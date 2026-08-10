@@ -76,7 +76,6 @@ afterEach(async () => {
 
 describe('byok storage handlers', () => {
   const definition = {
-    version: 1,
     endpoint: { kind: 'provider_default' },
     models: [
       {
@@ -173,11 +172,21 @@ describe('byok storage handlers', () => {
   test.each([
     [
       'custom endpoint without URL',
-      { ...definition, endpoint: { kind: 'custom' } },
+      {
+        ...definition,
+        endpoint: { kind: 'openai_compatible', dialect: 'responses' },
+      },
     ],
     [
       'unsupported endpoint protocol',
-      { ...definition, endpoint: { kind: 'custom', url: 'file:///tmp/api' } },
+      {
+        ...definition,
+        endpoint: {
+          kind: 'openai_compatible',
+          url: 'file:///tmp/api',
+          dialect: 'responses',
+        },
+      },
     ],
     [
       'malformed capability object',
@@ -231,7 +240,11 @@ describe('byok storage handlers', () => {
       credential: 'sk-openai',
       definition: {
         ...definition,
-        endpoint: { kind: 'custom', url: 'https://api.openai.example/v1' },
+        endpoint: {
+          kind: 'openai_compatible',
+          url: 'https://api.openai.example/v1',
+          dialect: 'responses',
+        },
       },
       sortOrder: 4,
       enabled: false,
@@ -254,7 +267,11 @@ describe('byok storage handlers', () => {
       description: 'Primary key',
       definition: {
         ...definition,
-        endpoint: { kind: 'custom', url: 'https://api.openai.example/v1' },
+        endpoint: {
+          kind: 'openai_compatible',
+          url: 'https://api.openai.example/v1',
+          dialect: 'responses',
+        },
       },
       sortOrder: 4,
       enabled: false,
@@ -284,7 +301,11 @@ describe('byok storage handlers', () => {
       credential: 'sk-openai-next',
       definition: {
         ...definition,
-        endpoint: { kind: 'custom', url: 'https://api.openai.example/v1' },
+        endpoint: {
+          kind: 'openai_compatible',
+          url: 'https://api.openai.example/v1',
+          dialect: 'responses',
+        },
       },
       sortOrder: 4,
       enabled: true,

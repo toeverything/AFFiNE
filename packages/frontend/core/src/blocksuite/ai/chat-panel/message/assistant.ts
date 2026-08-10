@@ -107,7 +107,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       'content' in this.item &&
       this.item.content &&
       this.item.content.includes('[^') &&
-      /\[\^\d+\]:{"type":"doc","docId":"[^"]+"}/.test(this.item.content);
+      /\[\^[^\]]+\]:{"type":"doc","docId":"[^"]+"}/.test(this.item.content);
 
     return html`<div class="user-info">
       <chat-assistant-avatar .status=${this.status}></chat-assistant-avatar>
@@ -127,7 +127,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       ${streamObjects?.length
         ? this.renderStreamObjects(streamObjects)
         : this.renderRichText(content)}
-      ${shouldRenderError ? AIChatErrorRenderer(error, host) : nothing}
+      ${shouldRenderError
+        ? AIChatErrorRenderer(error, host, () => this.retry())
+        : nothing}
       ${this.renderEditorActions()}
     `;
   }

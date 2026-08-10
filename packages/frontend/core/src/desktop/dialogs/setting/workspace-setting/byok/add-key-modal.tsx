@@ -1,5 +1,8 @@
 import { Button, Input, Modal, notify } from '@affine/component';
 import {
+  ByokCustomEndpointMode,
+  ByokEndpointKind,
+  ByokOpenAiDialect,
   ByokProvider,
   createWorkspaceByokProfileMutation,
   probeWorkspaceByokDraftMutation,
@@ -15,7 +18,6 @@ import {
   byokT,
   endpointHintKey,
   providerLabels,
-  shouldShowEndpoint,
   storageLabel,
 } from './metadata';
 import { ModelSelector } from './model-selector';
@@ -41,7 +43,6 @@ export const AddKeyModal = ({
   localStorageSupported,
   canAddServerKey,
   canAddLocalKey,
-  isSelfHosted,
   gql,
 }: {
   workspaceId: string;
@@ -55,7 +56,6 @@ export const AddKeyModal = ({
   localStorageSupported: boolean;
   canAddServerKey: boolean;
   canAddLocalKey: boolean;
-  isSelfHosted: boolean;
   gql?: GqlFn;
 }) => {
   const t = useI18n();
@@ -67,6 +67,7 @@ export const AddKeyModal = ({
   const [apiKey, setApiKey] = useState('');
   const [customEndpoint, setCustomEndpoint] = useState(false);
   const [endpoint, setEndpoint] = useState('');
+  const [dialect, setDialect] = useState<ByokOpenAiDialect | null>(null);
   const [models, setModels] = useState<ModelDeclaration[]>([]);
   const [testStatus, setTestStatus] = useState<'passed' | 'failed' | null>(
     null
@@ -76,14 +77,16 @@ export const AddKeyModal = ({
   const busyRef = useRef(false);
   const localStorageUnavailable = !localStorageSupported || !canAddLocalKey;
   const localStorageDisabled = !!editingKey || localStorageUnavailable;
-  const showCustomEndpoint = shouldShowEndpoint(
-    isSelfHosted,
-    settings.customEndpointSupported
-  );
+  const customEndpointMode = settings.policy.customEndpointMode;
+  const showCustomEndpoint =
+    provider === ByokProvider.openai &&
+    customEndpointMode !== ByokCustomEndpointMode.unavailable;
+  const customEndpointEnabled =
+    customEndpointMode === ByokCustomEndpointMode.enabled;
 
   const endpointHint = endpointHintKey(
-    settings.customEndpointSupported,
-    settings.privateEndpointSupported
+    customEndpointMode,
+    settings.policy.privateEndpointSupported
   );
   const providerCatalog = useMemo(
     () => catalogModels(settings, provider),
@@ -103,7 +106,11 @@ export const AddKeyModal = ({
     );
     setApiKey('');
     setEndpoint(editingKey?.definition.endpoint.url ?? '');
-    setCustomEndpoint(editingKey?.definition.endpoint.kind === 'custom');
+    setDialect(editingKey?.definition.endpoint.dialect ?? null);
+    setCustomEndpoint(
+      editingKey?.definition.endpoint.kind ===
+        ByokEndpointKind.openai_compatible
+    );
     setModels(
       editingKey?.definition.models ?? defaultModels(settings, nextProvider)
     );
@@ -113,13 +120,20 @@ export const AddKeyModal = ({
 
   const definition = useMemo<ByokDefinition>(
     () => ({
-      version: editingKey?.definition.version ?? 1,
       endpoint: customEndpoint
-        ? { kind: 'custom', url: endpoint }
-        : { kind: 'provider_default', url: null },
+        ? {
+            kind: ByokEndpointKind.openai_compatible,
+            url: endpoint,
+            dialect,
+          }
+        : {
+            kind: ByokEndpointKind.provider_default,
+            url: null,
+            dialect: null,
+          },
       models,
     }),
-    [customEndpoint, editingKey?.definition.version, endpoint, models]
+    [customEndpoint, dialect, endpoint, models]
   );
 
   const invalidateTest = () => setTestStatus(null);
@@ -297,7 +311,7 @@ export const AddKeyModal = ({
     models.length > 0 &&
     models.every(model => model.modelId.trim() && model.capabilities.length) &&
     new Set(models.map(model => model.modelId.trim())).size === models.length &&
-    (!customEndpoint || !!endpoint.trim());
+    (!customEndpoint || (!!endpoint.trim() && dialect !== null));
 
   return (
     <Modal
@@ -325,11 +339,14 @@ export const AddKeyModal = ({
                 const next = event.target.value as ByokProvider;
                 setProvider(next);
                 setName(providerLabels[next]);
+                setCustomEndpoint(false);
+                setEndpoint('');
+                setDialect(null);
                 setModels(defaultModels(settings, next));
                 invalidateTest();
               }}
             >
-              {settings.allowedProviders.map(item => (
+              {settings.policy.allowedProviders.map(item => (
                 <option key={item} value={item}>
                   {providerLabels[item]}
                 </option>
@@ -408,42 +425,71 @@ export const AddKeyModal = ({
                 <input
                   type="checkbox"
                   checked={customEndpoint}
-                  disabled={!settings.customEndpointSupported}
+                  disabled={!customEndpointEnabled}
                   onChange={event => {
                     setCustomEndpoint(event.target.checked);
-                    if (event.target.checked && !editingKey) setModels([]);
-                    if (!event.target.checked)
+                    setEndpoint('');
+                    setDialect(null);
+                    if (event.target.checked && !editingKey) {
+                      setModels([]);
+                    } else if (!event.target.checked) {
                       setModels(defaultModels(settings, provider));
+                    }
                     invalidateTest();
                   }}
                 />
                 {byokT(t, 'endpoint.use-custom')}
               </label>
-              {!settings.customEndpointSupported && endpointHint ? (
+              {!customEndpointEnabled && endpointHint ? (
                 <span className={styles.fieldHint}>
                   {byokT(t, endpointHint)}
                 </span>
               ) : null}
               {customEndpoint ? (
-                <label className={styles.endpointField}>
-                  <span className={styles.label}>
-                    {byokT(t, 'field.endpoint')}
-                  </span>
-                  <Input
-                    size="large"
-                    value={endpoint}
-                    onChange={value => {
-                      setEndpoint(value);
-                      invalidateTest();
-                    }}
-                    placeholder="https://api.example.com/v1"
-                  />
-                  {endpointHint ? (
-                    <span className={styles.fieldHint}>
-                      {byokT(t, endpointHint)}
+                <>
+                  <label className={styles.endpointField}>
+                    <span className={styles.label}>
+                      {byokT(t, 'field.endpoint')}
                     </span>
-                  ) : null}
-                </label>
+                    <Input
+                      size="large"
+                      value={endpoint}
+                      onChange={value => {
+                        setEndpoint(value);
+                        invalidateTest();
+                      }}
+                      placeholder="https://api.example.com/v1"
+                    />
+                    {endpointHint ? (
+                      <span className={styles.fieldHint}>
+                        {byokT(t, endpointHint)}
+                      </span>
+                    ) : null}
+                  </label>
+                  <label className={styles.field}>
+                    <span className={styles.label}>
+                      {byokT(t, 'field.dialect')}
+                    </span>
+                    <select
+                      className={styles.input}
+                      value={dialect ?? ''}
+                      onChange={event => {
+                        setDialect(event.target.value as ByokOpenAiDialect);
+                        invalidateTest();
+                      }}
+                    >
+                      <option value="" disabled>
+                        {byokT(t, 'placeholder.dialect')}
+                      </option>
+                      <option value={ByokOpenAiDialect.responses}>
+                        {byokT(t, 'dialect.responses')}
+                      </option>
+                      <option value={ByokOpenAiDialect.chat_completions}>
+                        {byokT(t, 'dialect.chat-completions')}
+                      </option>
+                    </select>
+                  </label>
+                </>
               ) : null}
             </>
           ) : null}

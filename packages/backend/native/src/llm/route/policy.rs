@@ -1,7 +1,10 @@
-use llm_adapter::capability::declared_model_matches;
+use llm_adapter::{
+  capability::declared_model_matches,
+  target::{BackendEndpoint, EgressPolicy, OpenAiDialect},
+};
 
 use super::CatalogSlot;
-use crate::llm::byok::ByokProfileDefinition;
+use crate::llm::byok::ByokModelDeclaration;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Deployment {
@@ -16,11 +19,14 @@ pub(crate) enum ProfileSource {
   Managed,
 }
 
-pub(crate) struct AuthorizedProfileRef {
+pub(crate) struct AuthorizedProviderProfile {
   pub(crate) profile_id: String,
   pub(crate) source: ProfileSource,
   pub(crate) provider: String,
-  pub(crate) definition: ByokProfileDefinition,
+  pub(crate) endpoint: BackendEndpoint,
+  pub(crate) openai_dialect: Option<OpenAiDialect>,
+  pub(crate) egress_policy: EgressPolicy,
+  pub(crate) models: Vec<ByokModelDeclaration>,
   pub(crate) sort_order: i32,
   pub(crate) credential_ref: CredentialRef,
 }
@@ -61,7 +67,7 @@ pub(crate) struct RoutePolicyInput<'a> {
   pub(crate) deployment: Deployment,
   pub(crate) byok_enabled: bool,
   pub(crate) access_available: bool,
-  pub(crate) profiles: &'a [AuthorizedProfileRef],
+  pub(crate) profiles: &'a [AuthorizedProviderProfile],
   pub(crate) target_override: Option<&'a TargetOverride>,
   pub(crate) target_override_managed: bool,
 }
@@ -84,7 +90,7 @@ pub(crate) fn decide(input: RoutePolicyInput<'_>) -> RouteDecision {
     let mut selected = compatible_targets(&input, input.target_override_managed);
     selected.retain(|candidate| {
       let profile = &input.profiles[candidate.profile_index];
-      let model = &profile.definition.models[candidate.model_index];
+      let model = &profile.models[candidate.model_index];
       profile.profile_id == target.profile_id && model.model_id == target.model_id
     });
     return if selected.is_empty() {
@@ -124,7 +130,6 @@ fn compatible_targets(input: &RoutePolicyInput<'_>, managed: bool) -> Vec<Author
     .into_iter()
     .flat_map(|(profile_index, profile)| {
       profile
-        .definition
         .models
         .iter()
         .enumerate()
@@ -142,33 +147,27 @@ mod tests {
   use llm_adapter::capability::{DeclaredModelCapability, ModelInput, ModelOutput};
 
   use super::*;
-  use crate::llm::{
-    byok::{ByokEndpoint, ByokModelDeclaration},
-    route::catalog,
-  };
+  use crate::llm::{byok::ByokModelDeclaration, route::catalog};
 
-  fn profile(id: &str, source: ProfileSource, model: &str, output: ModelOutput) -> AuthorizedProfileRef {
-    AuthorizedProfileRef {
+  fn profile(id: &str, source: ProfileSource, model: &str, output: ModelOutput) -> AuthorizedProviderProfile {
+    AuthorizedProviderProfile {
       profile_id: id.to_string(),
       source,
       provider: "openai".to_string(),
-      definition: ByokProfileDefinition {
-        version: 1,
-        endpoint: ByokEndpoint::Custom {
-          url: "https://example.test/v1".to_string(),
-        },
-        models: vec![ByokModelDeclaration {
-          model_id: model.to_string(),
-          enabled: true,
-          capabilities: vec![DeclaredModelCapability {
-            input: vec![ModelInput::Text],
-            output: vec![output],
-            features: vec![],
-            attachment_kinds: vec![],
-            attachment_sources: vec![],
-          }],
+      endpoint: BackendEndpoint::Custom("https://example.test/v1".to_string()),
+      openai_dialect: Some(OpenAiDialect::Responses),
+      egress_policy: EgressPolicy::PublicOnly,
+      models: vec![ByokModelDeclaration {
+        model_id: model.to_string(),
+        enabled: true,
+        capabilities: vec![DeclaredModelCapability {
+          input: vec![ModelInput::Text],
+          output: vec![output],
+          features: vec![],
+          attachment_kinds: vec![],
+          attachment_sources: vec![],
         }],
-      },
+      }],
       sort_order: 0,
       credential_ref: CredentialRef::Managed {
         profile_id: id.to_string(),
@@ -269,7 +268,7 @@ mod tests {
       panic!("override should resolve");
     };
     assert_eq!(
-      profiles[candidates[0].profile_index].definition.models[candidates[0].model_index].model_id,
+      profiles[candidates[0].profile_index].models[candidates[0].model_index].model_id,
       "vendor/model:B"
     );
 
@@ -294,7 +293,7 @@ mod tests {
     ));
 
     let mut disabled = profile("disabled", ProfileSource::Server, "model:C", ModelOutput::Text);
-    disabled.definition.models[0].enabled = false;
+    disabled.models[0].enabled = false;
     assert!(matches!(
       decide(RoutePolicyInput {
         slot: &slot,

@@ -236,6 +236,9 @@ class ChatMessageType implements Partial<ChatMessage> {
   @Field(() => GraphQLJSON, { nullable: true })
   params!: Record<string, string> | undefined;
 
+  @Field(() => GraphQLJSON, { nullable: true })
+  scopeSnapshot!: ChatMessage['scopeSnapshot'];
+
   @Field(() => Date)
   createdAt!: Date;
 }

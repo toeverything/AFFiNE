@@ -11,6 +11,7 @@ import {
   type StreamObject,
   StreamObjectSchema,
 } from '../runtime/contracts/runtime-event-contract';
+import { RetrievalScopeSchema } from '../runtime/contracts/shared';
 
 // Owner map:
 // - provider/profile/config schemas in this file are backend host ingress.
@@ -74,17 +75,21 @@ export const VertexSchema: JSONSchema = {
 
 export const PromptToolsSchema = z
   .enum([
-    'blobRead',
+    'artifactRead',
+    'artifactSearch',
     'codeArtifact',
     'conversationSummary',
     // work with indexer
     'docRead',
+    'docCanvasRead',
+    'docSearch',
     'docCreate',
     'docUpdate',
     'docUpdateMeta',
-    'docKeywordSearch',
-    // work with embeddings
-    'docSemanticSearch',
+    'frontendGetEditorState',
+    'frontendReadSelection',
+    'frontendReadNodes',
+    'frontendSnapshotDocument',
     // work with exa/model internal tools
     'webSearch',
     // artifact tools
@@ -280,6 +285,7 @@ const CopilotProviderOptionsSchema = z.object({
       'transcript',
     ])
     .optional(),
+  retrievalScope: RetrievalScopeSchema.optional(),
 });
 
 export const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(

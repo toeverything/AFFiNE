@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   Logger,
   type OnApplicationBootstrap,
@@ -12,20 +13,34 @@ import {
   BackendRuntime,
   type BackendRuntimeHealth,
   type ByokLocalLeaseOutput,
+  type ByokPolicyOutput,
   type ByokProbeResultOutput,
   type ByokProfileOutput,
+  type CompileScopeInput,
   type CopilotExecuteInput,
   type CopilotRouteCheckInput,
   type CreateByokLocalLeaseInput,
   type CreateByokProfileInput,
+  type EmbeddingHealth,
+  type EnsureWorkspaceBlobArtifactInput,
+  type MatchEmbeddingCandidatesInput,
   type ProbeByokDraftInput,
   type ProbeByokProfileInput,
+  type PutWorkspaceArtifactInput,
+  type ReadEmbeddingSourceContentInput,
   type ReorderByokProfilesInput,
   type ReplaceByokProfileInput,
   type RotateByokCredentialInput,
+  type RuntimeTurnScopeSnapshot,
+  type RuntimeWorkspaceArtifact,
+  type SyncEmbeddingStateInput,
 } from '../../native';
 
 type RuntimeInstance = InstanceType<typeof BackendRuntime>;
+
+export const BACKEND_RUNTIME_CONFIG_PATHS = Symbol(
+  'BACKEND_RUNTIME_CONFIG_PATHS'
+);
 
 class RuntimeEventStream<T> implements AsyncIterableIterator<T> {
   private readonly values: T[] = [];
@@ -262,8 +277,16 @@ export class BackendRuntimeProvider
   private readonly runtime: RuntimeInstance;
   private migrationsStarted = false;
 
-  constructor(@Optional() private readonly config?: Config) {
-    this.runtime = new BackendRuntime(this.config?.crypto.privateKey);
+  constructor(
+    @Optional() private readonly config?: Config,
+    @Optional()
+    @Inject(BACKEND_RUNTIME_CONFIG_PATHS)
+    configPaths?: string[]
+  ) {
+    this.runtime = new BackendRuntime(
+      this.config?.crypto.privateKey,
+      configPaths
+    );
   }
 
   async onApplicationBootstrap() {
@@ -288,7 +311,12 @@ export class BackendRuntimeProvider
 
   @OnEvent('config.changed')
   async onConfigChanged({ updates }: Events['config.changed']) {
-    if (!updates.copilot && !updates.crypto && !updates.db) {
+    if (
+      !updates.copilot &&
+      !updates.crypto &&
+      !updates.db &&
+      !updates.storages
+    ) {
       return;
     }
     await this.runtime.reloadConfig(this.config?.crypto.privateKey);
@@ -296,6 +324,101 @@ export class BackendRuntimeProvider
 
   async health(): Promise<BackendRuntimeHealth> {
     return await this.runtime.health();
+  }
+
+  async embeddingHealth(): Promise<EmbeddingHealth> {
+    return await this.measured('embeddingHealth', runtime =>
+      runtime.embeddingHealth()
+    );
+  }
+
+  async embeddingQueueCounts() {
+    return await this.measured('embeddingQueueCounts', runtime =>
+      runtime.embeddingQueueCounts()
+    );
+  }
+
+  async embeddingWorkspaceProgress(workspaceId: string) {
+    return await this.measured('embeddingWorkspaceProgress', runtime =>
+      runtime.embeddingWorkspaceProgress(workspaceId)
+    );
+  }
+
+  async reconcileEmbeddingWorkspaces() {
+    return await this.measured('reconcileEmbeddingWorkspaces', runtime =>
+      runtime.reconcileEmbeddingWorkspaces()
+    );
+  }
+
+  async compileTurnScope(
+    input: CompileScopeInput
+  ): Promise<RuntimeTurnScopeSnapshot> {
+    return await this.measured('compileTurnScope', runtime =>
+      runtime.compileTurnScope(input)
+    );
+  }
+
+  async putWorkspaceArtifact(
+    input: PutWorkspaceArtifactInput,
+    body: Buffer
+  ): Promise<RuntimeWorkspaceArtifact> {
+    return await this.measured('putWorkspaceArtifact', runtime =>
+      runtime.putWorkspaceArtifact(input, body)
+    );
+  }
+
+  async ensureWorkspaceBlobArtifact(
+    input: EnsureWorkspaceBlobArtifactInput
+  ): Promise<RuntimeWorkspaceArtifact> {
+    return await this.measured('ensureWorkspaceBlobArtifact', runtime =>
+      runtime.ensureWorkspaceBlobArtifact(input)
+    );
+  }
+
+  async syncEmbeddingState(input: SyncEmbeddingStateInput) {
+    return await this.measured('syncEmbeddingState', runtime =>
+      runtime.syncEmbeddingState(input)
+    );
+  }
+
+  async readEmbeddingSourceContent(input: ReadEmbeddingSourceContentInput) {
+    return await this.measured('readEmbeddingSourceContent', runtime =>
+      runtime.readEmbeddingSourceContent(input)
+    );
+  }
+
+  async matchEmbeddingCandidates(input: MatchEmbeddingCandidatesInput) {
+    return await this.measured('matchEmbeddingCandidates', runtime =>
+      runtime.matchEmbeddingCandidates(input)
+    );
+  }
+
+  async cleanupUnreferencedArtifacts(limit: number) {
+    return await this.measured('cleanupUnreferencedArtifacts', runtime =>
+      runtime.cleanupUnreferencedArtifacts(limit)
+    );
+  }
+
+  async setArtifactLibraryOwned(
+    workspaceId: string,
+    artifactId: string,
+    libraryOwned: boolean,
+    displayName?: string
+  ) {
+    return await this.measured('setArtifactLibraryOwned', runtime =>
+      runtime.setArtifactLibraryOwned(
+        workspaceId,
+        artifactId,
+        libraryOwned,
+        displayName
+      )
+    );
+  }
+
+  async cancelEmbeddingCandidateRequest(requestId: string) {
+    return await this.measured('cancelEmbeddingCandidateRequest', runtime =>
+      runtime.cancelEmbeddingCandidateRequest(requestId)
+    );
   }
 
   async cleanupExpiredSnapshotHistories(limit: number) {
@@ -376,6 +499,12 @@ export class BackendRuntimeProvider
   async listByokProfiles(workspaceId: string): Promise<ByokProfileOutput[]> {
     return await this.measured('listByokProfiles', runtime =>
       runtime.listByokProfiles(workspaceId)
+    );
+  }
+
+  async getByokPolicy(): Promise<ByokPolicyOutput> {
+    return await this.measured('getByokPolicy', runtime =>
+      Promise.resolve(runtime.getByokPolicy())
     );
   }
 

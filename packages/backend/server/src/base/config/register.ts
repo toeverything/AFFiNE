@@ -8,22 +8,35 @@ import { z } from 'zod';
 import { type EnvConfigType, parseEnvValue } from './env';
 import { AppConfigByPath } from './types';
 
-export type JSONSchema = { description?: string } & (
-  | { type?: undefined; oneOf?: JSONSchema[] }
-  | {
-      type: 'string' | 'number' | 'boolean';
-      enum?: string[];
-    }
-  | {
-      type: 'array';
-      items?: JSONSchema;
-    }
-  | {
-      type: 'object';
-      properties?: Record<string, JSONSchema>;
-      required?: string[];
-    }
-);
+export type JSONSchema = {
+  $id?: string;
+  $ref?: string;
+  $schema?: string;
+  additionalProperties?: boolean | JSONSchema;
+  allOf?: JSONSchema[];
+  anyOf?: JSONSchema[];
+  definitions?: Record<string, JSONSchema>;
+  description?: string;
+  default?: unknown;
+  enum?: unknown[];
+  format?: string;
+  items?: JSONSchema;
+  minItems?: number;
+  minLength?: number;
+  oneOf?: JSONSchema[];
+  pattern?: string;
+  properties?: Record<string, JSONSchema>;
+  required?: string[];
+  title?: string;
+  type?:
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'array'
+    | 'object'
+    | 'null'
+    | Array<'string' | 'number' | 'boolean' | 'array' | 'object' | 'null'>;
+};
 
 type ConfigType = EnvConfigType | 'array' | 'object' | 'any';
 export type ConfigDescriptor<T> = {
@@ -34,6 +47,7 @@ export type ConfigDescriptor<T> = {
   default: T;
   env?: [string, EnvConfigType];
   link?: string;
+  internal?: boolean;
 };
 
 type ConfigDefineDescriptor<T> = {
@@ -44,6 +58,7 @@ type ConfigDefineDescriptor<T> = {
   env?: string | [string, EnvConfigType];
   link?: string;
   schema?: JSONSchema;
+  internal?: boolean;
 };
 
 function typeFromShape(shape: z.ZodType<any>): ConfigType {
@@ -87,19 +102,17 @@ function shapeFromType(type: ConfigType): z.ZodType<any> {
 }
 
 function typeFromSchema(schema: JSONSchema): ConfigType {
-  if ('type' in schema) {
-    switch (schema.type) {
-      case 'string':
-        return 'string';
-      case 'number':
-        return 'float';
-      case 'boolean':
-        return 'boolean';
-      case 'array':
-        return 'array';
-      case 'object':
-        return 'object';
-    }
+  switch (schema.type) {
+    case 'string':
+      return 'string';
+    case 'number':
+      return 'float';
+    case 'boolean':
+      return 'boolean';
+    case 'array':
+      return 'array';
+    case 'object':
+      return 'object';
   }
 
   return 'any';
@@ -168,6 +181,7 @@ function standardizeDescriptor<T>(
     },
     env,
     link: desc.link,
+    internal: desc.internal,
     schema: {
       type: schemaFromType(type),
       description: desc.desc,
@@ -201,11 +215,19 @@ export function defineModuleConfig<T extends keyof AppConfigSchema>(
   module: T,
   defs: ModuleConfigDescriptors<AppConfigByPath<T>>
 ) {
+  registerModuleConfig(
+    module,
+    defs as Record<string, ConfigDefineDescriptor<unknown>>
+  );
+}
+
+function registerModuleConfig(
+  module: string,
+  defs: Record<string, ConfigDefineDescriptor<unknown>>
+) {
   const descriptors: Record<string, ConfigDescriptor<any>> = {};
   Object.entries(defs).forEach(([key, desc]) => {
-    descriptors[key] = standardizeDescriptor(
-      desc as ConfigDefineDescriptor<any>
-    );
+    descriptors[key] = standardizeDescriptor(desc);
   });
 
   APP_CONFIG_DESCRIPTORS[module] = {
@@ -214,7 +236,52 @@ export function defineModuleConfig<T extends keyof AppConfigSchema>(
   };
 }
 
-const CONFIG_JSON_PATHS = [
+export type NativeAppConfigDescriptor = {
+  key: string;
+  description: string;
+  defaultValue: unknown;
+  schema: JSONSchema;
+  internal: boolean;
+};
+
+export function defineNativeModuleConfig<T extends keyof AppConfigSchema>(
+  module: T,
+  descriptors: NativeAppConfigDescriptor[],
+  validate: (module: string, key: string, value: unknown) => string[],
+  nodeDefinitions: Partial<ModuleConfigDescriptors<AppConfigByPath<T>>> = {}
+) {
+  registerModuleConfig(module, {
+    ...nodeDefinitions,
+    ...Object.fromEntries(
+      descriptors.map(descriptor => [
+        descriptor.key,
+        {
+          desc: descriptor.description,
+          default: descriptor.defaultValue,
+          schema: descriptor.schema,
+          internal: descriptor.internal,
+          validate: (value: unknown) => {
+            const errors = validate(module, descriptor.key, value);
+            return errors.length
+              ? {
+                  success: false as const,
+                  error: new z.ZodError(
+                    errors.map(message => ({
+                      code: z.ZodIssueCode.custom,
+                      message,
+                      path: [],
+                    }))
+                  ),
+                }
+              : { success: true as const, data: value };
+          },
+        },
+      ])
+    ),
+  } as Record<string, ConfigDefineDescriptor<unknown>>);
+}
+
+export const CONFIG_JSON_PATHS = [
   join(env.projectRoot, 'config.json'),
   `${homedir()}/.affine/config/config.json`,
 ];

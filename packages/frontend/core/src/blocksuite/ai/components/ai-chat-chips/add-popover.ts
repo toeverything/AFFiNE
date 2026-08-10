@@ -487,7 +487,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
     this.abortController.abort();
     await this.addChip({
       docId: meta.id,
-      state: 'processing',
+      state: 'finished',
     });
     const mode = this.docDisplayConfig.getDocPrimaryMode(meta.id);
     const method = meta.id === this.docId ? 'cur-doc' : 'doc';
@@ -498,7 +498,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
     this.abortController.abort();
     await this.addChip({
       tagId: tag.id,
-      state: 'processing',
+      state: 'finished',
     });
     this._track('tags');
   };
@@ -507,7 +507,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
     this.abortController.abort();
     await this.addChip({
       collectionId: collection.id,
-      state: 'processing',
+      state: 'finished',
     });
     this._track('collections');
   };

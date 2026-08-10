@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use llm_adapter::{
   backend::{BackendError, DefaultHttpClient},
@@ -10,29 +10,26 @@ use llm_adapter::{
     ImageProviderOptions, ImageRequest, RerankCandidate, RerankRequest, StructuredRequest,
   },
   router::{ExecutablePreparedRoute, ExecutableRequest, dispatch_prepared_route},
-  target::{BackendCredential, BackendOperation, BackendTargetInput, EgressPolicy, compile_backend_target},
+  target::{
+    BackendCredential, BackendEndpoint, BackendOperation, BackendTargetInput, EgressPolicy, compile_backend_target,
+  },
 };
 use serde_json::json;
 
-use super::{RuntimeError, RuntimeResult, backend_provider, byok_endpoint, executable_protocol};
-use crate::{
-  llm::{
-    ByokModelProbeCheckOutput, ByokModelProbeOutput, ByokProbeCheckInput, ByokProbeResultOutput, ByokProbeStatusOutput,
-    byok::{ByokEndpoint, ByokProfileDefinition, SensitiveCredential, definition_fingerprint},
-  },
-  runtime::config::CopilotByokRuntimeConfig,
+use super::{RuntimeError, RuntimeResult, backend_provider, executable_protocol};
+use crate::llm::{
+  ByokModelProbeCheckOutput, ByokModelProbeOutput, ByokProbeCheckInput, ByokProbeResultOutput, ByokProbeStatusOutput,
+  byok::{ByokEndpoint, ByokPolicy, ByokProfileDefinition, SensitiveCredential, definition_fingerprint},
 };
 
 pub(super) async fn execute_probe(
   provider: &str,
   definition: &ByokProfileDefinition,
   credential: SensitiveCredential,
-  policy: &CopilotByokRuntimeConfig,
+  policy: &ByokPolicy,
   checks: Vec<ByokProbeCheckInput>,
 ) -> RuntimeResult<ByokProbeResultOutput> {
   let tested_at_ms = chrono::Utc::now().timestamp_millis();
-  let connection_error = connection_probe(provider, &definition.endpoint, &credential, policy).await;
-  let connection = status(tested_at_ms, connection_error.as_deref());
   let mut requested = HashSet::new();
   for check in checks {
     if !requested.insert((check.model_id.clone(), check.operation.clone())) {
@@ -40,7 +37,7 @@ pub(super) async fn execute_probe(
     }
     if !matches!(
       check.operation.as_str(),
-      "chat" | "structured" | "tools" | "vision" | "embedding" | "rerank" | "image" | "transcript"
+      "chat" | "structured" | "tool_calling" | "vision" | "embedding" | "rerank" | "image" | "transcript"
     ) {
       return Err(RuntimeError::invalid_input("unknown BYOK probe operation"));
     }
@@ -58,9 +55,7 @@ pub(super) async fn execute_probe(
     }
     let mut outputs = Vec::with_capacity(model_checks.len());
     for operation in model_checks {
-      let probe_status = if connection_error.is_some() {
-        not_tested()
-      } else if !model.enabled {
+      let probe_status = if !model.enabled {
         failed(tested_at_ms, "model_disabled")
       } else if !declared_model_matches(&model.capabilities, &requirements(&operation)) {
         failed(tested_at_ms, "capability_not_declared")
@@ -73,7 +68,7 @@ pub(super) async fn execute_probe(
         let credential = String::from_utf8(credential.expose().to_vec())
           .map_err(|_| RuntimeError::invalid_state("credential_unavailable"))?;
         let operation_for_task = operation.clone();
-        let allow_private = policy.allow_custom_endpoint && policy.allow_private_endpoint;
+        let egress_policy = policy.egress_policy(&endpoint);
         tokio::task::spawn_blocking(move || {
           dispatch_check(
             &provider,
@@ -81,7 +76,7 @@ pub(super) async fn execute_probe(
             &model_id,
             credential,
             &operation_for_task,
-            allow_private,
+            egress_policy,
           )
         })
         .await
@@ -104,6 +99,8 @@ pub(super) async fn execute_probe(
     return Err(RuntimeError::invalid_input("BYOK probe model not found"));
   }
 
+  let connection = connection_status(tested_at_ms, &models);
+
   Ok(ByokProbeResultOutput {
     definition_fingerprint: definition_fingerprint(definition),
     stale: false,
@@ -112,57 +109,17 @@ pub(super) async fn execute_probe(
   })
 }
 
-async fn connection_probe(
-  provider: &str,
-  endpoint: &ByokEndpoint,
-  credential: &SensitiveCredential,
-  policy: &CopilotByokRuntimeConfig,
-) -> Option<String> {
-  let credential = match std::str::from_utf8(credential.expose()) {
-    Ok(value) => value.to_string(),
-    Err(_) => return Some("credential_unavailable".to_string()),
-  };
-  let (url, headers) = probe_request(provider, endpoint, credential);
-  let allow_private = policy.allow_custom_endpoint && policy.allow_private_endpoint;
-  let result = tokio::task::spawn_blocking(move || {
-    safefetch::safe_fetch(&safefetch::SafeFetchRequest {
-      url,
-      method: Some(safefetch::SafeFetchMethod::Get),
-      headers: Some(headers.clone()),
-      body: None,
-      timeout_ms: Some(10_000),
-      max_redirects: Some(0),
-      max_bytes: Some(1024 * 1024),
-      allowed_headers: Some(headers.keys().cloned().collect()),
-      allowed_hosts: None,
-      allow_http: Some(allow_private),
-      allow_private_target_origin: Some(allow_private),
-      ech_config_list: None,
-    })
-  })
-  .await;
-  match result {
-    Ok(Ok(response))
-      if (200..300).contains(&response.status) && valid_connection_response(provider, &response.body) =>
-    {
-      None
-    }
-    Ok(Ok(response)) => Some(http_error_kind(response.status).to_string()),
-    _ => Some("transport".to_string()),
-  }
-}
-
 fn dispatch_check(
   provider: &str,
   endpoint: &ByokEndpoint,
   model_id: &str,
   credential: String,
   operation: &str,
-  allow_private: bool,
+  egress_policy: EgressPolicy,
 ) -> ByokProbeStatusOutput {
   let checked_at = chrono::Utc::now().timestamp_millis();
   let operation_kind = match operation {
-    "chat" | "tools" => BackendOperation::Chat,
+    "chat" | "tool_calling" => BackendOperation::Chat,
     "structured" => BackendOperation::Structured,
     "embedding" => BackendOperation::Embedding,
     "rerank" => BackendOperation::Rerank,
@@ -175,15 +132,18 @@ fn dispatch_check(
       Err(_) => return failed(checked_at, "unsupported_provider"),
     },
     operation: operation_kind,
-    endpoint: byok_endpoint(provider, endpoint),
+    endpoint: match endpoint {
+      ByokEndpoint::ProviderDefault => BackendEndpoint::ProviderDefault,
+      ByokEndpoint::OpenAiCompatible { url, .. } => BackendEndpoint::Custom(url.clone()),
+    },
+    openai_dialect: match endpoint {
+      ByokEndpoint::ProviderDefault => None,
+      ByokEndpoint::OpenAiCompatible { dialect, .. } => Some(*dialect),
+    },
     model: model_id.to_string(),
     credential: BackendCredential::new(credential),
     timeout_ms: Some(15_000),
-    egress_policy: if allow_private {
-      EgressPolicy::AllowPrivate
-    } else {
-      EgressPolicy::PublicOnly
-    },
+    egress_policy,
   });
   let target = match target {
     Ok(target) => target,
@@ -213,13 +173,13 @@ fn probe_request_for_operation(operation: &str) -> ExecutableRequest {
     }],
   };
   match operation {
-    "chat" | "tools" => ExecutableRequest::Chat(CoreRequest {
+    "chat" | "tool_calling" => ExecutableRequest::Chat(CoreRequest {
       model: String::new(),
       messages: vec![message],
       stream: false,
       max_tokens: Some(8),
       temperature: Some(0.0),
-      tools: if operation == "tools" {
+      tools: if operation == "tool_calling" {
         vec![CoreToolDefinition {
           name: "byok_probe".to_string(),
           description: Some("Probe tool compatibility".to_string()),
@@ -283,7 +243,7 @@ fn requirements(operation: &str) -> ModelRequirements {
       vec![],
       vec![],
     ),
-    "tools" => (
+    "tool_calling" => (
       vec![ModelInput::Text],
       vec![ModelOutput::Text],
       vec![ModelFeature::ToolCalling],
@@ -330,55 +290,36 @@ fn requirements(operation: &str) -> ModelRequirements {
   }
 }
 
-fn probe_request(provider: &str, endpoint: &ByokEndpoint, credential: String) -> (String, HashMap<String, String>) {
-  let base = match endpoint {
-    ByokEndpoint::Custom { url } => url.as_str(),
-    ByokEndpoint::ProviderDefault => match provider {
-      "openai" => "https://api.openai.com/v1",
-      "anthropic" => "https://api.anthropic.com/v1",
-      "gemini" => "https://generativelanguage.googleapis.com/v1beta",
-      "fal" => "https://api.fal.ai/v1",
-      _ => unreachable!("validated provider"),
-    },
-  };
-  let mut headers = HashMap::new();
-  match provider {
-    "openai" => {
-      headers.insert("authorization".to_string(), format!("Bearer {credential}"));
-    }
-    "anthropic" => {
-      headers.insert("x-api-key".to_string(), credential);
-      headers.insert("anthropic-version".to_string(), "2023-06-01".to_string());
-    }
-    "gemini" => {
-      headers.insert("x-goog-api-key".to_string(), credential);
-    }
-    "fal" => {
-      headers.insert("authorization".to_string(), format!("Key {credential}"));
-    }
-    _ => unreachable!("validated provider"),
+fn connection_status(tested_at_ms: i64, models: &[ByokModelProbeOutput]) -> ByokProbeStatusOutput {
+  let statuses = models
+    .iter()
+    .flat_map(|model| model.checks.iter().map(|check| &check.status));
+  if statuses.clone().any(|status| status.kind == "verified") {
+    return verified(tested_at_ms);
   }
-  let suffix = if provider == "fal" { "models?limit=10" } else { "models" };
-  (format!("{}/{suffix}", base.trim_end_matches('/')), headers)
+  if let Some(error) = statuses
+    .filter(|status| status.kind == "failed")
+    .filter_map(|status| status.error_kind.as_deref())
+    .find(|error| is_connection_error(error))
+  {
+    return failed(tested_at_ms, error);
+  }
+  not_tested()
 }
 
-fn valid_connection_response(provider: &str, body: &[u8]) -> bool {
-  let Ok(body) = serde_json::from_slice::<serde_json::Value>(body) else {
-    return false;
-  };
-  match provider {
-    "openai" | "anthropic" => body.get("data").is_some_and(serde_json::Value::is_array),
-    "gemini" => body.get("models").is_some_and(serde_json::Value::is_array),
-    "fal" => body.get("error").is_none(),
-    _ => false,
-  }
-}
-
-fn status(tested_at_ms: i64, error: Option<&str>) -> ByokProbeStatusOutput {
-  match error {
-    Some(error) => failed(tested_at_ms, error),
-    None => verified(tested_at_ms),
-  }
+fn is_connection_error(error: &str) -> bool {
+  matches!(
+    error,
+    "authentication"
+      | "permission"
+      | "not_found"
+      | "rate_limited"
+      | "unavailable"
+      | "rejected"
+      | "transport"
+      | "timeout"
+      | "invalid_response"
+  )
 }
 
 fn verified(tested_at_ms: i64) -> ByokProbeStatusOutput {
@@ -432,35 +373,166 @@ fn backend_error_kind(error: &BackendError) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-  use llm_adapter::target::BackendEndpoint;
+  use std::{
+    io::{Read, Write},
+    net::{TcpListener, TcpStream},
+    sync::mpsc,
+    thread,
+  };
+
+  use llm_adapter::target::OpenAiDialect;
 
   use super::*;
 
+  fn read_request(stream: &mut TcpStream) -> String {
+    let mut request = Vec::new();
+    let mut content_length = None;
+    let mut header_length = None;
+    loop {
+      let mut chunk = [0; 4096];
+      let count = stream.read(&mut chunk).unwrap();
+      if count == 0 {
+        break;
+      }
+      request.extend_from_slice(&chunk[..count]);
+      if header_length.is_none()
+        && let Some(index) = request.windows(4).position(|window| window == b"\r\n\r\n")
+      {
+        let end = index + 4;
+        let headers = String::from_utf8_lossy(&request[..end]);
+        content_length = headers.lines().find_map(|line| {
+          line
+            .strip_prefix("content-length: ")
+            .or_else(|| line.strip_prefix("Content-Length: "))
+            .and_then(|value| value.parse::<usize>().ok())
+        });
+        header_length = Some(end);
+      }
+      if let Some(header_length) = header_length
+        && request.len() >= header_length + content_length.unwrap_or_default()
+      {
+        break;
+      }
+    }
+    String::from_utf8(request).unwrap()
+  }
+
+  fn serve_openai_compatible(request_count: usize) -> (String, mpsc::Receiver<String>, thread::JoinHandle<()>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let endpoint = format!("http://{}/v1", listener.local_addr().unwrap());
+    let (sender, receiver) = mpsc::channel();
+    let handle = thread::spawn(move || {
+      for stream in listener.incoming().take(request_count) {
+        let mut stream = stream.unwrap();
+        let request = read_request(&mut stream);
+        let responses = request.starts_with("POST /v1/responses ");
+        let body = if responses {
+          json!({
+            "id": "resp_smoke",
+            "model": "smoke-model",
+            "status": "completed",
+            "output": [{
+              "type": "message",
+              "id": "msg_smoke",
+              "role": "assistant",
+              "content": [{ "type": "output_text", "text": "{\"ok\":true}" }]
+            }],
+            "usage": { "input_tokens": 1, "output_tokens": 1, "total_tokens": 2 }
+          })
+        } else {
+          json!({
+            "id": "chat_smoke",
+            "model": "smoke-model",
+            "choices": [{
+              "index": 0,
+              "message": { "role": "assistant", "content": "{\"ok\":true}" },
+              "finish_reason": "stop"
+            }],
+            "usage": { "prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2 }
+          })
+        }
+        .to_string();
+        write!(
+          stream,
+          "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+          body.len(),
+          body
+        )
+        .unwrap();
+        sender.send(request).unwrap();
+      }
+    });
+    (endpoint, receiver, handle)
+  }
+
   #[test]
-  fn connection_probe_errors_are_low_information() {
-    let (url, headers) = probe_request("openai", &ByokEndpoint::ProviderDefault, "secret".to_string());
-    assert_eq!(url, "https://api.openai.com/v1/models");
-    assert_eq!(headers.get("authorization").map(String::as_str), Some("Bearer secret"));
+  fn connection_evidence_is_aggregated_from_operation_checks() {
     assert_eq!(http_error_kind(401), "authentication");
     assert_eq!(http_error_kind(403), "permission");
     assert_eq!(http_error_kind(429), "rate_limited");
     assert_eq!(http_error_kind(503), "unavailable");
 
-    let custom = ByokEndpoint::Custom {
-      url: "http://127.0.0.1:1234/v1".to_string(),
+    let output = |status| ByokModelProbeOutput {
+      model_id: "model".to_string(),
+      checks: vec![ByokModelProbeCheckOutput {
+        operation: "chat".to_string(),
+        status,
+      }],
     };
+    assert_eq!(connection_status(1, &[output(verified(1))]).kind, "verified");
+    assert_eq!(connection_status(1, &[output(failed(1, "transport"))]).kind, "failed");
     assert_eq!(
-      probe_request("openai", &custom, "secret".to_string()).0,
-      "http://127.0.0.1:1234/v1/models"
+      connection_status(1, &[output(failed(1, "model_disabled"))]).kind,
+      "not_tested"
+    );
+  }
+
+  #[test]
+  fn openai_compatible_probe_smoke_uses_the_selected_dialect() {
+    let operations = ["chat", "structured", "tool_calling"];
+    let (endpoint, requests, server) = serve_openai_compatible(operations.len() * 2);
+
+    for dialect in [OpenAiDialect::Responses, OpenAiDialect::ChatCompletions] {
+      let endpoint = ByokEndpoint::OpenAiCompatible {
+        url: endpoint.clone(),
+        dialect,
+      };
+      for operation in operations {
+        assert_eq!(
+          dispatch_check(
+            "openai",
+            &endpoint,
+            "smoke-model",
+            "smoke-key".to_string(),
+            operation,
+            EgressPolicy::AllowPrivate,
+          )
+          .kind,
+          "verified"
+        );
+      }
+    }
+
+    server.join().unwrap();
+    let requests = requests.into_iter().collect::<Vec<_>>();
+    assert_eq!(
+      requests
+        .iter()
+        .filter(|request| request.starts_with("POST /v1/responses "))
+        .count(),
+      operations.len()
     );
     assert_eq!(
-      byok_endpoint("openai", &custom),
-      BackendEndpoint::Custom("http://127.0.0.1:1234".to_string())
+      requests
+        .iter()
+        .filter(|request| request.starts_with("POST /v1/chat/completions "))
+        .count(),
+      operations.len()
     );
-    assert!(valid_connection_response("openai", br#"{"data":[]}"#));
-    assert!(!valid_connection_response(
-      "openai",
-      br#"{"error":"Unexpected endpoint"}"#
-    ));
+    assert!(requests.iter().all(|request| !request.contains("/models")));
+    assert_eq!(
+      requests.iter().filter(|request| request.contains("byok_probe")).count(),
+      2
+    );
   }
 }

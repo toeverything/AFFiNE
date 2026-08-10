@@ -565,6 +565,16 @@ mod tests {
     );
 
     let chat = built_in_prompt("Chat With AFFiNE AI").expect("chat prompt");
+    let chat_tools = chat
+      .config
+      .as_ref()
+      .and_then(|config| config.get("tools"))
+      .and_then(Value::as_array)
+      .expect("chat tools");
+    assert!(chat_tools.iter().any(|tool| tool == "artifactRead"));
+    assert!(chat_tools.iter().any(|tool| tool == "artifactSearch"));
+    assert!(!chat_tools.iter().any(|tool| tool == "contextSearch"));
+    assert!(!chat_tools.iter().any(|tool| tool == "blobRead"));
     assert_eq!(chat.managed_targets, ["gpt-5.6-luna"]);
     assert_eq!(
       chat

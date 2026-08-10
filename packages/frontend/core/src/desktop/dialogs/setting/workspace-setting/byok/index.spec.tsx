@@ -24,6 +24,57 @@ const ByokProvider = vi.hoisted(() => ({
   gemini: 'gemini',
   fal: 'fal',
 }));
+const ByokEnums = vi.hoisted(() => ({
+  ByokCustomEndpointMode: {
+    unavailable: 'unavailable',
+    disabled: 'disabled',
+    enabled: 'enabled',
+  },
+  ByokEndpointKind: {
+    provider_default: 'provider_default',
+    openai_compatible: 'openai_compatible',
+  },
+  ByokOpenAiDialect: {
+    responses: 'responses',
+    chat_completions: 'chat_completions',
+  },
+  ByokModelInput: {
+    text: 'text',
+    image: 'image',
+    audio: 'audio',
+    file: 'file',
+  },
+  ByokModelOutput: {
+    text: 'text',
+    object: 'object',
+    structured: 'structured',
+    embedding: 'embedding',
+    rerank: 'rerank',
+    image: 'image',
+  },
+  ByokModelFeature: {
+    tool_calling: 'tool_calling',
+    reasoning: 'reasoning',
+    web_search: 'web_search',
+  },
+  ByokAttachmentKind: { image: 'image', audio: 'audio', file: 'file' },
+  ByokAttachmentSource: {
+    url: 'url',
+    data: 'data',
+    bytes: 'bytes',
+    file_handle: 'file_handle',
+  },
+  ByokProbeOperation: {
+    chat: 'chat',
+    structured: 'structured',
+    tool_calling: 'tool_calling',
+    vision: 'vision',
+    embedding: 'embedding',
+    rerank: 'rerank',
+    image: 'image',
+    transcript: 'transcript',
+  },
+}));
 const createMutation = vi.hoisted(() => Symbol('create'));
 const probeMutation = vi.hoisted(() => Symbol('probe'));
 const replaceMutation = vi.hoisted(() => Symbol('replace'));
@@ -118,6 +169,7 @@ vi.mock('@affine/component', () => ({
 
 vi.mock('@affine/graphql', () => ({
   ByokProvider,
+  ...ByokEnums,
   createWorkspaceByokProfileMutation: createMutation,
   probeWorkspaceByokDraftMutation: probeMutation,
   replaceWorkspaceByokProfileMutation: replaceMutation,
@@ -138,15 +190,20 @@ const textCapability = {
   attachmentSources: [],
 };
 
-function settings(customEndpointSupported = true) {
+function settings(
+  customEndpointMode = ByokEnums.ByokCustomEndpointMode.enabled
+) {
   return {
     workspaceId: 'workspace-1',
     entitled: true,
     serverEntitled: true,
     localEntitled: false,
-    allowedProviders: Object.values(ByokProvider),
-    customEndpointSupported,
-    privateEndpointSupported: false,
+    policy: {
+      enabled: true,
+      allowedProviders: Object.values(ByokProvider),
+      customEndpointMode,
+      privateEndpointSupported: false,
+    },
     localStorageSupported: false,
     keys: [],
     catalog: {
@@ -181,22 +238,30 @@ describe('BYOK settings behavior', () => {
   });
 
   test.each([
-    [false, false, 'endpoint.custom-disabled'],
-    [true, false, 'endpoint.private-disabled'],
-    [true, true, null],
+    [
+      ByokEnums.ByokCustomEndpointMode.disabled,
+      false,
+      'endpoint.custom-disabled',
+    ],
+    [
+      ByokEnums.ByokCustomEndpointMode.enabled,
+      false,
+      'endpoint.private-disabled',
+    ],
+    [ByokEnums.ByokCustomEndpointMode.enabled, true, null],
   ] as const)(
-    'maps endpoint policy custom=%s private=%s',
-    (customEndpointSupported, privateEndpointSupported, expected) => {
-      expect(
-        endpointHintKey(customEndpointSupported, privateEndpointSupported)
-      ).toBe(expected);
+    'maps endpoint policy mode=%s private=%s',
+    (mode, privateEndpointSupported, expected) => {
+      expect(endpointHintKey(mode as never, privateEndpointSupported)).toBe(
+        expected
+      );
     }
   );
 
   test('shows a disabled custom endpoint control with its self-hosted policy hint', () => {
     const props = {
       workspaceId: 'workspace-1',
-      settings: settings(false) as never,
+      settings: settings(ByokEnums.ByokCustomEndpointMode.disabled) as never,
       editingKey: null,
       open: true,
       onOpenChange: vi.fn(),
@@ -208,7 +273,7 @@ describe('BYOK settings behavior', () => {
       canAddLocalKey: false,
       gql: vi.fn() as never,
     };
-    const { rerender } = render(<AddKeyModal {...props} isSelfHosted />);
+    const { rerender } = render(<AddKeyModal {...props} />);
 
     expect(
       (
@@ -219,7 +284,14 @@ describe('BYOK settings behavior', () => {
     ).toBe(true);
     expect(screen.getByText('custom-disabled')).toBeTruthy();
 
-    rerender(<AddKeyModal {...props} isSelfHosted={false} />);
+    rerender(
+      <AddKeyModal
+        {...props}
+        settings={
+          settings(ByokEnums.ByokCustomEndpointMode.unavailable) as never
+        }
+      />
+    );
     expect(screen.queryByRole('checkbox', { name: 'use-custom' })).toBeNull();
     expect(screen.queryByText('custom-disabled')).toBeNull();
   });
@@ -238,7 +310,6 @@ describe('BYOK settings behavior', () => {
         localStorageSupported={false}
         canAddServerKey
         canAddLocalKey={false}
-        isSelfHosted={false}
         gql={vi.fn() as never}
       />
     );
@@ -335,7 +406,6 @@ describe('BYOK settings behavior', () => {
         localStorageSupported={false}
         canAddServerKey
         canAddLocalKey={false}
-        isSelfHosted={false}
         gql={gql as never}
       />
     );
@@ -399,7 +469,6 @@ describe('BYOK settings behavior', () => {
         localStorageSupported={false}
         canAddServerKey
         canAddLocalKey={false}
-        isSelfHosted={false}
         gql={gql as never}
       />
     );
@@ -421,7 +490,7 @@ describe('BYOK settings behavior', () => {
     ).toBe(false);
   });
 
-  test('preserves definition version and server revision while editing', async () => {
+  test('preserves server revision and writes the breaking definition shape', async () => {
     type MockOperation = {
       query: symbol;
       variables?: { input?: Record<string, unknown> };
@@ -462,8 +531,11 @@ describe('BYOK settings behavior', () => {
             sortOrder: 0,
             revision: 7,
             definition: {
-              version: 3,
-              endpoint: { kind: 'provider_default', url: null },
+              endpoint: {
+                kind: ByokEnums.ByokEndpointKind.provider_default,
+                url: null,
+                dialect: null,
+              },
               models: [
                 {
                   modelId: 'model-a',
@@ -483,7 +555,6 @@ describe('BYOK settings behavior', () => {
         localStorageSupported={false}
         canAddServerKey
         canAddLocalKey={false}
-        isSelfHosted={false}
         gql={gql as never}
       />
     );
@@ -495,7 +566,19 @@ describe('BYOK settings behavior', () => {
     );
     expect(replaceCall?.[0].variables?.input).toMatchObject({
       expectedRevision: 7,
-      definition: { version: 3 },
+      definition: {
+        endpoint: {
+          kind: ByokEnums.ByokEndpointKind.provider_default,
+          url: null,
+          dialect: null,
+        },
+      },
     });
+    expect(
+      Object.hasOwn(
+        replaceCall?.[0].variables?.input?.definition as object,
+        'version'
+      )
+    ).toBe(false);
   });
 });

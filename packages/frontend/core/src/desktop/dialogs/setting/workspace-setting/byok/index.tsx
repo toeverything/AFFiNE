@@ -10,7 +10,6 @@ import {
   type GraphQLQuery,
   probeWorkspaceByokProfileMutation,
   reorderWorkspaceByokProfilesMutation,
-  ServerDeploymentType,
   workspaceByokSettingsQuery as byokSettingsQuery,
 } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -115,14 +114,16 @@ export const WorkspaceByokSetting = () => {
       return a.sortOrder - b.sortOrder;
     });
   }, [localKeys, settings?.keys]);
-  const canAddServerKey = settings?.serverEntitled ?? false;
+  const policyAllowsCreation =
+    (settings?.policy.enabled ?? false) &&
+    (settings?.policy.allowedProviders.length ?? 0) > 0;
+  const canAddServerKey =
+    (settings?.serverEntitled ?? false) && policyAllowsCreation;
   const canAddLocalKey =
     (settings?.localEntitled ?? false) &&
-    (settings?.localStorageSupported ?? false);
+    (settings?.localStorageSupported ?? false) &&
+    policyAllowsCreation;
   const canManageKeys = canAddServerKey || canAddLocalKey;
-  const isSelfHosted =
-    workspaceServer.server?.config$.value.type ===
-    ServerDeploymentType.Selfhosted;
 
   const clearAll = useCallback(async () => {
     if (!settings) {
@@ -397,7 +398,6 @@ export const WorkspaceByokSetting = () => {
         localStorageSupported={settings.localStorageSupported}
         canAddServerKey={canAddServerKey}
         canAddLocalKey={canAddLocalKey}
-        isSelfHosted={isSelfHosted}
         gql={workspaceServer.server?.gql as GqlFn | undefined}
       />
     </>

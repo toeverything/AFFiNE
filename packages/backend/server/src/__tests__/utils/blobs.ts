@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { type Blob } from '@prisma/client';
 
 import { TestingApp } from './testing-app';
@@ -104,7 +106,7 @@ export async function setBlob(
     .attach(
       '0',
       buffer,
-      `blob-${Math.random().toString(16).substring(2, 10)}.data`
+      createHash('sha256').update(buffer).digest('base64url')
     )
     .expect(200);
 

@@ -3,6 +3,10 @@ import { z } from 'zod';
 import type { Turn } from './core/types';
 import type { ResolvedPrompt } from './prompt';
 import { PromptMessageSchema, PureMessageSchema } from './providers/types';
+import {
+  type SessionFocus,
+  TurnScopeSnapshotSchema,
+} from './runtime/contracts/shared';
 
 const takeFirst = (v: unknown) => (Array.isArray(v) ? v[0] : v);
 
@@ -93,6 +97,7 @@ export const ChatQuerySchema = z
 
 export const ChatMessageSchema = PromptMessageSchema.extend({
   id: z.string().optional(),
+  scopeSnapshot: TurnScopeSnapshotSchema.nullable().optional(),
   createdAt: z.date(),
 }).strict();
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
@@ -148,12 +153,6 @@ export type ChatSessionState = {
   workspaceId: string;
   docId: string | null;
   turns: Turn[];
+  focus: SessionFocus;
   prompt: ResolvedPrompt;
-};
-
-export type CopilotContextFile = {
-  id: string; // fileId
-  created_at: number;
-  // embedding status
-  status: 'in_progress' | 'completed' | 'failed';
 };

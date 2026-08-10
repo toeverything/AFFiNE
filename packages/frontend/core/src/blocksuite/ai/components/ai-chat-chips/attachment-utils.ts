@@ -29,7 +29,7 @@ export async function addFilesToChat(
       }
       await addChip({
         file,
-        state: 'processing',
+        state: 'finished',
       });
     })
   );

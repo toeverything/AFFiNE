@@ -369,6 +369,18 @@
       "type": "Boolean",
       "desc": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK."
     },
+    "unsplash": {
+      "type": "Object",
+      "desc": "The config for the unsplash key."
+    },
+    "exa": {
+      "type": "Object",
+      "desc": "The config for the exa web search key."
+    },
+    "storage": {
+      "type": "Object",
+      "desc": "The config for the storage provider."
+    },
     "byok.enabled": {
       "type": "Boolean",
       "desc": "Allow workspace owners and admins to configure AI provider keys through AI BYOK."
@@ -384,22 +396,6 @@
     "byok.allowPrivateEndpoint": {
       "type": "Boolean",
       "desc": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
-    },
-    "providers.profiles": {
-      "type": "Array",
-      "desc": "The profile list for copilot providers."
-    },
-    "unsplash": {
-      "type": "Object",
-      "desc": "The config for the unsplash key."
-    },
-    "exa": {
-      "type": "Object",
-      "desc": "The config for the exa web search key."
-    },
-    "storage": {
-      "type": "Object",
-      "desc": "The config for the storage provider."
     }
   },
   "indexer": {

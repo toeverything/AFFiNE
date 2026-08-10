@@ -79,7 +79,7 @@ pub fn byok_catalog() -> ByokCatalogOutput {
 
 fn provider_for_backend(backend: &str) -> Option<&'static str> {
   match backend {
-    "openai_chat" | "openai_responses" => Some("openai"),
+    "openai_responses" => Some("openai"),
     "anthropic" => Some("anthropic"),
     "gemini_api" => Some("gemini"),
     "fal" => Some("fal"),

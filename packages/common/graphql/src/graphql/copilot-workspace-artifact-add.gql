@@ -1,0 +1,9 @@
+mutation addWorkspaceArtifact($workspaceId: String!, $blob: Upload!) {
+  addWorkspaceArtifact(workspaceId: $workspaceId, blob: $blob) {
+    artifactId
+    contentHash
+    mediaType
+    size
+    createdAt
+  }
+}

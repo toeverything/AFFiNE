@@ -1,6 +1,13 @@
 import { apis, type ClientHandler } from '@affine/electron-api';
 import { UserFriendlyError } from '@affine/error';
 import {
+  type ByokAttachmentKind,
+  type ByokAttachmentSource,
+  type ByokEndpointKind,
+  type ByokModelFeature,
+  type ByokModelInput,
+  type ByokModelOutput,
+  type ByokOpenAiDialect,
   ByokProvider,
   createWorkspaceByokLocalLeaseMutation,
 } from '@affine/graphql';
@@ -68,7 +75,28 @@ export async function createWorkspaceByokLocalLease(
               name: provider.name,
               description: provider.description ?? null,
               credential: provider.credential,
-              definition: provider.definition,
+              definition: {
+                endpoint: {
+                  kind: provider.definition.endpoint.kind as ByokEndpointKind,
+                  url: provider.definition.endpoint.url,
+                  dialect: provider.definition.endpoint.dialect as
+                    | ByokOpenAiDialect
+                    | null
+                    | undefined,
+                },
+                models: provider.definition.models.map(model => ({
+                  ...model,
+                  capabilities: model.capabilities.map(capability => ({
+                    input: capability.input as ByokModelInput[],
+                    output: capability.output as ByokModelOutput[],
+                    features: capability.features as ByokModelFeature[],
+                    attachmentKinds:
+                      capability.attachmentKinds as ByokAttachmentKind[],
+                    attachmentSources:
+                      capability.attachmentSources as ByokAttachmentSource[],
+                  })),
+                })),
+              },
               enabled: provider.enabled ?? true,
             },
           ]

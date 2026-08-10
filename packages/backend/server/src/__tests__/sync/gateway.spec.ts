@@ -721,6 +721,16 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
     );
     t.true(error.message.includes('Doc.Delete'));
 
+    const userdataError = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:delete-doc', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: `userdata$${owner.id}$${workspace.id}$docIntegrationRef`,
+      })
+    );
+    t.is(userdataError.name, 'SPACE_ACCESS_DENIED');
+
     const ownerJoin = unwrapResponse(
       t,
       await emitWithAck<{ clientId: string; success: boolean }>(
@@ -805,6 +815,16 @@ test('workspace sync load-doc should enforce doc read permissions', async t => {
       })
     );
     t.true(error.message.includes('Doc.Read'));
+
+    const userdataError = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:load-doc', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: `userdata$${owner.id}$${workspace.id}$favorite`,
+      })
+    );
+    t.is(userdataError.name, 'SPACE_ACCESS_DENIED');
   } finally {
     socket.disconnect();
   }
@@ -868,6 +888,17 @@ test('workspace sync push-doc-update should enforce doc update permissions', asy
       })
     );
     t.true(error.message.includes('Doc.Update'));
+
+    const userdataError = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: `userdata$${owner.id}$${workspace.id}$settings`,
+        update: createYjsUpdateBase64(),
+      })
+    );
+    t.is(userdataError.name, 'SPACE_ACCESS_DENIED');
 
     const updates = await db.update.count({
       where: {

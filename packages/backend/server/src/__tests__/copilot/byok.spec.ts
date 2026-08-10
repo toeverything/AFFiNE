@@ -4,7 +4,6 @@ import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 
-import { Config } from '../../base';
 import type { CurrentUser } from '../../core/auth';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import type { WorkspaceType } from '../../core/workspaces';
@@ -17,7 +16,6 @@ type Context = {
   db: PrismaClient;
   models: Models;
   runtime: BackendRuntimeProvider;
-  config: Config;
   resolver: WorkspaceByokResolver;
 };
 
@@ -34,7 +32,6 @@ const testPrivateKey = privateKey
   .toString();
 
 const definition = {
-  version: 1,
   endpoint: { kind: 'provider_default' },
   models: [
     {
@@ -59,7 +56,6 @@ test.before(async t => {
   t.context.db = t.context.module.get(PrismaClient);
   t.context.models = t.context.module.get(Models);
   t.context.runtime = t.context.module.get(BackendRuntimeProvider);
-  t.context.config = t.context.module.get(Config);
   t.context.resolver = t.context.module.get(WorkspaceByokResolver);
 });
 
@@ -73,31 +69,24 @@ test.after.always(async t => {
   else process.env.AFFINE_PRIVATE_KEY = previousKey;
 });
 
-test('BYOK settings expose the configured custom endpoint policy', async t => {
+test('BYOK settings expose the native effective policy', async t => {
   const user = await t.context.models.user.create({
     email: `${randomUUID()}@affine.pro`,
   });
   const workspace = await t.context.models.workspace.create(user.id);
-  const previous = t.context.config.copilot.byok.allowCustomEndpoint;
-  t.context.config.copilot.byok.allowCustomEndpoint = true;
-
-  try {
-    const settings = await t.context.resolver.settings(
-      {
-        id: user.id,
-        email: user.email,
-        avatarUrl: user.avatarUrl,
-        name: user.name,
-        disabled: user.disabled,
-        hasPassword: null,
-        emailVerified: true,
-      } satisfies CurrentUser,
-      { id: workspace.id } as WorkspaceType
-    );
-    t.true(settings.customEndpointSupported);
-  } finally {
-    t.context.config.copilot.byok.allowCustomEndpoint = previous;
-  }
+  const settings = await t.context.resolver.settings(
+    {
+      id: user.id,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      name: user.name,
+      disabled: user.disabled,
+      hasPassword: null,
+      emailVerified: true,
+    } satisfies CurrentUser,
+    { id: workspace.id } as WorkspaceType
+  );
+  t.deepEqual(settings.policy, await t.context.runtime.getByokPolicy());
 });
 
 test('native BYOK runtime owns multi-model profile CAS, ordering, and credential rotation', async t => {

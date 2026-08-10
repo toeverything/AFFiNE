@@ -164,7 +164,14 @@ export const WorkspaceSideEffects = () => {
       createAIRequestService(
         graphqlService.gql,
         eventSourceService.eventSource,
-        nbstoreService.realtime
+        nbstoreService.realtime,
+        async docIds => {
+          await Promise.all(
+            [currentWorkspace.id, 'db$docProperties', ...docIds].map(docId =>
+              currentWorkspace.engine.doc.waitForSynced(docId)
+            )
+          );
+        }
       ),
       globalDialogService,
       authService
@@ -173,9 +180,10 @@ export const WorkspaceSideEffects = () => {
       dispose();
     };
   }, [
+    currentWorkspace.engine.doc,
+    currentWorkspace.id,
     eventSourceService,
     nbstoreService,
-    workspaceDialogService,
     graphqlService,
     globalDialogService,
     authService,

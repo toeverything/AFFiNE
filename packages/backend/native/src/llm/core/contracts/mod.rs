@@ -273,8 +273,8 @@ pub struct ModelRegistryVariantContract {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub protocol: Option<String>,
   #[napi(
-    ts_type = "'anthropic' | 'chat_completions' | 'chat_completions_no_v1' | 'cloudflare_workers_ai' | 'responses' | \
-               'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'"
+    ts_type = "'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | \
+               'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'"
   )]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub request_layer: Option<String>,
@@ -293,8 +293,8 @@ pub struct ModelRegistryRouteContract {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub protocol: Option<String>,
   #[napi(
-    ts_type = "'anthropic' | 'chat_completions' | 'chat_completions_no_v1' | 'cloudflare_workers_ai' | 'responses' | \
-               'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'"
+    ts_type = "'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | \
+               'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'"
   )]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub request_layer: Option<String>,

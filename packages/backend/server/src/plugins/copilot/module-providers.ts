@@ -4,23 +4,26 @@ import { CompatHistoryProjector } from './compat/history-projector';
 import { HistoryPromptPreloadProjector } from './compat/history-prompt-preload-projector';
 import { HistoryVisibilityPolicy } from './compat/history-visibility-policy';
 import { CompatSubmissionStore } from './compat/submission-store';
-import {
-  CopilotContextResolver,
-  CopilotContextRootResolver,
-  CopilotContextService,
-  CopilotEmbeddingRealtimeProvider,
-} from './context';
 import { ConversationInboxService } from './conversation/inbox';
 import { ConversationPolicy } from './conversation/policy';
 import { ConversationStore } from './conversation/store';
 import { CopilotCronJobs } from './cron';
+import { DelegatedEditorRealtimeProvider } from './delegated/realtime';
+import { DelegatedEditorService } from './delegated/service';
 import {
-  CopilotEmbeddingClientService,
-  CopilotEmbeddingJob,
+  CopilotRerankService,
+  EMBEDDING_RERANK_RUNTIME,
+  NativeEmbeddingService,
 } from './embedding';
+import { CopilotEmbeddingRealtimeProvider } from './embedding/realtime';
 import { WorkspaceMcpProvider } from './mcp/provider';
 import { PromptService } from './prompt';
 import { CopilotResolver, UserCopilotResolver } from './resolver';
+import { ArtifactRetrievalService } from './retrieval/artifact';
+import {
+  DOCUMENT_VECTOR_SEARCH,
+  DocumentRetrievalService,
+} from './retrieval/document';
 import { ActionRuntimeBridge } from './runtime/action-runtime-bridge';
 import { CapabilityRuntime } from './runtime/capability-runtime';
 import { CopilotRuntimeEventConsumer } from './runtime/copilot-runtime-event-consumer';
@@ -61,14 +64,19 @@ export const COPILOT_RUNTIME_PROVIDERS = [
   HistoryPromptPreloadProjector,
   CompatSubmissionStore,
   HistoryVisibilityPolicy,
-  CopilotContextService,
-  CopilotEmbeddingClientService,
+  NativeEmbeddingService,
+  CopilotRerankService,
   PromptService,
+  { provide: DOCUMENT_VECTOR_SEARCH, useExisting: NativeEmbeddingService },
+  DocumentRetrievalService,
+  ArtifactRetrievalService,
+  DelegatedEditorService,
   ActionRuntimeBridge,
   CopilotRuntimeEventConsumer,
   PromptRuntime,
   ConversationHost,
   CapabilityRuntime,
+  { provide: EMBEDDING_RERANK_RUNTIME, useExisting: CapabilityRuntime },
   ToolRuntime,
   AttachmentMaterializer,
   AttachmentAdmissionHost,
@@ -79,18 +87,11 @@ export const COPILOT_RUNTIME_PROVIDERS = [
   TurnPersistence,
 ];
 
-export const COPILOT_CONTEXT_REALTIME_PROVIDERS = [
-  CopilotEmbeddingRealtimeProvider,
-];
-
-export const COPILOT_CONTEXT_PROVIDERS = [
-  CopilotContextResolver,
-  ...COPILOT_CONTEXT_REALTIME_PROVIDERS,
-];
-
 export const COPILOT_TRANSCRIPT_REALTIME_PROVIDERS = [
   CopilotTranscriptionReader,
   CopilotTranscriptRealtimeProvider,
+  CopilotEmbeddingRealtimeProvider,
+  DelegatedEditorRealtimeProvider,
 ];
 
 export const COPILOT_TRANSCRIPT_PROVIDERS = [
@@ -108,11 +109,10 @@ export const COPILOT_WORKSPACE_PROVIDERS = [
 export const COPILOT_RESOLVER_PROVIDERS = [
   CopilotResolver,
   UserCopilotResolver,
-  CopilotContextRootResolver,
   WorkspaceByokResolver,
 ];
 
-export const COPILOT_JOB_PROVIDERS = [CopilotEmbeddingJob, CopilotCronJobs];
+export const COPILOT_JOB_PROVIDERS = [CopilotCronJobs];
 
 export const COPILOT_MCP_PROVIDERS = [WorkspaceMcpProvider];
 
@@ -123,7 +123,6 @@ export const COPILOT_KERNEL_PROVIDERS = [
 
 export const COPILOT_FEATURE_PROVIDERS = [
   TurnOrchestrator,
-  ...COPILOT_CONTEXT_PROVIDERS,
   ...COPILOT_TRANSCRIPT_PROVIDERS,
   ...COPILOT_WORKSPACE_PROVIDERS,
   ...COPILOT_JOB_PROVIDERS,

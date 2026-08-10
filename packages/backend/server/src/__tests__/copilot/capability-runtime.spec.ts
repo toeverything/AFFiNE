@@ -196,28 +196,37 @@ test('text streaming consumes native generic events', async t => {
   );
 });
 
-test('product event consumer attributes BYOK usage from structured identity', async t => {
+test('product event consumer records route activity and real usage', async t => {
   const records: unknown[] = [];
+  const activity: string[] = [];
+  const failures: string[] = [];
   const models = {
     copilotUsage: { create: async (value: unknown) => records.push(value) },
     copilotWorkspaceByokConfig: {
-      touchUsed: async () => {},
-      markFailure: async () => {},
+      touchUsed: async (_workspaceId: string, profileId: string) =>
+        activity.push(profileId),
+      markFailure: async (
+        _workspaceId: string,
+        _profileId: string,
+        errorKind: string
+      ) => failures.push(errorKind),
     },
   } as unknown as Models;
   const consumer = new CopilotRuntimeEventConsumer(models);
+  const route = {
+    profileId: 'profile-1',
+    source: 'server' as const,
+    provider: 'openai',
+    model: 'opaque/model:B',
+  };
   await consumer.consume(
     [
       {
         type: 'usage',
-        route: {
-          profileId: 'profile-1',
-          source: 'server',
-          provider: 'openai',
-          model: 'opaque/model:B',
-        },
+        route,
         usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
       },
+      { type: 'route_selected', route },
     ],
     { workspaceId: 'workspace-1', featureKind: 'chat' }
   );
@@ -230,6 +239,48 @@ test('product event consumer attributes BYOK usage from structured identity', as
     completionTokens: 2,
     totalTokens: 5,
   });
+  t.deepEqual(activity, ['profile-1']);
+
+  await consumer.consume(
+    [{ type: 'route_selected', route: { ...route, profileId: 'profile-2' } }],
+    { workspaceId: 'workspace-1', featureKind: 'chat' }
+  );
+  t.is(records.length, 1);
+  t.deepEqual(activity, ['profile-1', 'profile-2']);
+
+  await consumer.consume(
+    [
+      {
+        type: 'usage',
+        route: { ...route, source: 'local', profileId: 'local-1' },
+        usage: {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+          cached_tokens: 0,
+        },
+      },
+      {
+        type: 'route_selected',
+        route: { ...route, source: 'local', profileId: 'local-1' },
+      },
+      {
+        type: 'route_selected',
+        route: { ...route, source: 'affine_cloud', profileId: 'managed-1' },
+      },
+      { type: 'route_failed', route, errorKind: 'upstream_error' },
+    ],
+    { workspaceId: 'workspace-1', featureKind: 'chat' }
+  );
+  t.like(records[1], {
+    providerSource: 'byok_local',
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+    cachedTokens: 0,
+  });
+  t.deepEqual(activity, ['profile-1', 'profile-2']);
+  t.deepEqual(failures, ['upstream_error']);
 });
 
 test('tool callback validates arguments and preserves call identity', async t => {
