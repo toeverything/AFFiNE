@@ -9681,9 +9681,21 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.realtime.connection-error.title"](): string;
     /**
-      * `Check that your server proxy forwards /socket.io over WebSocket or HTTP polling.`
+      * `The real-time connection could not authenticate your session. Sign in again if the problem continues.`
       */
-    ["com.affine.realtime.connection-error.message"](): string;
+    ["com.affine.realtime.connection-error.authentication"](): string;
+    /**
+      * `The server cannot be reached. Check your network connection and server proxy.`
+      */
+    ["com.affine.realtime.connection-error.network"](): string;
+    /**
+      * `The server rejected the real-time request. Try again later.`
+      */
+    ["com.affine.realtime.connection-error.server"](): string;
+    /**
+      * `The server did not respond in time. AFFiNE will keep trying to reconnect.`
+      */
+    ["com.affine.realtime.connection-error.timeout"](): string;
     /**
       * `An internal error occurred.`
       */

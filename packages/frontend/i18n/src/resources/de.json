@@ -2307,7 +2307,6 @@
   "com.affine.settings.devices.sign-out-failed": "Gerät konnte nicht abgemeldet werden",
   "com.affine.settings.devices.sign-out-all-failed": "Geräte konnten nicht abgemeldet werden",
   "com.affine.realtime.connection-error.title": "Echtzeitverbindung fehlgeschlagen",
-  "com.affine.realtime.connection-error.message": "Stelle sicher, dass dein Server-Proxy /socket.io über WebSocket oder HTTP-Polling weiterleitet.",
   "error.INTERNAL_SERVER_ERROR": "Es ist ein interner Fehler aufgetreten.",
   "error.NETWORK_ERROR": "Netzwerkfehler.",
   "error.TOO_MANY_REQUEST": "Zu viele Anfragen.",
