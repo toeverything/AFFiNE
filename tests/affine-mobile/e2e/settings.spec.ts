@@ -9,9 +9,11 @@ const openSettings = async (page: Page) => {
 
 const openWorkspaceSettings = async (page: Page) => {
   await openSettings(page);
+  const dialog = page.getByRole('dialog');
   await expect(
-    page.getByText('Delete workspace', { exact: true })
+    dialog.getByText('Delete workspace', { exact: true })
   ).toBeVisible();
+  return dialog;
 };
 
 test('can open settings', async ({ page }) => {
@@ -62,12 +64,29 @@ test('can rename the current workspace', async ({ page }) => {
 });
 
 test('deleting a workspace asks for its name', async ({ page }) => {
-  await openWorkspaceSettings(page);
+  const dialog = await openWorkspaceSettings(page);
 
-  await page.getByText('Delete workspace', { exact: true }).click();
+  const name = (
+    (await page
+      .getByTestId('setting-row')
+      .filter({ hasText: 'Workspace name' })
+      .textContent()) ?? ''
+  )
+    .replace('Workspace name', '')
+    .trim();
+  expect(name).toBeTruthy();
+
+  await dialog.getByText('Delete workspace', { exact: true }).click();
   const confirm = page.getByTestId('delete-workspace-confirm-button');
+  const input = page.getByTestId('delete-workspace-input');
   await expect(confirm).toBeDisabled();
 
-  await page.getByTestId('delete-workspace-input').fill('not the name');
+  await input.fill('not the name');
   await expect(confirm).toBeDisabled();
+
+  await input.fill(name);
+  await expect(confirm).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(confirm).toBeHidden();
 });

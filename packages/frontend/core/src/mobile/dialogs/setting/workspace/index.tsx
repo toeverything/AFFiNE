@@ -95,14 +95,14 @@ export const WorkspaceGroup = () => {
           colorfulFallback
         />
         {isOwner ? <ArrowRightSmallIcon fontSize={22} /> : null}
-        <input
-          ref={avatarInputRef}
-          type="file"
-          accept={AVATAR_ACCEPT}
-          style={{ display: 'none' }}
-          onChange={handleAvatarChange}
-        />
       </RowLayout>
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept={AVATAR_ACCEPT}
+        style={{ display: 'none' }}
+        onChange={handleAvatarChange}
+      />
       {isOwner && avatar ? (
         <RowLayout label={t['Remove photo']()} onClick={removeAvatar} />
       ) : null}

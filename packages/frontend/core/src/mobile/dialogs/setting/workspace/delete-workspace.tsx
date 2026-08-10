@@ -4,7 +4,7 @@ import {
   RouteLogic,
   useNavigateHelper,
 } from '@affine/core/components/hooks/use-navigate-helper';
-import { WorkspaceDeleteModal } from '@affine/core/desktop/dialogs/setting/workspace-setting/preference/delete-leave-workspace/delete';
+import { WorkspaceDeleteModal } from '@affine/core/components/workspace-delete-modal';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import {
@@ -63,10 +63,16 @@ export const DeleteLeaveWorkspace = () => {
       }
     }
 
-    if (isOwner) {
-      await workspacesService.deleteWorkspace(workspace.meta);
-    } else {
-      await workspacePermissionService.leaveWorkspace();
+    try {
+      if (isOwner) {
+        await workspacesService.deleteWorkspace(workspace.meta);
+      } else {
+        await workspacePermissionService.leaveWorkspace();
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error({ title: t['com.affine.error.unexpected-error.title']() });
+      return;
     }
     notify.success({ title: t['Successfully deleted']() });
   }, [
