@@ -759,6 +759,37 @@ __metadata:
     unplugin-swc: "npm:^1.5.9"
     vite: "npm:^7.3.5"
     vitest: "npm:^4.1.10"
+  dependenciesMeta:
+    "@apollo/protobufjs":
+      built: false
+    "@prisma/client":
+      built: true
+    "@prisma/engines":
+      built: true
+    "@scarf/scarf":
+      built: false
+    "@sentry/cli":
+      built: true
+    "@swc/core":
+      built: false
+    core-js:
+      built: false
+    electron:
+      built: true
+    electron-winstaller:
+      built: true
+    esbuild:
+      built: true
+    msgpackr-extract:
+      built: false
+    msw:
+      built: false
+    prisma:
+      built: false
+    protobufjs:
+      built: false
+    unrs-resolver:
+      built: false
   languageName: unknown
   linkType: soft
 

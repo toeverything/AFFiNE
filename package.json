@@ -46,6 +46,53 @@
       "cargo fmt --"
     ]
   },
+  "dependenciesMeta": {
+    "@apollo/protobufjs": {
+      "built": false
+    },
+    "@prisma/client": {
+      "built": true
+    },
+    "@prisma/engines": {
+      "built": true
+    },
+    "@scarf/scarf": {
+      "built": false
+    },
+    "@sentry/cli": {
+      "built": true
+    },
+    "@swc/core": {
+      "built": false
+    },
+    "core-js": {
+      "built": false
+    },
+    "electron": {
+      "built": true
+    },
+    "electron-winstaller": {
+      "built": true
+    },
+    "esbuild": {
+      "built": true
+    },
+    "msgpackr-extract": {
+      "built": false
+    },
+    "msw": {
+      "built": false
+    },
+    "prisma": {
+      "built": false
+    },
+    "protobufjs": {
+      "built": false
+    },
+    "unrs-resolver": {
+      "built": false
+    }
+  },
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
     "@capacitor/cli": "^8.4.2",
