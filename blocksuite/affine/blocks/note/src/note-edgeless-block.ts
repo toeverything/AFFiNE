@@ -322,25 +322,27 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
           .editing=${this._editing}
         ></edgeless-note-mask>
 
-        ${isCollapsable &&
-        tool.currentToolName$.value !== 'frameNavigator' &&
-        (!this.model.isPageBlock() || !hasHeader)
-          ? html`<div
-              class="${classMap({
-                [styles.collapseButton]: true,
-                flip: isCollapseArrowUp,
-              })}"
-              style=${styleMap({
-                bottom: this._editing ? `${-extra}px` : '0',
-              })}
-              data-testid="edgeless-note-collapse-button"
-              @mousedown=${stopPropagation}
-              @mouseup=${stopPropagation}
-              @click=${this._setCollapse}
-            >
-              ${MoreIndicator}
-            </div>`
-          : nothing}
+        ${
+          isCollapsable &&
+          tool.currentToolName$.value !== 'frameNavigator' &&
+          (!this.model.isPageBlock() || !hasHeader)
+            ? html`<div
+                class="${classMap({
+                  [styles.collapseButton]: true,
+                  flip: isCollapseArrowUp,
+                })}"
+                style=${styleMap({
+                  bottom: this._editing ? `${-extra}px` : '0',
+                })}
+                data-testid="edgeless-note-collapse-button"
+                @mousedown=${stopPropagation}
+                @mouseup=${stopPropagation}
+                @click=${this._setCollapse}
+              >
+                ${MoreIndicator}
+              </div>`
+            : nothing
+        }
         ${this._collapsedContent()}
       </div>
     `;

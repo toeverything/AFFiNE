@@ -1,5 +1,3 @@
-/* eslint-disable rxjs/finnish */
-
 import { PropertyValue } from '@affine/component';
 import { type TagLike, TagsInlineEditor } from '@affine/core/components/tags';
 import { TagService } from '@affine/core/modules/tag';

@@ -61,12 +61,14 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
     });
 
     return html`
-      ${item.attachments
-        ? html`<chat-content-images
-            class="chat-content-images"
-            .images=${item.attachments}
-          ></chat-content-images>`
-        : nothing}
+      ${
+        item.attachments
+          ? html`<chat-content-images
+              class="chat-content-images"
+              .images=${item.attachments}
+            ></chat-content-images>`
+          : nothing
+      }
       <div
         class="text-content-wrapper"
         data-test-id="chat-content-user-text"
@@ -74,15 +76,17 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
       >
         <chat-content-pure-text .text=${item.content}></chat-content-pure-text>
       </div>
-      ${showReceipt
-        ? html`<div class="scope-receipt" data-testid="chat-scope-receipt">
-            ${selectorNames?.join(', ')} ·
-            ${I18n['com.affine.ai.chat-panel.scope.sources']({
-              count: String(resolvedCount),
-            })}
-            · ${new Date(receipt.resolvedAt).toLocaleString()}
-          </div>`
-        : nothing}
+      ${
+        showReceipt
+          ? html`<div class="scope-receipt" data-testid="chat-scope-receipt">
+              ${selectorNames?.join(', ')} ·
+              ${I18n['com.affine.ai.chat-panel.scope.sources']({
+                count: String(resolvedCount),
+              })}
+              · ${new Date(receipt.resolvedAt).toLocaleString()}
+            </div>`
+          : nothing
+      }
     `;
   }
 

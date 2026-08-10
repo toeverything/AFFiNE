@@ -194,19 +194,23 @@ export class ChatPanelChips extends SignalWatcher(
           return null;
         }
       )}
-      ${moreCandidates && !isCollapsed
-        ? html`<div
-            class="more-candidate-button"
-            @click=${this._toggleMoreCandidatesMenu}
-          >
-            ${MoreVerticalIcon()}
-          </div>`
-        : nothing}
-      ${isCollapsed
-        ? html`<div class="collapse-button" @click=${this.toggleCollapse}>
-            +${allChips.length - 1}
-          </div>`
-        : nothing}
+      ${
+        moreCandidates && !isCollapsed
+          ? html`<div
+              class="more-candidate-button"
+              @click=${this._toggleMoreCandidatesMenu}
+            >
+              ${MoreVerticalIcon()}
+            </div>`
+          : nothing
+      }
+      ${
+        isCollapsed
+          ? html`<div class="collapse-button" @click=${this.toggleCollapse}>
+              +${allChips.length - 1}
+            </div>`
+          : nothing
+      }
     </div>`;
   }
 
