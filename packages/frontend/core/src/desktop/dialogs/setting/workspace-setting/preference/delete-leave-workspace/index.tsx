@@ -2,6 +2,7 @@ import { notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { WorkspaceDeleteModal } from '@affine/core/components/workspace-delete-modal';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import {
@@ -18,7 +19,6 @@ import {
   RouteLogic,
   useNavigateHelper,
 } from '../../../../../../components/hooks/use-navigate-helper';
-import { WorkspaceDeleteModal } from './delete';
 
 export const DeleteLeaveWorkspace = ({
   onCloseSetting,
