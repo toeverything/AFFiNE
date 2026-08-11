@@ -108,7 +108,7 @@
     "@vitest/coverage-istanbul": "^4.1.10",
     "@vitest/ui": "^4.1.10",
     "electron": "^39.0.0",
-    "eslint": "9.39.2",
+    "eslint": "10.8.1",
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-lit": "^2.2.1",
     "eslint-plugin-react": "^7.37.5",
