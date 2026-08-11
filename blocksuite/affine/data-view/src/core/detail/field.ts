@@ -22,6 +22,7 @@ import type {
   CellRenderProps,
   DataViewCellLifeCycle,
 } from '../property/index.js';
+import { startDrag } from '../utils/drag.js';
 import { renderUniLit } from '../utils/uni-component/uni-component.js';
 import type { Property } from '../view-manager/property.js';
 import type { SingleView } from '../view-manager/single-view.js';
@@ -105,6 +106,36 @@ export class RecordField extends SignalWatcher(
       color: var(--affine-text-disable-color);
       font-size: 14px;
       line-height: 22px;
+    }
+
+    .field-wrapper {
+      position: relative;
+    }
+
+    .drag-handle {
+      position: absolute;
+      left: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .field-wrapper:hover .drag-handle {
+      opacity: 1;
+    }
+
+    .drag-handle-bar {
+      width: 4px;
+      height: 12px;
+      border-radius: 2px;
+      background-color: var(--affine-placeholder-color);
     }
   `;
 
@@ -216,6 +247,67 @@ export class RecordField extends SignalWatcher(
     return this.column.cellGetOrCreate(this.rowId);
   });
 
+  _startDrag = (evt: PointerEvent) => {
+    if (this.readonly) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    
+    const detail = this.closest('affine-data-view-record-detail');
+    if (!detail) return;
+    
+    const preview = createDragPreview(this, evt.clientX, evt.clientY);
+    const dropPreview = createDropPreview();
+    let currentTargetId: string | undefined = undefined;
+    let isBefore = true;
+
+    startDrag(evt, {
+      onDrag: () => undefined,
+      onMove: evt => {
+        preview.display(evt.clientX, evt.clientY);
+        
+        const fields = Array.from(detail.querySelectorAll('affine-data-view-record-field'));
+        let targetField: HTMLElement | undefined;
+        
+        for (const field of fields) {
+          const rect = field.getBoundingClientRect();
+          const mid = (rect.top + rect.bottom) / 2;
+          if (evt.clientY < rect.bottom) {
+            targetField = field as HTMLElement;
+            isBefore = evt.clientY < mid;
+            break;
+          }
+        }
+
+        // If evt.clientY is greater than the bottom of the last field, target the last field
+        if (!targetField && fields.length > 0) {
+          targetField = fields[fields.length - 1] as HTMLElement;
+          isBefore = false;
+        }
+        
+        if (targetField) {
+          const rect = targetField.getBoundingClientRect();
+          currentTargetId = targetField.dataset.columnId;
+          dropPreview.display(rect.left, isBefore ? rect.top : rect.bottom, rect.width);
+        } else {
+          currentTargetId = undefined;
+          dropPreview.remove();
+        }
+      },
+      onClear: () => {
+        preview.remove();
+        dropPreview.remove();
+      },
+      onDrop: () => {
+        if (currentTargetId && currentTargetId !== this.column.id) {
+          this.column.move({
+            id: currentTargetId,
+            before: isBefore
+          });
+        }
+      }
+    });
+  };
+
   changeEditing = (editing: boolean) => {
     const selection = this.closest('affine-data-view-record-detail')?.selection;
     if (selection) {
@@ -254,7 +346,10 @@ export class RecordField extends SignalWatcher(
       'is-focus': this.isFocus$.value,
     });
     return html`
-      <div>
+      <div class="field-wrapper">
+        <div class="drag-handle" @pointerdown="${this._startDrag}">
+          <div class="drag-handle-bar"></div>
+        </div>
         <div class="field-left" @click="${this._clickLeft}">
           <div class="icon">
             <uni-lit .uni="${this.column.icon}"></uni-lit>
@@ -284,3 +379,56 @@ declare global {
     'affine-data-view-record-field': RecordField;
   }
 }
+
+const createDragPreview = (field: RecordField, x: number, y: number) => {
+  const div = document.createElement('div');
+  div.style.position = 'fixed';
+  div.style.pointerEvents = 'none';
+  div.style.opacity = '0.9';
+  div.style.backgroundColor = 'var(--affine-background-primary-color)';
+  div.style.boxShadow = 'var(--affine-shadow-2)';
+  div.style.left = `${x}px`;
+  div.style.top = `${y}px`;
+  div.style.zIndex = '9999';
+  div.style.borderRadius = '4px';
+  div.style.padding = '4px 8px';
+  div.style.fontSize = '14px';
+  div.style.display = 'flex';
+  div.style.alignItems = 'center';
+  div.style.border = '1px solid var(--affine-border-color)';
+  div.style.color = 'var(--affine-text-primary-color)';
+  div.innerText = field.column.name$.value;
+  
+  document.body.append(div);
+  return {
+    display(x: number, y: number) {
+      div.style.left = `${Math.round(x + 10)}px`;
+      div.style.top = `${Math.round(y + 10)}px`;
+    },
+    remove() {
+      div.remove();
+    },
+  };
+};
+
+const createDropPreview = () => {
+  const div = document.createElement('div');
+  div.style.pointerEvents = 'none';
+  div.style.position = 'fixed';
+  div.style.zIndex = '9999';
+  div.style.height = '2px';
+  div.style.borderRadius = '1px';
+  div.style.backgroundColor = 'var(--affine-primary-color)';
+  div.style.boxShadow = '0px 0px 8px 0px rgba(30, 150, 235, 0.35)';
+  return {
+    display(x: number, y: number, width: number) {
+      document.body.append(div);
+      div.style.left = `${x}px`;
+      div.style.top = `${y - 1}px`;
+      div.style.width = `${width}px`;
+    },
+    remove() {
+      div.remove();
+    },
+  };
+};
