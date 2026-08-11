@@ -354,25 +354,6 @@ export class GroupTrait {
 
   addToGroup(rowId: string, key: string) {
     this.view.lockRows(false);
-    const groupMap = this.groupDataMap$.value;
-    const groupInfo = this.groupInfo$.value;
-    if (!groupMap || !groupInfo) {
-      return;
-    }
-    const addTo = groupInfo.config.addToGroup;
-    if (addTo === false) {
-      return;
-    }
-    const v = groupMap[key]?.value;
-    if (v != null) {
-      const newValue = addTo(
-        v,
-        this.view.cellGetOrCreate(rowId, groupInfo.property.id).jsonValue$.value
-      );
-      this.view
-        .cellGetOrCreate(rowId, groupInfo.property.id)
-        .valueSet(newValue);
-    }
     const map = this.groupDataMap$.value;
     const info = this.groupInfo$.value;
     if (!map || !info) return;
