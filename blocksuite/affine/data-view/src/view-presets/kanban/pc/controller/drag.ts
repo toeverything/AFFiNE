@@ -40,7 +40,8 @@ export class KanbanDragController implements ReactiveController {
           return;
         }
         preview.display(evt.x - offsetLeft, evt.y - offsetTop);
-        if (!Rect.fromDOM(host).isPointIn(Point.from(evt))) {
+        const container = this.scrollContainer || host;
+        if (!Rect.fromDOM(container).isPointIn(Point.from(evt))) {
           const callback = this.logic.root.config.onDrag;
           if (callback) {
             this.dropPreview.remove();
