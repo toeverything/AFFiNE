@@ -248,9 +248,12 @@ fn managed_endpoint(profile: &CopilotManagedProfileConfig) -> RuntimeResult<Back
       } else {
         "anthropic"
       };
-      format!(
-        "https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}/publishers/{publisher}"
-      )
+      let host = if location == "global" {
+        "aiplatform.googleapis.com".to_string()
+      } else {
+        format!("{location}-aiplatform.googleapis.com")
+      };
+      format!("https://{host}/v1/projects/{project}/locations/{location}/publishers/{publisher}")
     }
     "cloudflareWorkersAi" => format!(
       "https://api.cloudflare.com/client/v4/accounts/{}/ai",
@@ -310,4 +313,42 @@ pub(super) fn required_config_text<'a>(
     .and_then(serde_json::Value::as_str)
     .filter(|value| !value.trim().is_empty())
     .ok_or_else(|| RuntimeError::invalid_state(format!("managed copilot profile requires {field}")))
+}
+
+#[cfg(test)]
+mod tests {
+  use serde_json::json;
+
+  use super::{BackendEndpoint, CopilotManagedProfileConfig, managed_endpoint};
+
+  fn vertex_profile(location: &str) -> CopilotManagedProfileConfig {
+    CopilotManagedProfileConfig {
+      id: "vertex".to_string(),
+      provider: "geminiVertex".to_string(),
+      enabled: true,
+      models: vec!["gemini-3.6-flash".to_string()],
+      config: json!({ "project": "affine-us", "location": location }),
+    }
+  }
+
+  #[test]
+  fn managed_vertex_endpoint_uses_global_host() {
+    assert_eq!(
+      managed_endpoint(&vertex_profile("global")).unwrap(),
+      BackendEndpoint::Custom(
+        "https://aiplatform.googleapis.com/v1/projects/affine-us/locations/global/publishers/google".to_string()
+      )
+    );
+  }
+
+  #[test]
+  fn managed_vertex_endpoint_uses_regional_host() {
+    assert_eq!(
+      managed_endpoint(&vertex_profile("us-central1")).unwrap(),
+      BackendEndpoint::Custom(
+        "https://us-central1-aiplatform.googleapis.com/v1/projects/affine-us/locations/us-central1/publishers/google"
+          .to_string()
+      )
+    );
+  }
 }

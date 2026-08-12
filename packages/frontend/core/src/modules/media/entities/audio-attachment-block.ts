@@ -169,8 +169,8 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
 
   readonly transcribe = async () => {
     try {
-      // if job is already running, we should not start it again
-      if (this.transcriptionJob.status$.value.status !== 'waiting-for-job') {
+      const initialStatus = this.transcriptionJob.status$.value.status;
+      if (initialStatus !== 'waiting-for-job' && initialStatus !== 'failed') {
         return;
       }
       const status = await this.transcriptionJob.start();
