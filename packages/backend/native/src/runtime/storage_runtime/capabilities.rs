@@ -96,6 +96,8 @@ mod tests {
       presign_sign_content_type_for_put: Some(true),
       use_presigned_url: true,
       proxy_upload: false,
+      custom_get_url_prefix: None,
+      custom_get_sign_key: None,
     }));
 
     assert!(capabilities.presign_put);
@@ -121,6 +123,8 @@ mod tests {
       presign_sign_content_type_for_put: Some(true),
       use_presigned_url: true,
       proxy_upload: true,
+      custom_get_url_prefix: None,
+      custom_get_sign_key: None,
     }));
 
     assert!(capabilities.proxy_upload);
