@@ -31,7 +31,11 @@ jobs:
         run: yarn build -p @affine/mobile
         
       - name: Build Server Native
-        run: yarn build -p @affine/server-native
+        run: |
+          yarn build -p @affine/server-native
+          touch packages/backend/native/server-native.arm64.node
+          touch packages/backend/native/server-native.armv7.node
+          touch packages/backend/native/server-native.x64.node
         
       - name: Build Server
         run: yarn build -p @affine/server
