@@ -8,7 +8,7 @@ services:
     # Runs Prisma + data migrations and generates the server private key on boot,
     # then starts the server. AFFINE_SERVER_HOST is set from the service's own
     # hostname unless you override it (e.g. for a custom domain).
-    dockerCommand: 'sh -c "export AFFINE_SERVER_HOST=${AFFINE_SERVER_HOST:-$RENDER_EXTERNAL_HOSTNAME} && node ./scripts/self-host-predeploy.js && node ./dist/main.js"'
+    dockerCommand: 'export AFFINE_SERVER_HOST=${AFFINE_SERVER_HOST:-$RENDER_EXTERNAL_HOSTNAME}; node ./scripts/self-host-predeploy.js && node ./dist/main.js'
     healthCheckPath: /info
     disk:
       # Uploaded blobs (~/.affine/storage) and the generated private key
