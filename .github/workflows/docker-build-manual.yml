@@ -1,0 +1,46 @@
+name: Manual Docker Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+          
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Install dependencies
+        run: yarn install
+        
+      - name: Build Web
+        run: yarn build -p @affine/web
+        
+      - name: Build Admin
+        run: yarn build -p @affine/admin
+        
+      - name: Build Mobile
+        run: yarn build -p @affine/mobile
+        
+      - name: Build Server
+        run: yarn build -p @affine/server
+        
+      - name: Build Docker Image
+        run: |
+          docker build -f .github/deployment/node/Dockerfile -t affine-local .
+          docker save affine-local -o affine-docker-image.tar
+          
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: affine-docker-image
+          path: affine-docker-image.tar
+          retention-days: 1
