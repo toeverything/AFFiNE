@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: affine
+    runtime: image
+    plan: standard
+    image:
+      url: ghcr.io/toeverything/affine:stable
+    # Runs Prisma + data migrations and generates the server private key on boot,
+    # then starts the server. AFFINE_SERVER_HOST is set from the service's own
+    # hostname unless you override it (e.g. for a custom domain).
+    dockerCommand: 'sh -c "export AFFINE_SERVER_HOST=${AFFINE_SERVER_HOST:-$RENDER_EXTERNAL_HOSTNAME} && node ./scripts/self-host-predeploy.js && node ./dist/main.js"'
+    healthCheckPath: /info
+    disk:
+      # Uploaded blobs (~/.affine/storage) and the generated private key
+      # (~/.affine/config/private.key) must survive restarts.
+      name: affine-data
+      mountPath: /root/.affine
+      sizeGB: 10
+    envVars:
+      - key: AFFINE_SERVER_PORT
+        value: 10000
+      - key: AFFINE_SERVER_HTTPS
+        value: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: affine-postgres
+          property: connectionString
+      - key: REDIS_SERVER_HOST
+        fromService:
+          name: affine-keyvalue
+          type: keyvalue
+          property: host
+      - key: REDIS_SERVER_PORT
+        fromService:
+          name: affine-keyvalue
+          type: keyvalue
+          property: port
+
+  - type: keyvalue
+    name: affine-keyvalue
+    plan: starter
+    maxmemoryPolicy: noeviction
+    ipAllowList: [] # internal connections only
+
+databases:
+  - name: affine-postgres
+    plan: basic-256mb
+    postgresMajorVersion: '16'
