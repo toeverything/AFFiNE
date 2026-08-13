@@ -184,7 +184,7 @@ Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiN
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Ho1yShif/AFFiNE/tree/feat/render-deploy)
 
-The [`render.yaml`](./render.yaml) Blueprint runs the prebuilt `ghcr.io/toeverything/affine:stable` image and provisions the two services it depends on: PostgreSQL and Key Value (Redis). Nothing is built from this repo, so the deploy takes a few minutes.
+The [`render.yaml`](./render.yaml) Blueprint runs the prebuilt `ghcr.io/toeverything/affine:stable` image and provisions the two services it depends on: PostgreSQL and Key Value (Redis). AFFiNE itself is not compiled from this repo. [`.render/Dockerfile`](./.render/Dockerfile) only adds a start script to the published image, so the deploy takes a few minutes.
 
 The Blueprint creates:
 
