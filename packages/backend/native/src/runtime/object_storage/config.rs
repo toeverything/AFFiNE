@@ -149,17 +149,19 @@ impl ObjectStorageConfig {
     let (use_presigned_url, proxy_upload, custom_get_url_prefix, custom_get_sign_key) = config
       .use_presigned_url
       .map(|value| {
+        let url_prefix = value.url_prefix.filter(|prefix| !prefix.is_empty());
+        let sign_key = value.sign_key.filter(|key| !key.is_empty());
+        let custom_get_enabled = value.enabled && url_prefix.is_some() && sign_key.is_some();
+        let (custom_get_url_prefix, custom_get_sign_key) = if custom_get_enabled {
+          (url_prefix, sign_key)
+        } else {
+          (None, None)
+        };
         (
           value.enabled,
-          value.enabled
-            && value.url_prefix.as_ref().is_some_and(|prefix| !prefix.is_empty())
-            && value.sign_key.as_ref().is_some_and(|key| !key.is_empty()),
-          value
-            .enabled
-            .then_some(value.url_prefix)
-            .flatten()
-            .filter(|prefix| !prefix.is_empty()),
-          value.enabled.then_some(value.sign_key).flatten(),
+          custom_get_enabled,
+          custom_get_url_prefix,
+          custom_get_sign_key,
         )
       })
       .unwrap_or((false, false, None, None));
@@ -197,14 +199,26 @@ impl ObjectStorageConfig {
     key: &ObjectKey,
     timestamp: u64,
   ) -> ObjectStorageResult<Option<PresignedObjectRequest>> {
-    let Some(prefix) = self.custom_get_url_prefix.as_deref() else {
+    let (Some(prefix), Some(sign_key)) = (
+      self.custom_get_url_prefix.as_deref(),
+      self.custom_get_sign_key.as_deref(),
+    ) else {
       return Ok(None);
     };
     let mut url = Url::parse(prefix)
-      .and_then(|url| url.join(&format!("/{}", key.as_str())))
       .map_err(|err| ObjectStorageError::Config(format!("invalid object storage URL prefix: {err}")))?;
+    if !matches!(url.scheme(), "http" | "https") || url.query().is_some() || url.fragment().is_some() {
+      return Err(ObjectStorageError::Config(
+        "object storage URL prefix must be an HTTP(S) URL without query or fragment".to_string(),
+      ));
+    }
+    url
+      .path_segments_mut()
+      .map_err(|_| ObjectStorageError::Config("object storage URL prefix cannot be a base URL".to_string()))?
+      .pop_if_empty()
+      .extend(key.as_str().split('/'));
     let payload = format!("{}{timestamp}", url.path());
-    let mut mac = HmacSha256::new_from_slice(self.custom_get_sign_key.as_deref().unwrap_or_default().as_bytes())
+    let mut mac = HmacSha256::new_from_slice(sign_key.as_bytes())
       .map_err(|err| ObjectStorageError::Config(format!("invalid object storage signing key: {err}")))?;
     mac.update(payload.as_bytes());
     let signature = STANDARD.encode(mac.finalize().into_bytes());

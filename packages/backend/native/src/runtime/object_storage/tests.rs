@@ -261,7 +261,7 @@ fn resolves_r2_proxy_upload_capability_from_config_json_shape() {
       },
       "usePresignedURL": {
         "enabled": true,
-        "urlPrefix": "https://cdn.example.com",
+        "urlPrefix": "https://cdn.example.com/storage/",
         "signKey": "secret"
       }
     }),
@@ -277,11 +277,44 @@ fn resolves_r2_proxy_upload_capability_from_config_json_shape() {
     .unwrap();
   let url = url::Url::parse(&request.url).unwrap();
   assert_eq!(url.origin().ascii_serialization(), "https://cdn.example.com");
-  assert_eq!(url.path(), "/workspace/blob.m4a");
+  assert_eq!(url.path(), "/storage/workspace/blob.m4a");
   assert_eq!(
     url.query_pairs().find(|(key, _)| key == "sign").unwrap().1,
-    "1700000000-XZONMKZc4ECeyoqUvhBJjP/yfpafc4FeDAWjA9B9gkI="
+    "1700000000-01IngHvoE2trslxVyYUzfWkhgdlYdpcRXcpSYqZ9gkc="
   );
+
+  for use_presigned_url in [
+    serde_json::json!({
+      "enabled": true,
+      "urlPrefix": "https://cdn.example.com"
+    }),
+    serde_json::json!({
+      "enabled": true,
+      "urlPrefix": "https://cdn.example.com",
+      "signKey": ""
+    }),
+  ] {
+    let storage = StorageProviderConfig {
+      provider: "cloudflare-r2".to_string(),
+      bucket: "workspace-blobs".to_string(),
+      config: serde_json::json!({
+        "accountId": "account",
+        "credentials": {
+          "accessKeyId": "key",
+          "secretAccessKey": "secret"
+        },
+        "usePresignedURL": use_presigned_url
+      }),
+    };
+    let config = ObjectStorageConfig::from_r2_config(storage).unwrap().unwrap();
+    assert!(!config.proxy_upload);
+    assert!(
+      config
+        .custom_presign_get_at(&ObjectKey::new("workspace/blob.m4a").unwrap(), 1_700_000_000)
+        .unwrap()
+        .is_none()
+    );
+  }
 }
 
 #[test]
