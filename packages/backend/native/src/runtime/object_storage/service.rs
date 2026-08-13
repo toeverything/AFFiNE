@@ -182,12 +182,17 @@ impl ObjectStorageService {
   ) -> RuntimeResult<Option<PresignedObjectRequest>> {
     match self.backend_for_scope(locator.scope)? {
       StorageBackendConfig::Fs(_) | StorageBackendConfig::Assetpack(_) => Ok(None),
-      StorageBackendConfig::S3(config) => config
-        .build_client()?
-        .presign_get(&locator.key)
-        .await
-        .map(Some)
-        .map_err(Into::into),
+      StorageBackendConfig::S3(config) => {
+        if let Some(request) = config.custom_presign_get(&locator.key)? {
+          return Ok(Some(request));
+        }
+        config
+          .build_client()?
+          .presign_get(&locator.key)
+          .await
+          .map(Some)
+          .map_err(Into::into)
+      }
     }
   }
 

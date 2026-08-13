@@ -271,6 +271,17 @@ fn resolves_r2_proxy_upload_capability_from_config_json_shape() {
 
   assert!(config.use_presigned_url);
   assert!(config.proxy_upload);
+  let request = config
+    .custom_presign_get_at(&ObjectKey::new("workspace/blob.m4a").unwrap(), 1_700_000_000)
+    .unwrap()
+    .unwrap();
+  let url = url::Url::parse(&request.url).unwrap();
+  assert_eq!(url.origin().ascii_serialization(), "https://cdn.example.com");
+  assert_eq!(url.path(), "/workspace/blob.m4a");
+  assert_eq!(
+    url.query_pairs().find(|(key, _)| key == "sign").unwrap().1,
+    "1700000000-XZONMKZc4ECeyoqUvhBJjP/yfpafc4FeDAWjA9B9gkI="
+  );
 }
 
 #[test]
