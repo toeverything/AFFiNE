@@ -30,6 +30,9 @@ jobs:
       - name: Build Mobile
         run: yarn build -p @affine/mobile
         
+      - name: Build Server Native
+        run: yarn build -p @affine/server-native
+        
       - name: Build Server
         run: yarn build -p @affine/server
         
