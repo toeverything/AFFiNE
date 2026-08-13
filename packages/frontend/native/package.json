@@ -25,7 +25,7 @@
     ]
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.5.0",
+    "@napi-rs/cli": "3.8.6",
     "@napi-rs/whisper": "^0.0.4",
     "@types/node": "^22.0.0",
     "ava": "^7.0.0",

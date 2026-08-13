@@ -19,7 +19,7 @@
     "@shoelace-style/shoelace": "2.20.1",
     "@toeverything/pdf-viewer": "^0.1.1",
     "@toeverything/pdfium": "^0.1.1",
-    "katex": "^0.16.27",
+    "katex": "^0.18.0",
     "lit": "^3.2.0",
     "lz-string": "^1.5.0",
     "rxjs": "^7.8.2",

@@ -13,8 +13,8 @@ aes-gcm = { workspace = true }
 affine_common = { workspace = true, features = ["hashcash", "napi"] }
 affine_doc_loader = { workspace = true }
 anyhow = { workspace = true }
-assetpack-core = "0.1.0"
-assetpack-transform-precomp2 = "0.1.0"
+assetpack-core = "0.3.0"
+assetpack-transform-precomp2 = "0.3.0"
 base64 = { workspace = true }
 chrono = { workspace = true }
 crc32fast = "1.5.0"
@@ -28,8 +28,8 @@ homedir = { workspace = true }
 image = { workspace = true }
 infer = { workspace = true }
 instant-xml = "0.7.5"
-jsonschema = "0.47"
-libwebp-sys = "0.9.6"
+jsonschema = "0.49"
+libwebp-sys = "0.14.0"
 little_exif = { workspace = true }
 llm_adapter = { workspace = true, features = ["schema", "ureq-client"] }
 llm_runtime = { workspace = true, features = ["schema", "ureq-client"] }

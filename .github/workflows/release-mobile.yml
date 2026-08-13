@@ -111,7 +111,7 @@ jobs:
           xcode-version: 26.2
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
+          ruby-version: '3.4.10'
       - name: Install Swiftformat
         run: brew install swiftformat
       - name: Cap sync
@@ -187,7 +187,7 @@ jobs:
         run: yarn workspace @affine/android cap sync
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - name: Auth gcloud
         id: auth
         uses: google-github-actions/auth@v2
