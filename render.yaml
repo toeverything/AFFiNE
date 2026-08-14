@@ -3,9 +3,7 @@ services:
     name: affine
     runtime: docker
     plan: standard
-    # The Dockerfile only adds a start script to
-    # ghcr.io/toeverything/affine:stable. The script runs migrations, then the
-    # server.
+    # The Dockerfile adds a start script to ghcr.io/toeverything/affine:stable. It runs migrations and the server
     dockerfilePath: ./.render/Dockerfile
     dockerContext: ./.render
     healthCheckPath: /info
@@ -44,4 +42,4 @@ services:
 databases:
   - name: affine-postgres
     plan: basic-256mb
-    postgresMajorVersion: '16'
+    postgresMajorVersion: "16"
