@@ -176,25 +176,11 @@ We would like to express our gratitude to all the individuals who have already c
 
 Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiNE. Our team is diligently updating to the latest version. For more information on how to self-host AFFiNE, please refer to our [documentation](https://docs.affine.pro/self-host-affine).
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Ho1yShif/AFFiNE/tree/feat/render-deploy)
+
 [![Run on Sealos](https://sealos.io/Deploy-on-Sealos.svg)](https://sealos.io/products/app-store/affine)
 
 [![Run on ClawCloud](https://raw.githubusercontent.com/ClawCloud/Run-Template/refs/heads/main/Run-on-ClawCloud.svg)](https://template.run.claw.cloud/?openapp=system-fastdeploy%3FtemplateName%3Daffine)
-
-### Render
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Ho1yShif/AFFiNE/tree/feat/render-deploy)
-
-The [`render.yaml`](./render.yaml) Blueprint runs the prebuilt `ghcr.io/toeverything/affine:stable` image and provisions the two services it depends on: PostgreSQL and Key Value (Redis). AFFiNE itself is not compiled from this repo. [`.render/Dockerfile`](./.render/Dockerfile) only adds a start script to the published image, so the deploy takes a few minutes.
-
-The Blueprint creates:
-
-- A web service running the AFFiNE image, with a 10 GB disk mounted at `/root/.affine` for uploaded blobs and the generated server private key.
-- A PostgreSQL 16 database. AFFiNE migrations enable the `pgvector` extension, which Render's PostgreSQL supports.
-- A Key Value instance with `noeviction`, reachable only over the private network.
-
-Migrations run on every boot, before the server starts. Open the service URL after the first deploy to create the admin account.
-
-The default plans cost about $25/month. Free instance types are not an option here because the disk requires a paid instance, and the server needs more than 512 MB of memory. To use a custom domain, add it in the Dashboard and set `AFFINE_SERVER_HOST` to that domain. For email invites and password resets, add the `MAILER_*` variables described in the [self-host docs](https://docs.affine.pro/self-host-affine).
 
 ## Feature Request
 
