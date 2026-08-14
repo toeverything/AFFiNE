@@ -3,8 +3,9 @@ services:
     name: affine
     runtime: docker
     plan: standard
-    # A three-line Dockerfile over ghcr.io/toeverything/affine:stable that adds a
-    # start script. The script runs migrations, then the server.
+    # The Dockerfile only adds a start script to
+    # ghcr.io/toeverything/affine:stable. The script runs migrations, then the
+    # server.
     dockerfilePath: ./.render/Dockerfile
     dockerContext: ./.render
     healthCheckPath: /info

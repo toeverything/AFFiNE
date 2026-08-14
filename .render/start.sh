@@ -1,9 +1,9 @@
 #!/bin/sh
-set -e
+set -eu
 
-# Set the public hostname from the one Render assigns, unless it is already set
-# (a custom domain, for example).
-export AFFINE_SERVER_HOST="${AFFINE_SERVER_HOST:-$RENDER_EXTERNAL_HOSTNAME}"
+# Use the hostname Render assigns, unless AFFINE_SERVER_HOST is already set to a
+# custom domain.
+export AFFINE_SERVER_HOST="${AFFINE_SERVER_HOST:-${RENDER_EXTERNAL_HOSTNAME:-localhost}}"
 
 # Generates the server private key on first boot, then runs the Prisma and data
 # migrations. Safe to run on every boot.

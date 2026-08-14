@@ -1,8 +1,8 @@
-# Wraps the published AFFiNE image with a start script that runs migrations
-# before the server. Nothing is compiled here.
+# syntax=docker/dockerfile:1.7
+
+# Adds a start script to the published AFFiNE image. Nothing is compiled here.
 FROM ghcr.io/toeverything/affine:stable
 
-COPY start.sh /usr/local/bin/render-start.sh
-RUN chmod +x /usr/local/bin/render-start.sh
+COPY --chmod=0755 start.sh /usr/local/bin/render-start.sh
 
 CMD ["/usr/local/bin/render-start.sh"]
