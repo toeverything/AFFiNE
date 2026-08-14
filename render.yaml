@@ -49,3 +49,4 @@ projects:
           - name: affine-postgres
             plan: basic-256mb
             postgresMajorVersion: "16"
+            ipAllowList: [] # internal connections only
