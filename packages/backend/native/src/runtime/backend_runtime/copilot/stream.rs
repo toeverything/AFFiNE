@@ -28,7 +28,7 @@ use super::{BackendRuntime, COPILOT_REQUEST_TIMEOUT, RuntimeError, dispatch, to_
 use crate::{
   llm::{
     CopilotExecuteInput,
-    route::{AuthorizedProfileRef, AuthorizedTargetRef, CatalogSlot},
+    route::{AuthorizedProviderProfile, AuthorizedTargetRef, CatalogSlot},
   },
   runtime::BackendRuntimeConfig,
 };
@@ -37,7 +37,7 @@ pub(super) type PreparedCopilotExecution = (
   Arc<BackendRuntimeConfig>,
   CatalogSlot,
   ExecutableRequest,
-  Vec<AuthorizedProfileRef>,
+  Vec<AuthorizedProviderProfile>,
   Vec<AuthorizedTargetRef>,
   HashMap<String, Zeroizing<String>>,
 );

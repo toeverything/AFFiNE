@@ -351,7 +351,7 @@ export class CopilotTranscriptionResolver {
       user.id,
       workspaceId,
       blobId,
-      // oxlint-disable-next-line @typescript-eslint/await-thenable
+      // oxlint-disable-next-line typescript/await-thenable
       await Promise.all(allBlobs),
       input ?? undefined
     );

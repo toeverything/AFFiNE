@@ -29,12 +29,14 @@ test('backend-runtime provider starts once, runs migrations once, and reports he
   await provider.start();
   await provider.onConfigChanged({ updates: { mailer: {} } });
   await provider.onConfigChanged({ updates: { copilot: {} } });
+  await provider.onConfigChanged({ updates: { storages: {} } });
   const health = await provider.health();
   await provider.stop();
 
   t.is(runtime.start.callCount, 2);
   t.is(runtime.runMigrations.callCount, 1);
-  t.true(runtime.reloadConfig.calledOnceWithExactly(privateKey));
+  t.is(runtime.reloadConfig.callCount, 2);
+  t.true(runtime.reloadConfig.alwaysCalledWithExactly(privateKey));
   t.true(health.databaseConnected);
   t.is(runtime.stop.callCount, 1);
 });

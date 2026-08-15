@@ -148,7 +148,7 @@
     "sinon": "^21.0.1",
     "socket.io-client": "^4.8.3",
     "supertest": "^7.1.4",
-    "typescript": "^5.9.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "why-is-node-running": "^3.2.2"
   },
   "nodemonConfig": {

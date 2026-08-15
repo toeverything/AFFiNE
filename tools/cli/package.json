@@ -32,17 +32,17 @@
     "jsonc-parser": "^3.3.1",
     "lodash-es": "^4.17.23",
     "mime-types": "^3.0.0",
+    "oxfmt": "0.63.0",
     "postcss": "^8.5.18",
     "postcss-loader": "^8.2.1",
     "postcss-selector-parser": "^7.1.0",
-    "prettier": "^3.7.4",
     "source-map-loader": "^5.0.0",
     "style-loader": "^4.0.0",
     "swc-loader": "^0.2.6",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.21.0",
     "typanion": "^3.14.0",
-    "typescript": "^5.9.3"
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",

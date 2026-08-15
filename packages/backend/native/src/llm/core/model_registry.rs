@@ -141,7 +141,7 @@ mod tests {
     let variant = response.variant.unwrap();
 
     assert_eq!(variant.raw_model_id, "deepseek-v4-pro");
-    assert_eq!(variant.request_layer.as_deref(), Some("chat_completions_no_v1"));
+    assert_eq!(variant.request_layer.as_deref(), Some("chat_completions"));
 
     let legacy = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("deepseek".to_string()),

@@ -58,7 +58,7 @@ export class ImportClipperService extends Service {
     workspaceName: string,
     clipperInput: ClipperInput
   ) {
-    // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // oxlint-disable-next-line typescript/no-non-null-assertion
     let docId: string | undefined;
     const { id: workspaceId } = await this.workspacesService.create(
       flavour,

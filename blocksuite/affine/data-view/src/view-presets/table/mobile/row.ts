@@ -109,19 +109,23 @@ export class MobileTableRow extends SignalWatcher(
               </mobile-table-cell>
               <div class="${cellDivider}"></div>
             </div>
-            ${!column.readonly$.value &&
-            column.view.mainProperties$.value.titleColumn === column.id
-              ? html` <div class="mobile-row-ops">
-                  <div class="mobile-row-op" @click="${clickDetail}">
-                    ${CenterPeekIcon()}
-                  </div>
-                  ${!view.readonly$.value
-                    ? html` <div class="mobile-row-op" @click="${openMenu}">
-                        ${MoreHorizontalIcon()}
-                      </div>`
-                    : nothing}
-                </div>`
-              : nothing}
+            ${
+              !column.readonly$.value &&
+              column.view.mainProperties$.value.titleColumn === column.id
+                ? html` <div class="mobile-row-ops">
+                    <div class="mobile-row-op" @click="${clickDetail}">
+                      ${CenterPeekIcon()}
+                    </div>
+                    ${
+                      !view.readonly$.value
+                        ? html` <div class="mobile-row-op" @click="${openMenu}">
+                            ${MoreHorizontalIcon()}
+                          </div>`
+                        : nothing
+                    }
+                  </div>`
+                : nothing
+            }
           `;
         }
       )}

@@ -16,6 +16,9 @@ export class JournalStore extends Store {
     return new Set(
       get(this.docsService.list.docs$)
         .filter(doc => {
+          if (get(doc.trash$)) {
+            return false;
+          }
           const journal = get(doc.properties$.selector(p => p.journal));
           return !!journal && isJournalString(journal);
         })
@@ -53,12 +56,15 @@ export class JournalStore extends Store {
 
   getDocsByJournalDate(date: string) {
     return this.docsService.list.docs$.value.filter(
-      doc => doc.properties$.value.journal === date
+      doc => !doc.trash$.value && doc.properties$.value.journal === date
     );
   }
   docsByJournalDate$(date: string) {
     return LiveData.computed(get => {
       return get(this.docsService.list.docs$).filter(doc => {
+        if (get(doc.trash$)) {
+          return false;
+        }
         const journal = get(doc.properties$.selector(p => p.journal));
         return journal === date;
       });

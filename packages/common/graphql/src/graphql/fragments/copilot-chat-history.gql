@@ -12,6 +12,7 @@ fragment CopilotChatHistory on CopilotHistories {
     role
     content
     attachments
+    scopeSnapshot
     streamObjects {
       type
       textDelta

@@ -12,10 +12,12 @@ public struct WorkspaceByokModelDeclarationInput: InputObject {
 
   public init(
     capabilities: [WorkspaceByokCapabilityInput],
+    enabled: Bool,
     modelId: String
   ) {
     __data = InputDict([
       "capabilities": capabilities,
+      "enabled": enabled,
       "modelId": modelId
     ])
   }
@@ -23,6 +25,11 @@ public struct WorkspaceByokModelDeclarationInput: InputObject {
   public var capabilities: [WorkspaceByokCapabilityInput] {
     get { __data["capabilities"] }
     set { __data["capabilities"] = newValue }
+  }
+
+  public var enabled: Bool {
+    get { __data["enabled"] }
+    set { __data["enabled"] = newValue }
   }
 
   public var modelId: String {

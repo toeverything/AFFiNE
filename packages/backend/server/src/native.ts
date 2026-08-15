@@ -10,8 +10,12 @@ import serverNativeModule, {
   type CapabilityAttachmentContract,
   type CapabilityModelCapability,
   type CommandResponse,
+  type CompileScopeInput,
   type ContentPolicyScanInput,
   type ContentPolicyScanResult,
+  type DocumentEmbeddingProjectionInput,
+  type EmbeddingHealth,
+  type EnsureWorkspaceBlobArtifactInput,
   type ImageInspection,
   type ImageInspectionOptions,
   type LicenseError,
@@ -27,12 +31,15 @@ import serverNativeModule, {
   type LlmRequestContract,
   type LlmRerankRequestContract,
   type LlmStructuredRequestContract,
+  type MatchEmbeddingCandidatesInput,
   type ModelConditionsContract,
   type PortalResponse,
   type PromptMessageContract,
   type PromptRenderResult,
   type PromptSessionResult,
   type PromptStructuredResponseContract,
+  type PutWorkspaceArtifactInput,
+  type ReadEmbeddingSourceContentInput,
   type RemoteAttachmentFetchRequest,
   type RemoteAttachmentFetchResponse,
   type RemoteMimeTypeRequest,
@@ -45,6 +52,9 @@ import serverNativeModule, {
   type RuntimeBlobMetadataBackfillResult,
   type RuntimeDocBlobRefsResult,
   type RuntimeDocCompactionResult,
+  type RuntimeEmbeddingCandidate,
+  type RuntimeEmbeddingSourceContent,
+  type RuntimeEmbeddingWorkspaceState,
   type RuntimeMagicLinkOtpConsumeResult,
   type RuntimeMultipartUploadInit,
   type RuntimeMultipartUploadPart,
@@ -53,13 +63,17 @@ import serverNativeModule, {
   type RuntimeObjectMetadata,
   type RuntimeObjectStoragePutOptions,
   type RuntimePresignedObjectRequest,
+  type RuntimeRetrievalScope,
+  type RuntimeTurnScopeSnapshot,
   type RuntimeVerificationTokenRecord,
+  type RuntimeWorkspaceArtifact,
   type RuntimeWorkspaceInviteLinkRecord,
   type RuntimeWorkspaceStatsDailyRecalibrationResult,
   type SafeFetchRequest,
   type SafeFetchResponse,
   type StorageProviderCapabilities,
   type StorageRuntimeHealth,
+  type SyncEmbeddingStateInput,
   type Tokenizer,
 } from '@affine/server-native';
 
@@ -76,6 +90,7 @@ export type {
   ByokModelDeclarationInput,
   ByokModelProbeCheckOutput,
   ByokModelProbeOutput,
+  ByokPolicyOutput,
   ByokProbeCheckInput,
   ByokProbeResultOutput,
   ByokProbeStatusOutput,
@@ -102,8 +117,12 @@ export type {
   CapabilityAttachmentContract,
   CapabilityModelCapability,
   CommandResponse,
+  CompileScopeInput,
   ContentPolicyScanInput,
   ContentPolicyScanResult,
+  DocumentEmbeddingProjectionInput,
+  EmbeddingHealth,
+  EnsureWorkspaceBlobArtifactInput,
   ImageInspection,
   ImageInspectionOptions,
   LicenseError,
@@ -113,10 +132,13 @@ export type {
   LicenseRecurringRequest,
   LicenseResponse,
   LicenseSeatsRequest,
+  MatchEmbeddingCandidatesInput,
   ModelConditionsContract,
   PortalResponse,
   PromptMessageContract,
   PromptStructuredResponseContract,
+  PutWorkspaceArtifactInput,
+  ReadEmbeddingSourceContentInput,
   RemoteAttachmentFetchRequest,
   RemoteAttachmentFetchResponse,
   RemoteMimeTypeRequest,
@@ -129,6 +151,9 @@ export type {
   RuntimeBlobMetadataBackfillResult,
   RuntimeDocBlobRefsResult,
   RuntimeDocCompactionResult,
+  RuntimeEmbeddingCandidate,
+  RuntimeEmbeddingSourceContent,
+  RuntimeEmbeddingWorkspaceState,
   RuntimeMagicLinkOtpConsumeResult,
   RuntimeMultipartUploadInit,
   RuntimeMultipartUploadPart,
@@ -137,13 +162,17 @@ export type {
   RuntimeObjectMetadata,
   RuntimeObjectStoragePutOptions,
   RuntimePresignedObjectRequest,
+  RuntimeRetrievalScope,
+  RuntimeTurnScopeSnapshot,
   RuntimeVerificationTokenRecord,
+  RuntimeWorkspaceArtifact,
   RuntimeWorkspaceInviteLinkRecord,
   RuntimeWorkspaceStatsDailyRecalibrationResult,
   SafeFetchRequest,
   SafeFetchResponse,
   StorageProviderCapabilities,
   StorageRuntimeHealth,
+  SyncEmbeddingStateInput,
 };
 
 export type ActionEventType =
@@ -198,6 +227,8 @@ import type {
 } from './plugins/copilot/runtime/contracts/tool-contract';
 
 export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
+export const authorizeUserdataDocSubject =
+  serverNativeModule.authorizeUserdataDocSubject;
 export const authSessionAccessTokenKeyId =
   serverNativeModule.authSessionAccessTokenKeyId;
 export const createAuthSessionRefreshToken =
@@ -312,7 +343,10 @@ export const updateLicenseSeats = serverNativeModule.updateLicenseSeats;
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;
-export const parseYDocFromBinary = serverNativeModule.parseDocFromBinary;
+export const projectDocCanvasFromBinary =
+  serverNativeModule.projectDocCanvasFromBinary;
+export const projectDocSearchFromBinary =
+  serverNativeModule.projectDocSearchFromBinary;
 export const parseYDocToMarkdown = serverNativeModule.parseDocToMarkdown;
 export const parsePageDocFromBinary = serverNativeModule.parsePageDoc;
 export const parseWorkspaceDocFromBinary = serverNativeModule.parseWorkspaceDoc;

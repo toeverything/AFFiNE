@@ -215,9 +215,6 @@ export class WorkspaceBlobResolver {
       if (record.size !== size) {
         throw new BlobInvalid('Blob size mismatch');
       }
-      if (record.mime !== mime) {
-        throw new BlobInvalid('Blob mime mismatch');
-      }
 
       if (record.status === 'completed') {
         const existingMetadata = await this.storage.head(workspaceId, key);
@@ -226,8 +223,6 @@ export class WorkspaceBlobResolver {
           record = null;
         } else if (existingMetadata.contentLength !== size) {
           throw new BlobInvalid('Blob size mismatch');
-        } else if (existingMetadata.contentType !== mime) {
-          throw new BlobInvalid('Blob mime mismatch');
         } else {
           return {
             method: BlobUploadMethod.GRAPHQL,
@@ -235,6 +230,8 @@ export class WorkspaceBlobResolver {
             alreadyUploaded: true,
           };
         }
+      } else {
+        mime = record.mime;
       }
     }
 

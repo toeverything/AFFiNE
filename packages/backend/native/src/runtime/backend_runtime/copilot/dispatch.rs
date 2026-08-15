@@ -10,8 +10,7 @@ use llm_adapter::{
   core::{CoreContent, ImageInput, ImageRequest},
   router::{ExecutablePreparedRoute, ExecutableProtocol, ExecutableRequest, ExecutableResponse},
   target::{
-    BackendCredential, BackendEndpoint, BackendOperation, BackendProtocol, BackendProvider, BackendTargetInput,
-    EgressPolicy, compile_backend_target,
+    BackendCredential, BackendOperation, BackendProtocol, BackendProvider, BackendTargetInput, compile_backend_target,
   },
 };
 use llm_runtime::{CompiledPlan, CompiledRoute, RuntimeRouteEvent, RuntimeUsage, dispatch_compiled_plan};
@@ -23,9 +22,10 @@ use super::{COPILOT_REQUEST_TIMEOUT, RuntimeError, RuntimeResult, context};
 use crate::{
   llm::{
     LlmImageRequestContract,
-    byok::{ByokEndpoint, CredentialEnvelopeKey},
+    byok::CredentialEnvelopeKey,
     route::{
-      AuthorizedProfileRef, AuthorizedTargetRef, CatalogSlot, CredentialRef, RouteOperation, with_request_requirements,
+      AuthorizedProviderProfile, AuthorizedTargetRef, CatalogSlot, CredentialRef, RouteOperation,
+      with_request_requirements,
     },
   },
   runtime::{BackendRuntimeConfig, CopilotManagedProfileConfig},
@@ -104,7 +104,7 @@ pub(super) fn execute(
   config: Arc<BackendRuntimeConfig>,
   slot: CatalogSlot,
   request: ExecutableRequest,
-  profiles: Vec<AuthorizedProfileRef>,
+  profiles: Vec<AuthorizedProviderProfile>,
   candidates: Vec<AuthorizedTargetRef>,
   managed_credentials: HashMap<String, Zeroizing<String>>,
 ) -> RuntimeResult<CopilotExecutionResult> {
@@ -124,11 +124,34 @@ pub(super) fn execute(
   })
 }
 
+pub(super) fn execute_embeddings(
+  config: Arc<BackendRuntimeConfig>,
+  slot: CatalogSlot,
+  request: ExecutableRequest,
+  profiles: Vec<AuthorizedProviderProfile>,
+  candidates: Vec<AuthorizedTargetRef>,
+  managed_credentials: HashMap<String, Zeroizing<String>>,
+) -> RuntimeResult<Vec<Vec<f32>>> {
+  let output = execute(config, slot, request, profiles, candidates, managed_credentials)?;
+  let response: llm_adapter::core::EmbeddingResponse = serde_json::from_value(output.result)
+    .map_err(|error| RuntimeError::json("decode embedding response failed", error))?;
+  response
+    .embeddings
+    .into_iter()
+    .map(|vector| {
+      if vector.len() != 1024 || vector.iter().any(|value| !value.is_finite()) {
+        return Err(RuntimeError::invalid_state("invalid_embedding_vector"));
+      }
+      Ok(vector.into_iter().map(|value| value as f32).collect())
+    })
+    .collect()
+}
+
 pub(super) fn compile_execution(
   config: &BackendRuntimeConfig,
   slot: CatalogSlot,
   request: ExecutableRequest,
-  profiles: &[AuthorizedProfileRef],
+  profiles: &[AuthorizedProviderProfile],
   candidates: &[AuthorizedTargetRef],
   managed_credentials: &HashMap<String, Zeroizing<String>>,
 ) -> RuntimeResult<CompiledExecution> {
@@ -141,7 +164,6 @@ pub(super) fn compile_execution(
       .get(candidate.profile_index)
       .ok_or_else(|| RuntimeError::invalid_state("invalid authorized route profile"))?;
     let model = profile
-      .definition
       .models
       .get(candidate.model_index)
       .ok_or_else(|| RuntimeError::invalid_state("invalid authorized route model"))?;
@@ -149,17 +171,12 @@ pub(super) fn compile_execution(
     let target = compile_backend_target(BackendTargetInput {
       provider: provider(&profile.provider)?,
       operation: operation(slot.operation),
-      endpoint: endpoint(&profile.provider, &profile.definition.endpoint),
+      endpoint: profile.endpoint.clone(),
+      openai_dialect: profile.openai_dialect,
       model: model.model_id.clone(),
       credential: BackendCredential::new(credential),
       timeout_ms: Some(COPILOT_REQUEST_TIMEOUT.as_millis() as u64),
-      egress_policy: if profile.source != crate::llm::route::ProfileSource::Managed
-        && config.copilot.byok.allow_private_endpoint
-      {
-        EgressPolicy::AllowPrivate
-      } else {
-        EgressPolicy::PublicOnly
-      },
+      egress_policy: profile.egress_policy,
     })
     .map_err(|error| RuntimeError::invalid_state(error.to_string()))?;
     let route_id = Uuid::new_v4().to_string();
@@ -257,7 +274,7 @@ fn collect_message_attachments(
 
 fn resolve_credential(
   key: &CredentialEnvelopeKey,
-  profile: &AuthorizedProfileRef,
+  profile: &AuthorizedProviderProfile,
   managed_credentials: &HashMap<String, Zeroizing<String>>,
 ) -> RuntimeResult<String> {
   match &profile.credential_ref {
@@ -344,17 +361,6 @@ fn operation(value: RouteOperation) -> BackendOperation {
     RouteOperation::Embedding => BackendOperation::Embedding,
     RouteOperation::Rerank => BackendOperation::Rerank,
     RouteOperation::Image => BackendOperation::Image,
-  }
-}
-
-pub(in crate::runtime::backend_runtime) fn endpoint(provider: &str, value: &ByokEndpoint) -> BackendEndpoint {
-  match (provider, value) {
-    ("anthropic", ByokEndpoint::ProviderDefault) => BackendEndpoint::Custom("https://api.anthropic.com".to_string()),
-    ("openai" | "anthropic", ByokEndpoint::Custom { url }) => {
-      BackendEndpoint::Custom(url.strip_suffix("/v1").unwrap_or(url).to_string())
-    }
-    (_, ByokEndpoint::ProviderDefault) => BackendEndpoint::ProviderDefault,
-    (_, ByokEndpoint::Custom { url }) => BackendEndpoint::Custom(url.clone()),
   }
 }
 

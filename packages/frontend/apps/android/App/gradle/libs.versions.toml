@@ -38,8 +38,8 @@ richtext             = "1.0.0-alpha02"
 # @keep
 targetSdk              = "36"
 timber                 = "5.0.1"
-webkit                 = "1.16.0"
 version-catalog-update = "1.0.0"
+webkit                 = "1.16.0"
 
 [libraries]
 android-gradle-plugin                    = { module = "com.android.tools.build:gradle", version.ref = "android-gradle-plugin" }

@@ -10,6 +10,10 @@ import {
   CopilotSessionNotFound,
 } from '../base';
 import type { PromptAttachment } from '../plugins/copilot/providers/types';
+import type {
+  SessionFocus,
+  TurnScopeSnapshot,
+} from '../plugins/copilot/runtime/contracts/shared';
 import {
   type ChatMessage as CopilotChatMessage,
   ChatMessageSchema,
@@ -48,6 +52,7 @@ type ChatMessage = {
   content: string;
   attachments?: ChatAttachment[] | null;
   params?: Record<string, any> | null;
+  scopeSnapshot?: TurnScopeSnapshot | null;
   streamObjects?: ChatStreamObject[] | null;
   createdAt: Date;
 };
@@ -61,6 +66,7 @@ type StoredChatMessage = Prisma.AiSessionMessageGetPayload<{
     attachments: true;
     streamObjects: true;
     params: true;
+    scopeSnapshot: true;
     createdAt: true;
   };
 }>;
@@ -317,6 +323,7 @@ export class CopilotSessionModel extends BaseModel {
       params: this.sanitizeJsonValue(
         omit(message.params, ['docs']) || undefined
       ),
+      scopeSnapshot: this.sanitizeJsonValue(message.scopeSnapshot),
       streamObjects: message.streamObjects?.map(o =>
         this.sanitizeStreamObject(o)
       ),
@@ -488,6 +495,7 @@ export class CopilotSessionModel extends BaseModel {
       parentSessionId: true,
       pinned: true,
       title: true,
+      focus: true,
       promptName: true,
       createdAt: true,
       updatedAt: true,
@@ -499,6 +507,7 @@ export class CopilotSessionModel extends BaseModel {
           attachments: true,
           streamObjects: true,
           params: true,
+          scopeSnapshot: true,
           createdAt: true,
         },
         orderBy: { createdAt: 'asc' },
@@ -516,6 +525,7 @@ export class CopilotSessionModel extends BaseModel {
       parentSessionId: true,
       pinned: true,
       title: true,
+      focus: true,
       promptName: true,
       createdAt: true,
       updatedAt: true,
@@ -584,6 +594,7 @@ export class CopilotSessionModel extends BaseModel {
         parentSessionId: true,
         pinned: true,
         title: true,
+        focus: true,
         promptName: true,
         createdAt: true,
         updatedAt: true,
@@ -596,6 +607,7 @@ export class CopilotSessionModel extends BaseModel {
                 attachments: true,
                 streamObjects: true,
                 params: true,
+                scopeSnapshot: true,
                 createdAt: true,
               },
               orderBy: {
@@ -744,6 +756,7 @@ export class CopilotSessionModel extends BaseModel {
         attachments: true,
         streamObjects: true,
         params: true,
+        scopeSnapshot: true,
         createdAt: true,
       },
     });
@@ -766,6 +779,7 @@ export class CopilotSessionModel extends BaseModel {
         attachments: true,
         streamObjects: true,
         params: true,
+        scopeSnapshot: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'asc' },
@@ -791,6 +805,7 @@ export class CopilotSessionModel extends BaseModel {
           content: m.content,
           attachments: m.attachments || undefined,
           params: m.params || undefined,
+          scopeSnapshot: m.scopeSnapshot || undefined,
           streamObjects: m.streamObjects || undefined,
           createdAt: m.createdAt,
           sessionId,
@@ -813,13 +828,32 @@ export class CopilotSessionModel extends BaseModel {
     sessionId: string;
     userId: string;
     message: ChatMessage;
+    focus?: SessionFocus;
+    artifacts?: Array<{
+      artifactId: string;
+      role: string;
+      displayName?: string;
+      metadata?: Record<string, unknown>;
+    }>;
   }) {
-    const haveSession = await this.has(state.sessionId, state.userId);
-    if (!haveSession) {
+    const session = await this.getExists(
+      state.sessionId,
+      { id: true, workspaceId: true },
+      { userId: state.userId }
+    );
+    if (!session) {
       throw new CopilotSessionNotFound();
     }
 
     const message = this.sanitizeMessage(state.message);
+    const artifacts = [];
+    const artifactKeys = new Set<string>();
+    for (const artifact of state.artifacts ?? []) {
+      const key = `${artifact.artifactId}:${artifact.role}`;
+      if (artifactKeys.has(key)) continue;
+      artifactKeys.add(key);
+      artifacts.push(artifact);
+    }
     const created = await this.db.aiSessionMessage.create({
       data: {
         sessionId: state.sessionId,
@@ -828,8 +862,28 @@ export class CopilotSessionModel extends BaseModel {
         content: message.content,
         attachments: message.attachments || undefined,
         params: message.params || undefined,
+        scopeSnapshot: message.scopeSnapshot || undefined,
         streamObjects: message.streamObjects || undefined,
         createdAt: message.createdAt,
+        artifacts: artifacts.length
+          ? {
+              create: artifacts.map(artifact => ({
+                role: artifact.role,
+                displayName: this.sanitizeString(artifact.displayName),
+                metadata: this.sanitizeJsonValue(artifact.metadata) as
+                  | Prisma.InputJsonObject
+                  | undefined,
+                artifact: {
+                  connect: {
+                    workspaceId_id: {
+                      workspaceId: session.workspaceId,
+                      id: artifact.artifactId,
+                    },
+                  },
+                },
+              })),
+            }
+          : undefined,
       },
       select: {
         id: true,
@@ -839,6 +893,7 @@ export class CopilotSessionModel extends BaseModel {
         attachments: true,
         streamObjects: true,
         params: true,
+        scopeSnapshot: true,
         createdAt: true,
       },
     });
@@ -850,6 +905,7 @@ export class CopilotSessionModel extends BaseModel {
           message.role === AiSessionMessageRole.user
             ? { increment: 1 }
             : undefined,
+        focus: state.focus,
       },
     });
 

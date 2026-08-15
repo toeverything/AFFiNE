@@ -12,7 +12,7 @@ import {
 } from '@nestjs/graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 
-import { Config, Throttle } from '../../../base';
+import { Throttle } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { PermissionAccess } from '../../../core/permission';
@@ -22,27 +22,36 @@ import { llmGetByokCatalog } from '../../../native';
 import { CopilotEnabled } from '../feature';
 import { ByokEntitlementPolicy } from './policy';
 import {
-  BYOK_ALLOWED_PROVIDERS,
+  ByokAttachmentKind,
+  ByokAttachmentSource,
+  ByokCustomEndpointMode,
+  ByokEndpointKind,
+  ByokModelFeature,
+  ByokModelInput,
+  ByokModelOutput,
+  ByokOpenAiDialect,
+  ByokProbeOperation,
+  ByokProbeStatusKind,
   ByokProvider,
   ByokProviderSource,
 } from './types';
 
 @ObjectType()
 class WorkspaceByokCapabilityType {
-  @Field(() => [String])
-  input!: string[];
+  @Field(() => [ByokModelInput])
+  input!: ByokModelInput[];
 
-  @Field(() => [String])
-  output!: string[];
+  @Field(() => [ByokModelOutput])
+  output!: ByokModelOutput[];
 
-  @Field(() => [String])
-  features!: string[];
+  @Field(() => [ByokModelFeature])
+  features!: ByokModelFeature[];
 
-  @Field(() => [String])
-  attachmentKinds!: string[];
+  @Field(() => [ByokAttachmentKind])
+  attachmentKinds!: ByokAttachmentKind[];
 
-  @Field(() => [String])
-  attachmentSources!: string[];
+  @Field(() => [ByokAttachmentSource])
+  attachmentSources!: ByokAttachmentSource[];
 }
 
 @ObjectType()
@@ -59,18 +68,18 @@ class WorkspaceByokModelDeclarationType {
 
 @ObjectType()
 class WorkspaceByokEndpointType {
-  @Field(() => String)
-  kind!: string;
+  @Field(() => ByokEndpointKind)
+  kind!: ByokEndpointKind;
 
   @Field(() => String, { nullable: true })
   url!: string | null;
+
+  @Field(() => ByokOpenAiDialect, { nullable: true })
+  dialect!: ByokOpenAiDialect | null;
 }
 
 @ObjectType()
 class WorkspaceByokProfileDefinitionType {
-  @Field(() => SafeIntResolver)
-  version!: number;
-
   @Field(() => WorkspaceByokEndpointType)
   endpoint!: WorkspaceByokEndpointType;
 
@@ -80,8 +89,8 @@ class WorkspaceByokProfileDefinitionType {
 
 @ObjectType()
 class WorkspaceByokProbeStatusType {
-  @Field(() => String)
-  kind!: string;
+  @Field(() => ByokProbeStatusKind)
+  kind!: ByokProbeStatusKind;
 
   @Field(() => Date, { nullable: true })
   testedAt!: Date | null;
@@ -92,8 +101,8 @@ class WorkspaceByokProbeStatusType {
 
 @ObjectType()
 class WorkspaceByokModelProbeCheckType {
-  @Field(() => String)
-  operation!: string;
+  @Field(() => ByokProbeOperation)
+  operation!: ByokProbeOperation;
 
   @Field(() => WorkspaceByokProbeStatusType)
   status!: WorkspaceByokProbeStatusType;
@@ -205,6 +214,21 @@ class WorkspaceByokCatalogType {
 }
 
 @ObjectType()
+class WorkspaceByokPolicyType {
+  @Field(() => Boolean)
+  enabled!: boolean;
+
+  @Field(() => [ByokProvider])
+  allowedProviders!: ByokProvider[];
+
+  @Field(() => ByokCustomEndpointMode)
+  customEndpointMode!: ByokCustomEndpointMode;
+
+  @Field(() => Boolean)
+  privateEndpointSupported!: boolean;
+}
+
+@ObjectType()
 class WorkspaceByokSettingsType {
   @Field(() => String)
   workspaceId!: string;
@@ -221,14 +245,8 @@ class WorkspaceByokSettingsType {
   @Field(() => [WorkspaceByokProfileType])
   profiles!: WorkspaceByokProfileType[];
 
-  @Field(() => [ByokProvider])
-  allowedProviders!: ByokProvider[];
-
-  @Field(() => Boolean)
-  customEndpointSupported!: boolean;
-
-  @Field(() => Boolean)
-  privateEndpointSupported!: boolean;
+  @Field(() => WorkspaceByokPolicyType)
+  policy!: WorkspaceByokPolicyType;
 
   @Field(() => WorkspaceByokCatalogType)
   catalog!: WorkspaceByokCatalogType;
@@ -257,20 +275,20 @@ class CreateWorkspaceByokLocalLeaseResultType {
 
 @InputType()
 class WorkspaceByokCapabilityInput {
-  @Field(() => [String])
-  input!: string[];
+  @Field(() => [ByokModelInput])
+  input!: ByokModelInput[];
 
-  @Field(() => [String])
-  output!: string[];
+  @Field(() => [ByokModelOutput])
+  output!: ByokModelOutput[];
 
-  @Field(() => [String])
-  features!: string[];
+  @Field(() => [ByokModelFeature])
+  features!: ByokModelFeature[];
 
-  @Field(() => [String])
-  attachmentKinds!: string[];
+  @Field(() => [ByokAttachmentKind])
+  attachmentKinds!: ByokAttachmentKind[];
 
-  @Field(() => [String])
-  attachmentSources!: string[];
+  @Field(() => [ByokAttachmentSource])
+  attachmentSources!: ByokAttachmentSource[];
 }
 
 @InputType()
@@ -287,18 +305,18 @@ class WorkspaceByokModelDeclarationInput {
 
 @InputType()
 class WorkspaceByokEndpointInput {
-  @Field(() => String)
-  kind!: string;
+  @Field(() => ByokEndpointKind)
+  kind!: ByokEndpointKind;
 
   @Field(() => String, { nullable: true })
   url!: string | null;
+
+  @Field(() => ByokOpenAiDialect, { nullable: true })
+  dialect!: ByokOpenAiDialect | null;
 }
 
 @InputType()
 class WorkspaceByokProfileDefinitionInput {
-  @Field(() => SafeIntResolver)
-  version!: number;
-
   @Field(() => WorkspaceByokEndpointInput)
   endpoint!: WorkspaceByokEndpointInput;
 
@@ -377,8 +395,8 @@ class WorkspaceByokProbeCheckInput {
   @Field(() => String)
   modelId!: string;
 
-  @Field(() => String)
-  operation!: string;
+  @Field(() => ByokProbeOperation)
+  operation!: ByokProbeOperation;
 }
 
 @InputType()
@@ -472,8 +490,7 @@ export class WorkspaceByokResolver {
     private readonly ac: PermissionAccess,
     private readonly entitlement: ByokEntitlementPolicy,
     private readonly runtime: BackendRuntimeProvider,
-    private readonly models: Models,
-    private readonly config: Config
+    private readonly models: Models
   ) {}
 
   @ResolveField(() => WorkspaceByokSettingsType, {
@@ -491,8 +508,8 @@ export class WorkspaceByokResolver {
     const profiles = serverEntitled
       ? await this.runtime.listByokProfiles(workspace.id)
       : [];
-    const customEndpointSupported =
-      this.config.copilot.byok.allowCustomEndpoint;
+    const policy = await this.runtime.getByokPolicy();
+    const allowedProviders = new Set(policy.allowedProviders);
     const catalog = llmGetByokCatalog();
     return {
       workspaceId: workspace.id,
@@ -500,17 +517,19 @@ export class WorkspaceByokResolver {
       serverEntitled,
       localEntitled,
       profiles: profiles.map(profile => projectProfile(profile)),
-      allowedProviders: [...BYOK_ALLOWED_PROVIDERS],
-      customEndpointSupported,
-      privateEndpointSupported:
-        customEndpointSupported &&
-        this.config.copilot.byok.allowPrivateEndpoint,
+      policy: {
+        ...policy,
+        allowedProviders: policy.allowedProviders as ByokProvider[],
+        customEndpointMode: policy.customEndpointMode as ByokCustomEndpointMode,
+      },
       catalog: {
         ...catalog,
-        providers: catalog.providers.map(provider => ({
-          ...provider,
-          provider: provider.provider as ByokProvider,
-        })),
+        providers: catalog.providers
+          .filter(provider => allowedProviders.has(provider.provider))
+          .map(provider => ({
+            ...provider,
+            provider: provider.provider as ByokProvider,
+          })),
       },
     };
   }
@@ -711,6 +730,7 @@ function nativeDefinition(input: WorkspaceByokProfileDefinitionInput) {
     endpoint: {
       ...input.endpoint,
       url: input.endpoint.url ?? undefined,
+      dialect: input.endpoint.dialect ?? undefined,
     },
   };
 }

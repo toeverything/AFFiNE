@@ -5,7 +5,7 @@
 
 public struct CopilotChatHistory: AffineGraphQL.SelectionSet, Fragment {
   public static var fragmentDefinition: StaticString {
-    #"fragment CopilotChatHistory on CopilotHistories { __typename sessionId workspaceId docId parentSessionId promptName action pinned title messages { __typename id role content attachments streamObjects { __typename type textDelta toolCallId toolName args result } createdAt } createdAt updatedAt }"#
+    #"fragment CopilotChatHistory on CopilotHistories { __typename sessionId workspaceId docId parentSessionId promptName action pinned title messages { __typename id role content attachments scopeSnapshot streamObjects { __typename type textDelta toolCallId toolName args result } createdAt } createdAt updatedAt }"#
   }
 
   public let __data: DataDict
@@ -57,6 +57,7 @@ public struct CopilotChatHistory: AffineGraphQL.SelectionSet, Fragment {
       .field("role", String.self),
       .field("content", String.self),
       .field("attachments", [String]?.self),
+      .field("scopeSnapshot", AffineGraphQL.JSON?.self),
       .field("streamObjects", [StreamObject]?.self),
       .field("createdAt", AffineGraphQL.DateTime.self),
     ] }
@@ -68,6 +69,7 @@ public struct CopilotChatHistory: AffineGraphQL.SelectionSet, Fragment {
     public var role: String { __data["role"] }
     public var content: String { __data["content"] }
     public var attachments: [String]? { __data["attachments"] }
+    public var scopeSnapshot: AffineGraphQL.JSON? { __data["scopeSnapshot"] }
     public var streamObjects: [StreamObject]? { __data["streamObjects"] }
     public var createdAt: AffineGraphQL.DateTime { __data["createdAt"] }
 

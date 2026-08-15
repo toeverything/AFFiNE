@@ -53,7 +53,9 @@ export class CopilotRuntimeEventConsumer {
   ) {
     for (const event of events) {
       try {
-        if (event.type === 'usage') {
+        if (event.type === 'route_selected') {
+          await this.recordSelection(event, context);
+        } else if (event.type === 'usage') {
           await this.recordUsage(event, context);
         } else if (event.type === 'route_failed') {
           await this.recordFailure(event, context);
@@ -65,6 +67,18 @@ export class CopilotRuntimeEventConsumer {
           }`
         );
       }
+    }
+  }
+
+  private async recordSelection(
+    event: Extract<CopilotRuntimeEvent, { type: 'route_selected' }>,
+    context: CopilotRuntimeEventContext
+  ) {
+    if (context.workspaceId && event.route.source === 'server') {
+      await this.models.copilotWorkspaceByokConfig.touchUsed(
+        context.workspaceId,
+        event.route.profileId
+      );
     }
   }
 
@@ -100,12 +114,6 @@ export class CopilotRuntimeEventConsumer {
       totalTokens: usage.total_tokens ?? 0,
       cachedTokens: usage.cached_tokens ?? 0,
     });
-    if (event.route.source === 'server') {
-      await this.models.copilotWorkspaceByokConfig.touchUsed(
-        context.workspaceId,
-        event.route.profileId
-      );
-    }
   }
 
   private async recordFailure(

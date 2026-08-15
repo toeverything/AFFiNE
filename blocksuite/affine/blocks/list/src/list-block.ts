@@ -174,23 +174,25 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
             [TOGGLE_BUTTON_PARENT_CLASS]: true,
           })}
         >
-          ${this.model.children.length > 0
-            ? html`
-                <blocksuite-toggle-button
-                  .collapsed=${collapsed}
-                  .updateCollapsed=${(value: boolean) => {
-                    if (this.store.readonly) {
-                      this._readonlyCollapsed = value;
-                    } else {
-                      this.store.captureSync();
-                      this.store.updateBlock(this.model, {
-                        collapsed: value,
-                      });
-                    }
-                  }}
-                ></blocksuite-toggle-button>
-              `
-            : nothing}
+          ${
+            this.model.children.length > 0
+              ? html`
+                  <blocksuite-toggle-button
+                    .collapsed=${collapsed}
+                    .updateCollapsed=${(value: boolean) => {
+                      if (this.store.readonly) {
+                        this._readonlyCollapsed = value;
+                      } else {
+                        this.store.captureSync();
+                        this.store.updateBlock(this.model, {
+                          collapsed: value,
+                        });
+                      }
+                    }}
+                  ></blocksuite-toggle-button>
+                `
+              : nothing
+          }
           ${listIcon}
           <rich-text
             .yText=${this.model.props.text.yText}

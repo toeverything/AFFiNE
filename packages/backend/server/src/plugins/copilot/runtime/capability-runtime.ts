@@ -1,4 +1,6 @@
 /* oxlint-disable import/no-cycle -- Tool callbacks can invoke nested Copilot prompts. */
+import { randomUUID } from 'node:crypto';
+
 import { Injectable } from '@nestjs/common';
 
 import { Config } from '../../../base/config';
@@ -198,6 +200,7 @@ export class CapabilityRuntime {
     options: RuntimeOptions
   ) {
     const { request, toolSet } = await this.prepareChat(messages, options);
+    const runId = randomUUID();
     const rawStream = this.backend.streamCopilot<
       LlmToolLoopStreamEvent | CopilotRuntimeEvent
     >(
@@ -218,6 +221,8 @@ export class CapabilityRuntime {
           await executeToolCall(toolSet, toolRequest, {
             signal: options.signal,
             messages,
+            runId,
+            toolCallId: toolRequest.callId,
           })
         );
       },

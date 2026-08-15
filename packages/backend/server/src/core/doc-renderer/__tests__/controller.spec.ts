@@ -150,6 +150,7 @@ const policyCases: Array<{
         markdown: Sinon.stub(docReader, 'getDocMarkdown').resolves({
           title: 'markdown-doc',
           markdown: '# markdown-doc',
+          revision: '1',
           knownUnsupportedBlocks: [],
           unknownBlocks: [],
         }),
