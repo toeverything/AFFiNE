@@ -597,13 +597,13 @@ mod tests {
     );
 
     let transcript = built_in_prompt("Transcript audio structured").expect("transcript prompt");
-    assert_eq!(transcript.managed_targets, ["gemini-3.5-flash-lite"]);
+    assert_eq!(transcript.managed_targets, ["gemini-3.7-flash"]);
     assert_eq!(
       transcript
         .managed_premium_targets
         .as_deref()
         .map(|targets| targets.iter().map(String::as_str).collect::<Vec<_>>()),
-      Some(vec!["gemini-3.6-flash"])
+      Some(vec!["gemini-3.7-flash"])
     );
   }
 }
