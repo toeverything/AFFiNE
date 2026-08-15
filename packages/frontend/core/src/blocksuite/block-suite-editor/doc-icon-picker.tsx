@@ -1,6 +1,10 @@
-import { IconEditor, IconRenderer } from '@affine/component';
+import { IconEditor, IconType } from '@affine/component';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
+import {
+  ExplorerIcon,
+  useBlobIconUrl,
+} from '@affine/core/modules/explorer-icon/views/explorer-icon';
 import { useI18n } from '@affine/i18n';
 import { SmileSolidIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -44,13 +48,18 @@ export const DocIconPicker = ({
   const isPlaceholder = !icon?.icon;
   const shouldShowAddIconOption = settings.displayAddIconOption;
 
+  const currentIcon = icon?.icon;
+  const blobId =
+    currentIcon?.type === IconType.Blob ? currentIcon.blobId : undefined;
+  const iconUrl = useBlobIconUrl(blobId);
+
   if (readonly) {
     return isPlaceholder ? null : (
       <div
         className={styles.docIconPickerTrigger}
-        data-icon-type={icon?.icon?.type}
+        data-icon-type={currentIcon?.type}
       >
-        <IconRenderer data={icon.icon} />
+        <ExplorerIcon icon={currentIcon} />
       </div>
     );
   }
@@ -62,7 +71,8 @@ export const DocIconPicker = ({
   return (
     <TitleContainer hasIcon={!isPlaceholder}>
       <IconEditor
-        icon={icon?.icon}
+        icon={currentIcon}
+        iconUrl={iconUrl}
         onIconChange={data => {
           explorerIconService
             .setIcon({
