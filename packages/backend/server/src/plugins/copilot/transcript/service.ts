@@ -46,10 +46,6 @@ export class CopilotTranscriptionService {
     private readonly realtime: RealtimePublisher
   ) {}
 
-  private parseTaskPayload(payload: unknown): TranscriptionPayloadV2 {
-    return TranscriptPayloadSchema.parse(payload);
-  }
-
   private buildTaskPublicMeta(payload: TranscriptionPayloadV2) {
     return {
       sourceAudio: payload.sourceAudio,
@@ -68,13 +64,10 @@ export class CopilotTranscriptionService {
     const infos: AudioBlobInfos = [];
     for (const [idx, blob] of blobs.entries()) {
       const buffer = await readStream(blob.createReadStream());
-      const url = await this.storage.put(
-        userId,
-        workspaceId,
-        `${blobId}-${idx}`,
-        buffer
-      );
+      const key = `${blobId}-${idx}`;
+      const url = await this.storage.put(userId, workspaceId, key, buffer);
       infos.push({
+        key,
         url,
         mimeType: sniffMime(buffer, blob.mimetype) || blob.mimetype,
         index: idx,
@@ -103,6 +96,47 @@ export class CopilotTranscriptionService {
     } satisfies TranscriptionPayloadV2;
   }
 
+  private async resolveAttachmentUrl(
+    userId: string,
+    workspaceId: string,
+    info: AudioBlobInfos[number]
+  ) {
+    if (info.url.startsWith('data:')) {
+      return info.url;
+    }
+
+    const key =
+      info.key ?? this.storage.keyFromUrl(userId, workspaceId, info.url);
+    if (!key) {
+      throw new Error('Transcript attachment cannot be resolved');
+    }
+
+    const signedUrl = await this.storage.presignGet(userId, workspaceId, key);
+    if (!signedUrl) {
+      throw new Error('Transcript attachment signing is not configured');
+    }
+    return signedUrl;
+  }
+
+  private async materializePayload(
+    userId: string,
+    workspaceId: string,
+    payload: TranscriptionPayloadV2
+  ) {
+    return {
+      ...payload,
+      infos: payload.infos
+        ? await Promise.all(
+            payload.infos.map(async info => ({
+              url: await this.resolveAttachmentUrl(userId, workspaceId, info),
+              mimeType: info.mimeType,
+              index: info.index,
+            }))
+          )
+        : payload.infos,
+    } satisfies TranscriptionPayloadV2;
+  }
+
   private async buildTranscriptActionMessages(payload: TranscriptionPayloadV2) {
     const prompt = await this.prompts.get(TRANSCRIPT_PROMPT_REF);
     if (!prompt) {
@@ -118,13 +152,12 @@ export class CopilotTranscriptionService {
           index: info.index ?? null,
         })) ?? null,
     };
-    const attachments =
-      payload.infos?.map(info => ({
-        role: 'user' as const,
-        content: `Audio attachment ${info.index ?? 0}`,
-        attachments: [{ attachment: info.url, mimeType: info.mimeType }],
-        params: { mimetype: info.mimeType },
-      })) ?? [];
+    const attachments = (payload.infos ?? []).map(info => ({
+      role: 'user' as const,
+      content: `Audio attachment ${info.index ?? 0}`,
+      attachments: [{ attachment: info.url, mimeType: info.mimeType }],
+      params: { mimetype: info.mimeType },
+    }));
     return [
       ...this.prompts.finish(prompt, {
         content: JSON.stringify(metadata),
@@ -205,7 +238,7 @@ export class CopilotTranscriptionService {
       );
     }
 
-    const payload = this.parseTaskPayload(task.protectedResult);
+    const payload = TranscriptPayloadSchema.parse(task.protectedResult);
     await this.runtime.assertRoute(
       'transcript.audio',
       {},
@@ -287,14 +320,19 @@ export class CopilotTranscriptionService {
       let bridgeFailed = false;
       let bridgeError = 'transcript native recipe failed';
       let finalResult: unknown = null;
-      const messages = await this.buildTranscriptActionMessages(payload);
+      const runtimePayload = await this.materializePayload(
+        task.userId,
+        task.workspaceId,
+        payload
+      );
+      const messages = await this.buildTranscriptActionMessages(runtimePayload);
       for await (const event of this.actionBridge.runStream({
         userId: task.userId,
         workspaceId: task.workspaceId,
         actionId: TRANSCRIPT_ACTION_ID,
         actionVersion: TRANSCRIPT_ACTION_VERSION,
         retryOf: retryOf ?? null,
-        inputSnapshot: payload,
+        inputSnapshot: runtimePayload,
         onRunCreated: async ({ runId }) => {
           await this.models.copilotTranscriptTask.markRunning(taskId, runId);
           this.publishTaskChanged(
@@ -329,7 +367,10 @@ export class CopilotTranscriptionService {
       if (bridgeFailed) {
         throw new Error(bridgeError);
       }
-      const parsedResult = TranscriptPayloadSchema.parse(finalResult);
+      const parsedResult = {
+        ...TranscriptPayloadSchema.parse(finalResult),
+        infos: payload.infos,
+      } satisfies TranscriptionPayloadV2;
       await this.models.copilotTranscriptTask.complete(taskId, {
         status: 'ready',
         actionRunId,

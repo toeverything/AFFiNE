@@ -326,7 +326,7 @@ mod tests {
       id: "vertex".to_string(),
       provider: "geminiVertex".to_string(),
       enabled: true,
-      models: vec!["gemini-3.6-flash".to_string()],
+      models: vec!["gemini-3.7-flash".to_string()],
       config: json!({ "project": "affine-us", "location": location }),
     }
   }

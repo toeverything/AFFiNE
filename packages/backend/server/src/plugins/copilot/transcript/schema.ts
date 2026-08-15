@@ -18,7 +18,8 @@ export const LegacyTranscriptionSchema = z.array(
 );
 
 export const AudioBlobInfoSchema = z.object({
-  url: z.string(),
+  key: z.string().min(1).optional(),
+  url: z.string().min(1),
   mimeType: z.string(),
   index: z.number().int().nullable().optional(),
 });
