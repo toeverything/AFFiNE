@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { AiJobStatus } from '@prisma/client';
 
@@ -5,7 +7,6 @@ import {
   CopilotTranscriptionJobExists,
   CopilotTranscriptionJobNotFound,
   type FileUpload,
-  JobQueue,
   OnJob,
   sniffMime,
 } from '../../../base';
@@ -40,7 +41,6 @@ import { readStream } from './utils';
 export class CopilotTranscriptionService {
   constructor(
     private readonly models: Models,
-    private readonly job: JobQueue,
     private readonly storage: CopilotStorage,
     private readonly prompts: PromptService,
     private readonly actionBridge: ActionRuntimeBridge,
@@ -201,24 +201,23 @@ export class CopilotTranscriptionService {
     );
     const infos = await this.persistUploads(userId, workspaceId, blobId, blobs);
     const payload = this.createCanonicalPayload(blobId, infos, input);
+    const generation = randomUUID();
     const task = await this.models.copilotTranscriptTask.create({
       userId,
       workspaceId,
       blobId,
       recipeId: TRANSCRIPT_ACTION_ID,
       recipeVersion: TRANSCRIPT_ACTION_VERSION,
+      dispatchGeneration: generation,
       inputSnapshot: payload,
       publicMeta: this.buildTaskPublicMeta(payload),
+      protectedResult: payload,
     });
 
-    await this.job.add('copilot.transcript.task.submit', {
-      taskId: task.id,
-      payload,
-    });
-    await this.models.copilotTranscriptTask.markRunning(task.id);
-    this.publishTaskChanged(workspaceId, task.id, AiJobStatus.running);
+    await this.retry.enqueuePendingTask(task.id, payload, generation, null);
+    this.publishTaskChanged(workspaceId, task.id, AiJobStatus.pending);
 
-    return { id: task.id, status: AiJobStatus.running, infos };
+    return { id: task.id, status: AiJobStatus.pending, infos };
   }
 
   async retryTask(userId: string, workspaceId: string, taskId: string) {
@@ -270,14 +269,34 @@ export class CopilotTranscriptionService {
   async transcriptTask({
     taskId,
     payload,
+    generation: queuedGeneration,
     retryOf,
   }: Jobs['copilot.transcript.task.submit']) {
     const task = await this.models.copilotTranscriptTask.get(taskId);
     if (!task) {
       throw new CopilotTranscriptionJobNotFound();
     }
+    let actionRunId = retryOf ?? null;
+    const generation = queuedGeneration ?? randomUUID();
+    if (
+      !queuedGeneration &&
+      !(await this.models.copilotTranscriptTask.adoptLegacyDispatch(
+        taskId,
+        actionRunId,
+        generation
+      ))
+    ) {
+      return;
+    }
+    const claimed = await this.models.copilotTranscriptTask.claimDispatch(
+      taskId,
+      generation,
+      actionRunId
+    );
+    if (!claimed) {
+      return;
+    }
 
-    let actionRunId: string | null = null;
     try {
       let bridgeFailed = false;
       let bridgeError = 'transcript native recipe failed';
@@ -296,7 +315,17 @@ export class CopilotTranscriptionService {
         retryOf: retryOf ?? null,
         inputSnapshot: runtimePayload,
         onRunCreated: async ({ runId }) => {
-          await this.models.copilotTranscriptTask.markRunning(taskId, runId);
+          const attached =
+            await this.models.copilotTranscriptTask.attachActionRun(
+              taskId,
+              generation,
+              actionRunId,
+              runId
+            );
+          if (!attached) {
+            throw new Error('stale transcript dispatch generation');
+          }
+          actionRunId = runId;
           this.publishTaskChanged(
             task.workspaceId,
             taskId,
@@ -317,7 +346,6 @@ export class CopilotTranscriptionService {
           responseContract: TranscriptActionResultContract,
         },
       })) {
-        actionRunId = event.runId;
         if (event.type === 'error' || event.status === 'failed') {
           bridgeFailed = true;
           bridgeError = event.errorMessage ?? event.errorCode ?? bridgeError;
@@ -333,29 +361,43 @@ export class CopilotTranscriptionService {
         ...TranscriptPayloadSchema.parse(finalResult),
         infos: payload.infos,
       } satisfies TranscriptionPayloadV2;
-      await this.models.copilotTranscriptTask.complete(taskId, {
-        status: 'ready',
-        actionRunId,
-        publicMeta: this.buildTaskPublicMeta(parsedResult),
-        protectedResult: parsedResult,
-        errorCode: null,
-      });
-      this.publishTaskChanged(task.workspaceId, taskId, AiJobStatus.finished);
+      const completed =
+        await this.models.copilotTranscriptTask.completeDispatch(
+          taskId,
+          generation,
+          actionRunId,
+          {
+            status: 'ready',
+            publicMeta: this.buildTaskPublicMeta(parsedResult),
+            protectedResult: parsedResult,
+            errorCode: null,
+          }
+        );
+      if (completed) {
+        this.publishTaskChanged(task.workspaceId, taskId, AiJobStatus.finished);
+      }
     } catch (error) {
-      await this.models.copilotTranscriptTask.complete(taskId, {
-        status: 'failed',
-        actionRunId,
-        publicMeta: this.buildTaskPublicMeta(payload),
-        protectedResult: payload,
-        errorCode:
-          error instanceof Error ? error.message : 'transcript_task_failed',
-      });
-      this.publishTaskChanged(
-        task.workspaceId,
+      const errorCode =
+        error instanceof Error ? error.message : 'transcript_task_failed';
+      const failed = await this.models.copilotTranscriptTask.completeDispatch(
         taskId,
-        AiJobStatus.failed,
-        error instanceof Error ? error.message : 'transcript_task_failed'
+        generation,
+        actionRunId,
+        {
+          status: 'failed',
+          publicMeta: this.buildTaskPublicMeta(payload),
+          protectedResult: payload,
+          errorCode,
+        }
       );
+      if (failed) {
+        this.publishTaskChanged(
+          task.workspaceId,
+          taskId,
+          AiJobStatus.failed,
+          errorCode
+        );
+      }
       throw error;
     }
   }

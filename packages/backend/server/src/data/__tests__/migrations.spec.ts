@@ -126,6 +126,11 @@ test('transcript backfill adds stable keys without removing compatibility URLs',
 });
 
 test('managed provider migration preserves explicit profiles and converts legacy keys atomically', async t => {
+  t.teardown(async () => {
+    await t.context.db.appConfig.deleteMany({
+      where: { id: { startsWith: 'copilot.providers.' } },
+    });
+  });
   const profiles = [
     {
       id: 'openai-default',
@@ -185,7 +190,7 @@ test('managed provider migration preserves explicit profiles and converts legacy
 
   await t.context.db.appConfig.update({
     where: { id: 'copilot.providers.profiles' },
-    data: { value: [{ ...profiles[0], id: 'invalid id' }] },
+    data: { value: [{ ...profiles[0], enabled: 'true' }] },
   });
   await t.context.db.appConfig.create({
     data: {

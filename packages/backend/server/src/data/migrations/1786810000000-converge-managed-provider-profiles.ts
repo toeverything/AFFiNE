@@ -1,3 +1,4 @@
+import serverNativeModule from '@affine/server-native';
 import { type Prisma, PrismaClient } from '@prisma/client';
 
 const PROFILE_KEY = 'copilot.providers.profiles';
@@ -12,7 +13,6 @@ const PROVIDERS = [
 ] as const;
 
 const PROVIDER_IDS = PROVIDERS.map(provider => `copilot.providers.${provider}`);
-const PROFILE_ID = /^[a-zA-Z0-9-_]+$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -20,40 +20,25 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function readProfiles(value: Prisma.JsonValue | undefined) {
   if (value === undefined) {
-    return [] as Prisma.JsonObject[];
+    return [] as Prisma.JsonArray;
   }
   if (!Array.isArray(value)) {
     throw new Error(`${PROFILE_KEY} must be an array`);
   }
+  return value;
+}
 
-  const ids = new Set<string>();
-  return value.map((profile, index) => {
-    if (
-      !isRecord(profile) ||
-      typeof profile.id !== 'string' ||
-      !PROFILE_ID.test(profile.id) ||
-      !PROVIDERS.includes(profile.type as (typeof PROVIDERS)[number]) ||
-      !isRecord(profile.config)
-    ) {
-      throw new Error(`${PROFILE_KEY}[${index}] is invalid`);
-    }
-    if (ids.has(profile.id)) {
-      throw new Error(`${PROFILE_KEY} contains duplicate id ${profile.id}`);
-    }
-    if (
-      profile.models !== undefined &&
-      (!Array.isArray(profile.models) ||
-        !profile.models.length ||
-        profile.models.some(
-          model => typeof model !== 'string' || !model.trim()
-        ) ||
-        new Set(profile.models).size !== profile.models.length)
-    ) {
-      throw new Error(`${PROFILE_KEY}[${index}].models is invalid`);
-    }
-    ids.add(profile.id);
-    return profile as Prisma.JsonObject;
-  });
+function validateProfiles(
+  profiles: Prisma.JsonArray
+): asserts profiles is Prisma.JsonObject[] {
+  const errors = serverNativeModule.validateAppConfigValue(
+    'copilot',
+    'providers.profiles',
+    profiles
+  );
+  if (errors.length) {
+    throw new Error(`${PROFILE_KEY} is invalid: ${errors.join('; ')}`);
+  }
 }
 
 export class ConvergeManagedProviderProfiles1786810000000 {
@@ -66,7 +51,13 @@ export class ConvergeManagedProviderProfiles1786810000000 {
       const byId = new Map(rows.map(row => [row.id, row]));
       const profileRow = byId.get(PROFILE_KEY);
       const profiles = readProfiles(profileRow?.value);
-      const profileIds = new Set(profiles.map(profile => profile.id as string));
+      const profileIds = new Set(
+        profiles.flatMap(profile =>
+          isRecord(profile) && typeof profile.id === 'string'
+            ? [profile.id]
+            : []
+        )
+      );
 
       for (const [index, provider] of PROVIDERS.entries()) {
         const legacy = byId.get(`copilot.providers.${provider}`);
@@ -89,6 +80,7 @@ export class ConvergeManagedProviderProfiles1786810000000 {
       }
 
       if (PROVIDER_IDS.some(id => byId.has(id))) {
+        validateProfiles(profiles);
         await tx.appConfig.upsert({
           where: { id: PROFILE_KEY },
           update: { value: profiles },
