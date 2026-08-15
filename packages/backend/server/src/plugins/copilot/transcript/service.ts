@@ -18,7 +18,13 @@ import { PromptService } from '../prompt';
 import { ActionRuntimeBridge } from '../runtime/action-runtime-bridge';
 import { CapabilityRuntime } from '../runtime/capability-runtime';
 import { CopilotStorage } from '../storage';
+import {
+  TRANSCRIPT_ACTION_ID,
+  TRANSCRIPT_ACTION_VERSION,
+  TRANSCRIPT_PROMPT_REF,
+} from './constants';
 import { taskToJob, type TranscriptionJob } from './job';
+import { CopilotTranscriptionRetryService } from './retry';
 import {
   TranscriptActionResultContract,
   TranscriptPayloadSchema,
@@ -30,10 +36,6 @@ import type {
 } from './types';
 import { readStream } from './utils';
 
-const TRANSCRIPT_ACTION_ID = 'transcript.audio';
-const TRANSCRIPT_PROMPT_REF = 'Transcript audio structured';
-const TRANSCRIPT_ACTION_VERSION = 'v1';
-
 @Injectable()
 export class CopilotTranscriptionService {
   constructor(
@@ -43,7 +45,8 @@ export class CopilotTranscriptionService {
     private readonly prompts: PromptService,
     private readonly actionBridge: ActionRuntimeBridge,
     private readonly runtime: CapabilityRuntime,
-    private readonly realtime: RealtimePublisher
+    private readonly realtime: RealtimePublisher,
+    private readonly retry: CopilotTranscriptionRetryService
   ) {}
 
   private buildTaskPublicMeta(payload: TranscriptionPayloadV2) {
@@ -219,48 +222,7 @@ export class CopilotTranscriptionService {
   }
 
   async retryTask(userId: string, workspaceId: string, taskId: string) {
-    const task = await this.models.copilotTranscriptTask.getWithUser(
-      userId,
-      workspaceId,
-      taskId
-    );
-    if (!task) {
-      throw new CopilotTranscriptionJobNotFound();
-    }
-    if (task.status === 'ready' || task.status === 'settled') {
-      throw new BadRequestException(
-        'Ready or settled transcript tasks cannot be retried'
-      );
-    }
-    if (task.status !== 'failed') {
-      throw new BadRequestException(
-        'Only failed transcript tasks can be retried'
-      );
-    }
-
-    const payload = TranscriptPayloadSchema.parse(task.protectedResult);
-    await this.runtime.assertRoute(
-      'transcript.audio',
-      {},
-      {
-        user: userId,
-        workspace: workspaceId,
-        featureKind: 'transcript',
-        builtInRouteId: TRANSCRIPT_PROMPT_REF,
-      }
-    );
-    await this.job.add('copilot.transcript.task.submit', {
-      taskId,
-      payload,
-      retryOf: task.actionRunId ?? undefined,
-    });
-    await this.models.copilotTranscriptTask.markRunning(taskId);
-    this.publishTaskChanged(workspaceId, taskId, AiJobStatus.running);
-    return {
-      id: taskId,
-      status: AiJobStatus.running,
-      infos: payload.infos ?? undefined,
-    };
+    return await this.retry.retryTask(userId, workspaceId, taskId);
   }
 
   async settleTask(userId: string, workspaceId: string, taskId: string) {

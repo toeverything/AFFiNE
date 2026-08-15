@@ -3,6 +3,7 @@ import test from 'ava';
 import Sinon from 'sinon';
 
 import { buildLegacyProjection } from '../../plugins/copilot/transcript/projection';
+import { CopilotTranscriptionRetryService } from '../../plugins/copilot/transcript/retry';
 import { TranscriptPayloadSchema } from '../../plugins/copilot/transcript/schema';
 import { CopilotTranscriptionService } from '../../plugins/copilot/transcript/service';
 
@@ -136,6 +137,12 @@ function createSuccessfulTranscriptBridge(
 }
 
 function createCopilotTranscriptionService(...deps: unknown[]) {
+  const retry = new CopilotTranscriptionRetryService(
+    deps[0] as never,
+    deps[1] as never,
+    (deps[6] ?? { assertRoute: Sinon.stub().resolves() }) as never,
+    (deps[7] ?? { publish: Sinon.stub() }) as never
+  );
   return new CopilotTranscriptionService(
     deps[0] as never,
     deps[1] as never,
@@ -143,7 +150,8 @@ function createCopilotTranscriptionService(...deps: unknown[]) {
     deps[4] as never,
     deps[5] as never,
     (deps[6] ?? { assertRoute: Sinon.stub().resolves() }) as never,
-    (deps[7] ?? { publish: Sinon.stub() }) as never
+    (deps[7] ?? { publish: Sinon.stub() }) as never,
+    retry
   );
 }
 
