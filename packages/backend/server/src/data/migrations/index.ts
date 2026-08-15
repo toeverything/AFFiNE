@@ -6,3 +6,4 @@ export * from './1751966744168-correct-session-update-time';
 export * from './1763800000000-rebuild-manticore-mixed-script-indexes';
 export * from './1765500000000-backfill-permission-projection';
 export * from './1765600000000-backfill-entitlement-projection';
+export * from './1786805802350-backfill-transcript-storage-keys';

@@ -294,7 +294,7 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
     } as never,
     {} as never,
     {
-      resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.5-flash-lite'),
+      resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.7-flash'),
     } as never,
     {} as never,
     {} as never,
@@ -303,7 +303,7 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
 
   const result = await service.retryTask('user-1', 'workspace-1', 'task-1');
 
-  t.is(result.status, AiJobStatus.running);
+  t.is(result?.status, AiJobStatus.running);
   t.like(queuedJobs[0] as Record<string, unknown>, {
     name: 'copilot.transcript.task.submit',
   });
@@ -351,9 +351,7 @@ for (const status of ['ready', 'settled']) {
       } as never,
       {} as never,
       {
-        resolveTranscriptionModel: Sinon.stub().resolves(
-          'gemini-3.5-flash-lite'
-        ),
+        resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.7-flash'),
       } as never,
       {} as never,
       {} as never,
@@ -403,7 +401,8 @@ test('transcriptTask runs native transcript recipe through action bridge when av
     ],
     infos: [
       {
-        url: 'data:image/png;base64,YXVkaW8=',
+        key: 'blob-1-0',
+        url: 'https://affine.fail/api/copilot/blob/user-1/workspace-1/blob-1-0',
         mimeType: 'audio/opus',
         index: 0,
       },
@@ -428,7 +427,11 @@ test('transcriptTask runs native transcript recipe through action bridge when av
       },
     } as never,
     {} as never,
-    {} as never,
+    {
+      presignGet: Sinon.stub().resolves(
+        'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test'
+      ),
+    } as never,
     {} as never,
     createTranscriptPromptService() as never,
     createSuccessfulTranscriptBridge('run-bridge', bridgeInputs) as never
@@ -447,6 +450,20 @@ test('transcriptTask runs native transcript recipe through action bridge when av
     slot: 'transcript.audio',
     builtInRouteId: 'Transcript audio structured',
   });
+  t.deepEqual(
+    (
+      bridgeInputs[0] as {
+        nativeInput: { input: { infos: unknown[] } };
+      }
+    ).nativeInput.input.infos,
+    [
+      {
+        url: 'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test',
+        mimeType: 'audio/opus',
+        index: 0,
+      },
+    ]
+  );
   const messages = (
     bridgeInputs[0] as {
       step: {
@@ -459,7 +476,10 @@ test('transcriptTask runs native transcript recipe through action bridge when av
     infos: [{ mimeType: 'audio/opus', index: 0 }],
   });
   t.deepEqual(messages.at(-1)?.attachments, [
-    { attachment: 'data:image/png;base64,YXVkaW8=', mimeType: 'audio/opus' },
+    {
+      attachment: 'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test',
+      mimeType: 'audio/opus',
+    },
   ]);
   t.like(complete.firstCall.args[1], {
     status: 'ready',
@@ -471,6 +491,7 @@ test('transcriptTask runs native transcript recipe through action bridge when av
     complete.firstCall.args[1].protectedResult.normalizedTranscript,
     '00:00:05 A: Kickoff'
   );
+  t.deepEqual(complete.firstCall.args[1].protectedResult.infos, payload.infos);
 });
 
 test('transcriptTask fails task when native action bridge reports an error event', async t => {
