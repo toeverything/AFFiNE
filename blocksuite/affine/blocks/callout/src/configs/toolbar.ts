@@ -23,6 +23,10 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { IconPickerWrapper } from '../icon-picker-wrapper.js';
+import {
+  beginIconSelection,
+  isLatestIconSelection,
+} from '../icon-selection.js';
 
 const colors = [
   'default',
@@ -122,10 +126,12 @@ const iconPickerAction = {
       // Create props for the icon picker
       const props = {
         onSelect: (iconData?: IconData | Blob) => {
+          const generation = beginIconSelection(model);
           if (iconData instanceof Blob) {
             ctx.store.blobSync
               .set(iconData)
               .then(blobId => {
+                if (!isLatestIconSelection(model, generation)) return;
                 ctx.store.updateBlock(model, {
                   icon: { type: IconType.Blob, blobId },
                 });

@@ -35,6 +35,7 @@ import {
   calloutHostStyles,
 } from './callout-block-styles.js';
 import { IconPickerWrapper } from './icon-picker-wrapper.js';
+import { beginIconSelection, isLatestIconSelection } from './icon-selection.js';
 // Copy of renderUniLit and UniLit from affine-data-view
 export const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
   uni: UniComponent<Props, Expose> | undefined,
@@ -147,10 +148,12 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
     // Create props for the icon picker
     const props = {
       onSelect: (iconData?: IconData | Blob) => {
+        const generation = beginIconSelection(this.model);
         if (iconData instanceof Blob) {
           this.model.store.blobSync
             .set(iconData)
             .then(blobId => {
+              if (!isLatestIconSelection(this.model, generation)) return;
               this.model.props.icon$.value = {
                 type: IconType.Blob,
                 blobId,
