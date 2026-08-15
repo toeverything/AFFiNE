@@ -16,13 +16,13 @@ export default {
 } satisfies Meta<typeof IconAndNameEditorMenu>;
 
 export const Basic: StoryFn<IconAndNameEditorMenuProps> = () => {
-  const [icon, setIcon] = useState<IconData | undefined>({
+  const [icon, setIcon] = useState<IconData | Blob | undefined>({
     type: IconType.Emoji,
     unicode: '👋',
   });
   const [name, setName] = useState<string>('Hello');
 
-  const handleIconChange = useCallback((icon?: IconData) => {
+  const handleIconChange = useCallback((icon?: IconData | Blob) => {
     setIcon(icon);
   }, []);
   const handleNameChange = useCallback((name: string) => {
