@@ -3,8 +3,11 @@ import { describe, expect, test } from 'vitest';
 import {
   ALLOWED_TYPES,
   computeResizeDimensions,
+  exceedsDecodeLimits,
   hasTransparency,
   MAX_FILE_SIZE,
+  MAX_SOURCE_DIMENSION,
+  MAX_SOURCE_PIXELS,
   MAX_SVG_FILE_SIZE,
   resizeImage,
   validateIconFile,
@@ -70,6 +73,27 @@ describe('hasTransparency', () => {
 
   test('returns false for empty data', () => {
     expect(hasTransparency(new Uint8ClampedArray())).toBe(false);
+  });
+});
+
+describe('exceedsDecodeLimits', () => {
+  test('accepts dimensions at the caps', () => {
+    expect(exceedsDecodeLimits(MAX_SOURCE_DIMENSION, 1)).toBe(false);
+    expect(exceedsDecodeLimits(1, MAX_SOURCE_DIMENSION)).toBe(false);
+    // a square at the pixel cap
+    const side = Math.floor(Math.sqrt(MAX_SOURCE_PIXELS));
+    expect(exceedsDecodeLimits(side, side)).toBe(false);
+  });
+
+  test('rejects one oversized side', () => {
+    expect(exceedsDecodeLimits(MAX_SOURCE_DIMENSION + 1, 1)).toBe(true);
+    expect(exceedsDecodeLimits(1, MAX_SOURCE_DIMENSION + 1)).toBe(true);
+  });
+
+  test('rejects a pixel-flood image with sides under the dimension cap', () => {
+    expect(
+      exceedsDecodeLimits(MAX_SOURCE_DIMENSION, MAX_SOURCE_DIMENSION)
+    ).toBe(true);
   });
 });
 

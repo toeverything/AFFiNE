@@ -19,6 +19,24 @@ export const MAX_FILE_SIZE = 5 * 1024 * 1024;
  * such as SVGs wrapping embedded base64 rasters.
  */
 export const MAX_SVG_FILE_SIZE = 500 * 1024;
+/**
+ * MAX_FILE_SIZE bounds only the encoded bytes. A small compressed file can
+ * declare very large dimensions, and the decode into the canvas can freeze
+ * the renderer. These caps bound the decoded size instead.
+ */
+export const MAX_SOURCE_DIMENSION = 8192;
+export const MAX_SOURCE_PIXELS = 32 * 1024 * 1024;
+/** `resizeImage` rejects with this message when the decode caps are hit. */
+export const DIMENSIONS_ERROR = 'image-dimensions-too-large';
+
+/** Whether decoded dimensions are over the decode caps. */
+export function exceedsDecodeLimits(width: number, height: number): boolean {
+  return (
+    width > MAX_SOURCE_DIMENSION ||
+    height > MAX_SOURCE_DIMENSION ||
+    width * height > MAX_SOURCE_PIXELS
+  );
+}
 export const ALLOWED_TYPES = new Set([
   'image/png',
   'image/jpeg',
@@ -90,6 +108,11 @@ export function resizeImage(file: File): Promise<Blob> {
 
     img.onload = () => {
       URL.revokeObjectURL(url);
+
+      if (exceedsDecodeLimits(img.width, img.height)) {
+        reject(new Error(DIMENSIONS_ERROR));
+        return;
+      }
 
       const { width, height } = computeResizeDimensions(
         img.width,

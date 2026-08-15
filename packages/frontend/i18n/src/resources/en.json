@@ -2408,6 +2408,7 @@
   "com.affine.iconPicker.custom.error.unsupported": "Unsupported file type. Use PNG, JPEG, SVG, WebP, or GIF.",
   "com.affine.iconPicker.custom.error.tooLarge": "File is too large. Please use an image under 5MB.",
   "com.affine.iconPicker.custom.error.svgTooLarge": "SVG file is too large. Please use an SVG under 500KB.",
+  "com.affine.iconPicker.custom.error.dimensions": "Image dimensions are too large. Please use a smaller image.",
   "com.affine.iconPicker.custom.error.failed": "Failed to process image.",
   "com.affine.settings.devices.title": "Devices",
   "com.affine.settings.devices.description": "Devices with an active sign-in session",

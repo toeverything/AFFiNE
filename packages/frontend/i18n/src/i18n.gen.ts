@@ -9669,6 +9669,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.iconPicker.custom.error.svgTooLarge"](): string;
     /**
+      * `Image dimensions are too large. Please use a smaller image.`
+      */
+    ["com.affine.iconPicker.custom.error.dimensions"](): string;
+    /**
       * `Failed to process image.`
       */
     ["com.affine.iconPicker.custom.error.failed"](): string;

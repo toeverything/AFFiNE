@@ -6,6 +6,7 @@ import { Button } from '../../../button';
 import * as styles from './custom-icon-picker.css';
 import {
   ALLOWED_TYPES,
+  DIMENSIONS_ERROR,
   type IconFileError,
   resizeImage,
   validateIconFile,
@@ -23,6 +24,9 @@ export const CustomIconPicker = ({ onSelect }: CustomIconPickerProps) => {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
+  // The file dialog can deliver a file while an older resize task still
+  // runs, so each task gets an id and only the latest task may apply.
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -31,6 +35,7 @@ export const CustomIconPicker = ({ onSelect }: CustomIconPickerProps) => {
   }, []);
 
   const handleFile = (file: File) => {
+    const requestId = ++requestIdRef.current;
     setError(null);
 
     const validationError = validateIconFile(file);
@@ -42,23 +47,32 @@ export const CustomIconPicker = ({ onSelect }: CustomIconPickerProps) => {
         'svg-too-large': t['com.affine.iconPicker.custom.error.svgTooLarge'](),
       };
       setError(messages[validationError]);
+      // This call also cancelled any older task, so its `finally` will not
+      // clear the processing state.
+      setProcessing(false);
       return;
     }
 
     setProcessing(true);
     resizeImage(file)
       .then(blob => {
+        if (requestId !== requestIdRef.current) return;
         if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
         const url = URL.createObjectURL(blob);
         previewUrlRef.current = url;
         setPreview(url);
         onSelect(blob);
       })
-      .catch(() => {
-        setError(t['com.affine.iconPicker.custom.error.failed']());
+      .catch((error: unknown) => {
+        if (requestId !== requestIdRef.current) return;
+        setError(
+          error instanceof Error && error.message === DIMENSIONS_ERROR
+            ? t['com.affine.iconPicker.custom.error.dimensions']()
+            : t['com.affine.iconPicker.custom.error.failed']()
+        );
       })
       .finally(() => {
-        setProcessing(false);
+        if (requestId === requestIdRef.current) setProcessing(false);
       });
   };
 
