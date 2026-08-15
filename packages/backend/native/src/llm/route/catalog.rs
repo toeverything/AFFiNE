@@ -262,7 +262,7 @@ mod tests {
         CopilotManagedTier::Premium
       )
       .unwrap(),
-      ["gemini-3.6-flash"]
+      ["gemini-3.7-flash"]
     );
     assert_eq!(
       managed_targets(&slot("index.embedding").unwrap(), None, CopilotManagedTier::Standard).unwrap(),
