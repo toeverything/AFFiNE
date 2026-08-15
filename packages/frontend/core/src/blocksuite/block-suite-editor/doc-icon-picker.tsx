@@ -64,11 +64,13 @@ export const DocIconPicker = ({
       <IconEditor
         icon={icon?.icon}
         onIconChange={data => {
-          explorerIconService.setIcon({
-            where: 'doc',
-            id: docId,
-            icon: data,
-          });
+          explorerIconService
+            .setIcon({
+              where: 'doc',
+              id: docId,
+              icon: data,
+            })
+            .catch(console.error);
         }}
         closeAfterSelect={true}
         triggerVariant="plain"

@@ -127,7 +127,20 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
 
     // Create props for the icon picker
     const props = {
-      onSelect: (iconData?: IconData) => {
+      onSelect: (iconData?: IconData | Blob) => {
+        if (iconData instanceof Blob) {
+          this.model.store.blobSync
+            .set(iconData)
+            .then(blobId => {
+              this.model.props.icon$.value = {
+                type: IconType.Blob,
+                blobId,
+              };
+              this._closeIconPicker();
+            })
+            .catch(console.error);
+          return;
+        }
         this.model.props.icon$.value = iconData;
         this._closeIconPicker(); // Close the picker after selection
       },
