@@ -23,6 +23,9 @@ export function useBlobIconUrl(blobId?: string): string | undefined {
       return;
     }
     let cancelled = false;
+    // Clear the previous icon, so a changed blob id shows the fallback
+    // during the load and not the old image.
+    setUrl(undefined);
     const blobSync = workspaceService.workspace.docCollection.blobSync;
     getBlobIconUrl(blobId, id => blobSync.get(id))
       .then(resolved => {

@@ -1,7 +1,7 @@
 import { type IconData, IconRenderer, IconType } from '@affine/component';
 import { getBlobIconUrl } from '@blocksuite/affine-shared/utils';
 import * as litIcons from '@blocksuite/icons/lit';
-import { html } from 'lit';
+import { html, type TemplateResult } from 'lit';
 import { until } from 'lit/directives/until.js';
 
 import { BlobIcon } from '../../explorer-icon/views/explorer-icon';
@@ -31,7 +31,8 @@ export const getDocIconComponent = (
 
 export const getDocIconComponentLit = (
   icon: IconData,
-  getBlob?: (blobId: string) => Promise<Blob | null>
+  getBlob?: (blobId: string) => Promise<Blob | null>,
+  fallback?: () => TemplateResult
 ) => {
   return () => {
     if (icon.type === IconType.Emoji) {
@@ -45,8 +46,11 @@ export const getDocIconComponentLit = (
       </div>`;
     }
     if (icon.type === IconType.Blob && icon.blobId) {
+      // The fallback keeps the icon visible while the blob URL resolves,
+      // and when the blob is missing.
+      const placeholder = fallback ? fallback() : html``;
       if (!getBlob) {
-        return null;
+        return placeholder;
       }
       return until(
         getBlobIconUrl(icon.blobId, getBlob).then(url =>
@@ -56,9 +60,9 @@ export const getDocIconComponentLit = (
                 alt=""
                 style="width: 1em; height: 1em; object-fit: cover; border-radius: 4px; display: inline-block; vertical-align: middle;"
               />`
-            : html``
+            : placeholder
         ),
-        html``
+        placeholder
       );
     }
     return null;

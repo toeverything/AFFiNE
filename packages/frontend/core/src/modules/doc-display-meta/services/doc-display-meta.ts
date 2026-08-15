@@ -179,8 +179,13 @@ export class DocDisplayMetaService extends Service {
         const icon = get(this.explorerIconService.icon$('doc', docId))?.icon;
         if (icon) {
           return options?.type === 'lit'
-            ? getDocIconComponentLit(icon, id =>
-                this.workspaceService.workspace.docCollection.blobSync.get(id)
+            ? getDocIconComponentLit(
+                icon,
+                id =>
+                  this.workspaceService.workspace.docCollection.blobSync.get(
+                    id
+                  ),
+                getFallbackIcon()
               )
             : getDocIconComponent(icon, getFallbackIcon());
         }
