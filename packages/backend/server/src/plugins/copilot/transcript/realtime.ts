@@ -11,12 +11,14 @@ import {
 } from '../../../core/realtime';
 import { assertCopilotEnabled } from '../availability';
 import { CopilotTranscriptionReader } from './reader';
+import { CopilotTranscriptionRetryService } from './retry';
 
 @Injectable()
 export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly ac: PermissionAccess,
     private readonly transcript: CopilotTranscriptionReader,
+    private readonly retry: CopilotTranscriptionRetryService,
     private readonly registry: RealtimeRegistry,
     private readonly config: Config
   ) {}
@@ -32,6 +34,24 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
     const topicInput = z.object({
       workspaceId: z.string(),
       taskId: z.string(),
+    });
+
+    this.registry.registerRequest({
+      name: 'copilot.transcript.task.retry',
+      input: z.object({
+        workspaceId: z.string(),
+        taskId: z.string(),
+      }),
+      handle: async (user, input) => {
+        await this.assertCopilot(user.id, input.workspaceId);
+        return {
+          task: await this.retry.retryTask(
+            user.id,
+            input.workspaceId,
+            input.taskId
+          ),
+        };
+      },
     });
 
     registerRealtimeLiveQuery(this.registry, {

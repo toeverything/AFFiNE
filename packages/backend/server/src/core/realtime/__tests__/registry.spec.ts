@@ -11,6 +11,7 @@ import { PublicDocMode } from '../../../models';
 import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/embedding/realtime';
 import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript/reader';
 import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript/realtime';
+import type { CopilotTranscriptionRetryService } from '../../../plugins/copilot/transcript/retry';
 import type { CurrentUser } from '../../auth';
 import { CommentRealtimeProvider } from '../../comment/realtime';
 import { NotificationRealtimeProvider } from '../../notification/realtime';
@@ -443,6 +444,7 @@ test('front and sync realtime gateway required handlers are registered by lightw
     {} as never
   ).onModuleInit();
   new CopilotTranscriptRealtimeProvider(
+    {} as never,
     {} as never,
     {} as never,
     registry,
@@ -1058,8 +1060,13 @@ test('copilot transcript realtime provider registers task live query handlers', 
       return { id: taskId ?? blobId, status: 'finished', userId, workspaceId };
     },
   } as unknown as CopilotTranscriptionReader;
+  const retry = {
+    async retryTask(userId: string, workspaceId: string, taskId: string) {
+      return { id: taskId, status: 'running', userId, workspaceId };
+    },
+  } as unknown as CopilotTranscriptionRetryService;
 
-  new CopilotTranscriptRealtimeProvider(ac, transcript, registry, {
+  new CopilotTranscriptRealtimeProvider(ac, transcript, retry, registry, {
     copilot: { enabled: true },
   } as never).onModuleInit();
 
@@ -1077,7 +1084,22 @@ test('copilot transcript realtime provider registers task live query handlers', 
       },
     }
   );
+  t.deepEqual(
+    await registry.getRequest('copilot.transcript.task.retry').handle(user, {
+      workspaceId: 'space',
+      taskId: 'task',
+    }),
+    {
+      task: {
+        id: 'task',
+        status: 'running',
+        userId: 'u1',
+        workspaceId: 'space',
+      },
+    }
+  );
   t.deepEqual(assertions, [
+    { userId: 'u1', workspaceId: 'space', action: 'Workspace.Copilot' },
     { userId: 'u1', workspaceId: 'space', action: 'Workspace.Copilot' },
   ]);
 });

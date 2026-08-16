@@ -222,11 +222,16 @@ providerTest(
       blobId,
       recipeId: 'transcript.audio',
       recipeVersion: 'v1',
+      dispatchGeneration: 'provider-test-generation',
       inputSnapshot: payload,
       publicMeta: { sourceAudio: payload.sourceAudio, infos: payload.infos },
     });
 
-    await transcript.transcriptTask({ taskId: task.id, payload });
+    await transcript.transcriptTask({
+      taskId: task.id,
+      payload,
+      generation: 'provider-test-generation',
+    });
     const ready = await models.copilotTranscriptTask.get(task.id);
     t.is(ready?.status, 'ready');
     t.is(
