@@ -196,11 +196,7 @@ providerTest(
   'managed transcript route executes the provider-neutral job port',
   async t => {
     const { models, runtime, transcript } = t.context;
-    await assertManagedRoute(
-      runtime,
-      'transcript.audio',
-      'Transcript audio structured'
-    );
+    await assertManagedRoute(runtime, 'transcript.audio', 'Transcript audio');
     const user = await models.user.create({
       email: `copilot-provider-transcript-${randomUUID()}@affine.pro`,
     });

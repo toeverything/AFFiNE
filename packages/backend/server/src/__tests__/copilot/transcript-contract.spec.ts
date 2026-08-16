@@ -63,7 +63,7 @@ test('TranscriptPayloadSchema rejects empty payloads', t => {
 
 function createTranscriptPromptService() {
   return {
-    get: Sinon.stub().resolves({ name: 'Transcript audio structured' }),
+    get: Sinon.stub().callsFake(async name => ({ name })),
     finish: Sinon.stub().callsFake((_prompt, params) => [
       {
         role: 'user',
@@ -73,57 +73,16 @@ function createTranscriptPromptService() {
   };
 }
 
-async function buildNativeTranscriptResult(input: any, runId: string) {
-  await input.onRunCreated?.({ runId, attempt: 1 });
-  const nativeInput = { input: input.inputSnapshot };
-  return {
-    nativeInput,
-    result: {
-      sourceAudio: nativeInput.input.sourceAudio ?? null,
-      quality: nativeInput.input.quality ?? null,
-      infos: [{ url: 'about:invalid', mimeType: 'text/plain', index: 0 }],
-      sliceManifest: null,
-      normalizedSegments: [
-        {
-          speaker: 'A',
-          startSec: 5,
-          endSec: 9,
-          start: '00:00:05',
-          end: '00:00:09',
-          text: 'Kickoff',
-        },
-      ],
-      normalizedTranscript: '00:00:05 A: Kickoff',
-      summaryJson: {
-        title: 'Weekly Sync',
-        durationMinutes: 1,
-        attendees: ['A'],
-        keyPoints: ['Kickoff'],
-        actionItems: [],
-        decisions: [],
-        openQuestions: [],
-        blockers: [],
-      },
-      version: 'transcript-result-v1',
-    },
-  };
-}
-
 function createSuccessfulTranscriptBridge(
   runId: string,
   bridgeInputs: unknown[]
 ) {
   return {
-    runStream: (input: unknown) =>
+    runStream: (input: any, executor: (input: any) => Promise<any>) =>
       (async function* () {
-        const { nativeInput, result } = await buildNativeTranscriptResult(
-          input,
-          runId
-        );
-        bridgeInputs.push({
-          ...(input as Record<string, unknown>),
-          nativeInput,
-        });
+        await input.onRunCreated?.({ runId, attempt: 1 });
+        const { result } = await executor(input);
+        bridgeInputs.push(input);
         yield {
           type: 'action_done' as const,
           actionId: 'transcript.audio',
@@ -334,7 +293,7 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
       user: 'user-1',
       workspace: 'workspace-1',
       featureKind: 'transcript',
-      builtInRouteId: 'Transcript audio structured',
+      builtInRouteId: 'Transcript audio',
     }
   );
   t.is(assertRoute.callCount, 2);
@@ -468,13 +427,13 @@ for (const status of ['ready', 'settled']) {
         user: 'user-1',
         workspace: 'workspace-1',
         featureKind: 'transcript',
-        builtInRouteId: 'Transcript audio structured',
+        builtInRouteId: 'Transcript audio',
       }
     );
   });
 }
 
-test('transcriptTask runs native transcript recipe through action bridge when available', async t => {
+test('transcriptTask transcribes each audio slice and merges absolute timestamps', async t => {
   const payload = TranscriptPayloadSchema.parse({
     sourceAudio: { blobId: 'blob-1', mimeType: 'audio/opus' },
     sliceManifest: [
@@ -485,6 +444,13 @@ test('transcriptTask runs native transcript recipe through action bridge when av
         startSec: 12,
         durationSec: 30,
       },
+      {
+        index: 1,
+        fileName: 'audio-1.opus',
+        mimeType: 'audio/opus',
+        startSec: 42,
+        durationSec: 300,
+      },
     ],
     infos: [
       {
@@ -493,9 +459,62 @@ test('transcriptTask runs native transcript recipe through action bridge when av
         mimeType: 'audio/opus',
         index: 0,
       },
+      {
+        key: 'blob-1-1',
+        url: 'https://affine.fail/api/copilot/blob/user-1/workspace-1/blob-1-1',
+        mimeType: 'audio/opus',
+        index: 1,
+      },
     ],
   });
   const bridgeInputs: unknown[] = [];
+  const clock = Sinon.useFakeTimers();
+  t.teardown(() => clock.restore());
+  const structuredCalls: {
+    messages: { content?: string; attachments?: unknown[] }[];
+    options: { builtInRouteId?: string };
+    slot?: string;
+  }[] = [];
+  let transientFailure = true;
+  const generateStructuredValue = Sinon.stub().callsFake(
+    async (
+      _conditions: unknown,
+      messages: { content?: string; attachments?: unknown[] }[],
+      options: { builtInRouteId?: string },
+      _contract: unknown,
+      _filter: unknown,
+      slot?: string
+    ) => {
+      structuredCalls.push({ messages, options, slot });
+      if (options.builtInRouteId === 'Summarize the meeting structured') {
+        return {
+          value: {
+            title: 'Weekly Sync',
+            durationMinutes: 1,
+            attendees: ['A', 'B'],
+            keyPoints: ['Kickoff', 'Follow-up'],
+            actionItems: [],
+            decisions: [],
+            openQuestions: [],
+            blockers: [],
+          },
+        };
+      }
+
+      const attachment = messages
+        .flatMap(message => message.attachments ?? [])
+        .at(0) as { attachment: string };
+      if (attachment.attachment.includes('blob-1-1') && transientFailure) {
+        transientFailure = false;
+        throw new Error('upstream returned status 503: UNAVAILABLE');
+      }
+      return {
+        value: attachment.attachment.includes('blob-1-0')
+          ? [{ a: 'A', s: 5, e: 9, t: 'Kickoff' }]
+          : [{ a: 'B', s: 100, e: 500, t: 'Follow-up' }],
+      };
+    }
+  );
   const claimDispatch = Sinon.stub();
   claimDispatch.onFirstCall().resolves(true);
   claimDispatch.onSecondCall().resolves(false);
@@ -519,20 +538,24 @@ test('transcriptTask runs native transcript recipe through action bridge when av
     } as never,
     {} as never,
     {
-      presignGet: Sinon.stub().resolves(
-        'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test'
+      presignGet: Sinon.stub().callsFake(
+        async (_userId, _workspaceId, key) =>
+          `https://canary.copilotcontent.affine.pro/${key}?sig=test`
       ),
     } as never,
     {} as never,
     createTranscriptPromptService() as never,
-    createSuccessfulTranscriptBridge('run-bridge', bridgeInputs) as never
+    createSuccessfulTranscriptBridge('run-bridge', bridgeInputs) as never,
+    { generateStructuredValue } as never
   );
 
-  await service.transcriptTask({
+  const run = service.transcriptTask({
     taskId: 'task-1',
     payload,
     generation: 'generation-1',
   });
+  await clock.tickAsync(5_000);
+  await run;
   await service.transcriptTask({
     taskId: 'task-1',
     payload,
@@ -546,39 +569,63 @@ test('transcriptTask runs native transcript recipe through action bridge when av
   });
   t.like((bridgeInputs[0] as { step: Record<string, unknown> }).step, {
     slot: 'transcript.audio',
-    builtInRouteId: 'Transcript audio structured',
+    builtInRouteId: 'Transcript audio',
   });
   t.deepEqual(
     (
       bridgeInputs[0] as {
-        nativeInput: { input: { infos: unknown[] } };
+        inputSnapshot: { infos: unknown[] };
       }
-    ).nativeInput.input.infos,
+    ).inputSnapshot.infos,
     [
       {
         url: 'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test',
         mimeType: 'audio/opus',
         index: 0,
       },
+      {
+        url: 'https://canary.copilotcontent.affine.pro/blob-1-1?sig=test',
+        mimeType: 'audio/opus',
+        index: 1,
+      },
     ]
   );
-  const messages = (
-    bridgeInputs[0] as {
-      step: {
-        messages: { content?: string; attachments?: unknown[] }[];
-      };
-    }
-  ).step.messages;
-  t.false(messages[0].content?.includes('data:image/png'));
-  t.like(JSON.parse(messages[0].content ?? '{}'), {
-    infos: [{ mimeType: 'audio/opus', index: 0 }],
-  });
-  t.deepEqual(messages.at(-1)?.attachments, [
-    {
-      attachment: 'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test',
-      mimeType: 'audio/opus',
-    },
-  ]);
+  t.is(structuredCalls.length, 4);
+  const transcriptCalls = structuredCalls.filter(
+    call => call.options.builtInRouteId === 'Transcript audio'
+  );
+  t.is(transcriptCalls.length, 3);
+  t.true(transcriptCalls.every(call => call.slot === 'transcript.audio'));
+  t.deepEqual(
+    transcriptCalls.map(call => call.messages.at(-1)?.attachments),
+    [
+      [
+        {
+          attachment:
+            'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test',
+          mimeType: 'audio/opus',
+        },
+      ],
+      [
+        {
+          attachment:
+            'https://canary.copilotcontent.affine.pro/blob-1-1?sig=test',
+          mimeType: 'audio/opus',
+        },
+      ],
+      [
+        {
+          attachment:
+            'https://canary.copilotcontent.affine.pro/blob-1-1?sig=test',
+          mimeType: 'audio/opus',
+        },
+      ],
+    ]
+  );
+  t.is(
+    structuredCalls.at(-1)?.messages.at(-1)?.content,
+    '00:00:17 A: Kickoff\n00:01:42 B: Follow-up'
+  );
   t.like(completeDispatch.firstCall.args[3], {
     status: 'ready',
     errorCode: null,
@@ -592,7 +639,16 @@ test('transcriptTask runs native transcript recipe through action bridge when av
   );
   t.is(
     completeDispatch.firstCall.args[3].protectedResult.normalizedTranscript,
-    '00:00:05 A: Kickoff'
+    '00:00:17 A: Kickoff\n00:01:42 B: Follow-up'
+  );
+  t.like(
+    completeDispatch.firstCall.args[3].protectedResult.normalizedSegments[1],
+    {
+      startSec: 102,
+      endSec: 342,
+      start: '00:01:42',
+      end: '00:05:42',
+    }
   );
   t.deepEqual(
     completeDispatch.firstCall.args[3].protectedResult.infos,
@@ -626,9 +682,9 @@ test('transcriptTask fails task when native action bridge reports an error event
     {} as never,
     createTranscriptPromptService() as never,
     {
-      runStream: (input: unknown) =>
+      runStream: (input: any) =>
         (async function* () {
-          await buildNativeTranscriptResult(input, 'run-bridge');
+          await input.onRunCreated?.({ runId: 'run-bridge', attempt: 1 });
           yield {
             type: 'error' as const,
             actionId: 'transcript.audio',
