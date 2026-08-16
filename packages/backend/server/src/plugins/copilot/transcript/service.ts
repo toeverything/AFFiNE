@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { AiJobStatus } from '@prisma/client';
 
@@ -5,7 +7,6 @@ import {
   CopilotTranscriptionJobExists,
   CopilotTranscriptionJobNotFound,
   type FileUpload,
-  JobQueue,
   OnJob,
   sniffMime,
 } from '../../../base';
@@ -18,7 +19,13 @@ import { PromptService } from '../prompt';
 import { ActionRuntimeBridge } from '../runtime/action-runtime-bridge';
 import { CapabilityRuntime } from '../runtime/capability-runtime';
 import { CopilotStorage } from '../storage';
+import {
+  TRANSCRIPT_ACTION_ID,
+  TRANSCRIPT_ACTION_VERSION,
+  TRANSCRIPT_PROMPT_REF,
+} from './constants';
 import { taskToJob, type TranscriptionJob } from './job';
+import { CopilotTranscriptionRetryService } from './retry';
 import {
   TranscriptActionResultContract,
   TranscriptPayloadSchema,
@@ -30,20 +37,16 @@ import type {
 } from './types';
 import { readStream } from './utils';
 
-const TRANSCRIPT_ACTION_ID = 'transcript.audio';
-const TRANSCRIPT_PROMPT_REF = 'Transcript audio structured';
-const TRANSCRIPT_ACTION_VERSION = 'v1';
-
 @Injectable()
 export class CopilotTranscriptionService {
   constructor(
     private readonly models: Models,
-    private readonly job: JobQueue,
     private readonly storage: CopilotStorage,
     private readonly prompts: PromptService,
     private readonly actionBridge: ActionRuntimeBridge,
     private readonly runtime: CapabilityRuntime,
-    private readonly realtime: RealtimePublisher
+    private readonly realtime: RealtimePublisher,
+    private readonly retry: CopilotTranscriptionRetryService
   ) {}
 
   private buildTaskPublicMeta(payload: TranscriptionPayloadV2) {
@@ -198,69 +201,27 @@ export class CopilotTranscriptionService {
     );
     const infos = await this.persistUploads(userId, workspaceId, blobId, blobs);
     const payload = this.createCanonicalPayload(blobId, infos, input);
+    const generation = randomUUID();
     const task = await this.models.copilotTranscriptTask.create({
       userId,
       workspaceId,
       blobId,
       recipeId: TRANSCRIPT_ACTION_ID,
       recipeVersion: TRANSCRIPT_ACTION_VERSION,
+      dispatchGeneration: generation,
       inputSnapshot: payload,
       publicMeta: this.buildTaskPublicMeta(payload),
+      protectedResult: payload,
     });
 
-    await this.job.add('copilot.transcript.task.submit', {
-      taskId: task.id,
-      payload,
-    });
-    await this.models.copilotTranscriptTask.markRunning(task.id);
-    this.publishTaskChanged(workspaceId, task.id, AiJobStatus.running);
+    await this.retry.enqueuePendingTask(task.id, payload, generation, null);
+    this.publishTaskChanged(workspaceId, task.id, AiJobStatus.pending);
 
-    return { id: task.id, status: AiJobStatus.running, infos };
+    return { id: task.id, status: AiJobStatus.pending, infos };
   }
 
   async retryTask(userId: string, workspaceId: string, taskId: string) {
-    const task = await this.models.copilotTranscriptTask.getWithUser(
-      userId,
-      workspaceId,
-      taskId
-    );
-    if (!task) {
-      throw new CopilotTranscriptionJobNotFound();
-    }
-    if (task.status === 'ready' || task.status === 'settled') {
-      throw new BadRequestException(
-        'Ready or settled transcript tasks cannot be retried'
-      );
-    }
-    if (task.status !== 'failed') {
-      throw new BadRequestException(
-        'Only failed transcript tasks can be retried'
-      );
-    }
-
-    const payload = TranscriptPayloadSchema.parse(task.protectedResult);
-    await this.runtime.assertRoute(
-      'transcript.audio',
-      {},
-      {
-        user: userId,
-        workspace: workspaceId,
-        featureKind: 'transcript',
-        builtInRouteId: TRANSCRIPT_PROMPT_REF,
-      }
-    );
-    await this.job.add('copilot.transcript.task.submit', {
-      taskId,
-      payload,
-      retryOf: task.actionRunId ?? undefined,
-    });
-    await this.models.copilotTranscriptTask.markRunning(taskId);
-    this.publishTaskChanged(workspaceId, taskId, AiJobStatus.running);
-    return {
-      id: taskId,
-      status: AiJobStatus.running,
-      infos: payload.infos ?? undefined,
-    };
+    return await this.retry.retryTask(userId, workspaceId, taskId);
   }
 
   async settleTask(userId: string, workspaceId: string, taskId: string) {
@@ -308,14 +269,34 @@ export class CopilotTranscriptionService {
   async transcriptTask({
     taskId,
     payload,
+    generation: queuedGeneration,
     retryOf,
   }: Jobs['copilot.transcript.task.submit']) {
     const task = await this.models.copilotTranscriptTask.get(taskId);
     if (!task) {
       throw new CopilotTranscriptionJobNotFound();
     }
+    let actionRunId = retryOf ?? null;
+    const generation = queuedGeneration ?? randomUUID();
+    if (
+      !queuedGeneration &&
+      !(await this.models.copilotTranscriptTask.adoptLegacyDispatch(
+        taskId,
+        actionRunId,
+        generation
+      ))
+    ) {
+      return;
+    }
+    const claimed = await this.models.copilotTranscriptTask.claimDispatch(
+      taskId,
+      generation,
+      actionRunId
+    );
+    if (!claimed) {
+      return;
+    }
 
-    let actionRunId: string | null = null;
     try {
       let bridgeFailed = false;
       let bridgeError = 'transcript native recipe failed';
@@ -334,7 +315,17 @@ export class CopilotTranscriptionService {
         retryOf: retryOf ?? null,
         inputSnapshot: runtimePayload,
         onRunCreated: async ({ runId }) => {
-          await this.models.copilotTranscriptTask.markRunning(taskId, runId);
+          const attached =
+            await this.models.copilotTranscriptTask.attachActionRun(
+              taskId,
+              generation,
+              actionRunId,
+              runId
+            );
+          if (!attached) {
+            throw new Error('stale transcript dispatch generation');
+          }
+          actionRunId = runId;
           this.publishTaskChanged(
             task.workspaceId,
             taskId,
@@ -355,7 +346,6 @@ export class CopilotTranscriptionService {
           responseContract: TranscriptActionResultContract,
         },
       })) {
-        actionRunId = event.runId;
         if (event.type === 'error' || event.status === 'failed') {
           bridgeFailed = true;
           bridgeError = event.errorMessage ?? event.errorCode ?? bridgeError;
@@ -371,29 +361,43 @@ export class CopilotTranscriptionService {
         ...TranscriptPayloadSchema.parse(finalResult),
         infos: payload.infos,
       } satisfies TranscriptionPayloadV2;
-      await this.models.copilotTranscriptTask.complete(taskId, {
-        status: 'ready',
-        actionRunId,
-        publicMeta: this.buildTaskPublicMeta(parsedResult),
-        protectedResult: parsedResult,
-        errorCode: null,
-      });
-      this.publishTaskChanged(task.workspaceId, taskId, AiJobStatus.finished);
+      const completed =
+        await this.models.copilotTranscriptTask.completeDispatch(
+          taskId,
+          generation,
+          actionRunId,
+          {
+            status: 'ready',
+            publicMeta: this.buildTaskPublicMeta(parsedResult),
+            protectedResult: parsedResult,
+            errorCode: null,
+          }
+        );
+      if (completed) {
+        this.publishTaskChanged(task.workspaceId, taskId, AiJobStatus.finished);
+      }
     } catch (error) {
-      await this.models.copilotTranscriptTask.complete(taskId, {
-        status: 'failed',
-        actionRunId,
-        publicMeta: this.buildTaskPublicMeta(payload),
-        protectedResult: payload,
-        errorCode:
-          error instanceof Error ? error.message : 'transcript_task_failed',
-      });
-      this.publishTaskChanged(
-        task.workspaceId,
+      const errorCode =
+        error instanceof Error ? error.message : 'transcript_task_failed';
+      const failed = await this.models.copilotTranscriptTask.completeDispatch(
         taskId,
-        AiJobStatus.failed,
-        error instanceof Error ? error.message : 'transcript_task_failed'
+        generation,
+        actionRunId,
+        {
+          status: 'failed',
+          publicMeta: this.buildTaskPublicMeta(payload),
+          protectedResult: payload,
+          errorCode,
+        }
       );
+      if (failed) {
+        this.publishTaskChanged(
+          task.workspaceId,
+          taskId,
+          AiJobStatus.failed,
+          errorCode
+        );
+      }
       throw error;
     }
   }
