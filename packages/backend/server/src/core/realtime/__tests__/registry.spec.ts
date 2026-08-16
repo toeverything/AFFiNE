@@ -1065,7 +1065,6 @@ test('copilot transcript realtime provider registers task live query handlers', 
       return { id: taskId, status: 'running', userId, workspaceId };
     },
   } as unknown as CopilotTranscriptionRetryService;
-
   new CopilotTranscriptRealtimeProvider(ac, transcript, retry, registry, {
     copilot: { enabled: true },
   } as never).onModuleInit();
