@@ -177,6 +177,9 @@ private extension ChatManager {
       timeoutInterval: 10
     )
     request.setValue("close", forHTTPHeaderField: "Connection")
+    // The SSE stream bypasses the Apollo client, so attach the Bearer token the
+    // same way QLService authorizes its GraphQL/REST traffic.
+    request = QLService.shared.authorized(request)
 
     let closable = ClosableTask(detachedTask: .detached(operation: {
       let eventSource = EventSource()
