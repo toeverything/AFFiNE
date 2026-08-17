@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { AiJobStatus } from '@prisma/client';
 
 import {
@@ -58,9 +58,13 @@ import { readStream } from './utils';
 
 const TRANSCRIPT_SLICE_CONCURRENCY = 2;
 const TRANSCRIPT_RETRY_DELAYS = [5_000, 15_000];
+const MAX_RECOVERABLE_TIMESTAMP_RATIO = 2;
+const MIN_MILLISECOND_TIMESTAMP_RATIO = 100;
 
 @Injectable()
 export class CopilotTranscriptionService {
+  private readonly logger = new Logger(CopilotTranscriptionService.name);
+
   constructor(
     private readonly models: Models,
     private readonly storage: CopilotStorage,
@@ -236,41 +240,70 @@ export class CopilotTranscriptionService {
     const sliceIndex = info.index ?? fallbackIndex;
     const response = TranscriptionResponseSchema.parse(output.value);
     const timestamps = response.flatMap(segment => [segment.s, segment.e]);
-    const maxTimestamp = Math.max(0, ...timestamps);
-    const mmssTimestamps = timestamps.map(timestamp => {
-      const minutes = Math.floor(timestamp / 100);
-      const seconds = timestamp - minutes * 100;
-      return seconds < 60 ? minutes * 60 + seconds : null;
-    });
-    const usesMmss =
-      durationSec !== undefined &&
-      maxTimestamp > durationSec + 5 &&
-      mmssTimestamps.every(
-        timestamp => timestamp !== null && timestamp <= durationSec + 5
-      );
-    if (
-      durationSec !== undefined &&
-      maxTimestamp > durationSec + 5 &&
-      !usesMmss
-    ) {
-      throw new Error('Transcript slice timestamps exceed audio duration');
+    const maxTs = Math.max(0, ...timestamps);
+    const maxAllowed = durationSec === undefined ? Infinity : durationSec + 5;
+    let scale = 1;
+    let convertMmss = false;
+    if (durationSec !== undefined && maxTs > maxAllowed) {
+      const mmssTimestamps = timestamps.map(timestamp => {
+        const minutes = Math.floor(timestamp / 100);
+        const seconds = timestamp - minutes * 100;
+        return seconds < 60 ? minutes * 60 + seconds : null;
+      });
+      if (mmssTimestamps.every(ts => ts !== null && ts <= maxAllowed)) {
+        convertMmss = true;
+      } else if (
+        durationSec > 0 &&
+        maxTs >= durationSec * MIN_MILLISECOND_TIMESTAMP_RATIO &&
+        maxTs / 1000 <= maxAllowed
+      ) {
+        scale = 0.001;
+      } else if (maxTs <= durationSec * MAX_RECOVERABLE_TIMESTAMP_RATIO) {
+        scale = durationSec / maxTs;
+      } else {
+        scale = 1;
+      }
     }
 
-    return response.map((segment, index) => {
-      const startSec = usesMmss
-        ? (mmssTimestamps[index * 2] ?? segment.s)
-        : segment.s;
-      const endSec = usesMmss
-        ? (mmssTimestamps[index * 2 + 1] ?? segment.e)
-        : segment.e;
+    let correctedTimestamps = 0;
+    const normalizeTimestamp = (timestamp: number, index: number) => {
+      const minutes = Math.floor(timestamp / 100);
+      const seconds = timestamp - minutes * 100;
+      const converted = convertMmss
+        ? minutes * 60 + seconds
+        : timestamp * scale;
+      const bounded =
+        durationSec === undefined
+          ? Math.max(0, converted)
+          : Math.min(Math.max(converted, 0), durationSec);
+      if (bounded !== timestamp) correctedTimestamps += 1;
+      if (!Number.isFinite(bounded)) {
+        this.logger.warn(
+          `Invalid timestamp at position ${index} in transcript slice ${sliceIndex}`
+        );
+        return 0;
+      }
+      return bounded;
+    };
+
+    const segments = response.map((segment, index) => {
+      const startSec = normalizeTimestamp(segment.s, index * 2);
+      const endSec = normalizeTimestamp(segment.e, index * 2 + 1);
       return {
         sliceIndex,
         speaker: segment.a,
-        startSec: Math.min(startSec, durationSec ?? startSec) + offset,
-        endSec: Math.min(endSec, durationSec ?? endSec) + offset,
+        startSec: startSec + offset,
+        endSec: endSec + offset,
         text: segment.t,
       };
     });
+
+    if (correctedTimestamps > 0) {
+      this.logger.warn(
+        `Normalized ${correctedTimestamps} out-of-range transcript timestamps for slice ${sliceIndex} (duration=${durationSec ?? 'unknown'}s, scale=${scale}, mmss=${convertMmss})`
+      );
+    }
+    return segments;
   }
 
   private async generateStructuredValue(
