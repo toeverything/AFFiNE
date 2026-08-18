@@ -39,9 +39,9 @@ export const DeleteAccount = ({
                   profile.isLoading$,
                 ]).pipe(
                   map(([info, isLoading]) =>
-                    isLoading || info === null
+                    isLoading && info === null
                       ? null
-                      : !!info.isTeam && !!info.isOwner
+                      : !!info?.isTeam && !!info?.isOwner
                   )
                 );
               })

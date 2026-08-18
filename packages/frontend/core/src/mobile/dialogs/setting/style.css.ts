@@ -163,6 +163,7 @@ export const promoCardTitle = style({
 export const promoCardDescription = style({
   display: 'block',
   width: '100%',
+  boxSizing: 'border-box',
   maxWidth: 'none',
   paddingRight: 96,
   fontSize: 16,

@@ -9,22 +9,35 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import type * as Infra from '@toeverything/infra';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+
+type ProfileInfo = {
+  isOwner?: boolean;
+  isTeam?: boolean;
+};
+
+type SubjectLike<T> = {
+  next: (value: T) => void;
+};
 
 const deleteAccount = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const notifyError = vi.hoisted(() => vi.fn());
 const trackDeleteAccount = vi.hoisted(() => vi.fn());
-const liveDataFrom = vi.hoisted(() =>
-  vi.fn(() => ({ __type: 'team-owner-live-data' }))
-);
+const liveDataFrom = vi.hoisted(() => vi.fn());
 const accountState = vi.hoisted(() => ({
   value: {
     email: 'user@example.com',
     label: 'User',
   },
 }));
-const teamOwnerState = vi.hoisted(() => ({ value: false as boolean | null }));
+const workspaceState = vi.hoisted(() => ({
+  workspaces$: null as SubjectLike<unknown[]> | null,
+  profile$: null as SubjectLike<ProfileInfo | null> | null,
+  profileLoading$: null as SubjectLike<boolean> | null,
+  revalidate: null as { mockClear: () => void } | null,
+}));
 const authSessionAccountStream = vi.hoisted(() =>
   Symbol('authSessionAccount$')
 );
@@ -55,22 +68,21 @@ vi.mock('@affine/component', () => ({
         <div>{title}</div>
         <div>{description}</div>
         {children}
-        <button
-          onClick={event => {
-            if (cancelButtonOptions?.onClick) {
-              cancelButtonOptions.onClick(event);
-              return;
-            }
-            if (onCancel !== false) {
-              onCancel?.();
-            }
-            if (!event.defaultPrevented) {
-              onOpenChange?.(false);
-            }
-          }}
-        >
-          {cancelText}
-        </button>
+        {onCancel !== false ? (
+          <button
+            onClick={event => {
+              cancelButtonOptions?.onClick?.(event);
+              if (!event.defaultPrevented) {
+                onCancel?.();
+              }
+              if (!event.defaultPrevented) {
+                onOpenChange?.(false);
+              }
+            }}
+          >
+            {cancelText}
+          </button>
+        ) : null}
         <button
           disabled={confirmButtonOptions?.disabled}
           onClick={event => {
@@ -137,7 +149,26 @@ vi.mock('@affine/track', () => ({
   },
 }));
 
-vi.mock('@toeverything/infra', () => {
+vi.mock('@toeverything/infra', async () => {
+  const actual = await vi.importActual<typeof Infra>('@toeverything/infra');
+  const { BehaviorSubject } = await import('rxjs');
+
+  const workspaces$ = new BehaviorSubject<unknown[]>([]);
+  const profile$ = new BehaviorSubject<ProfileInfo | null>(null);
+  const profileLoading$ = new BehaviorSubject(false);
+  const profile = {
+    profile$,
+    isLoading$: profileLoading$,
+    revalidate: vi.fn(),
+  };
+  workspaceState.workspaces$ = workspaces$;
+  workspaceState.profile$ = profile$;
+  workspaceState.profileLoading$ = profileLoading$;
+  workspaceState.revalidate = profile.revalidate;
+  liveDataFrom.mockImplementation((source, initialValue) =>
+    actual.LiveData.from(source, initialValue)
+  );
+
   const authService = {
     session: {
       ['account$']: authSessionAccountStream,
@@ -157,11 +188,9 @@ vi.mock('@toeverything/infra', () => {
   };
   const workspacesService = {
     list: {
-      ['workspaces$']: {
-        pipe: vi.fn(() => ({ __type: 'workspaces-observable' })),
-      },
+      ['workspaces$']: workspaces$,
     },
-    getProfile: vi.fn(),
+    getProfile: vi.fn(() => profile),
   };
 
   return {
@@ -172,13 +201,8 @@ vi.mock('@toeverything/infra', () => {
       if (source === authSessionAccountStream) {
         return accountState.value;
       }
-      if (
-        typeof source === 'object' &&
-        source !== null &&
-        '__type' in source &&
-        (source as { __type?: string }).__type === 'team-owner-live-data'
-      ) {
-        return teamOwnerState.value;
+      if (typeof source === 'object' && source !== null && 'value' in source) {
+        return (source as { value: unknown }).value;
       }
       return undefined;
     },
@@ -225,11 +249,14 @@ describe('DeleteAccount mobile flow', () => {
     notifyError.mockClear();
     trackDeleteAccount.mockClear();
     liveDataFrom.mockClear();
+    workspaceState.workspaces$?.next([]);
+    workspaceState.profile$?.next(null);
+    workspaceState.profileLoading$?.next(false);
+    workspaceState.revalidate?.mockClear();
     accountState.value = {
       email: 'user@example.com',
       label: 'User',
     };
-    teamOwnerState.value = false;
     deleteAccount.mockResolvedValue(undefined);
   });
 
@@ -322,10 +349,18 @@ describe('DeleteAccount mobile flow', () => {
       expect(notifyError).toHaveBeenCalledWith(error);
     });
     expect(trackDeleteAccount).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {
+          name: 'com.affine.setting.account.delete.confirm-button',
+        })
+      ).not.toHaveProperty('disabled', true);
+    });
   });
 
   test('blocks account deletion for team workspace owners', () => {
-    teamOwnerState.value = true;
+    workspaceState.workspaces$?.next([{ id: 'team-workspace' }]);
+    workspaceState.profile$?.next({ isTeam: true, isOwner: true });
 
     render(<DeleteAccount />);
 
@@ -343,10 +378,12 @@ describe('DeleteAccount mobile flow', () => {
         'com.affine.setting.account.delete.email-confirm-title'
       )
     ).toBeNull();
+    expect(workspaceState.revalidate).toHaveBeenCalled();
   });
 
   test('hides account deletion until workspace ownership is known', () => {
-    teamOwnerState.value = null;
+    workspaceState.workspaces$?.next([{ id: 'workspace' }]);
+    workspaceState.profileLoading$?.next(true);
 
     render(<DeleteAccount />);
 
@@ -355,5 +392,17 @@ describe('DeleteAccount mobile flow', () => {
         name: 'com.affine.mobile.setting.others.delete-account',
       })
     ).toBeNull();
+  });
+
+  test('keeps account deletion available after a failed profile load', () => {
+    workspaceState.workspaces$?.next([{ id: 'workspace' }]);
+
+    render(<DeleteAccount />);
+
+    expect(
+      screen.getByRole('button', {
+        name: 'com.affine.mobile.setting.others.delete-account',
+      })
+    ).toBeTruthy();
   });
 });
