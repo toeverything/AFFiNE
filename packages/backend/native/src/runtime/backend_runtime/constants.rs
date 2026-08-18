@@ -1,5 +1,3 @@
-pub(super) const BYOK_LOCAL_LEASE_ACTIVE_PURPOSE: &str = "copilot_byok_local_lease:active";
-pub(super) const BYOK_LOCAL_LEASE_PURPOSE: &str = "copilot_byok_local_lease";
 pub(super) const MAGIC_LINK_OTP_PURPOSE: &str = "magic_link_otp";
 pub(super) const MAX_MAGIC_LINK_OTP_ATTEMPTS: i32 = 10;
 pub(super) const WORKSPACE_INVITE_LINK_ID_PURPOSE: &str = "workspace_invite_link:id";

@@ -6,6 +6,7 @@ import {
   type ToolEvent,
   ToolEventSchema,
 } from '../runtime/contracts/runtime-event-contract';
+import { TurnScopeSnapshotSchema } from '../runtime/contracts/shared';
 
 const CanonicalDateSchema = z.coerce.date();
 
@@ -35,6 +36,7 @@ export const TurnSchema = z
     renderTrace: z.array(StreamObjectSchema).default([]),
     toolEvents: z.array(ToolEventSchema).default([]),
     metadata: z.record(z.string(), z.any()).default({}),
+    scopeSnapshot: TurnScopeSnapshotSchema.nullable().optional(),
     createdAt: CanonicalDateSchema,
   })
   .strict();

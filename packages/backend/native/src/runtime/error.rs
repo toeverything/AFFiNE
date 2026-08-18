@@ -1,6 +1,6 @@
 use napi::{Error, Status};
 
-use super::storage_runtime::object_storage::error::ObjectStorageError;
+use super::object_storage::error::ObjectStorageError;
 
 pub(crate) type RuntimeResult<T> = std::result::Result<T, RuntimeError>;
 

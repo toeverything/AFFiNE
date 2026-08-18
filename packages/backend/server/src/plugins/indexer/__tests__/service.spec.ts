@@ -2044,7 +2044,6 @@ test('should list doc ids work', async t => {
 // #region indexDoc()
 
 test('should index doc work', async t => {
-  const count = module.queue.count('copilot.embedding.updateDoc');
   const docSnapshot = await module.create(Mockers.DocSnapshot, {
     workspaceId: workspace.id,
     user,
@@ -2092,7 +2091,16 @@ test('should index doc work', async t => {
       ],
     },
     options: {
-      fields: ['workspaceId', 'docId', 'blockId', 'content', 'flavour'],
+      fields: [
+        'workspaceId',
+        'docId',
+        'blockId',
+        'unitId',
+        'projectionVersion',
+        'sourceHash',
+        'content',
+        'flavour',
+      ],
       highlights: [
         {
           field: 'content',
@@ -2107,10 +2115,26 @@ test('should index doc work', async t => {
   });
 
   t.is(result2.nodes.length, 2);
-  t.snapshot(
-    result2.nodes.map(node => omit(node.fields, ['workspaceId', 'docId']))
+  t.true(
+    result2.nodes.every(
+      node =>
+        node.fields.unitId.length === 1 &&
+        node.fields.projectionVersion[0] === 1 &&
+        node.fields.sourceHash.length === 1
+    )
   );
-  t.is(module.queue.count('copilot.embedding.updateDoc'), count + 1);
+  t.is(new Set(result2.nodes.map(node => node.fields.sourceHash[0])).size, 1);
+  t.snapshot(
+    result2.nodes.map(node =>
+      omit(node.fields, [
+        'workspaceId',
+        'docId',
+        'unitId',
+        'projectionVersion',
+        'sourceHash',
+      ])
+    )
+  );
 });
 // #endregion
 

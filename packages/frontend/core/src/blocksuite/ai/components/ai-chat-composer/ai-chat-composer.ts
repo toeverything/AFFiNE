@@ -2,9 +2,9 @@ import './ai-chat-composer-tip';
 
 import type {
   AIDraftService,
+  AIModelService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import type {
   ServerService,
   SubscriptionService,
@@ -129,13 +129,13 @@ export class AIChatComposer extends SignalWatcher(
   accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
   accessor subscriptionService!: SubscriptionService;
-
-  @property({ attribute: false })
-  accessor aiModelService!: AIModelService;
 
   @property({ attribute: false })
   accessor onAISubscribe!: () => Promise<void>;
@@ -145,9 +145,6 @@ export class AIChatComposer extends SignalWatcher(
 
   @state()
   accessor isChipsCollapsed = false;
-
-  @state()
-  accessor embeddingCompleted = false;
 
   override render() {
     return html`
@@ -183,14 +180,13 @@ export class AIChatComposer extends SignalWatcher(
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .aiDraftService=${this.aiDraftService}
         .aiToolsConfigService=${this.aiToolsConfigService}
+        .aiModelService=${this.aiModelService}
         .notificationService=${this.notificationService}
         .subscriptionService=${this.subscriptionService}
-        .aiModelService=${this.aiModelService}
         .onAISubscribe=${this.onAISubscribe}
         .portalContainer=${this.portalContainer}
         .onChatSuccess=${this.onChatSuccess}
         .trackOptions=${this.trackOptions}
-        .isContextProcessing=${this.isContextProcessing}
       ></ai-chat-input>
       <div class="chat-panel-footer">
         <ai-chat-composer-tip
@@ -206,17 +202,16 @@ export class AIChatComposer extends SignalWatcher(
   override connectedCallback() {
     super.connectedCallback();
     this._disposables.add(
-      AIAppEvents.requestOpenWithChat.subscribe(this.beforeChatContextSend)
+      AIAppEvents.requestOpenWithChat.subscribe(this.beforeChatSourceSend)
     );
     this._disposables.add(
-      AIAppEvents.requestSendWithChat.subscribe(this.beforeChatContextSend)
+      AIAppEvents.requestSendWithChat.subscribe(this.beforeChatSourceSend)
     );
     this.initComposer().catch(console.error);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
-    this.runtime?.dispatch({ type: 'stopContextPolling' }).catch(console.error);
   }
 
   protected override willUpdate(changedProperties: PropertyValues): void {
@@ -240,7 +235,7 @@ export class AIChatComposer extends SignalWatcher(
     }
   }
 
-  private readonly beforeChatContextSend = (
+  private readonly beforeChatSourceSend = (
     params: AISendParams | AIChatParams | null
   ) => {
     if (!params) return;
@@ -265,19 +260,15 @@ export class AIChatComposer extends SignalWatcher(
     }
   };
 
-  private get isContextProcessing() {
-    return this.chips.some(chip => chip.state === 'processing');
-  }
-
   private readonly toChipState = (state?: string): ChipState => {
     if (state === 'finished' || state === 'processing' || state === 'failed') {
       return state;
     }
-    return 'processing';
+    return 'finished';
   };
 
   private readonly runtimeItemToChip = (
-    item: AIChatSnapshot['composer']['context']['items'][number]
+    item: AIChatSnapshot['composer']['scopeSelection']['items'][number]
   ): ChatChip => {
     switch (item.kind) {
       case 'doc':
@@ -318,15 +309,20 @@ export class AIChatComposer extends SignalWatcher(
           createdAt: item.createdAt,
           tooltip: item.tooltip,
         };
+      case 'favorite':
+        return {
+          sourceId: item.favoriteId,
+          name: item.name ?? 'Favorites',
+          state: 'finished',
+        };
     }
   };
 
   private readonly syncChipsFromRuntimeSnapshot = (
     snapshot = this.runtimeSnapshot
   ) => {
-    const context = snapshot?.composer.context;
+    const context = snapshot?.composer.scopeSelection;
     if (!context) return;
-    this.embeddingCompleted = context.embeddingCompleted;
     const selectedChips = this.chips.filter(isSelectedContextChip);
     this.updateChips([
       ...context.items.map(this.runtimeItemToChip),
@@ -340,9 +336,14 @@ export class AIChatComposer extends SignalWatcher(
 
   private readonly chipToContextItem = (
     chip: ChatChip
-  ): AIChatSnapshot['composer']['context']['items'][number] | null => {
+  ): AIChatSnapshot['composer']['scopeSelection']['items'][number] | null => {
     if (isDocChip(chip)) {
-      return { kind: 'doc', docId: chip.docId, state: chip.state };
+      return {
+        kind: 'doc',
+        docId: chip.docId,
+        name: this.docDisplayConfig.getTitle(chip.docId),
+        state: chip.state,
+      };
     }
     if (isFileChip(chip)) {
       return {
@@ -357,6 +358,7 @@ export class AIChatComposer extends SignalWatcher(
       return {
         kind: 'tag',
         tagId: chip.tagId,
+        name: this.docDisplayConfig.getTagTitle(chip.tagId),
         docIds: this.docDisplayConfig.getTagPageIds(chip.tagId),
         state: chip.state,
       };
@@ -365,6 +367,7 @@ export class AIChatComposer extends SignalWatcher(
       return {
         kind: 'collection',
         collectionId: chip.collectionId,
+        name: this.docDisplayConfig.getCollectionTitle(chip.collectionId),
         docIds: this.docDisplayConfig.getCollectionPageIds(chip.collectionId),
         state: chip.state,
       };
@@ -376,7 +379,6 @@ export class AIChatComposer extends SignalWatcher(
   };
 
   private readonly initChips = async () => {
-    await this.runtime?.dispatch({ type: 'loadContext' });
     this.syncChipsFromRuntime();
   };
 
@@ -417,14 +419,13 @@ export class AIChatComposer extends SignalWatcher(
       return;
     }
     this.updateChips([...this.chips, chip]);
-    await this.addToContext(chip);
-    await this.pollContextDocsAndFiles();
+    await this.addSource(chip);
   };
 
   private readonly removeChip = async (chip: ChatChip) => {
     const chips = omitChip(this.chips, chip);
     this.updateChips(chips);
-    await this.removeFromContext(chip);
+    await this.removeSource(chip);
   };
 
   private readonly addSelectedContextChip = async () => {
@@ -444,7 +445,7 @@ export class AIChatComposer extends SignalWatcher(
         this.addChip(
           {
             docId,
-            state: 'processing',
+            state: 'finished',
           },
           true
         )
@@ -454,7 +455,7 @@ export class AIChatComposer extends SignalWatcher(
           {
             sourceId: attachment.sourceId,
             name: attachment.name,
-            state: 'processing',
+            state: 'finished',
           },
           true
         )
@@ -469,7 +470,7 @@ export class AIChatComposer extends SignalWatcher(
     }
   };
 
-  private readonly addToContext = async (chip: ChatChip) => {
+  private readonly addSource = async (chip: ChatChip) => {
     if (isDocChip(chip)) {
       return await this.addDocToContext(chip);
     }
@@ -491,8 +492,13 @@ export class AIChatComposer extends SignalWatcher(
   private readonly addDocToContext = async (chip: DocChip) => {
     try {
       await this.runtime?.dispatch({
-        type: 'addContextItem',
-        item: { kind: 'doc', docId: chip.docId, state: chip.state },
+        type: 'addScopeSelector',
+        item: {
+          kind: 'doc',
+          docId: chip.docId,
+          name: this.docDisplayConfig.getTitle(chip.docId),
+          state: chip.state,
+        },
       });
       this.syncChipsFromRuntime();
     } catch (e) {
@@ -506,7 +512,7 @@ export class AIChatComposer extends SignalWatcher(
   private readonly addFileToContext = async (chip: FileChip) => {
     try {
       await this.runtime?.dispatch({
-        type: 'addContextItem',
+        type: 'addScopeSelector',
         item: {
           kind: 'file',
           file: chip.file,
@@ -527,10 +533,11 @@ export class AIChatComposer extends SignalWatcher(
   private readonly addTagToContext = async (chip: TagChip) => {
     try {
       await this.runtime?.dispatch({
-        type: 'addContextItem',
+        type: 'addScopeSelector',
         item: {
           kind: 'tag',
           tagId: chip.tagId,
+          name: this.docDisplayConfig.getTagTitle(chip.tagId),
           docIds: this.docDisplayConfig.getTagPageIds(chip.tagId),
           state: chip.state,
         },
@@ -547,10 +554,11 @@ export class AIChatComposer extends SignalWatcher(
   private readonly addCollectionToContext = async (chip: CollectionChip) => {
     try {
       await this.runtime?.dispatch({
-        type: 'addContextItem',
+        type: 'addScopeSelector',
         item: {
           kind: 'collection',
           collectionId: chip.collectionId,
+          name: this.docDisplayConfig.getCollectionTitle(chip.collectionId),
           docIds: this.docDisplayConfig.getCollectionPageIds(chip.collectionId),
           state: chip.state,
         },
@@ -570,7 +578,7 @@ export class AIChatComposer extends SignalWatcher(
   ) => {
     try {
       await this.runtime?.dispatch({
-        type: 'addContextItem',
+        type: 'addScopeSelector',
         item: { kind: 'blob', blobId: chip.sourceId, state: chip.state },
       });
       this.syncChipsFromRuntime();
@@ -583,9 +591,7 @@ export class AIChatComposer extends SignalWatcher(
     }
   };
 
-  private readonly removeFromContext = async (
-    chip: ChatChip
-  ): Promise<boolean> => {
+  private readonly removeSource = async (chip: ChatChip): Promise<boolean> => {
     if (isSelectedContextChip(chip)) {
       this.updateContext({
         ...this.chatContextValue,
@@ -597,7 +603,7 @@ export class AIChatComposer extends SignalWatcher(
     const item = this.chipToContextItem(chip);
     if (!item) return true;
     try {
-      await this.runtime?.dispatch({ type: 'removeContextItem', item });
+      await this.runtime?.dispatch({ type: 'removeScopeSelector', item });
       this.syncChipsFromRuntime();
       return true;
     } catch {
@@ -621,30 +627,10 @@ export class AIChatComposer extends SignalWatcher(
     });
   };
 
-  private readonly pollContextDocsAndFiles = async () => {
-    if (!this.runtime) return;
-    await this.runtime.dispatch({ type: 'startContextPolling' });
-    this.syncChipsFromRuntime();
-  };
-
-  private readonly pollEmbeddingStatus = async () => {
-    if (!this.runtime) return;
-    await this.runtime.dispatch({ type: 'pollEmbeddingStatus' });
-    this.syncChipsFromRuntime();
-  };
-
   private readonly initComposer = async () => {
     const userId = AIAppEvents.userInfo.value?.id;
     if (!userId || !this.session) return;
 
     await this.initChips();
-    const needPoll = this.chips.some(
-      chip =>
-        chip.state === 'processing' || isTagChip(chip) || isCollectionChip(chip)
-    );
-    if (needPoll) {
-      await this.pollContextDocsAndFiles();
-    }
-    await this.pollEmbeddingStatus();
   };
 }

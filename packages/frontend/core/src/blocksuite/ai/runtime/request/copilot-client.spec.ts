@@ -3,7 +3,13 @@
  */
 import { describe, expect, test, vi } from 'vitest';
 
-import { CopilotClient, Endpoint } from './copilot-client';
+import {
+  SelectedSourcesFailedError,
+  SelectedSourcesLimitExceededError,
+  SelectedSourcesProcessingError,
+  SelectedSourcesUnavailableError,
+} from '../../provider/error';
+import { CopilotClient, Endpoint, resolveError } from './copilot-client';
 
 describe('CopilotClient action streams', () => {
   test('routes action endpoint outside the deprecated workflow path', () => {
@@ -48,5 +54,29 @@ describe('CopilotClient action streams', () => {
       { workspaceId: 'workspace-1' },
       { timeoutMs: 10000 }
     );
+
+    expect(
+      resolveError({
+        name: 'COPILOT_SELECTED_SOURCES_PROCESSING',
+        type: 'BAD_REQUEST',
+        message: 'processing',
+      })
+    ).toBeInstanceOf(SelectedSourcesProcessingError);
+    for (const [name, expected] of [
+      ['COPILOT_SELECTED_SOURCES_FAILED', SelectedSourcesFailedError],
+      ['COPILOT_SELECTED_SOURCES_UNAVAILABLE', SelectedSourcesUnavailableError],
+      [
+        'COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED',
+        SelectedSourcesLimitExceededError,
+      ],
+    ] as const) {
+      expect(
+        resolveError({
+          name,
+          type: 'INTERNAL_SERVER_ERROR',
+          message: 'unavailable',
+        })
+      ).toBeInstanceOf(expected);
+    }
   });
 });

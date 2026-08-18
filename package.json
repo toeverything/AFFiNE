@@ -22,14 +22,12 @@
     "af": "r affine.ts",
     "dev": "yarn affine dev",
     "build": "yarn affine build",
-    "lint:eslint": "cross-env NODE_OPTIONS=\"--max-old-space-size=16384\" eslint --report-unused-disable-directives-severity=off . --cache",
-    "lint:eslint:fix": "yarn lint:eslint --fix --fix-type problem,suggestion,layout",
-    "lint:prettier": "prettier --ignore-unknown --cache --check .",
-    "lint:prettier:fix": "prettier --ignore-unknown --cache --write .",
+    "lint:format": "oxfmt --check .",
+    "lint:format:fix": "oxfmt --write .",
     "lint:ox": "oxlint --deny-warnings",
     "lint:ox:fix": "yarn lint:ox --fix",
-    "lint": "yarn lint:ox && yarn lint:eslint && yarn lint:prettier",
-    "lint:fix": "yarn lint:ox:fix && yarn lint:eslint:fix && yarn lint:prettier:fix",
+    "lint": "yarn lint:ox && yarn lint:format",
+    "lint:fix": "yarn lint:ox:fix && yarn lint:format:fix",
     "test": "vitest --run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
@@ -37,10 +35,9 @@
     "postinstall": "yarn affine init && yarn husky"
   },
   "lint-staged": {
-    "*": "prettier --write --ignore-unknown --cache",
+    "*": "oxfmt --write --no-error-on-unmatched-pattern",
     "*.{ts,tsx,mjs,js,jsx}": [
-      "prettier --ignore-unknown --write",
-      "cross-env NODE_OPTIONS=\"--max-old-space-size=16384\" eslint --cache --fix"
+      "oxlint --fix --no-error-on-unmatched-pattern"
     ],
     "*.toml": [
       "taplo format"
@@ -49,32 +46,71 @@
       "cargo fmt --"
     ]
   },
+  "dependenciesMeta": {
+    "@apollo/protobufjs": {
+      "built": false
+    },
+    "@prisma/client": {
+      "built": true
+    },
+    "@prisma/engines": {
+      "built": true
+    },
+    "@scarf/scarf": {
+      "built": false
+    },
+    "@sentry/cli": {
+      "built": true
+    },
+    "@swc/core": {
+      "built": false
+    },
+    "core-js": {
+      "built": false
+    },
+    "electron": {
+      "built": true
+    },
+    "electron-winstaller": {
+      "built": true
+    },
+    "esbuild": {
+      "built": true
+    },
+    "msgpackr-extract": {
+      "built": false
+    },
+    "msw": {
+      "built": false
+    },
+    "prisma": {
+      "built": false
+    },
+    "protobufjs": {
+      "built": false
+    },
+    "unrs-resolver": {
+      "built": false
+    }
+  },
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
     "@capacitor/cli": "^8.4.2",
-    "@eslint/js": "^9.39.2",
     "@faker-js/faker": "^10.1.0",
     "@istanbuljs/schema": "^0.1.3",
-    "@magic-works/i18n-codegen": "^0.6.1",
     "@playwright/test": "=1.58.2",
-    "@smarttools/eslint-plugin-rxjs": "^1.0.8",
     "@taplo/cli": "^0.7.0",
     "@toeverything/infra": "workspace:*",
-    "@types/eslint": "^9.6.1",
     "@types/node": "^22.0.0",
-    "@typescript-eslint/parser": "^8.55.0",
+    "@typescript/native": "npm:typescript@7.0.2",
     "@vanilla-extract/vite-plugin": "^5.0.0",
     "@vitest/browser": "^4.1.10",
     "@vitest/coverage-istanbul": "^4.1.10",
     "@vitest/ui": "^4.1.10",
-    "cross-env": "^10.1.0",
     "electron": "^39.0.0",
-    "eslint": "^9.39.2",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint": "9.39.2",
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-lit": "^2.2.1",
-    "eslint-plugin-oxlint": "1.68.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-simple-import-sort": "^12.1.1",
@@ -83,17 +119,16 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
     "msw": "^2.13.2",
-    "oxlint": "1.76.0",
-    "oxlint-tsgolint": "^0.23.0",
-    "prettier": "^3.7.4",
+    "oxfmt": "0.63.0",
+    "oxlint": "1.78.0",
+    "oxlint-tsgolint": "7.0.2001",
     "semver": "^7.7.3",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.55.0",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "unplugin-swc": "^1.5.9",
     "vite": "^7.3.5",
     "vitest": "^4.1.10"
   },
-  "packageManager": "yarn@4.13.0",
+  "packageManager": "yarn@4.18.0",
   "resolutions": {
     "array-buffer-byte-length": "npm:@nolyfill/array-buffer-byte-length@^1",
     "array-includes": "npm:@nolyfill/array-includes@^1",
@@ -169,8 +204,11 @@
     "fs-xattr": "npm:@napi-rs/xattr@latest",
     "@opentelemetry/core": "^2.10.0",
     "ioredis": "^5.11.1",
+    "js-yaml@npm:^3.13.1": "^3.15.1",
+    "js-yaml@npm:^3.14.1": "^3.15.1",
     "js-yaml@npm:^4.1.0": "^5.0.0",
     "js-yaml@npm:4.1.1": "^5.0.0",
+    "js-yaml@npm:5.2.1": "^5.2.3",
     "multer": "^2.2.0",
     "protobufjs": "^7.6.4",
     "tar": "^7.5.21",
@@ -180,6 +218,7 @@
     "ws@npm:^8.19.0": "^8.21.0",
     "ws@npm:8.20.1": "^8.21.0",
     "ws@npm:~8.17.1": "^8.21.0",
+    "@magic-works/i18n-codegen": "patch:@magic-works/i18n-codegen@npm%3A0.6.1#~/.yarn/patches/@magic-works-i18n-codegen-virtual-25e53a17d6.patch",
     "decode-named-character-reference@npm:^1.0.0": "patch:decode-named-character-reference@npm%3A1.0.2#~/.yarn/patches/decode-named-character-reference-npm-1.0.2-db17a755fd.patch",
     "@atlaskit/pragmatic-drag-and-drop": "patch:@atlaskit/pragmatic-drag-and-drop@npm%3A1.4.0#~/.yarn/patches/@atlaskit-pragmatic-drag-and-drop-npm-1.4.0-75c45f52d3.patch",
     "yjs": "patch:yjs@npm%3A13.6.21#~/.yarn/patches/yjs-npm-13.6.21-c9f1f3397c.patch"

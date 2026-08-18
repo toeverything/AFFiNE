@@ -18,6 +18,37 @@ import type {
 import type { GfxModel } from '@blocksuite/std/gfx';
 import { type Page } from '@playwright/test';
 export class EditorUtils {
+  public static async waitForCurrentDocSynced(page: Page) {
+    await page.evaluate(async () => {
+      const [, , workspaceId, docId] = location.pathname.split('/');
+      const workspace = (
+        window as typeof window & {
+          currentWorkspace?: {
+            engine: {
+              doc: {
+                waitForSynced(docId: string, abort: AbortSignal): Promise<void>;
+              };
+            };
+          };
+        }
+      ).currentWorkspace;
+      if (!workspaceId || !docId || !workspace) {
+        throw new Error('Current document is unavailable');
+      }
+      const abort = AbortSignal.timeout(60_000);
+      await Promise.all([
+        workspace.engine.doc.waitForSynced(docId, abort),
+        workspace.engine.doc.waitForSynced('db$docProperties', abort),
+      ]);
+      const response = await fetch(
+        `/api/workspaces/${workspaceId}/docs/${docId}`
+      );
+      if (!response.ok) {
+        throw new Error('Current document could not be persisted');
+      }
+    });
+  }
+
   public static async focusToEditor(page: Page) {
     const title = getBlockSuiteEditorTitle(page);
     await title.focus();
@@ -351,8 +382,7 @@ export class EditorUtils {
         await page.keyboard.press('Enter');
       }
     }
-    // sleep 1 sec to wait the doc sync
-    await page.waitForTimeout(1000);
+    await this.waitForCurrentDocSynced(page);
   }
 
   public static async createTagAndDoc(

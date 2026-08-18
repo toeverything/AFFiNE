@@ -3,6 +3,7 @@ import test from 'ava';
 import Sinon from 'sinon';
 
 import { buildLegacyProjection } from '../../plugins/copilot/transcript/projection';
+import { CopilotTranscriptionRetryService } from '../../plugins/copilot/transcript/retry';
 import { TranscriptPayloadSchema } from '../../plugins/copilot/transcript/schema';
 import { CopilotTranscriptionService } from '../../plugins/copilot/transcript/service';
 
@@ -62,7 +63,7 @@ test('TranscriptPayloadSchema rejects empty payloads', t => {
 
 function createTranscriptPromptService() {
   return {
-    get: Sinon.stub().resolves({ name: 'Transcript audio structured' }),
+    get: Sinon.stub().callsFake(async name => ({ name })),
     finish: Sinon.stub().callsFake((_prompt, params) => [
       {
         role: 'user',
@@ -72,62 +73,19 @@ function createTranscriptPromptService() {
   };
 }
 
-async function buildNativeTranscriptResult(input: any, runId: string) {
-  await input.onRunCreated?.({ runId, attempt: 1 });
-  const nativeInput = input.nativeInput;
-  return {
-    nativeInput,
-    result: {
-      sourceAudio: nativeInput.input.sourceAudio ?? null,
-      quality: nativeInput.input.quality ?? null,
-      infos: [{ url: 'about:invalid', mimeType: 'text/plain', index: 0 }],
-      sliceManifest: null,
-      normalizedSegments: [
-        {
-          speaker: 'A',
-          startSec: 5,
-          endSec: 9,
-          start: '00:00:05',
-          end: '00:00:09',
-          text: 'Kickoff',
-        },
-      ],
-      normalizedTranscript: '00:00:05 A: Kickoff',
-      summaryJson: {
-        title: 'Weekly Sync',
-        durationMinutes: 1,
-        attendees: ['A'],
-        keyPoints: ['Kickoff'],
-        actionItems: [],
-        decisions: [],
-        openQuestions: [],
-        blockers: [],
-      },
-      providerMeta: { provider: 'gemini', model: 'gemini-3.5-flash-lite' },
-      version: 'transcript-result-v1',
-      strategy: 'gemini',
-    },
-  };
-}
-
 function createSuccessfulTranscriptBridge(
   runId: string,
   bridgeInputs: unknown[]
 ) {
   return {
-    runStream: (input: unknown) =>
+    runStream: (input: any, executor: (input: any) => Promise<any>) =>
       (async function* () {
-        const { nativeInput, result } = await buildNativeTranscriptResult(
-          input,
-          runId
-        );
-        bridgeInputs.push({
-          ...(input as Record<string, unknown>),
-          nativeInput,
-        });
+        await input.onRunCreated?.({ runId, attempt: 1 });
+        const { result } = await executor(input);
+        bridgeInputs.push(input);
         yield {
           type: 'action_done' as const,
-          actionId: 'transcript.audio.gemini',
+          actionId: 'transcript.audio',
           actionVersion: 'v1',
           status: 'succeeded' as const,
           runId,
@@ -138,17 +96,20 @@ function createSuccessfulTranscriptBridge(
 }
 
 function createCopilotTranscriptionService(...deps: unknown[]) {
-  return new CopilotTranscriptionService(
+  const retry = new CopilotTranscriptionRetryService(
     deps[0] as never,
     deps[1] as never,
+    (deps[6] ?? { assertRoute: Sinon.stub().resolves() }) as never,
+    (deps[7] ?? { publish: Sinon.stub() }) as never
+  );
+  return new CopilotTranscriptionService(
+    deps[0] as never,
     deps[2] as never,
-    deps[3] as never,
     deps[4] as never,
     deps[5] as never,
-    (deps[6] ?? {
-      assertQuotaOrByok: Sinon.stub().resolves(undefined),
-    }) as never,
-    (deps[7] ?? { publish: Sinon.stub() }) as never
+    (deps[6] ?? { assertRoute: Sinon.stub().resolves() }) as never,
+    (deps[7] ?? { publish: Sinon.stub() }) as never,
+    retry
   );
 }
 
@@ -221,47 +182,6 @@ test('settleTask unlocks ready transcript task result idempotently', async t => 
   Sinon.assert.calledOnceWithExactly(settle, 'task-1');
 });
 
-test('settleTask checks copilot quota before unlocking ready task', async t => {
-  const payload = TranscriptPayloadSchema.parse({
-    normalizedTranscript: '00:00:05 A: Kickoff',
-  });
-  const settle = Sinon.stub().resolves({
-    id: 'task-1',
-    status: 'settled',
-    protectedResult: payload,
-  });
-  const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
-  const service = createCopilotTranscriptionService(
-    {
-      copilotTranscriptTask: {
-        getWithUser: Sinon.stub().resolves({
-          id: 'task-1',
-          status: 'ready',
-          protectedResult: payload,
-        }),
-        settle,
-      },
-    } as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    { assertQuotaOrByok } as never
-  );
-
-  await t.throwsAsync(
-    () => service.settleTask('user-1', 'workspace-1', 'task-1'),
-    { message: /quota exceeded/ }
-  );
-  Sinon.assert.calledOnceWithMatch(assertQuotaOrByok, {
-    userId: 'user-1',
-    workspaceId: 'workspace-1',
-    featureKind: 'transcript',
-  });
-  Sinon.assert.notCalled(settle);
-});
-
 test('retryTask rejects ready transcript tasks', async t => {
   const service = createCopilotTranscriptionService(
     {
@@ -312,14 +232,13 @@ test('retryTask rejects settled transcript tasks', async t => {
 
 test('retryTask reuses failed task and queues a new action attempt', async t => {
   const queuedJobs: unknown[] = [];
-  const markRunning = Sinon.stub().resolves({
-    id: 'task-1',
-    status: 'running',
-  });
+  const assertRoute = Sinon.stub().resolves();
+  const claimRetry = Sinon.stub();
+  claimRetry.onFirstCall().resolves(true);
+  claimRetry.onSecondCall().resolves(false);
   const payload = TranscriptPayloadSchema.parse({
     normalizedTranscript: '00:00:05 A: Kickoff',
     summaryJson: null,
-    providerMeta: { provider: 'gemini', model: 'gemini-3.5-flash-lite' },
   });
   const service = createCopilotTranscriptionService(
     {
@@ -327,29 +246,29 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
         getWithUser: Sinon.stub().resolves({
           id: 'task-1',
           status: 'failed',
-          strategy: 'gemini',
           actionRunId: 'run-failed',
           protectedResult: payload,
         }),
-        markRunning,
+        claimRetry,
       },
     } as never,
     {
-      add: Sinon.stub().callsFake(async (name, payload) => {
-        queuedJobs.push({ name, payload });
+      add: Sinon.stub().callsFake(async (name, payload, options) => {
+        queuedJobs.push({ name, payload, options });
       }),
     } as never,
     {} as never,
     {
-      resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.5-flash-lite'),
+      resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.7-flash'),
     } as never,
     {} as never,
-    {} as never
+    {} as never,
+    { assertRoute } as never
   );
 
   const result = await service.retryTask('user-1', 'workspace-1', 'task-1');
 
-  t.is(result.status, AiJobStatus.running);
+  t.is(result?.status, AiJobStatus.pending);
   t.like(queuedJobs[0] as Record<string, unknown>, {
     name: 'copilot.transcript.task.submit',
   });
@@ -357,55 +276,97 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
     taskId: 'task-1',
     retryOf: 'run-failed',
   });
-  Sinon.assert.calledOnceWithExactly(markRunning, 'task-1');
-});
-
-test('retryTask prechecks quota or BYOK before queueing provider work', async t => {
-  const add = Sinon.stub().resolves(undefined);
-  const markRunning = Sinon.stub().resolves({ id: 'task-1' });
-  const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
-  const payload = TranscriptPayloadSchema.parse({
-    normalizedTranscript: '00:00:05 A: Kickoff',
+  t.like((queuedJobs[0] as { options: Record<string, unknown> }).options, {
+    attempts: 1,
+    removeOnFail: true,
   });
-  const service = createCopilotTranscriptionService(
+  await t.throwsAsync(
+    () => service.retryTask('user-1', 'workspace-1', 'task-1'),
+    { message: /Only failed transcript tasks/ }
+  );
+  t.is(queuedJobs.length, 1);
+  Sinon.assert.alwaysCalledWithExactly(
+    assertRoute,
+    'transcript.audio',
+    {},
+    {
+      user: 'user-1',
+      workspace: 'workspace-1',
+      featureKind: 'transcript',
+      builtInRouteId: 'Transcript audio',
+    }
+  );
+  t.is(assertRoute.callCount, 2);
+
+  const failPendingDispatch = Sinon.stub().resolves(true);
+  const failingRetry = new CopilotTranscriptionRetryService(
     {
       copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves({
-          id: 'task-1',
+          id: 'task-2',
           status: 'failed',
-          strategy: 'gemini',
+          actionRunId: null,
           protectedResult: payload,
         }),
-        markRunning,
+        claimRetry: Sinon.stub().resolves(true),
+        failPendingDispatch,
       },
     } as never,
-    { add } as never,
-    {} as never,
-    {
-      resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.5-flash-lite'),
-    } as never,
-    {} as never,
-    {} as never,
-    { assertQuotaOrByok } as never
+    { add: Sinon.stub().rejects(new Error('redis unavailable')) } as never,
+    { assertRoute: Sinon.stub().resolves() } as never,
+    { publish: Sinon.stub() } as never
+  );
+  await t.throwsAsync(
+    () => failingRetry.retryTask('user-1', 'workspace-1', 'task-2'),
+    { message: 'redis unavailable' }
+  );
+  Sinon.assert.calledOnceWithExactly(
+    failPendingDispatch,
+    'task-2',
+    Sinon.match.string,
+    'redis unavailable'
   );
 
-  await t.throwsAsync(
-    () => service.retryTask('user-1', 'workspace-1', 'task-1'),
-    { message: /quota exceeded/ }
+  const recoveredJobs: unknown[] = [];
+  const recovery = new CopilotTranscriptionRetryService(
+    {
+      copilotTranscriptTask: {
+        pendingDispatches: Sinon.stub().resolves([
+          {
+            id: 'task-3',
+            workspaceId: 'workspace-1',
+            dispatchGeneration: 'generation-recovery',
+            actionRunId: 'run-failed',
+            protectedResult: payload,
+            inputSnapshot: null,
+          },
+        ]),
+        staleRunningDispatches: Sinon.stub().resolves([]),
+      },
+    } as never,
+    {
+      add: Sinon.stub().callsFake(async (name, jobPayload, options) => {
+        recoveredJobs.push({ name, jobPayload, options });
+      }),
+    } as never,
+    {} as never,
+    { publish: Sinon.stub() } as never
   );
-  Sinon.assert.calledOnceWithMatch(assertQuotaOrByok, {
-    userId: 'user-1',
-    workspaceId: 'workspace-1',
-    featureKind: 'transcript',
+  await recovery.reconcileDispatches();
+  t.like(recoveredJobs[0] as Record<string, unknown>, {
+    name: 'copilot.transcript.task.submit',
   });
-  Sinon.assert.notCalled(add);
-  Sinon.assert.notCalled(markRunning);
+  t.like((recoveredJobs[0] as { options: Record<string, unknown> }).options, {
+    jobId: 'copilot-transcript-task/task-3/generation-recovery',
+    attempts: 1,
+  });
 });
 
 for (const status of ['ready', 'settled']) {
   test(`submitTask allows a new task for the same blob after ${status} task`, async t => {
     const createdTasks: unknown[] = [];
     const queuedJobs: unknown[] = [];
+    const assertRoute = Sinon.stub().resolves();
     const service = createCopilotTranscriptionService(
       {
         copilotTranscriptTask: {
@@ -421,18 +382,17 @@ for (const status of ['ready', 'settled']) {
         },
       } as never,
       {
-        add: Sinon.stub().callsFake(async (name, payload) => {
-          queuedJobs.push({ name, payload });
+        add: Sinon.stub().callsFake(async (name, payload, options) => {
+          queuedJobs.push({ name, payload, options });
         }),
       } as never,
       {} as never,
       {
-        resolveTranscriptionModel: Sinon.stub().resolves(
-          'gemini-3.5-flash-lite'
-        ),
+        resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.7-flash'),
       } as never,
       {} as never,
-      {} as never
+      {} as never,
+      { assertRoute } as never
     );
 
     const result = await service.submitTask(
@@ -443,75 +403,37 @@ for (const status of ['ready', 'settled']) {
     );
 
     t.is(result.id, 'task-next');
+    t.is(result.status, AiJobStatus.pending);
     t.like(createdTasks[0] as Record<string, unknown>, {
       blobId: 'blob-1',
-      recipeId: 'transcript.audio.gemini',
+      recipeId: 'transcript.audio',
     });
+    t.is(
+      typeof (createdTasks[0] as Record<string, unknown>).dispatchGeneration,
+      'string'
+    );
     t.like(queuedJobs[0] as Record<string, unknown>, {
       name: 'copilot.transcript.task.submit',
     });
+    t.like((queuedJobs[0] as { options: Record<string, unknown> }).options, {
+      attempts: 1,
+      removeOnFail: true,
+    });
+    Sinon.assert.calledOnceWithExactly(
+      assertRoute,
+      'transcript.audio',
+      {},
+      {
+        user: 'user-1',
+        workspace: 'workspace-1',
+        featureKind: 'transcript',
+        builtInRouteId: 'Transcript audio',
+      }
+    );
   });
 }
 
-test('submitTask prechecks quota or BYOK before persisting uploads', async t => {
-  const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
-  const resolveTranscriptionModel = Sinon.stub().resolves(
-    'gemini-3.5-flash-lite'
-  );
-  const service = createCopilotTranscriptionService(
-    {
-      copilotTranscriptTask: {
-        getWithUser: Sinon.stub().resolves(null),
-      },
-    } as never,
-    {} as never,
-    {} as never,
-    {
-      resolveTranscriptionModel,
-    } as never,
-    {} as never,
-    {} as never,
-    { assertQuotaOrByok } as never
-  );
-
-  await t.throwsAsync(
-    () => service.submitTask('user-1', 'workspace-1', 'blob-1', []),
-    { message: /quota exceeded/ }
-  );
-  Sinon.assert.calledOnceWithMatch(assertQuotaOrByok, {
-    userId: 'user-1',
-    workspaceId: 'workspace-1',
-    featureKind: 'transcript',
-  });
-  Sinon.assert.notCalled(resolveTranscriptionModel);
-});
-
-test('submitTask rejects unavailable transcript strategy', async t => {
-  const service = createCopilotTranscriptionService(
-    {
-      copilotTranscriptTask: {
-        getWithUser: Sinon.stub().resolves(null),
-      },
-    } as never,
-    {} as never,
-    {} as never,
-    {
-      resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.5-flash-lite'),
-    } as never,
-    {} as never,
-    {} as never
-  );
-
-  await t.throwsAsync(
-    () =>
-      service.submitTask('user-1', 'workspace-1', 'blob-1', [], {
-        strategy: 'local-asr',
-      }),
-    { message: /not available/ }
-  );
-});
-
-test('transcriptTask runs native transcript recipe through action bridge when available', async t => {
+test('transcriptTask transcribes each audio slice and merges absolute timestamps', async t => {
   const payload = TranscriptPayloadSchema.parse({
     sourceAudio: { blobId: 'blob-1', mimeType: 'audio/opus' },
     sliceManifest: [
@@ -522,18 +444,82 @@ test('transcriptTask runs native transcript recipe through action bridge when av
         startSec: 12,
         durationSec: 30,
       },
+      {
+        index: 1,
+        fileName: 'audio-1.opus',
+        mimeType: 'audio/opus',
+        startSec: 42,
+        durationSec: 300,
+      },
     ],
     infos: [
       {
-        url: 'data:image/png;base64,YXVkaW8=',
+        key: 'blob-1-0',
+        url: 'https://affine.fail/api/copilot/blob/user-1/workspace-1/blob-1-0',
         mimeType: 'audio/opus',
         index: 0,
+      },
+      {
+        key: 'blob-1-1',
+        url: 'https://affine.fail/api/copilot/blob/user-1/workspace-1/blob-1-1',
+        mimeType: 'audio/opus',
+        index: 1,
       },
     ],
   });
   const bridgeInputs: unknown[] = [];
-  const markRunning = Sinon.stub().resolves({ id: 'task-1' });
-  const complete = Sinon.stub().resolves({ id: 'task-1', status: 'ready' });
+  const clock = Sinon.useFakeTimers();
+  t.teardown(() => clock.restore());
+  const structuredCalls: {
+    messages: { content?: string; attachments?: unknown[] }[];
+    options: { builtInRouteId?: string };
+    slot?: string;
+  }[] = [];
+  let transientFailure = true;
+  const generateStructuredValue = Sinon.stub().callsFake(
+    async (
+      _conditions: unknown,
+      messages: { content?: string; attachments?: unknown[] }[],
+      options: { builtInRouteId?: string },
+      _contract: unknown,
+      _filter: unknown,
+      slot?: string
+    ) => {
+      structuredCalls.push({ messages, options, slot });
+      if (options.builtInRouteId === 'Summarize the meeting structured') {
+        return {
+          value: {
+            title: 'Weekly Sync',
+            durationMinutes: 1,
+            attendees: ['A', 'B'],
+            keyPoints: ['Kickoff', 'Follow-up'],
+            actionItems: [],
+            decisions: [],
+            openQuestions: [],
+            blockers: [],
+          },
+        };
+      }
+
+      const attachment = messages
+        .flatMap(message => message.attachments ?? [])
+        .at(0) as { attachment: string };
+      if (attachment.attachment.includes('blob-1-1') && transientFailure) {
+        transientFailure = false;
+        throw new Error('upstream returned status 503: UNAVAILABLE');
+      }
+      return {
+        value: attachment.attachment.includes('blob-1-0')
+          ? [{ a: 'A', s: 5, e: 9, t: 'Kickoff' }]
+          : [{ a: 'B', s: 100, e: 500, t: 'Follow-up' }],
+      };
+    }
+  );
+  const claimDispatch = Sinon.stub();
+  claimDispatch.onFirstCall().resolves(true);
+  claimDispatch.onSecondCall().resolves(false);
+  const attachActionRun = Sinon.stub().resolves(true);
+  const completeDispatch = Sinon.stub().resolves(true);
   const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
@@ -545,58 +531,128 @@ test('transcriptTask runs native transcript recipe through action bridge when av
           status: 'pending',
           actionRunId: null,
         }),
-        markRunning,
-        complete,
+        claimDispatch,
+        attachActionRun,
+        completeDispatch,
       },
     } as never,
     {} as never,
-    {} as never,
+    {
+      presignGet: Sinon.stub().callsFake(
+        async (_userId, _workspaceId, key) =>
+          `https://canary.copilotcontent.affine.pro/${key}?sig=test`
+      ),
+    } as never,
     {} as never,
     createTranscriptPromptService() as never,
-    createSuccessfulTranscriptBridge('run-bridge', bridgeInputs) as never
+    createSuccessfulTranscriptBridge('run-bridge', bridgeInputs) as never,
+    { generateStructuredValue } as never
   );
 
+  const run = service.transcriptTask({
+    taskId: 'task-1',
+    payload,
+    generation: 'generation-1',
+  });
+  await clock.tickAsync(5_000);
+  await run;
   await service.transcriptTask({
     taskId: 'task-1',
     payload,
-    modelId: 'gemini-3.5-flash-lite',
+    generation: 'generation-1',
   });
+  t.is(bridgeInputs.length, 1);
 
   t.like(bridgeInputs[0] as Record<string, unknown>, {
-    actionId: 'transcript.audio.gemini',
+    actionId: 'transcript.audio',
     actionVersion: 'v1',
   });
-  t.like(
-    (bridgeInputs[0] as { prepareStructuredRoutes: Record<string, unknown> })
-      .prepareStructuredRoutes,
-    {
-      stepId: 'transcribe',
-      modelId: 'gemini-3.5-flash-lite',
-    }
-  );
-  const messages = (
-    bridgeInputs[0] as {
-      prepareStructuredRoutes: {
-        messages: { content?: string; attachments?: unknown[] }[];
-      };
-    }
-  ).prepareStructuredRoutes.messages;
-  t.false(messages[0].content?.includes('data:image/png'));
-  t.like(JSON.parse(messages[0].content ?? '{}'), {
-    infos: [{ mimeType: 'audio/opus', index: 0 }],
+  t.like((bridgeInputs[0] as { step: Record<string, unknown> }).step, {
+    slot: 'transcript.audio',
+    builtInRouteId: 'Transcript audio',
   });
-  t.deepEqual(messages.at(-1)?.attachments, [
-    { attachment: 'data:image/png;base64,YXVkaW8=', mimeType: 'audio/opus' },
-  ]);
-  t.like(complete.firstCall.args[1], {
+  t.deepEqual(
+    (
+      bridgeInputs[0] as {
+        inputSnapshot: { infos: unknown[] };
+      }
+    ).inputSnapshot.infos,
+    [
+      {
+        url: 'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test',
+        mimeType: 'audio/opus',
+        index: 0,
+      },
+      {
+        url: 'https://canary.copilotcontent.affine.pro/blob-1-1?sig=test',
+        mimeType: 'audio/opus',
+        index: 1,
+      },
+    ]
+  );
+  t.is(structuredCalls.length, 4);
+  const transcriptCalls = structuredCalls.filter(
+    call => call.options.builtInRouteId === 'Transcript audio'
+  );
+  t.is(transcriptCalls.length, 3);
+  t.true(transcriptCalls.every(call => call.slot === 'transcript.audio'));
+  t.deepEqual(
+    transcriptCalls.map(call => call.messages.at(-1)?.attachments),
+    [
+      [
+        {
+          attachment:
+            'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test',
+          mimeType: 'audio/opus',
+        },
+      ],
+      [
+        {
+          attachment:
+            'https://canary.copilotcontent.affine.pro/blob-1-1?sig=test',
+          mimeType: 'audio/opus',
+        },
+      ],
+      [
+        {
+          attachment:
+            'https://canary.copilotcontent.affine.pro/blob-1-1?sig=test',
+          mimeType: 'audio/opus',
+        },
+      ],
+    ]
+  );
+  t.is(
+    structuredCalls.at(-1)?.messages.at(-1)?.content,
+    '00:00:17 A: Kickoff\n00:01:42 B: Follow-up'
+  );
+  t.like(completeDispatch.firstCall.args[3], {
     status: 'ready',
-    actionRunId: 'run-bridge',
     errorCode: null,
   });
-  Sinon.assert.calledWith(markRunning, 'task-1', 'run-bridge');
+  Sinon.assert.calledWith(
+    attachActionRun,
+    'task-1',
+    'generation-1',
+    null,
+    'run-bridge'
+  );
   t.is(
-    complete.firstCall.args[1].protectedResult.normalizedTranscript,
-    '00:00:05 A: Kickoff'
+    completeDispatch.firstCall.args[3].protectedResult.normalizedTranscript,
+    '00:00:17 A: Kickoff\n00:01:42 B: Follow-up'
+  );
+  t.like(
+    completeDispatch.firstCall.args[3].protectedResult.normalizedSegments[1],
+    {
+      startSec: 102,
+      endSec: 342,
+      start: '00:01:42',
+      end: '00:05:42',
+    }
+  );
+  t.deepEqual(
+    completeDispatch.firstCall.args[3].protectedResult.infos,
+    payload.infos
   );
 });
 
@@ -604,7 +660,7 @@ test('transcriptTask fails task when native action bridge reports an error event
   const payload = TranscriptPayloadSchema.parse({
     normalizedTranscript: '00:00:05 A: Kickoff',
   });
-  const complete = Sinon.stub().resolves({ id: 'task-1', status: 'failed' });
+  const completeDispatch = Sinon.stub().resolves(true);
   const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
@@ -616,8 +672,9 @@ test('transcriptTask fails task when native action bridge reports an error event
           status: 'pending',
           actionRunId: null,
         }),
-        markRunning: Sinon.stub().resolves({ id: 'task-1' }),
-        complete,
+        claimDispatch: Sinon.stub().resolves(true),
+        attachActionRun: Sinon.stub().resolves(true),
+        completeDispatch,
       },
     } as never,
     {} as never,
@@ -625,12 +682,12 @@ test('transcriptTask fails task when native action bridge reports an error event
     {} as never,
     createTranscriptPromptService() as never,
     {
-      runStream: (input: unknown) =>
+      runStream: (input: any) =>
         (async function* () {
-          await buildNativeTranscriptResult(input, 'run-bridge');
+          await input.onRunCreated?.({ runId: 'run-bridge', attempt: 1 });
           yield {
             type: 'error' as const,
-            actionId: 'transcript.audio.gemini',
+            actionId: 'transcript.audio',
             actionVersion: 'v1',
             status: 'failed' as const,
             runId: 'run-bridge',
@@ -645,12 +702,11 @@ test('transcriptTask fails task when native action bridge reports an error event
       service.transcriptTask({
         taskId: 'task-1',
         payload,
-        modelId: 'gemini-3.5-flash-lite',
+        generation: 'generation-1',
       }),
     { message: /native_failed/ }
   );
-  t.like(complete.firstCall.args[1], {
+  t.like(completeDispatch.firstCall.args[3], {
     status: 'failed',
-    actionRunId: 'run-bridge',
   });
 });

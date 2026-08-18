@@ -46,15 +46,12 @@ pub struct PromptSpecMessage {
 }
 
 #[napi(object)]
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BuiltInPromptSpec {
   pub name: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub action: Option<String>,
-  pub model: String,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub optional_models: Option<Vec<String>>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub config: Option<Value>,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -62,6 +59,69 @@ pub struct BuiltInPromptSpec {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub builtins: Option<Vec<PromptBuiltin>>,
   pub messages: Vec<PromptSpecMessage>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct PromptCatalogSpec {
+  name: String,
+  #[serde(default)]
+  action: Option<String>,
+  #[serde(default)]
+  managed_route: Option<BuiltInManagedRouteSpec>,
+  #[serde(default)]
+  config: Option<Value>,
+  #[serde(default)]
+  params: Option<BTreeMap<String, PromptParamSpec>>,
+  #[serde(default)]
+  builtins: Option<Vec<PromptBuiltin>>,
+  messages: Vec<PromptSpecMessage>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct BuiltInManagedRouteSpec {
+  targets: Vec<String>,
+  #[serde(default)]
+  premium_targets: Option<Vec<String>>,
+  #[serde(default)]
+  selectable_targets: Vec<BuiltInManagedTargetSpec>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct BuiltInManagedTargetSpec {
+  id: String,
+  model_id: String,
+  display_name: String,
+  minimum_tier: BuiltInManagedTargetTier,
+}
+
+#[napi(string_enum)]
+#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BuiltInManagedTargetTier {
+  Standard,
+  Premium,
+}
+
+#[napi(object)]
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BuiltInManagedTarget {
+  pub id: String,
+  pub display_name: String,
+  pub minimum_tier: BuiltInManagedTargetTier,
+}
+
+#[napi(object)]
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BuiltInRouteOptions {
+  pub route_id: String,
+  pub standard_default_target_id: Option<String>,
+  pub premium_default_target_id: Option<String>,
+  pub choices: Vec<BuiltInManagedTarget>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -73,18 +133,27 @@ pub(crate) struct BuiltInPromptMessage {
   pub(crate) params: Option<Map<String, Value>>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct BuiltInPrompt {
   pub(crate) name: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) action: Option<String>,
-  pub(crate) model: String,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) optional_models: Option<Vec<String>>,
+  pub(crate) managed_targets: Vec<String>,
+  pub(crate) managed_premium_targets: Option<Vec<String>>,
+  #[serde(skip)]
+  pub(crate) managed_selectable_targets: Vec<BuiltInManagedTargetDefinition>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) config: Option<Value>,
   pub(crate) messages: Vec<BuiltInPromptMessage>,
+}
+
+#[derive(Clone)]
+pub(crate) struct BuiltInManagedTargetDefinition {
+  pub(crate) id: String,
+  pub(crate) model_id: String,
+  pub(crate) display_name: String,
+  pub(crate) minimum_tier: BuiltInManagedTargetTier,
 }
 
 struct PromptCatalog {
@@ -112,16 +181,89 @@ pub(crate) fn built_in_prompt(name: &str) -> Option<&'static BuiltInPrompt> {
     .and_then(|index| BUILTIN_PROMPT_CATALOG.prompts.get(*index))
 }
 
+pub(crate) fn built_in_managed_targets(name: &str, premium: bool) -> Option<&'static [String]> {
+  built_in_prompt(name).and_then(|prompt| {
+    let targets = if premium {
+      prompt
+        .managed_premium_targets
+        .as_deref()
+        .unwrap_or(prompt.managed_targets.as_slice())
+    } else {
+      prompt.managed_targets.as_slice()
+    };
+    (!targets.is_empty()).then_some(targets)
+  })
+}
+
+pub(crate) fn built_in_managed_target(
+  name: &str,
+  target_id: &str,
+  premium: bool,
+) -> Option<&'static BuiltInManagedTargetDefinition> {
+  built_in_prompt(name)?
+    .managed_selectable_targets
+    .iter()
+    .find(|target| target.id == target_id && (premium || target.minimum_tier == BuiltInManagedTargetTier::Standard))
+}
+
+#[napi(catch_unwind)]
+pub fn llm_get_built_in_route_options(name: String) -> Option<BuiltInRouteOptions> {
+  let prompt = built_in_prompt(&name)?;
+  if prompt.managed_selectable_targets.is_empty() {
+    return None;
+  }
+  let target_id_for_model = |model: Option<&String>| {
+    model.and_then(|model| {
+      prompt
+        .managed_selectable_targets
+        .iter()
+        .find(|target| &target.model_id == model)
+        .map(|target| target.id.clone())
+    })
+  };
+  Some(BuiltInRouteOptions {
+    route_id: prompt.name.clone(),
+    standard_default_target_id: target_id_for_model(prompt.managed_targets.first()),
+    premium_default_target_id: target_id_for_model(
+      prompt
+        .managed_premium_targets
+        .as_ref()
+        .and_then(|targets| targets.first())
+        .or_else(|| prompt.managed_targets.first()),
+    ),
+    choices: prompt
+      .managed_selectable_targets
+      .iter()
+      .map(|target| BuiltInManagedTarget {
+        id: target.id.clone(),
+        display_name: target.display_name.clone(),
+        minimum_tier: target.minimum_tier,
+      })
+      .collect(),
+  })
+}
+
 impl PromptCatalog {
   fn load() -> Result<Self, String> {
     let partials: BTreeMap<String, String> =
       serde_json::from_str(PROMPT_PARTIALS_SOURCE).map_err(|error| format!("invalid prompt partials JSON: {error}"))?;
-    let specs: Vec<BuiltInPromptSpec> =
+    let catalog_specs: Vec<PromptCatalogSpec> =
       serde_json::from_str(PROMPT_SPECS_SOURCE).map_err(|error| format!("invalid prompt spec JSON: {error}"))?;
-    let prompts = specs
+    let prompts = catalog_specs
       .iter()
       .map(|spec| compile_prompt_spec(spec, &partials))
       .collect::<Result<Vec<_>, _>>()?;
+    let specs = catalog_specs
+      .into_iter()
+      .map(|spec| BuiltInPromptSpec {
+        name: spec.name,
+        action: spec.action,
+        config: spec.config.filter(|value| !value.is_null()),
+        params: spec.params,
+        builtins: spec.builtins,
+        messages: spec.messages,
+      })
+      .collect::<Vec<_>>();
 
     Ok(Self {
       specs_by_name: specs
@@ -140,7 +282,17 @@ impl PromptCatalog {
   }
 }
 
-fn compile_prompt_spec(spec: &BuiltInPromptSpec, partials: &BTreeMap<String, String>) -> Result<BuiltInPrompt, String> {
+fn compile_prompt_spec(spec: &PromptCatalogSpec, partials: &BTreeMap<String, String>) -> Result<BuiltInPrompt, String> {
+  if spec
+    .managed_route
+    .as_ref()
+    .is_some_and(|route| !valid_managed_route(route))
+  {
+    return Err(format!("Prompt \"{}\" has an invalid managed route", spec.name));
+  }
+  if !spec.messages.is_empty() && spec.managed_route.is_none() {
+    return Err(format!("Executable prompt \"{}\" requires a managed route", spec.name));
+  }
   let resolved_templates = spec
     .messages
     .iter()
@@ -186,11 +338,69 @@ fn compile_prompt_spec(spec: &BuiltInPromptSpec, partials: &BTreeMap<String, Str
   Ok(BuiltInPrompt {
     name: spec.name.clone(),
     action: spec.action.clone(),
-    model: spec.model.clone(),
-    optional_models: spec.optional_models.clone(),
+    managed_targets: spec
+      .managed_route
+      .as_ref()
+      .map(|route| route.targets.clone())
+      .unwrap_or_default(),
+    managed_premium_targets: spec
+      .managed_route
+      .as_ref()
+      .and_then(|route| route.premium_targets.clone()),
+    managed_selectable_targets: spec
+      .managed_route
+      .as_ref()
+      .map(|route| {
+        route
+          .selectable_targets
+          .iter()
+          .map(|target| BuiltInManagedTargetDefinition {
+            id: target.id.clone(),
+            model_id: target.model_id.clone(),
+            display_name: target.display_name.clone(),
+            minimum_tier: target.minimum_tier,
+          })
+          .collect()
+      })
+      .unwrap_or_default(),
     config: spec.config.clone().filter(|value| !value.is_null()),
     messages,
   })
+}
+
+fn valid_managed_route(route: &BuiltInManagedRouteSpec) -> bool {
+  if route.targets.is_empty()
+    || route.targets.iter().any(|target| target.trim().is_empty())
+    || route
+      .premium_targets
+      .as_ref()
+      .is_some_and(|targets| targets.is_empty() || targets.iter().any(|target| target.trim().is_empty()))
+  {
+    return false;
+  }
+  let ids = route
+    .selectable_targets
+    .iter()
+    .map(|target| target.id.as_str())
+    .collect::<BTreeSet<_>>();
+  let models = route
+    .selectable_targets
+    .iter()
+    .map(|target| target.model_id.as_str())
+    .collect::<BTreeSet<_>>();
+  if route.selectable_targets.iter().any(|target| {
+    target.id.trim().is_empty() || target.model_id.trim().is_empty() || target.display_name.trim().is_empty()
+  }) || ids.len() != route.selectable_targets.len()
+    || models.len() != route.selectable_targets.len()
+  {
+    return false;
+  }
+  route.selectable_targets.is_empty()
+    || route
+      .targets
+      .iter()
+      .chain(route.premium_targets.iter().flatten())
+      .all(|model| models.contains(model.as_str()))
 }
 
 fn normalize_prompt_param(spec: &PromptParamSpec) -> Value {
@@ -250,7 +460,7 @@ fn resolve_prompt_template(template: &str, partials: &BTreeMap<String, String>) 
   Err("Prompt partial expansion exceeded maximum depth".to_string())
 }
 
-fn validate_builtins(spec: &BuiltInPromptSpec, templates: &[String]) -> Result<(), String> {
+fn validate_builtins(spec: &PromptCatalogSpec, templates: &[String]) -> Result<(), String> {
   let declared = spec
     .builtins
     .clone()
@@ -355,26 +565,45 @@ mod tests {
     );
 
     let chat = built_in_prompt("Chat With AFFiNE AI").expect("chat prompt");
-    assert_eq!(chat.model, "gpt-5.6-luna");
+    let chat_tools = chat
+      .config
+      .as_ref()
+      .and_then(|config| config.get("tools"))
+      .and_then(Value::as_array)
+      .expect("chat tools");
+    assert!(chat_tools.iter().any(|tool| tool == "artifactRead"));
+    assert!(chat_tools.iter().any(|tool| tool == "artifactSearch"));
+    assert!(!chat_tools.iter().any(|tool| tool == "contextSearch"));
+    assert!(!chat_tools.iter().any(|tool| tool == "blobRead"));
+    assert_eq!(chat.managed_targets, ["gpt-5.6-luna"]);
     assert_eq!(
       chat
-        .optional_models
-        .as_ref()
-        .map(|models| models.iter().map(String::as_str).collect::<Vec<_>>()),
-      Some(vec![
-        "gpt-5.6-luna",
-        "gpt-5.6-terra",
-        "gemini-3.6-flash",
-        "claude-sonnet-4-6"
-      ])
+        .managed_premium_targets
+        .as_deref()
+        .map(|targets| targets.iter().map(String::as_str).collect::<Vec<_>>()),
+      Some(vec!["gpt-5.6-luna"])
+    );
+    let options = llm_get_built_in_route_options(chat.name.clone()).expect("chat route options");
+    assert_eq!(options.standard_default_target_id.as_deref(), Some("luna"));
+    assert_eq!(options.premium_default_target_id.as_deref(), Some("luna"));
+    assert_eq!(options.choices.len(), 4);
+    assert_eq!(
+      built_in_managed_target(&chat.name, "terra", false).map(|target| target.model_id.as_str()),
+      None
     );
     assert_eq!(
-      chat.config.as_ref().and_then(|config| config.get("proModels")),
-      Some(&serde_json::json!([
-        "gpt-5.6-terra",
-        "gemini-3.6-flash",
-        "claude-sonnet-4-6"
-      ]))
+      built_in_managed_target(&chat.name, "terra", true).map(|target| target.model_id.as_str()),
+      Some("gpt-5.6-terra")
+    );
+
+    let transcript = built_in_prompt("Transcript audio structured").expect("transcript prompt");
+    assert_eq!(transcript.managed_targets, ["gemini-3.7-flash"]);
+    assert_eq!(
+      transcript
+        .managed_premium_targets
+        .as_deref()
+        .map(|targets| targets.iter().map(String::as_str).collect::<Vec<_>>()),
+      Some(vec!["gemini-3.7-flash"])
     );
   }
 }

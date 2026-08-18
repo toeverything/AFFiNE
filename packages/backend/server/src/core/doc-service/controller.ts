@@ -93,6 +93,20 @@ export class DocRpcController {
 
   @SkipThrottle()
   @Internal()
+  @Get('/workspaces/:workspaceId/docs/:docId/canvas')
+  async getDocCanvas(
+    @Param('workspaceId') workspaceId: string,
+    @Param('docId') docId: string
+  ) {
+    const projection = await this.docReader.getDocCanvas(workspaceId, docId);
+    if (!projection) {
+      throw new NotFound('Doc not found');
+    }
+    return projection;
+  }
+
+  @SkipThrottle()
+  @Internal()
   @Get('/workspaces/:workspaceId/docs/:docId/content')
   async getDocContent(
     @Param('workspaceId') workspaceId: string,

@@ -237,13 +237,15 @@ export class Tooltip extends LitElement {
         ${unsafeCSS(this.style.cssText)}
       }
 
-      ${this.allowInteractive
-        ? css``
-        : css`
-            :host {
-              pointer-events: none;
-            }
-          `}
+      ${
+        this.allowInteractive
+          ? css``
+          : css`
+              :host {
+                pointer-events: none;
+              }
+            `
+      }
 
       ${this.tooltipStyle}
     `;

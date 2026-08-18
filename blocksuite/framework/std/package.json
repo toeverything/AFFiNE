@@ -3,7 +3,7 @@
   "description": "Std for blocksuite blocks",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "yarn run -T tsc"
   },
   "sideEffects": false,
   "keywords": [],
@@ -11,7 +11,7 @@
   "license": "MIT",
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^2.0.0",
-    "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "^2.1.2",
+    "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "^3.0.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "^2.0.0",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/store": "workspace:*",

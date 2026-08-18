@@ -150,7 +150,7 @@ export const TagsEditor = ({
       const idx = tagColors.findIndex(c => c.value === color);
       return tagColors[(idx + 1) % tagColors.length].value;
     },
-    // eslint-disable-next-line react-hooks/purity
+    // oxlint-disable-next-line react-hooks-js/purity
     tagColors[Math.floor(Math.random() * tagColors.length)].value
   );
 

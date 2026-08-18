@@ -278,7 +278,21 @@ test('should return doc markdown success', async t => {
     docSnapshot.id,
     false
   );
-  t.snapshot(result);
+  if (result) {
+    const { revision, ...markdown } = result;
+    t.truthy(revision);
+    t.snapshot(markdown);
+  }
+  const canvas = await docReader.getDocCanvas(workspace.id, docSnapshot.id);
+  t.is(canvas?.version, 1);
+  t.is(canvas?.docId, docSnapshot.id);
+  t.truthy(canvas?.revision);
+  t.deepEqual(canvas?.counts, {
+    connector: 6,
+    group: 6,
+    shape: 7,
+    text: 7,
+  });
 });
 
 test('should read markdown return null when doc not exists', async t => {
@@ -293,4 +307,5 @@ test('should read markdown return null when doc not exists', async t => {
     false
   );
   t.is(result, null);
+  t.is(await docReader.getDocCanvas(workspace.id, randomUUID()), null);
 });

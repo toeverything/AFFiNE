@@ -47,9 +47,7 @@ export class WorkspaceImpl implements Workspace {
   meta: WorkspaceMeta;
 
   slots = {
-    /* eslint-disable rxjs/finnish */
     docListUpdated: new Subject<void>(),
-    /* eslint-enable rxjs/finnish */
   };
 
   get docs() {
