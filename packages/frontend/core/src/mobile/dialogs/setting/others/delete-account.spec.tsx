@@ -2,9 +2,15 @@
  * @vitest-environment happy-dom
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const deleteAccount = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const notifyError = vi.hoisted(() => vi.fn());
@@ -18,6 +24,7 @@ const accountState = vi.hoisted(() => ({
     label: 'User',
   },
 }));
+const teamOwnerState = vi.hoisted(() => ({ value: false as boolean | null }));
 const authSessionAccountStream = vi.hoisted(() =>
   Symbol('authSessionAccount$')
 );
@@ -171,7 +178,7 @@ vi.mock('@toeverything/infra', () => {
         '__type' in source &&
         (source as { __type?: string }).__type === 'team-owner-live-data'
       ) {
-        return false;
+        return teamOwnerState.value;
       }
       return undefined;
     },
@@ -209,6 +216,10 @@ vi.mock('./delete-account.css', () => ({
 import { DeleteAccount } from './delete-account';
 
 describe('DeleteAccount mobile flow', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     deleteAccount.mockClear();
     notifyError.mockClear();
@@ -218,6 +229,8 @@ describe('DeleteAccount mobile flow', () => {
       email: 'user@example.com',
       label: 'User',
     };
+    teamOwnerState.value = false;
+    deleteAccount.mockResolvedValue(undefined);
   });
 
   test('returns to the warning step when cancelling the email confirmation step', async () => {
@@ -254,6 +267,93 @@ describe('DeleteAccount mobile flow', () => {
       screen.queryByText(
         'com.affine.setting.account.delete.email-confirm-title'
       )
+    ).toBeNull();
+  });
+
+  test('deletes the account after confirming the account email', async () => {
+    const onDeleteFinished = vi.fn();
+
+    render(<DeleteAccount onDeleteFinished={onDeleteFinished} />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'com.affine.mobile.setting.others.delete-account',
+      })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: ' USER@EXAMPLE.COM ' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'com.affine.setting.account.delete.confirm-button',
+      })
+    );
+
+    await waitFor(() => {
+      expect(deleteAccount).toHaveBeenCalledOnce();
+    });
+    expect(trackDeleteAccount).toHaveBeenCalledOnce();
+    expect(onDeleteFinished).toHaveBeenCalledOnce();
+  });
+
+  test('shows an error and clears loading when account deletion fails', async () => {
+    const error = new Error('delete failed');
+    deleteAccount.mockRejectedValueOnce(error);
+
+    render(<DeleteAccount />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'com.affine.mobile.setting.others.delete-account',
+      })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'user@example.com' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'com.affine.setting.account.delete.confirm-button',
+      })
+    );
+
+    await waitFor(() => {
+      expect(notifyError).toHaveBeenCalledWith(error);
+    });
+    expect(trackDeleteAccount).not.toHaveBeenCalled();
+  });
+
+  test('blocks account deletion for team workspace owners', () => {
+    teamOwnerState.value = true;
+
+    render(<DeleteAccount />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'com.affine.mobile.setting.others.delete-account',
+      })
+    );
+
+    expect(
+      screen.getByText('com.affine.setting.account.delete.team-warning-title')
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(
+        'com.affine.setting.account.delete.email-confirm-title'
+      )
+    ).toBeNull();
+  });
+
+  test('hides account deletion until workspace ownership is known', () => {
+    teamOwnerState.value = null;
+
+    render(<DeleteAccount />);
+
+    expect(
+      screen.queryByRole('button', {
+        name: 'com.affine.mobile.setting.others.delete-account',
+      })
     ).toBeNull();
   });
 });

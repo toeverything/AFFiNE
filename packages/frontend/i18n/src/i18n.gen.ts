@@ -3108,10 +3108,6 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.promo.description"](): string;
     /**
-      * `AFFiNE Cloud & Self-Hosted`
-      */
-    ["com.affine.mobile.setting.promo.eyebrow"](): string;
-    /**
       * `AFFiNE for team and more`
       */
     ["com.affine.mobile.setting.promo.title"](): string;

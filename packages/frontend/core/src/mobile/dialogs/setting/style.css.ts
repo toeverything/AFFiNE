@@ -1,8 +1,4 @@
-import {
-  bodyEmphasized,
-  bodyRegular,
-  footnoteRegular,
-} from '@toeverything/theme/typography';
+import { bodyEmphasized, bodyRegular } from '@toeverything/theme/typography';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
@@ -141,14 +137,6 @@ export const promoCard = style({
     },
   },
 });
-
-export const promoCardEyebrow = style([
-  footnoteRegular,
-  {
-    color: cssVarV2('button/pureWhiteText'),
-    opacity: 0.88,
-  },
-]);
 
 export const promoCardContent = style({
   position: 'relative',
