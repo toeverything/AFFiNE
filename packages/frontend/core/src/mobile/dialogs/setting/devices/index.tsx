@@ -4,7 +4,7 @@ import {
   type DeviceAuthSession,
 } from '@affine/core/modules/cloud';
 import { useI18n } from '@affine/i18n';
-import { useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { SettingGroup } from '../group';
@@ -15,10 +15,16 @@ const loadFailedToastId = 'mobile-settings-devices-load-failed';
 export const DevicesGroup = () => {
   const t = useI18n();
   const auth = useService(AuthService);
+  const loginStatus = useLiveData(auth.session.status$);
   const [sessions, setSessions] = useState<DeviceAuthSession[]>([]);
   const dismissTimer = useRef<number | undefined>(undefined);
 
   const reload = useCallback(() => {
+    if (loginStatus !== 'authenticated') {
+      setSessions([]);
+      return;
+    }
+
     void auth
       .listDeviceSessions()
       .then(setSessions)
@@ -36,7 +42,7 @@ export const DevicesGroup = () => {
           5000
         );
       });
-  }, [auth, t]);
+  }, [auth, loginStatus, t]);
 
   useEffect(reload, [reload]);
   useEffect(
@@ -70,6 +76,10 @@ export const DevicesGroup = () => {
     },
     [auth, reload, t]
   );
+
+  if (loginStatus !== 'authenticated' || sessions.length === 0) {
+    return null;
+  }
 
   return (
     <SettingGroup title={t['com.affine.settings.devices.title']()}>
