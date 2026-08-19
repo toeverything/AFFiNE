@@ -230,6 +230,86 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     }
   };
 
+  private readonly _onAndroidIMEInput = async (event: Event) => {
+    if (!IS_ANDROID) return;
+
+    const inputType = (
+      event as CustomEvent<{
+        inputType?: string;
+      }>
+    ).detail?.inputType;
+    if (
+      inputType !== 'deleteContentBackward' &&
+      inputType !== 'deleteContentForward'
+    ) {
+      return;
+    }
+
+    const range = this.editor.rangeService.getNativeRange();
+    if (
+      this.editor.isReadonly ||
+      !range ||
+      !this._isRangeCompletelyInRoot(range)
+    )
+      return;
+
+    this._isComposing = false;
+    this._compositionInlineRange = null;
+
+    let inlineRange = this.editor.toInlineRange(range);
+    if (!inlineRange) {
+      this.editor.rerenderWholeEditor();
+      await this.editor.waitForUpdate();
+      const newRange = this.editor.rangeService.getNativeRange();
+      inlineRange = newRange ? this.editor.toInlineRange(newRange) : null;
+      if (!inlineRange) return;
+    }
+
+    if (inlineRange.length === 0) {
+      if (inputType === 'deleteContentBackward') {
+        if (inlineRange.index === 0) return;
+        inlineRange = {
+          index: inlineRange.index - 1,
+          length: 1,
+        };
+      } else {
+        if (inlineRange.index >= this.editor.yTextLength) return;
+        inlineRange = {
+          index: inlineRange.index,
+          length: 1,
+        };
+      }
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const raw = new InputEvent('beforeinput', {
+      inputType,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    const ctx: BeforeinputHookCtx<TextAttributes> = {
+      inlineEditor: this.editor,
+      raw,
+      inlineRange,
+      data: null,
+      attributes: {} as TextAttributes,
+    };
+    this.editor.hooks.beforeinput?.(ctx);
+
+    transformInput<TextAttributes>(
+      ctx.raw.inputType,
+      ctx.data,
+      ctx.attributes,
+      ctx.inlineRange,
+      this.editor as never
+    );
+    this.editor.slots.inputting.next('');
+    this._finishAndroidComposingSession(`android:${inputType}`);
+  };
+
   private readonly _onClick = (event: MouseEvent) => {
     // select embed element when click on it
     if (event.target instanceof Node && isInEmbedElement(event.target)) {
@@ -458,6 +538,13 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     this.editor.disposables.addFromEvent(eventSource, 'beforeinput', e => {
       this._onBeforeInput(e).catch(console.error);
     });
+    this.editor.disposables.addFromEvent(
+      eventSource,
+      'affine-android-ime-input',
+      e => {
+        this._onAndroidIMEInput(e).catch(console.error);
+      }
+    );
     this.editor.disposables.addFromEvent(
       eventSource,
       'compositionstart',
