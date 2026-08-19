@@ -122,7 +122,7 @@ export class LanguageListButton extends WithDisposable(
     const plainTextItem: FilterableListItem = {
       label: 'Plain Text',
       name: PLAIN_TEXT_ID,
-      aliases: ['plain', 'text', 'none'],
+      aliases: ['plain', 'text', 'plaintext', 'txt', 'none'],
     };
 
     const langList = localStorage.getItem('blocksuite:code-block:lang-list');
