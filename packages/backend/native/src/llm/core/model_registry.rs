@@ -81,12 +81,12 @@ mod tests {
 
     let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("gemini_api".to_string()),
-      model_id: "gemini-3.6-flash".to_string(),
+      model_id: "gemini-3.7-flash".to_string(),
     })
     .unwrap();
 
     assert_eq!(response.matched_by.as_deref(), Some("raw_model_id"));
-    assert_eq!(response.variant.unwrap().raw_model_id, "gemini-3.6-flash");
+    assert_eq!(response.variant.unwrap().raw_model_id, "gemini-3.7-flash");
   }
 
   #[test]
@@ -301,7 +301,7 @@ mod tests {
         attachment_kinds: None,
         attachment_source_kinds: None,
         has_remote_attachments: None,
-        model_id: Some("gemini-3.6-flash".to_string()),
+        model_id: Some("gemini-3.7-flash".to_string()),
         output_type: Some("image".to_string()),
       },
     })

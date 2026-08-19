@@ -3036,6 +3036,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.about.title"](): string;
     /**
+      * `Log In / Sign Up`
+      */
+    ["com.affine.mobile.setting.account.sign-in"](): string;
+    /**
+      * `Account & Data`
+      */
+    ["com.affine.mobile.setting.account.title"](): string;
+    /**
       * `Font style`
       */
     ["com.affine.mobile.setting.appearance.font"](): string;
@@ -3052,6 +3060,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.appearance.title"](): string;
     /**
+      * `Experimental features`
+      */
+    ["com.affine.mobile.setting.experimental.features"](): string;
+    /**
+      * `Experimental`
+      */
+    ["com.affine.mobile.setting.experimental.title"](): string;
+    /**
       * `Settings`
       */
     ["com.affine.mobile.setting.header-title"](): string;
@@ -3060,7 +3076,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.others.github"](): string;
     /**
-      * `Discord Group`
+      * `Discord group`
       */
     ["com.affine.mobile.setting.others.discord"](): string;
     /**
@@ -3080,9 +3096,49 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.others.website"](): string;
     /**
-      * `Delete my account`
+      * `Delete Account`
       */
     ["com.affine.mobile.setting.others.delete-account"](): string;
+    /**
+      * `Danger Zone`
+      */
+    ["com.affine.mobile.setting.danger-zone.title"](): string;
+    /**
+      * `Collaborate seamlessly with AFFiNE team, available in Cloud and Self-Hosted versions.`
+      */
+    ["com.affine.mobile.setting.promo.description"](): string;
+    /**
+      * `AFFiNE for team and more`
+      */
+    ["com.affine.mobile.setting.promo.title"](): string;
+    /**
+      * `Go Pro`
+      */
+    ["com.affine.mobile.setting.subscription.button"](): string;
+    /**
+      * `Unlimited space for your notes and boards.`
+      */
+    ["com.affine.mobile.setting.subscription.description"](): string;
+    /**
+      * `Unlock Pro Features`
+      */
+    ["com.affine.mobile.setting.subscription.title"](): string;
+    /**
+      * `Invite a friend`
+      */
+    ["com.affine.mobile.setting.support.invite"](): string;
+    /**
+      * `Check out AFFiNE for notes, whiteboards, docs, and AI.`
+      */
+    ["com.affine.mobile.setting.support.invite-message"](): string;
+    /**
+      * `Rate AFFiNE`
+      */
+    ["com.affine.mobile.setting.support.rate"](): string;
+    /**
+      * `Support us`
+      */
+    ["com.affine.mobile.setting.support.title"](): string;
     /**
       * `Want to keep data local?`
       */
@@ -5250,6 +5306,10 @@ export function useAFFiNEI18N(): {
       * `Delete your account?`
       */
     ["com.affine.setting.account.delete.confirm-title"](): string;
+    /**
+      * `Confirm your email`
+      */
+    ["com.affine.setting.account.delete.email-confirm-title"](): string;
     /**
       * `Please type your email to confirm`
       */
@@ -10765,6 +10825,14 @@ export const TypedTrans: {
       * `Your account will be inaccessible, and your personal space on the server will be permanently deleted. You can remove local data by uninstalling the app or clearing your browser storage. <1>This action is irreversible.</1>`
       */
     ["com.affine.setting.account.delete.confirm-delete-description-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `Type <1>{{email}}</1> to confirm account deletion.`
+      */
+    ["com.affine.setting.account.delete.email-confirm-description"]: ComponentType<TypedTransProps<{
+        readonly email: string;
+    }, {
         ["1"]: JSX.Element;
     }>>;
     /**
