@@ -16,7 +16,7 @@ import GraphQLUpload, {
 import {
   BlobQuotaExceeded,
   CopilotEmbeddingUnavailable,
-  CopilotFailedToAddWorkspaceFileEmbedding,
+  CopilotFailedToAddWorkspaceArtifact,
   Mutex,
   paginate,
   PaginationInput,
@@ -26,13 +26,14 @@ import {
 import { CurrentUser } from '../../../core/auth';
 import { PermissionAccess } from '../../../core/permission';
 import { WorkspaceType } from '../../../core/workspaces';
+import { CopilotEnabled } from '../feature';
 import { COPILOT_LOCKER } from '../resolver';
 import { MAX_EMBEDDABLE_SIZE } from '../utils';
 import { CopilotWorkspaceService } from './service';
 import {
-  CopilotWorkspaceFileType,
+  CopilotWorkspaceArtifactType,
   CopilotWorkspaceIgnoredDocType,
-  PaginatedCopilotWorkspaceFileType,
+  PaginatedCopilotWorkspaceArtifactType,
   PaginatedIgnoredDocsType,
 } from './types';
 
@@ -47,6 +48,7 @@ export class CopilotWorkspaceConfigType {
  * Public apis rate limit: 10 req/m
  * Other rate limit: 120 req/m
  */
+@CopilotEnabled()
 @Resolver(() => WorkspaceType)
 export class CopilotWorkspaceEmbeddingResolver {
   constructor(private readonly ac: PermissionAccess) {}
@@ -67,6 +69,7 @@ export class CopilotWorkspaceEmbeddingResolver {
   }
 }
 
+@CopilotEnabled()
 @Resolver(() => CopilotWorkspaceConfigType)
 export class CopilotWorkspaceEmbeddingConfigResolver {
   constructor(
@@ -129,34 +132,34 @@ export class CopilotWorkspaceEmbeddingConfigResolver {
     );
   }
 
-  @ResolveField(() => PaginatedCopilotWorkspaceFileType, {
+  @ResolveField(() => PaginatedCopilotWorkspaceArtifactType, {
     complexity: 2,
   })
-  async files(
+  async artifacts(
     @Parent() config: CopilotWorkspaceConfigType,
     @Args('pagination', PaginationInput.decode) pagination: PaginationInput
-  ): Promise<PaginatedCopilotWorkspaceFileType> {
-    const [files, totalCount] = await this.copilotWorkspace.listFiles(
+  ): Promise<PaginatedCopilotWorkspaceArtifactType> {
+    const [artifacts, totalCount] = await this.copilotWorkspace.listArtifacts(
       config.workspaceId,
       pagination
     );
 
-    return paginate(files, 'createdAt', pagination, totalCount);
+    return paginate(artifacts, 'createdAt', pagination, totalCount);
   }
 
-  @Mutation(() => CopilotWorkspaceFileType, {
-    name: 'addWorkspaceEmbeddingFiles',
+  @Mutation(() => CopilotWorkspaceArtifactType, {
+    name: 'addWorkspaceArtifact',
     complexity: 2,
-    description: 'Update workspace embedding files',
+    description: 'Add a workspace artifact',
   })
-  async addFiles(
+  async addArtifact(
     @Context() ctx: { req: Request },
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId', { type: () => String })
     workspaceId: string,
     @Args({ name: 'blob', type: () => GraphQLUpload })
     content: FileUpload
-  ): Promise<CopilotWorkspaceFileType> {
+  ): Promise<CopilotWorkspaceArtifactType> {
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
@@ -178,48 +181,35 @@ export class CopilotWorkspaceEmbeddingConfigResolver {
     }
 
     try {
-      const { blobId, file } = await this.copilotWorkspace.addFile(
-        user.id,
-        workspaceId,
-        content
-      );
-      await this.copilotWorkspace.queueFileEmbedding({
-        userId: user.id,
-        workspaceId,
-        blobId,
-        fileId: file.fileId,
-        fileName: file.fileName,
-      });
-
-      return file;
-    } catch (e: any) {
+      return await this.copilotWorkspace.addArtifact(workspaceId, content);
+    } catch (e) {
       // passthrough user friendly error
       if (e instanceof UserFriendlyError) {
         throw e;
       }
-      throw new CopilotFailedToAddWorkspaceFileEmbedding({
-        message: e.message,
+      throw new CopilotFailedToAddWorkspaceArtifact({
+        message: e instanceof Error ? e.message : String(e),
       });
     }
   }
 
   @Mutation(() => Boolean, {
-    name: 'removeWorkspaceEmbeddingFiles',
+    name: 'removeWorkspaceArtifact',
     complexity: 2,
-    description: 'Remove workspace embedding files',
+    description: 'Remove a workspace artifact',
   })
-  async removeFiles(
+  async removeArtifact(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId', { type: () => String })
     workspaceId: string,
-    @Args('fileId', { type: () => String })
-    fileId: string
+    @Args('artifactId', { type: () => String })
+    artifactId: string
   ): Promise<boolean> {
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
       .assert('Workspace.Settings.Update');
 
-    return await this.copilotWorkspace.removeFile(workspaceId, fileId);
+    return await this.copilotWorkspace.removeArtifact(workspaceId, artifactId);
   }
 }

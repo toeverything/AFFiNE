@@ -191,7 +191,6 @@ model Workspace {
   docs                       WorkspaceDoc[]
   blobs                      Blob[]
   ignoredDocs                AiWorkspaceIgnoredDocs[]
-  embedFiles                 AiWorkspaceFiles[]
   byokConfigs                AiWorkspaceByokConfig[]
   aiUsageEvents              AiUsageEvent[]
   comments                   Comment[]
@@ -209,6 +208,7 @@ model Workspace {
   docAccessPolicies          DocAccessPolicy[]
   docGrants                  DocGrant[]
   mcpCredentials             McpCredential[]
+  artifacts                  WorkspaceArtifact[]
 
   @@index([lastCheckEmbeddings])
   @@index([createdAt])
@@ -652,8 +652,6 @@ model Snapshot {
   // we need to clear all hanging updates and snapshots before enable the foreign key on workspaceId
   // workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  embedding AiWorkspaceEmbedding[]
-
   @@id([workspaceId, id])
   @@index([workspaceId, updatedAt])
   @@map("snapshots")
@@ -706,63 +704,32 @@ model SnapshotHistory {
   @@map("snapshot_histories")
 }
 
-enum AiPromptRole {
+enum AiSessionMessageRole {
   system
   assistant
   user
-}
 
-model AiPromptMessage {
-  promptId    Int          @map("prompt_id") @db.Integer
-  // if a group of prompts contains multiple sentences, idx specifies the order of each sentence
-  idx         Int          @db.Integer
-  // system/assistant/user
-  role        AiPromptRole
-  // prompt content
-  content     String       @db.Text
-  attachments Json?        @db.Json
-  params      Json?        @db.Json
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  prompt AiPrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
-
-  @@unique([promptId, idx])
-  @@map("ai_prompts_messages")
-}
-
-model AiPrompt {
-  id             Int      @id @default(autoincrement()) @db.Integer
-  name           String   @unique @db.VarChar(32)
-  // an mark identifying which view to use to display the session
-  // it is only used in the frontend and does not affect the backend
-  action         String?  @db.VarChar
-  model          String   @db.VarChar
-  optionalModels String[] @default([]) @map("optional_models") @db.VarChar
-  config         Json?    @db.Json
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
-  // whether the prompt metadata is manually overridden in compat storage
-  modified       Boolean  @default(false)
-
-  messages AiPromptMessage[]
-  sessions AiSession[]
-
-  @@map("ai_prompts_metadata")
+  // the database type keeps the legacy name so the previous release, whose
+  // Prisma client casts enum values as "AiPromptRole", can keep writing
+  // ai_sessions_messages while it runs against the same database
+  @@map("AiPromptRole")
 }
 
 model AiSessionMessage {
-  id                 String       @id @default(uuid()) @db.VarChar
-  sessionId          String       @map("session_id") @db.VarChar
-  compatSubmissionId String?      @map("compat_submission_id") @db.VarChar
-  role               AiPromptRole
-  content            String       @db.Text
-  streamObjects      Json?        @db.Json
-  attachments        Json?        @db.Json
-  params             Json?        @db.Json
-  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                 String               @id @default(uuid()) @db.VarChar
+  sessionId          String               @map("session_id") @db.VarChar
+  compatSubmissionId String?              @map("compat_submission_id") @db.VarChar
+  role               AiSessionMessageRole
+  content            String               @db.Text
+  streamObjects      Json?                @db.Json
+  attachments        Json?                @db.Json
+  params             Json?                @db.Json
+  scopeSnapshot      Json?                @map("scope_snapshot") @db.JsonB
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session   AiSession           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  artifacts AiMessageArtifact[]
 
   @@index([sessionId])
   @@index([sessionId, compatSubmissionId])
@@ -782,15 +749,13 @@ model AiSession {
   // the session id of the parent session if this session is a forked session
   parentSessionId String?   @map("parent_session_id") @db.VarChar
   messageCost     Int       @default(0)
-  tokenCost       Int       @default(0)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
+  focus           Json?     @db.JsonB
 
   user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  prompt     AiPrompt           @relation(fields: [promptName], references: [name], onDelete: Cascade)
   messages   AiSessionMessage[]
-  context    AiContext[]
   actionRuns AiActionRun[]
 
   //NOTE:
@@ -802,6 +767,50 @@ model AiSession {
   @@index([userId])
   @@index([userId, workspaceId, docId])
   @@map("ai_sessions_metadata")
+}
+
+model WorkspaceArtifact {
+  id                   String    @id @default(uuid()) @db.Uuid
+  workspaceId          String    @map("workspace_id") @db.VarChar
+  contentHash          String    @map("content_hash") @db.VarChar
+  displayName          String?   @map("display_name") @db.VarChar
+  fileName             String?   @map("file_name") @db.VarChar
+  canonicalMediaType   String    @map("canonical_media_type") @db.VarChar
+  sizeBytes            BigInt    @map("size_bytes")
+  storageScope         String    @map("storage_scope") @db.VarChar
+  storageKey           String    @map("storage_key") @db.Text
+  status               String    @db.VarChar
+  libraryOwned         Boolean   @default(false) @map("library_owned")
+  reservationExpiresAt DateTime? @map("reservation_expires_at") @db.Timestamptz(3)
+  readyAt              DateTime? @map("ready_at") @db.Timestamptz(3)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  messages  AiMessageArtifact[]
+
+  @@unique([workspaceId, contentHash])
+  @@unique([workspaceId, id])
+  @@index([workspaceId, status])
+  @@index([status, reservationExpiresAt])
+  @@map("workspace_artifacts")
+}
+
+model AiMessageArtifact {
+  messageId   String   @map("message_id") @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  artifactId  String   @map("artifact_id") @db.Uuid
+  role        String   @db.VarChar
+  displayName String?  @map("display_name") @db.VarChar
+  metadata    Json?    @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  message  AiSessionMessage  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  artifact WorkspaceArtifact @relation(fields: [workspaceId, artifactId], references: [workspaceId, id], onDelete: Cascade)
+
+  @@id([messageId, artifactId, role])
+  @@index([workspaceId, artifactId])
+  @@map("ai_message_artifacts")
 }
 
 model AiActionRun {
@@ -838,81 +847,28 @@ model AiActionRun {
 }
 
 model AiTranscriptTask {
-  id              String    @id @default(uuid()) @db.VarChar
-  userId          String    @map("user_id") @db.VarChar
-  workspaceId     String    @map("workspace_id") @db.VarChar
-  blobId          String    @map("blob_id") @db.VarChar
-  status          String    @db.VarChar
-  strategy        String    @db.VarChar
-  recipeId        String    @map("recipe_id") @db.VarChar
-  recipeVersion   String    @map("recipe_version") @db.VarChar
-  actionRunId     String?   @map("action_run_id") @db.VarChar
-  inputSnapshot   Json?     @map("input_snapshot") @db.Json
-  publicMeta      Json?     @map("public_meta") @db.Json
-  protectedResult Json?     @map("protected_result") @db.Json
-  errorCode       String?   @map("error_code") @db.VarChar
-  settledAt       DateTime? @map("settled_at") @db.Timestamptz(3)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                 String    @id @default(uuid()) @db.VarChar
+  userId             String    @map("user_id") @db.VarChar
+  workspaceId        String    @map("workspace_id") @db.VarChar
+  blobId             String    @map("blob_id") @db.VarChar
+  status             String    @db.VarChar
+  recipeId           String    @map("recipe_id") @db.VarChar
+  recipeVersion      String    @map("recipe_version") @db.VarChar
+  actionRunId        String?   @map("action_run_id") @db.VarChar
+  dispatchGeneration String?   @map("dispatch_generation") @db.VarChar
+  inputSnapshot      Json?     @map("input_snapshot") @db.Json
+  publicMeta         Json?     @map("public_meta") @db.Json
+  protectedResult    Json?     @map("protected_result") @db.Json
+  errorCode          String?   @map("error_code") @db.VarChar
+  settledAt          DateTime? @map("settled_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([userId, workspaceId])
   @@index([workspaceId, blobId])
   @@index([status])
   @@index([actionRunId])
   @@map("ai_transcript_tasks")
-}
-
-model AiContext {
-  id        String @id @default(uuid()) @db.VarChar
-  sessionId String @map("session_id") @db.VarChar
-  config    Json   @db.Json
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  embeddings AiContextEmbedding[]
-  session    AiSession            @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@map("ai_contexts")
-}
-
-model AiContextEmbedding {
-  id        String                      @id @default(uuid()) @db.VarChar
-  contextId String                      @map("context_id") @db.VarChar
-  fileId    String                      @map("file_id") @db.VarChar
-  // a file can be divided into multiple chunks and embedded separately.
-  chunk     Int                         @db.Integer
-  content   String                      @db.VarChar
-  embedding Unsupported("vector(1024)")
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  context AiContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
-
-  @@unique([contextId, fileId, chunk])
-  @@index([embedding], map: "ai_context_embeddings_idx")
-  @@map("ai_context_embeddings")
-}
-
-model AiWorkspaceEmbedding {
-  workspaceId String                      @map("workspace_id") @db.VarChar
-  docId       String                      @map("doc_id") @db.VarChar
-  // a doc can be divided into multiple chunks and embedded separately.
-  chunk       Int                         @db.Integer
-  content     String                      @db.VarChar
-  embedding   Unsupported("vector(1024)")
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  // workspace level search not available for non-cloud workspaces
-  // so we can match this record with the snapshot one by one
-  snapshot Snapshot @relation(fields: [workspaceId, docId], references: [workspaceId, id], onDelete: Cascade)
-
-  @@id([workspaceId, docId, chunk])
-  @@index([embedding], map: "ai_workspace_embeddings_idx")
-  @@map("ai_workspace_embeddings")
 }
 
 model AiWorkspaceIgnoredDocs {
@@ -927,78 +883,26 @@ model AiWorkspaceIgnoredDocs {
   @@map("ai_workspace_ignored_docs")
 }
 
-model AiWorkspaceFiles {
-  workspaceId String @map("workspace_id") @db.VarChar
-  fileId      String @map("file_id") @db.VarChar
-  blobId      String @default("") @map("blob_id") @db.VarChar
-  fileName    String @map("file_name") @db.VarChar
-  mimeType    String @map("mime_type") @db.VarChar
-  size        Int    @db.Integer
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  embeddings AiWorkspaceFileEmbedding[]
-
-  @@id([workspaceId, fileId])
-  @@map("ai_workspace_files")
-}
-
-model AiWorkspaceFileEmbedding {
-  workspaceId String                      @map("workspace_id") @db.VarChar
-  fileId      String                      @map("file_id") @db.VarChar
-  // a file can be divided into multiple chunks and embedded separately.
-  chunk       Int                         @db.Integer
-  content     String                      @db.VarChar
-  embedding   Unsupported("vector(1024)")
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  file AiWorkspaceFiles @relation(fields: [workspaceId, fileId], references: [workspaceId, fileId], onDelete: Cascade)
-
-  @@id([workspaceId, fileId, chunk])
-  @@index([embedding], map: "ai_workspace_file_embeddings_idx")
-  @@map("ai_workspace_file_embeddings")
-}
-
-model AiWorkspaceBlobEmbedding {
-  workspaceId String                      @map("workspace_id") @db.VarChar
-  blobId      String                      @map("blob_id") @db.VarChar
-  // a file can be divided into multiple chunks and embedded separately.
-  chunk       Int                         @db.Integer
-  content     String                      @db.VarChar
-  embedding   Unsupported("vector(1024)")
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  blob Blob @relation(fields: [workspaceId, blobId], references: [workspaceId, key], onDelete: Cascade)
-
-  @@id([workspaceId, blobId, chunk])
-  @@index([embedding], map: "ai_workspace_blob_embeddings_idx")
-  @@map("ai_workspace_blob_embeddings")
-}
-
 model AiWorkspaceByokConfig {
-  id                  String    @id @default(uuid()) @db.VarChar
-  workspaceId         String    @map("workspace_id") @db.VarChar
-  provider            String    @db.VarChar
-  name                String    @db.VarChar
-  description         String?   @db.VarChar
-  encryptedApiKey     String    @map("encrypted_api_key") @db.Text
-  endpoint            String?   @db.Text
-  sortOrder           Int       @default(0) @map("sort_order")
-  enabled             Boolean   @default(true)
-  disabledReason      String?   @map("disabled_reason") @db.VarChar
-  lastValidatedAt     DateTime? @map("last_validated_at") @db.Timestamptz(3)
-  lastValidationError String?   @map("last_validation_error") @db.Text
-  lastUsedAt          DateTime? @map("last_used_at") @db.Timestamptz(3)
-  lastErrorAt         DateTime? @map("last_error_at") @db.Timestamptz(3)
-  lastError           String?   @map("last_error") @db.Text
-  createdBy           String?   @map("created_by") @db.VarChar
-  updatedBy           String?   @map("updated_by") @db.VarChar
-  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                   String    @id @default(uuid()) @db.VarChar
+  workspaceId          String    @map("workspace_id") @db.VarChar
+  provider             String    @db.VarChar
+  name                 String    @db.VarChar
+  description          String?   @db.VarChar
+  encryptedApiKey      String    @map("encrypted_api_key") @db.Text
+  definition           Json      @db.JsonB
+  revision             Int       @default(1)
+  credentialGeneration Int       @default(1) @map("credential_generation")
+  validation           Json?     @db.JsonB
+  sortOrder            Int       @default(0) @map("sort_order")
+  enabled              Boolean   @default(true)
+  lastUsedAt           DateTime? @map("last_used_at") @db.Timestamptz(3)
+  lastErrorAt          DateTime? @map("last_error_at") @db.Timestamptz(3)
+  lastError            String?   @map("last_error") @db.Text
+  createdBy            String?   @map("created_by") @db.VarChar
+  updatedBy            String?   @map("updated_by") @db.VarChar
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -1250,8 +1154,7 @@ model Blob {
   createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   deletedAt   DateTime?  @map("deleted_at") @db.Timestamptz(3)
 
-  workspace                Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  AiWorkspaceBlobEmbedding AiWorkspaceBlobEmbedding[]
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, key])
   @@index([workspaceId, status, deletedAt])

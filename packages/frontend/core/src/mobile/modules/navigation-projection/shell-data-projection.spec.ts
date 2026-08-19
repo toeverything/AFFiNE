@@ -1,5 +1,3 @@
-/* eslint-disable rxjs/finnish */
-
 import { Framework, LiveData } from '@toeverything/infra';
 import { Observable, Subject } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';

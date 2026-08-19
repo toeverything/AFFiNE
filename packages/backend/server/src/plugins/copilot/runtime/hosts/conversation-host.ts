@@ -2,19 +2,30 @@ import { Injectable } from '@nestjs/common';
 
 import {
   CopilotMessageNotFound,
+  CopilotSelectedSourcesLimitExceeded,
   CopilotSessionNotFound,
   Mutex,
 } from '../../../../base';
-import { CopilotAccessPolicy } from '../../access';
+import { BackendRuntimeProvider } from '../../../../core/backend-runtime';
 import { CompatSubmissionStore } from '../../compat/submission-store';
+import { ConversationPolicy } from '../../conversation/policy';
 import {
   canonicalizeTurnTrace,
+  promptMessageFromTurn,
   type Turn,
   turnFromChatMessage,
 } from '../../core';
 import type { PromptParams } from '../../providers/types';
 import { ChatSession, ChatSessionService } from '../../session';
 import { ChatQuerySchema } from '../../types';
+import {
+  ClientScopeSelectorSchema,
+  type ScopeSelector,
+  ScopeSelectorSchema,
+  type SessionFocus,
+  TurnScopeSnapshotSchema,
+} from '../contracts/shared';
+import { AttachmentAdmissionHost } from './attachment-admission';
 
 export type PreparedConversationTurn = {
   messageId?: string;
@@ -35,8 +46,113 @@ export class ConversationHost {
     private readonly sessions: ChatSessionService,
     private readonly submissions: CompatSubmissionStore,
     private readonly mutex: Mutex,
-    private readonly access: CopilotAccessPolicy
+    private readonly policy: ConversationPolicy,
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly attachmentAdmission: AttachmentAdmissionHost
   ) {}
+
+  private selectors(
+    value: unknown,
+    source: ScopeSelector['source']
+  ): ScopeSelector[] {
+    if (value === undefined) return [];
+    return ClientScopeSelectorSchema.array()
+      .max(100)
+      .parse(value)
+      .map(selector => ({ ...selector, source }));
+  }
+
+  private mergeSelectors(...groups: ScopeSelector[][]): ScopeSelector[] {
+    const merged = new Map<string, ScopeSelector>();
+    for (const selector of groups.flat()) {
+      merged.set(`${selector.kind}:${selector.id}`, selector);
+    }
+    return [...merged.values()];
+  }
+
+  private async prepareMessageState(
+    session: ChatSession,
+    params: Record<string, any>,
+    attachments: NonNullable<
+      Parameters<AttachmentAdmissionHost['admitPromptAttachments']>[0]
+    >
+  ) {
+    const {
+      scopeSelectors: rawSelectors,
+      focusSelectors: rawFocus,
+      preferredSourceIds: rawPreferred,
+      ...metadata
+    } = params;
+    const focus: SessionFocus =
+      rawFocus === undefined
+        ? session.config.focus
+        : { selectors: this.selectors(rawFocus, 'focus') };
+    const admitted = await this.attachmentAdmission.admitPromptAttachments(
+      attachments,
+      {
+        userId: session.config.userId,
+        workspaceId: session.config.workspaceId,
+        sessionId: session.config.sessionId,
+      }
+    );
+    const artifacts = await Promise.all(
+      admitted.map(async source => {
+        const artifact = await this.runtime.putWorkspaceArtifact(
+          {
+            workspaceId: session.config.workspaceId,
+            mimeType: source.mimeType,
+            fileName: source.fileName,
+            libraryOwned: false,
+          },
+          Buffer.from(source.data, 'base64')
+        );
+        return {
+          artifactId: artifact.id,
+          role: 'attachment',
+          displayName: source.fileName,
+          metadata: { mimeType: artifact.canonicalMediaType },
+        };
+      })
+    );
+    const artifactSelectors = artifacts.map(
+      ({ artifactId, displayName }): ScopeSelector => ({
+        kind: 'artifact',
+        id: artifactId,
+        name: displayName,
+        source: 'message',
+      })
+    );
+    const selectors = this.mergeSelectors(
+      focus.selectors,
+      this.selectors(rawSelectors, 'draft'),
+      artifactSelectors
+    );
+    const preferredSourceIds =
+      rawPreferred === undefined
+        ? []
+        : ScopeSelectorSchema.shape.id.array().max(100).parse(rawPreferred);
+    let compiledScope: Awaited<
+      ReturnType<BackendRuntimeProvider['compileTurnScope']>
+    >;
+    try {
+      compiledScope = await this.runtime.compileTurnScope({
+        workspaceId: session.config.workspaceId,
+        userId: session.config.userId,
+        selectors,
+        preferredSourceIds,
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('scope_required_document_limit_exceeded')
+      ) {
+        throw new CopilotSelectedSourcesLimitExceeded();
+      }
+      throw error;
+    }
+    const scopeSnapshot = TurnScopeSnapshotSchema.parse(compiledScope);
+    return { artifacts, focus, metadata, scopeSnapshot };
+  }
 
   private async loadAcceptedTurn(
     session: ChatSession,
@@ -109,31 +225,22 @@ export class ConversationHost {
     session: ChatSession,
     sessionId: string,
     messageId?: string,
-    retry = false,
-    byokLeaseId?: string
+    retry = false
   ): Promise<AppendedSessionMessage> {
-    const resolveChatRouteAccess = () =>
-      this.access.resolveTurnRouteAccess({
-        userId,
-        workspaceId: session.config.workspaceId,
-        byokLeaseId,
-        featureKind: 'chat',
-      });
+    const quotaBackedRoutesAllowed = () => this.policy.hasQuota(userId);
 
     if (!messageId) {
       await this.sessions.revertLatestMessage(sessionId, false);
       session.revertLatestMessage(false);
       if (!session.latestUserTurn) {
-        const routeAccess = await resolveChatRouteAccess();
         return {
           turn: session.latestUserTurn,
-          quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+          quotaBackedRoutesAllowed: await quotaBackedRoutesAllowed(),
         };
       }
-      const routeAccess = await resolveChatRouteAccess();
       return {
         turn: session.latestUserTurn,
-        quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+        quotaBackedRoutesAllowed: await quotaBackedRoutesAllowed(),
       };
     }
 
@@ -177,7 +284,7 @@ export class ConversationHost {
       };
     }
 
-    const routeAccess = await resolveChatRouteAccess();
+    const quotaAllowed = await quotaBackedRoutesAllowed();
 
     const submission = await this.submissions.get(messageId);
     if (!submission || submission.sessionId !== sessionId) {
@@ -189,17 +296,25 @@ export class ConversationHost {
       session.revertLatestMessage(true);
     }
 
+    const prepared = await this.prepareMessageState(
+      session,
+      submission.params ?? {},
+      submission.attachments ?? []
+    );
+
     const turn = await this.sessions.appendTurn({
       sessionId,
       userId: session.config.userId,
-      prompt: { model: session.model },
       compatSubmissionId: messageId,
+      focus: prepared.focus,
+      artifacts: prepared.artifacts,
       turn: {
         conversationId: sessionId,
         role: 'user',
         content: submission.content ?? '',
         attachments: submission.attachments ?? [],
-        metadata: submission.params ?? {},
+        metadata: prepared.metadata,
+        scopeSnapshot: prepared.scopeSnapshot,
         renderTrace: [],
         toolEvents: [],
         createdAt: submission.createdAt,
@@ -213,7 +328,7 @@ export class ConversationHost {
     session.pushPersistedTurn(turn);
     return {
       turn,
-      quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+      quotaBackedRoutesAllowed: quotaAllowed,
     };
   }
 
@@ -222,8 +337,7 @@ export class ConversationHost {
     sessionId: string,
     query: Record<string, string | string[]>
   ): Promise<PreparedConversationTurn> {
-    const { messageId, retry, params, byokLeaseId } =
-      ChatQuerySchema.parse(query);
+    const { messageId, retry, params } = ChatQuerySchema.parse(query);
     const session = await this.sessions.get(sessionId);
     if (!session || session.config.userId !== userId) {
       throw new CopilotSessionNotFound();
@@ -233,8 +347,7 @@ export class ConversationHost {
       session,
       sessionId,
       messageId,
-      retry,
-      byokLeaseId
+      retry
     );
     const currentUserMessage =
       session.stashTurns.findLast(turn => turn.role === 'user') ??
@@ -257,7 +370,7 @@ export class ConversationHost {
     return {
       ...latestTurn.metadata,
       content: latestTurn.content,
-      attachments: latestTurn.attachments,
+      attachments: promptMessageFromTurn(latestTurn).attachments ?? [],
     };
   }
 
@@ -280,7 +393,6 @@ export class ConversationHost {
     const persisted = await this.sessions.appendTurn({
       sessionId: session.config.sessionId,
       userId: session.config.userId,
-      prompt: { model: session.model },
       turn: assistantTurn,
     });
     session.pushPersistedTurn(persisted);

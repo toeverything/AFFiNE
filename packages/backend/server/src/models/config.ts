@@ -9,11 +9,34 @@ export class AppConfigModel extends BaseModel {
   async load(excludedKeys: string[] = []) {
     return this.db.appConfig.findMany({
       where: excludedKeys.length ? { id: { notIn: excludedKeys } } : undefined,
+      orderBy: { id: 'asc' },
     });
   }
 
   @Transactional()
   async save(user: string, updates: Array<{ key: string; value: any }>) {
+    await this.db
+      .$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${'app-config-paths'}, 0))`;
+    const existing = await this.db.appConfig.findMany({
+      select: { id: true },
+    });
+    const updateKeys = updates.map(update => update.key);
+    for (const [index, key] of updateKeys.entries()) {
+      const overlappingKey = [
+        ...existing.map(config => config.id),
+        ...updateKeys.slice(0, index),
+      ].find(
+        candidate =>
+          candidate !== key &&
+          (candidate.startsWith(`${key}.`) || key.startsWith(`${candidate}.`))
+      );
+      if (overlappingKey) {
+        throw new Error(
+          `App config paths must not overlap: ${overlappingKey} and ${key}`
+        );
+      }
+    }
+
     return await Promise.allSettled(
       updates.map(async update => {
         return this.db.appConfig.upsert({

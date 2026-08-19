@@ -486,14 +486,18 @@ export class CodeArtifactTool extends ArtifactTool<
     const { html: htmlContent } = result as { html: string };
 
     return html`<div class="code-artifact-preview">
-      ${this.mode === 'preview'
-        ? html`<affine-html-preview .html=${htmlContent}></affine-html-preview>`
-        : html`<code-highlighter
-            .std=${this.std}
-            .code=${htmlContent}
-            .language=${'html'}
-            .showLineNumbers=${true}
-          ></code-highlighter>`}
+      ${
+        this.mode === 'preview'
+          ? html`<affine-html-preview
+              .html=${htmlContent}
+            ></affine-html-preview>`
+          : html`<code-highlighter
+              .std=${this.std}
+              .code=${htmlContent}
+              .language=${'html'}
+              .showLineNumbers=${true}
+            ></code-highlighter>`
+      }
     </div>`;
   }
 

@@ -8,6 +8,7 @@ import {
   sniffMime,
 } from '../../../base';
 import { PermissionAccess } from '../../../core/permission';
+import { Models } from '../../../models';
 import { processImage } from '../../../native';
 import { CompatSubmissionStore } from '../compat/submission-store';
 import type { PromptMessage } from '../providers/types';
@@ -30,6 +31,7 @@ export class ConversationInboxService {
   constructor(
     private readonly chatSession: ChatSessionService,
     private readonly ac: PermissionAccess,
+    private readonly models: Models,
     private readonly storage: CopilotStorage,
     private readonly submissions: CompatSubmissionStore
   ) {}
@@ -47,6 +49,26 @@ export class ConversationInboxService {
     const blobs = await Promise.all(
       options.blob ? [options.blob] : options.blobs || []
     );
+
+    const focusSelectors = options.params?.focusSelectors;
+    const hasWorkspaceContext =
+      attachments.length > 0 ||
+      blobs.length > 0 ||
+      (Array.isArray(options.params?.scopeSelectors) &&
+        options.params.scopeSelectors.length > 0) ||
+      (Array.isArray(options.params?.preferredSourceIds) &&
+        options.params.preferredSourceIds.length > 0) ||
+      (focusSelectors === undefined
+        ? session.config.focus.selectors.length > 0
+        : Array.isArray(focusSelectors) && focusSelectors.length > 0);
+    if (
+      hasWorkspaceContext &&
+      !(await this.models.workspace.get(session.config.workspaceId))
+    ) {
+      throw new BadRequestException(
+        "Local workspaces don't support attachments or references."
+      );
+    }
 
     if (blobs.length) {
       await this.ac
@@ -86,7 +108,12 @@ export class ConversationInboxService {
         filename,
         attachmentBuffer
       );
-      attachments.push({ attachment, mimeType: attachmentMimeType });
+      attachments.push({
+        kind: 'url',
+        url: attachment,
+        mimeType: attachmentMimeType,
+        fileName: blob.filename,
+      });
     }
 
     return await this.submissions.create({

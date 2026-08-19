@@ -24,11 +24,13 @@ export const menuGroupItems = {
         ${items}
       </div>`;
     }
-    const result: TemplateResult = html` ${index === 0
-        ? ''
-        : html` <div
-            style="height: 0.5px;background-color: var(--affine-divider-color);margin: 4px 0"
-          ></div>`}
+    const result: TemplateResult = html` ${
+        index === 0
+          ? ''
+          : html` <div
+              style="height: 0.5px;background-color: var(--affine-divider-color);margin: 4px 0"
+            ></div>`
+      }
       <div style="display: flex;flex-direction: column;gap:4px">${items}</div>`;
     return result;
   },

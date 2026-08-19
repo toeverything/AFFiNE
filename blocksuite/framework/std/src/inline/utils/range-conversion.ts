@@ -260,7 +260,7 @@ export function inlineRangeToDomRange(
   let focusOffset = 0;
   let index = 0;
 
-  // oxlint-disable-next-line @typescript-eslint/prefer-for-of
+  // oxlint-disable-next-line typescript/prefer-for-of
   for (let i = 0; i < lineElements.length; i++) {
     if (startText && endText) {
       break;

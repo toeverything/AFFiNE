@@ -304,6 +304,39 @@ registerNativeImageFilesPicker(async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   return globalContextService.globalContext.docId.get();
 };
+(window as any).waitForSelectedSources = async (documentIds: string[]) => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentWorkspaceId =
+    globalContextService.globalContext.workspaceId.get();
+  const workspacesService = frameworkProvider.get(WorkspacesService);
+  const workspaceRef = currentWorkspaceId
+    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    : null;
+  if (!workspaceRef) {
+    throw new Error('Current workspace is unavailable');
+  }
+
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const { workspace } = workspaceRef;
+    await Promise.race([
+      Promise.all(
+        [workspace.id, 'db$docProperties', ...new Set(documentIds)].map(docId =>
+          workspace.engine.doc.waitForSynced(docId)
+        )
+      ),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('Selected source synchronization timed out')),
+          15000
+        );
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    workspaceRef.dispose();
+  }
+};
 (window as any).getCurrentUserIdentifier = () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentServerId = globalContextService.globalContext.serverId.get();

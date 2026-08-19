@@ -24,6 +24,7 @@ interface Context {
     assertMailDeliveryQuotaV1: Sinon.SinonStub;
     commitMailDeliveryQuotaV1: Sinon.SinonStub;
     releaseMailDeliveryQuotaV1: Sinon.SinonStub;
+    embeddingHealth: Sinon.SinonStub;
   };
 }
 
@@ -34,6 +35,12 @@ test.before(async t => {
     assertMailDeliveryQuotaV1: Sinon.stub(),
     commitMailDeliveryQuotaV1: Sinon.stub(),
     releaseMailDeliveryQuotaV1: Sinon.stub(),
+    embeddingHealth: Sinon.stub().resolves({
+      enabled: false,
+      state: 'disabled',
+      reason: 'test',
+      workerRunning: false,
+    }),
   };
   t.context.module = await createTestingModule({
     tapModule: builder => {

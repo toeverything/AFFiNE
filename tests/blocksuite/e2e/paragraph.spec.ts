@@ -7,6 +7,7 @@ import {
   dragOverTitle,
   enterPlaygroundRoom,
   focusRichText,
+  focusRichTextEnd,
   focusTitle,
   getBlockIds,
   getIndexCoordinate,
@@ -49,6 +50,7 @@ import {
   assertBlockSelections,
   assertBlockTextContent,
   assertBlockType,
+  assertBlockTypes,
   assertClassName,
   assertDivider,
   assertDocTitleFocus,
@@ -661,58 +663,64 @@ test('delete at start of paragraph immediately following list', async ({
   await captureHistory(page);
 
   await assertRichTexts(page, ['hello', 'a']);
-  await assertBlockChildrenIds(page, '1', ['2', '3']);
-  await assertBlockType(page, '3', 'text');
+  await assertBlockTypes(page, ['text', 'text']);
 
   // text -> bulleted
   await focusRichText(page, 1);
   await updateBlockType(page, 'affine:list', 'bulleted');
-  await assertBlockType(page, '2', 'text');
-  await assertBlockType(page, '4', 'bulleted');
+  await assertBlockTypes(page, ['text', 'bulleted']);
+  await focusRichTextEnd(page, 1);
   await pressBackspace(page, 2);
   await waitNextFrame(page);
-  await assertBlockType(page, '5', 'text');
-  await assertBlockChildrenIds(page, '1', ['2', '5']);
+  await assertBlockTypes(page, ['text', 'text']);
+  await assertBlockChildrenFlavours(page, '1', [
+    'affine:paragraph',
+    'affine:paragraph',
+  ]);
   await pressBackspace(page);
-  await assertBlockChildrenIds(page, '1', ['2']);
+  await assertBlockTypes(page, ['text']);
 
   // reset
   await undoByClick(page);
   await undoByClick(page);
   await assertRichTexts(page, ['hello', 'a']);
-  await assertBlockChildrenIds(page, '1', ['2', '3']);
-  await assertBlockType(page, '3', 'text');
+  await assertBlockTypes(page, ['text', 'text']);
 
   // text -> numbered
   await focusRichText(page, 1);
   await updateBlockType(page, 'affine:list', 'numbered');
-  await assertBlockType(page, '2', 'text');
-  await assertBlockType(page, '6', 'numbered');
+  await assertBlockTypes(page, ['text', 'numbered']);
+  await focusRichTextEnd(page, 1);
   await pressBackspace(page, 2);
   await waitNextFrame(page);
-  await assertBlockType(page, '7', 'text');
-  await assertBlockChildrenIds(page, '1', ['2', '7']);
+  await assertBlockTypes(page, ['text', 'text']);
+  await assertBlockChildrenFlavours(page, '1', [
+    'affine:paragraph',
+    'affine:paragraph',
+  ]);
   await pressBackspace(page);
-  await assertBlockChildrenIds(page, '1', ['2']);
+  await assertBlockTypes(page, ['text']);
 
   // reset
   await undoByClick(page);
   await undoByClick(page);
   await assertRichTexts(page, ['hello', 'a']);
-  await assertBlockChildrenIds(page, '1', ['2', '3']);
-  await assertBlockType(page, '3', 'text');
+  await assertBlockTypes(page, ['text', 'text']);
 
   // text -> todo
   await focusRichText(page, 1);
   await updateBlockType(page, 'affine:list', 'todo');
-  await assertBlockType(page, '2', 'text');
-  await assertBlockType(page, '8', 'todo');
+  await assertBlockTypes(page, ['text', 'todo']);
+  await focusRichTextEnd(page, 1);
   await pressBackspace(page, 2);
   await waitNextFrame(page);
-  await assertBlockType(page, '9', 'text');
-  await assertBlockChildrenIds(page, '1', ['2', '9']);
+  await assertBlockTypes(page, ['text', 'text']);
+  await assertBlockChildrenFlavours(page, '1', [
+    'affine:paragraph',
+    'affine:paragraph',
+  ]);
   await pressBackspace(page);
-  await assertBlockChildrenIds(page, '1', ['2']);
+  await assertBlockTypes(page, ['text']);
 });
 
 test('delete at start of paragraph with content', async ({ page }) => {

@@ -24,16 +24,12 @@ export function KeyboardToolbarExtension(
 
     private readonly _disposables = new DisposableGroup();
 
-    // eslint-disable-next-line rxjs/finnish
     readonly visible$ = signal(false);
 
-    // eslint-disable-next-line rxjs/finnish
     readonly height$ = signal(0);
 
-    // eslint-disable-next-line rxjs/finnish
     readonly staticHeight$ = signal(0);
 
-    // eslint-disable-next-line rxjs/finnish
     readonly appTabSafeArea$ = signal(`calc(${globalVars.appTabSafeArea})`);
 
     static override setup(di: Container) {
@@ -45,15 +41,19 @@ export function KeyboardToolbarExtension(
 
     override mounted() {
       this._disposables.add(
-        affineVirtualKeyboardProvider.onChange(({ visible, height }) => {
-          batch(() => {
-            if (visible && this.staticHeight$.peek() !== height) {
-              this.staticHeight$.value = height;
-            }
-            this.visible$.value = visible;
-            this.height$.value = height;
-          });
-        })
+        affineVirtualKeyboardProvider.onChange(
+          ({ visible, height, overlaysContent }) => {
+            const layoutHeight = overlaysContent === false ? 0 : height;
+
+            batch(() => {
+              if (visible && this.staticHeight$.peek() !== height) {
+                this.staticHeight$.value = height;
+              }
+              this.visible$.value = visible;
+              this.height$.value = layoutHeight;
+            });
+          }
+        )
       );
     }
 

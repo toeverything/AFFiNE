@@ -117,9 +117,12 @@ test('retry when connect failed', async () => {
   class TestConnection extends AutoReconnectConnection {
     override retryDelay = 300;
     connectCount = 0;
+    retryDelayFor(retryCount: number) {
+      return this.getRetryDelay(retryCount);
+    }
     override async doConnect() {
       this.connectCount++;
-      if (this.connectCount === 3) {
+      if (this.connectCount >= 3) {
         return { hello: 'world' };
       }
       throw new Error('not connected, count: ' + this.connectCount);
@@ -127,9 +130,15 @@ test('retry when connect failed', async () => {
     override doDisconnect() {
       return Promise.resolve();
     }
+    triggerError(error: Error) {
+      this.error = error;
+    }
   }
 
   const connection = new TestConnection();
+  expect([0, 1, 2, 8].map(count => connection.retryDelayFor(count))).toEqual([
+    300, 600, 1200, 60000,
+  ]);
   connection.connect();
 
   await vitest.waitFor(() => {
@@ -148,6 +157,12 @@ test('retry when connect failed', async () => {
     expect(connection.connectCount).toBe(3);
     expect(connection.status).toBe('connected');
     expect(connection.error).toBeUndefined();
+  });
+
+  connection.triggerError(new Error('disconnected'));
+  await vitest.waitFor(() => {
+    expect(connection.connectCount).toBe(4);
+    expect(connection.status).toBe('connected');
   });
 });
 

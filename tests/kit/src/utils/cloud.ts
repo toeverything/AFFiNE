@@ -155,21 +155,6 @@ export async function cleanupWorkspace(workspaceId: string): Promise<void> {
   });
 }
 
-export async function switchDefaultChatModel(model: string) {
-  await runPrisma(async client => {
-    const prompt = await client.aiPrompt.findFirst({
-      where: { name: 'Chat With AFFiNE AI' },
-      select: { id: true },
-    });
-    if (!prompt) return;
-
-    await client.aiPrompt.update({
-      where: { id: prompt.id },
-      data: { model },
-    });
-  });
-}
-
 export async function createRandomAIUser(): Promise<{
   name: string;
   email: string;
@@ -323,6 +308,7 @@ export async function enableCloudWorkspace(page: Page) {
   await waitForAllPagesLoad(page);
   await dismissBlockingModal(page);
   await clickNewPageButton(page);
+  await waitForWorkspaceSynced(page);
 }
 
 export async function enableCloudWorkspaceFromShareButton(page: Page) {
@@ -339,6 +325,32 @@ export async function enableCloudWorkspaceFromShareButton(page: Page) {
   await waitForEditorLoad(page);
   await dismissBlockingModal(page);
   await clickNewPageButton(page);
+  await waitForWorkspaceSynced(page);
+}
+
+async function waitForWorkspaceSynced(page: Page) {
+  await page.evaluate(async () => {
+    const workspaceId = location.pathname.split('/')[2];
+    const workspace = (
+      window as typeof window & {
+        currentWorkspace?: {
+          engine: {
+            doc: {
+              waitForSynced(docId: string, abort: AbortSignal): Promise<void>;
+            };
+          };
+        };
+      }
+    ).currentWorkspace;
+    if (!workspaceId || !workspace) {
+      throw new Error('Cloud workspace is unavailable');
+    }
+    const abort = AbortSignal.timeout(60_000);
+    await Promise.all([
+      workspace.engine.doc.waitForSynced(workspaceId, abort),
+      workspace.engine.doc.waitForSynced('db$docProperties', abort),
+    ]);
+  });
 }
 
 export async function enableShare(page: Page) {

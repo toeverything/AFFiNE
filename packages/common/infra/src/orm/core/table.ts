@@ -27,25 +27,29 @@ type Typeof<F extends FieldSchemaBuilder> =
   F extends FieldSchemaBuilder<infer Type> ? Type : never;
 
 type RequiredFields<T extends TableSchemaBuilder> = {
-  [K in TableDefinedFieldNames<T> as T[K] extends FieldSchemaBuilder<
-    any,
-    infer Optional
-  >
-    ? Optional extends false
-      ? K
+  [
+    K in TableDefinedFieldNames<T> as T[K] extends FieldSchemaBuilder<
+      any,
+      infer Optional
+    >
+      ? Optional extends false
+        ? K
+        : never
       : never
-    : never]: Typeof<T[K]>;
+  ]: Typeof<T[K]>;
 };
 
 type OptionalFields<T extends TableSchemaBuilder> = {
-  [K in TableDefinedFieldNames<T> as T[K] extends FieldSchemaBuilder<
-    any,
-    infer Optional
-  >
-    ? Optional extends true
-      ? K
+  [
+    K in TableDefinedFieldNames<T> as T[K] extends FieldSchemaBuilder<
+      any,
+      infer Optional
+    >
+      ? Optional extends true
+        ? K
+        : never
       : never
-    : never]?: Typeof<T[K]> | null;
+  ]?: Typeof<T[K]> | null;
 };
 
 type PrimaryKeyField<T extends TableSchemaBuilder> = {
@@ -104,7 +108,9 @@ export type UpdateEntityInput<T extends TableSchemaBuilder> = Pretty<
   MaybeDocumentEntityWrapper<
     T,
     {
-      [key in NonPrimaryKeyFieldNames<T>]?: key extends keyof TableDefinedEntity<T>
+      [
+        key in NonPrimaryKeyFieldNames<T>
+      ]?: key extends keyof TableDefinedEntity<T>
         ? TableDefinedEntity<T>[key]
         : never;
     }
@@ -115,7 +121,9 @@ export type FindEntityInput<T extends TableSchemaBuilder> = Pretty<
   MaybeDocumentEntityWrapper<
     T,
     {
-      [key in TableDefinedFieldNames<T>]?: key extends keyof TableDefinedEntity<T>
+      [
+        key in TableDefinedFieldNames<T>
+      ]?: key extends keyof TableDefinedEntity<T>
         ?
             | TableDefinedEntity<T>[key]
             | { not: TableDefinedEntity<T>[key] | null }
