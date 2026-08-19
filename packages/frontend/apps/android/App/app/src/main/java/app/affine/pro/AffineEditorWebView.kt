@@ -68,6 +68,7 @@ class AffineEditorWebView(
                           composed: true,
                         }));
                         let fallbackKey = null;
+                        let fallbackActivatedHost = false;
                         if (!handled) {
                           const key = '$escapedInputType' === 'deleteContentForward'
                             ? 'Delete'
@@ -76,6 +77,14 @@ class AffineEditorWebView(
                             ? 46
                             : 8;
                           fallbackKey = key;
+                          const fallbackElement = target instanceof Element
+                            ? target
+                            : target?.parentElement;
+                          const host = fallbackElement?.closest?.('editor-host');
+                          if (host?.std?.event) {
+                            host.std.event.active = true;
+                            fallbackActivatedHost = true;
+                          }
                           target.dispatchEvent(new KeyboardEvent('keydown', {
                             key,
                             code: key,
@@ -86,10 +95,12 @@ class AffineEditorWebView(
                             composed: true,
                           }));
                         }
-                        window.AffineAndroidIME?.finishComposingSession?.(
-                          'android:$escapedInputType'
-                        );
-                        return { inputType: '$escapedInputType', handled, fallbackKey };
+                        return {
+                          inputType: '$escapedInputType',
+                          handled,
+                          fallbackKey,
+                          fallbackActivatedHost,
+                        };
                       } catch (error) {
                         console.error('[AffineIME] dispatch editor input failed', error);
                         return { error: String(error) };
@@ -110,10 +121,36 @@ class AffineEditorWebView(
         @JavascriptInterface
         fun finishComposingSession(reason: String?) {
             val reasonForLog = reason?.take(48) ?: "unknown"
+            val isDeleteReason = reason?.contains("deleteContent") == true
             Log.i(TAG, "finishComposingSessionFromWeb reason=$reasonForLog")
-            imeState.clearRequestedAtMs = SystemClock.uptimeMillis()
-            post { restartInput() }
+            if (!isDeleteReason) {
+                imeState.clearRequestedAtMs = SystemClock.uptimeMillis()
+            }
+            requestRestartInput(
+                if (isDeleteReason) {
+                    DELETE_RESTART_INPUT_DEBOUNCE_MS
+                } else {
+                    0L
+                },
+            )
         }
+    }
+
+    private fun requestRestartInput(delayMs: Long) {
+        if (delayMs <= 0L) {
+            post { restartInput() }
+            return
+        }
+
+        val restartGeneration = imeState.nextRestartGeneration()
+        postDelayed(
+            {
+                if (restartGeneration != imeState.restartInputGeneration) return@postDelayed
+
+                restartInput()
+            },
+            delayMs,
+        )
     }
 
     private fun restartInput() {
@@ -128,6 +165,15 @@ class AffineEditorWebView(
 
         @Volatile
         var lastDeleteIntentAtMs: Long = 0L
+
+        @Volatile
+        var restartInputGeneration: Int = 0
+
+        @Synchronized
+        fun nextRestartGeneration(): Int {
+            restartInputGeneration += 1
+            return restartInputGeneration
+        }
     }
 
     private class AffineInputConnection(
@@ -340,8 +386,6 @@ class AffineEditorWebView(
                 if (event.action == KeyEvent.ACTION_DOWN) {
                     Log.i(TAG, "dispatchDeleteKeyEventToEditorInput")
                     recordDeleteIntent()
-                    resetComposingText()
-                    clearExternalRegion()
                     dispatchDeleteBackward()
                     isConsumingDeleteKeyEvent = true
                     return true
@@ -355,8 +399,6 @@ class AffineEditorWebView(
                 if (event.action == KeyEvent.ACTION_DOWN) {
                     Log.i(TAG, "dispatchForwardDeleteKeyEventToEditorInput")
                     recordDeleteIntent()
-                    resetComposingText()
-                    clearExternalRegion()
                     dispatchDeleteForward()
                     isConsumingDeleteKeyEvent = true
                     return true
@@ -608,6 +650,7 @@ class AffineEditorWebView(
 
     companion object {
         private const val TAG = "AffineIME"
+        private const val DELETE_RESTART_INPUT_DEBOUNCE_MS = 120L
         private const val EXTERNAL_REGION_REPLAY_WINDOW_MS = 2_500L
         private const val EXTERNAL_REPLAY_DELETE_WINDOW_MS = 3_000L
         private const val SYNTHETIC_EXTERNAL_DELETE_SUPPRESS_WINDOW_MS = 120L

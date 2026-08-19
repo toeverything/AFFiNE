@@ -307,7 +307,6 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       this.editor as never
     );
     this.editor.slots.inputting.next('');
-    this._finishAndroidComposingSession(`android:${inputType}`);
   };
 
   private readonly _onClick = (event: MouseEvent) => {
