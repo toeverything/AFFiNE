@@ -103,6 +103,21 @@ pub(in super::super) async fn create(
       definition, sort_order, enabled, created_by, updated_by, created_at, updated_at
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    ON CONFLICT (workspace_id, provider, name) DO UPDATE
+    SET id = EXCLUDED.id,
+        description = EXCLUDED.description,
+        encrypted_api_key = EXCLUDED.encrypted_api_key,
+        definition = EXCLUDED.definition,
+        sort_order = EXCLUDED.sort_order,
+        enabled = EXCLUDED.enabled,
+        revision = 1,
+        credential_generation = 1,
+        validation = NULL,
+        created_by = EXCLUDED.created_by,
+        updated_by = EXCLUDED.updated_by,
+        created_at = EXCLUDED.created_at,
+        updated_at = EXCLUDED.updated_at
+    WHERE ai_workspace_byok_configs.definition = '{}'::jsonb
     RETURNING id, workspace_id, provider, name, description, encrypted_api_key,
               definition, sort_order, enabled, revision, credential_generation, validation
     "#,
@@ -117,9 +132,10 @@ pub(in super::super) async fn create(
   .bind(sort_order)
   .bind(input.enabled)
   .bind(&input.actor_user_id)
-  .fetch_one(&mut *tx)
+  .fetch_optional(&mut *tx)
   .await
-  .map_err(|error| RuntimeError::database("create BYOK profile failed", error))?;
+  .map_err(|error| RuntimeError::database("create BYOK profile failed", error))?
+  .ok_or_else(|| RuntimeError::invalid_input("BYOK profile name already exists"))?;
   tx.commit()
     .await
     .map_err(|error| RuntimeError::database("create BYOK profile commit failed", error))?;
@@ -578,7 +594,14 @@ pub(super) fn require_text(value: &str, field: &'static str) -> RuntimeResult<()
 
 #[cfg(test)]
 mod tests {
-  use super::{PgPool, Uuid, list};
+  use super::{ByokPolicy, PgPool, Uuid, create, list};
+  use crate::{
+    llm::{
+      ByokCapabilityInput, ByokEndpointInput, ByokModelDeclarationInput, ByokProfileDefinitionInput,
+      CreateByokProfileInput, Deployment,
+    },
+    runtime::config::CopilotByokRuntimeConfig,
+  };
 
   #[tokio::test]
   async fn list_skips_rows_with_unparseable_legacy_definition() {
@@ -618,6 +641,40 @@ mod tests {
     let profiles = list(&pool, &workspace_id).await.unwrap();
     assert_eq!(profiles.len(), 1);
     assert_eq!(profiles[0].name, "valid");
+
+    let input = || CreateByokProfileInput {
+      workspace_id: workspace_id.clone(),
+      provider: "openai".to_string(),
+      name: "legacy".to_string(),
+      description: None,
+      credential: "replacement-key".to_string(),
+      definition: ByokProfileDefinitionInput {
+        endpoint: ByokEndpointInput {
+          kind: "provider_default".to_string(),
+          url: None,
+          dialect: None,
+        },
+        models: vec![ByokModelDeclarationInput {
+          model_id: "gpt-4o-mini".to_string(),
+          enabled: true,
+          capabilities: vec![ByokCapabilityInput {
+            input: vec!["text".to_string()],
+            output: vec!["text".to_string()],
+            features: vec![],
+            attachment_kinds: vec![],
+            attachment_sources: vec![],
+          }],
+        }],
+      },
+      enabled: true,
+      actor_user_id: "user-1".to_string(),
+    };
+    let policy = ByokPolicy::from(Deployment::Cloud, &CopilotByokRuntimeConfig::default());
+    create(&pool, &[7; 32], &policy, input()).await.unwrap();
+    let profiles = list(&pool, &workspace_id).await.unwrap();
+    assert_eq!(profiles.len(), 2);
+    assert!(profiles.iter().any(|profile| profile.name == "legacy"));
+    assert!(create(&pool, &[7; 32], &policy, input()).await.is_err());
 
     sqlx::query("DELETE FROM ai_workspace_byok_configs WHERE workspace_id = $1")
       .bind(&workspace_id)

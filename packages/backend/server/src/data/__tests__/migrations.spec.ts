@@ -5,6 +5,8 @@ import ava, { TestFn } from 'ava';
 import { createTestingModule, type TestingModule } from '../../__tests__/utils';
 import { Models } from '../../models';
 import { BackfillPermissionProjection1765500000000 } from '../migrations/1765500000000-backfill-permission-projection';
+import { BackfillTranscriptStorageKeys1786805802350 } from '../migrations/1786805802350-backfill-transcript-storage-keys';
+import { ConvergeManagedProviderProfiles1786810000000 } from '../migrations/1786810000000-converge-managed-provider-profiles';
 
 interface Context {
   module: TestingModule;
@@ -79,5 +81,129 @@ test('permission backfill repairs ownerless workspaces before runtime state proj
       },
     }),
     { role: 'owner' }
+  );
+});
+
+test('transcript backfill adds stable keys without removing compatibility URLs', async t => {
+  const payload = {
+    sourceAudio: { blobId: 'blob-1' },
+    infos: [
+      {
+        url: 'https://affine.example/api/copilot/blob/user-1/workspace-1/blob-1',
+        mimeType: 'audio/m4a',
+      },
+      {
+        url: 'https://example.com/external.m4a',
+        mimeType: 'audio/m4a',
+      },
+    ],
+  };
+  await t.context.db.aiTranscriptTask.create({
+    data: {
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      blobId: 'blob-1',
+      status: 'failed',
+      recipeId: 'transcript.audio',
+      recipeVersion: 'v1',
+      inputSnapshot: payload,
+      protectedResult: payload,
+    },
+  });
+
+  await BackfillTranscriptStorageKeys1786805802350.up(t.context.db);
+  await BackfillTranscriptStorageKeys1786805802350.up(t.context.db);
+
+  const task = await t.context.db.aiTranscriptTask.findFirstOrThrow({
+    where: { blobId: 'blob-1' },
+  });
+  const expected = {
+    ...payload,
+    infos: [{ ...payload.infos[0], key: 'blob-1' }, payload.infos[1]],
+  };
+  t.deepEqual(task.inputSnapshot, expected);
+  t.deepEqual(task.protectedResult, expected);
+});
+
+test('managed provider migration preserves explicit profiles and converts legacy keys atomically', async t => {
+  t.teardown(async () => {
+    await t.context.db.appConfig.deleteMany({
+      where: { id: { startsWith: 'copilot.providers.' } },
+    });
+  });
+  const profiles = [
+    {
+      id: 'openai-default',
+      type: 'openai',
+      priority: 7,
+      config: { apiKey: 'profile-key' },
+    },
+  ];
+  await t.context.db.appConfig.createMany({
+    data: [
+      { id: 'copilot.providers.profiles', value: profiles },
+      {
+        id: 'copilot.providers.openai',
+        value: { apiKey: 'shadowed-legacy-key' },
+      },
+      {
+        id: 'copilot.providers.gemini',
+        value: { apiKey: 'gemini-key' },
+      },
+      {
+        id: 'copilot.providers.defaults',
+        value: { fallback: 'openai-default' },
+      },
+    ],
+  });
+
+  await ConvergeManagedProviderProfiles1786810000000.up(t.context.db);
+  await ConvergeManagedProviderProfiles1786810000000.up(t.context.db);
+
+  const migrated = await t.context.db.appConfig.findUniqueOrThrow({
+    where: { id: 'copilot.providers.profiles' },
+  });
+  t.deepEqual(migrated.value, [
+    ...profiles,
+    {
+      id: 'gemini-default',
+      type: 'gemini',
+      priority: 4,
+      config: { apiKey: 'gemini-key' },
+    },
+  ]);
+  t.is(
+    await t.context.db.appConfig.count({
+      where: {
+        id: {
+          in: ['copilot.providers.openai', 'copilot.providers.gemini'],
+        },
+      },
+    }),
+    0
+  );
+  t.truthy(
+    await t.context.db.appConfig.findUnique({
+      where: { id: 'copilot.providers.defaults' },
+    })
+  );
+
+  await t.context.db.appConfig.update({
+    where: { id: 'copilot.providers.profiles' },
+    data: { value: [{ ...profiles[0], enabled: 'true' }] },
+  });
+  await t.context.db.appConfig.create({
+    data: {
+      id: 'copilot.providers.fal',
+      value: { apiKey: 'fal-key' },
+    },
+  });
+  await t.throwsAsync(() =>
+    ConvergeManagedProviderProfiles1786810000000.up(t.context.db)
+  );
+  t.truthy(
+    await t.context.db.appConfig.findUnique({
+      where: { id: 'copilot.providers.fal' },
+    })
   );
 });

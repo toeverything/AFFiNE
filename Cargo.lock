@@ -3660,6 +3660,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tower-service",
+ "webpki-roots 1.0.6",
 ]
 
 [[package]]
@@ -4755,9 +4756,9 @@ dependencies = [
 
 [[package]]
 name = "llm_adapter"
-version = "0.2.18"
+version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49df35c253da1563c33f0733ef3a46da3194299807cbd7e03c48dfa12a89a72f"
+checksum = "5d13be366ea35d2a9966ad5770e3d070e495af4e1e6dd009638dee4b55ab45ed"
 dependencies = [
  "base64",
  "jsonschema",

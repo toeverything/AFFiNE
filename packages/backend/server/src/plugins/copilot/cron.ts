@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { JobQueue, OneDay, OnJob } from '../../base';
 import { Models } from '../../models';
+import { CopilotTranscriptionRetryService } from './transcript/retry';
 
 const BACKGROUND_COPILOT_JOB_PRIORITY = 100;
 
@@ -19,8 +20,14 @@ export class CopilotCronJobs {
 
   constructor(
     private readonly models: Models,
-    private readonly jobs: JobQueue
+    private readonly jobs: JobQueue,
+    private readonly transcriptRetry: CopilotTranscriptionRetryService
   ) {}
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async reconcileTranscriptDispatches() {
+    await this.transcriptRetry.reconcileDispatches();
+  }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async dailyCleanupJob() {
