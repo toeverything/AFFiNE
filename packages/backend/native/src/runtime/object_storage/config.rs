@@ -1,12 +1,19 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use hmac::{Hmac, KeyInit, Mac};
 use rusty_s3::{Bucket, Credentials, UrlStyle};
 use serde::Deserialize;
+use sha2::Sha256;
 use url::Url;
 
 use super::{
   client::ObjectStorageClient,
   error::{ObjectStorageError, ObjectStorageResult},
-  types::StorageProviderConfig,
+  types::{ObjectKey, PresignedObjectRequest, StorageProviderConfig},
 };
+
+type HmacSha256 = Hmac<Sha256>;
 
 #[derive(Clone, Debug)]
 pub(crate) struct ObjectStorageConfig {
@@ -24,6 +31,8 @@ pub(crate) struct ObjectStorageConfig {
   pub(crate) presign_sign_content_type_for_put: Option<bool>,
   pub(crate) use_presigned_url: bool,
   pub(crate) proxy_upload: bool,
+  pub(crate) custom_get_url_prefix: Option<String>,
+  pub(crate) custom_get_sign_key: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -124,6 +133,8 @@ impl ObjectStorageConfig {
       presign_sign_content_type_for_put: config.presign.as_ref().and_then(|v| v.sign_content_type_for_put),
       use_presigned_url: config.use_presigned_url.map(|v| v.enabled).unwrap_or(false),
       proxy_upload: false,
+      custom_get_url_prefix: None,
+      custom_get_sign_key: None,
     }))
   }
 
@@ -135,17 +146,25 @@ impl ObjectStorageConfig {
       Some(R2Jurisdiction::Default) | None => config.account_id,
     };
     let credentials = config.credentials.unwrap_or_default();
-    let (use_presigned_url, proxy_upload) = config
+    let (use_presigned_url, proxy_upload, custom_get_url_prefix, custom_get_sign_key) = config
       .use_presigned_url
       .map(|value| {
+        let url_prefix = value.url_prefix.filter(|prefix| !prefix.is_empty());
+        let sign_key = value.sign_key.filter(|key| !key.is_empty());
+        let custom_get_enabled = value.enabled && url_prefix.is_some() && sign_key.is_some();
+        let (custom_get_url_prefix, custom_get_sign_key) = if custom_get_enabled {
+          (url_prefix, sign_key)
+        } else {
+          (None, None)
+        };
         (
           value.enabled,
-          value.enabled
-            && value.url_prefix.as_ref().is_some_and(|prefix| !prefix.is_empty())
-            && value.sign_key.as_ref().is_some_and(|key| !key.is_empty()),
+          custom_get_enabled,
+          custom_get_url_prefix,
+          custom_get_sign_key,
         )
       })
-      .unwrap_or((false, false));
+      .unwrap_or((false, false, None, None));
 
     Ok(Some(Self {
       provider: storage.provider,
@@ -162,6 +181,57 @@ impl ObjectStorageConfig {
       presign_sign_content_type_for_put: config.presign.as_ref().and_then(|v| v.sign_content_type_for_put),
       use_presigned_url,
       proxy_upload,
+      custom_get_url_prefix,
+      custom_get_sign_key,
+    }))
+  }
+
+  pub(crate) fn custom_presign_get(&self, key: &ObjectKey) -> ObjectStorageResult<Option<PresignedObjectRequest>> {
+    let timestamp = SystemTime::now()
+      .duration_since(UNIX_EPOCH)
+      .map_err(|err| ObjectStorageError::Config(format!("system time before unix epoch: {err}")))?
+      .as_secs();
+    self.custom_presign_get_at(key, timestamp)
+  }
+
+  pub(super) fn custom_presign_get_at(
+    &self,
+    key: &ObjectKey,
+    timestamp: u64,
+  ) -> ObjectStorageResult<Option<PresignedObjectRequest>> {
+    let (Some(prefix), Some(sign_key)) = (
+      self.custom_get_url_prefix.as_deref(),
+      self.custom_get_sign_key.as_deref(),
+    ) else {
+      return Ok(None);
+    };
+    let mut url = Url::parse(prefix)
+      .map_err(|err| ObjectStorageError::Config(format!("invalid object storage URL prefix: {err}")))?;
+    if !matches!(url.scheme(), "http" | "https") || url.query().is_some() || url.fragment().is_some() {
+      return Err(ObjectStorageError::Config(
+        "object storage URL prefix must be an HTTP(S) URL without query or fragment".to_string(),
+      ));
+    }
+    url
+      .path_segments_mut()
+      .map_err(|_| ObjectStorageError::Config("object storage URL prefix cannot be a base URL".to_string()))?
+      .pop_if_empty()
+      .extend(key.as_str().split('/'));
+    let payload = format!("{}{timestamp}", url.path());
+    let mut mac = HmacSha256::new_from_slice(sign_key.as_bytes())
+      .map_err(|err| ObjectStorageError::Config(format!("invalid object storage signing key: {err}")))?;
+    mac.update(payload.as_bytes());
+    let signature = STANDARD.encode(mac.finalize().into_bytes());
+    url
+      .query_pairs_mut()
+      .append_pair("sign", &format!("{timestamp}-{signature}"));
+
+    Ok(Some(PresignedObjectRequest {
+      url: url.to_string(),
+      headers: Default::default(),
+      expires_at_ms: i64::try_from(timestamp.saturating_add(self.presign_expires_in_seconds.unwrap_or(60)))
+        .unwrap_or(i64::MAX)
+        .saturating_mul(1000),
     }))
   }
 

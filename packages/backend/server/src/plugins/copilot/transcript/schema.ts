@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
-import { llmGetContractSchema } from '../../../native';
-import { buildStructuredResponseFromSchemaJson } from '../runtime/contracts';
+import {
+  buildStructuredResponseContract,
+  type RequiredStructuredOutputContract,
+} from '../runtime/contracts';
 
 // Owner: DB/job/API legacy compatibility and transcript projection.
 // Native owns transcript domain result schemas; this file accepts historical
@@ -18,7 +20,8 @@ export const LegacyTranscriptionSchema = z.array(
 );
 
 export const AudioBlobInfoSchema = z.object({
-  url: z.string(),
+  key: z.string().min(1).optional(),
+  url: z.string().min(1),
   mimeType: z.string(),
   index: z.number().int().nullable().optional(),
 });
@@ -59,6 +62,15 @@ export const MeetingSummaryV2Schema = z.object({
   openQuestions: z.array(z.string()),
   blockers: z.array(z.string()),
 });
+
+export const TranscriptionResponseSchema = z.array(
+  z.object({
+    a: z.string().describe("speaker's name, for example A, B, C"),
+    s: z.number().describe('start time in seconds'),
+    e: z.number().describe('end time in seconds'),
+    t: z.string().describe('transcription text'),
+  })
+);
 
 export const TranscriptionSourceAudioSchema = z.object({
   blobId: z.string().nullable().optional(),
@@ -102,8 +114,8 @@ export const TranscriptionSubmitInputSchema = TranscriptionPayloadV2Schema.pick(
   }
 );
 
-function buildRequiredStructuredContract(schema: Record<string, unknown>) {
-  const contract = buildStructuredResponseFromSchemaJson(schema);
+function buildRequiredStructuredContract(schema: z.ZodType) {
+  const contract = buildStructuredResponseContract(schema);
   if (!contract.responseSchemaJson || !contract.schemaHash) {
     throw new Error('Structured transcript contract is required');
   }
@@ -111,11 +123,15 @@ function buildRequiredStructuredContract(schema: Record<string, unknown>) {
   return {
     responseSchemaJson: contract.responseSchemaJson,
     schemaHash: contract.schemaHash,
-  };
+  } satisfies RequiredStructuredOutputContract;
 }
 
-export const TranscriptActionResultContract = buildRequiredStructuredContract(
-  llmGetContractSchema('transcriptGeneratedResult')
+export const TranscriptionResponseContract = buildRequiredStructuredContract(
+  TranscriptionResponseSchema
+);
+
+export const MeetingSummaryV2Contract = buildRequiredStructuredContract(
+  MeetingSummaryV2Schema
 );
 
 type CanonicalTranscriptPayload = z.infer<typeof TranscriptionPayloadV2Schema>;

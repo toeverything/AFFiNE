@@ -3,8 +3,8 @@
     "name": "Transcript audio",
     "action": "Transcript audio",
     "managedRoute": {
-      "targets": ["gemini-3.5-flash-lite"],
-      "premiumTargets": ["gemini-3.6-flash"]
+      "targets": ["gemini-3.7-flash"],
+      "premiumTargets": ["gemini-3.7-flash"]
     },
     "config": {
       "requireContent": false,
@@ -17,8 +17,8 @@
     "name": "Transcript audio structured",
     "action": "Transcript audio structured",
     "managedRoute": {
-      "targets": ["gemini-3.5-flash-lite"],
-      "premiumTargets": ["gemini-3.6-flash"]
+      "targets": ["gemini-3.7-flash"],
+      "premiumTargets": ["gemini-3.7-flash"]
     },
     "config": {
       "requireContent": false,
@@ -39,7 +39,7 @@
   {
     "name": "Generate a caption",
     "action": "Generate a caption",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "config": {
       "requireContent": false,
       "requireAttachment": true
@@ -129,7 +129,7 @@
   {
     "name": "Explain this image",
     "action": "Explain this image",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "config": {
       "requireContent": false,
       "requireAttachment": true
@@ -148,7 +148,7 @@
   {
     "name": "Explain this code",
     "action": "Explain this code",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -163,7 +163,7 @@
   {
     "name": "Translate to",
     "action": "Translate",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "params": {
       "language": {
         "default": "English",
@@ -256,7 +256,7 @@
   {
     "name": "Write a twitter about this",
     "action": "Write a twitter about this",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -271,7 +271,7 @@
   {
     "name": "Write a poem about this",
     "action": "Write a poem about this",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -301,7 +301,7 @@
   {
     "name": "Write outline",
     "action": "Write outline",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -316,7 +316,7 @@
   {
     "name": "Change tone to",
     "action": "Change tone",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "params": {
       "tone": {
         "default": "professional",
@@ -337,7 +337,7 @@
   {
     "name": "Brainstorm ideas about this",
     "action": "Brainstorm ideas about this",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -386,7 +386,7 @@
   {
     "name": "Improve writing for it",
     "action": "Improve writing for it",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -416,7 +416,7 @@
   {
     "name": "Fix spelling for it",
     "action": "Fix spelling for it",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -476,7 +476,7 @@
   {
     "name": "Create headings",
     "action": "Create headings",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -521,7 +521,7 @@
   {
     "name": "Make it longer",
     "action": "Make it longer",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -536,7 +536,7 @@
   {
     "name": "Make it shorter",
     "action": "Make it shorter",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -551,7 +551,7 @@
   {
     "name": "Continue writing",
     "action": "Continue writing",
-    "managedRoute": { "targets": ["gemini-3.5-flash-lite"] },
+    "managedRoute": { "targets": ["gemini-3.7-flash"] },
     "messages": [
       {
         "role": "system",
@@ -711,8 +711,8 @@
         },
         {
           "id": "gemini",
-          "modelId": "gemini-3.6-flash",
-          "displayName": "Gemini 3.6 Flash",
+          "modelId": "gemini-3.7-flash",
+          "displayName": "Gemini 3.7 Flash",
           "minimumTier": "premium"
         },
         {

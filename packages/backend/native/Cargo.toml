@@ -20,7 +20,7 @@ chrono = { workspace = true }
 crc32fast = "1.5.0"
 doc_extractor = { workspace = true }
 file-format = { workspace = true }
-gcp_auth = "0.12.7"
+gcp_auth = { version = "0.12.7", features = ["webpki-roots"] }
 hex = { workspace = true }
 hkdf = { workspace = true }
 hmac = "0.13"

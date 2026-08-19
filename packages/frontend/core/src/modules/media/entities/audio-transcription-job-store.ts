@@ -1,5 +1,4 @@
 import {
-  retryTranscriptTaskMutation,
   settleTranscriptTaskMutation,
   submitTranscriptTaskMutation,
   type TranscriptionResultType,
@@ -64,21 +63,14 @@ export class AudioTranscriptionJobStore extends Entity<{
   };
 
   retryTranscriptTask = async (taskId: string) => {
-    const graphqlService = this.graphqlService;
-    if (!graphqlService) {
-      throw new Error('No graphql service available');
-    }
-    const response = await graphqlService.gql({
-      query: retryTranscriptTaskMutation,
-      variables: {
-        taskId,
-        workspaceId: this.currentWorkspaceId,
-      },
-    });
-    if (!response.retryTranscriptTask) {
+    const response = await this.nbstoreService.realtime.request(
+      'copilot.transcript.task.retry',
+      { taskId, workspaceId: this.currentWorkspaceId }
+    );
+    if (!response.task) {
       throw new Error('Failed to retry audio transcription');
     }
-    return response.retryTranscriptTask;
+    return response.task as TranscriptionResultType;
   };
 
   getTranscriptTask = async (

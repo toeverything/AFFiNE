@@ -286,6 +286,15 @@ test('should create pending blob upload with graphql fallback', async t => {
   t.truthy(record);
   t.is(record?.status, 'pending');
 
+  await createBlobUpload(
+    app,
+    workspace.id,
+    key,
+    size,
+    'application/octet-stream'
+  );
+  t.is((await blobModel.get(workspace.id, key))?.mime, mime);
+
   const listed = await listBlobs(app, workspace.id);
   t.is(listed.length, 0);
 });
@@ -317,6 +326,15 @@ test('should complete pending blob upload', async t => {
 
   const listed = await listBlobs(app, workspace.id);
   t.is(listed.length, 1);
+
+  const existing = await createBlobUpload(
+    app,
+    workspace.id,
+    key,
+    buffer.length,
+    'audio/x-m4a'
+  );
+  t.true(existing.alreadyUploaded);
 });
 
 test('should reject complete when blob key mismatched', async t => {

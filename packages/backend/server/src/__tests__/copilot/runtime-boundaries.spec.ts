@@ -1200,7 +1200,9 @@ test('title policy and cron scheduling retain background-job invariants', async 
       toBeGenerateTitle: async () => [{ id: 'session-1' }, { id: 'session-2' }],
     },
   } as unknown as Models;
-  const cron = new CopilotCronJobs(models, jobs);
+  const cron = new CopilotCronJobs(models, jobs, {
+    async reconcileDispatches() {},
+  } as never);
 
   await cron.dailyCleanupJob();
   await cron.generateMissingTitles();
