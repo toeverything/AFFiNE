@@ -1,26 +1,23 @@
-import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 
 import { PrismaClient, User, Workspace } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
-import { Config } from '../../base';
-import { CopilotContextModel } from '../../models/copilot-context';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
+import { WorkspaceBlobStorage } from '../../core/storage';
 import { CopilotWorkspaceConfigModel } from '../../models/copilot-workspace';
-import { DocModel } from '../../models/doc';
 import { UserModel } from '../../models/user';
 import { WorkspaceModel } from '../../models/workspace';
 import { createTestingModule, type TestingModule } from '../utils';
-import { cleanObject } from '../utils/copilot';
 
 interface Context {
-  config: Config;
   module: TestingModule;
-  db: PrismaClient;
-  doc: DocModel;
   user: UserModel;
   workspace: WorkspaceModel;
-  copilotContext: CopilotContextModel;
   copilotWorkspace: CopilotWorkspaceConfigModel;
+  runtime: BackendRuntimeProvider;
+  db: PrismaClient;
+  storage: WorkspaceBlobStorage;
 }
 
 const test = ava as TestFn<Context>;
@@ -29,24 +26,19 @@ test.before(async t => {
   const module = await createTestingModule();
   t.context.user = module.get(UserModel);
   t.context.workspace = module.get(WorkspaceModel);
-  t.context.copilotContext = module.get(CopilotContextModel);
   t.context.copilotWorkspace = module.get(CopilotWorkspaceConfigModel);
+  t.context.runtime = module.get(BackendRuntimeProvider);
   t.context.db = module.get(PrismaClient);
-  t.context.doc = module.get(DocModel);
-  t.context.config = module.get(Config);
+  t.context.storage = module.get(WorkspaceBlobStorage);
   t.context.module = module;
 });
 
 let user: User;
 let workspace: Workspace;
 
-let docId = 'doc1';
-
 test.beforeEach(async t => {
   await t.context.module.initTestingDB();
-  user = await t.context.user.create({
-    email: 'test@affine.pro',
-  });
+  user = await t.context.user.create({ email: 'test@affine.pro' });
   workspace = await t.context.workspace.create(user.id);
 });
 
@@ -54,419 +46,245 @@ test.after(async t => {
   await t.context.module.close();
 });
 
-test('should manage copilot workspace ignored docs', async t => {
-  const ignoredDocs = await t.context.copilotWorkspace.listIgnoredDocs(
-    workspace.id
+test('should manage workspace ignored documents', async t => {
+  t.is(await t.context.copilotWorkspace.countIgnoredDocs(workspace.id), 0);
+  t.is(
+    await t.context.copilotWorkspace.updateIgnoredDocs(workspace.id, ['doc1']),
+    1
   );
-  t.deepEqual(ignoredDocs, []);
-
-  {
-    const count = await t.context.copilotWorkspace.updateIgnoredDocs(
-      workspace.id,
-      [docId]
-    );
-    t.snapshot(count, 'should add ignored doc');
-
-    const ret = await t.context.copilotWorkspace.listIgnoredDocs(workspace.id);
-    t.snapshot(cleanObject(ret), 'should return added doc');
-
-    const check = await t.context.copilotWorkspace.checkIgnoredDocs(
-      workspace.id,
-      [docId]
-    );
-    t.snapshot(check, 'should return ignored docs in workspace');
-  }
-
-  {
-    const count = await t.context.copilotWorkspace.updateIgnoredDocs(
-      workspace.id,
-      [docId]
-    );
-    t.snapshot(count, 'should not change if ignored doc exists');
-
-    const ret = await t.context.copilotWorkspace.listIgnoredDocs(workspace.id);
-    t.snapshot(cleanObject(ret), 'should not add ignored doc again');
-  }
-
-  {
-    const count = await t.context.copilotWorkspace.updateIgnoredDocs(
-      workspace.id,
-      ['new_doc']
-    );
-    t.snapshot(count, 'should add new ignored doc');
-
-    const ret = await t.context.copilotWorkspace.listIgnoredDocs(workspace.id);
-    t.snapshot(cleanObject(ret), 'should add ignored doc');
-  }
-
-  {
+  t.is(
+    await t.context.copilotWorkspace.updateIgnoredDocs(workspace.id, ['doc1']),
+    0
+  );
+  t.is(
+    await t.context.copilotWorkspace.updateIgnoredDocs(workspace.id, ['doc2']),
+    1
+  );
+  t.is(await t.context.copilotWorkspace.countIgnoredDocs(workspace.id), 2);
+  const firstPage = await t.context.copilotWorkspace.listIgnoredDocs(
+    workspace.id,
+    { offset: 0, first: 1 }
+  );
+  t.is(firstPage.length, 1);
+  t.true(['doc1', 'doc2'].includes(firstPage[0].docId));
+  t.deepEqual(
+    await t.context.copilotWorkspace.checkIgnoredDocs(workspace.id, [
+      'doc1',
+      'doc2',
+    ]),
+    ['doc1', 'doc2']
+  );
+  t.is(
     await t.context.copilotWorkspace.updateIgnoredDocs(
       workspace.id,
-      undefined,
-      [docId]
-    );
-
-    const ret = await t.context.copilotWorkspace.listIgnoredDocs(workspace.id);
-    t.snapshot(cleanObject(ret), 'should remove ignored doc');
-  }
+      [],
+      ['doc1', 'doc2']
+    ),
+    2
+  );
+  t.is(await t.context.copilotWorkspace.countIgnoredDocs(workspace.id), 0);
 });
 
-test('should insert and search embedding', async t => {
-  {
-    const { fileId } = await t.context.copilotWorkspace.addFile(workspace.id, {
-      fileName: 'file1',
-      blobId: 'blob1',
+test('workspace artifacts deduplicate bytes and remain workspace isolated', async t => {
+  const body = Buffer.from('shared artifact');
+  const first = await t.context.runtime.putWorkspaceArtifact(
+    {
+      workspaceId: workspace.id,
       mimeType: 'text/plain',
-      size: 1,
-    });
-    await t.context.copilotWorkspace.insertFileEmbeddings(
-      workspace.id,
-      fileId,
-      [
-        {
-          index: 0,
-          content: 'content',
-          embedding: Array.from({ length: 1024 }, () => 1),
-        },
-      ]
-    );
-
+      displayName: 'first.txt',
+      fileName: 'first.txt',
+      libraryOwned: false,
+    },
+    body
+  );
+  const repeated = await t.context.runtime.putWorkspaceArtifact(
     {
-      const ret = await t.context.copilotWorkspace.matchFileEmbedding(
-        workspace.id,
-        Array.from({ length: 1024 }, () => 0.9),
-        1,
-        1
-      );
-      t.snapshot(
-        cleanObject(ret, ['fileId']),
-        'should match workspace file embedding'
-      );
-    }
-  }
+      workspaceId: workspace.id,
+      mimeType: 'text/plain',
+      displayName: 'repeated.txt',
+      fileName: 'repeated.txt',
+      libraryOwned: true,
+    },
+    body
+  );
+  t.is(repeated.id, first.id);
+  t.is(repeated.displayName, 'repeated.txt');
+  t.is(repeated.fileName, 'first.txt');
+  t.true(repeated.libraryOwned);
 
-  {
-    await t.context.db.blob.create({
-      data: {
-        workspaceId: workspace.id,
-        key: 'blob-test',
-        mime: 'text/plain',
-        size: 1,
-      },
-    });
-
-    const blobId = 'blob-test';
-    await t.context.copilotWorkspace.insertBlobEmbeddings(
+  const unnamed = await t.context.runtime.putWorkspaceArtifact(
+    {
+      workspaceId: workspace.id,
+      mimeType: 'application/octet-stream',
+      libraryOwned: false,
+    },
+    Buffer.from('unnamed artifact')
+  );
+  await t.throwsAsync(
+    t.context.runtime.setArtifactLibraryOwned(workspace.id, unnamed.id, true),
+    { message: 'artifact_library_display_name_required' }
+  );
+  await t.throwsAsync(
+    t.context.runtime.setArtifactLibraryOwned(
       workspace.id,
+      '6ba7b811-9dad-11d1-80b4-00c04fd430c8',
+      false
+    ),
+    { message: 'artifact_not_found' }
+  );
+
+  const blobId = createHash('sha256').update(body).digest('base64url');
+  await t.context.storage.put(workspace.id, blobId, body);
+  await t.throwsAsync(
+    t.context.runtime.ensureWorkspaceBlobArtifact({
+      workspaceId: workspace.id,
       blobId,
-      [
-        {
-          index: 0,
-          content: 'blob content',
-          embedding: Array.from({ length: 1024 }, () => 1),
-        },
-      ]
-    );
+      mimeType: 'text/plain',
+      libraryOwned: true,
+    }),
+    { message: 'artifact_library_display_name_required' }
+  );
+  await t.context.db.workspaceArtifact.update({
+    where: { id: first.id },
+    data: {
+      status: 'reserving',
+      reservationExpiresAt: new Date(Date.now() + 60_000),
+    },
+  });
+  const aliased = await t.context.runtime.ensureWorkspaceBlobArtifact({
+    workspaceId: workspace.id,
+    blobId,
+    mimeType: 'text/plain',
+    libraryOwned: false,
+  });
+  t.is(aliased.id, first.id);
+  t.is(aliased.status, 'ready');
+  t.is(aliased.storageScope, 'copilot');
 
+  const otherWorkspace = await t.context.workspace.create(user.id);
+  const isolated = await t.context.runtime.putWorkspaceArtifact(
     {
-      const ret = await t.context.copilotWorkspace.matchBlobEmbedding(
-        workspace.id,
-        Array.from({ length: 1024 }, () => 0.9),
-        1,
-        1
-      );
-      t.snapshot(cleanObject(ret), 'should match workspace blob embedding');
-    }
+      workspaceId: otherWorkspace.id,
+      mimeType: 'text/plain',
+      fileName: 'isolated.txt',
+      libraryOwned: false,
+    },
+    body
+  );
+  t.not(isolated.id, first.id);
+  t.is(isolated.contentHash, first.contentHash);
+  t.is(
+    await t.context.db.workspaceArtifact.count({
+      where: { contentHash: first.contentHash },
+    }),
+    2
+  );
 
-    await t.context.copilotWorkspace.removeBlob(workspace.id, blobId);
+  const session = await t.context.db.aiSession.create({
+    data: {
+      userId: user.id,
+      workspaceId: otherWorkspace.id,
+      promptName: 'Chat With AFFiNE AI',
+    },
+  });
+  const message = await t.context.db.aiSessionMessage.create({
+    data: { sessionId: session.id, role: 'user', content: 'attachment' },
+  });
+  await t.context.db.aiMessageArtifact.create({
+    data: {
+      messageId: message.id,
+      workspaceId: otherWorkspace.id,
+      artifactId: isolated.id,
+      role: 'attachment',
+    },
+  });
+  await t.context.workspace.delete(otherWorkspace.id);
+  t.is(
+    await t.context.db.aiMessageArtifact.count({
+      where: { artifactId: isolated.id },
+    }),
+    0
+  );
 
+  await t.context.runtime.setArtifactLibraryOwned(
+    workspace.id,
+    first.id,
+    false
+  );
+  await t.context.db.$executeRaw`UPDATE workspace_artifacts
+    SET created_at='2026-01-01T00:00:00.000Z', updated_at='2026-01-01T00:00:00.000Z'
+    WHERE id=${first.id}::uuid`;
+  const reused = await t.context.runtime.putWorkspaceArtifact(
     {
-      const ret = await t.context.copilotWorkspace.matchBlobEmbedding(
-        workspace.id,
-        Array.from({ length: 1024 }, () => 0.9),
-        1,
-        1
-      );
-      t.deepEqual(ret, [], 'should not match after removal');
-    }
-  }
-
-  {
-    const docId = randomUUID();
-    await t.context.doc.upsert({
-      spaceId: workspace.id,
-      docId,
-      blob: Uint8Array.from([1, 2, 3]),
-      timestamp: Date.now(),
-      editorId: user.id,
-    });
-
-    const toBeEmbedDocIds = await t.context.copilotWorkspace.findDocsToEmbed(
-      workspace.id
-    );
-    t.snapshot(toBeEmbedDocIds.length, 'should find docs to embed');
-
-    await t.context.copilotContext.insertWorkspaceEmbedding(
-      workspace.id,
-      docId,
-      [
-        {
-          index: 0,
-          content: 'content',
-          embedding: Array.from({ length: 1024 }, () => 1),
-        },
-      ]
-    );
-
-    const afterInsertEmbedding =
-      await t.context.copilotWorkspace.findDocsToEmbed(workspace.id);
-    t.snapshot(afterInsertEmbedding.length, 'should not find docs to embed');
-  }
-
-  {
-    const docId = randomUUID();
-    await t.context.doc.upsert({
-      spaceId: workspace.id,
-      docId,
-      blob: Uint8Array.from([1, 2, 3]),
-      timestamp: Date.now(),
-      editorId: user.id,
-    });
-
-    const toBeEmbedDocIds = await t.context.copilotWorkspace.findDocsToEmbed(
-      workspace.id
-    );
-    t.snapshot(toBeEmbedDocIds.length, 'should find docs to embed');
-
-    await t.context.copilotWorkspace.updateIgnoredDocs(workspace.id, [docId]);
-
-    const afterAddIgnoreDocs = await t.context.copilotWorkspace.findDocsToEmbed(
-      workspace.id
-    );
-    t.snapshot(afterAddIgnoreDocs.length, 'should not find docs to embed');
-  }
-
-  {
-    const docId = `foo$bar`;
-    await t.context.doc.upsert({
-      spaceId: workspace.id,
-      docId: docId,
-      blob: Uint8Array.from([1, 2, 3]),
-      timestamp: Date.now(),
-      editorId: user.id,
-    });
-    const results = await t.context.copilotWorkspace.findDocsToEmbed(
-      workspace.id
-    );
-    t.false(results.includes(docId), 'docs containing `$` should be excluded');
-  }
-
-  {
-    const docId = 'empty_doc';
-    await t.context.doc.upsert({
-      spaceId: workspace.id,
-      docId: docId,
-      blob: Uint8Array.from([0, 0]),
-      timestamp: Date.now(),
-      editorId: user.id,
-    });
-    const results = await t.context.copilotWorkspace.findDocsToEmbed(
-      workspace.id
-    );
-    t.false(results.includes(docId), 'empty documents should be excluded');
-  }
-});
-
-test('should check need to be embedded', async t => {
-  const docId = randomUUID();
-
-  await t.context.doc.upsert({
-    spaceId: workspace.id,
-    docId,
-    blob: Uint8Array.from([1, 2, 3]),
-    timestamp: Date.now(),
-    editorId: user.id,
+      workspaceId: workspace.id,
+      mimeType: 'text/plain',
+      displayName: 'reused.txt',
+      fileName: 'reused.txt',
+      libraryOwned: false,
+    },
+    body
+  );
+  t.is(reused.id, first.id);
+  t.is(await t.context.runtime.cleanupUnreferencedArtifacts(1), 0);
+  await t.context.db.$executeRaw`UPDATE workspace_artifacts
+    SET updated_at='2026-01-01T00:00:00.000Z'
+    WHERE id=${first.id}::uuid`;
+  const retainedSession = await t.context.db.aiSession.create({
+    data: {
+      userId: user.id,
+      workspaceId: workspace.id,
+      promptName: 'Chat With AFFiNE AI',
+    },
   });
-
-  {
-    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
-      workspace.id,
-      docId
-    );
-    t.snapshot(
-      needsEmbedding,
-      'document with no embedding should need embedding'
-    );
-  }
-
-  {
-    await t.context.copilotContext.insertWorkspaceEmbedding(
-      workspace.id,
-      docId,
-      [
-        {
-          index: 0,
-          content: 'content',
-          embedding: Array.from({ length: 1024 }, () => 1),
+  const retainedMessage = await t.context.db.aiSessionMessage.create({
+    data: {
+      sessionId: retainedSession.id,
+      role: 'user',
+      content: 'retained attachment',
+      artifacts: {
+        create: {
+          workspaceId: workspace.id,
+          artifactId: first.id,
+          role: 'attachment',
         },
-      ]
-    );
-
-    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
-      workspace.id,
-      docId
-    );
-    t.snapshot(
-      needsEmbedding,
-      'document with recent embedding should not need embedding'
-    );
-  }
-
-  {
-    await t.context.doc.upsert({
-      spaceId: workspace.id,
-      docId,
-      blob: Uint8Array.from([4, 5, 6]),
-      timestamp: Date.now() + 1000, // Ensure timestamp is later
-      editorId: user.id,
-    });
-
-    // simulate an old embedding
-    const oldEmbeddingTime = new Date(Date.now() - 25 * 60 * 1000);
-    await t.context.db.aiWorkspaceEmbedding.updateMany({
-      where: { workspaceId: workspace.id, docId },
-      data: { updatedAt: oldEmbeddingTime },
-    });
-
-    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
-      workspace.id,
-      docId
-    );
-    t.snapshot(
-      needsEmbedding,
-      'document updated after embedding and older-than-10m should need embedding'
-    );
-  }
-
-  {
-    // only time passed (>10m since last embedding) but no doc updates => should NOT re-embed
-    const baseNow = Date.now();
-    const docId2 = randomUUID();
-    const t0 = baseNow - 30 * 60 * 1000; // snapshot updated 30 minutes ago
-    const t1 = baseNow - 25 * 60 * 1000; // embedding updated 25 minutes ago
-
-    await t.context.doc.upsert({
-      spaceId: workspace.id,
-      docId: docId2,
-      blob: Uint8Array.from([1, 2, 3]),
-      timestamp: t0,
-      editorId: user.id,
-    });
-
-    await t.context.copilotContext.insertWorkspaceEmbedding(
-      workspace.id,
-      docId2,
-      [
-        {
-          index: 0,
-          content: 'content2',
-          embedding: Array.from({ length: 1024 }, () => 1),
-        },
-      ]
-    );
-
-    await t.context.db.aiWorkspaceEmbedding.updateMany({
-      where: { workspaceId: workspace.id, docId: docId2 },
-      data: { updatedAt: new Date(t1) },
-    });
-
-    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
-      workspace.id,
-      docId2
-    );
-    t.snapshot(
-      needsEmbedding,
-      'should not need embedding when only 10-minute window passed without updates'
-    );
-
-    const t2 = baseNow - 5 * 60 * 1000; // doc updated 5 minutes ago
-    await t.context.doc.upsert({
-      spaceId: workspace.id,
-      docId: docId2,
-      blob: Uint8Array.from([7, 8, 9]),
-      timestamp: t2,
-      editorId: user.id,
-    });
-
-    needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
-      workspace.id,
-      docId2
-    );
-    t.snapshot(
-      needsEmbedding,
-      'should need embedding when doc updated and last embedding older than 10 minutes'
-    );
-  }
-  // --- new cases end ---
-});
-
-test('should check embedding table', async t => {
-  {
-    const ret = await t.context.copilotWorkspace.checkEmbeddingAvailable();
-    t.true(ret, 'should return true when embedding table is available');
-  }
-
-  // {
-  //   await t.context.db
-  //     .$executeRaw`DROP TABLE IF EXISTS "ai_workspace_file_embeddings"`;
-  //   const ret = await t.context.copilotWorkspace.checkEmbeddingAvailable();
-  //   t.false(ret, 'should return false when embedding table is not available');
-  // }
-});
-
-test('should filter outdated doc id style in embedding status', async t => {
-  const docId = randomUUID();
-  const outdatedDocId = `${workspace.id}:space:${docId}`;
-
-  await t.context.doc.upsert({
-    spaceId: workspace.id,
-    docId,
-    blob: Uint8Array.from([1, 2, 3]),
-    timestamp: Date.now(),
-    editorId: user.id,
+      },
+    },
   });
-
-  await t.context.doc.upsert({
-    spaceId: workspace.id,
-    docId: outdatedDocId,
-    blob: Uint8Array.from([1, 2, 3]),
-    timestamp: Date.now(),
-    editorId: user.id,
+  t.is(await t.context.runtime.cleanupUnreferencedArtifacts(1), 0);
+  await t.context.db.aiSessionMessage.delete({
+    where: { id: retainedMessage.id },
   });
+  t.is(await t.context.runtime.cleanupUnreferencedArtifacts(1), 1);
+  const [source] = await t.context.db.$queryRaw<
+    { deletedAt: Date | null }[]
+  >`SELECT deleted_at AS "deletedAt" FROM embedding_sources
+    WHERE workspace_id=${workspace.id} AND source_kind='artifact' AND source_key=${first.id}`;
+  t.truthy(source?.deletedAt);
+  t.is(
+    await t.context.db.workspaceArtifact.count({ where: { id: first.id } }),
+    0
+  );
 
-  {
-    const status = await t.context.copilotWorkspace.getEmbeddingStatus(
-      workspace.id
-    );
-    t.snapshot(status, 'should include modern doc format');
-  }
-
-  {
-    await t.context.copilotContext.insertWorkspaceEmbedding(
-      workspace.id,
-      docId,
-      [
-        {
-          index: 0,
-          content: 'content',
-          embedding: Array.from({ length: 1024 }, () => 1),
-        },
-      ]
-    );
-
-    const status = await t.context.copilotWorkspace.getEmbeddingStatus(
-      workspace.id
-    );
-    t.snapshot(status, 'should count docs after filtering outdated');
-  }
+  const deletingBody = Buffer.from('cleanup retry');
+  const deletingBlobId = createHash('sha256')
+    .update(deletingBody)
+    .digest('base64url');
+  await t.context.storage.put(workspace.id, deletingBlobId, deletingBody);
+  const deleting = await t.context.runtime.ensureWorkspaceBlobArtifact({
+    workspaceId: workspace.id,
+    blobId: deletingBlobId,
+    mimeType: 'text/plain',
+    libraryOwned: false,
+  });
+  t.is(deleting.storageScope, 'blob');
+  await t.context.db.workspaceArtifact.update({
+    where: { id: deleting.id },
+    data: { status: 'deleting' },
+  });
+  await t.context.storage.delete(workspace.id, deletingBlobId, true);
+  t.is(await t.context.runtime.cleanupUnreferencedArtifacts(1), 1);
+  t.is(
+    await t.context.db.workspaceArtifact.count({ where: { id: deleting.id } }),
+    0
+  );
 });

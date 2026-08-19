@@ -2,6 +2,7 @@ import {
   base64ToUint8Array,
   uint8ArrayToBase64,
 } from '@affine/core/modules/workspace-engine';
+import { normalizeNativeOptional } from '@affine/mobile-shared/nbstore/optional';
 import {
   decodePayload,
   MOBILE_BLOB_FILE_PREFIX,
@@ -405,7 +406,7 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       indexName,
       docId,
     });
-    return result.text;
+    return normalizeNativeOptional(result.text);
   },
   ftsGetMatches: async function (
     id: string,

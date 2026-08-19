@@ -10,7 +10,9 @@ export {
   Config,
   ConfigFactory,
   defineModuleConfig,
+  defineNativeModuleConfig,
   type JSONSchema,
+  type NativeAppConfigDescriptor,
 } from './config';
 export * from './cors';
 export * from './error';

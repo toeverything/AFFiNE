@@ -53,8 +53,8 @@
     "@sentry/esbuild-plugin": "^5.3.0",
     "@toeverything/infra": "workspace:*",
     "@types/set-cookie-parser": "^2.4.10",
-    "app-builder-lib": "^26.8.1",
-    "builder-util-runtime": "^9.5.1",
+    "app-builder-lib": "^26.15.0",
+    "builder-util-runtime": "^9.7.0",
     "cross-env": "^10.1.0",
     "debug": "^4.4.0",
     "electron": "^39.0.0",
@@ -70,14 +70,14 @@
     "rxjs": "^7.8.2",
     "semver": "^7.7.3",
     "tree-kill": "^1.2.2",
-    "typescript": "^5.9.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "uuid": "^14.0.0",
     "vitest": "^4.1.8",
     "zod": "^3.25.76"
   },
   "dependencies": {
     "async-call-rpc": "^6.4.2",
-    "electron-updater": "^6.8.3",
+    "electron-updater": "^6.8.9",
     "link-preview-js": "^4.0.0",
     "set-cookie-parser": "^2.7.1",
     "yjs": "^13.6.27"

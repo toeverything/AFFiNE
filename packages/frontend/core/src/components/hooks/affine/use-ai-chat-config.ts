@@ -82,6 +82,13 @@ export function useAIChatConfig() {
       const collectionMetas$ = collectionService.collectionMetas$;
       return createSignalFromObservable(collectionMetas$, []);
     },
+    getCollectionTitle: (collectionId: string) => {
+      return (
+        collectionService.collectionMetas$.value.find(
+          collection => collection.id === collectionId
+        )?.name ?? ''
+      );
+    },
     getCollectionPageIds: (collectionId: string) => {
       const collection$ = collectionService.collection$(collectionId);
       // TODO: lack of documents that meet the collection rules
@@ -90,6 +97,7 @@ export function useAIChatConfig() {
   };
 
   const searchMenuConfig = {
+    addContextAvailable: workspaceService.workspace.flavour !== 'local',
     getDocMenuGroup: (
       query: string,
       action: SearchDocMenuAction,

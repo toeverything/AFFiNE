@@ -16,7 +16,7 @@ object AuthInitializer {
     fun initialize(bridge: Bridge) {
         bridge.addWebViewListener(object : WebViewListener() {
             override fun onPageLoaded(webView: WebView?) {
-                bridge.removeWebViewListener(this)
+                webView?.post { bridge.removeWebViewListener(this) }
                 MainScope().launch(Dispatchers.IO) {
                     try {
                         FileTree.get()?.checkAndUploadOldLogs(

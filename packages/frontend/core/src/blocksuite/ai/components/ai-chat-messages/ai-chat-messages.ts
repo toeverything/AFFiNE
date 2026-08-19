@@ -337,77 +337,83 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         })}
         data-testid="chat-panel-messages-container"
       >
-        ${filteredItems.length === 0
-          ? html`<div
-              class="messages-placeholder"
-              data-testid="chat-panel-messages-placeholder"
-            >
-              ${AffineIcon(
-                isHistoryLoading
-                  ? 'var(--affine-icon-secondary)'
-                  : 'var(--affine-primary-color)'
-              )}
-              <div
-                class="messages-placeholder-title"
-                data-loading=${isHistoryLoading}
+        ${
+          filteredItems.length === 0
+            ? html`<div
+                class="messages-placeholder"
+                data-testid="chat-panel-messages-placeholder"
               >
-                ${this.isHistoryLoading
-                  ? html`<span data-testid="chat-panel-loading-state"
-                      >AFFiNE AI is loading history...</span
-                    >`
-                  : html`<span data-testid="chat-panel-empty-state"
-                      >What can I help you with?</span
-                    >`}
-              </div>
-              ${this.independentMode ? nothing : this._renderAIOnboarding()}
-            </div> `
-          : repeat(
-              filteredItems,
-              (item, index) => this._getMessageKey(item, index),
-              (item, index) => {
-                const isLast = index === filteredItems.length - 1;
-                if (isChatMessage(item) && item.role === 'user') {
-                  return html`<chat-message-user
-                    .item=${item}
-                  ></chat-message-user>`;
-                } else if (isChatMessage(item) && item.role === 'assistant') {
-                  return html`<chat-message-assistant
-                    .host=${this.host}
-                    .session=${this.session}
-                    .item=${item}
-                    .isLast=${isLast}
-                    .status=${isLast ? status : 'idle'}
-                    .error=${isLast ? error : null}
-                    .extensions=${this.extensions}
-                    .affineFeatureFlagService=${this.affineFeatureFlagService}
-                    .affineThemeService=${this.affineThemeService}
-                    .notificationService=${this.notificationService}
-                    .retry=${() => this.retry()}
-                    .width=${this.width}
-                    .independentMode=${this.independentMode}
-                    .docDisplayService=${this.docDisplayService}
-                    .peekViewService=${this.peekViewService}
-                    .onOpenDoc=${this.onOpenDoc}
-                  ></chat-message-assistant>`;
-                } else if (isChatAction(item) && this.host) {
-                  return html`<chat-message-action
-                    .host=${this.host}
-                    .item=${item}
-                  ></chat-message-action>`;
+                ${AffineIcon(
+                  isHistoryLoading
+                    ? 'var(--affine-icon-secondary)'
+                    : 'var(--affine-primary-color)'
+                )}
+                <div
+                  class="messages-placeholder-title"
+                  data-loading=${isHistoryLoading}
+                >
+                  ${
+                    this.isHistoryLoading
+                      ? html`<span data-testid="chat-panel-loading-state"
+                          >AFFiNE AI is loading history...</span
+                        >`
+                      : html`<span data-testid="chat-panel-empty-state"
+                          >What can I help you with?</span
+                        >`
+                  }
+                </div>
+                ${this.independentMode ? nothing : this._renderAIOnboarding()}
+              </div> `
+            : repeat(
+                filteredItems,
+                (item, index) => this._getMessageKey(item, index),
+                (item, index) => {
+                  const isLast = index === filteredItems.length - 1;
+                  if (isChatMessage(item) && item.role === 'user') {
+                    return html`<chat-message-user
+                      .item=${item}
+                    ></chat-message-user>`;
+                  } else if (isChatMessage(item) && item.role === 'assistant') {
+                    return html`<chat-message-assistant
+                      .host=${this.host}
+                      .session=${this.session}
+                      .item=${item}
+                      .isLast=${isLast}
+                      .status=${isLast ? status : 'idle'}
+                      .error=${isLast ? error : null}
+                      .extensions=${this.extensions}
+                      .affineFeatureFlagService=${this.affineFeatureFlagService}
+                      .affineThemeService=${this.affineThemeService}
+                      .notificationService=${this.notificationService}
+                      .retry=${() => this.retry()}
+                      .width=${this.width}
+                      .independentMode=${this.independentMode}
+                      .docDisplayService=${this.docDisplayService}
+                      .peekViewService=${this.peekViewService}
+                      .onOpenDoc=${this.onOpenDoc}
+                    ></chat-message-assistant>`;
+                  } else if (isChatAction(item) && this.host) {
+                    return html`<chat-message-action
+                      .host=${this.host}
+                      .item=${item}
+                    ></chat-message-action>`;
+                  }
+                  return nothing;
                 }
-                return nothing;
-              }
-            )}
+              )
+        }
       </div>
-      ${showDownIndicator && filteredItems.length > 0
-        ? html`<div
-            data-testid="chat-panel-scroll-down-indicator"
-            class="down-indicator"
-            @click=${this._onDownIndicatorClick}
-          >
-            ${ArrowDownIcon()}
-          </div>`
-        : nothing}
+      ${
+        showDownIndicator && filteredItems.length > 0
+          ? html`<div
+              data-testid="chat-panel-scroll-down-indicator"
+              class="down-indicator"
+              @click=${this._onDownIndicatorClick}
+            >
+              ${ArrowDownIcon()}
+            </div>`
+          : nothing
+      }
     `;
   }
 

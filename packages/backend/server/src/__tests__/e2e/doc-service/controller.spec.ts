@@ -26,7 +26,9 @@ e2e('should get doc markdown success', async t => {
     .expect(200)
     .expect('Content-Type', 'application/json; charset=utf-8');
 
-  t.snapshot(res.body);
+  const { revision, ...body } = res.body;
+  t.regex(revision, /^\d+$/);
+  t.snapshot(body);
 });
 
 e2e('should get doc markdown return null when doc not exists', async t => {

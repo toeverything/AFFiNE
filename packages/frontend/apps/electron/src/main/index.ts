@@ -65,7 +65,7 @@ if (overrideSession) {
   app.setPath('sessionData', userDataPath);
 }
 
-// oxlint-disable-next-line @typescript-eslint/no-var-requires
+// oxlint-disable-next-line typescript/no-var-requires
 if (require('electron-squirrel-startup')) app.quit();
 
 if (process.env.SKIP_ONBOARDING) {

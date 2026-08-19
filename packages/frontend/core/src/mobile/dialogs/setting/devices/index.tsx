@@ -4,30 +4,54 @@ import {
   type DeviceAuthSession,
 } from '@affine/core/modules/cloud';
 import { useI18n } from '@affine/i18n';
-import { useService } from '@toeverything/infra';
-import { useCallback, useEffect, useState } from 'react';
+import { useLiveData, useService } from '@toeverything/infra';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { SettingGroup } from '../group';
 import { RowLayout } from '../row.layout';
 
+const loadFailedToastId = 'mobile-settings-devices-load-failed';
+
 export const DevicesGroup = () => {
   const t = useI18n();
   const auth = useService(AuthService);
+  const loginStatus = useLiveData(auth.session.status$);
   const [sessions, setSessions] = useState<DeviceAuthSession[]>([]);
+  const dismissTimer = useRef<number | undefined>(undefined);
 
   const reload = useCallback(() => {
+    if (loginStatus !== 'authenticated') {
+      setSessions([]);
+      return;
+    }
+
     void auth
       .listDeviceSessions()
       .then(setSessions)
       .catch(error => {
-        notify.error({
-          title: t['com.affine.settings.devices.load-failed'](),
-          message: String(error),
-        });
+        const toastId = notify.error(
+          {
+            title: t['com.affine.settings.devices.load-failed'](),
+            message: String(error),
+          },
+          { id: loadFailedToastId, duration: 5000 }
+        );
+        window.clearTimeout(dismissTimer.current);
+        dismissTimer.current = window.setTimeout(
+          () => notify.dismiss(toastId),
+          5000
+        );
       });
-  }, [auth, t]);
+  }, [auth, loginStatus, t]);
 
   useEffect(reload, [reload]);
+  useEffect(
+    () => () => {
+      window.clearTimeout(dismissTimer.current);
+      notify.dismiss(loadFailedToastId);
+    },
+    []
+  );
 
   const revoke = useCallback(
     async (session: DeviceAuthSession) => {
@@ -52,6 +76,10 @@ export const DevicesGroup = () => {
     },
     [auth, reload, t]
   );
+
+  if (loginStatus !== 'authenticated' || sessions.length === 0) {
+    return null;
+  }
 
   return (
     <SettingGroup title={t['com.affine.settings.devices.title']()}>

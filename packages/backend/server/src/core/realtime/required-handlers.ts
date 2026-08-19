@@ -11,8 +11,8 @@ export const REALTIME_GATEWAY_REQUIRED_REQUESTS = [
   'user.settings.get',
   'notification.count.get',
   'comment.changes.get',
-  'workspace.embedding.progress.get',
   'copilot.transcript.task.get',
+  'copilot.transcript.task.retry',
   'user.quota-state.get',
   'workspace.quota-state.get',
 ] as const satisfies readonly RealtimeRequestName[];
@@ -28,7 +28,6 @@ export const REALTIME_GATEWAY_REQUIRED_TOPICS = [
   'user.settings.changed',
   'notification.count.changed',
   'comment.changed',
-  'workspace.embedding.progress.changed',
   'copilot.transcript.task.changed',
   'user.quota-state.changed',
   'workspace.quota-state.changed',

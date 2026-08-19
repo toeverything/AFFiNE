@@ -20,35 +20,42 @@ def nativeAbi = nativeTarget == 'x86_64' ? 'x86_64' : 'arm64-v8a'
 apply from: 'capacitor.build.gradle'
 
 android {
-    namespace "app.affine.pro"
-    compileSdk rootProject.ext.compileSdkVersion
+    namespace = "app.affine.pro"
+    compileSdk = rootProject.ext.compileSdkVersion
     ndkVersion = new File(sdkDirectory, "ndk").listFiles().sort().last().name
     defaultConfig {
-        applicationId "app.affine.pro"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName System.getenv('VERSION_NAME') ?: 'v1.0.0-local'
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        applicationId = "app.affine.pro"
+        minSdkVersion = rootProject.ext.minSdkVersion
+        targetSdkVersion = rootProject.ext.targetSdkVersion
+        versionCode = 1
+        versionName = System.getenv('VERSION_NAME') ?: 'v1.0.0-local'
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders = [usesCleartextTraffic: "false"]
         aaptOptions {
             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
         ndk {
             abiFilters nativeAbi
         }
     }
     buildFeatures {
-        compose true
-        buildConfig true
-        viewBinding true
+        compose = true
+        buildConfig = true
+        viewBinding = true
     }
     buildTypes {
         release {
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        profile {
+            initWith release
+            profileable true
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
         }
         debug {
             minifyEnabled false
@@ -112,6 +119,7 @@ dependencies {
     implementation libs.androidx.datastore.preferences
     implementation libs.androidx.navigation.fragment
     implementation libs.androidx.navigation.ui.ktx
+    implementation libs.androidx.webkit
 
     implementation libs.apollo.runtime
     implementation (libs.jna) {
@@ -159,8 +167,8 @@ cargo {
 
 kotlin {
     compilerOptions {
-        apiVersion = KotlinVersion.KOTLIN_2_1
-        languageVersion = KotlinVersion.KOTLIN_2_1
+        apiVersion = KotlinVersion.KOTLIN_2_2
+        languageVersion = KotlinVersion.KOTLIN_2_2
         jvmTarget = JvmTarget.JVM_21
     }
 }

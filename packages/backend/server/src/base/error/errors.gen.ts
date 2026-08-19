@@ -868,62 +868,6 @@ export class CopilotProviderSideError extends UserFriendlyError {
     super('internal_server_error', 'copilot_provider_side_error', message, args);
   }
 }
-@ObjectType()
-class CopilotInvalidContextDataType {
-  @Field() contextId!: string
-}
-
-export class CopilotInvalidContext extends UserFriendlyError {
-  constructor(args: CopilotInvalidContextDataType, message?: string | ((args: CopilotInvalidContextDataType) => string)) {
-    super('invalid_input', 'copilot_invalid_context', message, args);
-  }
-}
-@ObjectType()
-class CopilotContextFileNotSupportedDataType {
-  @Field() fileName!: string
-  @Field() message!: string
-}
-
-export class CopilotContextFileNotSupported extends UserFriendlyError {
-  constructor(args: CopilotContextFileNotSupportedDataType, message?: string | ((args: CopilotContextFileNotSupportedDataType) => string)) {
-    super('bad_request', 'copilot_context_file_not_supported', message, args);
-  }
-}
-@ObjectType()
-class CopilotFailedToModifyContextDataType {
-  @Field() contextId!: string
-  @Field() message!: string
-}
-
-export class CopilotFailedToModifyContext extends UserFriendlyError {
-  constructor(args: CopilotFailedToModifyContextDataType, message?: string | ((args: CopilotFailedToModifyContextDataType) => string)) {
-    super('internal_server_error', 'copilot_failed_to_modify_context', message, args);
-  }
-}
-@ObjectType()
-class CopilotFailedToMatchContextDataType {
-  @Field() contextId!: string
-  @Field() content!: string
-  @Field() message!: string
-}
-
-export class CopilotFailedToMatchContext extends UserFriendlyError {
-  constructor(args: CopilotFailedToMatchContextDataType, message?: string | ((args: CopilotFailedToMatchContextDataType) => string)) {
-    super('internal_server_error', 'copilot_failed_to_match_context', message, args);
-  }
-}
-@ObjectType()
-class CopilotFailedToMatchGlobalContextDataType {
-  @Field() workspaceId!: string
-  @Field() content!: string
-  @Field() message!: string
-}
-
-export class CopilotFailedToMatchGlobalContext extends UserFriendlyError {
-  constructor(args: CopilotFailedToMatchGlobalContextDataType, message?: string | ((args: CopilotFailedToMatchGlobalContextDataType) => string)) {
-    super('internal_server_error', 'copilot_failed_to_match_global_context', message, args);
-  }
-}
 
 export class CopilotEmbeddingDisabled extends UserFriendlyError {
   constructor(message?: string) {
@@ -934,6 +878,40 @@ export class CopilotEmbeddingDisabled extends UserFriendlyError {
 export class CopilotEmbeddingUnavailable extends UserFriendlyError {
   constructor(message?: string) {
     super('action_forbidden', 'copilot_embedding_unavailable', message);
+  }
+}
+
+export class CopilotSelectedSourcesProcessing extends UserFriendlyError {
+  constructor(message?: string) {
+    super('bad_request', 'copilot_selected_sources_processing', message);
+  }
+}
+
+export class CopilotSelectedSourcesFailed extends UserFriendlyError {
+  constructor(message?: string) {
+    super('bad_request', 'copilot_selected_sources_failed', message);
+  }
+}
+
+export class CopilotSelectedSourcesUnavailable extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'copilot_selected_sources_unavailable', message);
+  }
+}
+
+export class CopilotSelectedSourcesLimitExceeded extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'copilot_selected_sources_limit_exceeded', message);
+  }
+}
+@ObjectType()
+class CopilotFailedToAddWorkspaceArtifactDataType {
+  @Field() message!: string
+}
+
+export class CopilotFailedToAddWorkspaceArtifact extends UserFriendlyError {
+  constructor(args: CopilotFailedToAddWorkspaceArtifactDataType, message?: string | ((args: CopilotFailedToAddWorkspaceArtifactDataType) => string)) {
+    super('internal_server_error', 'copilot_failed_to_add_workspace_artifact', message, args);
   }
 }
 
@@ -952,16 +930,6 @@ export class CopilotTranscriptionJobNotFound extends UserFriendlyError {
 export class CopilotTranscriptionAudioNotProvided extends UserFriendlyError {
   constructor(message?: string) {
     super('bad_request', 'copilot_transcription_audio_not_provided', message);
-  }
-}
-@ObjectType()
-class CopilotFailedToAddWorkspaceFileEmbeddingDataType {
-  @Field() message!: string
-}
-
-export class CopilotFailedToAddWorkspaceFileEmbedding extends UserFriendlyError {
-  constructor(args: CopilotFailedToAddWorkspaceFileEmbeddingDataType, message?: string | ((args: CopilotFailedToAddWorkspaceFileEmbeddingDataType) => string)) {
-    super('internal_server_error', 'copilot_failed_to_add_workspace_file_embedding', message, args);
   }
 }
 
@@ -1317,17 +1285,16 @@ export enum ErrorNames {
   COPILOT_PROMPT_INVALID,
   COPILOT_PROVIDER_NOT_SUPPORTED,
   COPILOT_PROVIDER_SIDE_ERROR,
-  COPILOT_INVALID_CONTEXT,
-  COPILOT_CONTEXT_FILE_NOT_SUPPORTED,
-  COPILOT_FAILED_TO_MODIFY_CONTEXT,
-  COPILOT_FAILED_TO_MATCH_CONTEXT,
-  COPILOT_FAILED_TO_MATCH_GLOBAL_CONTEXT,
   COPILOT_EMBEDDING_DISABLED,
   COPILOT_EMBEDDING_UNAVAILABLE,
+  COPILOT_SELECTED_SOURCES_PROCESSING,
+  COPILOT_SELECTED_SOURCES_FAILED,
+  COPILOT_SELECTED_SOURCES_UNAVAILABLE,
+  COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED,
+  COPILOT_FAILED_TO_ADD_WORKSPACE_ARTIFACT,
   COPILOT_TRANSCRIPTION_JOB_EXISTS,
   COPILOT_TRANSCRIPTION_JOB_NOT_FOUND,
   COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED,
-  COPILOT_FAILED_TO_ADD_WORKSPACE_FILE_EMBEDDING,
   BLOB_QUOTA_EXCEEDED,
   STORAGE_QUOTA_EXCEEDED,
   MEMBER_QUOTA_EXCEEDED,
@@ -1368,5 +1335,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [GraphqlBadRequestDataType, HttpRequestErrorDataType, SsrfBlockedErrorDataType, ResponseTooLargeErrorDataType, ImageFormatNotSupportedDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CalendarProviderRequestErrorDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, CopilotFailedToMatchGlobalContextDataType, CopilotFailedToAddWorkspaceFileEmbeddingDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, UnsupportedServerVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
+    [GraphqlBadRequestDataType, HttpRequestErrorDataType, SsrfBlockedErrorDataType, ResponseTooLargeErrorDataType, ImageFormatNotSupportedDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CalendarProviderRequestErrorDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotFailedToAddWorkspaceArtifactDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, UnsupportedServerVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
 });

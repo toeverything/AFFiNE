@@ -1,14 +1,14 @@
 PODS:
-  - Capacitor (7.4.5):
+  - Capacitor (8.4.2):
     - CapacitorCordova
-  - CapacitorApp (7.1.1):
+  - CapacitorApp (8.1.1):
     - Capacitor
-  - CapacitorBrowser (7.0.3):
+  - CapacitorBrowser (8.0.4):
     - Capacitor
-  - CapacitorCordova (7.4.5)
-  - CapacitorHaptics (7.0.3):
+  - CapacitorCordova (8.4.2)
+  - CapacitorHaptics (8.0.2):
     - Capacitor
-  - CapacitorKeyboard (7.0.4):
+  - CapacitorKeyboard (8.0.5):
     - Capacitor
   - CapacitorPluginAppTrackingTransparency (3.0.0):
     - Capacitor
@@ -45,15 +45,15 @@ EXTERNAL SOURCES:
     :path: "../../../../../node_modules/capacitor-plugin-app-tracking-transparency"
 
 SPEC CHECKSUMS:
-  Capacitor: 12914e6f1b7835e161a74ebd19cb361efa37a7dd
-  CapacitorApp: 63b237168fc869e758481dba283315a85743ee78
-  CapacitorBrowser: b98aa3db018a2ce4c68242d27e596c344f3b81b3
-  CapacitorCordova: 31bbe4466000c6b86d9b7f1181ee286cff0205aa
-  CapacitorHaptics: ce15be8f287fa2c61c7d2d9e958885b90cf0bebc
-  CapacitorKeyboard: 5660c760113bfa48962817a785879373cf5339c3
+  Capacitor: 52f999235b8bd6a7d01694753f4f4d54d182e3a3
+  CapacitorApp: 305bd13c44f6f9d164e2ee66a4faa956ed8c0e06
+  CapacitorBrowser: 752e0208aa07c7aa63d1f7cde895a3e9519b2656
+  CapacitorCordova: 345eacdc4c8282415446aea4acd8c77d82480bd4
+  CapacitorHaptics: 296f771ecd89c7a1bd92a7b6826a7d268e2e70f5
+  CapacitorKeyboard: b6b0744890cdb1d9a96e2cafcc9253fdcc55de3b
   CapacitorPluginAppTrackingTransparency: f0df8fe65d07d3854de3dad832caf192262bbaa5
   CryptoSwift: 967f37cea5a3294d9cce358f78861652155be483
 
-PODFILE CHECKSUM: 2c1e4be82121f2d9724ecf7e31dd14e165aeb082
+PODFILE CHECKSUM: ea5ce301a5d89089eaf7d25b0c1fd49293dcfc20
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.17.0

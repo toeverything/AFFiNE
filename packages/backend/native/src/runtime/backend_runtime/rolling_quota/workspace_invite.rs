@@ -293,14 +293,15 @@ impl BackendRuntime {
     if input.target_count <= 0 {
       return Err(napi_error("target_count must be positive"));
     }
-    let config = self.config()?.invite_quota;
+    let runtime_config = self.config()?;
+    let config = &runtime_config.invite_quota;
     let pool = self.pool().await?;
     let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
       .fetch_one(&pool)
       .await
       .map_err(|err| RuntimeError::database("failed to read database clock", err))?;
     let actor = load_actor(&pool, &input.actor_user_id).await?;
-    let actor_subject = subject_hash(&actor.email, &config);
+    let actor_subject = subject_hash(&actor.email, config);
     if let Some(status) = active_subject_status(&pool, &actor_subject).await?
       && matches!(status.as_str(), "banned" | "quarantined")
     {
@@ -387,14 +388,14 @@ impl BackendRuntime {
         action_required: None,
       });
     }
-    if let Some(abuse_decision) = high_confidence_invite_abuse(&input, &actor, &config) {
+    if let Some(abuse_decision) = high_confidence_invite_abuse(&input, &actor, config) {
       let reason = abuse_decision.reason;
       let scope_key = match abuse_decision.subject_kind {
         "workspace" => format!("invite:workspace_subject:{}", abuse_decision.subject_key),
         "source_prefix_domain" => format!("invite:source_cohort_subject:{}", abuse_decision.subject_key),
         _ => format!("invite:actor_subject:{}", abuse_decision.subject_key),
       };
-      let action_required = record_invite_abuse_action(&pool, &input, &actor, abuse_decision, &config).await?;
+      let action_required = record_invite_abuse_action(&pool, &input, &actor, abuse_decision, config).await?;
       return Ok(RuntimeWorkspaceInviteQuotaDecision {
         allowed: false,
         reservation_id: None,
@@ -411,7 +412,7 @@ impl BackendRuntime {
 
     let workspace = load_workspace(&pool, &input.workspace_id).await?;
     let activity = load_invite_activity(&pool, &input.actor_user_id, &input.workspace_id).await?;
-    let scopes = build_invite_scopes(&input, &actor, &workspace, &quota, &activity, &config, now)?;
+    let scopes = build_invite_scopes(&input, &actor, &workspace, &quota, &activity, config, now)?;
     match reserve_scopes(&pool, "workspace_invite", input.request_id.as_deref(), scopes).await? {
       Ok(reservation) => Ok(RuntimeWorkspaceInviteQuotaDecision {
         allowed: true,

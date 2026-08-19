@@ -6,7 +6,7 @@ import {
   JobQueue,
   SearchProviderNotFound,
 } from '../../base';
-import { readAllBlocksFromDocSnapshot } from '../../core/utils/blocksuite';
+import { projectDocSearch } from '../../core/utils/blocksuite';
 import { Models } from '../../models';
 import { SearchProviderType } from './config';
 import { SearchProviderFactory } from './factory';
@@ -284,9 +284,10 @@ export class IndexerService {
     };
 
     try {
-      const result = await readAllBlocksFromDocSnapshot(
+      const projection = projectDocSearch(
+        docSnapshot.blob,
         docId,
-        docSnapshot.blob
+        docSnapshot.updatedAt.getTime().toString()
       );
       await this.write(
         SearchTable.doc,
@@ -294,8 +295,11 @@ export class IndexerService {
           {
             workspaceId,
             docId,
-            title: result.title,
-            summary: result.summary,
+            title: projection.title,
+            summary: projection.units
+              .map(unit => unit.text)
+              .join('\n')
+              .slice(0, 1000),
             // NOTE(@fengmk): journal is not supported yet
             // journal: result.journal,
             createdByUserId: docSnapshot.createdBy ?? '',
@@ -309,20 +313,25 @@ export class IndexerService {
       await this.deleteBlocksByDocId(workspaceId, docId, options);
       await this.write(
         SearchTable.block,
-        result.blocks.map(block => ({
+        projection.units.map(unit => ({
           workspaceId,
           docId,
-          blockId: block.blockId,
-          content: block.content ?? '',
-          flavour: block.flavour,
-          blob: block.blob,
-          refDocId: block.refDocId,
-          ref: block.ref,
-          parentFlavour: block.parentFlavour,
-          parentBlockId: block.parentBlockId,
-          additional: block.additional
-            ? JSON.stringify(block.additional)
-            : undefined,
+          blockId: unit.blockId ?? unit.unitId,
+          unitId: unit.unitId,
+          projectionVersion: projection.version,
+          sourceHash: projection.sourceHash,
+          visibility: unit.visibility,
+          elementId: unit.elementId,
+          frameId: unit.frameId,
+          sourceBlockId: unit.blockId,
+          blob: unit.blobId,
+          refDocId: unit.refDocIds.length ? unit.refDocIds : undefined,
+          ref: unit.refs.length ? unit.refs : undefined,
+          content: unit.text,
+          flavour: `affine:${unit.type}`,
+          parentFlavour: unit.parentFlavour,
+          parentBlockId: unit.parentBlockId,
+          additional: unit.additional,
           markdownPreview: undefined,
           createdByUserId: docSnapshot.createdBy ?? '',
           updatedByUserId: docSnapshot.updatedBy ?? '',
@@ -332,12 +341,8 @@ export class IndexerService {
         options
       );
 
-      await this.queue.add('copilot.embedding.updateDoc', {
-        workspaceId,
-        docId,
-      });
       this.logger.verbose(
-        `synced doc ${workspaceId}/${docId} with ${result.blocks.length} blocks`
+        `synced doc ${workspaceId}/${docId} with ${projection.units.length} search units`
       );
     } catch (err) {
       this.logger.warn(
@@ -559,6 +564,13 @@ export class IndexerService {
         hits: {
           fields: [
             'blockId',
+            'unitId',
+            'projectionVersion',
+            'sourceHash',
+            'visibility',
+            'elementId',
+            'frameId',
+            'sourceBlockId',
             'flavour',
             'content',
             'createdAt',
@@ -590,6 +602,20 @@ export class IndexerService {
     for (const bucket of result.buckets) {
       const docId = bucket.key;
       const blockId = bucket.hits.nodes[0].fields.blockId[0] as string;
+      const unitId = bucket.hits.nodes[0].fields.unitId[0] as string;
+      const projectionVersion = bucket.hits.nodes[0].fields
+        .projectionVersion[0] as number;
+      const sourceHash = bucket.hits.nodes[0].fields.sourceHash[0] as string;
+      const visibility = bucket.hits.nodes[0].fields.visibility[0] as string;
+      const elementId = bucket.hits.nodes[0].fields.elementId?.[0] as
+        | string
+        | undefined;
+      const frameId = bucket.hits.nodes[0].fields.frameId?.[0] as
+        | string
+        | undefined;
+      const sourceBlockId = bucket.hits.nodes[0].fields.sourceBlockId?.[0] as
+        | string
+        | undefined;
       const flavour = bucket.hits.nodes[0].fields.flavour[0] as string;
       const content = bucket.hits.nodes[0].fields.content[0] as string;
       const createdAt = bucket.hits.nodes[0].fields.createdAt[0] as Date;
@@ -611,7 +637,13 @@ export class IndexerService {
 
       docs.push({
         docId,
-        blockId,
+        blockId: sourceBlockId || blockId,
+        ...(unitId ? { unitId } : {}),
+        ...(projectionVersion ? { projectionVersion } : {}),
+        ...(sourceHash ? { sourceHash } : {}),
+        ...(visibility ? { visibility } : {}),
+        ...(elementId ? { elementId } : {}),
+        ...(frameId ? { frameId } : {}),
         title,
         highlight,
         createdAt,

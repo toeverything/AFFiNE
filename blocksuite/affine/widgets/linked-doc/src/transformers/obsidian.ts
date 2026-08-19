@@ -23,6 +23,7 @@ import {
   blobsFromAssets,
   type ImportBatch,
   type ImportDoc,
+  type ImportFolder,
 } from './import-batch.js';
 import {
   bindImportedAssetsToJob,
@@ -397,6 +398,70 @@ type ObsidianAttachmentEmbed = {
   fileType: string;
 };
 
+type ObsidianAssetLookup = {
+  resolve: (
+    targetPath: string,
+    currentFilePath: string
+  ) => { blobId: string; path: string } | null;
+};
+
+function createAssetLookup(
+  pathBlobIdMap: ReadonlyMap<string, string>,
+  vaultRoot: string,
+  attachmentFolderPath?: string
+): ObsidianAssetLookup {
+  const exact = new Map<string, { blobId: string; path: string }>();
+  const byBasename = new Map<
+    string,
+    { blobId: string; path: string } | typeof AMBIGUOUS_PAGE_LOOKUP
+  >();
+
+  for (const [path, blobId] of pathBlobIdMap) {
+    const entry = { blobId, path };
+    exact.set(normalizeLookupKey(path), entry);
+    const name = normalizeLookupKey(basename(path));
+    const existing = byBasename.get(name);
+    if (!existing) {
+      byBasename.set(name, entry);
+    } else if (
+      existing !== AMBIGUOUS_PAGE_LOOKUP &&
+      existing.blobId !== blobId
+    ) {
+      byBasename.set(name, AMBIGUOUS_PAGE_LOOKUP);
+    }
+  }
+
+  return {
+    resolve(targetPath, currentFilePath) {
+      const normalizedTarget = normalizeFilePathReference(targetPath);
+      const rootPath = vaultRoot
+        ? `${vaultRoot}/${normalizedTarget}`
+        : normalizedTarget;
+      const candidates = [
+        getImageFullPath(currentFilePath, normalizedTarget),
+        rootPath,
+      ];
+      if (attachmentFolderPath) {
+        candidates.push(
+          vaultRoot
+            ? `${vaultRoot}/${attachmentFolderPath}/${basename(normalizedTarget)}`
+            : `${attachmentFolderPath}/${basename(normalizedTarget)}`
+        );
+      }
+
+      for (const candidate of candidates) {
+        const resolved = exact.get(normalizeLookupKey(candidate));
+        if (resolved) return resolved;
+      }
+
+      const match = byBasename.get(
+        normalizeLookupKey(basename(normalizedTarget))
+      );
+      return match && match !== AMBIGUOUS_PAGE_LOOKUP ? match : null;
+    },
+  };
+}
+
 function createObsidianAttach(embed: ObsidianAttachmentEmbed): string {
   return `<!-- ${OBSIDIAN_ATTACHMENT_EMBED_TAG} ${encodeURIComponent(
     JSON.stringify(embed)
@@ -501,7 +566,7 @@ function preprocessObsidianEmbeds(
   markdown: string,
   filePath: string,
   pageLookupMap: ReadonlyMap<string, string>,
-  pathBlobIdMap: ReadonlyMap<string, string>
+  assetLookup: ObsidianAssetLookup
 ): string {
   return replaceWikiLinks(markdown, true, ({ raw, rawTarget, rawAlias }) => {
     const targetPageId = resolvePageIdFromLookup(
@@ -516,8 +581,11 @@ function preprocessObsidianEmbeds(
     const { path } = parseObsidianTarget(rawTarget);
     if (!path) return raw;
 
-    const assetPath = getImageFullPath(filePath, path);
-    const encodedPath = encodeMarkdownPath(assetPath);
+    const resolvedAsset = assetLookup.resolve(path, filePath);
+    const assetPath = resolvedAsset?.path ?? getImageFullPath(filePath, path);
+    const encodedPath = encodeMarkdownPath(
+      resolvedAsset ? `/${assetPath}` : path
+    );
 
     if (isImageAssetPath(path)) {
       const alt = getEmbedLabel(rawAlias, path, false);
@@ -525,7 +593,7 @@ function preprocessObsidianEmbeds(
     }
 
     const label = getEmbedLabel(rawAlias, path, true);
-    const blobId = pathBlobIdMap.get(assetPath);
+    const blobId = resolvedAsset?.blobId;
     if (!blobId) return `[${escapeMarkdownLabel(label)}](${encodedPath})`;
 
     const extension = path.split('.').at(-1)?.toLowerCase() ?? '';
@@ -541,7 +609,7 @@ function preprocessObsidianMarkdown(
   markdown: string,
   filePath: string,
   pageLookupMap: ReadonlyMap<string, string>,
-  pathBlobIdMap: ReadonlyMap<string, string>
+  assetLookup: ObsidianAssetLookup
 ): string {
   const { content: contentWithoutFootnotes, footnotes: extractedFootnotes } =
     extractObsidianFootnotes(markdown);
@@ -549,7 +617,7 @@ function preprocessObsidianMarkdown(
     contentWithoutFootnotes,
     filePath,
     pageLookupMap,
-    pathBlobIdMap
+    assetLookup
   );
   const normalizedMarkdown = preprocessTitleHeader(
     preprocessObsidianCallouts(content)
@@ -696,6 +764,76 @@ export type PlanObsidianVaultResult = ImportObsidianVaultResult & {
   batch: ImportBatch;
 };
 
+function getVaultRoot(paths: string[]): string {
+  const first = paths[0]?.split('/').find(Boolean);
+  return first && paths.every(path => path.startsWith(`${first}/`))
+    ? first
+    : '';
+}
+
+function isObsidianConfigPath(path: string): boolean {
+  return normalizeFilePathReference(path)
+    .split('/')
+    .some(segment => segment === '.obsidian');
+}
+
+async function getAttachmentFolderPath(importedFiles: File[]) {
+  const appConfig = importedFiles.find(file => {
+    const path = normalizeFilePathReference(
+      file.webkitRelativePath || file.name
+    );
+    return (
+      path.endsWith('/.obsidian/app.json') || path === '.obsidian/app.json'
+    );
+  });
+  if (!appConfig) return undefined;
+
+  try {
+    const parsed = JSON.parse(await appConfig.text()) as {
+      attachmentFolderPath?: unknown;
+    };
+    return typeof parsed.attachmentFolderPath === 'string' &&
+      parsed.attachmentFolderPath.trim()
+      ? normalizeFilePathReference(parsed.attachmentFolderPath.trim())
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function buildObsidianFolders(
+  markdownFiles: MarkdownFileImportEntry[],
+  vaultRoot: string
+): ImportFolder[] | undefined {
+  const folders = new Map<string, ImportFolder>();
+
+  for (const file of markdownFiles) {
+    const normalizedPath = normalizeFilePathReference(file.fullPath);
+    const vaultPath =
+      vaultRoot && normalizedPath.startsWith(`${vaultRoot}/`)
+        ? normalizedPath.slice(vaultRoot.length + 1)
+        : normalizedPath;
+    const parts = vaultPath.split('/').filter(Boolean);
+    parts.pop();
+    if (parts.length === 0) continue;
+
+    let parentPath: string | undefined;
+    for (const name of parts) {
+      const path = parentPath ? `${parentPath}/${name}` : name;
+      folders.set(path, { path, name, parentPath });
+      parentPath = path;
+    }
+    folders.set(`${parentPath}/__doc__${file.pageId}`, {
+      path: `${parentPath}/__doc__${file.pageId}`,
+      name: `__doc__${file.pageId}`,
+      parentPath,
+      pageId: file.pageId,
+    });
+  }
+
+  return folders.size ? Array.from(folders.values()) : undefined;
+}
+
 export async function planObsidianVault({
   collection,
   schema,
@@ -715,10 +853,17 @@ export async function planObsidianVault({
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
   const markdownBlobs: MarkdownFileImportEntry[] = [];
   const pageLookupMap = new Map<string, string>();
+  const importedPaths = importedFiles.map(
+    file => file.webkitRelativePath || file.name
+  );
+  const vaultRoot = getVaultRoot(importedPaths);
+  const attachmentFolderPath = await getAttachmentFolderPath(importedFiles);
 
   for (const file of importedFiles) {
     const filePath = file.webkitRelativePath || file.name;
-    if (isSystemImportPath(filePath)) continue;
+    if (isSystemImportPath(filePath) || isObsidianConfigPath(filePath)) {
+      continue;
+    }
 
     if (file.name.endsWith('.md')) {
       const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
@@ -765,6 +910,12 @@ export async function planObsidianVault({
     }
   }
 
+  const assetLookup = createAssetLookup(
+    pendingPathBlobIdMap,
+    vaultRoot,
+    attachmentFolderPath
+  );
+
   for (const existingDocMeta of collection.meta.docMetas) {
     if (existingDocMeta.title) {
       registerPageLookup(
@@ -802,17 +953,13 @@ export async function planObsidianVault({
         job.adapterConfigs.set('obsidian:pageEmoji:' + id, emoji);
       }
 
-      const pathBlobIdMap = bindImportedAssetsToJob(
-        job,
-        pendingAssets,
-        pendingPathBlobIdMap
-      );
+      bindImportedAssetsToJob(job, pendingAssets, pendingPathBlobIdMap);
 
       const preprocessedMarkdown = preprocessObsidianMarkdown(
         content,
         fullPath,
         pageLookupMap,
-        pathBlobIdMap
+        assetLookup
       );
       const mdAdapter = new MarkdownAdapter(job, provider);
       const snapshot = await mdAdapter.toDocSnapshot({
@@ -838,6 +985,7 @@ export async function planObsidianVault({
     batch: {
       docs,
       blobs: await blobsFromAssets(pendingAssets, pendingPathBlobIdMap),
+      folders: buildObsidianFolders(markdownBlobs, vaultRoot),
       icons: Array.from(docEmojis, ([docId, emoji]) => ({
         docId,
         icon: { type: 'emoji', unicode: emoji },

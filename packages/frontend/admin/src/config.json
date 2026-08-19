@@ -367,56 +367,7 @@
   "copilot": {
     "enabled": {
       "type": "Boolean",
-      "desc": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>"
-    },
-    "byok.enabled": {
-      "type": "Boolean",
-      "desc": "Whether to enable workspace BYOK."
-    },
-    "byok.allowedProviders": {
-      "type": "Array",
-      "desc": "The allowlist for workspace BYOK providers."
-    },
-    "byok.allowCustomEndpoint": {
-      "type": "Boolean",
-      "desc": "Whether workspace BYOK custom endpoints are accepted."
-    },
-    "providers.profiles": {
-      "type": "Array",
-      "desc": "The profile list for copilot providers."
-    },
-    "providers.defaults": {
-      "type": "Object",
-      "desc": "The default provider ids for model output types and global fallback."
-    },
-    "providers.openai": {
-      "type": "Object",
-      "desc": "The config for the openai provider.",
-      "link": "https://github.com/openai/openai-node"
-    },
-    "providers.cloudflareWorkersAi": {
-      "type": "Object",
-      "desc": "The config for the Cloudflare Workers AI provider."
-    },
-    "providers.fal": {
-      "type": "Object",
-      "desc": "The config for the fal provider."
-    },
-    "providers.gemini": {
-      "type": "Object",
-      "desc": "The config for the gemini provider."
-    },
-    "providers.geminiVertex": {
-      "type": "Object",
-      "desc": "The config for the gemini provider in Google Vertex AI."
-    },
-    "providers.anthropic": {
-      "type": "Object",
-      "desc": "The config for the anthropic provider."
-    },
-    "providers.anthropicVertex": {
-      "type": "Object",
-      "desc": "The config for the anthropic provider in Google Vertex AI."
+      "desc": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK."
     },
     "unsplash": {
       "type": "Object",
@@ -429,6 +380,22 @@
     "storage": {
       "type": "Object",
       "desc": "The config for the storage provider."
+    },
+    "byok.enabled": {
+      "type": "Boolean",
+      "desc": "Allow workspace owners and admins to configure AI provider keys through AI BYOK."
+    },
+    "byok.allowedProviders": {
+      "type": "Array",
+      "desc": "AI providers that workspace owners and admins may add through AI BYOK."
+    },
+    "byok.allowCustomEndpoint": {
+      "type": "Boolean",
+      "desc": "Allow AI BYOK keys to use a custom provider endpoint."
+    },
+    "byok.allowPrivateEndpoint": {
+      "type": "Boolean",
+      "desc": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
     }
   },
   "indexer": {

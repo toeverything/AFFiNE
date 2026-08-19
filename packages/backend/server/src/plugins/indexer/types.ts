@@ -45,6 +45,12 @@ registerEnumType(SearchQueryOccur, {
 export interface SearchDoc {
   docId: string;
   blockId: string;
+  unitId?: string;
+  projectionVersion?: number;
+  sourceHash?: string;
+  visibility?: string;
+  elementId?: string;
+  frameId?: string;
   title: string;
   highlight: string;
   createdAt: Date;

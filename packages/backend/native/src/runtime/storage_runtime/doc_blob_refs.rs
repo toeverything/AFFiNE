@@ -1,4 +1,5 @@
 use affine_doc_loader as doc_loader;
+use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
 use super::{
@@ -8,10 +9,12 @@ use super::{
 
 const PARSER_VERSION: i32 = 1;
 
-struct ExtractedRef {
-  blob_key: String,
-  block_id: String,
-  flavour: String,
+type ExtractedRef = doc_loader::BlobRef;
+
+#[derive(Default)]
+struct ProjectionState {
+  cursor: Option<String>,
+  failed_docs: i64,
 }
 
 async fn load_workspace_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
@@ -34,15 +37,16 @@ async fn upsert_projection_checkpoint(
   pool: &PgPool,
   workspace_id: &str,
   result: &RuntimeDocBlobRefsResult,
+  failed_docs: i64,
 ) -> RuntimeResult<()> {
-  let completed = result.next_cursor.is_none();
-  let status = if completed && result.failed_docs == 0 {
-    "completed"
-  } else if result.failed_docs > 0 {
+  let status = if result.next_cursor.is_some() {
+    "running"
+  } else if failed_docs > 0 {
     "failed"
   } else {
-    "running"
+    "completed"
   };
+  let completed = status == "completed";
   sqlx::query(
     r#"
     INSERT INTO storage_reconciliation_checkpoints
@@ -59,9 +63,10 @@ async fn upsert_projection_checkpoint(
   .bind(workspace_id)
   .bind(status)
   .bind(serde_json::json!({ "lastDocId": result.next_cursor }))
-  .bind(completed && result.failed_docs == 0)
+  .bind(completed)
   .bind(serde_json::json!({
     "parserVersion": PARSER_VERSION,
+    "failedDocs": failed_docs,
   }))
   .execute(pool)
   .await
@@ -94,23 +99,39 @@ async fn upsert_projection_failure_checkpoint(pool: &PgPool, workspace_id: &str,
   Ok(())
 }
 
-async fn load_projection_cursor(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Option<String>> {
-  let checkpoint = sqlx::query_as::<_, (String, serde_json::Value)>(
-    "SELECT status, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
+async fn load_projection_state(pool: &PgPool, workspace_id: &str) -> RuntimeResult<ProjectionState> {
+  let checkpoint = sqlx::query_as::<_, (String, serde_json::Value, serde_json::Value)>(
+    "SELECT status, cursor, metadata FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = \
+     $1",
   )
   .bind(workspace_id)
   .fetch_optional(pool)
   .await
   .map_err(|err| RuntimeError::database("Doc blob refs checkpoint load failed", err))?;
-  Ok(checkpoint.and_then(|(status, cursor)| {
-    if status != "running" {
-      return None;
-    }
-    cursor
-      .get("lastDocId")
-      .and_then(|value| value.as_str())
-      .map(ToString::to_string)
-  }))
+  let Some((status, cursor, metadata)) = checkpoint else {
+    return Ok(ProjectionState::default());
+  };
+  if status != "running" && status != "failed" {
+    return Ok(ProjectionState::default());
+  }
+  if metadata.get("parserVersion").and_then(serde_json::Value::as_i64) != Some(i64::from(PARSER_VERSION)) {
+    return Ok(ProjectionState::default());
+  }
+  let cursor = cursor
+    .get("lastDocId")
+    .and_then(|value| value.as_str())
+    .map(ToString::to_string);
+  let Some(cursor) = cursor else {
+    return Ok(ProjectionState::default());
+  };
+  let failed_docs = metadata
+    .get("failedDocs")
+    .and_then(serde_json::Value::as_i64)
+    .unwrap_or(i64::from(status == "failed"));
+  Ok(ProjectionState {
+    cursor: Some(cursor),
+    failed_docs,
+  })
 }
 
 async fn purge_removed_doc_refs(pool: &PgPool, workspace_id: &str, current_doc_ids: &[String]) -> RuntimeResult<i64> {
@@ -129,23 +150,9 @@ async fn purge_removed_doc_refs(pool: &PgPool, workspace_id: &str, current_doc_i
   Ok(result.rows_affected() as i64)
 }
 
-fn extract_refs(snapshot: &CurrentDoc) -> RuntimeResult<Vec<ExtractedRef>> {
-  let parsed = doc_loader::parse_doc_from_binary(snapshot.blob.clone(), snapshot.doc_id.clone())
-    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))?;
-  let mut refs = Vec::new();
-  for block in parsed.blocks {
-    let Some(blob_keys) = block.blob else {
-      continue;
-    };
-    for blob_key in blob_keys {
-      refs.push(ExtractedRef {
-        blob_key,
-        block_id: block.block_id.clone(),
-        flavour: block.flavour.clone(),
-      });
-    }
-  }
-  Ok(refs)
+fn extract_refs(blob: Vec<u8>) -> RuntimeResult<Vec<ExtractedRef>> {
+  doc_loader::get_blob_refs_from_binary(blob)
+    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))
 }
 
 #[cfg(test)]
@@ -167,7 +174,7 @@ mod tests {
       updated_at: Utc::now(),
     };
 
-    let refs = extract_refs(&snapshot).expect("refs should parse");
+    let refs = extract_refs(snapshot.blob).expect("refs should parse");
 
     assert!(
       refs
@@ -209,19 +216,25 @@ mod tests {
       updated_at: Utc::now(),
     };
 
-    assert!(extract_refs(&snapshot).is_err());
+    assert!(extract_refs(snapshot.blob).is_err());
   }
 }
 
-async fn replace_doc_refs(pool: &PgPool, snapshot: &CurrentDoc, refs: Vec<ExtractedRef>) -> RuntimeResult<(i64, i64)> {
+async fn replace_doc_refs(
+  pool: &PgPool,
+  workspace_id: &str,
+  doc_id: &str,
+  updated_at: DateTime<Utc>,
+  refs: Vec<ExtractedRef>,
+) -> RuntimeResult<(i64, i64)> {
   let mut tx = pool
     .begin()
     .await
     .map_err(|err| RuntimeError::database("Doc blob refs transaction failed", err))?;
 
   let deleted = sqlx::query("DELETE FROM doc_blob_refs WHERE workspace_id = $1 AND doc_id = $2")
-    .bind(&snapshot.workspace_id)
-    .bind(&snapshot.doc_id)
+    .bind(workspace_id)
+    .bind(doc_id)
     .execute(&mut *tx)
     .await
     .map_err(|err| RuntimeError::database("Doc blob refs delete failed", err))?
@@ -243,12 +256,12 @@ async fn replace_doc_refs(pool: &PgPool, snapshot: &CurrentDoc, refs: Vec<Extrac
             error = NULL
       "#,
     )
-    .bind(&snapshot.workspace_id)
-    .bind(&snapshot.doc_id)
+    .bind(workspace_id)
+    .bind(doc_id)
     .bind(reference.blob_key)
     .bind(reference.block_id)
     .bind(reference.flavour)
-    .bind(snapshot.updated_at)
+    .bind(updated_at)
     .bind(PARSER_VERSION)
     .execute(&mut *tx)
     .await
@@ -306,9 +319,15 @@ async fn rebuild_doc_blob_refs_inner(
     return Ok(result);
   };
 
-  match extract_refs(&snapshot) {
+  let CurrentDoc {
+    workspace_id,
+    doc_id,
+    blob,
+    updated_at,
+  } = snapshot;
+  match extract_refs(blob) {
     Ok(refs) => {
-      let (written, deleted) = replace_doc_refs(&pool, &snapshot, refs).await?;
+      let (written, deleted) = replace_doc_refs(&pool, &workspace_id, &doc_id, updated_at, refs).await?;
       result.parsed_docs = 1;
       result.refs_written = written;
       result.refs_deleted = deleted;
@@ -351,11 +370,11 @@ impl StorageRuntime {
         return Err(err.into());
       }
     };
-    let cursor = load_projection_cursor(&pool, &workspace_id).await?;
+    let state = load_projection_state(&pool, &workspace_id).await?;
     let current_doc_ids = doc_ids.clone();
     let doc_ids = doc_ids
       .into_iter()
-      .filter(|doc_id| cursor.as_ref().is_none_or(|cursor| doc_id > cursor))
+      .filter(|doc_id| state.cursor.as_ref().is_none_or(|cursor| doc_id > cursor))
       .collect::<Vec<_>>();
     let has_more = doc_ids.len() > limit as usize;
     let mut total = RuntimeDocBlobRefsResult {
@@ -377,13 +396,14 @@ impl StorageRuntime {
       total.refs_deleted += result.refs_deleted;
       total.failed_docs += result.failed_docs;
     }
+    let failed_docs = state.failed_docs + total.failed_docs;
     if has_more {
       total.next_cursor = last_doc_id;
-    } else if total.failed_docs == 0 {
+    } else if failed_docs == 0 {
       total.refs_deleted += purge_removed_doc_refs(&pool, &workspace_id, &current_doc_ids).await?;
     }
 
-    upsert_projection_checkpoint(&pool, &workspace_id, &total).await?;
+    upsert_projection_checkpoint(&pool, &workspace_id, &total, failed_docs).await?;
 
     Ok(total)
   }

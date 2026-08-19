@@ -156,3 +156,68 @@ fn render_prompt_message(
 
   Ok(next)
 }
+
+#[cfg(test)]
+mod tests {
+  use serde_json::json;
+
+  use super::*;
+
+  fn message(role: &str, content: &str) -> PromptMessageContract {
+    serde_json::from_value(json!({ "role": role, "content": content })).unwrap()
+  }
+
+  #[test]
+  fn renders_lists_and_normalizes_missing_or_invalid_params_to_defaults() {
+    let messages = vec![
+      message("system", "translate {{src}} to {{dest}}: {{content}}"),
+      message("user", "links:\n{{#links}}- {{.}}\n{{/links}}"),
+    ];
+    let template_params = serde_json::from_value(json!({
+      "src": ["eng"],
+      "dest": ["chs", "jpn"]
+    }))
+    .unwrap();
+    let params = serde_json::from_value(json!({
+      "src": "invalid",
+      "content": "hello",
+      "links": ["https://affine.pro", "https://github.com/toeverything/AFFiNE"]
+    }))
+    .unwrap();
+
+    let rendered = render_prompt_response(&messages, &template_params, &params).unwrap();
+
+    assert_eq!(rendered.messages[0].content, "translate eng to chs: hello");
+    assert_eq!(
+      rendered.messages[1].content,
+      "links:\n- https://affine.pro\n- https://github.com/toeverything/AFFiNE\n"
+    );
+    assert_eq!(rendered.warnings.len(), 2);
+  }
+
+  #[test]
+  fn appends_input_attachments_only_to_user_messages() {
+    let messages = vec![message("system", "system"), message("user", "{{content}}")];
+    let params = serde_json::from_value(json!({
+      "content": "summarize",
+      "attachments": [{
+        "kind": "file_handle",
+        "fileHandle": "file-1",
+        "mimeType": "application/pdf"
+      }]
+    }))
+    .unwrap();
+
+    let rendered = render_prompt_response(&messages, &Map::new(), &params).unwrap();
+
+    assert!(rendered.messages[0].attachments.is_none());
+    assert_eq!(
+      rendered.messages[1].attachments,
+      Some(vec![json!({
+        "kind": "file_handle",
+        "fileHandle": "file-1",
+        "mimeType": "application/pdf"
+      })])
+    );
+  }
+}

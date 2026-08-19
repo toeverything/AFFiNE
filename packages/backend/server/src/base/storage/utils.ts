@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { Readable } from 'node:stream';
 
 import type { Response } from 'express';
@@ -68,3 +69,20 @@ export const SIGNED_URL_EXPIRED = 60 * 60; // 1 hour
 export const STORAGE_PROXY_ROOT = '/api/storage';
 export const PROXY_UPLOAD_PATH = `${STORAGE_PROXY_ROOT}/upload`;
 export const PROXY_MULTIPART_PATH = `${STORAGE_PROXY_ROOT}/multipart`;
+
+export function createStorageUploadToken(
+  path: string,
+  fields: (string | number)[],
+  expiresAt: number,
+  signKey: string
+) {
+  const canonical = JSON.stringify([
+    'affine-storage-upload',
+    1,
+    'PUT',
+    path,
+    ...fields,
+    expiresAt,
+  ]);
+  return createHmac('sha256', signKey).update(canonical).digest('base64url');
+}

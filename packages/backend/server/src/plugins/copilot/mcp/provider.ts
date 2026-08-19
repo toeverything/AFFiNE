@@ -1,13 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { McpAccessMode } from '@prisma/client';
-import { pick } from 'lodash-es';
 import z from 'zod/v3';
 
 import { DocReader, DocWriter } from '../../../core/doc';
 import { PermissionAccess } from '../../../core/permission';
-import { clearEmbeddingChunk } from '../../../models';
-import { IndexerService } from '../../indexer';
-import { CopilotContextService } from '../context/service';
+import { DocumentRetrievalService } from '../retrieval/document';
 
 type McpTextContent = {
   type: 'text';
@@ -103,8 +100,7 @@ export class WorkspaceMcpProvider {
     private readonly ac: PermissionAccess,
     private readonly reader: DocReader,
     private readonly writer: DocWriter,
-    private readonly context: CopilotContextService,
-    private readonly indexer: IndexerService
+    private readonly retrieval: DocumentRetrievalService
   ) {}
 
   async for(
@@ -154,105 +150,57 @@ export class WorkspaceMcpProvider {
       },
     });
 
-    const semanticSearch = defineTool({
-      name: 'semantic_search',
-      title: 'Semantic Search',
+    const docSearch = defineTool({
+      name: 'doc_search',
+      title: 'Document Search',
       description:
-        'Retrieve conceptually related passages by performing vector-based semantic similarity search across embedded documents; use this tool only when exact keyword search fails or the user explicitly needs meaning-level matches (e.g., paraphrases, synonyms, broader concepts, recent documents).',
-      parser: z.object({ query: z.string() }),
+        'Search persisted workspace documents and return bounded passages with Page or canvas locators. Retrieval strategy is selected by the server and never includes files, blobs, attachments, or the web.',
+      parser: z.object({
+        query: z.string().trim().min(1).max(2000),
+        doc_ids: z.array(z.string().min(1).max(128)).max(50).optional(),
+        limit: z.number().int().min(1).max(20).optional(),
+      }),
       inputSchema: {
         type: 'object',
         properties: {
           query: { type: 'string' },
+          doc_ids: {
+            type: 'array',
+            items: { type: 'string' },
+            maxItems: 50,
+          },
+          limit: { type: 'integer', minimum: 1, maximum: 20 },
         },
         required: ['query'],
         additionalProperties: false,
       },
-      execute: async ({ query }, options) => {
-        const trimmed = query.trim();
-        if (!trimmed) {
-          return toolError('Query is required for semantic search.');
-        }
-
-        const chunks = await this.context.matchWorkspaceDocs(
-          workspaceId,
-          trimmed,
-          5,
+      execute: async ({ query, doc_ids, limit }, options) => {
+        const result = await this.retrieval.search(
+          { user: userId, workspace: workspaceId },
+          query,
+          doc_ids,
+          limit ?? 10,
           options.signal
         );
-
-        const abortedAfterMatch = abortIfNeeded(options.signal);
-        if (abortedAfterMatch) return abortedAfterMatch;
-
-        const docs = await this.ac
-          .user(userId)
-          .workspace(workspaceId)
-          .docs(
-            chunks.filter(chunk => 'docId' in chunk),
-            'Doc.Read'
-          );
-
-        const abortedAfterDocs = abortIfNeeded(options.signal);
-        if (abortedAfterDocs) return abortedAfterDocs;
-
-        if (!docs || docs.length === 0) {
-          return toolText('No matching documents found.');
-        }
-
-        return {
-          content: docs.map(doc => ({
-            type: 'text',
-            text: clearEmbeddingChunk(doc).content,
-          })),
-        };
+        return toolText(
+          JSON.stringify({
+            retrieval_mode: result.retrievalMode,
+            degraded_reason: result.degradedReason,
+            hits: result.hits.map(hit => ({
+              doc_id: hit.docId,
+              title: hit.title,
+              excerpt: hit.excerpt,
+              visibility: hit.visibility,
+              block_id: hit.blockId,
+              element_id: hit.elementId,
+              frame_id: hit.frameId,
+            })),
+          })
+        );
       },
     });
 
-    const keywordSearch = defineTool({
-      name: 'keyword_search',
-      title: 'Keyword Search',
-      description:
-        'Fuzzy search all workspace documents for the exact keyword or phrase supplied and return passages ranked by textual match. Use this tool by default whenever a straightforward term-based or keyword-base lookup is sufficient.',
-      parser: z.object({ query: z.string() }),
-      inputSchema: {
-        type: 'object',
-        properties: {
-          query: { type: 'string' },
-        },
-        required: ['query'],
-        additionalProperties: false,
-      },
-      execute: async ({ query }, options) => {
-        const trimmed = query.trim();
-        if (!trimmed) return toolError('Query is required for keyword search.');
-
-        let docs = await this.indexer.searchDocsByKeyword(workspaceId, trimmed);
-
-        const abortedAfterSearch = abortIfNeeded(options.signal);
-        if (abortedAfterSearch) return abortedAfterSearch;
-
-        docs = await this.ac
-          .user(userId)
-          .workspace(workspaceId)
-          .docs(docs, 'Doc.Read');
-
-        const abortedAfterDocs = abortIfNeeded(options.signal);
-        if (abortedAfterDocs) return abortedAfterDocs;
-
-        if (!docs || docs.length === 0) {
-          return toolText('No matching documents found.');
-        }
-
-        return {
-          content: docs.map(doc => ({
-            type: 'text',
-            text: JSON.stringify(pick(doc, 'docId', 'title', 'createdAt')),
-          })),
-        };
-      },
-    });
-
-    const tools = [readDocument, semanticSearch, keywordSearch];
+    const tools = [readDocument, docSearch];
 
     if (
       accessMode === McpAccessMode.READ_WRITE &&
