@@ -34,7 +34,6 @@ class AffineEditorWebView(
                 "initialSelection=${outAttrs.initialSelStart},${outAttrs.initialSelEnd} " +
                 "package=${outAttrs.packageName}",
         )
-        imeState.updateSelection(outAttrs.initialSelStart, outAttrs.initialSelEnd)
         return AffineInputConnection(
             connection,
             imeState,
@@ -43,9 +42,6 @@ class AffineEditorWebView(
             },
             dispatchDeleteForward = {
                 dispatchAndroidEditorInput("deleteContentForward")
-            },
-            dispatchKeyDown = { key, keyCode ->
-                dispatchAndroidKeyDown(key, keyCode)
             },
         )
     }
@@ -110,92 +106,14 @@ class AffineEditorWebView(
         }
     }
 
-    private fun dispatchAndroidKeyDown(key: String, keyCode: Int) {
-        val escapedKey = key.replace("\\", "\\\\").replace("'", "\\'")
-        post {
-            evaluateJavascript(
-                """
-                    (() => {
-                      try {
-                        let endedComposition = false;
-                        const selection = document.getSelection();
-                        let target = selection?.anchorNode ?? document.activeElement ?? document.body;
-                        if (target && target.nodeType === Node.TEXT_NODE) {
-                          target = target.parentElement;
-                        }
-                        if (!(target instanceof EventTarget)) {
-                          target = document.activeElement ?? document.body;
-                        }
-                        if ('$escapedKey' === 'Backspace' || '$escapedKey' === 'Delete') {
-                          target.dispatchEvent(new CompositionEvent('compositionend', {
-                            data: '',
-                            bubbles: true,
-                            cancelable: true,
-                            composed: true,
-                          }));
-                          endedComposition = true;
-                        }
-                        target.dispatchEvent(new KeyboardEvent('keydown', {
-                          key: '$escapedKey',
-                          code: '$escapedKey',
-                          keyCode: $keyCode,
-                          which: $keyCode,
-                          bubbles: true,
-                          cancelable: true,
-                          composed: true,
-                        }));
-                        if ('$escapedKey' === 'Backspace' || '$escapedKey' === 'Delete') {
-                          window.AffineAndroidIME?.finishComposingSession?.('keydown:$escapedKey');
-                        }
-                        return { endedComposition };
-                      } catch (error) {
-                        console.error('[AffineIME] dispatch keydown failed', error);
-                        return { error: String(error) };
-                      }
-                    })();
-                """.trimIndent(),
-                { result ->
-                    Log.i(
-                        TAG,
-                        "dispatchAndroidKeyDown result=$result key=$key keyCode=$keyCode",
-                    )
-                },
-            )
-        }
-    }
-
     private inner class AndroidIMEBridge {
         @JavascriptInterface
         fun finishComposingSession(reason: String?) {
             val reasonForLog = reason?.take(48) ?: "unknown"
             Log.i(TAG, "finishComposingSessionFromWeb reason=$reasonForLog")
             imeState.clearRequestedAtMs = SystemClock.uptimeMillis()
-            requestRestartInput(
-                if (
-                    shouldUseLegacyNativeDelete() &&
-                    reason?.startsWith("beforeinput:deleteContent") == true
-                ) {
-                    DELETE_RESTART_INPUT_DELAY_MS
-                } else {
-                    0L
-                }
-            )
-        }
-    }
-
-    private fun requestRestartInput(delayMs: Long) {
-        if (delayMs <= 0) {
             post { restartInput() }
-            return
         }
-
-        val restartGeneration = imeState.nextRestartGeneration()
-        val delayedRestart = Runnable {
-            if (restartGeneration != imeState.restartInputGeneration) return@Runnable
-
-            restartInput()
-        }
-        postDelayed(delayedRestart, delayMs)
     }
 
     private fun restartInput() {
@@ -204,38 +122,12 @@ class AffineEditorWebView(
         inputMethodManager?.restartInput(this@AffineEditorWebView)
     }
 
-    private fun shouldUseLegacyNativeDelete(): Boolean {
-        return Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q
-    }
-
     private class AndroidIMEState {
         @Volatile
         var clearRequestedAtMs: Long = 0L
 
         @Volatile
         var lastDeleteIntentAtMs: Long = 0L
-
-        @Volatile
-        var lastSelectionStart: Int = -1
-
-        @Volatile
-        var lastSelectionEnd: Int = -1
-
-        @Volatile
-        var restartInputGeneration: Int = 0
-
-        fun updateSelection(start: Int, end: Int) {
-            if (start < 0 || end < 0) return
-
-            lastSelectionStart = start
-            lastSelectionEnd = end
-        }
-
-        @Synchronized
-        fun nextRestartGeneration(): Int {
-            restartInputGeneration += 1
-            return restartInputGeneration
-        }
     }
 
     private class AffineInputConnection(
@@ -243,7 +135,6 @@ class AffineEditorWebView(
         private val state: AndroidIMEState,
         private val dispatchDeleteBackward: () -> Unit,
         private val dispatchDeleteForward: () -> Unit,
-        private val dispatchKeyDown: (String, Int) -> Unit,
     ) : InputConnectionWrapper(target, true) {
         private var handledClearRequestedAtMs = 0L
         private var composingText = ""
@@ -254,7 +145,6 @@ class AffineEditorWebView(
         private var lastExternalReplayTextLength = -1
         private var lastExternalReplayTextAtMs = 0L
         private var syntheticExternalDeleteAtMs = 0L
-        private var lastLegacyKeymapBackspaceAtMs = 0L
         private var isConsumingDeleteKeyEvent = false
 
         override fun setComposingRegion(start: Int, end: Int): Boolean {
@@ -448,31 +338,6 @@ class AffineEditorWebView(
             )
             if (event.keyCode == KeyEvent.KEYCODE_DEL) {
                 if (event.action == KeyEvent.ACTION_DOWN) {
-                    if (shouldUseLegacyNativeDelete()) {
-                        val selectionBeforeDelete = getSelectionSnapshot()
-                        Log.w(TAG, "applyLegacyNativeDeleteForKeyEvent forward=false")
-                        recordDeleteIntent()
-                        resetComposingText()
-                        clearExternalRegion()
-                        if (shouldSuppressRepeatedLegacyKeymapBackspace(selectionBeforeDelete)) {
-                            Log.w(
-                                TAG,
-                                "suppressRepeatedLegacyKeymapBackspace " +
-                                    "selection=${selectionBeforeDelete.previewForLog()}",
-                            )
-                            isConsumingDeleteKeyEvent = true
-                            return true
-                        }
-                        if (shouldRouteLegacyBackspaceToEditorInput()) {
-                            dispatchDeleteBackward()
-                            isConsumingDeleteKeyEvent = true
-                            return true
-                        }
-                        applyNativeDelete(forward = false)
-                        isConsumingDeleteKeyEvent = true
-                        return true
-                    }
-
                     Log.i(TAG, "dispatchDeleteKeyEventToEditorInput")
                     recordDeleteIntent()
                     resetComposingText()
@@ -488,16 +353,6 @@ class AffineEditorWebView(
             }
             if (event.keyCode == KeyEvent.KEYCODE_FORWARD_DEL) {
                 if (event.action == KeyEvent.ACTION_DOWN) {
-                    if (shouldUseLegacyNativeDelete()) {
-                        Log.w(TAG, "applyLegacyNativeDeleteForKeyEvent forward=true")
-                        recordDeleteIntent()
-                        resetComposingText()
-                        clearExternalRegion()
-                        applyNativeDelete(forward = true)
-                        isConsumingDeleteKeyEvent = true
-                        return true
-                    }
-
                     Log.i(TAG, "dispatchForwardDeleteKeyEventToEditorInput")
                     recordDeleteIntent()
                     resetComposingText()
@@ -606,47 +461,6 @@ class AffineEditorWebView(
                 nextText.length >= externalRegionText.length
         }
 
-        private fun applyNativeDelete(forward: Boolean) {
-            if (forward) {
-                super.deleteSurroundingText(0, 1)
-            } else {
-                super.deleteSurroundingText(1, 0)
-            }
-            syntheticExternalDeleteAtMs = SystemClock.uptimeMillis()
-        }
-
-        private fun shouldRouteLegacyBackspaceToEditorInput(): Boolean {
-            val beforeCursor = getTextBeforeCursor(2, 0)?.toString()
-            val shouldRoute =
-                beforeCursor == "" ||
-                    beforeCursor?.endsWith("\n") == true ||
-                    beforeCursor?.endsWith("\r") == true
-            if (shouldRoute) {
-                Log.i(TAG, "routeLegacyBackspaceToEditorInput before=${beforeCursor.previewForLog()}")
-            } else {
-                Log.i(TAG, "skipLegacyBackspaceEditorInput before=${beforeCursor.previewForLog()}")
-            }
-            return shouldRoute
-        }
-
-        private fun shouldSuppressRepeatedLegacyKeymapBackspace(
-            selection: SelectionSnapshot?,
-        ): Boolean {
-            if (selection?.start != 0 || selection.end != 0) return false
-
-            return SystemClock.uptimeMillis() - lastLegacyKeymapBackspaceAtMs <=
-                LEGACY_KEYMAP_BACKSPACE_SUPPRESS_WINDOW_MS
-        }
-
-        private fun dispatchLegacyAndroidKeyDown(key: String, keyCode: Int) {
-            Log.i(TAG, "dispatchLegacyAndroidKeyDown key=$key keyCode=$keyCode")
-            dispatchKeyDown(key, keyCode)
-        }
-
-        private fun shouldUseLegacyNativeDelete(): Boolean {
-            return Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q
-        }
-
         private fun resetComposingText() {
             composingText = ""
             isComposingTextActive = false
@@ -753,12 +567,8 @@ class AffineEditorWebView(
             Log.i(TAG, "clearNativeComposingStateFromWeb")
             resetComposingText()
             clearExternalRegion()
-            if (skipNativeFinish || shouldUseLegacyNativeDelete()) {
-                Log.i(
-                    TAG,
-                    "skipFinishComposingText clearForDelete=$skipNativeFinish " +
-                        "legacy=${shouldUseLegacyNativeDelete()}",
-                )
+            if (skipNativeFinish) {
+                Log.i(TAG, "skipFinishComposingText clearForDelete=true")
                 return
             }
             super.finishComposingText()
@@ -776,31 +586,11 @@ class AffineEditorWebView(
             return text.substring(localStart, localEnd)
         }
 
-        private fun getSelectionSnapshot(): SelectionSnapshot? {
-            val extractedText = getExtractedTextSafely() ?: return getLastKnownSelectionSnapshot()
-            val textLength = extractedText.startOffset + (extractedText.text?.length ?: return null)
-            val start = extractedText.selectionStart + extractedText.startOffset
-            val end = extractedText.selectionEnd + extractedText.startOffset
-            if (start < 0 || end < 0) return getLastKnownSelectionSnapshot()
-
-            state.updateSelection(start, end)
-
-            return SelectionSnapshot(start, end, textLength)
-        }
-
         private fun getExtractedTextSafely() = try {
             getExtractedText(ExtractedTextRequest(), 0)
         } catch (error: Throwable) {
             Log.w(TAG, "getExtractedTextFailed error=${error.javaClass.simpleName}")
             null
-        }
-
-        private fun getLastKnownSelectionSnapshot(): SelectionSnapshot? {
-            val start = state.lastSelectionStart
-            val end = state.lastSelectionEnd
-            if (start < 0 || end < 0) return null
-
-            return SelectionSnapshot(start, end, null)
         }
 
         private fun isWordBoundaryCommit(text: String): Boolean {
@@ -818,24 +608,11 @@ class AffineEditorWebView(
 
     companion object {
         private const val TAG = "AffineIME"
-        private const val DELETE_RESTART_INPUT_DELAY_MS = 180L
         private const val EXTERNAL_REGION_REPLAY_WINDOW_MS = 2_500L
         private const val EXTERNAL_REPLAY_DELETE_WINDOW_MS = 3_000L
-        private const val LEGACY_KEYMAP_BACKSPACE_SUPPRESS_WINDOW_MS = 400L
         private const val SYNTHETIC_EXTERNAL_DELETE_SUPPRESS_WINDOW_MS = 120L
         private const val MIN_REPLACEMENT_COMMON_PREFIX_LENGTH = 2
     }
-}
-
-private data class SelectionSnapshot(
-    val start: Int,
-    val end: Int,
-    val textLength: Int?,
-)
-
-private fun SelectionSnapshot?.previewForLog(): String {
-    if (this == null) return "null"
-    return "$start,$end/$textLength"
 }
 
 private fun Int.toFlags(): String = "0x${toString(16)}"
