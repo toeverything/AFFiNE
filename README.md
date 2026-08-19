@@ -180,8 +180,6 @@ Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiN
 
 [![Run on Sealos](https://sealos.io/Deploy-on-Sealos.svg)](https://sealos.io/products/app-store/affine)
 
-[![Run on ClawCloud](https://raw.githubusercontent.com/ClawCloud/Run-Template/refs/heads/main/Run-on-ClawCloud.svg)](https://template.run.claw.cloud/?openapp=system-fastdeploy%3FtemplateName%3Daffine)
-
 ## Feature Request
 
 For feature requests, please see [discussions](https://github.com/toeverything/AFFiNE/discussions/categories/ideas).

@@ -16,9 +16,8 @@ test('after loaded, will land on the home page', async ({ page }) => {
 });
 
 test('stale first-open state still restores one local workspace', async ({
-  browser,
+  context,
 }) => {
-  const context = await browser.newContext();
   await context.addInitScript(() => {
     window.localStorage.setItem('app_config', '{"onBoarding":false}');
     window.localStorage.setItem('is-first-open', 'false');
@@ -56,8 +55,6 @@ test('stale first-open state still restores one local workspace', async ({
     () => window.currentWorkspace?.meta
   );
   expect(reloadedWorkspace?.id).toBe(firstWorkspace?.id);
-
-  await context.close();
 });
 
 test('workspace selector does not offer workspace creation', async ({
