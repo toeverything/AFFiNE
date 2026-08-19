@@ -190,6 +190,7 @@ class AffineEditorWebView(
         private var isDroppingExternalReplay = false
         private var lastExternalReplayTextLength = -1
         private var lastExternalReplayTextAtMs = 0L
+        private var lastExternalReplayDeletedLength = 0
         private var syntheticExternalDeleteAtMs = 0L
         private var isConsumingDeleteKeyEvent = false
 
@@ -207,6 +208,7 @@ class AffineEditorWebView(
                 isDroppingExternalReplay = false
                 lastExternalReplayTextLength = regionText.length
                 lastExternalReplayTextAtMs = externalRegionAtMs
+                lastExternalReplayDeletedLength = 0
             }
 
             return true
@@ -273,7 +275,7 @@ class AffineEditorWebView(
                         "dropExternalReplayCommit text=${committedText.previewForLog()}",
                     )
                     if (committedText.isEmpty()) {
-                        deleteRemainingExternalReplayText()
+                        deleteRemainingExternalReplayTextAfterShrink()
                     }
                     return true
                 }
@@ -283,6 +285,7 @@ class AffineEditorWebView(
             if (isComposingTextActive && committedText.isNotEmpty()) {
                 if (isWordBoundaryCommit(committedText)) {
                     resetComposingText()
+                    clearExternalRegion()
                     return super.commitText(text, newCursorPosition)
                 }
 
@@ -460,12 +463,12 @@ class AffineEditorWebView(
                 return false
             }
 
-            val isRestoringExistingRegion =
-                externalRegionText == text ||
-                    externalRegionText.startsWith(text)
+            val isSameRegionReplay = externalRegionText == text
+            val isDeleteShrinkReplay =
+                externalRegionText.startsWith(text) && hasRecentDeleteIntent(now)
             val isLikelyPassiveReplay = text.length > 1 || externalRegionText.length > 1
 
-            return isRestoringExistingRegion && isLikelyPassiveReplay
+            return (isSameRegionReplay || isDeleteShrinkReplay) && isLikelyPassiveReplay
         }
 
         private fun adoptExternalRegionAsComposingTextIfNeeded(nextText: String) {
@@ -514,6 +517,7 @@ class AffineEditorWebView(
             isDroppingExternalReplay = false
             lastExternalReplayTextLength = -1
             lastExternalReplayTextAtMs = 0L
+            lastExternalReplayDeletedLength = 0
         }
 
         private fun deleteForShrinkingExternalReplay(nextTextLength: Int) {
@@ -538,6 +542,7 @@ class AffineEditorWebView(
                 )
                 recordDeleteIntent()
                 super.deleteSurroundingText(deleteCount, 0)
+                lastExternalReplayDeletedLength += deleteCount
                 syntheticExternalDeleteAtMs = SystemClock.uptimeMillis()
             }
 
@@ -566,6 +571,12 @@ class AffineEditorWebView(
             lastExternalReplayTextAtMs = now
         }
 
+        private fun deleteRemainingExternalReplayTextAfterShrink() {
+            if (lastExternalReplayDeletedLength <= 0) return
+
+            deleteRemainingExternalReplayText()
+        }
+
         private fun shouldDropNativeDeleteAfterSyntheticExternalDelete(
             beforeLength: Int,
             afterLength: Int,
@@ -581,10 +592,15 @@ class AffineEditorWebView(
             if (committedText.isNotEmpty()) return false
             if (isComposingTextActive || externalRegionText.isEmpty()) return false
             if (lastExternalReplayTextLength <= 0) return false
+            if (lastExternalReplayDeletedLength <= 0) return false
 
             val now = SystemClock.uptimeMillis()
             return now - externalRegionAtMs <= EXTERNAL_REPLAY_DELETE_WINDOW_MS &&
-                now - state.lastDeleteIntentAtMs <= EXTERNAL_REPLAY_DELETE_WINDOW_MS
+                hasRecentDeleteIntent(now)
+        }
+
+        private fun hasRecentDeleteIntent(now: Long): Boolean {
+            return now - state.lastDeleteIntentAtMs <= EXTERNAL_REPLAY_DELETE_WINDOW_MS
         }
 
         private fun recordDeleteIntent(beforeLength: Int, afterLength: Int) {
