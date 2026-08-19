@@ -7,6 +7,7 @@ import {
 import type { WORKSPACE_DIALOG_SCHEMA } from '@affine/core/modules/dialogs/constant';
 import { useLiveData, useService } from '@toeverything/infra';
 
+import { DeletedAccountDialog } from './deleted-account';
 import { CollectionSelectorDialog } from './selectors/collection-selector';
 import { DateSelectorDialog } from './selectors/date-selector';
 import { DocSelectorDialog } from './selectors/doc-selector';
@@ -16,6 +17,7 @@ import { SignInDialog } from './sign-in';
 
 const GLOBAL_DIALOGS = {
   'sign-in': SignInDialog,
+  'deleted-account': DeletedAccountDialog,
 } satisfies {
   [key in keyof GLOBAL_DIALOG_SCHEMA]?: React.FC<
     DialogComponentProps<GLOBAL_DIALOG_SCHEMA[key]>
