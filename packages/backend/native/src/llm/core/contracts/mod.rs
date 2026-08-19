@@ -10,17 +10,6 @@ use serde_json::Value;
 
 #[napi(object)]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct PromptRenderContract {
-  pub messages: Vec<PromptMessageContract>,
-  #[napi(ts_type = "Record<string, any>")]
-  pub template_params: Value,
-  #[napi(ts_type = "Record<string, any>")]
-  pub render_params: Value,
-}
-
-#[napi(object)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
 pub struct PromptRenderResult {
   pub messages: Vec<PromptMessageContract>,
   pub warnings: Vec<String>,
@@ -35,64 +24,11 @@ pub struct BuiltInPromptRenderContract {
   pub render_params: Value,
 }
 
-#[napi(object)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
-pub struct PromptTokenCountContract {
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub model: Option<String>,
-  pub messages: Vec<PromptCountMessage>,
-}
-
-#[napi(object)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
-pub struct PromptTokenCountResult {
-  pub tokens: u32,
-}
-
-#[napi(object)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
-pub struct PromptCountMessage {
-  pub content: String,
-}
-
-#[napi(object)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct PromptMetadataContract {
-  pub messages: Vec<PromptMessageContract>,
-}
-
-#[napi(object)]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PromptMetadataResult {
   pub param_keys: Vec<String>,
-  #[napi(ts_type = "Record<string, any>")]
   pub template_params: Value,
-}
-
-#[napi(object)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct PromptSessionContract {
-  pub prompt: PromptSessionPrompt,
-  pub turns: Vec<PromptMessageContract>,
-  #[napi(ts_type = "Record<string, any>")]
-  pub render_params: Value,
-  pub max_token_size: u32,
-}
-
-#[napi(object)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct PromptSessionPrompt {
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub action: Option<String>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub model: Option<String>,
-  pub prompt_tokens: u32,
-  #[napi(ts_type = "Record<string, any>")]
-  pub template_params: Value,
-  pub messages: Vec<PromptMessageContract>,
 }
 
 #[napi(object)]
@@ -112,7 +48,6 @@ pub struct BuiltInPromptSessionContract {
   pub turns: Vec<PromptMessageContract>,
   #[napi(ts_type = "Record<string, any>")]
   pub render_params: Value,
-  pub max_token_size: u32,
 }
 
 #[napi(object)]
@@ -293,29 +228,6 @@ pub struct CapabilityMatchResponse {
 #[derive(Debug, Clone, Deserialize, JsonSchema, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
-pub struct RequestedModelMatchRequest {
-  pub provider_ids: Vec<String>,
-  pub optional_models: Vec<String>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub requested_model_id: Option<String>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub default_model: Option<String>,
-}
-
-#[napi(object)]
-#[derive(Debug, Clone, Deserialize, JsonSchema, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
-pub struct RequestedModelMatchResponse {
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub selected_model: Option<String>,
-  pub matched_optional_model: bool,
-}
-
-#[napi(object)]
-#[derive(Debug, Clone, Deserialize, JsonSchema, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
 pub struct ModelRegistryResolveRequest {
   #[napi(
     ts_type = "'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | \
@@ -361,8 +273,8 @@ pub struct ModelRegistryVariantContract {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub protocol: Option<String>,
   #[napi(
-    ts_type = "'anthropic' | 'chat_completions' | 'chat_completions_no_v1' | 'cloudflare_workers_ai' | 'responses' | \
-               'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'"
+    ts_type = "'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | \
+               'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'"
   )]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub request_layer: Option<String>,
@@ -381,8 +293,8 @@ pub struct ModelRegistryRouteContract {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub protocol: Option<String>,
   #[napi(
-    ts_type = "'anthropic' | 'chat_completions' | 'chat_completions_no_v1' | 'cloudflare_workers_ai' | 'responses' | \
-               'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'"
+    ts_type = "'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | \
+               'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'"
   )]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub request_layer: Option<String>,
@@ -636,8 +548,6 @@ pub struct LlmImageRequestContract {
 #[serde(rename_all = "camelCase")]
 pub struct LlmImageRequestBuildContract {
   pub model: String,
-  #[napi(ts_type = "'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'")]
-  pub protocol: String,
   pub messages: Vec<PromptMessageContract>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub options: Option<Value>,
@@ -647,47 +557,7 @@ pub struct LlmImageRequestBuildContract {
 mod tests {
   use serde_json::json;
 
-  use super::{CapabilityMatchRequest, PromptRenderContract, PromptSessionContract, ProviderDriverSpec};
-
-  #[test]
-  fn should_roundtrip_prompt_contracts() {
-    let render_value = json!({
-      "messages": [{
-        "role": "system",
-        "content": "summarize",
-        "responseFormat": {
-          "type": "json_schema",
-          "responseSchemaJson": {
-            "type": "object",
-            "properties": {
-              "summary": { "type": "string" }
-            },
-            "required": ["summary"]
-          },
-          "schemaHash": "abc123"
-        }
-      }],
-      "templateParams": { "tone": "short" },
-      "renderParams": { "topic": "docs" }
-    });
-    let session_value = json!({
-      "prompt": {
-        "model": "gpt-5-mini",
-        "promptTokens": 12,
-        "templateParams": {},
-        "messages": [{ "role": "system", "content": "summarize" }]
-      },
-      "turns": [{ "role": "user", "content": "hello" }],
-      "renderParams": { "tone": "short" },
-      "maxTokenSize": 1024
-    });
-
-    let render_contract: PromptRenderContract = serde_json::from_value(render_value.clone()).unwrap();
-    let session_contract: PromptSessionContract = serde_json::from_value(session_value.clone()).unwrap();
-
-    assert_eq!(serde_json::to_value(render_contract).unwrap(), render_value);
-    assert_eq!(serde_json::to_value(session_contract).unwrap(), session_value);
-  }
+  use super::{CapabilityMatchRequest, ProviderDriverSpec};
 
   #[test]
   fn should_roundtrip_tool_and_runtime_contracts() {

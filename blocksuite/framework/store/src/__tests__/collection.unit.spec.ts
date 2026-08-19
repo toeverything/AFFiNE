@@ -382,7 +382,7 @@ describe('addBlock', () => {
 
     const doc0 = collection.createDoc('doc:home');
     const doc1 = collection.createDoc('space:doc1');
-    // oxlint-disable-next-line @typescript-eslint/await-thenable
+    // oxlint-disable-next-line typescript/await-thenable
     await Promise.all([doc0.load(), doc1.load()]);
     assert.equal(collection.docs.size, 2);
     const store0 = doc0.getStore({

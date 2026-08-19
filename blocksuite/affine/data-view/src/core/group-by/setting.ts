@@ -224,9 +224,9 @@ export class GroupSetting extends SignalWatcher(
               <div
                 ${sortable(g.key)}
                 ${dragHandler(g.key)}
-                class="dv-hover dv-round-4 group-item ${g.hide$.value
-                  ? 'group-hidden'
-                  : ''}"
+                class="dv-hover dv-round-4 group-item ${
+                  g.hide$.value ? 'group-hidden' : ''
+                }"
               >
                 <div class="group-item-drag-bar"></div>
                 <div
@@ -376,27 +376,28 @@ export const buildGroupSettingItems = (
                             ['Month', 'date-month'],
                             ['Year', 'date-year'],
                           ] as [string, string][]
-                        ).map(
-                          ([label, key]): MenuConfig =>
-                            menu.action({
-                              name: label,
-                              label: () => {
-                                const isSelected =
-                                  group.groupInfo$.value?.config.name === key;
-                                return html`<span
-                                  style="font-size:14px;color:${isSelected
+                        ).map(([label, key]): MenuConfig =>
+                          menu.action({
+                            name: label,
+                            label: () => {
+                              const isSelected =
+                                group.groupInfo$.value?.config.name === key;
+                              return html`<span
+                                style="font-size:14px;color:${
+                                  isSelected
                                     ? 'var(--affine-text-emphasis-color)'
-                                    : 'var(--affine-text-secondary-color)'}"
-                                  >${label}</span
-                                >`;
-                              },
-                              isSelected:
-                                group.groupInfo$.value?.config.name === key,
-                              select: () => {
-                                group.changeGroupMode(key);
-                                return false;
-                              },
-                            })
+                                    : 'var(--affine-text-secondary-color)'
+                                }"
+                                >${label}</span
+                              >`;
+                            },
+                            isSelected:
+                              group.groupInfo$.value?.config.name === key,
+                            select: () => {
+                              group.changeGroupMode(key);
+                              return false;
+                            },
+                          })
                         )
                       ),
                     ],
@@ -417,10 +418,12 @@ export const buildGroupSettingItems = (
                           <div
                             style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
                           >
-                            ${group.groupInfo$.value?.config.name ===
-                            'date-week-mon'
-                              ? 'Monday'
-                              : 'Sunday'}
+                            ${
+                              group.groupInfo$.value?.config.name ===
+                              'date-week-mon'
+                                ? 'Monday'
+                                : 'Sunday'
+                            }
                           </div>
                         `,
                         options: {
@@ -439,9 +442,11 @@ export const buildGroupSettingItems = (
                                       group.groupInfo$.value?.config.name ===
                                       key;
                                     return html`<span
-                                      style="font-size:14px;color:${isSelected
-                                        ? 'var(--affine-text-emphasis-color)'
-                                        : 'var(--affine-text-secondary-color)'}"
+                                      style="font-size:14px;color:${
+                                        isSelected
+                                          ? 'var(--affine-text-emphasis-color)'
+                                          : 'var(--affine-text-secondary-color)'
+                                      }"
                                       >${label}</span
                                     >`;
                                   },
@@ -485,9 +490,11 @@ export const buildGroupSettingItems = (
                           label: () => {
                             const isSelected = group.sortAsc$.value;
                             return html`<span
-                              style="font-size:14px;color:${isSelected
-                                ? 'var(--affine-text-emphasis-color)'
-                                : 'var(--affine-text-secondary-color)'}"
+                              style="font-size:14px;color:${
+                                isSelected
+                                  ? 'var(--affine-text-emphasis-color)'
+                                  : 'var(--affine-text-secondary-color)'
+                              }"
                               >Oldest first</span
                             >`;
                           },
@@ -502,9 +509,11 @@ export const buildGroupSettingItems = (
                           label: () => {
                             const isSelected = !group.sortAsc$.value;
                             return html`<span
-                              style="font-size:14px;color:${isSelected
-                                ? 'var(--affine-text-emphasis-color)'
-                                : 'var(--affine-text-secondary-color)'}"
+                              style="font-size:14px;color:${
+                                isSelected
+                                  ? 'var(--affine-text-emphasis-color)'
+                                  : 'var(--affine-text-secondary-color)'
+                              }"
                               >Newest first</span
                             >`;
                           },

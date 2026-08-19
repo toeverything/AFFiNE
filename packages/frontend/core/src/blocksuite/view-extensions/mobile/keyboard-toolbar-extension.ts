@@ -24,16 +24,12 @@ export function KeyboardToolbarExtension(
 
     private readonly _disposables = new DisposableGroup();
 
-    // eslint-disable-next-line rxjs/finnish
     readonly visible$ = signal(false);
 
-    // eslint-disable-next-line rxjs/finnish
     readonly height$ = signal(0);
 
-    // eslint-disable-next-line rxjs/finnish
     readonly staticHeight$ = signal(0);
 
-    // eslint-disable-next-line rxjs/finnish
     readonly appTabSafeArea$ = signal(`calc(${globalVars.appTabSafeArea})`);
 
     static override setup(di: Container) {

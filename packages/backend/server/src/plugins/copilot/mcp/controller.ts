@@ -16,6 +16,7 @@ import type { Request, Response } from 'express';
 import { ActionForbidden, Throttle } from '../../../base';
 import { Public } from '../../../core/auth';
 import { extractTokenFromHeader } from '../../../core/auth/input';
+import { CopilotEnabled } from '../feature';
 import { McpCredentialService } from './credential';
 import { WorkspaceMcpProvider, type WorkspaceMcpServer } from './provider';
 
@@ -46,6 +47,7 @@ const SUPPORTED_PROTOCOL_VERSIONS = new Set([
   '2024-10-07',
 ]);
 
+@CopilotEnabled()
 @Controller('/api/workspaces/:workspaceId/mcp')
 export class WorkspaceMcpController {
   private readonly logger = new Logger(WorkspaceMcpController.name);

@@ -42,8 +42,9 @@ FFI_TARGET=${1}
 # path to source code root
 SRC_ROOT=${2}
 REPO_ROOT=$(cd "$SRC_ROOT/../../.." && pwd)
-# Keep Cargo artifacts in a stable location that the rest of this script can reference.
-export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$REPO_ROOT/target}"
+# Keep Cargo artifacts in a stable repo-local location so Xcode does not inherit
+# a sandbox-specific CARGO_TARGET_DIR from the parent shell.
+export CARGO_TARGET_DIR="$REPO_ROOT/target"
 cd "$REPO_ROOT"
 # buildvariant from our xcconfigs
 BUILDVARIANT=$(printf '%s' "${3}" | tr '[:upper:]' '[:lower:]')

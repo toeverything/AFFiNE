@@ -103,6 +103,16 @@ export class ByokEntitlementPolicy {
     }
   }
 
+  async assertEntitled(workspaceId: string, userId?: string) {
+    const [serverEntitled, localEntitled] = await this.hasEntitlement(
+      workspaceId,
+      userId
+    );
+    if (!serverEntitled && !localEntitled) {
+      throw new ActionForbidden('BYOK requires Pro, Team, or Believer.');
+    }
+  }
+
   private async hasWorkspaceTeamPlan(workspaceId: string) {
     try {
       const state =

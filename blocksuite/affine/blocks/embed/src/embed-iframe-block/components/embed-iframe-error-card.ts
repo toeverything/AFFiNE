@@ -252,16 +252,18 @@ export class EmbedIframeErrorCard extends WithDisposable(LitElement) {
             ${this.error?.message || 'Failed to load embedded content'}
           </div>
           <div class="error-info">
-            ${this.readonly
-              ? nothing
-              : html`
-                  <div class="button edit" @click=${this._toggleEdit}>
-                    <span class="icon"
-                      >${EditIcon({ width: '16px', height: '16px' })}</span
-                    >
-                    <span class="text">Edit</span>
-                  </div>
-                `}
+            ${
+              this.readonly
+                ? nothing
+                : html`
+                    <div class="button edit" @click=${this._toggleEdit}>
+                      <span class="icon"
+                        >${EditIcon({ width: '16px', height: '16px' })}</span
+                      >
+                      <span class="text">Edit</span>
+                    </div>
+                  `
+            }
             <div class="button retry" @click=${this._handleRetry}>
               <span class="icon"
                 >${ResetIcon({ width: '16px', height: '16px' })}</span

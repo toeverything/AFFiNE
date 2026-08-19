@@ -59,17 +59,17 @@ export const actionDefinitions = {
         | {
             docs?: unknown;
             files?: unknown;
-            selectedSnapshot?: unknown;
-            selectedMarkdown?: unknown;
-            html?: unknown;
           }
         | undefined;
       return {
         docs: contexts?.docs,
         files: contexts?.files,
-        selectedSnapshot: contexts?.selectedSnapshot,
-        selectedMarkdown: contexts?.selectedMarkdown,
-        html: contexts?.html,
+        liveEditorContext:
+          typeof options.liveEditorContext === 'string'
+            ? options.liveEditorContext
+            : undefined,
+        scopeSelectors: options.scopeSelectors,
+        focusSelectors: options.focusSelectors,
         ...(options.docId ? { currentDocId: options.docId } : {}),
       };
     },

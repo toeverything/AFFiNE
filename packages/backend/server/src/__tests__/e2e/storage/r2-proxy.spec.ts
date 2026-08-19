@@ -369,7 +369,7 @@ e2e.serial('should proxy single upload with valid signature', async t => {
 
 e2e.serial('should proxy multipart upload and return etag', async t => {
   const { workspace } = await setupWorkspace();
-  const key = 'multipart-object';
+  const key = sha256Base64urlWithPadding(Buffer.from('multipart-object'));
   const totalSize = MULTIPART_THRESHOLD + 1024;
   const init = await createBlobUpload(workspace.id, key, totalSize, 'bin');
 
@@ -404,7 +404,7 @@ e2e.serial(
   'should resume multipart upload and return uploaded parts',
   async t => {
     const { workspace } = await setupWorkspace();
-    const key = 'multipart-resume';
+    const key = sha256Base64urlWithPadding(Buffer.from('multipart-resume'));
     const totalSize = MULTIPART_THRESHOLD + 1024;
 
     const init1 = await createBlobUpload(workspace.id, key, totalSize, 'bin');

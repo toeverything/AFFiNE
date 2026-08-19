@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+/* oxlint-disable import/no-cycle -- Prompt execution delegates to the capability runtime. */
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 
 import { CopilotPromptNotFound } from '../../../base';
 import { PromptService } from '../prompt/service';
@@ -11,7 +12,6 @@ import {
 } from '../providers/types';
 import { CapabilityRuntime } from './capability-runtime';
 import type { RequiredStructuredOutputContract } from './contracts';
-import { CapabilityPolicyHost } from './hosts/capability-policy-host';
 
 type PromptRuntimeStructuredContract = RequiredStructuredOutputContract;
 
@@ -24,8 +24,11 @@ type PromptRuntimeStructuredProviderOptions = Omit<
 export class PromptRuntime {
   constructor(
     private readonly prompts: PromptService,
-    private readonly capabilityPolicy: CapabilityPolicyHost,
-    private readonly runtime: CapabilityRuntime
+    @Inject(forwardRef(() => CapabilityRuntime))
+    private readonly runtime: Pick<
+      CapabilityRuntime,
+      'text' | 'generateStructuredValue'
+    >
   ) {}
 
   private async preparePrompt(
@@ -44,11 +47,8 @@ export class PromptRuntime {
 
     return {
       prompt,
-      modelId: await this.capabilityPolicy.resolvePromptModel({
-        defaultModel: prompt.model,
-        optionalModels: prompt.optionalModels,
-        requestedModelId: options.modelId,
-      }),
+      builtInRouteId: prompt.name,
+      modelId: 'route-selected',
       finalMessages: [
         ...this.prompts.finish(prompt, params),
         ...(options.appendMessages ?? []),
@@ -75,6 +75,7 @@ export class PromptRuntime {
       {
         ...prepared.prompt.config,
         ...options.providerOptions,
+        builtInRouteId: prepared.builtInRouteId,
       },
       { prefer: prepared.prefer }
     );
@@ -100,6 +101,7 @@ export class PromptRuntime {
       {
         ...prepared.prompt.config,
         ...options.providerOptions,
+        builtInRouteId: prepared.builtInRouteId,
         responseSchemaJson: options.responseContract.responseSchemaJson,
         schemaHash: options.responseContract.schemaHash,
         strict: options.strict,

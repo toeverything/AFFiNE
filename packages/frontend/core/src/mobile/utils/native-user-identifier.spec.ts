@@ -1,3 +1,4 @@
+import { LiveData } from '@toeverything/infra';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import type { NativeUserIdentifierAuthService } from './native-user-identifier';
@@ -8,14 +9,14 @@ const createAuthService = (
   waitForRevalidation: NativeUserIdentifierAuthService['session']['waitForRevalidation']
 ): NativeUserIdentifierAuthService => ({
   session: {
-    ['account$']: {
-      value: accountId
+    account$: new LiveData(
+      accountId
         ? {
             id: accountId,
             label: 'Test User',
           }
-        : null,
-    },
+        : null
+    ),
     waitForRevalidation,
   },
 });
@@ -37,12 +38,14 @@ describe('createNativeUserIdentifierResolver', () => {
   });
 
   test('reuses the same in-flight revalidation across concurrent lookups', async () => {
-    let resolveRevalidation: (() => void) | null = null;
+    let resolveRevalidation: () => void = () => {
+      throw new Error('Revalidation promise was not created');
+    };
     const waitForRevalidation = vi.fn(
       () =>
         new Promise<void>(resolve => {
           resolveRevalidation = () => {
-            authService.session['account$'].value = {
+            authService.session.account$.value = {
               id: 'user-id',
               label: 'Test User',
             };
@@ -59,9 +62,8 @@ describe('createNativeUserIdentifierResolver', () => {
     const secondLookup = resolveCurrentUserIdentifier(authService);
 
     expect(waitForRevalidation).toHaveBeenCalledTimes(1);
-    expect(resolveRevalidation).not.toBeNull();
 
-    resolveRevalidation?.();
+    resolveRevalidation();
 
     await expect(firstLookup).resolves.toBe('user-id');
     await expect(secondLookup).resolves.toBe('user-id');

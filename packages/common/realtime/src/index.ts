@@ -4,6 +4,18 @@ export type RealtimeTopicName = keyof RealtimeTopicMap;
 export const WORKSPACE_MEMBERS_REQUEST_TAKE_MAX = 100;
 
 export interface RealtimeRequestMap {
+  'copilot.delegated.editor.upsert': {
+    input: DelegatedEditorLeaseInput;
+    output: { ok: true; expiresAt: number };
+  };
+  'copilot.delegated.editor.release': {
+    input: { clientId: string; editorStateId: string };
+    output: { ok: true };
+  };
+  'copilot.delegated.tool.respond': {
+    input: DelegatedToolResponse;
+    output: { accepted: boolean };
+  };
   'workspace.access.get': {
     input: { workspaceId: string };
     output: { access: WorkspaceAccessSnapshot };
@@ -68,6 +80,13 @@ export interface RealtimeRequestMap {
       workspaceId: string;
       blobId?: string;
       taskId?: string;
+    };
+    output: { task: unknown | null };
+  };
+  'copilot.transcript.task.retry': {
+    input: {
+      workspaceId: string;
+      taskId: string;
     };
     output: { task: unknown | null };
   };
@@ -242,6 +261,10 @@ export type WorkspaceEmbeddingProgressReason =
   | 'resync';
 
 export interface RealtimeTopicMap {
+  'copilot.delegated.tool.requested': {
+    input: { clientId: string };
+    event: DelegatedToolRequest | DelegatedToolCancel;
+  };
   'workspace.access.changed': {
     input: { workspaceId: string };
     event: { changed: true; reason: string };
@@ -317,6 +340,56 @@ export interface RealtimeTopicMap {
   'workspace.quota-state.changed': {
     input: { workspaceId: string };
     event: { changed: true };
+  };
+}
+
+export type DelegatedToolName =
+  | 'frontend_get_editor_state'
+  | 'frontend_read_selection'
+  | 'frontend_read_nodes'
+  | 'frontend_snapshot_document';
+
+export interface DelegatedEditorLeaseInput {
+  clientId: string;
+  sessionId: string;
+  workspaceId: string;
+  docId: string;
+  editorStateId: string;
+  mode: 'page' | 'edgeless';
+  readonly: boolean;
+  focused: boolean;
+  capabilities: DelegatedToolName[];
+}
+
+export interface DelegatedToolIdentity {
+  requestId: string;
+  runId: string;
+  toolCallId: string;
+  sessionId: string;
+  workspaceId: string;
+  docId: string;
+  clientId: string;
+  editorStateId: string;
+}
+
+export interface DelegatedToolRequest extends DelegatedToolIdentity {
+  type: 'request';
+  tool: DelegatedToolName;
+  args: Record<string, unknown>;
+  deadlineAt: number;
+}
+
+export interface DelegatedToolCancel extends DelegatedToolIdentity {
+  type: 'cancel';
+  reason: 'aborted' | 'timeout' | 'disconnect';
+}
+
+export interface DelegatedToolResponse extends DelegatedToolIdentity {
+  result?: unknown;
+  error?: {
+    code: string;
+    message: string;
+    retryable: boolean;
   };
 }
 

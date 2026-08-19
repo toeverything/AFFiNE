@@ -73,7 +73,6 @@ playwright/.cache
 download
 
 # Cache
-.eslintcache
 next-env.d.ts
 .rollup.cache
 

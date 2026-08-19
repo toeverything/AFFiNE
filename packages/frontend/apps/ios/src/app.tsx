@@ -362,6 +362,39 @@ registerNativeImageFilesPicker(async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   return globalContextService.globalContext.docId.get();
 };
+(window as any).waitForSelectedSources = async (documentIds: string[]) => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentWorkspaceId =
+    globalContextService.globalContext.workspaceId.get();
+  const workspacesService = frameworkProvider.get(WorkspacesService);
+  const workspaceRef = currentWorkspaceId
+    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    : null;
+  if (!workspaceRef) {
+    throw new Error('Current workspace is unavailable');
+  }
+
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const { workspace } = workspaceRef;
+    await Promise.race([
+      Promise.all(
+        [workspace.id, 'db$docProperties', ...new Set(documentIds)].map(docId =>
+          workspace.engine.doc.waitForSynced(docId)
+        )
+      ),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('Selected source synchronization timed out')),
+          15000
+        );
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    workspaceRef.dispose();
+  }
+};
 (window as any).getCurrentUserIdentifier = async () => {
   const { authService } = getCurrentNativeSignInContext();
   return await getCurrentNativeUserIdentifier(authService);
@@ -448,18 +481,33 @@ const showNativeSignIn = async () => {
     return account.id;
   }
 
-  const result = await Auth.showNativeSignIn();
-  if (!result.success) {
-    return null;
-  }
+  let cancelRequestSignIn!: () => void;
+  const cancelledSignIn = new Promise<{ success: false }>(resolve => {
+    cancelRequestSignIn = () => resolve({ success: false });
+  });
+  cancelActiveRequestSignIn = cancelRequestSignIn;
 
-  const authenticatedAccount = authService.session.account$.value;
-  if (authenticatedAccount?.id) {
-    return authenticatedAccount.id;
-  }
+  try {
+    const result = await Promise.race([
+      Auth.showNativeSignIn(),
+      cancelledSignIn,
+    ]);
+    if (!result.success) {
+      return null;
+    }
 
-  const session = await authService.session.waitForAuthenticated();
-  return session.session.account.id;
+    const authenticatedAccount = authService.session.account$.value;
+    if (authenticatedAccount?.id) {
+      return authenticatedAccount.id;
+    }
+
+    const session = await authService.session.waitForAuthenticated();
+    return session.session.account.id;
+  } finally {
+    if (cancelActiveRequestSignIn === cancelRequestSignIn) {
+      cancelActiveRequestSignIn = null;
+    }
+  }
 };
 
 (window as any).showNativeSignIn = showNativeSignIn;

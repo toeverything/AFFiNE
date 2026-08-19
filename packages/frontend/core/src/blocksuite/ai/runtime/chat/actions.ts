@@ -1,15 +1,12 @@
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 
-import type { AIChatContextItem, AIChatScope } from './state';
+import type { AIChatScope, AIChatScopeSelector } from './state';
 
 export type AIChatSendOptions = {
   input?: string;
   contexts?: {
     docs?: unknown;
     files?: unknown;
-    selectedSnapshot?: unknown;
-    selectedMarkdown?: unknown;
-    html?: unknown;
   };
   attachments?: (string | Blob | File)[];
   attachmentPreviews?: string[];
@@ -18,7 +15,7 @@ export type AIChatSendOptions = {
   control?: BlockSuitePresets.TrackerControl;
   reasoning?: boolean;
   toolsConfig?: unknown;
-  modelId?: string;
+  routeTargetId?: string;
   userInfo?: {
     userId?: string;
     userName?: string;
@@ -45,16 +42,13 @@ export type AIChatAction =
   | { type: 'clearError' }
   | { type: 'setComposerText'; text: string }
   | { type: 'setReasoning'; reasoning: boolean }
-  | { type: 'setModel'; modelId?: string }
+  | { type: 'setRouteTarget'; routeTargetId?: string }
   | { type: 'addAttachment'; attachment: string | Blob | File }
   | { type: 'removeAttachment'; index: number }
-  | { type: 'addContextItem'; item: AIChatContextItem }
-  | { type: 'removeContextItem'; item: AIChatContextItem }
-  | { type: 'loadContext' }
-  | { type: 'pollContext' }
-  | { type: 'startContextPolling' }
-  | { type: 'stopContextPolling' }
-  | { type: 'pollEmbeddingStatus' }
+  | { type: 'addScopeSelector'; item: AIChatScopeSelector }
+  | { type: 'removeScopeSelector'; item: AIChatScopeSelector }
+  | { type: 'addFocusSelector'; item: AIChatScopeSelector }
+  | { type: 'removeFocusSelector'; item: AIChatScopeSelector }
   | ({ type: 'send' } & AIChatSendOptions)
   | { type: 'retry'; messageId: string }
   | { type: 'stop' };

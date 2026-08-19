@@ -12,7 +12,6 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
-
 const UniReactNode = memo(
   function UniReactNode(props: {
     ele: HTMLElement;

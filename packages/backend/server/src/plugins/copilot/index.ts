@@ -11,12 +11,12 @@ import { StorageModule } from '../../core/storage';
 import { WorkspaceModule } from '../../core/workspaces';
 import { IndexerModule } from '../indexer';
 import { CopilotController } from './controller';
+import { CopilotFeatureGuard, CopilotFeatureService } from './feature';
 import { WorkspaceMcpController } from './mcp/controller';
 import { McpCredentialService } from './mcp/credential';
 import { McpCredentialResolver } from './mcp/resolver';
 import {
   COPILOT_API_PROVIDERS,
-  COPILOT_CONTEXT_REALTIME_PROVIDERS,
   COPILOT_FEATURE_PROVIDERS,
   COPILOT_KERNEL_PROVIDERS,
   COPILOT_TRANSCRIPT_REALTIME_PROVIDERS,
@@ -34,23 +34,24 @@ const COPILOT_SHARED_IMPORTS = [
 ];
 
 @Module({
-  imports: [...COPILOT_SHARED_IMPORTS],
+  imports: [ServerConfigModule],
+  providers: [CopilotFeatureService, CopilotFeatureGuard],
+  exports: [CopilotFeatureService, CopilotFeatureGuard],
+})
+export class CopilotAvailabilityModule {}
+
+@Module({
+  imports: [...COPILOT_SHARED_IMPORTS, CopilotAvailabilityModule],
   providers: [...COPILOT_KERNEL_PROVIDERS],
-  exports: [...COPILOT_KERNEL_PROVIDERS],
+  exports: [CopilotAvailabilityModule, ...COPILOT_KERNEL_PROVIDERS],
 })
 export class CopilotKernelModule {}
 
 @Module({
-  imports: [PermissionModule],
+  imports: [PermissionModule, CopilotAvailabilityModule, CopilotKernelModule],
   providers: [...COPILOT_TRANSCRIPT_REALTIME_PROVIDERS],
 })
 export class CopilotRealtimeModule {}
-
-@Module({
-  imports: [PermissionModule],
-  providers: [...COPILOT_CONTEXT_REALTIME_PROVIDERS],
-})
-export class CopilotEmbeddingRealtimeModule {}
 
 @Module({
   imports: [...COPILOT_SHARED_IMPORTS, CopilotKernelModule],
