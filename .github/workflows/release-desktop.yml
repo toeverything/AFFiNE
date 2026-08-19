@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -84,7 +84,7 @@ jobs:
     outputs:
       signer_available: ${{ steps.check.outputs.signer_available }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Check windows signer availability
         id: check
         run: node ./scripts/check-windows-signer.mjs
@@ -178,7 +178,7 @@ jobs:
       SKIP_GENERATE_ASSETS: 1
       TS_RS_EXPERIMENT: this_is_unstable_software
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Version
         uses: ./.github/actions/setup-version
@@ -376,7 +376,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Download Artifacts (macos-x64)
         if: ${{ inputs.desktop_macos }}
         uses: actions/download-artifact@v4
@@ -407,13 +407,13 @@ jobs:
         with:
           name: affine-linux-x64-builds
           path: ./release
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
       - name: Copy Selfhost Release Files
         run: |
           cp ./.docker/selfhost/compose.yml ./release/docker-compose.yml
-          cp ./.docker/selfhost/.env.example ./release/.env.example
+          cp ./.docker/selfhost/config.json.example ./release/config.json.example
           cp ./.docker/selfhost/schema.json ./release/config.schema.json
       - name: Generate Release yml
         run: |

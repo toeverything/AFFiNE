@@ -1,0 +1,6 @@
+mutation removeWorkspaceArtifact(
+  $workspaceId: String!
+  $artifactId: String!
+) {
+  removeWorkspaceArtifact(workspaceId: $workspaceId, artifactId: $artifactId)
+}

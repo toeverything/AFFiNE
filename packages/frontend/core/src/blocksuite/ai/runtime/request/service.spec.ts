@@ -1,9 +1,17 @@
 /**
  * @vitest-environment happy-dom
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { UserFriendlyError } from '@affine/error';
+import type { EditorHost } from '@blocksuite/affine/std';
+import type { GfxModel } from '@blocksuite/affine/std/gfx';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { DelegatedEditorHost } from '../frontend/delegated-editor-host';
+import { readNodes } from '../frontend/live-projection';
 import { type CopilotClient, Endpoint } from './copilot-client';
 import { textToText, toImage } from './message-transport';
 import { AIRequestService } from './service';
@@ -23,9 +31,13 @@ const electronApis = vi.hoisted(() => ({
           Array<{
             provider: string;
             name: string;
-            apiKey: string;
+            credential: string;
+            definition: {
+              version: number;
+              endpoint: { kind: string; url?: string | null };
+              models: unknown[];
+            };
             description?: string | null;
-            endpoint?: string | null;
             sortOrder?: number | null;
             enabled?: boolean | null;
           }>
@@ -117,7 +129,11 @@ describe('runtime request transport BYOK local lease handling', () => {
         {
           provider: 'openai',
           name: 'OpenAI',
-          apiKey: 'sk-local',
+          credential: 'sk-local',
+          definition: {
+            endpoint: { kind: 'provider_default' },
+            models: [{ modelId: 'model-1', capabilities: [] }],
+          },
         },
       ]),
     };
@@ -193,6 +209,253 @@ describe('AIRequestService action definitions', () => {
   beforeEach(() => {
     vi.stubGlobal('BUILD_CONFIG', { isElectron: false });
     electronApis.byokStorage = undefined;
+  });
+
+  test('manages the active delegated editor and its live projection contract', async () => {
+    const service = new AIRequestService(createClient());
+    const started: string[] = [];
+    const synced: string[] = [];
+    const disposed: string[] = [];
+    service.setActiveEditorFactory(sessionId => ({
+      start: async () => {
+        started.push(sessionId);
+      },
+      sync: async () => {
+        synced.push(sessionId);
+      },
+      dispose: () => {
+        disposed.push(sessionId);
+      },
+      context: () => JSON.stringify({ session_id: sessionId }),
+    }));
+
+    await service.activateEditor('session-1');
+    await service.activateEditor('session-1');
+    await service.activateEditor('session-2');
+    expect(service.getActiveEditorContext()).toBe(
+      JSON.stringify({ session_id: 'session-2' })
+    );
+    service.setActiveEditorFactory(undefined);
+
+    expect(started).toEqual(['session-1', 'session-2']);
+    expect(synced).toEqual(['session-1']);
+    expect(disposed).toEqual(['session-1', 'session-2']);
+
+    vi.useFakeTimers();
+    try {
+      const blockUpdated$ = new Subject<void>();
+      const selectionChanged$ = new Subject<void>();
+      const viewportUpdated$ = new Subject<void>();
+      const viewportSizeUpdated$ = new Subject<void>();
+      const toolRequests$ = new Subject<never>();
+      const selectedElements: Array<{ id: string }> = [];
+      const requests: Array<{ op: string; input: Record<string, unknown> }> =
+        [];
+      let holdNextUpsert = false;
+      let resolveHeldUpsert: (() => void) | undefined;
+      const realtime = {
+        subscribe: vi.fn(() => toolRequests$),
+        request: vi.fn(async (op: string, input: Record<string, unknown>) => {
+          requests.push({ op, input });
+          if (holdNextUpsert && op.endsWith('.upsert')) {
+            await new Promise<void>(resolve => {
+              resolveHeldUpsert = resolve;
+            });
+          }
+          return { ok: true };
+        }),
+      };
+      const delegatedHost = new DelegatedEditorHost({
+        realtime: realtime as never,
+        host: {
+          store: {
+            readonly$: new BehaviorSubject(false),
+            slots: Object.fromEntries([['blockUpdated', blockUpdated$]]),
+          },
+          selection: {
+            slots: Object.fromEntries([['changed', selectionChanged$]]),
+          },
+          std: {
+            get: () => ({
+              getEditorMode: () => 'edgeless',
+              selection: { selectedElements },
+              viewport: Object.fromEntries([
+                ['viewportUpdated', viewportUpdated$],
+                ['sizeUpdated', viewportSizeUpdated$],
+              ]),
+            }),
+          },
+        } as unknown as EditorHost,
+        sessionId: 'session-1',
+        workspaceId: 'workspace-1',
+        docId: 'doc-1',
+      });
+
+      await delegatedHost.start();
+      selectionChanged$.next();
+      await vi.advanceTimersByTimeAsync(150);
+      expect(requests.filter(item => item.op.endsWith('.upsert'))).toHaveLength(
+        1
+      );
+
+      selectedElements.push({ id: 'element-1' });
+      selectionChanged$.next();
+      selectionChanged$.next();
+      await vi.advanceTimersByTimeAsync(150);
+      const selectionUpserts = requests.filter(item =>
+        item.op.endsWith('.upsert')
+      );
+      expect(selectionUpserts).toHaveLength(2);
+      expect(selectionUpserts[1].input.editorStateId).not.toBe(
+        selectionUpserts[0].input.editorStateId
+      );
+
+      blockUpdated$.next();
+      blockUpdated$.next();
+      blockUpdated$.next();
+      await vi.advanceTimersByTimeAsync(150);
+      expect(requests.filter(item => item.op.endsWith('.upsert'))).toHaveLength(
+        3
+      );
+
+      holdNextUpsert = true;
+      blockUpdated$.next();
+      await vi.advanceTimersByTimeAsync(150);
+      blockUpdated$.next();
+      const sync = delegatedHost.sync();
+      holdNextUpsert = false;
+      resolveHeldUpsert?.();
+      await sync;
+      const synchronizedUpserts = requests.filter(item =>
+        item.op.endsWith('.upsert')
+      );
+      expect(synchronizedUpserts).toHaveLength(5);
+      expect(synchronizedUpserts[4].input.editorStateId).not.toBe(
+        synchronizedUpserts[3].input.editorStateId
+      );
+      delegatedHost.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+
+    const fixture = JSON.parse(
+      readFileSync(
+        join(
+          process.cwd(),
+          'packages/frontend/core/src/blocksuite/ai/runtime/request/__fixtures__/live-projection-contract.json'
+        ),
+        'utf8'
+      )
+    );
+    const document = fixture.documents[0];
+    const expectation = fixture.expectations[0];
+    const frameSource = document.pageBlocks.find(
+      (block: { id: string }) => block.id === expectation.frame.id
+    );
+    const frame = {
+      id: frameSource.id,
+      flavour: `affine:${frameSource.type}`,
+      xywh: JSON.stringify([
+        frameSource.bounds.x,
+        frameSource.bounds.y,
+        frameSource.bounds.width,
+        frameSource.bounds.height,
+      ]),
+      props: {
+        title: frameSource.title,
+        childElementIds: frameSource.childIds,
+      },
+      group: null,
+      groups: [],
+    } as unknown as GfxModel;
+    const elements = document.surfaceElements.map(
+      (source: Record<string, unknown>) =>
+        ({
+          id: source.id,
+          flavour: source.type,
+          xywh: JSON.stringify([
+            (source.bounds as { x: number }).x,
+            (source.bounds as { y: number }).y,
+            (source.bounds as { width: number }).width,
+            (source.bounds as { height: number }).height,
+          ]),
+          props: {
+            ...source,
+            source: source.sourceId ? { id: source.sourceId } : undefined,
+            target: source.targetId ? { id: source.targetId } : undefined,
+          },
+          group: source.id === expectation.connector.id ? frame : null,
+          groups: source.id === expectation.connector.id ? [frame] : [],
+        }) as unknown as GfxModel
+    );
+    const mindmapRoot = elements.find(
+      (element: GfxModel) => element.id === 'mindmap-01'
+    );
+    const mindmapLeaf = elements.find(
+      (element: GfxModel) => element.id === 'mindmap-02'
+    );
+    if (!mindmapRoot || !mindmapLeaf) {
+      throw new Error('Anonymous contract fixture is missing mindmap nodes');
+    }
+    (
+      mindmapRoot as unknown as { props: Record<string, unknown> }
+    ).props.children = {
+      [mindmapLeaf.id]: {
+        parent: mindmapRoot.id,
+        index: document.surfaceElements.find(
+          (element: { id: string }) => element.id === mindmapLeaf.id
+        ).index,
+      },
+    };
+    (mindmapLeaf as unknown as { group: GfxModel }).group = mindmapRoot;
+    (mindmapLeaf as unknown as { groups: GfxModel[] }).groups = [mindmapRoot];
+    const models = new Map(
+      [frame, ...elements].map(model => [model.id, model])
+    );
+    const projection = readNodes(
+      {
+        store: { getBlock: () => undefined },
+        std: {
+          get: () => ({ getElementById: (id: string) => models.get(id) }),
+        },
+      } as unknown as EditorHost,
+      'editor-state-1',
+      { element_ids: [...models.keys()] }
+    );
+    const values = projection.items.map(item =>
+      'value' in item && item.value && 'type' in item.value
+        ? item.value
+        : undefined
+    );
+    const frameValue = values.find(value => value?.id === expectation.frame.id);
+    const connectorValue = values.find(
+      value => value?.id === expectation.connector.id
+    );
+    const mindmapRootValue = values.find(value => value?.id === 'mindmap-01');
+    const mindmapLeafValue = values.find(value => value?.id === 'mindmap-02');
+    const brushValue = values.find(value => value?.id === 'brush-01');
+    const unknownValue = values.find(value => value?.id === 'unknown-01');
+
+    expect(frameValue).toMatchObject({
+      type: 'frame',
+      child_ids: expectation.frame.childIds,
+    });
+    expect(connectorValue).toMatchObject({
+      type: 'connector',
+      frame_id: expectation.frame.id,
+      source_id: expectation.connector.sourceId,
+      target_id: expectation.connector.targetId,
+    });
+    expect(mindmapRootValue).toMatchObject({ child_ids: ['mindmap-02'] });
+    expect(mindmapLeafValue).toMatchObject({
+      parent_id: 'mindmap-01',
+      index: '0',
+    });
+    expect(brushValue).toMatchObject({ type: 'brush', point_count: 4 });
+    expect(unknownValue).toMatchObject({ type: 'fixture-unknown' });
+    expect(values.slice(1).map(value => value?.type)).toEqual(
+      document.surfaceElements.map((element: { type: string }) => element.type)
+    );
   });
 
   test('routes action-stream requests through action endpoint', async () => {

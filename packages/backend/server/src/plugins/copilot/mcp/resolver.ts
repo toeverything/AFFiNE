@@ -15,6 +15,7 @@ import { McpAccessMode } from '@prisma/client';
 
 import { CurrentUser } from '../../../core/auth';
 import { PermissionAccess } from '../../../core/permission';
+import { CopilotEnabled } from '../feature';
 import { McpCredentialService } from './credential';
 
 registerEnumType(McpAccessMode, { name: 'McpAccessMode' });
@@ -89,6 +90,7 @@ class CreateMcpCredentialInput {
   expirationDays!: number;
 }
 
+@CopilotEnabled()
 @Resolver()
 export class McpCredentialResolver {
   constructor(

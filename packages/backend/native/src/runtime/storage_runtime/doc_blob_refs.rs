@@ -1,4 +1,5 @@
 use affine_doc_loader as doc_loader;
+use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
 use super::{
@@ -8,11 +9,7 @@ use super::{
 
 const PARSER_VERSION: i32 = 1;
 
-struct ExtractedRef {
-  blob_key: String,
-  block_id: String,
-  flavour: String,
-}
+type ExtractedRef = doc_loader::BlobRef;
 
 #[derive(Default)]
 struct ProjectionState {
@@ -153,23 +150,9 @@ async fn purge_removed_doc_refs(pool: &PgPool, workspace_id: &str, current_doc_i
   Ok(result.rows_affected() as i64)
 }
 
-fn extract_refs(snapshot: &CurrentDoc) -> RuntimeResult<Vec<ExtractedRef>> {
-  let parsed = doc_loader::parse_doc_from_binary(snapshot.blob.clone(), snapshot.doc_id.clone())
-    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))?;
-  let mut refs = Vec::new();
-  for block in parsed.blocks {
-    let Some(blob_keys) = block.blob else {
-      continue;
-    };
-    for blob_key in blob_keys {
-      refs.push(ExtractedRef {
-        blob_key,
-        block_id: block.block_id.clone(),
-        flavour: block.flavour.clone(),
-      });
-    }
-  }
-  Ok(refs)
+fn extract_refs(blob: Vec<u8>) -> RuntimeResult<Vec<ExtractedRef>> {
+  doc_loader::get_blob_refs_from_binary(blob)
+    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))
 }
 
 #[cfg(test)]
@@ -191,7 +174,7 @@ mod tests {
       updated_at: Utc::now(),
     };
 
-    let refs = extract_refs(&snapshot).expect("refs should parse");
+    let refs = extract_refs(snapshot.blob).expect("refs should parse");
 
     assert!(
       refs
@@ -233,19 +216,25 @@ mod tests {
       updated_at: Utc::now(),
     };
 
-    assert!(extract_refs(&snapshot).is_err());
+    assert!(extract_refs(snapshot.blob).is_err());
   }
 }
 
-async fn replace_doc_refs(pool: &PgPool, snapshot: &CurrentDoc, refs: Vec<ExtractedRef>) -> RuntimeResult<(i64, i64)> {
+async fn replace_doc_refs(
+  pool: &PgPool,
+  workspace_id: &str,
+  doc_id: &str,
+  updated_at: DateTime<Utc>,
+  refs: Vec<ExtractedRef>,
+) -> RuntimeResult<(i64, i64)> {
   let mut tx = pool
     .begin()
     .await
     .map_err(|err| RuntimeError::database("Doc blob refs transaction failed", err))?;
 
   let deleted = sqlx::query("DELETE FROM doc_blob_refs WHERE workspace_id = $1 AND doc_id = $2")
-    .bind(&snapshot.workspace_id)
-    .bind(&snapshot.doc_id)
+    .bind(workspace_id)
+    .bind(doc_id)
     .execute(&mut *tx)
     .await
     .map_err(|err| RuntimeError::database("Doc blob refs delete failed", err))?
@@ -267,12 +256,12 @@ async fn replace_doc_refs(pool: &PgPool, snapshot: &CurrentDoc, refs: Vec<Extrac
             error = NULL
       "#,
     )
-    .bind(&snapshot.workspace_id)
-    .bind(&snapshot.doc_id)
+    .bind(workspace_id)
+    .bind(doc_id)
     .bind(reference.blob_key)
     .bind(reference.block_id)
     .bind(reference.flavour)
-    .bind(snapshot.updated_at)
+    .bind(updated_at)
     .bind(PARSER_VERSION)
     .execute(&mut *tx)
     .await
@@ -330,9 +319,15 @@ async fn rebuild_doc_blob_refs_inner(
     return Ok(result);
   };
 
-  match extract_refs(&snapshot) {
+  let CurrentDoc {
+    workspace_id,
+    doc_id,
+    blob,
+    updated_at,
+  } = snapshot;
+  match extract_refs(blob) {
     Ok(refs) => {
-      let (written, deleted) = replace_doc_refs(&pool, &snapshot, refs).await?;
+      let (written, deleted) = replace_doc_refs(&pool, &workspace_id, &doc_id, updated_at, refs).await?;
       result.parsed_docs = 1;
       result.refs_written = written;
       result.refs_deleted = deleted;

@@ -311,9 +311,12 @@ async fn current_activity(
 }
 
 fn root_contains(root: CurrentDoc, doc_id: &str) -> RuntimeResult<bool> {
-  let ids = affine_doc_loader::get_doc_ids_from_binary(root.blob, true)
+  let projection = affine_doc_loader::project_workspace_root(root.blob, true)
     .map_err(|err| RuntimeError::invalid_state(format!("Document cleanup root parse failed: {err}")))?;
-  Ok(ids.iter().any(|id| id == doc_id))
+  if !projection.complete {
+    return Err(RuntimeError::invalid_state("Document cleanup root doc is incomplete"));
+  }
+  Ok(projection.doc_ids.iter().any(|id| id == doc_id))
 }
 
 async fn delete_doc_rows(tx: &mut Transaction<'_, Postgres>, candidate: &Candidate) -> RuntimeResult<i64> {
@@ -340,17 +343,6 @@ async fn delete_doc_rows(tx: &mut Transaction<'_, Postgres>, candidate: &Candida
   .await
   .map_err(|err| RuntimeError::database("Document cleanup storage bytes load failed", err))?;
   let mut row_counts = HashMap::<String, i64>::new();
-  row_counts.insert(
-    "ai_workspace_embeddings".to_string(),
-    sqlx::query_scalar::<_, i64>(
-      "SELECT COUNT(*) FROM ai_workspace_embeddings WHERE workspace_id = $1 AND doc_id = $2",
-    )
-    .bind(&candidate.workspace_id)
-    .bind(&candidate.doc_id)
-    .fetch_one(&mut **tx)
-    .await
-    .map_err(|err| RuntimeError::database("Document cleanup embedding cascade count failed", err))?,
-  );
   row_counts.insert(
     "replies".to_string(),
     sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM replies WHERE workspace_id = $1 AND doc_id = $2")
@@ -425,7 +417,6 @@ async fn delete_doc_rows(tx: &mut Transaction<'_, Postgres>, candidate: &Candida
     "commentAttachmentKeys": attachment_keys,
     "commentObjectsDone": false,
     "searchDone": false,
-    "copilotDone": false,
   }))
   .execute(&mut **tx)
   .await
@@ -621,11 +612,6 @@ fn payload_effect(effect: PendingEffect) -> RuntimeResult<RuntimeDocumentCleanup
       .get("searchDone")
       .and_then(Value::as_bool)
       .unwrap_or(false),
-    copilot_done: effect
-      .cleanup_payload
-      .get("copilotDone")
-      .and_then(Value::as_bool)
-      .unwrap_or(false),
   })
 }
 
@@ -645,7 +631,6 @@ async fn complete_effect(
       AND cleanup_payload->>'cleanupVersion' = $3
     RETURNING COALESCE((cleanup_payload->>'commentObjectsDone')::boolean, false)
           AND COALESCE((cleanup_payload->>'searchDone')::boolean, false)
-          AND COALESCE((cleanup_payload->>'copilotDone')::boolean, false)
     "#,
   )
   .bind(workspace_id)
@@ -839,8 +824,7 @@ impl StorageRuntime {
   ) -> napi::Result<RuntimeDocumentCleanupAckResult> {
     let path = match effect.as_str() {
       "search" => "searchDone",
-      "copilot" => "copilotDone",
-      _ => return Err(napi_error("document cleanup effect must be search or copilot")),
+      _ => return Err(napi_error("document cleanup effect must be search")),
     };
     let pool = self.pool().await?;
     let mut tx = pool
@@ -903,7 +887,9 @@ mod tests {
     let runtime = StorageRuntime {
       config: RwLock::new(StorageRuntimeConfig {
         database_url,
-        backends: HashMap::new(),
+        object_storage: crate::runtime::object_storage::ObjectStorageService {
+          backends: HashMap::new(),
+        },
       }),
       pool: Mutex::new(Some(pool.clone())),
     };
@@ -911,8 +897,8 @@ mod tests {
   }
 
   async fn insert_user_workspace(pool: &PgPool, suffix: &str) -> AnyResult<(String, String)> {
-    let user_id = format!("rust-test:document-cleanup:user:{suffix}");
-    let workspace_id = format!("rust-test:document-cleanup:workspace:{suffix}");
+    let user_id = format!("rust-test-dc-user-{suffix}");
+    let workspace_id = format!("rust-test-dc-ws-{suffix}");
     sqlx::query("DELETE FROM workspaces WHERE id = $1")
       .bind(&workspace_id)
       .execute(pool)
@@ -974,7 +960,7 @@ mod tests {
       eprintln!("skipping postgres integration test: DATABASE_URL is not set");
       return Ok(());
     };
-    let workspace_id = format!("rust-test:document-cleanup:{}", Uuid::new_v4());
+    let workspace_id = format!("rust-test-dc-{}", Uuid::new_v4());
     let doc_id = "missing-doc";
     let root = affine_doc_loader::add_doc_to_root_doc(Vec::new(), "live-doc", None)?;
     let live_doc = affine_doc_loader::build_full_doc("Live", "", "live-doc")?;
@@ -1193,9 +1179,9 @@ mod tests {
     let suffix = Uuid::new_v4().to_string();
     let (user_id, workspace_id) = insert_user_workspace(&pool, &suffix).await?;
     let object_root = tempfile::tempdir()?;
-    runtime.config.write().unwrap().backends.insert(
+    runtime.config.write().unwrap().object_storage.backends.insert(
       "blob".to_string(),
-      super::super::StorageBackendConfig::Fs(super::super::FsStorageConfig {
+      crate::runtime::object_storage::StorageBackendConfig::Fs(crate::runtime::object_storage::FsStorageConfig {
         provider: "fs".to_string(),
         root: object_root.path().to_string_lossy().to_string(),
         bucket: "document-cleanup-test".to_string(),
@@ -1279,13 +1265,19 @@ mod tests {
 
     let session_id = format!("session:{suffix}");
     let prompt_name = format!("p_{}", &suffix[..30]);
-    sqlx::query(
-      "INSERT INTO ai_prompts_metadata (name, model, created_at, updated_at) VALUES ($1, 'test-model', \
-       CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (name) DO NOTHING",
-    )
-    .bind(&prompt_name)
-    .execute(&pool)
-    .await?;
+    if sqlx::query_scalar::<_, Option<String>>("SELECT to_regclass('ai_prompts_metadata')::text")
+      .fetch_one(&pool)
+      .await?
+      .is_some()
+    {
+      sqlx::query(
+        "INSERT INTO ai_prompts_metadata (name, model, created_at, updated_at) VALUES ($1, 'test-model', \
+         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (name) DO NOTHING",
+      )
+      .bind(&prompt_name)
+      .execute(&pool)
+      .await?;
+    }
     sqlx::query(
       r#"
     INSERT INTO ai_sessions_metadata
@@ -1392,19 +1384,6 @@ mod tests {
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
     sqlx::query(
-      r#"
-    INSERT INTO ai_workspace_embeddings
-      (workspace_id, doc_id, chunk, content, embedding, created_at, updated_at)
-    VALUES ($1, $2, 0, 'content', ('[' || rtrim(repeat('0,', 1024), ',') || ']')::vector,
-            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    "#,
-    )
-    .bind(&workspace_id)
-    .bind(doc_id)
-    .execute(&pool)
-    .await?;
-
-    sqlx::query(
       "UPDATE document_cleanup_candidates SET missing_since = CURRENT_TIMESTAMP - INTERVAL '31 days' WHERE \
        workspace_id = $1 AND doc_id = $2",
     )
@@ -1421,7 +1400,6 @@ mod tests {
     assert_eq!(executed.effects.len(), 1);
     assert!(executed.effects[0].comment_objects_done);
     assert!(!executed.effects[0].search_done);
-    assert!(!executed.effects[0].copilot_done);
     assert!(
       runtime
         .head_object("blob".to_string(), attachment_object_key)
@@ -1443,7 +1421,6 @@ mod tests {
       ("comment_attachments", "doc_id"),
       ("replies", "doc_id"),
       ("workspace_doc_view_daily", "doc_id"),
-      ("ai_workspace_embeddings", "doc_id"),
     ] {
       let count = sqlx::query_scalar::<_, i64>(&format!(
         "SELECT COUNT(*) FROM {table} WHERE workspace_id = $1 AND {column} = $2"
@@ -1479,17 +1456,19 @@ mod tests {
       )
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert!(!search.completed);
-    let copilot = runtime
-      .ack_document_cleanup_effect(
-        workspace_id.clone(),
-        doc_id.to_string(),
-        effect.cleanup_version.clone(),
-        "copilot".to_string(),
-      )
-      .await
-      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert!(copilot.completed);
+    assert!(search.completed);
+    // the copilot effect was removed; acknowledging it must be rejected
+    assert!(
+      runtime
+        .ack_document_cleanup_effect(
+          workspace_id.clone(),
+          doc_id.to_string(),
+          effect.cleanup_version.clone(),
+          "copilot".to_string(),
+        )
+        .await
+        .is_err()
+    );
     let candidate_count = sqlx::query_scalar::<_, i64>(
       "SELECT COUNT(*) FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2",
     )
@@ -1549,18 +1528,16 @@ mod tests {
     assert!(retained.get::<Option<String>, _>("error").is_some());
     let retry_cleanup_version = retained.get::<String, _>("cleanup_version");
 
-    for effect in ["search", "copilot"] {
-      let ack = runtime
-        .ack_document_cleanup_effect(
-          workspace_id.clone(),
-          retry_doc_id.to_string(),
-          retry_cleanup_version.clone(),
-          effect.to_string(),
-        )
-        .await
-        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-      assert!(!ack.completed);
-    }
+    let ack = runtime
+      .ack_document_cleanup_effect(
+        workspace_id.clone(),
+        retry_doc_id.to_string(),
+        retry_cleanup_version.clone(),
+        "search".to_string(),
+      )
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert!(!ack.completed);
 
     sqlx::query(
       "UPDATE document_cleanup_candidates SET cleanup_payload = jsonb_set(cleanup_payload, '{commentAttachmentKeys}', \

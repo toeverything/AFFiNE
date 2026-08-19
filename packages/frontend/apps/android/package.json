@@ -37,6 +37,6 @@
     "@capacitor/cli": "^8.4.2",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
-    "typescript": "^5.9.3"
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   }
 }

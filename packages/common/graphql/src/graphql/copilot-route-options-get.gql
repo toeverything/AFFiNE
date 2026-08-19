@@ -1,0 +1,16 @@
+query getCopilotRouteOptions($promptName: String!) {
+  currentUser {
+    copilot {
+      routeOptions(promptName: $promptName) {
+        routeId
+        defaultTargetId
+        choices {
+          id
+          displayName
+          minimumTier
+          available
+        }
+      }
+    }
+  }
+}

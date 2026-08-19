@@ -1,6 +1,10 @@
+use std::collections::HashMap;
+
 use affine_common::napi_utils::map_napi_err;
 use affine_doc_loader::{
-  self as doc_loader, BlockInfo, CrawlResult, MarkdownResult, PageDocContent, WorkspaceDocContent,
+  self as doc_loader, Bounds, CanvasBlock, CanvasElement, CanvasProjectionV1, DocumentSearchProjectionV1,
+  DocumentSearchUnit, MarkdownResult, PageDocContent, ProjectionWarning, SearchUnitSource, Visibility,
+  WorkspaceDocContent,
 };
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -61,58 +65,239 @@ pub struct PublicDocMetaInput {
 }
 
 #[napi(object)]
-pub struct NativeBlockInfo {
-  pub block_id: String,
-  pub flavour: String,
-  pub content: Option<Vec<String>>,
-  pub blob: Option<Vec<String>>,
-  pub ref_doc_id: Option<Vec<String>>,
-  pub ref_info: Option<Vec<String>>,
-  pub parent_flavour: Option<String>,
-  pub parent_block_id: Option<String>,
-  pub additional: Option<String>,
+pub struct NativeDocBounds {
+  pub x: f64,
+  pub y: f64,
+  pub width: f64,
+  pub height: f64,
 }
 
-impl From<BlockInfo> for NativeBlockInfo {
-  fn from(info: BlockInfo) -> Self {
+impl From<Bounds> for NativeDocBounds {
+  fn from(value: Bounds) -> Self {
     Self {
-      block_id: info.block_id,
-      flavour: info.flavour,
-      content: info.content,
-      blob: info.blob,
-      ref_doc_id: info.ref_doc_id,
-      ref_info: info.ref_info,
-      parent_flavour: info.parent_flavour,
-      parent_block_id: info.parent_block_id,
-      additional: info.additional,
+      x: value.x,
+      y: value.y,
+      width: value.width,
+      height: value.height,
     }
   }
 }
 
 #[napi(object)]
-pub struct NativeCrawlResult {
-  pub blocks: Vec<NativeBlockInfo>,
-  pub title: String,
-  pub summary: String,
+pub struct NativeProjectionWarning {
+  pub code: String,
+  pub locator: String,
 }
 
-impl From<CrawlResult> for NativeCrawlResult {
-  fn from(result: CrawlResult) -> Self {
+impl From<ProjectionWarning> for NativeProjectionWarning {
+  fn from(value: ProjectionWarning) -> Self {
     Self {
-      blocks: result.blocks.into_iter().map(Into::into).collect(),
-      title: result.title,
-      summary: result.summary,
+      code: value.code,
+      locator: value.locator,
+    }
+  }
+}
+
+fn visibility(value: Visibility) -> String {
+  match value {
+    Visibility::Page => "page",
+    Visibility::Edgeless => "edgeless",
+    Visibility::Both => "both",
+  }
+  .into()
+}
+
+#[napi(object)]
+pub struct NativeCanvasProjectionBlock {
+  pub id: String,
+  #[napi(js_name = "type")]
+  pub block_type: String,
+  pub visibility: String,
+  pub bounds: Option<NativeDocBounds>,
+  pub text: Option<String>,
+  pub title: Option<String>,
+  pub child_ids: Vec<String>,
+}
+
+impl From<CanvasBlock> for NativeCanvasProjectionBlock {
+  fn from(value: CanvasBlock) -> Self {
+    Self {
+      id: value.id,
+      block_type: value.block_type,
+      visibility: visibility(value.visibility),
+      bounds: value.bounds.map(Into::into),
+      text: value.text,
+      title: value.title,
+      child_ids: value.child_ids,
+    }
+  }
+}
+
+#[napi(object)]
+pub struct NativeCanvasProjectionElement {
+  pub id: String,
+  #[napi(js_name = "type")]
+  pub element_type: String,
+  pub bounds: Option<NativeDocBounds>,
+  pub text: Option<String>,
+  pub title: Option<String>,
+  pub frame_id: Option<String>,
+  pub child_ids: Vec<String>,
+  pub source_id: Option<String>,
+  pub target_id: Option<String>,
+  pub parent_id: Option<String>,
+  pub index: Option<String>,
+  pub point_count: Option<u32>,
+  pub color: Option<String>,
+  pub line_width: Option<f64>,
+}
+
+impl From<CanvasElement> for NativeCanvasProjectionElement {
+  fn from(value: CanvasElement) -> Self {
+    Self {
+      id: value.id,
+      element_type: value.element_type,
+      bounds: value.bounds.map(Into::into),
+      text: value.text,
+      title: value.title,
+      frame_id: value.frame_id,
+      child_ids: value.child_ids,
+      source_id: value.source_id,
+      target_id: value.target_id,
+      parent_id: value.parent_id,
+      index: value.index,
+      point_count: value.point_count,
+      color: value.color,
+      line_width: value.line_width,
+    }
+  }
+}
+
+#[napi(object)]
+pub struct NativeCanvasProjection {
+  pub version: u8,
+  pub doc_id: String,
+  pub revision: String,
+  pub title: String,
+  pub surface_block_id: Option<String>,
+  pub bounds: Option<NativeDocBounds>,
+  pub counts: HashMap<String, u32>,
+  pub blocks: Vec<NativeCanvasProjectionBlock>,
+  pub elements: Vec<NativeCanvasProjectionElement>,
+  pub warnings: Vec<NativeProjectionWarning>,
+}
+
+impl From<CanvasProjectionV1> for NativeCanvasProjection {
+  fn from(value: CanvasProjectionV1) -> Self {
+    Self {
+      version: value.version,
+      doc_id: value.doc_id,
+      revision: value.revision,
+      title: value.title,
+      surface_block_id: value.surface_block_id,
+      bounds: value.bounds.map(Into::into),
+      counts: value.counts.into_iter().collect(),
+      blocks: value.blocks.into_iter().map(Into::into).collect(),
+      elements: value.elements.into_iter().map(Into::into).collect(),
+      warnings: value.warnings.into_iter().map(Into::into).collect(),
+    }
+  }
+}
+
+#[napi(object)]
+pub struct NativeDocumentSearchUnit {
+  pub unit_id: String,
+  pub source: String,
+  pub visibility: String,
+  pub block_id: Option<String>,
+  pub element_id: Option<String>,
+  pub frame_id: Option<String>,
+  pub blob_id: Option<String>,
+  pub ref_doc_ids: Vec<String>,
+  pub refs: Vec<String>,
+  pub parent_flavour: Option<String>,
+  pub parent_block_id: Option<String>,
+  pub additional: Option<String>,
+  #[napi(js_name = "type")]
+  pub unit_type: String,
+  pub text: String,
+}
+
+impl From<DocumentSearchUnit> for NativeDocumentSearchUnit {
+  fn from(value: DocumentSearchUnit) -> Self {
+    let source = match value.source {
+      SearchUnitSource::PageBlock => "page-block",
+      SearchUnitSource::CanvasBlock => "canvas-block",
+      SearchUnitSource::SurfaceElement => "surface-element",
+    };
+    Self {
+      unit_id: value.unit_id,
+      source: source.into(),
+      visibility: visibility(value.visibility),
+      block_id: value.block_id,
+      element_id: value.element_id,
+      frame_id: value.frame_id,
+      blob_id: value.blob_id,
+      ref_doc_ids: value.ref_doc_ids,
+      refs: value.refs,
+      parent_flavour: value.parent_flavour,
+      parent_block_id: value.parent_block_id,
+      additional: value.additional,
+      unit_type: value.unit_type,
+      text: value.text,
+    }
+  }
+}
+
+#[napi(object)]
+pub struct NativeDocumentSearchProjection {
+  pub version: u8,
+  pub doc_id: String,
+  pub revision: String,
+  pub source_hash: String,
+  pub title: String,
+  pub units: Vec<NativeDocumentSearchUnit>,
+  pub warnings: Vec<NativeProjectionWarning>,
+}
+
+impl From<DocumentSearchProjectionV1> for NativeDocumentSearchProjection {
+  fn from(value: DocumentSearchProjectionV1) -> Self {
+    Self {
+      version: value.version,
+      doc_id: value.doc_id,
+      revision: value.revision,
+      source_hash: value.source_hash,
+      title: value.title,
+      units: value.units.into_iter().map(Into::into).collect(),
+      warnings: value.warnings.into_iter().map(Into::into).collect(),
     }
   }
 }
 
 #[napi]
-pub fn parse_doc_from_binary(doc_bin: Buffer, doc_id: String) -> Result<NativeCrawlResult> {
-  let result = map_napi_err(
-    doc_loader::parse_doc_from_binary(doc_bin.into(), doc_id),
+pub fn project_doc_canvas_from_binary(
+  doc_bin: Buffer,
+  doc_id: String,
+  revision: String,
+) -> Result<NativeCanvasProjection> {
+  let projection = map_napi_err(
+    doc_loader::project_canvas(doc_bin.into(), doc_id, revision),
     Status::GenericFailure,
   )?;
-  Ok(result.into())
+  Ok(projection.into())
+}
+
+#[napi]
+pub fn project_doc_search_from_binary(
+  doc_bin: Buffer,
+  doc_id: String,
+  revision: String,
+) -> Result<NativeDocumentSearchProjection> {
+  let projection = map_napi_err(
+    doc_loader::project_document_search(doc_bin.into(), doc_id, revision),
+    Status::GenericFailure,
+  )?;
+  Ok(projection.into())
 }
 
 #[napi]

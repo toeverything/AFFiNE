@@ -37,27 +37,6 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
-export interface AddContextBlobInput {
-  blobId: Scalars['String']['input'];
-  contextId: Scalars['String']['input'];
-}
-
-export interface AddContextCategoryInput {
-  categoryId: Scalars['String']['input'];
-  contextId: Scalars['String']['input'];
-  docs?: InputMaybe<Array<Scalars['String']['input']>>;
-  type: ContextCategories;
-}
-
-export interface AddContextDocInput {
-  contextId: Scalars['String']['input'];
-  docId: Scalars['String']['input'];
-}
-
-export interface AddContextFileInput {
-  contextId: Scalars['String']['input'];
-}
-
 export interface AdminAllSharedLink {
   __typename?: 'AdminAllSharedLink';
   docId: Scalars['String']['output'];
@@ -411,15 +390,72 @@ export interface BlobUploadedPart {
   partNumber: Scalars['Int']['output'];
 }
 
-export enum ByokKeyStorage {
-  local = 'local',
-  server = 'server',
+export enum ByokAttachmentKind {
+  audio = 'audio',
+  file = 'file',
+  image = 'image',
 }
 
-export enum ByokKeyTestStatus {
+export enum ByokAttachmentSource {
+  bytes = 'bytes',
+  data = 'data',
+  file_handle = 'file_handle',
+  url = 'url',
+}
+
+export enum ByokCustomEndpointMode {
+  disabled = 'disabled',
+  enabled = 'enabled',
+  unavailable = 'unavailable',
+}
+
+export enum ByokEndpointKind {
+  openai_compatible = 'openai_compatible',
+  provider_default = 'provider_default',
+}
+
+export enum ByokModelFeature {
+  reasoning = 'reasoning',
+  tool_calling = 'tool_calling',
+  web_search = 'web_search',
+}
+
+export enum ByokModelInput {
+  audio = 'audio',
+  file = 'file',
+  image = 'image',
+  text = 'text',
+}
+
+export enum ByokModelOutput {
+  embedding = 'embedding',
+  image = 'image',
+  object = 'object',
+  rerank = 'rerank',
+  structured = 'structured',
+  text = 'text',
+}
+
+export enum ByokOpenAiDialect {
+  chat_completions = 'chat_completions',
+  responses = 'responses',
+}
+
+export enum ByokProbeOperation {
+  chat = 'chat',
+  embedding = 'embedding',
+  image = 'image',
+  rerank = 'rerank',
+  structured = 'structured',
+  tool_calling = 'tool_calling',
+  transcript = 'transcript',
+  vision = 'vision',
+}
+
+export enum ByokProbeStatusKind {
   failed = 'failed',
-  passed = 'passed',
-  untested = 'untested',
+  not_tested = 'not_tested',
+  verified = 'verified',
 }
 
 export enum ByokProvider {
@@ -506,6 +542,7 @@ export interface ChatMessage {
   id: Maybe<Scalars['ID']['output']>;
   params: Maybe<Scalars['JSON']['output']>;
   role: Scalars['String']['output'];
+  scopeSnapshot: Maybe<Scalars['JSON']['output']>;
   streamObjects: Maybe<Array<StreamObject>>;
 }
 
@@ -575,53 +612,15 @@ export interface CommentUpdateInput {
   id: Scalars['ID']['input'];
 }
 
-export enum ContextCategories {
-  Collection = 'Collection',
-  Tag = 'Tag',
-}
-
-export enum ContextEmbedStatus {
-  failed = 'failed',
-  finished = 'finished',
-  processing = 'processing',
-}
-
-export interface ContextMatchedDocChunk {
-  __typename?: 'ContextMatchedDocChunk';
-  chunk: Scalars['SafeInt']['output'];
-  content: Scalars['String']['output'];
-  distance: Maybe<Scalars['Float']['output']>;
-  docId: Scalars['String']['output'];
-}
-
-export interface ContextMatchedFileChunk {
-  __typename?: 'ContextMatchedFileChunk';
-  blobId: Scalars['String']['output'];
-  chunk: Scalars['SafeInt']['output'];
-  content: Scalars['String']['output'];
-  distance: Maybe<Scalars['Float']['output']>;
-  fileId: Scalars['String']['output'];
-  mimeType: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-}
-
-export interface ContextWorkspaceEmbeddingStatus {
-  __typename?: 'ContextWorkspaceEmbeddingStatus';
-  embedded: Scalars['SafeInt']['output'];
-  total: Scalars['SafeInt']['output'];
-}
-
 export interface Copilot {
   __typename?: 'Copilot';
   chats: PaginatedCopilotHistoriesType;
-  /** Get the context list of a session */
-  contexts: Array<CopilotContext>;
   /** @deprecated use `chats` instead */
   histories: Array<CopilotHistories>;
-  /** List available models for a prompt, with human-readable names */
-  models: CopilotModelsType;
   /** Get the quota of the user in the workspace */
   quota: CopilotQuota;
+  /** List native built-in route choices for a prompt */
+  routeOptions: Maybe<CopilotRouteOptions>;
   /** Get the session by id */
   session: CopilotSessionType;
   /**
@@ -640,17 +639,12 @@ export interface CopilotChatsArgs {
   pagination: PaginationInput;
 }
 
-export interface CopilotContextsArgs {
-  contextId?: InputMaybe<Scalars['String']['input']>;
-  sessionId?: InputMaybe<Scalars['String']['input']>;
-}
-
 export interface CopilotHistoriesArgs {
   docId?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<QueryChatHistoriesInput>;
 }
 
-export interface CopilotModelsArgs {
+export interface CopilotRouteOptionsArgs {
   promptName: Scalars['String']['input'];
 }
 
@@ -668,87 +662,13 @@ export interface CopilotTranscriptTaskArgs {
   taskId?: InputMaybe<Scalars['String']['input']>;
 }
 
-export interface CopilotContext {
-  __typename?: 'CopilotContext';
-  /** list blobs in context */
-  blobs: Array<CopilotContextBlob>;
-  /** list collections in context */
-  collections: Array<CopilotContextCategory>;
-  /** list files in context */
-  docs: Array<CopilotContextDoc>;
-  /** list files in context */
-  files: Array<CopilotContextFile>;
-  id: Maybe<Scalars['ID']['output']>;
-  /** match file in context */
-  matchFiles: Array<ContextMatchedFileChunk>;
-  /** match workspace docs */
-  matchWorkspaceDocs: Array<ContextMatchedDocChunk>;
-  /** list tags in context */
-  tags: Array<CopilotContextCategory>;
-  workspaceId: Scalars['String']['output'];
-}
-
-export interface CopilotContextMatchFilesArgs {
-  content: Scalars['String']['input'];
-  limit?: InputMaybe<Scalars['SafeInt']['input']>;
-  scopedThreshold?: InputMaybe<Scalars['Float']['input']>;
-  threshold?: InputMaybe<Scalars['Float']['input']>;
-}
-
-export interface CopilotContextMatchWorkspaceDocsArgs {
-  content: Scalars['String']['input'];
-  limit?: InputMaybe<Scalars['SafeInt']['input']>;
-  scopedThreshold?: InputMaybe<Scalars['Float']['input']>;
-  threshold?: InputMaybe<Scalars['Float']['input']>;
-}
-
-export interface CopilotContextBlob {
-  __typename?: 'CopilotContextBlob';
-  createdAt: Scalars['SafeInt']['output'];
-  id: Scalars['ID']['output'];
-  status: Maybe<ContextEmbedStatus>;
-}
-
-export interface CopilotContextCategory {
-  __typename?: 'CopilotContextCategory';
-  createdAt: Scalars['SafeInt']['output'];
-  docs: Array<CopilotContextDoc>;
-  id: Scalars['ID']['output'];
-  type: ContextCategories;
-}
-
-export interface CopilotContextDoc {
-  __typename?: 'CopilotContextDoc';
-  createdAt: Scalars['SafeInt']['output'];
-  id: Scalars['ID']['output'];
-  status: Maybe<ContextEmbedStatus>;
-}
-
-export interface CopilotContextFile {
-  __typename?: 'CopilotContextFile';
-  blobId: Scalars['String']['output'];
-  chunkSize: Scalars['SafeInt']['output'];
-  createdAt: Scalars['SafeInt']['output'];
-  error: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  mimeType: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-  status: ContextEmbedStatus;
-}
-
-export interface CopilotContextFileNotSupportedDataType {
-  __typename?: 'CopilotContextFileNotSupportedDataType';
-  fileName: Scalars['String']['output'];
-  message: Scalars['String']['output'];
-}
-
 export interface CopilotDocNotFoundDataType {
   __typename?: 'CopilotDocNotFoundDataType';
   docId: Scalars['String']['output'];
 }
 
-export interface CopilotFailedToAddWorkspaceFileEmbeddingDataType {
-  __typename?: 'CopilotFailedToAddWorkspaceFileEmbeddingDataType';
+export interface CopilotFailedToAddWorkspaceArtifactDataType {
+  __typename?: 'CopilotFailedToAddWorkspaceArtifactDataType';
   message: Scalars['String']['output'];
 }
 
@@ -758,26 +678,6 @@ export interface CopilotFailedToGenerateEmbeddingDataType {
   provider: Scalars['String']['output'];
 }
 
-export interface CopilotFailedToMatchContextDataType {
-  __typename?: 'CopilotFailedToMatchContextDataType';
-  content: Scalars['String']['output'];
-  contextId: Scalars['String']['output'];
-  message: Scalars['String']['output'];
-}
-
-export interface CopilotFailedToMatchGlobalContextDataType {
-  __typename?: 'CopilotFailedToMatchGlobalContextDataType';
-  content: Scalars['String']['output'];
-  message: Scalars['String']['output'];
-  workspaceId: Scalars['String']['output'];
-}
-
-export interface CopilotFailedToModifyContextDataType {
-  __typename?: 'CopilotFailedToModifyContextDataType';
-  contextId: Scalars['String']['output'];
-  message: Scalars['String']['output'];
-}
-
 export interface CopilotHistories {
   __typename?: 'CopilotHistories';
   /** An mark identifying which view to use to display the session */
@@ -785,15 +685,11 @@ export interface CopilotHistories {
   createdAt: Scalars['DateTime']['output'];
   docId: Maybe<Scalars['String']['output']>;
   messages: Array<ChatMessage>;
-  model: Scalars['String']['output'];
-  optionalModels: Array<Scalars['String']['output']>;
   parentSessionId: Maybe<Scalars['String']['output']>;
   pinned: Scalars['Boolean']['output'];
   promptName: Scalars['String']['output'];
   sessionId: Scalars['String']['output'];
   title: Maybe<Scalars['String']['output']>;
-  /** The number of tokens used in the session */
-  tokens: Scalars['Int']['output'];
   updatedAt: Scalars['DateTime']['output'];
   workspaceId: Scalars['String']['output'];
 }
@@ -804,27 +700,9 @@ export interface CopilotHistoriesTypeEdge {
   node: CopilotHistories;
 }
 
-export interface CopilotInvalidContextDataType {
-  __typename?: 'CopilotInvalidContextDataType';
-  contextId: Scalars['String']['output'];
-}
-
 export interface CopilotMessageNotFoundDataType {
   __typename?: 'CopilotMessageNotFoundDataType';
   messageId: Scalars['String']['output'];
-}
-
-export interface CopilotModelType {
-  __typename?: 'CopilotModelType';
-  id: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-}
-
-export interface CopilotModelsType {
-  __typename?: 'CopilotModelsType';
-  defaultModel: Scalars['String']['output'];
-  optionalModels: Array<CopilotModelType>;
-  proModels: Array<CopilotModelType>;
 }
 
 export interface CopilotPromptNotFoundDataType {
@@ -851,49 +729,63 @@ export interface CopilotQuota {
   used: Scalars['SafeInt']['output'];
 }
 
+export interface CopilotRouteOptions {
+  __typename?: 'CopilotRouteOptions';
+  choices: Array<CopilotRouteTarget>;
+  defaultTargetId: Maybe<Scalars['String']['output']>;
+  routeId: Scalars['String']['output'];
+}
+
+export interface CopilotRouteTarget {
+  __typename?: 'CopilotRouteTarget';
+  available: Scalars['Boolean']['output'];
+  displayName: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  minimumTier: Scalars['String']['output'];
+}
+
 export interface CopilotSessionType {
   __typename?: 'CopilotSessionType';
   docId: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  model: Scalars['String']['output'];
-  optionalModels: Array<Scalars['String']['output']>;
   parentSessionId: Maybe<Scalars['ID']['output']>;
   pinned: Scalars['Boolean']['output'];
   promptName: Scalars['String']['output'];
   title: Maybe<Scalars['String']['output']>;
 }
 
+export interface CopilotWorkspaceArtifact {
+  __typename?: 'CopilotWorkspaceArtifact';
+  artifactId: Scalars['String']['output'];
+  contentHash: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  embeddingStatus: Scalars['String']['output'];
+  fileName: Scalars['String']['output'];
+  mediaType: Scalars['String']['output'];
+  size: Scalars['SafeInt']['output'];
+  workspaceId: Scalars['String']['output'];
+}
+
+export interface CopilotWorkspaceArtifactTypeEdge {
+  __typename?: 'CopilotWorkspaceArtifactTypeEdge';
+  cursor: Scalars['String']['output'];
+  node: CopilotWorkspaceArtifact;
+}
+
 export interface CopilotWorkspaceConfig {
   __typename?: 'CopilotWorkspaceConfig';
   allIgnoredDocs: Array<CopilotWorkspaceIgnoredDoc>;
-  files: PaginatedCopilotWorkspaceFileType;
+  artifacts: PaginatedCopilotWorkspaceArtifactType;
   ignoredDocs: PaginatedIgnoredDocsType;
   workspaceId: Scalars['String']['output'];
 }
 
-export interface CopilotWorkspaceConfigFilesArgs {
+export interface CopilotWorkspaceConfigArtifactsArgs {
   pagination: PaginationInput;
 }
 
 export interface CopilotWorkspaceConfigIgnoredDocsArgs {
   pagination: PaginationInput;
-}
-
-export interface CopilotWorkspaceFile {
-  __typename?: 'CopilotWorkspaceFile';
-  blobId: Scalars['String']['output'];
-  createdAt: Scalars['DateTime']['output'];
-  fileId: Scalars['String']['output'];
-  fileName: Scalars['String']['output'];
-  mimeType: Scalars['String']['output'];
-  size: Scalars['SafeInt']['output'];
-  workspaceId: Scalars['String']['output'];
-}
-
-export interface CopilotWorkspaceFileTypeEdge {
-  __typename?: 'CopilotWorkspaceFileTypeEdge';
-  cursor: Scalars['String']['output'];
-  node: CopilotWorkspaceFile;
 }
 
 export interface CopilotWorkspaceIgnoredDoc {
@@ -964,19 +856,28 @@ export interface CreateWorkspaceByokLocalLeaseInput {
 }
 
 export interface CreateWorkspaceByokLocalLeaseProviderInput {
-  apiKey: Scalars['String']['input'];
+  credential: Scalars['String']['input'];
+  definition: WorkspaceByokProfileDefinitionInput;
   description?: InputMaybe<Scalars['String']['input']>;
-  enabled?: InputMaybe<Scalars['Boolean']['input']>;
-  endpoint?: InputMaybe<Scalars['String']['input']>;
+  enabled: Scalars['Boolean']['input'];
   name: Scalars['String']['input'];
   provider: ByokProvider;
-  sortOrder?: InputMaybe<Scalars['SafeInt']['input']>;
 }
 
 export interface CreateWorkspaceByokLocalLeaseResultType {
   __typename?: 'CreateWorkspaceByokLocalLeaseResultType';
   expiresAt: Scalars['DateTime']['output'];
   leaseId: Scalars['String']['output'];
+}
+
+export interface CreateWorkspaceByokProfileInput {
+  credential: Scalars['String']['input'];
+  definition: WorkspaceByokProfileDefinitionInput;
+  description?: InputMaybe<Scalars['String']['input']>;
+  enabled: Scalars['Boolean']['input'];
+  name: Scalars['String']['input'];
+  provider: ByokProvider;
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface CredentialsRequirementType {
@@ -1168,14 +1069,9 @@ export type ErrorDataUnion =
   | AlreadyInSpaceDataType
   | BlobNotFoundDataType
   | CalendarProviderRequestErrorDataType
-  | CopilotContextFileNotSupportedDataType
   | CopilotDocNotFoundDataType
-  | CopilotFailedToAddWorkspaceFileEmbeddingDataType
+  | CopilotFailedToAddWorkspaceArtifactDataType
   | CopilotFailedToGenerateEmbeddingDataType
-  | CopilotFailedToMatchContextDataType
-  | CopilotFailedToMatchGlobalContextDataType
-  | CopilotFailedToModifyContextDataType
-  | CopilotInvalidContextDataType
   | CopilotMessageNotFoundDataType
   | CopilotPromptNotFoundDataType
   | CopilotProviderNotSupportedDataType
@@ -1256,25 +1152,24 @@ export enum ErrorNames {
   COMMENT_ATTACHMENT_QUOTA_EXCEEDED = 'COMMENT_ATTACHMENT_QUOTA_EXCEEDED',
   COMMENT_NOT_FOUND = 'COMMENT_NOT_FOUND',
   COPILOT_ACTION_TAKEN = 'COPILOT_ACTION_TAKEN',
-  COPILOT_CONTEXT_FILE_NOT_SUPPORTED = 'COPILOT_CONTEXT_FILE_NOT_SUPPORTED',
   COPILOT_DOCS_NOT_FOUND = 'COPILOT_DOCS_NOT_FOUND',
   COPILOT_DOC_NOT_FOUND = 'COPILOT_DOC_NOT_FOUND',
   COPILOT_EMBEDDING_DISABLED = 'COPILOT_EMBEDDING_DISABLED',
   COPILOT_EMBEDDING_UNAVAILABLE = 'COPILOT_EMBEDDING_UNAVAILABLE',
-  COPILOT_FAILED_TO_ADD_WORKSPACE_FILE_EMBEDDING = 'COPILOT_FAILED_TO_ADD_WORKSPACE_FILE_EMBEDDING',
+  COPILOT_FAILED_TO_ADD_WORKSPACE_ARTIFACT = 'COPILOT_FAILED_TO_ADD_WORKSPACE_ARTIFACT',
   COPILOT_FAILED_TO_CREATE_MESSAGE = 'COPILOT_FAILED_TO_CREATE_MESSAGE',
   COPILOT_FAILED_TO_GENERATE_EMBEDDING = 'COPILOT_FAILED_TO_GENERATE_EMBEDDING',
   COPILOT_FAILED_TO_GENERATE_TEXT = 'COPILOT_FAILED_TO_GENERATE_TEXT',
-  COPILOT_FAILED_TO_MATCH_CONTEXT = 'COPILOT_FAILED_TO_MATCH_CONTEXT',
-  COPILOT_FAILED_TO_MATCH_GLOBAL_CONTEXT = 'COPILOT_FAILED_TO_MATCH_GLOBAL_CONTEXT',
-  COPILOT_FAILED_TO_MODIFY_CONTEXT = 'COPILOT_FAILED_TO_MODIFY_CONTEXT',
-  COPILOT_INVALID_CONTEXT = 'COPILOT_INVALID_CONTEXT',
   COPILOT_MESSAGE_NOT_FOUND = 'COPILOT_MESSAGE_NOT_FOUND',
   COPILOT_PROMPT_INVALID = 'COPILOT_PROMPT_INVALID',
   COPILOT_PROMPT_NOT_FOUND = 'COPILOT_PROMPT_NOT_FOUND',
   COPILOT_PROVIDER_NOT_SUPPORTED = 'COPILOT_PROVIDER_NOT_SUPPORTED',
   COPILOT_PROVIDER_SIDE_ERROR = 'COPILOT_PROVIDER_SIDE_ERROR',
   COPILOT_QUOTA_EXCEEDED = 'COPILOT_QUOTA_EXCEEDED',
+  COPILOT_SELECTED_SOURCES_FAILED = 'COPILOT_SELECTED_SOURCES_FAILED',
+  COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED = 'COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED',
+  COPILOT_SELECTED_SOURCES_PROCESSING = 'COPILOT_SELECTED_SOURCES_PROCESSING',
+  COPILOT_SELECTED_SOURCES_UNAVAILABLE = 'COPILOT_SELECTED_SOURCES_UNAVAILABLE',
   COPILOT_SESSION_DELETED = 'COPILOT_SESSION_DELETED',
   COPILOT_SESSION_INVALID_INPUT = 'COPILOT_SESSION_INVALID_INPUT',
   COPILOT_SESSION_NOT_FOUND = 'COPILOT_SESSION_NOT_FOUND',
@@ -1841,16 +1736,8 @@ export interface Mutation {
   abortBlobUpload: Scalars['Boolean']['output'];
   acceptInviteById: Scalars['Boolean']['output'];
   activateLicense: License;
-  /** add a blob to context */
-  addContextBlob: CopilotContextBlob;
-  /** add a category to context */
-  addContextCategory: CopilotContextCategory;
-  /** add a doc to context */
-  addContextDoc: CopilotContextDoc;
-  /** add a file to context */
-  addContextFile: CopilotContextFile;
-  /** Update workspace embedding files */
-  addWorkspaceEmbeddingFiles: CopilotWorkspaceFile;
+  /** Add a workspace artifact */
+  addWorkspaceArtifact: CopilotWorkspaceArtifact;
   /** Update workspace flags for admin */
   adminUpdateWorkspace: Maybe<AdminWorkspace>;
   approveMember: Scalars['Boolean']['output'];
@@ -1861,7 +1748,6 @@ export interface Mutation {
   changePassword: Scalars['Boolean']['output'];
   /** Cleanup sessions */
   cleanupCopilotSession: Array<Scalars['String']['output']>;
-  clearWorkspaceByokConfigs: Scalars['Boolean']['output'];
   completeBlobUpload: Scalars['String']['output'];
   createBlobUpload: BlobUploadInit;
   /** Create change password url */
@@ -1869,8 +1755,6 @@ export interface Mutation {
   /** Create a subscription checkout link of stripe */
   createCheckoutSession: Scalars['String']['output'];
   createComment: CommentObjectType;
-  /** Create a context session */
-  createCopilotContext: Scalars['String']['output'];
   /** Create a chat message */
   createCopilotMessage: Scalars['String']['output'];
   /**
@@ -1891,6 +1775,7 @@ export interface Mutation {
   /** Create a new workspace */
   createWorkspace: WorkspaceType;
   createWorkspaceByokLocalLease: CreateWorkspaceByokLocalLeaseResultType;
+  createWorkspaceByokProfile: WorkspaceByokProfileType;
   deactivateLicense: Scalars['Boolean']['output'];
   deleteAccount: DeleteAccount;
   deleteAuthSigningKey: Array<AuthSigningKeyType>;
@@ -1902,7 +1787,7 @@ export interface Mutation {
   /** Delete a user account */
   deleteUser: DeleteAccount;
   deleteWorkspace: Scalars['Boolean']['output'];
-  deleteWorkspaceByokConfig: Scalars['Boolean']['output'];
+  deleteWorkspaceByokProfile: Scalars['Boolean']['output'];
   /** Reenable an banned user */
   enableUser: UserType;
   /** Create a chat session */
@@ -1921,9 +1806,9 @@ export interface Mutation {
   /** mention user in a doc */
   mentionUser: Scalars['ID']['output'];
   previewLicense: AdminLicensePreview;
+  probeWorkspaceByokDraft: WorkspaceByokProbeResultType;
+  probeWorkspaceByokProfile: WorkspaceByokProbeResultType;
   publishDoc: DocType;
-  /** queue workspace doc embedding */
-  queueWorkspaceEmbedding: Scalars['Boolean']['output'];
   /** mark all notifications as read */
   readAllNotifications: Scalars['Boolean']['output'];
   /** mark notification as read */
@@ -1934,17 +1819,10 @@ export interface Mutation {
   releaseDeletedBlobs: Scalars['Boolean']['output'];
   /** Remove user avatar */
   removeAvatar: RemoveAvatar;
-  /** remove a blob from context */
-  removeContextBlob: Scalars['Boolean']['output'];
-  /** remove a category from context */
-  removeContextCategory: Scalars['Boolean']['output'];
-  /** remove a doc from context */
-  removeContextDoc: Scalars['Boolean']['output'];
-  /** remove a file from context */
-  removeContextFile: Scalars['Boolean']['output'];
-  /** Remove workspace embedding files */
-  removeWorkspaceEmbeddingFiles: Scalars['Boolean']['output'];
-  reorderWorkspaceByokConfigs: Array<WorkspaceByokKeyConfigType>;
+  /** Remove a workspace artifact */
+  removeWorkspaceArtifact: Scalars['Boolean']['output'];
+  reorderWorkspaceByokProfiles: Array<WorkspaceByokProfileType>;
+  replaceWorkspaceByokProfile: WorkspaceByokProfileType;
   /** Request to apply the subscription in advance */
   requestApplySubscription: Array<SubscriptionType>;
   /** Resolve a comment or not */
@@ -1959,6 +1837,7 @@ export interface Mutation {
   revokePublicDoc: DocType;
   rotateAuthSigningKey: Array<AuthSigningKeyType>;
   rotateMcpCredential: RevealedMcpCredentialType;
+  rotateWorkspaceByokCredential: WorkspaceByokProfileType;
   sendChangeEmail: Scalars['Boolean']['output'];
   sendChangePasswordEmail: Scalars['Boolean']['output'];
   sendSetPasswordEmail: Scalars['Boolean']['output'];
@@ -1968,7 +1847,6 @@ export interface Mutation {
   setBlob: Scalars['String']['output'];
   settleTranscriptTask: Maybe<TranscriptionResultType>;
   submitTranscriptTask: Maybe<TranscriptionResultType>;
-  testWorkspaceByokConfig: TestWorkspaceByokConfigResultType;
   unlinkCalendarAccount: Scalars['Boolean']['output'];
   /** update app configuration */
   updateAppConfig: Scalars['JSONObject']['output'];
@@ -1998,7 +1876,6 @@ export interface Mutation {
   uploadAvatar: UserType;
   /** Upload a comment attachment and return the access url */
   uploadCommentAttachment: Scalars['String']['output'];
-  upsertWorkspaceByokConfig: WorkspaceByokKeyConfigType;
   verifyEmail: Scalars['Boolean']['output'];
 }
 
@@ -2019,24 +1896,7 @@ export interface MutationActivateLicenseArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationAddContextBlobArgs {
-  options: AddContextBlobInput;
-}
-
-export interface MutationAddContextCategoryArgs {
-  options: AddContextCategoryInput;
-}
-
-export interface MutationAddContextDocArgs {
-  options: AddContextDocInput;
-}
-
-export interface MutationAddContextFileArgs {
-  content: Scalars['Upload']['input'];
-  options: AddContextFileInput;
-}
-
-export interface MutationAddWorkspaceEmbeddingFilesArgs {
+export interface MutationAddWorkspaceArtifactArgs {
   blob: Scalars['Upload']['input'];
   workspaceId: Scalars['String']['input'];
 }
@@ -2075,11 +1935,6 @@ export interface MutationCleanupCopilotSessionArgs {
   options: DeleteSessionInput;
 }
 
-export interface MutationClearWorkspaceByokConfigsArgs {
-  provider?: InputMaybe<ByokProvider>;
-  workspaceId: Scalars['String']['input'];
-}
-
 export interface MutationCompleteBlobUploadArgs {
   key: Scalars['String']['input'];
   parts?: InputMaybe<Array<BlobUploadPartInput>>;
@@ -2105,11 +1960,6 @@ export interface MutationCreateCheckoutSessionArgs {
 
 export interface MutationCreateCommentArgs {
   input: CommentCreateInput;
-}
-
-export interface MutationCreateCopilotContextArgs {
-  sessionId: Scalars['String']['input'];
-  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationCreateCopilotMessageArgs {
@@ -2153,6 +2003,10 @@ export interface MutationCreateWorkspaceByokLocalLeaseArgs {
   input: CreateWorkspaceByokLocalLeaseInput;
 }
 
+export interface MutationCreateWorkspaceByokProfileArgs {
+  input: CreateWorkspaceByokProfileInput;
+}
+
 export interface MutationDeactivateLicenseArgs {
   workspaceId: Scalars['String']['input'];
 }
@@ -2184,8 +2038,8 @@ export interface MutationDeleteWorkspaceArgs {
   id: Scalars['String']['input'];
 }
 
-export interface MutationDeleteWorkspaceByokConfigArgs {
-  id: Scalars['ID']['input'];
+export interface MutationDeleteWorkspaceByokProfileArgs {
+  profileId: Scalars['ID']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2254,14 +2108,17 @@ export interface MutationPreviewLicenseArgs {
   license: Scalars['Upload']['input'];
 }
 
+export interface MutationProbeWorkspaceByokDraftArgs {
+  input: ProbeWorkspaceByokDraftInput;
+}
+
+export interface MutationProbeWorkspaceByokProfileArgs {
+  input: ProbeWorkspaceByokProfileInput;
+}
+
 export interface MutationPublishDocArgs {
   docId: Scalars['String']['input'];
   mode?: InputMaybe<PublicDocMode>;
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationQueueWorkspaceEmbeddingArgs {
-  docId: Array<Scalars['String']['input']>;
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2279,29 +2136,17 @@ export interface MutationReleaseDeletedBlobsArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationRemoveContextBlobArgs {
-  options: RemoveContextBlobInput;
-}
-
-export interface MutationRemoveContextCategoryArgs {
-  options: RemoveContextCategoryInput;
-}
-
-export interface MutationRemoveContextDocArgs {
-  options: RemoveContextDocInput;
-}
-
-export interface MutationRemoveContextFileArgs {
-  options: RemoveContextFileInput;
-}
-
-export interface MutationRemoveWorkspaceEmbeddingFilesArgs {
-  fileId: Scalars['String']['input'];
+export interface MutationRemoveWorkspaceArtifactArgs {
+  artifactId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationReorderWorkspaceByokConfigsArgs {
-  input: ReorderWorkspaceByokConfigsInput;
+export interface MutationReorderWorkspaceByokProfilesArgs {
+  input: ReorderWorkspaceByokProfilesInput;
+}
+
+export interface MutationReplaceWorkspaceByokProfileArgs {
+  input: ReplaceWorkspaceByokProfileInput;
 }
 
 export interface MutationRequestApplySubscriptionArgs {
@@ -2361,6 +2206,10 @@ export interface MutationRotateMcpCredentialArgs {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationRotateWorkspaceByokCredentialArgs {
+  input: RotateWorkspaceByokCredentialInput;
+}
+
 export interface MutationSendChangeEmailArgs {
   callbackUrl: Scalars['String']['input'];
 }
@@ -2405,10 +2254,6 @@ export interface MutationSubmitTranscriptTaskArgs {
   blobs?: InputMaybe<Array<Scalars['Upload']['input']>>;
   input?: InputMaybe<SubmitAudioTranscriptionInput>;
   workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationTestWorkspaceByokConfigArgs {
-  input: TestWorkspaceByokConfigInput;
 }
 
 export interface MutationUnlinkCalendarAccountArgs {
@@ -2491,10 +2336,6 @@ export interface MutationUploadCommentAttachmentArgs {
   attachment: Scalars['Upload']['input'];
   docId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationUpsertWorkspaceByokConfigArgs {
-  input: UpsertWorkspaceByokConfigInput;
 }
 
 export interface MutationVerifyEmailArgs {
@@ -2627,9 +2468,9 @@ export interface PaginatedCopilotHistoriesType {
   totalCount: Scalars['Int']['output'];
 }
 
-export interface PaginatedCopilotWorkspaceFileType {
-  __typename?: 'PaginatedCopilotWorkspaceFileType';
-  edges: Array<CopilotWorkspaceFileTypeEdge>;
+export interface PaginatedCopilotWorkspaceArtifactType {
+  __typename?: 'PaginatedCopilotWorkspaceArtifactType';
+  edges: Array<CopilotWorkspaceArtifactTypeEdge>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
 }
@@ -2692,6 +2533,22 @@ export enum Permission {
   Owner = 'Owner',
 }
 
+export interface ProbeWorkspaceByokDraftInput {
+  checks: Array<WorkspaceByokProbeCheckInput>;
+  credential?: InputMaybe<Scalars['String']['input']>;
+  definition: WorkspaceByokProfileDefinitionInput;
+  expectedRevision?: InputMaybe<Scalars['SafeInt']['input']>;
+  profileId?: InputMaybe<Scalars['ID']['input']>;
+  provider: ByokProvider;
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface ProbeWorkspaceByokProfileInput {
+  checks: Array<WorkspaceByokProbeCheckInput>;
+  profileId: Scalars['ID']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
 /** The mode which the public doc default in */
 export enum PublicDocMode {
   Edgeless = 'Edgeless',
@@ -2732,11 +2589,6 @@ export interface Query {
   prices: Array<SubscriptionPrice>;
   /** Get public user by id */
   publicUserById: Maybe<PublicUserType>;
-  /**
-   * query workspace embedding status
-   * @deprecated Use realtime subscription "workspace.embedding.progress.changed" instead.
-   */
-  queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
   /** server config */
   serverConfig: ServerConfigType;
   /** Get user by email */
@@ -2801,10 +2653,6 @@ export interface QueryMcpCredentialsArgs {
 
 export interface QueryPublicUserByIdArgs {
   id: Scalars['String']['input'];
-}
-
-export interface QueryQueryWorkspaceEmbeddingStatusArgs {
-  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryUserArgs {
@@ -2878,30 +2726,19 @@ export interface RemoveAvatar {
   success: Scalars['Boolean']['output'];
 }
 
-export interface RemoveContextBlobInput {
-  blobId: Scalars['String']['input'];
-  contextId: Scalars['String']['input'];
+export interface ReorderWorkspaceByokProfilesInput {
+  profiles: Array<WorkspaceByokProfileOrderInput>;
+  workspaceId: Scalars['String']['input'];
 }
 
-export interface RemoveContextCategoryInput {
-  categoryId: Scalars['String']['input'];
-  contextId: Scalars['String']['input'];
-  type: ContextCategories;
-}
-
-export interface RemoveContextDocInput {
-  contextId: Scalars['String']['input'];
-  docId: Scalars['String']['input'];
-}
-
-export interface RemoveContextFileInput {
-  contextId: Scalars['String']['input'];
-  fileId: Scalars['String']['input'];
-}
-
-export interface ReorderWorkspaceByokConfigsInput {
-  ids: Array<Scalars['ID']['input']>;
-  storage: ByokKeyStorage;
+export interface ReplaceWorkspaceByokProfileInput {
+  credential?: InputMaybe<Scalars['String']['input']>;
+  definition: WorkspaceByokProfileDefinitionInput;
+  description?: InputMaybe<Scalars['String']['input']>;
+  enabled: Scalars['Boolean']['input'];
+  expectedRevision: Scalars['SafeInt']['input'];
+  name: Scalars['String']['input'];
+  profileId: Scalars['ID']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2948,6 +2785,13 @@ export interface RevealedMcpCredentialType {
 export interface RevokeDocUserRoleInput {
   docId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface RotateWorkspaceByokCredentialInput {
+  credential: Scalars['String']['input'];
+  expectedRevision: Scalars['SafeInt']['input'];
+  profileId: Scalars['ID']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -3136,7 +2980,6 @@ export interface SubmitAudioTranscriptionInput {
   quality?: InputMaybe<TranscriptionQualityInput>;
   sliceManifest?: InputMaybe<Array<AudioSliceManifestItemInput>>;
   sourceAudio?: InputMaybe<TranscriptionSourceAudioInput>;
-  strategy?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface SubscriptionAlreadyExistsDataType {
@@ -3222,22 +3065,6 @@ export enum SubscriptionVariant {
   Onetime = 'Onetime',
 }
 
-export interface TestWorkspaceByokConfigInput {
-  apiKey?: InputMaybe<Scalars['String']['input']>;
-  configId?: InputMaybe<Scalars['ID']['input']>;
-  endpoint?: InputMaybe<Scalars['String']['input']>;
-  provider: ByokProvider;
-  storage: ByokKeyStorage;
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface TestWorkspaceByokConfigResultType {
-  __typename?: 'TestWorkspaceByokConfigResultType';
-  message: Maybe<Scalars['String']['output']>;
-  ok: Scalars['Boolean']['output'];
-  status: ByokKeyTestStatus;
-}
-
 export enum TimeBucket {
   Day = 'Day',
   Hour = 'Hour',
@@ -3252,12 +3079,6 @@ export interface TimeWindow {
   requestedSize: Scalars['Int']['output'];
   timezone: Scalars['String']['output'];
   to: Scalars['DateTime']['output'];
-}
-
-export interface TranscriptProviderMetaType {
-  __typename?: 'TranscriptProviderMetaType';
-  model: Maybe<Scalars['String']['output']>;
-  provider: Maybe<Scalars['String']['output']>;
 }
 
 export interface TranscriptionItemType {
@@ -3285,12 +3106,10 @@ export interface TranscriptionResultType {
   id: Scalars['ID']['output'];
   normalizedSegments: Maybe<Array<NormalizedTranscriptSegmentType>>;
   normalizedTranscript: Maybe<Scalars['String']['output']>;
-  providerMeta: Maybe<TranscriptProviderMetaType>;
   quality: Maybe<TranscriptionQualityType>;
   sliceManifest: Maybe<Array<AudioSliceManifestItemType>>;
   sourceAudio: Maybe<TranscriptionSourceAudioType>;
   status: AiJobStatus;
-  strategy: Maybe<Scalars['String']['output']>;
   summary: Maybe<Scalars['String']['output']>;
   summaryJson: Maybe<MeetingSummaryV2Type>;
   title: Maybe<Scalars['String']['output']>;
@@ -3406,19 +3225,6 @@ export interface UpdateWorkspaceInput {
   public?: InputMaybe<Scalars['Boolean']['input']>;
 }
 
-export interface UpsertWorkspaceByokConfigInput {
-  apiKey?: InputMaybe<Scalars['String']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  enabled?: InputMaybe<Scalars['Boolean']['input']>;
-  endpoint?: InputMaybe<Scalars['String']['input']>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  name: Scalars['String']['input'];
-  provider: ByokProvider;
-  sortOrder?: InputMaybe<Scalars['SafeInt']['input']>;
-  storage: ByokKeyStorage;
-  workspaceId: Scalars['String']['input'];
-}
-
 export interface UserImportFailedType {
   __typename?: 'UserImportFailedType';
   email: Scalars['String']['output'];
@@ -3530,48 +3336,147 @@ export interface VersionRejectedDataType {
   version: Scalars['String']['output'];
 }
 
-export interface WorkspaceByokCapabilityWarningType {
-  __typename?: 'WorkspaceByokCapabilityWarningType';
-  featureKind: Scalars['String']['output'];
-  reason: Scalars['String']['output'];
-  requiredProviders: Array<ByokProvider>;
+export interface WorkspaceByokCapabilityInput {
+  attachmentKinds: Array<ByokAttachmentKind>;
+  attachmentSources: Array<ByokAttachmentSource>;
+  features: Array<ByokModelFeature>;
+  input: Array<ByokModelInput>;
+  output: Array<ByokModelOutput>;
 }
 
-export interface WorkspaceByokKeyConfigType {
-  __typename?: 'WorkspaceByokKeyConfigType';
-  capabilities: Array<Scalars['String']['output']>;
-  configured: Scalars['Boolean']['output'];
-  description: Maybe<Scalars['String']['output']>;
-  disabledReason: Maybe<Scalars['String']['output']>;
-  enabled: Scalars['Boolean']['output'];
-  endpoint: Maybe<Scalars['String']['output']>;
-  endpointEditable: Scalars['Boolean']['output'];
-  id: Scalars['ID']['output'];
-  lastError: Maybe<Scalars['String']['output']>;
-  lastErrorAt: Maybe<Scalars['DateTime']['output']>;
-  lastTestError: Maybe<Scalars['String']['output']>;
-  lastTestedAt: Maybe<Scalars['DateTime']['output']>;
-  lastUsedAt: Maybe<Scalars['DateTime']['output']>;
-  name: Scalars['String']['output'];
+export interface WorkspaceByokCapabilityType {
+  __typename?: 'WorkspaceByokCapabilityType';
+  attachmentKinds: Array<ByokAttachmentKind>;
+  attachmentSources: Array<ByokAttachmentSource>;
+  features: Array<ByokModelFeature>;
+  input: Array<ByokModelInput>;
+  output: Array<ByokModelOutput>;
+}
+
+export interface WorkspaceByokCatalogModelType {
+  __typename?: 'WorkspaceByokCatalogModelType';
+  capabilities: Array<WorkspaceByokCapabilityType>;
+  displayName: Scalars['String']['output'];
+  modelId: Scalars['String']['output'];
+  recommended: Scalars['Boolean']['output'];
+}
+
+export interface WorkspaceByokCatalogProviderType {
+  __typename?: 'WorkspaceByokCatalogProviderType';
+  models: Array<WorkspaceByokCatalogModelType>;
   provider: ByokProvider;
+}
+
+export interface WorkspaceByokCatalogType {
+  __typename?: 'WorkspaceByokCatalogType';
+  providers: Array<WorkspaceByokCatalogProviderType>;
+  version: Scalars['String']['output'];
+}
+
+export interface WorkspaceByokEndpointInput {
+  dialect?: InputMaybe<ByokOpenAiDialect>;
+  kind: ByokEndpointKind;
+  url?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface WorkspaceByokEndpointType {
+  __typename?: 'WorkspaceByokEndpointType';
+  dialect: Maybe<ByokOpenAiDialect>;
+  kind: ByokEndpointKind;
+  url: Maybe<Scalars['String']['output']>;
+}
+
+export interface WorkspaceByokModelDeclarationInput {
+  capabilities: Array<WorkspaceByokCapabilityInput>;
+  enabled: Scalars['Boolean']['input'];
+  modelId: Scalars['String']['input'];
+}
+
+export interface WorkspaceByokModelDeclarationType {
+  __typename?: 'WorkspaceByokModelDeclarationType';
+  capabilities: Array<WorkspaceByokCapabilityType>;
+  enabled: Scalars['Boolean']['output'];
+  modelId: Scalars['String']['output'];
+}
+
+export interface WorkspaceByokModelProbeCheckType {
+  __typename?: 'WorkspaceByokModelProbeCheckType';
+  operation: ByokProbeOperation;
+  status: WorkspaceByokProbeStatusType;
+}
+
+export interface WorkspaceByokModelProbeType {
+  __typename?: 'WorkspaceByokModelProbeType';
+  checks: Array<WorkspaceByokModelProbeCheckType>;
+  modelId: Scalars['String']['output'];
+}
+
+export interface WorkspaceByokPolicyType {
+  __typename?: 'WorkspaceByokPolicyType';
+  allowedProviders: Array<ByokProvider>;
+  customEndpointMode: ByokCustomEndpointMode;
+  enabled: Scalars['Boolean']['output'];
+  privateEndpointSupported: Scalars['Boolean']['output'];
+}
+
+export interface WorkspaceByokProbeCheckInput {
+  modelId: Scalars['String']['input'];
+  operation: ByokProbeOperation;
+}
+
+export interface WorkspaceByokProbeResultType {
+  __typename?: 'WorkspaceByokProbeResultType';
+  connection: WorkspaceByokProbeStatusType;
+  definitionFingerprint: Scalars['String']['output'];
+  models: Array<WorkspaceByokModelProbeType>;
+  stale: Scalars['Boolean']['output'];
+}
+
+export interface WorkspaceByokProbeStatusType {
+  __typename?: 'WorkspaceByokProbeStatusType';
+  errorKind: Maybe<Scalars['String']['output']>;
+  kind: ByokProbeStatusKind;
+  testedAt: Maybe<Scalars['DateTime']['output']>;
+}
+
+export interface WorkspaceByokProfileDefinitionInput {
+  endpoint: WorkspaceByokEndpointInput;
+  models: Array<WorkspaceByokModelDeclarationInput>;
+}
+
+export interface WorkspaceByokProfileDefinitionType {
+  __typename?: 'WorkspaceByokProfileDefinitionType';
+  endpoint: WorkspaceByokEndpointType;
+  models: Array<WorkspaceByokModelDeclarationType>;
+}
+
+export interface WorkspaceByokProfileOrderInput {
+  expectedRevision: Scalars['SafeInt']['input'];
+  profileId: Scalars['ID']['input'];
+}
+
+export interface WorkspaceByokProfileType {
+  __typename?: 'WorkspaceByokProfileType';
+  definition: WorkspaceByokProfileDefinitionType;
+  description: Maybe<Scalars['String']['output']>;
+  enabled: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  profileId: Scalars['ID']['output'];
+  provider: ByokProvider;
+  revision: Scalars['SafeInt']['output'];
   sortOrder: Scalars['SafeInt']['output'];
-  storage: ByokKeyStorage;
-  testStatus: ByokKeyTestStatus;
+  validation: Maybe<WorkspaceByokValidationType>;
+  workspaceId: Scalars['String']['output'];
 }
 
 export interface WorkspaceByokSettingsType {
   __typename?: 'WorkspaceByokSettingsType';
-  allowedProviders: Array<ByokProvider>;
-  customEndpointSupported: Scalars['Boolean']['output'];
+  catalog: WorkspaceByokCatalogType;
   entitled: Scalars['Boolean']['output'];
-  entitlementRequired: Array<Scalars['String']['output']>;
-  hasAiPlan: Scalars['Boolean']['output'];
-  keys: Array<WorkspaceByokKeyConfigType>;
   localEntitled: Scalars['Boolean']['output'];
-  localStorageSupported: Scalars['Boolean']['output'];
-  privateEndpointSupported: Scalars['Boolean']['output'];
+  policy: WorkspaceByokPolicyType;
+  profiles: Array<WorkspaceByokProfileType>;
   serverEntitled: Scalars['Boolean']['output'];
-  warnings: Array<WorkspaceByokCapabilityWarningType>;
   workspaceId: Scalars['String']['output'];
 }
 
@@ -3580,6 +3485,14 @@ export interface WorkspaceByokUsagePointType {
   date: Scalars['DateTime']['output'];
   featureKind: Scalars['String']['output'];
   totalTokens: Scalars['SafeInt']['output'];
+}
+
+export interface WorkspaceByokValidationType {
+  __typename?: 'WorkspaceByokValidationType';
+  connection: WorkspaceByokProbeStatusType;
+  credentialGeneration: Scalars['SafeInt']['output'];
+  definitionFingerprint: Scalars['String']['output'];
+  models: Array<WorkspaceByokModelProbeType>;
 }
 
 export interface WorkspaceCalendarItemInput {
@@ -4985,314 +4898,6 @@ export type UploadCommentAttachmentMutation = {
   uploadCommentAttachment: string;
 };
 
-export type AddContextBlobMutationVariables = Exact<{
-  options: AddContextBlobInput;
-}>;
-
-export type AddContextBlobMutation = {
-  __typename?: 'Mutation';
-  addContextBlob: {
-    __typename?: 'CopilotContextBlob';
-    id: string;
-    createdAt: number;
-    status: ContextEmbedStatus | null;
-  };
-};
-
-export type RemoveContextBlobMutationVariables = Exact<{
-  options: RemoveContextBlobInput;
-}>;
-
-export type RemoveContextBlobMutation = {
-  __typename?: 'Mutation';
-  removeContextBlob: boolean;
-};
-
-export type AddContextCategoryMutationVariables = Exact<{
-  options: AddContextCategoryInput;
-}>;
-
-export type AddContextCategoryMutation = {
-  __typename?: 'Mutation';
-  addContextCategory: {
-    __typename?: 'CopilotContextCategory';
-    id: string;
-    createdAt: number;
-    type: ContextCategories;
-    docs: Array<{
-      __typename?: 'CopilotContextDoc';
-      id: string;
-      createdAt: number;
-      status: ContextEmbedStatus | null;
-    }>;
-  };
-};
-
-export type RemoveContextCategoryMutationVariables = Exact<{
-  options: RemoveContextCategoryInput;
-}>;
-
-export type RemoveContextCategoryMutation = {
-  __typename?: 'Mutation';
-  removeContextCategory: boolean;
-};
-
-export type CreateCopilotContextMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  sessionId: Scalars['String']['input'];
-}>;
-
-export type CreateCopilotContextMutation = {
-  __typename?: 'Mutation';
-  createCopilotContext: string;
-};
-
-export type AddContextDocMutationVariables = Exact<{
-  options: AddContextDocInput;
-}>;
-
-export type AddContextDocMutation = {
-  __typename?: 'Mutation';
-  addContextDoc: {
-    __typename?: 'CopilotContextDoc';
-    id: string;
-    createdAt: number;
-    status: ContextEmbedStatus | null;
-  };
-};
-
-export type RemoveContextDocMutationVariables = Exact<{
-  options: RemoveContextDocInput;
-}>;
-
-export type RemoveContextDocMutation = {
-  __typename?: 'Mutation';
-  removeContextDoc: boolean;
-};
-
-export type AddContextFileMutationVariables = Exact<{
-  content: Scalars['Upload']['input'];
-  options: AddContextFileInput;
-}>;
-
-export type AddContextFileMutation = {
-  __typename?: 'Mutation';
-  addContextFile: {
-    __typename?: 'CopilotContextFile';
-    id: string;
-    createdAt: number;
-    name: string;
-    mimeType: string;
-    chunkSize: number;
-    error: string | null;
-    status: ContextEmbedStatus;
-    blobId: string;
-  };
-};
-
-export type RemoveContextFileMutationVariables = Exact<{
-  options: RemoveContextFileInput;
-}>;
-
-export type RemoveContextFileMutation = {
-  __typename?: 'Mutation';
-  removeContextFile: boolean;
-};
-
-export type ListContextObjectQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  sessionId: Scalars['String']['input'];
-  contextId: Scalars['String']['input'];
-}>;
-
-export type ListContextObjectQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      contexts: Array<{
-        __typename?: 'CopilotContext';
-        blobs: Array<{
-          __typename?: 'CopilotContextBlob';
-          id: string;
-          status: ContextEmbedStatus | null;
-          createdAt: number;
-        }>;
-        docs: Array<{
-          __typename?: 'CopilotContextDoc';
-          id: string;
-          status: ContextEmbedStatus | null;
-          createdAt: number;
-        }>;
-        files: Array<{
-          __typename?: 'CopilotContextFile';
-          id: string;
-          name: string;
-          mimeType: string;
-          blobId: string;
-          chunkSize: number;
-          error: string | null;
-          status: ContextEmbedStatus;
-          createdAt: number;
-        }>;
-        tags: Array<{
-          __typename?: 'CopilotContextCategory';
-          type: ContextCategories;
-          id: string;
-          createdAt: number;
-          docs: Array<{
-            __typename?: 'CopilotContextDoc';
-            id: string;
-            status: ContextEmbedStatus | null;
-            createdAt: number;
-          }>;
-        }>;
-        collections: Array<{
-          __typename?: 'CopilotContextCategory';
-          type: ContextCategories;
-          id: string;
-          createdAt: number;
-          docs: Array<{
-            __typename?: 'CopilotContextDoc';
-            id: string;
-            status: ContextEmbedStatus | null;
-            createdAt: number;
-          }>;
-        }>;
-      }>;
-    };
-  } | null;
-};
-
-export type ListContextQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  sessionId: Scalars['String']['input'];
-}>;
-
-export type ListContextQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      contexts: Array<{
-        __typename?: 'CopilotContext';
-        id: string | null;
-        workspaceId: string;
-      }>;
-    };
-  } | null;
-};
-
-export type MatchContextQueryVariables = Exact<{
-  contextId?: InputMaybe<Scalars['String']['input']>;
-  workspaceId?: InputMaybe<Scalars['String']['input']>;
-  content: Scalars['String']['input'];
-  limit?: InputMaybe<Scalars['SafeInt']['input']>;
-  scopedThreshold?: InputMaybe<Scalars['Float']['input']>;
-  threshold?: InputMaybe<Scalars['Float']['input']>;
-}>;
-
-export type MatchContextQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      contexts: Array<{
-        __typename?: 'CopilotContext';
-        matchFiles: Array<{
-          __typename?: 'ContextMatchedFileChunk';
-          fileId: string;
-          blobId: string;
-          name: string;
-          mimeType: string;
-          chunk: number;
-          content: string;
-          distance: number | null;
-        }>;
-        matchWorkspaceDocs: Array<{
-          __typename?: 'ContextMatchedDocChunk';
-          docId: string;
-          chunk: number;
-          content: string;
-          distance: number | null;
-        }>;
-      }>;
-    };
-  } | null;
-};
-
-export type MatchWorkspaceDocsQueryVariables = Exact<{
-  contextId?: InputMaybe<Scalars['String']['input']>;
-  workspaceId?: InputMaybe<Scalars['String']['input']>;
-  content: Scalars['String']['input'];
-  limit?: InputMaybe<Scalars['SafeInt']['input']>;
-  scopedThreshold?: InputMaybe<Scalars['Float']['input']>;
-  threshold?: InputMaybe<Scalars['Float']['input']>;
-}>;
-
-export type MatchWorkspaceDocsQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      contexts: Array<{
-        __typename?: 'CopilotContext';
-        matchWorkspaceDocs: Array<{
-          __typename?: 'ContextMatchedDocChunk';
-          docId: string;
-          chunk: number;
-          content: string;
-          distance: number | null;
-        }>;
-      }>;
-    };
-  } | null;
-};
-
-export type MatchFilesQueryVariables = Exact<{
-  contextId?: InputMaybe<Scalars['String']['input']>;
-  workspaceId?: InputMaybe<Scalars['String']['input']>;
-  content: Scalars['String']['input'];
-  limit?: InputMaybe<Scalars['SafeInt']['input']>;
-  scopedThreshold?: InputMaybe<Scalars['Float']['input']>;
-  threshold?: InputMaybe<Scalars['Float']['input']>;
-}>;
-
-export type MatchFilesQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      contexts: Array<{
-        __typename?: 'CopilotContext';
-        matchFiles: Array<{
-          __typename?: 'ContextMatchedFileChunk';
-          fileId: string;
-          blobId: string;
-          chunk: number;
-          content: string;
-          distance: number | null;
-        }>;
-      }>;
-    };
-  } | null;
-};
-
-export type QueueWorkspaceEmbeddingMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  docId: Array<Scalars['String']['input']> | Scalars['String']['input'];
-}>;
-
-export type QueueWorkspaceEmbeddingMutation = {
-  __typename?: 'Mutation';
-  queueWorkspaceEmbedding: boolean;
-};
-
 export type GetCopilotHistoryIdsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   pagination: PaginationInput;
@@ -5367,12 +4972,9 @@ export type GetCopilotDocSessionsQuery = {
             docId: string | null;
             parentSessionId: string | null;
             promptName: string;
-            model: string;
-            optionalModels: Array<string>;
             action: string | null;
             pinned: boolean;
             title: string | null;
-            tokens: number;
             createdAt: string;
             updatedAt: string;
             messages: Array<{
@@ -5381,6 +4983,7 @@ export type GetCopilotDocSessionsQuery = {
               role: string;
               content: string;
               attachments: Array<string> | null;
+              scopeSnapshot: Record<string, string> | null;
               createdAt: string;
               streamObjects: Array<{
                 __typename?: 'StreamObject';
@@ -5431,12 +5034,9 @@ export type GetCopilotPinnedSessionsQuery = {
             docId: string | null;
             parentSessionId: string | null;
             promptName: string;
-            model: string;
-            optionalModels: Array<string>;
             action: string | null;
             pinned: boolean;
             title: string | null;
-            tokens: number;
             createdAt: string;
             updatedAt: string;
             messages: Array<{
@@ -5445,6 +5045,7 @@ export type GetCopilotPinnedSessionsQuery = {
               role: string;
               content: string;
               attachments: Array<string> | null;
+              scopeSnapshot: Record<string, string> | null;
               createdAt: string;
               streamObjects: Array<{
                 __typename?: 'StreamObject';
@@ -5494,12 +5095,9 @@ export type GetCopilotWorkspaceSessionsQuery = {
             docId: string | null;
             parentSessionId: string | null;
             promptName: string;
-            model: string;
-            optionalModels: Array<string>;
             action: string | null;
             pinned: boolean;
             title: string | null;
-            tokens: number;
             createdAt: string;
             updatedAt: string;
             messages: Array<{
@@ -5508,6 +5106,7 @@ export type GetCopilotWorkspaceSessionsQuery = {
               role: string;
               content: string;
               attachments: Array<string> | null;
+              scopeSnapshot: Record<string, string> | null;
               createdAt: string;
               streamObjects: Array<{
                 __typename?: 'StreamObject';
@@ -5558,12 +5157,9 @@ export type GetCopilotHistoriesQuery = {
             docId: string | null;
             parentSessionId: string | null;
             promptName: string;
-            model: string;
-            optionalModels: Array<string>;
             action: string | null;
             pinned: boolean;
             title: string | null;
-            tokens: number;
             createdAt: string;
             updatedAt: string;
             messages: Array<{
@@ -5572,6 +5168,7 @@ export type GetCopilotHistoriesQuery = {
               role: string;
               content: string;
               attachments: Array<string> | null;
+              scopeSnapshot: Record<string, string> | null;
               createdAt: string;
               streamObjects: Array<{
                 __typename?: 'StreamObject';
@@ -5599,34 +5196,6 @@ export type CreateCopilotMessageMutation = {
   createCopilotMessage: string;
 };
 
-export type GetPromptModelsQueryVariables = Exact<{
-  promptName: Scalars['String']['input'];
-}>;
-
-export type GetPromptModelsQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      models: {
-        __typename?: 'CopilotModelsType';
-        defaultModel: string;
-        optionalModels: Array<{
-          __typename?: 'CopilotModelType';
-          id: string;
-          name: string;
-        }>;
-        proModels: Array<{
-          __typename?: 'CopilotModelType';
-          id: string;
-          name: string;
-        }>;
-      };
-    };
-  } | null;
-};
-
 export type CopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;
 
 export type CopilotQuotaQuery = {
@@ -5640,6 +5209,32 @@ export type CopilotQuotaQuery = {
         limit: number | null;
         used: number;
       };
+    };
+  } | null;
+};
+
+export type GetCopilotRouteOptionsQueryVariables = Exact<{
+  promptName: Scalars['String']['input'];
+}>;
+
+export type GetCopilotRouteOptionsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      routeOptions: {
+        __typename?: 'CopilotRouteOptions';
+        routeId: string;
+        defaultTargetId: string | null;
+        choices: Array<{
+          __typename?: 'CopilotRouteTarget';
+          id: string;
+          displayName: string;
+          minimumTier: string;
+          available: boolean;
+        }>;
+      } | null;
     };
   } | null;
 };
@@ -5666,12 +5261,9 @@ export type CreateCopilotSessionWithHistoryMutation = {
     docId: string | null;
     parentSessionId: string | null;
     promptName: string;
-    model: string;
-    optionalModels: Array<string>;
     action: string | null;
     pinned: boolean;
     title: string | null;
-    tokens: number;
     createdAt: string;
     updatedAt: string;
     messages: Array<{
@@ -5680,6 +5272,7 @@ export type CreateCopilotSessionWithHistoryMutation = {
       role: string;
       content: string;
       attachments: Array<string> | null;
+      scopeSnapshot: Record<string, string> | null;
       createdAt: string;
       streamObjects: Array<{
         __typename?: 'StreamObject';
@@ -5742,12 +5335,9 @@ export type GetCopilotLatestDocSessionQuery = {
             docId: string | null;
             parentSessionId: string | null;
             promptName: string;
-            model: string;
-            optionalModels: Array<string>;
             action: string | null;
             pinned: boolean;
             title: string | null;
-            tokens: number;
             createdAt: string;
             updatedAt: string;
             messages: Array<{
@@ -5756,6 +5346,7 @@ export type GetCopilotLatestDocSessionQuery = {
               role: string;
               content: string;
               attachments: Array<string> | null;
+              scopeSnapshot: Record<string, string> | null;
               createdAt: string;
               streamObjects: Array<{
                 __typename?: 'StreamObject';
@@ -5804,12 +5395,9 @@ export type GetCopilotSessionQuery = {
             docId: string | null;
             parentSessionId: string | null;
             promptName: string;
-            model: string;
-            optionalModels: Array<string>;
             action: string | null;
             pinned: boolean;
             title: string | null;
-            tokens: number;
             createdAt: string;
             updatedAt: string;
             messages: Array<{
@@ -5818,6 +5406,7 @@ export type GetCopilotSessionQuery = {
               role: string;
               content: string;
               attachments: Array<string> | null;
+              scopeSnapshot: Record<string, string> | null;
               createdAt: string;
               streamObjects: Array<{
                 __typename?: 'StreamObject';
@@ -5867,12 +5456,9 @@ export type GetCopilotRecentSessionsQuery = {
             docId: string | null;
             parentSessionId: string | null;
             promptName: string;
-            model: string;
-            optionalModels: Array<string>;
             action: string | null;
             pinned: boolean;
             title: string | null;
-            tokens: number;
             createdAt: string;
             updatedAt: string;
             messages: Array<{
@@ -5881,6 +5467,7 @@ export type GetCopilotRecentSessionsQuery = {
               role: string;
               content: string;
               attachments: Array<string> | null;
+              scopeSnapshot: Record<string, string> | null;
               createdAt: string;
               streamObjects: Array<{
                 __typename?: 'StreamObject';
@@ -5940,12 +5527,9 @@ export type GetCopilotSessionsQuery = {
             docId: string | null;
             parentSessionId: string | null;
             promptName: string;
-            model: string;
-            optionalModels: Array<string>;
             action: string | null;
             pinned: boolean;
             title: string | null;
-            tokens: number;
             createdAt: string;
             updatedAt: string;
             messages: Array<{
@@ -5954,6 +5538,7 @@ export type GetCopilotSessionsQuery = {
               role: string;
               content: string;
               attachments: Array<string> | null;
+              scopeSnapshot: Record<string, string> | null;
               createdAt: string;
               streamObjects: Array<{
                 __typename?: 'StreamObject';
@@ -6155,37 +5740,36 @@ export type SubmitTranscriptTaskMutation = {
   } | null;
 };
 
-export type AddWorkspaceEmbeddingFilesMutationVariables = Exact<{
+export type AddWorkspaceArtifactMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   blob: Scalars['Upload']['input'];
 }>;
 
-export type AddWorkspaceEmbeddingFilesMutation = {
+export type AddWorkspaceArtifactMutation = {
   __typename?: 'Mutation';
-  addWorkspaceEmbeddingFiles: {
-    __typename?: 'CopilotWorkspaceFile';
-    fileId: string;
-    fileName: string;
-    blobId: string;
-    mimeType: string;
+  addWorkspaceArtifact: {
+    __typename?: 'CopilotWorkspaceArtifact';
+    artifactId: string;
+    contentHash: string;
+    mediaType: string;
     size: number;
     createdAt: string;
   };
 };
 
-export type GetWorkspaceEmbeddingFilesQueryVariables = Exact<{
+export type GetWorkspaceArtifactsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   pagination: PaginationInput;
 }>;
 
-export type GetWorkspaceEmbeddingFilesQuery = {
+export type GetWorkspaceArtifactsQuery = {
   __typename?: 'Query';
   workspace: {
     __typename?: 'WorkspaceType';
     embedding: {
       __typename?: 'CopilotWorkspaceConfig';
-      files: {
-        __typename?: 'PaginatedCopilotWorkspaceFileType';
+      artifacts: {
+        __typename?: 'PaginatedCopilotWorkspaceArtifactType';
         totalCount: number;
         pageInfo: {
           __typename?: 'PageInfo';
@@ -6193,13 +5777,14 @@ export type GetWorkspaceEmbeddingFilesQuery = {
           hasNextPage: boolean;
         };
         edges: Array<{
-          __typename?: 'CopilotWorkspaceFileTypeEdge';
+          __typename?: 'CopilotWorkspaceArtifactTypeEdge';
           node: {
-            __typename?: 'CopilotWorkspaceFile';
-            fileId: string;
+            __typename?: 'CopilotWorkspaceArtifact';
+            artifactId: string;
+            contentHash: string;
             fileName: string;
-            blobId: string;
-            mimeType: string;
+            embeddingStatus: string;
+            mediaType: string;
             size: number;
             createdAt: string;
           };
@@ -6209,14 +5794,14 @@ export type GetWorkspaceEmbeddingFilesQuery = {
   };
 };
 
-export type RemoveWorkspaceEmbeddingFilesMutationVariables = Exact<{
+export type RemoveWorkspaceArtifactMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
-  fileId: Scalars['String']['input'];
+  artifactId: Scalars['String']['input'];
 }>;
 
-export type RemoveWorkspaceEmbeddingFilesMutation = {
+export type RemoveWorkspaceArtifactMutation = {
   __typename?: 'Mutation';
-  removeWorkspaceEmbeddingFiles: boolean;
+  removeWorkspaceArtifact: boolean;
 };
 
 export type AddWorkspaceEmbeddingIgnoredDocsMutationVariables = Exact<{
@@ -6393,12 +5978,9 @@ export type CopilotChatHistoryFragment = {
   docId: string | null;
   parentSessionId: string | null;
   promptName: string;
-  model: string;
-  optionalModels: Array<string>;
   action: string | null;
   pinned: boolean;
   title: string | null;
-  tokens: number;
   createdAt: string;
   updatedAt: string;
   messages: Array<{
@@ -6407,6 +5989,7 @@ export type CopilotChatHistoryFragment = {
     role: string;
     content: string;
     attachments: Array<string> | null;
+    scopeSnapshot: Record<string, string> | null;
     createdAt: string;
     streamObjects: Array<{
       __typename?: 'StreamObject';
@@ -6448,12 +6031,9 @@ export type PaginatedCopilotChatsFragment = {
       docId: string | null;
       parentSessionId: string | null;
       promptName: string;
-      model: string;
-      optionalModels: Array<string>;
       action: string | null;
       pinned: boolean;
       title: string | null;
-      tokens: number;
       createdAt: string;
       updatedAt: string;
       messages: Array<{
@@ -6462,6 +6042,7 @@ export type PaginatedCopilotChatsFragment = {
         role: string;
         content: string;
         attachments: Array<string> | null;
+        scopeSnapshot: Record<string, string> | null;
         createdAt: string;
         streamObjects: Array<{
           __typename?: 'StreamObject';
@@ -7693,61 +7274,115 @@ export type WorkspaceBlobQuotaQuery = {
   };
 };
 
-export type ClearWorkspaceByokConfigsMutationVariables = Exact<{
+export type DeleteWorkspaceByokProfileMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  profileId: Scalars['ID']['input'];
 }>;
 
-export type ClearWorkspaceByokConfigsMutation = {
+export type DeleteWorkspaceByokProfileMutation = {
   __typename?: 'Mutation';
-  clearWorkspaceByokConfigs: boolean;
+  deleteWorkspaceByokProfile: boolean;
 };
 
-export type DeleteWorkspaceByokConfigMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  id: Scalars['ID']['input'];
+export type ProbeWorkspaceByokProfileMutationVariables = Exact<{
+  input: ProbeWorkspaceByokProfileInput;
 }>;
 
-export type DeleteWorkspaceByokConfigMutation = {
+export type ProbeWorkspaceByokProfileMutation = {
   __typename?: 'Mutation';
-  deleteWorkspaceByokConfig: boolean;
-};
-
-export type ReorderWorkspaceByokConfigsMutationVariables = Exact<{
-  input: ReorderWorkspaceByokConfigsInput;
-}>;
-
-export type ReorderWorkspaceByokConfigsMutation = {
-  __typename?: 'Mutation';
-  reorderWorkspaceByokConfigs: Array<{
-    __typename?: 'WorkspaceByokKeyConfigType';
-    id: string;
-    sortOrder: number;
-  }>;
-};
-
-export type TestWorkspaceByokConfigMutationVariables = Exact<{
-  input: TestWorkspaceByokConfigInput;
-}>;
-
-export type TestWorkspaceByokConfigMutation = {
-  __typename?: 'Mutation';
-  testWorkspaceByokConfig: {
-    __typename?: 'TestWorkspaceByokConfigResultType';
-    ok: boolean;
-    status: ByokKeyTestStatus;
-    message: string | null;
+  probeWorkspaceByokProfile: {
+    __typename?: 'WorkspaceByokProbeResultType';
+    definitionFingerprint: string;
+    stale: boolean;
+    connection: {
+      __typename?: 'WorkspaceByokProbeStatusType';
+      kind: ByokProbeStatusKind;
+      testedAt: string | null;
+      errorKind: string | null;
+    };
+    models: Array<{
+      __typename?: 'WorkspaceByokModelProbeType';
+      modelId: string;
+      checks: Array<{
+        __typename?: 'WorkspaceByokModelProbeCheckType';
+        operation: ByokProbeOperation;
+        status: {
+          __typename?: 'WorkspaceByokProbeStatusType';
+          kind: ByokProbeStatusKind;
+          testedAt: string | null;
+          errorKind: string | null;
+        };
+      }>;
+    }>;
   };
 };
 
-export type UpsertWorkspaceByokConfigMutationVariables = Exact<{
-  input: UpsertWorkspaceByokConfigInput;
+export type ProbeWorkspaceByokDraftMutationVariables = Exact<{
+  input: ProbeWorkspaceByokDraftInput;
 }>;
 
-export type UpsertWorkspaceByokConfigMutation = {
+export type ProbeWorkspaceByokDraftMutation = {
   __typename?: 'Mutation';
-  upsertWorkspaceByokConfig: {
-    __typename?: 'WorkspaceByokKeyConfigType';
-    id: string;
+  probeWorkspaceByokDraft: {
+    __typename?: 'WorkspaceByokProbeResultType';
+    definitionFingerprint: string;
+    stale: boolean;
+    connection: {
+      __typename?: 'WorkspaceByokProbeStatusType';
+      kind: ByokProbeStatusKind;
+      testedAt: string | null;
+      errorKind: string | null;
+    };
+    models: Array<{
+      __typename?: 'WorkspaceByokModelProbeType';
+      modelId: string;
+      checks: Array<{
+        __typename?: 'WorkspaceByokModelProbeCheckType';
+        operation: ByokProbeOperation;
+        status: {
+          __typename?: 'WorkspaceByokProbeStatusType';
+          kind: ByokProbeStatusKind;
+          testedAt: string | null;
+          errorKind: string | null;
+        };
+      }>;
+    }>;
+  };
+};
+
+export type CreateWorkspaceByokProfileMutationVariables = Exact<{
+  input: CreateWorkspaceByokProfileInput;
+}>;
+
+export type CreateWorkspaceByokProfileMutation = {
+  __typename?: 'Mutation';
+  createWorkspaceByokProfile: {
+    __typename?: 'WorkspaceByokProfileType';
+    profileId: string;
+  };
+};
+
+export type ReplaceWorkspaceByokProfileMutationVariables = Exact<{
+  input: ReplaceWorkspaceByokProfileInput;
+}>;
+
+export type ReplaceWorkspaceByokProfileMutation = {
+  __typename?: 'Mutation';
+  replaceWorkspaceByokProfile: {
+    __typename?: 'WorkspaceByokProfileType';
+    profileId: string;
+  };
+};
+
+export type RotateWorkspaceByokCredentialMutationVariables = Exact<{
+  input: RotateWorkspaceByokCredentialInput;
+}>;
+
+export type RotateWorkspaceByokCredentialMutation = {
+  __typename?: 'Mutation';
+  rotateWorkspaceByokCredential: {
+    __typename?: 'WorkspaceByokProfileType';
+    profileId: string;
   };
 };
 
@@ -7762,6 +7397,20 @@ export type CreateWorkspaceByokLocalLeaseMutation = {
     leaseId: string;
     expiresAt: string;
   };
+};
+
+export type ReorderWorkspaceByokProfilesMutationVariables = Exact<{
+  input: ReorderWorkspaceByokProfilesInput;
+}>;
+
+export type ReorderWorkspaceByokProfilesMutation = {
+  __typename?: 'Mutation';
+  reorderWorkspaceByokProfiles: Array<{
+    __typename?: 'WorkspaceByokProfileType';
+    profileId: string;
+    sortOrder: number;
+    revision: number;
+  }>;
 };
 
 export type WorkspaceByokSettingsQueryVariables = Exact<{
@@ -7781,38 +7430,91 @@ export type WorkspaceByokSettingsQuery = {
       entitled: boolean;
       serverEntitled: boolean;
       localEntitled: boolean;
-      entitlementRequired: Array<string>;
-      allowedProviders: Array<ByokProvider>;
-      localStorageSupported: boolean;
-      customEndpointSupported: boolean;
-      privateEndpointSupported: boolean;
-      hasAiPlan: boolean;
-      keys: Array<{
-        __typename?: 'WorkspaceByokKeyConfigType';
-        id: string;
+      policy: {
+        __typename?: 'WorkspaceByokPolicyType';
+        enabled: boolean;
+        allowedProviders: Array<ByokProvider>;
+        customEndpointMode: ByokCustomEndpointMode;
+        privateEndpointSupported: boolean;
+      };
+      catalog: {
+        __typename?: 'WorkspaceByokCatalogType';
+        version: string;
+        providers: Array<{
+          __typename?: 'WorkspaceByokCatalogProviderType';
+          provider: ByokProvider;
+          models: Array<{
+            __typename?: 'WorkspaceByokCatalogModelType';
+            modelId: string;
+            displayName: string;
+            recommended: boolean;
+            capabilities: Array<{
+              __typename?: 'WorkspaceByokCapabilityType';
+              input: Array<ByokModelInput>;
+              output: Array<ByokModelOutput>;
+              features: Array<ByokModelFeature>;
+              attachmentKinds: Array<ByokAttachmentKind>;
+              attachmentSources: Array<ByokAttachmentSource>;
+            }>;
+          }>;
+        }>;
+      };
+      profiles: Array<{
+        __typename?: 'WorkspaceByokProfileType';
+        profileId: string;
         provider: ByokProvider;
         name: string;
         description: string | null;
-        storage: ByokKeyStorage;
-        configured: boolean;
         enabled: boolean;
-        endpoint: string | null;
-        endpointEditable: boolean;
         sortOrder: number;
-        capabilities: Array<string>;
-        testStatus: ByokKeyTestStatus;
-        disabledReason: string | null;
-        lastTestedAt: string | null;
-        lastTestError: string | null;
-        lastUsedAt: string | null;
-        lastErrorAt: string | null;
-        lastError: string | null;
-      }>;
-      warnings: Array<{
-        __typename?: 'WorkspaceByokCapabilityWarningType';
-        featureKind: string;
-        reason: string;
-        requiredProviders: Array<ByokProvider>;
+        revision: number;
+        definition: {
+          __typename?: 'WorkspaceByokProfileDefinitionType';
+          endpoint: {
+            __typename?: 'WorkspaceByokEndpointType';
+            kind: ByokEndpointKind;
+            url: string | null;
+            dialect: ByokOpenAiDialect | null;
+          };
+          models: Array<{
+            __typename?: 'WorkspaceByokModelDeclarationType';
+            modelId: string;
+            enabled: boolean;
+            capabilities: Array<{
+              __typename?: 'WorkspaceByokCapabilityType';
+              input: Array<ByokModelInput>;
+              output: Array<ByokModelOutput>;
+              features: Array<ByokModelFeature>;
+              attachmentKinds: Array<ByokAttachmentKind>;
+              attachmentSources: Array<ByokAttachmentSource>;
+            }>;
+          }>;
+        };
+        validation: {
+          __typename?: 'WorkspaceByokValidationType';
+          definitionFingerprint: string;
+          credentialGeneration: number;
+          connection: {
+            __typename?: 'WorkspaceByokProbeStatusType';
+            kind: ByokProbeStatusKind;
+            testedAt: string | null;
+            errorKind: string | null;
+          };
+          models: Array<{
+            __typename?: 'WorkspaceByokModelProbeType';
+            modelId: string;
+            checks: Array<{
+              __typename?: 'WorkspaceByokModelProbeCheckType';
+              operation: ByokProbeOperation;
+              status: {
+                __typename?: 'WorkspaceByokProbeStatusType';
+                kind: ByokProbeStatusKind;
+                testedAt: string | null;
+                errorKind: string | null;
+              };
+            }>;
+          }>;
+        } | null;
       }>;
     };
     byokUsage: Array<{
@@ -8092,31 +7794,6 @@ export type Queries =
       response: ListCommentsQuery;
     }
   | {
-      name: 'listContextObjectQuery';
-      variables: ListContextObjectQueryVariables;
-      response: ListContextObjectQuery;
-    }
-  | {
-      name: 'listContextQuery';
-      variables: ListContextQueryVariables;
-      response: ListContextQuery;
-    }
-  | {
-      name: 'matchContextQuery';
-      variables: MatchContextQueryVariables;
-      response: MatchContextQuery;
-    }
-  | {
-      name: 'matchWorkspaceDocsQuery';
-      variables: MatchWorkspaceDocsQueryVariables;
-      response: MatchWorkspaceDocsQuery;
-    }
-  | {
-      name: 'matchFilesQuery';
-      variables: MatchFilesQueryVariables;
-      response: MatchFilesQuery;
-    }
-  | {
       name: 'getCopilotHistoryIdsQuery';
       variables: GetCopilotHistoryIdsQueryVariables;
       response: GetCopilotHistoryIdsQuery;
@@ -8142,14 +7819,14 @@ export type Queries =
       response: GetCopilotHistoriesQuery;
     }
   | {
-      name: 'getPromptModelsQuery';
-      variables: GetPromptModelsQueryVariables;
-      response: GetPromptModelsQuery;
-    }
-  | {
       name: 'copilotQuotaQuery';
       variables: CopilotQuotaQueryVariables;
       response: CopilotQuotaQuery;
+    }
+  | {
+      name: 'getCopilotRouteOptionsQuery';
+      variables: GetCopilotRouteOptionsQueryVariables;
+      response: GetCopilotRouteOptionsQuery;
     }
   | {
       name: 'getCopilotLatestDocSessionQuery';
@@ -8177,9 +7854,9 @@ export type Queries =
       response: GetTranscriptTaskQuery;
     }
   | {
-      name: 'getWorkspaceEmbeddingFilesQuery';
-      variables: GetWorkspaceEmbeddingFilesQueryVariables;
-      response: GetWorkspaceEmbeddingFilesQuery;
+      name: 'getWorkspaceArtifactsQuery';
+      variables: GetWorkspaceArtifactsQueryVariables;
+      response: GetWorkspaceArtifactsQuery;
     }
   | {
       name: 'getAllWorkspaceEmbeddingIgnoredDocsQuery';
@@ -8564,56 +8241,6 @@ export type Mutations =
       response: UploadCommentAttachmentMutation;
     }
   | {
-      name: 'addContextBlobMutation';
-      variables: AddContextBlobMutationVariables;
-      response: AddContextBlobMutation;
-    }
-  | {
-      name: 'removeContextBlobMutation';
-      variables: RemoveContextBlobMutationVariables;
-      response: RemoveContextBlobMutation;
-    }
-  | {
-      name: 'addContextCategoryMutation';
-      variables: AddContextCategoryMutationVariables;
-      response: AddContextCategoryMutation;
-    }
-  | {
-      name: 'removeContextCategoryMutation';
-      variables: RemoveContextCategoryMutationVariables;
-      response: RemoveContextCategoryMutation;
-    }
-  | {
-      name: 'createCopilotContextMutation';
-      variables: CreateCopilotContextMutationVariables;
-      response: CreateCopilotContextMutation;
-    }
-  | {
-      name: 'addContextDocMutation';
-      variables: AddContextDocMutationVariables;
-      response: AddContextDocMutation;
-    }
-  | {
-      name: 'removeContextDocMutation';
-      variables: RemoveContextDocMutationVariables;
-      response: RemoveContextDocMutation;
-    }
-  | {
-      name: 'addContextFileMutation';
-      variables: AddContextFileMutationVariables;
-      response: AddContextFileMutation;
-    }
-  | {
-      name: 'removeContextFileMutation';
-      variables: RemoveContextFileMutationVariables;
-      response: RemoveContextFileMutation;
-    }
-  | {
-      name: 'queueWorkspaceEmbeddingMutation';
-      variables: QueueWorkspaceEmbeddingMutationVariables;
-      response: QueueWorkspaceEmbeddingMutation;
-    }
-  | {
       name: 'createCopilotMessageMutation';
       variables: CreateCopilotMessageMutationVariables;
       response: CreateCopilotMessageMutation;
@@ -8659,14 +8286,14 @@ export type Mutations =
       response: SubmitTranscriptTaskMutation;
     }
   | {
-      name: 'addWorkspaceEmbeddingFilesMutation';
-      variables: AddWorkspaceEmbeddingFilesMutationVariables;
-      response: AddWorkspaceEmbeddingFilesMutation;
+      name: 'addWorkspaceArtifactMutation';
+      variables: AddWorkspaceArtifactMutationVariables;
+      response: AddWorkspaceArtifactMutation;
     }
   | {
-      name: 'removeWorkspaceEmbeddingFilesMutation';
-      variables: RemoveWorkspaceEmbeddingFilesMutationVariables;
-      response: RemoveWorkspaceEmbeddingFilesMutation;
+      name: 'removeWorkspaceArtifactMutation';
+      variables: RemoveWorkspaceArtifactMutationVariables;
+      response: RemoveWorkspaceArtifactMutation;
     }
   | {
       name: 'addWorkspaceEmbeddingIgnoredDocsMutation';
@@ -8884,34 +8511,44 @@ export type Mutations =
       response: VerifyEmailMutation;
     }
   | {
-      name: 'clearWorkspaceByokConfigsMutation';
-      variables: ClearWorkspaceByokConfigsMutationVariables;
-      response: ClearWorkspaceByokConfigsMutation;
+      name: 'deleteWorkspaceByokProfileMutation';
+      variables: DeleteWorkspaceByokProfileMutationVariables;
+      response: DeleteWorkspaceByokProfileMutation;
     }
   | {
-      name: 'deleteWorkspaceByokConfigMutation';
-      variables: DeleteWorkspaceByokConfigMutationVariables;
-      response: DeleteWorkspaceByokConfigMutation;
+      name: 'probeWorkspaceByokProfileMutation';
+      variables: ProbeWorkspaceByokProfileMutationVariables;
+      response: ProbeWorkspaceByokProfileMutation;
     }
   | {
-      name: 'reorderWorkspaceByokConfigsMutation';
-      variables: ReorderWorkspaceByokConfigsMutationVariables;
-      response: ReorderWorkspaceByokConfigsMutation;
+      name: 'probeWorkspaceByokDraftMutation';
+      variables: ProbeWorkspaceByokDraftMutationVariables;
+      response: ProbeWorkspaceByokDraftMutation;
     }
   | {
-      name: 'testWorkspaceByokConfigMutation';
-      variables: TestWorkspaceByokConfigMutationVariables;
-      response: TestWorkspaceByokConfigMutation;
+      name: 'createWorkspaceByokProfileMutation';
+      variables: CreateWorkspaceByokProfileMutationVariables;
+      response: CreateWorkspaceByokProfileMutation;
     }
   | {
-      name: 'upsertWorkspaceByokConfigMutation';
-      variables: UpsertWorkspaceByokConfigMutationVariables;
-      response: UpsertWorkspaceByokConfigMutation;
+      name: 'replaceWorkspaceByokProfileMutation';
+      variables: ReplaceWorkspaceByokProfileMutationVariables;
+      response: ReplaceWorkspaceByokProfileMutation;
+    }
+  | {
+      name: 'rotateWorkspaceByokCredentialMutation';
+      variables: RotateWorkspaceByokCredentialMutationVariables;
+      response: RotateWorkspaceByokCredentialMutation;
     }
   | {
       name: 'createWorkspaceByokLocalLeaseMutation';
       variables: CreateWorkspaceByokLocalLeaseMutationVariables;
       response: CreateWorkspaceByokLocalLeaseMutation;
+    }
+  | {
+      name: 'reorderWorkspaceByokProfilesMutation';
+      variables: ReorderWorkspaceByokProfilesMutationVariables;
+      response: ReorderWorkspaceByokProfilesMutation;
     }
   | {
       name: 'setEnableAiMutation';

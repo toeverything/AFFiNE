@@ -483,6 +483,24 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
+                        }
+                      }
                     }
                   }
                 }
@@ -549,6 +567,24 @@
                         }
                       }
                     },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
+                        }
+                      }
+                    },
                     "accountId": {
                       "type": "string",
                       "description": "The account id for the cloudflare r2 storage provider."
@@ -560,24 +596,6 @@
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "The presigned url config for the cloudflare r2 storage provider.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether to use presigned url for the cloudflare r2 storage provider."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "The presigned key for the cloudflare r2 storage provider."
-                        }
-                      }
                     }
                   }
                 }
@@ -712,6 +730,24 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
+                        }
+                      }
                     }
                   }
                 }
@@ -778,6 +814,24 @@
                         }
                       }
                     },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
+                        }
+                      }
+                    },
                     "accountId": {
                       "type": "string",
                       "description": "The account id for the cloudflare r2 storage provider."
@@ -789,24 +843,6 @@
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "The presigned url config for the cloudflare r2 storage provider.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether to use presigned url for the cloudflare r2 storage provider."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "The presigned key for the cloudflare r2 storage provider."
-                        }
-                      }
                     }
                   }
                 }
@@ -1140,152 +1176,8 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>\n@default false",
+          "description": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.\n@default false",
           "default": false
-        },
-        "byok.enabled": {
-          "type": "boolean",
-          "description": "Whether to enable workspace BYOK.\n@default true",
-          "default": true
-        },
-        "byok.allowedProviders": {
-          "type": "array",
-          "description": "The allowlist for workspace BYOK providers.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
-          "default": [
-            "openai",
-            "anthropic",
-            "gemini",
-            "fal"
-          ]
-        },
-        "byok.allowCustomEndpoint": {
-          "type": "boolean",
-          "description": "Whether workspace BYOK custom endpoints are accepted.\n@default false",
-          "default": false
-        },
-        "byok.allowPrivateEndpoint": {
-          "type": "boolean",
-          "description": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network.\n@default false",
-          "default": false
-        },
-        "providers.profiles": {
-          "type": "array",
-          "description": "The profile list for copilot providers.\n@default []",
-          "default": []
-        },
-        "providers.defaults": {
-          "type": "object",
-          "description": "The default provider ids for model output types and global fallback.\n@default {}",
-          "default": {}
-        },
-        "providers.openai": {
-          "type": "object",
-          "description": "The config for the openai provider.\n@default {\"apiKey\":\"\",\"baseURL\":\"https://api.openai.com/v1\"}\n@link https://github.com/openai/openai-node",
-          "default": {
-            "apiKey": "",
-            "baseURL": "https://api.openai.com/v1"
-          }
-        },
-        "providers.cloudflareWorkersAi": {
-          "type": "object",
-          "description": "The config for the Cloudflare Workers AI provider.\n@default {\"apiToken\":\"\",\"accountId\":\"\"}",
-          "default": {
-            "apiToken": "",
-            "accountId": ""
-          }
-        },
-        "providers.fal": {
-          "type": "object",
-          "description": "The config for the fal provider.\n@default {\"apiKey\":\"\"}",
-          "default": {
-            "apiKey": ""
-          }
-        },
-        "providers.gemini": {
-          "type": "object",
-          "description": "The config for the gemini provider.\n@default {\"apiKey\":\"\",\"baseURL\":\"https://generativelanguage.googleapis.com/v1beta\"}",
-          "default": {
-            "apiKey": "",
-            "baseURL": "https://generativelanguage.googleapis.com/v1beta"
-          }
-        },
-        "providers.geminiVertex": {
-          "type": "object",
-          "description": "The config for the google vertex provider.\n@default {}",
-          "properties": {
-            "location": {
-              "type": "string",
-              "description": "The location of the google vertex provider."
-            },
-            "project": {
-              "type": "string",
-              "description": "The project name of the google vertex provider."
-            },
-            "googleAuthOptions": {
-              "type": "object",
-              "description": "The google auth options for the google vertex provider.",
-              "properties": {
-                "credentials": {
-                  "type": "object",
-                  "description": "The credentials for the google vertex provider.",
-                  "properties": {
-                    "client_email": {
-                      "type": "string",
-                      "description": "The client email for the google vertex provider."
-                    },
-                    "private_key": {
-                      "type": "string",
-                      "description": "The private key for the google vertex provider."
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "default": {}
-        },
-        "providers.anthropic": {
-          "type": "object",
-          "description": "The config for the anthropic provider.\n@default {\"apiKey\":\"\",\"baseURL\":\"https://api.anthropic.com/v1\"}",
-          "default": {
-            "apiKey": "",
-            "baseURL": "https://api.anthropic.com/v1"
-          }
-        },
-        "providers.anthropicVertex": {
-          "type": "object",
-          "description": "The config for the google vertex provider.\n@default {}",
-          "properties": {
-            "location": {
-              "type": "string",
-              "description": "The location of the google vertex provider."
-            },
-            "project": {
-              "type": "string",
-              "description": "The project name of the google vertex provider."
-            },
-            "googleAuthOptions": {
-              "type": "object",
-              "description": "The google auth options for the google vertex provider.",
-              "properties": {
-                "credentials": {
-                  "type": "object",
-                  "description": "The credentials for the google vertex provider.",
-                  "properties": {
-                    "client_email": {
-                      "type": "string",
-                      "description": "The client email for the google vertex provider."
-                    },
-                    "private_key": {
-                      "type": "string",
-                      "description": "The private key for the google vertex provider."
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "default": {}
         },
         "unsplash": {
           "type": "object",
@@ -1391,6 +1283,24 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
+                        }
+                      }
                     }
                   }
                 }
@@ -1457,6 +1367,24 @@
                         }
                       }
                     },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
+                        }
+                      }
+                    },
                     "accountId": {
                       "type": "string",
                       "description": "The account id for the cloudflare r2 storage provider."
@@ -1468,24 +1396,6 @@
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "The presigned url config for the cloudflare r2 storage provider.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether to use presigned url for the cloudflare r2 storage provider."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "The presigned key for the cloudflare r2 storage provider."
-                        }
-                      }
                     }
                   }
                 }
@@ -1529,6 +1439,48 @@
               "path": "~/.affine/storage"
             }
           }
+        },
+        "byok.enabled": {
+          "type": "boolean",
+          "description": "Allow workspace owners and admins to configure AI provider keys through AI BYOK.\n@default true",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "boolean",
+          "default": true
+        },
+        "byok.allowedProviders": {
+          "type": "array",
+          "description": "AI providers that workspace owners and admins may add through AI BYOK.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "items": {
+            "enum": [
+              "openai",
+              "anthropic",
+              "gemini",
+              "fal"
+            ],
+            "type": "string"
+          },
+          "title": "Array_of_string",
+          "default": [
+            "openai",
+            "anthropic",
+            "gemini",
+            "fal"
+          ]
+        },
+        "byok.allowCustomEndpoint": {
+          "type": "boolean",
+          "description": "Allow AI BYOK keys to use a custom provider endpoint.\n@default false",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "boolean",
+          "default": false
+        },
+        "byok.allowPrivateEndpoint": {
+          "type": "boolean",
+          "description": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network.\n@default false",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "boolean",
+          "default": false
         }
       }
     },

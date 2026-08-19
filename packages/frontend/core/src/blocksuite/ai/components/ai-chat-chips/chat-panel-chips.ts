@@ -13,7 +13,6 @@ import { isEqual } from 'lodash-es';
 
 import type { ChatChip, DocChip, DocDisplayConfig, FileChip } from './type';
 import {
-  estimateTokenCount,
   getChipKey,
   isAttachmentChip,
   isCollectionChip,
@@ -22,9 +21,6 @@ import {
   isSelectedContextChip,
   isTagChip,
 } from './utils';
-
-// 100k tokens limit for the docs context
-const MAX_TOKEN_COUNT = 100000;
 
 const MAX_CANDIDATES = 3;
 
@@ -149,9 +145,7 @@ export class ChatPanelChips extends SignalWatcher(
               .chip=${chip}
               .independentMode=${this.independentMode}
               .addChip=${this.addChip}
-              .updateChip=${this.updateChip}
               .removeChip=${this.removeChip}
-              .checkTokenLimit=${this._checkTokenLimit}
               .docDisplayConfig=${this.docDisplayConfig}
             ></chat-panel-doc-chip>`;
           }
@@ -200,19 +194,23 @@ export class ChatPanelChips extends SignalWatcher(
           return null;
         }
       )}
-      ${moreCandidates && !isCollapsed
-        ? html`<div
-            class="more-candidate-button"
-            @click=${this._toggleMoreCandidatesMenu}
-          >
-            ${MoreVerticalIcon()}
-          </div>`
-        : nothing}
-      ${isCollapsed
-        ? html`<div class="collapse-button" @click=${this.toggleCollapse}>
-            +${allChips.length - 1}
-          </div>`
-        : nothing}
+      ${
+        moreCandidates && !isCollapsed
+          ? html`<div
+              class="more-candidate-button"
+              @click=${this._toggleMoreCandidatesMenu}
+            >
+              ${MoreVerticalIcon()}
+            </div>`
+          : nothing
+      }
+      ${
+        isCollapsed
+          ? html`<div class="collapse-button" @click=${this.toggleCollapse}>
+              +${allChips.length - 1}
+            </div>`
+          : nothing
+      }
     </div>`;
   }
 
@@ -275,39 +273,6 @@ export class ChatPanelChips extends SignalWatcher(
       abortController: this._abortController,
       closeOnClickAway: true,
     });
-  };
-
-  private readonly _checkTokenLimit = (
-    newChip: DocChip,
-    newTokenCount: number
-  ) => {
-    const estimatedTokens = this.chips.reduce((acc, chip) => {
-      if (isFileChip(chip) || isTagChip(chip) || isCollectionChip(chip)) {
-        return acc;
-      }
-      if (isDocChip(chip) && chip.docId === newChip.docId) {
-        return acc + newTokenCount;
-      }
-
-      if (
-        isDocChip(chip) &&
-        chip.markdown?.value &&
-        chip.state === 'finished'
-      ) {
-        const tokenCount =
-          chip.tokenCount ?? estimateTokenCount(chip.markdown.value);
-        return acc + tokenCount;
-      }
-      if (isSelectedContextChip(chip)) {
-        const tokenCount =
-          estimateTokenCount(chip.combinedElementsMarkdown ?? '') +
-          estimateTokenCount(chip.snapshot ?? '') +
-          estimateTokenCount(chip.html ?? '');
-        return acc + tokenCount;
-      }
-      return acc;
-    }, 0);
-    return estimatedTokens <= MAX_TOKEN_COUNT;
   };
 
   private readonly _updateReferenceDocs = () => {
