@@ -14,6 +14,14 @@ import android.view.inputmethod.InputMethodManager
 import android.webkit.JavascriptInterface
 import com.getcapacitor.CapacitorWebView
 
+private const val AFFINE_IME_TAG = "AffineIME"
+
+private fun logDebug(message: String) {
+    if (BuildConfig.DEBUG) {
+        Log.d(AFFINE_IME_TAG, message)
+    }
+}
+
 class AffineEditorWebView(
     context: Context,
     attrs: AttributeSet,
@@ -21,18 +29,17 @@ class AffineEditorWebView(
     private val imeState = AndroidIMEState()
 
     init {
-        Log.i(TAG, "AffineEditorWebView created sdk=${Build.VERSION.SDK_INT}")
+        logDebug("AffineEditorWebView created sdk=${Build.VERSION.SDK_INT}")
         addJavascriptInterface(AndroidIMEBridge(), "AffineAndroidIME")
     }
 
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
         val connection = super.onCreateInputConnection(outAttrs) ?: return null
-        Log.i(
-            TAG,
+        logDebug(
             "onCreateInputConnection inputType=${outAttrs.inputType.toFlags()} " +
                 "imeOptions=${outAttrs.imeOptions.toFlags()} " +
                 "initialSelection=${outAttrs.initialSelStart},${outAttrs.initialSelEnd} " +
-                "package=${outAttrs.packageName}",
+                "package=${outAttrs.packageName}"
         )
         return AffineInputConnection(
             connection,
@@ -108,10 +115,7 @@ class AffineEditorWebView(
                     })();
                 """.trimIndent(),
                 { result ->
-                    Log.i(
-                        TAG,
-                        "dispatchAndroidEditorInput result=$result inputType=$inputType",
-                    )
+                    logDebug("dispatchAndroidEditorInput result=$result inputType=$inputType")
                 },
             )
         }
@@ -122,7 +126,7 @@ class AffineEditorWebView(
         fun finishComposingSession(reason: String?) {
             val reasonForLog = reason?.take(48) ?: "unknown"
             val isDeleteReason = reason?.contains("deleteContent") == true
-            Log.i(TAG, "finishComposingSessionFromWeb reason=$reasonForLog")
+            logDebug("finishComposingSessionFromWeb reason=$reasonForLog")
             if (!isDeleteReason) {
                 imeState.clearRequestedAtMs = SystemClock.uptimeMillis()
             }
@@ -197,9 +201,8 @@ class AffineEditorWebView(
         override fun setComposingRegion(start: Int, end: Int): Boolean {
             consumeClearRequest()
             val regionText = getTextForRegion(start, end)
-            Log.i(
-                TAG,
-                "setComposingRegion start=$start end=$end text=${regionText.previewForLog()}",
+            logDebug(
+                "setComposingRegion start=$start end=$end text=${regionText.previewForLog()}"
             )
 
             if (!isComposingTextActive) {
@@ -217,26 +220,23 @@ class AffineEditorWebView(
         override fun setComposingText(text: CharSequence?, newCursorPosition: Int): Boolean {
             consumeClearRequest()
             val nextText = text?.toString() ?: ""
-            Log.i(
-                TAG,
+            logDebug(
                 "setComposingText text=${nextText.previewForLog()} " +
-                    "length=${nextText.length} cursor=$newCursorPosition",
+                    "length=${nextText.length} cursor=$newCursorPosition"
             )
 
             if (shouldAdoptExternalRegionForReplacement(nextText)) {
-                Log.i(
-                    TAG,
+                logDebug(
                     "resumeExternalReplayAsReplacement text=${nextText.previewForLog()} " +
-                        "regionText=${externalRegionText.previewForLog()}",
+                        "regionText=${externalRegionText.previewForLog()}"
                 )
                 isDroppingExternalReplay = false
             }
 
             if (shouldDropExternalReplay(nextText)) {
-                Log.w(
-                    TAG,
+                logDebug(
                     "dropExternalComposingReplay text=${nextText.previewForLog()} " +
-                        "regionText=${externalRegionText.previewForLog()}",
+                        "regionText=${externalRegionText.previewForLog()}"
                 )
                 isDroppingExternalReplay = true
                 deleteForShrinkingExternalReplay(nextText.length)
@@ -251,17 +251,15 @@ class AffineEditorWebView(
         override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
             consumeClearRequest()
             val committedText = text?.toString() ?: ""
-            Log.i(
-                TAG,
+            logDebug(
                 "commitText text=${committedText.previewForLog()} " +
-                    "length=${committedText.length} cursor=$newCursorPosition",
+                    "length=${committedText.length} cursor=$newCursorPosition"
             )
 
             if (shouldDeleteExternalRegionOnEmptyCommit(committedText)) {
-                Log.w(
-                    TAG,
+                logDebug(
                     "deleteExternalRegionOnEmptyCommit text=" +
-                        externalRegionText.previewForLog(),
+                        externalRegionText.previewForLog()
                 )
                 deleteRemainingExternalReplayText()
                 clearExternalRegion()
@@ -270,10 +268,7 @@ class AffineEditorWebView(
 
             if (isDroppingExternalReplay) {
                 if (committedText.isEmpty() || committedText == externalRegionText) {
-                    Log.w(
-                        TAG,
-                        "dropExternalReplayCommit text=${committedText.previewForLog()}",
-                    )
+                    logDebug("dropExternalReplayCommit text=${committedText.previewForLog()}")
                     if (committedText.isEmpty()) {
                         deleteRemainingExternalReplayTextAfterShrink()
                     }
@@ -303,7 +298,7 @@ class AffineEditorWebView(
 
         override fun finishComposingText(): Boolean {
             consumeClearRequest()
-            Log.i(TAG, "finishComposingText")
+            logDebug("finishComposingText")
             resetComposingText()
             clearExternalRegion()
             return super.finishComposingText()
@@ -311,13 +306,12 @@ class AffineEditorWebView(
 
         override fun deleteSurroundingText(beforeLength: Int, afterLength: Int): Boolean {
             consumeClearRequest()
-            Log.i(TAG, "deleteSurroundingText before=$beforeLength after=$afterLength")
+            logDebug("deleteSurroundingText before=$beforeLength after=$afterLength")
             recordDeleteIntent(beforeLength, afterLength)
             if (shouldDropNativeDeleteAfterSyntheticExternalDelete(beforeLength, afterLength)) {
-                Log.w(
-                    TAG,
+                logDebug(
                     "dropNativeDeleteAfterSyntheticExternalDelete before=$beforeLength " +
-                        "after=$afterLength",
+                        "after=$afterLength"
                 )
                 clearExternalRegion()
                 return true
@@ -337,13 +331,12 @@ class AffineEditorWebView(
             afterLength: Int,
         ): Boolean {
             consumeClearRequest()
-            Log.i(TAG, "deleteSurroundingTextInCodePoints before=$beforeLength after=$afterLength")
+            logDebug("deleteSurroundingTextInCodePoints before=$beforeLength after=$afterLength")
             recordDeleteIntent(beforeLength, afterLength)
             if (shouldDropNativeDeleteAfterSyntheticExternalDelete(beforeLength, afterLength)) {
-                Log.w(
-                    TAG,
+                logDebug(
                     "dropNativeDeleteInCodePointsAfterSyntheticExternalDelete " +
-                        "before=$beforeLength after=$afterLength",
+                        "before=$beforeLength after=$afterLength"
                 )
                 clearExternalRegion()
                 return true
@@ -360,7 +353,7 @@ class AffineEditorWebView(
 
         override fun setSelection(start: Int, end: Int): Boolean {
             consumeClearRequest()
-            Log.i(TAG, "setSelection start=$start end=$end")
+            logDebug("setSelection start=$start end=$end")
             clearExternalRegion()
             resetComposingText()
             return super.setSelection(start, end)
@@ -368,7 +361,7 @@ class AffineEditorWebView(
 
         override fun performEditorAction(editorAction: Int): Boolean {
             consumeClearRequest()
-            Log.i(TAG, "performEditorAction action=$editorAction")
+            logDebug("performEditorAction action=$editorAction")
             resetComposingText()
             clearExternalRegion()
             return super.performEditorAction(editorAction)
@@ -380,14 +373,13 @@ class AffineEditorWebView(
                     (event.keyCode == KeyEvent.KEYCODE_DEL ||
                         event.keyCode == KeyEvent.KEYCODE_FORWARD_DEL)
             consumeClearRequest(skipNativeFinish = isDeleteActionDown)
-            Log.i(
-                TAG,
+            logDebug(
                 "sendKeyEvent action=${event.action} keyCode=${event.keyCode} " +
-                    "unicode=${event.unicodeChar} repeat=${event.repeatCount}",
+                    "unicode=${event.unicodeChar} repeat=${event.repeatCount}"
             )
             if (event.keyCode == KeyEvent.KEYCODE_DEL) {
                 if (event.action == KeyEvent.ACTION_DOWN) {
-                    Log.i(TAG, "dispatchDeleteKeyEventToEditorInput")
+                    logDebug("dispatchDeleteKeyEventToEditorInput")
                     recordDeleteIntent()
                     dispatchDeleteBackward()
                     isConsumingDeleteKeyEvent = true
@@ -400,7 +392,7 @@ class AffineEditorWebView(
             }
             if (event.keyCode == KeyEvent.KEYCODE_FORWARD_DEL) {
                 if (event.action == KeyEvent.ACTION_DOWN) {
-                    Log.i(TAG, "dispatchForwardDeleteKeyEventToEditorInput")
+                    logDebug("dispatchForwardDeleteKeyEventToEditorInput")
                     recordDeleteIntent()
                     dispatchDeleteForward()
                     isConsumingDeleteKeyEvent = true
@@ -428,11 +420,10 @@ class AffineEditorWebView(
             val deleteCount = previousText.length - prefixLength
             val insertText = nextText.substring(prefixLength)
 
-            Log.i(
-                TAG,
+            logDebug(
                 "applyComposingText previous=${previousText.previewForLog()} " +
                     "next=${nextText.previewForLog()} delete=$deleteCount " +
-                    "insert=${insertText.previewForLog()}",
+                    "insert=${insertText.previewForLog()}"
             )
 
             if (deleteCount > 0) {
@@ -484,10 +475,9 @@ class AffineEditorWebView(
 
             composingText = externalRegionText
             isComposingTextActive = composingText.isNotEmpty()
-            Log.i(
-                TAG,
+            logDebug(
                 "adoptExternalRegionAsComposingText regionText=" +
-                    "${externalRegionText.previewForLog()} next=${nextText.previewForLog()}",
+                    "${externalRegionText.previewForLog()} next=${nextText.previewForLog()}"
             )
         }
 
@@ -535,10 +525,9 @@ class AffineEditorWebView(
                 }
 
             if (deleteCount > 0) {
-                Log.w(
-                    TAG,
+                logDebug(
                     "deleteForShrinkingExternalReplay before=$deleteCount " +
-                        "from=$lastExternalReplayTextLength to=$nextTextLength",
+                        "from=$lastExternalReplayTextLength to=$nextTextLength"
                 )
                 recordDeleteIntent()
                 super.deleteSurroundingText(deleteCount, 0)
@@ -560,9 +549,8 @@ class AffineEditorWebView(
                 return
             }
 
-            Log.w(
-                TAG,
-                "deleteRemainingExternalReplayText before=$lastExternalReplayTextLength",
+            logDebug(
+                "deleteRemainingExternalReplayText before=$lastExternalReplayTextLength"
             )
             recordDeleteIntent()
             super.deleteSurroundingText(lastExternalReplayTextLength, 0)
@@ -622,11 +610,11 @@ class AffineEditorWebView(
             }
 
             handledClearRequestedAtMs = clearRequestedAtMs
-            Log.i(TAG, "clearNativeComposingStateFromWeb")
+            logDebug("clearNativeComposingStateFromWeb")
             resetComposingText()
             clearExternalRegion()
             if (skipNativeFinish) {
-                Log.i(TAG, "skipFinishComposingText clearForDelete=true")
+                logDebug("skipFinishComposingText clearForDelete=true")
                 return
             }
             super.finishComposingText()
@@ -647,7 +635,7 @@ class AffineEditorWebView(
         private fun getExtractedTextSafely() = try {
             getExtractedText(ExtractedTextRequest(), 0)
         } catch (error: Throwable) {
-            Log.w(TAG, "getExtractedTextFailed error=${error.javaClass.simpleName}")
+            logDebug("getExtractedTextFailed error=${error.javaClass.simpleName}")
             null
         }
 
@@ -665,7 +653,6 @@ class AffineEditorWebView(
     }
 
     companion object {
-        private const val TAG = "AffineIME"
         private const val DELETE_RESTART_INPUT_DEBOUNCE_MS = 120L
         private const val EXTERNAL_REGION_REPLAY_WINDOW_MS = 2_500L
         private const val EXTERNAL_REPLAY_DELETE_WINDOW_MS = 3_000L

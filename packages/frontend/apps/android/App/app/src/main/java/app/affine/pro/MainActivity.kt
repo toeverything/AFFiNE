@@ -115,7 +115,9 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
     }
 
     private fun configureEditorWebView() {
-        Log.i("AffineIME", "configureEditorWebView webView=${bridge.webView.javaClass.name}")
+        if (BuildConfig.DEBUG) {
+            Log.d("AffineIME", "configureEditorWebView webView=${bridge.webView.javaClass.name}")
+        }
         bridge.webView.apply {
             overScrollMode = View.OVER_SCROLL_NEVER
             isHorizontalScrollBarEnabled = false
