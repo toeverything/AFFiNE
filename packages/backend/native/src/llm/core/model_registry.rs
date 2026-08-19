@@ -21,7 +21,7 @@ pub fn llm_resolve_model_registry_variant(
     request.backend_kind.as_deref(),
     request.model_id.as_str(),
   )
-  .map_err(crate::llm::host::invalid_arg)?
+  .map_err(crate::llm::invalid_arg)?
   {
     Some((variant, matched_by)) => ModelRegistryResolveResponse {
       variant: Some(to_contract_variant(variant)?),
@@ -44,7 +44,7 @@ pub fn llm_match_model_registry(request: ModelRegistryMatchRequest) -> Result<Mo
     .map_err(crate::llm::map_json_error)?;
   let response = ModelRegistryMatchResponse {
     variant: llm_adapter::core::select_model_registry_variant(&variants, request.backend_kind.as_str(), &cond)
-      .map_err(crate::llm::host::invalid_arg)?
+      .map_err(crate::llm::invalid_arg)?
       .map(to_contract_variant)
       .transpose()?,
   };
@@ -81,12 +81,12 @@ mod tests {
 
     let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("gemini_api".to_string()),
-      model_id: "gemini-3.6-flash".to_string(),
+      model_id: "gemini-3.7-flash".to_string(),
     })
     .unwrap();
 
     assert_eq!(response.matched_by.as_deref(), Some("raw_model_id"));
-    assert_eq!(response.variant.unwrap().raw_model_id, "gemini-3.6-flash");
+    assert_eq!(response.variant.unwrap().raw_model_id, "gemini-3.7-flash");
   }
 
   #[test]
@@ -141,7 +141,7 @@ mod tests {
     let variant = response.variant.unwrap();
 
     assert_eq!(variant.raw_model_id, "deepseek-v4-pro");
-    assert_eq!(variant.request_layer.as_deref(), Some("chat_completions_no_v1"));
+    assert_eq!(variant.request_layer.as_deref(), Some("chat_completions"));
 
     let legacy = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("deepseek".to_string()),
@@ -301,7 +301,7 @@ mod tests {
         attachment_kinds: None,
         attachment_source_kinds: None,
         has_remote_attachments: None,
-        model_id: Some("gemini-3.6-flash".to_string()),
+        model_id: Some("gemini-3.7-flash".to_string()),
         output_type: Some("image".to_string()),
       },
     })

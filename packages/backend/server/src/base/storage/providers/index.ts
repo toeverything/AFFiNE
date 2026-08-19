@@ -127,12 +127,12 @@ const S3ConfigSchema: JSONSchema = {
         urlPrefix: {
           type: 'string',
           description:
-            'Optional custom origin for browser upload URLs. Provider presigned URLs also use this origin when signKey is not configured.',
+            'Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured.',
         },
         signKey: {
           type: 'string',
           description:
-            'Optional HMAC key for signed upload URLs. Without urlPrefix, upload URLs use the server origin.',
+            'Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix.',
         },
       },
     },

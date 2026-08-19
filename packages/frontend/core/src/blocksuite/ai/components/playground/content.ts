@@ -1,5 +1,7 @@
-import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type {
+  AIModelService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
 import type {
   ServerService,
   SubscriptionService,
@@ -104,13 +106,13 @@ export class PlaygroundContent extends SignalWatcher(
   accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
   accessor affineWorkspaceDialogService!: WorkspaceDialogService;
 
   @property({ attribute: false })
   accessor subscriptionService!: SubscriptionService;
-
-  @property({ attribute: false })
-  accessor aiModelService!: AIModelService;
 
   @state()
   accessor sessions: CopilotChatHistoryFragment[] = [];
@@ -319,11 +321,11 @@ export class PlaygroundContent extends SignalWatcher(
       }
     };
 
-    // oxlint-disable-next-line @typescript-eslint/no-misused-promises
+    // oxlint-disable-next-line typescript/no-misused-promises
     button.addEventListener('click', handleSendClick);
 
     this._disposables.add(() => {
-      // oxlint-disable-next-line @typescript-eslint/no-misused-promises
+      // oxlint-disable-next-line typescript/no-misused-promises
       button.removeEventListener('click', handleSendClick);
     });
   }
@@ -380,10 +382,11 @@ export class PlaygroundContent extends SignalWatcher(
                 .affineThemeService=${this.affineThemeService}
                 .notificationService=${this.notificationService}
                 .aiToolsConfigService=${this.aiToolsConfigService}
-                .affineWorkspaceDialogService=${this
-                  .affineWorkspaceDialogService}
-                .subscriptionService=${this.subscriptionService}
                 .aiModelService=${this.aiModelService}
+                .affineWorkspaceDialogService=${
+                  this.affineWorkspaceDialogService
+                }
+                .subscriptionService=${this.subscriptionService}
                 .addChat=${this.addChat}
               ></playground-chat>
             </div>

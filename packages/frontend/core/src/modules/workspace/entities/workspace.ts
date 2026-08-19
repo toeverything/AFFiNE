@@ -57,7 +57,6 @@ export class Workspace extends Entity {
             });
             return id;
           },
-          /* eslint-disable rxjs/finnish */
           blobState$: key => this.engine.blob.blobState$(key),
           upload: key => this.engine.blob.upload(key),
           name: 'blob',

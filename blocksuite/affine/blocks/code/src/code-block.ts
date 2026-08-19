@@ -489,9 +489,11 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
           }}
         >
         </rich-text>
-        ${collapsed
-          ? html`<div class="code-collapsed-fade" aria-hidden="true"></div>`
-          : nothing}
+        ${
+          collapsed
+            ? html`<div class="code-collapsed-fade" aria-hidden="true"></div>`
+            : nothing
+        }
         <div
           style=${styleMap({
             display: shouldRenderPreview && !collapsed ? undefined : 'none',

@@ -6,11 +6,10 @@ import {
 import { WorkspaceServerService } from '@affine/core/modules/cloud';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import {
-  ByokKeyStorage,
-  clearWorkspaceByokConfigsMutation as clearByokMutation,
-  deleteWorkspaceByokConfigMutation as deleteByokMutation,
+  deleteWorkspaceByokProfileMutation,
   type GraphQLQuery,
-  ServerDeploymentType,
+  probeWorkspaceByokProfileMutation,
+  reorderWorkspaceByokProfilesMutation,
   workspaceByokSettingsQuery as byokSettingsQuery,
 } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -29,26 +28,11 @@ import {
   readLocalKeys,
   reorderLocalKeys,
 } from './local-storage';
-import { byokT } from './metadata';
-import type {
-  ByokKey,
-  ByokSettings,
-  ByokStorage,
-  ByokUsagePoint,
-  GqlFn,
-} from './types';
+import { byokT, capabilitiesFor } from './metadata';
+import { probeChecks } from './model-utils';
+import type { ByokKey, ByokSettings, ByokUsagePoint, GqlFn } from './types';
+import { ByokStorage } from './types';
 import { UsagePanel } from './usage';
-
-const reorderByokMutation = {
-  id: 'reorderWorkspaceByokConfigsMutation',
-  op: 'reorderWorkspaceByokConfigs',
-  query: `mutation reorderWorkspaceByokConfigs($input: ReorderWorkspaceByokConfigsInput!) {
-    reorderWorkspaceByokConfigs(input: $input) {
-      id
-      sortOrder
-    }
-  }`,
-} satisfies GraphQLQuery;
 
 export const WorkspaceByokSetting = () => {
   const t = useI18n();
@@ -59,6 +43,7 @@ export const WorkspaceByokSetting = () => {
   const [localKeys, setLocalKeys] = useState<ByokKey[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<ByokKey | null>(null);
+  const [testingKeyId, setTestingKeyId] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<{
     id: string;
     storage: ByokStorage;
@@ -83,8 +68,27 @@ export const WorkspaceByokSetting = () => {
       localByokStorageSupported(),
       readLocalKeys(workspace.id),
     ]);
+    const serverKeys = data.workspace.byokSettings.profiles.map(profile => {
+      const key: ByokKey = {
+        id: profile.profileId,
+        provider: profile.provider,
+        name: profile.name,
+        description: profile.description,
+        storage: ByokStorage.server,
+        configured: true,
+        enabled: profile.enabled,
+        sortOrder: profile.sortOrder,
+        revision: profile.revision,
+        definition: profile.definition,
+        capabilities: [],
+        validation: profile.validation,
+      };
+      key.capabilities = capabilitiesFor(key);
+      return key;
+    });
     setSettings({
       ...data.workspace.byokSettings,
+      keys: serverKeys,
       localStorageSupported:
         data.workspace.byokSettings.localEntitled && localStorageSupported,
     });
@@ -105,44 +109,55 @@ export const WorkspaceByokSetting = () => {
   const keys = useMemo(() => {
     return [...localKeys, ...(settings?.keys ?? [])].toSorted((a, b) => {
       if (a.storage !== b.storage) {
-        return a.storage === ByokKeyStorage.local ? -1 : 1;
+        return a.storage === ByokStorage.local ? -1 : 1;
       }
       return a.sortOrder - b.sortOrder;
     });
   }, [localKeys, settings?.keys]);
-  const canAddServerKey = settings?.serverEntitled ?? false;
+  const policyAllowsCreation =
+    (settings?.policy.enabled ?? false) &&
+    (settings?.policy.allowedProviders.length ?? 0) > 0;
+  const canAddServerKey =
+    (settings?.serverEntitled ?? false) && policyAllowsCreation;
   const canAddLocalKey =
     (settings?.localEntitled ?? false) &&
-    (settings?.localStorageSupported ?? false);
+    (settings?.localStorageSupported ?? false) &&
+    policyAllowsCreation;
   const canManageKeys = canAddServerKey || canAddLocalKey;
-  const isSelfHosted =
-    workspaceServer.server?.config$.value.type ===
-    ServerDeploymentType.Selfhosted;
 
   const clearAll = useCallback(async () => {
     if (!settings) {
       return;
     }
-    if (!workspaceServer.server && settings.serverEntitled) {
-      return;
-    }
+    const deletions: Promise<unknown>[] = [];
     if (settings.serverEntitled && workspaceServer.server) {
       const gql = workspaceServer.server.gql as GqlFn;
-      await gql({
-        query: clearByokMutation,
-        variables: { workspaceId: workspace.id },
-      });
+      deletions.push(
+        ...settings.keys.map(key =>
+          gql({
+            query: deleteWorkspaceByokProfileMutation,
+            variables: { workspaceId: workspace.id, profileId: key.id },
+          })
+        )
+      );
     }
     if (settings.localStorageSupported) {
-      await clearLocalKeys(workspace.id);
+      deletions.push(clearLocalKeys(workspace.id));
     }
-    setLocalKeys([]);
+    const results = await Promise.allSettled(deletions);
     await load();
+    if (
+      results.some(
+        result => result.status === 'rejected' || result.value === false
+      )
+    ) {
+      throw new Error('Some BYOK profiles could not be deleted');
+    }
   }, [load, settings, workspace.id, workspaceServer.server]);
 
   const deleteKey = useCallback(
     async (key: ByokKey) => {
-      if (key.storage === ByokKeyStorage.local) {
+      if (key.storage === ByokStorage.local) {
         await deleteLocalKey(workspace.id, key.id);
         setLocalKeys(await readLocalKeys(workspace.id));
         return;
@@ -154,10 +169,35 @@ export const WorkspaceByokSetting = () => {
           }) => Promise<unknown>)
         | undefined;
       await gql?.({
-        query: deleteByokMutation,
-        variables: { workspaceId: workspace.id, id: key.id },
+        query: deleteWorkspaceByokProfileMutation,
+        variables: { workspaceId: workspace.id, profileId: key.id },
       });
       await load();
+    },
+    [load, workspace.id, workspaceServer.server]
+  );
+
+  const testKey = useCallback(
+    async (key: ByokKey) => {
+      if (key.storage !== ByokStorage.server || !workspaceServer.server) {
+        return;
+      }
+      setTestingKeyId(key.id);
+      try {
+        await (workspaceServer.server.gql as GqlFn)({
+          query: probeWorkspaceByokProfileMutation,
+          variables: {
+            input: {
+              workspaceId: workspace.id,
+              profileId: key.id,
+              checks: probeChecks(key.definition.models, false),
+            },
+          },
+        });
+        await load();
+      } finally {
+        setTestingKeyId(null);
+      }
     },
     [load, workspace.id, workspaceServer.server]
   );
@@ -187,38 +227,44 @@ export const WorkspaceByokSetting = () => {
       nextBucket.splice(toIndex, 0, moved);
       const nextBucketIds = nextBucket.map(key => key.id);
 
-      if (targetKey.storage === ByokKeyStorage.local) {
+      if (targetKey.storage === ByokStorage.local) {
         setLocalKeys(await reorderLocalKeys(workspace.id, nextBucketIds));
-        return;
-      }
-
-      const gql = workspaceServer.server?.gql as
-        | ((input: {
-            query: GraphQLQuery;
-            variables?: Record<string, unknown>;
-          }) => Promise<unknown>)
-        | undefined;
-      await gql?.({
-        query: reorderByokMutation,
-        variables: {
-          input: {
-            workspaceId: workspace.id,
-            storage: ByokKeyStorage.server,
-            ids: nextBucketIds,
+      } else if (workspaceServer.server) {
+        if (nextBucket.some(key => key.revision === undefined)) {
+          notify.error({
+            title: byokT(t, 'notify.reload-required.title'),
+            message: byokT(t, 'notify.reload-required.message'),
+          });
+          await load();
+          return;
+        }
+        await (workspaceServer.server.gql as GqlFn)({
+          query: reorderWorkspaceByokProfilesMutation,
+          variables: {
+            input: {
+              workspaceId: workspace.id,
+              profiles: nextBucket.flatMap(key =>
+                key.revision === undefined
+                  ? []
+                  : [
+                      {
+                        profileId: key.id,
+                        expectedRevision: key.revision,
+                      },
+                    ]
+              ),
+            },
           },
-        },
-      });
-      await load();
+        });
+        await load();
+      }
     },
     [draggingKey, keys, load, t, workspace.id, workspaceServer.server]
   );
 
   if (!settings) {
     return (
-      <SettingHeader
-        title={byokT(t, 'title-beta')}
-        subtitle={byokT(t, 'loading')}
-      />
+      <SettingHeader title={byokT(t, 'title')} subtitle={byokT(t, 'loading')} />
     );
   }
 
@@ -226,7 +272,7 @@ export const WorkspaceByokSetting = () => {
     return (
       <>
         <SettingHeader
-          title={byokT(t, 'title-beta')}
+          title={byokT(t, 'title')}
           subtitle={byokT(t, 'subtitle')}
         />
         <SettingWrapper>
@@ -237,13 +283,7 @@ export const WorkspaceByokSetting = () => {
                 {byokT(t, 'locked.description')}
               </div>
             </div>
-            <div className={styles.tags}>
-              {settings.entitlementRequired.map(plan => (
-                <span className={styles.tag} key={plan}>
-                  {plan}
-                </span>
-              ))}
-            </div>
+            <div className={styles.tags}></div>
           </div>
         </SettingWrapper>
       </>
@@ -252,21 +292,9 @@ export const WorkspaceByokSetting = () => {
 
   return (
     <>
-      <SettingHeader
-        title={byokT(t, 'title-beta')}
-        subtitle={byokT(t, 'header')}
-      />
+      <SettingHeader title={byokT(t, 'title')} subtitle={byokT(t, 'header')} />
       <SettingWrapper>
         <div className={styles.stack}>
-          {settings.hasAiPlan ? (
-            <div className={styles.notice}>
-              <div className={styles.title}>{byokT(t, 'notice.title')}</div>
-              <div className={styles.description}>
-                {byokT(t, 'notice.description')}
-              </div>
-            </div>
-          ) : null}
-
           <div className={styles.panel} data-testid="workspace-byok-keys">
             <div className={styles.panelHeader}>
               <div>
@@ -289,6 +317,7 @@ export const WorkspaceByokSetting = () => {
             {keys.length ? (
               <KeyList
                 keys={keys}
+                testingKeyId={testingKeyId}
                 onEdit={key => {
                   setEditingKey(key);
                   setModalOpen(true);
@@ -298,6 +327,15 @@ export const WorkspaceByokSetting = () => {
                     logByokError('Failed to delete BYOK key', error);
                     notify.error({
                       title: byokT(t, 'notify.delete-failed.title'),
+                      message: byokT(t, 'notify.operation-failed.message'),
+                    });
+                  });
+                }}
+                onTest={key => {
+                  testKey(key).catch(error => {
+                    logByokError('Failed to test BYOK provider', error);
+                    notify.error({
+                      title: byokT(t, 'notify.test-failed.title'),
                       message: byokT(t, 'notify.operation-failed.message'),
                     });
                   });
@@ -326,7 +364,7 @@ export const WorkspaceByokSetting = () => {
             )}
           </div>
 
-          <CoveragePanel keys={keys} settings={settings} />
+          <CoveragePanel keys={keys} />
 
           <UsagePanel
             keys={keys}
@@ -360,7 +398,6 @@ export const WorkspaceByokSetting = () => {
         localStorageSupported={settings.localStorageSupported}
         canAddServerKey={canAddServerKey}
         canAddLocalKey={canAddLocalKey}
-        isSelfHosted={isSelfHosted}
         gql={workspaceServer.server?.gql as GqlFn | undefined}
       />
     </>

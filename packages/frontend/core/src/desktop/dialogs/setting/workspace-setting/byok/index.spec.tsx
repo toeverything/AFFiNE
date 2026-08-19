@@ -8,29 +8,15 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
-import type * as Infra from '@toeverything/infra';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-
-const gqlMock = vi.hoisted(() => vi.fn());
-const workspaceState = vi.hoisted(() => ({
-  id: 'workspace-1',
-}));
-const electronApiState = vi.hoisted(() => ({
-  apis: undefined as
-    | {
-        byokStorage?: {
-          isSupported: () => Promise<boolean>;
-          listWorkspaceKeys: (workspaceId: string) => Promise<unknown[]>;
-        };
-      }
-    | undefined,
-}));
-const WorkspaceServerServiceToken = vi.hoisted(
-  () => class WorkspaceServerService {}
-);
-const WorkspaceServiceToken = vi.hoisted(() => class WorkspaceService {});
+import type {
+  ButtonHTMLAttributes,
+  ChangeEvent,
+  InputHTMLAttributes,
+  ReactNode,
+} from 'react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 const ByokProvider = vi.hoisted(() => ({
   openai: 'openai',
@@ -38,35 +24,60 @@ const ByokProvider = vi.hoisted(() => ({
   gemini: 'gemini',
   fal: 'fal',
 }));
-const ByokKeyStorage = vi.hoisted(() => ({
-  server: 'server',
-  local: 'local',
+const ByokEnums = vi.hoisted(() => ({
+  ByokCustomEndpointMode: {
+    unavailable: 'unavailable',
+    disabled: 'disabled',
+    enabled: 'enabled',
+  },
+  ByokEndpointKind: {
+    provider_default: 'provider_default',
+    openai_compatible: 'openai_compatible',
+  },
+  ByokOpenAiDialect: {
+    responses: 'responses',
+    chat_completions: 'chat_completions',
+  },
+  ByokModelInput: {
+    text: 'text',
+    image: 'image',
+    audio: 'audio',
+    file: 'file',
+  },
+  ByokModelOutput: {
+    text: 'text',
+    object: 'object',
+    structured: 'structured',
+    embedding: 'embedding',
+    rerank: 'rerank',
+    image: 'image',
+  },
+  ByokModelFeature: {
+    tool_calling: 'tool_calling',
+    reasoning: 'reasoning',
+    web_search: 'web_search',
+  },
+  ByokAttachmentKind: { image: 'image', audio: 'audio', file: 'file' },
+  ByokAttachmentSource: {
+    url: 'url',
+    data: 'data',
+    bytes: 'bytes',
+    file_handle: 'file_handle',
+  },
+  ByokProbeOperation: {
+    chat: 'chat',
+    structured: 'structured',
+    tool_calling: 'tool_calling',
+    vision: 'vision',
+    embedding: 'embedding',
+    rerank: 'rerank',
+    image: 'image',
+    transcript: 'transcript',
+  },
 }));
-const ByokKeyTestStatus = vi.hoisted(() => ({
-  untested: 'untested',
-  passed: 'passed',
-  failed: 'failed',
-}));
-const ServerDeploymentType = vi.hoisted(() => ({
-  Affine: 'Affine',
-  Selfhosted: 'Selfhosted',
-}));
-
-const workspaceByokSettingsQuery = vi.hoisted(() =>
-  Symbol('workspaceByokSettingsQuery')
-);
-const testWorkspaceByokConfigMutation = vi.hoisted(() =>
-  Symbol('testWorkspaceByokConfigMutation')
-);
-const upsertWorkspaceByokConfigMutation = vi.hoisted(() =>
-  Symbol('upsertWorkspaceByokConfigMutation')
-);
-const clearWorkspaceByokConfigsMutation = vi.hoisted(() =>
-  Symbol('clearWorkspaceByokConfigsMutation')
-);
-const deleteWorkspaceByokConfigMutation = vi.hoisted(() =>
-  Symbol('deleteWorkspaceByokConfigMutation')
-);
+const createMutation = vi.hoisted(() => Symbol('create'));
+const probeMutation = vi.hoisted(() => Symbol('probe'));
+const replaceMutation = vi.hoisted(() => Symbol('replace'));
 
 vi.mock('@affine/component', () => ({
   Button: ({
@@ -75,632 +86,499 @@ vi.mock('@affine/component', () => ({
   }: ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) => (
     <button {...props}>{children}</button>
   ),
-  DragHandle: () => <span>drag-handle</span>,
+  Input: ({
+    onChange,
+    size: _size,
+    ...props
+  }: Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size'> & {
+    onChange?: (value: string) => void;
+    size?: string;
+  }) => (
+    <input
+      {...props}
+      onChange={event => onChange?.(event.currentTarget.value)}
+    />
+  ),
+  Checkbox: ({
+    checked,
+    onChange,
+    label,
+    name,
+    'aria-label': ariaLabel,
+  }: {
+    checked: boolean;
+    onChange?: (event: ChangeEvent<HTMLInputElement>, checked: boolean) => void;
+    label?: string;
+    name?: string;
+    'aria-label'?: string;
+  }) => (
+    <span>
+      <input
+        aria-label={ariaLabel ?? label}
+        name={name}
+        type="checkbox"
+        checked={checked}
+        onChange={event => onChange?.(event, event.currentTarget.checked)}
+      />
+      {label}
+    </span>
+  ),
+  Modal: ({ open, children }: { open: boolean; children: ReactNode }) =>
+    open ? <div role="dialog">{children}</div> : null,
+  Switch: ({
+    checked,
+    onChange,
+    ...props
+  }: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    'aria-label'?: string;
+  }) => (
+    <input
+      {...props}
+      type="checkbox"
+      checked={checked}
+      onChange={event => onChange(event.currentTarget.checked)}
+    />
+  ),
+  DragHandle: () => <span>drag</span>,
   IconButton: ({ title, onClick }: { title: string; onClick?: () => void }) => (
     <button onClick={onClick}>{title}</button>
   ),
-  Modal: ({
-    open,
-    title,
+  Menu: ({ children, items }: { children: ReactNode; items: ReactNode }) => (
+    <div>
+      {children}
+      {items}
+    </div>
+  ),
+  MenuItem: ({
     children,
+    disabled,
+    onSelect,
   }: {
-    open: boolean;
-    title: string;
     children: ReactNode;
-  }) =>
-    open ? (
-      <div role="dialog" aria-label={title}>
-        {children}
-      </div>
-    ) : null,
-  notify: {
-    error: vi.fn(),
-  },
-}));
-
-vi.mock('@affine/component/setting-components', () => ({
-  SettingHeader: ({
-    title,
-    subtitle,
-  }: {
-    title: string;
-    subtitle?: string;
+    disabled?: boolean;
+    onSelect?: () => void;
   }) => (
-    <header>
-      <h1>{title}</h1>
-      {subtitle ? <p>{subtitle}</p> : null}
-    </header>
+    <button disabled={disabled} onClick={onSelect}>
+      {children}
+    </button>
   ),
-  SettingWrapper: ({ children }: { children: ReactNode }) => (
-    <main>{children}</main>
-  ),
-}));
-
-vi.mock('@affine/core/modules/cloud', () => ({
-  WorkspaceServerService: WorkspaceServerServiceToken,
-}));
-
-vi.mock('@affine/core/modules/workspace', () => ({
-  WorkspaceService: WorkspaceServiceToken,
-}));
-
-vi.mock('@affine/electron-api', () => ({
-  get apis() {
-    return electronApiState.apis;
-  },
+  notify: { error: vi.fn() },
 }));
 
 vi.mock('@affine/graphql', () => ({
-  ByokKeyStorage,
-  ByokKeyTestStatus,
   ByokProvider,
-  ServerDeploymentType,
-  clearWorkspaceByokConfigsMutation,
-  deleteWorkspaceByokConfigMutation,
-  testWorkspaceByokConfigMutation,
-  upsertWorkspaceByokConfigMutation,
-  workspaceByokSettingsQuery,
+  ...ByokEnums,
+  createWorkspaceByokProfileMutation: createMutation,
+  probeWorkspaceByokDraftMutation: probeMutation,
+  replaceWorkspaceByokProfileMutation: replaceMutation,
 }));
 
-vi.mock('@affine/i18n', () => {
-  const messages: Record<string, string> = {
-    'com.affine.settings.workspace.byok.action.add-key': 'Add key',
-    'com.affine.settings.workspace.byok.action.edit': 'Edit',
-    'com.affine.settings.workspace.byok.action.delete': 'Delete',
-    'com.affine.settings.workspace.byok.action.test-key': 'Test key',
-    'com.affine.settings.workspace.byok.action.save-key': 'Save key',
-    'com.affine.settings.workspace.byok.action.cancel': 'Cancel',
-    'com.affine.settings.workspace.byok.action.clear-all':
-      'Clear all BYOK keys',
-    'com.affine.settings.workspace.byok.field.api-key': 'API key',
-    'com.affine.settings.workspace.byok.field.storage': 'Key storage',
-    'com.affine.settings.workspace.byok.placeholder.key-name': 'Primary',
-    'com.affine.settings.workspace.byok.status.key-verified': 'Key verified',
-    'com.affine.settings.workspace.byok.status.disabled-after-failure':
-      'Disabled after failure',
-    'com.affine.settings.workspace.byok.storage.local': 'Local',
-    'com.affine.settings.workspace.byok.storage.server': 'Server',
-    'com.affine.settings.workspace.byok.storage.local-this-device':
-      'Local (this device)',
-    'com.affine.settings.workspace.byok.storage.local-desktop-only':
-      'Local (Desktop only)',
-    'com.affine.settings.workspace.byok.usage.tokens': '{{count}} tokens',
-    'com.affine.settings.workspace.byok.notify.operation-failed.message':
-      'Please try again.',
-    'com.affine.settings.workspace.byok.notify.test-failed.title':
-      'Key test failed',
-    'com.affine.settings.workspace.byok.notify.load-failed.title':
-      'BYOK settings not loaded',
-    'com.affine.settings.workspace.byok.notify.save-failed.title':
-      'BYOK key not saved',
-    'com.affine.settings.workspace.byok.notify.delete-failed.title':
-      'BYOK key not deleted',
-    'com.affine.settings.workspace.byok.notify.reorder-failed.title':
-      'BYOK keys not reordered',
-    'com.affine.settings.workspace.byok.notify.clear-failed.title':
-      'BYOK keys not cleared',
-  };
-  const translate = (key: string, options?: Record<string, unknown>) => {
-    let message = messages[key] ?? key;
-    for (const [name, value] of Object.entries(options ?? {})) {
-      message = message.replaceAll(`{{${name}}}`, String(value));
-    }
-    return message;
-  };
-  const t = new Proxy(
-    {
-      t: translate,
-    },
-    {
-      get(target, key: string) {
-        if (key in target) {
-          return target[key as keyof typeof target];
-        }
-        return (options?: Record<string, unknown>) => translate(key, options);
-      },
-    }
-  );
-
-  return {
-    useI18n: () => t,
-  };
-});
-
-vi.mock('@blocksuite/icons/rc', () => ({
-  ChatWithAiIcon: () => <span>chat-ai</span>,
-  DeleteIcon: () => <span>delete</span>,
-  EditIcon: () => <span>edit</span>,
-  ImageIcon: () => <span>image</span>,
-  PenIcon: () => <span>pen</span>,
-  TocIcon: () => <span>toc</span>,
-  TranscriptWithAiIcon: () => <span>transcript</span>,
+vi.mock('@affine/i18n', () => ({
+  useI18n: () => ({ t: (key: string) => key.split('.').at(-1) ?? key }),
 }));
 
-vi.mock('@toeverything/infra', async importOriginal => {
-  const actual = await importOriginal<typeof Infra>();
+import { AddKeyModal } from './add-key-modal';
+import { endpointHintKey } from './metadata';
 
-  return {
-    ...actual,
-    useService: (token: unknown) => {
-      if (token === WorkspaceServerServiceToken) {
-        return {
-          server: {
-            ['config$']: { value: { type: ServerDeploymentType.Affine } },
-            gql: gqlMock,
-          },
-        };
-      }
-      if (token === WorkspaceServiceToken) {
-        return {
-          workspace: workspaceState,
-        };
-      }
-      return {};
-    },
-  };
-});
+const textCapability = {
+  input: ['text'],
+  output: ['text'],
+  features: [],
+  attachmentKinds: [],
+  attachmentSources: [],
+};
 
-import { WorkspaceByokSetting } from '.';
-import { logByokError } from './errors';
-import { UsagePanel } from './usage';
-
-function settings(overrides: Record<string, unknown> = {}) {
+function settings(
+  customEndpointMode = ByokEnums.ByokCustomEndpointMode.enabled
+) {
   return {
     workspaceId: 'workspace-1',
     entitled: true,
     serverEntitled: true,
     localEntitled: false,
-    entitlementRequired: ['Pro', 'Team', 'Believer'],
-    allowedProviders: ['openai', 'anthropic', 'gemini', 'fal'],
+    policy: {
+      enabled: true,
+      allowedProviders: Object.values(ByokProvider),
+      customEndpointMode,
+      privateEndpointSupported: false,
+    },
     localStorageSupported: false,
-    customEndpointSupported: false,
-    hasAiPlan: true,
     keys: [],
-    warnings: [],
-    ...overrides,
-  };
-}
-
-function byokKey(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 'server-key',
-    provider: ByokProvider.openai,
-    name: 'Primary',
-    description: 'Workspace fallback key',
-    storage: ByokKeyStorage.server,
-    configured: true,
-    enabled: true,
-    endpoint: null,
-    endpointEditable: false,
-    sortOrder: 0,
-    capabilities: ['Text', 'Image input', 'Actions', 'Image generate'],
-    testStatus: ByokKeyTestStatus.passed,
-    disabledReason: null,
-    lastTestedAt: null,
-    lastTestError: null,
-    lastUsedAt: null,
-    lastErrorAt: null,
-    lastError: null,
-    ...overrides,
-  };
-}
-
-function settingsResponse(overrides: Record<string, unknown> = {}) {
-  return {
-    workspace: {
-      byokSettings: settings(overrides),
-      byokUsage: [],
+    catalog: {
+      version: 'catalog-1',
+      providers: [
+        {
+          provider: ByokProvider.openai,
+          models: [
+            {
+              modelId: 'model-a',
+              displayName: 'Model A',
+              recommended: true,
+              capabilities: [textCapability],
+            },
+            {
+              modelId: 'model-b',
+              displayName: 'Model B',
+              recommended: false,
+              capabilities: [textCapability],
+            },
+          ],
+        },
+      ],
     },
   };
 }
 
-describe('WorkspaceByokSetting', () => {
+describe('BYOK settings behavior', () => {
   afterEach(() => {
     cleanup();
-    vi.unstubAllGlobals();
+    vi.clearAllMocks();
   });
 
-  beforeEach(() => {
-    gqlMock.mockReset();
-    gqlMock.mockImplementation(async ({ query }) => {
-      if (query === workspaceByokSettingsQuery) {
-        return settingsResponse();
-      }
-      throw new Error('Unexpected GraphQL operation');
-    });
-    vi.stubGlobal('BUILD_CONFIG', { isElectron: false });
-    electronApiState.apis = undefined;
-  });
+  test.each([
+    [
+      ByokEnums.ByokCustomEndpointMode.disabled,
+      false,
+      'endpoint.custom-disabled',
+    ],
+    [
+      ByokEnums.ByokCustomEndpointMode.enabled,
+      false,
+      'endpoint.private-disabled',
+    ],
+    [ByokEnums.ByokCustomEndpointMode.enabled, true, null],
+  ] as const)(
+    'maps endpoint policy mode=%s private=%s',
+    (mode, privateEndpointSupported, expected) => {
+      expect(endpointHintKey(mode as never, privateEndpointSupported)).toBe(
+        expected
+      );
+    }
+  );
 
-  test('renders locked state without key management controls', async () => {
-    gqlMock.mockImplementation(async ({ query }) => {
-      if (query === workspaceByokSettingsQuery) {
-        return settingsResponse({
-          entitled: false,
-          serverEntitled: false,
-          localEntitled: false,
-        });
-      }
-      throw new Error('Unexpected GraphQL operation');
-    });
+  test('shows a disabled custom endpoint control with its self-hosted policy hint', () => {
+    const props = {
+      workspaceId: 'workspace-1',
+      settings: settings(ByokEnums.ByokCustomEndpointMode.disabled) as never,
+      editingKey: null,
+      open: true,
+      onOpenChange: vi.fn(),
+      onSaved: vi.fn(),
+      localKeys: [],
+      setLocalKeys: vi.fn(),
+      localStorageSupported: false,
+      canAddServerKey: true,
+      canAddLocalKey: false,
+      gql: vi.fn() as never,
+    };
+    const { rerender } = render(<AddKeyModal {...props} />);
 
-    render(<WorkspaceByokSetting />);
+    expect(
+      (
+        screen.getByRole('checkbox', {
+          name: 'use-custom',
+        }) as HTMLInputElement
+      ).disabled
+    ).toBe(true);
+    expect(screen.getByText('custom-disabled')).toBeTruthy();
 
-    await screen.findByTestId('workspace-byok-locked');
-    expect(screen.queryByText('Add key')).toBeNull();
-    expect(screen.queryByTestId('workspace-byok-empty')).toBeNull();
-  });
-
-  test('renders empty state and keeps save disabled until key test passes', async () => {
-    gqlMock.mockImplementation(async ({ query }) => {
-      if (query === workspaceByokSettingsQuery) {
-        return settingsResponse();
-      }
-      if (query === testWorkspaceByokConfigMutation) {
-        return {
-          testWorkspaceByokConfig: {
-            ok: true,
-            status: 'passed',
-            message: null,
-          },
-        };
-      }
-      if (query === upsertWorkspaceByokConfigMutation) {
-        return { upsertWorkspaceByokConfig: { id: 'server-key' } };
-      }
-      throw new Error('Unexpected GraphQL operation');
-    });
-
-    render(<WorkspaceByokSetting />);
-
-    await screen.findByTestId('workspace-byok-empty');
-    fireEvent.click(screen.getAllByText('Add key')[0]);
-    expect(screen.getByText<HTMLButtonElement>('Save key').disabled).toBe(true);
-
-    fireEvent.change(screen.getByPlaceholderText('Primary'), {
-      target: { value: 'Primary' },
-    });
-    fireEvent.change(screen.getByLabelText('API key'), {
-      target: { value: 'sk-test' },
-    });
-    fireEvent.click(screen.getByText('Test key'));
-
-    await screen.findByText('Key verified');
-    expect(screen.getByText<HTMLButtonElement>('Save key').disabled).toBe(
-      false
+    rerender(
+      <AddKeyModal
+        {...props}
+        settings={
+          settings(ByokEnums.ByokCustomEndpointMode.unavailable) as never
+        }
+      />
     );
-    fireEvent.click(screen.getByText('Save key'));
-
-    await waitFor(() => {
-      expect(gqlMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          query: upsertWorkspaceByokConfigMutation,
-        })
-      );
-    });
+    expect(screen.queryByRole('checkbox', { name: 'use-custom' })).toBeNull();
+    expect(screen.queryByText('custom-disabled')).toBeNull();
   });
 
-  test('keeps local storage disabled on web even for local-entitled users', async () => {
-    gqlMock.mockImplementation(async ({ query }) => {
-      if (query === workspaceByokSettingsQuery) {
-        return settingsResponse({
-          localEntitled: true,
-          localStorageSupported: true,
-        });
-      }
-      throw new Error('Unexpected GraphQL operation');
-    });
-
-    render(<WorkspaceByokSetting />);
-
-    await screen.findByTestId('workspace-byok-empty');
-    fireEvent.click(screen.getAllByText('Add key')[0]);
-
-    const storageSelect =
-      screen.getByLabelText<HTMLSelectElement>('Key storage');
-    const localOption = Array.from(storageSelect.options).find(
-      option => option.value === ByokKeyStorage.local
-    );
-    expect(localOption?.disabled).toBe(true);
-  });
-
-  test('reorders server keys within their storage bucket', async () => {
-    gqlMock.mockImplementation(async ({ query }) => {
-      if (query === workspaceByokSettingsQuery) {
-        return settingsResponse({
-          keys: [
-            byokKey({ id: 'server-1', name: 'First', sortOrder: 0 }),
-            byokKey({ id: 'server-2', name: 'Second', sortOrder: 1 }),
-          ],
-        });
-      }
-      return {};
-    });
-
-    render(<WorkspaceByokSetting />);
-
-    const firstRow = (await screen.findByText('OpenAI / First')).closest(
-      '[draggable="true"]'
-    );
-    const secondRow = screen
-      .getByText('OpenAI / Second')
-      .closest('[draggable="true"]');
-
-    expect(firstRow).not.toBeNull();
-    expect(secondRow).not.toBeNull();
-    fireEvent.dragStart(firstRow as Element);
-    fireEvent.dragOver(secondRow as Element);
-    fireEvent.drop(secondRow as Element);
-
-    await waitFor(() => {
-      expect(gqlMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variables: expect.objectContaining({
-            input: expect.objectContaining({
-              workspaceId: 'workspace-1',
-              storage: ByokKeyStorage.server,
-              ids: ['server-2', 'server-1'],
-            }),
-          }),
-        })
-      );
-    });
-  });
-
-  test('marks coverage rows by configured provider support', async () => {
-    let keys = [
-      byokKey({ provider: ByokProvider.openai }),
-      byokKey({
-        id: 'disabled-gemini',
-        provider: ByokProvider.gemini,
-        enabled: false,
-        capabilities: [
-          'Text',
-          'Image input',
-          'Actions',
-          'Image generate',
-          'Transcript',
-          'Indexing',
-        ],
-      }),
-      byokKey({
-        id: 'local-gemini',
-        provider: ByokProvider.gemini,
-        storage: ByokKeyStorage.local,
-        capabilities: ['Text', 'Image input', 'Actions', 'Image generate'],
-      }),
-    ];
-
-    gqlMock.mockImplementation(async ({ query }) => {
-      if (query === workspaceByokSettingsQuery) {
-        return settingsResponse({
-          keys,
-        });
-      }
-      throw new Error('Unexpected GraphQL operation');
-    });
-
-    render(<WorkspaceByokSetting />);
-
-    expect(
-      (await screen.findByTestId('workspace-byok-coverage-chat')).dataset
-        .covered
-    ).toBe('true');
-    expect(
-      screen.getByTestId('workspace-byok-coverage-action').dataset.covered
-    ).toBe('true');
-    expect(
-      screen.getByTestId('workspace-byok-coverage-image').dataset.covered
-    ).toBe('true');
-    expect(
-      screen.getByTestId('workspace-byok-coverage-transcript').dataset.covered
-    ).toBe('false');
-    expect(
-      screen.getByTestId('workspace-byok-coverage-workspace_indexing').dataset
-        .covered
-    ).toBe('false');
-    expect(screen.getAllByTestId(/^workspace-byok-coverage-/)).toHaveLength(5);
-
-    cleanup();
-    keys = [
-      byokKey({
-        provider: ByokProvider.gemini,
-        capabilities: [
-          'Text',
-          'Image input',
-          'Actions',
-          'Image generate',
-          'Transcript',
-          'Indexing',
-        ],
-      }),
-    ];
-    render(<WorkspaceByokSetting />);
-
-    expect(
-      (await screen.findByTestId('workspace-byok-coverage-transcript')).dataset
-        .covered
-    ).toBe('true');
-    expect(
-      screen.getByTestId('workspace-byok-coverage-workspace_indexing').dataset
-        .covered
-    ).toBe('true');
-  });
-
-  test('restores a failed server row after key test passes', async () => {
-    gqlMock.mockImplementation(async ({ query }) => {
-      if (query === workspaceByokSettingsQuery) {
-        return settingsResponse({
-          keys: [
-            byokKey({
-              enabled: false,
-              testStatus: ByokKeyTestStatus.failed,
-              disabledReason: 'recent_failure',
-              lastErrorAt: '2026-05-01T00:00:00.000Z',
-              lastError: 'Provider rejected the API key.',
-            }),
-          ],
-        });
-      }
-      if (query === testWorkspaceByokConfigMutation) {
-        return {
-          testWorkspaceByokConfig: {
-            ok: true,
-            status: 'passed',
-            message: null,
-          },
-        };
-      }
-      if (query === upsertWorkspaceByokConfigMutation) {
-        return {
-          upsertWorkspaceByokConfig: {
-            id: 'server-key',
-          },
-        };
-      }
-      throw new Error('Unexpected GraphQL operation');
-    });
-
-    render(<WorkspaceByokSetting />);
-
-    await screen.findByText('Disabled after failure');
-    fireEvent.click(screen.getByText('Edit'));
-    fireEvent.change(screen.getByLabelText('API key'), {
-      target: { value: 'sk-test' },
-    });
-    fireEvent.click(screen.getByText('Test key'));
-
-    await screen.findByText('Key verified');
-    fireEvent.click(screen.getByText('Save key'));
-
-    await waitFor(() => {
-      expect(gqlMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          query: upsertWorkspaceByokConfigMutation,
-          variables: expect.objectContaining({
-            input: expect.objectContaining({
-              id: 'server-key',
-              enabled: true,
-            }),
-          }),
-        })
-      );
-    });
-  });
-
-  test('tests a saved server key without resending plaintext', async () => {
-    gqlMock.mockImplementation(async ({ query }) => {
-      if (query === workspaceByokSettingsQuery) {
-        return settingsResponse({
-          keys: [byokKey()],
-        });
-      }
-      if (query === testWorkspaceByokConfigMutation) {
-        return {
-          testWorkspaceByokConfig: {
-            ok: true,
-            status: 'passed',
-            message: null,
-          },
-        };
-      }
-      if (query === upsertWorkspaceByokConfigMutation) {
-        return {
-          upsertWorkspaceByokConfig: {
-            id: 'server-key',
-          },
-        };
-      }
-      throw new Error('Unexpected GraphQL operation');
-    });
-
-    render(<WorkspaceByokSetting />);
-
-    await screen.findByText('OpenAI / Primary');
-    fireEvent.click(screen.getByText('Edit'));
-    expect(screen.getByText<HTMLButtonElement>('Test key').disabled).toBe(
-      false
-    );
-    fireEvent.click(screen.getByText('Test key'));
-
-    await waitFor(() => {
-      expect(gqlMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          query: testWorkspaceByokConfigMutation,
-          variables: expect.objectContaining({
-            input: expect.objectContaining({
-              apiKey: null,
-              configId: 'server-key',
-            }),
-          }),
-        })
-      );
-    });
-
-    await screen.findByText('Key verified');
-    fireEvent.click(screen.getByText('Save key'));
-
-    await waitFor(() => {
-      expect(gqlMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          query: upsertWorkspaceByokConfigMutation,
-          variables: expect.objectContaining({
-            input: expect.objectContaining({
-              apiKey: null,
-              id: 'server-key',
-            }),
-          }),
-        })
-      );
-    });
-  });
-});
-
-describe('UsagePanel', () => {
-  afterEach(() => {
-    cleanup();
-  });
-
-  test('aggregates usage rows by date before rendering bars', () => {
-    const today = new Date().toISOString();
+  test('shows selected models separately and adds catalog or custom models', () => {
     render(
-      <UsagePanel
-        keys={[]}
-        usage={[
-          { date: today, featureKind: 'chat', totalTokens: 3 },
-          { date: today, featureKind: 'transcript', totalTokens: 5 },
-        ]}
-        onClearAll={() => {}}
+      <AddKeyModal
+        workspaceId="workspace-1"
+        settings={settings() as never}
+        editingKey={null}
+        open
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+        localKeys={[]}
+        setLocalKeys={vi.fn()}
+        localStorageSupported={false}
+        canAddServerKey
+        canAddLocalKey={false}
+        gql={vi.fn() as never}
       />
     );
 
-    expect(screen.getByTitle('8 tokens')).not.toBeNull();
-  });
-});
+    expect(screen.getByText('Model A')).toBeTruthy();
+    expect(screen.queryByText('Model B')).toBeNull();
+    expect(
+      (screen.getByRole('radio', { name: /local/i }) as HTMLInputElement)
+        .disabled
+    ).toBe(true);
+    expect(screen.getByText('desktop-only')).toBeTruthy();
 
-describe('logByokError', () => {
-  test('logs safe metadata without raw error message', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const error = Object.assign(
-      new Error('authorization: Bearer token=a+b%2F=='),
-      {
-        code: 'BAD_REQUEST',
-        status: 400,
-        type: 'bad_request',
-      }
+    fireEvent.click(screen.getByRole('button', { name: 'add-model' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Model B/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'add-selected-models' })
+    );
+    expect(screen.getByText('Model B')).toBeTruthy();
+
+    const modelBRow = screen.getByText('Model B').closest('li')!;
+    fireEvent.click(within(modelBRow).getByRole('button', { name: 'move-up' }));
+    expect(
+      [...screen.getByRole('list').querySelectorAll('strong')].map(
+        element => element.textContent
+      )
+    ).toEqual(['Model B', 'Model A']);
+    const reorderedModelBRow = screen.getByText('Model B').closest('li')!;
+    fireEvent.click(
+      within(reorderedModelBRow).getByRole('checkbox', {
+        name: 'disable-model',
+      })
+    );
+    expect(
+      within(screen.getByText('Model B').closest('li')!).getByText('disabled')
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByText('use-custom'));
+    expect(screen.queryByText('Model A')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'add-model' }));
+    const modelId = screen.getByPlaceholderText('model-id');
+    fireEvent.change(modelId, { target: { value: 'custom-chat' } });
+    const modelDialog = screen.getAllByRole('dialog').at(-1)!;
+    fireEvent.click(
+      within(modelDialog).getByRole('button', { name: 'add-model' })
     );
 
-    try {
-      logByokError('byok', error);
-      expect(warn).toHaveBeenCalledWith('byok', {
-        name: 'Error',
-        code: 'BAD_REQUEST',
-        status: 400,
-        type: 'bad_request',
-      });
-      expect(JSON.stringify(warn.mock.calls)).not.toContain('token=a+b%2F==');
-    } finally {
-      warn.mockRestore();
-    }
+    expect(screen.getByText('custom-chat')).toBeTruthy();
+  });
+
+  test('requires model verification before saving the selected models', async () => {
+    type MockOperation = {
+      query: symbol;
+      variables?: {
+        input?: { definition?: { models?: unknown[] } };
+      };
+    };
+    let probePasses = false;
+    const gql = vi.fn(async ({ query }: MockOperation) => {
+      if (query === probeMutation) {
+        return {
+          probeWorkspaceByokDraft: {
+            definitionFingerprint: 'fingerprint',
+            stale: false,
+            connection: { kind: 'verified' },
+            models: [
+              {
+                modelId: 'model-a',
+                checks: [
+                  {
+                    operation: 'chat',
+                    status: { kind: probePasses ? 'verified' : 'failed' },
+                  },
+                ],
+              },
+            ],
+          },
+        };
+      }
+      if (query === createMutation) {
+        return { createWorkspaceByokProfile: { profileId: 'profile-1' } };
+      }
+      throw new Error('Unexpected GraphQL operation');
+    });
+    render(
+      <AddKeyModal
+        workspaceId="workspace-1"
+        settings={settings() as never}
+        editingKey={null}
+        open
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+        localKeys={[]}
+        setLocalKeys={vi.fn()}
+        localStorageSupported={false}
+        canAddServerKey
+        canAddLocalKey={false}
+        gql={gql as never}
+      />
+    );
+
+    fireEvent.change(document.querySelector('input[type="password"]')!, {
+      target: { value: 'secret' },
+    });
+    fireEvent.click(screen.getByText('connect'));
+
+    await waitFor(() => expect(gql).toHaveBeenCalledTimes(1));
+    expect(gql.mock.calls.some(call => call[0].query === createMutation)).toBe(
+      false
+    );
+
+    probePasses = true;
+    fireEvent.click(screen.getByText('connect'));
+    await waitFor(() => expect(gql).toHaveBeenCalledTimes(3));
+    const createCall = gql.mock.calls.find(
+      call => call[0].query === createMutation
+    );
+    expect(createCall?.[0].variables?.input?.definition?.models).toEqual([
+      {
+        modelId: 'model-a',
+        enabled: true,
+        capabilities: [textCapability],
+      },
+    ]);
+  });
+
+  test('does not accept a verified connection when no model check ran', async () => {
+    type MockOperation = {
+      query: symbol;
+      variables?: { input?: { checks?: unknown[] } };
+    };
+    const gql = vi.fn(async ({ query }: MockOperation) => {
+      if (query === probeMutation) {
+        return {
+          probeWorkspaceByokDraft: {
+            definitionFingerprint: 'fingerprint',
+            stale: false,
+            connection: { kind: 'verified' },
+            models: [],
+          },
+        };
+      }
+      if (query === createMutation) {
+        return { createWorkspaceByokProfile: { profileId: 'profile-1' } };
+      }
+      throw new Error('Unexpected GraphQL operation');
+    });
+    render(
+      <AddKeyModal
+        workspaceId="workspace-1"
+        settings={settings() as never}
+        editingKey={null}
+        open
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+        localKeys={[]}
+        setLocalKeys={vi.fn()}
+        localStorageSupported={false}
+        canAddServerKey
+        canAddLocalKey={false}
+        gql={gql as never}
+      />
+    );
+
+    fireEvent.change(document.querySelector('input[type="password"]')!, {
+      target: { value: 'secret' },
+    });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'disable-model' }));
+    fireEvent.click(screen.getByText('connect'));
+
+    await waitFor(() => expect(screen.getByText('failed')).toBeTruthy());
+
+    const probeCall = gql.mock.calls.find(
+      ([operation]) => operation.query === probeMutation
+    );
+    expect(probeCall?.[0].variables?.input?.checks).toEqual([]);
+    expect(
+      gql.mock.calls.some(([operation]) => operation.query === createMutation)
+    ).toBe(false);
+  });
+
+  test('preserves server revision and writes the breaking definition shape', async () => {
+    type MockOperation = {
+      query: symbol;
+      variables?: { input?: Record<string, unknown> };
+    };
+    const gql = vi.fn(async ({ query }: MockOperation) => {
+      if (query === probeMutation) {
+        return {
+          probeWorkspaceByokDraft: {
+            definitionFingerprint: 'fingerprint',
+            stale: false,
+            connection: { kind: 'verified' },
+            models: [
+              {
+                modelId: 'model-a',
+                checks: [{ operation: 'chat', status: { kind: 'verified' } }],
+              },
+            ],
+          },
+        };
+      }
+      if (query === replaceMutation) {
+        return { replaceWorkspaceByokProfile: { profileId: 'profile-1' } };
+      }
+      throw new Error('Unexpected GraphQL operation');
+    });
+    render(
+      <AddKeyModal
+        workspaceId="workspace-1"
+        settings={settings() as never}
+        editingKey={
+          {
+            id: 'profile-1',
+            provider: ByokProvider.openai,
+            name: 'OpenAI',
+            storage: 'server',
+            configured: true,
+            enabled: true,
+            sortOrder: 0,
+            revision: 7,
+            definition: {
+              endpoint: {
+                kind: ByokEnums.ByokEndpointKind.provider_default,
+                url: null,
+                dialect: null,
+              },
+              models: [
+                {
+                  modelId: 'model-a',
+                  enabled: true,
+                  capabilities: [textCapability],
+                },
+              ],
+            },
+            capabilities: ['Text'],
+          } as never
+        }
+        open
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+        localKeys={[]}
+        setLocalKeys={vi.fn()}
+        localStorageSupported={false}
+        canAddServerKey
+        canAddLocalKey={false}
+        gql={gql as never}
+      />
+    );
+
+    fireEvent.click(screen.getByText('save-changes'));
+    await waitFor(() => expect(gql).toHaveBeenCalledTimes(2));
+    const replaceCall = gql.mock.calls.find(
+      call => call[0].query === replaceMutation
+    );
+    expect(replaceCall?.[0].variables?.input).toMatchObject({
+      expectedRevision: 7,
+      definition: {
+        endpoint: {
+          kind: ByokEnums.ByokEndpointKind.provider_default,
+          url: null,
+          dialect: null,
+        },
+      },
+    });
+    expect(
+      Object.hasOwn(
+        replaceCall?.[0].variables?.input?.definition as object,
+        'version'
+      )
+    ).toBe(false);
   });
 });
