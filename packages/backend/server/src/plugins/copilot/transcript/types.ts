@@ -53,6 +53,7 @@ declare global {
     'copilot.transcript.task.submit': {
       taskId: string;
       payload: TranscriptionPayloadV2;
+      generation?: string;
       retryOf?: string;
     };
   }

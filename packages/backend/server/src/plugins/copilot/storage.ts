@@ -59,12 +59,29 @@ export class CopilotStorage {
   ): Promise<StorageRuntimeGetObjectResult> {
     const name = `${userId}/${workspaceId}/${key}`;
     if (signedUrl) {
-      const presigned = await this.rt.presignGet('copilot', name);
-      if (presigned) {
-        return { redirectUrl: presigned.url };
-      }
+      const redirectUrl = await this.presignGet(userId, workspaceId, key);
+      if (redirectUrl) return { redirectUrl };
     }
     return this.rt.getObject('copilot', name);
+  }
+
+  async presignGet(userId: string, workspaceId: string, key: string) {
+    return (
+      await this.rt.presignGet('copilot', `${userId}/${workspaceId}/${key}`)
+    )?.url;
+  }
+
+  keyFromUrl(userId: string, workspaceId: string, url: string) {
+    try {
+      const parsed = new URL(url);
+      const prefix = `/api/copilot/blob/${encodeURIComponent(userId)}/${encodeURIComponent(workspaceId)}/`;
+      if (parsed.pathname.startsWith(prefix)) {
+        return decodeURIComponent(parsed.pathname.slice(prefix.length));
+      }
+    } catch {
+      return;
+    }
+    return undefined;
   }
 
   @CallMetric('ai', 'blob_delete')

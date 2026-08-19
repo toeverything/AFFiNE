@@ -173,50 +173,54 @@ export class SectionEditTool extends WithDisposable(ShadowlessElement) {
                 ${CopyIcon()}
                 <affine-tooltip>Copy</affine-tooltip>
               </div>
-              ${this.independentMode
-                ? nothing
-                : html`<div
-                    class="edit-button"
-                    @click=${async () => {
-                      if (!this.host) return;
-                      if (this.host.std.store.readonly$.value) {
-                        this.notificationService.notify({
-                          title: 'Cannot insert in read-only mode',
-                          accent: 'error',
-                          onClose: () => {},
-                        });
-                        return;
-                      }
-                      if (isInsidePageEditor(this.host)) {
-                        await PAGE_INSERT.handler(
-                          this.host,
-                          result.content,
-                          this.selection
-                        );
-                      } else {
-                        await EDGELESS_INSERT.handler(
-                          this.host,
-                          result.content,
-                          this.selection
-                        );
-                      }
-                    }}
-                  >
-                    ${InsertBleowIcon()}
-                    <affine-tooltip>Insert below</affine-tooltip>
-                  </div>`}
-              ${this.independentMode
-                ? nothing
-                : html`<div
-                    class="edit-button"
-                    @click=${async () => {
-                      if (!this.host) return;
-                      SAVE_AS_DOC.handler(this.host, result.content);
-                    }}
-                  >
-                    ${LinkedPageIcon()}
-                    <affine-tooltip>Create new doc</affine-tooltip>
-                  </div>`}
+              ${
+                this.independentMode
+                  ? nothing
+                  : html`<div
+                      class="edit-button"
+                      @click=${async () => {
+                        if (!this.host) return;
+                        if (this.host.std.store.readonly$.value) {
+                          this.notificationService.notify({
+                            title: 'Cannot insert in read-only mode',
+                            accent: 'error',
+                            onClose: () => {},
+                          });
+                          return;
+                        }
+                        if (isInsidePageEditor(this.host)) {
+                          await PAGE_INSERT.handler(
+                            this.host,
+                            result.content,
+                            this.selection
+                          );
+                        } else {
+                          await EDGELESS_INSERT.handler(
+                            this.host,
+                            result.content,
+                            this.selection
+                          );
+                        }
+                      }}
+                    >
+                      ${InsertBleowIcon()}
+                      <affine-tooltip>Insert below</affine-tooltip>
+                    </div>`
+              }
+              ${
+                this.independentMode
+                  ? nothing
+                  : html`<div
+                      class="edit-button"
+                      @click=${async () => {
+                        if (!this.host) return;
+                        SAVE_AS_DOC.handler(this.host, result.content);
+                      }}
+                    >
+                      ${LinkedPageIcon()}
+                      <affine-tooltip>Create new doc</affine-tooltip>
+                    </div>`
+              }
             </div>
           </div>
           <chat-content-rich-text

@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* oxlint-disable */
 import '../src/prelude';
 import '../src/app.module';
 

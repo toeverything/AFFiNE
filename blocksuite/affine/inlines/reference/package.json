@@ -3,7 +3,7 @@
   "description": "Inline reference for BlockSuite.",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "yarn run -T tsc"
   },
   "sideEffects": false,
   "keywords": [],

@@ -64,13 +64,15 @@ export class AIChatAddContext extends SignalWatcher(
         @click=${this.toggleAddDocMenu}
       >
         ${PlusIcon()}
-        ${disabled
-          ? html`<affine-tooltip>
-              ${I18n[
-                'com.affine.ai.chat-panel.local-workspace-context-unavailable'
-              ]()}
-            </affine-tooltip>`
-          : null}
+        ${
+          disabled
+            ? html`<affine-tooltip>
+                ${I18n[
+                  'com.affine.ai.chat-panel.local-workspace-context-unavailable'
+                ]()}
+              </affine-tooltip>`
+            : null
+        }
       </div>
     `;
   }

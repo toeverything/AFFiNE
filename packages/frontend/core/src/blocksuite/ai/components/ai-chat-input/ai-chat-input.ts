@@ -574,37 +574,45 @@ export class AIChatInput extends SignalWatcher(
       @dragleave=${this._handleDragLeave}
       @drop=${this._handleDrop}
     >
-      ${this.isDragOver
-        ? html`<div class="chat-panel-input-drop-overlay">Drop to attach</div>`
-        : nothing}
-      ${hasImages
-        ? html`
-            <image-preview-grid
-              .images=${images}
-              .onImageRemove=${this._handleImageRemove}
-            ></image-preview-grid>
-          `
-        : nothing}
-      ${this.chatContextValue.quote
-        ? html`<div
-            class="chat-selection-quote"
-            data-testid="chat-selection-quote"
-          >
-            ${repeat(
-              getFirstTwoLines(this.chatContextValue.quote),
-              line => line,
-              line => html`<div>${line}</div>`
-            )}
-            <div
-              class="chat-quote-close"
-              @click=${() => {
-                this.updateContext({ quote: '', markdown: '' });
-              }}
+      ${
+        this.isDragOver
+          ? html`<div class="chat-panel-input-drop-overlay">
+              Drop to attach
+            </div>`
+          : nothing
+      }
+      ${
+        hasImages
+          ? html`
+              <image-preview-grid
+                .images=${images}
+                .onImageRemove=${this._handleImageRemove}
+              ></image-preview-grid>
+            `
+          : nothing
+      }
+      ${
+        this.chatContextValue.quote
+          ? html`<div
+              class="chat-selection-quote"
+              data-testid="chat-selection-quote"
             >
-              ${CloseIcon()}
-            </div>
-          </div>`
-        : nothing}
+              ${repeat(
+                getFirstTwoLines(this.chatContextValue.quote),
+                line => line,
+                line => html`<div>${line}</div>`
+              )}
+              <div
+                class="chat-quote-close"
+                @click=${() => {
+                  this.updateContext({ quote: '', markdown: '' });
+                }}
+              >
+                ${CloseIcon()}
+              </div>
+            </div>`
+          : nothing
+      }
       <textarea
         rows="1"
         placeholder="What are your thoughts?"
@@ -646,22 +654,24 @@ export class AIChatInput extends SignalWatcher(
           .subscriptionService=${this.subscriptionService}
           .onAISubscribe=${this.onAISubscribe}
         ></chat-input-preference>
-        ${status === 'transmitting' || status === 'loading'
-          ? html`<button
-              class="chat-panel-stop"
-              @click=${this._handleAbort}
-              data-testid="chat-panel-stop"
-            >
-              ${ChatAbortIcon}
-            </button>`
-          : html`<button
-              @click="${this._onTextareaSend}"
-              class="chat-panel-send"
-              aria-disabled=${this.isSendDisabled}
-              data-testid="chat-panel-send"
-            >
-              ${ArrowUpBigIcon()}
-            </button>`}
+        ${
+          status === 'transmitting' || status === 'loading'
+            ? html`<button
+                class="chat-panel-stop"
+                @click=${this._handleAbort}
+                data-testid="chat-panel-stop"
+              >
+                ${ChatAbortIcon}
+              </button>`
+            : html`<button
+                @click="${this._onTextareaSend}"
+                class="chat-panel-send"
+                aria-disabled=${this.isSendDisabled}
+                data-testid="chat-panel-send"
+              >
+                ${ArrowUpBigIcon()}
+              </button>`
+        }
       </div>
     </div>`;
   }

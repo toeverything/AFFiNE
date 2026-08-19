@@ -390,9 +390,11 @@ function renderActionItem(action: ToolbarAction, context: ToolbarContext) {
       @click=${() => action.run?.(context)}
     >
       ${action.icon}
-      ${action.showLabel && action.label
-        ? html`<span class="label">${action.label}</span>`
-        : null}
+      ${
+        action.showLabel && action.label
+          ? html`<span class="label">${action.label}</span>`
+          : null
+      }
     </editor-icon-button>
   `;
 }
