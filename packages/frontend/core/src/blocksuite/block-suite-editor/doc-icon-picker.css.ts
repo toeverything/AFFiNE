@@ -13,6 +13,10 @@ export const docIconPickerTrigger = style({
     '&[data-icon-type="emoji"]': {
       fontFamily: 'Inter',
     },
+    '&[data-icon-type="blob"]': {
+      padding: 3,
+      fontSize: 58,
+    },
     '&::after': {
       display: 'none',
     },

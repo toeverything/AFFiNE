@@ -1,15 +1,31 @@
 use affine_doc_loader as doc_loader;
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
+use y_octo::{Any, Doc, Value};
 
 use super::{
   CurrentDoc, RuntimeDocBlobRefsResult, RuntimeError, RuntimeResult, StorageRuntime, load_current_doc,
   load_workspace_live_doc_ids, napi_error,
 };
 
-const PARSER_VERSION: i32 = 1;
+// v2: also extracts explorer-icon table refs and callout `prop:icon` refs, so
+// custom icon blobs are visible to blob cleanup.
+const PARSER_VERSION: i32 = 2;
+
+/// Synced workspace-DB table whose rows reference workspace blobs: custom
+/// doc/collection/folder/tag icons store `{ type: 'blob', blobId }`.
+const EXPLORER_ICON_TABLE: &str = "explorerIcon";
+const EXPLORER_ICON_FLAVOUR: &str = "affine:explorer-icon";
+const CALLOUT_FLAVOUR: &str = "affine:callout";
 
 type ExtractedRef = doc_loader::BlobRef;
+
+/// Server-side doc id of a workspace's synced `explorerIcon` ORM table. The
+/// client-local `db$explorerIcon` id is namespaced with the workspace id on
+/// upload (see `packages/common/nbstore/src/utils/id-converter.ts`).
+fn explorer_icon_doc_id(workspace_id: &str) -> String {
+  format!("db${workspace_id}${EXPLORER_ICON_TABLE}")
+}
 
 #[derive(Default)]
 struct ProjectionState {
@@ -19,6 +35,10 @@ struct ProjectionState {
 
 async fn load_workspace_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
   let mut ids = load_workspace_live_doc_ids(pool, workspace_id).await?;
+  // The explorer-icon table lives outside `meta.pages`, so it is added to the
+  // scan set explicitly — its rows are the only place custom explorer icon
+  // blobs are referenced.
+  ids.push(explorer_icon_doc_id(workspace_id));
   let retained = sqlx::query_scalar::<_, String>(
     "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 AND status IN ('marked', 'failed') ORDER \
      BY doc_id",
@@ -151,14 +171,106 @@ async fn purge_removed_doc_refs(pool: &PgPool, workspace_id: &str, current_doc_i
 }
 
 fn extract_refs(blob: Vec<u8>) -> RuntimeResult<Vec<ExtractedRef>> {
-  doc_loader::get_blob_refs_from_binary(blob)
-    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))
+  let mut refs = extract_callout_icon_refs(&blob)?;
+  let mut block_refs = doc_loader::get_blob_refs_from_binary(blob)
+    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))?;
+  block_refs.append(&mut refs);
+  Ok(block_refs)
+}
+
+/// Extract blob references from a workspace's synced `explorerIcon` table:
+/// one root-level record per icon, with the `icon` field stored as plain JSON
+/// by the yjs ORM table adapter (`packages/common/infra/src/orm`).
+fn extract_explorer_icon_refs(blob: &[u8]) -> RuntimeResult<Vec<ExtractedRef>> {
+  let records = doc_loader::project_orm_records(blob)
+    .map_err(|err| RuntimeError::invalid_state(format!("Explorer icon refs parse failed: {err}")))?;
+  Ok(
+    records
+      .into_iter()
+      .filter_map(|record| {
+        let icon = record.get("icon")?;
+        if icon.get("type").and_then(serde_json::Value::as_str) != Some("blob") {
+          return None;
+        }
+        let blob_key = icon.get("blobId").and_then(serde_json::Value::as_str)?.to_string();
+        let block_id = record
+          .get("id")
+          .and_then(serde_json::Value::as_str)
+          .map_or_else(|| blob_key.clone(), ToString::to_string);
+        Some(ExtractedRef {
+          blob_key,
+          block_id,
+          flavour: EXPLORER_ICON_FLAVOUR.to_string(),
+        })
+      })
+      .collect(),
+  )
+}
+
+/// `affine_doc_loader` only extracts `prop:sourceId` refs from image and
+/// attachment blocks; callout blocks reference their custom icon blob from a
+/// nested `prop:icon` map instead, so those are walked here.
+fn extract_callout_icon_refs(blob: &[u8]) -> RuntimeResult<Vec<ExtractedRef>> {
+  let mut doc = Doc::default();
+  doc
+    .apply_update_from_binary_v1(blob)
+    .map_err(|err| RuntimeError::invalid_state(format!("Callout icon refs parse failed: {err}")))?;
+  // Mirror `get_blob_refs_from_binary`: a doc without a `blocks` root (e.g.
+  // the workspace root or a db/userdata table doc) simply has no block refs.
+  let Ok(blocks) = doc.get_map("blocks") else {
+    return Ok(Vec::new());
+  };
+  let mut refs = Vec::new();
+  for (block_key, value) in blocks.iter() {
+    let block_key = block_key.to_string();
+    let Some(block) = value.to_map() else {
+      continue;
+    };
+    if read_string(block.get("sys:flavour")).as_deref() != Some(CALLOUT_FLAVOUR) {
+      continue;
+    }
+    let Some(blob_key) = block.get("prop:icon").and_then(blob_icon_key) else {
+      continue;
+    };
+    let block_id = read_string(block.get("sys:id")).unwrap_or(block_key);
+    refs.push(ExtractedRef {
+      blob_key,
+      block_id,
+      flavour: CALLOUT_FLAVOUR.to_string(),
+    });
+  }
+  Ok(refs)
+}
+
+/// Read `{ type: 'blob', blobId }` from an icon value that may be a nested
+/// `Y.Map` (BlockSuite writers deep-convert props) or a plain object.
+fn blob_icon_key(icon: Value) -> Option<String> {
+  if let Value::Any(Any::Object(object)) = &icon {
+    if object.get("type") != Some(&Any::String("blob".to_string())) {
+      return None;
+    }
+    if let Some(Any::String(blob_key)) = object.get("blobId") {
+      return Some(blob_key.clone());
+    }
+    return None;
+  }
+  let map = icon.to_map()?;
+  if read_string(map.get("type")).as_deref() != Some("blob") {
+    return None;
+  }
+  read_string(map.get("blobId"))
+}
+
+fn read_string(value: Option<Value>) -> Option<String> {
+  match value?.to_any()? {
+    Any::String(value) => Some(value),
+    _ => None,
+  }
 }
 
 #[cfg(test)]
 mod tests {
   use chrono::Utc;
-  use y_octo::Doc;
 
   use super::*;
 
@@ -217,6 +329,138 @@ mod tests {
     };
 
     assert!(extract_refs(snapshot.blob).is_err());
+    assert!(extract_explorer_icon_refs(&[0xff]).is_err());
+    assert!(extract_callout_icon_refs(&[0xff]).is_err());
+  }
+
+  #[test]
+  fn explorer_icon_doc_id_is_workspace_scoped() {
+    assert_eq!(explorer_icon_doc_id("ws-1"), "db$ws-1$explorerIcon");
+  }
+
+  fn icon_object(entries: [(&str, &str); 2]) -> Value {
+    let object = entries
+      .into_iter()
+      .map(|(key, value)| (key.to_string(), Any::String(value.to_string())))
+      .collect();
+    Value::Any(Any::Object(Box::new(object)))
+  }
+
+  fn blob_icon_object(blob_key: &str) -> Value {
+    icon_object([("type", "blob"), ("blobId", blob_key)])
+  }
+
+  #[test]
+  fn explorer_icon_refs_project_blob_icons_only() {
+    let doc = Doc::default();
+    let mut blob_row = doc.get_or_create_map("doc:with-icon").expect("row should build");
+    blob_row
+      .insert("id".to_string(), "doc:with-icon")
+      .expect("id should insert");
+    blob_row
+      .insert("icon".to_string(), blob_icon_object("icon-blob-key"))
+      .expect("icon should insert");
+    let mut emoji_row = doc.get_or_create_map("folder:emoji").expect("row should build");
+    emoji_row
+      .insert("id".to_string(), "folder:emoji")
+      .expect("id should insert");
+    emoji_row
+      .insert("icon".to_string(), icon_object([("type", "emoji"), ("unicode", "📁")]))
+      .expect("icon should insert");
+    let mut deleted_row = doc.get_or_create_map("tag:deleted").expect("row should build");
+    deleted_row
+      .insert("id".to_string(), "tag:deleted")
+      .expect("id should insert");
+    deleted_row
+      .insert("icon".to_string(), blob_icon_object("deleted-blob-key"))
+      .expect("icon should insert");
+    deleted_row
+      .insert("$$DELETED".to_string(), true)
+      .expect("delete flag should insert");
+
+    let refs = extract_explorer_icon_refs(&doc.encode_update_v1().expect("doc should encode")).expect("refs parse");
+
+    assert_eq!(refs.len(), 1);
+    assert_eq!(refs[0].blob_key, "icon-blob-key");
+    assert_eq!(refs[0].block_id, "doc:with-icon");
+    assert_eq!(refs[0].flavour, EXPLORER_ICON_FLAVOUR);
+  }
+
+  #[test]
+  fn callout_icon_refs_read_nested_and_plain_icons() {
+    let doc = Doc::default();
+    let mut blocks = doc.get_or_create_map("blocks").expect("blocks should build");
+
+    let mut nested = doc.create_map().expect("block should build");
+    nested.insert("sys:id".to_string(), "block-nested").expect("id");
+    nested
+      .insert("sys:flavour".to_string(), "affine:callout")
+      .expect("flavour");
+    let mut nested_icon = doc.create_map().expect("icon should build");
+    nested_icon.insert("type".to_string(), "blob").expect("type");
+    nested_icon
+      .insert("blobId".to_string(), "callout-nested-key")
+      .expect("blobId");
+    nested.insert("prop:icon".to_string(), nested_icon).expect("icon");
+    blocks.insert("block-nested".to_string(), nested).expect("block");
+
+    let mut plain = doc.create_map().expect("block should build");
+    plain.insert("sys:id".to_string(), "block-plain").expect("id");
+    plain
+      .insert("sys:flavour".to_string(), "affine:callout")
+      .expect("flavour");
+    plain
+      .insert("prop:icon".to_string(), blob_icon_object("callout-plain-key"))
+      .expect("icon");
+    blocks.insert("block-plain".to_string(), plain).expect("block");
+
+    let mut emoji = doc.create_map().expect("block should build");
+    emoji.insert("sys:id".to_string(), "block-emoji").expect("id");
+    emoji
+      .insert("sys:flavour".to_string(), "affine:callout")
+      .expect("flavour");
+    let mut emoji_icon = doc.create_map().expect("icon should build");
+    emoji_icon.insert("type".to_string(), "emoji").expect("type");
+    emoji_icon.insert("unicode".to_string(), "💡").expect("unicode");
+    emoji.insert("prop:icon".to_string(), emoji_icon).expect("icon");
+    blocks.insert("block-emoji".to_string(), emoji).expect("block");
+
+    let mut image = doc.create_map().expect("block should build");
+    image.insert("sys:id".to_string(), "block-image").expect("id");
+    image
+      .insert("sys:flavour".to_string(), "affine:image")
+      .expect("flavour");
+    image
+      .insert("prop:sourceId".to_string(), "image-blob-key")
+      .expect("sourceId");
+    blocks.insert("block-image".to_string(), image).expect("block");
+
+    let blob = doc.encode_update_v1().expect("doc should encode");
+
+    let mut callout_refs = extract_callout_icon_refs(&blob).expect("refs parse");
+    callout_refs.sort_by(|left, right| left.blob_key.cmp(&right.blob_key));
+    assert_eq!(callout_refs.len(), 2);
+    assert_eq!(callout_refs[0].blob_key, "callout-nested-key");
+    assert_eq!(callout_refs[0].block_id, "block-nested");
+    assert_eq!(callout_refs[0].flavour, CALLOUT_FLAVOUR);
+    assert_eq!(callout_refs[1].blob_key, "callout-plain-key");
+    assert_eq!(callout_refs[1].block_id, "block-plain");
+
+    // The full doc-content path merges the loader's image/attachment refs
+    // with the supplemental callout refs.
+    let mut all_refs = extract_refs(blob).expect("refs parse");
+    all_refs.sort_by(|left, right| left.blob_key.cmp(&right.blob_key));
+    assert_eq!(
+      all_refs
+        .iter()
+        .map(|reference| reference.blob_key.as_str())
+        .collect::<Vec<_>>(),
+      vec!["callout-nested-key", "callout-plain-key", "image-blob-key"]
+    );
+
+    // A doc without a `blocks` root has no callout refs.
+    let empty = Doc::default().encode_update_v1().expect("doc should encode");
+    assert!(extract_callout_icon_refs(&empty).expect("refs parse").is_empty());
   }
 }
 
@@ -313,7 +557,19 @@ async fn rebuild_doc_blob_refs_inner(
     next_cursor: None,
   };
 
+  let is_explorer_icon_doc = doc_id == explorer_icon_doc_id(&workspace_id);
+
   let Some(snapshot) = load_current_doc(&pool, &workspace_id, &doc_id).await? else {
+    if is_explorer_icon_doc {
+      // The table doc only exists once a first custom icon is set; a missing
+      // doc means "no refs", not a parse failure — marking it failed would
+      // wedge blob cleanup for every workspace without custom icons.
+      let (written, deleted) = replace_doc_refs(&pool, &workspace_id, &doc_id, Utc::now(), Vec::new()).await?;
+      result.parsed_docs = 1;
+      result.refs_written = written;
+      result.refs_deleted = deleted;
+      return Ok(result);
+    }
     result.failed_docs = 1;
     mark_doc_failed(&pool, &workspace_id, &doc_id, "snapshot_missing").await?;
     return Ok(result);
@@ -325,7 +581,12 @@ async fn rebuild_doc_blob_refs_inner(
     blob,
     updated_at,
   } = snapshot;
-  match extract_refs(blob) {
+  let extracted = if is_explorer_icon_doc {
+    extract_explorer_icon_refs(&blob)
+  } else {
+    extract_refs(blob)
+  };
+  match extracted {
     Ok(refs) => {
       let (written, deleted) = replace_doc_refs(&pool, &workspace_id, &doc_id, updated_at, refs).await?;
       result.parsed_docs = 1;

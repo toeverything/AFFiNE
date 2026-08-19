@@ -121,7 +121,7 @@ describe('ImportCommitService', () => {
     const collection = new TestWorkspace({ id: 'test' });
     collection.meta.initialize();
     const folderTree = createFolderTree();
-    const setIcon = vi.fn();
+    const setIcon = vi.fn().mockResolvedValue(undefined);
     const service = createCommitService(collection, {
       organizeService: folderTree.service,
       explorerIconService: { setIcon },
@@ -317,7 +317,7 @@ describe('ImportCommitService', () => {
     collection.createDoc('doc-1');
     collection.createDoc('doc-2');
     const folderTree = createFolderTree();
-    const setIcon = vi.fn();
+    const setIcon = vi.fn().mockResolvedValue(undefined);
     const tags = new Map<string, { id: string; value: string }>();
     const service = createCommitService(collection, {
       organizeService: folderTree.service,
@@ -481,7 +481,7 @@ describe('ImportCommitService', () => {
     collection.meta.initialize();
     collection.createDoc('doc-1');
     const folderTree = createFolderTree();
-    const setIcon = vi.fn();
+    const setIcon = vi.fn().mockResolvedValue(undefined);
     const service = createCommitService(collection, {
       organizeService: folderTree.service,
       explorerIconService: { setIcon },

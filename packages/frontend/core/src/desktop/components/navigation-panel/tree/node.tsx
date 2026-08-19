@@ -7,7 +7,7 @@ import {
   IconAndNameEditorMenu,
   IconButton,
   type IconData,
-  IconRenderer,
+  IconType,
   Menu,
   MenuItem,
   useDraggable,
@@ -17,6 +17,10 @@ import { Guard } from '@affine/core/components/guard';
 import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
 import type { ExplorerType } from '@affine/core/modules/explorer-icon/store/explorer-icon';
+import {
+  ExplorerIcon,
+  useBlobIconUrl,
+} from '@affine/core/modules/explorer-icon/views/explorer-icon';
 import type { DocPermissionActions } from '@affine/core/modules/permissions';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
@@ -144,16 +148,22 @@ export const NavigationPanelTreeNodeRenameModal = ({
   );
 
   const onIconChange = useCallback(
-    (data?: IconData) => {
+    (data?: IconData | Blob) => {
       if (!explorerIconConfig) return;
-      explorerIconService.setIcon({
-        where: explorerIconConfig.where,
-        id: explorerIconConfig.id,
-        icon: data,
-      });
+      explorerIconService
+        .setIcon({
+          where: explorerIconConfig.where,
+          id: explorerIconConfig.id,
+          icon: data,
+        })
+        .catch(console.error);
     },
     [explorerIconConfig, explorerIconService]
   );
+
+  const iconData = explorerIcon?.icon;
+  const blobId = iconData?.type === IconType.Blob ? iconData.blobId : undefined;
+  const iconUrl = useBlobIconUrl(blobId);
 
   return (
     <IconAndNameEditorMenu
@@ -163,6 +173,7 @@ export const NavigationPanelTreeNodeRenameModal = ({
       onNameChange={handleRename}
       name={rawName ?? ''}
       icon={explorerIcon?.icon}
+      iconUrl={iconUrl}
       width={sidebarWidth - 16}
       contentOptions={{
         sideOffset: 36,
@@ -461,7 +472,7 @@ export const NavigationPanelTreeNode = ({
           />
         </div>
         <div className={styles.iconContainer}>
-          <IconRenderer data={explorerIcon?.icon} fallback={fallbackIcon} />
+          <ExplorerIcon icon={explorerIcon?.icon} fallback={fallbackIcon} />
         </div>
       </div>
 

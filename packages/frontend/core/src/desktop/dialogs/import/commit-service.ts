@@ -261,11 +261,13 @@ export class ImportCommitService {
     if (!icon || !this.options.explorerIconService) return;
     const iconData = toIconData(icon);
     if (!iconData) return;
-    this.options.explorerIconService.setIcon({
-      where: 'doc',
-      id,
-      icon: iconData,
-    });
+    this.options.explorerIconService
+      .setIcon({
+        where: 'doc',
+        id,
+        icon: iconData,
+      })
+      .catch(console.error);
   }
 
   private applyNativeTags(tags?: Map<string, string[]>) {

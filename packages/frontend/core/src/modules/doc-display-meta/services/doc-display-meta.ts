@@ -29,6 +29,7 @@ import type { DocRecord, DocsService } from '../../doc';
 import type { ExplorerIconService } from '../../explorer-icon/services/explorer-icon';
 import type { I18nService } from '../../i18n';
 import type { JournalService } from '../../journal';
+import type { WorkspaceService } from '../../workspace';
 import { getDocIconComponent, getDocIconComponentLit } from './icon';
 
 type IconType = 'rc' | 'lit';
@@ -88,7 +89,8 @@ export class DocDisplayMetaService extends Service {
     private readonly journalService: JournalService,
     private readonly docsService: DocsService,
     private readonly i18nService: I18nService,
-    private readonly explorerIconService: ExplorerIconService
+    private readonly explorerIconService: ExplorerIconService,
+    private readonly workspaceService: WorkspaceService
   ) {
     super();
   }
@@ -146,6 +148,30 @@ export class DocDisplayMetaService extends Service {
       const finalMode = options?.mode ?? mode ?? 'page';
       const referenceToNode = !!(referenced && options.referenceToNode);
 
+      // the icon shown when no custom icon is set — also used as the fallback
+      // while a custom blob icon is loading (or its blob is unavailable)
+      const getFallbackIcon = () => {
+        // title alias
+        if (titleAlias) return iconSet.AliasIcon;
+
+        if (journalIcon) return journalIcon;
+
+        // link to specified block
+        if (referenceToNode) return iconSet.BlockLinkIcon;
+
+        // link to regular doc (reference)
+        if (options?.reference) {
+          return finalMode === 'edgeless'
+            ? iconSet.LinkedEdgelessIcon
+            : iconSet.LinkedPageIcon;
+        }
+
+        // default icon
+        return finalMode === 'edgeless'
+          ? iconSet.EdgelessIcon
+          : iconSet.PageIcon;
+      };
+
       // emoji title
       if (enableEmojiIcon) {
         // const { emoji } = extractEmojiIcon(title);
@@ -153,28 +179,19 @@ export class DocDisplayMetaService extends Service {
         const icon = get(this.explorerIconService.icon$('doc', docId))?.icon;
         if (icon) {
           return options?.type === 'lit'
-            ? getDocIconComponentLit(icon)
-            : getDocIconComponent(icon);
+            ? getDocIconComponentLit(
+                icon,
+                id =>
+                  this.workspaceService.workspace.docCollection.blobSync.get(
+                    id
+                  ),
+                getFallbackIcon()
+              )
+            : getDocIconComponent(icon, getFallbackIcon());
         }
       }
 
-      // title alias
-      if (titleAlias) return iconSet.AliasIcon;
-
-      if (journalIcon) return journalIcon;
-
-      // link to specified block
-      if (referenceToNode) return iconSet.BlockLinkIcon;
-
-      // link to regular doc (reference)
-      if (options?.reference) {
-        return finalMode === 'edgeless'
-          ? iconSet.LinkedEdgelessIcon
-          : iconSet.LinkedPageIcon;
-      }
-
-      // default icon
-      return finalMode === 'edgeless' ? iconSet.EdgelessIcon : iconSet.PageIcon;
+      return getFallbackIcon();
     });
   }
 

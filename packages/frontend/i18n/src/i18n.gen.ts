@@ -9685,6 +9685,58 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.docIconPicker.placeholder"](): string;
     /**
+      * `Emoji`
+      */
+    ["com.affine.iconPicker.emoji"](): string;
+    /**
+      * `Icons`
+      */
+    ["com.affine.iconPicker.icons"](): string;
+    /**
+      * `Custom`
+      */
+    ["com.affine.iconPicker.custom"](): string;
+    /**
+      * `Remove`
+      */
+    ["com.affine.iconPicker.remove"](): string;
+    /**
+      * `Click to upload image`
+      */
+    ["com.affine.iconPicker.custom.upload"](): string;
+    /**
+      * `PNG, JPEG, SVG, WebP, GIF — auto-resized`
+      */
+    ["com.affine.iconPicker.custom.hint"](): string;
+    /**
+      * `Choose different image`
+      */
+    ["com.affine.iconPicker.custom.chooseAnother"](): string;
+    /**
+      * `Processing...`
+      */
+    ["com.affine.iconPicker.custom.processing"](): string;
+    /**
+      * `Unsupported file type. Use PNG, JPEG, SVG, WebP, or GIF.`
+      */
+    ["com.affine.iconPicker.custom.error.unsupported"](): string;
+    /**
+      * `File is too large. Please use an image under 5MB.`
+      */
+    ["com.affine.iconPicker.custom.error.tooLarge"](): string;
+    /**
+      * `SVG file is too large. Please use an SVG under 500KB.`
+      */
+    ["com.affine.iconPicker.custom.error.svgTooLarge"](): string;
+    /**
+      * `Image dimensions are too large. Please use a smaller image.`
+      */
+    ["com.affine.iconPicker.custom.error.dimensions"](): string;
+    /**
+      * `Failed to process image.`
+      */
+    ["com.affine.iconPicker.custom.error.failed"](): string;
+    /**
       * `Devices`
       */
     ["com.affine.settings.devices.title"](): string;
