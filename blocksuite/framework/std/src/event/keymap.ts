@@ -3,6 +3,7 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { base, keyName } from 'w3c-keyname';
 
 import type { UIEventHandler } from './base.js';
+import { KeyboardEventState } from './state/index.js';
 
 function normalizeKeyName(name: string) {
   const parts = name.split(/-(?!$)/);
@@ -132,6 +133,18 @@ export function androidBindKeymapPatch(
       'Backspace' in bindings
     ) {
       return bindings['Backspace'](ctx);
+    }
+
+    if (event.inputType === 'insertParagraph' && 'Enter' in bindings) {
+      if (!ctx.has('keyboardState')) {
+        ctx.add(
+          new KeyboardEventState({
+            event: event as unknown as KeyboardEvent,
+            composing: event.isComposing,
+          })
+        );
+      }
+      return bindings['Enter'](ctx);
     }
 
     return false;

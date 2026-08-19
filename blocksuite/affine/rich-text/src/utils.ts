@@ -57,11 +57,19 @@ export function getPrefixText(inlineEditor: InlineEditor) {
   const inlineRange = inlineEditor.getInlineRange();
   if (!inlineRange || inlineRange.length > 0) return '';
 
-  const nearestLineBreakIndex = inlineEditor.yTextString
-    .slice(0, inlineRange.index)
-    .lastIndexOf('\n');
+  const maxMarkdownPrefixLength = 512;
+  const prefixStart = Math.max(0, inlineRange.index - maxMarkdownPrefixLength);
+  const prefixWindow = inlineEditor.yTextString.slice(
+    prefixStart,
+    inlineRange.index
+  );
+  const nearestLineBreakIndex = prefixWindow.lastIndexOf('\n');
+  if (nearestLineBreakIndex === -1 && prefixStart > 0) return '';
+
+  const lineStart =
+    nearestLineBreakIndex === -1 ? 0 : prefixStart + nearestLineBreakIndex + 1;
   const prefixText = inlineEditor.yTextString.slice(
-    nearestLineBreakIndex + 1,
+    lineStart,
     inlineRange.index
   );
   return prefixText;

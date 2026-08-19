@@ -18,6 +18,20 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
 
   private _isComposing = false;
 
+  private readonly _finishAndroidComposingSession = (reason: string) => {
+    if (!IS_ANDROID) return;
+
+    window.setTimeout(() => {
+      (
+        globalThis as typeof globalThis & {
+          AffineAndroidIME?: {
+            finishComposingSession?: (reason: string) => void;
+          };
+        }
+      ).AffineAndroidIME?.finishComposingSession?.(reason);
+    }, 0);
+  };
+
   private readonly _getClosestInlineRoot = (node: Node): Element | null => {
     const el = node instanceof Element ? node : node.parentElement;
     return el?.closest(`[${INLINE_ROOT_ATTR}]`) ?? null;
@@ -203,6 +217,17 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     );
 
     this.editor.slots.inputting.next(event.data ?? '');
+
+    if (
+      IS_ANDROID &&
+      (ctx.raw.inputType === 'deleteContentBackward' ||
+        ctx.raw.inputType === 'insertParagraph' ||
+        ctx.raw.inputType === 'insertLineBreak' ||
+        (ctx.raw.inputType === 'insertText' &&
+          (ctx.data === ' ' || ctx.data === '\n')))
+    ) {
+      this._finishAndroidComposingSession(`beforeinput:${ctx.raw.inputType}`);
+    }
   };
 
   private readonly _onClick = (event: MouseEvent) => {
@@ -265,6 +290,7 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     }
 
     this.editor.slots.inputting.next(event.data ?? '');
+    this._finishAndroidComposingSession('compositionend');
   };
 
   private readonly _onCompositionStart = (event: CompositionEvent) => {

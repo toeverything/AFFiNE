@@ -1,6 +1,7 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
-import { bindKeymap } from '../event/keymap.js';
+import { UIEventState, UIEventStateContext } from '../event/base.js';
+import { androidBindKeymapPatch, bindKeymap } from '../event/keymap.js';
 
 const createKeyboardEvent = (options: {
   key: string;
@@ -115,5 +116,60 @@ describe('bindKeymap', () => {
 
     expect(handler(createCtx(event))).toBe(false);
     expect(handled).toBe(false);
+  });
+});
+
+describe('androidBindKeymapPatch', () => {
+  const beforeInputCtx = (inputType: string) => {
+    const event = new InputEvent('beforeinput', { inputType });
+    return { ctx: UIEventStateContext.from(new UIEventState(event)), event };
+  };
+
+  test('routes deleteContentBackward to the Backspace binding', () => {
+    const backspace = vi.fn(() => true);
+    const handler = androidBindKeymapPatch({ Backspace: backspace });
+    const { ctx } = beforeInputCtx('deleteContentBackward');
+
+    expect(handler(ctx)).toBe(true);
+    expect(backspace).toHaveBeenCalledOnce();
+  });
+
+  test('routes insertParagraph to the Enter binding', () => {
+    const enter = vi.fn((ctx: UIEventStateContext) => {
+      ctx.get('keyboardState').raw.preventDefault();
+      return true;
+    });
+    const handler = androidBindKeymapPatch({ Enter: enter });
+    const { ctx, event } = beforeInputCtx('insertParagraph');
+    const preventDefault = vi.spyOn(event, 'preventDefault');
+
+    expect(handler(ctx)).toBe(true);
+    expect(enter).toHaveBeenCalledOnce();
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(ctx.get('keyboardState').raw).toBe(
+      event as unknown as KeyboardEvent
+    );
+  });
+
+  test('does nothing for insertParagraph without an Enter binding', () => {
+    const handler = androidBindKeymapPatch({ Backspace: vi.fn(() => true) });
+    const { ctx } = beforeInputCtx('insertParagraph');
+
+    expect(handler(ctx)).toBe(false);
+    expect(ctx.has('keyboardState')).toBe(false);
+  });
+
+  test('ignores unrelated input types', () => {
+    const enter = vi.fn(() => true);
+    const backspace = vi.fn(() => true);
+    const handler = androidBindKeymapPatch({
+      Enter: enter,
+      Backspace: backspace,
+    });
+    const { ctx } = beforeInputCtx('insertText');
+
+    expect(handler(ctx)).toBe(false);
+    expect(enter).not.toHaveBeenCalled();
+    expect(backspace).not.toHaveBeenCalled();
   });
 });

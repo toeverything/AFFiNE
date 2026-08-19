@@ -3,6 +3,7 @@ package app.affine.pro
 import android.content.res.ColorStateList
 import android.content.ComponentCallbacks2
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.webkit.WebSettings
@@ -114,6 +115,7 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
     }
 
     private fun configureEditorWebView() {
+        Log.i("AffineIME", "configureEditorWebView webView=${bridge.webView.javaClass.name}")
         bridge.webView.apply {
             overScrollMode = View.OVER_SCROLL_NEVER
             isHorizontalScrollBarEnabled = false
