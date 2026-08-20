@@ -65,6 +65,14 @@ export declare class BackendRuntime {
   reloadConfig(privateKey?: string | undefined | null): Promise<void>
   health(): Promise<BackendRuntimeHealth>
   runMigrations(): Promise<void>
+  searchAuthorized(actorUserId: string, workspaceId: string, request: RuntimeSearchRequest): Promise<SearchOperationOutput>
+  aggregateAuthorized(actorUserId: string, workspaceId: string, request: RuntimeAggregateRequest): Promise<SearchOperationOutput>
+  indexSearchDocument(workspaceId: string, docId: string): Promise<void>
+  deleteSearchDocument(workspaceId: string, docId: string): Promise<void>
+  reconcileSearchWorkspace(workspaceId: string): Promise<void>
+  deleteSearchWorkspace(workspaceId: string): Promise<void>
+  filterReadableDocs(actorUserId: string, workspaceId: string, docIds: Array<string>): Promise<Array<string>>
+  searchStatus(): Promise<any>
   embeddingHealth(): Promise<EmbeddingHealth>
   syncEmbeddingState(input: SyncEmbeddingStateInput): Promise<RuntimeEmbeddingWorkspaceState>
   embeddingQueueCounts(): Promise<RuntimeEmbeddingQueueCounts>
@@ -100,7 +108,7 @@ export declare class StorageRuntime {
   cleanupExpiredPendingBlobs(cutoffMs: number, limit: number): Promise<RuntimeBlobCleanupResult>
   releaseDeletedBlobs(workspaceId: string, limit: number): Promise<RuntimeBlobCleanupResult>
   backfillMissingBlobMetadata(workspaceId: string | undefined | null, limit: number): Promise<RuntimeBlobMetadataBackfillResult>
-  rebuildDocBlobRefs(workspaceId: string, docId: string): Promise<RuntimeDocBlobRefsResult>
+  rebuildDocBlobRefs(workspaceId: string, docId: string, sourceRevision: number): Promise<RuntimeDocBlobRefsResult>
   rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
   reconcileWorkspaceDocuments(workspaceId: string): Promise<RuntimeDocumentCleanupReconcileResult>
   executeDocumentCleanupCandidates(workspaceId: string | undefined | null, gracePeriodDays: number, limit: number): Promise<RuntimeDocumentCleanupExecuteResult>
@@ -151,6 +159,17 @@ export declare function addDocToRootDoc(rootDocBin: Buffer, docId: string, title
 export const AFFINE_PRO_LICENSE_AES_KEY: string | undefined | null
 
 export const AFFINE_PRO_PUBLIC_KEY: string | undefined | null
+
+export interface AggregateHitsOptions {
+  fields: Array<string>
+  highlights: Array<SearchHighlight>
+  pagination: SearchPagination
+}
+
+export interface AggregateOptions {
+  hits: AggregateHitsOptions
+  pagination: SearchPagination
+}
 
 export interface AppConfigDescriptor {
   key: string
@@ -1159,6 +1178,14 @@ export interface RotateByokCredentialInput {
   actorUserId: string
 }
 
+export interface RuntimeAggregateRequest {
+  table: SearchTable
+  queries: Array<RuntimeSearchQuery>
+  rootQuery: number
+  field: string
+  options: AggregateOptions
+}
+
 export interface RuntimeBlobCleanupExecuteResult {
   scannedCandidates: number
   deletedObjects: number
@@ -1435,6 +1462,23 @@ export interface RuntimeRetrievalScope {
   preferredSourceIds: Array<string>
 }
 
+export interface RuntimeSearchQuery {
+  queryType: string
+  field?: string
+  matchValue?: string
+  query?: number
+  queries?: Array<number>
+  occur?: string
+  boost?: number
+}
+
+export interface RuntimeSearchRequest {
+  table: SearchTable
+  queries: Array<RuntimeSearchQuery>
+  rootQuery: number
+  options: SearchOptions
+}
+
 export interface RuntimeTurnScopeSnapshot {
   version: number
   resolvedAt: string
@@ -1564,6 +1608,33 @@ export interface ScopeSelectorInput {
   name?: string
   source: string
 }
+
+export interface SearchHighlight {
+  field: string
+  before: string
+  end: string
+}
+
+export interface SearchOperationOutput {
+  ok: boolean
+  value?: any
+  errorCode?: string
+}
+
+export interface SearchOptions {
+  fields: Array<string>
+  highlights: Array<SearchHighlight>
+  pagination: SearchPagination
+}
+
+export interface SearchPagination {
+  limit?: number
+  skip?: number
+  cursor?: string
+}
+
+export type SearchTable =  'doc'|
+'block';
 
 export declare function signAuthSessionAccessToken(userId: string, authSessionId: string, keyId: string, secret: Buffer, issuedAt: number, expiresAt: number): string
 

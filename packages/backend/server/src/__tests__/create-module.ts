@@ -8,6 +8,8 @@ import { PrismaClient } from '@prisma/client';
 
 import { FunctionalityModules } from '../app.module';
 import { AFFiNELogger, EventBus, JobModule, JobQueue } from '../base';
+import { BackendRuntimeProvider } from '../core/backend-runtime';
+import { StorageRuntimeProvider } from '../core/storage-runtime';
 import {
   createFactory,
   MockEventBus,
@@ -64,6 +66,15 @@ export async function createModule(
   module.useLogger(logger);
 
   await module.init();
+  const backendRuntime = module.get(BackendRuntimeProvider);
+  if (backendRuntime instanceof BackendRuntimeProvider) {
+    await backendRuntime.runMigrations();
+    await backendRuntime.onConfigChanged({ updates: { indexer: {} } });
+  }
+  const storageRuntime = module.get(StorageRuntimeProvider);
+  if (storageRuntime instanceof StorageRuntimeProvider) {
+    await storageRuntime.runMigrations();
+  }
   module[Symbol.asyncDispose] = async () => {
     await module.close();
   };

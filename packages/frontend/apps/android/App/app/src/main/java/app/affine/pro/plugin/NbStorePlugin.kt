@@ -7,9 +7,10 @@ import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import kotlinx.coroutines.Dispatchers
-import org.json.JSONObject
 import timber.log.Timber
 import uniffi.affine_mobile_native.DocRecord
+import uniffi.affine_mobile_native.DocIndexedClock
+import uniffi.affine_mobile_native.IndexHit
 import uniffi.affine_mobile_native.SetBlob
 import uniffi.affine_mobile_native.newDocStoragePool
 
@@ -623,119 +624,209 @@ class NbStorePlugin : Plugin() {
   }
 
   @PluginMethod
-  fun ftsAddDocument(call: PluginCall) {
+  fun getDocIndexedClock(call: PluginCall) {
     launch(Dispatchers.IO) {
       try {
-        val id = call.getStringEnsure("id")
-        val indexName = call.getStringEnsure("indexName")
-        val docId = call.getStringEnsure("docId")
-        val text = call.getStringEnsure("text")
-        val index = call.getBoolean("index")
-          ?: throw IllegalArgumentException("index is required")
-        docStoragePool.ftsAddDocument(id, indexName, docId, text, index)
-        call.resolve()
+        val clock = docStoragePool.getDocIndexedClock(
+          call.getStringEnsure("id"),
+          call.getStringEnsure("docId")
+        )
+        call.resolve(clock?.let(::indexedClockJson))
       } catch (e: Exception) {
-        call.reject("Failed to add document to fts: ${e.message}", null, e)
+        call.reject("Failed to get indexed clock: ${e.message}", null, e)
       }
     }
   }
 
   @PluginMethod
-  fun ftsDeleteDocument(call: PluginCall) {
+  fun setDocIndexedClock(call: PluginCall) {
     launch(Dispatchers.IO) {
       try {
-        val id = call.getStringEnsure("id")
-        val indexName = call.getStringEnsure("indexName")
-        val docId = call.getStringEnsure("docId")
-        docStoragePool.ftsDeleteDocument(id, indexName, docId)
+        val clock = DocIndexedClock(
+          call.getStringEnsure("docId"),
+          call.getLong("indexedClock") ?: throw IllegalArgumentException("indexedClock is required"),
+          call.getLong("indexerVersion") ?: throw IllegalArgumentException("indexerVersion is required")
+        )
+        docStoragePool.setDocIndexedClock(call.getStringEnsure("id"), clock)
         call.resolve()
       } catch (e: Exception) {
-        call.reject("Failed to delete document from fts: ${e.message}", null, e)
+        call.reject("Failed to set indexed clock: ${e.message}", null, e)
       }
     }
   }
 
   @PluginMethod
-  fun ftsSearch(call: PluginCall) {
+  fun setDocIndexedClocks(call: PluginCall) {
     launch(Dispatchers.IO) {
       try {
-        val id = call.getStringEnsure("id")
-        val indexName = call.getStringEnsure("indexName")
-        val query = call.getStringEnsure("query")
-        val results = docStoragePool.ftsSearch(id, indexName, query)
-        val mapped = results.map {
-          JSObject()
-            .put("id", it.id)
-            .put("score", it.score)
-            .put("terms", JSArray(it.terms))
+        val values = call.getArray("clocks") ?: throw IllegalArgumentException("clocks is required")
+        val clocks = (0 until values.length()).map { index ->
+          val value = values.getJSONObject(index)
+          DocIndexedClock(
+            value.getString("docId"),
+            value.getLong("timestamp"),
+            value.getLong("indexerVersion")
+          )
         }
+        docStoragePool.setDocIndexedClocks(call.getStringEnsure("id"), clocks)
+        call.resolve()
+      } catch (e: Exception) {
+        call.reject("Failed to commit indexed clocks: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun clearDocIndexedClock(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        docStoragePool.clearDocIndexedClock(call.getStringEnsure("id"), call.getStringEnsure("docId"))
+        call.resolve()
+      } catch (e: Exception) {
+        call.reject("Failed to clear indexed clock: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun indexUpsert(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val table = call.getStringEnsure("table")
+        val document = call.getObject("document")
+          ?: throw IllegalArgumentException("document is required")
+        docStoragePool.indexUpsert(id, table, document.toString())
+        call.resolve()
+      } catch (e: Exception) {
+        call.reject("Failed to upsert index document: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun indexDelete(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val table = call.getStringEnsure("table")
+        val docId = call.getStringEnsure("docId")
+        docStoragePool.indexDelete(id, table, docId)
+        call.resolve()
+      } catch (e: Exception) {
+        call.reject("Failed to delete index document: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun indexSearch(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val table = call.getStringEnsure("table")
+        val query = call.getObject("query") ?: throw IllegalArgumentException("query is required")
+        val options = call.getObject("options") ?: throw IllegalArgumentException("options is required")
+        val result = docStoragePool.indexSearch(id, table, query.toString(), options.toString())
         call.resolve(
-          JSObject().put("results", JSArray(mapped))
+          JSObject()
+            .put("total", result.total.toInt())
+            .put("hits", JSArray(result.hits.map(::indexHitJson)))
         )
       } catch (e: Exception) {
-        call.reject("Failed to search fts: ${e.message}", null, e)
+        call.reject("Failed to search index: ${e.message}", null, e)
       }
     }
   }
 
   @PluginMethod
-  fun ftsGetDocument(call: PluginCall) {
+  fun indexAggregate(call: PluginCall) {
     launch(Dispatchers.IO) {
       try {
         val id = call.getStringEnsure("id")
-        val indexName = call.getStringEnsure("indexName")
-        val docId = call.getStringEnsure("docId")
-        val text = docStoragePool.ftsGetDocument(id, indexName, docId)
-        call.resolve(JSObject().put("text", text ?: JSONObject.NULL))
-      } catch (e: Exception) {
-        call.reject("Failed to get fts document: ${e.message}", null, e)
-      }
-    }
-  }
-
-  @PluginMethod
-  fun ftsGetMatches(call: PluginCall) {
-    launch(Dispatchers.IO) {
-      try {
-        val id = call.getStringEnsure("id")
-        val indexName = call.getStringEnsure("indexName")
-        val docId = call.getStringEnsure("docId")
-        val query = call.getStringEnsure("query")
-        val matches = docStoragePool.ftsGetMatches(id, indexName, docId, query)
-        val mapped = matches.map {
+        val table = call.getStringEnsure("table")
+        val query = call.getObject("query") ?: throw IllegalArgumentException("query is required")
+        val hits = call.getObject("hits")?.toString()
+        val result = docStoragePool.indexAggregate(
+          id,
+          table,
+          query.toString(),
+          call.getStringEnsure("field"),
+          call.getIntEnsure("limit").toUInt(),
+          call.getIntEnsure("offset").toUInt(),
+          hits
+        )
+        val buckets = result.buckets.map {
           JSObject()
-            .put("start", it.start.toInt())
-            .put("end", it.end.toInt())
+            .put("key", it.key)
+            .put("count", it.count.toInt())
+            .put("score", it.score)
+            .put("hits", JSArray(it.hits.map(::indexHitJson)))
         }
-        call.resolve(JSObject().put("matches", JSArray(mapped)))
+        call.resolve(JSObject().put("total", result.total.toInt()).put("buckets", JSArray(buckets)))
       } catch (e: Exception) {
-        call.reject("Failed to get fts matches: ${e.message}", null, e)
+        call.reject("Failed to aggregate index: ${e.message}", null, e)
       }
     }
   }
 
   @PluginMethod
-  fun ftsFlushIndex(call: PluginCall) {
+  fun indexDeleteByQuery(call: PluginCall) {
     launch(Dispatchers.IO) {
       try {
         val id = call.getStringEnsure("id")
-        docStoragePool.ftsFlushIndex(id)
+        val table = call.getStringEnsure("table")
+        val query = call.getObject("query") ?: throw IllegalArgumentException("query is required")
+        val deleted = docStoragePool.indexDeleteByQuery(id, table, query.toString())
+        call.resolve(JSObject().put("deleted", deleted.toInt()))
+      } catch (e: Exception) {
+        call.reject("Failed to delete index documents: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun indexFlush(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        docStoragePool.indexFlush(call.getStringEnsure("id"))
         call.resolve()
       } catch (e: Exception) {
-        call.reject("Failed to flush fts index: ${e.message}", null, e)
+        call.reject("Failed to flush index: ${e.message}", null, e)
       }
     }
   }
 
   @PluginMethod
-  fun ftsIndexVersion(call: PluginCall) {
+  fun indexVersion(call: PluginCall) {
     launch(Dispatchers.IO) {
       try {
-        val version = docStoragePool.ftsIndexVersion() + ANDROID_INDEXER_VERSION_OFFSET
+        val version = docStoragePool.indexVersion() + ANDROID_INDEXER_VERSION_OFFSET
         call.resolve(JSObject().put("indexVersion", version))
       } catch (e: Exception) {
-        call.reject("Failed to get fts index version: ${e.message}", null, e)
+        call.reject("Failed to get index version: ${e.message}", null, e)
       }
     }
   }
 }
+
+private fun indexHitJson(hit: IndexHit): JSObject {
+  val fields = hit.fields.map { JSObject().put("field", it.field).put("values", JSArray(it.values)) }
+  val highlights = hit.highlights.map { highlight ->
+    val values = highlight.values.map { value ->
+      val spans = value.spans.map { JSObject().put("start", it.start.toInt()).put("end", it.end.toInt()) }
+      JSObject().put("valueIndex", value.valueIndex.toInt()).put("spans", JSArray(spans))
+    }
+    JSObject().put("field", highlight.field).put("values", JSArray(values))
+  }
+  return JSObject()
+    .put("id", hit.id)
+    .put("score", hit.score)
+    .put("fields", JSArray(fields))
+    .put("highlights", JSArray(highlights))
+}
+
+private fun indexedClockJson(clock: DocIndexedClock): JSObject = JSObject()
+  .put("docId", clock.docId)
+  .put("timestamp", clock.timestamp)
+  .put("indexerVersion", clock.indexerVersion)

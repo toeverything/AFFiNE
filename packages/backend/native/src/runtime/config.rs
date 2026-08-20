@@ -20,6 +20,28 @@ pub(crate) struct BackendRuntimeConfig {
   pub(crate) private_key: Arc<Zeroizing<String>>,
   pub(crate) deployment: Deployment,
   pub(crate) copilot: CopilotRuntimeConfig,
+  pub(crate) search: SearchRuntimeConfig,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct SearchRuntimeConfig {
+  pub(crate) provider: String,
+  pub(crate) endpoint: String,
+  pub(crate) api_key: String,
+  pub(crate) username: String,
+  pub(crate) password: String,
+}
+
+impl Default for SearchRuntimeConfig {
+  fn default() -> Self {
+    Self {
+      provider: "embedded".to_string(),
+      endpoint: String::new(),
+      api_key: String::new(),
+      username: String::new(),
+      password: String::new(),
+    }
+  }
 }
 
 #[derive(Clone, Debug)]
@@ -348,6 +370,7 @@ impl BackendRuntimeConfig {
         .map(TryInto::try_into)
         .transpose()?
         .unwrap_or_default(),
+      search: app_config.indexer.map(Into::into).unwrap_or_default(),
     }
     .validated()
   }
@@ -385,6 +408,10 @@ impl BackendRuntimeConfig {
         .map(TryInto::try_into)
         .transpose()?
         .unwrap_or_else(|| self.copilot.clone()),
+      search: app_config
+        .indexer
+        .map(Into::into)
+        .unwrap_or_else(|| self.search.clone()),
     }
     .validated()
   }
@@ -453,6 +480,42 @@ struct AppConfigFile {
   db: Option<DbConfigFile>,
   crypto: Option<CryptoConfigFile>,
   copilot: Option<CopilotRuntimeConfigFile>,
+  indexer: Option<SearchRuntimeConfigFile>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct SearchRuntimeConfigFile {
+  enabled: bool,
+  provider: SearchProviderConfigFile,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct SearchProviderConfigFile {
+  #[serde(rename = "type")]
+  provider: String,
+  endpoint: String,
+  api_key: String,
+  username: String,
+  password: String,
+}
+
+impl From<SearchRuntimeConfigFile> for SearchRuntimeConfig {
+  fn from(value: SearchRuntimeConfigFile) -> Self {
+    let provider = if value.enabled {
+      value.provider.provider
+    } else {
+      "embedded".to_string()
+    };
+    Self {
+      provider,
+      endpoint: value.provider.endpoint,
+      api_key: value.provider.api_key,
+      username: value.provider.username,
+      password: value.provider.password,
+    }
+  }
 }
 
 #[derive(Default, Deserialize)]
@@ -874,6 +937,7 @@ mod tests {
       private_key: Arc::new(Zeroizing::new("active-private-key".to_string())),
       deployment: Deployment::Cloud,
       copilot: CopilotRuntimeConfig::default(),
+      search: SearchRuntimeConfig::default(),
     };
     let empty = serde_json::Value::Object(Map::new());
 

@@ -1,12 +1,16 @@
+import { randomUUID } from 'node:crypto';
+
 import { ModuleRef } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
 import { createTestingModule, type TestingModule } from '../../__tests__/utils';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { Models } from '../../models';
 import { BackfillPermissionProjection1765500000000 } from '../migrations/1765500000000-backfill-permission-projection';
 import { BackfillTranscriptStorageKeys1786805802350 } from '../migrations/1786805802350-backfill-transcript-storage-keys';
 import { ConvergeManagedProviderProfiles1786810000000 } from '../migrations/1786810000000-converge-managed-provider-profiles';
+import { MigrateLegacyContextBlobArtifacts1786820000000 } from '../migrations/1786820000000-migrate-legacy-context-blob-artifacts';
 
 interface Context {
   module: TestingModule;
@@ -206,4 +210,98 @@ test('managed provider migration preserves explicit profiles and converts legacy
       where: { id: 'copilot.providers.fal' },
     })
   );
+});
+
+test('legacy context blob migration admits each blob once through the artifact runtime', async t => {
+  const user = await t.context.models.user.create({
+    email: 'legacy-context@affine.pro',
+  });
+  const workspace = await t.context.db.workspace.create({
+    data: { accessPolicy: { create: {} } },
+  });
+  const session = await t.context.db.aiSession.create({
+    data: {
+      userId: user.id,
+      workspaceId: workspace.id,
+      promptName: 'copilot',
+    },
+  });
+  const blobId = 'legacy-context-blob';
+  const legacyTable = await t.context.db.$queryRaw<{ exists: boolean }[]>`
+    SELECT to_regclass('public.ai_contexts') IS NOT NULL AS exists
+  `;
+  const createdLegacyTable = !legacyTable[0]?.exists;
+  if (createdLegacyTable) {
+    await t.context.db.$executeRaw`
+      CREATE TABLE ai_contexts (
+        id VARCHAR PRIMARY KEY,
+        session_id VARCHAR NOT NULL,
+        config JSON NOT NULL,
+        created_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ(3) NOT NULL
+      )
+    `;
+  }
+  await t.context.db.blob.create({
+    data: {
+      workspaceId: workspace.id,
+      key: blobId,
+      size: 12,
+      mime: 'text/plain',
+      status: 'completed',
+    },
+  });
+  await t.context.db.$executeRaw`
+    INSERT INTO ai_contexts (id, session_id, config, created_at, updated_at)
+    VALUES (${randomUUID()}, ${session.id}, ${JSON.stringify({ blobs: [blobId] })}::jsonb, now(), now())
+  `;
+
+  const calls: Array<{
+    workspaceId: string;
+    blobId: string;
+    mimeType: string;
+    libraryOwned?: boolean;
+  }> = [];
+  const runtime = {
+    async ensureWorkspaceBlobArtifact(input: (typeof calls)[number]) {
+      calls.push(input);
+      await t.context.db.$executeRaw`
+        INSERT INTO workspace_artifacts (
+          id, workspace_id, content_hash, canonical_media_type, size_bytes,
+          storage_scope, storage_key, status, ready_at
+        ) VALUES (
+          ${randomUUID()}::uuid, ${input.workspaceId}, ${`hash-${input.blobId}`},
+          ${input.mimeType}, 12, 'blob',
+          ${`${input.workspaceId}/${input.blobId}`}, 'ready', now()
+        )
+      `;
+      return {};
+    },
+  };
+  const ref = {
+    get(token: unknown) {
+      if (token === BackendRuntimeProvider) {
+        return runtime;
+      }
+      throw new Error('unexpected migration dependency');
+    },
+  } as unknown as ModuleRef;
+
+  try {
+    await MigrateLegacyContextBlobArtifacts1786820000000.up(t.context.db, ref);
+    await MigrateLegacyContextBlobArtifacts1786820000000.up(t.context.db, ref);
+  } finally {
+    if (createdLegacyTable) {
+      await t.context.db.$executeRaw`DROP TABLE ai_contexts`;
+    }
+  }
+
+  t.deepEqual(calls, [
+    {
+      workspaceId: workspace.id,
+      blobId,
+      mimeType: 'text/plain',
+      libraryOwned: false,
+    },
+  ]);
 });

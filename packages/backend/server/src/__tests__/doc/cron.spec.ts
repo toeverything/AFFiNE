@@ -4,7 +4,7 @@ import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
-import { DocStorageModule } from '../../core/doc';
+import { DocStorageModule, DocStorageWorkerModule } from '../../core/doc';
 import { DocStorageCronJob } from '../../core/doc/job';
 import { createTestingModule, type TestingModule } from '../utils';
 
@@ -23,7 +23,11 @@ test.before(async t => {
     cleanupExpiredSnapshotHistories: Sinon.stub(),
   };
   t.context.module = await createTestingModule({
-    imports: [ScheduleModule.forRoot(), DocStorageModule],
+    imports: [
+      ScheduleModule.forRoot(),
+      DocStorageModule,
+      DocStorageWorkerModule,
+    ],
     tapModule: builder => {
       builder
         .overrideProvider(BackendRuntimeProvider)

@@ -209,6 +209,15 @@
           "description": "Whether request abuse source facts should trust Cloudflare headers from the origin edge.\n@default false",
           "default": false
         },
+        "signInRateLimit": {
+          "type": "object",
+          "description": "Limits for sign-in attempts shared through Redis by source IP and email.\n@default {\"ttl\":60000,\"ipLimit\":20,\"emailLimit\":5}",
+          "default": {
+            "ttl": 60000,
+            "ipLimit": 20,
+            "emailLimit": 5
+          }
+        },
         "inviteQuotaShadowMode": {
           "type": "boolean",
           "description": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions.\n@default false",
@@ -968,17 +977,6 @@
           "type": "boolean",
           "description": "Whether allow guest users to create demo workspaces.\n@default true",
           "default": true
-        }
-      }
-    },
-    "docService": {
-      "type": "object",
-      "description": "Configuration for docService module",
-      "properties": {
-        "endpoint": {
-          "type": "string",
-          "description": "The endpoint of the doc service.\n@default \"\"\n@environment `DOC_SERVICE_ENDPOINT`",
-          "default": ""
         }
       }
     },

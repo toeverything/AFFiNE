@@ -1,26 +1,23 @@
 import { randomUUID } from 'node:crypto';
-import { mock } from 'node:test';
 
 import test from 'ava';
 import Sinon from 'sinon';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
-import { Config, JOB_SIGNAL } from '../../../base';
+import { JOB_SIGNAL } from '../../../base';
 import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import { DocReader } from '../../../core/doc';
 import { Models } from '../../../models';
 import { addDocToRootDoc } from '../../../native';
-import { SearchProviderFactory } from '../factory';
-import { IndexerModule, IndexerService } from '../index';
+import { IndexerModule, IndexerService, IndexerWorkerModule } from '../index';
 import { IndexerJob } from '../job';
-import { ManticoresearchProvider } from '../providers';
-import { blockSQL, docSQL, SearchTable } from '../tables';
 
 const module = await createModule({
   imports: [
     IndexerModule,
+    IndexerWorkerModule,
     ServerConfigModule,
     ConfigModule.override({
       indexer: {
@@ -32,21 +29,13 @@ const module = await createModule({
 });
 const indexerService = module.get(IndexerService);
 const indexerJob = module.get(IndexerJob);
-const searchProviderFactory = module.get(SearchProviderFactory);
-const manticoresearch = module.get(ManticoresearchProvider);
 const models = module.get(Models);
 const docReader = module.get(DocReader);
-const config = module.get(Config);
 
 const user = await module.create(Mockers.User);
 const workspace = await module.create(Mockers.Workspace, {
   snapshot: true,
   owner: user,
-});
-
-test.before(async () => {
-  await manticoresearch.recreateTable(SearchTable.block, blockSQL);
-  await manticoresearch.recreateTable(SearchTable.doc, docSQL);
 });
 
 test.after.always(async () => {
@@ -55,13 +44,6 @@ test.after.always(async () => {
 
 test.afterEach.always(() => {
   Sinon.restore();
-  mock.reset();
-});
-
-test.beforeEach(() => {
-  mock.method(searchProviderFactory, 'get', () => {
-    return manticoresearch;
-  });
 });
 
 test('should handle indexer.indexDoc job', async t => {
@@ -83,52 +65,17 @@ test('should handle indexer.deleteDoc job', async t => {
 });
 
 test('should handle indexer.indexWorkspace job', async t => {
-  const count = module.queue.count('indexer.deleteDoc');
-  const spy = Sinon.spy(indexerService, 'listDocIds');
+  const spy = Sinon.stub(indexerService, 'reconcileWorkspace').resolves();
 
   await indexerJob.indexWorkspace({
     workspaceId: workspace.id,
   });
 
-  t.is(spy.callCount, 1);
-  const { payload } = await module.queue.waitFor('indexer.indexDoc');
-  t.is(payload.workspaceId, workspace.id);
-  t.is(payload.docId, '5nS9BSp3Px');
-  // no delete job
-  t.is(module.queue.count('indexer.deleteDoc'), count);
+  t.true(spy.calledOnceWith(workspace.id));
 
   // workspace should be indexed
   const ws = await models.workspace.get(workspace.id);
   t.is(ws!.indexed, true);
-});
-
-test('should not sync existing doc', async t => {
-  const count = module.queue.count('indexer.indexDoc');
-  mock.method(indexerService, 'listDocIds', async () => {
-    return ['5nS9BSp3Px'];
-  });
-
-  await indexerJob.indexWorkspace({
-    workspaceId: workspace.id,
-  });
-
-  t.is(module.queue.count('indexer.indexDoc'), count);
-});
-
-test('should delete dangling indexed docs absent from the root live set', async t => {
-  const count = module.queue.count('indexer.deleteDoc');
-  mock.method(indexerService, 'listDocIds', async () => {
-    return ['mock-doc-id1', 'mock-doc-id2'];
-  });
-
-  await indexerJob.indexWorkspace({
-    workspaceId: workspace.id,
-  });
-
-  const { payload } = await module.queue.waitFor('indexer.indexDoc');
-  t.is(payload.workspaceId, workspace.id);
-  t.is(payload.docId, '5nS9BSp3Px');
-  t.is(module.queue.count('indexer.deleteDoc'), count + 2);
 });
 
 test('document cleanup reconcile deletes missing search state before ack', async t => {
@@ -199,32 +146,6 @@ test('document cleanup reconcile reindexes restored doc before ack', async t => 
     workspaceId: cleanupWorkspace.id,
     docId: 'restored-doc',
     cleanupVersion: 'version-2',
-    effect: 'search',
-  });
-});
-
-test('document cleanup reconcile only acknowledges when indexer is disabled', async t => {
-  Sinon.stub(config.indexer, 'enabled').value(false);
-  const deleteSpy = Sinon.spy(indexerService, 'deleteDoc');
-  const indexSpy = Sinon.spy(indexerService, 'indexDoc');
-  const getDocSpy = Sinon.spy(docReader, 'getDoc');
-
-  await indexerJob.reconcileDocumentCleanup({
-    workspaceId: workspace.id,
-    docId: 'disabled-doc',
-    cleanupVersion: 'version-disabled',
-  });
-
-  t.false(deleteSpy.called);
-  t.false(indexSpy.called);
-  t.false(getDocSpy.called);
-  const { payload } = await module.queue.waitFor(
-    'backendRuntime.ackDocumentCleanupEffect'
-  );
-  t.deepEqual(payload, {
-    workspaceId: workspace.id,
-    docId: 'disabled-doc',
-    cleanupVersion: 'version-disabled',
     effect: 'search',
   });
 });

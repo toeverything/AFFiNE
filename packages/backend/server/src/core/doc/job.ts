@@ -6,7 +6,7 @@ import { BackendRuntimeProvider } from '../backend-runtime';
 
 declare global {
   interface Jobs {
-    'nightly.cleanExpiredHistories': {};
+    'doc.cleanExpiredHistories': {};
   }
 }
 
@@ -20,7 +20,7 @@ export class DocStorageCronJob {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async nightlyJob() {
     await this.queue.add(
-      'nightly.cleanExpiredHistories',
+      'doc.cleanExpiredHistories',
       {},
       {
         jobId: 'nightly-doc-clean-expired-histories',
@@ -28,7 +28,7 @@ export class DocStorageCronJob {
     );
   }
 
-  @OnJob('nightly.cleanExpiredHistories')
+  @OnJob('doc.cleanExpiredHistories')
   async cleanExpiredHistories() {
     for (;;) {
       const count = await this.rt.cleanupExpiredSnapshotHistories(1000);

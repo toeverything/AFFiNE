@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { defineModuleConfig } from '../../base';
 
 export enum SearchProviderType {
+  Embedded = 'embedded',
   Manticoresearch = 'manticoresearch',
   Elasticsearch = 'elasticsearch',
 }
