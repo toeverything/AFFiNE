@@ -1,10 +1,9 @@
 # Building AFFiNE Web
 
 > **Warning**
->
 > This document is not guaranteed to be up-to-date.
 > If you find any outdated information, please feel free to open an issue or submit a PR.
-
+>
 > **Note**
 > This guide covers building and developing the **web app**.
 > For the desktop client app, see [building-desktop-client-app.md](./building-desktop-client-app.md).
@@ -106,7 +105,7 @@ This also initializes the workspace (`yarn affine init`) and installs the git ho
 
 ### Build Native Dependencies
 
-Run the following script. It will build the native module at [`/packages/frontend/native`](/packages/frontend/native) and build Node.js binding using [NAPI.rs](https://napi.rs/). This could take a while if you build it for the first time.
+Run the following script. It will build the native module at [`packages/frontend/native`](../packages/frontend/native) and build Node.js binding using [NAPI.rs](https://napi.rs/). This could take a while if you build it for the first time.
 
 ```sh
 yarn affine @affine/native build
@@ -160,16 +159,16 @@ Install the browser binaries once before the first run:
 npx playwright install
 ```
 
-The E2E suites live in [`/tests`](/tests):
+The E2E suites live in [`tests`](../tests):
 
-| Suite                  | Run with                                              | Notes                                          |
-| ---------------------- | ----------------------------------------------------- | ---------------------------------------------- |
-| `affine-local`         | `yarn workspace @affine-test/affine-local e2e`         | Web app, no server needed                      |
+| Suite                  | Run with                                               | Notes                                               |
+| ---------------------- | ------------------------------------------------------ | --------------------------------------------------- |
+| `affine-local`         | `yarn workspace @affine-test/affine-local e2e`         | Web app, no server needed                           |
 | `affine-cloud`         | `yarn workspace @affine-test/affine-cloud e2e`         | Requires the [local server](./developing-server.md) |
-| `affine-cloud-copilot` | `yarn workspace @affine-test/affine-cloud-copilot e2e` | Requires the local server                      |
-| `affine-desktop`       | `yarn workspace @affine-test/affine-desktop e2e`       | Desktop (Electron) app                         |
-| `affine-desktop-cloud` | `yarn workspace @affine-test/affine-desktop-cloud e2e` | Desktop + local server                         |
-| `affine-mobile`        | `yarn workspace @affine-test/affine-mobile e2e`        | Mobile UI                                      |
+| `affine-cloud-copilot` | `yarn workspace @affine-test/affine-cloud-copilot e2e` | Requires the local server                           |
+| `affine-desktop`       | `yarn workspace @affine-test/affine-desktop e2e`       | Desktop (Electron) app                              |
+| `affine-desktop-cloud` | `yarn workspace @affine-test/affine-desktop-cloud e2e` | Desktop + local server                              |
+| `affine-mobile`        | `yarn workspace @affine-test/affine-mobile e2e`        | Mobile UI                                           |
 
 There is also `@affine-test/blocksuite` (`yarn workspace @affine-test/blocksuite test`) for BlockSuite integration tests.
 
@@ -196,7 +195,7 @@ yarn typecheck
 4. Open the PR against the `canary` branch of `toeverything/AFFiNE`.
 5. Give the PR a title that follows [Conventional Commits](https://www.conventionalcommits.org/) — this is enforced by the `PR Title Lint` CI check:
 
-   ```
+   ```text
    type(scope): short description
 
    # examples
