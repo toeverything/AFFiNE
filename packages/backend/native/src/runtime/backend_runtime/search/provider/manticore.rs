@@ -2,6 +2,13 @@ use serde_json::{Value, json};
 
 use crate::runtime::{RuntimeError, RuntimeResult};
 
+pub(super) struct ManticoreAggregatePlan {
+  pub facet: Value,
+  pub field: String,
+  pub hits: Value,
+  pub requested_fields: Vec<String>,
+}
+
 pub(super) fn prepare_manticore_payload(
   payload: &mut Value,
   token_ids: &std::collections::HashMap<String, i64>,
@@ -116,6 +123,61 @@ pub(super) fn prepare_manticore_search(
     initial_offset
   };
   Ok(offset)
+}
+
+pub(super) fn prepare_manticore_aggregate(
+  dsl: &mut Value,
+  token_ids: &std::collections::HashMap<String, i64>,
+) -> RuntimeResult<ManticoreAggregatePlan> {
+  normalize_manticore_terms(dsl, token_ids)?;
+  let aggregation = dsl
+    .pointer_mut("/aggs/result")
+    .and_then(Value::as_object_mut)
+    .ok_or_else(|| RuntimeError::invalid_input("invalid search aggregation"))?;
+  let field = aggregation
+    .get("terms")
+    .and_then(|terms| terms.get("field"))
+    .and_then(Value::as_str)
+    .ok_or_else(|| RuntimeError::invalid_input("invalid search aggregation field"))?
+    .to_string();
+  let hits = aggregation
+    .get_mut("aggs")
+    .and_then(|aggs| aggs.get_mut("result"))
+    .and_then(|result| result.get_mut("top_hits"))
+    .map(Value::take)
+    .ok_or_else(|| RuntimeError::invalid_input("invalid search aggregation hits"))?;
+  aggregation.remove("aggs");
+  let requested_fields = hits
+    .get("fields")
+    .and_then(Value::as_array)
+    .into_iter()
+    .flatten()
+    .filter_map(Value::as_str)
+    .map(str::to_string)
+    .collect();
+  Ok(ManticoreAggregatePlan {
+    facet: dsl.take(),
+    field,
+    hits,
+    requested_fields,
+  })
+}
+
+pub(super) fn prepare_manticore_aggregate_hit(
+  plan: &ManticoreAggregatePlan,
+  key: &Value,
+  token_ids: &std::collections::HashMap<String, i64>,
+) -> RuntimeResult<Value> {
+  let mut dsl = plan.hits.clone();
+  let query = plan
+    .facet
+    .get("query")
+    .cloned()
+    .unwrap_or_else(|| json!({"match_all":{}}));
+  dsl["query"] = json!({"bool":{"must":[query,{"term":{&plan.field:{"value":key}}}]}});
+  let size = dsl.get("size").and_then(Value::as_u64).unwrap_or(10);
+  prepare_manticore_search(&mut dsl, None, size, 0, &plan.requested_fields, token_ids)?;
+  Ok(dsl)
 }
 
 pub(super) fn manticore_fields(source: Option<&Value>, requested_fields: &[String]) -> Value {
@@ -317,5 +379,28 @@ mod tests {
         {"equals":{"ref_doc_token_ids":10}}
       ]}}})
     );
+  }
+
+  #[test]
+  fn aggregate_uses_facets_and_prepares_group_hits() {
+    let mut dsl = json!({
+      "query":{"term":{"workspace_id":{"value":"workspace"}}},
+      "size":0,
+      "aggs":{"result":{"terms":{"field":"doc_id","size":10},"aggs":{"result":{"top_hits":{
+        "size":2,"_source":["workspace_id","doc_id"],"fields":["doc_id","content"],
+        "highlight":{"fields":{"content":{"pre_tags":["<b>"],"post_tags":["</b>"]}}}
+      }}}}}
+    });
+    let plan = prepare_manticore_aggregate(&mut dsl, &Default::default()).unwrap();
+    assert_eq!(plan.facet["aggs"]["result"]["terms"]["order"], json!({"_count":"desc"}));
+    assert!(plan.facet["aggs"]["result"].get("aggs").is_none());
+    let hit = prepare_manticore_aggregate_hit(&plan, &json!("doc"), &Default::default()).unwrap();
+    assert_eq!(
+      hit["query"]["bool"]["must"][1],
+      json!({"equals":{"doc_token":exact_token("doc")}})
+    );
+    assert_eq!(hit["highlight"], json!({"pre_tags":["<b>"],"post_tags":["</b>"]}));
+    assert_eq!(hit["_source"], json!(["content", "doc_id", "workspace_id"]));
+    assert!(hit.get("fields").is_none());
   }
 }

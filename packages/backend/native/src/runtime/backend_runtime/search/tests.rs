@@ -483,17 +483,13 @@ async fn remote_providers_apply_search_and_delete_the_same_contract() {
           "size":1,"_source":["workspace_id","doc_id"],"fields":["doc_id","title"],"sort":["doc_id"]
         }}}}}
       });
-      if provider == "elasticsearch" {
-        let aggregate = remote.aggregate(&table, aggregate_dsl).await.unwrap();
-        assert_eq!(aggregate["total"], 2);
-        assert_eq!(aggregate["buckets"].as_array().unwrap().len(), 2);
-        assert!(aggregate["buckets"][0]["hits"]["nodes"][0]["fields"]["doc_id"].is_array());
-      } else {
-        assert!(matches!(
-          remote.aggregate(&table, aggregate_dsl).await,
-          Err(crate::runtime::RuntimeError::SearchUnsupportedQuery)
-        ));
-      }
+      let aggregate = remote.aggregate(&table, aggregate_dsl).await.unwrap();
+      assert_eq!(aggregate["total"], 2, "provider {provider}");
+      assert_eq!(aggregate["buckets"].as_array().unwrap().len(), 2, "provider {provider}");
+      assert!(
+        aggregate["buckets"][0]["hits"]["nodes"][0]["fields"]["doc_id"].is_array(),
+        "provider {provider}"
+      );
 
       remote
         .provision(&block_table, super::types::SearchTable::Block)
