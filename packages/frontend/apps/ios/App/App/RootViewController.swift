@@ -423,7 +423,10 @@ class RootViewController: UINavigationController {
         }
 
         let isSignedIn = try await PaywallAuthGuard.ensureSignedIn(using: webView)
-        guard isSignedIn else { return }
+        guard isSignedIn else {
+          didRunColdStartPaywallFlow = false
+          return
+        }
 
         if try await PaywallAuthGuard.hasProSubscription(in: webView) {
           return
@@ -498,7 +501,6 @@ class RootViewController: UINavigationController {
     Task { @MainActor [weak self, weak onboardingController] in
       guard let self else { return }
       didRunColdStartPaywallFlow = true
-      OnboardingFlag.markCompleted()
 
       guard let webView = affineViewController?.webView else {
         showOnboardingAlert(message: "AFFiNE is still loading. Please try again in a moment.")
@@ -516,7 +518,9 @@ class RootViewController: UINavigationController {
         return
       }
       guard isSignedIn else {
-        finishOnboarding(from: nil)
+        didRunColdStartPaywallFlow = false
+        didScheduleOnboardingPresentation = false
+        showOnboardingAlert(message: "Sign in was not completed. Please try again when you are ready.")
         return
       }
 

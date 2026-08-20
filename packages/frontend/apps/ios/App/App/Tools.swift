@@ -108,6 +108,9 @@ enum PaywallAuthGuard {
         userInfo: [NSLocalizedDescriptionKey: "Unable to present sign-in."]
       )
     }
+    guard !(presenter is NativeSignInViewController) else {
+      return false
+    }
 
     return await withCheckedContinuation { continuation in
       let controller = NativeSignInViewController(webView: webView)

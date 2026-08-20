@@ -25,12 +25,36 @@ export function isKeyboardToolPanelConfig(
 
 export interface KeyboardToolbarClickState {
   suppressNextClick: boolean;
+  suppressionTimer?: ReturnType<typeof setTimeout>;
 }
+
+const CLICK_SUPPRESSION_TIMEOUT = 500;
 
 export function rememberKeyboardToolbarActivation(
   state: KeyboardToolbarClickState
 ) {
+  clearKeyboardToolbarActivation(state);
   state.suppressNextClick = true;
+}
+
+export function expireKeyboardToolbarActivation(
+  state: KeyboardToolbarClickState
+) {
+  if (!state.suppressNextClick || state.suppressionTimer) return;
+
+  state.suppressionTimer = setTimeout(() => {
+    clearKeyboardToolbarActivation(state);
+  }, CLICK_SUPPRESSION_TIMEOUT);
+}
+
+export function clearKeyboardToolbarActivation(
+  state: KeyboardToolbarClickState
+) {
+  if (state.suppressionTimer) {
+    clearTimeout(state.suppressionTimer);
+    state.suppressionTimer = undefined;
+  }
+  state.suppressNextClick = false;
 }
 
 export function consumeKeyboardToolbarClick(state: KeyboardToolbarClickState) {
@@ -38,7 +62,7 @@ export function consumeKeyboardToolbarClick(state: KeyboardToolbarClickState) {
     return true;
   }
 
-  state.suppressNextClick = false;
+  clearKeyboardToolbarActivation(state);
   return false;
 }
 

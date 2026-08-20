@@ -90,4 +90,37 @@ describe('createNativeUserIdentifierResolver', () => {
     await expect(resolveCurrentUserIdentifier(authService)).resolves.toBeNull();
     expect(waitForRevalidation).toHaveBeenCalledTimes(2);
   });
+
+  test('keeps revalidation cooldown scoped to each auth service', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-28T00:00:00.000Z'));
+
+    const firstWaitForRevalidation = vi.fn().mockResolvedValue(undefined);
+    const secondWaitForRevalidation = vi.fn().mockImplementation(() => {
+      secondAuthService.session.account$.value = {
+        id: 'second-user-id',
+        label: 'Second User',
+      };
+      return Promise.resolve();
+    });
+    const resolveCurrentUserIdentifier = createNativeUserIdentifierResolver({
+      revalidationCooldownMs: 1000,
+      revalidationTimeoutMs: 1000,
+    });
+    const firstAuthService = createAuthService(null, firstWaitForRevalidation);
+    const secondAuthService = createAuthService(
+      null,
+      secondWaitForRevalidation
+    );
+
+    await expect(
+      resolveCurrentUserIdentifier(firstAuthService)
+    ).resolves.toBeNull();
+    await expect(resolveCurrentUserIdentifier(secondAuthService)).resolves.toBe(
+      'second-user-id'
+    );
+
+    expect(firstWaitForRevalidation).toHaveBeenCalledTimes(1);
+    expect(secondWaitForRevalidation).toHaveBeenCalledTimes(1);
+  });
 });

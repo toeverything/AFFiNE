@@ -1,6 +1,6 @@
 import type { AuthService } from '../../modules/cloud/services/auth';
 
-export interface NativeUserIdentifierAuthService {
+export interface NativeUserIdentifierAuthService extends object {
   session: Pick<AuthService['session'], 'account$' | 'waitForRevalidation'>;
 }
 
@@ -18,24 +18,46 @@ export const createNativeUserIdentifierResolver = ({
   revalidationTimeoutMs = 1500,
   revalidationCooldownMs = 1000,
 }: NativeUserIdentifierResolverOptions = {}) => {
-  let revalidationPromise: Promise<void> | null = null;
-  let lastRevalidationStartedAt = 0;
+  const revalidationStates = new WeakMap<
+    NativeUserIdentifierAuthService,
+    {
+      promise: Promise<void> | null;
+      lastStartedAt: number;
+    }
+  >();
+
+  const getRevalidationState = (
+    authService: NativeUserIdentifierAuthService
+  ) => {
+    const existing = revalidationStates.get(authService);
+    if (existing) {
+      return existing;
+    }
+
+    const state = {
+      promise: null,
+      lastStartedAt: 0,
+    };
+    revalidationStates.set(authService, state);
+    return state;
+  };
 
   const waitForSessionRevalidation = async (
     authService: NativeUserIdentifierAuthService
   ) => {
+    const state = getRevalidationState(authService);
     const now = Date.now();
 
-    if (revalidationPromise) {
-      await revalidationPromise;
+    if (state.promise) {
+      await state.promise;
       return;
     }
 
-    if (now - lastRevalidationStartedAt < revalidationCooldownMs) {
+    if (now - state.lastStartedAt < revalidationCooldownMs) {
       return;
     }
 
-    lastRevalidationStartedAt = now;
+    state.lastStartedAt = now;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(
@@ -43,15 +65,15 @@ export const createNativeUserIdentifierResolver = ({
       revalidationTimeoutMs
     );
 
-    revalidationPromise = authService.session
+    state.promise = authService.session
       .waitForRevalidation(controller.signal)
       .catch(() => undefined)
       .finally(() => {
         clearTimeout(timeoutId);
-        revalidationPromise = null;
+        state.promise = null;
       });
 
-    await revalidationPromise;
+    await state.promise;
   };
 
   return async (authService: NativeUserIdentifierAuthService) => {

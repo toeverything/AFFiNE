@@ -19,6 +19,9 @@ import { desktopStyles, mobileStyles } from './prompt-modal.css';
 
 const styles = BUILD_CONFIG.isMobileEdition ? mobileStyles : desktopStyles;
 
+const getCssLength = (value: string | number) =>
+  typeof value === 'number' ? `${value}px` : value;
+
 export interface PromptModalProps extends ModalProps {
   confirmButtonOptions?: Omit<ButtonProps, 'children'>;
   onConfirm?: ((text: string) => void) | ((text: string) => Promise<void>);
@@ -98,7 +101,7 @@ export const PromptModal = ({
           ...(BUILD_CONFIG.isMobileEdition
             ? {
                 maxHeight: dynamicKeyboardHeight
-                  ? `calc(100dvh - ${dynamicKeyboardHeight} - 32px)`
+                  ? `calc(100dvh - ${getCssLength(dynamicKeyboardHeight)} - 32px)`
                   : 'calc(100dvh - 32px)',
                 overflowY: 'auto',
               }

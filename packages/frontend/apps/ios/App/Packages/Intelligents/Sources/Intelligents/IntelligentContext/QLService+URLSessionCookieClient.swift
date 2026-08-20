@@ -39,6 +39,21 @@ extension QLService {
 extension QLService {
   private static let authTokenService = "app.affine.pro.auth-token"
 
+  private struct StoredAuthSessionInfo: Decodable {
+    let id: String
+    let absoluteExpiresAt: String
+  }
+
+  private struct StoredAuthTokenPair: Decodable {
+    let version: Int
+    let tokenType: String
+    let accessToken: String
+    let accessExpiresAt: Date
+    let refreshToken: String
+    let refreshExpiresAt: String
+    let session: StoredAuthSessionInfo
+  }
+
   func authorized(_ request: URLRequest) -> URLRequest {
     guard request.value(forHTTPHeaderField: "Authorization") == nil,
           let requestURL = request.url,
@@ -70,12 +85,29 @@ extension QLService {
     let status = SecItemCopyMatching(query as CFDictionary, &item)
     guard status == errSecSuccess,
           let data = item as? Data,
-          let token = String(data: data, encoding: .utf8),
-          !token.isEmpty
+          let pair = try? JSONDecoder().decode(Self.StoredAuthTokenPair.self, from: data),
+          pair.version == 1,
+          pair.tokenType == "Bearer",
+          !pair.accessToken.isEmpty,
+          !pair.refreshToken.isEmpty,
+          pair.accessExpiresAt > Date(),
+          Self.parseAuthISO8601Date(pair.refreshExpiresAt) != nil,
+          Self.parseAuthISO8601Date(pair.session.absoluteExpiresAt) != nil
     else {
       return nil
     }
-    return token
+    return pair.accessToken
+  }
+
+  private static func parseAuthISO8601Date(_ value: String) -> Date? {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let date = formatter.date(from: value) {
+      return date
+    }
+
+    formatter.formatOptions = [.withInternetDateTime]
+    return formatter.date(from: value)
   }
 
   private static func canonicalOrigin(of url: URL) -> String? {

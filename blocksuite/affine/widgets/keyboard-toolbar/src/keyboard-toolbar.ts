@@ -25,7 +25,9 @@ import type {
 } from './config';
 import { keyboardToolbarStyles } from './styles';
 import {
+  clearKeyboardToolbarActivation,
   consumeKeyboardToolbarClick,
+  expireKeyboardToolbarActivation,
   isKeyboardSubToolBarConfig,
   isKeyboardToolBarActionItem,
   isKeyboardToolPanelConfig,
@@ -124,7 +126,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
   };
 
   private readonly _isPrimaryPointerEvent = (event: PointerEvent) => {
-    return event.button === 0;
+    return event.button === 0 && event.isPrimary;
   };
 
   private readonly _lastActiveItem$ = signal<KeyboardToolbarItem | null>(null);
@@ -232,11 +234,18 @@ export class AffineKeyboardToolbar extends SignalWatcher(
         rememberKeyboardToolbarActivation(this._clickSuppressionState);
         this._handleItemClick(item, index);
       }}
+      @pointerup=${() => expireKeyboardToolbarActivation(this._clickSuppressionState)}
+      @pointercancel=${() =>
+        clearKeyboardToolbarActivation(this._clickSuppressionState)}
       @keydown=${(event: KeyboardEvent) => {
         if (!this._isKeyboardActivation(event) || disabled) return;
         event.preventDefault();
         rememberKeyboardToolbarActivation(this._clickSuppressionState);
         this._handleItemClick(item, index);
+      }}
+      @keyup=${(event: KeyboardEvent) => {
+        if (!this._isKeyboardActivation(event)) return;
+        expireKeyboardToolbarActivation(this._clickSuppressionState);
       }}
       @click=${(event: MouseEvent) => {
         if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {
@@ -268,11 +277,19 @@ export class AffineKeyboardToolbar extends SignalWatcher(
             rememberKeyboardToolbarActivation(this._clickSuppressionState);
             this._goPrevToolbar();
           }}
+          @pointerup=${() =>
+            expireKeyboardToolbarActivation(this._clickSuppressionState)}
+          @pointercancel=${() =>
+            clearKeyboardToolbarActivation(this._clickSuppressionState)}
           @keydown=${(event: KeyboardEvent) => {
             if (!this._isKeyboardActivation(event)) return;
             event.preventDefault();
             rememberKeyboardToolbarActivation(this._clickSuppressionState);
             this._goPrevToolbar();
+          }}
+          @keyup=${(event: KeyboardEvent) => {
+            if (!this._isKeyboardActivation(event)) return;
+            expireKeyboardToolbarActivation(this._clickSuppressionState);
           }}
           @click=${(event: MouseEvent) => {
             if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {
@@ -312,6 +329,9 @@ export class AffineKeyboardToolbar extends SignalWatcher(
             this.keyboard.show();
           }
         }}
+        @pointerup=${() => expireKeyboardToolbarActivation(this._clickSuppressionState)}
+        @pointercancel=${() =>
+          clearKeyboardToolbarActivation(this._clickSuppressionState)}
         @keydown=${(event: KeyboardEvent) => {
           if (!this._isKeyboardActivation(event)) return;
           event.preventDefault();
@@ -325,6 +345,10 @@ export class AffineKeyboardToolbar extends SignalWatcher(
           } else {
             this.keyboard.show();
           }
+        }}
+        @keyup=${(event: KeyboardEvent) => {
+          if (!this._isKeyboardActivation(event)) return;
+          expireKeyboardToolbarActivation(this._clickSuppressionState);
         }}
         @click=${(event: MouseEvent) => {
           if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {

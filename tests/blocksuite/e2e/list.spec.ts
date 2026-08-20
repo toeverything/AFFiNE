@@ -264,6 +264,7 @@ test('nested list blocks', async ({ page }, testInfo) => {
       .click({
         force: true,
       });
+    await waitNextFrame(page, 100);
   };
 
   await focusListItem('2');

@@ -294,6 +294,7 @@ framework.impl(NativePaywallProvider, {
 
 const frameworkProvider = framework.provider();
 let cancelActiveRequestSignIn: (() => void) | null = null;
+let activeNativeSignInPromise: Promise<string | null> | null = null;
 
 registerNativePreviewHandlers({
   renderMermaidSvg: request => Preview.renderMermaidSvg(request),
@@ -480,6 +481,14 @@ const showNativeSignIn = async () => {
   if (account?.id) {
     return account.id;
   }
+  if (activeNativeSignInPromise) {
+    const result = await activeNativeSignInPromise;
+    const authenticatedAccount = authService.session.account$.value;
+    if (authenticatedAccount?.id) {
+      return authenticatedAccount.id;
+    }
+    return result;
+  }
 
   let cancelRequestSignIn!: () => void;
   const cancelledSignIn = new Promise<{ success: false }>(resolve => {
@@ -487,7 +496,7 @@ const showNativeSignIn = async () => {
   });
   cancelActiveRequestSignIn = cancelRequestSignIn;
 
-  try {
+  activeNativeSignInPromise = (async () => {
     const result = await Promise.race([
       Auth.showNativeSignIn(),
       cancelledSignIn,
@@ -503,10 +512,15 @@ const showNativeSignIn = async () => {
 
     const session = await authService.session.waitForAuthenticated();
     return session.session.account.id;
+  })();
+
+  try {
+    return await activeNativeSignInPromise;
   } finally {
     if (cancelActiveRequestSignIn === cancelRequestSignIn) {
       cancelActiveRequestSignIn = null;
     }
+    activeNativeSignInPromise = null;
   }
 };
 
