@@ -1,6 +1,8 @@
 import { indexerSearchDocsQuery } from '@affine/graphql';
 
+import { ConfigFactory } from '../../../base';
 import { createDocWithMarkdown } from '../../../native';
+import { SearchProviderType } from '../../../plugins/indexer/config';
 import { IndexerService } from '../../../plugins/indexer/service';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
@@ -19,10 +21,21 @@ e2e('should search docs by keyword', async t => {
     await app.get(IndexerService).indexDoc(workspace.id, docId);
   }
 
-  const result = await app.gql({
+  const search = app.gql({
     query: indexerSearchDocsQuery,
     variables: { id: workspace.id, input: { keyword: 'hello', limit: 2 } },
   });
+  if (
+    app.get(ConfigFactory).config.indexer.provider.type ===
+    SearchProviderType.Manticoresearch
+  ) {
+    await t.throwsAsync(search, {
+      message: /Invalid indexer input: unsupported_query/,
+    });
+    return;
+  }
+
+  const result = await search;
   t.is(result.workspace.searchDocs.length, 2);
   t.true(result.workspace.searchDocs.every(doc => doc.highlight.length > 0));
 });

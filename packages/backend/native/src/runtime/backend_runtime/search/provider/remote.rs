@@ -6,10 +6,7 @@ use sqlx::PgPool;
 
 use super::{
   super::{store::SearchChange, types::SearchTable},
-  manticore::{
-    manticore_exact_tokens, manticore_fields, prepare_manticore_aggregate, prepare_manticore_aggregate_hit,
-    prepare_manticore_payload, prepare_manticore_search,
-  },
+  manticore::{manticore_exact_tokens, manticore_fields, prepare_manticore_payload, prepare_manticore_search},
 };
 use crate::runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig};
 
@@ -117,7 +114,7 @@ impl RemoteProvider {
     mut dsl: Value,
   ) -> RuntimeResult<Value> {
     if self.provider == "manticoresearch" {
-      return self.aggregate_manticore(physical_table, dsl).await;
+      return Err(RuntimeError::SearchUnsupportedQuery);
     }
     dsl["track_total_hits"] = json!(true);
     let response = self
@@ -134,99 +131,6 @@ impl RemoteProvider {
     let value: Value =
       serde_json::from_slice(&bytes).map_err(|error| RuntimeError::json("invalid search provider response", error))?;
     normalize_aggregate(value)
-  }
-
-  async fn aggregate_manticore(&self, physical_table: &str, mut dsl: Value) -> RuntimeResult<Value> {
-    let token_ids = self.resolve_manticore_tokens(manticore_exact_tokens(&dsl)).await?;
-    let plan = prepare_manticore_aggregate(&mut dsl, &token_ids)?;
-    let response = self
-      .request(reqwest::Method::POST, &format!("{physical_table}/_search"))
-      .json(&plan.facet)
-      .send()
-      .await
-      .map_err(|_| RuntimeError::SearchProviderUnavailable)?;
-    let status = response.status();
-    let bytes = read_response(response).await?;
-    if !status.is_success() {
-      return Err(RuntimeError::SearchUnsupportedQuery);
-    }
-    let facet: Value =
-      serde_json::from_slice(&bytes).map_err(|error| RuntimeError::json("invalid search provider response", error))?;
-    let buckets = facet
-      .pointer("/aggregations/result/buckets")
-      .and_then(Value::as_array)
-      .ok_or_else(|| RuntimeError::invalid_state("invalid provider aggregate response"))?;
-    if buckets.is_empty() {
-      return Ok(json!({"total":0,"hasMore":false,"buckets":[]}));
-    }
-
-    let mut token_ids = token_ids;
-    if matches!(plan.field.as_str(), "acl_read_tokens" | "ref_doc_id") {
-      token_ids.extend(
-        self
-          .resolve_manticore_tokens(
-            buckets
-              .iter()
-              .filter_map(|bucket| bucket.get("key")?.as_str().map(str::to_string)),
-          )
-          .await?,
-      );
-    }
-    let hit_size = plan.hits.get("size").and_then(Value::as_u64).unwrap_or(10);
-    let mut body = String::new();
-    for bucket in buckets {
-      let key = bucket
-        .get("key")
-        .ok_or_else(|| RuntimeError::invalid_state("invalid provider aggregate bucket"))?;
-      let hit = prepare_manticore_aggregate_hit(&plan, key, &token_ids)?;
-      body.push_str(
-        &serde_json::to_string(&json!({"index":physical_table}))
-          .map_err(|error| RuntimeError::json("encode provider multi-search header", error))?,
-      );
-      body.push('\n');
-      body.push_str(
-        &serde_json::to_string(&hit)
-          .map_err(|error| RuntimeError::json("encode provider multi-search query", error))?,
-      );
-      body.push('\n');
-    }
-    let response = self
-      .request(reqwest::Method::POST, "_msearch")
-      .header("content-type", "application/x-ndjson")
-      .body(body)
-      .send()
-      .await
-      .map_err(|_| RuntimeError::SearchProviderUnavailable)?;
-    let status = response.status();
-    let bytes = read_response(response).await?;
-    if !status.is_success() {
-      return Err(RuntimeError::SearchUnsupportedQuery);
-    }
-    let searches: Value =
-      serde_json::from_slice(&bytes).map_err(|error| RuntimeError::json("invalid search provider response", error))?;
-    let responses = searches
-      .get("responses")
-      .and_then(Value::as_array)
-      .filter(|responses| responses.len() == buckets.len())
-      .ok_or_else(|| RuntimeError::invalid_state("invalid provider multi-search response"))?;
-    let buckets = buckets
-      .iter()
-      .zip(responses)
-      .map(|(bucket, response)| {
-        let hits = normalize(response.clone(), true, 0, hit_size, &plan.requested_fields)?;
-        Ok(json!({
-          "key":bucket.get("key").cloned().unwrap_or(Value::Null),
-          "count":bucket.get("doc_count").cloned().unwrap_or(json!(0)),
-          "hits":hits
-        }))
-      })
-      .collect::<RuntimeResult<Vec<_>>>()?;
-    let total = facet
-      .pointer("/hits/total/value")
-      .or_else(|| facet.pointer("/hits/total"))
-      .and_then(Value::as_u64)
-      .unwrap_or(buckets.len() as u64);
-    Ok(json!({"total":total,"hasMore":false,"buckets":buckets}))
   }
 
   pub(in crate::runtime::backend_runtime::search) async fn provision(
