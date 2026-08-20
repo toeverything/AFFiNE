@@ -216,6 +216,11 @@ fn normalize_manticore_terms(
   }
   match value {
     Value::Object(object) => {
+      if let Some(Value::Object(boolean)) = object.get_mut("bool")
+        && boolean.get("boost").and_then(Value::as_f64) == Some(1.0)
+      {
+        boolean.remove("boost");
+      }
       if let Some(Value::Object(terms)) = object.get_mut("terms") {
         terms.entry("order").or_insert_with(|| json!({"_count":"desc"}));
       }
@@ -362,7 +367,7 @@ mod tests {
       {"bool":{"must_not":[{"term":{"doc_id":{"value":"doc"}}}]}},
       {"term":{"acl_read_tokens":{"value":"member"}}},
       {"term":{"ref_doc_id":{"value":"ref-doc"}}}
-    ]}}});
+    ],"boost":1.0}}});
     normalize_manticore_terms(
       &mut dsl,
       &[("member".to_string(), 9), ("ref-doc".to_string(), 10)]
