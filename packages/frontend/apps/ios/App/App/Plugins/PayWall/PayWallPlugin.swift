@@ -11,7 +11,6 @@ public class PayWallPlugin: CAPPlugin, CAPBridgedPlugin {
   ) {
     controller = associatedController
     super.init()
-    Paywall.setup()
   }
 
   weak var controller: UIViewController?

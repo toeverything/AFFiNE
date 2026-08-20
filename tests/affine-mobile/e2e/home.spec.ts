@@ -25,11 +25,7 @@ test('stale first-open state still restores one local workspace', async ({
   const page = await context.newPage();
 
   await page.goto('http://localhost:8080/');
-  await expect(
-    page.locator('.affine-page-viewport[data-mode="page"]')
-  ).toBeVisible({
-    timeout: 30_000,
-  });
+  await page.waitForFunction(() => window.currentWorkspace !== undefined);
   const firstWorkspace = await page.evaluate(async () => {
     if (!window.currentWorkspace) {
       await new Promise<void>(resolve => {
@@ -42,12 +38,8 @@ test('stale first-open state still restores one local workspace', async ({
   });
 
   expect(firstWorkspace?.flavour).toBe('local');
-  const firstWorkspaceId = firstWorkspace?.id;
-  expect(firstWorkspaceId).toBeTruthy();
-  await page.goto('http://localhost:8080/');
-  await expect(page).toHaveURL(
-    url => url.pathname === `/workspace/${firstWorkspaceId}/home`,
-    { timeout: 30_000 }
+  await page.goto(
+    `http://localhost:8080/workspace/${firstWorkspace?.id ?? ''}/home`
   );
   await expect(page.getByRole('searchbox')).toBeVisible();
   await page

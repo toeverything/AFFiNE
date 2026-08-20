@@ -25,13 +25,9 @@ import type {
 } from './config';
 import { keyboardToolbarStyles } from './styles';
 import {
-  clearKeyboardToolbarActivation,
-  consumeKeyboardToolbarClick,
-  expireKeyboardToolbarActivation,
   isKeyboardSubToolBarConfig,
   isKeyboardToolBarActionItem,
   isKeyboardToolPanelConfig,
-  rememberKeyboardToolbarActivation,
 } from './utils';
 
 export const AFFINE_KEYBOARD_TOOLBAR = 'affine-keyboard-toolbar';
@@ -85,7 +81,6 @@ export class AffineKeyboardToolbar extends SignalWatcher(
   };
 
   private readonly _currentPanelIndex$ = signal(-1);
-  private readonly _clickSuppressionState = { suppressNextClick: false };
 
   private readonly _goPrevToolbar = () => {
     if (!this._isSubToolbarOpened) return;
@@ -119,14 +114,6 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       }
     }
     this._lastActiveItem$.value = item;
-  };
-
-  private readonly _isKeyboardActivation = (event: KeyboardEvent) => {
-    return event.key === 'Enter' || event.key === ' ';
-  };
-
-  private readonly _isPrimaryPointerEvent = (event: PointerEvent) => {
-    return event.button === 0 && event.isPrimary;
   };
 
   private readonly _lastActiveItem$ = signal<KeyboardToolbarItem | null>(null);
@@ -228,33 +215,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       size="36px"
       style=${style}
       ?disabled=${disabled}
-      @pointerdown=${(event: PointerEvent) => {
-        event.preventDefault();
-        if (!this._isPrimaryPointerEvent(event) || disabled) return;
-        rememberKeyboardToolbarActivation(this._clickSuppressionState);
-        this._handleItemClick(item, index);
-      }}
-      @pointerup=${() => expireKeyboardToolbarActivation(this._clickSuppressionState)}
-      @pointercancel=${() =>
-        clearKeyboardToolbarActivation(this._clickSuppressionState)}
-      @keydown=${(event: KeyboardEvent) => {
-        if (!this._isKeyboardActivation(event) || disabled) return;
-        event.preventDefault();
-        rememberKeyboardToolbarActivation(this._clickSuppressionState);
-        this._handleItemClick(item, index);
-      }}
-      @keyup=${(event: KeyboardEvent) => {
-        if (!this._isKeyboardActivation(event)) return;
-        expireKeyboardToolbarActivation(this._clickSuppressionState);
-      }}
-      @click=${(event: MouseEvent) => {
-        if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {
-          event.preventDefault();
-          return;
-        }
-        if (disabled) {
-          return;
-        }
+      @click=${() => {
         this._handleItemClick(item, index);
       }}
     >
@@ -269,36 +230,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     const goPrevToolbarAction = when(
       this._isSubToolbarOpened,
       () =>
-        html`<icon-button
-          size="36px"
-          @pointerdown=${(event: PointerEvent) => {
-            event.preventDefault();
-            if (!this._isPrimaryPointerEvent(event)) return;
-            rememberKeyboardToolbarActivation(this._clickSuppressionState);
-            this._goPrevToolbar();
-          }}
-          @pointerup=${() =>
-            expireKeyboardToolbarActivation(this._clickSuppressionState)}
-          @pointercancel=${() =>
-            clearKeyboardToolbarActivation(this._clickSuppressionState)}
-          @keydown=${(event: KeyboardEvent) => {
-            if (!this._isKeyboardActivation(event)) return;
-            event.preventDefault();
-            rememberKeyboardToolbarActivation(this._clickSuppressionState);
-            this._goPrevToolbar();
-          }}
-          @keyup=${(event: KeyboardEvent) => {
-            if (!this._isKeyboardActivation(event)) return;
-            expireKeyboardToolbarActivation(this._clickSuppressionState);
-          }}
-          @click=${(event: MouseEvent) => {
-            if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {
-              event.preventDefault();
-              return;
-            }
-            this._goPrevToolbar();
-          }}
-        >
+        html`<icon-button size="36px" @click=${this._goPrevToolbar}>
           ${ArrowLeftBigIcon()}
         </icon-button>`
     );
@@ -315,46 +247,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     return html`<div class="keyboard-container">
       <icon-button
         size="36px"
-        @pointerdown=${(event: PointerEvent) => {
-          event.preventDefault();
-          if (!this._isPrimaryPointerEvent(event)) return;
-          rememberKeyboardToolbarActivation(this._clickSuppressionState);
-          if (this.keyboard.staticHeight$.value === 0) {
-            this._closeToolPanel();
-            return;
-          }
-          if (this.keyboard.visible$.peek()) {
-            this.keyboard.hide();
-          } else {
-            this.keyboard.show();
-          }
-        }}
-        @pointerup=${() => expireKeyboardToolbarActivation(this._clickSuppressionState)}
-        @pointercancel=${() =>
-          clearKeyboardToolbarActivation(this._clickSuppressionState)}
-        @keydown=${(event: KeyboardEvent) => {
-          if (!this._isKeyboardActivation(event)) return;
-          event.preventDefault();
-          rememberKeyboardToolbarActivation(this._clickSuppressionState);
-          if (this.keyboard.staticHeight$.value === 0) {
-            this._closeToolPanel();
-            return;
-          }
-          if (this.keyboard.visible$.peek()) {
-            this.keyboard.hide();
-          } else {
-            this.keyboard.show();
-          }
-        }}
-        @keyup=${(event: KeyboardEvent) => {
-          if (!this._isKeyboardActivation(event)) return;
-          expireKeyboardToolbarActivation(this._clickSuppressionState);
-        }}
-        @click=${(event: MouseEvent) => {
-          if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {
-            event.preventDefault();
-            return;
-          }
+        @click=${() => {
           if (this.keyboard.staticHeight$.value === 0) {
             this._closeToolPanel();
             return;

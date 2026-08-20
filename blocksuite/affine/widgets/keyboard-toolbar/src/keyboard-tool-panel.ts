@@ -16,12 +16,6 @@ import type {
   KeyboardToolPanelGroup,
 } from './config.js';
 import { keyboardToolPanelStyles } from './styles.js';
-import {
-  clearKeyboardToolbarActivation,
-  consumeKeyboardToolbarClick,
-  expireKeyboardToolbarActivation,
-  rememberKeyboardToolbarActivation,
-} from './utils.js';
 
 export const AFFINE_KEYBOARD_TOOL_PANEL = 'affine-keyboard-tool-panel';
 
@@ -33,21 +27,11 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
 ) {
   static override styles = keyboardToolPanelStyles;
 
-  private readonly _clickSuppressionState = { suppressNextClick: false };
-
   private readonly _handleItemClick = (item: KeyboardToolbarActionItem) => {
     if (item.disableWhen && item.disableWhen(this.context)) return;
     if (item.action) {
       Promise.resolve(item.action(this.context)).catch(console.error);
     }
-  };
-
-  private readonly _isKeyboardActivation = (event: KeyboardEvent) => {
-    return event.key === 'Enter' || event.key === ' ';
-  };
-
-  private readonly _isPrimaryPointerEvent = (event: PointerEvent) => {
-    return event.button === 0 && event.isPrimary;
   };
 
   private _renderGroup(group: KeyboardToolPanelGroup) {
@@ -72,40 +56,8 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
   }
 
   private _renderItem(item: KeyboardToolbarActionItem) {
-    const disabled = item.disableWhen?.(this.context) ?? false;
-
     return html`<div class="keyboard-tool-panel-item">
-      <button
-        type="button"
-        ?disabled=${disabled}
-        @pointerdown=${(event: PointerEvent) => {
-          event.preventDefault();
-          if (!this._isPrimaryPointerEvent(event) || disabled) return;
-          rememberKeyboardToolbarActivation(this._clickSuppressionState);
-          this._handleItemClick(item);
-        }}
-        @pointerup=${() => expireKeyboardToolbarActivation(this._clickSuppressionState)}
-        @pointercancel=${() =>
-          clearKeyboardToolbarActivation(this._clickSuppressionState)}
-        @keydown=${(event: KeyboardEvent) => {
-          if (!this._isKeyboardActivation(event) || disabled) return;
-          event.preventDefault();
-          rememberKeyboardToolbarActivation(this._clickSuppressionState);
-          this._handleItemClick(item);
-        }}
-        @keyup=${(event: KeyboardEvent) => {
-          if (!this._isKeyboardActivation(event)) return;
-          expireKeyboardToolbarActivation(this._clickSuppressionState);
-        }}
-        @click=${(event: MouseEvent) => {
-          if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {
-            event.preventDefault();
-            return;
-          }
-          if (disabled) return;
-          this._handleItemClick(item);
-        }}
-      >
+      <button @click=${() => this._handleItemClick(item)}>
         ${this._renderIcon(item.icon)}
       </button>
       <span>${item.name}</span>

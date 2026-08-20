@@ -81,7 +81,7 @@ enum PaywallAuthGuard {
       throw NSError(
         domain: "PaywallAuthGuard",
         code: -1,
-        userInfo: [NSLocalizedDescriptionKey: "Unable to determine subscription status."]
+      userInfo: [NSLocalizedDescriptionKey: String(localized: "Unable to determine subscription status.")]
       )
     }
 
@@ -105,7 +105,7 @@ enum PaywallAuthGuard {
       throw NSError(
         domain: "PaywallAuthGuard",
         code: -1,
-        userInfo: [NSLocalizedDescriptionKey: "Unable to present sign-in."]
+      userInfo: [NSLocalizedDescriptionKey: String(localized: "Unable to present sign-in.")]
       )
     }
     guard !(presenter is NativeSignInViewController) else {
@@ -148,7 +148,7 @@ enum PaywallAuthGuard {
     throw NSError(
       domain: "PaywallAuthGuard",
       code: -1,
-      userInfo: [NSLocalizedDescriptionKey: "AFFiNE is still loading. Please wait a moment and try again."]
+      userInfo: [NSLocalizedDescriptionKey: String(localized: "AFFiNE is still loading. Please wait a moment and try again.")]
     )
   }
 

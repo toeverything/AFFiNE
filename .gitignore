@@ -96,12 +96,8 @@ af.cmd
 # playwright
 storageState.json
 /.understand-anything
+
 # local test/browser artifacts
 /.playwright-browsers/
 **/.vitest-attachments/
 /blocksuite/framework/std/src/__tests__/gfx/__screenshots__/
-
-# Local tool caches
-.corepack-bin/
-packages/frontend/apps/ios/App/.spm-cache/
-/.xcode-derived-data

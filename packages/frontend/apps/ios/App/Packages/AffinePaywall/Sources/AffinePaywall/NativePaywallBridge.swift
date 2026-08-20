@@ -32,7 +32,7 @@ public final class NativePaywallBridge: ObservableObject {
 
   public init(initialPlan: NativePaywallPlanKind = .pro) {
     selectedPlan = initialPlan
-    priceInfoByPlan = Self.fallbackPriceInfo
+    priceInfoByPlan = [:]
   }
 
   public func bind(webView: WKWebView?) {
@@ -43,30 +43,27 @@ public final class NativePaywallBridge: ObservableObject {
     selectedPlan = plan
   }
 
-  public func priceInfo(for plan: NativePaywallPlanKind) -> NativePaywallPriceInfo {
-    priceInfoByPlan[plan] ?? Self.fallbackPriceInfo[plan]!
+  public var isReady: Bool {
+    productsByPlan.count == NativePaywallPlanKind.allCases.count
+  }
+
+  public func priceInfo(for plan: NativePaywallPlanKind) -> NativePaywallPriceInfo? {
+    priceInfoByPlan[plan]
   }
 
   public func prepare() async throws {
     isLoading = true
     defer { isLoading = false }
 
-    guard let webView = associatedWebContext else {
-      throw NSError(
-        domain: "NativePaywallBridge",
-        code: -1,
-        userInfo: [NSLocalizedDescriptionKey: String(localized: "Missing required information")]
-      )
+    guard associatedWebContext != nil else {
+      throw bridgeError("Missing required information")
     }
     configurePurchases()
 
     let products = await Purchases.shared.products(Self.productIdentifiers)
-    guard !products.isEmpty else {
-      throw NSError(
-        domain: "NativePaywallBridge",
-        code: -1,
-        userInfo: [NSLocalizedDescriptionKey: String(localized: "Unable to load subscription options right now.")]
-      )
+    try Task.checkCancellation()
+    guard products.count == Self.productIdentifiers.count else {
+      throw bridgeError("Unable to load subscription options right now.")
     }
 
     var nextProducts: [NativePaywallPlanKind: StoreProduct] = [:]
@@ -78,7 +75,7 @@ public final class NativePaywallBridge: ObservableObject {
 
     productsByPlan = nextProducts
 
-    var nextPriceInfo = Self.fallbackPriceInfo
+    var nextPriceInfo: [NativePaywallPlanKind: NativePaywallPriceInfo] = [:]
     for plan in NativePaywallPlanKind.allCases {
       if let product = nextProducts[plan] {
         nextPriceInfo[plan] = Self.makePriceInfo(for: plan, product: product)
@@ -92,26 +89,20 @@ public final class NativePaywallBridge: ObservableObject {
     defer { isProcessing = false }
 
     guard let webView = associatedWebContext else {
-      throw NSError(
-        domain: "NativePaywallBridge",
-        code: -1,
-        userInfo: [NSLocalizedDescriptionKey: String(localized: "Missing required information")]
-      )
+      throw bridgeError("Missing required information")
     }
     try await configurePurchasesForCurrentUser(in: webView)
 
     guard let product = productsByPlan[selectedPlan] else {
-      throw NSError(
-        domain: "NativePaywallBridge",
-        code: -1,
-        userInfo: [NSLocalizedDescriptionKey: String(localized: "Unable to load the selected plan.")]
-      )
+      throw bridgeError("Unable to load the selected plan.")
     }
 
     let result = try await Purchases.shared.purchase(product: product)
     if result.userCancelled {
       return false
     }
+
+    try Task.checkCancellation()
 
     if let transaction = result.transaction {
       try await applySubscription(transactionID: transaction.transactionIdentifier, in: webView)
@@ -127,11 +118,7 @@ public final class NativePaywallBridge: ObservableObject {
     defer { isProcessing = false }
 
     guard let webView = associatedWebContext else {
-      throw NSError(
-        domain: "NativePaywallBridge",
-        code: -1,
-        userInfo: [NSLocalizedDescriptionKey: String(localized: "Missing required information")]
-      )
+      throw bridgeError("Missing required information")
     }
     try await configurePurchasesForCurrentUser(in: webView)
     _ = try await Purchases.shared.restorePurchases()
@@ -141,11 +128,9 @@ public final class NativePaywallBridge: ObservableObject {
 }
 
 private extension NativePaywallBridge {
-  static let fallbackPriceInfo: [NativePaywallPlanKind: NativePaywallPriceInfo] = [
-    .lite: NativePaywallPriceInfo(value: "$6.75", suffix: "/month"),
-    .pro: NativePaywallPriceInfo(value: "$81", suffix: "/year"),
-    .ai: NativePaywallPriceInfo(value: "$8.90", suffix: "/mo, billed annually"),
-  ]
+  static let revenueCatToken = "appl_FIzFhieVpSSmJRYJWwhVrgtnsVf"
+  static let revenueCatProxyEndpoint = URL(string: "https://iap.affine.pro/")!
+  static var isPurchasesConfigured = false
 
   static let productIdentifiers: [String] = [
     PricingConfiguration.proMonthly.productIdentifier,
@@ -165,15 +150,18 @@ private extension NativePaywallBridge {
   }
 
   func configurePurchases() {
-    Paywall.setup()
+    #if DEBUG
+      Purchases.logLevel = .debug
+    #endif
+    Purchases.proxyURL = Self.revenueCatProxyEndpoint
 
-    if !Paywall.isPurchasesConfigured {
+    if !Self.isPurchasesConfigured {
       let configuration = Configuration
-        .builder(withAPIKey: Paywall.revenueCatToken)
+        .builder(withAPIKey: Self.revenueCatToken)
         .with(showStoreMessagesAutomatically: false)
         .build()
       Purchases.configure(with: configuration)
-      Paywall.isPurchasesConfigured = true
+      Self.isPurchasesConfigured = true
     }
   }
 
@@ -192,11 +180,7 @@ private extension NativePaywallBridge {
       .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
     guard !userIdentifier.isEmpty, userIdentifier.count < 256 else {
-      throw NSError(
-        domain: "NativePaywallBridge",
-        code: -1,
-        userInfo: [NSLocalizedDescriptionKey: String(localized: "Missing required information")]
-      )
+      throw bridgeError("Missing required information")
     }
 
     return userIdentifier
@@ -256,5 +240,13 @@ private extension NativePaywallBridge {
     }
 
     return formatter.string(from: rounded as NSDecimalNumber)
+  }
+
+  func bridgeError(_ message: String) -> NSError {
+    NSError(
+      domain: "NativePaywallBridge",
+      code: -1,
+      userInfo: [NSLocalizedDescriptionKey: NSLocalizedString(message, comment: "")]
+    )
   }
 }

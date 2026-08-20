@@ -1,3 +1,4 @@
+import AffineGraphQL
 import Capacitor
 import Foundation
 import Security
@@ -71,22 +72,25 @@ private actor AuthSessionBroker {
   private var refreshTasks: [String: AuthRefreshOperation] = [:]
   private var mutationEpochs: [String: UInt] = [:]
 
-  func store(_ endpoint: String, response: AuthTokenResponse) throws {
+  func store(_ endpoint: String, response: AuthTokenResponse) throws -> StoredAuthTokenPair {
     invalidateRefresh(canonicalEndpoint(endpoint))
-    try write(endpoint, tokenPair(response))
+    let pair = try tokenPair(response)
+    try write(endpoint, pair)
+    return pair
   }
 
-  func validAccessToken(_ endpoint: String, minValidity: TimeInterval = 120) async throws -> String?
+  func validAccessToken(_ endpoint: String, minValidity: TimeInterval = 120) async throws
+    -> StoredAuthTokenPair?
   {
     guard let pair = try read(endpoint) else { return nil }
     if pair.accessExpiresAt.timeIntervalSinceNow > minValidity {
-      return pair.accessToken
+      return pair
     }
-    return try await refresh(endpoint).accessToken
+    return try await refresh(endpoint)
   }
 
-  func refreshAccessToken(_ endpoint: String) async throws -> String {
-    try await refresh(endpoint).accessToken
+  func refreshAccessToken(_ endpoint: String) async throws -> StoredAuthTokenPair {
+    try await refresh(endpoint)
   }
 
   func signOut(_ endpoint: String) async throws {
@@ -332,8 +336,12 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     Task {
       do {
         let endpoint = try call.getStringEnsure("endpoint")
-        let token = try await broker.validAccessToken(endpoint)
-        call.resolve(["token": token ?? NSNull()])
+        let pair = try await broker.validAccessToken(endpoint)
+        if let pair {
+          AuthAccessTokenCache.shared.set(
+            pair.accessToken, expiresAt: pair.accessExpiresAt, for: endpoint)
+        }
+        call.resolve(["token": pair?.accessToken ?? NSNull()])
       } catch {
         call.reject("Failed to get access token, \(error)", nil, error)
       }
@@ -343,7 +351,9 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
   @objc public func clearEndpointSession(_ call: CAPPluginCall) {
     Task {
       do {
-        try await broker.clear(call.getStringEnsure("endpoint"))
+        let endpoint = try call.getStringEnsure("endpoint")
+        try await broker.clear(endpoint)
+        AuthAccessTokenCache.shared.remove(for: endpoint)
         call.resolve(["ok": true])
       } catch {
         call.reject("Failed to clear auth session, \(error)", nil, error)
@@ -354,8 +364,11 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
   @objc public func refreshAccessToken(_ call: CAPPluginCall) {
     Task {
       do {
-        let token = try await broker.refreshAccessToken(call.getStringEnsure("endpoint"))
-        call.resolve(["token": token])
+        let endpoint = try call.getStringEnsure("endpoint")
+        let pair = try await broker.refreshAccessToken(endpoint)
+        AuthAccessTokenCache.shared.set(
+          pair.accessToken, expiresAt: pair.accessExpiresAt, for: endpoint)
+        call.resolve(["token": pair.accessToken])
       } catch {
         call.reject("Failed to refresh access token, \(error)", nil, error)
       }
@@ -474,6 +487,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
       do {
         let endpoint = try call.getStringEnsure("endpoint")
         try await broker.signOut(endpoint)
+        AuthAccessTokenCache.shared.remove(for: endpoint)
         self.clearAuthCookies(endpoint)
         call.resolve(["ok": true])
       } catch {
@@ -510,8 +524,10 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
       throw authServerError(data, statusCode: response.statusCode)
     }
 
-    try await broker.store(
+    let pair = try await broker.store(
       endpoint, response: JSONDecoder().decode(AuthTokenResponse.self, from: data))
+    AuthAccessTokenCache.shared.set(
+      pair.accessToken, expiresAt: pair.accessExpiresAt, for: endpoint)
     self.clearAuthCookies(endpoint)
   }
 
