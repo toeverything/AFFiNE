@@ -156,17 +156,21 @@ impl BackendRuntime {
       EmbeddingHealth::disabled("script_runtime", None)
     } else {
       let config = self.config()?;
-      if config.search.provider == "embedded" && !self.role.allows_embedded_search() {
-        return Err(RuntimeError::config(format!(
-          "embedded search is only available for the allinone role (current role: {})",
-          self.role.as_str()
-        )));
+      if config.search.enabled {
+        if config.search.provider == "embedded" && !self.role.allows_embedded_search() {
+          return Err(RuntimeError::config(format!(
+            "embedded search is only available for the allinone role (current role: {})",
+            self.role.as_str()
+          )));
+        }
+        let search = Arc::new(SearchRuntime::new(pool.clone(), config.search.clone())?);
+        if self.role.owns_background() {
+          search.initialize().await?;
+        }
+        *self.search.lock().await = Some(search);
+      } else {
+        *self.search.lock().await = None;
       }
-      let search = Arc::new(SearchRuntime::new(pool.clone(), config.search.clone())?);
-      if self.role.owns_background() {
-        search.initialize().await?;
-      }
-      *self.search.lock().await = Some(search);
       embedding_schema_health(&pool).await?
     };
     if self.script_mode {
@@ -246,17 +250,21 @@ impl BackendRuntime {
     self.update_config(config).map_err(to_napi_error)?;
     if !self.script_mode {
       let config = self.config().map_err(to_napi_error)?;
-      if config.search.provider == "embedded" && !self.role.allows_embedded_search() {
-        return Err(napi_error(format!(
-          "embedded search is only available for the allinone role (current role: {})",
-          self.role.as_str()
-        )));
+      if config.search.enabled {
+        if config.search.provider == "embedded" && !self.role.allows_embedded_search() {
+          return Err(napi_error(format!(
+            "embedded search is only available for the allinone role (current role: {})",
+            self.role.as_str()
+          )));
+        }
+        let search = Arc::new(SearchRuntime::new(pool.clone(), config.search.clone()).map_err(to_napi_error)?);
+        if self.role.owns_background() {
+          search.initialize().await.map_err(to_napi_error)?;
+        }
+        *self.search.lock().await = Some(search);
+      } else {
+        *self.search.lock().await = None;
       }
-      let search = Arc::new(SearchRuntime::new(pool.clone(), config.search.clone()).map_err(to_napi_error)?);
-      if self.role.owns_background() {
-        search.initialize().await.map_err(to_napi_error)?;
-      }
-      *self.search.lock().await = Some(search);
     } else {
       *self.search.lock().await = None;
     }

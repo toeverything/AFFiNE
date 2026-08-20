@@ -25,6 +25,7 @@ pub(crate) struct BackendRuntimeConfig {
 
 #[derive(Clone, Debug)]
 pub(crate) struct SearchRuntimeConfig {
+  pub(crate) enabled: bool,
   pub(crate) provider: String,
   pub(crate) endpoint: String,
   pub(crate) api_key: String,
@@ -35,6 +36,7 @@ pub(crate) struct SearchRuntimeConfig {
 impl Default for SearchRuntimeConfig {
   fn default() -> Self {
     Self {
+      enabled: false,
       provider: "embedded".to_string(),
       endpoint: String::new(),
       api_key: String::new(),
@@ -503,13 +505,9 @@ struct SearchProviderConfigFile {
 
 impl From<SearchRuntimeConfigFile> for SearchRuntimeConfig {
   fn from(value: SearchRuntimeConfigFile) -> Self {
-    let provider = if value.enabled {
-      value.provider.provider
-    } else {
-      "embedded".to_string()
-    };
     Self {
-      provider,
+      enabled: value.enabled,
+      provider: value.provider.provider,
       endpoint: value.provider.endpoint,
       api_key: value.provider.api_key,
       username: value.provider.username,
@@ -876,6 +874,27 @@ mod tests {
       .unwrap();
     assert!(!copilot.byok.enabled);
     assert!(copilot.byok.allow_custom_endpoint);
+  }
+
+  #[test]
+  fn search_config_keeps_disabled_state_separate_from_embedded_provider() {
+    let disabled = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(false)),
+      ("indexer.provider.type", serde_json::json!("embedded")),
+    ])
+    .unwrap();
+    let disabled: SearchRuntimeConfig = disabled.indexer.unwrap().into();
+    assert!(!disabled.enabled);
+    assert_eq!(disabled.provider, "embedded");
+
+    let enabled = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(true)),
+      ("indexer.provider.type", serde_json::json!("elasticsearch")),
+    ])
+    .unwrap();
+    let enabled: SearchRuntimeConfig = enabled.indexer.unwrap().into();
+    assert!(enabled.enabled);
+    assert_eq!(enabled.provider, "elasticsearch");
   }
 
   #[test]

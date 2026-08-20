@@ -454,6 +454,7 @@ impl DocStoragePool {
   }
 
   #[napi]
+  #[allow(clippy::too_many_arguments)]
   pub async fn index_aggregate(
     &self,
     id: String,

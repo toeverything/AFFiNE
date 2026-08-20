@@ -61,5 +61,11 @@ impl IndexManager {
   }
 }
 
+impl Default for IndexManager {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 #[cfg(test)]
 mod tests;

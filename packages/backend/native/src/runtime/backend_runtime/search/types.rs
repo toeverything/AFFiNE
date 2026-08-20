@@ -143,9 +143,10 @@ impl SearchRequest {
 
 impl RuntimeSearchRequest {
   pub(super) fn into_search_request(self) -> RuntimeResult<SearchRequest> {
+    let mut decoded_nodes = 0;
     Ok(SearchRequest {
       table: self.table,
-      query: decode_query(&self.queries, self.root_query, 0)?,
+      query: decode_query(&self.queries, self.root_query, 0, &mut decoded_nodes)?,
       options: self.options,
     })
   }
@@ -153,19 +154,30 @@ impl RuntimeSearchRequest {
 
 impl RuntimeAggregateRequest {
   pub(super) fn into_aggregate_request(self) -> RuntimeResult<AggregateRequest> {
+    let mut decoded_nodes = 0;
     Ok(AggregateRequest {
       table: self.table,
-      query: decode_query(&self.queries, self.root_query, 0)?,
+      query: decode_query(&self.queries, self.root_query, 0, &mut decoded_nodes)?,
       field: self.field,
       options: self.options,
     })
   }
 }
 
-fn decode_query(nodes: &[RuntimeSearchQuery], index: u32, depth: usize) -> RuntimeResult<SearchQuery> {
-  if nodes.len() > 100 || depth > 100 {
+const MAX_QUERY_GRAPH_NODES: usize = 100;
+const MAX_QUERY_DEPTH: usize = 100;
+const MAX_DECODED_QUERY_NODES: usize = 1_000;
+
+fn decode_query(
+  nodes: &[RuntimeSearchQuery],
+  index: u32,
+  depth: usize,
+  decoded_nodes: &mut usize,
+) -> RuntimeResult<SearchQuery> {
+  if nodes.len() > MAX_QUERY_GRAPH_NODES || depth > MAX_QUERY_DEPTH || *decoded_nodes >= MAX_DECODED_QUERY_NODES {
     return Err(RuntimeError::invalid_input("search query is too complex"));
   }
+  *decoded_nodes += 1;
   let node = nodes
     .get(index as usize)
     .ok_or_else(|| RuntimeError::invalid_input("invalid search query node"))?;
@@ -175,7 +187,7 @@ fn decode_query(nodes: &[RuntimeSearchQuery], index: u32, depth: usize) -> Runti
     match_value: node.match_value.clone(),
     query: node
       .query
-      .map(|index| decode_query(nodes, index, depth + 1).map(Box::new))
+      .map(|index| decode_query(nodes, index, depth + 1, decoded_nodes).map(Box::new))
       .transpose()?,
     queries: node
       .queries
@@ -183,7 +195,7 @@ fn decode_query(nodes: &[RuntimeSearchQuery], index: u32, depth: usize) -> Runti
       .map(|indices| {
         indices
           .iter()
-          .map(|index| decode_query(nodes, *index, depth + 1))
+          .map(|index| decode_query(nodes, *index, depth + 1, decoded_nodes))
           .collect()
       })
       .transpose()?,
@@ -210,14 +222,20 @@ mod tests {
 
   #[test]
   fn rejects_invalid_or_overly_complex_query_graphs() {
-    assert!(decode_query(&[node("all")], 1, 0).is_err());
+    assert!(decode_query(&[node("all")], 1, 0, &mut 0).is_err());
 
     let mut oversized = (0..101).map(|_| node("all")).collect::<Vec<_>>();
     oversized[0].query = Some(1);
-    assert!(decode_query(&oversized, 0, 0).is_err());
+    assert!(decode_query(&oversized, 0, 0, &mut 0).is_err());
 
     let mut recursive = vec![node("boost")];
     recursive[0].query = Some(0);
-    assert!(decode_query(&recursive, 0, 0).is_err());
+    assert!(decode_query(&recursive, 0, 0, &mut 0).is_err());
+
+    let mut shared_child = (0..100).map(|_| node("boolean")).collect::<Vec<_>>();
+    for (index, node) in shared_child.iter_mut().enumerate().take(99) {
+      node.queries = Some(vec![(index + 1) as u32, (index + 1) as u32]);
+    }
+    assert!(decode_query(&shared_child, 0, 0, &mut 0).is_err());
   }
 }

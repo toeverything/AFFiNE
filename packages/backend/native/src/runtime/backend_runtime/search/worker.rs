@@ -123,21 +123,31 @@ async fn apply_embedded(
   table: SearchTable,
   changes: &[SearchChange],
 ) -> RuntimeResult<()> {
-  let upserts = changes
-    .iter()
-    .filter_map(|change| change.payload.as_ref().map(super::provider_payload))
-    .collect::<Vec<_>>();
+  let mut upserts = Vec::new();
+  for change in changes {
+    if change.operation == "delete" {
+      if !upserts.is_empty() {
+        embedded
+          .write(
+            table.as_str().to_string(),
+            serde_json::to_string(&upserts).map_err(|error| RuntimeError::json("encode embedded changes", error))?,
+          )
+          .await?;
+        upserts.clear();
+      }
+      embedded
+        .delete(table.as_str().to_string(), change.external_id.clone())
+        .await?;
+    } else if let Some(payload) = &change.payload {
+      upserts.push(super::provider_payload(payload));
+    }
+  }
   if !upserts.is_empty() {
     embedded
       .write(
         table.as_str().to_string(),
         serde_json::to_string(&upserts).map_err(|error| RuntimeError::json("encode embedded changes", error))?,
       )
-      .await?;
-  }
-  for change in changes.iter().filter(|change| change.operation == "delete") {
-    embedded
-      .delete(table.as_str().to_string(), change.external_id.clone())
       .await?;
   }
   Ok(())
@@ -193,5 +203,70 @@ fn runtime_table(table: SearchTable) -> super::types::SearchTable {
   match table {
     SearchTable::Doc => super::types::SearchTable::Doc,
     SearchTable::Block => super::types::SearchTable::Block,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use serde_json::json;
+
+  use super::*;
+
+  #[tokio::test]
+  async fn embedded_changes_follow_stream_order() {
+    let embedded = EmbeddedSearchIndex::new();
+    let changes = vec![
+      SearchChange {
+        sequence: 1,
+        external_id: "workspace/doc".into(),
+        workspace_id: "workspace".into(),
+        doc_id: Some("doc".into()),
+        revision: 1,
+        operation: "delete".into(),
+        payload: Some(json!({
+          "workspace_id": "workspace",
+          "doc_id": "doc",
+          "title": "deleted",
+          "created_at": 1,
+          "updated_at": 1
+        })),
+      },
+      SearchChange {
+        sequence: 2,
+        external_id: "workspace/doc".into(),
+        workspace_id: "workspace".into(),
+        doc_id: Some("doc".into()),
+        revision: 2,
+        operation: "upsert".into(),
+        payload: Some(json!({
+          "workspace_id": "workspace",
+          "doc_id": "doc",
+          "title": "restored",
+          "created_at": 1,
+          "updated_at": 2
+        })),
+      },
+    ];
+
+    apply_embedded(&embedded, SearchTable::Doc, &changes).await.unwrap();
+
+    let result: serde_json::Value = serde_json::from_str(
+      &embedded
+        .search(
+          "doc".into(),
+          json!({
+            "query": {"match_all": {}},
+            "fields": ["doc_id", "title"],
+            "sort": ["doc_id"],
+            "size": 10
+          })
+          .to_string(),
+        )
+        .await
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(result["total"], 1);
+    assert_eq!(result["nodes"][0]["fields"]["title"], json!(["restored"]));
   }
 }

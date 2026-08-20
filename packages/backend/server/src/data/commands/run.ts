@@ -106,10 +106,10 @@ export class RunCommand {
       }>
     >`
       SELECT
-        to_regclass('public.ai_contexts') AS contexts,
-        to_regclass('public.ai_sessions_metadata') AS sessions,
-        to_regclass('public.blobs') AS blobs,
-        to_regclass('public.workspace_artifacts') AS artifacts
+        to_regclass('public.ai_contexts')::text AS contexts,
+        to_regclass('public.ai_sessions_metadata')::text AS sessions,
+        to_regclass('public.blobs')::text AS blobs,
+        to_regclass('public.workspace_artifacts')::text AS artifacts
     `;
 
     const schemaExists = Object.values(tables[0] ?? {}).every(Boolean);

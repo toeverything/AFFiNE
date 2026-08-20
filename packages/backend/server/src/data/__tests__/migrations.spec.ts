@@ -232,6 +232,16 @@ test('legacy context blob migration admits each blob once through the artifact r
   `;
   const createdLegacyTable = !legacyTable[0]?.exists;
   if (createdLegacyTable) {
+    const ref = {
+      get() {
+        throw new Error(
+          'legacy context runtime should not be resolved without source tables'
+        );
+      },
+    } as unknown as ModuleRef;
+    await MigrateLegacyContextBlobArtifacts1786820000000.up(t.context.db, ref);
+  }
+  if (createdLegacyTable) {
     await t.context.db.$executeRaw`
       CREATE TABLE ai_contexts (
         id VARCHAR PRIMARY KEY,
