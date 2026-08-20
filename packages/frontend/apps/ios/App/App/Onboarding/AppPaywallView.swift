@@ -1,4 +1,5 @@
 import AffinePaywall
+import AffineResources
 import SwiftUI
 
 struct AppPaywallRootView: View {

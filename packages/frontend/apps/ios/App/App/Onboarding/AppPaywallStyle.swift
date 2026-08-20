@@ -1,3 +1,4 @@
+import AffineResources
 import SwiftUI
 
 struct AppPaywallPalette {
@@ -185,4 +186,3 @@ struct AppPaywallLayout {
     max(safeAreaInsets.bottom + (isCompactLandscape ? 6 : 8), isCompactLandscape ? 8 : 16)
   }
 }
-

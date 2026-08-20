@@ -16,7 +16,7 @@ struct OnboardingBackground: View {
   }
 }
 
-private struct IntroPage: View {
+struct IntroPage: View {
   var body: some View {
     VStack(spacing: 0) {
       Spacer(minLength: 18)
@@ -52,7 +52,7 @@ private struct IntroPage: View {
   }
 }
 
-private struct IntroFooter: View {
+struct IntroFooter: View {
   let onGetStarted: () -> Void
 
   var body: some View {

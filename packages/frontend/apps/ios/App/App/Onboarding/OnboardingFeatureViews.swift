@@ -1,7 +1,7 @@
 import AffineResources
 import SwiftUI
 
-private struct RolePage: View {
+struct RolePage: View {
   @Binding var selectedRole: OnboardingRole?
 
   private let roles = OnboardingRole.allCases
@@ -34,7 +34,7 @@ private struct RolePage: View {
   }
 }
 
-private struct FeaturePage: View {
+struct FeaturePage: View {
   let feature: OnboardingFeature
 
   var body: some View {
@@ -152,7 +152,7 @@ struct PrimaryButton: View {
   }
 }
 
-private struct PageDots: View {
+struct PageDots: View {
   let count: Int
   let selectedIndex: Int
 

@@ -1,4 +1,5 @@
 import AffinePaywall
+import AffineResources
 import SwiftUI
 
 struct AppPaywallCard: View {
@@ -99,7 +100,7 @@ private struct AppPaywallFeatureRow: View {
   }
 }
 
-private struct AppPaywallFooterLinks: View {
+struct AppPaywallFooterLinks: View {
   let palette: AppPaywallPalette
 
   var body: some View {
@@ -115,7 +116,7 @@ private struct AppPaywallFooterLinks: View {
   }
 }
 
-private struct AppPaywallLegalLinks: View {
+struct AppPaywallLegalLinks: View {
   let palette: AppPaywallPalette
   let onOpenTerms: () -> Void
   let onOpenPrivacy: () -> Void
