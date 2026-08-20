@@ -2,8 +2,8 @@
   "indexer": {
     "enabled": true,
     "provider": {
-      "type": "manticoresearch",
-      "endpoint": "http://localhost:9308"
+      "type": "embedded",
+      "endpoint": ""
     }
   }
 }

@@ -29,7 +29,7 @@ global:
     database: 0
   indexer:
     enabled: false
-    provider: ''
+    provider: embedded
     endpoint: ''
     apiKey: ''
     username: ''

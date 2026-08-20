@@ -889,10 +889,6 @@ jobs:
         ports:
           - 1025:1025
           - 8025:8025
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        ports:
-          - 9308:9308
     steps:
       - uses: actions/checkout@v7
 
@@ -991,9 +987,87 @@ jobs:
           path: ./packages/backend/native
 
       - name: Prepare Server Test Environment
+        with:
+          indexer-provider: elasticsearch
         uses: ./.github/actions/server-test-env
 
       - name: Run server tests with elasticsearch only
+        run: yarn affine @affine/server e2e:coverage src/__tests__/e2e/indexer/search-docs.spec.ts --forbid-only
+        env:
+          CARGO_TARGET_DIR: '${{ github.workspace }}/target'
+
+      - name: Upload server test coverage results
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/backend/server/.coverage/lcov.info
+          flags: server-test
+          name: affine
+          fail_ci_if_error: false
+
+  server-test-manticore:
+    name: Server Test with Manticore
+    runs-on: ubuntu-latest
+    needs:
+      - build-server-native
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      REDIS_SERVER_HOST: localhost
+      SERVER_CONFIG: >-
+        {"indexer":{"enabled":true,"provider":{"type":"manticoresearch","endpoint":"http://localhost:9308"}}}
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+      mailer:
+        image: mailhog/mailhog
+        ports:
+          - 1025:1025
+          - 8025:8025
+      indexer:
+        image: manticoresearch/manticore:10.1.0
+        options: >-
+          --health-cmd "wget -q -O /dev/null http://localhost:9308/"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+        ports:
+          - 9308:9308
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo @affine/server
+          electron-install: false
+          full-cache: true
+
+      - name: Download server-native.node
+        uses: actions/download-artifact@v4
+        with:
+          name: server-native.node
+          path: ./packages/backend/native
+
+      - name: Prepare Server Test Environment
+        uses: ./.github/actions/server-test-env
+        with:
+          indexer-provider: manticoresearch
+
+      - name: Run server tests with Manticore
         run: yarn affine @affine/server e2e:coverage src/__tests__/e2e/indexer/search-docs.spec.ts --forbid-only
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
@@ -1033,10 +1107,6 @@ jobs:
         image: redis
         ports:
           - 6379:6379
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        ports:
-          - 9308:9308
     steps:
       - uses: actions/checkout@v7
 
@@ -1164,10 +1234,6 @@ jobs:
         ports:
           - 1025:1025
           - 8025:8025
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        ports:
-          - 9308:9308
     steps:
       - uses: actions/checkout@v7
 
@@ -1237,10 +1303,6 @@ jobs:
         image: redis
         ports:
           - 6379:6379
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        ports:
-          - 9308:9308
     steps:
       - uses: actions/checkout@v7
 
@@ -1320,10 +1382,6 @@ jobs:
         ports:
           - 1025:1025
           - 8025:8025
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        ports:
-          - 9308:9308
     steps:
       - uses: actions/checkout@v7
 
@@ -1527,6 +1585,8 @@ jobs:
       - build-electron-renderer
       - native-unit-test
       - server-test
+      - server-test-elasticsearch
+      - server-test-manticore
       - server-e2e-test
       - rust-test
       - rust-test-filter

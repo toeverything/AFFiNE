@@ -403,12 +403,12 @@
     },
     "provider.type": {
       "type": "String",
-      "desc": "Indexer search service provider name",
+      "desc": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.",
       "env": "AFFINE_INDEXER_SEARCH_PROVIDER"
     },
     "provider.endpoint": {
       "type": "String",
-      "desc": "Indexer search service endpoint",
+      "desc": "Remote indexer endpoint. Not used by the embedded provider.",
       "env": "AFFINE_INDEXER_SEARCH_ENDPOINT"
     },
     "provider.apiKey": {

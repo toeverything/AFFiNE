@@ -1493,13 +1493,13 @@
         },
         "provider.type": {
           "type": "string",
-          "description": "Indexer search service provider name\n@default \"manticoresearch\"\n@environment `AFFINE_INDEXER_SEARCH_PROVIDER`",
-          "default": "manticoresearch"
+          "description": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.\n@default \"embedded\"\n@environment `AFFINE_INDEXER_SEARCH_PROVIDER`",
+          "default": "embedded"
         },
         "provider.endpoint": {
           "type": "string",
-          "description": "Indexer search service endpoint\n@default \"http://localhost:9308\"\n@environment `AFFINE_INDEXER_SEARCH_ENDPOINT`",
-          "default": "http://localhost:9308"
+          "description": "Remote indexer endpoint. Not used by the embedded provider.\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_ENDPOINT`",
+          "default": ""
         },
         "provider.apiKey": {
           "type": "string",

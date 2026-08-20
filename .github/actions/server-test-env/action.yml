@@ -1,6 +1,12 @@
 name: 'Prepare Server Test Environment'
 description: 'Prepare Server Test Environment'
 
+inputs:
+  indexer-provider:
+    description: 'Search provider used by the server test runtime'
+    required: false
+    default: embedded
+
 runs:
   using: 'composite'
   steps:
@@ -26,17 +32,23 @@ runs:
     - name: Import config
       shell: bash
       run: |
+        case '${{ inputs.indexer-provider }}' in
+          embedded)
+            default_indexer='{"enabled":true,"provider":{"type":"embedded","endpoint":""}}'
+            ;;
+          elasticsearch)
+            default_indexer='{"enabled":true,"provider":{"type":"elasticsearch","endpoint":"http://localhost:9200"}}'
+            ;;
+          manticoresearch)
+            default_indexer='{"enabled":true,"provider":{"type":"manticoresearch","endpoint":"http://localhost:9308"}}'
+            ;;
+          *)
+            echo "Unsupported test indexer provider: ${{ inputs.indexer-provider }}" >&2
+            exit 1
+            ;;
+        esac
         if [[ -n "${SERVER_CONFIG:-}" ]]; then
-          printf '%s\n' "$SERVER_CONFIG" > ./packages/backend/server/config.json
+          jq --argjson indexer "$default_indexer" '.indexer = $indexer' <<<"$SERVER_CONFIG" > ./packages/backend/server/config.json
         else
-          jq -n \
-            '{
-              indexer: {
-                enabled: true,
-                provider: {
-                  type: "manticoresearch",
-                  endpoint: "http://localhost:9308"
-                }
-              }
-            }' > ./packages/backend/server/config.json
+          jq -n --argjson indexer "$default_indexer" '{indexer: $indexer}' > ./packages/backend/server/config.json
         fi

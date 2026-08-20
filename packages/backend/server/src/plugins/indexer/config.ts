@@ -35,14 +35,14 @@ defineModuleConfig('indexer', {
     env: ['AFFINE_INDEXER_ENABLED', 'boolean'],
   },
   'provider.type': {
-    desc: 'Indexer search service provider name',
-    default: SearchProviderType.Manticoresearch,
+    desc: 'Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.',
+    default: SearchProviderType.Embedded,
     shape: SearchProviderTypeSchema,
     env: ['AFFINE_INDEXER_SEARCH_PROVIDER', 'string'],
   },
   'provider.endpoint': {
-    desc: 'Indexer search service endpoint',
-    default: 'http://localhost:9308',
+    desc: 'Remote indexer endpoint. Not used by the embedded provider.',
+    default: '',
     env: ['AFFINE_INDEXER_SEARCH_ENDPOINT', 'string'],
     validate: val => {
       // allow to be nullable and empty string

@@ -16,8 +16,9 @@ spec:
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
-      {{- with .Values.worker.podAnnotations }}
       annotations:
+        checksum/indexer-config: {{ include "affine.indexerConfig" . | sha256sum }}
+      {{- with .Values.worker.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
