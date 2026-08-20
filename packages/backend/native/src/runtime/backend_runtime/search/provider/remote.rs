@@ -32,9 +32,13 @@ impl RemoteProvider {
     if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none() {
       return Err(RuntimeError::config("invalid search provider endpoint"));
     }
-    let client = Client::builder()
+    let mut client = Client::builder()
       .redirect(Policy::none())
-      .timeout(Duration::from_secs(30))
+      .timeout(Duration::from_secs(30));
+    if config.provider == "manticoresearch" {
+      client = client.pool_max_idle_per_host(0);
+    }
+    let client = client
       .build()
       .map_err(|error| RuntimeError::invalid_state(format!("search HTTP client failed: {error}")))?;
     Ok(Self {
