@@ -1,3 +1,4 @@
+import AffinePaywall
 import SwiftUI
 
 struct AppPaywallRootView: View {
