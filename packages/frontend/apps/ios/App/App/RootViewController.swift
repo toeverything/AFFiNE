@@ -424,7 +424,6 @@ class RootViewController: UINavigationController {
 
         let isSignedIn = try await PaywallAuthGuard.ensureSignedIn(using: webView)
         guard isSignedIn else {
-          didRunColdStartPaywallFlow = false
           return
         }
 
@@ -518,9 +517,6 @@ class RootViewController: UINavigationController {
         return
       }
       guard isSignedIn else {
-        didRunColdStartPaywallFlow = false
-        didScheduleOnboardingPresentation = false
-        showOnboardingAlert(message: "Sign in was not completed. Please try again when you are ready.")
         return
       }
 

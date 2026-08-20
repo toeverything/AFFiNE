@@ -50,12 +50,30 @@ import { SignInDialog } from './index';
 describe('SignInDialog', () => {
   afterEach(() => {
     cleanup();
+    delete window.showNativeSignIn;
     vi.unstubAllGlobals();
   });
 
-  test('falls back to the web sign-in panel when native sign-in is cancelled', async () => {
+  test('closes the dialog when native sign-in is cancelled', async () => {
     const close = vi.fn();
     setNativeSignIn(vi.fn().mockResolvedValue(null));
+
+    render(
+      <SignInDialog
+        close={close}
+        server="https://app.affine.pro"
+        step="signIn"
+      />
+    );
+
+    await waitFor(() => {
+      expect(close).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByText('mobile-sign-in-panel')).toBeNull();
+  });
+
+  test('falls back to the web sign-in panel when native bridge is unavailable', async () => {
+    const close = vi.fn();
 
     render(
       <SignInDialog

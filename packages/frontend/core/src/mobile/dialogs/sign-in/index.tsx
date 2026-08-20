@@ -55,7 +55,7 @@ export const SignInDialog = ({
           closeRef.current();
           return;
         }
-        setUseWebFallback(true);
+        closeRef.current();
       })
       .catch((error: unknown) => {
         console.error('Failed to show native sign-in', error);
