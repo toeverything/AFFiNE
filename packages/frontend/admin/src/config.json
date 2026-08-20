@@ -97,7 +97,7 @@
     },
     "signInRateLimit": {
       "type": "Object",
-      "desc": "Limits for sign-in attempts shared through Redis by source IP and email."
+      "desc": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds."
     },
     "inviteQuotaShadowMode": {
       "type": "Boolean",

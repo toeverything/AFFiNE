@@ -211,7 +211,7 @@
         },
         "signInRateLimit": {
           "type": "object",
-          "description": "Limits for sign-in attempts shared through Redis by source IP and email.\n@default {\"ttl\":60000,\"ipLimit\":20,\"emailLimit\":5}",
+          "description": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds.\n@default {\"ttl\":60000,\"ipLimit\":20,\"emailLimit\":5}",
           "default": {
             "ttl": 60000,
             "ipLimit": 20,

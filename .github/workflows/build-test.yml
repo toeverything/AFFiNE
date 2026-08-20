@@ -21,7 +21,6 @@ env:
   COVERAGE: true
   MACOSX_DEPLOYMENT_TARGET: '11.6'
   DEPLOYMENT_TYPE: affine
-  AFFINE_INDEXER_ENABLED: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -938,8 +937,8 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       REDIS_SERVER_HOST: localhost
-      AFFINE_INDEXER_SEARCH_PROVIDER: elasticsearch
-      AFFINE_INDEXER_SEARCH_ENDPOINT: http://localhost:9200
+      SERVER_CONFIG: >-
+        {"indexer":{"enabled":true,"provider":{"type":"elasticsearch","endpoint":"http://localhost:9200"}}}
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -995,7 +994,7 @@ jobs:
         uses: ./.github/actions/server-test-env
 
       - name: Run server tests with elasticsearch only
-        run: yarn affine @affine/server test:coverage "**/*/*elasticsearch.spec.ts" --forbid-only
+        run: yarn affine @affine/server e2e:coverage src/__tests__/e2e/indexer/search-docs.spec.ts --forbid-only
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
 

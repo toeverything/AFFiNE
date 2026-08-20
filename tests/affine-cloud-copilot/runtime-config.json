@@ -17,5 +17,12 @@
         "path": "/tmp/affine-cloud-copilot-storage"
       }
     }
+  },
+  "indexer": {
+    "enabled": true,
+    "provider": {
+      "type": "manticoresearch",
+      "endpoint": "http://localhost:9308"
+    }
   }
 }
