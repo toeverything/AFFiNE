@@ -15,12 +15,10 @@ type MetaState = {
 };
 
 export class WorkspaceMetaImpl implements WorkspaceMeta {
-  /* eslint-disable rxjs/finnish */
   commonFieldsUpdated = new Subject<void>();
   docMetaAdded = new Subject<string>();
   docMetaRemoved = new Subject<string>();
   docMetaUpdated = new Subject<void>();
-  /* eslint-enable rxjs/finnish */
 
   private readonly _handleDocCollectionMetaEvents = (
     events: Y.YEvent<Y.Array<unknown> | Y.Text | Y.Map<unknown>>[]

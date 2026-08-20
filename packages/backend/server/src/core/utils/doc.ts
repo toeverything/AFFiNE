@@ -35,7 +35,7 @@ export class DocID {
     return this.variant === DocVariant.Workspace
       ? this.workspace
       : // sub is always truthy when variant is not workspace
-        // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
+        // oxlint-disable-next-line typescript/no-non-null-assertion
         this.sub!;
   }
 

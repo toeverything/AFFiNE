@@ -17,11 +17,7 @@
   // Configure tool-specific properties.
   "customizations": {
     "vscode": {
-      "extensions": [
-        "ms-playwright.playwright",
-        "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint"
-      ]
+      "extensions": ["ms-playwright.playwright", "oxc.oxc-vscode"]
     }
   },
   "updateContentCommand": "bash ./.devcontainer/build.sh",

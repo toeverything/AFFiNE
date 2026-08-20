@@ -132,7 +132,7 @@ export class AuthService implements OnApplicationBootstrap {
     // fallback to the first valid session if user provided userId is invalid
     if (!userSession) {
       // checked
-      // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // oxlint-disable-next-line typescript/no-non-null-assertion
       userSession = sessions.at(-1)!;
     }
 

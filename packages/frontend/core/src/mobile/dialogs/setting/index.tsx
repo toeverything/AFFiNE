@@ -4,6 +4,7 @@ import type {
   DialogComponentProps,
   WORKSPACE_DIALOG_SCHEMA,
 } from '@affine/core/modules/dialogs';
+import { UrlService } from '@affine/core/modules/url';
 import { copyTextToClipboard } from '@affine/core/utils/clipboard';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -24,17 +25,17 @@ import { SwipeDialog } from './swipe-dialog';
 import { UserProfile } from './user-profile';
 import { UserUsage } from './user-usage';
 
-const AFFINE_APP_STORE_URL =
-  'https://apps.apple.com/app/notes-whiteboard-ai-affine/id6736937980';
+const AFFINE_MOBILE_STORE_URL = BUILD_CONFIG.isIOS
+  ? 'https://apps.apple.com/app/notes-whiteboard-ai-affine/id6736937980'
+  : BUILD_CONFIG.isAndroid
+    ? 'https://play.google.com/store/apps/details?id=app.affine.pro'
+    : undefined;
 const AFFINE_DOWNLOAD_URL = 'https://affine.pro/download';
 const AFFINE_TEAM_URL = 'https://affine.pro/teamhub';
 
-const openExternal = (url: string) => {
-  window.open(url, '_blank', 'noopener,noreferrer');
-};
-
 const SupportGroup = () => {
   const t = useI18n();
+  const urlService = useService(UrlService);
 
   const shareApp = useCallback(async () => {
     const shareData = {
@@ -60,15 +61,17 @@ const SupportGroup = () => {
       return;
     }
 
-    openExternal(AFFINE_DOWNLOAD_URL);
-  }, [t]);
+    urlService.openExternal(AFFINE_DOWNLOAD_URL);
+  }, [t, urlService]);
 
   return (
     <SettingGroup title={t['com.affine.mobile.setting.support.title']()}>
-      <RowLayout
-        label={t['com.affine.mobile.setting.support.rate']()}
-        onClick={() => openExternal(AFFINE_APP_STORE_URL)}
-      />
+      {AFFINE_MOBILE_STORE_URL ? (
+        <RowLayout
+          label={t['com.affine.mobile.setting.support.rate']()}
+          onClick={() => urlService.openExternal(AFFINE_MOBILE_STORE_URL)}
+        />
+      ) : null}
       <RowLayout
         label={t['com.affine.mobile.setting.support.invite']()}
         onClick={() => void shareApp()}
@@ -79,12 +82,13 @@ const SupportGroup = () => {
 
 const TeamPromotionCard = () => {
   const t = useI18n();
+  const urlService = useService(UrlService);
 
   return (
     <button
       type="button"
       className={styles.promoCard}
-      onClick={() => openExternal(AFFINE_TEAM_URL)}
+      onClick={() => urlService.openExternal(AFFINE_TEAM_URL)}
     >
       <span className={styles.promoCardContent}>
         <span className={styles.promoCardTitle}>
@@ -132,12 +136,15 @@ const MobileSetting = ({
 }) => {
   const session = useService(AuthService).session;
   const status = useLiveData(session.status$);
-  useEffect(() => session.revalidate(), [session]);
+
+  useEffect(() => {
+    session.revalidate();
+  }, [session]);
 
   return (
     <div className={styles.root}>
-      <UserProfile />
       <UserSubscription />
+      <UserProfile />
       <UserUsage />
       {status === 'authenticated' ? <DevicesGroup /> : null}
       <AppearanceGroup />

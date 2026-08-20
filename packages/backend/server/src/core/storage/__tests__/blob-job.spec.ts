@@ -289,7 +289,7 @@ test('storage reconciliation still refreshes document retention without object s
   t.false(t.context.runtime.planUnreferencedWorkspaceBlobs.called);
 });
 
-test('document cleanup dispatches independent stable search and copilot effects', async t => {
+test('document cleanup dispatches stable search effects', async t => {
   t.context.runtime.executeDocumentCleanupCandidates.resolves({
     scannedCandidates: 1,
     serializationRetries: 0,
@@ -305,7 +305,6 @@ test('document cleanup dispatches independent stable search and copilot effects'
         cleanupVersion: 'version-1',
         commentObjectsDone: true,
         searchDone: false,
-        copilotDone: false,
       },
     ],
   });
@@ -318,15 +317,6 @@ test('document cleanup dispatches independent stable search and copilot effects'
       Sinon.match({ docId: 'doc-1' }),
       {
         jobId: 'document-cleanup:search:workspace-1:doc-1:version-1',
-      }
-    )
-  );
-  t.true(
-    t.context.queue.add.calledWith(
-      'copilot.embedding.reconcileDocumentCleanup',
-      Sinon.match({ docId: 'doc-1' }),
-      {
-        jobId: 'document-cleanup:copilot:workspace-1:doc-1:version-1',
       }
     )
   );

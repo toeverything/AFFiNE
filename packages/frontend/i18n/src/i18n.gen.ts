@@ -879,6 +879,175 @@ export function useAFFiNEI18N(): {
         total: string;
     }>): string;
     /**
+      * `Local workspaces don't support attachments or references.`
+      */
+    ["com.affine.ai.chat-panel.local-workspace-context-unavailable"](): string;
+    /**
+      * `Reading canvas`
+      */
+    ["com.affine.ai.chat-panel.tool.canvas.reading"](): string;
+    /**
+      * `Read canvas of "{{title}}"`
+      */
+    ["com.affine.ai.chat-panel.tool.canvas.read"](options: {
+        readonly title: string;
+    }): string;
+    /**
+      * `Read canvas`
+      */
+    ["com.affine.ai.chat-panel.tool.canvas.read-untitled"](): string;
+    /**
+      * `Canvas read failed`
+      */
+    ["com.affine.ai.chat-panel.tool.canvas.failed"](): string;
+    /**
+      * `Canvas content`
+      */
+    ["com.affine.ai.chat-panel.tool.canvas.content"](): string;
+    /**
+      * `Current document`
+      */
+    ["com.affine.ai.chat-panel.tool.live.current-document"](): string;
+    /**
+      * `Checking editor state`
+      */
+    ["com.affine.ai.chat-panel.tool.live.state-checking"](): string;
+    /**
+      * `Checked editor state`
+      */
+    ["com.affine.ai.chat-panel.tool.live.state-checked"](): string;
+    /**
+      * `Reading selection`
+      */
+    ["com.affine.ai.chat-panel.tool.live.selection-reading"](): string;
+    /**
+      * `Read selection`
+      */
+    ["com.affine.ai.chat-panel.tool.live.selection-read"](): string;
+    /**
+      * `Reading editor content`
+      */
+    ["com.affine.ai.chat-panel.tool.live.content-reading"](): string;
+    /**
+      * `Read editor content`
+      */
+    ["com.affine.ai.chat-panel.tool.live.content-read"](): string;
+    /**
+      * `Reading outline of "{{title}}"`
+      */
+    ["com.affine.ai.chat-panel.tool.live.outline-reading"](options: {
+        readonly title: string;
+    }): string;
+    /**
+      * `Read outline of "{{title}}"`
+      */
+    ["com.affine.ai.chat-panel.tool.live.outline-read"](options: {
+        readonly title: string;
+    }): string;
+    /**
+      * `Reading canvas of "{{title}}"`
+      */
+    ["com.affine.ai.chat-panel.tool.live.canvas-reading"](options: {
+        readonly title: string;
+    }): string;
+    /**
+      * `Read canvas of "{{title}}"`
+      */
+    ["com.affine.ai.chat-panel.tool.live.canvas-read"](options: {
+        readonly title: string;
+    }): string;
+    /**
+      * `This view is not available in the current editor mode`
+      */
+    ["com.affine.ai.chat-panel.tool.live.view-unavailable"](): string;
+    /**
+      * `Live editor read failed`
+      */
+    ["com.affine.ai.chat-panel.tool.live.failed"](): string;
+    /**
+      * `{{mode}} mode`
+      */
+    ["com.affine.ai.chat-panel.tool.live.mode"](options: {
+        readonly mode: string;
+    }): string;
+    /**
+      * `{{count}} blocks`
+      */
+    ["com.affine.ai.chat-panel.tool.live.blocks"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `{{count}} elements`
+      */
+    ["com.affine.ai.chat-panel.tool.live.elements"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Document`
+      */
+    ["com.affine.ai.chat-panel.scope.document"](): string;
+    /**
+      * `Tag`
+      */
+    ["com.affine.ai.chat-panel.scope.tag"](): string;
+    /**
+      * `Collection`
+      */
+    ["com.affine.ai.chat-panel.scope.collection"](): string;
+    /**
+      * `Favorites`
+      */
+    ["com.affine.ai.chat-panel.scope.favorite"](): string;
+    /**
+      * `Attachment`
+      */
+    ["com.affine.ai.chat-panel.scope.artifact"](): string;
+    /**
+      * `{{count}} sources`
+      */
+    ["com.affine.ai.chat-panel.scope.sources"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Your selected sources are still processing. Try again shortly.`
+      */
+    ["com.affine.ai.error.selectedSourcesProcessing"](): string;
+    /**
+      * `Some selected sources could not be processed. Try again; if the problem continues, remove them and send a new message.`
+      */
+    ["com.affine.ai.error.selectedSourcesFailed"](): string;
+    /**
+      * `One or more selected sources are unavailable. Check the sources or workspace AI indexing settings, then retry.`
+      */
+    ["com.affine.ai.error.selectedSourcesUnavailable"](): string;
+    /**
+      * `Too many sources or too much content was selected. Select fewer sources and send a new message.`
+      */
+    ["com.affine.ai.error.selectedSourcesLimitExceeded"](): string;
+    /**
+      * `Retry`
+      */
+    ["com.affine.ai.error.retry"](): string;
+    /**
+      * `Working… · {{count}} actions`
+      */
+    ["com.affine.ai.chat-panel.tool-group.running"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Completed {{count}} actions`
+      */
+    ["com.affine.ai.chat-panel.tool-group.completed"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Completed {{count}} actions · {{failed}} failed`
+      */
+    ["com.affine.ai.chat-panel.tool-group.failed"](options: Readonly<{
+        count: string;
+        failed: string;
+    }>): string;
+    /**
       * `Delete this history?`
       */
     ["com.affine.ai.chat-panel.session.delete.confirm.title"](): string;
@@ -2963,10 +3132,6 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.promo.description"](): string;
     /**
-      * `AFFiNE Cloud & Self-Hosted`
-      */
-    ["com.affine.mobile.setting.promo.eyebrow"](): string;
-    /**
       * `AFFiNE for team and more`
       */
     ["com.affine.mobile.setting.promo.title"](): string;
@@ -2975,7 +3140,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.subscription.button"](): string;
     /**
-      * `Get 100 GB of cloud storage for your notes and boards.`
+      * `Unlimited space for your notes and boards.`
       */
     ["com.affine.mobile.setting.subscription.description"](): string;
     /**
@@ -2999,7 +3164,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.support.invite-message"](): string;
     /**
-      * `Rate AFFINE`
+      * `Rate AFFiNE`
       */
     ["com.affine.mobile.setting.support.rate"](): string;
     /**
@@ -5604,6 +5769,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.editorSettings.general.default-code-block.language.title"](): string;
     /**
+      * `Show line numbers in all code blocks by default.`
+      */
+    ["com.affine.settings.editorSettings.general.default-code-block.line-numbers.description"](): string;
+    /**
+      * `Show line numbers in code blocks`
+      */
+    ["com.affine.settings.editorSettings.general.default-code-block.line-numbers.title"](): string;
+    /**
       * `Encapsulate code snippets for better readability.`
       */
     ["com.affine.settings.editorSettings.general.default-code-block.wrap.description"](): string;
@@ -6023,10 +6196,6 @@ export function useAFFiNEI18N(): {
     /**
       * `AI BYOK (Beta)`
       */
-    ["com.affine.settings.workspace.byok.title-beta"](): string;
-    /**
-      * `AI BYOK`
-      */
     ["com.affine.settings.workspace.byok.title"](): string;
     /**
       * `Loading provider keys.`
@@ -6048,14 +6217,6 @@ export function useAFFiNEI18N(): {
       * `Upgrade this workspace to add provider keys and route AFFiNE AI through your own OpenAI, Anthropic, Gemini, or FAL account.`
       */
     ["com.affine.settings.workspace.byok.locked.description"](): string;
-    /**
-      * `AI plan stays available`
-      */
-    ["com.affine.settings.workspace.byok.notice.title"](): string;
-    /**
-      * `Local keys on this device are tried first. Workspace server keys follow, then AFFiNE AI plan routes when quota is available.`
-      */
-    ["com.affine.settings.workspace.byok.notice.description"](): string;
     /**
       * `Provider keys`
       */
@@ -6081,13 +6242,25 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.storage.server"](): string;
     /**
-      * `Local (this device)`
+      * `Available to workspace members.`
       */
-    ["com.affine.settings.workspace.byok.storage.local-this-device"](): string;
+    ["com.affine.settings.workspace.byok.storage.server.description"](): string;
     /**
-      * `Local (Desktop only)`
+      * `Kept in this desktop device’s secure storage.`
       */
-    ["com.affine.settings.workspace.byok.storage.local-desktop-only"](): string;
+    ["com.affine.settings.workspace.byok.storage.local.description"](): string;
+    /**
+      * `Available in the AFFiNE desktop app.`
+      */
+    ["com.affine.settings.workspace.byok.storage.local.desktop-only"](): string;
+    /**
+      * `Secure local storage is not available on this device.`
+      */
+    ["com.affine.settings.workspace.byok.storage.local.unavailable"](): string;
+    /**
+      * `Testing sends this key to the workspace server for this request only; it is not stored there.`
+      */
+    ["com.affine.settings.workspace.byok.storage.local.test-disclosure"](): string;
     /**
       * `Disabled after failure`
       */
@@ -6096,10 +6269,6 @@ export function useAFFiNEI18N(): {
       * `Key verified`
       */
     ["com.affine.settings.workspace.byok.status.key-verified"](): string;
-    /**
-      * `Key test failed`
-      */
-    ["com.affine.settings.workspace.byok.status.key-test-failed"](): string;
     /**
       * `Text`
       */
@@ -6130,16 +6299,6 @@ export function useAFFiNEI18N(): {
     ["com.affine.settings.workspace.byok.row.activity.failed"](options: {
         readonly date: string;
     }): string;
-    /**
-      * `used {{date}}`
-      */
-    ["com.affine.settings.workspace.byok.row.activity.used"](options: {
-        readonly date: string;
-    }): string;
-    /**
-      * `used today`
-      */
-    ["com.affine.settings.workspace.byok.row.activity.used-today"](): string;
     /**
       * `not used yet`
       */
@@ -6211,17 +6370,69 @@ export function useAFFiNEI18N(): {
         readonly count: string;
     }): string;
     /**
-      * `Add provider key`
+      * `Connect AI provider`
       */
-    ["com.affine.settings.workspace.byok.modal.add-title"](): string;
+    ["com.affine.settings.workspace.byok.modal.connect-title"](): string;
     /**
-      * `Edit provider key`
+      * `Manage provider`
       */
-    ["com.affine.settings.workspace.byok.modal.edit-title"](): string;
+    ["com.affine.settings.workspace.byok.modal.manage-title"](): string;
     /**
-      * `Re-enter the API key and test it before saving changes.`
+      * `Choose where the key is stored, then select the models AFFiNE may use.`
       */
-    ["com.affine.settings.workspace.byok.modal.description"](): string;
+    ["com.affine.settings.workspace.byok.modal.connect-description"](): string;
+    /**
+      * `Add models`
+      */
+    ["com.affine.settings.workspace.byok.modal.add-model-title"](): string;
+    /**
+      * `Add custom model`
+      */
+    ["com.affine.settings.workspace.byok.modal.add-custom-model-title"](): string;
+    /**
+      * `Edit model`
+      */
+    ["com.affine.settings.workspace.byok.modal.edit-model-title"](): string;
+    /**
+      * `Choose one or more models this key may use.`
+      */
+    ["com.affine.settings.workspace.byok.modal.catalog-model-description"](): string;
+    /**
+      * `Enter the endpoint model ID and choose its uses.`
+      */
+    ["com.affine.settings.workspace.byok.modal.custom-model-description"](): string;
+    /**
+      * `Connection`
+      */
+    ["com.affine.settings.workspace.byok.section.connection"](): string;
+    /**
+      * `Models`
+      */
+    ["com.affine.settings.workspace.byok.section.models"](): string;
+    /**
+      * `Advanced details`
+      */
+    ["com.affine.settings.workspace.byok.section.advanced"](): string;
+    /**
+      * `Models this key may use.`
+      */
+    ["com.affine.settings.workspace.byok.models.description.selected"](): string;
+    /**
+      * `Among compatible models, enabled models are tried from top to bottom.`
+      */
+    ["com.affine.settings.workspace.byok.models.description.order"](): string;
+    /**
+      * `No models added yet.`
+      */
+    ["com.affine.settings.workspace.byok.models.empty"](): string;
+    /**
+      * `All available models have been added.`
+      */
+    ["com.affine.settings.workspace.byok.models.all-added"](): string;
+    /**
+      * `No matching models.`
+      */
+    ["com.affine.settings.workspace.byok.models.no-search-results"](): string;
     /**
       * `Provider`
       */
@@ -6235,9 +6446,9 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.field.description"](): string;
     /**
-      * `Key storage`
+      * `Provider enabled`
       */
-    ["com.affine.settings.workspace.byok.field.storage"](): string;
+    ["com.affine.settings.workspace.byok.field.provider-enabled"](): string;
     /**
       * `API key`
       */
@@ -6247,6 +6458,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.field.endpoint"](): string;
     /**
+      * `API dialect`
+      */
+    ["com.affine.settings.workspace.byok.field.dialect"](): string;
+    /**
+      * `Model ID`
+      */
+    ["com.affine.settings.workspace.byok.field.model-id"](): string;
+    /**
       * `Custom endpoints are disabled by the server administrator. In Self-hosted Admin, enable copilot.byok.allowCustomEndpoint.`
       */
     ["com.affine.settings.workspace.byok.endpoint.custom-disabled"](): string;
@@ -6255,29 +6474,188 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.endpoint.private-disabled"](): string;
     /**
-      * `Primary`
+      * `Leave blank to keep the current key`
       */
-    ["com.affine.settings.workspace.byok.placeholder.key-name"](): string;
+    ["com.affine.settings.workspace.byok.placeholder.keep-current-key"](): string;
     /**
-      * `Workspace fallback key`
+      * `Model ID`
       */
-    ["com.affine.settings.workspace.byok.placeholder.description"](): string;
+    ["com.affine.settings.workspace.byok.placeholder.model-id"](): string;
+    /**
+      * `Search models…`
+      */
+    ["com.affine.settings.workspace.byok.placeholder.search-models"](): string;
+    /**
+      * `Select an API dialect`
+      */
+    ["com.affine.settings.workspace.byok.placeholder.dialect"](): string;
+    /**
+      * `Use a custom API-compatible endpoint`
+      */
+    ["com.affine.settings.workspace.byok.endpoint.use-custom"](): string;
+    /**
+      * `Responses API`
+      */
+    ["com.affine.settings.workspace.byok.dialect.responses"](): string;
+    /**
+      * `Chat Completions API`
+      */
+    ["com.affine.settings.workspace.byok.dialect.chat-completions"](): string;
+    /**
+      * `Include an image generation request when testing (provider charges may apply)`
+      */
+    ["com.affine.settings.workspace.byok.probe.include-image"](): string;
+    /**
+      * `Connection verified`
+      */
+    ["com.affine.settings.workspace.byok.probe.verified"](): string;
+    /**
+      * `Connection failed`
+      */
+    ["com.affine.settings.workspace.byok.probe.failed"](): string;
+    /**
+      * `Recommended`
+      */
+    ["com.affine.settings.workspace.byok.model.recommended"](): string;
+    /**
+      * `This model has already been added.`
+      */
+    ["com.affine.settings.workspace.byok.model.duplicate-id"](): string;
+    /**
+      * `Not tested`
+      */
+    ["com.affine.settings.workspace.byok.model.status.not-tested"](): string;
+    /**
+      * `Verified`
+      */
+    ["com.affine.settings.workspace.byok.model.status.verified"](): string;
+    /**
+      * `Failed`
+      */
+    ["com.affine.settings.workspace.byok.model.status.failed"](): string;
+    /**
+      * `Partially verified · {{verified}} of {{total}}`
+      */
+    ["com.affine.settings.workspace.byok.model.status.partially-verified"](options: Readonly<{
+        verified: string;
+        total: string;
+    }>): string;
+    /**
+      * `Disabled`
+      */
+    ["com.affine.settings.workspace.byok.model.status.disabled"](): string;
+    /**
+      * `Use this model for`
+      */
+    ["com.affine.settings.workspace.byok.model.use-this-for"](): string;
+    /**
+      * `Chat & writing`
+      */
+    ["com.affine.settings.workspace.byok.model.use.chat"](): string;
+    /**
+      * `Actions`
+      */
+    ["com.affine.settings.workspace.byok.model.use.actions"](): string;
+    /**
+      * `Structured output`
+      */
+    ["com.affine.settings.workspace.byok.model.use.structured"](): string;
+    /**
+      * `Image understanding`
+      */
+    ["com.affine.settings.workspace.byok.model.use.vision"](): string;
+    /**
+      * `Image generation`
+      */
+    ["com.affine.settings.workspace.byok.model.use.image"](): string;
+    /**
+      * `Transcription`
+      */
+    ["com.affine.settings.workspace.byok.model.use.transcript"](): string;
+    /**
+      * `Workspace indexing`
+      */
+    ["com.affine.settings.workspace.byok.model.use.embedding"](): string;
+    /**
+      * `Search reranking`
+      */
+    ["com.affine.settings.workspace.byok.model.use.rerank"](): string;
     /**
       * `Add key`
       */
     ["com.affine.settings.workspace.byok.action.add-key"](): string;
     /**
-      * `Test key`
+      * `Test connection`
       */
-    ["com.affine.settings.workspace.byok.action.test-key"](): string;
+    ["com.affine.settings.workspace.byok.action.test-connection"](): string;
+    /**
+      * `Test`
+      */
+    ["com.affine.settings.workspace.byok.action.test"](): string;
+    /**
+      * `Testing…`
+      */
+    ["com.affine.settings.workspace.byok.action.testing"](): string;
     /**
       * `Cancel`
       */
     ["com.affine.settings.workspace.byok.action.cancel"](): string;
     /**
-      * `Save key`
+      * `Connect`
       */
-    ["com.affine.settings.workspace.byok.action.save-key"](): string;
+    ["com.affine.settings.workspace.byok.action.connect"](): string;
+    /**
+      * `Connecting…`
+      */
+    ["com.affine.settings.workspace.byok.action.connecting"](): string;
+    /**
+      * `Save changes`
+      */
+    ["com.affine.settings.workspace.byok.action.save-changes"](): string;
+    /**
+      * `Add model`
+      */
+    ["com.affine.settings.workspace.byok.action.add-model"](): string;
+    /**
+      * `Add {{count}} models`
+      */
+    ["com.affine.settings.workspace.byok.action.add-selected-models"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Save model`
+      */
+    ["com.affine.settings.workspace.byok.action.save-model"](): string;
+    /**
+      * `Enable {{model}}`
+      */
+    ["com.affine.settings.workspace.byok.action.enable-model"](options: {
+        readonly model: string;
+    }): string;
+    /**
+      * `Disable {{model}}`
+      */
+    ["com.affine.settings.workspace.byok.action.disable-model"](options: {
+        readonly model: string;
+    }): string;
+    /**
+      * `Options for {{model}}`
+      */
+    ["com.affine.settings.workspace.byok.action.model-options"](options: {
+        readonly model: string;
+    }): string;
+    /**
+      * `Move up`
+      */
+    ["com.affine.settings.workspace.byok.action.move-up"](): string;
+    /**
+      * `Move down`
+      */
+    ["com.affine.settings.workspace.byok.action.move-down"](): string;
+    /**
+      * `Remove`
+      */
+    ["com.affine.settings.workspace.byok.action.remove"](): string;
     /**
       * `Clear all BYOK keys`
       */
@@ -6326,6 +6704,14 @@ export function useAFFiNEI18N(): {
       * `BYOK keys not cleared`
       */
     ["com.affine.settings.workspace.byok.notify.clear-failed.title"](): string;
+    /**
+      * `BYOK settings changed`
+      */
+    ["com.affine.settings.workspace.byok.notify.reload-required.title"](): string;
+    /**
+      * `Reload the settings and try again.`
+      */
+    ["com.affine.settings.workspace.byok.notify.reload-required.message"](): string;
     /**
       * `Please try again.`
       */
@@ -9397,17 +9783,25 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.realtime.connection-error.title"](): string;
     /**
-      * `Check that your server proxy forwards /socket.io over WebSocket or HTTP polling.`
+      * `The real-time connection could not authenticate your session. Sign in again if the problem continues.`
       */
-    ["com.affine.realtime.connection-error.message"](): string;
+    ["com.affine.realtime.connection-error.authentication"](): string;
+    /**
+      * `The server cannot be reached. Check your network connection and server proxy.`
+      */
+    ["com.affine.realtime.connection-error.network"](): string;
+    /**
+      * `The server rejected the real-time request. Try again later.`
+      */
+    ["com.affine.realtime.connection-error.server"](): string;
+    /**
+      * `The server did not respond in time. AFFiNE will keep trying to reconnect.`
+      */
+    ["com.affine.realtime.connection-error.timeout"](): string;
     /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;
-    /**
-      * `iOS native auth failed.`
-      */
-    ["error.IOS_NATIVE_AUTH_FAILED"](): string;
     /**
       * `Network error.`
       */
@@ -9950,40 +10344,6 @@ export function useAFFiNEI18N(): {
         message: string;
     }>): string;
     /**
-      * `Invalid copilot context {{contextId}}.`
-      */
-    ["error.COPILOT_INVALID_CONTEXT"](options: {
-        readonly contextId: string;
-    }): string;
-    /**
-      * `File {{fileName}} is not supported to use as context: {{message}}`
-      */
-    ["error.COPILOT_CONTEXT_FILE_NOT_SUPPORTED"](options: Readonly<{
-        fileName: string;
-        message: string;
-    }>): string;
-    /**
-      * `Failed to modify context {{contextId}}: {{message}}`
-      */
-    ["error.COPILOT_FAILED_TO_MODIFY_CONTEXT"](options: Readonly<{
-        contextId: string;
-        message: string;
-    }>): string;
-    /**
-      * `Failed to match context {{contextId}} with "%7B%7Bcontent%7D%7D": {{message}}`
-      */
-    ["error.COPILOT_FAILED_TO_MATCH_CONTEXT"](options: Readonly<{
-        contextId: string;
-        message: string;
-    }>): string;
-    /**
-      * `Failed to match context in workspace {{workspaceId}} with "%7B%7Bcontent%7D%7D": {{message}}`
-      */
-    ["error.COPILOT_FAILED_TO_MATCH_GLOBAL_CONTEXT"](options: Readonly<{
-        workspaceId: string;
-        message: string;
-    }>): string;
-    /**
       * `Embedding feature is disabled, please contact the administrator to enable it in the workspace settings.`
       */
     ["error.COPILOT_EMBEDDING_DISABLED"](): string;
@@ -9991,6 +10351,28 @@ export function useAFFiNEI18N(): {
       * `Embedding feature not available, you may need to install pgvector extension to your database`
       */
     ["error.COPILOT_EMBEDDING_UNAVAILABLE"](): string;
+    /**
+      * `Selected sources are still processing. Try again shortly.`
+      */
+    ["error.COPILOT_SELECTED_SOURCES_PROCESSING"](): string;
+    /**
+      * `Selected sources could not be processed. Remove the failed source or try again.`
+      */
+    ["error.COPILOT_SELECTED_SOURCES_FAILED"](): string;
+    /**
+      * `Selected sources are not available for AI retrieval.`
+      */
+    ["error.COPILOT_SELECTED_SOURCES_UNAVAILABLE"](): string;
+    /**
+      * `Too many or too much content was selected. Select fewer sources and try again.`
+      */
+    ["error.COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED"](): string;
+    /**
+      * `Failed to add workspace artifact: {{message}}`
+      */
+    ["error.COPILOT_FAILED_TO_ADD_WORKSPACE_ARTIFACT"](options: {
+        readonly message: string;
+    }): string;
     /**
       * `Transcription job already exists`
       */
@@ -10003,12 +10385,6 @@ export function useAFFiNEI18N(): {
       * `Audio not provided.`
       */
     ["error.COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED"](): string;
-    /**
-      * `Failed to add workspace file embedding: {{message}}`
-      */
-    ["error.COPILOT_FAILED_TO_ADD_WORKSPACE_FILE_EMBEDDING"](options: {
-        readonly message: string;
-    }): string;
     /**
       * `You have exceeded your blob size quota.`
       */
@@ -10175,25 +10551,25 @@ export const TypedTrans: {
     ["com.affine.ai-onboarding.general.5.description"]: ComponentType<TypedTransProps<{
         readonly link: string;
     }, {
-        a: React.JSX.Element;
+        a: JSX.Element;
     }>>;
     /**
       * `By continuing, you are agreeing to our <a>AI Terms</a>.`
       */
     ["com.affine.ai-onboarding.general.privacy"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        a: React.JSX.Element;
+        a: JSX.Element;
     }>>;
     /**
       * `Opening <1>AFFiNE</1> app now`
       */
     ["com.affine.auth.open.affine.prompt"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `This doc is now opened in <1>AFFiNE</1> app`
       */
     ["com.affine.auth.open.affine.open-doc-prompt"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `To continue signing in, please enter the code that was sent to <a>{{email}}</a>.`
@@ -10201,32 +10577,32 @@ export const TypedTrans: {
     ["com.affine.auth.sign.auth.code.hint"]: ComponentType<TypedTransProps<{
         readonly email: string;
     }, {
-        a: React.JSX.Element;
+        a: JSX.Element;
     }>>;
     /**
       * `Or <1>sign in with password</1> instead.`
       */
     ["com.affine.auth.sign.auth.code.message.password"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `This is an AFFiNE server hosted by you or your team. After signing in, workspace data is saved to the AFFiNE server you enter, not to AFFiNE Cloud. <1>Learn more about self-hosting.</1>`
       */
     ["com.affine.auth.sign.add-selfhosted.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `By clicking “Continue with Google/Email” above, you acknowledge that you agree to AFFiNE's <1>Terms of Conditions</1> and <3>Privacy Policy</3>.`
       */
     ["com.affine.auth.sign.message"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
-        ["3"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["3"]: JSX.Element;
     }>>;
     /**
       * `This demo is limited. <1>Download the AFFiNE Client</1> for the latest features and Performance.`
       */
     ["com.affine.banner.content"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> selected`
@@ -10238,7 +10614,7 @@ export const TypedTrans: {
     ["com.affine.collection.toolbar.selected"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> collection selected`
@@ -10246,7 +10622,7 @@ export const TypedTrans: {
     ["com.affine.collection.toolbar.selected_one"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> collection(s) selected`
@@ -10254,7 +10630,7 @@ export const TypedTrans: {
     ["com.affine.collection.toolbar.selected_other"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> collection(s) selected`
@@ -10262,7 +10638,7 @@ export const TypedTrans: {
     ["com.affine.collection.toolbar.selected_others"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `Deleting <1>{{tag}}</1> cannot be undone, please proceed with caution.`
@@ -10270,7 +10646,7 @@ export const TypedTrans: {
     ["com.affine.delete-tags.confirm.description"]: ComponentType<TypedTransProps<{
         readonly tag: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Selected <1>{{selectedCount}}</1>, filtered <3>{{filteredCount}}</3>`
@@ -10279,8 +10655,8 @@ export const TypedTrans: {
         selectedCount: string;
         filteredCount: string;
     }>, {
-        ["1"]: React.JSX.Element;
-        ["3"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["3"]: JSX.Element;
     }>>;
     /**
       * `Showing <1>{{count}}</1> docs.`
@@ -10288,7 +10664,7 @@ export const TypedTrans: {
     ["com.affine.editCollection.rules.countTips.more"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Showing <1>{{count}}</1> doc.`
@@ -10296,7 +10672,7 @@ export const TypedTrans: {
     ["com.affine.editCollection.rules.countTips.one"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Showing <1>{{count}}</1> docs.`
@@ -10304,14 +10680,14 @@ export const TypedTrans: {
     ["com.affine.editCollection.rules.countTips.zero"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Please <1>add rules</1> to save this collection or switch to <3>Docs</3>, use manual selection mode`
       */
     ["com.affine.editCollection.rules.empty.noRules.tips"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
-        ["3"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["3"]: JSX.Element;
     }>>;
     /**
       * `Docs that meet the rules will be added to the current collection <2>{{highlight}}</2>`
@@ -10319,25 +10695,25 @@ export const TypedTrans: {
     ["com.affine.editCollection.rules.tips"]: ComponentType<TypedTransProps<{
         readonly highlight: string;
     }, {
-        ["2"]: React.JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `If you are still experiencing this issue, please <1>contact us through the community</1>.`
       */
     ["com.affine.error.contact-us"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `With the workspace creator's free account, every member can access up to <1>7 days<1> of version history.`
       */
     ["com.affine.history.confirm-restore-modal.free-plan-prompt.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `With the workspace creator's Pro account, every member enjoys the privilege of accessing up to <1>30 days<1> of version history.`
       */
     ["com.affine.history.confirm-restore-modal.pro-plan-prompt.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> selected`
@@ -10349,7 +10725,7 @@ export const TypedTrans: {
     ["com.affine.page.toolbar.selected"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> doc selected`
@@ -10357,7 +10733,7 @@ export const TypedTrans: {
     ["com.affine.page.toolbar.selected_one"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> doc(s) selected`
@@ -10365,7 +10741,7 @@ export const TypedTrans: {
     ["com.affine.page.toolbar.selected_other"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> doc(s) selected`
@@ -10373,19 +10749,19 @@ export const TypedTrans: {
     ["com.affine.page.toolbar.selected_others"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `You are currently on the <a>free plan</a>.`
       */
     ["com.affine.payment.billing-setting.ai.free-desc"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        a: React.JSX.Element;
+        a: JSX.Element;
     }>>;
     /**
       * `You have purchased <a>Believer plan</a>. Enjoy with your benefits!`
       */
     ["com.affine.payment.billing-setting.believer.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        a: React.JSX.Element;
+        a: JSX.Element;
     }>>;
     /**
       * `You are currently on the <1>{{planName}} plan</1>.`
@@ -10393,7 +10769,7 @@ export const TypedTrans: {
     ["com.affine.payment.billing-setting.current-plan.description"]: ComponentType<TypedTransProps<{
         readonly planName: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `You are currently on the believer <1>{{planName}} plan</1>.`
@@ -10401,7 +10777,7 @@ export const TypedTrans: {
     ["com.affine.payment.billing-setting.current-plan.description.lifetime"]: ComponentType<TypedTransProps<{
         readonly planName: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `You are currently on the monthly <1>{{planName}} plan</1>.`
@@ -10409,7 +10785,7 @@ export const TypedTrans: {
     ["com.affine.payment.billing-setting.current-plan.description.monthly"]: ComponentType<TypedTransProps<{
         readonly planName: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `You are currently on the annually <1>{{planName}} plan</1>.`
@@ -10417,13 +10793,13 @@ export const TypedTrans: {
     ["com.affine.payment.billing-setting.current-plan.description.yearly"]: ComponentType<TypedTransProps<{
         readonly planName: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `One-time Purchase. Personal use rights for up to 150 years. <a>Fair Usage Policies</a> may apply.`
       */
     ["com.affine.payment.lifetime.caption-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        a: React.JSX.Element;
+        a: JSX.Element;
     }>>;
     /**
       * `You are currently on the {{currentPlan}} plan. If you have any questions, please contact our <3>customer support</3>.`
@@ -10431,37 +10807,37 @@ export const TypedTrans: {
     ["com.affine.payment.subtitle-active"]: ComponentType<TypedTransProps<{
         readonly currentPlan: string;
     }, {
-        ["3"]: React.JSX.Element;
+        ["3"]: JSX.Element;
     }>>;
     /**
       * `If you have any questions, please contact our <1> customer support</1>.`
       */
     ["com.affine.payment.upgrade-success-page.support"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `If you have any questions, please contact our <1>customer support</1>.`
       */
     ["com.affine.payment.upgrade-success-page.team.text-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `If you have any questions, please contact our <1>customer support</1>.`
       */
     ["com.affine.payment.license-success.text-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `This action deletes the old Favorites section. <b>Your documents are safe</b>, ensure you've moved your frequently accessed documents to the new personal Favorites section.`
       */
     ["com.affine.rootAppSidebar.migration-data.clean-all.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        b: React.JSX.Element;
+        b: JSX.Element;
     }>>;
     /**
       * `<b>Your documents are safe</b>, but you'll need to re-pin your most-used ones. "Favorites" are now personal. Move items from the old shared section to your new personal section or remove the old one by clicking "Empty the old favorites" now.`
       */
     ["com.affine.rootAppSidebar.migration-data.help.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        b: React.JSX.Element;
+        b: JSX.Element;
     }>>;
     /**
       * `No doc titles contain <1>{{search}}</1>`
@@ -10469,7 +10845,7 @@ export const TypedTrans: {
     ["com.affine.selectPage.empty.tips"]: ComponentType<TypedTransProps<{
         readonly search: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Are you sure you want to delete your account from <1>{{server}}</1>?`
@@ -10477,13 +10853,13 @@ export const TypedTrans: {
     ["com.affine.setting.account.delete.confirm-delete-description-1"]: ComponentType<TypedTransProps<{
         readonly server: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Your account will be inaccessible, and your personal space on the server will be permanently deleted. You can remove local data by uninstalling the app or clearing your browser storage. <1>This action is irreversible.</1>`
       */
     ["com.affine.setting.account.delete.confirm-delete-description-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Type <1>{{email}}</1> to confirm account deletion.`
@@ -10491,71 +10867,71 @@ export const TypedTrans: {
     ["com.affine.setting.account.delete.email-confirm-description"]: ComponentType<TypedTransProps<{
         readonly email: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Don't have the app? <1>Click to download</1>.`
       */
     ["com.affine.open-in-app.card.subtitle"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Settings changed; please restart the app. <1>Restart</1>`
       */
     ["com.affine.settings.editorSettings.general.spell-check.restart-hint"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Love our app? <1>Star us on GitHub</1> and <2>create issues</2> for your valuable feedback!`
       */
     ["com.affine.settings.suggestion-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `Meeting Features Available <strong>Free</strong> in Beta Phase`
       */
     ["com.affine.settings.meetings.setting.prompt.2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        strong: React.JSX.Element;
+        strong: JSX.Element;
     }>>;
     /**
       * `<strong>Where AI meets your meetings - affine your collaboration.</strong>
     <ul><li>Extract Action Items & Key Insights Instantly</li><li>Smart Auto-Capture Starts With Your Meeting</li><li>Seamless Integration Across All Meeting Platforms</li><li>One Unified Space for All Your Meeting's Context</li><li>Your AI Assistant with Every Meeting Context Preserved</li></ul>`
       */
     ["com.affine.settings.meetings.setting.welcome.hints"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        strong: React.JSX.Element;
-        ul: React.JSX.Element;
-        li: React.JSX.Element;
+        strong: JSX.Element;
+        ul: JSX.Element;
+        li: JSX.Element;
     }>>;
     /**
       * `Utilize the meeting notes and AI summarization features provided by AFFiNE. <1>Discuss more in the community</1>.`
       */
     ["com.affine.settings.meetings.enable.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Activate using the local key from <1>Toeverything.Inc</1>`
       */
     ["com.affine.settings.workspace.license.self-host-team.team.license"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Copy your workspace id and <1>reach out to us</1>.`
       */
     ["com.affine.settings.workspace.license.self-host-team.upload-license-file.tips.content"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `If you encounter any issues, contact support@toeverything.info. No license yet? <1>Click to purchase</1>.`
       */
     ["com.affine.settings.workspace.license.activate-modal.tips"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `This will make the workspace read-only. Your key remains usable elsewhere. Deactivation doesn't cancel your Team plan. To cancel, go to <1>Manage Payment</1>.`
       */
     ["com.affine.settings.workspace.license.deactivate-modal.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `The "<1>{{ name }}</1>" property will be removed. This action cannot be undone.`
@@ -10563,7 +10939,7 @@ export const TypedTrans: {
     ["com.affine.settings.workspace.properties.delete-property-desc"]: ComponentType<TypedTransProps<{
         readonly name: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> doc`
@@ -10571,7 +10947,7 @@ export const TypedTrans: {
     ["com.affine.settings.workspace.properties.doc"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> docs`
@@ -10579,7 +10955,7 @@ export const TypedTrans: {
     ["com.affine.settings.workspace.properties.doc_others"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `Manage workspace <1>{{name}}</1> properties`
@@ -10587,7 +10963,7 @@ export const TypedTrans: {
     ["com.affine.settings.workspace.properties.header.subtitle"]: ComponentType<TypedTransProps<{
         readonly name: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> selected`
@@ -10599,7 +10975,7 @@ export const TypedTrans: {
     ["com.affine.tag.toolbar.selected"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> tag selected`
@@ -10607,7 +10983,7 @@ export const TypedTrans: {
     ["com.affine.tag.toolbar.selected_one"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> tag(s) selected`
@@ -10615,7 +10991,7 @@ export const TypedTrans: {
     ["com.affine.tag.toolbar.selected_other"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> tag(s) selected`
@@ -10623,7 +10999,7 @@ export const TypedTrans: {
     ["com.affine.tag.toolbar.selected_others"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["0"]: React.JSX.Element;
+        ["0"]: JSX.Element;
     }>>;
     /**
       * `Deleting <1>{{workspace}}</1> cannot be undone, please proceed with caution. All contents will be lost.`
@@ -10631,7 +11007,7 @@ export const TypedTrans: {
     ["com.affine.workspaceDelete.description"]: ComponentType<TypedTransProps<{
         readonly workspace: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Deleting <1>{{workspace}}</1> will delete both local data and synced server data. This cannot be undone, so please proceed with caution.`
@@ -10639,13 +11015,13 @@ export const TypedTrans: {
     ["com.affine.workspaceDelete.description2"]: ComponentType<TypedTransProps<{
         readonly workspace: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * ` We recommend the <1>Chrome</1> browser for optimal experience.`
       */
     recommendBrowser: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `Are you sure you want to upgrade <1>{{workspaceName}}</1> to a Team Workspace? This will allow unlimited members to collaborate in this workspace.`
@@ -10653,7 +11029,7 @@ export const TypedTrans: {
     ["com.affine.upgrade-to-team-page.upgrade-confirm.description"]: ComponentType<TypedTransProps<{
         readonly workspaceName: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> mentioned you in <2>{{docTitle}}</2>`
@@ -10662,8 +11038,8 @@ export const TypedTrans: {
         username: string;
         docTitle: string;
     }>, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> commented in <2>{{docTitle}}</2>`
@@ -10672,8 +11048,8 @@ export const TypedTrans: {
         username: string;
         docTitle: string;
     }>, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> mentioned you in a comment in <2>{{docTitle}}</2>`
@@ -10682,8 +11058,8 @@ export const TypedTrans: {
         username: string;
         docTitle: string;
     }>, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> has accepted your invitation`
@@ -10691,7 +11067,7 @@ export const TypedTrans: {
     ["com.affine.notification.invitation-accepted"]: ComponentType<TypedTransProps<{
         readonly username: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> has requested to join <2>{{workspaceName}}</2>`
@@ -10700,8 +11076,8 @@ export const TypedTrans: {
         username: string;
         workspaceName: string;
     }>, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> has declined your request to join <2>{{workspaceName}}</2>`
@@ -10710,8 +11086,8 @@ export const TypedTrans: {
         username: string;
         workspaceName: string;
     }>, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> has approved your request to join <2>{{workspaceName}}</2>`
@@ -10720,8 +11096,8 @@ export const TypedTrans: {
         username: string;
         workspaceName: string;
     }>, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `There is an issue regarding your invitation to <1>{{workspaceName}}</1> `
@@ -10729,7 +11105,7 @@ export const TypedTrans: {
     ["com.affine.notification.invitation-blocked"]: ComponentType<TypedTransProps<{
         readonly workspaceName: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> invited you to join <2>{{workspaceName}}</2>`
@@ -10738,8 +11114,8 @@ export const TypedTrans: {
         username: string;
         workspaceName: string;
     }>, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `Unable to join <1/> <2>{{workspaceName}}</2> due to insufficient seats available.`
@@ -10747,8 +11123,8 @@ export const TypedTrans: {
     ["com.affine.fail-to-join-workspace.description-1"]: ComponentType<TypedTransProps<{
         readonly workspaceName: string;
     }, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `You requested to join <1/> <2>{{workspaceName}}</2> with <3>{{userEmail}}</3>, the workspace owner and team admins will review your request.`
@@ -10757,9 +11133,9 @@ export const TypedTrans: {
         workspaceName: string;
         userEmail: string;
     }>, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
-        ["3"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+        ["3"]: JSX.Element;
     }>>;
     /**
       * `Unable to process your request to join <1/> <2>{{workspaceName}}</2> with <3>{{userEmail}}</3>, the workspace has reached its member limit. Please contact the workspace owner for available seats.`
@@ -10768,16 +11144,16 @@ export const TypedTrans: {
         workspaceName: string;
         userEmail: string;
     }>, {
-        ["1"]: React.JSX.Element;
-        ["2"]: React.JSX.Element;
-        ["3"]: React.JSX.Element;
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+        ["3"]: JSX.Element;
     }>>;
     /**
       * `Import your Readwise highlights to AFFiNE. Please visit Readwise, <br />click <a>"Get Access Token"</a>, and paste the token below.`
       */
     ["com.affine.integration.readwise.connect.desc"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        br: React.JSX.Element;
-        a: React.JSX.Element;
+        br: JSX.Element;
+        a: JSX.Element;
     }>>;
     /**
       * `Updates to be imported since last successful import on {{lastImportedAt}} <a>Import everything instead</a>`
@@ -10785,7 +11161,7 @@ export const TypedTrans: {
     ["com.affine.integration.readwise.import.desc-from-last"]: ComponentType<TypedTransProps<{
         readonly lastImportedAt: string;
     }, {
-        a: React.JSX.Element;
+        a: JSX.Element;
     }>>;
     /**
       * `Please contact <1>{{user}}</1> to upgrade AI rights or resend the attachment.`
@@ -10793,6 +11169,6 @@ export const TypedTrans: {
     ["com.affine.audio.transcribe.non-owner.confirm.message"]: ComponentType<TypedTransProps<{
         readonly user: string;
     }, {
-        ["1"]: React.JSX.Element;
+        ["1"]: JSX.Element;
     }>>;
 } = /*#__PURE__*/ createProxy(createComponent);

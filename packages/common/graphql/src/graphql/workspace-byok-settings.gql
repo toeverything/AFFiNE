@@ -6,36 +6,61 @@ query workspaceByokSettings($id: String!, $from: DateTime!, $to: DateTime!) {
       entitled
       serverEntitled
       localEntitled
-      entitlementRequired
-      allowedProviders
-      localStorageSupported
-      customEndpointSupported
-      privateEndpointSupported
-      hasAiPlan
-      keys {
-        id
+      policy {
+        enabled
+        allowedProviders
+        customEndpointMode
+        privateEndpointSupported
+      }
+      catalog {
+        version
+        providers {
+          provider
+          models {
+            modelId
+            displayName
+            recommended
+            capabilities {
+              input
+              output
+              features
+              attachmentKinds
+              attachmentSources
+            }
+          }
+        }
+      }
+      profiles {
+        profileId
         provider
         name
         description
-        storage
-        configured
         enabled
-        endpoint
-        endpointEditable
         sortOrder
-        capabilities
-        testStatus
-        disabledReason
-        lastTestedAt
-        lastTestError
-        lastUsedAt
-        lastErrorAt
-        lastError
-      }
-      warnings {
-        featureKind
-        reason
-        requiredProviders
+        revision
+        definition {
+          endpoint { kind url dialect }
+          models {
+            modelId
+            enabled
+            capabilities {
+              input
+              output
+              features
+              attachmentKinds
+              attachmentSources
+            }
+          }
+        }
+        validation {
+          definitionFingerprint
+          credentialGeneration
+          connection { kind testedAt errorKind }
+          models {
+            modelId
+            checks { operation status { kind testedAt errorKind } }
+          }
+        }
       }
     }
     byokUsage(from: $from, to: $to) {

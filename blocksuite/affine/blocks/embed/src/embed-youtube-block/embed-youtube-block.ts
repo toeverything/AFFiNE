@@ -134,40 +134,42 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
           @dblclick=${this._handleDoubleClick}
         >
           <div class="affine-embed-youtube-video">
-            ${videoId
-              ? html`
-                  <div class="affine-embed-youtube-video-iframe-container">
-                    <iframe
-                      id="ytplayer"
-                      type="text/html"
-                      src=${`https://www.youtube.com/embed/${videoId}`}
-                      frameborder="0"
-                      allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                      sandbox="allow-scripts allow-same-origin allow-presentation"
-                      loading="lazy"
-                      credentialless
-                    ></iframe>
+            ${
+              videoId
+                ? html`
+                    <div class="affine-embed-youtube-video-iframe-container">
+                      <iframe
+                        id="ytplayer"
+                        type="text/html"
+                        src=${`https://www.youtube.com/embed/${videoId}`}
+                        frameborder="0"
+                        allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                        sandbox="allow-scripts allow-same-origin allow-presentation"
+                        loading="lazy"
+                        credentialless
+                      ></iframe>
 
-                    <!-- overlay to prevent the iframe from capturing pointer events -->
-                    <div
-                      class=${classMap({
-                        'affine-embed-youtube-video-iframe-overlay': true,
-                        hide: !this.showOverlay$.value,
-                      })}
-                    ></div>
-                    <img
-                      class=${classMap({
-                        'affine-embed-youtube-video-iframe-overlay': true,
-                        'media-print': true,
-                        hide: !this._showImage,
-                      })}
-                      src=${`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
-                      alt="YouTube Video"
-                      loading="lazy"
-                    />
-                  </div>
-                `
-              : bannerImage}
+                      <!-- overlay to prevent the iframe from capturing pointer events -->
+                      <div
+                        class=${classMap({
+                          'affine-embed-youtube-video-iframe-overlay': true,
+                          hide: !this.showOverlay$.value,
+                        })}
+                      ></div>
+                      <img
+                        class=${classMap({
+                          'affine-embed-youtube-video-iframe-overlay': true,
+                          'media-print': true,
+                          hide: !this._showImage,
+                        })}
+                        src=${`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                        alt="YouTube Video"
+                        loading="lazy"
+                      />
+                    </div>
+                  `
+                : bannerImage
+            }
           </div>
           <div class="affine-embed-youtube-content">
             <div class="affine-embed-youtube-content-header">
@@ -188,15 +190,17 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
               </div>
             </div>
 
-            ${loading
-              ? html`<div
-                  class="affine-embed-youtube-content-description"
-                ></div>`
-              : descriptionText
-                ? html`<div class="affine-embed-youtube-content-description">
-                    ${descriptionText}
-                  </div>`
-                : nothing}
+            ${
+              loading
+                ? html`<div
+                    class="affine-embed-youtube-content-description"
+                  ></div>`
+                : descriptionText
+                  ? html`<div class="affine-embed-youtube-content-description">
+                      ${descriptionText}
+                    </div>`
+                  : nothing
+            }
 
             <div class="affine-embed-youtube-content-url" @click=${this.open}>
               <span>www.youtube.com</span>

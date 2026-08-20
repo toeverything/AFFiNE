@@ -4,9 +4,9 @@ import type { AIRequestService } from '../request';
 import type { AIChatAction, AIChatSendOptions } from './actions';
 import type { AIChatSessionStrategy } from './session-strategy';
 import {
-  type AIChatContextItem,
   type AIChatMessage,
   type AIChatScope,
+  type AIChatScopeSelector,
   type AIChatSnapshot,
   type AIChatStatus,
   type AIChatTab,
@@ -21,42 +21,11 @@ type RuntimeOptions = {
   strategy: AIChatSessionStrategy;
 };
 
-type ContextStatus = 'finished' | 'processing' | 'failed';
-
-type ContextObject = {
-  id?: string;
-  docId?: string;
-  blobId?: string;
-  name?: string;
-  status?: ContextStatus;
-  error?: string | null;
-  createdAt?: number | null;
-  docs?: ContextObject[];
-};
-
-type ContextData = {
-  docs?: ContextObject[];
-  files?: ContextObject[];
-  tags?: ContextObject[];
-  collections?: ContextObject[];
-  blobs?: ContextObject[];
-};
-
-type EmbeddingStatus = {
-  embedded: number;
-  total: number;
-};
-
-const CONTEXT_POLLING_INTERVAL = 10000;
-
 export class AIChatRuntime {
   private readonly listeners = new Set<() => void>();
   private requestSeq = 0;
   private historyRequestSeq = 0;
-  private contextRequestSeq = 0;
   private streamAbortController: AbortController | null = null;
-  private contextPollingAbortController: AbortController | null = null;
-  private embeddingStatusAbortController: AbortController | null = null;
   private createSessionPromiseKey: string | null = null;
   private createSessionPromise: Promise<
     CopilotChatHistoryFragment | null | undefined
@@ -100,8 +69,6 @@ export class AIChatRuntime {
     this.createSessionPromise = null;
     this.createSessionPromiseKey = null;
     this.streamAbortController?.abort();
-    this.contextPollingAbortController?.abort();
-    this.embeddingStatusAbortController?.abort();
     this.listeners.clear();
   }
 
@@ -152,8 +119,8 @@ export class AIChatRuntime {
       case 'setReasoning':
         this.updateComposer({ reasoning: action.reasoning });
         return;
-      case 'setModel':
-        this.updateComposer({ modelId: action.modelId });
+      case 'setRouteTarget':
+        this.updateComposer({ routeTargetId: action.routeTargetId });
         return;
       case 'addAttachment':
         this.updateComposer({
@@ -170,26 +137,32 @@ export class AIChatRuntime {
           ),
         });
         return;
-      case 'addContextItem':
-        await this.addContextItem(action.item);
+      case 'addScopeSelector':
+        this.addScopeSelector(action.item);
         return;
-      case 'removeContextItem':
-        await this.removeContextItem(action.item);
+      case 'removeScopeSelector':
+        this.removeScopeSelector(action.item);
         return;
-      case 'loadContext':
-        await this.loadContext();
+      case 'addFocusSelector':
+        this.updateComposer({
+          focus: {
+            items: this.mergeSelectors(
+              this.snapshot.composer.focus.items,
+              action.item
+            ),
+          },
+        });
         return;
-      case 'startContextPolling':
-        this.startContextPolling();
-        return;
-      case 'stopContextPolling':
-        this.stopContextPolling();
-        return;
-      case 'pollContext':
-        await this.pollContext();
-        return;
-      case 'pollEmbeddingStatus':
-        this.pollEmbeddingStatus();
+      case 'removeFocusSelector':
+        this.updateComposer({
+          focus: {
+            items: this.snapshot.composer.focus.items.filter(
+              item =>
+                this.getScopeSelectorKey(item) !==
+                this.getScopeSelectorKey(action.item)
+            ),
+          },
+        });
         return;
     }
   }
@@ -344,6 +317,16 @@ export class AIChatRuntime {
     return this.snapshot.messages.findLast(message => message.role === 'user');
   }
 
+  private async activateEditorContext(sessionId: string) {
+    try {
+      await this.options.request.activateEditor?.(sessionId);
+      return this.options.request.getActiveEditorContext();
+    } catch (error) {
+      console.error(error);
+      return undefined;
+    }
+  }
+
   private async send(options: AIChatSendOptions, retryExisting = false) {
     const content = options.input || this.snapshot.composer.text;
     if (!content.trim() || !this.snapshot.uiPolicy.canSend) return;
@@ -374,6 +357,37 @@ export class AIChatRuntime {
       if (!this.snapshot.activeSessionId) {
         this.openSessionObject(session, true);
       }
+      const liveEditorContext = await this.activateEditorContext(
+        session.sessionId
+      );
+      const scopeSelectors = this.snapshot.composer.scopeSelection.items
+        .map(item => this.selectorInput(item))
+        .filter(selector => selector !== null);
+      const focusSelectors = this.snapshot.composer.focus.items
+        .map(item => this.selectorInput(item))
+        .filter(selector => selector !== null);
+      if (scopeSelectors.length || focusSelectors.length) {
+        this.updateScopeSelection({ syncing: true, error: null });
+        const selectedDocIds = [
+          ...this.snapshot.composer.scopeSelection.items,
+          ...this.snapshot.composer.focus.items,
+        ].flatMap(item => {
+          switch (item.kind) {
+            case 'doc':
+              return [item.docId];
+            case 'tag':
+            case 'collection':
+              return item.docIds;
+            default:
+              return [];
+          }
+        });
+        await this.options.request.waitForSelectedSources([
+          ...new Set(selectedDocIds),
+        ]);
+        if (seq !== this.requestSeq) return;
+        this.updateScopeSelection({ syncing: false });
+      }
 
       const stream = (await this.options.request.executeAction('chat', {
         workspaceId: this.snapshot.scope.workspaceId,
@@ -384,11 +398,17 @@ export class AIChatRuntime {
         sessionId: session.sessionId,
         input: content,
         contexts: options.contexts,
-        attachments: options.attachments ?? this.snapshot.composer.attachments,
-        contextId: this.snapshot.composer.context.contextId,
+        scopeSelectors,
+        focusSelectors,
+        liveEditorContext,
+        attachments: [
+          ...this.snapshot.composer.attachments,
+          ...(options.attachments ?? []),
+        ],
         reasoning: options.reasoning ?? this.snapshot.composer.reasoning,
         toolsConfig: options.toolsConfig ?? this.snapshot.composer.toolsConfig,
-        modelId: options.modelId ?? this.snapshot.composer.modelId,
+        routeTargetId:
+          options.routeTargetId ?? this.snapshot.composer.routeTargetId,
         isRootSession: options.isRootSession,
         where: options.where,
         control: options.control,
@@ -409,13 +429,21 @@ export class AIChatRuntime {
           ...this.snapshot.composer,
           text: '',
           attachments: [],
+          scopeSelection: {
+            ...this.snapshot.composer.scopeSelection,
+            items: [],
+            syncing: false,
+            error: null,
+          },
         },
       });
       await this.refreshLastMessageId(session.sessionId).catch(console.error);
       await this.bindActiveSessionToDoc().catch(console.error);
     } catch (error) {
       if (seq !== this.requestSeq) return;
-      this.commit({ status: 'error', error: this.toError(error) });
+      const resolved = this.toError(error);
+      this.updateScopeSelection({ syncing: false, error: resolved });
+      this.commit({ status: 'error', error: resolved });
     }
   }
 
@@ -439,9 +467,13 @@ export class AIChatRuntime {
       messages: this.resetLastAssistantMessage(this.snapshot.messages),
     });
     try {
+      const liveEditorContext = await this.activateEditorContext(
+        this.snapshot.activeSessionId
+      );
       const stream = (await this.options.request.executeAction('chat', {
         workspaceId: this.snapshot.scope.workspaceId,
         sessionId: this.snapshot.activeSessionId,
+        liveEditorContext,
         retry: true,
         stream: true,
         signal: this.streamAbortController.signal,
@@ -524,466 +556,99 @@ export class AIChatRuntime {
     });
   }
 
-  private updateContextState(
-    patch: Partial<AIChatSnapshot['composer']['context']>
+  private updateScopeSelection(
+    patch: Partial<AIChatSnapshot['composer']['scopeSelection']>
   ) {
     this.updateComposer({
-      context: {
-        ...this.snapshot.composer.context,
+      scopeSelection: {
+        ...this.snapshot.composer.scopeSelection,
         ...patch,
       },
     });
   }
 
-  private async getContextId() {
-    const createdSession = this.snapshot.activeSessionId
-      ? null
-      : await this.ensureSession();
-    if (createdSession) {
-      this.openSessionObject(createdSession, true);
+  private addScopeSelector(item: AIChatScopeSelector) {
+    if (item.kind === 'file') {
+      this.updateComposer({
+        attachments: [...this.snapshot.composer.attachments, item.file],
+      });
+    } else if (item.kind === 'blob') {
+      this.updateComposer({
+        attachments: [...this.snapshot.composer.attachments, item.blobId],
+      });
     }
-    const sessionId =
-      this.snapshot.activeSessionId ?? createdSession?.sessionId ?? null;
-    if (!sessionId) return null;
+    this.updateScopeSelection({
+      error: null,
+      items: this.mergeSelectors(
+        this.snapshot.composer.scopeSelection.items,
+        item
+      ),
+    });
+  }
 
-    const cached = this.snapshot.composer.context.contextId;
-    if (cached) return cached;
-
-    const { workspaceId } = this.snapshot.scope;
-    const existing = await this.options.request.context.getContextId(
-      workspaceId,
-      sessionId
+  private removeScopeSelector(item: AIChatScopeSelector) {
+    const key = this.getScopeSelectorKey(item);
+    const attachments = this.snapshot.composer.attachments.filter(
+      attachment => {
+        if (item.kind === 'file') return attachment !== item.file;
+        if (item.kind === 'blob') return attachment !== item.blobId;
+        return true;
+      }
     );
-    const contextId =
-      existing ??
-      (await this.options.request.context.createContext(
-        workspaceId,
-        sessionId
-      ));
-    this.updateContextState({ contextId });
-    return contextId;
-  }
-
-  private async addContextItem(item: AIChatContextItem) {
-    const seq = ++this.contextRequestSeq;
-    this.updateContextState({ loading: true, error: null });
-    try {
-      const contextId = await this.getContextId();
-      if (!contextId) throw new Error('Context not found');
-
-      const nextItem = await this.persistContextItem(contextId, item);
-      if (seq !== this.contextRequestSeq) return;
-      this.updateContextState({
-        loading: false,
-        items: [...this.snapshot.composer.context.items, nextItem],
-      });
-    } catch (error) {
-      if (seq !== this.contextRequestSeq) return;
-      this.updateContextState({ loading: false, error: this.toError(error) });
-    }
-  }
-
-  private async removeContextItem(item: AIChatContextItem) {
-    const seq = ++this.contextRequestSeq;
-    this.updateContextState({ loading: true, error: null });
-    try {
-      const contextId = this.snapshot.composer.context.contextId;
-      if (contextId) {
-        await this.deleteContextItem(contextId, item);
-      }
-      if (seq !== this.contextRequestSeq) return;
-      this.updateContextState({
-        loading: false,
-        items: this.snapshot.composer.context.items.filter(
-          existing =>
-            this.getContextItemKey(existing) !== this.getContextItemKey(item)
+    this.updateComposer({
+      attachments,
+      scopeSelection: {
+        ...this.snapshot.composer.scopeSelection,
+        items: this.snapshot.composer.scopeSelection.items.filter(
+          existing => this.getScopeSelectorKey(existing) !== key
         ),
-      });
-    } catch (error) {
-      if (seq !== this.contextRequestSeq) return;
-      this.updateContextState({ loading: false, error: this.toError(error) });
-    }
-  }
-
-  private async pollContext() {
-    const seq = ++this.contextRequestSeq;
-    const sessionId = this.snapshot.activeSessionId;
-    const contextId = this.snapshot.composer.context.contextId;
-    if (!sessionId || !contextId) return;
-
-    this.updateContextState({ polling: true, error: null });
-    try {
-      const context = await this.options.request.context.getContextDocsAndFiles(
-        this.snapshot.scope.workspaceId,
-        sessionId,
-        contextId
-      );
-      if (seq !== this.contextRequestSeq) return;
-      this.updateContextState({
-        polling: false,
-        items: this.mergePolledContextItems(context),
-        embeddingCount: this.getContextEmbeddingCount(context),
-      });
-    } catch (error) {
-      if (seq !== this.contextRequestSeq) return;
-      this.updateContextState({ polling: false, error: this.toError(error) });
-    }
-  }
-
-  private startContextPolling() {
-    this.stopContextPolling();
-    this.contextPollingAbortController = new AbortController();
-    const signal = this.contextPollingAbortController.signal;
-    void this.pollContextUntilIdle(signal).catch(error => {
-      if (signal.aborted) return;
-      this.updateContextState({ polling: false, error: this.toError(error) });
+      },
     });
   }
 
-  private stopContextPolling() {
-    this.contextPollingAbortController?.abort();
-    this.contextPollingAbortController = null;
+  private mergeSelectors(
+    items: AIChatScopeSelector[],
+    item: AIChatScopeSelector
+  ) {
+    const key = this.getScopeSelectorKey(item);
+    return [
+      ...items.filter(existing => this.getScopeSelectorKey(existing) !== key),
+      item,
+    ];
   }
 
-  private async pollContextUntilIdle(signal: AbortSignal) {
-    while (!signal.aborted) {
-      await this.pollContext();
-      if (signal.aborted) return;
-      if (this.snapshot.composer.context.embeddingCount.processing === 0) {
-        this.stopContextPolling();
-        return;
-      }
-      await this.waitForContextPollingInterval(signal);
-    }
-  }
-
-  private waitForContextPollingInterval(signal: AbortSignal) {
-    return new Promise<void>(resolve => {
-      const timeout = setTimeout(resolve, CONTEXT_POLLING_INTERVAL);
-      signal.addEventListener(
-        'abort',
-        () => {
-          clearTimeout(timeout);
-          resolve();
-        },
-        { once: true }
-      );
-    });
-  }
-
-  private async loadContext() {
-    const seq = ++this.contextRequestSeq;
-    const sessionId = this.snapshot.activeSessionId;
-    if (!sessionId) return;
-
-    this.updateContextState({ loading: true, error: null });
-    try {
-      const { workspaceId } = this.snapshot.scope;
-      const contextId = await this.options.request.context.getContextId(
-        workspaceId,
-        sessionId
-      );
-      if (!contextId) {
-        if (seq !== this.contextRequestSeq) return;
-        this.updateContextState({
-          contextId: null,
-          items: [],
-          loading: false,
-          embeddingCount: { finished: 0, processing: 0, failed: 0 },
-        });
-        return;
-      }
-      const context = await this.options.request.context.getContextDocsAndFiles(
-        workspaceId,
-        sessionId,
-        contextId
-      );
-      if (seq !== this.contextRequestSeq) return;
-      this.updateContextState({
-        contextId,
-        loading: false,
-        items: this.contextDataToItems(context),
-        embeddingCount: this.getContextEmbeddingCount(context),
-      });
-    } catch (error) {
-      if (seq !== this.contextRequestSeq) return;
-      this.updateContextState({ loading: false, error: this.toError(error) });
-    }
-  }
-
-  private pollEmbeddingStatus() {
-    this.embeddingStatusAbortController?.abort();
-    this.embeddingStatusAbortController = new AbortController();
-    const signal = this.embeddingStatusAbortController.signal;
-    void this.options.request.context
-      .pollEmbeddingStatus(
-        this.snapshot.scope.workspaceId,
-        status => {
-          if (signal.aborted) return;
-          this.updateContextState({
-            embeddingCompleted: this.isEmbeddingCompleted(status),
-          });
-        },
-        signal
-      )
-      .catch(error => {
-        if (signal.aborted) return;
-        this.updateContextState({
-          embeddingCompleted: false,
-          error: this.toError(error),
-        });
-      });
-  }
-
-  private async persistContextItem(
-    contextId: string,
-    item: AIChatContextItem
-  ): Promise<AIChatContextItem> {
+  private selectorInput(item: AIChatScopeSelector) {
     switch (item.kind) {
       case 'doc':
-        await this.options.request.context.addContextDoc({
-          contextId,
-          docId: item.docId,
-        });
-        return item;
-      case 'file': {
-        const file = await this.options.request.context.addContextFile(
-          item.file,
-          { contextId }
-        );
-        return {
-          ...item,
-          fileId: file.id,
-          blobId: file.blobId ?? item.blobId,
-          state: file.status,
-          createdAt: file.createdAt,
-          tooltip: file.error ?? undefined,
-        };
-      }
+        return { kind: 'document', id: item.docId, name: item.name };
       case 'tag':
-        await this.options.request.context.addContextTag({
-          contextId,
-          tagId: item.tagId,
-          docIds: item.docIds,
-        });
-        return item;
+        return { kind: 'tag', id: item.tagId, name: item.name };
       case 'collection':
-        await this.options.request.context.addContextCollection({
-          contextId,
-          collectionId: item.collectionId,
-          docIds: item.docIds,
-        });
-        return item;
-      case 'blob': {
-        const blob = await this.options.request.context.addContextBlob({
-          contextId,
-          blobId: item.blobId,
-        });
-        return {
-          ...item,
-          state: blob.status || item.state,
-          createdAt: blob.createdAt,
-        };
-      }
-    }
-  }
-
-  private deleteContextItem(contextId: string, item: AIChatContextItem) {
-    switch (item.kind) {
-      case 'doc':
-        return this.options.request.context.removeContextDoc({
-          contextId,
-          docId: item.docId,
-        });
+        return { kind: 'collection', id: item.collectionId, name: item.name };
+      case 'favorite':
+        return { kind: 'favorite', id: item.favoriteId, name: item.name };
       case 'file':
-        if (!item.fileId) return Promise.resolve();
-        return this.options.request.context.removeContextFile({
-          contextId,
-          fileId: item.fileId,
-        });
-      case 'tag':
-        return this.options.request.context.removeContextTag({
-          contextId,
-          tagId: item.tagId,
-        });
-      case 'collection':
-        return this.options.request.context.removeContextCollection({
-          contextId,
-          collectionId: item.collectionId,
-        });
       case 'blob':
-        return this.options.request.context.removeContextBlob({
-          contextId,
-          blobId: item.blobId,
-        });
+        return null;
     }
   }
 
-  private mergePolledContextItems(context: unknown) {
-    if (!context || typeof context !== 'object') {
-      return this.snapshot.composer.context.items;
-    }
-    const data = context as ContextData;
-    const docs = [
-      ...(data.docs ?? []),
-      ...(data.tags ?? []).flatMap(tag => tag.docs ?? []),
-      ...(data.collections ?? []).flatMap(collection => collection.docs ?? []),
-    ];
-
-    return this.snapshot.composer.context.items.map(item => {
-      if (item.kind === 'doc') {
-        const doc = docs.find(
-          candidate =>
-            candidate.docId === item.docId || candidate.id === item.docId
-        );
-        return doc?.status
-          ? { ...item, state: doc.status, tooltip: doc.error ?? undefined }
-          : item;
-      }
-      if (item.kind === 'file') {
-        const file = data.files?.find(
-          candidate =>
-            candidate.id === item.fileId ||
-            candidate.blobId === item.blobId ||
-            candidate.blobId === item.fileId
-        );
-        return file?.status
-          ? { ...item, state: file.status, tooltip: file.error ?? undefined }
-          : item;
-      }
-      if (item.kind === 'blob') {
-        const blob = data.blobs?.find(
-          candidate =>
-            candidate.blobId === item.blobId || candidate.id === item.blobId
-        );
-        return blob?.status
-          ? { ...item, state: blob.status, tooltip: blob.error ?? undefined }
-          : item;
-      }
-      return item;
-    });
-  }
-
-  private contextDataToItems(context: unknown): AIChatContextItem[] {
-    if (!context || typeof context !== 'object') return [];
-    const data = context as ContextData;
-    const items: AIChatContextItem[] = [
-      ...(data.docs ?? []).flatMap(doc =>
-        doc.id
-          ? [
-              {
-                kind: 'doc' as const,
-                docId: doc.id,
-                state: doc.status,
-                createdAt: doc.createdAt ?? undefined,
-                tooltip: doc.error ?? undefined,
-              },
-            ]
-          : []
-      ),
-      ...(data.files ?? []).flatMap(file =>
-        file.id && file.name
-          ? [
-              {
-                kind: 'file' as const,
-                file: new File([], file.name),
-                fileId: file.id,
-                blobId: file.blobId,
-                state: file.status,
-                createdAt: file.createdAt ?? undefined,
-                tooltip: file.error ?? undefined,
-              },
-            ]
-          : []
-      ),
-      ...(data.tags ?? []).flatMap(tag =>
-        tag.id
-          ? [
-              {
-                kind: 'tag' as const,
-                tagId: tag.id,
-                docIds: (tag.docs ?? []).flatMap(doc =>
-                  doc.id ? [doc.id] : []
-                ),
-                state: 'finished',
-                createdAt: tag.createdAt ?? undefined,
-                tooltip: tag.error ?? undefined,
-              },
-            ]
-          : []
-      ),
-      ...(data.collections ?? []).flatMap(collection =>
-        collection.id
-          ? [
-              {
-                kind: 'collection' as const,
-                collectionId: collection.id,
-                docIds: (collection.docs ?? []).flatMap(doc =>
-                  doc.id ? [doc.id] : []
-                ),
-                state: 'finished',
-                createdAt: collection.createdAt ?? undefined,
-                tooltip: collection.error ?? undefined,
-              },
-            ]
-          : []
-      ),
-      ...(data.blobs ?? []).flatMap(blob =>
-        (blob.blobId ?? blob.id)
-          ? [
-              {
-                kind: 'blob' as const,
-                blobId: blob.blobId ?? blob.id ?? '',
-                state: blob.status,
-                createdAt: blob.createdAt ?? undefined,
-                tooltip: blob.error ?? undefined,
-              },
-            ]
-          : []
-      ),
-    ];
-    return items.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
-  }
-
-  private getContextEmbeddingCount(
-    context: unknown
-  ): AIChatSnapshot['composer']['context']['embeddingCount'] {
-    const count = { finished: 0, processing: 0, failed: 0 };
-    if (!context || typeof context !== 'object') return count;
-    const data = context as ContextData;
-    const docs = [
-      ...(data.docs ?? []),
-      ...(data.tags ?? []).flatMap(tag => tag.docs ?? []),
-      ...(data.collections ?? []).flatMap(collection => collection.docs ?? []),
-    ];
-    for (const item of [
-      ...docs,
-      ...(data.files ?? []),
-      ...(data.blobs ?? []),
-    ]) {
-      if (item.status) count[item.status]++;
-    }
-    return count;
-  }
-
-  private isEmbeddingCompleted(status: unknown) {
-    if (!status || typeof status !== 'object') return false;
-    const { embedded, total } = status as EmbeddingStatus;
-    return embedded === total;
-  }
-
-  private getContextItemKey(item: AIChatContextItem) {
+  private getScopeSelectorKey(item: AIChatScopeSelector) {
     switch (item.kind) {
       case 'doc':
-        return `doc:${item.docId}`;
-      case 'file':
-        return `file:${item.fileId ?? item.file.name}`;
+        return `document:${item.docId}`;
+      case 'file': {
+        const id = item.fileId ?? item.blobId;
+        return id ? `file:${id}` : item.file;
+      }
       case 'tag':
         return `tag:${item.tagId}`;
       case 'collection':
         return `collection:${item.collectionId}`;
       case 'blob':
         return `blob:${item.blobId}`;
+      case 'favorite':
+        return `favorite:${item.favoriteId}`;
     }
   }
 

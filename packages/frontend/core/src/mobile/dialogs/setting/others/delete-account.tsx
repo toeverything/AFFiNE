@@ -22,7 +22,7 @@ export const DeleteAccount = ({
   const account = useLiveData(authService.session.account$);
   const isTeamWorkspaceOwner$ = useMemo(
     () =>
-      LiveData.from(
+      LiveData.from<boolean | null>(
         workspacesService.list.workspaces$.pipe(
           switchMap(workspaces => {
             if (!workspaces.length) {
@@ -30,28 +30,43 @@ export const DeleteAccount = ({
             }
 
             return combineLatest(
-              workspaces.map(meta =>
-                workspacesService
-                  .getProfile(meta)
-                  .profile$.pipe(
-                    map(profile => !!profile?.isTeam && !!profile.isOwner)
+              workspaces.map(meta => {
+                const profile = workspacesService.getProfile(meta);
+                profile.revalidate();
+
+                return combineLatest([
+                  profile.profile$,
+                  profile.isLoading$,
+                ]).pipe(
+                  map(([info, isLoading]) =>
+                    isLoading && info === null
+                      ? null
+                      : !!info?.isTeam && !!info?.isOwner
                   )
-              )
-            ).pipe(map(isOwnerFlags => isOwnerFlags.some(Boolean)));
+                );
+              })
+            ).pipe(
+              map(ownerStates => {
+                if (ownerStates.some(Boolean)) {
+                  return true;
+                }
+                return ownerStates.some(state => state === null) ? null : false;
+              })
+            );
           })
         ),
-        false
+        null
       ),
     [workspacesService]
   );
-  const isTeamWorkspaceOwner = useLiveData(isTeamWorkspaceOwner$) ?? false;
+  const isTeamWorkspaceOwner = useLiveData(isTeamWorkspaceOwner$);
   const [open, setOpen] = useState(false);
 
   const handleOpen = useCallback(() => {
     setOpen(true);
   }, []);
 
-  if (!account) {
+  if (!account || isTeamWorkspaceOwner === null) {
     return null;
   }
 
@@ -147,6 +162,7 @@ const DeleteAccountModal = ({
       console.error(err);
       const error = UserFriendlyError.fromAny(err);
       notify.error(error);
+    } finally {
       setIsLoading(false);
     }
   }, [authService, onDeleteFinished]);
@@ -230,21 +246,24 @@ const DeleteAccountModal = ({
         confirmText={t['com.affine.setting.account.delete.confirm-button']()}
         confirmButtonOptions={{
           variant: 'error',
-          disabled: email !== account.email || isLoading,
+          disabled:
+            email.trim().toLowerCase() !==
+              account.email?.trim().toLowerCase() || isLoading,
           loading: isLoading,
           onClick: handleDeleteAccountClick,
         }}
         cancelText={t['Cancel']()}
         cancelButtonOptions={{
           variant: 'primary',
-        }}
-        onCancel={() => {
-          setPhase('warning');
+          onClick: event => {
+            event.preventDefault();
+            setPhase('warning');
+          },
         }}
         rowFooter
       >
         <Input
-          type="text"
+          type="email"
           placeholder={t[
             'com.affine.setting.account.delete.input-placeholder'
           ]()}

@@ -15,7 +15,7 @@ use super::super::contracts::{
   LlmRerankRequestContract, LlmStructuredRequestContract, RerankCandidate as ContractRerankCandidate, ToolContract,
 };
 use crate::llm::{
-  LlmDispatchPayload, LlmMiddlewarePayload, LlmRerankDispatchPayload, LlmStructuredDispatchPayload, host::invalid_arg,
+  LlmDispatchPayload, LlmMiddlewarePayload, LlmRerankDispatchPayload, LlmStructuredDispatchPayload, invalid_arg,
   map_json_error,
 };
 

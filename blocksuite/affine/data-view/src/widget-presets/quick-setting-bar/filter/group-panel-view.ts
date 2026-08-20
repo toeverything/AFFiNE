@@ -374,25 +374,27 @@ export class FilterGroupView extends SignalWatcher(ShadowlessElement) {
             <div
               style="flex:1;display:flex;align-items:start;justify-content: space-between;gap: 8px;"
             >
-              ${filter.type === 'filter'
-                ? html`
-                    <filter-condition-view
-                      .vars="${this.vars}"
-                      .index="${i}"
-                      .value="${this.conditions$}"
-                      .onChange="${this.setConditions}"
-                    ></filter-condition-view>
-                  `
-                : html`
-                    <filter-group-view
-                      class="${groupClassList}"
-                      style="width: 100%;"
-                      .depth="${this.depth + 1}"
-                      .onChange="${(v: Filter) => this._setFilter(i, v)}"
-                      .vars="${this.vars}"
-                      .filterGroup="${computed(() => filter)}"
-                    ></filter-group-view>
-                  `}
+              ${
+                filter.type === 'filter'
+                  ? html`
+                      <filter-condition-view
+                        .vars="${this.vars}"
+                        .index="${i}"
+                        .value="${this.conditions$}"
+                        .onChange="${this.setConditions}"
+                      ></filter-condition-view>
+                    `
+                  : html`
+                      <filter-group-view
+                        class="${groupClassList}"
+                        style="width: 100%;"
+                        .depth="${this.depth + 1}"
+                        .onChange="${(v: Filter) => this._setFilter(i, v)}"
+                        .vars="${this.vars}"
+                        .filterGroup="${computed(() => filter)}"
+                      ></filter-group-view>
+                    `
+              }
               <div class="filter-group-item-ops" @click="${clickOps}">
                 ${MoreHorizontalIcon()}
               </div>

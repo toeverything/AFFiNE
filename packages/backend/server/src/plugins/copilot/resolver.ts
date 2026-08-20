@@ -31,11 +31,12 @@ import { CurrentUser } from '../../core/auth';
 import { DocAction, PermissionAccess } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
+import { llmGetBuiltInRouteOptions } from '../../native';
+import { ByokEntitlementPolicy } from './byok';
 import { CompatHistoryProjector } from './compat/history-projector';
 import { ConversationInboxService } from './conversation/inbox';
-import { PromptService } from './prompt/service';
-import { CopilotProviderFactory } from './providers/factory';
-import { ModelOutputType, type StreamObject } from './providers/types';
+import { CopilotEnabled } from './feature';
+import type { StreamObject } from './providers/types';
 import { ChatSessionService } from './session';
 import { type ChatHistory, type ChatMessage, SubmittedMessage } from './types';
 
@@ -235,6 +236,9 @@ class ChatMessageType implements Partial<ChatMessage> {
   @Field(() => GraphQLJSON, { nullable: true })
   params!: Record<string, string> | undefined;
 
+  @Field(() => GraphQLJSON, { nullable: true })
+  scopeSnapshot!: ChatMessage['scopeSnapshot'];
+
   @Field(() => Date)
   createdAt!: Date;
 }
@@ -256,12 +260,6 @@ class CopilotHistoriesType implements Omit<ChatHistory, 'userId'> {
   @Field(() => String)
   promptName!: string;
 
-  @Field(() => String)
-  model!: string;
-
-  @Field(() => [String])
-  optionalModels!: string[];
-
   @Field(() => String, {
     description: 'An mark identifying which view to use to display the session',
     nullable: true,
@@ -273,11 +271,6 @@ class CopilotHistoriesType implements Omit<ChatHistory, 'userId'> {
 
   @Field(() => String, { nullable: true })
   title!: string | null;
-
-  @Field(() => Number, {
-    description: 'The number of tokens used in the session',
-  })
-  tokens!: number;
 
   @Field(() => [ChatMessageType])
   messages!: ChatMessageType[];
@@ -304,27 +297,6 @@ class CopilotQuotaType {
 }
 
 @ObjectType()
-class CopilotModelType {
-  @Field(() => String)
-  id!: string;
-
-  @Field(() => String)
-  name!: string;
-}
-
-@ObjectType()
-export class CopilotModelsType {
-  @Field(() => String)
-  defaultModel!: string;
-
-  @Field(() => [CopilotModelType])
-  optionalModels!: CopilotModelType[];
-
-  @Field(() => [CopilotModelType])
-  proModels!: CopilotModelType[];
-}
-
-@ObjectType()
 export class CopilotSessionType {
   @Field(() => ID)
   id!: string;
@@ -343,12 +315,33 @@ export class CopilotSessionType {
 
   @Field(() => String)
   promptName!: string;
+}
+
+@ObjectType('CopilotRouteTarget')
+class CopilotRouteTargetType {
+  @Field(() => String)
+  id!: string;
 
   @Field(() => String)
-  model!: string;
+  displayName!: string;
 
-  @Field(() => [String])
-  optionalModels!: string[];
+  @Field(() => String)
+  minimumTier!: string;
+
+  @Field(() => Boolean)
+  available!: boolean;
+}
+
+@ObjectType('CopilotRouteOptions')
+class CopilotRouteOptionsType {
+  @Field(() => String)
+  routeId!: string;
+
+  @Field(() => String, { nullable: true })
+  defaultTargetId!: string | null;
+
+  @Field(() => [CopilotRouteTargetType])
+  choices!: CopilotRouteTargetType[];
 }
 
 // ================== Resolver ==================
@@ -360,19 +353,46 @@ export class CopilotType {
 }
 
 @Throttle()
+@CopilotEnabled()
 @Resolver(() => CopilotType)
 export class CopilotResolver {
-  private readonly modelNames = new Map<string, string>();
-
   constructor(
     private readonly ac: PermissionAccess,
     private readonly mutex: RequestMutex,
-    private readonly prompt: PromptService,
     private readonly chatSession: ChatSessionService,
     private readonly historyProjector: CompatHistoryProjector,
     private readonly inbox: ConversationInboxService,
-    private readonly providerFactory: CopilotProviderFactory
+    private readonly entitlement: ByokEntitlementPolicy
   ) {}
+
+  @ResolveField(() => CopilotRouteOptionsType, {
+    nullable: true,
+    description: 'List native built-in route choices for a prompt',
+    complexity: 2,
+  })
+  async routeOptions(
+    @CurrentUser() user: CurrentUser,
+    @Args('promptName') promptName: string
+  ): Promise<CopilotRouteOptionsType | null> {
+    const options = llmGetBuiltInRouteOptions(promptName);
+    if (!options) return null;
+    if (env.selfhosted) {
+      return { routeId: options.routeId, defaultTargetId: null, choices: [] };
+    }
+    const premium = await this.entitlement.hasAiPlan(user.id);
+    return {
+      routeId: options.routeId,
+      defaultTargetId: premium
+        ? (options.premiumDefaultTargetId ?? null)
+        : (options.standardDefaultTargetId ?? null),
+      choices: options.choices.map(choice => ({
+        id: choice.id,
+        displayName: choice.displayName,
+        minimumTier: choice.minimumTier,
+        available: premium || choice.minimumTier === 'Standard',
+      })),
+    };
+  }
 
   @ResolveField(() => CopilotQuotaType, {
     name: 'quota',
@@ -406,51 +426,6 @@ export class CopilotResolver {
         .assert('Workspace.Copilot');
     }
     return { userId: user.id, workspaceId, docId: docId || undefined };
-  }
-
-  @ResolveField(() => CopilotModelsType, {
-    description:
-      'List available models for a prompt, with human-readable names',
-    complexity: 2,
-  })
-  async models(
-    @Args('promptName') promptName: string
-  ): Promise<CopilotModelsType> {
-    const prompt = await this.prompt.get(promptName);
-    if (!prompt) {
-      throw new NotFoundException('Prompt not found');
-    }
-    const convertModels = async (ids: string[]) => {
-      const models = await Promise.all(
-        ids.map(async id => {
-          const cachedName = this.modelNames.get(id);
-          if (cachedName) return { id, name: cachedName };
-
-          const resolved = await this.providerFactory.resolveProvider({
-            modelId: id,
-            outputType: ModelOutputType.Text,
-          });
-          const name = resolved?.provider.resolveModel(
-            resolved.modelId ?? id,
-            resolved.execution
-          )?.name;
-          if (name) {
-            this.modelNames.set(id, name);
-            return { id, name };
-          }
-          return null;
-        })
-      );
-
-      return models.filter(model => !!model) as CopilotModelType[];
-    };
-    const proModels = prompt.config?.proModels || [];
-
-    return {
-      defaultModel: prompt.model,
-      optionalModels: await convertModels(prompt.optionalModels),
-      proModels: await convertModels(proModels),
-    };
   }
 
   @ResolveField(() => CopilotSessionType, {
@@ -813,6 +788,7 @@ export class CopilotResolver {
 }
 
 @Throttle()
+@CopilotEnabled()
 @Resolver(() => UserType)
 export class UserCopilotResolver {
   constructor(private readonly ac: PermissionAccess) {}

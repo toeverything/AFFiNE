@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import type { CalendarAccount, Prisma } from '@prisma/client';
-import { addDays, subDays } from 'date-fns';
 
 import {
   CalendarProviderRequestError,
@@ -819,9 +818,14 @@ export class CalendarService {
 
   private getSyncWindow() {
     const now = this.now();
+    const timeMin = new Date(now);
+    const timeMax = new Date(now);
+    timeMin.setDate(timeMin.getDate() - DEFAULT_PAST_DAYS);
+    timeMax.setDate(timeMax.getDate() + DEFAULT_FUTURE_DAYS);
+
     return {
-      timeMin: subDays(now, DEFAULT_PAST_DAYS).toISOString(),
-      timeMax: addDays(now, DEFAULT_FUTURE_DAYS).toISOString(),
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
     };
   }
 

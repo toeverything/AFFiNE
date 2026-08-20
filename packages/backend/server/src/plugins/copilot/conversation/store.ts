@@ -12,6 +12,10 @@ import {
   type Turn,
   turnFromChatMessage,
 } from '../core';
+import {
+  type SessionFocus,
+  SessionFocusSchema,
+} from '../runtime/contracts/shared';
 import { type ChatMessage, ChatMessageSchema } from '../types';
 
 type SessionRecord = NonNullable<
@@ -68,6 +72,11 @@ export class ConversationStore {
     return parsed.data;
   }
 
+  private toFocus(focus: unknown): SessionFocus {
+    const parsed = SessionFocusSchema.safeParse(focus);
+    return parsed.success ? parsed.data : { selectors: [] };
+  }
+
   async create(
     seed: ConversationSeed,
     reuseLatestChat = false
@@ -83,7 +92,7 @@ export class ConversationStore {
         conversation: Conversation;
         turns: Turn[];
         promptName: string;
-        tokenCost: number;
+        focus: SessionFocus;
       }
     | undefined
   > {
@@ -96,7 +105,7 @@ export class ConversationStore {
       conversation: this.toConversation(session),
       turns: this.toTurns(session),
       promptName: session.promptName,
-      tokenCost: session.tokenCost,
+      focus: this.toFocus(session.focus),
     };
   }
 
@@ -104,7 +113,7 @@ export class ConversationStore {
     | {
         conversation: Conversation;
         promptName: string;
-        tokenCost: number;
+        focus: SessionFocus;
       }
     | undefined
   > {
@@ -124,7 +133,7 @@ export class ConversationStore {
         updatedAt: session.updatedAt,
       },
       promptName: session.promptName,
-      tokenCost: session.tokenCost,
+      focus: this.toFocus(session.focus),
     };
   }
 
@@ -146,7 +155,7 @@ export class ConversationStore {
         turnFromChatMessage(message, session.id)
       ),
       promptName: session.promptName,
-      tokenCost: session.tokenCost,
+      focus: this.toFocus(session.focus),
     }));
   }
 
@@ -168,14 +177,13 @@ export class ConversationStore {
         updatedAt: session.updatedAt,
       } satisfies Conversation,
       promptName: session.promptName,
-      tokenCost: session.tokenCost,
+      focus: this.toFocus(session.focus),
     }));
   }
 
   async appendTurns(input: {
     sessionId: string;
     userId: string;
-    prompt: { model: string };
     turns: Turn[];
   }) {
     return await this.models.copilotSession.updateMessages({
@@ -190,14 +198,21 @@ export class ConversationStore {
   async appendTurn(input: {
     sessionId: string;
     userId: string;
-    prompt: { model: string };
     turn: Turn;
     compatSubmissionId?: string;
+    focus?: SessionFocus;
+    artifacts?: Array<{
+      artifactId: string;
+      role: string;
+      displayName?: string;
+      metadata?: Record<string, unknown>;
+    }>;
   }) {
     const message = await this.models.copilotSession.appendMessage({
       sessionId: input.sessionId,
       userId: input.userId,
-      prompt: input.prompt,
+      focus: input.focus,
+      artifacts: input.artifacts,
       message: (() => {
         const { id: _id, ...message } = chatMessageFromTurn(input.turn);
         return { ...message, compatSubmissionId: input.compatSubmissionId };

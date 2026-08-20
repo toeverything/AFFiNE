@@ -1,5 +1,4 @@
 import test from 'ava';
-import { omit } from 'lodash-es';
 import * as Y from 'yjs';
 
 import { createModule } from '../../../__tests__/create-module';
@@ -7,7 +6,8 @@ import { Mockers } from '../../../__tests__/mocks';
 import { Models } from '../../../models';
 import {
   parseDocToMarkdownFromDocSnapshot,
-  readAllBlocksFromDocSnapshot,
+  projectDocCanvas,
+  projectDocSearch,
   readAllDocIdsFromWorkspaceSnapshot,
 } from '../blocksuite';
 
@@ -119,45 +119,6 @@ test('nested concurrent meta edits do not restore a deleted entry', t => {
   );
 });
 
-test('can read all blocks from doc snapshot', async t => {
-  const rootDoc = await models.doc.get(workspace.id, workspace.id);
-  t.truthy(rootDoc);
-  const doc = await models.doc.get(workspace.id, docSnapshot.id);
-  t.truthy(doc);
-
-  const result = await readAllBlocksFromDocSnapshot('doc-0', docSnapshot.blob);
-
-  t.snapshot({
-    ...result,
-    blocks: result!.blocks.map(block => omit(block, ['yblock'])),
-  });
-});
-
-test('can read blob filename from doc snapshot', async t => {
-  const docSnapshot = await module.create(Mockers.DocSnapshot, {
-    workspaceId: workspace.id,
-    user: owner,
-    snapshotFile: 'test-doc-with-blob.snapshot.bin',
-  });
-
-  const result = await readAllBlocksFromDocSnapshot('doc-0', docSnapshot.blob);
-
-  // NOTE: avoid snapshot result directly, because it will cause hanging
-  t.snapshot(JSON.parse(JSON.stringify(result)));
-});
-
-test('can read all blocks from doc snapshot without workspace snapshot', async t => {
-  const doc = await models.doc.get(workspace.id, docSnapshot.id);
-  t.truthy(doc);
-
-  const result = await readAllBlocksFromDocSnapshot('doc-0', docSnapshot.blob);
-
-  t.snapshot({
-    ...result,
-    blocks: result!.blocks.map(block => omit(block, ['yblock'])),
-  });
-});
-
 test('can parse doc to markdown from doc snapshot', async t => {
   const result = parseDocToMarkdownFromDocSnapshot(
     workspace.id,
@@ -166,6 +127,38 @@ test('can parse doc to markdown from doc snapshot', async t => {
   );
 
   t.snapshot(result);
+
+  const canvas = projectDocCanvas(
+    docSnapshot.blob,
+    'fixture-doc',
+    'fixture-revision'
+  );
+  const search = projectDocSearch(
+    docSnapshot.blob,
+    'fixture-doc',
+    'fixture-revision'
+  );
+  t.snapshot(canvas, 'should export the exact canvas projection');
+  t.snapshot(search, 'should export the exact search projection');
+  t.deepEqual(
+    search,
+    projectDocSearch(docSnapshot.blob, 'fixture-doc', 'fixture-revision')
+  );
+
+  const blobSnapshot = await module.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+    docId: 'fixture-blob-doc',
+    snapshotFile: 'test-doc-with-blob.snapshot.bin',
+  });
+  t.snapshot(
+    projectDocSearch(
+      blobSnapshot.blob,
+      blobSnapshot.id,
+      'fixture-blob-revision'
+    ),
+    'should export attachment metadata from the blob fixture'
+  );
 });
 
 test('can parse doc to markdown from doc snapshot with ai editable', async t => {

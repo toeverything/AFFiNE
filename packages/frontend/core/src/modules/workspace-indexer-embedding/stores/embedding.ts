@@ -1,12 +1,12 @@
 import type { WorkspaceServerService } from '@affine/core/modules/cloud';
 import type { NbstoreService } from '@affine/core/modules/storage';
 import {
-  addWorkspaceEmbeddingFilesMutation,
+  addWorkspaceArtifactMutation,
   addWorkspaceEmbeddingIgnoredDocsMutation,
   getAllWorkspaceEmbeddingIgnoredDocsQuery,
-  getWorkspaceEmbeddingFilesQuery,
+  getWorkspaceArtifactsQuery,
   type PaginationInput,
-  removeWorkspaceEmbeddingFilesMutation,
+  removeWorkspaceArtifactMutation,
   removeWorkspaceEmbeddingIgnoredDocsMutation,
   setEnableDocEmbeddingMutation,
 } from '@affine/graphql';
@@ -104,7 +104,7 @@ export class EmbeddingStore extends Store {
     }
 
     await this.workspaceServerService.server.gql({
-      query: addWorkspaceEmbeddingFilesMutation,
+      query: addWorkspaceArtifactMutation,
       variables: {
         workspaceId,
         blob,
@@ -125,7 +125,7 @@ export class EmbeddingStore extends Store {
 
   async removeEmbeddingFile(
     workspaceId: string,
-    fileId: string,
+    artifactId: string,
     signal?: AbortSignal
   ) {
     if (!this.workspaceServerService.server) {
@@ -133,10 +133,10 @@ export class EmbeddingStore extends Store {
     }
 
     await this.workspaceServerService.server.gql({
-      query: removeWorkspaceEmbeddingFilesMutation,
+      query: removeWorkspaceArtifactMutation,
       variables: {
         workspaceId,
-        fileId,
+        artifactId,
       },
       context: { signal },
     });
@@ -144,11 +144,11 @@ export class EmbeddingStore extends Store {
 
   async removeEmbeddingFiles(
     workspaceId: string,
-    fileIds: string[],
+    artifactIds: string[],
     signal?: AbortSignal
   ) {
-    for (const fileId of fileIds) {
-      await this.removeEmbeddingFile(workspaceId, fileId, signal);
+    for (const artifactId of artifactIds) {
+      await this.removeEmbeddingFile(workspaceId, artifactId, signal);
     }
   }
 
@@ -162,14 +162,14 @@ export class EmbeddingStore extends Store {
     }
 
     const data = await this.workspaceServerService.server.gql({
-      query: getWorkspaceEmbeddingFilesQuery,
+      query: getWorkspaceArtifactsQuery,
       variables: {
         workspaceId,
         pagination,
       },
       context: { signal },
     });
-    return data.workspace.embedding.files;
+    return data.workspace.embedding.artifacts;
   }
 
   async getEmbeddingProgress(workspaceId: string, signal?: AbortSignal) {

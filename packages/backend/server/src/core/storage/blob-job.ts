@@ -304,15 +304,6 @@ export class StorageBlobJob {
           jobId: `document-cleanup:search:${effect.workspaceId}:${effect.docId}:${effect.cleanupVersion}`,
         });
       }
-      if (!effect.copilotDone) {
-        await this.queue.add(
-          'copilot.embedding.reconcileDocumentCleanup',
-          effect,
-          {
-            jobId: `document-cleanup:copilot:${effect.workspaceId}:${effect.docId}:${effect.cleanupVersion}`,
-          }
-        );
-      }
       if (effect.commentObjectsDone) {
         await this.event.emitAsync('workspace.blobs.updated', {
           workspaceId: effect.workspaceId,

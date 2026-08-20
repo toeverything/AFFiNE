@@ -22,6 +22,7 @@ import {
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
 import { PermissionAccess } from '../../../core/permission';
+import { CopilotEnabled } from '../feature';
 import { CopilotType } from '../resolver';
 import type { TranscriptionJob } from './job';
 import { buildLegacyProjection } from './projection';
@@ -36,7 +37,6 @@ import type {
   TranscriptionQuality,
   TranscriptionSourceAudio,
   TranscriptionSubmitInput,
-  TranscriptProviderMeta,
 } from './types';
 
 registerEnumType(AiJobStatus, {
@@ -166,15 +166,6 @@ class TranscriptionQualityType implements TranscriptionQuality {
   overflowCount!: number | null;
 }
 
-@ObjectType()
-class TranscriptProviderMetaType implements TranscriptProviderMeta {
-  @Field(() => String, { nullable: true })
-  provider!: string | null;
-
-  @Field(() => String, { nullable: true })
-  model!: string | null;
-}
-
 @InputType()
 class AudioSliceManifestItemInput implements AudioSliceManifestItem {
   @Field(() => Int)
@@ -233,9 +224,6 @@ class SubmitAudioTranscriptionInput implements TranscriptionSubmitInput {
 
   @Field(() => [AudioSliceManifestItemInput], { nullable: true })
   sliceManifest?: AudioSliceManifestItemInput[];
-
-  @Field(() => String, { nullable: true })
-  strategy?: string | null;
 }
 
 @ObjectType()
@@ -273,14 +261,8 @@ class TranscriptionResultType {
   @Field(() => MeetingSummaryV2Type, { nullable: true })
   summaryJson!: TranscriptionPayload['summaryJson'] | null;
 
-  @Field(() => TranscriptProviderMetaType, { nullable: true })
-  providerMeta!: TranscriptionPayload['providerMeta'] | null;
-
   @Field(() => String, { nullable: true })
   version!: string | null;
-
-  @Field(() => String, { nullable: true })
-  strategy!: string | null;
 
   @Field(() => AiJobStatus)
   status!: AiJobStatus;
@@ -292,6 +274,7 @@ const FinishedStatus: Set<AiJobStatus> = new Set([
 ]);
 
 @Injectable()
+@CopilotEnabled()
 @Resolver(() => CopilotType)
 export class CopilotTranscriptionResolver {
   constructor(
@@ -318,9 +301,7 @@ export class CopilotTranscriptionResolver {
         normalizedSegments: null,
         normalizedTranscript: null,
         summaryJson: null,
-        providerMeta: null,
         version: null,
-        strategy: null,
       };
       if (FinishedStatus.has(finalJob.status)) {
         finalJob.title = legacy?.title ?? null;
@@ -333,9 +314,7 @@ export class CopilotTranscriptionResolver {
         finalJob.normalizedSegments = ret?.normalizedSegments ?? null;
         finalJob.normalizedTranscript = ret?.normalizedTranscript ?? null;
         finalJob.summaryJson = ret?.summaryJson ?? null;
-        finalJob.providerMeta = ret?.providerMeta ?? null;
         finalJob.version = ret?.version ?? null;
-        finalJob.strategy = ret?.strategy ?? null;
       }
       return finalJob;
     }
@@ -372,7 +351,7 @@ export class CopilotTranscriptionResolver {
       user.id,
       workspaceId,
       blobId,
-      // oxlint-disable-next-line @typescript-eslint/await-thenable
+      // oxlint-disable-next-line typescript/await-thenable
       await Promise.all(allBlobs),
       input ?? undefined
     );
