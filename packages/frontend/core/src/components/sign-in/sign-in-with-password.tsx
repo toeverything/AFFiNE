@@ -158,7 +158,7 @@ export const SignInWithPasswordStep = ({
             })
           : (nativeNetworkMessage ?? visibleMessage);
         const failedTitle = shouldExposeNativeAuthError
-          ? t['com.affine.auth.toast.title.ios-auth']({ name: error.name })
+          ? t['com.affine.auth.toast.title.ios-auth']()
           : t['com.affine.auth.toast.title.failed']();
 
         if (isRateLimited) {
@@ -280,7 +280,7 @@ export const SignInWithPasswordStep = ({
           />
           {!verifyToken && needCaptcha && <Captcha />}
           {authErrorMessage ? (
-            <div className={styles.signInError} role="alert" aria-live="polite">
+            <div className={styles.signInError} role="alert">
               {authErrorMessage}
             </div>
           ) : null}

@@ -104,7 +104,10 @@ export class AuthStore extends Store {
 
     const [user, authMethods] = await Promise.all([
       this.fetchCurrentUserProfile(),
-      this.fetchAuthMethods(),
+      this.fetchAuthMethods().catch(error => {
+        console.warn('Failed to fetch auth methods', error);
+        return undefined;
+      }),
     ]);
     if (!user || user.id !== session.user.id) {
       throw new Error('User profile does not match auth session');
@@ -127,18 +130,12 @@ export class AuthStore extends Store {
       return currentUser;
     } catch (error) {
       console.warn('Failed to fetch current user profile from GraphQL', error);
-      await this.nbstoreService.realtime.configure({
-        endpoint: this.serverService.server.baseUrl,
-        authenticated: false,
-        isSelfHosted:
-          this.serverService.server.config$.value.type ===
-          ServerDeploymentType.Selfhosted,
-      });
-      return await this.nbstoreService.realtime.request(
+      const { user } = await this.nbstoreService.realtime.request(
         'user.profile.get',
         {},
         { timeoutMs: 10_000 }
       );
+      return user;
     }
   }
 

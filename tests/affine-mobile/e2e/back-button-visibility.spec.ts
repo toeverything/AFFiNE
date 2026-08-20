@@ -8,7 +8,7 @@ const locateBack = (page: Page) => page.getByTestId('page-header-back');
 test('new doc returns to its source without creating a New destination', async ({
   page,
 }) => {
-  await openTab(page, 'New Page');
+  await openTab(page, 'New doc');
   await expect(locateBack(page)).toBeVisible();
   await pageBack(page);
   await expect(page).toHaveURL(/\/home$/);
@@ -22,7 +22,7 @@ test('new doc returns to its source without creating a New destination', async (
 
 // TODO(@CatsJuice): mobile @ menu is not ready
 // test('jump to linked doc should show back', async ({ page }) => {
-//   await openTab(page, 'New Page');
+//   await openTab(page, 'New doc');
 //   await expect(locateBack(page)).not.toBeVisible();
 //   const docId = await page.evaluate(() => location.pathname.split('/').pop());
 //   await page.keyboard.type('Test Doc');

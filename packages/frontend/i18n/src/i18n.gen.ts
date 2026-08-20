@@ -1,5 +1,5 @@
 // @ts-nocheck
-/* eslint-disable */
+/* oxlint-disable */
 import { createElement, useMemo, type ComponentType, type JSX } from "react";
 import { useTranslation, Trans, type TransProps } from "react-i18next";
 type TypedTransProps<Value, Components, Context extends string | undefined = undefined> = Omit<TransProps<string, never, never, Context>, "values" | "ns" | "i18nKey"> & ({} extends Value ? {} : {
@@ -1580,7 +1580,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.toast.message.failed"](): string;
     /**
-      * `iOS auth: {{message}}`
+      * `{{message}}`
       */
     ["com.affine.auth.toast.message.ios-auth"](options: {
         readonly message: string;
@@ -1594,11 +1594,9 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.toast.title.failed"](): string;
     /**
-      * `iOS auth: {{name}}`
+      * `Sign-in failed on iOS`
       */
-    ["com.affine.auth.toast.title.ios-auth"](options: {
-        readonly name: string;
-    }): string;
+    ["com.affine.auth.toast.title.ios-auth"](): string;
     /**
       * `Signed in`
       */
@@ -9806,6 +9804,10 @@ export function useAFFiNEI18N(): {
       * `Network error.`
       */
     ["error.NETWORK_ERROR"](): string;
+    /**
+      * `iOS native authentication failed.`
+      */
+    ["error.IOS_NATIVE_AUTH_FAILED"](): string;
     /**
       * `Too many requests.`
       */

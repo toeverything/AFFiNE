@@ -196,7 +196,9 @@ const isUserFriendlyErrorResponse = (value: unknown) =>
 const isLocalNetworkProhibitedMessage = (message: string) =>
   /local network prohibited/i.test(message) ||
   (/NSURLErrorDomain Code=-1009/i.test(message) &&
-    /192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\./.test(message));
+    /(?:^|[^\d.])(?:192\.168|10|172\.(?:1[6-9]|2\d|3[01]))(?:\.\d{1,3}){2}(?=$|[^\d.])/.test(
+      message
+    ));
 
 const localNetworkProhibitedError = () => ({
   status: 0,
@@ -587,7 +589,6 @@ function setupIOSSyncDiagnostics() {
   const globalContext = globalContextService.globalContext;
   const updateDiagnostics = (reason: string) => {
     installCurrentWorkspaceSyncProbe(reason);
-    resetCurrentRemoteDocSync(reason);
   };
 
   globalContext.workspaceId.$.subscribe(() =>
@@ -667,7 +668,7 @@ const getCurrentServerForNative = () => {
     return serversService.server$(currentServerId).value ?? null;
   }
 
-  return null;
+  return defaultServerService.server;
 };
 
 (window as any).getCurrentServerBaseUrl = () => {

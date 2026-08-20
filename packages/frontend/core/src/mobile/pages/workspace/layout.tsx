@@ -153,24 +153,8 @@ export const WorkspaceLayout = ({
       }
     });
 
-    const timers = [0, 5_000, 15_000].map(delay =>
-      window.setTimeout(() => {
-        console.warn('[AFFiNE][iOS sync] reset workspace sync', {
-          ...syncContext,
-          delay,
-        });
-        workspace.engine.doc.resetSync().catch(error => {
-          console.warn('[AFFiNE][iOS sync] reset workspace sync failed', {
-            ...syncContext,
-            error,
-          });
-        });
-      }, delay)
-    );
-
     return () => {
       subscription.unsubscribe();
-      timers.forEach(timer => window.clearTimeout(timer));
     };
   }, [workspace, workspaceServer]);
 

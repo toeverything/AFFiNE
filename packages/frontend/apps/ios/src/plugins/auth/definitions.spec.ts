@@ -1,17 +1,10 @@
 import type { SignInUserInfo } from '@affine/core/modules/cloud/provider/auth';
+import { expectTypeOf, test } from 'vitest';
 
 import type { AuthPlugin } from './definitions';
 
-type IsExact<T, Expected> = T extends Expected
-  ? Expected extends T
-    ? true
-    : false
-  : false;
-
-type Assert<T extends true> = T;
-
 type SignInPasswordResult = Awaited<ReturnType<AuthPlugin['signInPassword']>>;
 
-export type SignInPasswordResolvesUserInfo = Assert<
-  IsExact<SignInPasswordResult, SignInUserInfo>
->;
+test('signInPassword resolves user info', () => {
+  expectTypeOf<SignInPasswordResult>().toEqualTypeOf<SignInUserInfo>();
+});
