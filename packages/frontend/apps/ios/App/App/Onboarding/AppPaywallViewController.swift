@@ -101,6 +101,11 @@ final class AppPaywallViewController: UIViewController {
         let completed = try await bridge.purchaseSelectedPlan()
         guard completed else { return }
 
+        guard try await hasActiveSubscription(for: plan) else {
+          bridge.errorMessage = String(localized: "Your purchase is still being processed. Please try again in a moment.")
+          return
+        }
+
         dismiss(animated: true) { [weak self] in
           self?.onPurchaseCompleted?()
         }
@@ -119,7 +124,7 @@ final class AppPaywallViewController: UIViewController {
       do {
         try await bridge.restorePurchases()
 
-        guard try await hasActiveSubscriptionForCurrentPlan() else {
+        guard try await hasActiveSubscription(for: initialPlan) else {
           bridge.errorMessage = String(localized: "No active purchases were found to restore.")
           return
         }
@@ -135,7 +140,7 @@ final class AppPaywallViewController: UIViewController {
     }
   }
 
-  private func hasActiveSubscriptionForCurrentPlan() async throws -> Bool {
+  private func hasActiveSubscription(for plan: AppPaywallPlan) async throws -> Bool {
     guard let webView = bindWebView else {
       throw NSError(
         domain: "AppPaywallViewController",
@@ -144,7 +149,7 @@ final class AppPaywallViewController: UIViewController {
       )
     }
 
-    switch initialPlan {
+    switch plan {
     case .ai:
       return try await PaywallAuthGuard.hasAISubscription(in: webView)
     case .pro, .lite:
@@ -232,4 +237,3 @@ enum AppPaywallPlan: String, CaseIterable {
     }
   }
 }
-

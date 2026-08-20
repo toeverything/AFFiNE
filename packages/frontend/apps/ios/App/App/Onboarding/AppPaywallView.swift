@@ -191,7 +191,7 @@ struct AppPaywallCarouselPage: View {
       }
       .padding(.top, layout.dotsTopPadding)
 
-      AppPaywallFooterLinks(palette: palette, onClose: onClose)
+      AppPaywallFooterLinks(palette: palette)
         .padding(.top, layout.footerTopPadding)
         .padding(.horizontal, layout.horizontalPadding)
 

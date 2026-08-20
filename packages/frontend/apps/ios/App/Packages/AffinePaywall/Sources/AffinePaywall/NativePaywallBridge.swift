@@ -73,6 +73,10 @@ public final class NativePaywallBridge: ObservableObject {
       }
     }
 
+    guard nextProducts.count == NativePaywallPlanKind.allCases.count else {
+      throw bridgeError("Unable to load subscription options right now.")
+    }
+
     productsByPlan = nextProducts
 
     var nextPriceInfo: [NativePaywallPlanKind: NativePaywallPriceInfo] = [:]
@@ -122,7 +126,6 @@ public final class NativePaywallBridge: ObservableObject {
     }
     try await configurePurchasesForCurrentUser(in: webView)
     _ = try await Purchases.shared.restorePurchases()
-    _ = try await Purchases.shared.syncPurchases()
     try await updateSubscriptionState(in: webView)
   }
 }
@@ -188,7 +191,8 @@ private extension NativePaywallBridge {
 
   func applySubscription(transactionID: String, in webView: WKWebView) async throws {
     _ = try await webView.callAsyncJavaScript(
-      "return await window.requestApplySubscription('\(transactionID)');",
+      "return await window.requestApplySubscription(transactionID);",
+      arguments: ["transactionID": transactionID],
       contentWorld: .page
     )
   }
@@ -233,7 +237,7 @@ private extension NativePaywallBridge {
 
     var monthlyPrice = product.price / Decimal(months)
     var rounded = Decimal()
-    NSDecimalRound(&rounded, &monthlyPrice, 2, .up)
+    NSDecimalRound(&rounded, &monthlyPrice, 2, .plain)
 
     guard let formatter = product.priceFormatter?.copy() as? NumberFormatter else {
       return product.localizedPriceString

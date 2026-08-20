@@ -256,6 +256,9 @@
     "Student" : {
 
     },
+    "Subscriptions auto-renew until canceled." : {
+
+    },
     "Subscription Terms" : {
 
     },
@@ -335,6 +338,9 @@
 
     },
     "Your Work, " : {
+
+    },
+    "Your purchase is still being processed. Please try again in a moment." : {
 
     },
     "/month" : {

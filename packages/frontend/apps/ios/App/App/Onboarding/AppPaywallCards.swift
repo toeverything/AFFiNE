@@ -100,15 +100,17 @@ private struct AppPaywallFeatureRow: View {
 
 private struct AppPaywallFooterLinks: View {
   let palette: AppPaywallPalette
-  let onClose: () -> Void
 
   var body: some View {
-    Button(action: onClose) {
+    VStack(spacing: 4) {
       Text("Cancel Anytime")
         .font(.system(size: 16.5, weight: .medium))
         .foregroundStyle(palette.primaryText)
+
+      Text("Subscriptions auto-renew until canceled.")
+        .font(.system(size: 12.5, weight: .regular))
+        .foregroundStyle(palette.secondaryText)
     }
-    .buttonStyle(.plain)
   }
 }
 
