@@ -612,8 +612,8 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
       do {
         let clock = DocIndexedClock(
           docId: try call.getStringEnsure("docId"),
-          timestamp: Int64(try call.getDoubleEnsure("indexedClock")),
-          indexerVersion: Int64(try call.getDoubleEnsure("indexerVersion"))
+          timestamp: try call.getInt64Ensure("indexedClock"),
+          indexerVersion: try call.getInt64Ensure("indexerVersion")
         )
         try await docStoragePool.setDocIndexedClock(universalId: try call.getStringEnsure("id"), clock: clock)
         call.resolve()
@@ -630,14 +630,16 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
           guard
             let docId = value["docId"] as? String,
             let timestamp = value["timestamp"] as? Double,
-            let indexerVersion = value["indexerVersion"] as? Double
+            let timestamp = Int64(exactly: timestamp),
+            let indexerVersion = value["indexerVersion"] as? Double,
+            let indexerVersion = Int64(exactly: indexerVersion)
           else {
             throw RequestParamError.request(key: "clocks")
           }
           return DocIndexedClock(
             docId: docId,
-            timestamp: Int64(timestamp),
-            indexerVersion: Int64(indexerVersion)
+            timestamp: timestamp,
+            indexerVersion: indexerVersion
           )
         }
         try await docStoragePool.setDocIndexedClocks(universalId: try call.getStringEnsure("id"), clocks: clocks)
@@ -726,8 +728,8 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
           table: table,
           query: try jsonString(call, "query"),
           field: try call.getStringEnsure("field"),
-          limit: UInt32(try call.getIntEnsure("limit")),
-          offset: UInt32(try call.getIntEnsure("offset")),
+          limit: try call.getUInt32Ensure("limit"),
+          offset: try call.getUInt32Ensure("offset"),
           hits: try optionalJsonString(call, "hits")
         )
         let buckets = result.buckets.map { bucket in

@@ -28,9 +28,12 @@ pub(super) fn compile_document(table: &TableSchema, value: JsonValue) -> Result<
     }
     let field = table.field(&name)?;
     let values = match value {
-      JsonValue::Array(values) => values,
+      JsonValue::Array(values) => values.into_iter().filter(|value| !value.is_null()).collect(),
       value => vec![value],
     };
+    if values.is_empty() {
+      continue;
+    }
     document.add_values(
       field,
       values

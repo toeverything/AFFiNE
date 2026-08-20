@@ -507,7 +507,11 @@ impl From<SearchRuntimeConfigFile> for SearchRuntimeConfig {
   fn from(value: SearchRuntimeConfigFile) -> Self {
     Self {
       enabled: value.enabled,
-      provider: value.provider.provider,
+      provider: if value.provider.provider.is_empty() {
+        "embedded".to_string()
+      } else {
+        value.provider.provider
+      },
       endpoint: value.provider.endpoint,
       api_key: value.provider.api_key,
       username: value.provider.username,
@@ -895,6 +899,14 @@ mod tests {
     let enabled: SearchRuntimeConfig = enabled.indexer.unwrap().into();
     assert!(enabled.enabled);
     assert_eq!(enabled.provider, "elasticsearch");
+
+    let enabled_without_provider = app_config_from_module_json(serde_json::json!({
+      "indexer": { "enabled": true }
+    }))
+    .unwrap();
+    let enabled_without_provider: SearchRuntimeConfig = enabled_without_provider.indexer.unwrap().into();
+    assert!(enabled_without_provider.enabled);
+    assert_eq!(enabled_without_provider.provider, "embedded");
   }
 
   #[test]

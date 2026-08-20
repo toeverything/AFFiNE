@@ -77,6 +77,12 @@ worker:
   podAnnotations: {}
   podSecurityContext:
     fsGroup: 2000
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
   serviceAccount:
     create: true
     annotations: {}

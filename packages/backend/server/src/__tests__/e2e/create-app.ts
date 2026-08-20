@@ -255,8 +255,10 @@ export class TestingApp extends NestApplication {
 export async function createApp(
   metadata: TestingAppMetadata = {}
 ): Promise<TestingApp> {
+  const config = new ConfigFactory().config;
   const runtimeConfig = await createTestRuntimeConfig(
-    new ConfigFactory().config.db.datasourceUrl
+    config.db.datasourceUrl,
+    config.indexer
   );
   const { buildAppModule } = await import('../../app.module');
   const { tapModule, tapApp } = metadata;

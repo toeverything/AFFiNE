@@ -67,7 +67,7 @@ defineModuleConfig('auth', {
     shape: z.boolean(),
   },
   signInRateLimit: {
-    desc: 'Limits for sign-in attempts shared through Redis by source IP and email.',
+    desc: 'Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds.',
     default: {
       ttl: 60_000,
       ipLimit: 20,

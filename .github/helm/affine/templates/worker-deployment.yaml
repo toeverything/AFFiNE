@@ -47,6 +47,8 @@ spec:
         - name: worker
           image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag | default .Values.graphql.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            {{- toYaml .Values.worker.securityContext | nindent 12 }}
           env:
             - name: AFFINE_PRIVATE_KEY
               valueFrom:
@@ -128,6 +130,12 @@ spec:
             successThreshold: {{ default .Values.worker.probe.successThreshold .Values.worker.probe.readiness.successThreshold }}
           resources:
             {{- toYaml .Values.worker.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
       {{- with .Values.worker.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

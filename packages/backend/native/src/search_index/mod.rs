@@ -345,13 +345,25 @@ mod tests {
   #[tokio::test]
   async fn write_is_atomic_and_corrupt_checkpoint_is_rejected() {
     let index = EmbeddedSearchIndex::new();
+    index
+      .write(
+        "doc".into(),
+        json!([{ "workspace_id": "workspace", "doc_id": "null-values", "summary": [null] }]).to_string(),
+      )
+      .await
+      .unwrap();
+    let all = json!({ "match_all": {} });
+    let result: Value =
+      serde_json::from_str(&index.search("doc".into(), search(all.clone(), None)).await.unwrap()).unwrap();
+    assert_eq!(result["total"], 1);
+
+    index.reset("doc".into()).await.unwrap();
     let documents = json!([
       doc("workspace", "valid", "hello", 1),
       { "workspace_id": "workspace", "doc_id": "invalid", "unknown": true }
     ]);
     assert!(index.write("doc".into(), documents.to_string()).await.is_err());
 
-    let all = json!({ "match_all": {} });
     let result: Value = serde_json::from_str(&index.search("doc".into(), search(all, None)).await.unwrap()).unwrap();
     assert_eq!(result["total"], 0);
     assert!(index.restore("doc".into(), vec![1, 2, 3].into()).await.is_err());

@@ -25,7 +25,18 @@ runs:
 
     - name: Import config
       shell: bash
-      env:
-        DEFAULT_CONFIG: '{}'
       run: |
-        printf '%s\n' "${SERVER_CONFIG:-$DEFAULT_CONFIG}" > ./packages/backend/server/config.json
+        config="${SERVER_CONFIG:-{}}"
+        jq \
+          --arg enabled "${AFFINE_INDEXER_ENABLED:-true}" \
+          --arg provider "${AFFINE_INDEXER_SEARCH_PROVIDER:-manticoresearch}" \
+          --arg endpoint "${AFFINE_INDEXER_SEARCH_ENDPOINT:-http://localhost:9308}" \
+          '
+          def with_default($key; $value):
+            if has($key) then . else . + {($key): $value} end;
+          .indexer = ((.indexer // {})
+            | with_default("enabled"; ($enabled == "1" or $enabled == "true"))
+            | .provider = ((.provider // {})
+              | with_default("type"; $provider)
+              | with_default("endpoint"; $endpoint)))
+          ' <<< "$config" > ./packages/backend/server/config.json
