@@ -338,18 +338,6 @@ private final class ColdStartSignInSheetViewController: UIViewController {
   }
 }
 
-private enum ColdStartPaywallFlag {
-  private static let presentedKey = "com.affine.paywall.cold-start-pro-presented"
-
-  static var wasPresented: Bool {
-    UserDefaults.standard.bool(forKey: presentedKey)
-  }
-
-  static func markPresented() {
-    UserDefaults.standard.set(true, forKey: presentedKey)
-  }
-}
-
 @objc
 class RootViewController: UINavigationController {
   private var affineViewController: AFFiNEViewController?
@@ -411,7 +399,6 @@ class RootViewController: UINavigationController {
 
   private func runColdStartPaywallFlowIfNeeded() {
     guard OnboardingFlag.isCompleted else { return }
-    guard !ColdStartPaywallFlag.wasPresented else { return }
     guard !didRunColdStartPaywallFlow else { return }
     guard presentedViewController == nil else {
       scheduleColdStartPaywallFlowRetry()
@@ -432,7 +419,6 @@ class RootViewController: UINavigationController {
         let isAlreadySignedIn = await PaywallAuthGuard.currentUserIdentifier(in: webView) != nil
         if !isAlreadySignedIn {
           let action = await presentColdStartSignInSheet()
-          ColdStartPaywallFlag.markPresented()
           guard action == .seeProBenefits else { return }
         }
 
@@ -445,7 +431,6 @@ class RootViewController: UINavigationController {
           return
         }
 
-        ColdStartPaywallFlag.markPresented()
         presentSharedPaywall(initialPlan: .pro, bindWebView: webView)
       } catch {
         didRunColdStartPaywallFlow = false
@@ -515,7 +500,6 @@ class RootViewController: UINavigationController {
     Task { @MainActor [weak self, weak onboardingController] in
       guard let self else { return }
       OnboardingFlag.markCompleted()
-      ColdStartPaywallFlag.markPresented()
       didRunColdStartPaywallFlow = true
 
       guard let webView = affineViewController?.webView else {

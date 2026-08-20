@@ -58,7 +58,7 @@ public final class NativePaywallBridge: ObservableObject {
         userInfo: [NSLocalizedDescriptionKey: String(localized: "Missing required information")]
       )
     }
-    try await configurePurchases(for: webView)
+    configurePurchases()
 
     let products = await Purchases.shared.products(Self.productIdentifiers)
     guard !products.isEmpty else {
@@ -98,7 +98,7 @@ public final class NativePaywallBridge: ObservableObject {
         userInfo: [NSLocalizedDescriptionKey: String(localized: "Missing required information")]
       )
     }
-    try await configurePurchases(for: webView)
+    try await configurePurchasesForCurrentUser(in: webView)
 
     guard let product = productsByPlan[selectedPlan] else {
       throw NSError(
@@ -133,7 +133,7 @@ public final class NativePaywallBridge: ObservableObject {
         userInfo: [NSLocalizedDescriptionKey: String(localized: "Missing required information")]
       )
     }
-    try await configurePurchases(for: webView)
+    try await configurePurchasesForCurrentUser(in: webView)
     _ = try await Purchases.shared.restorePurchases()
     _ = try await Purchases.shared.syncPurchases()
     try await updateSubscriptionState(in: webView)
@@ -164,20 +164,22 @@ private extension NativePaywallBridge {
     }
   }
 
-  func configurePurchases(for webView: WKWebView) async throws {
+  func configurePurchases() {
     Paywall.setup()
-    let userIdentifier = try await fetchCurrentUserIdentifier(in: webView)
 
     if !Paywall.isPurchasesConfigured {
       let configuration = Configuration
         .builder(withAPIKey: Paywall.revenueCatToken)
-        .with(appUserID: userIdentifier)
         .with(showStoreMessagesAutomatically: false)
         .build()
       Purchases.configure(with: configuration)
       Paywall.isPurchasesConfigured = true
     }
+  }
 
+  func configurePurchasesForCurrentUser(in webView: WKWebView) async throws {
+    configurePurchases()
+    let userIdentifier = try await fetchCurrentUserIdentifier(in: webView)
     _ = try await Purchases.shared.logIn(userIdentifier)
   }
 
