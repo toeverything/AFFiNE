@@ -96,7 +96,7 @@ export class KanbanGroup extends SignalWatcher(
   static override styles = styles;
 
   private readonly clickAddCard = () => {
-    const id = this.view.addCard('end', this.group.key);
+    const id = this.view.addCard('start', this.group.key);
     requestAnimationFrame(() => {
       const columnId =
         this.view.mainProperties$.value.titleColumn ||

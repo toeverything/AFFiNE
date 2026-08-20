@@ -315,6 +315,33 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
       });
     }
 
+    // Prepend the new card to the group's manual sort order so it always
+    // appears at the top.  Without this, sortByManually would place
+    // unknown IDs at the bottom of the list.
+    if (!this.sortManager.hasSort$.value) {
+      const groupMap = this.groupTrait.groupDataMap$.value;
+      if (groupMap) {
+        const currentRows =
+          groupMap[group]?.rows
+            .filter(row => row.rowId !== id)
+            .map(row => row.rowId) ?? [];
+        const newOrder = [id, ...currentRows];
+        const groupKeys = Object.keys(groupMap);
+        const map = new Map(this.view?.groupProperties.map(v => [v.key, v]));
+        this.dataUpdate(() => ({
+          groupProperties: groupKeys.map(key => {
+            if (key === group) {
+              const existing = map.get(key);
+              return existing
+                ? { ...existing, manuallyCardSort: newOrder }
+                : { key, hide: false, manuallyCardSort: newOrder };
+            }
+            return map.get(key) ?? { key, hide: false, manuallyCardSort: [] };
+          }),
+        }));
+      }
+    }
+
     return id;
   }
 

@@ -60,7 +60,7 @@ export class MobileKanbanGroup extends SignalWatcher(
   static override styles = styles;
 
   private readonly clickAddCard = () => {
-    this.view.addCard('end', this.group.key);
+    this.view.addCard('start', this.group.key);
     this.requestUpdate();
   };
 
