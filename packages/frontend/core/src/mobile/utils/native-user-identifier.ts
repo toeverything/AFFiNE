@@ -1,6 +1,6 @@
 import type { AuthService } from '../../modules/cloud/services/auth';
 
-export interface NativeUserIdentifierAuthService extends object {
+export interface NativeUserIdentifierAuthService {
   session: Pick<AuthService['session'], 'account$' | 'waitForRevalidation'>;
 }
 
