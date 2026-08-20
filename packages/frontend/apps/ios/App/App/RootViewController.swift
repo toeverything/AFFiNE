@@ -499,6 +499,7 @@ class RootViewController: UINavigationController {
   private func handleOnboardingCompletion(from onboardingController: OnboardingViewController?) {
     Task { @MainActor [weak self, weak onboardingController] in
       guard let self else { return }
+      OnboardingFlag.markCompleted()
       didRunColdStartPaywallFlow = true
 
       guard let webView = affineViewController?.webView else {
