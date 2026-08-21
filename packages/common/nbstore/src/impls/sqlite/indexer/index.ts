@@ -24,6 +24,7 @@ import {
 import { createNode } from './node-builder';
 
 const SQLITE_INDEXER_VERSION_OFFSET = 1;
+const MAX_NATIVE_U32 = 0xffffffff;
 
 export class SqliteIndexerStorage extends IndexerStorageBase {
   static readonly identifier = 'SqliteIndexerStorage';
@@ -83,8 +84,8 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
       String(table),
       toNativeQuery(query),
       String(field),
-      limit,
-      skip,
+      toNativeUInt32(limit),
+      toNativeUInt32(skip),
       options?.hits
         ? toNativeOptions(options.hits, hitLimit, hitSkip)
         : undefined
@@ -240,11 +241,18 @@ function toNativeOptions(
 ): NativeIndexSearchOptions {
   const highlights = options?.highlights?.map(item => String(item.field)) ?? [];
   return {
-    limit,
-    offset,
+    limit: toNativeUInt32(limit),
+    offset: toNativeUInt32(offset),
     fields: [
       ...new Set([...(options?.fields?.map(String) ?? []), ...highlights]),
     ],
     highlights,
   };
+}
+
+function toNativeUInt32(value: number): number {
+  if (Number.isFinite(value)) {
+    return Math.max(0, Math.min(MAX_NATIVE_U32, Math.trunc(value)));
+  }
+  return value === Infinity ? MAX_NATIVE_U32 : 0;
 }

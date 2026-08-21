@@ -222,6 +222,8 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     });
 
     try {
+      docCollection.meta.initialize();
+
       // apply initial state
       await initial(docCollection, blobStorage, docStorage);
 
