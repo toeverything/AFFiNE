@@ -34,6 +34,9 @@ export class BroadcastChannelAwarenessStorage extends AwarenessStorageBase {
     id: this.options.id,
   });
   get channel() {
+    if (this.connection.status === 'idle') {
+      this.connection.connect();
+    }
     return this.connection.inner;
   }
 
