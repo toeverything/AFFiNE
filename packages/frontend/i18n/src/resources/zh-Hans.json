@@ -354,7 +354,7 @@
   "com.affine.auth.toast.message.ios-auth": "iOS 认证：{{message}}",
   "com.affine.auth.toast.message.signed-in": "您已登录 AFFiNE，开始同步您的数据！",
   "com.affine.auth.toast.title.failed": "无法登录",
-  "com.affine.auth.toast.title.ios-auth": "iOS 认证：{{name}}",
+  "com.affine.auth.toast.title.ios-auth": "iOS 登录失败",
   "com.affine.auth.toast.title.signed-in": "已登录",
   "com.affine.auth.verify.email.message": "您当前的邮箱是 {{email}}。我们将向此邮箱发送一个临时的验证链接。",
   "com.affine.backButton": "返回首页",

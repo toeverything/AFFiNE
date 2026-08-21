@@ -700,22 +700,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
 
         let user = try self.signInUserResponse(data)
         let exchangeOperationId = try await self.beginExchangeSession(endpoint, data)
-        Task {
-          do {
-            try await self.waitForExchangeSession(endpoint, exchangeOperationId)
-          } catch let error as NativeAuthHTTPError {
-            self.logAuthFailure(
-              endpoint: endpoint, action: error.action, statusCode: error.statusCode, data: error.data,
-              error: error)
-          } catch let error as NativeAuthResponseError {
-            self.logAuthFailure(
-              endpoint: endpoint, action: error.action, statusCode: nil, data: nil, error: error)
-          } catch {
-            self.logAuthFailure(
-              endpoint: endpoint, action: "/api/auth/session/exchange", statusCode: nil, data: nil,
-              error: error)
-          }
-        }
+        try await self.waitForExchangeSession(endpoint, exchangeOperationId)
         call.resolve(user)
       } catch {
         self.rejectAuthFailure(
