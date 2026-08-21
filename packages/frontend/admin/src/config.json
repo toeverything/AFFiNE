@@ -87,9 +87,9 @@
       "type": "Boolean",
       "desc": "Whether require email verification before accessing restricted resources(not implemented)."
     },
-    "newAccountShareActionDelay": {
+    "newAccountActionDelay": {
       "type": "Number",
-      "desc": "Minimum account age in seconds before new accounts can invite members or create share links."
+      "desc": "Minimum account age in seconds before new accounts can invite members, create invite links, or publish documents. Set to 0 to disable."
     },
     "trustedCloudflareHeaders": {
       "type": "Boolean",

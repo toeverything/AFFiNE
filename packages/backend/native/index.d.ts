@@ -34,6 +34,7 @@ export declare class BackendRuntime {
   claimInviteAbuseAction(actionId: string, workerId: string): Promise<boolean>
   claimRetryableInviteAbuseActions(workerId: string, limit: number): Promise<Array<RuntimeInviteAbuseClaimedAction>>
   markInviteAbuseAction(actionId: string, workerId: string, status: string, error?: string | undefined | null): Promise<boolean>
+  evaluateWorkspaceActionV1(actorUserId: string, workspaceId: string): Promise<RuntimeWorkspaceActionDecision>
   assertWorkspaceInviteQuotaV1(input: RuntimeWorkspaceInviteQuotaInput): Promise<RuntimeWorkspaceInviteQuotaDecision>
   commitWorkspaceInviteQuotaV1(reservationId: string, usage: RuntimeWorkspaceInviteQuotaUsage): Promise<boolean>
   releaseWorkspaceInviteQuotaV1(reservationId: string): Promise<boolean>
@@ -1494,6 +1495,12 @@ export interface RuntimeVerificationTokenRecord {
   token: string
   credential?: string
   expiresAtMs: number
+}
+
+export interface RuntimeWorkspaceActionDecision {
+  allowed: boolean
+  retryAfterSeconds?: number
+  reason?: string
 }
 
 export interface RuntimeWorkspaceArtifact {

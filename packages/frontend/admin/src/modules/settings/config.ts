@@ -58,9 +58,9 @@ export const KNOWN_CONFIG_GROUPS = [
       'allowSignup',
       'allowSignupForOauth',
       {
-        key: 'newAccountShareActionDelay',
+        key: 'newAccountActionDelay',
         type: 'Number',
-        desc: 'Minimum account age in seconds before new accounts can invite members or create share links.',
+        desc: 'Minimum account age in seconds before accounts can invite members, create invite links, or publish documents. Set to 0 to disable.',
       },
       // nested json object
       {

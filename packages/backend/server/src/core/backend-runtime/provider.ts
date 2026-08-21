@@ -121,6 +121,12 @@ export type RuntimeWorkspaceInviteQuotaUsage = {
   targetDomains: RuntimeQuotaTargetDomainInput[];
 };
 
+export type RuntimeWorkspaceActionDecision = {
+  allowed: boolean;
+  retryAfterSeconds?: number;
+  reason?: string;
+};
+
 export type RuntimeInviteAbuseAction =
   | 'ban_actor'
   | 'quarantine_actor'
@@ -213,6 +219,10 @@ export type RuntimeMailDeliveryQuotaDecision = {
 };
 
 type RuntimeQuotaMethods = RuntimeInstance & {
+  evaluateWorkspaceActionV1(
+    actorUserId: string,
+    workspaceId: string
+  ): Promise<RuntimeWorkspaceActionDecision>;
   assertWorkspaceInviteQuotaV1(
     input: RuntimeWorkspaceInviteQuotaInput
   ): Promise<NativeRuntimeWorkspaceInviteQuotaDecision>;
@@ -328,6 +338,7 @@ export class BackendRuntimeProvider
       !updates.copilot &&
       !updates.crypto &&
       !updates.db &&
+      !updates.auth &&
       !updates.indexer &&
       !updates.storages
     ) {
@@ -534,6 +545,12 @@ export class BackendRuntimeProvider
       await this.measured('assertWorkspaceInviteQuotaV1', rt =>
         this.quotaRuntime(rt).assertWorkspaceInviteQuotaV1(input)
       )
+    );
+  }
+
+  async evaluateWorkspaceActionV1(actorUserId: string, workspaceId: string) {
+    return await this.measured('evaluateWorkspaceActionV1', rt =>
+      this.quotaRuntime(rt).evaluateWorkspaceActionV1(actorUserId, workspaceId)
     );
   }
 
