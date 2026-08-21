@@ -121,6 +121,84 @@ export const updateBlockType: Command<
     }
     return next({ updatedBlocks: [newModel] });
   };
+  const transformToCallout: Command<{}, { updatedBlocks: BlockModel[] }> = (
+    _,
+    next
+  ) => {
+    if (flavour !== 'affine:callout') return;
+    // When flavour IS 'affine:callout', this command MUST always be terminal
+    // (always call next, never fall through). The generic transformModel branch
+    // that follows unconditionally deletes the source block even when addBlock
+    // fails a schema check — falling through would cause data loss.
+
+    const calloutModels: BlockModel[] = [];
+    const paragraphModels: BlockModel[] = [];
+
+    blockModels.forEach(model => {
+      if (
+        !matchModels(model, [
+          ParagraphBlockModel,
+          ListBlockModel,
+          CodeBlockModel,
+        ])
+      ) {
+        return;
+      }
+
+      const parent = doc.getParent(model);
+      if (!parent) return;
+
+      // [P1a] Callout cannot be nested inside another Callout — skip silently.
+      // We still call next() at the end so the chain does NOT fall through to
+      // the generic transformModel branch (which would delete the source block).
+      if (parent.flavour === 'affine:callout') return;
+
+      const index = parent.children.indexOf(model);
+      const textContent = model.text?.clone();
+
+      // Callout is a hub block — its text lives in a child paragraph,
+      // not in its own text prop, so we create the callout first,
+      // then add a paragraph inside it carrying the original text.
+      const calloutId = doc.addBlock('affine:callout', {}, parent, index);
+      if (!calloutId) return;
+
+      const calloutModel = doc.getModelById(calloutId);
+      if (!calloutModel) return;
+
+      const paragraphId = doc.addBlock(
+        'affine:paragraph',
+        { text: textContent },
+        calloutModel
+      );
+
+      const paragraphModel = paragraphId
+        ? doc.getModelById(paragraphId)
+        : null;
+
+      // [P1b] Re-parent nested children (e.g. indented list items) to the new
+      // paragraph so they remain reachable after the source block is removed.
+      if (paragraphModel && model.children.length > 0) {
+        doc.deleteBlock(model, { bringChildrenTo: paragraphModel });
+      } else {
+        doc.deleteBlock(model, { deleteChildren: false });
+      }
+
+      calloutModels.push(calloutModel);
+      if (paragraphModel) {
+        paragraphModels.push(paragraphModel);
+      }
+    });
+
+    // Always terminal for 'affine:callout' — never fall through to
+    // genericTransform. If no blocks were converted (e.g. all were inside an
+    // existing Callout and skipped), we still call next with empty arrays.
+    const updatedBlocks =
+      paragraphModels.length > 0 ? paragraphModels : calloutModels;
+    return next({ updatedBlocks, calloutModels } as {
+      updatedBlocks: BlockModel[];
+      calloutModels: BlockModel[];
+    });
+  };
   const transformToLatex: Command<{}, { updatedBlocks: BlockModel[] }> = (
     _,
     next
@@ -206,8 +284,16 @@ export const updateBlockType: Command<
     if (blockSelections.length === 0) {
       return false;
     }
+
+    // [P2] For Callout conversions, select the Callout container rather than
+    // the inner paragraph so that an immediate Delete removes the whole block.
+    const calloutModels = (ctx as { calloutModels?: BlockModel[] })
+      .calloutModels;
+    const targetModels =
+      calloutModels && calloutModels.length > 0 ? calloutModels : updatedBlocks;
+
     requestAnimationFrame(() => {
-      const selections = updatedBlocks.map(model => {
+      const selections = targetModels.map(model => {
         return selectionManager.create(BlockSelection, {
           blockId: model.id,
         });
@@ -249,6 +335,7 @@ export const updateBlockType: Command<
     .try<{ updatedBlocks: BlockModel[] }>(chain => [
       chain.pipe(mergeToCode),
       chain.pipe(appendDivider),
+      chain.pipe(transformToCallout),
       chain.pipe(transformToLatex),
       chain.pipe((_, next) => {
         const newModels: BlockModel[] = [];
