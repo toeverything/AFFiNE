@@ -2,7 +2,6 @@ import {
   base64ToUint8Array,
   uint8ArrayToBase64,
 } from '@affine/core/modules/workspace-engine';
-import { normalizeNativeOptional } from '@affine/mobile-shared/nbstore/optional';
 import {
   decodePayload,
   MOBILE_BLOB_FILE_PREFIX,
@@ -358,77 +357,74 @@ export const NbStoreNativeDBApis: NativeDBApis = {
   ): Promise<CrawlResult> {
     return await NbStore.crawlDocData({ id, docId });
   },
-  ftsAddDocument: async function (
+  indexUpsert: async function (
     id: string,
-    indexName: string,
-    docId: string,
-    text: string,
-    index: boolean
+    table: string,
+    document
   ): Promise<void> {
-    await NbStore.ftsAddDocument({
+    await NbStore.indexUpsert({
       id,
-      indexName,
-      docId,
-      text,
-      index,
+      table,
+      document,
     });
   },
-  ftsDeleteDocument: async function (
+  indexDelete: async function (
     id: string,
-    indexName: string,
+    table: string,
     docId: string
   ): Promise<void> {
-    await NbStore.ftsDeleteDocument({
+    await NbStore.indexDelete({
       id,
-      indexName,
+      table,
       docId,
     });
   },
-  ftsSearch: async function (
-    id: string,
-    indexName: string,
-    query: string
-  ): Promise<{ id: string; score: number; terms: Array<string> }[]> {
-    const { results } = await NbStore.ftsSearch({
+  indexSearch: async function (id: string, table: string, query, options) {
+    return await NbStore.indexSearch({
       id,
-      indexName,
+      table,
+      query,
+      options,
+    });
+  },
+  indexAggregate: async function (
+    id: string,
+    table: string,
+    query,
+    field: string,
+    limit: number,
+    offset: number,
+    hits
+  ) {
+    return await NbStore.indexAggregate({
+      id,
+      table,
+      query,
+      field,
+      limit,
+      offset,
+      hits,
+    });
+  },
+  indexDeleteByQuery: async function (
+    id: string,
+    table: string,
+    query
+  ): Promise<number> {
+    const { deleted } = await NbStore.indexDeleteByQuery({
+      id,
+      table,
       query,
     });
-    return results ?? [];
+    return deleted;
   },
-  ftsGetDocument: async function (
-    id: string,
-    indexName: string,
-    docId: string
-  ): Promise<string | null> {
-    const result = await NbStore.ftsGetDocument({
-      id,
-      indexName,
-      docId,
-    });
-    return normalizeNativeOptional(result.text);
-  },
-  ftsGetMatches: async function (
-    id: string,
-    indexName: string,
-    docId: string,
-    query: string
-  ): Promise<{ start: number; end: number }[]> {
-    const { matches } = await NbStore.ftsGetMatches({
-      id,
-      indexName,
-      docId,
-      query,
-    });
-    return matches ?? [];
-  },
-  ftsFlushIndex: async function (id: string): Promise<void> {
-    await NbStore.ftsFlushIndex({
+  indexFlush: async function (id: string): Promise<void> {
+    await NbStore.indexFlush({
       id,
     });
   },
-  ftsIndexVersion: function (): Promise<number> {
-    return NbStore.ftsIndexVersion().then(res => res.indexVersion);
+  indexVersion: function (): Promise<number> {
+    return NbStore.indexVersion().then(res => res.indexVersion);
   },
   getDocIndexedClock: function (
     id: string,
@@ -449,6 +445,15 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       docId,
       indexedClock: indexedClock.getTime(),
       indexerVersion,
+    });
+  },
+  setDocIndexedClocks: function (id, clocks): Promise<void> {
+    return NbStore.setDocIndexedClocks({
+      id,
+      clocks: clocks.map(clock => ({
+        ...clock,
+        timestamp: clock.timestamp.getTime(),
+      })),
     });
   },
   clearDocIndexedClock: function (id: string, docId: string): Promise<void> {

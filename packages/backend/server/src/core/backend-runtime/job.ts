@@ -22,7 +22,7 @@ const SELECTED_DOCUMENT_WAIT_MS = 90_000;
 
 declare global {
   interface Jobs {
-    'nightly.cleanExpiredBackendRuntimeHousekeeping': {};
+    'backendRuntime.cleanExpiredHousekeeping': {};
     'backendRuntime.syncDocumentEmbedding': {
       workspaceId: string;
       docId: string;
@@ -34,54 +34,13 @@ declare global {
 }
 
 @Injectable()
-export class BackendRuntimeEmbeddingJob {
+export class BackendRuntimeEmbeddingService {
   constructor(
     private readonly rt: BackendRuntimeProvider,
-    private readonly queue: JobQueue,
     private readonly models: Models
   ) {}
 
-  @OnEvent('doc.updated')
-  async onDocUpdated({ workspaceId, docId }: Events['doc.updated']) {
-    await this.queueDocument(workspaceId, docId);
-  }
-
-  @OnEvent('doc.snapshot.updated')
-  async onDocSnapshotUpdated({
-    workspaceId,
-    docId,
-  }: Events['doc.snapshot.updated']) {
-    if (workspaceId === docId) {
-      await this.queue.add(
-        'backendRuntime.reconcileDocumentEmbeddings',
-        { workspaceId },
-        { jobId: `reconcileDocumentEmbeddings/${workspaceId}` }
-      );
-      return;
-    }
-    await this.queueDocument(workspaceId, docId);
-  }
-
-  private async queueDocument(workspaceId: string, docId: string) {
-    if (
-      workspaceId === docId ||
-      docId.startsWith('db$') ||
-      docId.startsWith('userdata$')
-    ) {
-      return;
-    }
-    await this.queue.add(
-      'backendRuntime.syncDocumentEmbedding',
-      { workspaceId, docId },
-      { jobId: `syncDocumentEmbedding/${workspaceId}/${docId}` }
-    );
-  }
-
-  @OnJob('backendRuntime.syncDocumentEmbedding')
-  async syncDocument({
-    workspaceId,
-    docId,
-  }: Jobs['backendRuntime.syncDocumentEmbedding']) {
+  async syncDocument(workspaceId: string, docId: string) {
     await this.syncDocuments(workspaceId, [docId], true);
   }
 
@@ -174,16 +133,74 @@ export class BackendRuntimeEmbeddingJob {
     });
   }
 
-  @OnJob('backendRuntime.reconcileDocumentEmbeddings')
-  async reconcileDocuments({
-    workspaceId,
-  }: Jobs['backendRuntime.reconcileDocumentEmbeddings']) {
+  async reconcileDocuments(workspaceId: string) {
     if (!(await this.rt.embeddingHealth()).enabled) return;
     await this.rt.syncEmbeddingState({
       workspaceId,
       enabled: await this.models.workspace.allowEmbedding(workspaceId),
       reconcileDocuments: true,
     });
+  }
+}
+
+@Injectable()
+export class BackendRuntimeEmbeddingProducer {
+  constructor(private readonly queue: JobQueue) {}
+
+  @OnEvent('doc.updated')
+  async onDocUpdated({ workspaceId, docId }: Events['doc.updated']) {
+    await this.queueDocument(workspaceId, docId);
+  }
+
+  @OnEvent('doc.snapshot.updated')
+  async onDocSnapshotUpdated({
+    workspaceId,
+    docId,
+  }: Events['doc.snapshot.updated']) {
+    if (workspaceId === docId) {
+      await this.queue.add(
+        'backendRuntime.reconcileDocumentEmbeddings',
+        { workspaceId },
+        { jobId: `reconcileDocumentEmbeddings/${workspaceId}` }
+      );
+      return;
+    }
+    await this.queueDocument(workspaceId, docId);
+  }
+
+  private async queueDocument(workspaceId: string, docId: string) {
+    if (
+      workspaceId === docId ||
+      docId.startsWith('db$') ||
+      docId.startsWith('userdata$')
+    ) {
+      return;
+    }
+    await this.queue.add(
+      'backendRuntime.syncDocumentEmbedding',
+      { workspaceId, docId },
+      { jobId: `syncDocumentEmbedding/${workspaceId}/${docId}` }
+    );
+  }
+}
+
+@Injectable()
+export class BackendRuntimeEmbeddingJob {
+  constructor(private readonly service: BackendRuntimeEmbeddingService) {}
+
+  @OnJob('backendRuntime.syncDocumentEmbedding')
+  async syncDocument({
+    workspaceId,
+    docId,
+  }: Jobs['backendRuntime.syncDocumentEmbedding']) {
+    await this.service.syncDocument(workspaceId, docId);
+  }
+
+  @OnJob('backendRuntime.reconcileDocumentEmbeddings')
+  async reconcileDocuments({
+    workspaceId,
+  }: Jobs['backendRuntime.reconcileDocumentEmbeddings']) {
+    await this.service.reconcileDocuments(workspaceId);
   }
 }
 
@@ -199,7 +216,7 @@ export class BackendRuntimeHousekeepingJob {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async nightlyJob() {
     await this.queue.add(
-      'nightly.cleanExpiredBackendRuntimeHousekeeping',
+      'backendRuntime.cleanExpiredHousekeeping',
       {},
       {
         jobId: 'nightly-backend-runtime-housekeeping',
@@ -207,7 +224,7 @@ export class BackendRuntimeHousekeepingJob {
     );
   }
 
-  @OnJob('nightly.cleanExpiredBackendRuntimeHousekeeping')
+  @OnJob('backendRuntime.cleanExpiredHousekeeping')
   async cleanExpiredRuntimeHousekeeping() {
     const states = await this.cleanBatches(() =>
       this.rt.cleanupExpiredRuntimeStates(1000)

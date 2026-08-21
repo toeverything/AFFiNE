@@ -163,6 +163,23 @@ export const KNOWN_CONFIG_GROUPS = [
       },
     ],
   } as ConfigGroup<'copilot'>,
+  {
+    name: 'Indexer',
+    module: 'indexer',
+    fields: [
+      {
+        key: 'provider.type',
+        type: 'Enum',
+        options: ['embedded', 'manticoresearch', 'elasticsearch'],
+        desc: 'Search provider. Embedded keeps external credentials for later reuse.',
+      },
+      'provider.endpoint',
+      'provider.apiKey',
+      'provider.username',
+      'provider.password',
+      'autoIndex.batchSize',
+    ],
+  } as ConfigGroup<'indexer'>,
 ];
 
 export const UNKNOWN_CONFIG_GROUPS = ALL_CONFIGURABLE_MODULES.filter(

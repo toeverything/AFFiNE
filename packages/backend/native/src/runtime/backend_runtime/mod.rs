@@ -8,9 +8,12 @@ mod doc_storage;
 mod embedding;
 mod gate;
 mod housekeeping;
+mod permission;
+mod role;
 mod rolling_quota;
 mod runtime_state;
 mod scope_compiler;
+mod search;
 #[cfg(test)]
 mod tests;
 mod workspace_stats;
@@ -23,16 +26,21 @@ use byok::LocalLeasePayload;
 use copilot::{backend_provider, executable_protocol};
 use embedding::register_artifact_source;
 use napi::{Result, bindgen_prelude::Buffer};
+use search::SearchRuntime;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row, postgres::PgPoolOptions};
 use tokio::sync::Mutex;
 
-use self::types::{BackendRuntimeHealth, EmbeddingHealth};
+use self::{
+  role::ServerRole,
+  search::{RuntimeAggregateRequest, RuntimeSearchRequest},
+  types::{BackendRuntimeHealth, EmbeddingHealth, SearchOperationOutput},
+};
 use super::object_storage::ObjectStorageService;
 pub(crate) use super::types;
 pub(super) use super::{
   BackendRuntimeConfig, ConfigSource, InviteQuotaConfig, RuntimeError, RuntimeResult,
-  migrations::{migrate_embedding_tables, migrate_runtime_tables},
+  migrations::{embedding_schema_health, migrate_all_tables},
   napi_error, to_napi_error,
 };
 use crate::llm::{
@@ -45,15 +53,45 @@ pub(super) fn token_hash(token: &str) -> String {
   hex::encode(Sha256::digest(token.as_bytes()))
 }
 
+fn search_operation_output(result: RuntimeResult<serde_json::Value>) -> SearchOperationOutput {
+  match result {
+    Ok(value) => SearchOperationOutput {
+      ok: true,
+      value: Some(value),
+      error_code: None,
+    },
+    Err(error) => SearchOperationOutput {
+      ok: false,
+      value: None,
+      error_code: Some(
+        match error {
+          RuntimeError::SearchWorkspaceDenied => "workspace_denied",
+          RuntimeError::SearchPermissionUnavailable => "permission_unavailable",
+          RuntimeError::SearchProviderUnavailable => "provider_unavailable",
+          RuntimeError::SearchUnsupportedQuery => "unsupported_query",
+          RuntimeError::SearchReplayGap => "provider_unavailable",
+          RuntimeError::InvalidInput(_) | RuntimeError::Json { .. } => "invalid_request",
+          _ => "internal",
+        }
+        .to_string(),
+      ),
+    },
+  }
+}
+
 #[napi_derive::napi]
 pub struct BackendRuntime {
   config_source: ConfigSource,
+  role: ServerRole,
+  script_mode: bool,
   config: Arc<RwLock<Arc<BackendRuntimeConfig>>>,
   config_reload: Mutex<()>,
   pool: Mutex<Option<PgPool>>,
   embedding_health: RwLock<EmbeddingHealth>,
   object_storage: RwLock<Arc<ObjectStorageService>>,
   embedding: Mutex<Option<Arc<embedding::EmbeddingService>>>,
+  embedding_worker: Mutex<Option<embedding::EmbeddingWorker>>,
+  search: Mutex<Option<Arc<SearchRuntime>>>,
   managed_token_providers: Arc<copilot::ManagedTokenProviderCache>,
 }
 
@@ -62,16 +100,21 @@ impl BackendRuntime {
   #[napi(constructor)]
   pub fn new(private_key: Option<String>, config_paths: Option<Vec<String>>) -> Result<Self> {
     let config_source = ConfigSource::new(config_paths);
+    let (role, script_mode) = ServerRole::from_environment().map_err(napi_error)?;
     let config = BackendRuntimeConfig::from_config_source(private_key, &config_source).map_err(to_napi_error)?;
     let object_storage = ObjectStorageService::from_config_source(&config_source).map_err(to_napi_error)?;
     Ok(Self {
       config_source,
+      role,
+      script_mode,
       config: Arc::new(RwLock::new(Arc::new(config))),
       config_reload: Mutex::new(()),
       pool: Mutex::new(None),
       embedding_health: RwLock::new(EmbeddingHealth::disabled("runtime_not_started", None)),
       object_storage: RwLock::new(Arc::new(object_storage)),
       embedding: Mutex::new(None),
+      embedding_worker: Mutex::new(None),
+      search: Mutex::new(None),
       managed_token_providers: Arc::new(Default::default()),
     })
   }
@@ -109,7 +152,30 @@ impl BackendRuntime {
       .write()
       .map_err(|_| RuntimeError::invalid_state("object storage service lock poisoned"))? = Arc::new(object_storage);
 
-    let mut embedding_health = migrate_embedding_tables(&pool).await;
+    let embedding_health = if self.script_mode {
+      EmbeddingHealth::disabled("script_runtime", None)
+    } else {
+      let config = self.config()?;
+      if config.search.enabled {
+        if config.search.provider == "embedded" && !self.role.allows_embedded_search() {
+          return Err(RuntimeError::config(format!(
+            "embedded search is only available for the allinone role (current role: {})",
+            self.role.as_str()
+          )));
+        }
+        let search = Arc::new(SearchRuntime::new(pool.clone(), config.search.clone())?);
+        if self.role.owns_background() {
+          search.initialize().await?;
+        }
+        *self.search.lock().await = Some(search);
+      } else {
+        *self.search.lock().await = None;
+      }
+      embedding_schema_health(&pool).await?
+    };
+    if self.script_mode {
+      *self.search.lock().await = None;
+    }
     if embedding_health.enabled {
       let provider = copilot::BackgroundEmbeddingProvider::new(
         pool.clone(),
@@ -117,18 +183,30 @@ impl BackendRuntime {
         Arc::clone(&self.managed_token_providers),
       );
       let embedding = embedding::EmbeddingService::new(pool.clone(), self.object_storage()?, provider);
-      if std::env::var("NODE_ENV").as_deref() != Ok("test")
-        || std::env::var("AFFINE_EMBEDDING_WORKER").as_deref() == Ok("1")
+      if self.role.owns_background()
+        && (std::env::var("NODE_ENV").as_deref() != Ok("test")
+          || std::env::var("AFFINE_EMBEDDING_WORKER").as_deref() == Ok("1"))
       {
-        embedding.start().await;
+        *self.embedding_worker.lock().await = Some(embedding::EmbeddingWorker::start(Arc::clone(&embedding)));
       }
-      embedding_health.worker_running = embedding.is_running().await;
+      let mut embedding_health = embedding_health;
+      embedding_health.worker_running = self
+        .embedding_worker
+        .lock()
+        .await
+        .as_ref()
+        .is_some_and(embedding::EmbeddingWorker::is_running);
       *self.embedding.lock().await = Some(embedding);
+      *self
+        .embedding_health
+        .write()
+        .map_err(|_| RuntimeError::invalid_state("embedding health lock poisoned"))? = embedding_health;
+    } else {
+      *self
+        .embedding_health
+        .write()
+        .map_err(|_| RuntimeError::invalid_state("embedding health lock poisoned"))? = embedding_health;
     }
-    *self
-      .embedding_health
-      .write()
-      .map_err(|_| RuntimeError::invalid_state("embedding health lock poisoned"))? = embedding_health;
 
     *guard = Some(pool);
     Ok(())
@@ -136,9 +214,11 @@ impl BackendRuntime {
 
   #[napi]
   pub async fn stop(&self) -> Result<()> {
-    if let Some(embedding) = self.embedding.lock().await.take() {
-      embedding.stop().await;
+    self.search.lock().await.take();
+    if let Some(worker) = self.embedding_worker.lock().await.take() {
+      worker.stop().await;
     }
+    self.embedding.lock().await.take();
     let pool = self.pool.lock().await.take();
     if let Some(pool) = pool {
       pool.close().await;
@@ -168,6 +248,26 @@ impl BackendRuntime {
       .await
       .map_err(to_napi_error)?;
     self.update_config(config).map_err(to_napi_error)?;
+    if !self.script_mode {
+      let config = self.config().map_err(to_napi_error)?;
+      if config.search.enabled {
+        if config.search.provider == "embedded" && !self.role.allows_embedded_search() {
+          return Err(napi_error(format!(
+            "embedded search is only available for the allinone role (current role: {})",
+            self.role.as_str()
+          )));
+        }
+        let search = Arc::new(SearchRuntime::new(pool.clone(), config.search.clone()).map_err(to_napi_error)?);
+        if self.role.owns_background() {
+          search.initialize().await.map_err(to_napi_error)?;
+        }
+        *self.search.lock().await = Some(search);
+      } else {
+        *self.search.lock().await = None;
+      }
+    } else {
+      *self.search.lock().await = None;
+    }
     let object_storage = Arc::new(object_storage);
     *self
       .object_storage
@@ -176,17 +276,19 @@ impl BackendRuntime {
     if let Some(embedding) = self.embedding.lock().await.as_ref() {
       embedding.reload_object_storage(object_storage).map_err(to_napi_error)?;
     }
-    let workspace_ids = sqlx::query_scalar::<_, String>("SELECT id FROM workspaces")
-      .fetch_all(&pool)
-      .await
-      .map_err(|error| {
-        to_napi_error(RuntimeError::database(
-          "load workspaces for embedding reconciliation failed",
-          error,
-        ))
-      })?;
-    for workspace_id in workspace_ids {
-      self.reconcile_embedding_workspace(&workspace_id).await?;
+    if self.role.owns_background() {
+      let workspace_ids = sqlx::query_scalar::<_, String>("SELECT id FROM workspaces")
+        .fetch_all(&pool)
+        .await
+        .map_err(|error| {
+          to_napi_error(RuntimeError::database(
+            "load workspaces for embedding reconciliation failed",
+            error,
+          ))
+        })?;
+      for workspace_id in workspace_ids {
+        self.reconcile_embedding_workspace(&workspace_id).await?;
+      }
     }
     Ok(())
   }
@@ -217,7 +319,106 @@ impl BackendRuntime {
   #[napi]
   pub async fn run_migrations(&self) -> Result<()> {
     let pool = self.pool().await?;
-    migrate_runtime_tables(&pool).await.map_err(to_napi_error)
+    let embedding_health = migrate_all_tables(&pool).await.map_err(to_napi_error)?;
+    *self
+      .embedding_health
+      .write()
+      .map_err(|_| napi_error("embedding health lock poisoned"))? = embedding_health;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn search_authorized(
+    &self,
+    actor_user_id: String,
+    workspace_id: String,
+    request: RuntimeSearchRequest,
+  ) -> Result<SearchOperationOutput> {
+    let result = self
+      .search_runtime()
+      .await?
+      .search_authorized(&actor_user_id, &workspace_id, request)
+      .await;
+    Ok(search_operation_output(result))
+  }
+
+  #[napi]
+  pub async fn aggregate_authorized(
+    &self,
+    actor_user_id: String,
+    workspace_id: String,
+    request: RuntimeAggregateRequest,
+  ) -> Result<SearchOperationOutput> {
+    let result = self
+      .search_runtime()
+      .await?
+      .aggregate_authorized(&actor_user_id, &workspace_id, request)
+      .await;
+    Ok(search_operation_output(result))
+  }
+
+  #[napi]
+  pub async fn index_search_document(&self, workspace_id: String, doc_id: String) -> Result<()> {
+    let search = self.search_runtime().await?;
+    let result = if self.role.owns_background() {
+      search.index_document(&workspace_id, &doc_id).await
+    } else {
+      search.project_document_only(&workspace_id, &doc_id).await
+    };
+    result.map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub async fn delete_search_document(&self, workspace_id: String, doc_id: String) -> Result<()> {
+    let search = self.search_runtime().await?;
+    let result = if self.role.owns_background() {
+      search.delete_document(&workspace_id, &doc_id).await
+    } else {
+      search.delete_document_only(&workspace_id, &doc_id).await
+    };
+    result.map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub async fn reconcile_search_workspace(&self, workspace_id: String) -> Result<()> {
+    self.require_background()?;
+    self
+      .search_runtime()
+      .await?
+      .reconcile_workspace(permission::SystemSearchCapability::ReconcileIndex, &workspace_id)
+      .await
+      .map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub async fn delete_search_workspace(&self, workspace_id: String) -> Result<()> {
+    self.require_background()?;
+    self
+      .search_runtime()
+      .await?
+      .delete_workspace(&workspace_id)
+      .await
+      .map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub async fn filter_readable_docs(
+    &self,
+    actor_user_id: String,
+    workspace_id: String,
+    doc_ids: Vec<String>,
+  ) -> Result<Vec<String>> {
+    let authorizer = permission::PermissionAuthorizer::new(self.pool().await?);
+    authorizer
+      .filter_readable_docs(&workspace_id, &actor_user_id, doc_ids)
+      .await
+      .map(|ids| ids.into_iter().collect())
+      .map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub async fn search_status(&self) -> Result<serde_json::Value> {
+    self.search_runtime().await?.status().await.map_err(to_napi_error)
   }
 
   #[napi]
@@ -370,6 +571,7 @@ impl BackendRuntime {
 
   #[napi]
   pub async fn reconcile_embedding_workspaces(&self) -> Result<i64> {
+    self.require_background()?;
     let workspace_ids = sqlx::query_scalar::<_, String>("SELECT id FROM workspaces")
       .fetch_all(&self.pool().await?)
       .await
@@ -405,6 +607,7 @@ impl BackendRuntime {
 
   #[napi]
   pub async fn cleanup_unreferenced_artifacts(&self, limit: i64) -> Result<i64> {
+    self.require_background()?;
     if limit <= 0 {
       return Err(napi_error("artifact cleanup limit must be positive"));
     }
@@ -570,6 +773,27 @@ impl BackendRuntime {
       .as_ref()
       .cloned()
       .ok_or_else(|| RuntimeError::invalid_state("BackendRuntime must be started before using postgres operations"))
+  }
+
+  fn require_background(&self) -> Result<()> {
+    if self.role.owns_background() {
+      Ok(())
+    } else {
+      Err(napi_error(format!(
+        "backend runtime role {} does not own background work",
+        self.role.as_str()
+      )))
+    }
+  }
+
+  async fn search_runtime(&self) -> Result<Arc<SearchRuntime>> {
+    self
+      .search
+      .lock()
+      .await
+      .as_ref()
+      .cloned()
+      .ok_or_else(|| napi_error("search_provider_not_ready"))
   }
 
   async fn reconcile_embedding_workspace(&self, workspace_id: &str) -> Result<()> {

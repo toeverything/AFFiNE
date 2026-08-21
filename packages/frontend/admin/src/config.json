@@ -95,6 +95,10 @@
       "type": "Boolean",
       "desc": "Whether request abuse source facts should trust Cloudflare headers from the origin edge."
     },
+    "signInRateLimit": {
+      "type": "Object",
+      "desc": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds."
+    },
     "inviteQuotaShadowMode": {
       "type": "Boolean",
       "desc": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions."
@@ -298,13 +302,6 @@
       "desc": "Whether allow guest users to create demo workspaces."
     }
   },
-  "docService": {
-    "endpoint": {
-      "type": "String",
-      "desc": "The endpoint of the doc service.",
-      "env": "DOC_SERVICE_ENDPOINT"
-    }
-  },
   "telemetry": {
     "allowedOrigin": {
       "type": "Array",
@@ -406,12 +403,12 @@
     },
     "provider.type": {
       "type": "String",
-      "desc": "Indexer search service provider name",
+      "desc": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.",
       "env": "AFFINE_INDEXER_SEARCH_PROVIDER"
     },
     "provider.endpoint": {
       "type": "String",
-      "desc": "Indexer search service endpoint",
+      "desc": "Remote indexer endpoint. Not used by the embedded provider.",
       "env": "AFFINE_INDEXER_SEARCH_ENDPOINT"
     },
     "provider.apiKey": {

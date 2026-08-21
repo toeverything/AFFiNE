@@ -173,6 +173,19 @@ const AdminPanel = ({
                     key={`${module}-${version}`}
                   >
                     {fields.map(field => {
+                      const fieldKey =
+                        typeof field === 'string' ? field : String(field.key);
+                      const effectiveIndexerProvider = sourceConfig?.enabled
+                        ? sourceConfig?.provider?.type
+                        : 'embedded';
+                      if (
+                        module === 'indexer' &&
+                        effectiveIndexerProvider === 'embedded' &&
+                        fieldKey.startsWith('provider.') &&
+                        fieldKey !== 'provider.type'
+                      ) {
+                        return null;
+                      }
                       let props: ConfigInputProps;
                       if (typeof field === 'string') {
                         const descriptor =
@@ -194,11 +207,26 @@ const AdminPanel = ({
                           type: field.type ?? descriptor.type,
                           // @ts-expect-error for enum type
                           options: field.options,
-                          defaultValue: get(
-                            sourceConfig,
-                            field.key + (field.sub ? '.' + field.sub : '')
-                          ),
-                          onChange: onUpdate,
+                          defaultValue:
+                            module === 'indexer' &&
+                            field.key === 'provider.type'
+                              ? effectiveIndexerProvider
+                              : get(
+                                  sourceConfig,
+                                  field.key + (field.sub ? '.' + field.sub : '')
+                                ),
+                          onChange:
+                            module === 'indexer' &&
+                            field.key === 'provider.type'
+                              ? (_path, value) => {
+                                  if (value === 'embedded') {
+                                    onUpdate('indexer/enabled', false);
+                                  } else {
+                                    onUpdate('indexer/enabled', true);
+                                    onUpdate('indexer/provider.type', value);
+                                  }
+                                }
+                              : onUpdate,
                         };
                       }
 

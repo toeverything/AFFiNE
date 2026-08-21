@@ -2,6 +2,8 @@ import { Global, Module } from '@nestjs/common';
 
 import {
   BackendRuntimeEmbeddingJob,
+  BackendRuntimeEmbeddingProducer,
+  BackendRuntimeEmbeddingService,
   BackendRuntimeHousekeepingJob,
 } from './job';
 import {
@@ -17,14 +19,30 @@ import {
       useValue: undefined,
     },
     BackendRuntimeProvider,
-    BackendRuntimeEmbeddingJob,
-    BackendRuntimeHousekeepingJob,
+    BackendRuntimeEmbeddingService,
   ],
-  exports: [BackendRuntimeProvider, BackendRuntimeEmbeddingJob],
+  exports: [BackendRuntimeProvider, BackendRuntimeEmbeddingService],
 })
 export class BackendRuntimeModule {}
 
-export { BackendRuntimeEmbeddingJob } from './job';
+@Module({
+  imports: [BackendRuntimeModule],
+  providers: [BackendRuntimeEmbeddingProducer],
+})
+export class BackendRuntimeProducerModule {}
+
+@Module({
+  imports: [BackendRuntimeModule],
+  providers: [BackendRuntimeEmbeddingJob, BackendRuntimeHousekeepingJob],
+})
+export class BackendRuntimeWorkerModule {}
+
+export {
+  BackendRuntimeEmbeddingJob,
+  BackendRuntimeEmbeddingProducer,
+  BackendRuntimeEmbeddingService,
+  BackendRuntimeHousekeepingJob,
+} from './job';
 export {
   BACKEND_RUNTIME_CONFIG_PATHS,
   BackendRuntimeProvider,

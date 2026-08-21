@@ -20,6 +20,11 @@ export interface AuthConfig {
   requireEmailVerification: boolean;
   newAccountShareActionDelay: number;
   trustedCloudflareHeaders: boolean;
+  signInRateLimit: ConfigItem<{
+    ttl: number;
+    ipLimit: number;
+    emailLimit: number;
+  }>;
   inviteQuotaShadowMode: boolean;
   inviteQuotaFailOpenOnRuntimeError: boolean;
   passwordRequirements: ConfigItem<{
@@ -60,6 +65,21 @@ defineModuleConfig('auth', {
     desc: 'Whether request abuse source facts should trust Cloudflare headers from the origin edge.',
     default: false,
     shape: z.boolean(),
+  },
+  signInRateLimit: {
+    desc: 'Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds.',
+    default: {
+      ttl: 60_000,
+      ipLimit: 20,
+      emailLimit: 5,
+    },
+    shape: z
+      .object({
+        ttl: z.number().int().positive(),
+        ipLimit: z.number().int().positive(),
+        emailLimit: z.number().int().positive(),
+      })
+      .strict(),
   },
   inviteQuotaShadowMode: {
     desc: 'Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions.',

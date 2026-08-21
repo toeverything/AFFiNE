@@ -44,7 +44,6 @@ import {
   type DotToUnderline,
   mapPermissionsToGraphqlPermissions,
   PermissionAccess,
-  PermissionService,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
 import { canUserExecuteLimitedActions } from '../abuse';
@@ -300,7 +299,6 @@ export class WorkspaceDocResolver {
      */
     private readonly prisma: PrismaClient,
     private readonly ac: PermissionAccess,
-    private readonly permission: PermissionService,
     private readonly models: Models,
     private readonly cache: Cache,
     private readonly event: EventBus,
@@ -409,12 +407,14 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('pagination', PaginationInput.decode) pagination: PaginationInput
   ): Promise<PaginatedDocType> {
-    const predicate = this.permission.docReadableSqlPredicate({
-      userId: me.id,
-      workspaceId: workspace.id,
-      action: 'Doc.Read',
-      docIdColumn: Prisma.raw('"workspace_pages"."page_id"'),
-    });
+    const readable = await this.runtime.filterReadableDocs(
+      me.id,
+      workspace.id,
+      await this.models.doc.listWorkspaceDocIds(workspace.id)
+    );
+    const predicate = readable.length
+      ? Prisma.sql`"workspace_pages"."page_id" IN (${Prisma.join(readable)})`
+      : Prisma.sql`FALSE`;
     const [count, rows] = await this.models.doc.paginateDocInfoByUpdatedAt(
       workspace.id,
       pagination,

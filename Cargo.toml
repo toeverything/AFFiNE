@@ -54,7 +54,7 @@ resolver = "3"
   llm_runtime = { version = "0.2", default-features = false }
   lru = "0.16"
   matroska = "0.30"
-  memory-indexer = "0.3.1"
+  memory-indexer = "0.4.0"
   mimalloc = "0.1"
   mp4parse = "0.17"
   nanoid = "0.4"

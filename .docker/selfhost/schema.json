@@ -209,6 +209,15 @@
           "description": "Whether request abuse source facts should trust Cloudflare headers from the origin edge.\n@default false",
           "default": false
         },
+        "signInRateLimit": {
+          "type": "object",
+          "description": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds.\n@default {\"ttl\":60000,\"ipLimit\":20,\"emailLimit\":5}",
+          "default": {
+            "ttl": 60000,
+            "ipLimit": 20,
+            "emailLimit": 5
+          }
+        },
         "inviteQuotaShadowMode": {
           "type": "boolean",
           "description": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions.\n@default false",
@@ -971,17 +980,6 @@
         }
       }
     },
-    "docService": {
-      "type": "object",
-      "description": "Configuration for docService module",
-      "properties": {
-        "endpoint": {
-          "type": "string",
-          "description": "The endpoint of the doc service.\n@default \"\"\n@environment `DOC_SERVICE_ENDPOINT`",
-          "default": ""
-        }
-      }
-    },
     "telemetry": {
       "type": "object",
       "description": "Configuration for telemetry module",
@@ -1495,13 +1493,13 @@
         },
         "provider.type": {
           "type": "string",
-          "description": "Indexer search service provider name\n@default \"manticoresearch\"\n@environment `AFFINE_INDEXER_SEARCH_PROVIDER`",
-          "default": "manticoresearch"
+          "description": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.\n@default \"embedded\"\n@environment `AFFINE_INDEXER_SEARCH_PROVIDER`",
+          "default": "embedded"
         },
         "provider.endpoint": {
           "type": "string",
-          "description": "Indexer search service endpoint\n@default \"http://localhost:9308\"\n@environment `AFFINE_INDEXER_SEARCH_ENDPOINT`",
-          "default": "http://localhost:9308"
+          "description": "Remote indexer endpoint. Not used by the embedded provider.\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_ENDPOINT`",
+          "default": ""
         },
         "provider.apiKey": {
           "type": "string",

@@ -11,7 +11,11 @@ import { GraphQLJSONObject } from 'graphql-scalars';
 
 import { PublicUserType } from '../../core/user';
 import { PublicUser } from '../../models';
-import { SearchTable } from './tables';
+
+export enum SearchTable {
+  block = 'block',
+  doc = 'doc',
+}
 
 export enum SearchQueryType {
   match = 'match',

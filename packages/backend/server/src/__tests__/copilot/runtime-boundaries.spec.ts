@@ -10,6 +10,7 @@ import {
   type Config,
   type EventBus,
   type JobQueue,
+  SearchProviderNotFound,
 } from '../../base';
 import { ServerFeature, type ServerService } from '../../core';
 import type { DocReader } from '../../core/doc';
@@ -417,7 +418,6 @@ test('document tools enforce the user-selected hard scope', async t => {
     ) => candidates,
   };
   const hybrid = new DocumentRetrievalService(
-    { indexer: { enabled: true } } as Config,
     readableAc,
     lexicalIndexer,
     vectorSearch,
@@ -432,7 +432,6 @@ test('document tools enforce the user-selected hard scope', async t => {
   t.true(hybridResult.hits[0].score > 1 / 61);
 
   const lexicalOnly = new DocumentRetrievalService(
-    { indexer: { enabled: true } } as Config,
     readableAc,
     lexicalIndexer,
     { ...vectorSearch, canEmbedding: false },
@@ -448,9 +447,12 @@ test('document tools enforce the user-selected hard scope', async t => {
   t.is(lexicalResult.degradedReason, 'VECTOR_UNAVAILABLE');
 
   const vectorOnly = new DocumentRetrievalService(
-    { indexer: { enabled: false } } as Config,
     readableAc,
-    lexicalIndexer,
+    {
+      searchDocsByKeyword: async () => {
+        throw new SearchProviderNotFound();
+      },
+    } as unknown as IndexerService,
     vectorSearch,
     documentModels
   );
