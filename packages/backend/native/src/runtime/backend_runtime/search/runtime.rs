@@ -79,7 +79,6 @@ impl SearchRuntime {
     }
     generation::activate(&self.pool, &active).await?;
     *self.generation.write().await = Some(active);
-    self.refresh_all_permission_cursors().await?;
     Ok(())
   }
 
@@ -322,7 +321,7 @@ impl SearchRuntime {
       .await
       .map_err(|error| RuntimeError::database("load search permission cursor", error))?
     };
-    let applied = applied.unwrap_or(-1);
+    let applied = applied.unwrap_or_default();
     if applied >= revision {
       return Ok(());
     }
@@ -330,13 +329,11 @@ impl SearchRuntime {
   }
 
   async fn refresh_permission_cursor(&self, workspace_id: &str) -> RuntimeResult<()> {
-    let revision: i64 = sqlx::query_scalar(
-      "SELECT coalesce(max(revision),0)::bigint FROM workspace_permission_changes WHERE workspace_id=$1",
-    )
-    .bind(workspace_id)
-    .fetch_one(&self.pool)
-    .await
-    .map_err(|error| RuntimeError::database("load search permission revision", error))?;
+    let revision: i64 = sqlx::query_scalar("SELECT revision FROM workspace_permission_revisions WHERE workspace_id=$1")
+      .bind(workspace_id)
+      .fetch_one(&self.pool)
+      .await
+      .map_err(|error| RuntimeError::database("load search permission revision", error))?;
     let generation = self.active_generation().await?;
     if self.remote.is_none() {
       let mut cursors = self.embedded_permission_cursors.write().await;
@@ -354,17 +351,6 @@ impl SearchRuntime {
       .execute(&self.pool)
       .await
       .map_err(|error| RuntimeError::database("advance search permission cursor", error))?;
-    }
-    Ok(())
-  }
-
-  async fn refresh_all_permission_cursors(&self) -> RuntimeResult<()> {
-    let workspace_ids: Vec<String> = sqlx::query_scalar("SELECT id FROM workspaces")
-      .fetch_all(&self.pool)
-      .await
-      .map_err(|error| RuntimeError::database("load search permission workspaces", error))?;
-    for workspace_id in workspace_ids {
-      self.refresh_permission_cursor(&workspace_id).await?;
     }
     Ok(())
   }
