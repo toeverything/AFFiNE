@@ -11,7 +11,7 @@ internal class AffineInputConnection(
     private val dispatchDeleteBackward: () -> Unit,
     private val dispatchDeleteForward: () -> Unit,
 ) : InputConnectionWrapper(target, true) {
-    private var handledClearRequestGeneration = 0L
+    private var handledClearRequestGeneration = state.clearRequestGeneration
     private var composingText = ""
     private var isComposingTextActive = false
     private var isConsumingDeleteKeyEvent = false
@@ -36,6 +36,8 @@ internal class AffineInputConnection(
             isComposingTextActive = nextComposingText.isNotEmpty()
         }
 
+        // Keep the native composing region untouched so IME autocorrect replay stays in the
+        // explicit replay state machine instead of being applied twice by the platform.
         return true
     }
 

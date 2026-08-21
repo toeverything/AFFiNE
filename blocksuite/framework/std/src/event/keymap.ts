@@ -142,6 +142,7 @@ export function androidBindKeymapPatch(
       const keyboardEvent = new KeyboardEvent('keydown', {
         key: bindingName,
         code: bindingName,
+        cancelable: true,
       });
       Object.defineProperty(keyboardEvent, 'isComposing', {
         configurable: true,

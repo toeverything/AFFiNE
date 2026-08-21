@@ -121,7 +121,10 @@ describe('bindKeymap', () => {
 
 describe('androidBindKeymapPatch', () => {
   const beforeInputCtx = (inputType: string) => {
-    const event = new InputEvent('beforeinput', { inputType });
+    const event = new InputEvent('beforeinput', {
+      inputType,
+      cancelable: true,
+    });
     return { ctx: UIEventStateContext.from(new UIEventState(event)), event };
   };
 
@@ -148,6 +151,18 @@ describe('androidBindKeymapPatch', () => {
     expect(preventDefault).toHaveBeenCalledOnce();
     expect(ctx.get('keyboardState').raw.key).toBe('Enter');
     expect(ctx.get('keyboardState').composing).toBe(false);
+  });
+
+  test('propagates preventDefault when the binding returns false', () => {
+    const backspace = vi.fn((ctx: UIEventStateContext) => {
+      ctx.get('keyboardState').raw.preventDefault();
+      return false;
+    });
+    const handler = androidBindKeymapPatch({ Backspace: backspace });
+    const { ctx, event } = beforeInputCtx('deleteContentBackward');
+
+    expect(handler(ctx)).toBe(false);
+    expect(event.defaultPrevented).toBe(true);
   });
 
   test('does nothing for insertParagraph without an Enter binding', () => {

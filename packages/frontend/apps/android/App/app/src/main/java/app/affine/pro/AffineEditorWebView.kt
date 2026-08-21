@@ -2,12 +2,10 @@ package app.affine.pro
 
 import android.content.Context
 import android.util.AttributeSet
-import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
 import com.getcapacitor.CapacitorWebView
-import org.json.JSONObject
 
 class AffineEditorWebView(
     context: Context,
@@ -22,7 +20,7 @@ class AffineEditorWebView(
         isTrustedPage = { this.isTrustedPage },
         clearComposingState = { imeState.nextClearRequestGeneration() },
         requestRestartInput = ::requestRestartInput,
-        setEditorFocused = { focused -> imeState.editorFocused = focused },
+        onEditorFocusedChanged = { focused -> imeState.editorFocused = focused },
     )
 
     fun updateAndroidIMEBridge(url: String?, expectedOrigin: String?) {
@@ -56,19 +54,6 @@ class AffineEditorWebView(
                 dispatchAndroidEditorInput(this, AndroidImeInputType.FORWARD_DELETE)
             },
         )
-    }
-
-    @Suppress("DEPRECATION")
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.action == KeyEvent.ACTION_MULTIPLE) {
-            val characters = JSONObject.quote(event.characters.orEmpty())
-            evaluateJavascript(
-                "document.activeElement.value = document.activeElement.value + $characters;",
-                null,
-            )
-            return false
-        }
-        return super.dispatchKeyEvent(event)
     }
 
     private fun requestRestartInput(delayMs: Long) {

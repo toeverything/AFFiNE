@@ -108,14 +108,8 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
 
     private fun configureAndroidIMEBridge() {
         val trustedOrigin = normalizeAffineOrigin(bridge.localUrl)
+        bridge.setWebViewClient(AffineWebViewClient(bridge, trustedOrigin))
         bridge.addWebViewListener(object : WebViewListener() {
-            override fun onPageStarted(webView: WebView?) {
-                (webView as? AffineEditorWebView)?.updateAndroidIMEBridge(
-                    webView.url,
-                    trustedOrigin,
-                )
-            }
-
             override fun onPageCommitVisible(view: WebView?, url: String?) {
                 (view as? AffineEditorWebView)?.updateAndroidIMEBridge(url, trustedOrigin)
             }

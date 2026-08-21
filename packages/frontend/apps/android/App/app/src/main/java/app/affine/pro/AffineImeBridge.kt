@@ -35,7 +35,7 @@ internal class AffineImeBridge(
     private val isTrustedPage: () -> Boolean,
     private val clearComposingState: () -> Unit,
     private val requestRestartInput: (Long) -> Unit,
-    private val setEditorFocused: (Boolean) -> Unit,
+    private val onEditorFocusedChanged: (Boolean) -> Unit,
 ) {
     @JavascriptInterface
     fun getProtocolVersion(): Int {
@@ -58,7 +58,7 @@ internal class AffineImeBridge(
     @JavascriptInterface
     fun setEditorFocused(focused: Boolean) {
         if (isTrustedPage()) {
-            setEditorFocused(focused)
+            onEditorFocusedChanged(focused)
         }
     }
 }
