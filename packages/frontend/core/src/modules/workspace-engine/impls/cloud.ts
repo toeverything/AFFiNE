@@ -222,10 +222,12 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     });
 
     try {
-      docCollection.meta.initialize();
-
       // apply initial state
       await initial(docCollection, blobStorage, docStorage);
+
+      if (!docCollection.meta.docs) {
+        docCollection.meta.initialize();
+      }
 
       // save workspace to local storage, should be vary fast
       for (const subdocs of docList) {
