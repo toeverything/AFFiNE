@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -39,7 +38,6 @@ import {
 import type { GraphqlContext } from '../../../base/graphql';
 import { Models, type WorkspaceUserCompat } from '../../../models';
 import { CurrentUser, Public } from '../../auth';
-import { BackendRuntimeProvider } from '../../backend-runtime';
 import { containsUrlOrDomain } from '../../content-policy';
 import {
   PermissionAccess,
@@ -49,11 +47,8 @@ import {
 import { QuotaService } from '../../quota';
 import { UserType } from '../../user';
 import { validators } from '../../utils/validators';
-import {
-  canUserExecuteLimitedActions,
-  getAbuseRequestSource,
-  InviteQuotaAssertService,
-} from '../abuse';
+import { getAbuseRequestSource, InviteQuotaAssertService } from '../abuse';
+import { WorkspaceActionAdmissionService } from '../action-admission';
 import { WorkspaceService } from '../service';
 import {
   InvitationType,
@@ -92,8 +87,6 @@ function aggregateTargetDomains(candidates: InviteCandidate[]) {
  */
 @Resolver(() => WorkspaceType)
 export class WorkspaceMemberResolver {
-  private readonly logger = new Logger(WorkspaceMemberResolver.name);
-
   constructor(
     private readonly cache: Cache,
     private readonly event: EventBus,
@@ -106,53 +99,8 @@ export class WorkspaceMemberResolver {
     private readonly quota: QuotaService,
     private readonly config: Config,
     private readonly inviteQuota: InviteQuotaAssertService,
-    private readonly runtime: BackendRuntimeProvider
+    private readonly actionAdmission: WorkspaceActionAdmissionService
   ) {}
-
-  private async assertCanInviteOrShare(
-    userId: string,
-    context: {
-      workspaceId: string;
-      action: 'createInviteLink';
-    }
-  ) {
-    if (await this.runtime.isInviteAbuseUserQuarantinedOrBanned(userId)) {
-      this.logger.warn('Share action blocked for quarantined actor', {
-        userId,
-        ...context,
-      });
-      throw new ActionForbidden(
-        'This feature is temporarily unavailable for you.'
-      );
-    }
-    if (
-      await this.runtime.isInviteAbuseWorkspaceQuarantined(context.workspaceId)
-    ) {
-      this.logger.warn('Share action blocked for quarantined workspace', {
-        userId,
-        ...context,
-      });
-      throw new ActionForbidden(
-        'This feature is temporarily unavailable for you.'
-      );
-    }
-    // Member invites are owned by native quota; this guard stays for invite links until share/link actions migrate.
-    const user = await this.models.user.get(userId);
-    const newAccountAgeMs = this.config.auth.newAccountShareActionDelay * 1000;
-    if (!user || !canUserExecuteLimitedActions(user, newAccountAgeMs)) {
-      this.logger.warn('Share action blocked for new account', {
-        userId,
-        email: user?.email,
-        createdAt: user?.createdAt,
-        accountAgeMs: user ? Date.now() - user.createdAt.getTime() : null,
-        minimumAccountAgeMs: newAccountAgeMs,
-        ...context,
-      });
-      throw new ActionForbidden(
-        'This feature is temporarily unavailable for you.'
-      );
-    }
-  }
 
   private async assertWorkspaceNameCanInvite(workspaceId: string) {
     const workspace = await this.workspaceService.getWorkspaceInfo(workspaceId);
@@ -286,6 +234,11 @@ export class WorkspaceMemberResolver {
     if (candidates.length === 0) {
       return results;
     }
+
+    await this.actionAdmission.assertAllowed(me.id, {
+      workspaceId,
+      action: 'inviteMember',
+    });
 
     // lock to prevent concurrent invite
     const lockFlag = `invite:${workspaceId}`;
@@ -452,7 +405,7 @@ export class WorkspaceMemberResolver {
       .user(user.id)
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
-    await this.assertCanInviteOrShare(user.id, {
+    await this.actionAdmission.assertAllowed(user.id, {
       workspaceId,
       action: 'createInviteLink',
     });

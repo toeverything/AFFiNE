@@ -163,6 +163,39 @@ export function probeChecks(models: ModelDeclaration[], includeImage: boolean) {
     );
 }
 
+export function retainVerifiedCapabilities(
+  models: ModelDeclaration[],
+  probeModels: Array<{
+    modelId: string;
+    checks: Array<{ operation: string; status: { kind: string } }>;
+  }>
+) {
+  return models.map(model => {
+    const probe = probeModels.find(item => item.modelId === model.modelId);
+    if (!probe) return model;
+    const failedOperations = new Set(
+      probe.checks
+        .filter(check => check.status.kind !== 'verified')
+        .map(check => check.operation)
+    );
+    const selectedUseCases = modelUseCases(model);
+    const verifiedUseCases = selectedUseCases.filter(
+      useCase =>
+        !failedOperations.has(useCase === 'actions' ? 'tool_calling' : useCase)
+    );
+    const capabilities =
+      verifiedUseCases.length === 0 ||
+      verifiedUseCases.length === selectedUseCases.length
+        ? model.capabilities
+        : verifiedUseCases.map(capabilityForUseCase);
+    return {
+      ...model,
+      enabled: verifiedUseCases.length > 0 && model.enabled,
+      capabilities,
+    };
+  });
+}
+
 export function catalogModels(settings: ByokSettings, provider: ByokProvider) {
   return (
     settings.catalog.providers.find(item => item.provider === provider)

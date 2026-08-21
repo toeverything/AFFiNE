@@ -39,14 +39,6 @@ declare global {
   }
 }
 
-export function canUserExecuteLimitedActions(
-  user: { createdAt: Date },
-  minimumAccountAgeMs: number
-) {
-  if (minimumAccountAgeMs <= 0) return true;
-  return Date.now() - user.createdAt.getTime() >= minimumAccountAgeMs;
-}
-
 function parseAsn(value: string | undefined) {
   if (!value) {
     return;

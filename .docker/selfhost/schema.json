@@ -199,9 +199,9 @@
           "description": "Whether require email verification before accessing restricted resources(not implemented).\n@default true",
           "default": true
         },
-        "newAccountShareActionDelay": {
+        "newAccountActionDelay": {
           "type": "number",
-          "description": "Minimum account age in seconds before new accounts can invite members or create share links.\n@default 86400",
+          "description": "Minimum account age in seconds before new accounts can invite members, create invite links, or publish documents. Set to 0 to disable.\n@default 86400",
           "default": 86400
         },
         "trustedCloudflareHeaders": {

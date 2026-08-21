@@ -108,9 +108,6 @@ fn base_invite_limits(
   let mut per_day = 15;
   let mut per_week = 30;
 
-  if account_age < Duration::hours(24) {
-    return (0, 0, 0, 0);
-  }
   if !actor.email_verified {
     single = 1;
     per_hour = 1;
@@ -467,7 +464,7 @@ mod tests {
   }
 
   #[test]
-  fn seat_based_weekly_limit_binds_paid_team_and_high_risk_domain() {
+  fn invite_scopes_apply_plan_ceiling_domain_risk_and_graduated_limits() {
     let now = Utc.with_ymd_and_hms(2026, 7, 6, 0, 0, 0).single().unwrap();
     let input = RuntimeWorkspaceInviteQuotaInput {
       actor_user_id: "u1".to_string(),
@@ -500,6 +497,18 @@ mod tests {
       .find(|scope| scope.scope_key == "invite:quota_subject_domain:workspace:w1:qq.com")
       .unwrap();
     assert_eq!(high_risk.limit, 5);
+
+    let fresh_actor_scopes = build_invite_scopes(
+      &input,
+      &user(now - Duration::hours(1)),
+      &workspace(now - Duration::hours(1)),
+      &quota("paid_team", 10),
+      &InviteActivityFacts::default(),
+      &invite_config(),
+      now,
+    )
+    .unwrap();
+    assert_eq!(fresh_actor_scopes[0].limit, 3);
   }
 
   #[test]

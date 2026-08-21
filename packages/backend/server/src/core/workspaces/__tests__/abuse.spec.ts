@@ -15,11 +15,13 @@ import { Mockers } from '../../../__tests__/mocks';
 import { Config } from '../../../base';
 import { ActionForbidden, TooManyRequest } from '../../../base/error';
 import { Models, WorkspaceRole } from '../../../models';
+import { EntitlementService } from '../../entitlement';
 import {
   getAbuseRequestSource,
   InviteAbuseDispositionService,
   InviteQuotaAssertService,
 } from '../abuse';
+import { WorkspaceActionAdmissionService } from '../action-admission';
 
 let app: TestingApp;
 const quota = {
@@ -345,8 +347,8 @@ test('workspace quarantine blocks invite link creation', async t => {
       updated_at = now()
   `;
 
-  const previousDelay = config.auth.newAccountShareActionDelay;
-  config.auth.newAccountShareActionDelay = 0;
+  const previousDelay = config.auth.newAccountActionDelay;
+  config.auth.newAccountActionDelay = 0;
   try {
     await app.login(owner);
     await t.throwsAsync(
@@ -359,32 +361,80 @@ test('workspace quarantine blocks invite link creation', async t => {
       })
     );
   } finally {
-    config.auth.newAccountShareActionDelay = previousDelay;
+    config.auth.newAccountActionDelay = previousDelay;
   }
 });
 
-test('domain workspace name blocks invite link creation', async t => {
+test('workspace action admission applies exemptions before content policy', async t => {
   const config = app.get(Config);
+  const db = app.get(PrismaClient);
+  const actionAdmission = app.get(WorkspaceActionAdmissionService);
   const owner = await app.create(Mockers.User);
+  await db.user.update({
+    where: { id: owner.id },
+    data: { createdAt: new Date() },
+  });
   const workspace = await app.create(Mockers.Workspace, {
     owner,
     name: 'Join example.com',
   });
 
-  const previousDelay = config.auth.newAccountShareActionDelay;
-  config.auth.newAccountShareActionDelay = 0;
+  await t.throwsAsync(
+    actionAdmission.assertAllowed(owner.id, {
+      workspaceId: workspace.id,
+      action: 'inviteMember',
+    }),
+    { instanceOf: ActionForbidden }
+  );
+
+  const previousDeploymentType = globalThis.env.DEPLOYMENT_TYPE;
+  // @ts-expect-error test mutates env singleton for deployment-specific admission semantics
+  globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
   try {
-    await app.login(owner);
-    await t.throwsAsync(
-      app.gql({
-        query: createInviteLinkMutation,
-        variables: {
-          workspaceId: workspace.id,
-          expireTime: WorkspaceInviteLinkExpireTime.OneDay,
-        },
+    await t.notThrowsAsync(
+      actionAdmission.assertAllowed(owner.id, {
+        workspaceId: workspace.id,
+        action: 'inviteMember',
       })
     );
   } finally {
-    config.auth.newAccountShareActionDelay = previousDelay;
+    // @ts-expect-error test restores env singleton
+    globalThis.env.DEPLOYMENT_TYPE = previousDeploymentType;
   }
+
+  const previousDelay = config.auth.newAccountActionDelay;
+  config.auth.newAccountActionDelay = 0;
+  try {
+    await t.notThrowsAsync(
+      actionAdmission.assertAllowed(owner.id, {
+        workspaceId: workspace.id,
+        action: 'inviteMember',
+      })
+    );
+  } finally {
+    config.auth.newAccountActionDelay = previousDelay;
+  }
+
+  await app.get(EntitlementService).upsertAdminGrant({
+    targetType: 'user',
+    targetId: owner.id,
+    plan: 'pro',
+  });
+  await t.notThrowsAsync(
+    actionAdmission.assertAllowed(owner.id, {
+      workspaceId: workspace.id,
+      action: 'inviteMember',
+    })
+  );
+
+  await app.login(owner);
+  await t.throwsAsync(
+    app.gql({
+      query: createInviteLinkMutation,
+      variables: {
+        workspaceId: workspace.id,
+        expireTime: WorkspaceInviteLinkExpireTime.OneDay,
+      },
+    })
+  );
 });

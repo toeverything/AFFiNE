@@ -6,10 +6,10 @@ use llm_adapter::{
     AttachmentKind, AttachmentSource, ModelFeature, ModelInput, ModelOutput, ModelRequirements, declared_model_matches,
   },
   core::{
-    CoreContent, CoreMessage, CoreRequest, CoreRole, CoreToolDefinition, EmbeddingRequest, ImageOptions,
-    ImageProviderOptions, ImageRequest, RerankCandidate, RerankRequest, StructuredRequest,
+    CoreContent, CoreMessage, CoreRequest, CoreRole, CoreToolChoice, CoreToolDefinition, EmbeddingRequest,
+    ImageOptions, ImageProviderOptions, ImageRequest, RerankCandidate, RerankRequest, StructuredRequest,
   },
-  router::{ExecutablePreparedRoute, ExecutableRequest, dispatch_prepared_route},
+  router::{ExecutablePreparedRoute, ExecutableRequest, ExecutableResponse, dispatch_prepared_route},
   target::{
     BackendCredential, BackendEndpoint, BackendOperation, BackendTargetInput, EgressPolicy, compile_backend_target,
   },
@@ -30,9 +30,11 @@ pub(super) async fn execute_probe(
   checks: Vec<ByokProbeCheckInput>,
 ) -> RuntimeResult<ByokProbeResultOutput> {
   let tested_at_ms = chrono::Utc::now().timestamp_millis();
-  let mut requested = HashSet::new();
+  let mut requested = Vec::new();
+  let mut requested_set = HashSet::new();
   for check in checks {
-    if !requested.insert((check.model_id.clone(), check.operation.clone())) {
+    let key = (check.model_id.clone(), check.operation.clone());
+    if !requested_set.insert(key.clone()) {
       return Err(RuntimeError::invalid_input("duplicate BYOK probe check"));
     }
     if !matches!(
@@ -41,6 +43,7 @@ pub(super) async fn execute_probe(
     ) {
       return Err(RuntimeError::invalid_input("unknown BYOK probe operation"));
     }
+    requested.push(key);
   }
 
   let mut models = Vec::new();
@@ -160,7 +163,40 @@ fn dispatch_check(
     Err(_) => return failed(checked_at, "invalid_probe_request"),
   };
   match dispatch_prepared_route(&DefaultHttpClient::default(), &route) {
-    Ok(_) => verified(checked_at),
+    Ok(ExecutableResponse::Chat(response)) => {
+      let valid = if operation == "tool_calling" {
+        response
+          .message
+          .content
+          .iter()
+          .any(|content| matches!(content, CoreContent::ToolCall { name, .. } if name == "byok_probe"))
+      } else {
+        response
+          .message
+          .content
+          .iter()
+          .any(|content| matches!(content, CoreContent::Text { text } if !text.trim().is_empty()))
+      };
+      if valid {
+        verified(checked_at)
+      } else {
+        failed(checked_at, "invalid_response")
+      }
+    }
+    Ok(ExecutableResponse::Structured(response)) => {
+      let valid = response.output_json.as_ref().is_some_and(|output| {
+        let ExecutableRequest::Structured(request) = &route.request else {
+          return false;
+        };
+        llm_adapter::schema::validate_json_schema(&request.schema, output).is_ok()
+      });
+      if valid {
+        verified(checked_at)
+      } else {
+        failed(checked_at, "invalid_response")
+      }
+    }
+    Ok(_) => failed(checked_at, "invalid_response"),
     Err(error) => failed(checked_at, backend_error_kind(&error)),
   }
 }
@@ -169,7 +205,11 @@ fn probe_request_for_operation(operation: &str) -> ExecutableRequest {
   let message = CoreMessage {
     role: CoreRole::User,
     content: vec![CoreContent::Text {
-      text: "Reply with OK.".to_string(),
+      text: match operation {
+        "tool_calling" => "Call the byok_probe tool.".to_string(),
+        "structured" => "Return exactly {\"ok\":true}.".to_string(),
+        _ => "Reply with OK.".to_string(),
+      },
     }],
   };
   match operation {
@@ -177,8 +217,8 @@ fn probe_request_for_operation(operation: &str) -> ExecutableRequest {
       model: String::new(),
       messages: vec![message],
       stream: false,
-      max_tokens: Some(8),
-      temperature: Some(0.0),
+      max_tokens: Some(64),
+      temperature: None,
       tools: if operation == "tool_calling" {
         vec![CoreToolDefinition {
           name: "byok_probe".to_string(),
@@ -188,7 +228,9 @@ fn probe_request_for_operation(operation: &str) -> ExecutableRequest {
       } else {
         vec![]
       },
-      tool_choice: None,
+      tool_choice: (operation == "tool_calling").then_some(CoreToolChoice::Specific {
+        name: "byok_probe".to_string(),
+      }),
       include: None,
       reasoning: None,
       response_schema: None,
@@ -202,8 +244,8 @@ fn probe_request_for_operation(operation: &str) -> ExecutableRequest {
         "required": ["ok"],
         "additionalProperties": false
       }),
-      max_tokens: Some(16),
-      temperature: Some(0.0),
+      max_tokens: Some(128),
+      temperature: None,
       reasoning: None,
       strict: Some(true),
       response_mime_type: Some("application/json".to_string()),
@@ -426,7 +468,22 @@ mod tests {
         let mut stream = stream.unwrap();
         let request = read_request(&mut stream);
         let responses = request.starts_with("POST /v1/responses ");
-        let body = if responses {
+        let tool_calling = request.contains("byok_probe");
+        let body = if responses && tool_calling {
+          json!({
+            "id": "resp_smoke",
+            "model": "smoke-model",
+            "status": "completed",
+            "output": [{
+              "type": "function_call",
+              "id": "fc_smoke",
+              "call_id": "call_smoke",
+              "name": "byok_probe",
+              "arguments": "{}"
+            }],
+            "usage": { "input_tokens": 1, "output_tokens": 1, "total_tokens": 2 }
+          })
+        } else if responses {
           json!({
             "id": "resp_smoke",
             "model": "smoke-model",
@@ -438,6 +495,25 @@ mod tests {
               "content": [{ "type": "output_text", "text": "{\"ok\":true}" }]
             }],
             "usage": { "input_tokens": 1, "output_tokens": 1, "total_tokens": 2 }
+          })
+        } else if tool_calling {
+          json!({
+            "id": "chat_smoke",
+            "model": "smoke-model",
+            "choices": [{
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": null,
+                "tool_calls": [{
+                  "id": "call_smoke",
+                  "type": "function",
+                  "function": { "name": "byok_probe", "arguments": "{}" }
+                }]
+              },
+              "finish_reason": "tool_calls"
+            }],
+            "usage": { "prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2 }
           })
         } else {
           json!({
@@ -534,5 +610,6 @@ mod tests {
       requests.iter().filter(|request| request.contains("byok_probe")).count(),
       2
     );
+    assert!(requests.iter().all(|request| !request.contains("\"temperature\"")));
   }
 }
