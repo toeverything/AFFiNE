@@ -5,7 +5,7 @@ use sqlx::{FromRow, PgPool};
 
 use super::{
   RuntimeBlobCleanupExecuteResult, RuntimeBlobCleanupPlanResult, RuntimeError, RuntimeResult, StorageRuntime,
-  napi_error,
+  doc_blob_refs::PARSER_VERSION, load_workspace_canonical_doc_ids, napi_error,
 };
 
 #[derive(FromRow)]
@@ -83,6 +83,70 @@ async fn projection_is_stale(pool: &PgPool, workspace_id: &str) -> RuntimeResult
   .fetch_one(pool)
   .await
   .map_err(|err| RuntimeError::database("Blob cleanup retention activity check failed", err))?;
+  if sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM updates WHERE workspace_id = $1)")
+    .bind(workspace_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|err| RuntimeError::database("Blob cleanup pending update check failed", err))?
+  {
+    return Ok(true);
+  }
+  let mut current_doc_ids = match load_workspace_canonical_doc_ids(pool, workspace_id).await {
+    Ok(ids) => ids,
+    Err(_) => return Ok(true),
+  };
+  current_doc_ids.push(workspace_id.to_string());
+  current_doc_ids.extend(
+    sqlx::query_scalar::<_, String>(
+      "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 AND status IN ('marked', 'failed')",
+    )
+    .bind(workspace_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|err| RuntimeError::database("Blob cleanup retained document load failed", err))?,
+  );
+  current_doc_ids.sort();
+  current_doc_ids.dedup();
+  let has_nonfresh_projection = sqlx::query_scalar::<_, bool>(
+    r#"
+    SELECT EXISTS(
+      SELECT 1
+      FROM unnest($2::text[]) AS ids(doc_id)
+      LEFT JOIN snapshots s
+        ON s.workspace_id = $1 AND s.guid = ids.doc_id
+      LEFT JOIN doc_blob_ref_projections p
+        ON p.workspace_id = $1 AND p.doc_id = ids.doc_id
+      WHERE s.guid IS NULL
+         OR p.doc_id IS NULL
+         OR p.status <> 'fresh'
+         OR p.parser_version <> $3
+         OR p.source_revision IS DISTINCT FROM s.updated_at
+    )
+    OR EXISTS(
+      SELECT 1 FROM doc_blob_ref_projections
+      WHERE workspace_id = $1 AND status <> 'fresh'
+    )
+    OR EXISTS(
+      SELECT 1
+      FROM doc_blob_refs r
+      LEFT JOIN doc_blob_ref_projections p
+        ON p.workspace_id = r.workspace_id AND p.doc_id = r.doc_id
+      WHERE r.workspace_id = $1
+        AND (
+          p.doc_id IS NULL
+          OR p.status <> 'fresh'
+          OR r.parser_version <> p.parser_version
+          OR r.snapshot_updated_at IS DISTINCT FROM p.source_revision
+        )
+    )
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(&current_doc_ids)
+  .bind(PARSER_VERSION)
+  .fetch_one(pool)
+  .await
+  .map_err(|err| RuntimeError::database("Blob cleanup projection state check failed", err))?;
   let has_stale_rows = sqlx::query_scalar::<_, bool>(
     "SELECT EXISTS(SELECT 1 FROM doc_blob_refs WHERE workspace_id = $1 AND status <> 'fresh')",
   )
@@ -90,7 +154,7 @@ async fn projection_is_stale(pool: &PgPool, workspace_id: &str) -> RuntimeResult
   .fetch_one(pool)
   .await
   .map_err(|err| RuntimeError::database("Blob cleanup projection freshness check failed", err))?;
-  Ok(activity_after_checkpoint || has_stale_rows)
+  Ok(activity_after_checkpoint || has_nonfresh_projection || has_stale_rows)
 }
 
 async fn stale_projection_workspaces(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
@@ -107,18 +171,31 @@ async fn metadata_backfill_is_complete(pool: &PgPool, workspace_id: &str) -> Run
 
 async fn has_doc_ref(pool: &PgPool, workspace_id: &str, key: &str) -> RuntimeResult<bool> {
   sqlx::query_scalar::<_, bool>(
-    "SELECT EXISTS(SELECT 1 FROM doc_blob_refs WHERE workspace_id = $1 AND blob_key = $2 AND status = 'fresh')",
+    r#"
+    SELECT EXISTS(
+      SELECT 1
+      FROM doc_blob_refs r
+      JOIN doc_blob_ref_projections p
+        ON p.workspace_id = r.workspace_id AND p.doc_id = r.doc_id
+      WHERE r.workspace_id = $1
+        AND r.blob_key = $2
+        AND r.status = 'fresh'
+        AND p.status = 'fresh'
+        AND p.parser_version = $3
+        AND r.parser_version = p.parser_version
+        AND r.snapshot_updated_at = p.source_revision
+    )
+    "#,
   )
   .bind(workspace_id)
   .bind(key)
+  .bind(PARSER_VERSION)
   .fetch_one(pool)
   .await
   .map_err(|err| RuntimeError::database("Blob cleanup doc ref check failed", err))
 }
 
 async fn has_other_ref(pool: &PgPool, workspace_id: &str, key: &str) -> RuntimeResult<bool> {
-  // Remove the ai_contexts branch after stable and beta no longer run binaries
-  // built with the 115-migration schema.
   let required_ref = sqlx::query_scalar::<_, bool>(
     r#"
     SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1 AND avatar_key = $2)
@@ -130,17 +207,6 @@ async fn has_other_ref(pool: &PgPool, workspace_id: &str, key: &str) -> RuntimeR
           AND storage_scope = 'blob'
           AND storage_key = concat($1, '/', $2)
           AND status IN ('reserving', 'ready')
-      )
-      OR EXISTS(
-        SELECT 1
-        FROM ai_contexts c
-        JOIN ai_sessions_metadata s ON s.id = c.session_id
-        WHERE s.workspace_id = $1
-          AND jsonb_path_exists(
-            c.config::jsonb,
-            '$.** ? (@ == $blobKey)',
-            jsonb_build_object('blobKey', to_jsonb($2::text))
-          )
       )
     "#,
   )

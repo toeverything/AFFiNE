@@ -49,7 +49,6 @@ export class StorageRuntimeProvider
   async start() {
     this.configureRuntime();
     await this.runtime.start();
-    await this.runMigrationsOnce();
     const health = await this.runtime.health();
     this.logger.log(
       `storage runtime started: db=${health.databaseConnected} provider=${health.provider ?? 'none'}`
@@ -80,6 +79,10 @@ export class StorageRuntimeProvider
 
   async health(): Promise<StorageRuntimeHealth> {
     return await this.runtime.health();
+  }
+
+  async runMigrations() {
+    await this.runMigrationsOnce();
   }
 
   async providerCapabilities(
@@ -255,6 +258,16 @@ export class StorageRuntimeProvider
   async rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number) {
     return await this.measured('rebuildWorkspaceDocBlobRefs', rt =>
       rt.rebuildWorkspaceDocBlobRefs(workspaceId, limit)
+    );
+  }
+
+  async rebuildDocBlobRefs(
+    workspaceId: string,
+    docId: string,
+    sourceRevision: number
+  ) {
+    return await this.measured('rebuildDocBlobRefs', rt =>
+      rt.rebuildDocBlobRefs(workspaceId, docId, sourceRevision)
     );
   }
 

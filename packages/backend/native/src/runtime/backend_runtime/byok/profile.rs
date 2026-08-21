@@ -47,10 +47,7 @@ pub(in super::super) async fn list(pool: &PgPool, workspace_id: &str) -> Runtime
   .fetch_all(pool)
   .await
   .map_err(|error| RuntimeError::database("list BYOK profiles failed", error))?;
-  // Rows written by the previous release while it shares the database carry
-  // only the database-default definition and fail to parse; skip them until
-  // that release is retired.
-  Ok(rows.into_iter().filter_map(|row| profile_output(row).ok()).collect())
+  rows.into_iter().map(profile_output).collect()
 }
 
 pub(in super::super) async fn create(
@@ -103,21 +100,7 @@ pub(in super::super) async fn create(
       definition, sort_order, enabled, created_by, updated_by, created_at, updated_at
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    ON CONFLICT (workspace_id, provider, name) DO UPDATE
-    SET id = EXCLUDED.id,
-        description = EXCLUDED.description,
-        encrypted_api_key = EXCLUDED.encrypted_api_key,
-        definition = EXCLUDED.definition,
-        sort_order = EXCLUDED.sort_order,
-        enabled = EXCLUDED.enabled,
-        revision = 1,
-        credential_generation = 1,
-        validation = NULL,
-        created_by = EXCLUDED.created_by,
-        updated_by = EXCLUDED.updated_by,
-        created_at = EXCLUDED.created_at,
-        updated_at = EXCLUDED.updated_at
-    WHERE ai_workspace_byok_configs.definition = '{}'::jsonb
+    ON CONFLICT (workspace_id, provider, name) DO NOTHING
     RETURNING id, workspace_id, provider, name, description, encrypted_api_key,
               definition, sort_order, enabled, revision, credential_generation, validation
     "#,
@@ -589,102 +572,5 @@ pub(super) fn require_text(value: &str, field: &'static str) -> RuntimeResult<()
     Err(RuntimeError::invalid_input(format!("{field} is required")))
   } else {
     Ok(())
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use super::{ByokPolicy, PgPool, Uuid, create, list};
-  use crate::{
-    llm::{
-      ByokCapabilityInput, ByokEndpointInput, ByokModelDeclarationInput, ByokProfileDefinitionInput,
-      CreateByokProfileInput, Deployment,
-    },
-    runtime::config::CopilotByokRuntimeConfig,
-  };
-
-  #[tokio::test]
-  async fn list_skips_rows_with_unparseable_legacy_definition() {
-    let Ok(database_url) = std::env::var("DATABASE_URL") else {
-      return;
-    };
-    let pool = PgPool::connect(&database_url).await.unwrap();
-    let workspace_id = format!("byok-legacy-{}", Uuid::new_v4());
-    sqlx::query("INSERT INTO workspaces (id) VALUES ($1)")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
-    // a row as written by the previous release while it shares the database:
-    // definition is left at the database default and cannot be parsed
-    for (id, name, definition) in [
-      (Uuid::new_v4().to_string(), "legacy", "{}"),
-      (
-        Uuid::new_v4().to_string(),
-        "valid",
-        r#"{"endpoint":{"kind":"provider_default"},"models":[]}"#,
-      ),
-    ] {
-      sqlx::query(
-        "INSERT INTO ai_workspace_byok_configs (id, workspace_id, provider, name, encrypted_api_key, definition, \
-         created_at, updated_at) VALUES ($1, $2, 'openai', $3, 'x', $4::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-      )
-      .bind(&id)
-      .bind(&workspace_id)
-      .bind(name)
-      .bind(definition)
-      .execute(&pool)
-      .await
-      .unwrap();
-    }
-
-    let profiles = list(&pool, &workspace_id).await.unwrap();
-    assert_eq!(profiles.len(), 1);
-    assert_eq!(profiles[0].name, "valid");
-
-    let input = || CreateByokProfileInput {
-      workspace_id: workspace_id.clone(),
-      provider: "openai".to_string(),
-      name: "legacy".to_string(),
-      description: None,
-      credential: "replacement-key".to_string(),
-      definition: ByokProfileDefinitionInput {
-        endpoint: ByokEndpointInput {
-          kind: "provider_default".to_string(),
-          url: None,
-          dialect: None,
-        },
-        models: vec![ByokModelDeclarationInput {
-          model_id: "gpt-4o-mini".to_string(),
-          enabled: true,
-          capabilities: vec![ByokCapabilityInput {
-            input: vec!["text".to_string()],
-            output: vec!["text".to_string()],
-            features: vec![],
-            attachment_kinds: vec![],
-            attachment_sources: vec![],
-          }],
-        }],
-      },
-      enabled: true,
-      actor_user_id: "user-1".to_string(),
-    };
-    let policy = ByokPolicy::from(Deployment::Cloud, &CopilotByokRuntimeConfig::default());
-    create(&pool, &[7; 32], &policy, input()).await.unwrap();
-    let profiles = list(&pool, &workspace_id).await.unwrap();
-    assert_eq!(profiles.len(), 2);
-    assert!(profiles.iter().any(|profile| profile.name == "legacy"));
-    assert!(create(&pool, &[7; 32], &policy, input()).await.is_err());
-
-    sqlx::query("DELETE FROM ai_workspace_byok_configs WHERE workspace_id = $1")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
-    sqlx::query("DELETE FROM workspaces WHERE id = $1")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
   }
 }

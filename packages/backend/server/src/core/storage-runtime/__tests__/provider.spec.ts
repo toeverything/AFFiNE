@@ -51,18 +51,20 @@ test('storage-runtime provider restarts on storage config changes', async t => {
   const { provider, runtime } = createProvider();
 
   await provider.start();
+  await provider.runMigrations();
   await provider.onConfigChanged({ updates: { storages: {} } });
 
   t.is(runtime.stop.callCount, 1);
   t.is(runtime.configure.callCount, 2);
   t.is(runtime.start.callCount, 2);
-  t.is(runtime.runMigrations.callCount, 2);
+  t.is(runtime.runMigrations.callCount, 1);
 });
 
 test('storage-runtime provider restarts on copilot storage config changes', async t => {
   const { provider, runtime } = createProvider();
 
   await provider.start();
+  await provider.runMigrations();
   await provider.onConfigChanged({
     updates: {
       copilot: {
@@ -78,7 +80,7 @@ test('storage-runtime provider restarts on copilot storage config changes', asyn
   t.is(runtime.stop.callCount, 1);
   t.is(runtime.configure.callCount, 2);
   t.is(runtime.start.callCount, 2);
-  t.is(runtime.runMigrations.callCount, 2);
+  t.is(runtime.runMigrations.callCount, 1);
 });
 
 test('storage-runtime provider ignores unrelated config changes', async t => {
@@ -89,5 +91,5 @@ test('storage-runtime provider ignores unrelated config changes', async t => {
 
   t.is(runtime.stop.callCount, 0);
   t.is(runtime.start.callCount, 1);
-  t.is(runtime.runMigrations.callCount, 1);
+  t.is(runtime.runMigrations.callCount, 0);
 });

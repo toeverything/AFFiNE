@@ -14,6 +14,7 @@ pub mod llm;
 pub mod permission;
 pub mod runtime;
 pub mod safe_fetch;
+pub(crate) mod search_index;
 pub mod tiktoken;
 mod userdata_acl;
 mod utils;

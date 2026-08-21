@@ -20,10 +20,12 @@ import semver from 'semver';
 import { type Server, Socket } from 'socket.io';
 
 import {
+  BadRequest,
   CallMetric,
   checkCanaryDateClientVersion,
   DocNotFound,
   DocUpdateBlocked,
+  EventBus,
   GatewayErrorWrapper,
   metrics,
   NotInSpace,
@@ -63,9 +65,9 @@ type EventResponse<Data = any> = Data extends never
     };
 
 // sync: shared room for space membership checks and non-protocol broadcasts.
-// sync-025: legacy 0.25 doc sync protocol (space:broadcast-doc-update).
-// sync-026: current doc sync protocol (space:broadcast-doc-updates).
-type RoomType = 'sync' | 'sync-025' | 'sync-026' | `${string}:awareness`;
+// sync-026: legacy doc sync protocol (space:broadcast-doc-updates).
+// sync-027: batch doc sync protocol (invalidation + active subscriptions).
+type RoomType = 'sync' | 'sync-026' | 'sync-027' | `${string}:awareness`;
 
 function Room(
   spaceId: string,
@@ -74,14 +76,14 @@ function Room(
   return `${spaceId}:${type}`;
 }
 
-const MIN_WS_CLIENT_VERSION = new semver.Range('>=0.25.0', {
+const MIN_WS_CLIENT_VERSION = new semver.Range('>=0.26.0', {
   includePrerelease: true,
 });
-const DOC_UPDATES_PROTOCOL_026 = new semver.Range('>=0.26.0-0', {
+const MIN_BATCH_WS_CLIENT_VERSION = new semver.Range('>=0.27.5-0', {
   includePrerelease: true,
 });
+const MAX_SPACE_JOIN_BATCH_SIZE = 100;
 
-type SyncProtocolRoomType = Extract<RoomType, 'sync-025' | 'sync-026'>;
 const SOCKET_PRESENCE_USER_ID_KEY = 'affinePresenceUserId';
 
 function normalizeWsClientVersion(clientVersion: string): string | null {
@@ -108,11 +110,9 @@ function isSupportedWsClientVersion(clientVersion: string): boolean {
   );
 }
 
-function getSyncProtocolRoomType(clientVersion: string): SyncProtocolRoomType {
+function isBatchWsClientVersion(clientVersion: string): boolean {
   const normalized = normalizeWsClientVersion(clientVersion);
-  return DOC_UPDATES_PROTOCOL_026.test(normalized ?? clientVersion)
-    ? 'sync-026'
-    : 'sync-025';
+  return Boolean(normalized && MIN_BATCH_WS_CLIENT_VERSION.test(normalized));
 }
 
 enum SpaceType {
@@ -133,9 +133,24 @@ interface JoinSpaceAwarenessMessage {
   clientVersion: string;
 }
 
+interface JoinSpaceBatchEntry {
+  spaceType: SpaceType;
+  spaceId: string;
+  docId?: string;
+}
+
+interface JoinSpaceBatchMessage {
+  spaces: [JoinSpaceBatchEntry, ...JoinSpaceBatchEntry[]];
+  clientVersion: string;
+}
+
 interface LeaveSpaceMessage {
   spaceType: SpaceType;
   spaceId: string;
+}
+
+interface LeaveSpaceBatchMessage extends LeaveSpaceMessage {
+  docIds: string[];
 }
 
 interface LeaveSpaceAwarenessMessage {
@@ -159,15 +174,6 @@ interface BroadcastDocUpdatesMessage {
   timestamp: number;
   editor?: string;
   compressed?: boolean;
-}
-
-interface BroadcastDocUpdateMessage {
-  spaceType: SpaceType;
-  spaceId: string;
-  docId: string;
-  update: string;
-  timestamp: number;
-  editor: string;
 }
 
 interface LoadDocMessage {
@@ -201,6 +207,135 @@ interface UpdateAwarenessMessage {
   awarenessUpdate: string;
 }
 
+interface SyncAwarenessEvent {
+  spaceType: SpaceType;
+  spaceId: string;
+  docId: string;
+  sourceSocketId?: string;
+}
+
+interface SyncDocUpdatesPayload {
+  spaceType: SpaceType;
+  spaceId: string;
+  docId: string;
+  updates: Uint8Array[];
+  timestamp: number;
+  editor?: string;
+}
+
+declare global {
+  interface Events {
+    'sync.doc.updates.pushed': {
+      spaceType: SpaceType;
+      spaceId: string;
+      docId: string;
+      updates: string[];
+      timestamp: number;
+      editor?: string;
+    };
+    'sync.awareness.collect': SyncAwarenessEvent;
+    'sync.awareness.updated': SyncAwarenessEvent & {
+      awarenessUpdate: string;
+    };
+    'sync.permissions.changed': {
+      spaceType: SpaceType;
+      spaceId: string;
+      docId?: string;
+    };
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function parseJoinSpaceBatchMessage(message: unknown): JoinSpaceBatchMessage {
+  if (!isRecord(message)) {
+    throw new BadRequest('Invalid space join batch payload.');
+  }
+
+  const { spaces, clientVersion } = message;
+  if (!Array.isArray(spaces) || spaces.length === 0) {
+    throw new BadRequest('Space join batch must not be empty.');
+  }
+  if (spaces.length > MAX_SPACE_JOIN_BATCH_SIZE) {
+    throw new BadRequest(
+      `Space join batch exceeds limit (${MAX_SPACE_JOIN_BATCH_SIZE}).`
+    );
+  }
+  if (typeof clientVersion !== 'string' || clientVersion.length === 0) {
+    throw new BadRequest('Space join batch requires a client version.');
+  }
+
+  const entries = spaces.map((space, index) => {
+    if (!isRecord(space)) {
+      throw new BadRequest(`Invalid space join batch entry at index ${index}.`);
+    }
+
+    const { spaceType, spaceId, docId } = space;
+    if (
+      (spaceType !== SpaceType.Userspace &&
+        spaceType !== SpaceType.Workspace) ||
+      typeof spaceId !== 'string' ||
+      spaceId.trim().length === 0 ||
+      (docId !== undefined &&
+        (typeof docId !== 'string' || docId.trim().length === 0))
+    ) {
+      throw new BadRequest(`Invalid space join batch entry at index ${index}.`);
+    }
+
+    return {
+      spaceType,
+      spaceId,
+      ...(docId === undefined ? {} : { docId }),
+    } satisfies JoinSpaceBatchEntry;
+  }) as [JoinSpaceBatchEntry, ...JoinSpaceBatchEntry[]];
+
+  const first = entries[0];
+  const duplicateKeys = new Set<string>();
+  for (const entry of entries) {
+    if (
+      entry.spaceType !== first.spaceType ||
+      entry.spaceId !== first.spaceId
+    ) {
+      throw new BadRequest(
+        'Space join batch entries must belong to one space.'
+      );
+    }
+
+    const key = JSON.stringify([
+      entry.spaceType,
+      entry.spaceId,
+      entry.docId ?? null,
+    ]);
+    if (duplicateKeys.has(key)) {
+      throw new BadRequest('Space join batch contains duplicate entries.');
+    }
+    duplicateKeys.add(key);
+  }
+
+  return { spaces: entries, clientVersion };
+}
+
+function parseLeaveSpaceBatchMessage(message: unknown): LeaveSpaceBatchMessage {
+  if (!isRecord(message)) {
+    throw new BadRequest('Invalid space leave batch payload.');
+  }
+
+  const { spaceType, spaceId, docIds } = message;
+  if (
+    (spaceType !== SpaceType.Userspace && spaceType !== SpaceType.Workspace) ||
+    typeof spaceId !== 'string' ||
+    spaceId.trim().length === 0 ||
+    !Array.isArray(docIds) ||
+    docIds.some(docId => typeof docId !== 'string' || docId.trim().length === 0)
+  ) {
+    throw new BadRequest('Invalid space leave batch payload.');
+  }
+
+  return { spaceType, spaceId, docIds };
+}
+
 @WebSocketGateway()
 @UseInterceptors(ClsInterceptor)
 export class SpaceSyncGateway
@@ -223,13 +358,16 @@ export class SpaceSyncGateway
   private activeUsersFlushTimer?: NodeJS.Timeout;
   private activeUsersFlushInFlight = false;
   private activeUsersFlushQueued = false;
+  private readonly activeDocSockets = new Map<string, Set<Socket>>();
+  private readonly activeSocketDocs = new Map<string, Set<string>>();
 
   constructor(
     private readonly ac: PermissionAccess,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly userspace: PgUserspaceDocStorageAdapter,
     private readonly docReader: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly event: EventBus
   ) {}
 
   onModuleInit() {
@@ -345,6 +483,166 @@ export class SpaceSyncGateway
     }
   }
 
+  private activeDocKey(spaceType: SpaceType, spaceId: string, docId: string) {
+    return `${spaceType}:${spaceId}:${docId}`;
+  }
+
+  private addActiveDocSubscription(
+    client: Socket,
+    spaceType: SpaceType,
+    spaceId: string,
+    docId: string
+  ) {
+    const key = this.activeDocKey(spaceType, spaceId, docId);
+    let sockets = this.activeDocSockets.get(key);
+    if (!sockets) {
+      sockets = new Set();
+      this.activeDocSockets.set(key, sockets);
+    }
+    sockets.add(client);
+
+    let docs = this.activeSocketDocs.get(client.id);
+    if (!docs) {
+      docs = new Set();
+      this.activeSocketDocs.set(client.id, docs);
+    }
+    docs.add(key);
+  }
+
+  private removeActiveDocSubscription(
+    client: Socket,
+    spaceType: SpaceType,
+    spaceId: string,
+    docId: string
+  ) {
+    const key = this.activeDocKey(spaceType, spaceId, docId);
+    const sockets = this.activeDocSockets.get(key);
+    sockets?.delete(client);
+    if (sockets && sockets.size === 0) {
+      this.activeDocSockets.delete(key);
+    }
+
+    const docs = this.activeSocketDocs.get(client.id);
+    docs?.delete(key);
+    if (docs && docs.size === 0) {
+      this.activeSocketDocs.delete(client.id);
+    }
+  }
+
+  private removeAllActiveDocSubscriptions(client: Socket) {
+    const docs = this.activeSocketDocs.get(client.id);
+    if (!docs) {
+      return;
+    }
+
+    for (const key of docs) {
+      const sockets = this.activeDocSockets.get(key);
+      sockets?.delete(client);
+      if (sockets && sockets.size === 0) {
+        this.activeDocSockets.delete(key);
+      }
+    }
+    this.activeSocketDocs.delete(client.id);
+  }
+
+  private removeActiveDocSubscriptionsInSpace(
+    client: Socket,
+    spaceType: SpaceType,
+    spaceId: string
+  ) {
+    const prefix = `${spaceType}:${spaceId}:`;
+    for (const key of Array.from(this.activeSocketDocs.get(client.id) ?? [])) {
+      if (!key.startsWith(prefix)) {
+        continue;
+      }
+      const [, keySpaceId, docId] = key.split(':');
+      this.removeActiveDocSubscription(client, spaceType, keySpaceId, docId);
+    }
+  }
+
+  private hasActiveDocSubscription(
+    client: Socket,
+    spaceType: SpaceType,
+    spaceId: string,
+    docId: string
+  ) {
+    return Boolean(
+      this.activeSocketDocs
+        .get(client.id)
+        ?.has(this.activeDocKey(spaceType, spaceId, docId))
+    );
+  }
+
+  private emitActiveDocUpdate(
+    payload: SyncDocUpdatesPayload,
+    sourceSocketId?: string,
+    broadcastPayload?: BroadcastDocUpdatesMessage
+  ) {
+    const sockets = this.activeDocSockets.get(
+      this.activeDocKey(payload.spaceType, payload.spaceId, payload.docId)
+    );
+    if (!sockets) {
+      return;
+    }
+
+    const activeBroadcastPayload =
+      broadcastPayload ??
+      this.buildBroadcastPayload(
+        payload.spaceType,
+        payload.spaceId,
+        payload.docId,
+        payload.updates,
+        payload.timestamp,
+        payload.editor
+      );
+    for (const socket of sockets) {
+      if (socket.id !== sourceSocketId) {
+        socket.emit('space:broadcast-doc-updates', activeBroadcastPayload);
+      }
+    }
+  }
+
+  private emitActiveAwarenessCollect(event: SyncAwarenessEvent) {
+    const sockets = this.activeDocSockets.get(
+      this.activeDocKey(event.spaceType, event.spaceId, event.docId)
+    );
+    if (!sockets) {
+      return;
+    }
+
+    for (const socket of sockets) {
+      if (socket.id !== event.sourceSocketId) {
+        socket.emit('space:collect-awareness', {
+          spaceType: event.spaceType,
+          spaceId: event.spaceId,
+          docId: event.docId,
+        });
+      }
+    }
+  }
+
+  private emitActiveAwarenessUpdate(
+    event: SyncAwarenessEvent & { awarenessUpdate: string }
+  ) {
+    const sockets = this.activeDocSockets.get(
+      this.activeDocKey(event.spaceType, event.spaceId, event.docId)
+    );
+    if (!sockets) {
+      return;
+    }
+
+    for (const socket of sockets) {
+      if (socket.id !== event.sourceSocketId) {
+        socket.emit('space:broadcast-awareness-update', {
+          spaceType: event.spaceType,
+          spaceId: event.spaceId,
+          docId: event.docId,
+          awarenessUpdate: event.awarenessUpdate,
+        });
+      }
+    }
+  }
+
   handleConnection(client: Socket) {
     this.connectionCount++;
     this.logger.debug(`New connection, total: ${this.connectionCount}`);
@@ -355,6 +653,7 @@ export class SpaceSyncGateway
   }
 
   handleDisconnect(client: Socket) {
+    this.removeAllActiveDocSubscriptions(client);
     this.connectionCount = Math.max(0, this.connectionCount - 1);
     this.trackDisconnectedSocket(client.id);
     this.logger.debug(
@@ -538,39 +837,176 @@ export class SpaceSyncGateway
     timestamp,
     editor,
   }: Events['doc.updates.pushed']) {
-    if (!this.server || updates.length === 0) {
-      return;
-    }
-
-    const room025 = `${spaceType}:${Room(spaceId, 'sync-025')}`;
-    const encodedUpdates = this.encodeUpdates(updates);
-    for (const update of encodedUpdates) {
-      const payload: BroadcastDocUpdateMessage = {
-        spaceType: spaceType as SpaceType,
-        spaceId,
-        docId,
-        update,
-        timestamp,
-        editor: editor ?? '',
-      };
-      this.server.to(room025).emit('space:broadcast-doc-update', payload);
-    }
-
-    const room026 = `${spaceType}:${Room(spaceId, 'sync-026')}`;
-    const payload = this.buildBroadcastPayload(
-      spaceType as SpaceType,
+    this.publishDocUpdate({
+      spaceType: spaceType as SpaceType,
       spaceId,
       docId,
       updates,
       timestamp,
-      editor
+      editor,
+    });
+  }
+
+  @OnEvent('sync.doc.updates.pushed')
+  onClusterDocUpdatesPushed(payload: Events['sync.doc.updates.pushed']) {
+    this.emitActiveDocUpdate({
+      ...payload,
+      updates: payload.updates.map(update =>
+        Uint8Array.from(Buffer.from(update, 'base64'))
+      ),
+    });
+  }
+
+  @OnEvent('sync.awareness.collect')
+  onClusterAwarenessCollect(event: Events['sync.awareness.collect']) {
+    this.emitActiveAwarenessCollect(event);
+  }
+
+  @OnEvent('sync.awareness.updated')
+  onClusterAwarenessUpdated(event: Events['sync.awareness.updated']) {
+    this.emitActiveAwarenessUpdate(event);
+  }
+
+  @OnEvent('doc.grants.changed')
+  @OnEvent('doc.owner.changed')
+  @OnEvent('doc.default_role.changed')
+  @OnEvent('doc.public_state.changed')
+  @OnEvent('workspace.members.updated')
+  @OnEvent('workspace.members.roleChanged')
+  @OnEvent('workspace.members.removed')
+  @OnEvent('workspace.members.leave')
+  @OnEvent('workspace.owner.changed')
+  async onPermissionChanged({
+    workspaceId,
+    docId,
+  }: {
+    workspaceId: string;
+    docId?: string;
+  }) {
+    await this.publishPermissionChange({
+      spaceType: SpaceType.Workspace,
+      spaceId: workspaceId,
+      docId,
+    });
+  }
+
+  @OnEvent('sync.permissions.changed')
+  async onClusterPermissionsChanged(event: Events['sync.permissions.changed']) {
+    await this.revalidateActiveDocSubscriptions(event);
+  }
+
+  private async publishPermissionChange(
+    event: Events['sync.permissions.changed']
+  ) {
+    await this.revalidateActiveDocSubscriptions(event);
+    this.event.broadcast('sync.permissions.changed', event);
+  }
+
+  private async revalidateActiveDocSubscriptions(
+    event: Events['sync.permissions.changed']
+  ) {
+    const spacePrefix = `${event.spaceType}:${event.spaceId}:`;
+    const exactKey = event.docId
+      ? this.activeDocKey(event.spaceType, event.spaceId, event.docId)
+      : undefined;
+    const candidates = [...this.activeDocSockets.entries()].filter(
+      ([key]) => key === exactKey || (!exactKey && key.startsWith(spacePrefix))
     );
-    this.server.to(room026).emit('space:broadcast-doc-updates', payload);
+
+    for (const [key, sockets] of candidates) {
+      const [, spaceId, docId] = key.split(':');
+      for (const socket of Array.from(sockets)) {
+        const userId = this.resolvePresenceUserId(socket);
+        if (!userId) {
+          this.removeActiveDocSubscription(
+            socket,
+            event.spaceType,
+            spaceId,
+            docId
+          );
+          continue;
+        }
+
+        try {
+          this.assertUserdataSubject(event.spaceType, userId, spaceId, docId);
+          await this.assertDocActionAllowed(
+            event.spaceType,
+            userId,
+            spaceId,
+            docId,
+            'Doc.Read'
+          );
+        } catch {
+          this.removeActiveDocSubscription(
+            socket,
+            event.spaceType,
+            spaceId,
+            docId
+          );
+        }
+      }
+    }
+  }
+
+  private publishDocUpdate(
+    payload: SyncDocUpdatesPayload,
+    sourceSocket?: Socket
+  ) {
+    if (!this.server || payload.updates.length === 0) {
+      return;
+    }
+
+    const legacyRoom = `${payload.spaceType}:${Room(
+      payload.spaceId,
+      'sync-026'
+    )}`;
+    const broadcastPayload = this.buildBroadcastPayload(
+      payload.spaceType,
+      payload.spaceId,
+      payload.docId,
+      payload.updates,
+      payload.timestamp,
+      payload.editor
+    );
+    if (sourceSocket) {
+      sourceSocket
+        .to(legacyRoom)
+        .emit('space:broadcast-doc-updates', broadcastPayload);
+    } else {
+      this.server
+        .to(legacyRoom)
+        .emit('space:broadcast-doc-updates', broadcastPayload);
+    }
+
+    const batchRoom = `${payload.spaceType}:${Room(
+      payload.spaceId,
+      'sync-027'
+    )}`;
+    const invalidation = {
+      spaceType: payload.spaceType,
+      spaceId: payload.spaceId,
+      timestamp: payload.timestamp,
+    };
+    if (sourceSocket) {
+      sourceSocket
+        .to(batchRoom)
+        .emit('space:broadcast-doc-invalidation', invalidation);
+    } else {
+      this.server
+        .to(batchRoom)
+        .emit('space:broadcast-doc-invalidation', invalidation);
+    }
+
+    this.emitActiveDocUpdate(payload, sourceSocket?.id, broadcastPayload);
     metrics.socketio
       .counter('doc_updates_broadcast')
-      .add(payload.updates.length, {
-        mode: payload.compressed ? 'compressed' : 'batch',
+      .add(broadcastPayload.updates.length, {
+        mode: broadcastPayload.compressed ? 'compressed' : 'batch',
       });
+    this.event.broadcast('sync.doc.updates.pushed', {
+      ...payload,
+      updates: this.encodeUpdates(payload.updates),
+    });
   }
 
   selectAdapter(client: Socket, spaceType: SpaceType): SyncSocketAdapter {
@@ -611,21 +1047,140 @@ export class SpaceSyncGateway
       this.rejectJoin(client);
       return { data: { clientId: client.id, success: false } };
     }
+    if (isBatchWsClientVersion(clientVersion)) {
+      this.rejectJoin(client);
+      return { data: { clientId: client.id, success: false } };
+    }
 
     const adapter = this.selectAdapter(client, spaceType);
     await adapter.join(user.id, spaceId);
+    this.removeActiveDocSubscriptionsInSpace(client, spaceType, spaceId);
 
-    const protocolRoomType = getSyncProtocolRoomType(clientVersion);
-    const protocolRoom = adapter.room(spaceId, protocolRoomType);
-    const otherProtocolRoom = adapter.room(
-      spaceId,
-      protocolRoomType === 'sync-025' ? 'sync-026' : 'sync-025'
-    );
-    if (client.rooms.has(otherProtocolRoom)) {
-      await client.leave(otherProtocolRoom);
+    const legacyRoom = adapter.room(spaceId, 'sync-026');
+    const batchRoom = adapter.room(spaceId, 'sync-027');
+    if (client.rooms.has(batchRoom)) {
+      await client.leave(batchRoom);
     }
-    if (!client.rooms.has(protocolRoom)) {
-      await client.join(protocolRoom);
+    if (!client.rooms.has(legacyRoom)) {
+      await client.join(legacyRoom);
+    }
+
+    return { data: { clientId: client.id, success: true } };
+  }
+
+  @SubscribeMessage('space:join-batch')
+  async onJoinSpaceBatch(
+    @CurrentUser() user: CurrentUser,
+    @ConnectedSocket() client: Socket,
+    @MessageBody() message: unknown
+  ): Promise<EventResponse<{ clientId: string; success: boolean }>> {
+    const { spaces, clientVersion } = parseJoinSpaceBatchMessage(message);
+    if (
+      !isSupportedWsClientVersion(clientVersion) ||
+      !isBatchWsClientVersion(clientVersion)
+    ) {
+      this.rejectJoin(client);
+      return { data: { clientId: client.id, success: false } };
+    }
+
+    const [first] = spaces;
+    const adapter = this.selectAdapter(client, first.spaceType);
+
+    // Authorize the whole batch before mutating any Socket.IO room. This is
+    // intentionally separate from SyncSocketAdapter.join(), which is also
+    // used by the legacy single-room handlers.
+    await adapter.assertAccessible(first.spaceId, user.id, 'Workspace.Sync');
+
+    for (const space of spaces) {
+      if (space.docId === undefined) {
+        continue;
+      }
+      this.assertUserdataSubject(
+        space.spaceType,
+        user.id,
+        space.spaceId,
+        space.docId
+      );
+      await this.assertDocActionAllowed(
+        space.spaceType,
+        user.id,
+        space.spaceId,
+        space.docId,
+        'Doc.Read'
+      );
+    }
+
+    const rooms = new Set<string>();
+    rooms.add(adapter.room(first.spaceId));
+    rooms.add(adapter.room(first.spaceId, 'sync-027'));
+    const legacyRoom = adapter.room(first.spaceId, 'sync-026');
+
+    const roomsToJoin = [...rooms].filter(room => !client.rooms.has(room));
+    const subscriptionsToAdd = spaces.filter(
+      (space): space is JoinSpaceBatchEntry & { docId: string } =>
+        space.docId !== undefined &&
+        !this.hasActiveDocSubscription(
+          client,
+          space.spaceType,
+          space.spaceId,
+          space.docId
+        )
+    );
+    try {
+      if (roomsToJoin.length > 0) {
+        await client.join(roomsToJoin);
+      }
+      for (const space of subscriptionsToAdd) {
+        this.addActiveDocSubscription(
+          client,
+          space.spaceType,
+          space.spaceId,
+          space.docId
+        );
+      }
+      if (client.rooms.has(legacyRoom)) {
+        await client.leave(legacyRoom);
+      }
+    } catch (error) {
+      for (const space of subscriptionsToAdd) {
+        this.removeActiveDocSubscription(
+          client,
+          space.spaceType,
+          space.spaceId,
+          space.docId
+        );
+      }
+      await Promise.all(
+        roomsToJoin
+          .filter(room => client.rooms.has(room))
+          .map(async room => {
+            await client.leave(room);
+          })
+      );
+      throw error;
+    }
+
+    return { data: { clientId: client.id, success: true } };
+  }
+
+  @SubscribeMessage('space:leave-batch')
+  async onLeaveSpaceBatch(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() message: unknown
+  ): Promise<EventResponse<{ clientId: string; success: true }>> {
+    const { spaceType, spaceId, docIds } = parseLeaveSpaceBatchMessage(message);
+    for (const docId of docIds) {
+      this.removeActiveDocSubscription(client, spaceType, spaceId, docId);
+    }
+
+    const activeDocs = this.activeSocketDocs.get(client.id);
+    const hasActiveDocsInSpace = Array.from(activeDocs ?? []).some(key =>
+      key.startsWith(`${spaceType}:${spaceId}:`)
+    );
+    if (docIds.length === 0 && !hasActiveDocsInSpace) {
+      const adapter = this.selectAdapter(client, spaceType);
+      await adapter.leave(spaceId, 'sync-027');
+      await adapter.leave(spaceId);
     }
 
     return { data: { clientId: client.id, success: true } };
@@ -636,7 +1191,11 @@ export class SpaceSyncGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() { spaceType, spaceId }: LeaveSpaceMessage
   ): Promise<EventResponse<{ clientId: string; success: true }>> {
-    await this.selectAdapter(client, spaceType).leave(spaceId);
+    const adapter = this.selectAdapter(client, spaceType);
+    this.removeActiveDocSubscriptionsInSpace(client, spaceType, spaceId);
+    await adapter.leave(spaceId);
+    await adapter.leave(spaceId, 'sync-026');
+    await adapter.leave(spaceId, 'sync-027');
 
     return { data: { clientId: client.id, success: true } };
   }
@@ -729,33 +1288,17 @@ export class SpaceSyncGateway
       user.id
     );
 
-    const payload = this.buildBroadcastPayload(
-      spaceType,
-      spaceId,
-      docId,
-      [Buffer.from(update, 'base64')],
-      timestamp,
-      user.id
-    );
-    client
-      .to(adapter.room(spaceId, 'sync-026'))
-      .emit('space:broadcast-doc-updates', payload);
-    metrics.socketio
-      .counter('doc_updates_broadcast')
-      .add(payload.updates.length, {
-        mode: payload.compressed ? 'compressed' : 'batch',
-      });
-
-    client
-      .to(adapter.room(spaceId, 'sync-025'))
-      .emit('space:broadcast-doc-update', {
+    this.publishDocUpdate(
+      {
         spaceType,
         spaceId,
         docId,
-        update,
+        updates: [Buffer.from(update, 'base64')],
         timestamp,
         editor: user.id,
-      } satisfies BroadcastDocUpdateMessage);
+      },
+      client
+    );
 
     return {
       data: {
@@ -813,6 +1356,10 @@ export class SpaceSyncGateway
       this.rejectJoin(client);
       return { data: { clientId: client.id, success: false } };
     }
+    if (isBatchWsClientVersion(clientVersion)) {
+      this.rejectJoin(client);
+      return { data: { clientId: client.id, success: false } };
+    }
 
     await this.selectAdapter(client, spaceType).join(
       user.id,
@@ -845,11 +1392,18 @@ export class SpaceSyncGateway
   ) {
     const adapter = this.selectAdapter(client, spaceType);
 
-    const roomType = `${docId}:awareness` as const;
-    adapter.assertIn(spaceId, roomType);
-    client
-      .to(adapter.room(spaceId, roomType))
-      .emit('space:collect-awareness', { spaceType, spaceId, docId });
+    if (this.hasActiveDocSubscription(client, spaceType, spaceId, docId)) {
+      adapter.assertIn(spaceId);
+      const event = { spaceType, spaceId, docId, sourceSocketId: client.id };
+      this.emitActiveAwarenessCollect(event);
+      this.event.broadcast('sync.awareness.collect', event);
+    } else {
+      const roomType = `${docId}:awareness` as const;
+      adapter.assertIn(spaceId, roomType);
+      client
+        .to(adapter.room(spaceId, roomType))
+        .emit('space:collect-awareness', { spaceType, spaceId, docId });
+    }
 
     return { data: { clientId: client.id } };
   }
@@ -862,11 +1416,18 @@ export class SpaceSyncGateway
     const { spaceType, spaceId, docId } = message;
     const adapter = this.selectAdapter(client, spaceType);
 
-    const roomType = `${docId}:awareness` as const;
-    adapter.assertIn(spaceId, roomType);
-    client
-      .to(adapter.room(spaceId, roomType))
-      .emit('space:broadcast-awareness-update', message);
+    if (this.hasActiveDocSubscription(client, spaceType, spaceId, docId)) {
+      adapter.assertIn(spaceId);
+      const event = { ...message, sourceSocketId: client.id };
+      this.emitActiveAwarenessUpdate(event);
+      this.event.broadcast('sync.awareness.updated', event);
+    } else {
+      const roomType = `${docId}:awareness` as const;
+      adapter.assertIn(spaceId, roomType);
+      client
+        .to(adapter.room(spaceId, roomType))
+        .emit('space:broadcast-awareness-update', message);
+    }
 
     return {};
   }

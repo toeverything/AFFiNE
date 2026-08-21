@@ -15,6 +15,21 @@ pub(crate) enum RuntimeError {
   #[error("{0}")]
   InvalidState(String),
 
+  #[error("workspace access denied")]
+  SearchWorkspaceDenied,
+
+  #[error("search permission state unavailable")]
+  SearchPermissionUnavailable,
+
+  #[error("search provider unavailable")]
+  SearchProviderUnavailable,
+
+  #[error("search query is not supported by the active provider")]
+  SearchUnsupportedQuery,
+
+  #[error("search stream replay gap")]
+  SearchReplayGap,
+
   #[error("{context}: {source}")]
   Database {
     context: String,
@@ -94,6 +109,11 @@ impl RuntimeError {
       | Self::NapiBoundary(message) => {
         message.contains("NoSuchKey") || message.contains("NotFound") || message.contains("not found")
       }
+      Self::SearchWorkspaceDenied
+      | Self::SearchPermissionUnavailable
+      | Self::SearchProviderUnavailable
+      | Self::SearchUnsupportedQuery
+      | Self::SearchReplayGap => false,
       _ => false,
     }
   }

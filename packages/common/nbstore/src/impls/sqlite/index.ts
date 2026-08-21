@@ -8,7 +8,15 @@ import { SqliteIndexerSyncStorage } from './indexer-sync';
 
 export * from './blob';
 export * from './blob-sync';
-export { bindNativeDBApis, type NativeDBApis } from './db';
+export {
+  bindNativeDBApis,
+  type NativeDBApis,
+  type NativeIndexField,
+  type NativeIndexHit,
+  type NativeIndexQuery,
+  type NativeIndexSearchOptions,
+  type NativeIndexSearchResult,
+} from './db';
 export * from './doc';
 export * from './doc-sync';
 export * from './indexer';

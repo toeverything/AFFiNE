@@ -35,6 +35,12 @@ import {
   type RuntimeWorkspaceArtifact,
   type SyncEmbeddingStateInput,
 } from '../../native';
+import {
+  type AggregateRequestInput,
+  encodeAggregateRequest,
+  encodeSearchRequest,
+  type SearchRequestInput,
+} from './search';
 
 type RuntimeInstance = InstanceType<typeof BackendRuntime>;
 
@@ -299,9 +305,16 @@ export class BackendRuntimeProvider
 
   async start() {
     await this.runtime.start();
-    await this.runMigrationsOnce();
     const health = await this.runtime.health();
     this.logger.log(`backend runtime started: db=${health.databaseConnected}`);
+  }
+
+  /**
+   * Schema changes belong to the explicit predeploy path. Runtime startup only
+   * connects services and must not mutate the database schema.
+   */
+  async runMigrations() {
+    await this.runMigrationsOnce();
   }
 
   async stop() {
@@ -315,6 +328,7 @@ export class BackendRuntimeProvider
       !updates.copilot &&
       !updates.crypto &&
       !updates.db &&
+      !updates.indexer &&
       !updates.storages
     ) {
       return;
@@ -329,6 +343,74 @@ export class BackendRuntimeProvider
   async embeddingHealth(): Promise<EmbeddingHealth> {
     return await this.measured('embeddingHealth', runtime =>
       runtime.embeddingHealth()
+    );
+  }
+
+  async searchAuthorized(
+    actorUserId: string,
+    workspaceId: string,
+    request: SearchRequestInput
+  ) {
+    return await this.measured('searchAuthorized', runtime =>
+      runtime.searchAuthorized(
+        actorUserId,
+        workspaceId,
+        encodeSearchRequest(request)
+      )
+    );
+  }
+
+  async aggregateAuthorized(
+    actorUserId: string,
+    workspaceId: string,
+    request: AggregateRequestInput
+  ) {
+    return await this.measured('aggregateAuthorized', runtime =>
+      runtime.aggregateAuthorized(
+        actorUserId,
+        workspaceId,
+        encodeAggregateRequest(request)
+      )
+    );
+  }
+
+  async indexSearchDocument(workspaceId: string, docId: string) {
+    await this.measured('indexSearchDocument', runtime =>
+      runtime.indexSearchDocument(workspaceId, docId)
+    );
+  }
+
+  async deleteSearchDocument(workspaceId: string, docId: string) {
+    await this.measured('deleteSearchDocument', runtime =>
+      runtime.deleteSearchDocument(workspaceId, docId)
+    );
+  }
+
+  async reconcileSearchWorkspace(workspaceId: string) {
+    await this.measured('reconcileSearchWorkspace', runtime =>
+      runtime.reconcileSearchWorkspace(workspaceId)
+    );
+  }
+
+  async deleteSearchWorkspace(workspaceId: string) {
+    await this.measured('deleteSearchWorkspace', runtime =>
+      runtime.deleteSearchWorkspace(workspaceId)
+    );
+  }
+
+  async filterReadableDocs(
+    actorUserId: string,
+    workspaceId: string,
+    docIds: string[]
+  ) {
+    return await this.measured('filterReadableDocs', runtime =>
+      runtime.filterReadableDocs(actorUserId, workspaceId, docIds)
+    );
+  }
+
+  async searchStatus() {
+    return await this.measured('searchStatus', runtime =>
+      runtime.searchStatus()
     );
   }
 

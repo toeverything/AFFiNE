@@ -479,6 +479,32 @@ test('syncSubscription invalidates account when refresh token is invalid', async
   t.is(events.length, 0);
 });
 
+test('syncSubscription does not disable a calendar when token refresh returns 404', async t => {
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id, {
+    accessToken: 'expired-access-token',
+    expiresAt: new Date(Date.now() - 5 * 60 * 1000),
+  });
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+  });
+
+  const provider = new MockCalendarProvider();
+  mock.method(provider, 'refreshTokens', async () => {
+    throw new CalendarProviderRequestError({
+      status: 404,
+      message: 'Token endpoint not found',
+    });
+  });
+  mock.method(providerFactory, 'get', () => provider);
+
+  await calendarService.syncSubscription(subscription.id);
+
+  const updated = await models.calendarSubscription.get(subscription.id);
+  t.is(updated?.enabled, true);
+  t.is(updated?.syncRetryCount, 1);
+});
+
 test('syncSubscription disables subscription on provider 404', async t => {
   const user = await module.create(Mockers.User);
   const account = await createAccount(user.id);
@@ -671,6 +697,44 @@ test('syncSubscription renews webhook channel when expiring', async t => {
   t.is(updated?.customChannelId, 'new-channel');
   t.is(updated?.customResourceId, 'new-resource');
   t.truthy(updated?.channelExpiration);
+});
+
+test('syncSubscription replaces a webhook channel that is already gone', async t => {
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id);
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+    customChannelId: 'missing-channel',
+    customResourceId: 'missing-resource',
+    channelExpiration: new Date(Date.now() + 60 * 60 * 1000),
+  });
+
+  const provider = new MockCalendarProvider();
+  mock.method(provider, 'listEvents', async () => ({
+    events: [],
+    nextSyncToken: 'next-sync',
+  }));
+  const stopMock = mock.method(provider, 'stopChannel', async () => {
+    throw new CalendarProviderRequestError({
+      status: 404,
+      message: 'Channel not found',
+    });
+  });
+  const watchMock = mock.method(provider, 'watchCalendar', async () => ({
+    channelId: 'replacement-channel',
+    resourceId: 'replacement-resource',
+    expiration: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  }));
+  mock.method(providerFactory, 'get', () => provider);
+
+  await calendarService.syncSubscription(subscription.id);
+
+  t.is(stopMock.mock.callCount(), 1);
+  t.is(watchMock.mock.callCount(), 1);
+  const updated = await models.calendarSubscription.get(subscription.id);
+  t.is(updated?.customChannelId, 'replacement-channel');
+  t.is(updated?.customResourceId, 'replacement-resource');
+  t.is(updated?.syncRetryCount, 0);
 });
 
 test('syncSubscription falls back to polling when push is unsupported', async t => {

@@ -6,7 +6,7 @@ import { StorageRuntimeProvider } from '../storage-runtime';
 
 declare global {
   interface Jobs {
-    'nightly.cleanExpiredPendingBlobs': {};
+    'backendRuntime.cleanExpiredPendingBlobs': {};
   }
 }
 
@@ -23,7 +23,7 @@ export class BlobUploadCleanupJob {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async nightlyJob() {
     await this.queue.add(
-      'nightly.cleanExpiredPendingBlobs',
+      'backendRuntime.cleanExpiredPendingBlobs',
       {},
       {
         jobId: 'nightly-blob-clean-expired-pending',
@@ -31,7 +31,7 @@ export class BlobUploadCleanupJob {
     );
   }
 
-  @OnJob('nightly.cleanExpiredPendingBlobs')
+  @OnJob('backendRuntime.cleanExpiredPendingBlobs')
   async cleanExpiredPendingBlobs() {
     const cutoff = Date.now() - OneDay;
     let scanned = 0;
