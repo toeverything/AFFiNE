@@ -196,6 +196,15 @@ fn dispatch_check(
         failed(checked_at, "invalid_response")
       }
     }
+    Ok(ExecutableResponse::Embedding(response)) if operation == "embedding" && !response.embeddings.is_empty() => {
+      verified(checked_at)
+    }
+    Ok(ExecutableResponse::Rerank(response)) if operation == "rerank" && !response.scores.is_empty() => {
+      verified(checked_at)
+    }
+    Ok(ExecutableResponse::Image(response)) if operation == "image" && !response.images.is_empty() => {
+      verified(checked_at)
+    }
     Ok(_) => failed(checked_at, "invalid_response"),
     Err(error) => failed(checked_at, backend_error_kind(&error)),
   }
@@ -468,8 +477,34 @@ mod tests {
         let mut stream = stream.unwrap();
         let request = read_request(&mut stream);
         let responses = request.starts_with("POST /v1/responses ");
+        let embedding = request.starts_with("POST /v1/embeddings ");
+        let image = request.starts_with("POST /v1/images/generations ");
+        let rerank = request.contains("\"logprobs\":true");
         let tool_calling = request.contains("byok_probe");
-        let body = if responses && tool_calling {
+        let body = if embedding {
+          json!({
+            "model": "smoke-model",
+            "data": [{ "embedding": [0.1], "index": 0 }],
+            "usage": { "prompt_tokens": 1, "total_tokens": 1 }
+          })
+        } else if image {
+          json!({
+            "created": 0,
+            "data": [{ "url": "https://example.com/smoke.png" }]
+          })
+        } else if rerank {
+          json!({
+            "model": "smoke-model",
+            "choices": [{
+              "logprobs": { "content": [{
+                "top_logprobs": [
+                  { "token": "Yes", "logprob": 0.0 },
+                  { "token": "No", "logprob": -1.0 }
+                ]
+              }] }
+            }]
+          })
+        } else if responses && tool_calling {
           json!({
             "id": "resp_smoke",
             "model": "smoke-model",
@@ -565,7 +600,7 @@ mod tests {
 
   #[test]
   fn openai_compatible_probe_smoke_uses_the_selected_dialect() {
-    let operations = ["chat", "structured", "tool_calling"];
+    let operations = ["chat", "structured", "tool_calling", "embedding", "rerank", "image"];
     let (endpoint, requests, server) = serve_openai_compatible(operations.len() * 2);
 
     for dialect in [OpenAiDialect::Responses, OpenAiDialect::ChatCompletions] {
@@ -596,20 +631,39 @@ mod tests {
         .iter()
         .filter(|request| request.starts_with("POST /v1/responses "))
         .count(),
-      operations.len()
+      3
     );
     assert_eq!(
       requests
         .iter()
         .filter(|request| request.starts_with("POST /v1/chat/completions "))
         .count(),
-      operations.len()
+      5
+    );
+    assert_eq!(
+      requests
+        .iter()
+        .filter(|request| request.starts_with("POST /v1/embeddings "))
+        .count(),
+      2
+    );
+    assert_eq!(
+      requests
+        .iter()
+        .filter(|request| request.starts_with("POST /v1/images/generations "))
+        .count(),
+      2
     );
     assert!(requests.iter().all(|request| !request.contains("/models")));
     assert_eq!(
       requests.iter().filter(|request| request.contains("byok_probe")).count(),
       2
     );
-    assert!(requests.iter().all(|request| !request.contains("\"temperature\"")));
+    assert!(
+      requests
+        .iter()
+        .filter(|request| !request.contains("\"logprobs\":true"))
+        .all(|request| !request.contains("\"temperature\""))
+    );
   }
 }

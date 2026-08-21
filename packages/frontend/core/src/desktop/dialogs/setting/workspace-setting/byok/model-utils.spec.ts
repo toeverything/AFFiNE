@@ -62,7 +62,14 @@ describe('BYOK model capabilities', () => {
     ).toEqual([capability]);
   });
 
-  test('keeps verified uses when a shared capability partially fails', () => {
+  test('drops capabilities that imply failed uses while keeping independent uses', () => {
+    const embeddingCapability = {
+      input: [ByokModelInput.text],
+      output: [ByokModelOutput.embedding],
+      features: [],
+      attachmentKinds: [],
+      attachmentSources: [],
+    };
     const model: ModelDeclaration = {
       modelId: 'multimodal-tools',
       enabled: true,
@@ -79,45 +86,28 @@ describe('BYOK model capabilities', () => {
             ByokAttachmentSource.file_handle,
           ],
         },
+        embeddingCapability,
       ],
     };
 
-    expect(
-      retainVerifiedCapabilities(
-        [model],
-        [
-          {
-            modelId: model.modelId,
-            checks: [
-              { operation: 'chat', status: { kind: 'failed' } },
-              { operation: 'tool_calling', status: { kind: 'verified' } },
-            ],
-          },
-        ]
-      )[0]
-    ).toEqual({
-      ...model,
-      capabilities: [
+    const retained = retainVerifiedCapabilities(
+      [model],
+      [
         {
-          input: [ByokModelInput.text],
-          output: [ByokModelOutput.text],
-          features: [ByokModelFeature.tool_calling],
-          attachmentKinds: [],
-          attachmentSources: [],
-        },
-        {
-          input: [ByokModelInput.text, ByokModelInput.image],
-          output: [ByokModelOutput.text],
-          features: [],
-          attachmentKinds: [ByokAttachmentKind.image],
-          attachmentSources: [
-            ByokAttachmentSource.url,
-            ByokAttachmentSource.data,
-            ByokAttachmentSource.bytes,
-            ByokAttachmentSource.file_handle,
+          modelId: model.modelId,
+          checks: [
+            { operation: 'chat', status: { kind: 'failed' } },
+            { operation: 'tool_calling', status: { kind: 'verified' } },
+            { operation: 'embedding', status: { kind: 'verified' } },
           ],
         },
-      ],
+      ]
+    )[0];
+
+    expect(retained).toEqual({
+      ...model,
+      capabilities: [embeddingCapability],
     });
+    expect(modelUseCases(retained)).toEqual(['embedding']);
   });
 });

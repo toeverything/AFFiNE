@@ -179,18 +179,34 @@ export function retainVerifiedCapabilities(
         .map(check => check.operation)
     );
     const selectedUseCases = modelUseCases(model);
-    const verifiedUseCases = selectedUseCases.filter(
-      useCase =>
-        !failedOperations.has(useCase === 'actions' ? 'tool_calling' : useCase)
-    );
-    const capabilities =
-      verifiedUseCases.length === 0 ||
+    const verifiedUseCases = selectedUseCases.filter(useCase => {
+      const operation = useCase === 'actions' ? 'tool_calling' : useCase;
+      if (failedOperations.has(operation)) return false;
+
+      const represented = modelUseCases({
+        ...model,
+        capabilities: [capabilityForUseCase(useCase)],
+      });
+      return represented.every(
+        representedUseCase =>
+          !failedOperations.has(
+            representedUseCase === 'actions'
+              ? 'tool_calling'
+              : representedUseCase
+          )
+      );
+    });
+    const rebuiltCapabilities =
+      selectedUseCases.length > 0 &&
       verifiedUseCases.length === selectedUseCases.length
         ? model.capabilities
         : verifiedUseCases.map(capabilityForUseCase);
+    const capabilities = rebuiltCapabilities.length
+      ? rebuiltCapabilities
+      : model.capabilities;
     return {
       ...model,
-      enabled: verifiedUseCases.length > 0 && model.enabled,
+      enabled: rebuiltCapabilities.length > 0 && model.enabled,
       capabilities,
     };
   });
