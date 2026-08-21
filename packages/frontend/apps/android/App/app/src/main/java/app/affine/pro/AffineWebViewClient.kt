@@ -13,12 +13,13 @@ internal class AffineWebViewClient(
         view: WebView,
         request: WebResourceRequest,
     ): Boolean {
-        if (request.isForMainFrame) {
+        val shouldOverride = super.shouldOverrideUrlLoading(view, request)
+        if (!shouldOverride && request.isForMainFrame) {
             (view as? AffineEditorWebView)?.updateAndroidIMEBridge(
                 request.url.toString(),
                 trustedOrigin,
             )
         }
-        return super.shouldOverrideUrlLoading(view, request)
+        return shouldOverride
     }
 }
