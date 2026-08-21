@@ -80,16 +80,11 @@ async fn load_server_profiles(
   .map_err(|error| RuntimeError::database("load authorized BYOK profiles failed", error))?;
   rows
     .into_iter()
-    .filter_map(|row| {
-      // Rows written by the previous release while it shares the database
-      // carry only the database-default definition; skip them until that
-      // release is retired instead of failing the whole profile load.
-      let definition = match serde_json::from_value::<ByokProfileDefinition>(row.definition) {
-        Ok(definition) => definition,
-        Err(_) => return None,
-      };
+    .map(|row| {
+      let definition = serde_json::from_value::<ByokProfileDefinition>(row.definition)
+        .map_err(|error| RuntimeError::json("invalid stored BYOK definition", error))?;
       if !policy.allows(&row.provider, &definition.endpoint) {
-        return None;
+        return Ok(None);
       }
       let aad = server_aad(
         &row.workspace_id,
@@ -97,7 +92,7 @@ async fn load_server_profiles(
         &row.provider,
         definition.endpoint_identity(),
       );
-      Some(Ok(authorized_byok_profile(
+      Ok(Some(authorized_byok_profile(
         row.id,
         ProfileSource::Server,
         row.provider,
@@ -110,7 +105,8 @@ async fn load_server_profiles(
         },
       )))
     })
-    .collect()
+    .collect::<RuntimeResult<Vec<_>>>()
+    .map(|profiles| profiles.into_iter().flatten().collect())
 }
 
 async fn load_local_profiles(

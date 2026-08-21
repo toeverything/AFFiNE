@@ -694,6 +694,7 @@ test('indexer defers indexed clock persistence until a refresh happens on delaye
     })
   );
   const indexer = new TrackingIndexerStorage(calls, 30_000);
+  const update = vi.spyOn(indexer, 'update');
   const indexerSyncStorage = new TrackingIndexerSyncStorage(calls);
   const sync = new IndexerSyncImpl(
     docStorage,
@@ -712,6 +713,15 @@ test('indexer defers indexed clock persistence until a refresh happens on delaye
     sync.start();
     await sync.waitForCompleted();
 
+    const docUpdate = update.mock.calls.find(([table]) => table === 'doc');
+    expect(docUpdate).toBeDefined();
+    expect([...(docUpdate?.[1].fields ?? [])]).toEqual(
+      expect.arrayContaining([
+        ['docId', ['doc1']],
+        ['title', ['Doc 1']],
+        ['summary', ['summary']],
+      ])
+    );
     expect(calls).not.toContain('setClock:doc1');
 
     sync.stop();

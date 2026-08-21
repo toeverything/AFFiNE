@@ -10,7 +10,7 @@ pub(crate) mod types;
 
 pub(crate) use config::{
   BackendRuntimeConfig, ConfigSource, CopilotManagedProfileConfig, CopilotManagedProfileConfigFile,
-  CopilotRuntimeConfig, CopilotRuntimeConfigFile, InviteQuotaConfig,
+  CopilotRuntimeConfig, CopilotRuntimeConfigFile, InviteQuotaConfig, SearchRuntimeConfig,
 };
 use config::{SUPPORTED_BYOK_PROVIDERS, validate_copilot_config};
 pub use config_descriptor::{AppConfigDescriptor, app_config_descriptors, validate_app_config_value};

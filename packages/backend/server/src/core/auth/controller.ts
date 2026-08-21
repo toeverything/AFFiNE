@@ -118,7 +118,7 @@ export class AuthController {
   ) {
     const credential = SignInBodySchema.parse(body);
     validators.assertValidEmail(credential.email);
-    const canSignIn = await this.auth.canSignIn(credential.email);
+    const canSignIn = await this.auth.canSignIn(credential.email, req);
     if (!canSignIn) {
       throw new ActionForbidden();
     }

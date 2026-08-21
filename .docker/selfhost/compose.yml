@@ -18,7 +18,6 @@ services:
     environment:
       - REDIS_SERVER_HOST=redis
       - DATABASE_URL=postgresql://affine@postgres:5432/affine
-      - AFFINE_INDEXER_ENABLED=false
     restart: unless-stopped
 
   affine_migration:
@@ -31,7 +30,6 @@ services:
     environment:
       - REDIS_SERVER_HOST=redis
       - DATABASE_URL=postgresql://affine@postgres:5432/affine
-      - AFFINE_INDEXER_ENABLED=false
     depends_on:
       postgres:
         condition: service_healthy

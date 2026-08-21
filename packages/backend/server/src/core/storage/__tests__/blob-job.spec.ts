@@ -8,6 +8,7 @@ interface Context {
     health: Sinon.SinonStub;
     reconcileWorkspaceDocuments: Sinon.SinonStub;
     backfillMissingBlobMetadata: Sinon.SinonStub;
+    rebuildDocBlobRefs: Sinon.SinonStub;
     rebuildWorkspaceDocBlobRefs: Sinon.SinonStub;
     planUnreferencedWorkspaceBlobs: Sinon.SinonStub;
     executeBlobCleanupCandidates: Sinon.SinonStub;
@@ -45,6 +46,7 @@ test.beforeEach(t => {
       recovered: 0,
     }),
     backfillMissingBlobMetadata: Sinon.stub(),
+    rebuildDocBlobRefs: Sinon.stub(),
     rebuildWorkspaceDocBlobRefs: Sinon.stub(),
     planUnreferencedWorkspaceBlobs: Sinon.stub(),
     executeBlobCleanupCandidates: Sinon.stub(),
@@ -287,6 +289,31 @@ test('storage reconciliation still refreshes document retention without object s
   t.true(t.context.runtime.reconcileWorkspaceDocuments.calledOnce);
   t.true(t.context.runtime.rebuildWorkspaceDocBlobRefs.calledOnce);
   t.false(t.context.runtime.planUnreferencedWorkspaceBlobs.called);
+});
+
+test('document projection worker drains metadata incrementally after a document merge', async t => {
+  t.context.runtime.rebuildDocBlobRefs.resolves({
+    scannedDocs: 1,
+    parsedDocs: 1,
+    refsWritten: 1,
+    refsDeleted: 0,
+    failedDocs: 0,
+    nextCursor: null,
+  });
+
+  await t.context.job.projectWorkspaceDocBlobRefs({
+    workspaceId: 'workspace-1',
+    docId: 'doc-1',
+    sourceRevision: 123,
+  });
+
+  t.true(
+    t.context.runtime.rebuildDocBlobRefs.calledOnceWith(
+      'workspace-1',
+      'doc-1',
+      123
+    )
+  );
 });
 
 test('document cleanup dispatches stable search effects', async t => {

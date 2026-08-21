@@ -65,10 +65,6 @@ services:
     type: ClusterIP
     port: 8080
     annotations: {}
-  doc:
-    type: ClusterIP
-    annotations: {}
-
 nodeSelector: {}
 tolerations: []
 affinity: {}

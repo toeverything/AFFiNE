@@ -1,21 +1,45 @@
 import { Injectable } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { Config, JobQueue, OnEvent } from '../../base';
+import { JobQueue, OnEvent } from '../../base';
 
 @Injectable()
 export class IndexerEvent {
-  constructor(
-    private readonly queue: JobQueue,
-    private readonly config: Config
-  ) {}
+  constructor(private readonly queue: JobQueue) {}
+
+  @OnEvent('doc.grants.changed')
+  async reindexDocOnGrantChange({
+    workspaceId,
+    docId,
+  }: Events['doc.grants.changed']) {
+    await this.indexDoc({ workspaceId, docId });
+  }
+
+  @OnEvent('doc.owner.changed')
+  async reindexDocOnOwnerChange({
+    workspaceId,
+    docId,
+  }: Events['doc.owner.changed']) {
+    await this.indexDoc({ workspaceId, docId });
+  }
+
+  @OnEvent('doc.default_role.changed')
+  async reindexDocOnDefaultRoleChange({
+    workspaceId,
+    docId,
+  }: Events['doc.default_role.changed']) {
+    await this.indexDoc({ workspaceId, docId });
+  }
+
+  @OnEvent('doc.public_state.changed')
+  async reindexDocOnPublicStateChange({
+    workspaceId,
+    docId,
+  }: Events['doc.public_state.changed']) {
+    await this.indexDoc({ workspaceId, docId });
+  }
 
   @OnEvent('doc.updated')
   async indexDoc({ workspaceId, docId }: Events['doc.updated']) {
-    if (!this.config.indexer.enabled) {
-      return;
-    }
-
     await this.queue.add(
       'indexer.indexDoc',
       {
@@ -31,10 +55,6 @@ export class IndexerEvent {
 
   @OnEvent('doc.snapshot.updated')
   async indexWorkspace({ workspaceId, docId }: Events['doc.snapshot.updated']) {
-    if (!this.config.indexer.enabled) {
-      return;
-    }
-
     if (workspaceId !== docId) {
       return;
     }
@@ -48,10 +68,6 @@ export class IndexerEvent {
 
   @OnEvent('user.deleted')
   async deleteUserWorkspaces(payload: Events['user.deleted']) {
-    if (!this.config.indexer.enabled) {
-      return;
-    }
-
     for (const workspace of payload.ownedWorkspaces) {
       await this.queue.add(
         'indexer.deleteWorkspace',
@@ -64,22 +80,5 @@ export class IndexerEvent {
         }
       );
     }
-  }
-
-  @Cron(CronExpression.EVERY_30_SECONDS)
-  async autoIndexWorkspaces() {
-    if (!this.config.indexer.enabled) {
-      return;
-    }
-
-    await this.queue.add(
-      'indexer.autoIndexWorkspaces',
-      {},
-      {
-        // make sure only one job is running at a time
-        delay: 30 * 1000,
-        jobId: 'autoIndexWorkspaces',
-      }
-    );
   }
 }

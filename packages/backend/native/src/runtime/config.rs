@@ -20,6 +20,30 @@ pub(crate) struct BackendRuntimeConfig {
   pub(crate) private_key: Arc<Zeroizing<String>>,
   pub(crate) deployment: Deployment,
   pub(crate) copilot: CopilotRuntimeConfig,
+  pub(crate) search: SearchRuntimeConfig,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct SearchRuntimeConfig {
+  pub(crate) enabled: bool,
+  pub(crate) provider: String,
+  pub(crate) endpoint: String,
+  pub(crate) api_key: String,
+  pub(crate) username: String,
+  pub(crate) password: String,
+}
+
+impl Default for SearchRuntimeConfig {
+  fn default() -> Self {
+    Self {
+      enabled: false,
+      provider: "embedded".to_string(),
+      endpoint: String::new(),
+      api_key: String::new(),
+      username: String::new(),
+      password: String::new(),
+    }
+  }
 }
 
 #[derive(Clone, Debug)]
@@ -348,6 +372,7 @@ impl BackendRuntimeConfig {
         .map(TryInto::try_into)
         .transpose()?
         .unwrap_or_default(),
+      search: app_config.indexer.map(Into::into).unwrap_or_default(),
     }
     .validated()
   }
@@ -385,6 +410,10 @@ impl BackendRuntimeConfig {
         .map(TryInto::try_into)
         .transpose()?
         .unwrap_or_else(|| self.copilot.clone()),
+      search: app_config
+        .indexer
+        .map(Into::into)
+        .unwrap_or_else(|| self.search.clone()),
     }
     .validated()
   }
@@ -453,6 +482,42 @@ struct AppConfigFile {
   db: Option<DbConfigFile>,
   crypto: Option<CryptoConfigFile>,
   copilot: Option<CopilotRuntimeConfigFile>,
+  indexer: Option<SearchRuntimeConfigFile>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct SearchRuntimeConfigFile {
+  enabled: bool,
+  provider: SearchProviderConfigFile,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct SearchProviderConfigFile {
+  #[serde(rename = "type")]
+  provider: String,
+  endpoint: String,
+  api_key: String,
+  username: String,
+  password: String,
+}
+
+impl From<SearchRuntimeConfigFile> for SearchRuntimeConfig {
+  fn from(value: SearchRuntimeConfigFile) -> Self {
+    Self {
+      enabled: value.enabled,
+      provider: if value.provider.provider.is_empty() {
+        "embedded".to_string()
+      } else {
+        value.provider.provider
+      },
+      endpoint: value.provider.endpoint,
+      api_key: value.provider.api_key,
+      username: value.provider.username,
+      password: value.provider.password,
+    }
+  }
 }
 
 #[derive(Default, Deserialize)]
@@ -816,6 +881,35 @@ mod tests {
   }
 
   #[test]
+  fn search_config_keeps_disabled_state_separate_from_embedded_provider() {
+    let disabled = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(false)),
+      ("indexer.provider.type", serde_json::json!("embedded")),
+    ])
+    .unwrap();
+    let disabled: SearchRuntimeConfig = disabled.indexer.unwrap().into();
+    assert!(!disabled.enabled);
+    assert_eq!(disabled.provider, "embedded");
+
+    let enabled = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(true)),
+      ("indexer.provider.type", serde_json::json!("elasticsearch")),
+    ])
+    .unwrap();
+    let enabled: SearchRuntimeConfig = enabled.indexer.unwrap().into();
+    assert!(enabled.enabled);
+    assert_eq!(enabled.provider, "elasticsearch");
+
+    let enabled_without_provider = app_config_from_module_json(serde_json::json!({
+      "indexer": { "enabled": true }
+    }))
+    .unwrap();
+    let enabled_without_provider: SearchRuntimeConfig = enabled_without_provider.indexer.unwrap().into();
+    assert!(enabled_without_provider.enabled);
+    assert_eq!(enabled_without_provider.provider, "embedded");
+  }
+
+  #[test]
   fn partial_database_config_preserves_file_config_siblings() {
     let mut file_config = expand_module_config_paths(serde_json::json!({
       "copilot": {
@@ -874,6 +968,7 @@ mod tests {
       private_key: Arc::new(Zeroizing::new("active-private-key".to_string())),
       deployment: Deployment::Cloud,
       copilot: CopilotRuntimeConfig::default(),
+      search: SearchRuntimeConfig::default(),
     };
     let empty = serde_json::Value::Object(Map::new());
 

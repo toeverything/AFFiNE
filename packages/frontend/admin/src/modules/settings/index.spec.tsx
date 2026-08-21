@@ -24,13 +24,26 @@ vi.mock('../header', () => ({
 vi.mock('./config-input-row', () => ({
   ConfigRow: ({
     field,
+    defaultValue,
+    onChange,
     onErrorChange,
   }: {
     field: string;
+    defaultValue?: unknown;
+    onChange?: (field: string, value: unknown) => void;
     onErrorChange?: (field: string, error?: string) => void;
   }) => (
     <div data-testid={`field-${field}`}>
-      <div>{field}</div>
+      <div>{`${field}:${defaultValue}`}</div>
+      <button type="button" onClick={() => onChange?.(field, 'embedded')}>
+        set-embedded-{field}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange?.(field, 'manticoresearch')}
+      >
+        set-manticoresearch-{field}
+      </button>
       <button
         type="button"
         onClick={() => {
@@ -65,6 +78,16 @@ vi.mock('./config', () => ({
         type: 'Boolean',
       },
     },
+    indexer: {
+      'provider.type': {
+        desc: 'Provider',
+        type: 'String',
+      },
+      'provider.endpoint': {
+        desc: 'Endpoint',
+        type: 'String',
+      },
+    },
   },
   ALL_SETTING_GROUPS: [
     {
@@ -76,6 +99,18 @@ vi.mock('./config', () => ({
       name: 'Auth',
       module: 'auth',
       fields: ['allowSignup'],
+    },
+    {
+      name: 'Indexer',
+      module: 'indexer',
+      fields: [
+        {
+          key: 'provider.type',
+          type: 'Enum',
+          options: ['embedded', 'manticoresearch', 'elasticsearch'],
+        },
+        'provider.endpoint',
+      ],
     },
   ],
 }));
@@ -93,6 +128,13 @@ describe('SettingsPage', () => {
         auth: {
           allowSignup: true,
         },
+        indexer: {
+          enabled: false,
+          provider: {
+            type: 'elasticsearch',
+            endpoint: 'http://search.example',
+          },
+        },
       },
       patchedAppConfig: {
         server: {
@@ -100,6 +142,13 @@ describe('SettingsPage', () => {
         },
         auth: {
           allowSignup: true,
+        },
+        indexer: {
+          enabled: false,
+          provider: {
+            type: 'elasticsearch',
+            endpoint: 'http://search.example',
+          },
         },
       },
       update: vi.fn(),
@@ -146,6 +195,46 @@ describe('SettingsPage', () => {
     const authItem = document.getElementById('config-module-auth');
     expect(serverItem?.dataset.state).toBe('open');
     expect(authItem?.dataset.state).toBe('open');
+  });
+
+  test('encodes embedded without replacing external provider settings', () => {
+    const update = vi.fn();
+    useAppConfigMock.mockReturnValue({
+      ...useAppConfigMock(),
+      update,
+    });
+    render(
+      <MemoryRouter initialEntries={['/admin/settings']}>
+        <Routes>
+          <Route path="/admin/settings" element={<SettingsPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Indexer/i })[0]);
+    expect(screen.getByText('indexer/provider.type:embedded')).toBeTruthy();
+    expect(screen.queryByTestId('field-indexer/provider.endpoint')).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'set-embedded-indexer/provider.type',
+      })
+    );
+    expect(update).toHaveBeenCalledWith('indexer/enabled', false);
+    expect(update).not.toHaveBeenCalledWith(
+      'indexer/provider.type',
+      'embedded'
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'set-manticoresearch-indexer/provider.type',
+      })
+    );
+    expect(update).toHaveBeenCalledWith('indexer/enabled', true);
+    expect(update).toHaveBeenCalledWith(
+      'indexer/provider.type',
+      'manticoresearch'
+    );
   });
 
   test('disables save when group has validation errors even if group is dirty', () => {
