@@ -1,6 +1,7 @@
 import type { SignInUserInfo } from '@affine/core/modules/cloud/provider/auth';
 
 export interface AuthPlugin {
+  showNativeSignIn(): Promise<{ success: boolean }>;
   signInMagicLink(options: {
     endpoint: string;
     email: string;

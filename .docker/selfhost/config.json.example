@@ -10,5 +10,9 @@
       "enabled": true,
       "allowCustomEndpoint": true
     }
+  },
+  "indexer": {
+    "enabled": true,
+    "provider.type": "embedded"
   }
 }

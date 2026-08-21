@@ -56,6 +56,17 @@ function buildProgram(logger: Logger) {
     });
 
   program
+    .command('admit-legacy-context-blobs')
+    .description(
+      'Admit legacy context blobs before the cleanup schema migration'
+    )
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        await app.get(RunCommand).admitLegacyContextBlobs();
+      });
+    });
+
+  program
     .command('revert [name]')
     .description('Revert one data migration with given name')
     .action(async name => {

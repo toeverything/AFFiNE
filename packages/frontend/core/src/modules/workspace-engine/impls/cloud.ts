@@ -67,6 +67,7 @@ import {
   GraphQLService,
   WorkspaceServerService,
 } from '../../cloud';
+import { getSyncProtocol } from '../../cloud/stores/server-config';
 import { type GlobalState, NbstoreService } from '../../storage';
 import type {
   Workspace,
@@ -546,6 +547,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
               type: 'workspace',
               id: workspaceId,
               serverBaseUrl: this.server.serverMetadata.baseUrl,
+              syncProtocol: getSyncProtocol(this.server.config$.value.version),
               isSelfHosted:
                 this.server.config$.value.type ===
                 ServerDeploymentType.Selfhosted,
@@ -564,6 +566,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
               type: 'workspace',
               id: workspaceId,
               serverBaseUrl: this.server.serverMetadata.baseUrl,
+              syncProtocol: getSyncProtocol(this.server.config$.value.version),
               isSelfHosted:
                 this.server.config$.value.type ===
                 ServerDeploymentType.Selfhosted,

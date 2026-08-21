@@ -28,10 +28,12 @@ export const MobileSignInPanel = ({
   onClose,
   server,
   initStep,
+  showCloseButton = false,
 }: {
   onClose: () => void;
   server?: string;
   initStep?: SignInStep;
+  showCloseButton?: boolean;
 }) => {
   const workspacesService = useService(WorkspacesService);
   const { jumpToPage } = useNavigateHelper();
@@ -97,7 +99,7 @@ export const MobileSignInPanel = ({
   );
 
   return (
-    <MobileSignInLayout>
+    <MobileSignInLayout showCloseButton={showCloseButton} onClose={onClose}>
       <SignInPanel
         onSkip={onClose}
         onAuthenticated={onAuthenticated}

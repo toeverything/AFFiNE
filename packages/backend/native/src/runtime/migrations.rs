@@ -5,7 +5,10 @@ use super::{RuntimeError, RuntimeResult, types::EmbeddingHealth};
 
 pub(crate) const RUNTIME_MIGRATIONS: &str = include_str!("sql/runtime_migrations.sql");
 const EMBEDDING_MIGRATION: &str = include_str!("sql/embedding.sql");
+const SEARCH_MIGRATION: &str = include_str!("sql/search.sql");
+const SEARCH_ACL_TOKEN_MIGRATION: &str = include_str!("sql/search_acl_tokens.sql");
 const EMBEDDING_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0046;
+const SEARCH_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0053;
 #[cfg(test)]
 pub(crate) static EMBEDDING_TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
@@ -17,6 +20,14 @@ pub(crate) async fn migrate_runtime_tables(pool: &PgPool) -> RuntimeResult<()> {
   Ok(())
 }
 
+pub(crate) async fn migrate_all_tables(pool: &PgPool) -> RuntimeResult<EmbeddingHealth> {
+  migrate_runtime_tables(pool).await?;
+  let embedding = migrate_embedding_tables_inner(pool).await?;
+  migrate_search_tables(pool).await?;
+  Ok(embedding)
+}
+
+#[cfg(test)]
 pub(crate) async fn migrate_embedding_tables(pool: &PgPool) -> EmbeddingHealth {
   match migrate_embedding_tables_inner(pool).await {
     Ok(health) => health,
@@ -24,7 +35,7 @@ pub(crate) async fn migrate_embedding_tables(pool: &PgPool) -> EmbeddingHealth {
   }
 }
 
-async fn migrate_embedding_tables_inner(pool: &PgPool) -> RuntimeResult<EmbeddingHealth> {
+pub(crate) async fn embedding_schema_health(pool: &PgPool) -> RuntimeResult<EmbeddingHealth> {
   let Some(version) = pgvector_version(pool).await? else {
     return Ok(EmbeddingHealth::disabled("pgvector_unavailable", None));
   };
@@ -32,33 +43,19 @@ async fn migrate_embedding_tables_inner(pool: &PgPool) -> RuntimeResult<Embeddin
     return Ok(EmbeddingHealth::disabled("pgvector_version_unsupported", Some(version)));
   }
 
-  let mut transaction = pool
-    .begin()
-    .await
-    .map_err(|error| RuntimeError::database("Embedding migration transaction failed", error))?;
-  sqlx::query("SELECT pg_advisory_xact_lock($1)")
-    .bind(EMBEDDING_ADVISORY_LOCK)
-    .execute(&mut *transaction)
-    .await
-    .map_err(|error| RuntimeError::database("Embedding migration lock failed", error))?;
-  transaction
-    .execute(
-      r#"CREATE TABLE IF NOT EXISTS native_schema_migrations (
-        component TEXT NOT NULL,
-        version INTEGER NOT NULL,
-        checksum TEXT NOT NULL,
-        applied_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        PRIMARY KEY (component, version)
-      )"#,
-    )
-    .await
-    .map_err(|error| RuntimeError::database("Embedding migration ledger failed", error))?;
-
-  apply_migration(&mut transaction, 1, &[EMBEDDING_MIGRATION]).await?;
-  transaction
-    .commit()
-    .await
-    .map_err(|error| RuntimeError::database("Embedding migration commit failed", error))?;
+  let schema_ready: bool = sqlx::query_scalar(
+    "SELECT to_regclass('embedding_workspace_states') IS NOT NULL
+      AND to_regclass('embedding_indexes') IS NOT NULL
+      AND to_regclass('embedding_sources') IS NOT NULL
+      AND to_regclass('embedding_projections') IS NOT NULL
+      AND to_regclass('embedding_chunks') IS NOT NULL",
+  )
+  .fetch_one(pool)
+  .await
+  .map_err(|error| RuntimeError::database("Embedding schema health check failed", error))?;
+  if !schema_ready {
+    return Ok(EmbeddingHealth::disabled("schema_not_migrated", Some(version)));
+  }
 
   Ok(EmbeddingHealth {
     enabled: true,
@@ -70,23 +67,103 @@ async fn migrate_embedding_tables_inner(pool: &PgPool) -> RuntimeResult<Embeddin
   })
 }
 
+pub(crate) async fn migrate_search_tables(pool: &PgPool) -> RuntimeResult<()> {
+  migrate_component(
+    pool,
+    "search",
+    SEARCH_ADVISORY_LOCK,
+    &[(1, &[SEARCH_MIGRATION]), (2, &[SEARCH_ACL_TOKEN_MIGRATION])],
+  )
+  .await?;
+  sqlx::query("INSERT INTO search_runtime_streams(table_key) VALUES ('doc'), ('block') ON CONFLICT DO NOTHING")
+    .execute(pool)
+    .await
+    .map_err(|error| RuntimeError::database("Repair search runtime streams", error))?;
+  Ok(())
+}
+
+async fn migrate_embedding_tables_inner(pool: &PgPool) -> RuntimeResult<EmbeddingHealth> {
+  let Some(version) = pgvector_version(pool).await? else {
+    return Ok(EmbeddingHealth::disabled("pgvector_unavailable", None));
+  };
+  if !pgvector_at_least_0_8(&version) {
+    return Ok(EmbeddingHealth::disabled("pgvector_version_unsupported", Some(version)));
+  }
+
+  migrate_component(
+    pool,
+    "embedding",
+    EMBEDDING_ADVISORY_LOCK,
+    &[(1, &[EMBEDDING_MIGRATION])],
+  )
+  .await?;
+
+  Ok(EmbeddingHealth {
+    enabled: true,
+    state: "ready".to_string(),
+    reason: None,
+    pgvector_version: Some(version),
+    schema_version: Some(1),
+    worker_running: false,
+  })
+}
+
+async fn migrate_component(
+  pool: &PgPool,
+  component: &str,
+  advisory_lock: i64,
+  migrations: &[(i32, &[&str])],
+) -> RuntimeResult<()> {
+  let mut transaction = pool
+    .begin()
+    .await
+    .map_err(|error| RuntimeError::database("Native migration transaction failed", error))?;
+  sqlx::query("SELECT pg_advisory_xact_lock($1)")
+    .bind(advisory_lock)
+    .execute(&mut *transaction)
+    .await
+    .map_err(|error| RuntimeError::database("Native migration lock failed", error))?;
+  transaction
+    .execute(
+      r#"CREATE TABLE IF NOT EXISTS native_schema_migrations (
+        component TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        checksum TEXT NOT NULL,
+        applied_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (component, version)
+      )"#,
+    )
+    .await
+    .map_err(|error| RuntimeError::database("Native migration ledger failed", error))?;
+
+  for (version, statements) in migrations {
+    apply_migration(&mut transaction, component, *version, statements).await?;
+  }
+  transaction
+    .commit()
+    .await
+    .map_err(|error| RuntimeError::database("Native migration commit failed", error))
+}
+
 async fn apply_migration(
   transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+  component: &str,
   version: i32,
   statements: &[&str],
 ) -> RuntimeResult<()> {
   let checksum = migration_checksum(statements);
-  let applied = sqlx::query("SELECT checksum FROM native_schema_migrations WHERE component='embedding' AND version=$1")
+  let applied = sqlx::query("SELECT checksum FROM native_schema_migrations WHERE component=$1 AND version=$2")
+    .bind(component)
     .bind(version)
     .fetch_optional(&mut **transaction)
     .await
-    .map_err(|error| RuntimeError::database("Embedding migration ledger read failed", error))?;
+    .map_err(|error| RuntimeError::database("Native migration ledger read failed", error))?;
   if let Some(applied) = applied {
     let stored: String = applied
       .try_get("checksum")
-      .map_err(|error| RuntimeError::database("Embedding migration checksum decode failed", error))?;
+      .map_err(|error| RuntimeError::database("Native migration checksum decode failed", error))?;
     if stored != checksum {
-      return Err(RuntimeError::invalid_state("Embedding migration checksum mismatch"));
+      return Err(RuntimeError::invalid_state("Native migration checksum mismatch"));
     }
     return Ok(());
   }
@@ -94,14 +171,15 @@ async fn apply_migration(
     transaction
       .execute(*statement)
       .await
-      .map_err(|error| RuntimeError::database("Embedding migration failed", error))?;
+      .map_err(|error| RuntimeError::database("Native component migration failed", error))?;
   }
-  sqlx::query("INSERT INTO native_schema_migrations(component,version,checksum) VALUES('embedding',$1,$2)")
+  sqlx::query("INSERT INTO native_schema_migrations(component,version,checksum) VALUES($1,$2,$3)")
+    .bind(component)
     .bind(version)
     .bind(checksum)
     .execute(&mut **transaction)
     .await
-    .map_err(|error| RuntimeError::database("Embedding migration record failed", error))?;
+    .map_err(|error| RuntimeError::database("Native migration record failed", error))?;
   Ok(())
 }
 
@@ -188,5 +266,30 @@ mod tests {
     .await
     .unwrap();
     assert_eq!(dimensions, 1024);
+  }
+
+  #[test]
+  fn search_schema_uses_transactional_stream_heads() {
+    assert!(SEARCH_MIGRATION.contains("CREATE TABLE search_runtime_streams"));
+    assert!(SEARCH_MIGRATION.contains("PRIMARY KEY (table_key, stream_sequence)"));
+    assert!(!SEARCH_MIGRATION.contains("BIGSERIAL"));
+    assert!(!SEARCH_MIGRATION.contains("CREATE SEQUENCE"));
+  }
+
+  #[tokio::test]
+  async fn concurrent_search_migration_is_idempotent() {
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      return;
+    };
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    let (first, second) = tokio::join!(migrate_search_tables(&pool), migrate_search_tables(&pool));
+    first.unwrap();
+    second.unwrap();
+    let versions: Vec<i32> =
+      sqlx::query_scalar("SELECT version FROM native_schema_migrations WHERE component='search' ORDER BY version")
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+    assert_eq!(versions, vec![1, 2]);
   }
 }

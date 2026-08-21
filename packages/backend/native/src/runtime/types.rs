@@ -444,6 +444,7 @@ pub struct RuntimeBlobMetadataBackfillResult {
   pub workspace_ids: Vec<String>,
 }
 
+#[derive(Default)]
 #[napi_derive::napi(object)]
 pub struct RuntimeDocBlobRefsResult {
   pub scanned_docs: i64,
@@ -551,4 +552,11 @@ pub struct RuntimeWorkspaceStatsDailyRecalibrationResult {
 pub struct RuntimeEmbeddingProgress {
   pub total: i64,
   pub embedded: i64,
+}
+
+#[napi_derive::napi(object)]
+pub struct SearchOperationOutput {
+  pub ok: bool,
+  pub value: Option<serde_json::Value>,
+  pub error_code: Option<String>,
 }

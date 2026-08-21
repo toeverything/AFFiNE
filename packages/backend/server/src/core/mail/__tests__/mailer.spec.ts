@@ -25,6 +25,7 @@ interface Context {
     commitMailDeliveryQuotaV1: Sinon.SinonStub;
     releaseMailDeliveryQuotaV1: Sinon.SinonStub;
     embeddingHealth: Sinon.SinonStub;
+    searchStatus: Sinon.SinonStub;
   };
 }
 
@@ -41,6 +42,7 @@ test.before(async t => {
       reason: 'test',
       workerRunning: false,
     }),
+    searchStatus: Sinon.stub().resolves({ ready: false }),
   };
   t.context.module = await createTestingModule({
     tapModule: builder => {

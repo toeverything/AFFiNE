@@ -1,3 +1,4 @@
+import AffineGraphQL
 import Capacitor
 import Foundation
 import Security
@@ -87,30 +88,34 @@ private actor AuthSessionBroker {
   private var exchangeTasks: [String: AuthRefreshOperation] = [:]
   private var mutationEpochs: [String: UInt] = [:]
 
-  func store(_ endpoint: String, response: AuthTokenResponse) throws {
+  func store(_ endpoint: String, response: AuthTokenResponse) throws -> StoredAuthTokenPair {
     invalidateTokenMutation(canonicalEndpoint(endpoint))
-    try write(endpoint, tokenPair(response))
+    let pair = try tokenPair(response)
+    try write(endpoint, pair)
+    return pair
   }
 
-  func validAccessToken(_ endpoint: String, minValidity: TimeInterval = 120) async throws -> String? {
+  func validAccessToken(_ endpoint: String, minValidity: TimeInterval = 120) async throws
+    -> StoredAuthTokenPair?
+  {
     let key = canonicalEndpoint(endpoint)
     if let operation = exchangeTasks[key] {
-      return try await operation.task.value.accessToken
+      return try await operation.task.value
     }
 
     guard let pair = try read(endpoint) else { return nil }
     if pair.accessExpiresAt.timeIntervalSinceNow > minValidity {
-      return pair.accessToken
+      return pair
     }
-    return try await refresh(endpoint).accessToken
+    return try await refresh(endpoint)
   }
 
-  func refreshAccessToken(_ endpoint: String) async throws -> String {
+  func refreshAccessToken(_ endpoint: String) async throws -> StoredAuthTokenPair {
     let key = canonicalEndpoint(endpoint)
     if let operation = exchangeTasks[key] {
-      return try await operation.task.value.accessToken
+      return try await operation.task.value
     }
-    return try await refresh(endpoint).accessToken
+    return try await refresh(endpoint)
   }
 
   func signOut(_ endpoint: String) async throws {
@@ -348,6 +353,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
   public let identifier = "AuthPlugin"
   public let jsName = "Auth"
   public let pluginMethods: [CAPPluginMethod] = [
+    CAPPluginMethod(name: "showNativeSignIn", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "signInMagicLink", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "signInOauth", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "signInOpenApp", returnType: CAPPluginReturnPromise),
@@ -361,6 +367,32 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
 
   private let broker = AuthSessionBroker()
   private let authCookieNames = Set(["affine_session", "affine_user_id", "affine_csrf_token"])
+  private var isNativeSignInPresented = false
+
+  @objc public func showNativeSignIn(_ call: CAPPluginCall) {
+    Task { @MainActor [weak self] in
+      guard let self else {
+        call.reject("Failed to show native sign-in")
+        return
+      }
+
+      do {
+        let webView = try self.webView.get("AFFiNE is still loading. Please try again in a moment.")
+        if self.isNativeSignInPresented {
+          call.resolve(["success": false])
+          return
+        }
+
+        self.isNativeSignInPresented = true
+        defer { self.isNativeSignInPresented = false }
+
+        let isSignedIn = try await PaywallAuthGuard.ensureSignedIn(using: webView)
+        call.resolve(["success": isSignedIn])
+      } catch {
+        call.reject("Failed to show native sign-in", nil, error)
+      }
+    }
+  }
 
   @objc public func debugLog(_ call: CAPPluginCall) {
     let message = call.getString("message") ?? "[AFFiNE][iOS] debug log"
@@ -549,8 +581,12 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     Task {
       do {
         let endpoint = try call.getStringEnsure("endpoint")
-        let token = try await broker.validAccessToken(endpoint)
-        call.resolve(["token": token ?? NSNull()])
+        let pair = try await broker.validAccessToken(endpoint)
+        if let pair {
+          AuthAccessTokenCache.shared.set(
+            pair.accessToken, expiresAt: pair.accessExpiresAt, for: endpoint)
+        }
+        call.resolve(["token": pair?.accessToken ?? NSNull()])
       } catch {
         call.reject("Failed to get access token, \(error)", nil, error)
       }
@@ -560,7 +596,9 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
   @objc public func clearEndpointSession(_ call: CAPPluginCall) {
     Task {
       do {
-        try await broker.clear(call.getStringEnsure("endpoint"))
+        let endpoint = try call.getStringEnsure("endpoint")
+        try await broker.clear(endpoint)
+        AuthAccessTokenCache.shared.remove(for: endpoint)
         call.resolve(["ok": true])
       } catch {
         call.reject("Failed to clear auth session, \(error)", nil, error)
@@ -571,8 +609,11 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
   @objc public func refreshAccessToken(_ call: CAPPluginCall) {
     Task {
       do {
-        let token = try await broker.refreshAccessToken(call.getStringEnsure("endpoint"))
-        call.resolve(["token": token])
+        let endpoint = try call.getStringEnsure("endpoint")
+        let pair = try await broker.refreshAccessToken(endpoint)
+        AuthAccessTokenCache.shared.set(
+          pair.accessToken, expiresAt: pair.accessExpiresAt, for: endpoint)
+        call.resolve(["token": pair.accessToken])
       } catch {
         call.reject("Failed to refresh access token, \(error)", nil, error)
       }
@@ -712,6 +753,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
       do {
         let endpoint = try call.getStringEnsure("endpoint")
         try await broker.signOut(endpoint)
+        AuthAccessTokenCache.shared.remove(for: endpoint)
         self.clearAuthCookies(endpoint)
         call.resolve(["ok": true])
       } catch {

@@ -561,13 +561,16 @@ export class DocSyncPeer {
       this.actions.addDoc(docId);
       this.actions.updateRemoteClock(docId, remoteClock);
 
-      // schedule push job
-      this.schedule({
-        type: 'save',
-        docId,
-        remoteClock: remoteClock,
-        update,
-      });
+      if (isEmptyUpdate(update)) {
+        this.schedule({ type: 'pull', docId });
+      } else {
+        this.schedule({
+          type: 'save',
+          docId,
+          remoteClock: remoteClock,
+          update,
+        });
+      }
     },
   };
 

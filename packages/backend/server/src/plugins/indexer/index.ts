@@ -5,30 +5,41 @@ import { Module } from '@nestjs/common';
 import { ServerConfigModule } from '../../core/config';
 import { DocStorageModule } from '../../core/doc';
 import { PermissionModule } from '../../core/permission';
-import { QuotaServiceModule } from '../../core/quota';
 import { IndexerEvent } from './event';
-import { SearchProviderFactory } from './factory';
 import { IndexerJob } from './job';
-import { SearchProviders } from './providers';
 import { IndexerResolver } from './resolver';
+import { IndexerScheduler } from './scheduler';
 import { IndexerService } from './service';
 
+const INDEXER_SHARED_IMPORTS = [
+  ServerConfigModule,
+  DocStorageModule,
+  PermissionModule,
+];
+
 @Module({
-  imports: [
-    ServerConfigModule,
-    DocStorageModule,
-    PermissionModule,
-    QuotaServiceModule,
-  ],
-  providers: [
-    IndexerResolver,
-    IndexerService,
-    IndexerJob,
-    IndexerEvent,
-    SearchProviderFactory,
-    ...SearchProviders,
-  ],
-  exports: [IndexerService, SearchProviderFactory],
+  imports: INDEXER_SHARED_IMPORTS,
+  providers: [IndexerService],
+  exports: [IndexerService],
+})
+export class IndexerServiceModule {}
+
+@Module({
+  imports: [IndexerServiceModule],
+  providers: [IndexerEvent],
+})
+export class IndexerProducerModule {}
+
+@Module({
+  imports: [IndexerServiceModule, DocStorageModule, PermissionModule],
+  providers: [IndexerJob, IndexerScheduler],
+})
+export class IndexerWorkerModule {}
+
+@Module({
+  imports: [IndexerServiceModule, DocStorageModule, PermissionModule],
+  providers: [IndexerResolver, IndexerEvent],
+  exports: [IndexerServiceModule],
 })
 export class IndexerModule {}
 

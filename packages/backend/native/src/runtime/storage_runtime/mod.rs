@@ -17,7 +17,10 @@ pub use capabilities::StorageProviderCapabilities;
 use capabilities::storage_provider_capabilities;
 use config::StorageRuntimeConfig;
 pub(super) use current_doc::load_current_doc;
-use current_doc::{CurrentDoc, CurrentDocUpdate, load_workspace_live_doc_ids, merge_current_doc};
+use current_doc::{
+  CurrentDoc, CurrentDocUpdate, load_canonical_doc, load_workspace_canonical_doc_ids, load_workspace_live_doc_ids,
+  merge_current_doc,
+};
 
 use super::object_storage::{
   self, ObjectStorageService, StorageBackendConfig,

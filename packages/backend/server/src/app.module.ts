@@ -28,12 +28,16 @@ import { RedisModule } from './base/redis';
 import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
 import { AuthModule } from './core/auth';
-import { BackendRuntimeModule } from './core/backend-runtime';
+import {
+  BackendRuntimeModule,
+  BackendRuntimeProducerModule,
+  BackendRuntimeWorkerModule,
+} from './core/backend-runtime';
 import { CommentModule } from './core/comment';
 import { ServerConfigModule, ServerConfigResolverModule } from './core/config';
 import { DocStorageModule } from './core/doc';
+import { DocJobsModule } from './core/doc-jobs';
 import { DocRendererModule } from './core/doc-renderer';
-import { DocServiceModule } from './core/doc-service';
 import { FeatureModule } from './core/features';
 import { MailModule } from './core/mail';
 import { MonitorModule } from './core/monitor';
@@ -44,20 +48,20 @@ import { QuotaModule } from './core/quota';
 import { RealtimeModule } from './core/realtime';
 import { SelfhostModule } from './core/selfhost';
 import { StaticFileModule } from './core/static-files';
-import { StorageModule } from './core/storage';
+import { StorageApiModule, StorageWorkerModule } from './core/storage';
 import { StorageRuntimeModule } from './core/storage-runtime';
 import { SyncModule } from './core/sync';
 import { TelemetryModule } from './core/telemetry';
 import { UserModule } from './core/user';
 import { VersionModule } from './core/version';
 import { WorkspaceModule } from './core/workspaces';
-import { Env } from './env';
+import { Env, ServerRole } from './env';
 import { ModelsModule } from './models';
 import { CalendarModule } from './plugins/calendar';
 import { CaptchaModule } from './plugins/captcha';
 import { CopilotModule } from './plugins/copilot';
 import { GCloudModule } from './plugins/gcloud';
-import { IndexerModule } from './plugins/indexer';
+import { IndexerModule, IndexerWorkerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
 import { OAuthModule } from './plugins/oauth';
 import { PaymentModule } from './plugins/payment';
@@ -120,6 +124,7 @@ export const FunctionalityModules = [
   RealtimeModule,
   ModelsModule,
   BackendRuntimeModule,
+  BackendRuntimeProducerModule,
   StorageRuntimeModule,
   ScheduleModule.forRoot(),
   MonitorModule,
@@ -157,29 +162,27 @@ export class AppModuleBuilder {
 
 export function buildAppModule(env: Env) {
   const factor = new AppModuleBuilder();
+  const workerOnly = env.role === ServerRole.Worker;
 
   factor
     // basic
     .use(...FunctionalityModules)
 
-    // enable indexer module on graphql, doc and front service
-    .useIf(
-      () => env.flavors.graphql || env.flavors.doc || env.flavors.front,
-      IndexerModule
-    )
+    // online roles publish indexer events; only the worker registers consumers
+    .useIf(() => env.isApi || env.isFrontend, IndexerModule)
+    .useIf(() => env.isWorker, IndexerWorkerModule)
 
-    // auth
-    .use(UserModule, AuthModule, PermissionModule)
+    // the worker owns doc consumers and schedulers
+    .useIf(() => env.isWorker, DocJobsModule)
+    .useIf(() => env.isWorker, BackendRuntimeWorkerModule)
+
+    // auth and business APIs are not part of the queue worker application
+    .useIf(() => !workerOnly, UserModule, AuthModule, PermissionModule)
 
     // business modules
-    .use(
-      ServerConfigModule,
-      FeatureModule,
-      QuotaModule,
-      DocStorageModule,
-      NotificationModule,
-      MailModule
-    )
+    .use(ServerConfigModule, QuotaModule, DocStorageModule)
+    .useIf(() => env.isWorker, StorageWorkerModule)
+    .useIf(() => !workerOnly, FeatureModule, NotificationModule, MailModule)
     // renderer server and front server
     .useIf(() => env.flavors.renderer || env.flavors.front, DocRendererModule)
     // sync server and front server
@@ -197,7 +200,7 @@ export function buildAppModule(env: Env) {
       () => env.flavors.graphql,
       GqlModule,
       VersionModule,
-      StorageModule,
+      StorageApiModule,
       ServerConfigResolverModule,
       WorkspaceModule,
       LicenseModule,
@@ -210,10 +213,12 @@ export function buildAppModule(env: Env) {
       CommentModule,
       QueueDashboardModule
     )
-    // doc service and front service
-    .useIf(() => env.flavors.doc || env.flavors.front, DocServiceModule)
     // worker for and self-hosted API only for self-host and local development only
-    .useIf(() => env.dev || env.selfhosted, WorkerModule, SelfhostModule)
+    .useIf(
+      () => !workerOnly && (env.dev || env.selfhosted),
+      WorkerModule,
+      SelfhostModule
+    )
     // static frontend routes for front flavor
     .useIf(() => env.flavors.front, StaticFileModule)
 

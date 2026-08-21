@@ -1,11 +1,11 @@
 import test from 'ava';
-import Sinon from 'sinon';
 
 import { createModule } from '../../../__tests__/create-module';
-import { Config } from '../../../base';
+import { JobQueue } from '../../../base';
 import { ConfigModule } from '../../../base/config';
 import { IndexerEvent } from '../event';
 import { IndexerModule } from '../index';
+import { IndexerScheduler } from '../scheduler';
 
 const module = await createModule({
   imports: [
@@ -18,27 +18,10 @@ const module = await createModule({
   ],
 });
 const indexerEvent = module.get(IndexerEvent);
-const config = module.get(Config);
+const indexerScheduler = new IndexerScheduler(module.get(JobQueue));
 
 test.after.always(async () => {
   await module.close();
-});
-
-test.afterEach.always(() => {
-  Sinon.restore();
-});
-
-test('should not index workspace if indexer is disabled', async t => {
-  Sinon.stub(config.indexer, 'enabled').value(false);
-  const count = module.queue.count('indexer.indexWorkspace');
-
-  // @ts-expect-error ignore missing fields
-  await indexerEvent.indexWorkspace({
-    workspaceId: 'test-workspace',
-    docId: 'test-workspace',
-  });
-
-  t.is(module.queue.count('indexer.indexWorkspace'), count);
 });
 
 test('should index workspace when root snapshot is updated', async t => {
@@ -64,19 +47,19 @@ test('should not index workspace when non-root snapshot is updated', async t => 
   t.is(module.queue.count('indexer.indexWorkspace'), count);
 });
 
-test('should not delete workspace if indexer is disabled', async t => {
-  Sinon.stub(config.indexer, 'enabled').value(false);
-  const count = module.queue.count('indexer.deleteWorkspace');
-
-  // @ts-expect-error ignore missing fields
-  await indexerEvent.deleteUserWorkspaces({
-    ownedWorkspaces: ['test-workspace'],
+test('should reindex documents after document access changes', async t => {
+  await indexerEvent.reindexDocOnGrantChange({
+    workspaceId: 'test-workspace',
+    docId: 'test-doc',
   });
-
-  t.is(module.queue.count('indexer.deleteWorkspace'), count);
+  const { payload } = await module.queue.waitFor('indexer.indexDoc');
+  t.deepEqual(payload, {
+    workspaceId: 'test-workspace',
+    docId: 'test-doc',
+  });
 });
 
-test('should delete workspace if indexer is enabled', async t => {
+test('should delete workspace', async t => {
   // @ts-expect-error ignore missing fields
   await indexerEvent.deleteUserWorkspaces({
     ownedWorkspaces: ['test-workspace'],
@@ -86,17 +69,8 @@ test('should delete workspace if indexer is enabled', async t => {
   t.is(payload.workspaceId, 'test-workspace');
 });
 
-test('should not schedule auto index workspaces if indexer is disabled', async t => {
-  Sinon.stub(config.indexer, 'enabled').value(false);
-  const count = module.queue.count('indexer.autoIndexWorkspaces');
-
-  await indexerEvent.autoIndexWorkspaces();
-
-  t.is(module.queue.count('indexer.autoIndexWorkspaces'), count);
-});
-
 test('should schedule auto index workspaces', async t => {
-  await indexerEvent.autoIndexWorkspaces();
+  await indexerScheduler.autoIndexWorkspaces();
 
   const { payload } = await module.queue.waitFor('indexer.autoIndexWorkspaces');
   t.is(payload.lastIndexedWorkspaceSid, undefined);
