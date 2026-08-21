@@ -41,7 +41,7 @@ pub(crate) use super::types;
 pub(super) use super::{
   BackendRuntimeConfig, ConfigSource, InviteQuotaConfig, RuntimeError, RuntimeResult,
   migrations::{embedding_schema_health, migrate_all_tables},
-  napi_error, to_napi_error,
+  napi_error, to_napi_error, webpki_tls_config,
 };
 use crate::llm::{
   ByokLocalLeaseOutput, ByokPolicyOutput, ByokProbeResultOutput, ByokProfileOutput, CreateByokLocalLeaseInput,

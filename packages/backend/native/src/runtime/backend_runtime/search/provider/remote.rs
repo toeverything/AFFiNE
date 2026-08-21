@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use sqlx::PgPool;
 
 use super::{
-  super::{store::SearchChange, types::SearchTable},
+  super::{store::SearchChange, types::SearchTable, webpki_tls_config},
   manticore::{manticore_exact_tokens, manticore_fields, prepare_manticore_payload, prepare_manticore_search},
 };
 use crate::runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig};
@@ -33,6 +33,10 @@ impl RemoteProvider {
       return Err(RuntimeError::config("invalid search provider endpoint"));
     }
     let mut client = Client::builder()
+      .tls_backend_preconfigured(
+        webpki_tls_config()
+          .map_err(|error| RuntimeError::invalid_state(format!("search TLS config failed: {error}")))?,
+      )
       .redirect(Policy::none())
       .timeout(Duration::from_secs(30));
     if config.provider == "manticoresearch" {

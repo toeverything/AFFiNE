@@ -11,6 +11,8 @@ mod worker;
 pub(super) use runtime::SearchRuntime;
 pub(super) use types::{RuntimeAggregateRequest, RuntimeSearchRequest};
 
+pub(super) use super::webpki_tls_config;
+
 const SCHEMA_FINGERPRINT: &str = "search-runtime-v5";
 
 fn exact_token(value: &str) -> String {
