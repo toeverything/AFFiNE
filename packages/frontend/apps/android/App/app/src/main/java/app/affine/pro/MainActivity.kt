@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.webkit.WebSettings
+import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
@@ -31,6 +32,7 @@ import app.affine.pro.service.WebService
 import app.affine.pro.utils.px2dp
 import app.affine.pro.utils.dp2px
 import com.getcapacitor.BridgeActivity
+import com.getcapacitor.WebViewListener
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -100,8 +102,25 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
 
     override fun load() {
         super.load()
+        configureAndroidIMEBridge()
         AuthInitializer.initialize(bridge)
         configureEditorWebView()
+    }
+
+    private fun configureAndroidIMEBridge() {
+        bridge.addWebViewListener(object : WebViewListener() {
+            override fun onPageStarted(webView: WebView?) {
+                (webView as? AffineEditorWebView)?.updateAndroidIMEBridge(webView.url)
+            }
+
+            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                (view as? AffineEditorWebView)?.updateAndroidIMEBridge(url)
+            }
+        })
+
+        (bridge.webView as? AffineEditorWebView)?.updateAndroidIMEBridge(
+            bridge.webView.url ?: bridge.localUrl
+        )
     }
 
     override fun onTrimMemory(level: Int) {

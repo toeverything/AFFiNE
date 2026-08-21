@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <!-- Derived from @capacitor/android 8.4.2; keep this override aligned with the Capacitor layout. -->
     <app.affine.pro.AffineEditorWebView
         android:id="@+id/webview"
         android:layout_width="match_parent"

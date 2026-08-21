@@ -59,18 +59,12 @@ export function getPrefixText(inlineEditor: InlineEditor) {
 
   const maxMarkdownPrefixLength = 512;
   const prefixStart = Math.max(0, inlineRange.index - maxMarkdownPrefixLength);
-  const prefixWindow = inlineEditor.yTextString.slice(
-    prefixStart,
-    inlineRange.index
-  );
+  const yTextString = inlineEditor.yTextString;
+  const prefixWindow = yTextString.slice(prefixStart, inlineRange.index);
   const nearestLineBreakIndex = prefixWindow.lastIndexOf('\n');
   if (nearestLineBreakIndex === -1 && prefixStart > 0) return '';
 
-  const lineStart =
-    nearestLineBreakIndex === -1 ? 0 : prefixStart + nearestLineBreakIndex + 1;
-  const prefixText = inlineEditor.yTextString.slice(
-    lineStart,
-    inlineRange.index
-  );
-  return prefixText;
+  return nearestLineBreakIndex === -1
+    ? prefixWindow
+    : prefixWindow.slice(nearestLineBreakIndex + 1);
 }

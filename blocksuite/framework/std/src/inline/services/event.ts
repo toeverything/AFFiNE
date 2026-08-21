@@ -13,23 +13,43 @@ import { isMaybeInlineRangeEqual } from '../utils/inline-range.js';
 import { transformInput } from '../utils/transform-input.js';
 import type { BeforeinputHookCtx, CompositionEndHookCtx } from './hook.js';
 
+type AndroidIMEInputDetail = {
+  inputType?: string;
+};
+
+declare global {
+  interface HTMLElementEventMap {
+    'affine-android-ime-input': CustomEvent<AndroidIMEInputDetail>;
+  }
+}
+
 export class EventService<TextAttributes extends BaseTextAttributes> {
   private _compositionInlineRange: InlineRange | null = null;
 
   private _isComposing = false;
 
+  private readonly _androidIMEBridge = () => {
+    return (
+      globalThis as typeof globalThis & {
+        AffineAndroidIME?: {
+          finishComposingSession?: (reason: string) => void;
+          setEditorFocused?: (focused: boolean) => void;
+        };
+      }
+    ).AffineAndroidIME;
+  };
+
   private readonly _finishAndroidComposingSession = (reason: string) => {
     if (!IS_ANDROID) return;
 
     window.setTimeout(() => {
-      (
-        globalThis as typeof globalThis & {
-          AffineAndroidIME?: {
-            finishComposingSession?: (reason: string) => void;
-          };
-        }
-      ).AffineAndroidIME?.finishComposingSession?.(reason);
+      this._androidIMEBridge()?.finishComposingSession?.(reason);
     }, 0);
+  };
+
+  private readonly _setAndroidEditorFocused = (focused: boolean) => {
+    if (!IS_ANDROID) return;
+    this._androidIMEBridge()?.setEditorFocused?.(focused);
   };
 
   private readonly _getClosestInlineRoot = (node: Node): Element | null => {
@@ -221,6 +241,7 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     if (
       IS_ANDROID &&
       (ctx.raw.inputType === 'deleteContentBackward' ||
+        ctx.raw.inputType === 'deleteContentForward' ||
         ctx.raw.inputType === 'insertParagraph' ||
         ctx.raw.inputType === 'insertLineBreak' ||
         (ctx.raw.inputType === 'insertText' &&
@@ -230,14 +251,12 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     }
   };
 
-  private readonly _onAndroidIMEInput = async (event: Event) => {
+  private readonly _onAndroidIMEInput = async (
+    event: CustomEvent<AndroidIMEInputDetail>
+  ) => {
     if (!IS_ANDROID) return;
 
-    const inputType = (
-      event as CustomEvent<{
-        inputType?: string;
-      }>
-    ).detail?.inputType;
+    const inputType = event.detail?.inputType;
     if (
       inputType !== 'deleteContentBackward' &&
       inputType !== 'deleteContentForward'
@@ -252,9 +271,6 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       !this._isRangeCompletelyInRoot(range)
     )
       return;
-
-    this._isComposing = false;
-    this._compositionInlineRange = null;
 
     let inlineRange = this.editor.toInlineRange(range);
     if (!inlineRange) {
@@ -283,6 +299,8 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
 
     event.preventDefault();
     event.stopPropagation();
+    this._isComposing = false;
+    this._compositionInlineRange = null;
 
     const raw = new InputEvent('beforeinput', {
       inputType,
@@ -307,6 +325,7 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       this.editor as never
     );
     this.editor.slots.inputting.next('');
+    this._finishAndroidComposingSession(`android-ime:${inputType}`);
   };
 
   private readonly _onClick = (event: MouseEvent) => {
@@ -542,6 +561,23 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       'affine-android-ime-input',
       e => {
         this._onAndroidIMEInput(e).catch(console.error);
+      }
+    );
+    this.editor.disposables.addFromEvent(eventSource, 'focusin', () => {
+      this._setAndroidEditorFocused(true);
+    });
+    this.editor.disposables.addFromEvent(
+      eventSource,
+      'focusout',
+      (event: FocusEvent) => {
+        const relatedTarget = event.relatedTarget;
+        if (
+          relatedTarget instanceof Node &&
+          this.editor.rootElement?.contains(relatedTarget)
+        ) {
+          return;
+        }
+        this._setAndroidEditorFocused(false);
       }
     );
     this.editor.disposables.addFromEvent(

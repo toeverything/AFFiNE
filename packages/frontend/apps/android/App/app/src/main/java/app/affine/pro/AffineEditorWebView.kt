@@ -1,6 +1,7 @@
 package app.affine.pro
 
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.os.SystemClock
 import android.util.AttributeSet
@@ -22,15 +23,35 @@ private fun logDebug(message: String) {
     }
 }
 
+private fun isTrustedAffineOrigin(url: String?): Boolean {
+    val uri = Uri.parse(url ?: return false)
+    val scheme = uri.scheme?.lowercase()
+    val host = uri.host?.lowercase()
+    if (scheme == "https" && host == "localhost") return true
+
+    return BuildConfig.DEBUG &&
+        scheme == "http" &&
+        host in setOf("localhost", "127.0.0.1", "10.0.2.2")
+}
+
 class AffineEditorWebView(
     context: Context,
     attrs: AttributeSet,
 ) : CapacitorWebView(context, attrs) {
     private val imeState = AndroidIMEState()
+    private val androidIMEBridge = AndroidIMEBridge()
 
     init {
         logDebug("AffineEditorWebView created sdk=${Build.VERSION.SDK_INT}")
-        addJavascriptInterface(AndroidIMEBridge(), "AffineAndroidIME")
+    }
+
+    fun updateAndroidIMEBridge(url: String?) {
+        if (isTrustedAffineOrigin(url)) {
+            addJavascriptInterface(androidIMEBridge, "AffineAndroidIME")
+        } else {
+            removeJavascriptInterface("AffineAndroidIME")
+            imeState.editorFocused = false
+        }
     }
 
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
@@ -75,7 +96,6 @@ class AffineEditorWebView(
                           composed: true,
                         }));
                         let fallbackKey = null;
-                        let fallbackActivatedHost = false;
                         if (!handled) {
                           const key = '$escapedInputType' === 'deleteContentForward'
                             ? 'Delete'
@@ -84,14 +104,6 @@ class AffineEditorWebView(
                             ? 46
                             : 8;
                           fallbackKey = key;
-                          const fallbackElement = target instanceof Element
-                            ? target
-                            : target?.parentElement;
-                          const host = fallbackElement?.closest?.('editor-host');
-                          if (host?.std?.event) {
-                            host.std.event.active = true;
-                            fallbackActivatedHost = true;
-                          }
                           target.dispatchEvent(new KeyboardEvent('keydown', {
                             key,
                             code: key,
@@ -106,7 +118,6 @@ class AffineEditorWebView(
                           inputType: '$escapedInputType',
                           handled,
                           fallbackKey,
-                          fallbackActivatedHost,
                         };
                       } catch (error) {
                         console.error('[AffineIME] dispatch editor input failed', error);
@@ -124,11 +135,12 @@ class AffineEditorWebView(
     private inner class AndroidIMEBridge {
         @JavascriptInterface
         fun finishComposingSession(reason: String?) {
+            if (!isTrustedAffineOrigin(this@AffineEditorWebView.url)) return
             val reasonForLog = reason?.take(48) ?: "unknown"
             val isDeleteReason = reason?.contains("deleteContent") == true
             logDebug("finishComposingSessionFromWeb reason=$reasonForLog")
             if (!isDeleteReason) {
-                imeState.clearRequestedAtMs = SystemClock.uptimeMillis()
+                imeState.nextClearRequestGeneration()
             }
             requestRestartInput(
                 if (isDeleteReason) {
@@ -138,15 +150,22 @@ class AffineEditorWebView(
                 },
             )
         }
+
+        @JavascriptInterface
+        fun setEditorFocused(focused: Boolean) {
+            if (isTrustedAffineOrigin(this@AffineEditorWebView.url)) {
+                imeState.editorFocused = focused
+            }
+        }
     }
 
     private fun requestRestartInput(delayMs: Long) {
+        val restartGeneration = imeState.nextRestartGeneration()
         if (delayMs <= 0L) {
             post { restartInput() }
             return
         }
 
-        val restartGeneration = imeState.nextRestartGeneration()
         postDelayed(
             {
                 if (restartGeneration != imeState.restartInputGeneration) return@postDelayed
@@ -165,7 +184,10 @@ class AffineEditorWebView(
 
     private class AndroidIMEState {
         @Volatile
-        var clearRequestedAtMs: Long = 0L
+        var clearRequestGeneration: Long = 0L
+
+        @Volatile
+        var editorFocused: Boolean = false
 
         @Volatile
         var lastDeleteIntentAtMs: Long = 0L
@@ -178,6 +200,12 @@ class AffineEditorWebView(
             restartInputGeneration += 1
             return restartInputGeneration
         }
+
+        @Synchronized
+        fun nextClearRequestGeneration(): Long {
+            clearRequestGeneration += 1
+            return clearRequestGeneration
+        }
     }
 
     private class AffineInputConnection(
@@ -186,7 +214,7 @@ class AffineEditorWebView(
         private val dispatchDeleteBackward: () -> Unit,
         private val dispatchDeleteForward: () -> Unit,
     ) : InputConnectionWrapper(target, true) {
-        private var handledClearRequestedAtMs = 0L
+        private var handledClearRequestGeneration = 0L
         private var composingText = ""
         private var isComposingTextActive = false
         private var externalRegionText = ""
@@ -212,6 +240,12 @@ class AffineEditorWebView(
                 lastExternalReplayTextLength = regionText.length
                 lastExternalReplayTextAtMs = externalRegionAtMs
                 lastExternalReplayDeletedLength = 0
+            } else if (regionText != composingText) {
+                // Keep the mirror local instead of delegating to the native WebView
+                // connection; delegating would reintroduce the IME replay we suppress.
+                composingText = regionText
+                isComposingTextActive = regionText.isNotEmpty()
+                clearExternalRegion()
             }
 
             return true
@@ -318,10 +352,7 @@ class AffineEditorWebView(
             }
             clearExternalRegion()
             if (isComposingTextActive && beforeLength > 0) {
-                composingText = composingText.dropLast(beforeLength.coerceAtMost(composingText.length))
-                if (composingText.isEmpty()) {
-                    resetComposingText()
-                }
+                trimComposingTail(beforeLength, codePoints = false)
             }
             return super.deleteSurroundingText(beforeLength, afterLength)
         }
@@ -343,10 +374,7 @@ class AffineEditorWebView(
             }
             clearExternalRegion()
             if (isComposingTextActive && beforeLength > 0) {
-                composingText = composingText.dropLast(beforeLength.coerceAtMost(composingText.length))
-                if (composingText.isEmpty()) {
-                    resetComposingText()
-                }
+                trimComposingTail(beforeLength, codePoints = true)
             }
             return super.deleteSurroundingTextInCodePoints(beforeLength, afterLength)
         }
@@ -378,6 +406,9 @@ class AffineEditorWebView(
                     "unicode=${event.unicodeChar} repeat=${event.repeatCount}"
             )
             if (event.keyCode == KeyEvent.KEYCODE_DEL) {
+                if (!state.editorFocused && !isConsumingDeleteKeyEvent) {
+                    return super.sendKeyEvent(event)
+                }
                 if (event.action == KeyEvent.ACTION_DOWN) {
                     logDebug("dispatchDeleteKeyEventToEditorInput")
                     recordDeleteIntent()
@@ -391,6 +422,9 @@ class AffineEditorWebView(
                 }
             }
             if (event.keyCode == KeyEvent.KEYCODE_FORWARD_DEL) {
+                if (!state.editorFocused && !isConsumingDeleteKeyEvent) {
+                    return super.sendKeyEvent(event)
+                }
                 if (event.action == KeyEvent.ACTION_DOWN) {
                     logDebug("dispatchForwardDeleteKeyEventToEditorInput")
                     recordDeleteIntent()
@@ -438,6 +472,25 @@ class AffineEditorWebView(
             return true
         }
 
+        private fun trimComposingTail(beforeLength: Int, codePoints: Boolean) {
+            val length =
+                if (codePoints) {
+                    beforeLength.coerceAtMost(composingText.codePointCount(0, composingText.length))
+                } else {
+                    beforeLength.coerceAtMost(composingText.length)
+                }
+            composingText =
+                if (codePoints) {
+                    val end = composingText.offsetByCodePoints(composingText.length, -length)
+                    composingText.substring(0, end)
+                } else {
+                    composingText.dropLast(length)
+                }
+            if (composingText.isEmpty()) {
+                resetComposingText()
+            }
+        }
+
         private fun shouldDropExternalReplay(text: String): Boolean {
             if (text.isEmpty()) return false
             if (isDroppingExternalReplay) {
@@ -454,7 +507,8 @@ class AffineEditorWebView(
                 return false
             }
 
-            val isSameRegionReplay = externalRegionText == text
+            val isSameRegionReplay =
+                externalRegionText == text && hasRecentDeleteIntent(now)
             val isDeleteShrinkReplay =
                 externalRegionText.startsWith(text) && hasRecentDeleteIntent(now)
             val isLikelyPassiveReplay = text.length > 1 || externalRegionText.length > 1
@@ -601,15 +655,15 @@ class AffineEditorWebView(
         }
 
         private fun consumeClearRequest(skipNativeFinish: Boolean = false) {
-            val clearRequestedAtMs = state.clearRequestedAtMs
+            val clearRequestGeneration = state.clearRequestGeneration
             if (
-                clearRequestedAtMs == 0L ||
-                    clearRequestedAtMs == handledClearRequestedAtMs
+                clearRequestGeneration == 0L ||
+                    clearRequestGeneration == handledClearRequestGeneration
             ) {
                 return
             }
 
-            handledClearRequestedAtMs = clearRequestedAtMs
+            handledClearRequestGeneration = clearRequestGeneration
             logDebug("clearNativeComposingStateFromWeb")
             resetComposingText()
             clearExternalRegion()
@@ -634,7 +688,7 @@ class AffineEditorWebView(
 
         private fun getExtractedTextSafely() = try {
             getExtractedText(ExtractedTextRequest(), 0)
-        } catch (error: Throwable) {
+        } catch (error: Exception) {
             logDebug("getExtractedTextFailed error=${error.javaClass.simpleName}")
             null
         }
@@ -646,16 +700,31 @@ class AffineEditorWebView(
         private fun commonPrefixLength(left: String, right: String): Int {
             val maxLength = minOf(left.length, right.length)
             for (index in 0 until maxLength) {
-                if (left[index] != right[index]) return index
+                if (left[index] != right[index]) {
+                    return snapToCodePointBoundary(left, index)
+                }
             }
-            return maxLength
+            return snapToCodePointBoundary(left, maxLength)
+        }
+
+        private fun snapToCodePointBoundary(text: String, index: Int): Int {
+            return if (
+                index > 0 &&
+                    index < text.length &&
+                    Character.isHighSurrogate(text[index - 1]) &&
+                    Character.isLowSurrogate(text[index])
+            ) {
+                index - 1
+            } else {
+                index
+            }
         }
     }
 
     companion object {
         private const val DELETE_RESTART_INPUT_DEBOUNCE_MS = 120L
-        private const val EXTERNAL_REGION_REPLAY_WINDOW_MS = 2_500L
-        private const val EXTERNAL_REPLAY_DELETE_WINDOW_MS = 3_000L
+        private const val EXTERNAL_REGION_REPLAY_WINDOW_MS = 500L
+        private const val EXTERNAL_REPLAY_DELETE_WINDOW_MS = 500L
         private const val SYNTHETIC_EXTERNAL_DELETE_SUPPRESS_WINDOW_MS = 120L
         private const val MIN_REPLACEMENT_COMMON_PREFIX_LENGTH = 2
     }

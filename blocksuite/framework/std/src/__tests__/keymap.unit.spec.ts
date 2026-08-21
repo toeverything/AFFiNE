@@ -146,9 +146,8 @@ describe('androidBindKeymapPatch', () => {
     expect(handler(ctx)).toBe(true);
     expect(enter).toHaveBeenCalledOnce();
     expect(preventDefault).toHaveBeenCalledOnce();
-    expect(ctx.get('keyboardState').raw).toBe(
-      event as unknown as KeyboardEvent
-    );
+    expect(ctx.get('keyboardState').raw.key).toBe('Enter');
+    expect(ctx.get('keyboardState').composing).toBe(false);
   });
 
   test('does nothing for insertParagraph without an Enter binding', () => {
@@ -157,6 +156,20 @@ describe('androidBindKeymapPatch', () => {
 
     expect(handler(ctx)).toBe(false);
     expect(ctx.has('keyboardState')).toBe(false);
+  });
+
+  test('ignores non-input events', () => {
+    const enter = vi.fn(() => true);
+    const backspace = vi.fn(() => true);
+    const ctx = UIEventStateContext.from(
+      new UIEventState(new KeyboardEvent('keydown', { key: 'Enter' }))
+    );
+
+    expect(
+      androidBindKeymapPatch({ Enter: enter, Backspace: backspace })(ctx)
+    ).toBeUndefined();
+    expect(enter).not.toHaveBeenCalled();
+    expect(backspace).not.toHaveBeenCalled();
   });
 
   test('ignores unrelated input types', () => {
