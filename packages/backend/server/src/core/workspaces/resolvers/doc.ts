@@ -44,7 +44,7 @@ import {
   PermissionAccess,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
-import { WorkspaceActionAdmissionService } from '../action-admission';
+import { InviteQuotaAssertService } from '../abuse';
 import { DocGrantsService } from '../doc-grants';
 import { WorkspaceType } from '../types';
 import { TimeBucket, TimeWindow } from './analytics-types';
@@ -301,7 +301,7 @@ export class WorkspaceDocResolver {
     private readonly cache: Cache,
     private readonly event: EventBus,
     private readonly runtime: BackendRuntimeProvider,
-    private readonly actionAdmission: WorkspaceActionAdmissionService
+    private readonly inviteQuota: InviteQuotaAssertService
   ) {}
 
   @ResolveField(() => WorkspaceDocMeta, {
@@ -432,7 +432,8 @@ export class WorkspaceDocResolver {
     }
 
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
-    await this.actionAdmission.assertAllowed(user.id, {
+    await this.inviteQuota.assertWorkspaceActionAllowed({
+      actorUserId: user.id,
       workspaceId,
       docId,
       action: 'publishDoc',

@@ -229,6 +229,28 @@ export class InviteQuotaAssertService {
     private readonly disposition: InviteAbuseDispositionService
   ) {}
 
+  async assertWorkspaceActionAllowed(input: {
+    actorUserId: string;
+    workspaceId: string;
+    action: 'inviteMember' | 'createInviteLink' | 'publishDoc';
+    docId?: string;
+  }) {
+    const decision = await this.runtime.evaluateWorkspaceActionV1(
+      input.actorUserId,
+      input.workspaceId
+    );
+    if (decision.allowed) return;
+
+    this.logger.warn('Workspace action rejected', {
+      ...input,
+      reason: decision.reason,
+      retryAfter: decision.retryAfterSeconds,
+    });
+    throw new ActionForbidden(
+      'This feature is temporarily unavailable for you.'
+    );
+  }
+
   async assertWorkspaceInviteQuota(input: {
     actorUserId: string;
     workspaceId: string;
@@ -376,7 +398,11 @@ export class InviteQuotaAssertService {
   private mapDecision(
     decision: RuntimeWorkspaceInviteQuotaDecision
   ): UserFriendlyError {
-    if (decision.reason === 'abuse_subject' || decision.actionRequired) {
+    if (
+      decision.reason === 'abuse_subject' ||
+      decision.reason === 'new_account_action_delay' ||
+      decision.actionRequired
+    ) {
       return new ActionForbidden('This feature is temporarily unavailable.');
     }
     return new TooManyRequest();

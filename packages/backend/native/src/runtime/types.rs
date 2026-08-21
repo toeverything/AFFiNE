@@ -264,6 +264,13 @@ pub struct RuntimeWorkspaceInviteQuotaUsage {
 }
 
 #[napi_derive::napi(object)]
+pub struct RuntimeWorkspaceActionDecision {
+  pub allowed: bool,
+  pub retry_after_seconds: Option<i32>,
+  pub reason: Option<String>,
+}
+
+#[napi_derive::napi(object)]
 pub struct RuntimeInviteAbuseActionRequired {
   pub action: String,
   pub subject_key: String,

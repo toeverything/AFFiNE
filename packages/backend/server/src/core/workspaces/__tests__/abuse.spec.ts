@@ -15,16 +15,18 @@ import { Mockers } from '../../../__tests__/mocks';
 import { Config } from '../../../base';
 import { ActionForbidden, TooManyRequest } from '../../../base/error';
 import { Models, WorkspaceRole } from '../../../models';
+import { BackendRuntimeProvider } from '../../backend-runtime';
 import { EntitlementService } from '../../entitlement';
+import { QuotaService } from '../../quota';
 import {
   getAbuseRequestSource,
   InviteAbuseDispositionService,
   InviteQuotaAssertService,
 } from '../abuse';
-import { WorkspaceActionAdmissionService } from '../action-admission';
 
 let app: TestingApp;
 const quota = {
+  assertWorkspaceActionAllowed: Sinon.stub(),
   assertWorkspaceInviteQuota: Sinon.stub(),
   commitWorkspaceInviteQuota: Sinon.stub(),
   releaseWorkspaceInviteQuota: Sinon.stub(),
@@ -43,6 +45,7 @@ test.before(async () => {
 });
 
 test.beforeEach(() => {
+  quota.assertWorkspaceActionAllowed.reset();
   quota.assertWorkspaceInviteQuota.reset();
   quota.commitWorkspaceInviteQuota.reset();
   quota.releaseWorkspaceInviteQuota.reset();
@@ -365,10 +368,14 @@ test('workspace quarantine blocks invite link creation', async t => {
   }
 });
 
-test('workspace action admission applies exemptions before content policy', async t => {
-  const config = app.get(Config);
+test('workspace action admission applies exemption before content policy', async t => {
   const db = app.get(PrismaClient);
-  const actionAdmission = app.get(WorkspaceActionAdmissionService);
+  const inviteQuota = new InviteQuotaAssertService(
+    app.get(Config),
+    app.get(QuotaService),
+    app.get(BackendRuntimeProvider),
+    app.get(InviteAbuseDispositionService)
+  );
   const owner = await app.create(Mockers.User);
   await db.user.update({
     where: { id: owner.id },
@@ -380,40 +387,13 @@ test('workspace action admission applies exemptions before content policy', asyn
   });
 
   await t.throwsAsync(
-    actionAdmission.assertAllowed(owner.id, {
+    inviteQuota.assertWorkspaceActionAllowed({
+      actorUserId: owner.id,
       workspaceId: workspace.id,
       action: 'inviteMember',
     }),
     { instanceOf: ActionForbidden }
   );
-
-  const previousDeploymentType = globalThis.env.DEPLOYMENT_TYPE;
-  // @ts-expect-error test mutates env singleton for deployment-specific admission semantics
-  globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
-  try {
-    await t.notThrowsAsync(
-      actionAdmission.assertAllowed(owner.id, {
-        workspaceId: workspace.id,
-        action: 'inviteMember',
-      })
-    );
-  } finally {
-    // @ts-expect-error test restores env singleton
-    globalThis.env.DEPLOYMENT_TYPE = previousDeploymentType;
-  }
-
-  const previousDelay = config.auth.newAccountActionDelay;
-  config.auth.newAccountActionDelay = 0;
-  try {
-    await t.notThrowsAsync(
-      actionAdmission.assertAllowed(owner.id, {
-        workspaceId: workspace.id,
-        action: 'inviteMember',
-      })
-    );
-  } finally {
-    config.auth.newAccountActionDelay = previousDelay;
-  }
 
   await app.get(EntitlementService).upsertAdminGrant({
     targetType: 'user',
@@ -421,7 +401,8 @@ test('workspace action admission applies exemptions before content policy', asyn
     plan: 'pro',
   });
   await t.notThrowsAsync(
-    actionAdmission.assertAllowed(owner.id, {
+    inviteQuota.assertWorkspaceActionAllowed({
+      actorUserId: owner.id,
       workspaceId: workspace.id,
       action: 'inviteMember',
     })

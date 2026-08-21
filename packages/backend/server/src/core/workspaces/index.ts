@@ -13,7 +13,6 @@ import {
   InviteAbuseDispositionService,
   InviteQuotaAssertService,
 } from './abuse';
-import { WorkspaceActionAdmissionService } from './action-admission';
 import { WorkspacesController } from './controller';
 import { WorkspaceEvents } from './event';
 import { WorkspaceRealtimeModule } from './realtime.module';
@@ -53,7 +52,6 @@ import { WorkspaceStatsJob } from './stats.job';
     WorkspaceService,
     InviteAbuseDispositionService,
     InviteQuotaAssertService,
-    WorkspaceActionAdmissionService,
     WorkspaceEvents,
     AdminWorkspaceResolver,
     WorkspaceStatsJob,

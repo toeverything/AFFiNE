@@ -48,7 +48,6 @@ import { QuotaService } from '../../quota';
 import { UserType } from '../../user';
 import { validators } from '../../utils/validators';
 import { getAbuseRequestSource, InviteQuotaAssertService } from '../abuse';
-import { WorkspaceActionAdmissionService } from '../action-admission';
 import { WorkspaceService } from '../service';
 import {
   InvitationType,
@@ -98,8 +97,7 @@ export class WorkspaceMemberResolver {
     private readonly workspaceService: WorkspaceService,
     private readonly quota: QuotaService,
     private readonly config: Config,
-    private readonly inviteQuota: InviteQuotaAssertService,
-    private readonly actionAdmission: WorkspaceActionAdmissionService
+    private readonly inviteQuota: InviteQuotaAssertService
   ) {}
 
   private async assertWorkspaceNameCanInvite(workspaceId: string) {
@@ -235,7 +233,8 @@ export class WorkspaceMemberResolver {
       return results;
     }
 
-    await this.actionAdmission.assertAllowed(me.id, {
+    await this.inviteQuota.assertWorkspaceActionAllowed({
+      actorUserId: me.id,
       workspaceId,
       action: 'inviteMember',
     });
@@ -405,7 +404,8 @@ export class WorkspaceMemberResolver {
       .user(user.id)
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
-    await this.actionAdmission.assertAllowed(user.id, {
+    await this.inviteQuota.assertWorkspaceActionAllowed({
+      actorUserId: user.id,
       workspaceId,
       action: 'createInviteLink',
     });
