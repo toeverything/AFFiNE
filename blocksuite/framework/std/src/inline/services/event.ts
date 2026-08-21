@@ -13,8 +13,18 @@ import { isMaybeInlineRangeEqual } from '../utils/inline-range.js';
 import { transformInput } from '../utils/transform-input.js';
 import type { BeforeinputHookCtx, CompositionEndHookCtx } from './hook.js';
 
+type AndroidIMEInputType = 'deleteContentBackward' | 'deleteContentForward';
+
 type AndroidIMEInputDetail = {
-  inputType?: string;
+  inputType?: AndroidIMEInputType;
+  handled?: boolean;
+};
+
+type AndroidIMEBridge = {
+  getProtocolVersion?: () => number;
+  finishComposingSession?: () => void;
+  finishDeleteSession?: () => void;
+  setEditorFocused?: (focused: boolean) => void;
 };
 
 declare global {
@@ -29,21 +39,24 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
   private _isComposing = false;
 
   private readonly _androidIMEBridge = () => {
-    return (
+    const bridge = (
       globalThis as typeof globalThis & {
-        AffineAndroidIME?: {
-          finishComposingSession?: (reason: string) => void;
-          setEditorFocused?: (focused: boolean) => void;
-        };
+        AffineAndroidIME?: AndroidIMEBridge;
       }
     ).AffineAndroidIME;
+    return bridge?.getProtocolVersion?.() === 1 ? bridge : undefined;
   };
 
-  private readonly _finishAndroidComposingSession = (reason: string) => {
+  private readonly _finishAndroidComposingSession = (isDelete: boolean) => {
     if (!IS_ANDROID) return;
 
     window.setTimeout(() => {
-      this._androidIMEBridge()?.finishComposingSession?.(reason);
+      const bridge = this._androidIMEBridge();
+      if (isDelete) {
+        bridge?.finishDeleteSession?.();
+      } else {
+        bridge?.finishComposingSession?.();
+      }
     }, 0);
   };
 
@@ -247,7 +260,10 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
         (ctx.raw.inputType === 'insertText' &&
           (ctx.data === ' ' || ctx.data === '\n')))
     ) {
-      this._finishAndroidComposingSession(`beforeinput:${ctx.raw.inputType}`);
+      this._finishAndroidComposingSession(
+        ctx.raw.inputType === 'deleteContentBackward' ||
+          ctx.raw.inputType === 'deleteContentForward'
+      );
     }
   };
 
@@ -265,12 +281,13 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     }
 
     const range = this.editor.rangeService.getNativeRange();
-    if (
-      this.editor.isReadonly ||
-      !range ||
-      !this._isRangeCompletelyInRoot(range)
-    )
-      return;
+    if (!range || !this._isRangeCompletelyInRoot(range)) return;
+
+    event.detail.handled = true;
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.editor.isReadonly) return;
 
     let inlineRange = this.editor.toInlineRange(range);
     if (!inlineRange) {
@@ -297,8 +314,6 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       }
     }
 
-    event.preventDefault();
-    event.stopPropagation();
     this._isComposing = false;
     this._compositionInlineRange = null;
 
@@ -325,7 +340,7 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       this.editor as never
     );
     this.editor.slots.inputting.next('');
-    this._finishAndroidComposingSession(`android-ime:${inputType}`);
+    this._finishAndroidComposingSession(true);
   };
 
   private readonly _onClick = (event: MouseEvent) => {
@@ -388,7 +403,7 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     }
 
     this.editor.slots.inputting.next(event.data ?? '');
-    this._finishAndroidComposingSession('compositionend');
+    this._finishAndroidComposingSession(false);
   };
 
   private readonly _onCompositionStart = (event: CompositionEvent) => {

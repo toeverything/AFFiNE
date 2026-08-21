@@ -3,7 +3,6 @@ package app.affine.pro
 import android.content.res.ColorStateList
 import android.content.ComponentCallbacks2
 import android.os.Bundle
-import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.webkit.WebSettings
@@ -108,18 +107,23 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
     }
 
     private fun configureAndroidIMEBridge() {
+        val trustedOrigin = normalizeAffineOrigin(bridge.localUrl)
         bridge.addWebViewListener(object : WebViewListener() {
             override fun onPageStarted(webView: WebView?) {
-                (webView as? AffineEditorWebView)?.updateAndroidIMEBridge(webView.url)
+                (webView as? AffineEditorWebView)?.updateAndroidIMEBridge(
+                    webView.url,
+                    trustedOrigin,
+                )
             }
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
-                (view as? AffineEditorWebView)?.updateAndroidIMEBridge(url)
+                (view as? AffineEditorWebView)?.updateAndroidIMEBridge(url, trustedOrigin)
             }
         })
 
         (bridge.webView as? AffineEditorWebView)?.updateAndroidIMEBridge(
-            bridge.webView.url ?: bridge.localUrl
+            bridge.webView.url ?: bridge.localUrl,
+            trustedOrigin,
         )
     }
 
@@ -134,9 +138,6 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
     }
 
     private fun configureEditorWebView() {
-        if (BuildConfig.DEBUG) {
-            Log.d("AffineIME", "configureEditorWebView webView=${bridge.webView.javaClass.name}")
-        }
         bridge.webView.apply {
             overScrollMode = View.OVER_SCROLL_NEVER
             isHorizontalScrollBarEnabled = false
