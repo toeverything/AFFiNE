@@ -1,3 +1,5 @@
+import vm from 'node:vm';
+
 import { expect, test, vitest } from 'vitest';
 
 import { AutoReconnectConnection } from '../connection';
@@ -314,5 +316,47 @@ test('connecting timeout', async () => {
 
   // no reconnect after disconnect
   expect(connection.connectCount).toBe(5);
+  expect(connection.status).toBe('closed');
+});
+
+test('synchronous connection establishes immediately', () => {
+  class SyncTestConnection extends AutoReconnectConnection<{ id: string }> {
+    override doConnect() {
+      return { id: 'sync-conn' };
+    }
+    override doDisconnect() {}
+  }
+
+  const connection = new SyncTestConnection();
+  expect(connection.status).toBe('idle');
+  connection.connect();
+  expect(connection.status).toBe('connected');
+  expect(connection.inner).toEqual({ id: 'sync-conn' });
+  connection.disconnect();
+  expect(connection.status).toBe('closed');
+});
+
+test('cross-realm promise is awaited before becoming connected', async () => {
+  const foreignPromise = vm.runInNewContext(
+    'Promise.resolve({ id: "cross-realm" })'
+  );
+  expect(foreignPromise instanceof Promise).toBe(false);
+
+  class CrossRealmConnection extends AutoReconnectConnection<{ id: string }> {
+    override doConnect() {
+      return foreignPromise as Promise<{ id: string }>;
+    }
+    override doDisconnect() {}
+  }
+
+  const connection = new CrossRealmConnection();
+  connection.connect();
+
+  await vitest.waitFor(() => {
+    expect(connection.status).toBe('connected');
+    expect(connection.inner).toEqual({ id: 'cross-realm' });
+  });
+
+  connection.disconnect();
   expect(connection.status).toBe('closed');
 });

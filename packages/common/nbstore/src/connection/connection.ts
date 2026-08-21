@@ -21,6 +21,14 @@ export interface Connection<T = any> {
   ): () => void;
 }
 
+function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
+  return (
+    (typeof value === 'object' || typeof value === 'function') &&
+    value !== null &&
+    typeof (value as any).then === 'function'
+  );
+}
+
 export abstract class AutoReconnectConnection<
   T = any,
 > implements Connection<T> {
@@ -103,8 +111,8 @@ export abstract class AutoReconnectConnection<
 
       try {
         const result = this.doConnect(signal);
-        if (result instanceof Promise) {
-          result
+        if (isPromiseLike(result)) {
+          Promise.resolve(result)
             .then(value => {
               clearTimeout(timeout);
               if (!signal.aborted) {
