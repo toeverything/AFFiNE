@@ -45,7 +45,7 @@ import { NotificationModule } from './core/notification';
 import { PermissionModule } from './core/permission';
 import { QueueDashboardModule } from './core/queue-dashboard';
 import { QuotaModule } from './core/quota';
-import { RealtimeModule } from './core/realtime';
+import { RealtimeGatewayModule, RealtimeModule } from './core/realtime';
 import { SelfhostModule } from './core/selfhost';
 import { StaticFileModule } from './core/static-files';
 import { StorageApiModule, StorageWorkerModule } from './core/storage';
@@ -167,6 +167,7 @@ export function buildAppModule(env: Env) {
   factor
     // basic
     .use(...FunctionalityModules)
+    .useIf(() => !workerOnly, RealtimeGatewayModule)
 
     // online roles publish indexer events; only the worker registers consumers
     .useIf(() => env.isApi || env.isFrontend, IndexerModule)
