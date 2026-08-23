@@ -593,6 +593,84 @@ test('doc sync peer stops retrying a doc when remote denies permission', async (
   }
 });
 
+test('doc sync peer schedules known doc when priority is added during sync', async () => {
+  const id = `ws-priority-${Date.now()}`;
+  const local = new IndexedDBDocStorage({
+    id,
+    flavour: 'local-priority',
+    type: 'workspace',
+  });
+  const syncMetadata = new IndexedDBDocSyncStorage({
+    id,
+    flavour: 'local-priority',
+    type: 'workspace',
+  });
+  const remote = new IndexedDBDocStorage({
+    id,
+    flavour: 'remote-priority',
+    type: 'workspace',
+  });
+  const peer = new DocSyncPeer('remote-priority', local, syncMetadata, remote);
+  const abort = new AbortController();
+  const getPeerPushedClock = vi.spyOn(syncMetadata, 'getPeerPushedClock');
+
+  local.connection.connect();
+  syncMetadata.connection.connect();
+  remote.connection.connect();
+  await local.connection.waitForConnected();
+  await syncMetadata.connection.waitForConnected();
+  await remote.connection.waitForConnected();
+
+  const doc = new YDoc();
+  doc.getMap('test').set('hello', 'world');
+  await local.pushDocUpdate({
+    docId: 'doc-priority',
+    bin: encodeStateAsUpdate(doc),
+  });
+
+  try {
+    void peer.mainLoop(abort.signal);
+
+    await vi.waitFor(async () => {
+      const remoteDoc = await remote.getDoc('doc-priority');
+      expect(remoteDoc).not.toBeNull();
+    });
+    await vi.waitFor(() => {
+      let state:
+        | {
+            syncing: boolean;
+            synced: boolean;
+          }
+        | undefined;
+      const dispose = peer.docState$('doc-priority').subscribe(next => {
+        state = next;
+      });
+      dispose.unsubscribe();
+
+      expect(state).toMatchObject({
+        syncing: false,
+        synced: true,
+      });
+    });
+
+    const callsBeforePriority = getPeerPushedClock.mock.calls.length;
+    const undoPriority = peer.addPriority('doc-priority', 100);
+
+    await vi.waitFor(() => {
+      expect(getPeerPushedClock.mock.calls.length).toBeGreaterThan(
+        callsBeforePriority
+      );
+    });
+
+    undoPriority();
+  } finally {
+    abort.abort();
+    local.connection.disconnect();
+    syncMetadata.connection.disconnect();
+    remote.connection.disconnect();
+  }
+});
+
 test('doc sync peer stops retrying when remote connection denies permission', async () => {
   const local = new IndexedDBDocStorage({
     id: 'ws-connection-denied',

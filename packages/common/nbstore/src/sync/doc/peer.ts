@@ -504,14 +504,17 @@ export class DocSyncPeer {
       this.status.remoteClocks.setIfBigger(docId, remoteClock);
       this.statusUpdatedSubject$.next(docId);
     },
+    connectDoc: (docId: string) => {
+      this.schedule({
+        type: 'connect',
+        docId,
+      });
+    },
     addDoc: (docId: string) => {
       if (!this.status.docs.has(docId)) {
         this.status.docs.add(docId);
         this.statusUpdatedSubject$.next(docId);
-        this.schedule({
-          type: 'connect',
-          docId,
-        });
+        this.actions.connectDoc(docId);
       }
     },
   };
@@ -902,9 +905,14 @@ export class DocSyncPeer {
     const oldPriority = this.prioritySettings.get(id) ?? 0;
     const newPriority = oldPriority + priority;
     this.prioritySettings.set(id, newPriority);
+    const wasQueued = this.status.jobDocQueue.has(id);
     this.status.jobDocQueue.setPriority(id, newPriority);
     if (newPriority > 0 && this.status.syncing) {
-      this.actions.addDoc(id);
+      if (!this.status.docs.has(id)) {
+        this.actions.addDoc(id);
+      } else if (!wasQueued && !this.status.jobMap.has(id)) {
+        this.actions.connectDoc(id);
+      }
     }
 
     return () => {
