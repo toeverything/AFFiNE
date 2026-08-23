@@ -782,12 +782,14 @@ mod tests {
       } else {
         vec![0]
       };
+      let root_blob = affine_doc_loader::add_doc_to_root_doc(Vec::new(), &doc_id, None).unwrap();
       sqlx::query(
         r#"INSERT INTO snapshots(workspace_id,guid,blob,updated_at)
-           VALUES($1,$1,decode('00','hex'),now()),($1,$2,$3,now())"#,
+           VALUES($1,$1,$3,now()),($1,$2,$4,now())"#,
       )
       .bind(&workspace_id)
       .bind(&doc_id)
+      .bind(root_blob)
       .bind(doc_blob)
       .execute(&pool)
       .await

@@ -1,11 +1,14 @@
 import { indexerSearchDocsQuery } from '@affine/graphql';
 
+import { Config } from '../../../base';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
-e2e('should search docs by keyword', async t => {
+const indexerE2e = app.get(Config).indexer.enabled ? e2e : e2e.skip;
+
+indexerE2e('should search docs by keyword', async t => {
   const owner = await app.signup();
   const workspace = await app.create(Mockers.Workspace, {
     owner,
@@ -31,7 +34,7 @@ e2e('should search docs by keyword', async t => {
   t.true(result.workspace.searchDocs.every(doc => doc.highlight.length > 0));
 });
 
-e2e(
+indexerE2e(
   'should search docs by keyword failed when workspace is no permission',
   async t => {
     const owner = await app.signup();

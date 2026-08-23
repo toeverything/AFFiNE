@@ -1003,6 +1003,72 @@ jobs:
           name: affine
           fail_ci_if_error: false
 
+  server-test-embedded:
+    name: Server Test with Embedded Search
+    runs-on: ubuntu-latest
+    needs:
+      - build-server-native
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      REDIS_SERVER_HOST: localhost
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo @affine/server
+          electron-install: false
+          full-cache: true
+
+      - name: Download server-native.node
+        uses: actions/download-artifact@v4
+        with:
+          name: server-native.node
+          path: ./packages/backend/native
+
+      - name: Prepare Server Test Environment
+        with:
+          indexer-provider: embedded
+        uses: ./.github/actions/server-test-env
+
+      - name: Run embedded Search provider E2E
+        run: >-
+          yarn affine @affine/server e2e:coverage
+          src/__tests__/e2e/indexer/aggregate.spec.ts
+          src/__tests__/e2e/indexer/search-docs.spec.ts
+          src/__tests__/e2e/indexer/search.spec.ts
+          --concurrency 1
+          --forbid-only
+        env:
+          CARGO_TARGET_DIR: '${{ github.workspace }}/target'
+
+      - name: Upload server test coverage results
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/backend/server/.coverage/lcov.info
+          flags: server-test
+          name: affine
+          fail_ci_if_error: false
+
   server-test-manticoresearch:
     name: Server Test with Manticore Search
     runs-on: ubuntu-latest
@@ -1123,6 +1189,8 @@ jobs:
           path: ./packages/backend/native
 
       - name: Prepare Server Test Environment
+        with:
+          indexer-provider: disabled
         uses: ./.github/actions/server-test-env
 
       - name: Run server tests
@@ -1585,6 +1653,7 @@ jobs:
       - native-unit-test
       - server-test
       - server-test-elasticsearch
+      - server-test-embedded
       - server-test-manticoresearch
       - server-e2e-test
       - rust-test

@@ -4,12 +4,15 @@ import {
   SearchTable,
 } from '@affine/graphql';
 
+import { Config } from '../../../base';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
-e2e('should aggregate by docId', async t => {
+const indexerE2e = app.get(Config).indexer.enabled ? e2e : e2e.skip;
+
+indexerE2e('should aggregate by docId', async t => {
   const owner = await app.signup();
   const workspace = await app.create(Mockers.Workspace, {
     owner,
