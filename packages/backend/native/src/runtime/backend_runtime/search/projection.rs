@@ -1,32 +1,42 @@
 use serde_json::{Value, json};
 use sqlx::{PgPool, Row};
 
-use super::store::ProjectionInput;
 use crate::{
   permission::doc_role_allows,
   runtime::{RuntimeError, RuntimeResult, storage_runtime::load_current_doc},
 };
+
+#[derive(Clone, Debug, PartialEq)]
+pub(super) struct ProjectionInput {
+  pub(super) workspace_id: String,
+  pub(super) doc_id: String,
+  pub(super) payload: Value,
+}
 
 pub(super) async fn project_document(
   pool: &PgPool,
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<Option<(ProjectionInput, Vec<ProjectionInput>)>> {
-  let Some(current) = load_current_doc(pool, workspace_id, doc_id).await? else {
+  let Some(current) = load_current_doc(pool, workspace_id, doc_id)
+    .await
+    .map_err(|error| match error {
+      RuntimeError::InvalidState(message) => RuntimeError::SearchSourceInvalid(message),
+      error => error,
+    })?
+  else {
     return Ok(None);
   };
   let revision = current.updated_at.timestamp_millis();
   let projection =
     affine_doc_loader::project_document_search(current.blob, doc_id.to_string(), revision.to_string())
-      .map_err(|error| RuntimeError::invalid_state(format!("search document projection failed: {error}")))?;
-  let metadata = sqlx::query(
+      .map_err(|error| RuntimeError::SearchSourceInvalid(format!("document projection failed: {error}")))?;
+  let Some(metadata) = sqlx::query(
     r#"SELECT snapshot.created_at,snapshot.updated_at,snapshot.created_by,snapshot.updated_by,
-       revision.revision AS acl_revision,
        coalesce(doc_policy.visibility,'private') AS visibility,
        doc_policy.public_role,
        coalesce(doc_policy.member_default_role,workspace_policy.member_default_doc_role,'manager') AS member_default_role
        FROM snapshots snapshot
-       LEFT JOIN workspace_permission_revisions revision ON revision.workspace_id=snapshot.workspace_id
        LEFT JOIN workspace_access_policies workspace_policy ON workspace_policy.workspace_id=snapshot.workspace_id
        LEFT JOIN doc_access_policies doc_policy
          ON doc_policy.workspace_id=snapshot.workspace_id AND doc_policy.doc_id=snapshot.guid
@@ -37,11 +47,9 @@ pub(super) async fn project_document(
   .fetch_optional(pool)
   .await
   .map_err(|error| RuntimeError::database("load search projection metadata", error))?
-  .ok_or_else(|| RuntimeError::invalid_state("search snapshot metadata unavailable"))?;
-  let acl_revision = metadata
-    .try_get::<Option<i64>, _>("acl_revision")
-    .map_err(|error| RuntimeError::database("decode search ACL revision", error))?
-    .ok_or_else(|| RuntimeError::invalid_state("permission_state_unavailable"))?;
+  else {
+    return Ok(None);
+  };
   let visibility: String = metadata
     .try_get("visibility")
     .map_err(|error| RuntimeError::database("decode search doc visibility", error))?;
@@ -51,14 +59,18 @@ pub(super) async fn project_document(
   let member_default_role: String = metadata
     .try_get("member_default_role")
     .map_err(|error| RuntimeError::database("decode search member default role", error))?;
-  let acl_public_readable = visibility == "public"
-    && public_role
-      .as_deref()
-      .is_some_and(|role| doc_role_allows(role, "Doc.Read").unwrap_or(false));
-  let acl_member_default_readable = doc_role_allows(&member_default_role, "Doc.Read")
-    .map_err(|_| RuntimeError::invalid_state("permission_state_unavailable"))?;
+  let acl_public_readable = if visibility == "public" {
+    match public_role.as_deref() {
+      Some(role) => readable_role(role, "public")?,
+      None => false,
+    }
+  } else {
+    false
+  };
+  let acl_member_default_readable = readable_role(&member_default_role, "member default")?;
   let grants = sqlx::query(
-    "SELECT principal_id,role FROM doc_grants WHERE workspace_id=$1 AND doc_id=$2 AND principal_type='user'",
+    "SELECT principal_id,role FROM doc_grants WHERE workspace_id=$1 AND doc_id=$2 AND principal_type='user' ORDER BY \
+     principal_id,role",
   )
   .bind(workspace_id)
   .bind(doc_id)
@@ -74,7 +86,7 @@ pub(super) async fn project_document(
       let role: String = row
         .try_get("role")
         .map_err(|error| RuntimeError::database("decode grant role", error))?;
-      Ok(doc_role_allows(&role, "Doc.Read").unwrap_or(false).then_some(id))
+      Ok(readable_role(&role, "grant")?.then_some(id))
     })
     .collect::<RuntimeResult<Vec<_>>>()?
     .into_iter()
@@ -96,7 +108,6 @@ pub(super) async fn project_document(
     public_readable: acl_public_readable,
     member_default_readable: acl_member_default_readable,
     read_user_ids: acl_read_user_ids,
-    revision: acl_revision,
   };
   let document_payload = with_acl(
     json!({
@@ -113,14 +124,7 @@ pub(super) async fn project_document(
     }),
     &acl,
   );
-  let document = input(
-    workspace_id,
-    doc_id,
-    &format!("{workspace_id}/{doc_id}"),
-    revision,
-    document_payload,
-    &acl,
-  );
+  let document = input(workspace_id, doc_id, document_payload);
   let blocks = projection
     .units
     .into_iter()
@@ -142,24 +146,21 @@ pub(super) async fn project_document(
         }),
         &acl,
       );
-      input(
-        workspace_id,
-        doc_id,
-        &format!("{workspace_id}/{doc_id}/{block_id}"),
-        revision,
-        payload,
-        &acl,
-      )
+      input(workspace_id, doc_id, payload)
     })
     .collect();
   Ok(Some((document, blocks)))
+}
+
+fn readable_role(role: &str, source: &str) -> RuntimeResult<bool> {
+  doc_role_allows(role, "Doc.Read")
+    .map_err(|_| RuntimeError::SearchSourceInvalid(format!("invalid {source} document role")))
 }
 
 struct AclFields {
   public_readable: bool,
   member_default_readable: bool,
   read_user_ids: Vec<String>,
-  revision: i64,
 }
 
 fn with_acl(mut payload: Value, acl: &AclFields) -> Value {
@@ -181,27 +182,25 @@ fn with_acl(mut payload: Value, acl: &AclFields) -> Value {
     tokens.push("public".to_string());
   }
   object.insert("acl_read_tokens".to_string(), json!(tokens));
-  object.insert("acl_revision".to_string(), json!(acl.revision));
   payload
 }
 
-fn input(
-  workspace_id: &str,
-  doc_id: &str,
-  external_id: &str,
-  revision: i64,
-  payload: Value,
-  acl: &AclFields,
-) -> ProjectionInput {
+fn input(workspace_id: &str, doc_id: &str, payload: Value) -> ProjectionInput {
   ProjectionInput {
-    external_id: external_id.to_string(),
     workspace_id: workspace_id.to_string(),
     doc_id: doc_id.to_string(),
-    revision,
     payload,
-    acl_public_readable: acl.public_readable,
-    acl_member_default_readable: acl.member_default_readable,
-    acl_read_user_ids: acl.read_user_ids.clone(),
-    acl_revision: acl.revision,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn invalid_acl_role_is_a_permanent_search_source_error() {
+    let error = readable_role("future-role", "grant").unwrap_err();
+    assert!(matches!(error, RuntimeError::SearchSourceInvalid(_)));
+    assert!(error.is_permanent_search_source());
   }
 }

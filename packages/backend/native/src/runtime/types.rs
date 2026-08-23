@@ -476,7 +476,6 @@ pub struct RuntimeDocumentCleanupEffect {
   pub doc_id: String,
   pub cleanup_version: String,
   pub comment_objects_done: bool,
-  pub search_done: bool,
 }
 
 #[napi_derive::napi(object)]
@@ -489,11 +488,6 @@ pub struct RuntimeDocumentCleanupExecuteResult {
   pub failed: i64,
   pub deleted_rows: i64,
   pub effects: Vec<RuntimeDocumentCleanupEffect>,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeDocumentCleanupAckResult {
-  pub completed: bool,
 }
 
 #[napi_derive::napi(object)]
@@ -525,34 +519,6 @@ pub struct RuntimeDocCompactionResult {
   pub doc_id: String,
   pub updates_merged: i64,
   pub history_created: bool,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeWorkspaceStatsRefreshResult {
-  pub processed: i64,
-  pub backlog: i64,
-  pub skipped: bool,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeWorkspaceStatsRecalibrationResult {
-  pub processed: i64,
-  pub last_sid: i64,
-  pub skipped: bool,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeWorkspaceStatsSnapshotResult {
-  pub snapshotted: i64,
-  pub skipped: bool,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeWorkspaceStatsDailyRecalibrationResult {
-  pub processed: i64,
-  pub last_sid: i64,
-  pub snapshotted: i64,
-  pub skipped: bool,
 }
 
 #[napi_derive::napi(object)]

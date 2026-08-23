@@ -3,6 +3,7 @@ import { camelCase, mapKeys } from 'lodash-es';
 import {
   AggregateInput,
   SearchDoc,
+  SearchInput,
   SearchQueryOccur,
   SearchQueryType,
   SearchTable,
@@ -145,6 +146,66 @@ export function buildSearchDocsInput(
       pagination: { limit: options?.limit ?? 20 },
     },
   };
+}
+
+export function buildBasicSearchDocsInput(
+  workspaceId: string,
+  keyword: string,
+  options?: { limit?: number; docIds?: string[] }
+): SearchInput {
+  const aggregate = buildSearchDocsInput(workspaceId, keyword, options);
+  const limit = options?.limit ?? 20;
+  const contentQuery = {
+    type: SearchQueryType.match as const,
+    field: 'content',
+    match: keyword,
+  };
+  return {
+    table: aggregate.table,
+    query: options?.docIds
+      ? {
+          type: SearchQueryType.boolean,
+          occur: SearchQueryOccur.must,
+          queries: [
+            contentQuery,
+            {
+              type: SearchQueryType.boolean,
+              occur: SearchQueryOccur.should,
+              queries: options.docIds.map(docId => ({
+                type: SearchQueryType.match,
+                field: 'docId',
+                match: docId,
+              })),
+            },
+          ],
+        }
+      : contentQuery,
+    options: {
+      fields: ['docId', ...aggregate.options.hits.fields],
+      highlights: aggregate.options.hits.highlights,
+      pagination: { limit: Math.min(Math.max(limit, 1) * 4, 10_000) },
+    },
+  };
+}
+
+export function collectBasicSearchDocs(
+  result: { nodes: SearchNodeWithMeta[] },
+  workspaceId: string,
+  limit: number
+) {
+  const seen = new Set<string>();
+  const buckets: AggregateResult['buckets'] = [];
+  for (const node of result.nodes) {
+    const docId = node._source.docId;
+    if (seen.has(docId)) continue;
+    seen.add(docId);
+    buckets.push({ key: docId, count: 1, hits: { nodes: [node] } });
+    if (buckets.length === limit) break;
+  }
+  return collectSearchDocs(
+    { total: buckets.length, hasMore: false, buckets },
+    workspaceId
+  );
 }
 
 export function collectSearchDocs(

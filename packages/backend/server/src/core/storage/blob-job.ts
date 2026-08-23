@@ -33,12 +33,6 @@ declare global {
       gracePeriodDays?: number;
       limit?: number;
     };
-    'backendRuntime.ackDocumentCleanupEffect': {
-      workspaceId: string;
-      docId: string;
-      cleanupVersion: string;
-      effect: 'search' | 'copilot';
-    };
     'backendRuntime.planUnreferencedWorkspaceBlobs': {
       workspaceId: string;
       gracePeriodDays?: number;
@@ -321,11 +315,6 @@ export class StorageBlobJob {
       .counter('document_cleanup_execute_failure_total')
       .add(result.failed);
     for (const effect of result.effects) {
-      if (!effect.searchDone) {
-        await this.queue.add('indexer.reconcileDocumentCleanup', effect, {
-          jobId: `document-cleanup:search:${effect.workspaceId}:${effect.docId}:${effect.cleanupVersion}`,
-        });
-      }
       if (effect.commentObjectsDone) {
         await this.event.emitAsync('workspace.blobs.updated', {
           workspaceId: effect.workspaceId,
@@ -334,21 +323,6 @@ export class StorageBlobJob {
     }
     await this.recordDocumentCleanupHealth();
     return result;
-  }
-
-  @OnJob('backendRuntime.ackDocumentCleanupEffect')
-  async ackDocumentCleanupEffect({
-    workspaceId,
-    docId,
-    cleanupVersion,
-    effect,
-  }: Jobs['backendRuntime.ackDocumentCleanupEffect']) {
-    await this.rt.ackDocumentCleanupEffect(
-      workspaceId,
-      docId,
-      cleanupVersion,
-      effect
-    );
   }
 
   @OnJob('backendRuntime.planUnreferencedWorkspaceBlobs')

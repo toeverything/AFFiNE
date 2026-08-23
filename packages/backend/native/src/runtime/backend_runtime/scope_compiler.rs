@@ -250,7 +250,15 @@ mod tests {
     };
     let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
     let pool = PgPool::connect(&database_url).await.unwrap();
-    crate::runtime::migrations::migrate_search_tables(&pool).await.unwrap();
+    let legacy_relations: Vec<Option<String>> = sqlx::query_scalar(
+      "SELECT to_regclass(name) FROM \
+       unnest(ARRAY['workspace_permission_revisions','workspace_permission_changes','search_runtime_generations']) \
+       name",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert!(legacy_relations.into_iter().all(|relation| relation.is_none()));
     let suffix = uuid::Uuid::new_v4().simple().to_string();
     let user_id = format!("scope-user-{suffix}");
     let collaborator_id = format!("scope-collaborator-{suffix}");

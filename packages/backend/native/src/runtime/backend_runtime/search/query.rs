@@ -1,10 +1,105 @@
+use serde::Deserialize;
 use serde_json::{Value, json};
 
-use super::types::{AggregateRequest, SearchOptions, SearchQuery, SearchRequest, SearchTable};
-use crate::runtime::{
-  RuntimeError, RuntimeResult,
-  backend_runtime::permission::{AuthorizedSearchScope, DocReadScope},
+use super::{
+  AggregateOptions, AuthorizedSearchScope, DocReadScope, RuntimeAggregateRequest, RuntimeSearchQuery,
+  RuntimeSearchRequest, SearchOptions, SearchTable,
 };
+use crate::runtime::{RuntimeError, RuntimeResult};
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct AggregateRequest {
+  pub(super) table: SearchTable,
+  query: SearchQuery,
+  field: String,
+  options: AggregateOptions,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct SearchRequest {
+  pub(super) table: SearchTable,
+  query: SearchQuery,
+  options: SearchOptions,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct SearchQuery {
+  #[serde(rename = "type")]
+  query_type: String,
+  field: Option<String>,
+  #[serde(rename = "match")]
+  match_value: Option<String>,
+  query: Option<Box<SearchQuery>>,
+  queries: Option<Vec<SearchQuery>>,
+  occur: Option<String>,
+  boost: Option<f64>,
+}
+
+impl RuntimeSearchRequest {
+  pub(super) fn into_search_request(self) -> RuntimeResult<SearchRequest> {
+    let mut decoded_nodes = 0;
+    Ok(SearchRequest {
+      table: self.table,
+      query: decode_query(&self.queries, self.root_query, 0, &mut decoded_nodes)?,
+      options: self.options,
+    })
+  }
+}
+
+impl RuntimeAggregateRequest {
+  pub(super) fn into_aggregate_request(self) -> RuntimeResult<AggregateRequest> {
+    let mut decoded_nodes = 0;
+    Ok(AggregateRequest {
+      table: self.table,
+      query: decode_query(&self.queries, self.root_query, 0, &mut decoded_nodes)?,
+      field: self.field,
+      options: self.options,
+    })
+  }
+}
+
+const MAX_QUERY_GRAPH_NODES: usize = 100;
+const MAX_QUERY_DEPTH: usize = 100;
+const MAX_DECODED_QUERY_NODES: usize = 1_000;
+
+fn decode_query(
+  nodes: &[RuntimeSearchQuery],
+  index: u32,
+  depth: usize,
+  decoded_nodes: &mut usize,
+) -> RuntimeResult<SearchQuery> {
+  if nodes.len() > MAX_QUERY_GRAPH_NODES || depth > MAX_QUERY_DEPTH || *decoded_nodes >= MAX_DECODED_QUERY_NODES {
+    return Err(RuntimeError::invalid_input("search query is too complex"));
+  }
+  *decoded_nodes += 1;
+  let node = nodes
+    .get(index as usize)
+    .ok_or_else(|| RuntimeError::invalid_input("invalid search query node"))?;
+  Ok(SearchQuery {
+    query_type: node.query_type.clone(),
+    field: node.field.clone(),
+    match_value: node.match_value.clone(),
+    query: node
+      .query
+      .map(|index| decode_query(nodes, index, depth + 1, decoded_nodes).map(Box::new))
+      .transpose()?,
+    queries: node
+      .queries
+      .as_ref()
+      .map(|indices| {
+        indices
+          .iter()
+          .map(|index| decode_query(nodes, *index, depth + 1, decoded_nodes))
+          .collect()
+      })
+      .transpose()?,
+    occur: node.occur.clone(),
+    boost: node.boost,
+  })
+}
 
 pub(super) fn compile(request: &SearchRequest, scope: &AuthorizedSearchScope) -> RuntimeResult<Value> {
   let query = compile_query(request.table, &request.query)?;
@@ -26,7 +121,7 @@ pub(super) fn compile(request: &SearchRequest, scope: &AuthorizedSearchScope) ->
     .map(|field| validate_field(request.table, field).map(str::to_string))
     .collect::<RuntimeResult<Vec<_>>>()?;
   let mut dsl = json!({
-    "_source":["workspace_id","doc_id"],
+    "_source":["workspace_id","doc_id","source_version","permission_version"],
     "fields":fields,
     "query":{"bool":{"must":must}},
     "sort": stable_sort(request.table),
@@ -73,15 +168,19 @@ pub(super) fn compile_aggregate(request: &AggregateRequest, scope: &AuthorizedSe
   let hit_dsl = compile(&search, scope)?;
   let field = validate_field(request.table, &request.field)?;
   let limit = request.options.pagination.limit.unwrap_or(10);
-  if limit > 10_000 {
-    return Err(RuntimeError::invalid_input("aggregate limit exceeds 10000"));
+  let skip = request.options.pagination.skip.unwrap_or(0);
+  if skip.saturating_add(limit) > 10_000 {
+    return Err(RuntimeError::invalid_input("aggregate pagination exceeds 10000"));
+  }
+  if request.options.pagination.cursor.is_some() {
+    return Err(RuntimeError::invalid_input("aggregate cursor is unsupported"));
   }
   Ok(json!({
     "query":hit_dsl["query"],
-    "from":request.options.pagination.skip.unwrap_or(0),
+    "from":skip,
     "size":0,
     "aggs":{"result":{"terms":{"field":field,"size":limit},"aggs":{"result":{"top_hits":{
-      "size":hit_dsl["size"],"_source":hit_dsl["_source"],"fields":hit_dsl["fields"],
+      "size":hit_dsl["size"],"from":hit_dsl.get("from").cloned().unwrap_or_else(||json!(0)),"_source":hit_dsl["_source"],"fields":hit_dsl["fields"],
       "sort":hit_dsl["sort"],"highlight":hit_dsl.get("highlight").cloned().unwrap_or_else(||json!({}))
     }}}}}
   }))
@@ -234,7 +333,6 @@ mod tests {
   fn scope() -> AuthorizedSearchScope {
     AuthorizedSearchScope {
       workspace_id: "workspace".to_string(),
-      permission_revision: 1,
       docs: DocReadScope::All,
     }
   }
@@ -325,6 +423,10 @@ mod tests {
       dsl["aggs"]["result"]["aggs"]["result"]["top_hits"]["highlight"]["fields"]["content"],
       json!({"pre_tags":["<b>"],"post_tags":["</b>"]})
     );
+    let mut hit_skip = aggregate.clone();
+    hit_skip.options.hits.pagination.skip = Some(1);
+    let hit_skip_dsl = compile_aggregate(&hit_skip, &scope()).unwrap();
+    assert_eq!(hit_skip_dsl["aggs"]["result"]["aggs"]["result"]["top_hits"]["from"], 1);
 
     let mut invalid = aggregate;
     invalid.field = "aclReadTokens".to_string();
@@ -332,5 +434,43 @@ mod tests {
     invalid.field = "docId".to_string();
     invalid.options.pagination.limit = Some(10_001);
     assert!(compile_aggregate(&invalid, &scope()).is_err());
+    invalid.options.pagination.limit = Some(10_000);
+    invalid.options.pagination.skip = Some(1);
+    assert!(compile_aggregate(&invalid, &scope()).is_err());
+    invalid.options.pagination.limit = Some(10);
+    invalid.options.pagination.skip = None;
+    invalid.options.pagination.cursor = Some("candidate".to_string());
+    assert!(compile_aggregate(&invalid, &scope()).is_err());
+  }
+
+  fn runtime_node(query_type: &str) -> RuntimeSearchQuery {
+    RuntimeSearchQuery {
+      query_type: query_type.to_string(),
+      field: None,
+      match_value: None,
+      query: None,
+      queries: None,
+      occur: None,
+      boost: None,
+    }
+  }
+
+  #[test]
+  fn rejects_invalid_or_overly_complex_query_graphs() {
+    assert!(decode_query(&[runtime_node("all")], 1, 0, &mut 0).is_err());
+
+    let mut oversized = (0..101).map(|_| runtime_node("all")).collect::<Vec<_>>();
+    oversized[0].query = Some(1);
+    assert!(decode_query(&oversized, 0, 0, &mut 0).is_err());
+
+    let mut recursive = vec![runtime_node("boost")];
+    recursive[0].query = Some(0);
+    assert!(decode_query(&recursive, 0, 0, &mut 0).is_err());
+
+    let mut shared_child = (0..100).map(|_| runtime_node("boolean")).collect::<Vec<_>>();
+    for (index, node) in shared_child.iter_mut().enumerate().take(99) {
+      node.queries = Some(vec![(index + 1) as u32, (index + 1) as u32]);
+    }
+    assert!(decode_query(&shared_child, 0, 0, &mut 0).is_err());
   }
 }

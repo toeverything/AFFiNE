@@ -5,10 +5,7 @@ import { Module } from '@nestjs/common';
 import { ServerConfigModule } from '../../core/config';
 import { DocStorageModule } from '../../core/doc';
 import { PermissionModule } from '../../core/permission';
-import { IndexerEvent } from './event';
-import { IndexerJob } from './job';
 import { IndexerResolver } from './resolver';
-import { IndexerScheduler } from './scheduler';
 import { IndexerService } from './service';
 
 const INDEXER_SHARED_IMPORTS = [
@@ -25,20 +22,8 @@ const INDEXER_SHARED_IMPORTS = [
 export class IndexerServiceModule {}
 
 @Module({
-  imports: [IndexerServiceModule],
-  providers: [IndexerEvent],
-})
-export class IndexerProducerModule {}
-
-@Module({
   imports: [IndexerServiceModule, DocStorageModule, PermissionModule],
-  providers: [IndexerJob, IndexerScheduler],
-})
-export class IndexerWorkerModule {}
-
-@Module({
-  imports: [IndexerServiceModule, DocStorageModule, PermissionModule],
-  providers: [IndexerResolver, IndexerEvent],
+  providers: [IndexerResolver],
   exports: [IndexerServiceModule],
 })
 export class IndexerModule {}

@@ -29,7 +29,7 @@ impl PermissionAuthorizer {
   ) -> RuntimeResult<AuthorizedSearchScope> {
     match actor {
       SearchActor::User { user_id } => {
-        let snapshot = self.store.search_snapshot(workspace_id, user_id).await?;
+        let snapshot = self.store.permission_snapshot(workspace_id, user_id, &[]).await?;
         let owner_or_admin = matches!(snapshot.evaluation.workspace.role.as_deref(), Some("owner" | "admin"))
           && snapshot.evaluation.workspace.member_state.as_deref() == Some("active");
         let decision = evaluate_permission(snapshot.evaluation)
@@ -54,15 +54,10 @@ impl PermissionAuthorizer {
         };
         Ok(AuthorizedSearchScope {
           workspace_id: workspace_id.to_string(),
-          permission_revision: snapshot.revision,
           docs,
         })
       }
     }
-  }
-
-  pub(in crate::runtime::backend_runtime) async fn revision(&self, workspace_id: &str) -> RuntimeResult<i64> {
-    self.store.revision(workspace_id).await
   }
 
   pub(in crate::runtime::backend_runtime) async fn filter_readable_docs(
@@ -72,6 +67,9 @@ impl PermissionAuthorizer {
     doc_ids: Vec<String>,
   ) -> RuntimeResult<BTreeSet<String>> {
     let snapshot = self.store.permission_snapshot(workspace_id, user_id, &doc_ids).await?;
+    if snapshot.capability == DocAclCapability::Unknown {
+      return Err(RuntimeError::SearchPermissionUnavailable);
+    }
     let output = evaluate_permission(snapshot.evaluation).map_err(|_| RuntimeError::SearchPermissionUnavailable)?;
     Ok(
       output

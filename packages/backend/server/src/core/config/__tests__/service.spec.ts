@@ -7,6 +7,7 @@ import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
 import { InvalidAppConfigInput } from '../../../base';
 import { Models } from '../../../models';
+import { SearchProviderType } from '../../../plugins/indexer/config';
 import { ServerService } from '../service';
 
 const module = await createModule({
@@ -38,6 +39,19 @@ test('should update config', async t => {
 
   t.not(service.getConfig().server.externalUrl, oldValue);
   t.is(service.getConfig().server.externalUrl, newValue);
+});
+
+test('should enable the selected indexer provider', async t => {
+  await service.updateConfig(user.id, [
+    {
+      module: 'indexer',
+      key: 'provider.type',
+      value: SearchProviderType.Embedded,
+    },
+  ]);
+
+  t.true(service.getConfig().indexer.enabled);
+  t.is(service.getConfig().indexer.provider.type, SearchProviderType.Embedded);
 });
 
 test('should validate config before update', async t => {

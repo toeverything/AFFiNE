@@ -933,8 +933,6 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       REDIS_SERVER_HOST: localhost
-      SERVER_CONFIG: >-
-        {"indexer":{"enabled":true,"provider":{"type":"elasticsearch","endpoint":"http://localhost:9200"}}}
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -1005,8 +1003,8 @@ jobs:
           name: affine
           fail_ci_if_error: false
 
-  server-test-manticore:
-    name: Server Test with Manticore
+  server-test-manticoresearch:
+    name: Server Test with Manticore Search
     runs-on: ubuntu-latest
     needs:
       - build-server-native
@@ -1014,9 +1012,6 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       REDIS_SERVER_HOST: localhost
-      SEARCH_MS_URL: http://localhost:9308
-      SERVER_CONFIG: >-
-        {"indexer":{"enabled":true,"provider":{"type":"manticoresearch","endpoint":"http://localhost:9308"}}}
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -1038,15 +1033,18 @@ jobs:
         ports:
           - 1025:1025
           - 8025:8025
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        options: >-
-          --health-cmd "wget -q -O /dev/null http://localhost:9308/"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 12
+      manticore:
+        image: manticoresearch/manticore:29.0.2
+        env:
+          'searchd.listen': 'http:9308'
+          'searchd.network_timeout': '30'
         ports:
           - 9308:9308
+        options: >-
+          --health-cmd "wget -qO- --post-data='SHOW TABLES' 'http://127.0.0.1:9308/sql?mode=raw' >/dev/null"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
     steps:
       - uses: actions/checkout@v7
 
@@ -1057,13 +1055,6 @@ jobs:
           electron-install: false
           full-cache: true
 
-      - name: Setup Rust
-        uses: ./.github/actions/build-rust
-        with:
-          target: x86_64-unknown-linux-gnu
-          package: '@affine/server-native'
-          no-build: 'true'
-
       - name: Download server-native.node
         uses: actions/download-artifact@v4
         with:
@@ -1071,17 +1062,14 @@ jobs:
           path: ./packages/backend/native
 
       - name: Prepare Server Test Environment
-        uses: ./.github/actions/server-test-env
         with:
           indexer-provider: manticoresearch
+        uses: ./.github/actions/server-test-env
 
-      - name: Run server tests with Manticore
-        run: yarn affine @affine/server e2e:coverage src/__tests__/e2e/indexer/search-docs.spec.ts --forbid-only
-
-      - name: Run Manticore provider contract
-        run: >-
-          cargo test --manifest-path packages/backend/native/Cargo.toml
-          remote_providers_apply_search_and_delete_the_same_contract --lib
+      - name: Run Manticore Search provider E2E
+        run: yarn affine @affine/server e2e:coverage src/__tests__/e2e/indexer/manticore-provider.spec.ts --forbid-only
+        env:
+          CARGO_TARGET_DIR: '${{ github.workspace }}/target'
 
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v5
@@ -1597,7 +1585,7 @@ jobs:
       - native-unit-test
       - server-test
       - server-test-elasticsearch
-      - server-test-manticore
+      - server-test-manticoresearch
       - server-e2e-test
       - rust-test
       - rust-test-filter
