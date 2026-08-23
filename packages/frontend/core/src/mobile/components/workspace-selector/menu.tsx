@@ -39,15 +39,8 @@ const WorkspaceItem = ({
   className,
   ...attrs
 }: { workspace: WorkspaceMetadata } & HTMLAttributes<HTMLButtonElement>) => {
-  const t = useI18n();
   const info = useWorkspaceInfo(workspace);
-  const name =
-    info?.name?.trim() ||
-    (workspace.initialized === false
-      ? t['com.affine.mobile.workspace-selector.setting-up']()
-      : t['com.affine.mobile.workspace-selector.untitled']({
-          id: workspace.id.slice(0, 6),
-        }));
+  const name = info?.name;
   const isOwner = info?.isOwner;
 
   return (
@@ -63,7 +56,7 @@ const WorkspaceItem = ({
           colorfulFallback
         />
         <div className={styles.wsName}>{name}</div>
-        {isOwner === false ? <CollaborationIcon fontSize={24} /> : null}
+        {!isOwner ? <CollaborationIcon fontSize={24} /> : null}
       </button>
     </li>
   );
@@ -333,6 +326,9 @@ export const SelectorMenu = ({ onClose }: { onClose?: () => void }) => {
         const server = servers.find(
           server => server.id === workspaceMetadata.flavour
         );
+        if (workspaceMetadata.flavour !== 'local' && !server) {
+          return;
+        }
         const searchParams = new URLSearchParams({
           flavour: workspaceMetadata.flavour,
         });

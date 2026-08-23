@@ -253,10 +253,6 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'network_error',
     message: 'Network error.',
   },
-  ios_native_auth_failed: {
-    type: 'internal_server_error',
-    message: 'iOS native authentication failed.',
-  },
   too_many_request: {
     type: 'too_many_requests',
     message: 'Too many requests.',

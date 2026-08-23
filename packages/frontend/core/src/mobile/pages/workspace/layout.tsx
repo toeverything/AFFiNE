@@ -113,51 +113,6 @@ export const WorkspaceLayout = ({
     workspaceServer,
   ]);
 
-  useEffect(() => {
-    if (!BUILD_CONFIG.isIOS || !workspace) {
-      return;
-    }
-
-    const syncContext = {
-      workspaceId: workspace.id,
-      workspaceFlavour: workspace.flavour,
-      serverBaseUrl: workspaceServer?.baseUrl ?? null,
-    };
-    console.warn('[AFFiNE][iOS sync] workspace mounted', syncContext);
-
-    if (workspace.flavour === 'local') {
-      console.warn(
-        '[AFFiNE][iOS sync] workspace is local; remote sync disabled',
-        syncContext
-      );
-      return;
-    }
-
-    let lastStateKey = '';
-    const subscription = workspace.engine.doc.state$.subscribe(state => {
-      const syncState = {
-        total: state.total,
-        loaded: state.loaded,
-        syncing: state.syncing,
-        synced: state.synced,
-        retrying: state.syncRetrying,
-        error: state.syncErrorMessage,
-      };
-      const stateKey = JSON.stringify(syncState);
-      if (stateKey !== lastStateKey) {
-        lastStateKey = stateKey;
-        console.warn('[AFFiNE][iOS sync] workspace sync state', {
-          ...syncContext,
-          ...syncState,
-        });
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [workspace, workspaceServer]);
-
   const rootDocReady$ = useMemo(
     () =>
       workspace

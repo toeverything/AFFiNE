@@ -52,6 +52,8 @@ export class DocSyncImpl implements DocSync {
       new DocSyncPeer(peerId, this.storages.local, this.sync, remote)
   );
   private abort: AbortController | null = null;
+  private running: Promise<void> = Promise.resolve();
+  private resetting: Promise<void> | null = null;
 
   private readonly _state$ = combineLatest(
     this.peers.map(peer => peer.peerState$)
@@ -157,12 +159,16 @@ export class DocSyncImpl implements DocSync {
     if (this.abort) {
       this.abort.abort(MANUALLY_STOP);
     }
+    const previous = this.running;
     const abort = new AbortController();
     this.abort = abort;
-    Promise.allSettled(
-      this.peers.map(peer => peer.mainLoop(abort.signal))
-    ).catch(error => {
-      console.error(error);
+    this.running = previous.then(async () => {
+      if (abort.signal.aborted) {
+        return;
+      }
+      await Promise.allSettled(
+        this.peers.map(peer => peer.mainLoop(abort.signal))
+      );
     });
   }
 
@@ -176,12 +182,27 @@ export class DocSyncImpl implements DocSync {
     return () => undo.forEach(fn => fn());
   }
 
-  async resetSync() {
+  resetSync() {
+    if (this.resetting) {
+      return this.resetting;
+    }
+    const resetting = this.performReset().finally(() => {
+      if (this.resetting === resetting) {
+        this.resetting = null;
+      }
+    });
+    this.resetting = resetting;
+    return resetting;
+  }
+
+  private async performReset() {
     const running = this.abort !== null;
+    const activeRun = this.running;
     const shouldConnectSyncStorage =
       this.sync.connection.status === 'idle' ||
       this.sync.connection.status === 'closed';
     this.stop();
+    await activeRun;
     if (shouldConnectSyncStorage) {
       this.sync.connection.connect();
     }

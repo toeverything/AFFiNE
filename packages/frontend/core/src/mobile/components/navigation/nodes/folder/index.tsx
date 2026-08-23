@@ -6,12 +6,10 @@ import {
   notify,
 } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
-import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import type {
   NavigationPanelTreeNodeIcon,
   NodeOperation,
 } from '@affine/core/desktop/components/navigation-panel';
-import { waitForRootDocReady } from '@affine/core/mobile/utils';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
@@ -388,25 +386,16 @@ const NavigationPanelFolderNodeFolder = ({
   );
   const children = useLiveData(node.sortedChildren$);
 
-  const handleNewDoc = useAsyncCallback(async () => {
-    try {
-      await waitForRootDocReady(workspaceService.workspace);
-      const newDoc = createPage();
-      node.createLink('doc', newDoc.id, node.indexAt('before'));
-      track.$.navigationPanel.folders.createDoc();
-      track.$.navigationPanel.organize.createOrganizeItem({
-        type: 'link',
-        target: 'doc',
-      });
-      setCollapsed(false);
-    } catch (error) {
-      console.error('Failed to create folder doc', error);
-      notify.error({
-        title: t['com.affine.mobile.create-doc.error.title'](),
-        message: t['com.affine.mobile.create-doc.error.message'](),
-      });
-    }
-  }, [createPage, node, setCollapsed, t, workspaceService.workspace]);
+  const handleNewDoc = useCallback(() => {
+    const newDoc = createPage();
+    node.createLink('doc', newDoc.id, node.indexAt('before'));
+    track.$.navigationPanel.folders.createDoc();
+    track.$.navigationPanel.organize.createOrganizeItem({
+      type: 'link',
+      target: 'doc',
+    });
+    setCollapsed(false);
+  }, [createPage, node, setCollapsed]);
 
   const menuTarget = useMemo(
     () => (

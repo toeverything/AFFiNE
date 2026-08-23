@@ -40,16 +40,12 @@ export class DocsStore extends Store {
     transact(
       this.workspaceService.workspace.rootYDoc,
       () => {
-        const meta = this.workspaceService.workspace.rootYDoc.getMap('meta');
-        let docs = meta.get('pages');
+        const docs = this.workspaceService.workspace.rootYDoc
+          .getMap('meta')
+          .get('pages');
 
-        if (!docs) {
-          docs = new YArray();
-          meta.set('pages', docs);
-        }
-
-        if (!(docs instanceof YArray)) {
-          throw new Error('Workspace root doc pages is invalid');
+        if (!docs || !(docs instanceof YArray)) {
+          return;
         }
 
         docs.push([

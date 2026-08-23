@@ -1,4 +1,4 @@
-import { Button, notify } from '@affine/component';
+import { Button } from '@affine/component';
 import { AuthService, ServerService } from '@affine/core/modules/cloud';
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { NativePaywallService } from '@affine/core/modules/paywall';
@@ -28,15 +28,8 @@ export const UserSubscription = () => {
       return;
     }
 
-    void nativePaywallProvider?.showPaywall('Pro').catch(error => {
-      console.error(error);
-      notify.error({
-        title: t['com.affine.mobile.setting.subscription.open-failed.title'](),
-        message:
-          t['com.affine.mobile.setting.subscription.open-failed.message'](),
-      });
-    });
-  }, [globalDialogService, loggedIn, nativePaywallProvider, t]);
+    void nativePaywallProvider?.showPaywall('Pro').catch(console.error);
+  }, [globalDialogService, loggedIn, nativePaywallProvider]);
 
   if (!nativePaywallProvider || supported === false) {
     return null;

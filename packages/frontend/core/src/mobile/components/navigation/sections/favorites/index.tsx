@@ -1,15 +1,12 @@
-import { toast } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
-import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { NavigationPanelTreeRoot } from '@affine/core/desktop/components/navigation-panel';
-import { waitForRootDocReady } from '@affine/core/mobile/utils';
 import type { FavoriteSupportTypeUnion } from '@affine/core/modules/favorite';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
@@ -34,29 +31,15 @@ export const NavigationPanelFavorites = () => {
     workspaceService.workspace.docCollection
   );
 
-  const handleCreateNewFavoriteDoc = useAsyncCallback(async () => {
-    try {
-      await waitForRootDocReady(workspaceService.workspace);
-
-      const newDoc = createPage();
-      favoriteService.favoriteList.add(
-        'doc',
-        newDoc.id,
-        favoriteService.favoriteList.indexAt('before')
-      );
-      navigationPanelService.setCollapsed(path, false);
-    } catch (error) {
-      console.error('Failed to create favorite doc', error);
-      toast(t['com.affine.mobile.create-doc.error.toast']());
-    }
-  }, [
-    createPage,
-    favoriteService.favoriteList,
-    navigationPanelService,
-    path,
-    t,
-    workspaceService.workspace,
-  ]);
+  const handleCreateNewFavoriteDoc = useCallback(() => {
+    const newDoc = createPage();
+    favoriteService.favoriteList.add(
+      'doc',
+      newDoc.id,
+      favoriteService.favoriteList.indexAt('before')
+    );
+    navigationPanelService.setCollapsed(path, false);
+  }, [createPage, favoriteService.favoriteList, navigationPanelService, path]);
 
   return (
     <CollapsibleSection

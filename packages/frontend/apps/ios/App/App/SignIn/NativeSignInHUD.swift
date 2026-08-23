@@ -238,3 +238,4 @@ private struct NativeSignInLoadingRing: View {
     }
   }
 }
+

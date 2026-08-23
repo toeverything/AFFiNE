@@ -1580,12 +1580,6 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.toast.message.failed"](): string;
     /**
-      * `{{message}}`
-      */
-    ["com.affine.auth.toast.message.ios-auth"](options: {
-        readonly message: string;
-    }): string;
-    /**
       * `You have signed in to AFFiNE.`
       */
     ["com.affine.auth.toast.message.signed-in"](): string;
@@ -1593,10 +1587,6 @@ export function useAFFiNEI18N(): {
       * `Unable to sign in`
       */
     ["com.affine.auth.toast.title.failed"](): string;
-    /**
-      * `Sign-in failed on iOS`
-      */
-    ["com.affine.auth.toast.title.ios-auth"](): string;
     /**
       * `Signed in`
       */
@@ -3030,18 +3020,6 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.menu.rename"](): string;
     /**
-      * `Please try again.`
-      */
-    ["com.affine.mobile.create-doc.error.message"](): string;
-    /**
-      * `Failed to create doc`
-      */
-    ["com.affine.mobile.create-doc.error.title"](): string;
-    /**
-      * `Failed to create doc. Please try again.`
-      */
-    ["com.affine.mobile.create-doc.error.toast"](): string;
-    /**
       * `No results found`
       */
     ["com.affine.mobile.search.empty"](): string;
@@ -3142,14 +3120,6 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.subscription.description"](): string;
     /**
-      * `Please try again later.`
-      */
-    ["com.affine.mobile.setting.subscription.open-failed.message"](): string;
-    /**
-      * `Unable to open Pro upgrade`
-      */
-    ["com.affine.mobile.setting.subscription.open-failed.title"](): string;
-    /**
       * `Unlock Pro Features`
       */
     ["com.affine.mobile.setting.subscription.title"](): string;
@@ -3177,16 +3147,6 @@ export function useAFFiNEI18N(): {
       * `Start AFFiNE without an account`
       */
     ["com.affine.mobile.sign-in.skip.link"](): string;
-    /**
-      * `Setting up workspace`
-      */
-    ["com.affine.mobile.workspace-selector.setting-up"](): string;
-    /**
-      * `Workspace {{id}}`
-      */
-    ["com.affine.mobile.workspace-selector.untitled"](options: {
-        readonly id: string;
-    }): string;
     /**
       * `Older than a month`
       */
@@ -9840,10 +9800,6 @@ export function useAFFiNEI18N(): {
       * `Network error.`
       */
     ["error.NETWORK_ERROR"](): string;
-    /**
-      * `iOS native authentication failed.`
-      */
-    ["error.IOS_NATIVE_AUTH_FAILED"](): string;
     /**
       * `Too many requests.`
       */

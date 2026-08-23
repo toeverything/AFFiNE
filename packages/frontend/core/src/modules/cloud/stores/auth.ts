@@ -102,41 +102,14 @@ export class AuthStore extends Store {
     const session = await this.fetchAuthSession();
     if (!session.user) return { user: null };
 
-    const [user, authMethods] = await Promise.all([
-      this.fetchCurrentUserProfile(),
-      this.fetchAuthMethods().catch(error => {
-        console.warn('Failed to fetch auth methods', error);
-        return undefined;
-      }),
-    ]);
+    const { currentUser: user } = await this.gqlService.gql({
+      query: getCurrentUserQuery,
+    });
     if (!user || user.id !== session.user.id) {
       throw new Error('User profile does not match auth session');
     }
-
-    return {
-      user: {
-        ...user,
-        hasPassword: authMethods?.password?.bound ?? user.hasPassword ?? null,
-        authMethods,
-      },
-    };
-  }
-
-  private async fetchCurrentUserProfile(): Promise<CurrentUserProfileSnapshot | null> {
-    try {
-      const { currentUser } = await this.gqlService.gql({
-        query: getCurrentUserQuery,
-      });
-      return currentUser;
-    } catch (error) {
-      console.warn('Failed to fetch current user profile from GraphQL', error);
-      const { user } = await this.nbstoreService.realtime.request(
-        'user.profile.get',
-        {},
-        { timeoutMs: 10_000 }
-      );
-      return user;
-    }
+    const authMethods = await this.fetchAuthMethods();
+    return { user: { ...user, authMethods } };
   }
 
   private async fetchAuthSession(): Promise<{ user: { id: string } | null }> {

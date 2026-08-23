@@ -221,3 +221,4 @@ struct NativeSignInPalette {
     isDark ? .leading : .center
   }
 }
+

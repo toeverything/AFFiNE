@@ -315,24 +315,6 @@ test('should issue exchange code only for native credential sign in', async t =>
   t.is(typeof decoded.header.kid, 'string');
 });
 
-test('should not strict-throttle native session exchange bootstrap', async t => {
-  const { app } = t.context;
-
-  for (let attempt = 0; attempt < 21; attempt++) {
-    const res = await supertest(app.getHttpServer())
-      .post('/api/auth/session/exchange')
-      .set('x-affine-client-kind', 'native')
-      .send({
-        code: randomUUID(),
-        installationId: randomUUID(),
-        platform: 'ios',
-      })
-      .expect(400);
-
-    t.is(res.body.name, 'INVALID_AUTH_STATE');
-  }
-});
-
 test('should rotate token pairs and manage auth sessions', async t => {
   const { app } = t.context;
   const user = await app.createUser('token-lifecycle@affine.pro');

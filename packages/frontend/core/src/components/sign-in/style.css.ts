@@ -38,17 +38,6 @@ export const linkButton = style({
   userSelect: 'none',
 });
 
-export const signInError = style({
-  color: cssVar('errorColor'),
-  background: cssVarV2('layer/background/error'),
-  border: `1px solid ${cssVar('backgroundErrorColor')}`,
-  borderRadius: '8px',
-  fontSize: cssVar('fontXs'),
-  lineHeight: '20px',
-  marginBottom: '12px',
-  padding: '8px 10px',
-});
-
 export const addSelfhostedButton = style({
   color: cssVarV2('text/link'),
 });

@@ -3,20 +3,9 @@ import 'fake-indexeddb/auto';
 import * as reader from '@affine/reader';
 import { NEVER } from 'rxjs';
 import { afterEach, expect, test, vi } from 'vitest';
-import {
-  applyUpdate,
-  Array as YArray,
-  Doc as YDoc,
-  encodeStateAsUpdate,
-  encodeStateVectorFromUpdate,
-  Map as YMap,
-} from 'yjs';
+import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
-import {
-  type Connection,
-  type ConnectionStatus,
-  DummyConnection,
-} from '../connection';
+import { DummyConnection } from '../connection';
 import {
   IndexedDBBlobStorage,
   IndexedDBBlobSyncStorage,
@@ -33,7 +22,6 @@ import {
   type DocIndexedClock,
   type DocRecord,
   type DocStorage,
-  type DocSyncStorage,
   type DocUpdate,
   type IndexerDocument,
   type IndexerSchema,
@@ -45,7 +33,6 @@ import {
   SpaceStorage,
 } from '../storage';
 import { Sync } from '../sync';
-import { DocSyncImpl } from '../sync/doc';
 import { DocSyncPeer } from '../sync/doc/peer';
 import { IndexerSyncImpl } from '../sync/indexer';
 import { expectYjsEqual } from './utils';
@@ -62,90 +49,6 @@ function deferred<T = void>() {
     reject = rej;
   });
   return { promise, resolve, reject };
-}
-
-class ManualConnection implements Connection<undefined> {
-  status: ConnectionStatus = 'connecting';
-  readonly inner = undefined;
-  error?: Error;
-  waitCount = 0;
-  private readonly connected = deferred();
-
-  connect(): void {
-    this.status = 'connecting';
-  }
-
-  disconnect(): void {
-    this.status = 'closed';
-  }
-
-  waitForConnected(): Promise<void> {
-    this.waitCount++;
-    if (this.status === 'connected') {
-      return Promise.resolve();
-    }
-    return this.connected.promise;
-  }
-
-  onStatusChanged(): () => void {
-    return () => {};
-  }
-
-  resolveConnected() {
-    this.status = 'connected';
-    this.connected.resolve();
-  }
-}
-
-class TestDocSyncStorage implements DocSyncStorage {
-  readonly storageType = 'docSync' as const;
-  clearClocksCount = 0;
-
-  constructor(
-    readonly connection: Connection,
-    private readonly clearClocksImpl: () => Promise<void> = async () => {}
-  ) {}
-
-  async getPeerRemoteClock(): Promise<DocClock | null> {
-    return null;
-  }
-
-  async getPeerRemoteClocks(): Promise<DocClocks> {
-    return {};
-  }
-
-  async setPeerRemoteClock(): Promise<void> {
-    return;
-  }
-
-  async getPeerPulledRemoteClock(): Promise<DocClock | null> {
-    return null;
-  }
-
-  async getPeerPulledRemoteClocks(): Promise<DocClocks> {
-    return {};
-  }
-
-  async setPeerPulledRemoteClock(): Promise<void> {
-    return;
-  }
-
-  async getPeerPushedClock(): Promise<DocClock | null> {
-    return null;
-  }
-
-  async getPeerPushedClocks(): Promise<DocClocks> {
-    return {};
-  }
-
-  async setPeerPushedClock(): Promise<void> {
-    return;
-  }
-
-  async clearClocks(): Promise<void> {
-    this.clearClocksCount++;
-    await this.clearClocksImpl();
-  }
 }
 
 class TestDocStorage implements DocStorage {
@@ -210,6 +113,12 @@ class TestDocStorage implements DocStorage {
   }
 }
 
+class TimestampBlindDocStorage extends IndexedDBDocStorage {
+  override async getDocTimestamps(): Promise<DocClocks> {
+    return {};
+  }
+}
+
 class PermissionDeniedRemoteDocStorage implements DocStorage {
   readonly storageType = 'doc' as const;
   readonly connection = new DummyConnection();
@@ -266,60 +175,6 @@ class PermissionDeniedConnection extends DummyConnection {
 
 class PermissionDeniedConnectionDocStorage extends PermissionDeniedRemoteDocStorage {
   override readonly connection = new PermissionDeniedConnection();
-}
-
-class TimestampBlindRemoteDocStorage implements DocStorage {
-  readonly storageType = 'doc' as const;
-  readonly connection = new DummyConnection();
-  readonly isReadonly = false;
-  loadCount = 0;
-
-  constructor(
-    readonly spaceId: string,
-    private readonly record: DocRecord
-  ) {}
-
-  async getDoc(docId: string): Promise<DocRecord | null> {
-    return docId === this.record.docId ? this.record : null;
-  }
-
-  async getDocDiff(
-    docId: string,
-    _state?: Uint8Array
-  ): Promise<DocDiff | null> {
-    this.loadCount++;
-    if (docId !== this.record.docId) {
-      return null;
-    }
-    return {
-      docId,
-      missing: this.record.bin,
-      state: encodeStateVectorFromUpdate(this.record.bin),
-      timestamp: this.record.timestamp,
-    };
-  }
-
-  async pushDocUpdate(update: DocUpdate): Promise<DocClock> {
-    return { docId: update.docId, timestamp: this.record.timestamp };
-  }
-
-  async getDocTimestamp(docId: string): Promise<DocClock | null> {
-    return docId === this.record.docId
-      ? { docId, timestamp: this.record.timestamp }
-      : null;
-  }
-
-  async getDocTimestamps(): Promise<DocClocks> {
-    return {};
-  }
-
-  async deleteDoc(_docId: string): Promise<void> {
-    return;
-  }
-
-  subscribeDocUpdate(_callback: (update: DocRecord, origin?: string) => void) {
-    return () => {};
-  }
 }
 
 class TrackingIndexerStorage extends IndexerStorageBase {
@@ -440,59 +295,6 @@ class TrackingIndexerSyncStorage extends IndexerSyncStorageBase {
   }
 }
 
-test('doc reset waits for sync storage and restarts after clear failure', async () => {
-  const connection = new ManualConnection();
-  const docSyncStorage = new TestDocSyncStorage(connection, async () => {
-    throw new Error('clear failed');
-  });
-  const sync = new DocSyncImpl(
-    {
-      local: new TestDocStorage('ws1', new Map(), async () => null),
-      remotes: {},
-    },
-    docSyncStorage
-  );
-  const start = vi.spyOn(sync, 'start');
-
-  sync.start();
-  const reset = sync.resetSync();
-  await Promise.resolve();
-
-  expect(connection.waitCount).toBe(1);
-  expect(docSyncStorage.clearClocksCount).toBe(0);
-
-  connection.resolveConnected();
-  await expect(reset).rejects.toThrow('clear failed');
-
-  expect(docSyncStorage.clearClocksCount).toBe(1);
-  expect(start).toHaveBeenCalledTimes(2);
-});
-
-test('doc sync peer does not publish retrying state after manual abort', async () => {
-  const peer = new DocSyncPeer(
-    'remote',
-    new TestDocStorage('ws1', new Map(), async () => null),
-    new TestDocSyncStorage(new DummyConnection()),
-    new TestDocStorage('ws1', new Map(), async () => null)
-  );
-  const states: Array<{ retrying: boolean; synced: boolean }> = [];
-  const subscription = peer.peerState$.subscribe(({ retrying, synced }) => {
-    states.push({ retrying, synced });
-  });
-  const abort = new AbortController();
-
-  const running = peer.mainLoop(abort.signal);
-  await vi.waitFor(() => {
-    expect(states.some(state => state.synced && !state.retrying)).toBe(true);
-  });
-
-  abort.abort('manual abort');
-  await running;
-
-  expect(states.at(-1)?.retrying).toBe(false);
-  subscription.unsubscribe();
-});
-
 test('doc', async () => {
   const doc = new YDoc();
   doc.getMap('test').set('hello', 'world');
@@ -510,7 +312,7 @@ test('doc', async () => {
     type: 'workspace',
   });
 
-  const peerBDoc = new IndexedDBDocStorage({
+  const peerBDoc = new TimestampBlindDocStorage({
     id: 'ws1',
     flavour: 'b',
     type: 'workspace',
@@ -544,6 +346,12 @@ test('doc', async () => {
     docId: 'doc1',
     bin: update,
   });
+  const rootDoc = new YDoc();
+  rootDoc.getMap('meta').set('name', 'Self-host workspace');
+  await peerB.get('doc').pushDocUpdate({
+    docId: 'ws1',
+    bin: encodeStateAsUpdate(rootDoc),
+  });
 
   const sync = new Sync({
     local: peerA,
@@ -552,6 +360,7 @@ test('doc', async () => {
       c: peerC,
     },
   });
+  const removeRootPriority = sync.doc.addPriority('ws1', 100);
   sync.start();
 
   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -568,6 +377,13 @@ test('doc', async () => {
     expectYjsEqual(c!.bin, {
       test: {
         hello: 'world',
+      },
+    });
+
+    const root = await peerA.get('doc').getDoc('ws1');
+    expectYjsEqual(root!.bin, {
+      meta: {
+        name: 'Self-host workspace',
       },
     });
   }
@@ -598,148 +414,12 @@ test('doc', async () => {
       },
     });
   }
-});
 
-test('doc sync peer pulls priority docs when remote timestamp list is empty', async () => {
-  const workspaceId = 'ws-priority-empty-timestamps';
-  const remoteYDoc = new YDoc();
-  remoteYDoc.getMap('meta').set('name', 'Self-host workspace');
-  const remoteRecord = {
-    docId: workspaceId,
-    bin: encodeStateAsUpdate(remoteYDoc),
-    timestamp: new Date('2026-01-01T00:00:00.000Z'),
-  };
-  const local = new IndexedDBDocStorage({
-    id: workspaceId,
-    flavour: 'local-priority',
-    type: 'workspace',
-  });
-  const syncMetadata = new IndexedDBDocSyncStorage({
-    id: workspaceId,
-    flavour: 'local-priority',
-    type: 'workspace',
-  });
-  const remote = new TimestampBlindRemoteDocStorage(workspaceId, remoteRecord);
-  const peer = new DocSyncPeer(
-    'remote-empty-timestamps',
-    local,
-    syncMetadata,
-    remote
-  );
-  const abort = new AbortController();
-
-  local.connection.connect();
-  syncMetadata.connection.connect();
-  await local.connection.waitForConnected();
-  await syncMetadata.connection.waitForConnected();
-
-  try {
-    peer.addPriority(workspaceId, 100);
-    void peer.mainLoop(abort.signal);
-
-    await vi.waitFor(async () => {
-      expect(await local.getDoc(workspaceId)).not.toBeNull();
-    });
-
-    const pulledRootDoc = await local.getDoc(workspaceId);
-    expect(remote.loadCount).toBeGreaterThan(0);
-    expectYjsEqual(pulledRootDoc!.bin, {
-      meta: {
-        name: 'Self-host workspace',
-      },
-    });
-  } finally {
-    abort.abort();
-    local.connection.disconnect();
-    syncMetadata.connection.disconnect();
-  }
-});
-
-test('doc sync peer refreshes priority docs with stale local data and no remote clock', async () => {
-  const workspaceId = 'ws-priority-stale-local';
-  const peerId = 'remote-stale-local';
-  const remoteTimestamp = new Date('2026-01-02T00:00:00.000Z');
-
-  const localYDoc = new YDoc();
-  localYDoc.getMap('meta').set('name', 'Local cached workspace');
-
-  const remoteYDoc = new YDoc();
-  remoteYDoc.getMap('meta').set(
-    'pages',
-    YArray.from([
-      new YMap([
-        ['id', 'doc-1'],
-        ['title', 'Remote doc'],
-        ['createDate', remoteTimestamp.getTime()],
-        ['tags', new YArray()],
-      ]),
-    ])
-  );
-
-  const local = new IndexedDBDocStorage({
-    id: workspaceId,
-    flavour: 'local-priority-stale',
-    type: 'workspace',
-  });
-  const syncMetadata = new IndexedDBDocSyncStorage({
-    id: workspaceId,
-    flavour: 'local-priority-stale',
-    type: 'workspace',
-  });
-  const remote = new TimestampBlindRemoteDocStorage(workspaceId, {
-    docId: workspaceId,
-    bin: encodeStateAsUpdate(remoteYDoc),
-    timestamp: remoteTimestamp,
-  });
-  const peer = new DocSyncPeer(peerId, local, syncMetadata, remote);
-  const abort = new AbortController();
-
-  local.connection.connect();
-  syncMetadata.connection.connect();
-  await local.connection.waitForConnected();
-  await syncMetadata.connection.waitForConnected();
-  const localClock = await local.pushDocUpdate({
-    docId: workspaceId,
-    bin: encodeStateAsUpdate(localYDoc),
-  });
-  await syncMetadata.setPeerPushedClock(peerId, localClock);
-
-  try {
-    peer.addPriority(workspaceId, 100);
-    void peer.mainLoop(abort.signal);
-
-    await vi.waitFor(
-      async () => {
-        expect(remote.loadCount).toBeGreaterThan(0);
-        const rootRecord = await local.getDoc(workspaceId);
-        expect(rootRecord).not.toBeNull();
-        const rootDoc = new YDoc();
-        applyUpdate(rootDoc, rootRecord!.bin);
-        expect(rootDoc.getMap('meta').get('pages')).toBeInstanceOf(YArray);
-      },
-      { timeout: 1_000 }
-    );
-
-    const pulledRootDoc = await local.getDoc(workspaceId);
-    expect(remote.loadCount).toBeGreaterThan(0);
-    expectYjsEqual(pulledRootDoc!.bin, {
-      meta: {
-        name: 'Local cached workspace',
-        pages: [
-          {
-            id: 'doc-1',
-            title: 'Remote doc',
-            createDate: remoteTimestamp.getTime(),
-            tags: [],
-          },
-        ],
-      },
-    });
-  } finally {
-    abort.abort();
-    local.connection.disconnect();
-    syncMetadata.connection.disconnect();
-  }
+  removeRootPriority();
+  sync.stop();
+  peerA.disconnect();
+  peerB.disconnect();
+  peerC.disconnect();
 });
 
 test('blob', async () => {

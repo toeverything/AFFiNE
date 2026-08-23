@@ -688,7 +688,6 @@ __metadata:
     react-dom: "npm:^19.2.1"
     react-router-dom: "npm:^6.30.4"
     typescript: "npm:@typescript/typescript6@6.0.2"
-    vitest: "npm:^4.1.8"
   languageName: unknown
   linkType: soft
 

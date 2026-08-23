@@ -21,15 +21,12 @@ import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { Dispatch, SetStateAction } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { SignInState } from '.';
 import { Back } from './back';
 import { Captcha } from './captcha';
 import * as styles from './style.css';
-
-const MIN_SIGN_IN_LOADING_MS = 350;
-const RATE_LIMIT_SIGN_IN_COOLDOWN_SECONDS = 60;
 
 export const SignInWithPasswordStep = ({
   state,
@@ -70,9 +67,6 @@ export const SignInWithPasswordStep = ({
   const needCaptcha = useLiveData(captchaService.needCaptcha$);
   const challenge = useLiveData(captchaService.challenge$);
   const [isLoading, setIsLoading] = useState(false);
-  const isSigningInRef = useRef(false);
-  const [authErrorMessage, setAuthErrorMessage] = useState('');
-  const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
 
   const loginStatus = useLiveData(authService.session.status$);
 
@@ -90,144 +84,55 @@ export const SignInWithPasswordStep = ({
     setPasswordErrorHint(t['com.affine.auth.password.error']());
   }, [t]);
 
-  useEffect(() => {
-    if (rateLimitCooldown <= 0) return;
+  const onSignIn = useAsyncCallback(async () => {
+    if (isLoading || (!verifyToken && needCaptcha)) return;
+    setIsLoading(true);
 
-    const timer = window.setTimeout(() => {
-      setRateLimitCooldown(current => Math.max(0, current - 1));
-    }, 1000);
+    try {
+      await authService.signInPassword({
+        email,
+        password,
+        verifyToken,
+        challenge,
+      });
+    } catch (err) {
+      console.error(err);
+      const error = UserFriendlyError.fromAny(err);
 
-    return () => window.clearTimeout(timer);
-  }, [rateLimitCooldown]);
-
-  const onSignIn = useAsyncCallback(
-    async (currentPassword?: string) => {
       if (
-        isSigningInRef.current ||
-        rateLimitCooldown > 0 ||
-        (!verifyToken && needCaptcha)
+        error.is('WRONG_SIGN_IN_CREDENTIALS') ||
+        error.is('PASSWORD_REQUIRED')
       ) {
-        return;
-      }
-
-      isSigningInRef.current = true;
-      const signInStartedAt = Date.now();
-      const submittedPassword = currentPassword ?? password;
-      setPasswordError(false);
-      setPasswordErrorHint(t['com.affine.auth.password.error']());
-      setAuthErrorMessage('');
-      setRateLimitCooldown(0);
-      setIsLoading(true);
-
-      try {
-        await authService.signInPassword({
-          email,
-          password: submittedPassword,
-          verifyToken,
-          challenge,
+        setPasswordError(true);
+        setPasswordErrorHint(t['com.affine.auth.password.error']());
+      } else {
+        setPasswordError(false);
+        notify.error({
+          title: t['com.affine.auth.toast.title.failed'](),
+          message: error.is('REQUEST_ABORTED')
+            ? t['error.NETWORK_ERROR']()
+            : t[`error.${error.name}`](error.data),
         });
-      } catch (err) {
-        console.error(err);
-        const error = UserFriendlyError.fromAny(err);
-        const isRateLimited =
-          error.is('TOO_MANY_REQUEST') || error.isStatus(429);
-        const translatedMessage = error.is('REQUEST_ABORTED')
-          ? t['error.NETWORK_ERROR']()
-          : isRateLimited
-            ? t['error.TOO_MANY_REQUEST']()
-            : t[`error.${error.name}`](error.data);
-        const visibleMessage = isRateLimited
-          ? `${translatedMessage} ${t['com.affine.auth.toast.message.failed']()}`
-          : translatedMessage;
-        const nativeNetworkMessage =
-          BUILD_CONFIG.isNative &&
-          isSelfhosted &&
-          error.is('NETWORK_ERROR') &&
-          error.message &&
-          error.message !== translatedMessage
-            ? error.message
-            : null;
-        const diagnosticMessage = error.message || visibleMessage;
-        const shouldExposeNativeAuthError =
-          BUILD_CONFIG.isNative &&
-          isSelfhosted &&
-          error.is('IOS_NATIVE_AUTH_FAILED');
-        const selfhostedMessage = shouldExposeNativeAuthError
-          ? t['com.affine.auth.toast.message.ios-auth']({
-              message: diagnosticMessage,
-            })
-          : (nativeNetworkMessage ?? visibleMessage);
-        const failedTitle = shouldExposeNativeAuthError
-          ? t['com.affine.auth.toast.title.ios-auth']()
-          : t['com.affine.auth.toast.title.failed']();
-
-        if (isRateLimited) {
-          setRateLimitCooldown(RATE_LIMIT_SIGN_IN_COOLDOWN_SECONDS);
-        }
-
-        if (isSelfhosted) {
-          notify.error({
-            title: failedTitle,
-            message: selfhostedMessage,
-          });
-        }
-
-        if (
-          error.is('WRONG_SIGN_IN_CREDENTIALS') ||
-          error.is('PASSWORD_REQUIRED')
-        ) {
-          setPasswordError(true);
-          setPasswordErrorHint(
-            isSelfhosted
-              ? selfhostedMessage
-              : t['com.affine.auth.password.error']()
-          );
-        } else {
-          setPasswordError(false);
-          setAuthErrorMessage(selfhostedMessage);
-          if (!isSelfhosted) {
-            notify.error({
-              title: t['com.affine.auth.toast.title.failed'](),
-              message: selfhostedMessage,
-            });
-          }
-        }
-        captchaService.revalidate();
-      } finally {
-        const elapsed = Date.now() - signInStartedAt;
-        if (elapsed < MIN_SIGN_IN_LOADING_MS) {
-          await new Promise(resolve =>
-            window.setTimeout(resolve, MIN_SIGN_IN_LOADING_MS - elapsed)
-          );
-        }
-        isSigningInRef.current = false;
-        setIsLoading(false);
       }
-    },
-    [
-      verifyToken,
-      needCaptcha,
-      rateLimitCooldown,
-      password,
-      authService,
-      email,
-      challenge,
-      t,
-      isSelfhosted,
-      captchaService,
-    ]
-  );
+      captchaService.revalidate();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    isLoading,
+    verifyToken,
+    needCaptcha,
+    captchaService,
+    authService,
+    email,
+    password,
+    challenge,
+    t,
+  ]);
 
   const sendMagicLink = useCallback(() => {
     changeState(prev => ({ ...prev, step: 'signInWithEmail' }));
   }, [changeState]);
-
-  const isSubmitDisabled =
-    isLoading || rateLimitCooldown > 0 || (!verifyToken && needCaptcha);
-  const signInButtonText =
-    rateLimitCooldown > 0
-      ? `${t['com.affine.auth.sign.in']()} (${rateLimitCooldown}s)`
-      : t['com.affine.auth.sign.in']();
 
   return (
     <AuthContainer>
@@ -240,8 +145,7 @@ export const SignInWithPasswordStep = ({
         <form
           onSubmit={event => {
             event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            onSignIn(String(form.get('password') ?? ''));
+            onSignIn();
           }}
         >
           <AuthInput
@@ -251,9 +155,6 @@ export const SignInWithPasswordStep = ({
             type="email"
             name="username"
             autoComplete="username"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
           />
           <AuthInput
             autoFocus
@@ -263,13 +164,8 @@ export const SignInWithPasswordStep = ({
             type="password"
             name="password"
             autoComplete="current-password"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            disabled={isLoading}
             onChange={(value: string) => {
               setPassword(value);
-              setAuthErrorMessage('');
               if (passwordError) {
                 setPasswordError(false);
                 setPasswordErrorHint(t['com.affine.auth.password.error']());
@@ -277,22 +173,17 @@ export const SignInWithPasswordStep = ({
             }}
             error={passwordError}
             errorHint={passwordErrorHint}
+            onEnter={onSignIn}
           />
           {!verifyToken && needCaptcha && <Captcha />}
-          {authErrorMessage ? (
-            <div className={styles.signInError} role="alert">
-              {authErrorMessage}
-            </div>
-          ) : null}
           <Button
             data-testid="sign-in-button"
             variant="primary"
             size="extraLarge"
             style={{ width: '100%' }}
-            loading={isLoading}
-            disabled={isSubmitDisabled}
+            disabled={isLoading || (!verifyToken && needCaptcha)}
           >
-            {signInButtonText}
+            {t['com.affine.auth.sign.in']()}
           </Button>
         </form>
         {!isSelfhosted && (

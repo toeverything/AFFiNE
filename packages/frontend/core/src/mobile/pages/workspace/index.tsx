@@ -103,10 +103,8 @@ export const Component = () => {
   const listLoading = useLiveData(workspacesService.list.isRevalidating$);
   const workspaces = useLiveData(workspacesService.list.workspaces$);
 
-  // server search params
   const serverSearchParam = searchParams.get('server');
   const flavourSearchParam = searchParams.get('flavour');
-  const hasServerSearchParam = !!serverSearchParam;
   const serverFromSearchParams = useLiveData(
     serverSearchParam
       ? serversService.serverByBaseUrl$(serverSearchParam)
@@ -128,7 +126,7 @@ export const Component = () => {
       return findByFlavour(flavourSearchParam);
     }
 
-    if (hasServerSearchParam) {
+    if (serverSearchParam) {
       if (!serverFromSearchParams) {
         return undefined;
       }
@@ -143,13 +141,14 @@ export const Component = () => {
       }
     }
 
-    return workspaces.find(({ id }) => id === workspaceId);
+    const matches = workspaces.filter(({ id }) => id === workspaceId);
+    return matches.length === 1 ? matches[0] : undefined;
   }, [
     flavourSearchParam,
-    hasServerSearchParam,
-    workspaces,
     params.workspaceId,
+    serverSearchParam,
     serverFromSearchParams,
+    workspaces,
   ]);
 
   // if listLoading is false, we can show 404 page, otherwise we should show loading page.

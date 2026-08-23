@@ -3,7 +3,6 @@ import { DebugLogger } from '@affine/debug';
 import {
   createWorkspaceMutation,
   deleteWorkspaceMutation,
-  getWorkspaceRolePermissionsQuery,
   getWorkspacesQuery,
   ServerDeploymentType,
   ServerFeature,
@@ -225,10 +224,6 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       // apply initial state
       await initial(docCollection, blobStorage, docStorage);
 
-      if (!docCollection.meta.docs) {
-        docCollection.meta.initialize();
-      }
-
       // save workspace to local storage, should be vary fast
       for (const subdocs of docList) {
         await docStorage.pushDocUpdate({
@@ -277,20 +272,16 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
             },
           });
 
-          const ids = workspaces.map(({ id, initialized, owner, team }) => ({
+          const ids = workspaces.map(({ id, initialized }) => ({
             id,
             initialized,
-            ownerId: owner?.id,
-            team,
           }));
           return {
             accountId,
-            workspaces: ids.map(({ id, initialized, ownerId, team }) => ({
+            workspaces: ids.map(({ id, initialized }) => ({
               id,
               flavour: this.server.id,
               initialized,
-              ownerId,
-              team,
             })),
           };
         }).pipe(
@@ -455,28 +446,6 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   }
 
   private async getWorkspaceInfo(workspaceId: string, signal?: AbortSignal) {
-    try {
-      const { workspaceRolePermissions } = await this.graphqlService.gql({
-        query: getWorkspaceRolePermissionsQuery,
-        variables: { id: workspaceId },
-        context: { signal },
-      });
-      const permissions = workspaceRolePermissions?.permissions;
-      if (permissions) {
-        return {
-          workspace: {
-            permissions,
-            team:
-              this.workspaces$.value.find(
-                workspace => workspace.id === workspaceId
-              )?.team ?? false,
-          },
-        };
-      }
-    } catch (error) {
-      logger.error('error to get workspace permissions with graphql', error);
-    }
-
     const { access } = await this.nbstoreService.realtime.request(
       'workspace.access.get',
       { workspaceId },

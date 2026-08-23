@@ -6,8 +6,7 @@ export type ErrorName =
   | 'NETWORK_ERROR'
   | 'CONTENT_TOO_LARGE'
   | 'REQUEST_ABORTED'
-  | 'UNSUPPORTED_SERVER_VERSION'
-  | 'IOS_NATIVE_AUTH_FAILED';
+  | 'UNSUPPORTED_SERVER_VERSION';
 
 export interface UserFriendlyErrorResponse {
   status: number;

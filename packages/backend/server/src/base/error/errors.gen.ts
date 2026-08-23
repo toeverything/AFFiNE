@@ -16,12 +16,6 @@ export class NetworkError extends UserFriendlyError {
   }
 }
 
-export class IosNativeAuthFailed extends UserFriendlyError {
-  constructor(message?: string) {
-    super('internal_server_error', 'ios_native_auth_failed', message);
-  }
-}
-
 export class TooManyRequest extends UserFriendlyError {
   constructor(message?: string) {
     super('too_many_requests', 'too_many_request', message);
@@ -1215,7 +1209,6 @@ export class CommentAttachmentQuotaExceeded extends UserFriendlyError {
 export enum ErrorNames {
   INTERNAL_SERVER_ERROR,
   NETWORK_ERROR,
-  IOS_NATIVE_AUTH_FAILED,
   TOO_MANY_REQUEST,
   NOT_FOUND,
   BAD_REQUEST,

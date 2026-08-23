@@ -145,9 +145,6 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
     this._assertValidDocTitle(doc);
     this._doc.transact(() => {
       if (!this.docs) {
-        this.initialize();
-      }
-      if (!this.docs) {
         return;
       }
       const docs = this.docs as unknown[];

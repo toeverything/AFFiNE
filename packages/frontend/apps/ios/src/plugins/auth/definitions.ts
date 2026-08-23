@@ -1,5 +1,3 @@
-import type { SignInUserInfo } from '@affine/core/modules/cloud/provider/auth';
-
 export interface AuthPlugin {
   showNativeSignIn(): Promise<{ success: boolean }>;
   signInMagicLink(options: {
@@ -20,7 +18,7 @@ export interface AuthPlugin {
     password: string;
     verifyToken?: string;
     challenge?: string;
-  }): Promise<SignInUserInfo>;
+  }): Promise<void>;
   signInOpenApp(options: { endpoint: string; code: string }): Promise<void>;
   signOut(options: { endpoint: string }): Promise<void>;
   getValidAccessToken(options: {
@@ -28,8 +26,4 @@ export interface AuthPlugin {
   }): Promise<{ token?: string | null }>;
   refreshAccessToken(options: { endpoint: string }): Promise<{ token: string }>;
   clearEndpointSession(options: { endpoint: string }): Promise<void>;
-  debugLog(options: {
-    message: string;
-    payload?: Record<string, unknown> | null;
-  }): Promise<void>;
 }

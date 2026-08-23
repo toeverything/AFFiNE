@@ -25,7 +25,7 @@ function shouldSkipStoredAuthToken(url: string | URL) {
       url,
       globalThis.location?.origin ?? 'http://localhost'
     );
-    if (pathname.startsWith('/socket.io')) {
+    if (pathname === '/socket.io' || pathname.startsWith('/socket.io/')) {
       return true;
     }
     return [

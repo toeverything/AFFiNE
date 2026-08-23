@@ -81,12 +81,12 @@ export class WorkspaceRepositoryService extends Service {
   };
 
   openByWorkspaceId = (workspaceId: string, flavour?: string | null) => {
-    const workspaceMetadata =
-      this.workspacesListService.list.workspaces$.value.find(
-        workspace =>
-          workspace.id === workspaceId &&
-          (!flavour || workspace.flavour === flavour)
-      ) ?? this.workspacesListService.list.workspace$(workspaceId).value;
+    const workspaceMetadata = flavour
+      ? this.workspacesListService.list.workspaces$.value.find(
+          workspace =>
+            workspace.id === workspaceId && workspace.flavour === flavour
+        )
+      : this.workspacesListService.list.workspace$(workspaceId).value;
     return workspaceMetadata && this.open({ metadata: workspaceMetadata });
   };
 

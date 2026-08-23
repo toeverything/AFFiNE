@@ -67,29 +67,13 @@ private struct AuthRefreshOperation {
   let task: Task<StoredAuthTokenPair, Error>
 }
 
-private struct NativeAuthHTTPError: Error {
-  let action: String
-  let statusCode: Int
-  let data: Data
-}
-
-private struct NativeAuthResponseError: Error, CustomStringConvertible {
-  let action: String
-  let detail: String
-
-  var description: String {
-    "\(action): \(detail)"
-  }
-}
-
 private actor AuthSessionBroker {
   private let tokenService = "app.affine.pro.auth-token"
   private var refreshTasks: [String: AuthRefreshOperation] = [:]
-  private var exchangeTasks: [String: AuthRefreshOperation] = [:]
   private var mutationEpochs: [String: UInt] = [:]
 
   func store(_ endpoint: String, response: AuthTokenResponse) throws -> StoredAuthTokenPair {
-    invalidateTokenMutation(canonicalEndpoint(endpoint))
+    invalidateRefresh(canonicalEndpoint(endpoint))
     let pair = try tokenPair(response)
     try write(endpoint, pair)
     return pair
@@ -98,11 +82,6 @@ private actor AuthSessionBroker {
   func validAccessToken(_ endpoint: String, minValidity: TimeInterval = 120) async throws
     -> StoredAuthTokenPair?
   {
-    let key = canonicalEndpoint(endpoint)
-    if let operation = exchangeTasks[key] {
-      return try await operation.task.value
-    }
-
     guard let pair = try read(endpoint) else { return nil }
     if pair.accessExpiresAt.timeIntervalSinceNow > minValidity {
       return pair
@@ -111,17 +90,13 @@ private actor AuthSessionBroker {
   }
 
   func refreshAccessToken(_ endpoint: String) async throws -> StoredAuthTokenPair {
-    let key = canonicalEndpoint(endpoint)
-    if let operation = exchangeTasks[key] {
-      return try await operation.task.value
-    }
-    return try await refresh(endpoint)
+    try await refresh(endpoint)
   }
 
   func signOut(_ endpoint: String) async throws {
     let key = canonicalEndpoint(endpoint)
     let pair = try read(endpoint)
-    invalidateTokenMutation(key)
+    invalidateRefresh(key)
     try delete(endpoint)
     guard let pair else { return }
     _ = try await request(
@@ -130,47 +105,8 @@ private actor AuthSessionBroker {
   }
 
   func clear(_ endpoint: String) throws {
-    invalidateTokenMutation(canonicalEndpoint(endpoint))
+    invalidateRefresh(canonicalEndpoint(endpoint))
     try delete(endpoint)
-  }
-
-  func beginSessionExchange(
-    _ endpoint: String, code: String, installationId: String, platform: String, deviceName: String
-  ) -> UUID {
-    let key = canonicalEndpoint(endpoint)
-    invalidateTokenMutation(key)
-    let epoch = mutationEpochs[key, default: 0]
-    let operationId = UUID()
-    let task = Task {
-      let data = try await self.request(
-        endpoint, action: "/api/auth/session/exchange",
-        body: [
-          "code": code,
-          "installationId": installationId,
-          "platform": platform,
-          "deviceName": deviceName,
-        ])
-      let response = try JSONDecoder().decode(AuthTokenResponse.self, from: data)
-      let pair = try self.tokenPair(response)
-      guard !Task.isCancelled, self.mutationEpochs[key, default: 0] == epoch else {
-        throw AuthOperationCancelled()
-      }
-      try self.write(endpoint, pair)
-      return pair
-    }
-    exchangeTasks[key] = AuthRefreshOperation(id: operationId, task: task)
-    return operationId
-  }
-
-  func waitForSessionExchange(_ endpoint: String, operationId: UUID) async throws {
-    let key = canonicalEndpoint(endpoint)
-    guard let operation = exchangeTasks[key], operation.id == operationId else { return }
-    defer {
-      if exchangeTasks[key]?.id == operationId {
-        exchangeTasks[key] = nil
-      }
-    }
-    _ = try await operation.task.value
   }
 
   private func refresh(_ endpoint: String) async throws -> StoredAuthTokenPair {
@@ -207,12 +143,10 @@ private actor AuthSessionBroker {
     return try await task.value
   }
 
-  private func invalidateTokenMutation(_ key: String) {
+  private func invalidateRefresh(_ key: String) {
     mutationEpochs[key, default: 0] &+= 1
     refreshTasks[key]?.task.cancel()
     refreshTasks[key] = nil
-    exchangeTasks[key]?.task.cancel()
-    exchangeTasks[key] = nil
   }
 
   private func tokenPair(_ response: AuthTokenResponse) throws -> StoredAuthTokenPair {
@@ -233,19 +167,9 @@ private actor AuthSessionBroker {
       session: response.session)
   }
 
-  private func retryDelayNanoseconds(_ response: HTTPURLResponse?, attempt: Int) -> UInt64 {
-    if let retryAfter = response?.value(forHTTPHeaderField: "Retry-After"),
-      let seconds = Double(retryAfter)
-    {
-      return UInt64(min(max(seconds, 1), 30) * 1_000_000_000)
-    }
-
-    let baseMilliseconds = response?.statusCode == 429 ? 1_000 : 200
-    let milliseconds = min((baseMilliseconds * (1 << attempt)) + Int.random(in: 0...150), 30_000)
-    return UInt64(milliseconds) * 1_000_000
-  }
-
-  private func request(_ endpoint: String, action: String, body: [String: String]) async throws -> Data {
+  private func request(_ endpoint: String, action: String, body: [String: String]) async throws
+    -> Data
+  {
     guard let url = URL(string: "\(canonicalEndpoint(endpoint))\(action)") else {
       throw AuthError.invalidEndpoint
     }
@@ -257,8 +181,7 @@ private actor AuthSessionBroker {
     request.setValue(AppConfigManager.getAffineVersion(), forHTTPHeaderField: "x-affine-version")
     request.httpBody = try JSONEncoder().encode(body)
     request.timeoutInterval = 10
-    let maxAttempts = 5
-    for attempt in 0..<maxAttempts {
+    for attempt in 0..<3 {
       do {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -266,18 +189,15 @@ private actor AuthSessionBroker {
         }
         if response.statusCode < 400 { return data }
         let error = authServerError(data, statusCode: response.statusCode)
-        if (response.statusCode == 429 || response.statusCode >= 500) && attempt < maxAttempts - 1 {
-          try await Task.sleep(nanoseconds: retryDelayNanoseconds(response, attempt: attempt))
-          continue
-        }
-        throw error
+        guard response.statusCode >= 500, attempt < 2 else { throw error }
       } catch let error as AuthServerError {
-        throw error
+        if error.statusCode < 500 || attempt == 2 { throw error }
       } catch {
         if Task.isCancelled { throw AuthOperationCancelled() }
-        if attempt == maxAttempts - 1 { throw error }
-        try await Task.sleep(nanoseconds: retryDelayNanoseconds(nil, attempt: attempt))
+        if attempt == 2 { throw error }
       }
+      let delay = UInt64((200 * (1 << attempt)) + Int.random(in: 0...150)) * 1_000_000
+      try await Task.sleep(nanoseconds: delay)
     }
     throw AuthError.internalError
   }
@@ -362,7 +282,6 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     CAPPluginMethod(name: "getValidAccessToken", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "refreshAccessToken", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "clearEndpointSession", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "debugLog", returnType: CAPPluginReturnPromise),
   ]
 
   private let broker = AuthSessionBroker()
@@ -392,170 +311,6 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
         call.reject("Failed to show native sign-in", nil, error)
       }
     }
-  }
-
-  @objc public func debugLog(_ call: CAPPluginCall) {
-    let message = call.getString("message") ?? "[AFFiNE][iOS] debug log"
-    let payload = call.getObject("payload")
-
-    if let payload,
-      JSONSerialization.isValidJSONObject(payload),
-      let encoded = try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys]),
-      let payloadText = String(data: encoded, encoding: .utf8)
-    {
-      NSLog("%@ %@", message, payloadText)
-    } else {
-      NSLog("%@", message)
-    }
-
-    call.resolve()
-  }
-
-  private func responseText(_ data: Data) -> String {
-    String(data: data, encoding: .utf8) ?? "<non-utf8 body: \(data.count) bytes>"
-  }
-
-  private func redactedJSON(_ value: Any) -> Any {
-    if let dictionary = value as? [String: Any] {
-      var redacted: [String: Any] = [:]
-      for (key, value) in dictionary {
-        let lowercasedKey = key.lowercased()
-        if lowercasedKey.contains("token") || lowercasedKey == "code" || lowercasedKey.contains("secret") {
-          redacted[key] = "<redacted>"
-        } else {
-          redacted[key] = redactedJSON(value)
-        }
-      }
-      return redacted
-    }
-
-    if let array = value as? [Any] {
-      return array.map(redactedJSON)
-    }
-
-    return value
-  }
-
-  private func redactedResponseText(_ data: Data) -> String {
-    guard let json = try? JSONSerialization.jsonObject(with: data) else {
-      return responseText(data)
-    }
-    guard JSONSerialization.isValidJSONObject(json) else {
-      return responseText(data)
-    }
-    let redacted = redactedJSON(json)
-    guard JSONSerialization.isValidJSONObject(redacted),
-      let encoded = try? JSONSerialization.data(withJSONObject: redacted),
-      let text = String(data: encoded, encoding: .utf8)
-    else {
-      return responseText(data)
-    }
-    return text
-  }
-
-  private func isUserFriendlyErrorBody(_ data: Data) -> Bool {
-    guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-      return false
-    }
-    return json["type"] is String && json["name"] is String && json["message"] is String
-  }
-
-  private func nativeAuthErrorData(code: String?, statusCode: Int) -> Data {
-    let name = statusCode == 429 ? "TOO_MANY_REQUEST" : (code ?? "IOS_NATIVE_AUTH_FAILED")
-    let message = statusCode == 429 ? "Too many requests." : "iOS native auth failed."
-    let response: [String: Any] = [
-      "status": statusCode,
-      "code": name,
-      "type": name,
-      "name": name,
-      "message": message,
-    ]
-    return (try? JSONSerialization.data(withJSONObject: response)) ?? Data()
-  }
-
-  private func nativeAuthErrorMessage(
-    action: String,
-    statusCode: Int?,
-    data: Data?,
-    error: Error?
-  ) -> String {
-    if let data, isUserFriendlyErrorBody(data) {
-      return responseText(data)
-    }
-
-    let rawDetail = data.map(redactedResponseText) ?? error.map { String(describing: $0) } ?? "unknown error"
-    let status = statusCode ?? 0
-    let name: String
-    let isResponseError = error.map { $0 is NativeAuthResponseError } ?? false
-    if statusCode == nil && !isResponseError {
-      name = "NETWORK_ERROR"
-    } else {
-      name = "IOS_NATIVE_AUTH_FAILED"
-    }
-    let message = "iOS native auth failed at \(action)" + (statusCode.map { " (HTTP \($0))" } ?? "") + ": \(rawDetail)"
-    let response: [String: Any] = [
-      "status": status,
-      "code": name,
-      "type": name,
-      "name": name,
-      "message": message,
-    ]
-
-    guard let encoded = try? JSONSerialization.data(withJSONObject: response),
-      let json = String(data: encoded, encoding: .utf8)
-    else {
-      return message
-    }
-    return json
-  }
-
-  private func logAuthFailure(
-    endpoint: String,
-    action: String,
-    statusCode: Int?,
-    data: Data?,
-    error: Error?
-  ) {
-    let status = statusCode.map(String.init) ?? "none"
-    let detail = data.map(redactedResponseText) ?? error.map { String(describing: $0) } ?? "unknown error"
-    NSLog(
-      "[AFFiNE][Auth] native auth failed endpoint=\(canonicalEndpoint(endpoint)) action=\(action) status=\(status) detail=\(detail)"
-    )
-  }
-
-  private func rejectAuthFailure(
-    _ call: CAPPluginCall,
-    endpoint: String,
-    action: String,
-    statusCode: Int?,
-    data: Data?,
-    error: Error?
-  ) {
-    logAuthFailure(endpoint: endpoint, action: action, statusCode: statusCode, data: data, error: error)
-    call.reject(nativeAuthErrorMessage(action: action, statusCode: statusCode, data: data, error: error))
-  }
-
-  private func rejectAuthFailure(
-    _ call: CAPPluginCall,
-    endpoint: String,
-    defaultAction: String,
-    error: Error
-  ) {
-    if let error = error as? NativeAuthHTTPError {
-      rejectAuthFailure(
-        call, endpoint: endpoint, action: error.action, statusCode: error.statusCode, data: error.data,
-        error: error)
-      return
-    }
-
-    if let error = error as? NativeAuthResponseError {
-      rejectAuthFailure(
-        call, endpoint: endpoint, action: error.action, statusCode: nil, data: nil, error: error)
-      return
-    }
-
-    rejectAuthFailure(
-      call, endpoint: endpoint, action: defaultAction, statusCode: nil, data: nil, error: error)
   }
 
   private func canonicalEndpoint(_ endpoint: String) -> String {
@@ -674,8 +429,8 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
 
   @objc public func signInPassword(_ call: CAPPluginCall) {
     Task {
-      let endpoint = call.getString("endpoint") ?? "<missing endpoint>"
       do {
+        let endpoint = try call.getStringEnsure("endpoint")
         let email = try call.getStringEnsure("email")
         let password = try call.getStringEnsure("password")
         let verifyToken = call.getString("verifyToken")
@@ -692,19 +447,13 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
           ], body: ["email": email, "password": password])
 
         if response.statusCode >= 400 {
-          self.rejectAuthFailure(
-            call, endpoint: endpoint, action: "/api/auth/sign-in", statusCode: response.statusCode,
-            data: data, error: nil)
-          return
+          throw authServerError(data, statusCode: response.statusCode)
         }
 
-        let user = try self.signInUserResponse(data)
-        let exchangeOperationId = try await self.beginExchangeSession(endpoint, data)
-        try await self.waitForExchangeSession(endpoint, exchangeOperationId)
-        call.resolve(user)
+        try await self.exchangeSession(endpoint, data)
+        call.resolve(["ok": true])
       } catch {
-        self.rejectAuthFailure(
-          call, endpoint: endpoint, defaultAction: "/api/auth/sign-in", error: error)
+        call.reject("Failed to sign in, \(error)", nil, error)
       }
     }
   }
@@ -747,77 +496,39 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     }
   }
 
-  private func signInUserResponse(_ data: Data) throws -> [String: Any] {
-    guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-      let id = json["id"] as? String,
-      let email = json["email"] as? String,
-      let name = json["name"] as? String,
-      let emailVerified = json["emailVerified"] as? Bool
-    else {
-      throw NativeAuthResponseError(
-        action: "/api/auth/sign-in",
-        detail: "invalid user response: \(redactedResponseText(data))"
-      )
-    }
-
-    let avatarUrl = json["avatarUrl"] is NSNull ? nil : json["avatarUrl"] as? String
-    let hasPassword = json["hasPassword"] is NSNull ? nil : json["hasPassword"] as? Bool
-    var response: [String: Any] = [
-      "id": id,
-      "email": email,
-      "name": name,
-      "emailVerified": emailVerified,
-    ]
-    if let hasPassword {
-      response["hasPassword"] = hasPassword
-    } else {
-      response["hasPassword"] = NSNull()
-    }
-    if let avatarUrl {
-      response["avatarUrl"] = avatarUrl
-    } else {
-      response["avatarUrl"] = NSNull()
-    }
-    return response
-  }
-
   private func exchangeCodeFromResponse(_ data: Data) throws -> String {
     guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
       let code = json["exchangeCode"] as? String
     else {
-      throw NativeAuthResponseError(
-        action: "/api/auth/sign-in",
-        detail: "missing exchangeCode in response: \(redactedResponseText(data))"
-      )
+      throw AuthError.exchangeCodeNotFound
     }
 
     return code
   }
 
-  private func beginExchangeSession(_ endpoint: String, _ signInData: Data) async throws -> UUID {
-    let code = try exchangeCodeFromResponse(signInData)
-    return await broker.beginSessionExchange(
-      endpoint, code: code, installationId: self.installationId(), platform: "ios",
-      deviceName: UIDevice.current.name)
-  }
-
-  private func waitForExchangeSession(_ endpoint: String, _ operationId: UUID) async throws {
-    do {
-      try await broker.waitForSessionExchange(endpoint, operationId: operationId)
-    } catch let error as AuthServerError {
-      throw NativeAuthHTTPError(
-        action: "/api/auth/session/exchange", statusCode: error.statusCode,
-        data: self.nativeAuthErrorData(code: error.code, statusCode: error.statusCode))
-    } catch {
-      throw NativeAuthResponseError(
-        action: "/api/auth/session/exchange", detail: String(describing: error))
-    }
-    self.clearAuthCookies(endpoint)
-  }
-
   private func exchangeSession(_ endpoint: String, _ signInData: Data) async throws {
-    let operationId = try await beginExchangeSession(endpoint, signInData)
-    try await waitForExchangeSession(endpoint, operationId)
+    let code = try exchangeCodeFromResponse(signInData)
+    let (data, response) = try await self.fetch(
+      endpoint, method: "POST", action: "/api/auth/session/exchange",
+      headers: [
+        "x-affine-client-kind": "native"
+      ],
+      body: [
+        "code": code,
+        "installationId": self.installationId(),
+        "platform": "ios",
+        "deviceName": UIDevice.current.name,
+      ])
+
+    if response.statusCode >= 400 {
+      throw authServerError(data, statusCode: response.statusCode)
+    }
+
+    let pair = try await broker.store(
+      endpoint, response: JSONDecoder().decode(AuthTokenResponse.self, from: data))
+    AuthAccessTokenCache.shared.set(
+      pair.accessToken, expiresAt: pair.accessExpiresAt, for: endpoint)
+    self.clearAuthCookies(endpoint)
   }
 
   private func installationId() -> String {
@@ -847,7 +558,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
   private func fetch(
     _ endpoint: String, method: String, action: String, headers: [String: String?], body: Encodable?
   ) async throws -> (Data, HTTPURLResponse) {
-    guard let targetUrl = URL(string: "\(canonicalEndpoint(endpoint))\(action)") else {
+    guard let targetUrl = URL(string: "\(endpoint)\(action)") else {
       throw AuthError.invalidEndpoint
     }
 
