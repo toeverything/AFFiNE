@@ -545,12 +545,16 @@ const showNativeSignIn = async () => {
 };
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentWorkspaceId =
-    globalContextService.globalContext.workspaceId.get();
-  const currentDocId = globalContextService.globalContext.docId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentWorkspaceId = globalContext.workspaceId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
+  const currentDocId = globalContext.docId.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
   if (!workspaceRef) {
     return;
@@ -603,11 +607,15 @@ const showNativeSignIn = async () => {
   title: string
 ) => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentWorkspaceId =
-    globalContextService.globalContext.workspaceId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentWorkspaceId = globalContext.workspaceId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
 
   try {
