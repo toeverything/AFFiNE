@@ -45,7 +45,7 @@ import { NotificationModule } from './core/notification';
 import { PermissionModule } from './core/permission';
 import { QueueDashboardModule } from './core/queue-dashboard';
 import { QuotaModule } from './core/quota';
-import { RealtimeModule } from './core/realtime';
+import { RealtimeGatewayModule, RealtimeModule } from './core/realtime';
 import { SelfhostModule } from './core/selfhost';
 import { StaticFileModule } from './core/static-files';
 import { StorageApiModule, StorageWorkerModule } from './core/storage';
@@ -61,7 +61,7 @@ import { CalendarModule } from './plugins/calendar';
 import { CaptchaModule } from './plugins/captcha';
 import { CopilotModule } from './plugins/copilot';
 import { GCloudModule } from './plugins/gcloud';
-import { IndexerModule, IndexerWorkerModule } from './plugins/indexer';
+import { IndexerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
 import { OAuthModule } from './plugins/oauth';
 import { PaymentModule } from './plugins/payment';
@@ -167,10 +167,10 @@ export function buildAppModule(env: Env) {
   factor
     // basic
     .use(...FunctionalityModules)
+    .useIf(() => !workerOnly, RealtimeGatewayModule)
 
-    // online roles publish indexer events; only the worker registers consumers
+    // Search API and worker runtime are separate from the queue worker application.
     .useIf(() => env.isApi || env.isFrontend, IndexerModule)
-    .useIf(() => env.isWorker, IndexerWorkerModule)
 
     // the worker owns doc consumers and schedulers
     .useIf(() => env.isWorker, DocJobsModule)

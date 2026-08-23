@@ -42,7 +42,9 @@ export async function run() {
   const url = app.get(URLHelper);
   let telemetry: TelemetryService | null = null;
   try {
-    telemetry = app.get(TelemetryService, { strict: false });
+    if (env.role !== ServerRole.Worker) {
+      telemetry = app.get(TelemetryService, { strict: false });
+    }
   } catch {
     telemetry = null;
   }

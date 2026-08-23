@@ -35,8 +35,8 @@ export class IndexerResolver {
     return {
       nodes: result.nodes,
       pagination: {
-        count: result.total,
-        hasMore: result.nodes.length > 0,
+        count: result.nodes.length,
+        hasMore: Boolean(result.nextCursor),
         nextCursor: result.nextCursor,
       },
     };
@@ -56,7 +56,7 @@ export class IndexerResolver {
     return {
       buckets: result.buckets,
       pagination: {
-        count: result.total,
+        count: result.buckets.length,
         hasMore: result.hasMore,
       },
     };

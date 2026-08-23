@@ -4,13 +4,18 @@ import Sinon from 'sinon';
 import {
   InternalServerError,
   InvalidIndexerInput,
-  SearchProviderNotFound,
+  SearchIndexFailed,
+  SearchIndexNotReady,
+  SearchPermissionSyncing,
+  SearchProviderUnavailable,
   SpaceAccessDenied,
-  WorkspacePermissionNotFound,
 } from '../../../base';
+import { ConfigFactory } from '../../../base/config';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
-import { ServerService } from '../../../core/config';
+import { BackendRuntimeSearchJob } from '../../../core/backend-runtime/job';
+import { ServerFeature, ServerService } from '../../../core/config';
 import { Models } from '../../../models';
+import { IndexerResolver } from '../resolver';
 import { IndexerService } from '../service';
 import { SearchQueryType, SearchTable } from '../types';
 
@@ -18,13 +23,47 @@ test.afterEach.always(() => {
   Sinon.restore();
 });
 
+function enabledServer() {
+  return {
+    getConfig: Sinon.stub().returns({ indexer: { enabled: true } }),
+    enableFeature: Sinon.stub(),
+    disableFeature: Sinon.stub(),
+  };
+}
+
 test('reflects native search readiness in the Node feature flag', async t => {
   const runtime = {
     searchStatus: Sinon.stub(),
+    searchAuthorized: Sinon.stub().resolves({
+      ok: true,
+      value: { total: 0, nodes: [] },
+    }),
   };
   runtime.searchStatus.onFirstCall().resolves({ ready: true });
   runtime.searchStatus.onSecondCall().resolves({ ready: false });
+  runtime.searchStatus.onThirdCall().resolves({ ready: true });
+  const server = enabledServer();
+  const service = new IndexerService(
+    runtime as unknown as BackendRuntimeProvider,
+    {} as Models,
+    server as unknown as ServerService
+  );
+
+  await service.onApplicationBootstrap();
+  await service.onConfigChanged({ updates: { indexer: {} } } as never);
+  await service.search('actor', 'workspace', {} as never);
+
+  t.is(server.enableFeature.callCount, 2);
+  t.true(server.disableFeature.calledOnce);
+  t.is(runtime.searchStatus.callCount, 3);
+});
+
+test('does not query native search when the indexer is disabled', async t => {
+  const runtime = {
+    searchStatus: Sinon.stub(),
+  };
   const server = {
+    getConfig: Sinon.stub().returns({ indexer: { enabled: false } }),
     enableFeature: Sinon.stub(),
     disableFeature: Sinon.stub(),
   };
@@ -35,21 +74,50 @@ test('reflects native search readiness in the Node feature flag', async t => {
   );
 
   await service.onApplicationBootstrap();
-  await service.onConfigChanged({ updates: { indexer: {} } } as never);
 
-  t.true(server.enableFeature.calledOnce);
-  t.true(server.disableFeature.calledOnce);
-  t.is(runtime.searchStatus.callCount, 2);
+  t.false(runtime.searchStatus.called);
+  t.true(server.disableFeature.calledOnceWith(ServerFeature.Indexer));
+});
+
+test('does not schedule or run native search reconciliation when disabled', async t => {
+  const runtime = {
+    reconcileSearchProjection: Sinon.stub(),
+    searchStatus: Sinon.stub(),
+  };
+  const queue = { add: Sinon.stub() };
+  const config = {
+    config: { indexer: { enabled: false } },
+  } as unknown as ConfigFactory;
+  const job = new BackendRuntimeSearchJob(
+    runtime as unknown as BackendRuntimeProvider,
+    queue as never,
+    config
+  );
+
+  await job.scheduleReconciliation();
+  t.is(queue.add.callCount, 0);
+  t.is(await job.reconcileProjection({ limit: 100 }), 0);
+  t.false(runtime.reconcileSearchProjection.called);
+  t.false(runtime.searchStatus.called);
+
+  config.config.indexer.enabled = true;
+  await job.scheduleReconciliation();
+  t.deepEqual(queue.add.firstCall.args[2], {
+    jobId: 'backend-runtime-search-reconciliation',
+    removeOnFail: true,
+  });
 });
 
 test('maps native search results and typed errors at the Node boundary', async t => {
   const runtime = {
+    searchStatus: Sinon.stub().resolves({ ready: true }),
     searchAuthorized: Sinon.stub(),
+    aggregateAuthorized: Sinon.stub(),
   };
   const service = new IndexerService(
     runtime as unknown as BackendRuntimeProvider,
     {} as Models,
-    {} as ServerService
+    enabledServer() as unknown as ServerService
   );
   const input = {
     table: SearchTable.block,
@@ -59,7 +127,7 @@ test('maps native search results and typed errors at the Node boundary', async t
   runtime.searchAuthorized.resolves({
     ok: true,
     value: {
-      total: 1,
+      total: 99,
       nodes: [
         {
           id: 'node',
@@ -85,12 +153,41 @@ test('maps native search results and typed errors at the Node boundary', async t
     markdownPreview: ['<b>hello</b>'],
   });
 
+  const resolver = new IndexerResolver(service, {
+    user: Sinon.stub().returns({
+      workspace: Sinon.stub().returns({ assert: Sinon.stub().resolves() }),
+    }),
+  } as never);
+  const searchResult = await resolver.search(
+    { id: 'actor' } as never,
+    { id: 'workspace' } as never,
+    input
+  );
+  t.is(searchResult.pagination.count, 1);
+
+  runtime.aggregateAuthorized.resolves({
+    ok: true,
+    value: {
+      total: 99,
+      hasMore: true,
+      buckets: [{ key: 'doc', count: 1, hits: { nodes: [] } }],
+    },
+  });
+  const aggregateResult = await resolver.aggregate(
+    { id: 'actor' } as never,
+    { id: 'workspace' } as never,
+    {} as never
+  );
+  t.is(aggregateResult.pagination.count, 1);
+
   for (const [errorCode, expected] of [
     ['workspace_denied', SpaceAccessDenied],
     ['invalid_request', InvalidIndexerInput],
     ['unsupported_query', InvalidIndexerInput],
-    ['provider_unavailable', SearchProviderNotFound],
-    ['permission_unavailable', WorkspacePermissionNotFound],
+    ['provider_unavailable', SearchProviderUnavailable],
+    ['index_not_ready', SearchIndexNotReady],
+    ['permission_syncing', SearchPermissionSyncing],
+    ['index_failed', SearchIndexFailed],
     ['unexpected', InternalServerError],
   ] as const) {
     runtime.searchAuthorized.resolves({ ok: false, errorCode });
@@ -102,7 +199,29 @@ test('maps native search results and typed errors at the Node boundary', async t
 });
 
 test('searchDocs keeps filtering and enrichment in Node', async t => {
+  const blockNode = {
+    id: 'block',
+    score: 1,
+    fields: {
+      workspace_id: ['workspace'],
+      doc_id: ['doc'],
+      block_id: ['block'],
+      unit_id: ['unit'],
+      projection_version: [1],
+      source_hash: ['hash'],
+      visibility: ['visible'],
+      source_block_id: ['source-block'],
+      flavour: ['affine:paragraph'],
+      content: ['body'],
+      created_at: [2_000],
+      updated_at: [3_000],
+      created_by_user_id: ['creator'],
+      updated_by_user_id: ['updater'],
+    },
+    highlights: { content: ['<b>body</b>'] },
+  };
   const runtime = {
+    searchStatus: Sinon.stub().resolves({ ready: true }),
     aggregateAuthorized: Sinon.stub().resolves({
       ok: true,
       value: {
@@ -113,32 +232,17 @@ test('searchDocs keeps filtering and enrichment in Node', async t => {
             key: 'doc',
             count: 1,
             hits: {
-              nodes: [
-                {
-                  id: 'block',
-                  score: 1,
-                  fields: {
-                    workspace_id: ['workspace'],
-                    doc_id: ['doc'],
-                    block_id: ['block'],
-                    unit_id: ['unit'],
-                    projection_version: [1],
-                    source_hash: ['hash'],
-                    visibility: ['visible'],
-                    source_block_id: ['source-block'],
-                    flavour: ['affine:paragraph'],
-                    content: ['body'],
-                    created_at: [2_000],
-                    updated_at: [3_000],
-                    created_by_user_id: ['creator'],
-                    updated_by_user_id: ['updater'],
-                  },
-                  highlights: { content: ['<b>body</b>'] },
-                },
-              ],
+              nodes: [blockNode],
             },
           },
         ],
+      },
+    }),
+    searchAuthorized: Sinon.stub().resolves({
+      ok: true,
+      value: {
+        total: 2,
+        nodes: [blockNode, { ...blockNode, id: 'duplicate-block' }],
       },
     }),
   };
@@ -162,9 +266,16 @@ test('searchDocs keeps filtering and enrichment in Node', async t => {
   const service = new IndexerService(
     runtime as unknown as BackendRuntimeProvider,
     models as unknown as Models,
-    {} as ServerService
+    enabledServer() as unknown as ServerService
   );
 
+  for (const limit of [0, -1]) {
+    const error = await t.throwsAsync(
+      service.searchDocsByKeyword('actor', 'workspace', 'body', { limit })
+    );
+    t.true(error instanceof InvalidIndexerInput);
+  }
+  t.false(runtime.aggregateAuthorized.called);
   t.deepEqual(
     await service.searchDocsByKeyword('actor', 'workspace', 'body', {
       docIds: [],
@@ -194,4 +305,22 @@ test('searchDocs keeps filtering and enrichment in Node', async t => {
       }
     )
   );
+
+  runtime.aggregateAuthorized.resolves({
+    ok: false,
+    errorCode: 'unsupported_query',
+  });
+  const basicDocs = await service.searchDocsByKeyword(
+    'actor',
+    'workspace',
+    'body',
+    { limit: 5, docIds: ['doc'] }
+  );
+  t.is(basicDocs.length, 1);
+  t.is(basicDocs[0].docId, 'doc');
+  const basicRequest = runtime.searchAuthorized.firstCall.args[2];
+  t.true(basicRequest.options.fields.includes('docId'));
+  t.is(basicRequest.options.pagination?.limit, 20);
+  t.true(JSON.stringify(basicRequest.query).includes('doc'));
+  t.true(JSON.stringify(basicRequest.query).includes('workspace'));
 });

@@ -18,7 +18,7 @@ export interface AuthConfig {
   allowSignupForOauth: boolean;
   requireEmailDomainVerification: boolean;
   requireEmailVerification: boolean;
-  newAccountShareActionDelay: number;
+  newAccountActionDelay: number;
   trustedCloudflareHeaders: boolean;
   signInRateLimit: ConfigItem<{
     ttl: number;
@@ -56,8 +56,8 @@ defineModuleConfig('auth', {
     desc: 'Whether require email verification before accessing restricted resources(not implemented).',
     default: true,
   },
-  newAccountShareActionDelay: {
-    desc: 'Minimum account age in seconds before new accounts can invite members or create share links.',
+  newAccountActionDelay: {
+    desc: 'Minimum account age in seconds before new accounts can invite members, create invite links, or publish documents. Set to 0 to disable.',
     default: 24 * 60 * 60,
     shape: z.number().int().min(0),
   },

@@ -14,4 +14,6 @@ pub(in crate::runtime) use backend::{FsStorageConfig, StorageBackendConfig};
 pub(in crate::runtime) use config::ObjectStorageConfig;
 pub(crate) use service::ObjectStorageService;
 
+pub(super) use super::webpki_tls_config;
+
 pub(in crate::runtime) const MAX_BLOB_SIZE: i64 = i32::MAX as i64;

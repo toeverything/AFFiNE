@@ -296,13 +296,23 @@ export class SearchNodeObjectType {
 
 @ObjectType()
 export class SearchResultPagination {
-  @Field(() => Int)
+  @Field(() => Int, {
+    description:
+      'Number of results returned in this response, not a global total',
+  })
   count!: number;
 
-  @Field(() => Boolean)
+  @Field(() => Boolean, {
+    description:
+      'Whether the provider has more candidates; remaining visible results are not guaranteed',
+  })
   hasMore!: boolean;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => String, {
+    nullable: true,
+    description:
+      'Opaque provider candidate cursor; it does not guarantee complete visible-result pagination',
+  })
   nextCursor?: string;
 }
 
@@ -326,7 +336,9 @@ export class AggregateBucketObjectType {
   @Field(() => String)
   key!: string;
 
-  @Field(() => Int)
+  @Field(() => Int, {
+    description: 'Number of returned sample hits in this bucket',
+  })
   count!: number;
 
   @Field(() => AggregateBucketHitsObjectType, {

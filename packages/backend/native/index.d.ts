@@ -34,6 +34,7 @@ export declare class BackendRuntime {
   claimInviteAbuseAction(actionId: string, workerId: string): Promise<boolean>
   claimRetryableInviteAbuseActions(workerId: string, limit: number): Promise<Array<RuntimeInviteAbuseClaimedAction>>
   markInviteAbuseAction(actionId: string, workerId: string, status: string, error?: string | undefined | null): Promise<boolean>
+  evaluateWorkspaceActionV1(actorUserId: string, workspaceId: string): Promise<RuntimeWorkspaceActionDecision>
   assertWorkspaceInviteQuotaV1(input: RuntimeWorkspaceInviteQuotaInput): Promise<RuntimeWorkspaceInviteQuotaDecision>
   commitWorkspaceInviteQuotaV1(reservationId: string, usage: RuntimeWorkspaceInviteQuotaUsage): Promise<boolean>
   releaseWorkspaceInviteQuotaV1(reservationId: string): Promise<boolean>
@@ -55,10 +56,6 @@ export declare class BackendRuntime {
   getWorkspaceInviteLinkById(inviteId: string): Promise<RuntimeWorkspaceInviteLinkRecord | null>
   revokeWorkspaceInviteLink(workspaceId: string): Promise<boolean>
   cleanupExpiredRuntimeStates(limit: number): Promise<number>
-  refreshWorkspaceAdminStatsDirty(batchLimit: number, owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsRefreshResult>
-  recalibrateWorkspaceAdminStats(lastSid: number, batchLimit: number, owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsRecalibrationResult>
-  writeWorkspaceAdminStatsDailySnapshot(owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsSnapshotResult>
-  recalibrateWorkspaceAdminStatsDaily(batchLimit: number, owner: string, leaseTtlMs: number, lockRetryTimes: number, lockRetryDelayMs: number): Promise<RuntimeWorkspaceStatsDailyRecalibrationResult>
   constructor(privateKey?: string | undefined | null, configPaths?: Array<string> | undefined | null)
   start(): Promise<void>
   stop(): Promise<void>
@@ -67,10 +64,7 @@ export declare class BackendRuntime {
   runMigrations(): Promise<void>
   searchAuthorized(actorUserId: string, workspaceId: string, request: RuntimeSearchRequest): Promise<SearchOperationOutput>
   aggregateAuthorized(actorUserId: string, workspaceId: string, request: RuntimeAggregateRequest): Promise<SearchOperationOutput>
-  indexSearchDocument(workspaceId: string, docId: string): Promise<void>
-  deleteSearchDocument(workspaceId: string, docId: string): Promise<void>
-  reconcileSearchWorkspace(workspaceId: string): Promise<void>
-  deleteSearchWorkspace(workspaceId: string): Promise<void>
+  reconcileSearchProjection(limit?: number | undefined | null): Promise<number>
   filterReadableDocs(actorUserId: string, workspaceId: string, docIds: Array<string>): Promise<Array<string>>
   searchStatus(): Promise<any>
   embeddingHealth(): Promise<EmbeddingHealth>
@@ -112,7 +106,6 @@ export declare class StorageRuntime {
   rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
   reconcileWorkspaceDocuments(workspaceId: string): Promise<RuntimeDocumentCleanupReconcileResult>
   executeDocumentCleanupCandidates(workspaceId: string | undefined | null, gracePeriodDays: number, limit: number): Promise<RuntimeDocumentCleanupExecuteResult>
-  ackDocumentCleanupEffect(workspaceId: string, docId: string, cleanupVersion: string, effect: string): Promise<RuntimeDocumentCleanupAckResult>
   constructor()
   start(): Promise<void>
   configure(configJson: string): void
@@ -1260,16 +1253,11 @@ export interface RuntimeDocHistoryInput {
   historyMaxAgeMs: number
 }
 
-export interface RuntimeDocumentCleanupAckResult {
-  completed: boolean
-}
-
 export interface RuntimeDocumentCleanupEffect {
   workspaceId: string
   docId: string
   cleanupVersion: string
   commentObjectsDone: boolean
-  searchDone: boolean
 }
 
 export interface RuntimeDocumentCleanupExecuteResult {
@@ -1496,6 +1484,12 @@ export interface RuntimeVerificationTokenRecord {
   expiresAtMs: number
 }
 
+export interface RuntimeWorkspaceActionDecision {
+  allowed: boolean
+  retryAfterSeconds?: number
+  reason?: string
+}
+
 export interface RuntimeWorkspaceArtifact {
   id: string
   workspaceId: string
@@ -1542,30 +1536,6 @@ export interface RuntimeWorkspaceInviteQuotaInput {
 export interface RuntimeWorkspaceInviteQuotaUsage {
   targetCount: number
   targetDomains: Array<RuntimeQuotaTargetDomainInput>
-}
-
-export interface RuntimeWorkspaceStatsDailyRecalibrationResult {
-  processed: number
-  lastSid: number
-  snapshotted: number
-  skipped: boolean
-}
-
-export interface RuntimeWorkspaceStatsRecalibrationResult {
-  processed: number
-  lastSid: number
-  skipped: boolean
-}
-
-export interface RuntimeWorkspaceStatsRefreshResult {
-  processed: number
-  backlog: number
-  skipped: boolean
-}
-
-export interface RuntimeWorkspaceStatsSnapshotResult {
-  snapshotted: number
-  skipped: boolean
 }
 
 export declare function safeFetch(request: SafeFetchRequest): Promise<SafeFetchResponse>

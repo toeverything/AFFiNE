@@ -4,26 +4,32 @@
 DO $$
 BEGIN
   IF to_regclass('public.ai_contexts') IS NOT NULL AND EXISTS (
+    WITH referenced_blobs AS (
+      SELECT DISTINCT
+        session.workspace_id,
+        value #>> '{}' AS blob_key
+      FROM ai_contexts context
+      JOIN ai_sessions_metadata session ON session.id = context.session_id
+      CROSS JOIN LATERAL jsonb_path_query(
+        context.config::jsonb,
+        '$.** ? (@.type() == "string")'
+      ) AS referenced_value(value)
+    )
     SELECT 1
-    FROM ai_contexts context
-    JOIN ai_sessions_metadata session ON session.id = context.session_id
+    FROM referenced_blobs referenced
     JOIN blobs blob
-      ON blob.workspace_id = session.workspace_id
+      ON blob.workspace_id = referenced.workspace_id
+     AND blob.key = referenced.blob_key
      AND blob.deleted_at IS NULL
      AND blob.status = 'completed'
-    WHERE jsonb_path_exists(
-      context.config::jsonb,
-      '$.** ? (@ == $blobKey)',
-      jsonb_build_object('blobKey', to_jsonb(blob.key::text))
-      )
-      AND NOT EXISTS (
-        SELECT 1
-        FROM workspace_artifacts artifact
-        WHERE artifact.workspace_id = session.workspace_id
-          AND artifact.status = 'ready'
-          AND artifact.storage_scope = 'blob'
-          AND artifact.storage_key = concat(session.workspace_id, '/', blob.key)
-      )
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM workspace_artifacts artifact
+      WHERE artifact.workspace_id = referenced.workspace_id
+        AND artifact.status = 'ready'
+        AND artifact.storage_scope = 'blob'
+        AND artifact.storage_key = concat(referenced.workspace_id, '/', blob.key)
+    )
   ) THEN
     RAISE EXCEPTION
       'legacy context blob artifact admission is incomplete; run the data migration before cleanup';

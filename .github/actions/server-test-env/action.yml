@@ -33,6 +33,9 @@ runs:
       shell: bash
       run: |
         case '${{ inputs.indexer-provider }}' in
+          disabled)
+            default_indexer='{"enabled":false,"provider":{"type":"embedded","endpoint":""}}'
+            ;;
           embedded)
             default_indexer='{"enabled":true,"provider":{"type":"embedded","endpoint":""}}'
             ;;

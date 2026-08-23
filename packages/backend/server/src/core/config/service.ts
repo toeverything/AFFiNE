@@ -76,15 +76,7 @@ export class ServerService implements OnApplicationBootstrap {
     const providerType = updates.find(
       update => update.module === 'indexer' && update.key === 'provider.type'
     );
-    if (providerType?.value === 'embedded') {
-      updates = updates.filter(update => update !== providerType);
-      updates = [
-        ...updates.filter(
-          update => !(update.module === 'indexer' && update.key === 'enabled')
-        ),
-        { module: 'indexer', key: 'enabled', value: false },
-      ];
-    } else if (providerType) {
+    if (providerType) {
       updates = [
         ...updates.filter(
           update => !(update.module === 'indexer' && update.key === 'enabled')

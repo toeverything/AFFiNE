@@ -7,7 +7,14 @@ static PERMISSION_TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_
 async fn setup() -> Option<(PgPool, String, String)> {
   let database_url = std::env::var("DATABASE_URL").ok()?;
   let pool = PgPool::connect(&database_url).await.unwrap();
-  crate::runtime::migrations::migrate_search_tables(&pool).await.unwrap();
+  let legacy_relations: Vec<Option<String>> = sqlx::query_scalar(
+    "SELECT to_regclass(name) FROM \
+     unnest(ARRAY['workspace_permission_revisions','workspace_permission_changes','search_runtime_generations']) name",
+  )
+  .fetch_all(&pool)
+  .await
+  .unwrap();
+  assert!(legacy_relations.into_iter().all(|relation| relation.is_none()));
   let suffix = uuid::Uuid::new_v4().simple().to_string();
   let user_id = format!("search-permission-user-{suffix}");
   let workspace_id = format!("search-permission-workspace-{suffix}");
@@ -67,7 +74,15 @@ async fn non_team_is_all_and_team_uses_projected_acl() {
   };
   assert_eq!(predicate.actor_user_id, user_id);
   assert!(predicate.active_member);
-  assert!(team.permission_revision > free.permission_revision);
+
+  sqlx::query("UPDATE workspace_members SET role='admin' WHERE workspace_id=$1 AND user_id=$2")
+    .bind(&workspace_id)
+    .bind(&user_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  let admin = authorizer.authorize_search(&actor, &workspace_id).await.unwrap();
+  assert_eq!(admin.docs, DocReadScope::All);
 }
 
 #[tokio::test]
@@ -112,13 +127,20 @@ async fn inactive_member_is_denied_and_unknown_capability_fails_closed() {
 }
 
 #[tokio::test]
-async fn fact_changes_advance_revision_and_write_ordered_change() {
+async fn canonical_doc_acl_facts_are_evaluated_without_search_state() {
   let _guard = PERMISSION_TEST_LOCK.lock().await;
   let Some((pool, workspace_id, user_id)) = setup().await else {
     return;
   };
   let authorizer = PermissionAuthorizer::new(pool.clone());
-  let before = authorizer.revision(&workspace_id).await.unwrap();
+  sqlx::query(
+    "INSERT INTO doc_access_policies(workspace_id,doc_id,visibility,member_default_role) \
+     VALUES($1,'doc','private','none'),($1,'hidden','private','none')",
+  )
+  .bind(&workspace_id)
+  .execute(&pool)
+  .await
+  .unwrap();
   sqlx::query(
     "INSERT INTO doc_grants(workspace_id,doc_id,principal_type,principal_id,role) VALUES($1,'doc','user',$2,'reader')",
   )
@@ -127,39 +149,23 @@ async fn fact_changes_advance_revision_and_write_ordered_change() {
   .execute(&pool)
   .await
   .unwrap();
-  let after = authorizer.revision(&workspace_id).await.unwrap();
-  assert_eq!(after, before + 1);
-  let change: (i64, Option<String>, String) = sqlx::query_as(
-    "SELECT revision,doc_id,scope FROM workspace_permission_changes WHERE workspace_id=$1 AND revision=$2",
-  )
-  .bind(&workspace_id)
-  .bind(after)
-  .fetch_one(&pool)
-  .await
-  .unwrap();
-  assert_eq!(change, (after, Some("doc".to_string()), "doc_grant".to_string()));
-
-  sqlx::query("UPDATE workspace_members SET updated_at=now() WHERE workspace_id=$1 AND user_id=$2")
-    .bind(&workspace_id)
-    .bind(&user_id)
-    .execute(&pool)
+  let readable = authorizer
+    .filter_readable_docs(&workspace_id, &user_id, vec!["doc".to_string(), "hidden".to_string()])
     .await
     .unwrap();
-  assert_eq!(authorizer.revision(&workspace_id).await.unwrap(), after);
+  assert_eq!(readable, ["doc".to_string()].into_iter().collect());
 
-  let moved_workspace_id = format!("{workspace_id}-moved");
-  sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
-    .bind(&moved_workspace_id)
-    .execute(&pool)
-    .await
-    .unwrap();
-  assert_eq!(authorizer.revision(&moved_workspace_id).await.unwrap(), 0);
-  sqlx::query("UPDATE doc_grants SET workspace_id=$1 WHERE workspace_id=$2 AND doc_id='doc'")
-    .bind(&moved_workspace_id)
+  sqlx::query("UPDATE doc_access_policies SET member_default_role='reader' WHERE workspace_id=$1 AND doc_id='hidden'")
     .bind(&workspace_id)
     .execute(&pool)
     .await
     .unwrap();
-  assert_eq!(authorizer.revision(&workspace_id).await.unwrap(), after + 1);
-  assert_eq!(authorizer.revision(&moved_workspace_id).await.unwrap(), 1);
+  let readable = authorizer
+    .filter_readable_docs(&workspace_id, &user_id, vec!["doc".to_string(), "hidden".to_string()])
+    .await
+    .unwrap();
+  assert_eq!(
+    readable,
+    ["doc".to_string(), "hidden".to_string()].into_iter().collect()
+  );
 }

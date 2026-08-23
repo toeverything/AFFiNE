@@ -1,8 +1,8 @@
 import { getCurrentUserQuery } from '@affine/graphql';
 
 import { JobExecutor } from '../../../base/job/queue/executor';
-import { JobHandlerScanner } from '../../../base/job/queue/scanner';
 import { DatabaseDocReader, DocReader } from '../../../core/doc';
+import { RealtimeGateway } from '../../../core/realtime/gateway';
 import { createApp } from '../create-app';
 import { e2e } from '../test';
 
@@ -42,7 +42,7 @@ e2e('should init worker service', async t => {
   await withFlavor('worker', async app => {
     const res = await app.GET('/info').expect(200);
     t.is(res.body.flavor, 'worker');
-    t.truthy(app.get(JobHandlerScanner).getHandler('indexer.indexDoc'));
+    t.throws(() => app.get(RealtimeGateway));
 
     await t.throwsAsync(app.gql({ query: getCurrentUserQuery }));
     await app.PUT('/api/storage/upload').expect(404);
@@ -53,7 +53,6 @@ e2e('should init allinone service with worker handlers', async t => {
   await withFlavor('allinone', async app => {
     const res = await app.GET('/info').expect(200);
     t.is(res.body.flavor, 'allinone');
-    t.truthy(app.get(JobHandlerScanner).getHandler('indexer.indexDoc'));
   });
 });
 
@@ -65,6 +64,7 @@ e2e('should init graphql service', async t => {
 
     const user = await app.gql({ query: getCurrentUserQuery });
     t.is(user.currentUser, null);
+    t.truthy(app.get(RealtimeGateway));
   });
 });
 
