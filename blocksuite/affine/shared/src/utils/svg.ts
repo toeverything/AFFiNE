@@ -11,7 +11,7 @@ const MAX_NESTED_SVG_IMAGE_DEPTH = 2;
 
 const DEFAULT_SVG_SANITIZE_CONFIG: Config = {
   USE_PROFILES: { svg: true },
-  ADD_TAGS: ['use'],
+  ADD_TAGS: ['use', 'style'],
   ADD_ATTR: ['href', 'xlink:href', 'class', 'style', 'id'],
 };
 
@@ -25,7 +25,7 @@ const SVG_DATA_URL_PATTERN =
 const SAFE_IMAGE_DATA_URL_PATTERN =
   /^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i;
 const UNSAFE_CSS_PATTERN =
-  /(?:url\s*\(|@import|javascript\s*:|expression\s*\(|-moz-binding)/i;
+  /(?:@import|javascript\s*:|expression\s*\(|-moz-binding|url\s*\(\s*['"]?(?!#))/i;
 
 const SVG_ROOT_ATTRIBUTES = [
   'class',

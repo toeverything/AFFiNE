@@ -100,6 +100,18 @@ describe('sanitizeSvg', () => {
     expect(sanitized).not.toContain('url(');
   });
 
+  test('preserves same-document fragment url() references in inline styles', () => {
+    const sanitized = sanitizeSvg(`
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <path style="fill: url(#gradient);" d="M0 0h10v10z"></path>
+        <path style="fill: url(https://evil.example/x)" d="M0 0h10v10z"></path>
+      </svg>
+    `);
+
+    expect(sanitized).toContain('url(#gradient)');
+    expect(sanitized).not.toContain('https://evil.example');
+  });
+
   test('removes links sharing the current registrable domain', () => {
     setLocation('https://sub.example.co.uk/workspace');
 
