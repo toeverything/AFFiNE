@@ -5,8 +5,7 @@ use super::{RuntimeError, RuntimeResult, types::EmbeddingHealth};
 
 pub(crate) const RUNTIME_MIGRATIONS: &str = include_str!("sql/runtime_migrations.sql");
 const EMBEDDING_MIGRATION: &str = include_str!("sql/embedding.sql");
-const SEARCH_MIGRATION: &str = include_str!("sql/search.sql");
-const SEARCH_ACL_TOKEN_MIGRATION: &str = include_str!("sql/search_acl_tokens.sql");
+const SEARCH_PROJECTION_MIGRATION: &str = include_str!("sql/search_projection.sql");
 const EMBEDDING_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0046;
 const SEARCH_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0053;
 #[cfg(test)]
@@ -70,15 +69,11 @@ pub(crate) async fn embedding_schema_health(pool: &PgPool) -> RuntimeResult<Embe
 pub(crate) async fn migrate_search_tables(pool: &PgPool) -> RuntimeResult<()> {
   migrate_component(
     pool,
-    "search",
+    "search_projection",
     SEARCH_ADVISORY_LOCK,
-    &[(1, &[SEARCH_MIGRATION]), (2, &[SEARCH_ACL_TOKEN_MIGRATION])],
+    &[(1, &[SEARCH_PROJECTION_MIGRATION])],
   )
   .await?;
-  sqlx::query("INSERT INTO search_runtime_streams(table_key) VALUES ('doc'), ('block') ON CONFLICT DO NOTHING")
-    .execute(pool)
-    .await
-    .map_err(|error| RuntimeError::database("Repair search runtime streams", error))?;
   Ok(())
 }
 
@@ -118,6 +113,10 @@ async fn migrate_component(
     .begin()
     .await
     .map_err(|error| RuntimeError::database("Native migration transaction failed", error))?;
+  transaction
+    .execute("SET LOCAL lock_timeout = '5s'")
+    .await
+    .map_err(|error| RuntimeError::database("Native migration lock timeout failed", error))?;
   sqlx::query("SELECT pg_advisory_xact_lock($1)")
     .bind(advisory_lock)
     .execute(&mut *transaction)
@@ -269,11 +268,31 @@ mod tests {
   }
 
   #[test]
-  fn search_schema_uses_transactional_stream_heads() {
-    assert!(SEARCH_MIGRATION.contains("CREATE TABLE search_runtime_streams"));
-    assert!(SEARCH_MIGRATION.contains("PRIMARY KEY (table_key, stream_sequence)"));
-    assert!(!SEARCH_MIGRATION.contains("BIGSERIAL"));
-    assert!(!SEARCH_MIGRATION.contains("CREATE SEQUENCE"));
+  fn search_schema_uses_terminal_control_plane() {
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("DROP SCHEMA IF EXISTS search_projection CASCADE"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE SCHEMA search_projection"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE TABLE search_projection.generations"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE TABLE search_projection.workspace_states"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE TABLE search_projection.document_states"));
+    assert!(
+      SEARCH_PROJECTION_MIGRATION.contains("CREATE SEQUENCE IF NOT EXISTS search_projection.source_mutation_version")
+    );
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE SEQUENCE IF NOT EXISTS search_projection.permission_version"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE SEQUENCE IF NOT EXISTS search_projection.claim_fence"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE TRIGGER search_projection_snapshot_capture"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE TRIGGER search_projection_membership_capture"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("ON CONFLICT (generation_id, workspace_id, doc_id) DO UPDATE"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("WHERE state IN ('building', 'active')"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("target_source_version <> published_source_version"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("gc_table TEXT NOT NULL DEFAULT 'doc'"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("gc_cursor TEXT"));
+    assert!(
+      SEARCH_PROJECTION_MIGRATION
+        .contains("NEW.state = 'active' AND (TG_OP = 'INSERT' OR OLD.state IS DISTINCT FROM NEW.state)")
+    );
+    assert!(!SEARCH_PROJECTION_MIGRATION.contains("clock_timestamp()"));
+    assert!(!SEARCH_PROJECTION_MIGRATION.contains("CREATE TABLE search_runtime_projections"));
+    assert!(!SEARCH_PROJECTION_MIGRATION.contains("payload JSONB NOT NULL"));
   }
 
   #[tokio::test]
@@ -285,11 +304,367 @@ mod tests {
     let (first, second) = tokio::join!(migrate_search_tables(&pool), migrate_search_tables(&pool));
     first.unwrap();
     second.unwrap();
-    let versions: Vec<i32> =
-      sqlx::query_scalar("SELECT version FROM native_schema_migrations WHERE component='search' ORDER BY version")
-        .fetch_all(&pool)
-        .await
-        .unwrap();
-    assert_eq!(versions, vec![1, 2]);
+    let versions: Vec<i32> = sqlx::query_scalar(
+      "SELECT version FROM native_schema_migrations WHERE component='search_projection' ORDER BY version",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(versions, vec![1]);
+  }
+
+  #[tokio::test]
+  async fn permission_triggers_route_and_coalesce_document_and_workspace_scopes() {
+    let _guard = crate::runtime::backend_runtime::SEARCH_TEST_LOCK.lock().await;
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      return;
+    };
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    migrate_search_tables(&pool).await.unwrap();
+    sqlx::query("DELETE FROM search_projection.generations WHERE state='building'")
+      .execute(&pool)
+      .await
+      .unwrap();
+
+    let suffix = uuid::Uuid::new_v4().simple().to_string();
+    let generation_id = uuid::Uuid::new_v4();
+    let workspace_id = format!("trigger-workspace-{suffix}");
+    let doc_id = format!("trigger-doc-{suffix}");
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      r#"INSERT INTO search_projection.generations(id,provider,state,config_hash,schema_version)
+         VALUES($1,'embedded','building',decode(repeat('00',32),'hex'),1)"#,
+    )
+    .bind(generation_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO search_projection.workspace_states(generation_id,workspace_id,covered,pending_scope) \
+       VALUES($1,$2,true,'none')",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,decode('00','hex'),now())")
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+
+    sqlx::query(
+      "INSERT INTO doc_access_policies(workspace_id,doc_id,visibility,member_default_role) \
+       VALUES($1,$2,'private','none')",
+    )
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE doc_access_policies SET member_default_role='reader' WHERE workspace_id=$1 AND doc_id=$2")
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let document_scope: (String, i64) = sqlx::query_as(
+      r#"SELECT state.pending_scope,count(task.doc_id)
+         FROM search_projection.workspace_states state
+         LEFT JOIN search_projection.document_states task
+           ON task.generation_id=state.generation_id AND task.workspace_id=state.workspace_id
+         WHERE state.generation_id=$1 AND state.workspace_id=$2
+         GROUP BY state.pending_scope"#,
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(document_scope, ("none".to_string(), 1));
+
+    let moved_workspace_id = format!("trigger-moved-workspace-{suffix}");
+    let moved_doc_id = format!("trigger-moved-doc-{suffix}");
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&moved_workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,decode('00','hex'),now())")
+      .bind(&moved_workspace_id)
+      .bind(&moved_doc_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let old_version: i64 = sqlx::query_scalar(
+      "SELECT target_permission_version FROM search_projection.document_states WHERE generation_id=$1 AND \
+       workspace_id=$2 AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let moved_version: i64 = sqlx::query_scalar(
+      "SELECT target_permission_version FROM search_projection.document_states WHERE generation_id=$1 AND \
+       workspace_id=$2 AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&moved_workspace_id)
+    .bind(&moved_doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE doc_access_policies SET workspace_id=$3,doc_id=$4 WHERE workspace_id=$1 AND doc_id=$2")
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .bind(&moved_workspace_id)
+      .bind(&moved_doc_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let versions: (i64, i64) = sqlx::query_as(
+      r#"SELECT
+           (SELECT target_permission_version FROM search_projection.document_states
+            WHERE generation_id=$1 AND workspace_id=$2 AND doc_id=$3),
+           (SELECT target_permission_version FROM search_projection.document_states
+            WHERE generation_id=$1 AND workspace_id=$4 AND doc_id=$5)"#,
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .bind(&moved_workspace_id)
+    .bind(&moved_doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(versions.0 > old_version);
+    assert!(versions.1 > moved_version);
+
+    sqlx::query("INSERT INTO workspace_access_policies(workspace_id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let pending_scope: String = sqlx::query_scalar(
+      "SELECT pending_scope FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(pending_scope, "workspace");
+
+    sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
+      .bind(generation_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&moved_workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+  }
+
+  #[tokio::test]
+  async fn source_mutations_use_unique_versions_and_rollback_only_leaves_a_sequence_gap() {
+    let _guard = crate::runtime::backend_runtime::SEARCH_TEST_LOCK.lock().await;
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      return;
+    };
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    migrate_search_tables(&pool).await.unwrap();
+    sqlx::query("DELETE FROM search_projection.generations WHERE state='building'")
+      .execute(&pool)
+      .await
+      .unwrap();
+
+    let suffix = uuid::Uuid::new_v4().simple().to_string();
+    let generation_id = uuid::Uuid::new_v4();
+    let workspace_id = format!("source-version-workspace-{suffix}");
+    let doc_id = format!("source-version-doc-{suffix}");
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      r#"INSERT INTO search_projection.generations(id,provider,state,config_hash,schema_version)
+         VALUES($1,'embedded','building',decode(repeat('00',32),'hex'),1)"#,
+    )
+    .bind(generation_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO search_projection.workspace_states(generation_id,workspace_id,pending_scope) VALUES($1,$2,'none')",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+      "INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,decode('00','hex'),'2026-01-01 UTC')",
+    )
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let inserted: i64 = sqlx::query_scalar(
+      "SELECT target_source_version FROM search_projection.document_states WHERE generation_id=$1 AND workspace_id=$2 \
+       AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE snapshots SET blob=decode('01','hex') WHERE workspace_id=$1 AND guid=$2")
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let updated: i64 = sqlx::query_scalar(
+      "SELECT target_source_version FROM search_projection.document_states WHERE generation_id=$1 AND workspace_id=$2 \
+       AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(updated > inserted);
+
+    sqlx::query("DELETE FROM snapshots WHERE workspace_id=$1 AND guid=$2")
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let (deleted, target_exists, published_exists): (i64, bool, bool) = sqlx::query_as(
+      "SELECT target_source_version,target_source_exists,published_source_exists FROM \
+       search_projection.document_states WHERE generation_id=$1 AND workspace_id=$2 AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(deleted > updated);
+    assert!(!target_exists);
+    assert!(!published_exists);
+
+    sqlx::query(
+      "INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,decode('02','hex'),'2026-01-01 UTC')",
+    )
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let recreated: i64 = sqlx::query_scalar(
+      "SELECT target_source_version FROM search_projection.document_states WHERE generation_id=$1 AND workspace_id=$2 \
+       AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(recreated > deleted);
+
+    let mut transaction = pool.begin().await.unwrap();
+    sqlx::query("UPDATE snapshots SET blob=decode('03','hex') WHERE workspace_id=$1 AND guid=$2")
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .execute(&mut *transaction)
+      .await
+      .unwrap();
+    let rolled_back: i64 = sqlx::query_scalar(
+      "SELECT target_source_version FROM search_projection.document_states WHERE generation_id=$1 AND workspace_id=$2 \
+       AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .fetch_one(&mut *transaction)
+    .await
+    .unwrap();
+    transaction.rollback().await.unwrap();
+    let after_rollback: i64 = sqlx::query_scalar(
+      "SELECT target_source_version FROM search_projection.document_states WHERE generation_id=$1 AND workspace_id=$2 \
+       AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(after_rollback, recreated);
+    assert!(rolled_back > recreated);
+
+    sqlx::query("UPDATE snapshots SET blob=decode('04','hex') WHERE workspace_id=$1 AND guid=$2")
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let after_gap: i64 = sqlx::query_scalar(
+      "SELECT target_source_version FROM search_projection.document_states WHERE generation_id=$1 AND workspace_id=$2 \
+       AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(after_gap > rolled_back);
+
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let (remaining_states, delete_gc_scheduled): (i64, bool) = sqlx::query_as(
+      r#"SELECT count(*),bool_and(progress->>'kind'='deleted')
+         FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2"#,
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(remaining_states, 1);
+    assert!(delete_gc_scheduled);
+    sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
+      .bind(generation_id)
+      .execute(&pool)
+      .await
+      .unwrap();
   }
 }

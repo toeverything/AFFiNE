@@ -1,11 +1,7 @@
 import { ServerRole } from '../../../env';
 import { Queue, QUEUES } from './def';
 
-export const WORKER_QUEUES = [
-  Queue.DOC,
-  Queue.INDEXER,
-  Queue.BACKENDRUNTIME,
-] as const;
+export const WORKER_QUEUES = [Queue.DOC, Queue.BACKENDRUNTIME] as const;
 
 export function queuesForRole(role: ServerRole | undefined): Queue[] {
   switch (role) {

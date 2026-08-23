@@ -287,17 +287,6 @@ export class StorageRuntimeProvider
     );
   }
 
-  async ackDocumentCleanupEffect(
-    workspaceId: string,
-    docId: string,
-    cleanupVersion: string,
-    effect: 'search' | 'copilot'
-  ) {
-    return await this.measured('ackDocumentCleanupEffect', rt =>
-      rt.ackDocumentCleanupEffect(workspaceId, docId, cleanupVersion, effect)
-    );
-  }
-
   async planUnreferencedWorkspaceBlobs(
     workspaceId: string,
     gracePeriodDays: number,

@@ -2,11 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import {
+  ConfigFactory,
   CopilotSelectedSourcesFailed,
   CopilotSelectedSourcesLimitExceeded,
   CopilotSelectedSourcesProcessing,
   CopilotSelectedSourcesUnavailable,
   JobQueue,
+  metrics,
   OnEvent,
   OnJob,
 } from '../../base';
@@ -29,6 +31,9 @@ declare global {
     };
     'backendRuntime.reconcileDocumentEmbeddings': {
       workspaceId: string;
+    };
+    'backendRuntime.reconcileSearchProjection': {
+      limit?: number;
     };
   }
 }
@@ -255,5 +260,100 @@ export class BackendRuntimeHousekeepingJob {
       }
     }
     return total;
+  }
+}
+
+@Injectable()
+export class BackendRuntimeSearchJob {
+  constructor(
+    private readonly rt: BackendRuntimeProvider,
+    private readonly queue: JobQueue,
+    private readonly config: ConfigFactory
+  ) {}
+
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async scheduleReconciliation() {
+    if (!this.config.config.indexer.enabled) return;
+    await this.queue.add(
+      'backendRuntime.reconcileSearchProjection',
+      { limit: 100 },
+      { jobId: 'backend-runtime-search-reconciliation', removeOnFail: true }
+    );
+  }
+
+  @OnJob('backendRuntime.reconcileSearchProjection')
+  async reconcileProjection({
+    limit = 100,
+  }: Jobs['backendRuntime.reconcileSearchProjection']) {
+    if (!this.config.config.indexer.enabled) return 0;
+    const startedAt = performance.now();
+    try {
+      const reconciled = await this.rt.reconcileSearchProjection(limit);
+      const status = (await this.rt.searchStatus()) as {
+        ready?: boolean;
+        state?: string;
+        metrics?: {
+          scanCursor?: number;
+          scanHighWater?: number;
+          pendingPublications?: number;
+          gcBacklog?: number;
+          providerRequests?: number;
+          providerLatencyMicrosAvg?: number;
+          generationGcFailures?: number;
+          filterDrops?: {
+            missingPublished?: number;
+            projectionMismatch?: number;
+            canonicalPermission?: number;
+          };
+        };
+      };
+      metrics.search.counter('reconcile_runs').add(1);
+      metrics.search.gauge('reconciled_workspaces').record(reconciled);
+      metrics.search.gauge('generation_ready').record(status.ready ? 1 : 0, {
+        state: status.state ?? 'unknown',
+      });
+      metrics.search
+        .histogram('reconcile_latency_ms')
+        .record(performance.now() - startedAt);
+      const projection = status.metrics;
+      if (projection) {
+        metrics.search.gauge('scan_cursor').record(projection.scanCursor ?? 0);
+        metrics.search
+          .gauge('scan_high_water')
+          .record(projection.scanHighWater ?? 0);
+        metrics.search
+          .gauge('pending_publications')
+          .record(projection.pendingPublications ?? 0);
+        metrics.search.gauge('gc_backlog').record(projection.gcBacklog ?? 0);
+        metrics.search
+          .gauge('provider_requests')
+          .record(projection.providerRequests ?? 0);
+        metrics.search
+          .gauge('provider_latency_micros_avg')
+          .record(projection.providerLatencyMicrosAvg ?? 0);
+        metrics.search
+          .gauge('generation_gc_failures')
+          .record(projection.generationGcFailures ?? 0);
+        metrics.search
+          .gauge('filter_drops')
+          .record(projection.filterDrops?.missingPublished ?? 0, {
+            reason: 'missing_published',
+          });
+        metrics.search
+          .gauge('filter_drops')
+          .record(projection.filterDrops?.projectionMismatch ?? 0, {
+            reason: 'projection_mismatch',
+          });
+        metrics.search
+          .gauge('filter_drops')
+          .record(projection.filterDrops?.canonicalPermission ?? 0, {
+            reason: 'canonical_permission',
+          });
+      }
+      return reconciled;
+    } catch (error) {
+      metrics.search.counter('reconcile_failures').add(1);
+      throw error;
+    }
   }
 }

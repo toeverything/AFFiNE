@@ -385,27 +385,9 @@ export class BackendRuntimeProvider
     );
   }
 
-  async indexSearchDocument(workspaceId: string, docId: string) {
-    await this.measured('indexSearchDocument', runtime =>
-      runtime.indexSearchDocument(workspaceId, docId)
-    );
-  }
-
-  async deleteSearchDocument(workspaceId: string, docId: string) {
-    await this.measured('deleteSearchDocument', runtime =>
-      runtime.deleteSearchDocument(workspaceId, docId)
-    );
-  }
-
-  async reconcileSearchWorkspace(workspaceId: string) {
-    await this.measured('reconcileSearchWorkspace', runtime =>
-      runtime.reconcileSearchWorkspace(workspaceId)
-    );
-  }
-
-  async deleteSearchWorkspace(workspaceId: string) {
-    await this.measured('deleteSearchWorkspace', runtime =>
-      runtime.deleteSearchWorkspace(workspaceId)
+  async reconcileSearchProjection(limit = 100) {
+    return await this.measured('reconcileSearchProjection', runtime =>
+      runtime.reconcileSearchProjection(limit)
     );
   }
 

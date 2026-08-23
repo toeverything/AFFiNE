@@ -259,6 +259,7 @@ export interface AggregateBucketHitsObjectType {
 
 export interface AggregateBucketObjectType {
   __typename?: 'AggregateBucketObjectType';
+  /** Number of returned sample hits in this bucket */
   count: Scalars['Int']['output'];
   /** The hits object */
   hits: AggregateBucketHitsObjectType;
@@ -1108,6 +1109,8 @@ export type ErrorDataUnion =
   | ResponseTooLargeErrorDataType
   | RuntimeConfigNotFoundDataType
   | SameSubscriptionRecurringDataType
+  | SearchIndexFailedDataType
+  | SearchIndexNotReadyDataType
   | SpaceAccessDeniedDataType
   | SpaceNotFoundDataType
   | SpaceOwnerNotFoundDataType
@@ -1248,7 +1251,11 @@ export enum ErrorNames {
   RUNTIME_CONFIG_NOT_FOUND = 'RUNTIME_CONFIG_NOT_FOUND',
   SAME_EMAIL_PROVIDED = 'SAME_EMAIL_PROVIDED',
   SAME_SUBSCRIPTION_RECURRING = 'SAME_SUBSCRIPTION_RECURRING',
+  SEARCH_INDEX_FAILED = 'SEARCH_INDEX_FAILED',
+  SEARCH_INDEX_NOT_READY = 'SEARCH_INDEX_NOT_READY',
+  SEARCH_PERMISSION_SYNCING = 'SEARCH_PERMISSION_SYNCING',
   SEARCH_PROVIDER_NOT_FOUND = 'SEARCH_PROVIDER_NOT_FOUND',
+  SEARCH_PROVIDER_UNAVAILABLE = 'SEARCH_PROVIDER_UNAVAILABLE',
   SIGN_UP_FORBIDDEN = 'SIGN_UP_FORBIDDEN',
   SPACE_ACCESS_DENIED = 'SPACE_ACCESS_DENIED',
   SPACE_NOT_FOUND = 'SPACE_NOT_FOUND',
@@ -2829,6 +2836,16 @@ export interface SearchHighlight {
   field: Scalars['String']['input'];
 }
 
+export interface SearchIndexFailedDataType {
+  __typename?: 'SearchIndexFailedDataType';
+  diagnosticId: Scalars['String']['output'];
+}
+
+export interface SearchIndexNotReadyDataType {
+  __typename?: 'SearchIndexNotReadyDataType';
+  spaceId: Scalars['String']['output'];
+}
+
 export interface SearchInput {
   options: SearchOptions;
   query: SearchQuery;
@@ -2889,8 +2906,11 @@ export interface SearchResultObjectType {
 
 export interface SearchResultPagination {
   __typename?: 'SearchResultPagination';
+  /** Number of results returned in this response, not a global total */
   count: Scalars['Int']['output'];
+  /** Whether the provider has more candidates; remaining visible results are not guaranteed */
   hasMore: Scalars['Boolean']['output'];
+  /** Opaque provider candidate cursor; it does not guarantee complete visible-result pagination */
   nextCursor: Maybe<Scalars['String']['output']>;
 }
 

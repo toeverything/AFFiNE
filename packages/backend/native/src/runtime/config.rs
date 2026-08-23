@@ -920,6 +920,16 @@ mod tests {
     let enabled_without_provider: SearchRuntimeConfig = enabled_without_provider.indexer.unwrap().into();
     assert!(enabled_without_provider.enabled);
     assert_eq!(enabled_without_provider.provider, "embedded");
+
+    let manticore = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(true)),
+      ("indexer.provider.type", serde_json::json!("manticoresearch")),
+      ("indexer.provider.endpoint", serde_json::json!("http://localhost:9308")),
+    ])
+    .unwrap();
+    let manticore: SearchRuntimeConfig = manticore.indexer.unwrap().into();
+    assert!(manticore.enabled);
+    assert_eq!(manticore.provider, "manticoresearch");
   }
 
   #[test]

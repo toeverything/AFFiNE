@@ -20,10 +20,6 @@ impl PermissionStore {
     Self { pool }
   }
 
-  pub(super) async fn search_snapshot(&self, workspace_id: &str, user_id: &str) -> RuntimeResult<PermissionSnapshot> {
-    self.permission_snapshot(workspace_id, user_id, &[]).await
-  }
-
   pub(super) async fn permission_snapshot(
     &self,
     workspace_id: &str,
@@ -40,12 +36,10 @@ impl PermissionStore {
       .await
       .map_err(|error| RuntimeError::database("configure permission snapshot", error))?;
     let row = sqlx::query(
-      r#"SELECT revision.revision,
-         policy.visibility, coalesce(policy.sharing_enabled, true) AS sharing_enabled,
+      r#"SELECT policy.visibility, coalesce(policy.sharing_enabled, true) AS sharing_enabled,
          coalesce(policy.member_default_doc_role, 'manager') AS member_default_doc_role,
          member.role, member.state
        FROM workspaces workspace
-       LEFT JOIN workspace_permission_revisions revision ON revision.workspace_id=workspace.id
        LEFT JOIN workspace_access_policies policy ON policy.workspace_id=workspace.id
        LEFT JOIN LATERAL (
          SELECT role,state FROM workspace_members
@@ -60,10 +54,6 @@ impl PermissionStore {
     .await
     .map_err(|error| RuntimeError::database("load workspace permission facts", error))?
     .ok_or_else(|| RuntimeError::invalid_input("workspace_not_found"))?;
-    let revision = row
-      .try_get::<Option<i64>, _>("revision")
-      .map_err(|error| RuntimeError::database("decode permission revision", error))?
-      .ok_or_else(|| RuntimeError::invalid_state("permission_state_unavailable"))?;
     let sharing_enabled: bool = row
       .try_get("sharing_enabled")
       .map_err(|error| RuntimeError::database("decode workspace sharing", error))?;
@@ -134,7 +124,6 @@ impl PermissionStore {
       member_state.as_deref() == Some("active") && matches!(role.as_deref(), Some("member" | "admin" | "owner"));
 
     Ok(PermissionSnapshot {
-      revision,
       capability,
       evaluation: PermissionEvaluationInputV1 {
         version: 1,
@@ -162,15 +151,6 @@ impl PermissionStore {
       active_member,
       sharing_enabled,
     })
-  }
-
-  pub(super) async fn revision(&self, workspace_id: &str) -> RuntimeResult<i64> {
-    sqlx::query_scalar("SELECT revision FROM workspace_permission_revisions WHERE workspace_id=$1")
-      .bind(workspace_id)
-      .fetch_optional(&self.pool)
-      .await
-      .map_err(|error| RuntimeError::database("read permission revision", error))?
-      .ok_or_else(|| RuntimeError::invalid_state("permission_state_unavailable"))
   }
 }
 

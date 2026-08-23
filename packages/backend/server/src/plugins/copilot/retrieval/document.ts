@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { SearchProviderNotFound } from '../../../base';
+import { SearchProviderUnavailable } from '../../../base';
 import { PermissionAccess } from '../../../core/permission';
 import type { DocVisibility } from '../../../core/utils/blocksuite';
 import { type DocChunkSimilarity, Models } from '../../../models';
@@ -101,7 +101,7 @@ export class DocumentRetrievalService {
           docIds,
         })
         .catch(error => {
-          if (error instanceof SearchProviderNotFound) return null;
+          if (error instanceof SearchProviderUnavailable) return null;
           throw error;
         }),
       this.context.canEmbedding

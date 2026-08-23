@@ -16,7 +16,6 @@ mod scope_compiler;
 mod search;
 #[cfg(test)]
 mod tests;
-mod workspace_stats;
 use std::{
   sync::{Arc, RwLock},
   time::Duration,
@@ -26,6 +25,8 @@ use byok::LocalLeasePayload;
 use copilot::{backend_provider, executable_protocol};
 use embedding::register_artifact_source;
 use napi::{Result, bindgen_prelude::Buffer};
+#[cfg(test)]
+pub(crate) use search::SEARCH_TEST_LOCK;
 use search::SearchRuntime;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row, postgres::PgPoolOptions};
@@ -66,10 +67,12 @@ fn search_operation_output(result: RuntimeResult<serde_json::Value>) -> SearchOp
       error_code: Some(
         match error {
           RuntimeError::SearchWorkspaceDenied => "workspace_denied",
-          RuntimeError::SearchPermissionUnavailable => "permission_unavailable",
+          RuntimeError::SearchPermissionUnavailable => "permission_syncing",
+          RuntimeError::SearchIndexNotReady => "index_not_ready",
+          RuntimeError::SearchPermissionSyncing => "permission_syncing",
+          RuntimeError::SearchIndexFailed(_) => "index_failed",
           RuntimeError::SearchProviderUnavailable => "provider_unavailable",
           RuntimeError::SearchUnsupportedQuery => "unsupported_query",
-          RuntimeError::SearchReplayGap => "provider_unavailable",
           RuntimeError::InvalidInput(_) | RuntimeError::Json { .. } => "invalid_request",
           _ => "internal",
         }
@@ -358,46 +361,14 @@ impl BackendRuntime {
   }
 
   #[napi]
-  pub async fn index_search_document(&self, workspace_id: String, doc_id: String) -> Result<()> {
-    let search = self.search_runtime().await?;
-    let result = if self.role.owns_background() {
-      search.index_document(&workspace_id, &doc_id).await
-    } else {
-      search.project_document_only(&workspace_id, &doc_id).await
-    };
-    result.map_err(to_napi_error)
-  }
-
-  #[napi]
-  pub async fn delete_search_document(&self, workspace_id: String, doc_id: String) -> Result<()> {
-    let search = self.search_runtime().await?;
-    let result = if self.role.owns_background() {
-      search.delete_document(&workspace_id, &doc_id).await
-    } else {
-      search.delete_document_only(&workspace_id, &doc_id).await
-    };
-    result.map_err(to_napi_error)
-  }
-
-  #[napi]
-  pub async fn reconcile_search_workspace(&self, workspace_id: String) -> Result<()> {
+  pub async fn reconcile_search_projection(&self, limit: Option<i32>) -> Result<i32> {
     self.require_background()?;
     self
       .search_runtime()
       .await?
-      .reconcile_workspace(permission::SystemSearchCapability::ReconcileIndex, &workspace_id)
+      .reconcile_pending(limit.unwrap_or(100))
       .await
-      .map_err(to_napi_error)
-  }
-
-  #[napi]
-  pub async fn delete_search_workspace(&self, workspace_id: String) -> Result<()> {
-    self.require_background()?;
-    self
-      .search_runtime()
-      .await?
-      .delete_workspace(&workspace_id)
-      .await
+      .map(|count| count as i32)
       .map_err(to_napi_error)
   }
 

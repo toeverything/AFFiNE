@@ -1,15 +1,19 @@
 import { indexerSearchDocsQuery } from '@affine/graphql';
 
-import { ConfigFactory } from '../../../base';
+import { Config } from '../../../base';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { createDocWithMarkdown } from '../../../native';
-import { SearchProviderType } from '../../../plugins/indexer/config';
-import { IndexerService } from '../../../plugins/indexer/service';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
-e2e('should search docs by keyword', async t => {
+const indexerE2e = app.get(Config).indexer.enabled ? e2e : e2e.skip;
+
+indexerE2e('should search docs by keyword', async t => {
   const owner = await app.signup();
-  const workspace = await app.create(Mockers.Workspace, { owner });
+  const workspace = await app.create(Mockers.Workspace, {
+    owner,
+    snapshot: true,
+  });
   for (const docId of ['doc-0', 'doc-1', 'doc-2']) {
     await app.create(Mockers.DocMeta, { workspaceId: workspace.id, docId });
     await app.create(Mockers.DocSnapshot, {
@@ -18,33 +22,26 @@ e2e('should search docs by keyword', async t => {
       user: owner,
       blob: createDocWithMarkdown(docId, `${docId} hello`, docId),
     });
-    await app.get(IndexerService).indexDoc(workspace.id, docId);
+    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
   }
 
   const search = app.gql({
     query: indexerSearchDocsQuery,
     variables: { id: workspace.id, input: { keyword: 'hello', limit: 2 } },
   });
-  if (
-    app.get(ConfigFactory).config.indexer.provider.type ===
-    SearchProviderType.Manticoresearch
-  ) {
-    await t.throwsAsync(search, {
-      message: /Invalid indexer input: unsupported_query/,
-    });
-    return;
-  }
-
   const result = await search;
   t.is(result.workspace.searchDocs.length, 2);
   t.true(result.workspace.searchDocs.every(doc => doc.highlight.length > 0));
 });
 
-e2e(
+indexerE2e(
   'should search docs by keyword failed when workspace is no permission',
   async t => {
     const owner = await app.signup();
-    const workspace = await app.create(Mockers.Workspace, { owner });
+    const workspace = await app.create(Mockers.Workspace, {
+      owner,
+      snapshot: true,
+    });
     await app.signup();
     await t.throwsAsync(
       app.gql({

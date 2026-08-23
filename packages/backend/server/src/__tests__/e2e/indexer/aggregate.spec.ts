@@ -4,14 +4,20 @@ import {
   SearchTable,
 } from '@affine/graphql';
 
+import { Config } from '../../../base';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { createDocWithMarkdown } from '../../../native';
-import { IndexerService } from '../../../plugins/indexer/service';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
-e2e('should aggregate by docId', async t => {
+const indexerE2e = app.get(Config).indexer.enabled ? e2e : e2e.skip;
+
+indexerE2e('should aggregate by docId', async t => {
   const owner = await app.signup();
-  const workspace = await app.create(Mockers.Workspace, { owner });
+  const workspace = await app.create(Mockers.Workspace, {
+    owner,
+    snapshot: true,
+  });
   for (const [docId, markdown] of [
     ['doc-0', 'hello world\n\nhello again'],
     ['doc-1', 'hello world'],
@@ -23,7 +29,7 @@ e2e('should aggregate by docId', async t => {
       user: owner,
       blob: createDocWithMarkdown(docId, markdown, docId),
     });
-    await app.get(IndexerService).indexDoc(workspace.id, docId);
+    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
   }
 
   const result = await app.gql({

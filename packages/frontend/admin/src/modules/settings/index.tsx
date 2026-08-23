@@ -175,9 +175,8 @@ const AdminPanel = ({
                     {fields.map(field => {
                       const fieldKey =
                         typeof field === 'string' ? field : String(field.key);
-                      const effectiveIndexerProvider = sourceConfig?.enabled
-                        ? sourceConfig?.provider?.type
-                        : 'embedded';
+                      const effectiveIndexerProvider =
+                        sourceConfig?.provider?.type ?? 'embedded';
                       if (
                         module === 'indexer' &&
                         effectiveIndexerProvider === 'embedded' &&
@@ -219,12 +218,8 @@ const AdminPanel = ({
                             module === 'indexer' &&
                             field.key === 'provider.type'
                               ? (_path, value) => {
-                                  if (value === 'embedded') {
-                                    onUpdate('indexer/enabled', false);
-                                  } else {
-                                    onUpdate('indexer/enabled', true);
-                                    onUpdate('indexer/provider.type', value);
-                                  }
+                                  onUpdate('indexer/enabled', true);
+                                  onUpdate('indexer/provider.type', value);
                                 }
                               : onUpdate,
                         };

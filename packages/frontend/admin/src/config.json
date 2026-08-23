@@ -35,10 +35,6 @@
       "type": "Object",
       "desc": "The config for doc job queue"
     },
-    "queues.indexer": {
-      "type": "Object",
-      "desc": "The config for indexer job queue"
-    },
     "queues.notification": {
       "type": "Object",
       "desc": "The config for notification job queue"
@@ -398,39 +394,29 @@
   "indexer": {
     "enabled": {
       "type": "Boolean",
-      "desc": "Enable indexer plugin",
-      "env": "AFFINE_INDEXER_ENABLED"
+      "desc": "Enable indexer plugin"
     },
     "provider.type": {
       "type": "String",
-      "desc": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.",
-      "env": "AFFINE_INDEXER_SEARCH_PROVIDER"
+      "desc": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint."
     },
     "provider.endpoint": {
       "type": "String",
-      "desc": "Remote indexer endpoint. Not used by the embedded provider.",
-      "env": "AFFINE_INDEXER_SEARCH_ENDPOINT"
+      "desc": "Remote indexer endpoint. Not used by the embedded provider."
     },
     "provider.apiKey": {
       "type": "String",
-      "desc": "Indexer search service api key. Optional for elasticsearch",
-      "link": "https://www.elastic.co/guide/server/current/api-key.html",
-      "env": "AFFINE_INDEXER_SEARCH_API_KEY"
+      "desc": "Indexer search service api key. Optional for remote providers",
+      "link": "https://www.elastic.co/guide/server/current/api-key.html"
     },
     "provider.username": {
       "type": "String",
-      "desc": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for elasticsearch",
-      "link": "https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
-      "env": "AFFINE_INDEXER_SEARCH_USERNAME"
+      "desc": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for remote providers",
+      "link": "https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html"
     },
     "provider.password": {
       "type": "String",
-      "desc": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for elasticsearch",
-      "env": "AFFINE_INDEXER_SEARCH_PASSWORD"
-    },
-    "autoIndex.batchSize": {
-      "type": "Number",
-      "desc": "Number of workspaces automatically indexed per batch"
+      "desc": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for remote providers"
     }
   },
   "oauth": {

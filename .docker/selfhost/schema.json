@@ -86,18 +86,6 @@
             "concurrency": 1
           }
         },
-        "queues.indexer": {
-          "type": "object",
-          "description": "The config for indexer job queue\n@default {\"concurrency\":1}",
-          "properties": {
-            "concurrency": {
-              "type": "number"
-            }
-          },
-          "default": {
-            "concurrency": 1
-          }
-        },
         "queues.notification": {
           "type": "object",
           "description": "The config for notification job queue\n@default {\"concurrency\":10}",
@@ -1488,38 +1476,33 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Enable indexer plugin\n@default false\n@environment `AFFINE_INDEXER_ENABLED`",
+          "description": "Enable indexer plugin\n@default false",
           "default": false
         },
         "provider.type": {
           "type": "string",
-          "description": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.\n@default \"embedded\"\n@environment `AFFINE_INDEXER_SEARCH_PROVIDER`",
+          "description": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.\n@default \"embedded\"",
           "default": "embedded"
         },
         "provider.endpoint": {
           "type": "string",
-          "description": "Remote indexer endpoint. Not used by the embedded provider.\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_ENDPOINT`",
+          "description": "Remote indexer endpoint. Not used by the embedded provider.\n@default \"\"",
           "default": ""
         },
         "provider.apiKey": {
           "type": "string",
-          "description": "Indexer search service api key. Optional for elasticsearch\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_API_KEY`\n@link https://www.elastic.co/guide/server/current/api-key.html",
+          "description": "Indexer search service api key. Optional for remote providers\n@default \"\"\n@link https://www.elastic.co/guide/server/current/api-key.html",
           "default": ""
         },
         "provider.username": {
           "type": "string",
-          "description": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for elasticsearch\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_USERNAME`\n@link https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
+          "description": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for remote providers\n@default \"\"\n@link https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
           "default": ""
         },
         "provider.password": {
           "type": "string",
-          "description": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for elasticsearch\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_PASSWORD`",
+          "description": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for remote providers\n@default \"\"",
           "default": ""
-        },
-        "autoIndex.batchSize": {
-          "type": "number",
-          "description": "Number of workspaces automatically indexed per batch\n@default 10",
-          "default": 10
         }
       }
     },
