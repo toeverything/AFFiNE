@@ -4,7 +4,7 @@ use reqwest::{Client, redirect::Policy};
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
 
-use super::{SearchChange, SearchTable, webpki_tls_config};
+use super::{SearchChange, SearchTable, provider_write_error, webpki_tls_config};
 use crate::runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig};
 
 const MAX_RESPONSE_BYTES: usize = 50 * 1024 * 1024;
@@ -123,7 +123,7 @@ impl ManticoreSearchProvider {
     let status = response.status();
     let body = read_response(response).await?;
     if !status.is_success() {
-      return Err(RuntimeError::SearchProviderUnavailable);
+      return Err(provider_write_error(status.as_u16()));
     }
     let value: Value =
       serde_json::from_slice(&body).map_err(|error| RuntimeError::json("invalid manticore bulk response", error))?;
@@ -152,7 +152,7 @@ impl ManticoreSearchProvider {
       }
     });
     self
-      .delete_by_query(physical_table, query, limit.max(1))
+      .delete_bounded(physical_table, query, limit.max(1))
       .await
       .map(|_| ())
   }
@@ -169,16 +169,49 @@ impl ManticoreSearchProvider {
       {"equals":{"workspace_id":workspace_id}},
       {"range":{"source_version":{"lte":source_version_high_water}}}
     ]}});
-    let deleted = self.delete_by_query(physical_table, query, limit).await?;
-    Ok(deleted >= limit as u64)
+    let deleted = self.delete_bounded(physical_table, query, limit).await?;
+    Ok(deleted == limit)
   }
 
-  async fn delete_by_query(&self, physical_table: &str, query: Value, limit: usize) -> RuntimeResult<u64> {
-    let mut body = json!({"table":physical_table,"query":query});
-    body["limit"] = json!(limit);
+  async fn delete_bounded(&self, physical_table: &str, query: Value, limit: usize) -> RuntimeResult<usize> {
+    let response = self
+      .request(reqwest::Method::POST, "search")
+      .json(&json!({
+        "table":physical_table,
+        "query":query,
+        "limit":limit,
+        "sort":[{"id":"asc"}]
+      }))
+      .send()
+      .await
+      .map_err(|_| RuntimeError::SearchProviderUnavailable)?;
+    let status = response.status();
+    let body = read_response(response).await?;
+    if !status.is_success() {
+      return Err(RuntimeError::SearchProviderUnavailable);
+    }
+    let value: Value = serde_json::from_slice(&body)
+      .map_err(|error| RuntimeError::json("invalid manticore GC search response", error))?;
+    let ids = value
+      .pointer("/hits/hits")
+      .and_then(Value::as_array)
+      .ok_or_else(|| RuntimeError::invalid_state("invalid manticore GC search response"))?
+      .iter()
+      .map(|hit| {
+        let id = hit
+          .get("_id")
+          .or_else(|| hit.get("id"))
+          .and_then(|id| id.as_u64().or_else(|| id.as_str().and_then(|id| id.parse().ok())))
+          .ok_or_else(|| RuntimeError::invalid_state("invalid manticore GC search response"))?;
+        Ok(json!(id))
+      })
+      .collect::<RuntimeResult<Vec<_>>>()?;
+    if ids.is_empty() {
+      return Ok(0);
+    }
     let response = self
       .request(reqwest::Method::POST, "delete")
-      .json(&body)
+      .json(&json!({"table":physical_table,"id":ids}))
       .send()
       .await
       .map_err(|_| RuntimeError::SearchProviderUnavailable)?;
@@ -192,11 +225,7 @@ impl ManticoreSearchProvider {
     if value.get("error").is_some() {
       return Err(RuntimeError::invalid_state("provider_apply_failed"));
     }
-    value
-      .get("deleted")
-      .or_else(|| value.get("affected_rows"))
-      .and_then(Value::as_u64)
-      .ok_or_else(|| RuntimeError::invalid_state("invalid manticore delete response"))
+    Ok(ids.len())
   }
 
   fn request(&self, method: reqwest::Method, path: &str) -> reqwest::RequestBuilder {
@@ -294,25 +323,38 @@ fn validate_bulk_response(value: &Value, expected_changes: usize) -> RuntimeResu
     .get("items")
     .and_then(Value::as_array)
     .ok_or_else(|| RuntimeError::invalid_state("invalid manticore bulk response"))?;
-  let affected = items.iter().try_fold(0_u64, |affected, item| {
+  let mut affected = 0_u64;
+  for item in items {
     let result = item
       .as_object()
       .and_then(|item| item.values().next())
       .and_then(Value::as_object)
-      .filter(|result| {
-        result.get("error").is_none()
-          && result
-            .get("status")
-            .and_then(Value::as_u64)
-            .is_some_and(|status| (200..300).contains(&status))
-      })
       .ok_or_else(|| RuntimeError::invalid_state("provider_apply_failed"))?;
-    Ok::<_, RuntimeError>(
-      affected
-        + result.get("created").and_then(Value::as_u64).unwrap_or_default()
-        + result.get("updated").and_then(Value::as_u64).unwrap_or_default(),
-    )
-  })?;
+    let status = result
+      .get("status")
+      .and_then(Value::as_u64)
+      .and_then(|status| u16::try_from(status).ok())
+      .ok_or_else(|| RuntimeError::invalid_state("provider_apply_failed"))?;
+    if result.get("error").is_some() || !(200..300).contains(&status) {
+      return Err(provider_write_error(status));
+    }
+    let numeric = ["created", "updated", "deleted"]
+      .into_iter()
+      .filter_map(|field| result.get(field).and_then(Value::as_u64))
+      .sum::<u64>();
+    affected += if numeric > 0 {
+      numeric
+    } else if result.get("created").and_then(Value::as_bool).is_some()
+      || result
+        .get("result")
+        .and_then(Value::as_str)
+        .is_some_and(|result| matches!(result, "created" | "updated"))
+    {
+      1
+    } else {
+      return Err(RuntimeError::invalid_state("provider_apply_failed"));
+    };
+  }
   if value.get("errors").and_then(Value::as_bool) != Some(false) || affected != expected_changes as u64 {
     return Err(RuntimeError::invalid_state("provider_apply_failed"));
   }
@@ -553,6 +595,7 @@ mod tests {
     SearchTable, document_id, manticore_document, translate_query, translate_search_request, translate_sort,
     validate_bulk_response,
   };
+  use crate::runtime::RuntimeError;
 
   #[test]
   fn translates_the_shared_basic_query_subset() {
@@ -595,18 +638,35 @@ mod tests {
     );
     assert!(
       validate_bulk_response(
-        &json!({"errors":false,"items":[{"bulk":{"status":201,"created":2,"updated":0}}]}),
+        &json!({"errors":false,"items":[{"bulk":{"status":201,"created":2,"updated":0,"deleted":0}}]}),
         2,
       )
       .is_ok()
     );
     assert!(
       validate_bulk_response(
-        &json!({"errors":false,"items":[{"bulk":{"status":200,"created":0,"updated":1}}]}),
+        &json!({"errors":false,"items":[
+          {"replace":{"status":201,"created":true}},
+          {"replace":{"status":200,"created":false,"result":"updated"}}
+        ]}),
         2,
+      )
+      .is_ok()
+    );
+    assert!(
+      validate_bulk_response(
+        &json!({"errors":true,"items":[{"replace":{"status":400,"error":{"reason":"invalid"}}}]}),
+        1,
       )
       .is_err()
     );
+    assert!(matches!(
+      validate_bulk_response(
+        &json!({"errors":true,"items":[{"replace":{"status":400,"error":{"reason":"invalid"}}}]}),
+        1
+      ),
+      Err(RuntimeError::SearchSourceInvalid(_))
+    ));
   }
 
   #[test]

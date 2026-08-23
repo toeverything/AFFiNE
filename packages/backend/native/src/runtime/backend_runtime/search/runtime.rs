@@ -220,6 +220,9 @@ impl SearchRuntime {
         .map_err(|error| RuntimeError::database("load search generation state", error))?;
       if state != "active" {
         activate(&self.pool, &generation, &self.config).await?;
+        if self.config.provider == "embedded" {
+          self.embedded.retain_generation(generation.id).await;
+        }
         *self.generation.write().await = Some(generation);
       }
     }

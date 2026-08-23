@@ -28,7 +28,8 @@ DROP TABLE IF EXISTS search_runtime_acl_tokens;
 DROP TABLE IF EXISTS workspace_permission_changes;
 DROP TABLE IF EXISTS workspace_permission_revisions;
 
-CREATE SCHEMA IF NOT EXISTS search_projection;
+DROP SCHEMA IF EXISTS search_projection CASCADE;
+CREATE SCHEMA search_projection;
 
 CREATE SEQUENCE IF NOT EXISTS search_projection.source_mutation_version;
 CREATE SEQUENCE IF NOT EXISTS search_projection.permission_version;
@@ -134,13 +135,12 @@ DECLARE
   target_version BIGINT;
   candidate RECORD;
 BEGIN
-  PERFORM pg_advisory_xact_lock(hashtextextended('search-projection-generation', 0));
+  PERFORM pg_advisory_xact_lock_shared(hashtextextended('search-projection-generation', 0));
   target_version := nextval('search_projection.source_mutation_version');
 
   FOR candidate IN
     SELECT id, state FROM search_projection.generations
     WHERE state IN ('building', 'active')
-    FOR UPDATE
   LOOP
     PERFORM search_projection.ensure_workspace_state(candidate.id, target_workspace);
     IF target_doc = target_workspace THEN
@@ -188,8 +188,9 @@ DECLARE
   target_scope TEXT;
   version BIGINT;
   candidate RECORD;
+  target RECORD;
 BEGIN
-  PERFORM pg_advisory_xact_lock(hashtextextended('search-projection-generation', 0));
+  PERFORM pg_advisory_xact_lock_shared(hashtextextended('search-projection-generation', 0));
   version := nextval('search_projection.permission_version');
 
   IF TG_TABLE_NAME = 'entitlements' THEN
@@ -221,11 +222,13 @@ BEGIN
   FOR candidate IN
     SELECT id, state FROM search_projection.generations
     WHERE state IN ('building', 'active')
-    FOR UPDATE
   LOOP
-    FOREACH new_workspace IN ARRAY ARRAY_REMOVE(ARRAY[old_workspace, new_workspace], NULL)
+    FOR target IN
+      SELECT DISTINCT mutation.workspace_id, mutation.doc_id
+      FROM (VALUES (old_workspace, old_doc), (new_workspace, new_doc)) mutation(workspace_id, doc_id)
+      WHERE mutation.workspace_id IS NOT NULL
     LOOP
-      PERFORM search_projection.ensure_workspace_state(candidate.id, new_workspace);
+      PERFORM search_projection.ensure_workspace_state(candidate.id, target.workspace_id);
       UPDATE search_projection.workspace_states
       SET required_permission_version = GREATEST(required_permission_version, version),
           pending_scope = CASE
@@ -234,16 +237,16 @@ BEGIN
             ELSE pending_scope
           END,
           last_error = NULL, available_at = now(), updated_at = now()
-      WHERE generation_id = candidate.id AND workspace_id = new_workspace;
+      WHERE generation_id = candidate.id AND workspace_id = target.workspace_id;
 
       IF target_scope IN ('doc_policy', 'doc_grant') THEN
         UPDATE search_projection.document_states
         SET target_permission_version = GREATEST(target_permission_version, version),
             claim_fence = NULL, lease_owner = NULL, lease_expires_at = NULL,
-            last_error = NULL, available_at = now(), updated_at = now()
+          last_error = NULL, available_at = now(), updated_at = now()
         WHERE generation_id = candidate.id
-          AND workspace_id = new_workspace
-          AND doc_id = COALESCE(new_doc, old_doc);
+          AND workspace_id = target.workspace_id
+          AND doc_id = target.doc_id;
       END IF;
     END LOOP;
   END LOOP;

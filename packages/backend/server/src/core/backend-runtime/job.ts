@@ -277,7 +277,7 @@ export class BackendRuntimeSearchJob {
     await this.queue.add(
       'backendRuntime.reconcileSearchProjection',
       { limit: 100 },
-      { jobId: 'backend-runtime-search-reconciliation' }
+      { jobId: 'backend-runtime-search-reconciliation', removeOnFail: true }
     );
   }
 

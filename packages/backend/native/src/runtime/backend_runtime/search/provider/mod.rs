@@ -7,6 +7,14 @@ use self::{manticore::ManticoreSearchProvider, remote::RemoteProvider};
 use super::{SearchTable, webpki_tls_config};
 use crate::runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig};
 
+fn provider_write_error(status: u16) -> RuntimeError {
+  match status {
+    408 | 429 | 500..=599 => RuntimeError::SearchProviderUnavailable,
+    400..=499 => RuntimeError::SearchSourceInvalid("search provider rejected projection".to_string()),
+    _ => RuntimeError::invalid_state("provider_apply_failed"),
+  }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct SearchChange {
   pub(super) table: SearchTable,

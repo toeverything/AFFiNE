@@ -119,6 +119,15 @@ impl EmbeddedSearchIndex {
     self.manager.generation(generation_id, false).await.is_some()
   }
 
+  pub(crate) async fn retain_generation(&self, generation_id: Uuid) {
+    self
+      .manager
+      .generations
+      .write()
+      .await
+      .retain(|id, _| *id == generation_id);
+  }
+
   #[cfg(test)]
   pub(crate) async fn write(&self, table: String, documents_json: String) -> napi::Result<()> {
     self.write_for_generation(Uuid::nil(), table, documents_json).await
@@ -567,6 +576,12 @@ mod tests {
     .unwrap();
     assert_eq!(result["total"], 2);
     assert_ne!(result["nodes"][0]["id"], result["nodes"][1]["id"]);
+
+    let retired = Uuid::new_v4();
+    index.prepare_generation(retired).await;
+    index.retain_generation(Uuid::nil()).await;
+    assert!(index.has_generation(Uuid::nil()).await);
+    assert!(!index.has_generation(retired).await);
   }
 
   #[tokio::test]

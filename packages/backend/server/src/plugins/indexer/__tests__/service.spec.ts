@@ -99,6 +99,13 @@ test('does not schedule or run native search reconciliation when disabled', asyn
   t.is(await job.reconcileProjection({ limit: 100 }), 0);
   t.false(runtime.reconcileSearchProjection.called);
   t.false(runtime.searchStatus.called);
+
+  config.config.indexer.enabled = true;
+  await job.scheduleReconciliation();
+  t.deepEqual(queue.add.firstCall.args[2], {
+    jobId: 'backend-runtime-search-reconciliation',
+    removeOnFail: true,
+  });
 });
 
 test('maps native search results and typed errors at the Node boundary', async t => {
@@ -315,4 +322,5 @@ test('searchDocs keeps filtering and enrichment in Node', async t => {
   t.true(basicRequest.options.fields.includes('docId'));
   t.is(basicRequest.options.pagination?.limit, 20);
   t.true(JSON.stringify(basicRequest.query).includes('doc'));
+  t.true(JSON.stringify(basicRequest.query).includes('workspace'));
 });

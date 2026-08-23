@@ -37,7 +37,7 @@ pub(super) async fn upsert_document(
     .begin()
     .await
     .map_err(|error| RuntimeError::database("begin search document enqueue", error))?;
-  sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('search-projection-generation', 0))")
+  sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('search-projection-generation', 0))")
     .execute(&mut *transaction)
     .await
     .map_err(|error| RuntimeError::database("lock search document enqueue", error))?;

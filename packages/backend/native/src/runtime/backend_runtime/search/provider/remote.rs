@@ -3,7 +3,7 @@ use std::time::Duration;
 use reqwest::{Client, redirect::Policy};
 use serde_json::{Value, json};
 
-use super::{SearchChange, SearchTable, webpki_tls_config};
+use super::{SearchChange, SearchTable, provider_write_error, webpki_tls_config};
 use crate::runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig};
 
 const MAX_RESPONSE_BYTES: usize = 50 * 1024 * 1024;
@@ -171,7 +171,7 @@ impl RemoteProvider {
       .await
       .map_err(|_| RuntimeError::SearchProviderUnavailable)?;
     if !response.status().is_success() {
-      return Err(RuntimeError::SearchProviderUnavailable);
+      return Err(provider_write_error(response.status().as_u16()));
     }
     let value: Value = response
       .json()
@@ -281,22 +281,25 @@ fn validate_bulk_response(value: &Value, expected_items: usize) -> RuntimeResult
     .get("items")
     .and_then(Value::as_array)
     .ok_or_else(|| RuntimeError::invalid_state("invalid provider bulk response"))?;
-  if items.len() != expected_items
-    || value.get("errors").and_then(Value::as_bool) != Some(false)
-    || items.iter().any(|item| {
-      let result = item
-        .as_object()
-        .and_then(|item| item.values().next())
-        .and_then(Value::as_object);
-      result.is_none_or(|result| {
-        result.get("error").is_some()
-          || !result
-            .get("status")
-            .and_then(Value::as_u64)
-            .is_some_and(|status| (200..300).contains(&status))
-      })
-    })
-  {
+  if items.len() != expected_items {
+    return Err(RuntimeError::invalid_state("provider_apply_failed"));
+  }
+  for item in items {
+    let result = item
+      .as_object()
+      .and_then(|item| item.values().next())
+      .and_then(Value::as_object)
+      .ok_or_else(|| RuntimeError::invalid_state("provider_apply_failed"))?;
+    let status = result
+      .get("status")
+      .and_then(Value::as_u64)
+      .and_then(|status| u16::try_from(status).ok())
+      .ok_or_else(|| RuntimeError::invalid_state("provider_apply_failed"))?;
+    if result.get("error").is_some() || !(200..300).contains(&status) {
+      return Err(provider_write_error(status));
+    }
+  }
+  if value.get("errors").and_then(Value::as_bool) != Some(false) {
     return Err(RuntimeError::invalid_state("provider_apply_failed"));
   }
   Ok(())
@@ -409,6 +412,7 @@ mod tests {
   use serde_json::json;
 
   use super::{normalize_aggregate, validate_bulk_response, validate_delete_response};
+  use crate::runtime::RuntimeError;
 
   #[test]
   fn delete_response_rejects_partial_provider_failures() {
@@ -435,6 +439,14 @@ mod tests {
     ] {
       assert_eq!(validate_bulk_response(&response, expected_items).is_ok(), valid);
     }
+    assert!(matches!(
+      validate_bulk_response(&json!({"errors":true,"items":[{"index":{"status":400,"error":{}}}]}), 1),
+      Err(RuntimeError::SearchSourceInvalid(_))
+    ));
+    assert!(matches!(
+      validate_bulk_response(&json!({"errors":true,"items":[{"index":{"status":429,"error":{}}}]}), 1),
+      Err(RuntimeError::SearchProviderUnavailable)
+    ));
   }
 
   #[test]

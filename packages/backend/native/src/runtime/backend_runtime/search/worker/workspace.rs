@@ -782,26 +782,16 @@ mod tests {
       } else {
         vec![0]
       };
-      if phase_name == "documents" {
-        sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,$3,now())")
-          .bind(&workspace_id)
-          .bind(&doc_id)
-          .bind(doc_blob)
-          .execute(&pool)
-          .await
-          .unwrap();
-      } else {
-        sqlx::query(
-          r#"INSERT INTO snapshots(workspace_id,guid,blob,updated_at)
-             VALUES($1,$1,decode('00','hex'),now()),($1,$2,$3,now())"#,
-        )
-        .bind(&workspace_id)
-        .bind(&doc_id)
-        .bind(doc_blob)
-        .execute(&pool)
-        .await
-        .unwrap();
-      }
+      sqlx::query(
+        r#"INSERT INTO snapshots(workspace_id,guid,blob,updated_at)
+           VALUES($1,$1,decode('00','hex'),now()),($1,$2,$3,now())"#,
+      )
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .bind(doc_blob)
+      .execute(&pool)
+      .await
+      .unwrap();
       if corrupt_update {
         sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at) VALUES($1,$2,decode('00','hex'),now())")
           .bind(&workspace_id)

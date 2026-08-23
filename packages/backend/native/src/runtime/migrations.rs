@@ -269,7 +269,8 @@ mod tests {
 
   #[test]
   fn search_schema_uses_terminal_control_plane() {
-    assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE SCHEMA IF NOT EXISTS search_projection"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("DROP SCHEMA IF EXISTS search_projection CASCADE"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE SCHEMA search_projection"));
     assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE TABLE search_projection.generations"));
     assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE TABLE search_projection.workspace_states"));
     assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE TABLE search_projection.document_states"));
@@ -389,6 +390,65 @@ mod tests {
     .unwrap();
     assert_eq!(document_scope, ("none".to_string(), 1));
 
+    let moved_workspace_id = format!("trigger-moved-workspace-{suffix}");
+    let moved_doc_id = format!("trigger-moved-doc-{suffix}");
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&moved_workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,decode('00','hex'),now())")
+      .bind(&moved_workspace_id)
+      .bind(&moved_doc_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let old_version: i64 = sqlx::query_scalar(
+      "SELECT target_permission_version FROM search_projection.document_states WHERE generation_id=$1 AND \
+       workspace_id=$2 AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let moved_version: i64 = sqlx::query_scalar(
+      "SELECT target_permission_version FROM search_projection.document_states WHERE generation_id=$1 AND \
+       workspace_id=$2 AND doc_id=$3",
+    )
+    .bind(generation_id)
+    .bind(&moved_workspace_id)
+    .bind(&moved_doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE doc_access_policies SET workspace_id=$3,doc_id=$4 WHERE workspace_id=$1 AND doc_id=$2")
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .bind(&moved_workspace_id)
+      .bind(&moved_doc_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let versions: (i64, i64) = sqlx::query_as(
+      r#"SELECT
+           (SELECT target_permission_version FROM search_projection.document_states
+            WHERE generation_id=$1 AND workspace_id=$2 AND doc_id=$3),
+           (SELECT target_permission_version FROM search_projection.document_states
+            WHERE generation_id=$1 AND workspace_id=$4 AND doc_id=$5)"#,
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .bind(&moved_workspace_id)
+    .bind(&moved_doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(versions.0 > old_version);
+    assert!(versions.1 > moved_version);
+
     sqlx::query("INSERT INTO workspace_access_policies(workspace_id) VALUES($1)")
       .bind(&workspace_id)
       .execute(&pool)
@@ -411,6 +471,11 @@ mod tests {
       .unwrap();
     sqlx::query("DELETE FROM workspaces WHERE id=$1")
       .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&moved_workspace_id)
       .execute(&pool)
       .await
       .unwrap();

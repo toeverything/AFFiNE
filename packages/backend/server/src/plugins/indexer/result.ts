@@ -4,6 +4,7 @@ import {
   AggregateInput,
   SearchDoc,
   SearchInput,
+  SearchQuery,
   SearchQueryOccur,
   SearchQueryType,
   SearchTable,
@@ -155,31 +156,36 @@ export function buildBasicSearchDocsInput(
 ): SearchInput {
   const aggregate = buildSearchDocsInput(workspaceId, keyword, options);
   const limit = options?.limit ?? 20;
-  const contentQuery = {
-    type: SearchQueryType.match as const,
-    field: 'content',
-    match: keyword,
-  };
+  const queries: SearchQuery[] = [
+    {
+      type: SearchQueryType.match as const,
+      field: 'workspaceId',
+      match: workspaceId,
+    },
+    {
+      type: SearchQueryType.match as const,
+      field: 'content',
+      match: keyword,
+    },
+  ];
+  if (options?.docIds) {
+    queries.push({
+      type: SearchQueryType.boolean,
+      occur: SearchQueryOccur.should,
+      queries: options.docIds.map(docId => ({
+        type: SearchQueryType.match as const,
+        field: 'docId',
+        match: docId,
+      })),
+    });
+  }
   return {
     table: aggregate.table,
-    query: options?.docIds
-      ? {
-          type: SearchQueryType.boolean,
-          occur: SearchQueryOccur.must,
-          queries: [
-            contentQuery,
-            {
-              type: SearchQueryType.boolean,
-              occur: SearchQueryOccur.should,
-              queries: options.docIds.map(docId => ({
-                type: SearchQueryType.match,
-                field: 'docId',
-                match: docId,
-              })),
-            },
-          ],
-        }
-      : contentQuery,
+    query: {
+      type: SearchQueryType.boolean,
+      occur: SearchQueryOccur.must,
+      queries,
+    },
     options: {
       fields: ['docId', ...aggregate.options.hits.fields],
       highlights: aggregate.options.hits.highlights,

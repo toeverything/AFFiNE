@@ -13,6 +13,7 @@ import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
 const manticoreSearchEnabled =
+  app.get(Config).indexer.enabled &&
   app.get(Config).indexer.provider.type === 'manticoresearch';
 const manticoreSearchE2e = manticoreSearchEnabled ? e2e : e2e.skip;
 
@@ -30,7 +31,16 @@ async function indexDocument(
     user,
     blob: createDocWithMarkdown(docId, markdown, docId),
   });
-  await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+  await reconcileSearch();
+}
+
+async function reconcileSearch() {
+  const runtime = app.get(BackendRuntimeProvider);
+  for (let attempt = 0; attempt < 50; attempt++) {
+    await runtime.reconcileSearchProjection(1000);
+    if ((await runtime.searchStatus()).ready) return;
+  }
+  throw new Error('search projection did not become ready');
 }
 
 async function searchPage(
@@ -154,7 +164,7 @@ manticoreSearchE2e(
       workspaceId: workspace.id,
       userId: member.id,
     });
-    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    await reconcileSearch();
     t.is(await searchCount(workspace.id, marker), 0);
     t.is(await searchDocsCount(workspace.id, marker), 0);
 
@@ -164,12 +174,12 @@ manticoreSearchE2e(
       userId: member.id,
       type: DocRole.Reader,
     });
-    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    await reconcileSearch();
     t.true((await searchCount(workspace.id, marker)) > 0);
     t.true((await searchDocsCount(workspace.id, marker)) > 0);
 
     await app.models.docUser.delete(workspace.id, `${marker}-doc`, member.id);
-    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    await reconcileSearch();
     t.is(await searchCount(workspace.id, marker), 0);
     t.is(await searchDocsCount(workspace.id, marker), 0);
   }
