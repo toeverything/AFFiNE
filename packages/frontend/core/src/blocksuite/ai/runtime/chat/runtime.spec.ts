@@ -4,6 +4,7 @@
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { describe, expect, test, vi } from 'vitest';
 
+import { SelectedSourcesProcessingError } from '../../provider/error';
 import type { AIRequestService } from '../request';
 import { AIChatRuntime } from './runtime';
 import {
@@ -34,8 +35,6 @@ function session(
     parentSessionId: null,
     promptName: 'Chat With AFFiNE AI',
     action: null,
-    optionalModels: null,
-    tokens: 0,
     ...overrides,
   } as CopilotChatHistoryFragment;
 }
@@ -68,31 +67,11 @@ function createRequest(
     createSessionWithHistory: vi.fn().mockResolvedValue(session()),
     updateSession: vi.fn().mockResolvedValue(undefined),
     cleanupSessions: vi.fn().mockResolvedValue(undefined),
+    getActiveEditorContext: vi.fn().mockReturnValue(undefined),
     executeAction: vi.fn().mockResolvedValue(stream(['hello'])),
+    waitForSelectedSources: vi.fn().mockResolvedValue(undefined),
     histories: {
       ids: vi.fn().mockResolvedValue([]),
-    },
-    context: {
-      createContext: vi.fn().mockResolvedValue('context-1'),
-      getContextId: vi.fn().mockResolvedValue(undefined),
-      addContextDoc: vi.fn().mockResolvedValue(undefined),
-      removeContextDoc: vi.fn().mockResolvedValue(undefined),
-      addContextFile: vi
-        .fn()
-        .mockResolvedValue({ id: 'file-1', status: 'processing' }),
-      removeContextFile: vi.fn().mockResolvedValue(undefined),
-      addContextTag: vi.fn().mockResolvedValue(undefined),
-      removeContextTag: vi.fn().mockResolvedValue(undefined),
-      addContextCollection: vi.fn().mockResolvedValue(undefined),
-      removeContextCollection: vi.fn().mockResolvedValue(undefined),
-      getContextDocsAndFiles: vi.fn().mockResolvedValue(undefined),
-      matchContext: vi.fn().mockResolvedValue({ files: [], docs: [] }),
-      addContextBlob: vi
-        .fn()
-        .mockResolvedValue({ id: 'blob-1', status: 'processing' }),
-      removeContextBlob: vi.fn().mockResolvedValue(undefined),
-      pollContextDocsAndFiles: vi.fn(),
-      pollEmbeddingStatus: vi.fn(),
     },
     ...overrides,
   } as unknown as AIRequestService;
@@ -130,6 +109,7 @@ describe('AIChatRuntime', () => {
           id: 'message-1',
           role: 'user',
           content: 'previous chat',
+          scopeSnapshot: null,
           attachments: [],
           streamObjects: [],
           createdAt: new Date().toISOString(),
@@ -151,7 +131,7 @@ describe('AIChatRuntime', () => {
     expect(runtime.getSnapshot().messages).toEqual(fullSession.messages);
   });
 
-  test('send creates a session once and ignores duplicate sends while transmitting', async () => {
+  test('send tolerates optional editor activation and ignores duplicate sends while transmitting', async () => {
     let release!: () => void;
     const blockedStream = {
       async *[Symbol.asyncIterator]() {
@@ -162,6 +142,7 @@ describe('AIChatRuntime', () => {
       },
     };
     const request = createRequest({
+      getActiveEditorContext: vi.fn().mockReturnValue('{"mode":"page"}'),
       executeAction: vi.fn().mockResolvedValue(blockedStream),
     });
     const runtime = createRuntime(request);
@@ -177,8 +158,37 @@ describe('AIChatRuntime', () => {
 
     expect(request.createSessionWithHistory).toHaveBeenCalledTimes(1);
     expect(request.executeAction).toHaveBeenCalledTimes(1);
+    expect(request.executeAction).toHaveBeenCalledWith(
+      'chat',
+      expect.objectContaining({ liveEditorContext: '{"mode":"page"}' })
+    );
     expect(runtime.getSnapshot().messages.at(-1)?.content).toBe('done');
     expect(runtime.getSnapshot().uiPolicy.canCreateNewSession).toBe(true);
+
+    const activationError = new Error('editor unavailable');
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    const fallbackRequest = createRequest({
+      activateEditor: vi.fn().mockRejectedValue(activationError),
+      getActiveEditorContext: vi.fn().mockReturnValue('stale context'),
+      executeAction: vi.fn().mockResolvedValue(stream(['fallback'])),
+    });
+    const fallbackRuntime = createRuntime(fallbackRequest);
+    await fallbackRuntime.dispatch({ type: 'initialize' });
+
+    await fallbackRuntime.dispatch({ type: 'send', input: 'hello' });
+
+    expect(consoleError).toHaveBeenCalledWith(activationError);
+    expect(fallbackRequest.executeAction).toHaveBeenCalledWith(
+      'chat',
+      expect.objectContaining({ liveEditorContext: undefined })
+    );
+    expect(fallbackRuntime.getSnapshot().messages.at(-1)?.content).toBe(
+      'fallback'
+    );
+    expect(fallbackRuntime.getSnapshot().status).toBe('success');
+    consoleError.mockRestore();
   });
 
   test('send binds an unbound session to the active doc after success', async () => {
@@ -220,6 +230,7 @@ describe('AIChatRuntime', () => {
             id: 'message-1',
             role: 'user',
             content: 'existing chat',
+            scopeSnapshot: null,
             attachments: [],
             streamObjects: [],
             createdAt: new Date().toISOString(),
@@ -283,6 +294,7 @@ describe('AIChatRuntime', () => {
             id: 'message-1',
             role: 'user',
             content: 'first chat',
+            scopeSnapshot: null,
             attachments: [],
             streamObjects: [],
             createdAt: new Date().toISOString(),
@@ -299,6 +311,7 @@ describe('AIChatRuntime', () => {
             id: 'message-2',
             role: 'user',
             content: 'second chat',
+            scopeSnapshot: null,
             attachments: [],
             streamObjects: [],
             createdAt: new Date().toISOString(),
@@ -315,6 +328,7 @@ describe('AIChatRuntime', () => {
             id: 'message-1',
             role: 'user',
             content: 'first chat',
+            scopeSnapshot: null,
             attachments: [],
             streamObjects: [],
             createdAt: new Date().toISOString(),
@@ -362,6 +376,7 @@ describe('AIChatRuntime', () => {
           id: 'message-1',
           role: 'user',
           content: 'old chat',
+          scopeSnapshot: null,
           attachments: [],
           streamObjects: [],
           createdAt: new Date().toISOString(),
@@ -569,7 +584,7 @@ describe('AIChatRuntime', () => {
   });
 
   test('retry failure commits error status and keeps the retried assistant placeholder', async () => {
-    const error = new Error('retry failed');
+    const error = new SelectedSourcesProcessingError('retry failed');
     const request = createRequest({
       executeAction: vi.fn().mockRejectedValue(error),
     });
@@ -583,6 +598,7 @@ describe('AIChatRuntime', () => {
             role: 'user',
             content: 'hello',
             createdAt: new Date().toISOString(),
+            scopeSnapshot: null,
             attachments: null,
             streamObjects: null,
           },
@@ -591,6 +607,7 @@ describe('AIChatRuntime', () => {
             role: 'assistant',
             content: 'old',
             createdAt: new Date().toISOString(),
+            scopeSnapshot: null,
             attachments: null,
             streamObjects: null,
           },
@@ -651,6 +668,7 @@ describe('AIChatRuntime', () => {
             role: 'user',
             content: 'hello',
             createdAt: new Date().toISOString(),
+            scopeSnapshot: null,
             attachments: null,
             streamObjects: null,
           },
@@ -659,6 +677,7 @@ describe('AIChatRuntime', () => {
             role: 'assistant',
             content: 'old',
             createdAt: new Date().toISOString(),
+            scopeSnapshot: null,
             attachments: null,
             streamObjects: null,
           },
@@ -697,6 +716,7 @@ describe('AIChatRuntime', () => {
             role: 'user',
             content: 'hello',
             createdAt: new Date().toISOString(),
+            scopeSnapshot: null,
             attachments: null,
             streamObjects: null,
           },
@@ -705,6 +725,7 @@ describe('AIChatRuntime', () => {
             role: 'assistant',
             content: 'old',
             createdAt: new Date().toISOString(),
+            scopeSnapshot: null,
             attachments: null,
             streamObjects: null,
           },
@@ -780,156 +801,87 @@ describe('AIChatRuntime', () => {
     expect(runtime.getSnapshot().history.recent[0].sessionId).toBe('recent');
   });
 
-  test('context add remove and poll preserve operation order', async () => {
+  test('selected sources stay local, synchronize before send, and clear after success', async () => {
     const request = createRequest();
+    const runtime = createRuntime(request);
+    const file = new File(['attachment'], 'attachment.txt', {
+      type: 'text/plain',
+    });
+    const image = new File(['image'], 'image.png', { type: 'image/png' });
+    await runtime.dispatch({ type: 'initialize' });
+    await runtime.dispatch({
+      type: 'addScopeSelector',
+      item: { kind: 'doc', docId: 'doc-1' },
+    });
+    await runtime.dispatch({
+      type: 'addScopeSelector',
+      item: { kind: 'doc', docId: 'doc-2' },
+    });
+    await runtime.dispatch({
+      type: 'removeScopeSelector',
+      item: { kind: 'doc', docId: 'doc-1' },
+    });
+    await runtime.dispatch({
+      type: 'addFocusSelector',
+      item: { kind: 'tag', tagId: 'tag-1', docIds: [] },
+    });
+    await runtime.dispatch({
+      type: 'addFocusSelector',
+      item: { kind: 'tag', tagId: 'tag-2', docIds: ['doc-3'] },
+    });
+    await runtime.dispatch({
+      type: 'removeFocusSelector',
+      item: { kind: 'tag', tagId: 'tag-1', docIds: [] },
+    });
+    await runtime.dispatch({
+      type: 'addScopeSelector',
+      item: { kind: 'file', file },
+    });
+
+    await runtime.dispatch({
+      type: 'send',
+      input: 'question',
+      attachments: [image],
+    });
+
+    expect(request.waitForSelectedSources).toHaveBeenCalledTimes(1);
+    expect(request.waitForSelectedSources).toHaveBeenCalledWith([
+      'doc-2',
+      'doc-3',
+    ]);
+    expect(request.executeAction).toHaveBeenCalledWith(
+      'chat',
+      expect.objectContaining({
+        scopeSelectors: [{ kind: 'document', id: 'doc-2' }],
+        focusSelectors: [{ kind: 'tag', id: 'tag-2' }],
+        attachments: [file, image],
+      })
+    );
+    expect(runtime.getSnapshot().composer.scopeSelection.items).toEqual([]);
+    expect(runtime.getSnapshot().composer.focus.items).toEqual([
+      { kind: 'tag', tagId: 'tag-2', docIds: ['doc-3'] },
+    ]);
+  });
+
+  test('selected source synchronization failure does not submit a message', async () => {
+    const request = createRequest({
+      waitForSelectedSources: vi.fn().mockRejectedValue(new Error('offline')),
+    });
     const runtime = createRuntime(request);
     await runtime.dispatch({ type: 'initialize' });
-
     await runtime.dispatch({
-      type: 'addContextItem',
-      item: { kind: 'doc', docId: 'doc-2' },
-    });
-    await runtime.dispatch({
-      type: 'addContextItem',
-      item: { kind: 'blob', blobId: 'blob-1' },
-    });
-    await runtime.dispatch({
-      type: 'removeContextItem',
-      item: { kind: 'doc', docId: 'doc-2' },
-    });
-    (
-      request.context.getContextDocsAndFiles as ReturnType<typeof vi.fn>
-    ).mockResolvedValue({
-      blobs: [{ blobId: 'blob-1', status: 'finished' }],
-    });
-    await runtime.dispatch({ type: 'pollContext' });
-
-    expect(request.context.createContext).toHaveBeenCalledTimes(1);
-    expect(request.context.addContextDoc).toHaveBeenCalledWith({
-      contextId: 'context-1',
-      docId: 'doc-2',
-    });
-    expect(request.context.removeContextDoc).toHaveBeenCalledWith({
-      contextId: 'context-1',
-      docId: 'doc-2',
-    });
-    expect(runtime.getSnapshot().composer.context.items).toEqual([
-      { kind: 'blob', blobId: 'blob-1', state: 'finished' },
-    ]);
-  });
-
-  test('loadContext restores existing session context without creating a new context', async () => {
-    const request = createRequest();
-    (
-      request.context.getContextId as ReturnType<typeof vi.fn>
-    ).mockResolvedValue('context-1');
-    (
-      request.context.getContextDocsAndFiles as ReturnType<typeof vi.fn>
-    ).mockResolvedValue({
-      docs: [{ id: 'doc-2', status: 'finished', createdAt: 2 }],
-      files: [
-        {
-          id: 'file-1',
-          blobId: 'blob-file-1',
-          name: 'note.pdf',
-          status: 'processing',
-          createdAt: 1,
-        },
-      ],
-      tags: [
-        {
-          id: 'tag-1',
-          docs: [{ id: 'tag-doc', status: 'failed' }],
-          createdAt: 3,
-        },
-      ],
-      collections: [],
-      blobs: [],
-    });
-    const runtime = createRuntime(request);
-    await runtime.dispatch({
-      type: 'openSessionObject',
-      session: session(),
+      type: 'addScopeSelector',
+      item: { kind: 'collection', collectionId: 'collection-1', docIds: [] },
     });
 
-    await runtime.dispatch({ type: 'loadContext' });
+    await runtime.dispatch({ type: 'send', input: 'question' });
 
-    expect(request.context.createContext).not.toHaveBeenCalled();
-    expect(runtime.getSnapshot().composer.context.contextId).toBe('context-1');
-    expect(runtime.getSnapshot().composer.context.items).toEqual([
-      expect.objectContaining({
-        kind: 'file',
-        fileId: 'file-1',
-        blobId: 'blob-file-1',
-        state: 'processing',
-      }),
-      { kind: 'doc', docId: 'doc-2', state: 'finished', createdAt: 2 },
-      {
-        kind: 'tag',
-        tagId: 'tag-1',
-        docIds: ['tag-doc'],
-        state: 'finished',
-        createdAt: 3,
-        tooltip: undefined,
-      },
-    ]);
-    expect(runtime.getSnapshot().composer.context.embeddingCount).toEqual({
-      finished: 1,
-      processing: 1,
-      failed: 1,
-    });
-  });
-
-  test('pollEmbeddingStatus updates composer embedding completion state', async () => {
-    const request = createRequest();
-    (request.context.pollEmbeddingStatus as ReturnType<typeof vi.fn>)
-      .mockImplementationOnce(async (_workspaceId, onPoll) => {
-        onPoll({ embedded: 1, total: 2 });
-      })
-      .mockImplementationOnce(async (_workspaceId, onPoll) => {
-        onPoll({ embedded: 2, total: 2 });
-      });
-    const runtime = createRuntime(request);
-
-    await runtime.dispatch({ type: 'pollEmbeddingStatus' });
-    expect(runtime.getSnapshot().composer.context.embeddingCompleted).toBe(
-      false
+    expect(request.executeAction).not.toHaveBeenCalled();
+    expect(runtime.getSnapshot().status).toBe('error');
+    expect(runtime.getSnapshot().composer.scopeSelection.items).toHaveLength(1);
+    expect(runtime.getSnapshot().composer.scopeSelection.error?.message).toBe(
+      'offline'
     );
-
-    await runtime.dispatch({ type: 'pollEmbeddingStatus' });
-    expect(runtime.getSnapshot().composer.context.embeddingCompleted).toBe(
-      true
-    );
-  });
-
-  test('startContextPolling owns context polling lifecycle', async () => {
-    const request = createRequest();
-    (
-      request.context.getContextDocsAndFiles as ReturnType<typeof vi.fn>
-    ).mockResolvedValue({
-      docs: [{ docId: 'doc-2', status: 'finished' }],
-    });
-    (
-      request.context.getContextId as ReturnType<typeof vi.fn>
-    ).mockResolvedValue('context-1');
-    const runtime = createRuntime(request);
-
-    await runtime.dispatch({
-      type: 'openSessionObject',
-      session: session(),
-    });
-    await runtime.dispatch({ type: 'loadContext' });
-    await runtime.dispatch({ type: 'startContextPolling' });
-    await waitUntil(() => {
-      expect(request.context.getContextDocsAndFiles).toHaveBeenCalledTimes(2);
-    });
-
-    expect(runtime.getSnapshot().composer.context.polling).toBe(false);
-    expect(runtime.getSnapshot().composer.context.embeddingCount).toEqual({
-      finished: 1,
-      processing: 0,
-      failed: 0,
-    });
   });
 
   test('fork strategy creates child session from parent without doc tab restrictions', async () => {

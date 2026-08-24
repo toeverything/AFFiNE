@@ -1,12 +1,15 @@
-import { Button, Modal, notify } from '@affine/component';
+import { Button, Input, Modal, notify } from '@affine/component';
 import {
-  ByokKeyStorage,
+  ByokCustomEndpointMode,
+  ByokEndpointKind,
+  ByokOpenAiDialect,
   ByokProvider,
-  testWorkspaceByokConfigMutation as testByokMutation,
-  upsertWorkspaceByokConfigMutation as upsertByokMutation,
+  createWorkspaceByokProfileMutation,
+  probeWorkspaceByokDraftMutation,
+  replaceWorkspaceByokProfileMutation,
 } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { logByokError } from './errors';
 import * as styles from './index.css';
@@ -15,16 +18,19 @@ import {
   byokT,
   endpointHintKey,
   providerLabels,
-  shouldShowEndpoint,
   storageLabel,
 } from './metadata';
-import type {
-  ByokKey,
-  ByokSettings,
-  ByokStorage,
-  ByokTestResult,
-  GqlFn,
-} from './types';
+import { ModelSelector } from './model-selector';
+import {
+  catalogModels,
+  defaultModels,
+  type ModelDeclaration,
+  modelUseCases,
+  probeChecks,
+  retainVerifiedCapabilities,
+} from './model-utils';
+import type { ByokDefinition, ByokKey, ByokSettings, GqlFn } from './types';
+import { ByokStorage } from './types';
 
 export const AddKeyModal = ({
   workspaceId,
@@ -38,7 +44,6 @@ export const AddKeyModal = ({
   localStorageSupported,
   canAddServerKey,
   canAddLocalKey,
-  isSelfHosted,
   gql,
 }: {
   workspaceId: string;
@@ -52,300 +57,554 @@ export const AddKeyModal = ({
   localStorageSupported: boolean;
   canAddServerKey: boolean;
   canAddLocalKey: boolean;
-  isSelfHosted: boolean;
   gql?: GqlFn;
 }) => {
   const t = useI18n();
   const [provider, setProvider] = useState<ByokProvider>(ByokProvider.openai);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [storage, setStorage] = useState<ByokStorage>(ByokKeyStorage.server);
+  const [profileEnabled, setProfileEnabled] = useState(true);
+  const [storage, setStorage] = useState<ByokStorage>(ByokStorage.server);
   const [apiKey, setApiKey] = useState('');
+  const [customEndpoint, setCustomEndpoint] = useState(false);
   const [endpoint, setEndpoint] = useState('');
-  const [testResult, setTestResult] = useState<ByokTestResult | null>(null);
-  const [testing, setTesting] = useState(false);
-  const canTestStoredConfig =
-    storage === ByokKeyStorage.server &&
-    editingKey?.storage === ByokKeyStorage.server &&
-    editingKey.provider === provider;
-  const canTest = !!apiKey || canTestStoredConfig;
+  const [dialect, setDialect] = useState<ByokOpenAiDialect | null>(null);
+  const [models, setModels] = useState<ModelDeclaration[]>([]);
+  const [testStatus, setTestStatus] = useState<'passed' | 'failed' | null>(
+    null
+  );
+  const [includeImageProbe, setIncludeImageProbe] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const localStorageUnavailable = !localStorageSupported || !canAddLocalKey;
+  const localStorageDisabled = !!editingKey || localStorageUnavailable;
+  const customEndpointMode = settings.policy.customEndpointMode;
+  const showCustomEndpoint =
+    provider === ByokProvider.openai &&
+    customEndpointMode !== ByokCustomEndpointMode.unavailable;
+  const customEndpointEnabled =
+    customEndpointMode === ByokCustomEndpointMode.enabled;
+
   const endpointHint = endpointHintKey(
-    settings.customEndpointSupported,
-    settings.privateEndpointSupported
+    customEndpointMode,
+    settings.policy.privateEndpointSupported
+  );
+  const providerCatalog = useMemo(
+    () => catalogModels(settings, provider),
+    [provider, settings]
   );
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
-    setProvider(editingKey?.provider ?? ByokProvider.openai);
-    setName(editingKey?.name ?? '');
+    if (!open) return;
+    const nextProvider = editingKey?.provider ?? ByokProvider.openai;
+    setProvider(nextProvider);
+    setName(editingKey?.name ?? providerLabels[nextProvider]);
     setDescription(editingKey?.description ?? '');
+    setProfileEnabled(editingKey?.enabled ?? true);
     setStorage(
       editingKey?.storage ??
-        (canAddServerKey ? ByokKeyStorage.server : ByokKeyStorage.local)
+        (canAddServerKey ? ByokStorage.server : ByokStorage.local)
     );
     setApiKey('');
-    setEndpoint(editingKey?.endpoint ?? '');
-    setTestResult(null);
-  }, [canAddServerKey, editingKey, open]);
+    setEndpoint(editingKey?.definition.endpoint.url ?? '');
+    setDialect(editingKey?.definition.endpoint.dialect ?? null);
+    setCustomEndpoint(
+      editingKey?.definition.endpoint.kind ===
+        ByokEndpointKind.openai_compatible
+    );
+    setModels(
+      editingKey?.definition.models ?? defaultModels(settings, nextProvider)
+    );
+    setTestStatus(null);
+    setIncludeImageProbe(false);
+  }, [canAddServerKey, editingKey, open, settings]);
 
-  const testKey = useCallback(async () => {
-    if (!gql) {
-      return;
-    }
-    setTesting(true);
-    try {
-      const result = await gql({
-        query: testByokMutation,
-        variables: {
-          input: {
-            workspaceId,
-            provider,
-            storage,
-            apiKey: apiKey || null,
-            endpoint: endpoint || null,
-            configId: canTestStoredConfig ? editingKey.id : null,
+  const definition = useMemo<ByokDefinition>(
+    () => ({
+      endpoint: customEndpoint
+        ? {
+            kind: ByokEndpointKind.openai_compatible,
+            url: endpoint,
+            dialect,
+          }
+        : {
+            kind: ByokEndpointKind.provider_default,
+            url: null,
+            dialect: null,
           },
+      models,
+    }),
+    [customEndpoint, dialect, endpoint, models]
+  );
+
+  const invalidateTest = () => setTestStatus(null);
+  const runProbe = useCallback(async () => {
+    if (!gql) return { passed: false, definition };
+    const canReuseServerCredential =
+      editingKey?.storage === ByokStorage.server && !apiKey;
+    const checks = probeChecks(models, includeImageProbe);
+    const result = await gql({
+      query: probeWorkspaceByokDraftMutation,
+      variables: {
+        input: {
+          workspaceId,
+          provider,
+          credential: apiKey || null,
+          profileId: canReuseServerCredential ? editingKey.id : null,
+          expectedRevision: canReuseServerCredential
+            ? (editingKey.revision ?? null)
+            : null,
+          definition,
+          checks,
         },
-      });
-      const nextResult = result.testWorkspaceByokConfig as
-        | ByokTestResult
-        | undefined;
-      setTestResult(nextResult ?? null);
-      if (nextResult && !nextResult.ok) {
-        notify.error({
-          title: byokT(t, 'notify.test-failed.title'),
-          message: nextResult.message,
-        });
-      }
-    } finally {
-      setTesting(false);
-    }
+      },
+    });
+    const probe = result.probeWorkspaceByokDraft;
+    const nextModels = retainVerifiedCapabilities(models, probe.models);
+    const nextDefinition = { ...definition, models: nextModels };
+    const hasVerifiedCheck = probe.models.some(model =>
+      model.checks.some(check => check.status.kind === 'verified')
+    );
+    const passed =
+      checks.length > 0 &&
+      probe.connection.kind === 'verified' &&
+      hasVerifiedCheck &&
+      nextModels.some(model => model.enabled && model.capabilities.length > 0);
+    if (passed) setModels(nextModels);
+    setTestStatus(passed ? 'passed' : 'failed');
+    return { passed, definition: nextDefinition };
   }, [
     apiKey,
-    canTestStoredConfig,
+    definition,
     editingKey,
-    endpoint,
     gql,
+    includeImageProbe,
+    models,
     provider,
-    storage,
-    t,
     workspaceId,
   ]);
 
-  const save = useCallback(async () => {
-    if (!testResult?.ok || !gql) {
-      return;
-    }
-    if (storage === ByokKeyStorage.local) {
-      const saved = await upsertLocalKey(workspaceId, {
-        id:
-          editingKey?.storage === ByokKeyStorage.local
-            ? editingKey.id
-            : crypto.randomUUID(),
-        provider,
-        name,
-        description,
-        apiKey,
-        endpoint: endpoint || null,
-        sortOrder:
-          editingKey?.storage === ByokKeyStorage.local
-            ? editingKey.sortOrder
-            : localKeys.length,
-        enabled: true,
-      });
-      if (!saved) {
+  const persist = useCallback(
+    async (persistedDefinition = definition) => {
+      if (!gql) return;
+      if (storage === ByokStorage.local) {
+        const saved = await upsertLocalKey(workspaceId, {
+          id:
+            editingKey?.storage === ByokStorage.local
+              ? editingKey.id
+              : crypto.randomUUID(),
+          provider,
+          name,
+          description,
+          credential: apiKey,
+          definition: persistedDefinition,
+          sortOrder:
+            editingKey?.storage === ByokStorage.local
+              ? editingKey.sortOrder
+              : localKeys.length,
+          enabled: profileEnabled,
+        });
+        if (!saved) {
+          notify.error({
+            title: byokT(t, 'notify.local-save-failed.title'),
+            message: byokT(t, 'notify.local-save-failed.message'),
+          });
+          return;
+        }
+        setLocalKeys(await readLocalKeys(workspaceId));
+      } else if (editingKey?.storage === ByokStorage.server) {
+        if (editingKey.revision === undefined) {
+          notify.error({
+            title: byokT(t, 'notify.reload-required.title'),
+            message: byokT(t, 'notify.reload-required.message'),
+          });
+          return;
+        }
+        await gql({
+          query: replaceWorkspaceByokProfileMutation,
+          variables: {
+            input: {
+              workspaceId,
+              profileId: editingKey.id,
+              expectedRevision: editingKey.revision,
+              name,
+              description: description || null,
+              credential: apiKey || null,
+              definition: persistedDefinition,
+              enabled: profileEnabled,
+            },
+          },
+        });
+        await onSaved();
+      } else {
+        await gql({
+          query: createWorkspaceByokProfileMutation,
+          variables: {
+            input: {
+              workspaceId,
+              provider,
+              name,
+              description: description || null,
+              credential: apiKey,
+              definition: persistedDefinition,
+              enabled: profileEnabled,
+            },
+          },
+        });
+        await onSaved();
+      }
+      onOpenChange(false);
+    },
+    [
+      apiKey,
+      definition,
+      description,
+      editingKey,
+      gql,
+      localKeys.length,
+      name,
+      onOpenChange,
+      onSaved,
+      provider,
+      profileEnabled,
+      setLocalKeys,
+      storage,
+      t,
+      workspaceId,
+    ]
+  );
+
+  const connect = useCallback(async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      const probe =
+        testStatus === 'passed'
+          ? { passed: true, definition }
+          : await runProbe();
+      if (!probe.passed) {
         notify.error({
-          title: byokT(t, 'notify.local-save-failed.title'),
-          message: byokT(t, 'notify.local-save-failed.message'),
+          title: byokT(t, 'notify.test-failed.title'),
+          message: byokT(t, 'notify.operation-failed.message'),
         });
         return;
       }
-      setLocalKeys(await readLocalKeys(workspaceId));
-    } else {
-      await gql({
-        query: upsertByokMutation,
-        variables: {
-          input: {
-            workspaceId,
-            id:
-              editingKey?.storage === ByokKeyStorage.server
-                ? editingKey.id
-                : null,
-            provider,
-            name,
-            description,
-            storage,
-            apiKey: apiKey || null,
-            endpoint: endpoint || null,
-            enabled: true,
-          },
-        },
-      });
-      await onSaved();
+      await persist(probe.definition);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
     }
-    onOpenChange(false);
-    setApiKey('');
-    setTestResult(null);
-  }, [
-    apiKey,
-    description,
-    editingKey,
-    endpoint,
-    gql,
-    localKeys,
-    name,
-    onOpenChange,
-    onSaved,
-    provider,
-    setLocalKeys,
-    storage,
-    t,
-    testResult?.ok,
-    workspaceId,
-  ]);
+  }, [definition, persist, runProbe, t, testStatus]);
+
+  const testConnection = useCallback(async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      await runProbe();
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }, [runProbe]);
+
+  const hasCredential = !!apiKey || editingKey?.storage === ByokStorage.server;
+  const valid =
+    !!name.trim() &&
+    hasCredential &&
+    models.length > 0 &&
+    models.every(
+      model =>
+        model.modelId.trim() && (!model.enabled || model.capabilities.length)
+    ) &&
+    new Set(models.map(model => model.modelId.trim())).size === models.length &&
+    (!customEndpoint || (!!endpoint.trim() && dialect !== null));
 
   return (
     <Modal
-      width={520}
+      width={640}
       open={open}
       onOpenChange={onOpenChange}
-      title={
-        editingKey ? byokT(t, 'modal.edit-title') : byokT(t, 'modal.add-title')
-      }
-      description={byokT(t, 'modal.description')}
+      title={byokT(
+        t,
+        editingKey ? 'modal.manage-title' : 'modal.connect-title'
+      )}
+      description={byokT(t, 'modal.connect-description')}
     >
       <div className={styles.form}>
-        <label className={styles.field}>
-          <span className={styles.label}>{byokT(t, 'field.provider')}</span>
-          <select
-            className={styles.input}
-            value={provider}
-            onChange={event => {
-              setProvider(event.target.value as ByokProvider);
-              setTestResult(null);
-            }}
-          >
-            {settings.allowedProviders.map(provider => (
-              <option key={provider} value={provider}>
-                {providerLabels[provider]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={styles.field}>
-          <span className={styles.label}>{byokT(t, 'field.key-name')}</span>
-          <input
-            className={styles.input}
-            value={name}
-            onChange={event => setName(event.target.value)}
-            placeholder={byokT(t, 'placeholder.key-name')}
-          />
-        </label>
-        <label className={styles.field}>
-          <span className={styles.label}>{byokT(t, 'field.description')}</span>
-          <input
-            className={styles.input}
-            value={description}
-            onChange={event => setDescription(event.target.value)}
-            placeholder={byokT(t, 'placeholder.description')}
-          />
-        </label>
-        <label className={styles.field}>
-          <span className={styles.label}>{byokT(t, 'field.storage')}</span>
-          <select
-            className={styles.input}
-            value={storage}
-            disabled={!!editingKey}
-            onChange={event => {
-              setStorage(event.target.value as ByokStorage);
-              setTestResult(null);
-            }}
-          >
-            <option value={ByokKeyStorage.server} disabled={!canAddServerKey}>
-              {storageLabel(t, ByokKeyStorage.server)}
-            </option>
-            <option
-              value={ByokKeyStorage.local}
-              disabled={!localStorageSupported || !canAddLocalKey}
-            >
-              {canAddLocalKey
-                ? byokT(t, 'storage.local-this-device')
-                : byokT(t, 'storage.local-desktop-only')}
-            </option>
-          </select>
-        </label>
-        <label className={styles.field}>
-          <span className={styles.label}>{byokT(t, 'field.api-key')}</span>
-          <input
-            className={styles.input}
-            value={apiKey}
-            onChange={event => {
-              setApiKey(event.target.value);
-              setTestResult(null);
-            }}
-            type="password"
-          />
-        </label>{' '}
-        {shouldShowEndpoint(isSelfHosted, settings.customEndpointSupported) ? (
-          <label className={styles.endpointField}>
-            <span className={styles.label}>{byokT(t, 'field.endpoint')}</span>
-            <input
+        <div className={styles.formSection}>
+          <div className={styles.sectionTitle}>
+            {byokT(t, 'section.connection')}
+          </div>
+          <label className={styles.field}>
+            <span className={styles.label}>{byokT(t, 'field.provider')}</span>
+            <select
               className={styles.input}
-              value={endpoint}
-              disabled={!settings.customEndpointSupported}
+              value={provider}
+              disabled={!!editingKey}
               onChange={event => {
-                setEndpoint(event.target.value);
-                setTestResult(null);
+                const next = event.target.value as ByokProvider;
+                setProvider(next);
+                setName(providerLabels[next]);
+                setCustomEndpoint(false);
+                setEndpoint('');
+                setDialect(null);
+                setModels(defaultModels(settings, next));
+                invalidateTest();
               }}
-              placeholder="https://api.example.com/v1"
+            >
+              {settings.policy.allowedProviders.map(item => (
+                <option key={item} value={item}>
+                  {providerLabels[item]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className={styles.storageOptions}>
+            <label
+              className={styles.storageOption}
+              data-disabled={!canAddServerKey}
+            >
+              <input
+                className={styles.storageRadio}
+                type="radio"
+                name="byok-storage"
+                checked={storage === ByokStorage.server}
+                disabled={!!editingKey || !canAddServerKey}
+                onChange={() => setStorage(ByokStorage.server)}
+              />
+              <span className={styles.storageCopy}>
+                <strong>{storageLabel(t, ByokStorage.server)}</strong>
+                <small className={styles.storageDescription}>
+                  {byokT(t, 'storage.server.description')}
+                </small>
+              </span>
+            </label>
+            <label
+              className={styles.storageOption}
+              data-disabled={localStorageUnavailable}
+            >
+              <input
+                className={styles.storageRadio}
+                type="radio"
+                name="byok-storage"
+                checked={storage === ByokStorage.local}
+                disabled={localStorageDisabled}
+                onChange={() => setStorage(ByokStorage.local)}
+              />
+              <span className={styles.storageCopy}>
+                <strong>{storageLabel(t, ByokStorage.local)}</strong>
+                <small className={styles.storageDescription}>
+                  {!BUILD_CONFIG.isElectron
+                    ? byokT(t, 'storage.local.desktop-only')
+                    : !localStorageSupported
+                      ? byokT(t, 'storage.local.unavailable')
+                      : byokT(t, 'storage.local.description')}
+                </small>
+              </span>
+            </label>
+          </div>
+          <label className={styles.field}>
+            <span className={styles.label}>{byokT(t, 'field.api-key')}</span>
+            <Input
+              size="large"
+              value={apiKey}
+              onChange={value => {
+                setApiKey(value);
+                invalidateTest();
+              }}
+              type="password"
+              placeholder={
+                editingKey?.storage === ByokStorage.server
+                  ? byokT(t, 'placeholder.keep-current-key')
+                  : ''
+              }
             />
-            {endpointHint ? (
-              <span className={styles.fieldHint}>{byokT(t, endpointHint)}</span>
+            {storage === ByokStorage.local ? (
+              <span className={styles.fieldHint}>
+                {byokT(t, 'storage.local.test-disclosure')}
+              </span>
             ) : null}
           </label>
+          {showCustomEndpoint ? (
+            <>
+              <label className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  checked={customEndpoint}
+                  disabled={!customEndpointEnabled}
+                  onChange={event => {
+                    setCustomEndpoint(event.target.checked);
+                    setEndpoint('');
+                    setDialect(null);
+                    if (event.target.checked && !editingKey) {
+                      setModels([]);
+                    } else if (!event.target.checked) {
+                      setModels(defaultModels(settings, provider));
+                    }
+                    invalidateTest();
+                  }}
+                />
+                {byokT(t, 'endpoint.use-custom')}
+              </label>
+              {!customEndpointEnabled && endpointHint ? (
+                <span className={styles.fieldHint}>
+                  {byokT(t, endpointHint)}
+                </span>
+              ) : null}
+              {customEndpoint ? (
+                <>
+                  <label className={styles.endpointField}>
+                    <span className={styles.label}>
+                      {byokT(t, 'field.endpoint')}
+                    </span>
+                    <Input
+                      size="large"
+                      value={endpoint}
+                      onChange={value => {
+                        setEndpoint(value);
+                        invalidateTest();
+                      }}
+                      placeholder="https://api.example.com/v1"
+                    />
+                    {endpointHint ? (
+                      <span className={styles.fieldHint}>
+                        {byokT(t, endpointHint)}
+                      </span>
+                    ) : null}
+                  </label>
+                  <label className={styles.field}>
+                    <span className={styles.label}>
+                      {byokT(t, 'field.dialect')}
+                    </span>
+                    <select
+                      className={styles.input}
+                      value={dialect ?? ''}
+                      onChange={event => {
+                        setDialect(event.target.value as ByokOpenAiDialect);
+                        invalidateTest();
+                      }}
+                    >
+                      <option value="" disabled>
+                        {byokT(t, 'placeholder.dialect')}
+                      </option>
+                      <option value={ByokOpenAiDialect.responses}>
+                        {byokT(t, 'dialect.responses')}
+                      </option>
+                      <option value={ByokOpenAiDialect.chat_completions}>
+                        {byokT(t, 'dialect.chat-completions')}
+                      </option>
+                    </select>
+                  </label>
+                </>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+
+        <div className={styles.formSection}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <div className={styles.sectionTitle}>
+                {byokT(t, 'section.models')}
+              </div>
+              <div className={styles.description}>
+                {byokT(t, 'models.description.selected')}
+              </div>
+            </div>
+          </div>
+          <ModelSelector
+            customEndpoint={customEndpoint}
+            catalog={providerCatalog}
+            models={models}
+            validation={editingKey?.validation}
+            onChange={models => {
+              setModels(models);
+              invalidateTest();
+            }}
+          />
+        </div>
+
+        <details className={styles.advanced}>
+          <summary>{byokT(t, 'section.advanced')}</summary>
+          <div className={styles.advancedFields}>
+            <label className={styles.checkboxRow}>
+              <input
+                type="checkbox"
+                checked={profileEnabled}
+                onChange={event => setProfileEnabled(event.target.checked)}
+              />
+              {byokT(t, 'field.provider-enabled')}
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>{byokT(t, 'field.key-name')}</span>
+              <Input size="large" value={name} onChange={setName} />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>
+                {byokT(t, 'field.description')}
+              </span>
+              <Input
+                size="large"
+                value={description}
+                onChange={setDescription}
+              />
+            </label>
+          </div>
+        </details>
+
+        {models.some(model => modelUseCases(model).includes('image')) ? (
+          <label className={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={includeImageProbe}
+              onChange={event => {
+                setIncludeImageProbe(event.target.checked);
+                invalidateTest();
+              }}
+            />
+            {byokT(t, 'probe.include-image')}
+          </label>
         ) : null}
+
         <div className={styles.modalActions}>
           <span
             className={`${styles.testStatus} ${
-              testResult?.ok
+              testStatus === 'passed'
                 ? styles.success
-                : testResult && !testResult.ok
+                : testStatus === 'failed'
                   ? styles.error
                   : ''
             }`}
           >
-            {testResult?.ok
-              ? byokT(t, 'status.key-verified')
-              : testResult
-                ? byokT(t, 'status.key-test-failed')
+            {testStatus === 'passed'
+              ? byokT(t, 'probe.verified')
+              : testStatus === 'failed'
+                ? byokT(t, 'probe.failed')
                 : ''}
           </span>
           <Button
             variant="secondary"
-            disabled={!canTest || testing}
+            disabled={!valid || busy}
             onClick={() => {
-              testKey().catch(error => {
-                logByokError('Failed to test BYOK key', error);
-                notify.error({
-                  title: byokT(t, 'notify.test-failed.title'),
-                  message: byokT(t, 'notify.operation-failed.message'),
-                });
+              testConnection().catch(error => {
+                logByokError('Failed to test BYOK provider', error);
+                setTestStatus('failed');
               });
             }}
           >
-            {byokT(t, 'action.test-key')}
+            {byokT(t, 'action.test-connection')}
           </Button>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             {byokT(t, 'action.cancel')}
           </Button>
           <Button
             variant="primary"
-            disabled={!testResult?.ok || !name}
+            disabled={!valid || busy}
             onClick={() => {
-              save().catch(error => {
-                logByokError('Failed to save BYOK key', error);
+              connect().catch(error => {
+                logByokError('Failed to save BYOK provider', error);
                 notify.error({
                   title: byokT(t, 'notify.save-failed.title'),
                   message: byokT(t, 'notify.operation-failed.message'),
@@ -353,7 +612,14 @@ export const AddKeyModal = ({
               });
             }}
           >
-            {byokT(t, 'action.save-key')}
+            {byokT(
+              t,
+              busy
+                ? 'action.connecting'
+                : editingKey
+                  ? 'action.save-changes'
+                  : 'action.connect'
+            )}
           </Button>
         </div>
       </div>

@@ -5,19 +5,32 @@ use sqlx::{PgPool, Row};
 
 use super::{
   ActorFacts, BackendRuntime, InviteAbuseDecision, InviteActivityFacts, InviteQuotaConfig, QuotaFacts, QuotaViolation,
-  RuntimeError, RuntimeInviteAbuseActionRequired, RuntimeResult, RuntimeWorkspaceInviteQuotaDecision,
-  RuntimeWorkspaceInviteQuotaInput, RuntimeWorkspaceInviteQuotaUsage, WorkspaceFacts, build_invite_scopes,
-  commit_reservation, evaluate_projection, high_confidence_invite_abuse, invite_commit_usage_for_scope, napi_error,
-  normalize_domain, release_reservation, reserve_scopes, short_hash, source_cohort_subject_key, source_prefix,
-  subject_hash, sum_domains, workspace_subject_key,
+  RuntimeError, RuntimeInviteAbuseActionRequired, RuntimeResult, RuntimeWorkspaceActionDecision,
+  RuntimeWorkspaceInviteQuotaDecision, RuntimeWorkspaceInviteQuotaInput, RuntimeWorkspaceInviteQuotaUsage,
+  WorkspaceFacts, build_invite_scopes, commit_reservation, evaluate_projection, high_confidence_invite_abuse,
+  invite_abuse_user_quarantined_or_banned, invite_abuse_workspace_quarantined, invite_commit_usage_for_scope,
+  napi_error, new_account_action_retry_after, normalize_domain, release_reservation, reserve_scopes, short_hash,
+  source_cohort_subject_key, source_prefix, subject_hash, sum_domains, workspace_subject_key,
 };
 
 async fn load_actor(pool: &PgPool, user_id: &str) -> RuntimeResult<ActorFacts> {
   let row = sqlx::query(
     r#"
-    SELECT email, created_at, registered, email_verified IS NOT NULL AS email_verified, disabled
+    SELECT
+      users.email,
+      users.created_at,
+      users.registered,
+      users.email_verified IS NOT NULL AS email_verified,
+      users.disabled,
+      CASE
+        WHEN quota.known
+          AND NOT quota.stale
+          AND (quota.stale_after IS NULL OR quota.stale_after > clock_timestamp())
+        THEN quota.plan
+      END AS quota_plan
     FROM users
-    WHERE id = $1
+    LEFT JOIN effective_user_quota_states quota ON quota.user_id = users.id
+    WHERE users.id = $1
     "#,
   )
   .bind(user_id)
@@ -32,6 +45,7 @@ async fn load_actor(pool: &PgPool, user_id: &str) -> RuntimeResult<ActorFacts> {
     registered: row.get("registered"),
     email_verified: row.get("email_verified"),
     disabled: row.get("disabled"),
+    quota_plan: row.get("quota_plan"),
   })
 }
 
@@ -286,6 +300,49 @@ fn decision_from_violation(violation: QuotaViolation, reason: &str) -> RuntimeWo
 #[napi_derive::napi]
 impl BackendRuntime {
   #[napi]
+  pub async fn evaluate_workspace_action_v1(
+    &self,
+    actor_user_id: String,
+    workspace_id: String,
+  ) -> Result<RuntimeWorkspaceActionDecision> {
+    let runtime_config = self.config()?;
+    let pool = self.pool().await?;
+    if invite_abuse_user_quarantined_or_banned(&pool, &actor_user_id).await? {
+      return Ok(RuntimeWorkspaceActionDecision {
+        allowed: false,
+        retry_after_seconds: None,
+        reason: Some("abuse_subject".to_string()),
+      });
+    }
+    if invite_abuse_workspace_quarantined(&pool, &workspace_id).await? {
+      return Ok(RuntimeWorkspaceActionDecision {
+        allowed: false,
+        retry_after_seconds: None,
+        reason: Some("abuse_workspace".to_string()),
+      });
+    }
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&pool)
+      .await
+      .map_err(|err| RuntimeError::database("failed to read database clock", err))?;
+    let actor = load_actor(&pool, &actor_user_id).await?;
+    let quota = load_quota(&pool, &workspace_id).await?;
+    let current_quota = quota.as_ref().filter(|quota| evaluate_projection(quota, now).is_none());
+    let retry_after_seconds = new_account_action_retry_after(
+      runtime_config.deployment,
+      &runtime_config.invite_quota,
+      &actor,
+      current_quota,
+      now,
+    );
+    Ok(RuntimeWorkspaceActionDecision {
+      allowed: retry_after_seconds.is_none(),
+      retry_after_seconds,
+      reason: retry_after_seconds.map(|_| "new_account_action_delay".to_string()),
+    })
+  }
+
+  #[napi]
   pub async fn assert_workspace_invite_quota_v1(
     &self,
     input: RuntimeWorkspaceInviteQuotaInput,
@@ -293,14 +350,15 @@ impl BackendRuntime {
     if input.target_count <= 0 {
       return Err(napi_error("target_count must be positive"));
     }
-    let config = self.config()?.invite_quota;
+    let runtime_config = self.config()?;
+    let config = &runtime_config.invite_quota;
     let pool = self.pool().await?;
     let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
       .fetch_one(&pool)
       .await
       .map_err(|err| RuntimeError::database("failed to read database clock", err))?;
     let actor = load_actor(&pool, &input.actor_user_id).await?;
-    let actor_subject = subject_hash(&actor.email, &config);
+    let actor_subject = subject_hash(&actor.email, config);
     if let Some(status) = active_subject_status(&pool, &actor_subject).await?
       && matches!(status.as_str(), "banned" | "quarantined")
     {
@@ -387,14 +445,30 @@ impl BackendRuntime {
         action_required: None,
       });
     }
-    if let Some(abuse_decision) = high_confidence_invite_abuse(&input, &actor, &config) {
+    if let Some(retry_after_seconds) =
+      new_account_action_retry_after(runtime_config.deployment, config, &actor, Some(&quota), now)
+    {
+      return Ok(RuntimeWorkspaceInviteQuotaDecision {
+        allowed: false,
+        reservation_id: None,
+        retry_after_seconds: Some(retry_after_seconds),
+        reason: Some("new_account_action_delay".to_string()),
+        scope_key: None,
+        window_seconds: None,
+        limit: None,
+        current: None,
+        requested: Some(input.target_count),
+        action_required: None,
+      });
+    }
+    if let Some(abuse_decision) = high_confidence_invite_abuse(&input, &actor, config) {
       let reason = abuse_decision.reason;
       let scope_key = match abuse_decision.subject_kind {
         "workspace" => format!("invite:workspace_subject:{}", abuse_decision.subject_key),
         "source_prefix_domain" => format!("invite:source_cohort_subject:{}", abuse_decision.subject_key),
         _ => format!("invite:actor_subject:{}", abuse_decision.subject_key),
       };
-      let action_required = record_invite_abuse_action(&pool, &input, &actor, abuse_decision, &config).await?;
+      let action_required = record_invite_abuse_action(&pool, &input, &actor, abuse_decision, config).await?;
       return Ok(RuntimeWorkspaceInviteQuotaDecision {
         allowed: false,
         reservation_id: None,
@@ -411,7 +485,7 @@ impl BackendRuntime {
 
     let workspace = load_workspace(&pool, &input.workspace_id).await?;
     let activity = load_invite_activity(&pool, &input.actor_user_id, &input.workspace_id).await?;
-    let scopes = build_invite_scopes(&input, &actor, &workspace, &quota, &activity, &config, now)?;
+    let scopes = build_invite_scopes(&input, &actor, &workspace, &quota, &activity, config, now)?;
     match reserve_scopes(&pool, "workspace_invite", input.request_id.as_deref(), scopes).await? {
       Ok(reservation) => Ok(RuntimeWorkspaceInviteQuotaDecision {
         allowed: true,

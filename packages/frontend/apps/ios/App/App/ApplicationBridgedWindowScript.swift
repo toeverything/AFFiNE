@@ -18,13 +18,17 @@ enum ApplicationBridgedWindowScript: String {
   case getCurrentWorkspaceId = "window.getCurrentWorkspaceId();"
   case getCurrentDocId = "window.getCurrentDocId();"
   case getCurrentI18nLocale = "window.getCurrentI18nLocale();"
+  case getCurrentUserIdentifier = "return await window.getCurrentUserIdentifier();"
+  case requestSignIn = "return await window.requestSignIn();"
   case getCurrentThemeMode = "window.getCurrentThemeMode();"
-  case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title, workspaceId);"
+  case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title, workspaceId, workspaceFlavour);"
   case getShareWorkspaceCache = "return await window.getShareWorkspaceCache();"
 
   var requiresAsyncContext: Bool {
     switch self {
     case .getCurrentDocContentInMarkdown,
+         .getCurrentUserIdentifier,
+         .requestSignIn,
          .createNewDocByMarkdownInCurrentWorkspace,
          .getShareWorkspaceCache:
       true
@@ -64,6 +68,7 @@ extension WKWebView {
     markdown: String,
     title: String,
     workspaceId: String? = nil,
+    workspaceFlavour: String? = nil,
     callback: ((Any?) -> Void)? = nil
   ) -> Bool {
     var arguments: [String: Any] = [
@@ -74,6 +79,11 @@ extension WKWebView {
       arguments["workspaceId"] = workspaceId
     } else {
       arguments["workspaceId"] = NSNull()
+    }
+    if let workspaceFlavour, !workspaceFlavour.isEmpty {
+      arguments["workspaceFlavour"] = workspaceFlavour
+    } else {
+      arguments["workspaceFlavour"] = NSNull()
     }
     evaluateScript(
       .createNewDocByMarkdownInCurrentWorkspace,

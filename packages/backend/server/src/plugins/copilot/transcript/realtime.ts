@@ -1,21 +1,26 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
-import { CopilotTranscriptionJobNotFound } from '../../../base';
+import { Config } from '../../../base/config';
+import { CopilotTranscriptionJobNotFound } from '../../../base/error/errors.gen';
 import { PermissionAccess } from '../../../core/permission';
 import {
   RealtimeRegistry,
   realtimeTranscriptTaskRoom,
   registerRealtimeLiveQuery,
 } from '../../../core/realtime';
+import { assertCopilotEnabled } from '../availability';
 import { CopilotTranscriptionReader } from './reader';
+import { CopilotTranscriptionRetryService } from './retry';
 
 @Injectable()
 export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly ac: PermissionAccess,
     private readonly transcript: CopilotTranscriptionReader,
-    private readonly registry: RealtimeRegistry
+    private readonly retry: CopilotTranscriptionRetryService,
+    private readonly registry: RealtimeRegistry,
+    private readonly config: Config
   ) {}
 
   onModuleInit() {
@@ -29,6 +34,24 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
     const topicInput = z.object({
       workspaceId: z.string(),
       taskId: z.string(),
+    });
+
+    this.registry.registerRequest({
+      name: 'copilot.transcript.task.retry',
+      input: z.object({
+        workspaceId: z.string(),
+        taskId: z.string(),
+      }),
+      handle: async (user, input) => {
+        await this.assertCopilot(user.id, input.workspaceId);
+        return {
+          task: await this.retry.retryTask(
+            user.id,
+            input.workspaceId,
+            input.taskId
+          ),
+        };
+      },
     });
 
     registerRealtimeLiveQuery(this.registry, {
@@ -68,6 +91,7 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
   }
 
   private async assertCopilot(userId: string, workspaceId: string) {
+    assertCopilotEnabled(this.config);
     await this.ac
       .user(userId)
       .workspace(workspaceId)

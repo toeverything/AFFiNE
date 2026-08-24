@@ -1,11 +1,18 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import { Config, OnEvent, SignUpForbidden } from '../../base';
+import {
+  Cache,
+  Config,
+  getRequestClientIp,
+  OnEvent,
+  SignUpForbidden,
+  TooManyRequest,
+} from '../../base';
 import { Models, type User, type UserSession } from '../../models';
 import { EntitlementService } from '../entitlement';
 import { Mailer } from '../mail/mailer';
@@ -46,7 +53,8 @@ export class AuthService implements OnApplicationBootstrap {
     private readonly models: Models,
     private readonly mailer: Mailer,
     private readonly authSessions: AuthSessionService,
-    private readonly entitlement: EntitlementService
+    private readonly entitlement: EntitlementService,
+    private readonly cache: Cache
   ) {
     this.cookieOptions = {
       sameSite: 'lax',
@@ -69,9 +77,36 @@ export class AuthService implements OnApplicationBootstrap {
     }
   }
 
-  async canSignIn(_email: string) {
+  async canSignIn(email: string, req: Request) {
+    if (!env.testing) {
+      const { ttl, ipLimit, emailLimit } = this.config.auth.signInRateLimit;
+      const normalizedEmail = email.toLowerCase();
+      const ip = getRequestClientIp(req);
+
+      const emailAttempts = this.cache.increaseWithTtl(
+        this.signInRateLimitKey('email', normalizedEmail),
+        ttl
+      );
+      const ipAttempts = ip
+        ? this.cache.increaseWithTtl(this.signInRateLimitKey('ip', ip), ttl)
+        : Promise.resolve(0);
+      const [emailCount, ipCount] = await Promise.all([
+        emailAttempts,
+        ipAttempts,
+      ]);
+
+      if (emailCount > emailLimit || ipCount > ipLimit) {
+        throw new TooManyRequest();
+      }
+    }
+
     // may add more sign-in check later
     return true;
+  }
+
+  private signInRateLimitKey(scope: 'email' | 'ip', value: string) {
+    const digest = createHash('sha256').update(value).digest('hex');
+    return `auth:sign-in-rate:${scope}:${digest}`;
   }
 
   /**
@@ -132,7 +167,7 @@ export class AuthService implements OnApplicationBootstrap {
     // fallback to the first valid session if user provided userId is invalid
     if (!userSession) {
       // checked
-      // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // oxlint-disable-next-line typescript/no-non-null-assertion
       userSession = sessions.at(-1)!;
     }
 

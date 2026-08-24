@@ -392,9 +392,11 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
         scrolling=${ifDefined(scrolling)}
         style=${ifDefined(style)}
       ></iframe>
-      ${sourceHost
-        ? html`<div class="affine-embed-iframe-source">${sourceHost}</div>`
-        : nothing}`;
+      ${
+        sourceHost
+          ? html`<div class="affine-embed-iframe-source">${sourceHost}</div>`
+          : nothing
+      }`;
   };
 
   private readonly _isIframeUrlAllowed = (iframeUrl: string) => {

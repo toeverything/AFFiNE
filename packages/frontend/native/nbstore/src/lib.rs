@@ -221,6 +221,12 @@ impl DocStoragePool {
   }
 
   #[napi]
+  pub async fn set_doc_indexed_clocks(&self, universal_id: String, clocks: Vec<DocIndexedClock>) -> Result<()> {
+    self.get(universal_id).await?.commit_indexed_clocks(&clocks).await?;
+    Ok(())
+  }
+
+  #[napi]
   pub async fn clear_doc_indexed_clock(&self, universal_id: String, doc_id: String) -> Result<()> {
     self.get(universal_id).await?.clear_doc_indexed_clock(doc_id).await?;
     Ok(())
@@ -410,65 +416,72 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn fts_add_document(
-    &self,
-    id: String,
-    index_name: String,
-    doc_id: String,
-    text: String,
-    index: bool,
-  ) -> Result<()> {
+  pub async fn index_upsert(&self, id: String, table: String, document: indexer::NativeIndexDocument) -> Result<()> {
     let storage = self.pool.get(id).await?;
-    storage.fts_add(&index_name, &doc_id, &text, index).await?;
+    storage.index_upsert(&table, document).await?;
     Ok(())
   }
 
   #[napi]
-  pub async fn fts_flush_index(&self, id: String) -> Result<()> {
+  pub async fn index_flush(&self, id: String) -> Result<()> {
     let storage = self.pool.get(id).await?;
     storage.flush_index().await?;
     Ok(())
   }
 
   #[napi]
-  pub async fn fts_index_version(&self) -> Result<u32> {
+  pub async fn index_version(&self) -> Result<u32> {
     Ok(SqliteDocStorage::index_version())
   }
 
   #[napi]
-  pub async fn fts_delete_document(&self, id: String, index_name: String, doc_id: String) -> Result<()> {
+  pub async fn index_delete(&self, id: String, table: String, doc_id: String) -> Result<()> {
     let storage = self.pool.get(id).await?;
-    storage.fts_delete(&index_name, &doc_id).await?;
+    storage.index_delete(&table, &doc_id).await?;
     Ok(())
   }
 
   #[napi]
-  pub async fn fts_get_document(&self, id: String, index_name: String, doc_id: String) -> Result<Option<String>> {
+  pub async fn index_search(
+    &self,
+    id: String,
+    table: String,
+    query: indexer::NativeIndexQuery,
+    options: indexer::NativeIndexSearchOptions,
+  ) -> Result<indexer::NativeIndexSearchResult> {
     let storage = self.pool.get(id).await?;
-    Ok(storage.fts_get(&index_name, &doc_id).await?)
+    Ok(storage.index_search(&table, query, options).await?)
   }
 
   #[napi]
-  pub async fn fts_search(
+  #[allow(clippy::too_many_arguments)]
+  pub async fn index_aggregate(
     &self,
     id: String,
-    index_name: String,
-    query: String,
-  ) -> Result<Vec<indexer::NativeSearchHit>> {
+    table: String,
+    query: indexer::NativeIndexQuery,
+    field: String,
+    limit: u32,
+    offset: u32,
+    hits: Option<indexer::NativeIndexSearchOptions>,
+  ) -> Result<indexer::NativeIndexAggregateResult> {
     let storage = self.pool.get(id).await?;
-    Ok(storage.fts_search(&index_name, &query).await?)
+    Ok(
+      storage
+        .index_aggregate(&table, query, &field, limit, offset, hits)
+        .await?,
+    )
   }
 
   #[napi]
-  pub async fn fts_get_matches(
+  pub async fn index_delete_by_query(
     &self,
     id: String,
-    index_name: String,
-    doc_id: String,
-    query: String,
-  ) -> Result<Vec<indexer::NativeMatch>> {
+    table: String,
+    query: indexer::NativeIndexQuery,
+  ) -> Result<u32> {
     let storage = self.pool.get(id).await?;
-    Ok(storage.fts_get_matches(&index_name, &doc_id, &query).await?)
+    Ok(storage.index_delete_by_query(&table, query).await?)
   }
 }
 

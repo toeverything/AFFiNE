@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use anyhow::{Context, Result as AnyResult, anyhow};
 
 use super::{
@@ -6,7 +8,7 @@ use super::{
   *,
 };
 
-static PG_TEST_LOCK: std::sync::OnceLock<tokio::sync::Mutex<()>> = std::sync::OnceLock::new();
+static PG_TEST_LOCK: OnceLock<tokio::sync::Mutex<()>> = OnceLock::new();
 const TEST_VERIFICATION_TOKEN_TYPE: i32 = 99_999;
 
 fn pg_test_lock() -> &'static tokio::sync::Mutex<()> {
@@ -22,6 +24,7 @@ fn migrations_include_runtime_tables_without_worker_heartbeats() {
   assert!(RUNTIME_MIGRATIONS.contains("storage_reconciliation_checkpoints"));
   assert!(RUNTIME_MIGRATIONS.contains("document_cleanup_candidates"));
   assert!(RUNTIME_MIGRATIONS.contains("doc_blob_refs"));
+  assert!(RUNTIME_MIGRATIONS.contains("doc_blob_ref_projections"));
   assert!(RUNTIME_MIGRATIONS.contains("blob_cleanup_candidates"));
   assert!(!RUNTIME_MIGRATIONS.contains("runtime_worker_heartbeats"));
 }
@@ -97,11 +100,27 @@ async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
   .context("cleanup invite abuse subjects for backend runtime tests")?;
 
   Ok(Some(BackendRuntime {
-    config: std::sync::RwLock::new(BackendRuntimeConfig {
+    config_source: Default::default(),
+    role: ServerRole::AllInOne,
+    script_mode: false,
+    config: Arc::new(RwLock::new(Arc::new(BackendRuntimeConfig {
       database_url,
       invite_quota: Default::default(),
-    }),
+      private_key: Arc::new(zeroize::Zeroizing::new("test-private-key".to_string())),
+      deployment: crate::llm::Deployment::Cloud,
+      copilot: Default::default(),
+      search: Default::default(),
+    }))),
+    config_reload: Mutex::new(()),
     pool: Mutex::new(Some(pool)),
+    embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
+    object_storage: RwLock::new(Arc::new(
+      crate::runtime::object_storage::ObjectStorageService::from_config_files()?,
+    )),
+    embedding: Mutex::new(None),
+    embedding_worker: Mutex::new(None),
+    search: Mutex::new(None),
+    managed_token_providers: Arc::new(Default::default()),
   }))
 }
 
@@ -246,8 +265,18 @@ async fn runtime_gate_sql_semantics_are_atomic_and_ttl_bound() {
   let mut tasks = Vec::new();
   for _ in 0..16 {
     let runtime = BackendRuntime {
-      config: std::sync::RwLock::new(runtime.config().unwrap()),
+      config_source: Default::default(),
+      role: ServerRole::AllInOne,
+      script_mode: false,
+      config: Arc::new(RwLock::new(runtime.config().unwrap())),
+      config_reload: Mutex::new(()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
+      embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
+      object_storage: RwLock::new(runtime.object_storage().unwrap()),
+      embedding: Mutex::new(None),
+      embedding_worker: Mutex::new(None),
+      search: Mutex::new(None),
+      managed_token_providers: Arc::new(Default::default()),
     };
     tasks.push(tokio::spawn(async move {
       runtime
@@ -577,8 +606,18 @@ async fn coordination_lease_sql_semantics_are_fenced_and_ttl_bound() {
   let mut tasks = Vec::new();
   for index in 0..16 {
     let runtime = BackendRuntime {
-      config: std::sync::RwLock::new(runtime.config().unwrap()),
+      config_source: Default::default(),
+      role: ServerRole::AllInOne,
+      script_mode: false,
+      config: Arc::new(RwLock::new(runtime.config().unwrap())),
+      config_reload: Mutex::new(()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
+      embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
+      object_storage: RwLock::new(runtime.object_storage().unwrap()),
+      embedding: Mutex::new(None),
+      embedding_worker: Mutex::new(None),
+      search: Mutex::new(None),
+      managed_token_providers: Arc::new(Default::default()),
     };
     tasks.push(tokio::spawn(async move {
       runtime
@@ -781,8 +820,18 @@ async fn verification_token_sql_state_machine_handles_keep_verify_and_cleanup() 
   let mut tasks = Vec::new();
   for _ in 0..16 {
     let runtime = BackendRuntime {
-      config: std::sync::RwLock::new(runtime.config().unwrap()),
+      config_source: Default::default(),
+      role: ServerRole::AllInOne,
+      script_mode: false,
+      config: Arc::new(RwLock::new(runtime.config().unwrap())),
+      config_reload: Mutex::new(()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
+      embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
+      object_storage: RwLock::new(runtime.object_storage().unwrap()),
+      embedding: Mutex::new(None),
+      embedding_worker: Mutex::new(None),
+      search: Mutex::new(None),
+      managed_token_providers: Arc::new(Default::default()),
     };
     let token = concurrent_token.clone();
     tasks.push(tokio::spawn(async move {

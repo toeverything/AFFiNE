@@ -31,7 +31,9 @@ export abstract class AutoReconnectConnection<
   private _status: ConnectionStatus = 'idle';
   private _error: Error | undefined = undefined;
   retryDelay = 3000;
+  maxRetryDelay = 60000;
   connectingTimeout = 15000;
+  private retryCount = 0;
   private refCount = 0;
   private connectingAbort?: AbortController;
   private reconnectingAbort?: AbortController;
@@ -103,6 +105,7 @@ export abstract class AutoReconnectConnection<
           clearTimeout(timeout);
           if (!signal.aborted) {
             this._inner = value;
+            this.retryCount = 0;
             this.setStatus('connected');
           } else {
             try {
@@ -150,14 +153,19 @@ export abstract class AutoReconnectConnection<
 
     this.reconnectingAbort = new AbortController();
     const signal = this.reconnectingAbort.signal;
+    const retryDelay = this.getRetryDelay(this.retryCount++);
     const timeout = setTimeout(() => {
       if (!signal.aborted) {
         this.innerConnect();
       }
-    }, this.retryDelay);
+    }, retryDelay);
     signal.addEventListener('abort', () => {
       clearTimeout(timeout);
     });
+  }
+
+  protected getRetryDelay(retryCount: number) {
+    return Math.min(this.retryDelay * 2 ** retryCount, this.maxRetryDelay);
   }
 
   connect() {
@@ -175,6 +183,7 @@ export abstract class AutoReconnectConnection<
     }
     if (this.refCount === 0) {
       this.innerDisconnect();
+      this.retryCount = 0;
       this.setStatus('closed');
     }
   }

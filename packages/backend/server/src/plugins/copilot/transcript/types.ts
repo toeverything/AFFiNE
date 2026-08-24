@@ -15,7 +15,6 @@ import {
   TranscriptionQualitySchema,
   TranscriptionSourceAudioSchema,
   TranscriptionSubmitInputSchema,
-  TranscriptProviderMetaSchema,
 } from './schema';
 
 export type LegacyTranscriptionSegment = z.infer<
@@ -36,9 +35,6 @@ export type TranscriptionSourceAudio = z.infer<
   typeof TranscriptionSourceAudioSchema
 >;
 export type TranscriptionQuality = z.infer<typeof TranscriptionQualitySchema>;
-export type TranscriptProviderMeta = z.infer<
-  typeof TranscriptProviderMetaSchema
->;
 export type TranscriptionLegacyProjection = z.infer<
   typeof TranscriptionLegacyProjectionSchema
 >;
@@ -57,7 +53,7 @@ declare global {
     'copilot.transcript.task.submit': {
       taskId: string;
       payload: TranscriptionPayloadV2;
-      modelId?: string;
+      generation: string;
       retryOf?: string;
     };
   }

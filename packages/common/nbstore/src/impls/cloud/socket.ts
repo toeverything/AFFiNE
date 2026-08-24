@@ -28,14 +28,6 @@ type WebsocketResponse<T> =
     };
 
 interface ServerEvents {
-  'space:broadcast-doc-update': {
-    spaceType: string;
-    spaceId: string;
-    docId: string;
-    update: string;
-    timestamp: number;
-    editor: string;
-  };
   'space:broadcast-doc-updates': {
     spaceType: string;
     spaceId: string;
@@ -44,6 +36,11 @@ interface ServerEvents {
     timestamp: number;
     editor?: string;
     compressed?: boolean;
+  };
+  'space:broadcast-doc-invalidation': {
+    spaceType: string;
+    spaceId: string;
+    timestamp: number;
   };
 
   'space:collect-awareness': {
@@ -62,11 +59,29 @@ interface ServerEvents {
   'realtime:event': RealtimeEvent;
 }
 
+export type SyncProtocol = 'legacy' | 'batch';
+
 interface ClientEvents {
   'space:join': [
     { spaceType: string; spaceId: string; clientVersion: string },
-    { clientId: string },
+    { clientId: string; success: boolean },
   ];
+  'space:join-batch': [
+    {
+      spaces: Array<{
+        spaceType: string;
+        spaceId: string;
+        docId?: string;
+      }>;
+      clientVersion: string;
+    },
+    { clientId: string; success: boolean },
+  ];
+  'space:leave-batch': {
+    spaceType: string;
+    spaceId: string;
+    docIds: string[];
+  };
   'space:leave': { spaceType: string; spaceId: string };
   'space:join-awareness': [
     {
@@ -75,7 +90,7 @@ interface ClientEvents {
       docId: string;
       clientVersion: string;
     },
-    { clientId: string },
+    { clientId: string; success: boolean },
   ];
   'space:leave-awareness': {
     spaceType: string;
@@ -132,6 +147,8 @@ interface ClientEvents {
   'realtime:subscribe': [RealtimeSubscribeEnvelope, { subscriptionId: string }];
   'realtime:unsubscribe': [RealtimeUnsubscribeEnvelope, { ok: true }];
 }
+
+export const SPACE_JOIN_BATCH_LIMIT = 100;
 
 export type ServerEventsMap = {
   [Key in keyof ServerEvents]: (data: ServerEvents[Key]) => void;

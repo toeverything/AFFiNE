@@ -1,5 +1,4 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Injectable, Optional } from '@nestjs/common';
 
 import {
   DocActionDenied,
@@ -18,8 +17,6 @@ import {
   type PermissionWorkspaceAction,
 } from './context-loader';
 import { WorkspacePolicyService } from './policy';
-import { PermissionSqlPredicateBuilder } from './sql-predicate';
-import type { DocAction } from './types';
 
 const RUNTIME_RESTRICTED_WORKSPACE_ACTIONS = new Set<PermissionWorkspaceAction>(
   [
@@ -59,20 +56,8 @@ export class PermissionService {
   constructor(
     private readonly loader: PermissionContextLoader,
     @Optional()
-    @Inject(PermissionSqlPredicateBuilder)
-    private readonly sqlPredicate = new PermissionSqlPredicateBuilder(),
-    @Optional()
     private readonly workspacePolicy?: WorkspacePolicyService
   ) {}
-
-  docReadableSqlPredicate(input: {
-    userId: string;
-    workspaceId: string;
-    action: DocAction;
-    docIdColumn?: Prisma.Sql;
-  }) {
-    return this.sqlPredicate.docReadableSql(input);
-  }
 
   evaluate(input: PermissionEvaluationInputV1) {
     try {

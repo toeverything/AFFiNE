@@ -13,7 +13,7 @@ import type { WorkspaceProfileService } from './profile';
 import { WorkspaceService } from './workspace';
 
 const logger = new DebugLogger('affine:workspace-repository');
-const workspacePoolKey = (metadata: WorkspaceMetadata) =>
+const getWorkspacePoolKey = (metadata: WorkspaceMetadata) =>
   `${metadata.flavour}:${metadata.id}`;
 
 export class WorkspaceRepositoryService extends Service {
@@ -61,8 +61,7 @@ export class WorkspaceRepositoryService extends Service {
       };
     }
 
-    const key = workspacePoolKey(options.metadata);
-    const exist = this.pool.get(key);
+    const exist = this.pool.get(getWorkspacePoolKey(options.metadata));
     if (exist) {
       return {
         workspace: exist.obj,
@@ -72,7 +71,7 @@ export class WorkspaceRepositoryService extends Service {
 
     const workspace = this.instantiate(options, customEngineWorkerInitOptions);
 
-    const ref = this.pool.put(key, workspace);
+    const ref = this.pool.put(getWorkspacePoolKey(workspace.meta), workspace);
 
     return {
       workspace: ref.obj,
@@ -80,14 +79,13 @@ export class WorkspaceRepositoryService extends Service {
     };
   };
 
-  openByWorkspaceId = (
-    workspaceId: string,
-    workspaceFlavour?: string | null
-  ) => {
-    const workspaceMetadata = this.workspacesListService.list.workspace$(
-      workspaceId,
-      workspaceFlavour
-    ).value;
+  openByWorkspaceId = (workspaceId: string, flavour?: string | null) => {
+    const workspaceMetadata = flavour
+      ? this.workspacesListService.list.workspaces$.value.find(
+          workspace =>
+            workspace.id === workspaceId && workspace.flavour === flavour
+        )
+      : this.workspacesListService.list.workspace$(workspaceId).value;
     return workspaceMetadata && this.open({ metadata: workspaceMetadata });
   };
 

@@ -6,7 +6,6 @@ import { PermissionContextLoader } from './context-loader';
 import { EventsListener } from './event';
 import { WorkspacePolicyService } from './policy';
 import { PermissionService } from './service';
-import { PermissionSqlPredicateBuilder } from './sql-predicate';
 
 @Module({
   imports: [QuotaServiceModule],
@@ -14,16 +13,10 @@ import { PermissionSqlPredicateBuilder } from './sql-predicate';
     AccessControllerBuilder,
     EventsListener,
     WorkspacePolicyService,
-    PermissionSqlPredicateBuilder,
     PermissionContextLoader,
     PermissionService,
   ],
-  exports: [
-    AccessControllerBuilder,
-    WorkspacePolicyService,
-    PermissionSqlPredicateBuilder,
-    PermissionService,
-  ],
+  exports: [AccessControllerBuilder, WorkspacePolicyService, PermissionService],
 })
 export class PermissionModule {}
 
@@ -35,7 +28,6 @@ export {
 } from './permission-map';
 export { WorkspacePolicyService } from './policy';
 export { PermissionService } from './service';
-export { PermissionSqlPredicateBuilder } from './sql-predicate';
 export {
   DOC_ACTIONS,
   type DocAction,

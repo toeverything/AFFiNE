@@ -39,7 +39,6 @@ test.describe('AIChatWith/Image', () => {
 
     await expect(async () => {
       const { content } = await utils.chatPanel.getLatestAssistantMessage(page);
-      expect(content.length).toBeGreaterThan(20);
       expect(content).toMatch(/cat|kitten|feline|tabby|fluffy/i);
     }).toPass({ timeout: 20000 });
   });

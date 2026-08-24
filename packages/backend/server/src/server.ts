@@ -19,6 +19,7 @@ import {
 import { SocketIoAdapter } from './base/websocket';
 import { AuthGuard } from './core/auth';
 import { TelemetryService } from './core/telemetry/service';
+import { ServerRole } from './env';
 import { serverTimingAndCache } from './middleware/timing';
 
 const OneMB = 1024 * 1024;
@@ -41,7 +42,9 @@ export async function run() {
   const url = app.get(URLHelper);
   let telemetry: TelemetryService | null = null;
   try {
-    telemetry = app.get(TelemetryService, { strict: false });
+    if (env.role !== ServerRole.Worker) {
+      telemetry = app.get(TelemetryService, { strict: false });
+    }
   } catch {
     telemetry = null;
   }
@@ -93,7 +96,11 @@ export async function run() {
     })
   );
 
-  app.useGlobalGuards(app.get(AuthGuard), app.get(CloudThrottlerGuard));
+  if (env.role === ServerRole.Worker) {
+    app.useGlobalGuards(app.get(CloudThrottlerGuard));
+  } else {
+    app.useGlobalGuards(app.get(AuthGuard), app.get(CloudThrottlerGuard));
+  }
   app.useGlobalInterceptors(app.get(CacheInterceptor));
   app.useGlobalFilters(new GlobalExceptionFilter(app.getHttpAdapter()));
   app.use(cookieParser());

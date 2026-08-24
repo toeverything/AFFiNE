@@ -11,12 +11,9 @@ import semver from 'semver';
 import { Socket } from 'socket.io';
 
 import {
-  AccessDenied,
   AuthenticationRequired,
-  Cache,
   checkCanaryDateClientVersion,
   Config,
-  CryptoHelper,
   getClientVersionFromRequest,
   getRequestResponseFromContext,
   parseCookies,
@@ -32,9 +29,6 @@ import { AuthSessionHttpError } from './session-exchange';
 import { isLikelyJwt } from './token';
 
 const PUBLIC_ENTRYPOINT_SYMBOL = Symbol('public');
-const INTERNAL_ENTRYPOINT_SYMBOL = Symbol('internal');
-const INTERNAL_ACCESS_TOKEN_TTL_MS = 5 * 60 * 1000;
-const INTERNAL_ACCESS_TOKEN_CLOCK_SKEW_MS = 30 * 1000;
 
 type AuthenticatedRequestSession =
   | { type: 'jwt'; session: Session }
@@ -50,8 +44,6 @@ export class AuthGuard implements CanActivate, OnModuleInit {
   private static readonly CANARY_REQUIRED_VERSION = 'canary (within 2 months)';
 
   constructor(
-    private readonly crypto: CryptoHelper,
-    private readonly cache: Cache,
     private readonly config: Config,
     private readonly ref: ModuleRef,
     private readonly reflector: Reflector
@@ -67,38 +59,6 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     const { req, res } = getRequestResponseFromContext(context);
     const clazz = context.getClass();
     const handler = context.getHandler();
-    // rpc request is internal
-    const isInternal = this.reflector.getAllAndOverride<boolean>(
-      INTERNAL_ENTRYPOINT_SYMBOL,
-      [clazz, handler]
-    );
-    if (isInternal) {
-      const accessToken = req.get('x-access-token');
-      if (accessToken) {
-        const payload = this.crypto.parseInternalAccessToken(accessToken);
-        if (payload) {
-          const now = Date.now();
-          const method = req.method.toUpperCase();
-          const path = req.path;
-
-          const timestampInRange =
-            payload.ts <= now + INTERNAL_ACCESS_TOKEN_CLOCK_SKEW_MS &&
-            now - payload.ts <= INTERNAL_ACCESS_TOKEN_TTL_MS;
-
-          if (timestampInRange && payload.m === method && payload.p === path) {
-            const nonceKey = `rpc:nonce:${payload.nonce}`;
-            const ok = await this.cache.setnx(nonceKey, 1, {
-              ttl: INTERNAL_ACCESS_TOKEN_TTL_MS,
-            });
-            if (ok) {
-              return true;
-            }
-          }
-        }
-      }
-      throw new AccessDenied('Invalid internal request');
-    }
-
     // api is public
     const isPublic = this.reflector.getAllAndOverride<boolean>(
       PUBLIC_ENTRYPOINT_SYMBOL,
@@ -261,7 +221,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
   private getVersionRange(versionRange: string): semver.Range | null {
     if (this.cachedVersionRange.has(versionRange)) {
-      // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // oxlint-disable-next-line typescript/no-non-null-assertion
       return this.cachedVersionRange.get(versionRange)!;
     }
 
@@ -326,11 +286,6 @@ export class AuthGuard implements CanActivate, OnModuleInit {
  * Mark api to be public accessible
  */
 export const Public = () => SetMetadata(PUBLIC_ENTRYPOINT_SYMBOL, true);
-
-/**
- * Mark rpc api to be internal accessible
- */
-export const Internal = () => SetMetadata(INTERNAL_ENTRYPOINT_SYMBOL, true);
 
 export const AuthWebsocketOptionsProvider: FactoryProvider = {
   provide: WEBSOCKET_OPTIONS,

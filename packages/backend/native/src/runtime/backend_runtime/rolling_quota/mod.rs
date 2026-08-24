@@ -6,6 +6,7 @@ mod reservation;
 mod workspace_invite;
 mod workspace_invite_policy;
 
+use invite_abuse_actions::{invite_abuse_user_quarantined_or_banned, invite_abuse_workspace_quarantined};
 use mail_delivery::{build_mail_scopes, decision_from_violation as mail_decision_from_violation, mail_class};
 use napi::Result;
 use reservation::{
@@ -15,8 +16,8 @@ use reservation::{
 use sha2::{Digest, Sha256};
 use workspace_invite_policy::{
   ActorFacts, InviteAbuseDecision, InviteActivityFacts, QuotaFacts, WorkspaceFacts, build_invite_scopes,
-  evaluate_projection, high_confidence_invite_abuse, invite_commit_usage_for_scope, source_cohort_subject_key,
-  subject_hash, sum_domains,
+  evaluate_projection, high_confidence_invite_abuse, invite_commit_usage_for_scope, new_account_action_retry_after,
+  source_cohort_subject_key, subject_hash, sum_domains,
 };
 
 #[cfg(test)]
@@ -26,7 +27,8 @@ pub(super) use super::{
   types::{
     RuntimeInviteAbuseActionRequired, RuntimeInviteAbuseClaimedAction, RuntimeMailDeliveryQuotaDecision,
     RuntimeMailDeliveryQuotaInput, RuntimeQuotaSourceInput, RuntimeQuotaTargetDomainInput,
-    RuntimeWorkspaceInviteQuotaDecision, RuntimeWorkspaceInviteQuotaInput, RuntimeWorkspaceInviteQuotaUsage,
+    RuntimeWorkspaceActionDecision, RuntimeWorkspaceInviteQuotaDecision, RuntimeWorkspaceInviteQuotaInput,
+    RuntimeWorkspaceInviteQuotaUsage,
   },
 };
 
@@ -75,8 +77,9 @@ impl BackendRuntime {
     &self,
     input: RuntimeMailDeliveryQuotaInput,
   ) -> Result<RuntimeMailDeliveryQuotaDecision> {
-    let config = self.config()?.invite_quota;
-    let Some(class) = mail_class(&input.mail_name, &config) else {
+    let runtime_config = self.config()?;
+    let config = &runtime_config.invite_quota;
+    let Some(class) = mail_class(&input.mail_name, config) else {
       return Ok(RuntimeMailDeliveryQuotaDecision {
         allowed: false,
         reservation_id: None,
@@ -91,7 +94,7 @@ impl BackendRuntime {
       });
     };
     let pool = self.pool().await?;
-    let scopes = build_mail_scopes(&input, class, &config);
+    let scopes = build_mail_scopes(&input, class, config);
     match reserve_scopes(&pool, "mail_delivery", input.request_id.as_deref(), scopes).await? {
       Ok(reservation) => Ok(RuntimeMailDeliveryQuotaDecision {
         allowed: true,

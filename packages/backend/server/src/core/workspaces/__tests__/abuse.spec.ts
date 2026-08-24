@@ -15,6 +15,9 @@ import { Mockers } from '../../../__tests__/mocks';
 import { Config } from '../../../base';
 import { ActionForbidden, TooManyRequest } from '../../../base/error';
 import { Models, WorkspaceRole } from '../../../models';
+import { BackendRuntimeProvider } from '../../backend-runtime';
+import { EntitlementService } from '../../entitlement';
+import { QuotaService } from '../../quota';
 import {
   getAbuseRequestSource,
   InviteAbuseDispositionService,
@@ -23,6 +26,7 @@ import {
 
 let app: TestingApp;
 const quota = {
+  assertWorkspaceActionAllowed: Sinon.stub(),
   assertWorkspaceInviteQuota: Sinon.stub(),
   commitWorkspaceInviteQuota: Sinon.stub(),
   releaseWorkspaceInviteQuota: Sinon.stub(),
@@ -41,6 +45,7 @@ test.before(async () => {
 });
 
 test.beforeEach(() => {
+  quota.assertWorkspaceActionAllowed.reset();
   quota.assertWorkspaceInviteQuota.reset();
   quota.commitWorkspaceInviteQuota.reset();
   quota.releaseWorkspaceInviteQuota.reset();
@@ -345,8 +350,8 @@ test('workspace quarantine blocks invite link creation', async t => {
       updated_at = now()
   `;
 
-  const previousDelay = config.auth.newAccountShareActionDelay;
-  config.auth.newAccountShareActionDelay = 0;
+  const previousDelay = config.auth.newAccountActionDelay;
+  config.auth.newAccountActionDelay = 0;
   try {
     await app.login(owner);
     await t.throwsAsync(
@@ -359,32 +364,58 @@ test('workspace quarantine blocks invite link creation', async t => {
       })
     );
   } finally {
-    config.auth.newAccountShareActionDelay = previousDelay;
+    config.auth.newAccountActionDelay = previousDelay;
   }
 });
 
-test('domain workspace name blocks invite link creation', async t => {
-  const config = app.get(Config);
+test('workspace action admission applies exemption before content policy', async t => {
+  const db = app.get(PrismaClient);
+  const inviteQuota = new InviteQuotaAssertService(
+    app.get(Config),
+    app.get(QuotaService),
+    app.get(BackendRuntimeProvider),
+    app.get(InviteAbuseDispositionService)
+  );
   const owner = await app.create(Mockers.User);
+  await db.user.update({
+    where: { id: owner.id },
+    data: { createdAt: new Date() },
+  });
   const workspace = await app.create(Mockers.Workspace, {
     owner,
     name: 'Join example.com',
   });
 
-  const previousDelay = config.auth.newAccountShareActionDelay;
-  config.auth.newAccountShareActionDelay = 0;
-  try {
-    await app.login(owner);
-    await t.throwsAsync(
-      app.gql({
-        query: createInviteLinkMutation,
-        variables: {
-          workspaceId: workspace.id,
-          expireTime: WorkspaceInviteLinkExpireTime.OneDay,
-        },
-      })
-    );
-  } finally {
-    config.auth.newAccountShareActionDelay = previousDelay;
-  }
+  await t.throwsAsync(
+    inviteQuota.assertWorkspaceActionAllowed({
+      actorUserId: owner.id,
+      workspaceId: workspace.id,
+      action: 'inviteMember',
+    }),
+    { instanceOf: ActionForbidden }
+  );
+
+  await app.get(EntitlementService).upsertAdminGrant({
+    targetType: 'user',
+    targetId: owner.id,
+    plan: 'pro',
+  });
+  await t.notThrowsAsync(
+    inviteQuota.assertWorkspaceActionAllowed({
+      actorUserId: owner.id,
+      workspaceId: workspace.id,
+      action: 'inviteMember',
+    })
+  );
+
+  await app.login(owner);
+  await t.throwsAsync(
+    app.gql({
+      query: createInviteLinkMutation,
+      variables: {
+        workspaceId: workspace.id,
+        expireTime: WorkspaceInviteLinkExpireTime.OneDay,
+      },
+    })
+  );
 });

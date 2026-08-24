@@ -22,7 +22,11 @@ interface DocKeywordSearchToolResult {
   toolCallId: string;
   toolName: string;
   args: { query: string };
-  result: Array<{ title: string; docId: string }> | ToolError | null;
+  result:
+    | Array<{ title: string; docId: string }>
+    | { hits: Array<{ title: string; doc_id: string; excerpt?: string }> }
+    | ToolError
+    | null;
 }
 
 export class DocKeywordSearchResult extends WithDisposable(ShadowlessElement) {
@@ -64,9 +68,12 @@ export class DocKeywordSearchResult extends WithDisposable(ShadowlessElement) {
         .icon=${SearchIcon()}
       ></tool-call-failed>`;
     }
+    const items = Array.isArray(result)
+      ? result
+      : result.hits.map(item => ({ title: item.title, docId: item.doc_id }));
     let results: ToolResult[] = [];
     try {
-      results = result.map(item => ({
+      results = items.map(item => ({
         title: item.title,
         icon: PageIcon(),
         onClick: () => {
@@ -82,7 +89,7 @@ export class DocKeywordSearchResult extends WithDisposable(ShadowlessElement) {
       console.error('Failed to parse result', err);
     }
     return html`<tool-result-card
-      .name=${`Found ${result.length} pages for "${this.data.args.query}"`}
+      .name=${`Found ${items.length} pages for "${this.data.args.query}"`}
       .icon=${SearchIcon()}
       .width=${this.width}
       .results=${results}

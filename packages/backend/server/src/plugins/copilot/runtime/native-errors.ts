@@ -1,4 +1,4 @@
-import { NetworkError } from '../../../base';
+import { CopilotQuotaExceeded, NetworkError } from '../../../base';
 
 const LLM_TIMEOUT_ERROR_PREFIX = 'llm_timeout:';
 
@@ -18,6 +18,9 @@ function nativeErrorMessage(error: unknown) {
 
 export function mapNativeSemanticError(error: unknown): unknown {
   const message = nativeErrorMessage(error);
+  if (message === 'access_unavailable') {
+    return new CopilotQuotaExceeded();
+  }
   if (message?.startsWith(LLM_TIMEOUT_ERROR_PREFIX)) {
     return new NetworkError(
       message.slice(LLM_TIMEOUT_ERROR_PREFIX.length).trim() ||

@@ -17,7 +17,7 @@
     "@capacitor/core": "^8.4.2"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "vitest": "^4.1.8"
   }
 }

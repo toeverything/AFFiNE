@@ -1,16 +1,56 @@
 import { Global, Module } from '@nestjs/common';
 
-import { BackendRuntimeHousekeepingJob } from './job';
-import { BackendRuntimeProvider } from './provider';
+import {
+  BackendRuntimeEmbeddingJob,
+  BackendRuntimeEmbeddingProducer,
+  BackendRuntimeEmbeddingService,
+  BackendRuntimeHousekeepingJob,
+  BackendRuntimeSearchJob,
+} from './job';
+import {
+  BACKEND_RUNTIME_CONFIG_PATHS,
+  BackendRuntimeProvider,
+} from './provider';
 
 @Global()
 @Module({
-  providers: [BackendRuntimeProvider, BackendRuntimeHousekeepingJob],
-  exports: [BackendRuntimeProvider],
+  providers: [
+    {
+      provide: BACKEND_RUNTIME_CONFIG_PATHS,
+      useValue: undefined,
+    },
+    BackendRuntimeProvider,
+    BackendRuntimeEmbeddingService,
+  ],
+  exports: [BackendRuntimeProvider, BackendRuntimeEmbeddingService],
 })
 export class BackendRuntimeModule {}
 
+@Module({
+  imports: [BackendRuntimeModule],
+  providers: [BackendRuntimeEmbeddingProducer],
+})
+export class BackendRuntimeProducerModule {}
+
+@Module({
+  imports: [BackendRuntimeModule],
+  providers: [
+    BackendRuntimeEmbeddingJob,
+    BackendRuntimeHousekeepingJob,
+    BackendRuntimeSearchJob,
+  ],
+})
+export class BackendRuntimeWorkerModule {}
+
 export {
+  BackendRuntimeEmbeddingJob,
+  BackendRuntimeEmbeddingProducer,
+  BackendRuntimeEmbeddingService,
+  BackendRuntimeHousekeepingJob,
+  BackendRuntimeSearchJob,
+} from './job';
+export {
+  BACKEND_RUNTIME_CONFIG_PATHS,
   BackendRuntimeProvider,
   type RuntimeInviteAbuseAction,
   type RuntimeInviteAbuseClaimedAction,

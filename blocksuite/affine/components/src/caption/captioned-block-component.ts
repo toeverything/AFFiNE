@@ -53,19 +53,25 @@ export class CaptionedBlockComponent<
       })}
     >
       ${content}
-      ${this.useCaptionEditor
-        ? html`<block-caption-editor
-            ${ref(this._captionEditorRef)}
-          ></block-caption-editor>`
-        : nothing}
-      ${this.selectedStyle === SelectedStyle.Background
-        ? html`<affine-block-selection
-            .selected=${watch(this.selected$)}
-          ></affine-block-selection>`
-        : null}
-      ${this.useZeroWidth && !this.store.readonly
-        ? html`<block-zero-width .block=${this}></block-zero-width>`
-        : nothing}
+      ${
+        this.useCaptionEditor
+          ? html`<block-caption-editor
+              ${ref(this._captionEditorRef)}
+            ></block-caption-editor>`
+          : nothing
+      }
+      ${
+        this.selectedStyle === SelectedStyle.Background
+          ? html`<affine-block-selection
+              .selected=${watch(this.selected$)}
+            ></affine-block-selection>`
+          : null
+      }
+      ${
+        this.useZeroWidth && !this.store.readonly
+          ? html`<block-zero-width .block=${this}></block-zero-width>`
+          : nothing
+      }
     </div>`;
   }
 

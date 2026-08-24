@@ -35,10 +35,6 @@
       "type": "Object",
       "desc": "The config for doc job queue"
     },
-    "queues.indexer": {
-      "type": "Object",
-      "desc": "The config for indexer job queue"
-    },
     "queues.notification": {
       "type": "Object",
       "desc": "The config for notification job queue"
@@ -87,13 +83,17 @@
       "type": "Boolean",
       "desc": "Whether require email verification before accessing restricted resources(not implemented)."
     },
-    "newAccountShareActionDelay": {
+    "newAccountActionDelay": {
       "type": "Number",
-      "desc": "Minimum account age in seconds before new accounts can invite members or create share links."
+      "desc": "Minimum account age in seconds before new accounts can invite members, create invite links, or publish documents. Set to 0 to disable."
     },
     "trustedCloudflareHeaders": {
       "type": "Boolean",
       "desc": "Whether request abuse source facts should trust Cloudflare headers from the origin edge."
+    },
+    "signInRateLimit": {
+      "type": "Object",
+      "desc": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds."
     },
     "inviteQuotaShadowMode": {
       "type": "Boolean",
@@ -298,13 +298,6 @@
       "desc": "Whether allow guest users to create demo workspaces."
     }
   },
-  "docService": {
-    "endpoint": {
-      "type": "String",
-      "desc": "The endpoint of the doc service.",
-      "env": "DOC_SERVICE_ENDPOINT"
-    }
-  },
   "telemetry": {
     "allowedOrigin": {
       "type": "Array",
@@ -369,6 +362,18 @@
       "type": "Boolean",
       "desc": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK."
     },
+    "unsplash": {
+      "type": "Object",
+      "desc": "The config for the unsplash key."
+    },
+    "exa": {
+      "type": "Object",
+      "desc": "The config for the exa web search key."
+    },
+    "storage": {
+      "type": "Object",
+      "desc": "The config for the storage provider."
+    },
     "byok.enabled": {
       "type": "Boolean",
       "desc": "Allow workspace owners and admins to configure AI provider keys through AI BYOK."
@@ -384,93 +389,34 @@
     "byok.allowPrivateEndpoint": {
       "type": "Boolean",
       "desc": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
-    },
-    "providers.profiles": {
-      "type": "Array",
-      "desc": "The profile list for copilot providers."
-    },
-    "providers.defaults": {
-      "type": "Object",
-      "desc": "The default provider ids for model output types and global fallback."
-    },
-    "providers.openai": {
-      "type": "Object",
-      "desc": "The config for the openai provider.",
-      "link": "https://github.com/openai/openai-node"
-    },
-    "providers.cloudflareWorkersAi": {
-      "type": "Object",
-      "desc": "The config for the Cloudflare Workers AI provider."
-    },
-    "providers.fal": {
-      "type": "Object",
-      "desc": "The config for the fal provider."
-    },
-    "providers.gemini": {
-      "type": "Object",
-      "desc": "The config for the gemini provider."
-    },
-    "providers.geminiVertex": {
-      "type": "Object",
-      "desc": "The config for the gemini provider in Google Vertex AI."
-    },
-    "providers.anthropic": {
-      "type": "Object",
-      "desc": "The config for the anthropic provider."
-    },
-    "providers.anthropicVertex": {
-      "type": "Object",
-      "desc": "The config for the anthropic provider in Google Vertex AI."
-    },
-    "unsplash": {
-      "type": "Object",
-      "desc": "The config for the unsplash key."
-    },
-    "exa": {
-      "type": "Object",
-      "desc": "The config for the exa web search key."
-    },
-    "storage": {
-      "type": "Object",
-      "desc": "The config for the storage provider."
     }
   },
   "indexer": {
     "enabled": {
       "type": "Boolean",
-      "desc": "Enable indexer plugin",
-      "env": "AFFINE_INDEXER_ENABLED"
+      "desc": "Enable indexer plugin"
     },
     "provider.type": {
       "type": "String",
-      "desc": "Indexer search service provider name",
-      "env": "AFFINE_INDEXER_SEARCH_PROVIDER"
+      "desc": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint."
     },
     "provider.endpoint": {
       "type": "String",
-      "desc": "Indexer search service endpoint",
-      "env": "AFFINE_INDEXER_SEARCH_ENDPOINT"
+      "desc": "Remote indexer endpoint. Not used by the embedded provider."
     },
     "provider.apiKey": {
       "type": "String",
-      "desc": "Indexer search service api key. Optional for elasticsearch",
-      "link": "https://www.elastic.co/guide/server/current/api-key.html",
-      "env": "AFFINE_INDEXER_SEARCH_API_KEY"
+      "desc": "Indexer search service api key. Optional for remote providers",
+      "link": "https://www.elastic.co/guide/server/current/api-key.html"
     },
     "provider.username": {
       "type": "String",
-      "desc": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for elasticsearch",
-      "link": "https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
-      "env": "AFFINE_INDEXER_SEARCH_USERNAME"
+      "desc": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for remote providers",
+      "link": "https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html"
     },
     "provider.password": {
       "type": "String",
-      "desc": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for elasticsearch",
-      "env": "AFFINE_INDEXER_SEARCH_PASSWORD"
-    },
-    "autoIndex.batchSize": {
-      "type": "Number",
-      "desc": "Number of workspaces automatically indexed per batch"
+      "desc": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for remote providers"
     }
   },
   "oauth": {

@@ -1,4 +1,4 @@
-/* oxlint-disable @typescript-eslint/await-thenable */
+/* oxlint-disable typescript/await-thenable */
 import type {
   Template,
   TemplateCategory,

@@ -7,8 +7,9 @@ import { Doc as YDoc } from 'yjs';
 
 import { MockEventBus } from '../../../__tests__/mocks';
 import { createTestingApp, type TestingApp } from '../../../__tests__/utils';
-import { ConfigFactory, EventBus } from '../../../base';
-import { Flavor } from '../../../env';
+import { buildAppModule } from '../../../app.module';
+import { EventBus } from '../../../base';
+import { Env, Flavor } from '../../../env';
 import { Models } from '../../../models';
 import { DocReader, PgWorkspaceDocStorageAdapter } from '../../doc';
 
@@ -23,9 +24,10 @@ interface Context {
 const test = ava as TestFn<Context>;
 
 test.before(async t => {
-  // @ts-expect-error testing
-  env.FLAVOR = Flavor.Renderer;
+  const rendererEnv = new Env();
+  rendererEnv.FLAVOR = Flavor.Renderer;
   const app = await createTestingApp({
+    imports: [buildAppModule(rendererEnv)],
     tapModule: m => m.overrideProvider(EventBus).useClass(MockEventBus),
   });
 
@@ -39,11 +41,6 @@ let user: User;
 let workspace: Workspace;
 
 test.beforeEach(async t => {
-  t.context.app.get(ConfigFactory).override({
-    docService: {
-      endpoint: t.context.app.url(),
-    },
-  });
   await t.context.app.initTestingDB();
   user = await t.context.models.user.create({
     email: 'test@affine.pro',
@@ -59,9 +56,7 @@ test.afterEach.always(t => {
   t.context.recordDocView?.restore();
 });
 
-test.after.always(async t => {
-  await t.context.app.close();
-});
+test.after.always(async t => t.context.app.close());
 
 async function createDoc(
   adapter: PgWorkspaceDocStorageAdapter,
@@ -150,6 +145,7 @@ const policyCases: Array<{
         markdown: Sinon.stub(docReader, 'getDocMarkdown').resolves({
           title: 'markdown-doc',
           markdown: '# markdown-doc',
+          revision: '1',
           knownUnsupportedBlocks: [],
           unknownBlocks: [],
         }),

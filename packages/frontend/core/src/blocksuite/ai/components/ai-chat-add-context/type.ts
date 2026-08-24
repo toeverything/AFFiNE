@@ -6,6 +6,7 @@ import type {
 import type { LinkedMenuGroup } from '@blocksuite/affine/widgets/linked-doc';
 
 export interface SearchMenuConfig {
+  addContextAvailable: boolean;
   getDocMenuGroup: (
     query: string,
     action: SearchDocMenuAction,

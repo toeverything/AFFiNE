@@ -30,6 +30,7 @@ interface Attachments {
 }
 
 export class AdditionalAttachments extends Entity {
+  private refreshTimer?: ReturnType<typeof setTimeout>;
   error$ = new LiveData<any>(null);
   attachments$ = new LiveData<Attachments>({
     edges: [],
@@ -69,15 +70,39 @@ export class AdditionalAttachments extends Entity {
         mergeMap(value => {
           const patched = {
             ...value,
-            edges: value.edges.map(edge => ({
-              ...edge,
-              node: {
-                ...edge.node,
-                status: 'uploaded' as const,
-              },
-            })),
+            edges: value.edges.map(edge => {
+              const status = edge.node.embeddingStatus;
+              if (
+                status !== 'processing' &&
+                status !== 'ready' &&
+                status !== 'failed'
+              ) {
+                throw new Error(`Unknown attachment status: ${status}`);
+              }
+              const normalizedStatus: PersistedAttachmentFile['status'] =
+                status;
+              return {
+                ...edge,
+                node: {
+                  ...edge.node,
+                  status: normalizedStatus,
+                },
+              };
+            }),
           };
           this.attachments$.next(patched);
+          clearTimeout(this.refreshTimer);
+          if (
+            patched.edges.some(
+              (edge: { node: PersistedAttachmentFile }) =>
+                edge.node.status === 'processing'
+            )
+          ) {
+            this.refreshTimer = setTimeout(
+              () => this.getAttachments({ first: COUNT_PER_PAGE, after: null }),
+              1000
+            );
+          }
           return EMPTY;
         }),
         catchErrorInto(this.error$, error => {
@@ -148,6 +173,7 @@ export class AdditionalAttachments extends Entity {
   };
 
   override dispose(): void {
+    clearTimeout(this.refreshTimer);
     this.getAttachments.unsubscribe();
   }
 }

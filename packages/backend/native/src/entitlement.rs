@@ -28,6 +28,22 @@ const ONE_GB: i64 = 1024 * ONE_MB;
 const ONE_DAY_SECONDS: i64 = 24 * 60 * 60;
 const MAX_SEAT_QUANTITY: i32 = 100_000;
 
+pub(crate) fn entitlement_priority(status: &str, plan: &str) -> i32 {
+  let status = match status {
+    "active" => 200,
+    "grace" => 100,
+    _ => 0,
+  };
+  let plan = match plan {
+    "team" | "selfhost_team" => 40,
+    "lifetime_pro" => 30,
+    "pro" => 20,
+    "ai" => 10,
+    _ => 0,
+  };
+  status + plan
+}
+
 #[napi(object)]
 pub struct ResolveEntitlementInput {
   pub deployment_type: String,

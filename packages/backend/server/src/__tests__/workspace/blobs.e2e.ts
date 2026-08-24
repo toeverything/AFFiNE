@@ -273,7 +273,7 @@ test('should create pending blob upload with graphql fallback', async t => {
   await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
-  const key = `upload-${Math.random().toString(16).slice(2, 8)}`;
+  const key = sha256Base64urlWithPadding(Buffer.from('pending-upload'));
   const size = 4;
   const mime = 'text/plain';
 
@@ -285,6 +285,15 @@ test('should create pending blob upload with graphql fallback', async t => {
   const record = await blobModel.get(workspace.id, key);
   t.truthy(record);
   t.is(record?.status, 'pending');
+
+  await createBlobUpload(
+    app,
+    workspace.id,
+    key,
+    size,
+    'application/octet-stream'
+  );
+  t.is((await blobModel.get(workspace.id, key))?.mime, mime);
 
   const listed = await listBlobs(app, workspace.id);
   t.is(listed.length, 0);
@@ -317,6 +326,15 @@ test('should complete pending blob upload', async t => {
 
   const listed = await listBlobs(app, workspace.id);
   t.is(listed.length, 1);
+
+  const existing = await createBlobUpload(
+    app,
+    workspace.id,
+    key,
+    buffer.length,
+    'audio/x-m4a'
+  );
+  t.true(existing.alreadyUploaded);
 });
 
 test('should reject complete when blob key mismatched', async t => {
@@ -351,7 +369,14 @@ test('should reject multipart upload part url on fs provider', async t => {
   const workspace = await createWorkspace(app);
 
   await t.throwsAsync(
-    () => getBlobUploadPartUrl(app, workspace.id, 'blob-key', 'upload', 1),
+    () =>
+      getBlobUploadPartUrl(
+        app,
+        workspace.id,
+        sha256Base64urlWithPadding(Buffer.from('blob-key')),
+        'upload',
+        1
+      ),
     {
       message: 'Multipart upload is not supported',
     }

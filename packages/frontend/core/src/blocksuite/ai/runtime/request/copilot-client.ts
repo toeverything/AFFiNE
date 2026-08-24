@@ -3,12 +3,7 @@ import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import type { NbstoreService } from '@affine/core/modules/storage';
 import { UserFriendlyError } from '@affine/error';
 import {
-  addContextBlobMutation,
-  addContextCategoryMutation,
-  addContextDocMutation,
-  addContextFileMutation,
   cleanupCopilotSessionMutation,
-  createCopilotContextMutation,
   createCopilotMessageMutation,
   createCopilotSessionMutation,
   createCopilotSessionWithHistoryMutation,
@@ -19,16 +14,9 @@ import {
   getCopilotSessionQuery,
   getCopilotSessionsQuery,
   type GraphQLQuery,
-  listContextObjectQuery,
-  listContextQuery,
-  matchContextQuery,
   type PaginationInput,
   type QueryOptions,
   type QueryResponse,
-  removeContextBlobMutation,
-  removeContextCategoryMutation,
-  removeContextDocMutation,
-  removeContextFileMutation,
   type RequestOptions,
   updateCopilotSessionMutation,
 } from '@affine/graphql';
@@ -37,6 +25,10 @@ import { getCurrentStore } from '@toeverything/infra';
 import {
   GeneralNetworkError,
   PaymentRequiredError,
+  SelectedSourcesFailedError,
+  SelectedSourcesLimitExceededError,
+  SelectedSourcesProcessingError,
+  SelectedSourcesUnavailableError,
   UnauthorizedError,
 } from '../../provider/error';
 
@@ -64,6 +56,18 @@ function isAbortError(error: UserFriendlyError) {
 }
 
 function codeToError(error: UserFriendlyError) {
+  if (error.name === 'COPILOT_SELECTED_SOURCES_PROCESSING') {
+    return new SelectedSourcesProcessingError(error.message);
+  }
+  if (error.name === 'COPILOT_SELECTED_SOURCES_FAILED') {
+    return new SelectedSourcesFailedError(error.message);
+  }
+  if (error.name === 'COPILOT_SELECTED_SOURCES_UNAVAILABLE') {
+    return new SelectedSourcesUnavailableError(error.message);
+  }
+  if (error.name === 'COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED') {
+    return new SelectedSourcesLimitExceededError(error.message);
+  }
   switch (error.status) {
     case 401:
       return new UnauthorizedError();
@@ -326,148 +330,15 @@ export class CopilotClient {
     }
   }
 
-  async createContext(workspaceId: string, sessionId: string) {
-    const res = await this.gql({
-      query: createCopilotContextMutation,
-      variables: {
-        workspaceId,
-        sessionId,
-      },
-    });
-    return res.createCopilotContext;
-  }
-
-  async getContextId(workspaceId: string, sessionId: string) {
-    const res = await this.gql({
-      query: listContextQuery,
-      variables: {
-        workspaceId,
-        sessionId,
-      },
-    });
-    return res.currentUser?.copilot?.contexts?.[0]?.id || undefined;
-  }
-
-  async addContextDoc(options: OptionsField<typeof addContextDocMutation>) {
-    const res = await this.gql({
-      query: addContextDocMutation,
-      variables: {
-        options,
-      },
-    });
-    return res.addContextDoc;
-  }
-
-  async removeContextDoc(
-    options: OptionsField<typeof removeContextDocMutation>
-  ) {
-    const res = await this.gql({
-      query: removeContextDocMutation,
-      variables: {
-        options,
-      },
-    });
-    return res.removeContextDoc;
-  }
-
-  async addContextFile(
-    content: File,
-    options: OptionsField<typeof addContextFileMutation>
-  ) {
-    const res = await this.gql({
-      query: addContextFileMutation,
-      variables: {
-        content,
-        options,
-      },
-      timeout: 60000,
-    });
-    return res.addContextFile;
-  }
-
-  async removeContextFile(
-    options: OptionsField<typeof removeContextFileMutation>
-  ) {
-    const res = await this.gql({
-      query: removeContextFileMutation,
-      variables: {
-        options,
-      },
-    });
-    return res.removeContextFile;
-  }
-
-  async addContextCategory(
-    options: OptionsField<typeof addContextCategoryMutation>
-  ) {
-    const res = await this.gql({
-      query: addContextCategoryMutation,
-      variables: {
-        options,
-      },
-    });
-    return res.addContextCategory;
-  }
-
-  async removeContextCategory(
-    options: OptionsField<typeof removeContextCategoryMutation>
-  ) {
-    const res = await this.gql({
-      query: removeContextCategoryMutation,
-      variables: {
-        options,
-      },
-    });
-    return res.removeContextCategory;
-  }
-
-  async getContextDocsAndFiles(
-    workspaceId: string,
-    sessionId: string,
-    contextId: string
-  ) {
-    const res = await this.gql({
-      query: listContextObjectQuery,
-      variables: {
-        workspaceId,
-        sessionId,
-        contextId,
-      },
-    });
-    return res.currentUser?.copilot?.contexts?.[0];
-  }
-
-  async matchContext(
-    content: string,
-    contextId?: string,
-    workspaceId?: string,
-    limit?: number,
-    scopedThreshold?: number,
-    threshold?: number
-  ) {
-    const res = await this.gql({
-      query: matchContextQuery,
-      variables: {
-        content,
-        contextId,
-        workspaceId,
-        limit,
-        scopedThreshold,
-        threshold,
-      },
-    });
-    const { matchFiles: files, matchWorkspaceDocs: docs } =
-      res.currentUser?.copilot?.contexts?.[0] || {};
-    return { files, docs };
-  }
-
   // Text or image to text
   chatTextStream(
     {
       sessionId,
       messageId,
       reasoning,
+      profileId,
       modelId,
+      routeTargetId,
       toolsConfig,
       actionId,
       actionVersion,
@@ -478,7 +349,9 @@ export class CopilotClient {
       sessionId: string;
       messageId?: string;
       reasoning?: boolean;
+      profileId?: string;
       modelId?: string;
+      routeTargetId?: string;
       toolsConfig?: AIToolsConfig;
       actionId?: string;
       actionVersion?: string;
@@ -495,7 +368,9 @@ export class CopilotClient {
     const queryString = this.paramsToQueryString({
       messageId,
       reasoning,
+      profileId,
       modelId,
+      routeTargetId,
       toolsConfig,
       actionId,
       actionVersion,
@@ -556,23 +431,5 @@ export class CopilotClient {
       { workspaceId },
       { timeoutMs: 10000 }
     );
-  }
-
-  addContextBlob(options: OptionsField<typeof addContextBlobMutation>) {
-    return this.gql({
-      query: addContextBlobMutation,
-      variables: {
-        options,
-      },
-    }).then(res => res.addContextBlob);
-  }
-
-  removeContextBlob(options: OptionsField<typeof removeContextBlobMutation>) {
-    return this.gql({
-      query: removeContextBlobMutation,
-      variables: {
-        options,
-      },
-    }).then(res => res.removeContextBlob);
   }
 }

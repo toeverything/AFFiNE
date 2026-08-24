@@ -1,16 +1,27 @@
 import { serverConfigQuery, ServerFeature } from '@affine/graphql';
 
+import { Config } from '../../../base';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
+import { IndexerService } from '../../../plugins/indexer';
 import { app, e2e } from '../test';
 
-e2e('should indexer feature enabled by default', async t => {
-  const { serverConfig } = await app.gql({ query: serverConfigQuery });
+e2e(
+  'should expose the indexer feature when its projection is ready',
+  async t => {
+    const enabled = app.get(Config).indexer.enabled;
+    if (enabled) {
+      await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+      await app.get(IndexerService).onApplicationBootstrap();
+    }
+    const { serverConfig } = await app.gql({ query: serverConfigQuery });
 
-  t.is(
-    serverConfig.features.includes(ServerFeature.Indexer),
-    true,
-    JSON.stringify(serverConfig, null, 2)
-  );
-});
+    t.is(
+      serverConfig.features.includes(ServerFeature.Indexer),
+      enabled,
+      JSON.stringify(serverConfig, null, 2)
+    );
+  }
+);
 
 e2e('should comment feature enabled by default', async t => {
   const { serverConfig } = await app.gql({ query: serverConfigQuery });
