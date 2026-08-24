@@ -335,15 +335,31 @@ registerNativeImageFilesPicker(async () => {
 });
 
 // ------ some apis for native ------
-(window as any).getCurrentServerBaseUrl = () => {
+const getCurrentServerForNative = () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentServerId = globalContext.serverId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
   const serversService = frameworkProvider.get(ServersService);
   const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
+
+  if (currentWorkspaceFlavour && currentWorkspaceFlavour !== 'local') {
+    const workspaceServer = serversService.server$(
+      currentWorkspaceFlavour
+    ).value;
+    if (workspaceServer) {
+      return workspaceServer;
+    }
+  }
+
+  return (
     (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
-  return currentServer.baseUrl;
+    defaultServerService.server
+  );
+};
+
+(window as any).getCurrentServerBaseUrl = () => {
+  return getCurrentServerForNative().baseUrl;
 };
 (window as any).getCurrentI18nLocale = () => {
   return I18n.language;
@@ -365,11 +381,15 @@ registerNativeImageFilesPicker(async () => {
 };
 (window as any).waitForSelectedSources = async (documentIds: string[]) => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentWorkspaceId =
-    globalContextService.globalContext.workspaceId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentWorkspaceId = globalContext.workspaceId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
   if (!workspaceRef) {
     throw new Error('Current workspace is unavailable');
@@ -408,13 +428,7 @@ registerNativeImageFilesPicker(async () => {
   return true;
 };
 const getCurrentNativeSignInContext = () => {
-  const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
-  const serversService = frameworkProvider.get(ServersService);
-  const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
-    (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
+  const currentServer = getCurrentServerForNative();
   const authService = currentServer.scope.get(AuthService);
   return { authService, currentServer };
 };
@@ -531,12 +545,16 @@ const showNativeSignIn = async () => {
 };
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentWorkspaceId =
-    globalContextService.globalContext.workspaceId.get();
-  const currentDocId = globalContextService.globalContext.docId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentWorkspaceId = globalContext.workspaceId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
+  const currentDocId = globalContext.docId.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
   if (!workspaceRef) {
     return;
@@ -589,11 +607,15 @@ const showNativeSignIn = async () => {
   title: string
 ) => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentWorkspaceId =
-    globalContextService.globalContext.workspaceId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentWorkspaceId = globalContext.workspaceId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
 
   try {
