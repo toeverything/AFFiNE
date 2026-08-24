@@ -1,7 +1,9 @@
-import { notify } from '@affine/component';
-import { SettingRow } from '@affine/component/setting-components';
-import { ConfirmModal } from '@affine/component/ui/modal';
+import { ConfirmModal, notify } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '@affine/core/components/hooks/use-navigate-helper';
 import { WorkspaceDeleteModal } from '@affine/core/components/workspace-delete-modal';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
@@ -13,33 +15,25 @@ import { useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-import {
-  RouteLogic,
-  useNavigateHelper,
-} from '../../../../../../components/hooks/use-navigate-helper';
+import { RowLayout } from '../row.layout';
 
-export const DeleteLeaveWorkspace = ({
-  onCloseSetting,
-}: {
-  onCloseSetting?: () => void;
-}) => {
+export const DeleteLeaveWorkspace = () => {
   const {
     workspaceService,
-    globalContextService,
-    workspacePermissionService,
     workspacesService,
+    workspacePermissionService,
+    globalContextService,
   } = useServices({
     WorkspaceService,
-    GlobalContextService,
-    WorkspacePermissionService,
     WorkspacesService,
+    WorkspacePermissionService,
+    GlobalContextService,
   });
   const t = useI18n();
   const workspace = workspaceService.workspace;
   const { jumpToPage, jumpToIndex } = useNavigateHelper();
-  // fixme: cloud regression
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
 
@@ -47,89 +41,86 @@ export const DeleteLeaveWorkspace = ({
   const currentWorkspaceId = useLiveData(
     globalContextService.globalContext.workspaceId.$
   );
-
   const isOwner = useLiveData(workspacePermissionService.permission.isOwner$);
-  useEffect(() => {
-    workspacePermissionService.permission.revalidate();
-  }, [workspacePermissionService]);
 
   const onLeaveOrDelete = useCallback(() => {
-    if (isOwner !== null) {
-      if (isOwner) {
-        setShowDelete(true);
-      } else {
-        setShowLeave(true);
-      }
+    if (isOwner) {
+      setShowDelete(true);
+    } else {
+      setShowLeave(true);
     }
   }, [isOwner]);
 
-  const onDeleteConfirm = useAsyncCallback(async () => {
-    onCloseSetting?.();
-
+  const onConfirm = useAsyncCallback(async () => {
     if (currentWorkspaceId === workspace.id) {
       const backWorkspace = workspaceList.find(
         ws => ws.id !== currentWorkspaceId
       );
-      // TODO(@eyhn): if there is no workspace, jump to a new page(wait for design)
       if (backWorkspace) {
-        jumpToPage(backWorkspace?.id || '', 'all', RouteLogic.REPLACE);
+        jumpToPage(backWorkspace.id, 'all', RouteLogic.REPLACE);
       } else {
         jumpToIndex(RouteLogic.REPLACE);
       }
     }
 
-    if (isOwner) {
-      await workspacesService.deleteWorkspace(workspace.meta);
-    } else {
-      await workspacePermissionService.leaveWorkspace();
+    try {
+      if (isOwner) {
+        await workspacesService.deleteWorkspace(workspace.meta);
+      } else {
+        await workspacePermissionService.leaveWorkspace();
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error({ title: t['com.affine.error.unexpected-error.title']() });
+      return;
     }
     notify.success({ title: t['Successfully deleted']() });
   }, [
-    onCloseSetting,
     currentWorkspaceId,
+    isOwner,
+    jumpToIndex,
+    jumpToPage,
+    t,
     workspace.id,
     workspace.meta,
-    isOwner,
-    t,
     workspaceList,
-    jumpToPage,
-    jumpToIndex,
-    workspacesService,
     workspacePermissionService,
+    workspacesService,
   ]);
+
+  if (isOwner === null) {
+    return null;
+  }
 
   return (
     <>
-      <SettingRow
-        name={
+      <RowLayout
+        label={
           <span style={{ color: cssVarV2('status/error') }}>
             {isOwner
               ? t['com.affine.workspaceDelete.title']()
               : t['com.affine.deleteLeaveWorkspace.leave']()}
           </span>
         }
-        desc={t['com.affine.deleteLeaveWorkspace.description']()}
-        style={{ cursor: 'pointer' }}
         onClick={onLeaveOrDelete}
-        data-testid="delete-workspace-button"
       >
-        <ArrowRightSmallIcon />
-      </SettingRow>
+        <ArrowRightSmallIcon fontSize={22} />
+      </RowLayout>
       {isOwner ? (
         <WorkspaceDeleteModal
-          onConfirm={onDeleteConfirm}
           open={showDelete}
           onOpenChange={setShowDelete}
+          onConfirm={onConfirm}
           workspaceMetadata={workspace.meta}
         />
       ) : (
         <ConfirmModal
           open={showLeave}
-          cancelText={t['com.affine.confirmModal.button.cancel']()}
-          onConfirm={onDeleteConfirm}
           onOpenChange={setShowLeave}
+          onConfirm={onConfirm}
           title={`${t['com.affine.deleteLeaveWorkspace.leave']()}?`}
           description={t['com.affine.deleteLeaveWorkspace.leaveDescription']()}
+          cancelText={t['com.affine.confirmModal.button.cancel']()}
           confirmText={t['Leave']()}
           confirmButtonOptions={{
             variant: 'error',

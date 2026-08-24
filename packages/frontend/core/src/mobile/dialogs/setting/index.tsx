@@ -24,6 +24,7 @@ import { UserSubscription } from './subscription';
 import { SwipeDialog } from './swipe-dialog';
 import { UserProfile } from './user-profile';
 import { UserUsage } from './user-usage';
+import { WorkspaceGroup } from './workspace';
 
 const AFFINE_MOBILE_STORE_URL = BUILD_CONFIG.isIOS
   ? 'https://apps.apple.com/app/notes-whiteboard-ai-affine/id6736937980'
@@ -146,6 +147,7 @@ const MobileSetting = ({
       <UserSubscription />
       <UserProfile />
       <UserUsage />
+      <WorkspaceGroup />
       {status === 'authenticated' ? <DevicesGroup /> : null}
       <AppearanceGroup />
       <AboutGroup />
