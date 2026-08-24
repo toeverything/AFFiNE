@@ -264,6 +264,13 @@ pub struct RuntimeWorkspaceInviteQuotaUsage {
 }
 
 #[napi_derive::napi(object)]
+pub struct RuntimeWorkspaceActionDecision {
+  pub allowed: bool,
+  pub retry_after_seconds: Option<i32>,
+  pub reason: Option<String>,
+}
+
+#[napi_derive::napi(object)]
 pub struct RuntimeInviteAbuseActionRequired {
   pub action: String,
   pub subject_key: String,
@@ -444,6 +451,7 @@ pub struct RuntimeBlobMetadataBackfillResult {
   pub workspace_ids: Vec<String>,
 }
 
+#[derive(Default)]
 #[napi_derive::napi(object)]
 pub struct RuntimeDocBlobRefsResult {
   pub scanned_docs: i64,
@@ -468,7 +476,6 @@ pub struct RuntimeDocumentCleanupEffect {
   pub doc_id: String,
   pub cleanup_version: String,
   pub comment_objects_done: bool,
-  pub search_done: bool,
 }
 
 #[napi_derive::napi(object)]
@@ -481,11 +488,6 @@ pub struct RuntimeDocumentCleanupExecuteResult {
   pub failed: i64,
   pub deleted_rows: i64,
   pub effects: Vec<RuntimeDocumentCleanupEffect>,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeDocumentCleanupAckResult {
-  pub completed: bool,
 }
 
 #[napi_derive::napi(object)]
@@ -520,35 +522,14 @@ pub struct RuntimeDocCompactionResult {
 }
 
 #[napi_derive::napi(object)]
-pub struct RuntimeWorkspaceStatsRefreshResult {
-  pub processed: i64,
-  pub backlog: i64,
-  pub skipped: bool,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeWorkspaceStatsRecalibrationResult {
-  pub processed: i64,
-  pub last_sid: i64,
-  pub skipped: bool,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeWorkspaceStatsSnapshotResult {
-  pub snapshotted: i64,
-  pub skipped: bool,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeWorkspaceStatsDailyRecalibrationResult {
-  pub processed: i64,
-  pub last_sid: i64,
-  pub snapshotted: i64,
-  pub skipped: bool,
-}
-
-#[napi_derive::napi(object)]
 pub struct RuntimeEmbeddingProgress {
   pub total: i64,
   pub embedded: i64,
+}
+
+#[napi_derive::napi(object)]
+pub struct SearchOperationOutput {
+  pub ok: bool,
+  pub value: Option<serde_json::Value>,
+  pub error_code: Option<String>,
 }

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { Config, SearchProviderNotFound } from '../../../base';
+import { SearchProviderUnavailable } from '../../../base';
 import { PermissionAccess } from '../../../core/permission';
 import type { DocVisibility } from '../../../core/utils/blocksuite';
 import { type DocChunkSimilarity, Models } from '../../../models';
@@ -70,7 +70,6 @@ function hasVectorProjectionMetadata(hit: DocChunkSimilarity) {
 @Injectable()
 export class DocumentRetrievalService {
   constructor(
-    private readonly config: Config,
     private readonly ac: PermissionAccess,
     private readonly indexer: IndexerService,
     @Inject(DOCUMENT_VECTOR_SEARCH)
@@ -96,17 +95,15 @@ export class DocumentRetrievalService {
       byokLeaseId: options.byokLeaseId,
     };
     const [lexicalAttempt, vectorAttempt] = await Promise.allSettled([
-      this.config.indexer.enabled
-        ? this.indexer
-            .searchDocsByKeyword(workspaceId, query, {
-              limit: Math.max(limit * 3, 20),
-              docIds,
-            })
-            .catch(error => {
-              if (error instanceof SearchProviderNotFound) return null;
-              throw error;
-            })
-        : null,
+      this.indexer
+        .searchDocsByKeyword(userId, workspaceId, query, {
+          limit: Math.max(limit * 3, 20),
+          docIds,
+        })
+        .catch(error => {
+          if (error instanceof SearchProviderUnavailable) return null;
+          throw error;
+        }),
       this.context.canEmbedding
         ? this.context.matchWorkspaceDocCandidates(
             workspaceId,

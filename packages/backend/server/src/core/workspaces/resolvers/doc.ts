@@ -15,9 +15,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 
 import {
-  ActionForbidden,
   Cache,
-  Config,
   DocActionDenied,
   DocDefaultRoleCanNotBeOwner,
   DocNotFound,
@@ -44,10 +42,9 @@ import {
   type DotToUnderline,
   mapPermissionsToGraphqlPermissions,
   PermissionAccess,
-  PermissionService,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
-import { canUserExecuteLimitedActions } from '../abuse';
+import { InviteQuotaAssertService } from '../abuse';
 import { DocGrantsService } from '../doc-grants';
 import { WorkspaceType } from '../types';
 import { TimeBucket, TimeWindow } from './analytics-types';
@@ -300,54 +297,12 @@ export class WorkspaceDocResolver {
      */
     private readonly prisma: PrismaClient,
     private readonly ac: PermissionAccess,
-    private readonly permission: PermissionService,
     private readonly models: Models,
     private readonly cache: Cache,
     private readonly event: EventBus,
-    private readonly config: Config,
-    private readonly runtime: BackendRuntimeProvider
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly inviteQuota: InviteQuotaAssertService
   ) {}
-
-  private async assertCanShare(
-    userId: string,
-    context: { workspaceId: string; docId: string; action: 'publishDoc' }
-  ) {
-    if (await this.runtime.isInviteAbuseUserQuarantinedOrBanned(userId)) {
-      this.logger.warn('Share action blocked for quarantined actor', {
-        userId,
-        ...context,
-      });
-      throw new ActionForbidden(
-        'This feature is temporarily unavailable for you.'
-      );
-    }
-    if (
-      await this.runtime.isInviteAbuseWorkspaceQuarantined(context.workspaceId)
-    ) {
-      this.logger.warn('Share action blocked for quarantined workspace', {
-        userId,
-        ...context,
-      });
-      throw new ActionForbidden(
-        'This feature is temporarily unavailable for you.'
-      );
-    }
-    const user = await this.models.user.get(userId);
-    const newAccountAgeMs = this.config.auth.newAccountShareActionDelay * 1000;
-    if (!user || !canUserExecuteLimitedActions(user, newAccountAgeMs)) {
-      this.logger.warn('Share action blocked for new account', {
-        userId,
-        email: user?.email,
-        createdAt: user?.createdAt,
-        accountAgeMs: user ? Date.now() - user.createdAt.getTime() : null,
-        minimumAccountAgeMs: newAccountAgeMs,
-        ...context,
-      });
-      throw new ActionForbidden(
-        'This feature is temporarily unavailable for you.'
-      );
-    }
-  }
 
   @ResolveField(() => WorkspaceDocMeta, {
     description: 'Cloud page metadata of workspace',
@@ -409,12 +364,14 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('pagination', PaginationInput.decode) pagination: PaginationInput
   ): Promise<PaginatedDocType> {
-    const predicate = this.permission.docReadableSqlPredicate({
-      userId: me.id,
-      workspaceId: workspace.id,
-      action: 'Doc.Read',
-      docIdColumn: Prisma.raw('"workspace_pages"."page_id"'),
-    });
+    const readable = await this.runtime.filterReadableDocs(
+      me.id,
+      workspace.id,
+      await this.models.doc.listWorkspaceDocIds(workspace.id)
+    );
+    const predicate = readable.length
+      ? Prisma.sql`"workspace_pages"."page_id" IN (${Prisma.join(readable)})`
+      : Prisma.sql`FALSE`;
     const [count, rows] = await this.models.doc.paginateDocInfoByUpdatedAt(
       workspace.id,
       pagination,
@@ -475,7 +432,8 @@ export class WorkspaceDocResolver {
     }
 
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
-    await this.assertCanShare(user.id, {
+    await this.inviteQuota.assertWorkspaceActionAllowed({
+      actorUserId: user.id,
       workspaceId,
       docId,
       action: 'publishDoc',

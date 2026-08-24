@@ -20,6 +20,30 @@ pub(crate) struct BackendRuntimeConfig {
   pub(crate) private_key: Arc<Zeroizing<String>>,
   pub(crate) deployment: Deployment,
   pub(crate) copilot: CopilotRuntimeConfig,
+  pub(crate) search: SearchRuntimeConfig,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct SearchRuntimeConfig {
+  pub(crate) enabled: bool,
+  pub(crate) provider: String,
+  pub(crate) endpoint: String,
+  pub(crate) api_key: String,
+  pub(crate) username: String,
+  pub(crate) password: String,
+}
+
+impl Default for SearchRuntimeConfig {
+  fn default() -> Self {
+    Self {
+      enabled: false,
+      provider: "embedded".to_string(),
+      endpoint: String::new(),
+      api_key: String::new(),
+      username: String::new(),
+      password: String::new(),
+    }
+  }
 }
 
 #[derive(Clone, Debug)]
@@ -295,6 +319,7 @@ impl TryFrom<CopilotManagedProfileConfigFile> for CopilotManagedProfileConfig {
 
 #[derive(Clone, Debug)]
 pub(crate) struct InviteQuotaConfig {
+  pub(crate) new_account_action_delay_seconds: i64,
   pub(crate) high_risk_target_domains: Vec<String>,
   pub(crate) subject_hash_salt: String,
   pub(crate) mail_class_mapping: BTreeMap<String, String>,
@@ -303,6 +328,7 @@ pub(crate) struct InviteQuotaConfig {
 impl Default for InviteQuotaConfig {
   fn default() -> Self {
     Self {
+      new_account_action_delay_seconds: 24 * 60 * 60,
       high_risk_target_domains: [
         "qq.com",
         "proton.me",
@@ -348,6 +374,7 @@ impl BackendRuntimeConfig {
         .map(TryInto::try_into)
         .transpose()?
         .unwrap_or_default(),
+      search: app_config.indexer.map(Into::into).unwrap_or_default(),
     }
     .validated()
   }
@@ -385,6 +412,10 @@ impl BackendRuntimeConfig {
         .map(TryInto::try_into)
         .transpose()?
         .unwrap_or_else(|| self.copilot.clone()),
+      search: app_config
+        .indexer
+        .map(Into::into)
+        .unwrap_or_else(|| self.search.clone()),
     }
     .validated()
   }
@@ -450,9 +481,52 @@ fn deployment_from_env() -> Deployment {
 
 #[derive(Default, Deserialize)]
 struct AppConfigFile {
+  auth: Option<AuthConfigFile>,
   db: Option<DbConfigFile>,
   crypto: Option<CryptoConfigFile>,
   copilot: Option<CopilotRuntimeConfigFile>,
+  indexer: Option<SearchRuntimeConfigFile>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AuthConfigFile {
+  new_account_action_delay: Option<i64>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct SearchRuntimeConfigFile {
+  enabled: bool,
+  provider: SearchProviderConfigFile,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct SearchProviderConfigFile {
+  #[serde(rename = "type")]
+  provider: String,
+  endpoint: String,
+  api_key: String,
+  username: String,
+  password: String,
+}
+
+impl From<SearchRuntimeConfigFile> for SearchRuntimeConfig {
+  fn from(value: SearchRuntimeConfigFile) -> Self {
+    Self {
+      enabled: value.enabled,
+      provider: if value.provider.provider.is_empty() {
+        "embedded".to_string()
+      } else {
+        value.provider.provider
+      },
+      endpoint: value.provider.endpoint,
+      api_key: value.provider.api_key,
+      username: value.provider.username,
+      password: value.provider.password,
+    }
+  }
 }
 
 #[derive(Default, Deserialize)]
@@ -477,7 +551,11 @@ impl AppConfigFile {
   }
 
   fn invite_quota_config(&self) -> InviteQuotaConfig {
-    InviteQuotaConfig::default()
+    let mut config = InviteQuotaConfig::default();
+    if let Some(delay) = self.auth.as_ref().and_then(|auth| auth.new_account_action_delay) {
+      config.new_account_action_delay_seconds = delay.max(0);
+    }
+    config
   }
 }
 
@@ -816,6 +894,45 @@ mod tests {
   }
 
   #[test]
+  fn search_config_keeps_disabled_state_separate_from_embedded_provider() {
+    let disabled = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(false)),
+      ("indexer.provider.type", serde_json::json!("embedded")),
+    ])
+    .unwrap();
+    let disabled: SearchRuntimeConfig = disabled.indexer.unwrap().into();
+    assert!(!disabled.enabled);
+    assert_eq!(disabled.provider, "embedded");
+
+    let enabled = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(true)),
+      ("indexer.provider.type", serde_json::json!("elasticsearch")),
+    ])
+    .unwrap();
+    let enabled: SearchRuntimeConfig = enabled.indexer.unwrap().into();
+    assert!(enabled.enabled);
+    assert_eq!(enabled.provider, "elasticsearch");
+
+    let enabled_without_provider = app_config_from_module_json(serde_json::json!({
+      "indexer": { "enabled": true }
+    }))
+    .unwrap();
+    let enabled_without_provider: SearchRuntimeConfig = enabled_without_provider.indexer.unwrap().into();
+    assert!(enabled_without_provider.enabled);
+    assert_eq!(enabled_without_provider.provider, "embedded");
+
+    let manticore = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(true)),
+      ("indexer.provider.type", serde_json::json!("manticoresearch")),
+      ("indexer.provider.endpoint", serde_json::json!("http://localhost:9308")),
+    ])
+    .unwrap();
+    let manticore: SearchRuntimeConfig = manticore.indexer.unwrap().into();
+    assert!(manticore.enabled);
+    assert_eq!(manticore.provider, "manticoresearch");
+  }
+
+  #[test]
   fn partial_database_config_preserves_file_config_siblings() {
     let mut file_config = expand_module_config_paths(serde_json::json!({
       "copilot": {
@@ -874,6 +991,7 @@ mod tests {
       private_key: Arc::new(Zeroizing::new("active-private-key".to_string())),
       deployment: Deployment::Cloud,
       copilot: CopilotRuntimeConfig::default(),
+      search: SearchRuntimeConfig::default(),
     };
     let empty = serde_json::Value::Object(Map::new());
 
@@ -890,14 +1008,16 @@ mod tests {
   }
 
   #[test]
-  fn invite_quota_policy_is_internal_not_app_configurable() {
+  fn invite_abuse_policy_is_internal_while_action_delay_is_configurable() {
     let app_config = app_config_from_flat_overrides([
+      ("auth.newAccountActionDelay", serde_json::json!(123)),
       ("auth.untrustedPolicyOverride", serde_json::json!("runtime-salt-v2")),
       ("auth.untrustedDomainList", serde_json::json!(["Example.COM."])),
     ])
     .unwrap();
 
     let config = app_config.invite_quota_config();
+    assert_eq!(config.new_account_action_delay_seconds, 123);
     assert!(!config.high_risk_target_domains.contains(&"example.com".to_string()));
     assert_ne!(config.subject_hash_salt, "runtime-salt-v2");
     assert_eq!(

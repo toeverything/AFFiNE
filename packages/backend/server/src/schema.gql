@@ -203,6 +203,7 @@ type AggregateBucketHitsObjectType {
 }
 
 type AggregateBucketObjectType {
+  """Number of returned sample hits in this bucket"""
   count: Int!
 
   """The hits object"""
@@ -925,7 +926,7 @@ type EditorType {
   name: String!
 }
 
-union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarProviderRequestErrorDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceArtifactDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | ImageFormatNotSupportedDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | ResponseTooLargeErrorDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SsrfBlockedErrorDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedServerVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
+union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarProviderRequestErrorDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceArtifactDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | ImageFormatNotSupportedDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | ResponseTooLargeErrorDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SearchIndexFailedDataType | SearchIndexNotReadyDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SsrfBlockedErrorDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedServerVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -1050,7 +1051,11 @@ enum ErrorNames {
   RUNTIME_CONFIG_NOT_FOUND
   SAME_EMAIL_PROVIDED
   SAME_SUBSCRIPTION_RECURRING
+  SEARCH_INDEX_FAILED
+  SEARCH_INDEX_NOT_READY
+  SEARCH_PERMISSION_SYNCING
   SEARCH_PROVIDER_NOT_FOUND
+  SEARCH_PROVIDER_UNAVAILABLE
   SIGN_UP_FORBIDDEN
   SPACE_ACCESS_DENIED
   SPACE_NOT_FOUND
@@ -2141,6 +2146,14 @@ input SearchHighlight {
   field: String!
 }
 
+type SearchIndexFailedDataType {
+  diagnosticId: String!
+}
+
+type SearchIndexNotReadyDataType {
+  spaceId: String!
+}
+
 input SearchInput {
   options: SearchOptions!
   query: SearchQuery!
@@ -2199,8 +2212,17 @@ type SearchResultObjectType {
 }
 
 type SearchResultPagination {
+  """Number of results returned in this response, not a global total"""
   count: Int!
+
+  """
+  Whether the provider has more candidates; remaining visible results are not guaranteed
+  """
   hasMore: Boolean!
+
+  """
+  Opaque provider candidate cursor; it does not guarantee complete visible-result pagination
+  """
   nextCursor: String
 }
 
