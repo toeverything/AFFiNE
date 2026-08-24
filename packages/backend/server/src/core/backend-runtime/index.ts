@@ -5,6 +5,7 @@ import {
   BackendRuntimeEmbeddingProducer,
   BackendRuntimeEmbeddingService,
   BackendRuntimeHousekeepingJob,
+  BackendRuntimeSearchJob,
 } from './job';
 import {
   BACKEND_RUNTIME_CONFIG_PATHS,
@@ -33,7 +34,11 @@ export class BackendRuntimeProducerModule {}
 
 @Module({
   imports: [BackendRuntimeModule],
-  providers: [BackendRuntimeEmbeddingJob, BackendRuntimeHousekeepingJob],
+  providers: [
+    BackendRuntimeEmbeddingJob,
+    BackendRuntimeHousekeepingJob,
+    BackendRuntimeSearchJob,
+  ],
 })
 export class BackendRuntimeWorkerModule {}
 
@@ -42,6 +47,7 @@ export {
   BackendRuntimeEmbeddingProducer,
   BackendRuntimeEmbeddingService,
   BackendRuntimeHousekeepingJob,
+  BackendRuntimeSearchJob,
 } from './job';
 export {
   BACKEND_RUNTIME_CONFIG_PATHS,

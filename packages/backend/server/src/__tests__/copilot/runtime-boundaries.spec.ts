@@ -10,7 +10,7 @@ import {
   type Config,
   type EventBus,
   type JobQueue,
-  SearchProviderNotFound,
+  SearchProviderUnavailable,
 } from '../../base';
 import { ServerFeature, type ServerService } from '../../core';
 import type { DocReader } from '../../core/doc';
@@ -450,7 +450,7 @@ test('document tools enforce the user-selected hard scope', async t => {
     readableAc,
     {
       searchDocsByKeyword: async () => {
-        throw new SearchProviderNotFound();
+        throw new SearchProviderUnavailable();
       },
     } as unknown as IndexerService,
     vectorSearch,

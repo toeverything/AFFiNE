@@ -6,14 +6,18 @@ export const TEST_LOG_LEVEL: LogLevel =
   (process.env.TEST_LOG_LEVEL as LogLevel) ?? 'fatal';
 
 async function flushDB(client: PrismaClient) {
-  const result: { tablename: string }[] =
-    await client.$queryRaw`SELECT tablename
+  const result: { schemaname: string; tablename: string }[] =
+    await client.$queryRaw`SELECT schemaname, tablename
                            FROM pg_catalog.pg_tables
                            WHERE schemaname != 'pg_catalog'
                              AND schemaname != 'information_schema'`;
   const query = `TRUNCATE TABLE ${result
-    .map(({ tablename }) => tablename)
-    .filter(name => !name.includes('migrations'))
+    .filter(({ tablename }) => !tablename.includes('migrations'))
+    .map(({ schemaname, tablename }) =>
+      [schemaname, tablename]
+        .map(identifier => `"${identifier.replaceAll('"', '""')}"`)
+        .join('.')
+    )
     .join(', ')}`;
 
   for (let attempt = 0; attempt < 3; attempt++) {

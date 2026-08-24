@@ -319,6 +319,7 @@ impl TryFrom<CopilotManagedProfileConfigFile> for CopilotManagedProfileConfig {
 
 #[derive(Clone, Debug)]
 pub(crate) struct InviteQuotaConfig {
+  pub(crate) new_account_action_delay_seconds: i64,
   pub(crate) high_risk_target_domains: Vec<String>,
   pub(crate) subject_hash_salt: String,
   pub(crate) mail_class_mapping: BTreeMap<String, String>,
@@ -327,6 +328,7 @@ pub(crate) struct InviteQuotaConfig {
 impl Default for InviteQuotaConfig {
   fn default() -> Self {
     Self {
+      new_account_action_delay_seconds: 24 * 60 * 60,
       high_risk_target_domains: [
         "qq.com",
         "proton.me",
@@ -479,10 +481,17 @@ fn deployment_from_env() -> Deployment {
 
 #[derive(Default, Deserialize)]
 struct AppConfigFile {
+  auth: Option<AuthConfigFile>,
   db: Option<DbConfigFile>,
   crypto: Option<CryptoConfigFile>,
   copilot: Option<CopilotRuntimeConfigFile>,
   indexer: Option<SearchRuntimeConfigFile>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AuthConfigFile {
+  new_account_action_delay: Option<i64>,
 }
 
 #[derive(Default, Deserialize)]
@@ -542,7 +551,11 @@ impl AppConfigFile {
   }
 
   fn invite_quota_config(&self) -> InviteQuotaConfig {
-    InviteQuotaConfig::default()
+    let mut config = InviteQuotaConfig::default();
+    if let Some(delay) = self.auth.as_ref().and_then(|auth| auth.new_account_action_delay) {
+      config.new_account_action_delay_seconds = delay.max(0);
+    }
+    config
   }
 }
 
@@ -907,6 +920,16 @@ mod tests {
     let enabled_without_provider: SearchRuntimeConfig = enabled_without_provider.indexer.unwrap().into();
     assert!(enabled_without_provider.enabled);
     assert_eq!(enabled_without_provider.provider, "embedded");
+
+    let manticore = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(true)),
+      ("indexer.provider.type", serde_json::json!("manticoresearch")),
+      ("indexer.provider.endpoint", serde_json::json!("http://localhost:9308")),
+    ])
+    .unwrap();
+    let manticore: SearchRuntimeConfig = manticore.indexer.unwrap().into();
+    assert!(manticore.enabled);
+    assert_eq!(manticore.provider, "manticoresearch");
   }
 
   #[test]
@@ -985,14 +1008,16 @@ mod tests {
   }
 
   #[test]
-  fn invite_quota_policy_is_internal_not_app_configurable() {
+  fn invite_abuse_policy_is_internal_while_action_delay_is_configurable() {
     let app_config = app_config_from_flat_overrides([
+      ("auth.newAccountActionDelay", serde_json::json!(123)),
       ("auth.untrustedPolicyOverride", serde_json::json!("runtime-salt-v2")),
       ("auth.untrustedDomainList", serde_json::json!(["Example.COM."])),
     ])
     .unwrap();
 
     let config = app_config.invite_quota_config();
+    assert_eq!(config.new_account_action_delay_seconds, 123);
     assert!(!config.high_risk_target_domains.contains(&"example.com".to_string()));
     assert_ne!(config.subject_hash_salt, "runtime-salt-v2");
     assert_eq!(

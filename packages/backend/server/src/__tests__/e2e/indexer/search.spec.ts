@@ -4,11 +4,14 @@ import {
   SearchTable,
 } from '@affine/graphql';
 
+import { Config } from '../../../base';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { DocRole } from '../../../models';
 import { createDocWithMarkdown } from '../../../native';
-import { IndexerService } from '../../../plugins/indexer/service';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
+
+const indexerE2e = app.get(Config).indexer.enabled ? e2e : e2e.skip;
 
 async function indexDoc(
   workspaceId: string,
@@ -24,12 +27,15 @@ async function indexDoc(
     user,
     blob: createDocWithMarkdown(docId, markdown, docId),
   });
-  await app.get(IndexerService).indexDoc(workspaceId, docId);
+  await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
 }
 
-e2e('should search with query', async t => {
+indexerE2e('should search with query', async t => {
   const owner = await app.signup();
-  const workspace = await app.create(Mockers.Workspace, { owner });
+  const workspace = await app.create(Mockers.Workspace, {
+    owner,
+    snapshot: true,
+  });
   await indexDoc(
     workspace.id,
     owner,
@@ -114,100 +120,116 @@ e2e('should search with query', async t => {
   );
 });
 
-e2e('should filter no read permission docs on team workspace', async t => {
-  const owner = await app.signup();
-  const workspace = await app.create(Mockers.Workspace, { owner });
-  await app.create(Mockers.TeamWorkspace, { id: workspace.id });
-  await indexDoc(
-    workspace.id,
-    owner,
-    'private-doc',
-    'team secret searchable',
-    DocRole.None
-  );
+indexerE2e(
+  'should filter no read permission docs on team workspace',
+  async t => {
+    const owner = await app.signup();
+    const workspace = await app.create(Mockers.Workspace, {
+      owner,
+      snapshot: true,
+    });
+    await app.create(Mockers.TeamWorkspace, { id: workspace.id });
+    await indexDoc(
+      workspace.id,
+      owner,
+      'private-doc',
+      'team secret searchable',
+      DocRole.None
+    );
 
-  const member = await app.signup();
-  await app.create(Mockers.WorkspaceUser, {
-    workspaceId: workspace.id,
-    userId: member.id,
-  });
-  await app.get(IndexerService).reconcileWorkspace(workspace.id);
-  const denied = await app.gql({
-    query: indexerSearchQuery,
-    variables: {
-      id: workspace.id,
-      input: {
-        table: SearchTable.block,
-        query: {
-          type: SearchQueryType.match,
-          field: 'content',
-          match: 'secret',
+    const member = await app.signup();
+    await app.create(Mockers.WorkspaceUser, {
+      workspaceId: workspace.id,
+      userId: member.id,
+    });
+    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    const denied = await app.gql({
+      query: indexerSearchQuery,
+      variables: {
+        id: workspace.id,
+        input: {
+          table: SearchTable.block,
+          query: {
+            type: SearchQueryType.match,
+            field: 'content',
+            match: 'secret',
+          },
+          options: { fields: ['docId'], pagination: { limit: 10 } },
         },
-        options: { fields: ['docId'], pagination: { limit: 10 } },
       },
-    },
-  });
-  t.is(denied.workspace.search.pagination.count, 0);
+    });
+    t.is(denied.workspace.search.pagination.count, 0);
 
-  await app.create(Mockers.DocUser, {
-    workspaceId: workspace.id,
-    docId: 'private-doc',
-    userId: member.id,
-    type: DocRole.Reader,
-  });
-  await app.get(IndexerService).reconcileWorkspace(workspace.id);
-  const allowed = await app.gql({
-    query: indexerSearchQuery,
-    variables: {
-      id: workspace.id,
-      input: {
-        table: SearchTable.block,
-        query: {
-          type: SearchQueryType.match,
-          field: 'content',
-          match: 'secret',
+    await app.create(Mockers.DocUser, {
+      workspaceId: workspace.id,
+      docId: 'private-doc',
+      userId: member.id,
+      type: DocRole.Reader,
+    });
+    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    const allowed = await app.gql({
+      query: indexerSearchQuery,
+      variables: {
+        id: workspace.id,
+        input: {
+          table: SearchTable.block,
+          query: {
+            type: SearchQueryType.match,
+            field: 'content',
+            match: 'secret',
+          },
+          options: { fields: ['docId'], pagination: { limit: 10 } },
         },
-        options: { fields: ['docId'], pagination: { limit: 10 } },
       },
-    },
-  });
-  t.true(allowed.workspace.search.pagination.count > 0);
+    });
+    t.true(allowed.workspace.search.pagination.count > 0);
 
-  await app.models.docUser.delete(workspace.id, 'private-doc', member.id);
-  await app.get(IndexerService).reconcileWorkspace(workspace.id);
-  const revoked = await app.gql({
-    query: indexerSearchQuery,
-    variables: {
-      id: workspace.id,
-      input: {
-        table: SearchTable.block,
-        query: {
-          type: SearchQueryType.match,
-          field: 'content',
-          match: 'secret',
+    await app.models.docUser.delete(workspace.id, 'private-doc', member.id);
+    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    const revoked = await app.gql({
+      query: indexerSearchQuery,
+      variables: {
+        id: workspace.id,
+        input: {
+          table: SearchTable.block,
+          query: {
+            type: SearchQueryType.match,
+            field: 'content',
+            match: 'secret',
+          },
+          options: { fields: ['docId'], pagination: { limit: 10 } },
         },
-        options: { fields: ['docId'], pagination: { limit: 10 } },
       },
-    },
-  });
-  t.is(revoked.workspace.search.pagination.count, 0);
-});
+    });
+    t.is(revoked.workspace.search.pagination.count, 0);
+  }
+);
 
-e2e('should return empty results when search not match any docs', async t => {
-  const owner = await app.signup();
-  const workspace = await app.create(Mockers.Workspace, { owner });
-  await app.get(IndexerService).reconcileWorkspace(workspace.id);
-  const result = await app.gql({
-    query: indexerSearchQuery,
-    variables: {
-      id: workspace.id,
-      input: {
-        table: SearchTable.doc,
-        query: { type: SearchQueryType.match, field: 'title', match: 'absent' },
-        options: { fields: ['docId'], pagination: { limit: 10 } },
+indexerE2e(
+  'should return empty results when search not match any docs',
+  async t => {
+    const owner = await app.signup();
+    const workspace = await app.create(Mockers.Workspace, {
+      owner,
+      snapshot: true,
+    });
+    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    const result = await app.gql({
+      query: indexerSearchQuery,
+      variables: {
+        id: workspace.id,
+        input: {
+          table: SearchTable.doc,
+          query: {
+            type: SearchQueryType.match,
+            field: 'title',
+            match: 'absent',
+          },
+          options: { fields: ['docId'], pagination: { limit: 10 } },
+        },
       },
-    },
-  });
-  t.is(result.workspace.search.pagination.count, 0);
-  t.deepEqual(result.workspace.search.nodes, []);
-});
+    });
+    t.is(result.workspace.search.pagination.count, 0);
+    t.deepEqual(result.workspace.search.nodes, []);
+  }
+);

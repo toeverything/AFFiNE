@@ -21,14 +21,23 @@ pub(crate) enum RuntimeError {
   #[error("search permission state unavailable")]
   SearchPermissionUnavailable,
 
+  #[error("search index is not ready")]
+  SearchIndexNotReady,
+
+  #[error("search permission projection is syncing")]
+  SearchPermissionSyncing,
+
+  #[error("search index failed: {0}")]
+  SearchIndexFailed(String),
+
+  #[error("search source is invalid: {0}")]
+  SearchSourceInvalid(String),
+
   #[error("search provider unavailable")]
   SearchProviderUnavailable,
 
   #[error("search query is not supported by the active provider")]
   SearchUnsupportedQuery,
-
-  #[error("search stream replay gap")]
-  SearchReplayGap,
 
   #[error("{context}: {source}")]
   Database {
@@ -111,9 +120,11 @@ impl RuntimeError {
       }
       Self::SearchWorkspaceDenied
       | Self::SearchPermissionUnavailable
+      | Self::SearchIndexNotReady
+      | Self::SearchPermissionSyncing
       | Self::SearchProviderUnavailable
-      | Self::SearchUnsupportedQuery
-      | Self::SearchReplayGap => false,
+      | Self::SearchUnsupportedQuery => false,
+      Self::SearchIndexFailed(_) | Self::SearchSourceInvalid(_) => false,
       _ => false,
     }
   }
@@ -126,6 +137,10 @@ impl RuntimeError {
         ..
       } if source.code().as_deref() == Some("40001")
     )
+  }
+
+  pub(crate) fn is_permanent_search_source(&self) -> bool {
+    matches!(self, Self::SearchSourceInvalid(_))
   }
 }
 

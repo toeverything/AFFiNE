@@ -96,6 +96,30 @@ describe('shouldRefreshAccessToken', () => {
 });
 
 describe('auth request fetch', () => {
+  test.each([
+    ['/socket.io', true],
+    ['/socket.io/', true],
+    ['/socket.io/?EIO=4&transport=polling', true],
+    ['/socket.ioevil', false],
+  ])('handles the socket auth boundary for %s', async (path, skipped) => {
+    const provider = {
+      getValidAccessToken: vi.fn(async () => 'access-token'),
+      refreshAccessToken: vi.fn(async () => 'refreshed-token'),
+    };
+    const rawFetch = vi.fn<typeof fetch>(async request => {
+      expect((request as Request).headers.has('Authorization')).toBe(!skipped);
+      return new Response(JSON.stringify({ code: 'ACCESS_TOKEN_EXPIRED' }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    await createAuthFetch(provider, rawFetch)(`https://example.com${path}`);
+
+    expect(provider.getValidAccessToken).toHaveBeenCalledTimes(skipped ? 0 : 1);
+    expect(provider.refreshAccessToken).toHaveBeenCalledTimes(skipped ? 0 : 1);
+  });
+
   test('injects the endpoint token', async () => {
     const provider = {
       getValidAccessToken: vi.fn(async () => 'access-token'),
@@ -164,6 +188,30 @@ describe('auth request fetch', () => {
 });
 
 describe('auth request XMLHttpRequest', () => {
+  test.each([
+    ['/socket.io', true],
+    ['/socket.io/', true],
+    ['/socket.io/?EIO=4&transport=polling', true],
+    ['/socket.ioevil', false],
+  ])('handles the socket auth boundary for %s', async (path, skipped) => {
+    const xhrCalls = stubXMLHttpRequest();
+    const provider = {
+      getValidAccessToken: vi.fn(async () => 'access-token'),
+      refreshAccessToken: vi.fn(async () => 'refreshed-token'),
+    };
+    installAuthRequestProxy(provider);
+    const xhr = new XMLHttpRequest();
+
+    xhr.open('GET', `https://example.com${path}`);
+    xhr.send();
+    await vi.waitFor(() => expect(xhrCalls.send).toHaveBeenCalledOnce());
+    xhrCalls.respond(401, JSON.stringify({ code: 'ACCESS_TOKEN_EXPIRED' }));
+    await Promise.resolve();
+
+    expect(provider.getValidAccessToken).toHaveBeenCalledTimes(skipped ? 0 : 1);
+    expect(provider.refreshAccessToken).toHaveBeenCalledTimes(skipped ? 0 : 1);
+  });
+
   test('does not send after abort while waiting for a token', async () => {
     let resolveToken: (token: string | null) => void = () => {};
     const token = new Promise<string | null>(resolve => {
