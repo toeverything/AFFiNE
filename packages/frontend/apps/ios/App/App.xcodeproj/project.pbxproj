@@ -313,6 +313,12 @@
 				A10100000000000000000009 /* Shared/ShareInbox */,
 			);
 			name = AFFiNE;
+			packageProductDependencies = (
+				5027D4792E7C5FC100ADD25A /* AffineResources */,
+				5027D4772E7C5FBD00ADD25A /* AffinePaywall */,
+				5027D47B2E7C5FC400ADD25A /* AffineGraphQL */,
+				500D72F62E825064006E553F /* Intelligents */,
+			);
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* AFFiNE.app */;
 			productType = "com.apple.product-type.application";
@@ -385,6 +391,12 @@
 				Base,
 			);
 			mainGroup = 504EC2FB1FED79650016851F;
+			packageReferences = (
+				A10200000000000000000001 /* XCLocalSwiftPackageReference "Packages/AffinePaywall" */,
+				A10200000000000000000002 /* XCLocalSwiftPackageReference "Packages/AffineResources" */,
+				A10200000000000000000003 /* XCLocalSwiftPackageReference "Packages/AffineGraphQL" */,
+				A10200000000000000000004 /* XCLocalSwiftPackageReference "Packages/Intelligents" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
 			projectDirPath = "";
@@ -874,23 +886,46 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-/* End XCConfigurationList section */
+	/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A10200000000000000000001 /* XCLocalSwiftPackageReference "Packages/AffinePaywall" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AffinePaywall;
+		};
+		A10200000000000000000002 /* XCLocalSwiftPackageReference "Packages/AffineResources" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AffineResources;
+		};
+		A10200000000000000000003 /* XCLocalSwiftPackageReference "Packages/AffineGraphQL" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AffineGraphQL;
+		};
+		A10200000000000000000004 /* XCLocalSwiftPackageReference "Packages/Intelligents" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Intelligents;
+		};
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		500D72F62E825064006E553F /* Intelligents */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = A10200000000000000000004 /* XCLocalSwiftPackageReference "Packages/Intelligents" */;
 			productName = Intelligents;
 		};
 		5027D4772E7C5FBD00ADD25A /* AffinePaywall */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = A10200000000000000000001 /* XCLocalSwiftPackageReference "Packages/AffinePaywall" */;
 			productName = AffinePaywall;
 		};
 		5027D4792E7C5FC100ADD25A /* AffineResources */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = A10200000000000000000002 /* XCLocalSwiftPackageReference "Packages/AffineResources" */;
 			productName = AffineResources;
 		};
 		5027D47B2E7C5FC400ADD25A /* AffineGraphQL */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = A10200000000000000000003 /* XCLocalSwiftPackageReference "Packages/AffineGraphQL" */;
 			productName = AffineGraphQL;
 		};
 /* End XCSwiftPackageProductDependency section */
