@@ -365,17 +365,38 @@ export class CapabilityRuntime {
     input: string | string[],
     options: CopilotEmbeddingOptions = {}
   ) {
-    const result = (await this.execute(
-      'index.embedding',
-      buildLlmEmbeddingRequest({
-        model: 'route-selected',
-        inputs: Array.isArray(input) ? input : [input],
-        dimensions: options.dimensions,
-      }),
-      {},
-      options
-    )) as { embeddings: number[][] };
-    return result.embeddings;
+    const inputs = Array.isArray(input) ? input : [input];
+    const BATCH_SIZE = 64;
+    if (inputs.length <= BATCH_SIZE) {
+      const result = (await this.execute(
+        'index.embedding',
+        buildLlmEmbeddingRequest({
+          model: 'route-selected',
+          inputs,
+          dimensions: options.dimensions,
+        }),
+        {},
+        options
+      )) as { embeddings: number[][] };
+      return result.embeddings;
+    }
+
+    const embeddings: number[][] = [];
+    for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
+      const batch = inputs.slice(i, i + BATCH_SIZE);
+      const result = (await this.execute(
+        'index.embedding',
+        buildLlmEmbeddingRequest({
+          model: 'route-selected',
+          inputs: batch,
+          dimensions: options.dimensions,
+        }),
+        {},
+        options
+      )) as { embeddings: number[][] };
+      embeddings.push(...result.embeddings);
+    }
+    return embeddings;
   }
 
   async rerankConfigured(_modelId: string) {
