@@ -181,7 +181,7 @@ jobs:
           extra-flags: workspaces focus @affine/monorepo @affine-tools/cli @affine/android
           electron-install: false
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -261,7 +261,7 @@ jobs:
           extra-flags: workspaces focus @affine/monorepo @affine-tools/cli @affine/android
           electron-install: false
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '21'
