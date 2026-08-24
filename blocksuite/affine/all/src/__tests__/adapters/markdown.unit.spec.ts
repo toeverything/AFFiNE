@@ -3933,6 +3933,8 @@ describe('markdown to snapshot', () => {
     ['#00afde', 'blue'],
     ['rgb(0 175 222 / 100%)', 'blue'],
     ['#c83030', 'red'],
+    ['red', 'red'],
+    ['hsl(0, 100%, 50%)', 'red'],
     ['#db7123', 'orange'],
     ['#ac7400', 'yellow'],
     ['#04b745', 'green'],
@@ -3948,24 +3950,17 @@ describe('markdown to snapshot', () => {
     const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
       file: `<span style="color: ${color};">Hello</span>`,
     });
-    expect(rawBlockSnapshot).toMatchObject({
-      children: [
-        {
-          props: {
-            text: {
-              delta: [
-                mapped
-                  ? {
-                      insert: 'Hello',
-                      attributes: {
-                        color: `var(--affine-v2-text-highlight-fg-${mapped})`,
-                      },
-                    }
-                  : { insert: 'Hello' },
-              ],
-            },
-          },
-        },
+    expect(rawBlockSnapshot.children[0]?.props.text).toEqual({
+      '$blocksuite:internal:text$': true,
+      delta: [
+        mapped
+          ? {
+              insert: 'Hello',
+              attributes: {
+                color: `var(--affine-v2-text-highlight-fg-${mapped})`,
+              },
+            }
+          : { insert: 'Hello' },
       ],
     });
   });

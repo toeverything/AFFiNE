@@ -1,3 +1,4 @@
+import { TinyColor } from '@ctrl/tinycolor';
 import { cssVarV2, darkThemeV2, lightThemeV2 } from '@toeverything/theme/v2';
 
 type Rgb = { r: number; g: number; b: number };
@@ -9,7 +10,6 @@ const DEFAULT_TEXT_LIGHTNESS_MAX = 0.9;
 const MAX_COLOR_DISTANCE = 0.18;
 const MAX_CHROMA_DISTANCE = 0.12;
 const MAX_HUE_DISTANCE = 45;
-const cssNumberPattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?%?$/i;
 
 const supportedTextColorNames = [
   'red',
@@ -22,85 +22,11 @@ const supportedTextColorNames = [
   'grey',
 ] as const;
 
-const parseHexColor = (value: string) => {
-  const match = /^#([\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.exec(value);
-  if (!match) return null;
-
-  const hex = match[1];
-  const normalized =
-    hex.length <= 4
-      ? [...hex].map(component => component + component).join('')
-      : hex;
-  return {
-    r: Number.parseInt(normalized.slice(0, 2), 16),
-    g: Number.parseInt(normalized.slice(2, 4), 16),
-    b: Number.parseInt(normalized.slice(4, 6), 16),
-    alpha:
-      normalized.length === 8
-        ? Number.parseInt(normalized.slice(6, 8), 16) / 255
-        : 1,
-  };
-};
-
-const parseRgbChannel = (value: string) => {
-  if (!cssNumberPattern.test(value)) {
-    return null;
-  }
-  const percentage = value.endsWith('%');
-  const parsed = Number.parseFloat(value);
-  if (!Number.isFinite(parsed)) {
-    return null;
-  }
-  const channel = percentage ? (parsed / 100) * 255 : parsed;
-  return Math.min(255, Math.max(0, channel));
-};
-
-const parseAlpha = (value: string | undefined) => {
-  if (value === undefined) {
-    return 1;
-  }
-  if (!cssNumberPattern.test(value)) {
-    return null;
-  }
-  const percentage = value.endsWith('%');
-  const parsed = Number.parseFloat(value);
-  if (!Number.isFinite(parsed)) {
-    return null;
-  }
-  const alpha = percentage ? parsed / 100 : parsed;
-  return Math.min(1, Math.max(0, alpha));
-};
-
-const parseRgbColor = (value: string) => {
-  const match = /^rgba?\((.*)\)$/i.exec(value);
-  if (!match) {
-    return null;
-  }
-
-  const body = match[1].trim();
-  const parts = body.includes(',')
-    ? body.split(',').map(part => part.trim())
-    : body.split(/\s*\/\s*|\s+/).filter(Boolean);
-  if (parts.length < 3 || parts.length > 4) {
-    return null;
-  }
-
-  const [r, g, b] = parts.slice(0, 3).map(parseRgbChannel);
-  const alpha = parseAlpha(parts[3]);
-  if (r === null || g === null || b === null || alpha === null) {
-    return null;
-  }
-  return { r, g, b, alpha };
-};
-
-const parseCssColor = (value: string) => {
-  const normalized = value.trim().toLowerCase();
-  if (normalized === 'transparent') {
-    return { r: 0, g: 0, b: 0, alpha: 0 };
-  }
-  return normalized.startsWith('#')
-    ? parseHexColor(normalized)
-    : parseRgbColor(normalized);
+export const parseCssColor = (value: string) => {
+  const parsed = new TinyColor(value);
+  if (!parsed.isValid) return null;
+  const { r, g, b, a } = parsed.toRgb();
+  return { r, g, b, alpha: a };
 };
 
 const srgbToLinear = (channel: number) => {
