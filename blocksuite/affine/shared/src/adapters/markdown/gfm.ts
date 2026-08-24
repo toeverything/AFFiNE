@@ -51,7 +51,10 @@ function gfmToMarkdown() {
   return {
     extensions: [
       gfmStrikethroughToMarkdown(),
-      gfmTableToMarkdown(),
+      // Do not pad cells out to the widest value in the column. One long
+      // cell made every row that wide, which turned a small table into
+      // hundreds of columns of trailing spaces.
+      gfmTableToMarkdown({ tablePipeAlign: false }),
       gfmTaskListItemToMarkdown(),
       gfmFootnoteToMarkdown(),
     ],

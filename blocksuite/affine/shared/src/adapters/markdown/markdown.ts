@@ -212,14 +212,28 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
   }
 
   private _astToMarkdown(ast: Root) {
-    return unified()
-      .use(remarkGfm)
-      .use(remarkStringify, {
-        resourceLink: true,
-      })
-      .use(remarkMath)
-      .stringify(ast)
-      .replace(/&#x20;\n/g, ' \n');
+    return (
+      unified()
+        .use(remarkGfm)
+        .use(remarkStringify, {
+          resourceLink: true,
+        })
+        .use(remarkMath)
+        .stringify(ast)
+        .replace(/&#x20;\n/g, ' \n')
+        // A table cell cannot hold a newline, so the serializer emits a
+        // character reference for it. Leave a space rather than the entity.
+        .replace(/&#xA;/g, ' ')
+        // The serializer escapes & in a link destination because it can start
+        // a character reference. That puts \& in every query string and the
+        // link breaks when a reader copies it out. A bare & in a destination
+        // parses back as itself, so unescaping it is safe. Only destinations
+        // are touched, so a literal \& in body text stays escaped.
+        .replace(
+          /(\]\()([^()\s]+)/g,
+          (_, prefix, destination) => prefix + destination.replace(/\\&/g, '&')
+        )
+    );
   }
 
   private _markdownToAst(markdown: Markdown) {

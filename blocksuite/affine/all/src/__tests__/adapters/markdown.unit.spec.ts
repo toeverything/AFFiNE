@@ -2483,12 +2483,6 @@ hhh
         },
         columns: [
           {
-            type: 'title',
-            name: 'Title',
-            data: {},
-            id: 'block:2VfUaitjf9',
-          },
-          {
             type: 'select',
             name: 'Status',
             data: {
@@ -2517,6 +2511,12 @@ hhh
             name: 'Date',
             data: {},
             id: 'block:5cglrBmAr3',
+          },
+          {
+            type: 'title',
+            name: 'Title',
+            data: {},
+            id: 'block:2VfUaitjf9',
           },
           {
             type: 'number',
@@ -2610,10 +2610,10 @@ hhh
     };
 
     const md = `\
-| Title  | Status      | Date       | Number | Progress | MultiSelect | RichText                    | Link               | Checkbox |
-| ------ | ----------- | ---------- | ------ | -------- | ----------- | --------------------------- | ------------------ | -------- |
-| Task 1 | TODO        | 2023-12-15 | 1      | 65       | test1,test2 | [test2](https://google.com) | https://google.com | True     |
-| Task 2 | In Progress | 2023-12-20 |        |          |             | test1                       |                    |          |
+| Title | Status | Date | Number | Progress | MultiSelect | RichText | Link | Checkbox |
+| - | - | - | - | - | - | - | - | - |
+| Task 1 | TODO | 2023-12-15 | 1 | 65 | test1,test2 | [test2](https://google.com) | https://google.com | True |
+| Task 2 | In Progress | 2023-12-20 | | | | test1 | | |
 `;
     const mdAdapter = new MarkdownAdapter(createJob(), provider);
     const target = await mdAdapter.fromBlockSnapshot({
@@ -2847,13 +2847,13 @@ hhh
 
 &#x20;   bbb
 
-[untitled](https://example.com/4T5ObMgEIMII-4Bexyta1?mode=page\\&blockIds=abc%2C123\\&elementIds=def%2C456\\&databaseId=deadbeef\\&databaseRowId=123)
+[untitled](https://example.com/4T5ObMgEIMII-4Bexyta1?mode=page&blockIds=abc%2C123&elementIds=def%2C456&databaseId=deadbeef&databaseRowId=123)
 
 &#x20;   ccc
 
 &#x20;       ddd
 
-&#x20;       eee[test](https://example.com/deadbeef?mode=page\\&blockIds=abc%2C123\\&elementIds=def%2C456\\&databaseId=deadbeef\\&databaseRowId=123)[](https://example.com/foobar)
+&#x20;       eee[test](https://example.com/deadbeef?mode=page&blockIds=abc%2C123&elementIds=def%2C456&databaseId=deadbeef&databaseRowId=123)[](https://example.com/foobar)
 
 &#x20;       fff
 
@@ -5101,7 +5101,7 @@ aaa
 
 &#x20;       ddd
 
-&#x20;       eee[test](https://example.com/deadbeef?mode=page\\&blockIds=abc%2C123\\&elementIds=def%2C456)[](https://example.com/foobar)
+&#x20;       eee[test](https://example.com/deadbeef?mode=page&blockIds=abc%2C123&elementIds=def%2C456)[](https://example.com/foobar)
 
 &#x20;       fff
 
