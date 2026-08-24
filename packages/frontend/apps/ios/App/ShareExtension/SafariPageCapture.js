@@ -37,22 +37,61 @@ function formatTimestamp(seconds) {
   var m = Math.floor((total % 3600) / 60);
   var s = total % 60;
   if (h > 0) {
-    return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    return (
+      h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0')
+    );
   }
   return m + ':' + String(s).padStart(2, '0');
 }
 
 function decodeXmlEntities(value) {
-  return String(value || '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, function (_, num) {
-      return String.fromCharCode(Number(num));
-    });
+  var entities = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+  };
+  return String(value || '').replace(
+    /&(?:amp|lt|gt|quot|apos|#39|#\d+);/g,
+    function (entity) {
+      if (entities[entity]) return entities[entity];
+      var numeric = /^&#(\d+);$/.exec(entity);
+      var codePoint = numeric ? Number(numeric[1]) : NaN;
+      if (
+        !Number.isFinite(codePoint) ||
+        codePoint < 0 ||
+        codePoint > 0x10ffff
+      ) {
+        return entity;
+      }
+      try {
+        return String.fromCodePoint(codePoint);
+      } catch (error) {
+        return entity;
+      }
+    }
+  );
+}
+
+function stripCaptionMarkup(value) {
+  var text = String(value || '');
+  var result = '';
+  var insideTag = false;
+  for (var i = 0; i < text.length; i++) {
+    var character = text[i];
+    if (insideTag) {
+      if (character === '>') insideTag = false;
+      continue;
+    }
+    if (character === '<') {
+      insideTag = true;
+      continue;
+    }
+    result += character;
+  }
+  return result;
 }
 
 function parseTimedTextXml(xml) {
@@ -63,7 +102,7 @@ function parseTimedTextXml(xml) {
     var attrs = match[1] || '';
     var startMatch = /start\s*=\s*"([^"]*)"/.exec(attrs);
     var start = startMatch ? Number(startMatch[1]) : 0;
-    var text = decodeXmlEntities(match[2].replace(/<[^>]+>/g, ' '))
+    var text = decodeXmlEntities(stripCaptionMarkup(match[2]))
       .replace(/\s+/g, ' ')
       .trim();
     if (text) {
@@ -78,7 +117,11 @@ function parseVtt(vtt) {
   var blocks = String(vtt || '').split(/\n\n+/);
   for (var i = 0; i < blocks.length; i++) {
     var block = blocks[i].trim();
-    if (!block || block.indexOf('WEBVTT') === 0 || block.indexOf('NOTE') === 0) {
+    if (
+      !block ||
+      block.indexOf('WEBVTT') === 0 ||
+      block.indexOf('NOTE') === 0
+    ) {
       continue;
     }
     var blockLines = block.split('\n');
@@ -94,14 +137,14 @@ function parseVtt(vtt) {
     var parts = startToken.split(':');
     var start = 0;
     if (parts.length === 3) {
-      start = Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2]);
+      start =
+        Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2]);
     } else if (parts.length === 2) {
       start = Number(parts[0]) * 60 + Number(parts[1]);
     }
-    var text = blockLines
-      .slice(blockLines.indexOf(timeLine) + 1)
-      .join(' ')
-      .replace(/<[^>]+>/g, '')
+    var text = stripCaptionMarkup(
+      blockLines.slice(blockLines.indexOf(timeLine) + 1).join(' ')
+    )
       .replace(/\s+/g, ' ')
       .trim();
     if (text) {
@@ -116,7 +159,11 @@ function mergeCaptionLines(lines) {
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
     var last = merged[merged.length - 1];
-    if (last && Math.abs(last.start - line.start) < 0.05 && last.text === line.text) {
+    if (
+      last &&
+      Math.abs(last.start - line.start) < 0.05 &&
+      last.text === line.text
+    ) {
       continue;
     }
     if (
@@ -166,7 +213,8 @@ function parseTimestampText(value) {
 function extractChaptersFromValue(value, chapters) {
   if (!value) return;
   if (Array.isArray(value)) {
-    for (var i = 0; i < value.length; i++) extractChaptersFromValue(value[i], chapters);
+    for (var i = 0; i < value.length; i++)
+      extractChaptersFromValue(value[i], chapters);
     return;
   }
   if (typeof value !== 'object') return;
@@ -187,7 +235,10 @@ function extractChaptersFromValue(value, chapters) {
     var macroTitle = textValue(macro.title);
     var macroTime = textValue(macro.timeDescription);
     if (macroTitle && macroTime) {
-      chapters.push({ start: parseTimestampText(macroTime), title: macroTitle });
+      chapters.push({
+        start: parseTimestampText(macroTime),
+        title: macroTitle,
+      });
     }
   }
 
@@ -198,7 +249,8 @@ function extractChaptersFromValue(value, chapters) {
 
 function readYouTubeInitialData() {
   try {
-    if (typeof ytInitialData !== 'undefined' && ytInitialData) return ytInitialData;
+    if (typeof ytInitialData !== 'undefined' && ytInitialData)
+      return ytInitialData;
   } catch (error) {}
   return null;
 }
@@ -249,7 +301,16 @@ function formatTranscript(lines, chapters) {
 
 function selectCaptionTrack(tracks) {
   if (!tracks || !tracks.length) return null;
-  var preferred = ['en', 'en-us', 'en-gb', 'zh-hans', 'zh-cn', 'zh-hant', 'zh-tw', 'zh'];
+  var preferred = [
+    'en',
+    'en-us',
+    'en-gb',
+    'zh-hans',
+    'zh-cn',
+    'zh-hant',
+    'zh-tw',
+    'zh',
+  ];
   var manual = tracks.filter(function (t) {
     return t.kind !== 'asr';
   });
@@ -284,7 +345,8 @@ function fetchText(url, options) {
   options = options || {};
   var maxBytes = options.maxBytes || MAX_FETCH_TEXT_BYTES;
   var timeoutMs = options.timeoutMs || 5000;
-  var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var controller =
+    typeof AbortController !== 'undefined' ? new AbortController() : null;
   var timer = controller
     ? setTimeout(function () {
         controller.abort();
@@ -293,51 +355,60 @@ function fetchText(url, options) {
   return fetch(url, {
     credentials: 'include',
     signal: controller ? controller.signal : undefined,
-  }).then(function (response) {
-    if (!response.ok) {
-      throw new Error('fetch failed');
-    }
-    var length = Number(response.headers && response.headers.get('content-length'));
-    if (Number.isFinite(length) && length > maxBytes) {
-      throw new Error('fetch too large');
-    }
-    if (!response.body || !response.body.getReader) {
-      return response.text().then(function (text) {
-        if (text.length > maxBytes) throw new Error('fetch too large');
-        return text;
-      });
-    }
-    var reader = response.body.getReader();
-    var decoder = new TextDecoder();
-    var received = 0;
-    var chunks = [];
-    function readNext() {
-      return reader.read().then(function (result) {
-        if (result.done) {
-          return chunks.join('') + decoder.decode();
-        }
-        received += result.value.byteLength;
-        if (received > maxBytes) {
-          try {
-            reader.cancel();
-          } catch (error) {}
-          throw new Error('fetch too large');
-        }
-        chunks.push(decoder.decode(result.value, { stream: true }));
-        return readNext();
-      });
-    }
-    return readNext();
-  }).finally(function () {
-    if (timer) clearTimeout(timer);
-  });
+  })
+    .then(function (response) {
+      if (!response.ok) {
+        throw new Error('fetch failed');
+      }
+      var length = Number(
+        response.headers && response.headers.get('content-length')
+      );
+      if (Number.isFinite(length) && length > maxBytes) {
+        throw new Error('fetch too large');
+      }
+      if (!response.body || !response.body.getReader) {
+        return response.text().then(function (text) {
+          if (new TextEncoder().encode(text).byteLength > maxBytes) {
+            throw new Error('fetch too large');
+          }
+          return text;
+        });
+      }
+      var reader = response.body.getReader();
+      var decoder = new TextDecoder();
+      var received = 0;
+      var chunks = [];
+      function readNext() {
+        return reader.read().then(function (result) {
+          if (result.done) {
+            return chunks.join('') + decoder.decode();
+          }
+          received += result.value.byteLength;
+          if (received > maxBytes) {
+            try {
+              reader.cancel();
+            } catch (error) {}
+            throw new Error('fetch too large');
+          }
+          chunks.push(decoder.decode(result.value, { stream: true }));
+          return readNext();
+        });
+      }
+      return readNext();
+    })
+    .finally(function () {
+      if (timer) clearTimeout(timer);
+    });
 }
 
 function loadYouTubeTranscript(track, chapters) {
   if (!track || !track.baseUrl) {
     return Promise.resolve('');
   }
-  var base = String(track.baseUrl).replace(/\\u0026/g, '&');
+  var base = absoluteURL(track.baseUrl);
+  if (!base) {
+    return Promise.resolve('');
+  }
   var candidates = [base];
   if (base.indexOf('fmt=') === -1) {
     candidates.push(base + '&fmt=vtt');
@@ -355,7 +426,10 @@ function loadYouTubeTranscript(track, chapters) {
         if (!body || !String(body).trim()) {
           return next();
         }
-        var lines = body.indexOf('<text') !== -1 ? parseTimedTextXml(body) : parseVtt(body);
+        var lines =
+          body.indexOf('<text') !== -1
+            ? parseTimedTextXml(body)
+            : parseVtt(body);
         if (!lines.length) {
           return next();
         }
@@ -370,7 +444,10 @@ function loadYouTubeTranscript(track, chapters) {
 
 function readYouTubePlayer() {
   try {
-    if (typeof ytInitialPlayerResponse === 'undefined' || !ytInitialPlayerResponse) {
+    if (
+      typeof ytInitialPlayerResponse === 'undefined' ||
+      !ytInitialPlayerResponse
+    ) {
       return null;
     }
     return ytInitialPlayerResponse;
@@ -391,7 +468,12 @@ function hostnameOf(value) {
 
 function isXPostURL(value) {
   var host = hostnameOf(value);
-  if (host !== 'x.com' && host !== 'mobile.x.com' && host !== 'twitter.com' && host !== 'mobile.twitter.com') {
+  if (
+    host !== 'x.com' &&
+    host !== 'mobile.x.com' &&
+    host !== 'twitter.com' &&
+    host !== 'mobile.twitter.com'
+  ) {
     return false;
   }
   try {
@@ -417,7 +499,9 @@ function metaContent(name) {
 }
 
 function linesFromElement(element) {
-  return normalizeText((element && (element.innerText || element.textContent)) || '')
+  return normalizeText(
+    (element && (element.innerText || element.textContent)) || ''
+  )
     .split('\n')
     .map(function (line) {
       return normalizeText(line);
@@ -426,13 +510,18 @@ function linesFromElement(element) {
 }
 
 function pickXPostArticle(url) {
-  var articles = Array.prototype.slice.call(document.querySelectorAll('article'));
+  var articles = Array.prototype.slice.call(
+    document.querySelectorAll('article')
+  );
   if (!articles.length) return null;
   var statusMatch = String(url || '').match(/\/status\/(\d+)/);
   var statusId = statusMatch && statusMatch[1];
   for (var i = 0; i < articles.length; i++) {
     var article = articles[i];
-    if (statusId && article.querySelector('a[href*="/status/' + statusId + '"]')) {
+    if (
+      statusId &&
+      article.querySelector('a[href*="/status/' + statusId + '"]')
+    ) {
       return article;
     }
   }
@@ -503,11 +592,28 @@ function extractXTweetText(article) {
 function absoluteURL(value) {
   if (!value) return '';
   try {
-    var link = document.createElement('a');
-    link.href = String(value).replace(/\\u0026/g, '&').replace(/\\\//g, '/');
-    return link.href || '';
+    var decoded = String(value).replace(
+      /\\u0026|&amp;|\\\//g,
+      function (escape) {
+        if (escape === '\\u0026') return '&';
+        if (escape === '&amp;') return '&';
+        return '/';
+      }
+    );
+    var url = new URL(decoded, document.baseURI);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+    return url.href;
   } catch (error) {
     return '';
+  }
+}
+
+function isTrustedXMediaURL(value) {
+  try {
+    var url = new URL(value);
+    return url.protocol === 'https:' && url.hostname === 'pbs.twimg.com';
+  } catch (error) {
+    return false;
   }
 }
 
@@ -516,12 +622,16 @@ function mediaURLFromElement(element) {
   if (String(element.tagName || '').toUpperCase() === 'VIDEO') {
     return absoluteURL(element.getAttribute('poster') || element.poster || '');
   }
-  return absoluteURL(element.currentSrc || element.src || element.getAttribute('src') || '');
+  return absoluteURL(
+    element.currentSrc || element.src || element.getAttribute('src') || ''
+  );
 }
 
 function videoURLFromElement(element) {
   if (!element) return '';
-  var url = absoluteURL(element.currentSrc || element.src || element.getAttribute('src') || '');
+  var url = absoluteURL(
+    element.currentSrc || element.src || element.getAttribute('src') || ''
+  );
   if (url && url.indexOf('blob:') !== 0) return url;
   var source = element.querySelector && element.querySelector('source[src]');
   url = absoluteURL(source && source.getAttribute('src'));
@@ -551,15 +661,23 @@ function extractXMedia(article) {
       var tag = String(element.tagName || '').toUpperCase();
       var previewURL = mediaURLFromElement(element);
       var videoURL = tag === 'VIDEO' ? videoURLFromElement(element) : '';
-      var likelyVideo = /ext_tw_video_thumb|amplify_video_thumb/.test(previewURL);
+      var likelyVideo = /ext_tw_video_thumb|amplify_video_thumb/.test(
+        previewURL
+      );
       var type = tag === 'VIDEO' || likelyVideo ? 'video' : 'image';
-      var width = element.naturalWidth || element.videoWidth || element.clientWidth || 0;
-      var height = element.naturalHeight || element.videoHeight || element.clientHeight || 0;
+      var width =
+        element.naturalWidth || element.videoWidth || element.clientWidth || 0;
+      var height =
+        element.naturalHeight ||
+        element.videoHeight ||
+        element.clientHeight ||
+        0;
       return {
         type: type,
         previewURL: previewURL,
         videoURL: videoURL,
-        duration: type === 'video' ? extractXVideoDuration(article, element) : '',
+        duration:
+          type === 'video' ? extractXVideoDuration(article, element) : '',
         score: width * height,
       };
     })
@@ -567,22 +685,31 @@ function extractXMedia(article) {
       var url = candidate.previewURL || candidate.videoURL || '';
       if (!url) return false;
       if (/profile_images|emoji|avatar|abs\.twimg\.com/.test(url)) return false;
-      return /pbs\.twimg\.com\/(media|ext_tw_video_thumb|amplify_video_thumb|card_img)/.test(url)
-        || candidate.type === 'video';
+      return (
+        isTrustedXMediaURL(candidate.previewURL) || candidate.type === 'video'
+      );
     })
     .sort(function (a, b) {
       if (a.type !== b.type) return a.type === 'video' ? -1 : 1;
       return b.score - a.score;
     });
-  var ogVideo = metaContent('og:video') || metaContent('og:video:url') || metaContent('twitter:player:stream');
+  var ogVideo = absoluteURL(
+    metaContent('og:video') ||
+      metaContent('og:video:url') ||
+      metaContent('twitter:player:stream')
+  );
   if (candidates[0]) {
+    if (!isTrustedXMediaURL(candidates[0].previewURL)) {
+      candidates[0].previewURL = '';
+    }
     if (candidates[0].type === 'video' && !candidates[0].videoURL && ogVideo) {
       candidates[0].videoURL = ogVideo;
     }
     return candidates[0];
   }
 
-  var ogImage = metaContent('og:image');
+  var ogImage = absoluteURL(metaContent('og:image'));
+  if (!isTrustedXMediaURL(ogImage)) ogImage = '';
   if (ogVideo) {
     return {
       type: 'video',
@@ -602,7 +729,9 @@ function extractXMedia(article) {
 }
 
 function parseSrtTimestamp(value) {
-  var parts = String(value || '').replace(',', '.').split(':');
+  var parts = String(value || '')
+    .replace(',', '.')
+    .split(':');
   if (parts.length === 3) {
     return Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2]);
   }
@@ -614,7 +743,9 @@ function parseSrtTimestamp(value) {
 
 function parseSrt(srt) {
   var lines = [];
-  var blocks = String(srt || '').replace(/\r/g, '').split(/\n\n+/);
+  var blocks = String(srt || '')
+    .replace(/\r/g, '')
+    .split(/\n\n+/);
   for (var i = 0; i < blocks.length; i++) {
     var blockLines = blocks[i].split('\n').map(function (line) {
       return line.trim();
@@ -624,10 +755,7 @@ function parseSrt(srt) {
     });
     if (timeIndex < 0) continue;
     var start = parseSrtTimestamp(blockLines[timeIndex].split('-->')[0].trim());
-    var text = blockLines
-      .slice(timeIndex + 1)
-      .join(' ')
-      .replace(/<[^>]+>/g, '')
+    var text = stripCaptionMarkup(blockLines.slice(timeIndex + 1).join(' '))
       .replace(/\s+/g, ' ')
       .trim();
     if (text) lines.push({ start: start, text: text });
@@ -639,14 +767,18 @@ function parseCaptionBody(body) {
   var text = String(body || '');
   if (!text.trim()) return [];
   if (text.indexOf('<text') !== -1) return parseTimedTextXml(text);
-  var hasVttTiming = /(?:^|\n)\s*(?:(?:\d+:)?\d{2}:\d{2}\.\d{3})\s+-->/m.test(text);
+  var hasVttTiming = /(?:^|\n)\s*(?:(?:\d+:)?\d{2}:\d{2}\.\d{3})\s+-->/m.test(
+    text
+  );
   if (/^\uFEFF?\s*WEBVTT/.test(text) || hasVttTiming) return parseVtt(text);
   return parseSrt(text);
 }
 
 function linesFromTextTracks(article) {
   var lines = [];
-  var videos = Array.prototype.slice.call((article || document).querySelectorAll('video'));
+  var videos = Array.prototype.slice.call(
+    (article || document).querySelectorAll('video')
+  );
   for (var i = 0; i < videos.length; i++) {
     var tracks = videos[i].textTracks || [];
     for (var j = 0; j < tracks.length; j++) {
@@ -656,7 +788,8 @@ function linesFromTextTracks(article) {
         for (var k = 0; k < cues.length; k++) {
           var cue = cues[k];
           var text = normalizeText(cue.text || '');
-          if (text) lines.push({ start: Number(cue.startTime) || 0, text: text });
+          if (text)
+            lines.push({ start: Number(cue.startTime) || 0, text: text });
         }
       } catch (error) {}
     }
@@ -673,16 +806,15 @@ function extractCaptionURLsFromScripts() {
     if (text.indexOf('.vtt') === -1 && text.indexOf('.srt') === -1) continue;
     var match;
     while ((match = regex.exec(text))) {
-      urls.push(
-        absoluteURL(match[0].replace(/\\u0026/g, '&').replace(/&amp;/g, '&'))
-      );
+      urls.push(absoluteURL(match[0]));
     }
   }
   return urls;
 }
 
 function extractXCaptionURLs(article) {
-  var urls = Array.prototype.slice.call((article || document).querySelectorAll('track[src]'))
+  var urls = Array.prototype.slice
+    .call((article || document).querySelectorAll('track[src]'))
     .map(function (track) {
       return absoluteURL(track.getAttribute('src'));
     })
@@ -764,9 +896,14 @@ function extractXTimestamp(article) {
 
 function extractXMetrics(article) {
   function metric(testId, label) {
-    var node = article && article.querySelector('[data-testid="' + testId + '"]');
+    var node =
+      article && article.querySelector('[data-testid="' + testId + '"]');
     var raw = normalizeText(
-      (node && (node.getAttribute('aria-label') || node.innerText || node.textContent)) || ''
+      (node &&
+        (node.getAttribute('aria-label') ||
+          node.innerText ||
+          node.textContent)) ||
+        ''
     );
     var match = raw.match(/([\d,.]+\s*[KMB]?)/i);
     return match ? match[1].replace(/\s+/g, '') + ' ' + label : '';
@@ -805,25 +942,19 @@ function buildXPostPayload(article, url, videoTranscript) {
   var parts = [];
   if (author.displayName || author.handle) {
     parts.push(
-      ['**' + (author.displayName || 'X') + '**', author.handle]
-        .filter(Boolean)
-        .join('\n')
+      [author.displayName || 'X', author.handle].filter(Boolean).join('\n')
     );
-  }
-  if (media.previewURL) {
-    var alt = media.type === 'video' ? 'Tweet video cover' : 'Tweet media';
-    parts.push('![' + alt + '](' + media.previewURL + ')');
   }
   if (tweetText) parts.push(tweetText);
   if (media.type === 'video') {
     var videoInfo = ['Video'];
     if (media.duration) videoInfo.push('Duration: ' + media.duration);
     parts.push(videoInfo.join(' · '));
-    if (media.videoURL) parts.push('[Open video](' + media.videoURL + ')');
+    if (media.videoURL) parts.push('Open video: ' + media.videoURL);
     parts.push(
       videoTranscript
-        ? '## Video timeline\n\n' + videoTranscript
-        : '## Video timeline\n\nNo captions or timeline metadata exposed by X for this video.'
+        ? 'Video timeline\n\n' + videoTranscript
+        : 'Video timeline\n\nNo captions or timeline metadata exposed by X for this video.'
     );
   }
   if (timestamp) parts.push(timestamp);
@@ -872,7 +1003,9 @@ function captureGeneric() {
   var root = pickRoot();
   var content = selection;
   if (!content || content.length < 80) {
-    content = normalizeText((root && (root.innerText || root.textContent)) || '');
+    content = normalizeText(
+      (root && (root.innerText || root.textContent)) || ''
+    );
   }
   if (!content || content.length < 80) {
     content = normalizeText(
@@ -940,8 +1073,8 @@ SafariPageCapture.prototype = {
           '';
         var description = normalizeText(details.shortDescription || '');
         var tracks =
-          (((player.captions || {}).playerCaptionsTracklistRenderer || {})
-            .captionTracks) || [];
+          ((player.captions || {}).playerCaptionsTracklistRenderer || {})
+            .captionTracks || [];
         var selected = selectCaptionTrack(tracks);
         var chapters = extractChapters();
 

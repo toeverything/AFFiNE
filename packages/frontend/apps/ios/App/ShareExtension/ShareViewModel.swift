@@ -104,9 +104,6 @@ final class ShareViewModel: ObservableObject {
     title = built.title
     previewText = built.previewText
     markdown = built.markdown
-    if markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      markdown = built.previewText
-    }
     if let imageFile = built.files.first(where: { $0.embedInMarkdownAsImage }) {
       previewImage = UIImage(data: imageFile.data)?
         .preparingThumbnail(of: CGSize(width: 480, height: 480))
@@ -143,11 +140,14 @@ final class ShareViewModel: ObservableObject {
 
     let imageFiles = draft.files.filter(\.embedInMarkdownAsImage)
     let body = markdown.trimmingCharacters(in: .whitespacesAndNewlines)
-    if draft.rejectedAttachmentCount > 0 {
+    let hasImportableContent = ShareInboxSafety.hasImportableContent(
+      markdown: body
+    )
+    if draft.rejectedAttachmentCount > 0, !hasImportableContent {
       errorMessage = "File attachments are not supported yet. Share a link or image."
       return false
     }
-    guard !body.isEmpty else {
+    guard hasImportableContent else {
       errorMessage = "Shared content is empty"
       return false
     }

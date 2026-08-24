@@ -12,5 +12,6 @@ enum ShareInboxConstants {
   static let recentWorkspacesKey = "share.recentWorkspaces"
   static let lastWorkspaceIdKey = "share.lastWorkspaceId"
   static let lastWorkspaceFlavourKey = "share.lastWorkspaceFlavour"
+  static let importedItemIdsKey = "share.importedItemIds"
   static let openInboxURL = URL(string: "affine://share-inbox")!
 }

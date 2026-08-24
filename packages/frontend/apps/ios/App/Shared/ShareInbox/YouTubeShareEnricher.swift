@@ -52,8 +52,7 @@ enum YouTubeShareEnricher {
 
   static func videoId(from url: URL) -> String? {
     let host = (url.host ?? "").lowercased()
-    guard host.contains("youtube.com") || host == "youtu.be" || host.contains("youtube-nocookie.com")
-    else {
+    guard ShareInboxSafety.isYouTubeHost(host) else {
       return nil
     }
 
@@ -167,11 +166,13 @@ enum YouTubeShareEnricher {
       parts.append("![Thumbnail](attachment://youtube-thumbnail)")
     }
     if !result.description.isEmpty {
-      parts.append(result.description)
+      parts.append(ShareInboxSafety.escapeMarkdownText(result.description))
     }
     if !result.transcriptMarkdown.isEmpty {
       parts.append("## Transcript")
-      parts.append(result.transcriptMarkdown)
+      parts.append(
+        ShareInboxSafety.escapeMarkdownText(result.transcriptMarkdown)
+      )
     }
     return parts
       .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -621,11 +622,11 @@ enum YouTubeShareEnricher {
       ) != nil else { continue }
       let startToken = timeLine.split(separator: " ").first.map(String.init) ?? "0:00:00.000"
       let start = parseVTTTimestamp(startToken)
-      let text = blockLines
+      let rawText = blockLines
         .drop(while: { !$0.contains("-->") })
         .dropFirst()
         .joined(separator: " ")
-        .replacingOccurrences(of: #"<[^>]+>"#, with: "", options: .regularExpression)
+      let text = ShareInboxSafety.stripCaptionMarkup(rawText)
         .trimmingCharacters(in: .whitespacesAndNewlines)
       guard !text.isEmpty else { continue }
       lines.append(TimedLine(startSeconds: start, text: text))
@@ -798,36 +799,11 @@ enum YouTubeShareEnricher {
   }
 
   private static func stripHTML(_ value: String) -> String {
-    value.replacingOccurrences(of: #"<[^>]+>"#, with: "", options: .regularExpression)
+    ShareInboxSafety.stripCaptionMarkup(value)
   }
 
   private static func decodeXMLEntities(_ value: String) -> String {
-    var text = value
-    let entities: [(String, String)] = [
-      ("&amp;", "&"),
-      ("&lt;", "<"),
-      ("&gt;", ">"),
-      ("&quot;", "\""),
-      ("&#39;", "'"),
-      ("&apos;", "'"),
-      ("\n", "\n"),
-    ]
-    for (entity, replacement) in entities {
-      text = text.replacingOccurrences(of: entity, with: replacement)
-    }
-    // Numeric entities &#NN;
-    if let regex = try? NSRegularExpression(pattern: #"&#(\d+);"#) {
-      let ns = text as NSString
-      let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: ns.length))
-      for match in matches.reversed() {
-        guard match.numberOfRanges >= 2 else { continue }
-        let numString = ns.substring(with: match.range(at: 1))
-        if let num = Int(numString), let scalar = UnicodeScalar(num) {
-          text = (text as NSString).replacingCharacters(in: match.range, with: String(Character(scalar)))
-        }
-      }
-    }
-    return text
+    ShareInboxSafety.decodeXMLEntitiesOnce(value)
   }
 
   private static func sanitizeVideoId(_ value: String?) -> String? {

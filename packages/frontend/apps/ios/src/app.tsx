@@ -95,6 +95,7 @@ import {
   clearEndpointSession,
   getValidAccessToken,
 } from './proxy';
+import { resolveShareTargetWorkspace } from './share-extension/resolve-share-workspace';
 
 const storeManagerClient = createStoreManagerClient();
 setTelemetryTransport(storeManagerClient.telemetry);
@@ -613,71 +614,15 @@ const showNativeSignIn = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const workspacesService = frameworkProvider.get(WorkspacesService);
 
-  const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-  const findWorkspaceMeta = () => {
-    const matches = workspacesService.list.workspaces$.value.filter(
-      meta => meta.id === workspaceId
-    );
-    if (workspaceFlavour) {
-      return matches.find(meta => meta.flavour === workspaceFlavour) ?? null;
+  const targetWorkspace: WorkspaceMetadata | null = resolveShareTargetWorkspace(
+    {
+      currentFlavour: globalContextService.globalContext.workspaceFlavour.get(),
+      currentId: globalContextService.globalContext.workspaceId.get(),
+      preferredFlavour: workspaceFlavour,
+      preferredId: workspaceId,
+      workspaces: workspacesService.list.workspaces$.value,
     }
-    return matches.length === 1 ? matches[0] : null;
-  };
-
-  const currentWorkspaceMeta = () => {
-    const current = globalContextService.globalContext.workspaceId.get();
-    const currentFlavour =
-      globalContextService.globalContext.workspaceFlavour.get();
-    if (!current) {
-      return null;
-    }
-    return (
-      workspacesService.list.workspaces$.value.find(
-        meta =>
-          meta.id === current &&
-          (!currentFlavour || meta.flavour === currentFlavour)
-      ) ?? null
-    );
-  };
-
-  const resolveTargetWorkspace =
-    async (): Promise<WorkspaceMetadata | null> => {
-      const preferred =
-        typeof workspaceId === 'string' && workspaceId.length > 0
-          ? workspaceId
-          : null;
-      // Cold start: wait until workspace list / current context is ready.
-      for (let i = 0; i < 40; i++) {
-        if (preferred) {
-          const meta = findWorkspaceMeta();
-          if (meta) {
-            return meta;
-          }
-          await wait(500);
-          continue;
-        }
-        const current = currentWorkspaceMeta();
-        if (current) {
-          return current;
-        }
-        const first = workspacesService.list.workspaces$.value[0];
-        if (first) {
-          return first;
-        }
-        await wait(500);
-      }
-      if (preferred) {
-        return null;
-      }
-      return (
-        currentWorkspaceMeta() ??
-        workspacesService.list.workspaces$.value[0] ??
-        null
-      );
-    };
-
-  const targetWorkspace = await resolveTargetWorkspace();
+  );
   if (!targetWorkspace) {
     return null;
   }
@@ -705,27 +650,36 @@ const showNativeSignIn = async () => {
       extensions: getStoreManager().config.init().value.get('store'),
     });
     const docsService = workspace.scope.get(DocsService);
-    if (docId) {
-      // only support page mode for now
-      await docsService.changeDocTitle(docId, title);
-      docsService.list.setPrimaryMode(docId, 'page');
-      workbench.openDoc(docId);
-      // Ensure UI navigates into the new doc on cold start / workspace home.
-      try {
-        await router.navigate(
-          `/workspace/${targetWorkspace.id}/${docId}?flavour=${encodeURIComponent(
-            targetWorkspace.flavour
-          )}`
-        );
-      } catch (error) {
-        console.error('Failed to navigate to shared doc', error);
-      }
-      // Delay release so route mount can retain the pooled workspace.
-      setTimeout(() => workspaceRef.dispose(), 1500);
-      return docId;
-    } else {
+    if (!docId) {
       throw new Error('Failed to import doc');
     }
+
+    // Document creation is the transaction boundary. Decoration and navigation
+    // must not turn an already-created document into a retryable failure.
+    try {
+      await docsService.changeDocTitle(docId, title);
+    } catch (error) {
+      console.error('Failed to title shared doc', error);
+    }
+    try {
+      docsService.list.setPrimaryMode(docId, 'page');
+      workbench.openDoc(docId);
+    } catch (error) {
+      console.error('Failed to open shared doc', error);
+    }
+    // Ensure UI navigates into the new doc on cold start / workspace home.
+    try {
+      await router.navigate(
+        `/workspace/${targetWorkspace.id}/${docId}?flavour=${encodeURIComponent(
+          targetWorkspace.flavour
+        )}`
+      );
+    } catch (error) {
+      console.error('Failed to navigate to shared doc', error);
+    }
+    // Delay release so route mount can retain the pooled workspace.
+    setTimeout(() => workspaceRef.dispose(), 1500);
+    return docId;
   } catch (error) {
     workspaceRef.dispose();
     throw error;

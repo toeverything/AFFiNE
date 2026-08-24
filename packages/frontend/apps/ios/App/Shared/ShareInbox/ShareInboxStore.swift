@@ -81,9 +81,46 @@ final class ShareInboxStore {
     }
     if let lastWorkspaceId, !lastWorkspaceId.isEmpty {
       defaults.set(lastWorkspaceId, forKey: ShareInboxConstants.lastWorkspaceIdKey)
+    } else {
+      defaults.removeObject(forKey: ShareInboxConstants.lastWorkspaceIdKey)
     }
     if let lastWorkspaceFlavour, !lastWorkspaceFlavour.isEmpty {
       defaults.set(lastWorkspaceFlavour, forKey: ShareInboxConstants.lastWorkspaceFlavourKey)
+    } else {
+      defaults.removeObject(forKey: ShareInboxConstants.lastWorkspaceFlavourKey)
+    }
+  }
+
+  func isImported(_ item: ShareInboxItem) -> Bool {
+    guard let id = ShareInboxSafety.normalizedManifestID(item.id) else { return false }
+    return importedItemIds().contains(id)
+  }
+
+  @discardableResult
+  func markImported(_ item: ShareInboxItem) -> Bool {
+    guard let defaults,
+          let id = ShareInboxSafety.normalizedManifestID(item.id)
+    else {
+      return false
+    }
+    var ids = importedItemIds()
+    ids.insert(id)
+    defaults.set(Array(ids).sorted(), forKey: ShareInboxConstants.importedItemIdsKey)
+    return defaults.stringArray(forKey: ShareInboxConstants.importedItemIdsKey)?.contains(id) == true
+  }
+
+  func clearImported(_ item: ShareInboxItem) {
+    guard let defaults,
+          let id = ShareInboxSafety.normalizedManifestID(item.id)
+    else {
+      return
+    }
+    var ids = importedItemIds()
+    ids.remove(id)
+    if ids.isEmpty {
+      defaults.removeObject(forKey: ShareInboxConstants.importedItemIdsKey)
+    } else {
+      defaults.set(Array(ids).sorted(), forKey: ShareInboxConstants.importedItemIdsKey)
     }
   }
 
@@ -106,7 +143,9 @@ final class ShareInboxStore {
         writtenURLs.append(destination)
       }
 
-      let fileURL = inboxDirectoryURL.appendingPathComponent("\(item.id).json")
+      guard let fileURL = manifestURL(for: item.id) else {
+        throw ShareInboxError.invalidPayload
+      }
       let data = try encoder.encode(item)
       try data.write(to: fileURL, options: .atomic)
     } catch {
@@ -134,7 +173,13 @@ final class ShareInboxStore {
       .filter { $0.pathExtension.lowercased() == "json" }
       .compactMap { url -> ShareInboxItem? in
         guard let data = try? Data(contentsOf: url) else { return nil }
-        return try? decoder.decode(ShareInboxItem.self, from: data)
+        guard let item = try? decoder.decode(ShareInboxItem.self, from: data),
+              let expectedURL = manifestURL(for: item.id),
+              expectedURL.lastPathComponent.caseInsensitiveCompare(url.lastPathComponent) == .orderedSame
+        else {
+          return nil
+        }
+        return item
       }
       .sorted { $0.createdAt < $1.createdAt }
   }
@@ -154,8 +199,9 @@ final class ShareInboxStore {
   }
 
   func remove(_ item: ShareInboxItem) throws {
-    guard let inboxDirectoryURL else { return }
-    let fileURL = inboxDirectoryURL.appendingPathComponent("\(item.id).json")
+    guard let fileURL = manifestURL(for: item.id) else {
+      throw ShareInboxError.invalidPayload
+    }
     try fileManager.removeItem(at: fileURL)
 
     for attachment in item.attachments {
@@ -164,6 +210,24 @@ final class ShareInboxStore {
         try? fileManager.removeItem(at: url.deletingLastPathComponent())
       }
     }
+  }
+
+  private func importedItemIds() -> Set<String> {
+    Set(defaults?.stringArray(forKey: ShareInboxConstants.importedItemIdsKey) ?? [])
+  }
+
+  private func manifestURL(for itemId: String) -> URL? {
+    guard let inboxDirectoryURL,
+          let normalizedId = ShareInboxSafety.normalizedManifestID(itemId)
+    else {
+      return nil
+    }
+    let base = inboxDirectoryURL.standardizedFileURL
+    let candidate = base
+      .appendingPathComponent("\(normalizedId).json")
+      .standardizedFileURL
+    guard candidate.path.hasPrefix(base.path + "/") else { return nil }
+    return candidate
   }
 }
 

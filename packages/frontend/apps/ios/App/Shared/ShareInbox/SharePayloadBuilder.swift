@@ -7,6 +7,22 @@ import Foundation
 import UIKit
 import UniformTypeIdentifiers
 
+private final class XMediaRedirectDelegate: NSObject, URLSessionTaskDelegate {
+  func urlSession(
+    _ session: URLSession,
+    task: URLSessionTask,
+    willPerformHTTPRedirection response: HTTPURLResponse,
+    newRequest request: URLRequest,
+    completionHandler: @escaping (URLRequest?) -> Void
+  ) {
+    guard let url = request.url, ShareInboxSafety.isAllowedXMediaURL(url) else {
+      completionHandler(nil)
+      return
+    }
+    completionHandler(request)
+  }
+}
+
 enum SharePayloadBuilder {
   private static let maxAttachmentBytes = 12 * 1024 * 1024
   private static let maxRemoteImageBytes = 6 * 1024 * 1024
@@ -38,7 +54,7 @@ enum SharePayloadBuilder {
     var rejectedAttachmentCount = 0
 
     for item in extensionItems {
-      guard let attachments = item.attachments else { continue }
+      let attachments = item.attachments ?? []
       for provider in attachments {
         let typeIds = Set(provider.registeredTypeIdentifiers)
         #if DEBUG
@@ -170,8 +186,17 @@ enum SharePayloadBuilder {
         }
       }
 
-      if let suggested = item.attributedContentText?.string, !suggested.isEmpty, title == "Shared" {
-        title = String(suggested.prefix(48))
+      if let suggested = item.attributedContentText?.string, !suggested.isEmpty {
+        if let attributedBody = ShareInboxSafety.attributedTextBody(
+          suggested,
+          hasAttachments: !attachments.isEmpty,
+          existingText: textBody
+        ) {
+          textBody = attributedBody
+        }
+        if title == "Shared" {
+          title = String(suggested.prefix(48))
+        }
       }
     }
 
@@ -218,7 +243,8 @@ enum SharePayloadBuilder {
       )
     }
 
-    if let safariMediaURL,
+    if safariSourceType == "x-post",
+       let safariMediaURL,
        let mediaFile = await loadRemoteImageFile(
          from: safariMediaURL,
          placeholder: "attachment://x-post-media",
@@ -228,36 +254,35 @@ enum SharePayloadBuilder {
       files.removeAll { $0.placeholder == mediaFile.placeholder }
       if canAppend(mediaFile, to: files) {
         files.insert(mediaFile, at: 0)
-        pageContent = pageContent?.replacingOccurrences(
-          of: safariMediaURL,
-          with: mediaFile.placeholder
-        )
       }
     }
 
     // Prefer full page body over short share-sheet title text.
     let body: String?
     if let pageContent, !pageContent.isEmpty {
-      body = pageContent
-    } else if let textBody,
-              textBody != urlString,
-              textBody != title,
-              textBody.count > max(title.count + 8, 24)
-    {
-      body = textBody
+      body = ShareInboxSafety.escapeMarkdownText(pageContent)
     } else {
-      body = nil
+      body = ShareInboxSafety.importablePlainText(
+        textBody,
+        excludingURL: urlString
+      )
     }
 
     var markdownParts: [String] = []
     if let urlString {
-      markdownParts.append("[Source](\(urlString))")
+      if let safeURL = ShareInboxSafety.safeMarkdownWebURL(urlString) {
+        markdownParts.append("[Source](\(safeURL))")
+      } else {
+        markdownParts.append(
+          "Source: \(ShareInboxSafety.escapeMarkdownText(urlString))"
+        )
+      }
     }
     if let body {
       markdownParts.append(body)
     } else if let urlString {
       // Keep a visible editable body even when only the link is available.
-      markdownParts.append(urlString)
+      markdownParts.append(ShareInboxSafety.escapeMarkdownText(urlString))
     }
     for file in files {
       let alreadyReferenced = markdownParts.contains { $0.contains(file.placeholder) }
@@ -266,8 +291,12 @@ enum SharePayloadBuilder {
           markdownParts.append("![Shared Image](\(file.placeholder))")
         }
       } else {
-        markdownParts.append("Shared file: \(file.fileName)")
-        markdownParts.append("(\(file.mimeType))")
+        markdownParts.append(
+          "Shared file: \(ShareInboxSafety.escapeMarkdownText(file.fileName))"
+        )
+        markdownParts.append(
+          "(\(ShareInboxSafety.escapeMarkdownText(file.mimeType)))"
+        )
       }
     }
 
@@ -293,7 +322,7 @@ enum SharePayloadBuilder {
 
     return SharePayloadDraft(
       title: sanitizeTitle(title),
-      markdown: markdown.isEmpty ? preview : markdown,
+      markdown: markdown,
       previewText: String(preview.prefix(280)),
       files: files,
       rejectedAttachmentCount: rejectedAttachmentCount
@@ -429,9 +458,15 @@ enum SharePayloadBuilder {
   @MainActor
   private static func htmlToPlainText(_ html: String) -> String {
     guard html.utf8.count <= maxHTMLPayloadBytes else {
-      return String(html.prefix(maxSafariContentCharacters))
+      return String(
+        ShareInboxSafety.decodeXMLEntitiesOnce(
+          ShareInboxSafety.stripCaptionMarkup(html)
+        ).prefix(maxSafariContentCharacters)
+      )
     }
-    guard let data = html.data(using: .utf8) else { return html }
+    guard let data = html.data(using: .utf8) else {
+      return ShareInboxSafety.stripCaptionMarkup(html)
+    }
     let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
       .documentType: NSAttributedString.DocumentType.html,
       .characterEncoding: String.Encoding.utf8.rawValue,
@@ -441,7 +476,9 @@ enum SharePayloadBuilder {
       options: options,
       documentAttributes: nil
     ) else {
-      return html
+      return ShareInboxSafety.decodeXMLEntitiesOnce(
+        ShareInboxSafety.stripCaptionMarkup(html)
+      )
     }
     return attributed.string
       .replacingOccurrences(of: "\u{00a0}", with: " ")
@@ -535,8 +572,7 @@ enum SharePayloadBuilder {
     fileNamePrefix: String
   ) async -> SharePayloadFile? {
     guard let url = URL(string: urlString),
-          let scheme = url.scheme?.lowercased(),
-          scheme == "http" || scheme == "https"
+          ShareInboxSafety.isAllowedXMediaURL(url)
     else {
       return nil
     }
@@ -547,19 +583,30 @@ enum SharePayloadBuilder {
       forHTTPHeaderField: "User-Agent"
     )
     do {
-      let (data, response) = try await fetchDataCapped(request: request, maxBytes: maxRemoteImageBytes)
+      let redirectDelegate = XMediaRedirectDelegate()
+      let (data, response) = try await fetchDataCapped(
+        request: request,
+        maxBytes: maxRemoteImageBytes,
+        delegate: redirectDelegate
+      )
       guard !data.isEmpty,
             let http = response as? HTTPURLResponse,
-            (200...299).contains(http.statusCode)
+            (200...299).contains(http.statusCode),
+            let responseURL = http.url,
+            ShareInboxSafety.isAllowedXMediaURL(responseURL)
       else {
         return nil
       }
-      let mimeType = http.value(forHTTPHeaderField: "Content-Type")?
+      let declaredMimeType = http.value(forHTTPHeaderField: "Content-Type")?
         .components(separatedBy: ";")
         .first?
         .trimmingCharacters(in: .whitespacesAndNewlines)
         ?? mimeType(forFileName: url.lastPathComponent)
-      guard mimeType.hasPrefix("image/") else { return nil }
+      guard ShareInboxSafety.isSupportedRasterImageMimeType(declaredMimeType),
+            let mimeType = ShareInboxSafety.detectRasterImageMimeType(data)
+      else {
+        return nil
+      }
       let ext = fileExtension(forMimeType: mimeType)
       return SharePayloadFile(
         data: data,
@@ -575,9 +622,13 @@ enum SharePayloadBuilder {
 
   static func fetchDataCapped(
     request: URLRequest,
-    maxBytes: Int
+    maxBytes: Int,
+    delegate: URLSessionTaskDelegate? = nil
   ) async throws -> (Data, URLResponse) {
-    let (bytes, response) = try await URLSession.shared.bytes(for: request)
+    let (bytes, response) = try await URLSession.shared.bytes(
+      for: request,
+      delegate: delegate
+    )
     let expectedLength = response.expectedContentLength
     if expectedLength >= 0, expectedLength > Int64(maxBytes) {
       throw ShareInboxError.invalidPayload

@@ -48,6 +48,7 @@ final class ShareInboxImporter {
 
       // ~30s total budget for cold launch (workspace list + doc engine ready).
       let maxAttempts = 20
+      var importedThisRun = Set<String>()
       for attempt in 0..<maxAttempts {
         if Task.isCancelled { return }
 
@@ -60,10 +61,23 @@ final class ShareInboxImporter {
 
           var remaining = false
           for item in items {
-            let success = await importItem(item, using: webView)
-            if success {
+            if importedThisRun.contains(item.id) || store.isImported(item) {
               do {
                 try store.remove(item)
+                store.clearImported(item)
+              } catch {
+                remaining = true
+              }
+              continue
+            }
+
+            let success = await importItem(item, using: webView)
+            if success {
+              importedThisRun.insert(item.id)
+              _ = store.markImported(item)
+              do {
+                try store.remove(item)
+                store.clearImported(item)
               } catch {
                 remaining = true
               }
