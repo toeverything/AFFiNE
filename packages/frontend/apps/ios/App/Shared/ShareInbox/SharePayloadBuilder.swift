@@ -11,6 +11,11 @@ enum SharePayloadBuilder {
   private static let maxAttachmentBytes = 12 * 1024 * 1024
   private static let maxRemoteImageBytes = 6 * 1024 * 1024
   private static let maxTotalAttachmentBytes = 24 * 1024 * 1024
+  private static let maxTextPayloadBytes = 512 * 1024
+  private static let maxHTMLPayloadBytes = 768 * 1024
+  private static let maxPropertyListPayloadBytes = 1024 * 1024
+  private static let maxSafariContentCharacters = 250_000
+  private static let maxSafariTranscriptCharacters = 120_000
 
   private struct FileLoadResult {
     var file: SharePayloadFile?
@@ -349,25 +354,16 @@ enum SharePayloadBuilder {
   private static func loadSafariJavaScriptResults(
     from provider: NSItemProvider
   ) async throws -> SafariJavaScriptResults {
-    // Apple's sample uses loadItem forTypeIdentifier: property-list.
-    // Prefer that first; only fall back to dataRepresentation if needed.
-    if let item = try? await loadPropertyListItem(from: provider),
-       let parsed = parseSafariJavaScriptResults(from: item),
+    let data = try await loadFileRepresentationData(
+      from: provider,
+      typeIdentifier: UTType.propertyList.identifier,
+      maxBytes: maxPropertyListPayloadBytes
+    ).data
+    if let parsed = parseSafariJavaScriptResults(from: data),
        parsed.hasUsefulPayload
     {
       return parsed
     }
-
-    if let data = try? await loadDataRepresentation(
-      from: provider,
-      typeIdentifier: UTType.propertyList.identifier
-    ),
-      let parsed = parseSafariJavaScriptResults(from: data),
-      parsed.hasUsefulPayload
-    {
-      return parsed
-    }
-
     throw ShareInboxError.invalidPayload
   }
 
@@ -384,13 +380,13 @@ enum SharePayloadBuilder {
       ?? (results["text"] as? String)
 
     return SafariJavaScriptResults(
-      title: results["title"] as? String,
-      url: results["url"] as? String ?? results["baseURI"] as? String,
-      content: content,
-      description: results["description"] as? String,
-      transcript: results["transcript"] as? String,
-      mediaURL: results["mediaURL"] as? String,
-      sourceType: results["sourceType"] as? String
+      title: limitedString(results["title"] as? String, maxCharacters: 512),
+      url: limitedString(results["url"] as? String ?? results["baseURI"] as? String, maxCharacters: 4096),
+      content: limitedString(content, maxCharacters: maxSafariContentCharacters),
+      description: limitedString(results["description"] as? String, maxCharacters: maxSafariContentCharacters),
+      transcript: limitedString(results["transcript"] as? String, maxCharacters: maxSafariTranscriptCharacters),
+      mediaURL: limitedString(results["mediaURL"] as? String, maxCharacters: 4096),
+      sourceType: limitedString(results["sourceType"] as? String, maxCharacters: 128)
     )
   }
 
@@ -408,6 +404,7 @@ enum SharePayloadBuilder {
       return dictionary
     }
     if let data = item as? Data,
+       data.count <= maxPropertyListPayloadBytes,
        let plist = try? PropertyListSerialization.propertyList(
          from: data,
          options: [],
@@ -419,66 +416,21 @@ enum SharePayloadBuilder {
     return nil
   }
 
-  private static func loadDataRepresentation(
-    from provider: NSItemProvider,
-    typeIdentifier: String
-  ) async throws -> Data {
-    try await withCheckedThrowingContinuation { continuation in
-      provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
-        if let error {
-          continuation.resume(throwing: error)
-          return
-        }
-        if let data {
-          continuation.resume(returning: data)
-        } else {
-          continuation.resume(throwing: ShareInboxError.invalidPayload)
-        }
-      }
-    }
-  }
-
-  private static func loadPropertyListItem(from provider: NSItemProvider) async throws -> Any {
-    try await withCheckedThrowingContinuation { continuation in
-      provider.loadItem(forTypeIdentifier: UTType.propertyList.identifier, options: nil) { item, error in
-        if let error {
-          continuation.resume(throwing: error)
-          return
-        }
-        if let item {
-          continuation.resume(returning: item)
-        } else {
-          continuation.resume(throwing: ShareInboxError.invalidPayload)
-        }
-      }
-    }
-  }
-
   private static func loadHTMLString(from provider: NSItemProvider) async throws -> String {
-    try await withCheckedThrowingContinuation { continuation in
-      provider.loadItem(forTypeIdentifier: UTType.html.identifier, options: nil) { item, error in
-        if let error {
-          continuation.resume(throwing: error)
-          return
-        }
-        if let string = item as? String {
-          continuation.resume(returning: string)
-        } else if let data = item as? Data,
-                  let string = String(data: data, encoding: .utf8)
-                    ?? String(data: data, encoding: .utf16)
-        {
-          continuation.resume(returning: string)
-        } else if let attributed = item as? NSAttributedString {
-          continuation.resume(returning: attributed.string)
-        } else {
-          continuation.resume(throwing: ShareInboxError.invalidPayload)
-        }
-      }
-    }
+    try await loadFileRepresentationString(
+      from: provider,
+      typeIdentifier: UTType.html.identifier,
+      maxBytes: maxHTMLPayloadBytes,
+      maxCharacters: maxSafariContentCharacters,
+      encodings: [.utf8, .utf16]
+    )
   }
 
   @MainActor
   private static func htmlToPlainText(_ html: String) -> String {
+    guard html.utf8.count <= maxHTMLPayloadBytes else {
+      return String(html.prefix(maxSafariContentCharacters))
+    }
     guard let data = html.data(using: .utf8) else { return html }
     let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
       .documentType: NSAttributedString.DocumentType.html,
@@ -538,8 +490,11 @@ enum SharePayloadBuilder {
         continue
       }
 
-      guard let payload = try? await loadData(from: provider, typeIdentifier: typeId) else {
-        continue
+      let payload: (data: Data, rejectedDueToSize: Bool)
+      do {
+        payload = try await loadData(from: provider, typeIdentifier: typeId)
+      } catch {
+        return FileLoadResult(file: nil, rejectedAttachmentCount: 1)
       }
       if payload.rejectedDueToSize {
         return FileLoadResult(file: nil, rejectedAttachmentCount: 1)
@@ -645,6 +600,11 @@ enum SharePayloadBuilder {
     return String(trimmed.prefix(120))
   }
 
+  private static func limitedString(_ value: String?, maxCharacters: Int) -> String? {
+    guard let value else { return nil }
+    return String(value.prefix(maxCharacters))
+  }
+
   private static func canAppend(_ file: SharePayloadFile, to files: [SharePayloadFile]) -> Bool {
     let currentBytes = files.reduce(0) { $0 + $1.data.count }
     return file.data.count <= maxAttachmentBytes
@@ -674,32 +634,29 @@ enum SharePayloadBuilder {
   }
 
   private static func loadString(from provider: NSItemProvider) async throws -> String {
-    try await withCheckedThrowingContinuation { continuation in
-      provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { item, error in
-        if let error {
-          continuation.resume(throwing: error)
-          return
-        }
-        if let string = item as? String {
-          continuation.resume(returning: string)
-        } else if let data = item as? Data,
-                  let string = String(data: data, encoding: .utf8)
-        {
-          continuation.resume(returning: string)
-        } else if let attributed = item as? NSAttributedString {
-          continuation.resume(returning: attributed.string)
-        } else {
-          continuation.resume(throwing: ShareInboxError.invalidPayload)
-        }
-      }
-    }
+    try await loadFileRepresentationString(
+      from: provider,
+      typeIdentifier: UTType.plainText.identifier,
+      maxBytes: maxTextPayloadBytes,
+      maxCharacters: maxSafariContentCharacters,
+      encodings: [.utf8]
+    )
   }
 
   private static func loadData(
     from provider: NSItemProvider,
     typeIdentifier: String
   ) async throws -> (data: Data, rejectedDueToSize: Bool) {
-    try await withCheckedThrowingContinuation { continuation in
+    if let filePayload = try? await loadFileRepresentationData(
+      from: provider,
+      typeIdentifier: typeIdentifier
+    ) {
+      return filePayload
+    }
+    if let data = try? await loadDataRepresentation(from: provider, typeIdentifier: typeIdentifier) {
+      return (data, data.count > maxAttachmentBytes)
+    }
+    return try await withCheckedThrowingContinuation { continuation in
       provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, error in
         if let error {
           continuation.resume(throwing: error)
@@ -711,10 +668,67 @@ enum SharePayloadBuilder {
                   let payload = dataIfWithinLimit(at: url, maxBytes: maxAttachmentBytes)
         {
           continuation.resume(returning: (payload.data, payload.rejectedDueToSize))
-        } else if let image = item as? UIImage,
-                  let data = image.jpegData(compressionQuality: 0.85)
-        {
-          continuation.resume(returning: (data, data.count > maxAttachmentBytes))
+        } else {
+          continuation.resume(throwing: ShareInboxError.invalidPayload)
+        }
+      }
+    }
+  }
+
+  private static func loadFileRepresentationData(
+    from provider: NSItemProvider,
+    typeIdentifier: String,
+    maxBytes: Int = maxAttachmentBytes
+  ) async throws -> (data: Data, rejectedDueToSize: Bool) {
+    try await withCheckedThrowingContinuation { continuation in
+      provider.loadFileRepresentation(forTypeIdentifier: typeIdentifier) { url, error in
+        if let error {
+          continuation.resume(throwing: error)
+          return
+        }
+        guard let url,
+              let payload = dataIfWithinLimit(at: url, maxBytes: maxBytes)
+        else {
+          continuation.resume(throwing: ShareInboxError.invalidPayload)
+          return
+        }
+        continuation.resume(returning: payload)
+      }
+    }
+  }
+
+  private static func loadFileRepresentationString(
+    from provider: NSItemProvider,
+    typeIdentifier: String,
+    maxBytes: Int,
+    maxCharacters: Int,
+    encodings: [String.Encoding]
+  ) async throws -> String {
+    let payload = try await loadFileRepresentationData(
+      from: provider,
+      typeIdentifier: typeIdentifier,
+      maxBytes: maxBytes
+    )
+    guard !payload.rejectedDueToSize,
+          let string = encodings.lazy.compactMap({ String(data: payload.data, encoding: $0) }).first
+    else {
+      throw ShareInboxError.invalidPayload
+    }
+    return String(string.prefix(maxCharacters))
+  }
+
+  private static func loadDataRepresentation(
+    from provider: NSItemProvider,
+    typeIdentifier: String
+  ) async throws -> Data {
+    try await withCheckedThrowingContinuation { continuation in
+      provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
+        if let error {
+          continuation.resume(throwing: error)
+          return
+        }
+        if let data {
+          continuation.resume(returning: data)
         } else {
           continuation.resume(throwing: ShareInboxError.invalidPayload)
         }

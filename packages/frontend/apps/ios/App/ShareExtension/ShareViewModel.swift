@@ -11,7 +11,7 @@ final class ShareViewModel: ObservableObject {
   @Published var title: String = ""
   @Published var previewText: String = ""
   @Published var markdown: String = ""
-  @Published var selectedWorkspaceId: String?
+  @Published var selectedWorkspaceKey: String?
   @Published var workspaces: [ShareWorkspaceInfo] = []
   @Published var previewImage: UIImage?
   @Published var isLoading = true
@@ -22,12 +22,19 @@ final class ShareViewModel: ObservableObject {
   var hasWorkspaceCache: Bool { !workspaces.isEmpty }
 
   var selectedWorkspaceName: String {
-    if let selectedWorkspaceId,
-       let match = workspaces.first(where: { $0.id == selectedWorkspaceId })
-    {
-      return match.name
+    if let selectedWorkspace {
+      return selectedWorkspace.name
     }
     return workspaces.first?.name ?? "Workspace"
+  }
+
+  var selectedWorkspace: ShareWorkspaceInfo? {
+    if let selectedWorkspaceKey,
+       let match = workspaces.first(where: { $0.selectionKey == selectedWorkspaceKey })
+    {
+      return match
+    }
+    return workspaces.first
   }
 
   private var draft: SharePayloadDraft?
@@ -45,10 +52,15 @@ final class ShareViewModel: ObservableObject {
 
     workspaces = store.recentWorkspaces()
     let cachedLastId = store.lastWorkspaceId()
-    if let cachedLastId, workspaces.contains(where: { $0.id == cachedLastId }) {
-      selectedWorkspaceId = cachedLastId
+    let cachedLastFlavour = store.lastWorkspaceFlavour()
+    if let cachedLastId,
+       let cached = workspaces.first(where: {
+         $0.id == cachedLastId && (cachedLastFlavour == nil || $0.flavour == cachedLastFlavour)
+       })
+    {
+      selectedWorkspaceKey = cached.selectionKey
     } else {
-      selectedWorkspaceId = workspaces.first?.id
+      selectedWorkspaceKey = workspaces.first?.selectionKey
     }
 
     let items = extensionContext?.inputItems.compactMap { $0 as? NSExtensionItem } ?? []
@@ -131,7 +143,7 @@ final class ShareViewModel: ObservableObject {
 
     let imageFiles = draft.files.filter(\.embedInMarkdownAsImage)
     let body = markdown.trimmingCharacters(in: .whitespacesAndNewlines)
-    if draft.rejectedAttachmentCount > 0, isGenericFallbackBody(body) {
+    if draft.rejectedAttachmentCount > 0 {
       errorMessage = "File attachments are not supported yet. Share a link or image."
       return false
     }
@@ -158,7 +170,8 @@ final class ShareViewModel: ObservableObject {
     let item = ShareInboxItem(
       title: trimmedTitle,
       markdown: body,
-      workspaceId: selectedWorkspaceId,
+      workspaceId: selectedWorkspace?.id,
+      workspaceFlavour: selectedWorkspace?.flavour,
       previewText: String(body.prefix(280)),
       attachments: attachments
     )
@@ -178,10 +191,5 @@ final class ShareViewModel: ObservableObject {
       || lower.contains("youtu.be/")
       || lower.contains("youtube.com/watch")
       || lower.contains("m.youtube.com/")
-  }
-
-  private func isGenericFallbackBody(_ body: String) -> Bool {
-    let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
-    return trimmed.isEmpty || trimmed == "Shared content"
   }
 }

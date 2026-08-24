@@ -13,6 +13,7 @@ enum YouTubeShareEnricher {
   private static let maxPlayerBytes = 5 * 1024 * 1024
   private static let maxCaptionBytes = 3 * 1024 * 1024
   private static let maxThumbnailBytes = 6 * 1024 * 1024
+  private static let maxTranscriptCharacters = 120_000
 
   struct Result: Equatable {
     var title: String
@@ -669,6 +670,7 @@ enum YouTubeShareEnricher {
     var chapterIndex = 0
     var lastChapterTitle: String?
     var parts: [String] = []
+    var characterCount = 0
 
     for line in lines {
       while chapterIndex < sortedChapters.count,
@@ -676,15 +678,23 @@ enum YouTubeShareEnricher {
       {
         let chapter = sortedChapters[chapterIndex]
         if chapter.title != lastChapterTitle {
-          parts.append("### \(chapter.title)")
+          let heading = "### \(chapter.title)"
+          parts.append(heading)
+          characterCount += heading.count
           lastChapterTitle = chapter.title
         }
         chapterIndex += 1
       }
-      parts.append("\(formatTimestamp(line.startSeconds)) \(line.text)")
+      let part = "\(formatTimestamp(line.startSeconds)) \(line.text)"
+      parts.append(part)
+      characterCount += part.count
+      if characterCount >= maxTranscriptCharacters {
+        parts.append("[Transcript truncated]")
+        break
+      }
     }
 
-    return parts.joined(separator: "\n\n")
+    return String(parts.joined(separator: "\n\n").prefix(maxTranscriptCharacters))
   }
 
   private static func formatTimestamp(_ seconds: Double) -> String {

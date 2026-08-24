@@ -5,12 +5,16 @@ import { WorkspacesService } from '@affine/core/modules/workspace';
 import type { FrameworkProvider } from '@toeverything/infra';
 
 export function getCurrentWorkspace(frameworkProvider: FrameworkProvider) {
-  const currentWorkspaceId = frameworkProvider
-    .get(GlobalContextService)
-    .globalContext.workspaceId.get();
+  const globalContext =
+    frameworkProvider.get(GlobalContextService).globalContext;
+  const currentWorkspaceId = globalContext.workspaceId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
   if (!workspaceRef) {
     return;

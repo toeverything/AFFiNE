@@ -38,6 +38,7 @@ import {
 } from '@affine/core/modules/workbench';
 import {
   getAFFiNEWorkspaceSchema,
+  type WorkspaceMetadata,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
@@ -318,10 +319,15 @@ registerNativeImageFilesPicker(async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentWorkspaceId =
     globalContextService.globalContext.workspaceId.get();
+  const currentWorkspaceFlavour =
+    globalContextService.globalContext.workspaceFlavour.get();
   const currentDocId = globalContextService.globalContext.docId.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
   if (!workspaceRef) {
     return;
@@ -372,52 +378,90 @@ registerNativeImageFilesPicker(async () => {
 (window as any).createNewDocByMarkdownInCurrentWorkspace = async (
   markdown: string,
   title: string,
-  workspaceId?: string
+  workspaceId?: string,
+  workspaceFlavour?: string
 ) => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const workspacesService = frameworkProvider.get(WorkspacesService);
 
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  const resolveTargetWorkspaceId = async (): Promise<string | null> => {
-    const preferred =
-      typeof workspaceId === 'string' && workspaceId.length > 0
-        ? workspaceId
-        : null;
-    // Cold start: wait until workspace list / current context is ready.
-    for (let i = 0; i < 40; i++) {
-      if (preferred) {
-        const meta = workspacesService.list.workspace$(preferred).value;
-        if (meta) {
-          return preferred;
-        }
-        await wait(500);
-        continue;
-      }
-      const current = globalContextService.globalContext.workspaceId.get();
-      if (current) {
-        return current;
-      }
-      const first = workspacesService.list.workspaces$.value[0]?.id;
-      if (first) {
-        return first;
-      }
-      await wait(500);
+  const findWorkspaceMeta = () => {
+    const matches = workspacesService.list.workspaces$.value.filter(
+      meta => meta.id === workspaceId
+    );
+    if (workspaceFlavour) {
+      return matches.find(meta => meta.flavour === workspaceFlavour) ?? null;
+    }
+    return matches.length === 1 ? matches[0] : null;
+  };
+
+  const currentWorkspaceMeta = () => {
+    const current = globalContextService.globalContext.workspaceId.get();
+    const currentFlavour =
+      globalContextService.globalContext.workspaceFlavour.get();
+    if (!current) {
+      return null;
     }
     return (
-      globalContextService.globalContext.workspaceId.get() ??
-      workspacesService.list.workspaces$.value[0]?.id ??
-      null
+      workspacesService.list.workspaces$.value.find(
+        meta =>
+          meta.id === current &&
+          (!currentFlavour || meta.flavour === currentFlavour)
+      ) ?? null
     );
   };
 
-  const targetWorkspaceId = await resolveTargetWorkspaceId();
-  if (!targetWorkspaceId) {
+  const resolveTargetWorkspace =
+    async (): Promise<WorkspaceMetadata | null> => {
+      const preferred =
+        typeof workspaceId === 'string' && workspaceId.length > 0
+          ? workspaceId
+          : null;
+      // Cold start: wait until workspace list / current context is ready.
+      for (let i = 0; i < 40; i++) {
+        if (preferred) {
+          const meta = findWorkspaceMeta();
+          if (meta) {
+            return meta;
+          }
+          await wait(500);
+          continue;
+        }
+        const current = currentWorkspaceMeta();
+        if (current) {
+          return current;
+        }
+        const first = workspacesService.list.workspaces$.value[0];
+        if (first) {
+          return first;
+        }
+        await wait(500);
+      }
+      if (preferred) {
+        return null;
+      }
+      return (
+        currentWorkspaceMeta() ??
+        workspacesService.list.workspaces$.value[0] ??
+        null
+      );
+    };
+
+  const targetWorkspace = await resolveTargetWorkspace();
+  if (!targetWorkspace) {
     return null;
   }
 
-  const workspaceRef = workspacesService.openByWorkspaceId(targetWorkspaceId);
+  const workspaceRef = workspacesService.open({ metadata: targetWorkspace });
   if (!workspaceRef) {
+    return null;
+  }
+  if (
+    workspaceRef.workspace.meta.id !== targetWorkspace.id ||
+    workspaceRef.workspace.meta.flavour !== targetWorkspace.flavour
+  ) {
+    workspaceRef.dispose();
     return null;
   }
 
@@ -439,7 +483,11 @@ registerNativeImageFilesPicker(async () => {
       workbench.openDoc(docId);
       // Ensure UI navigates into the new doc on cold start / workspace home.
       try {
-        await router.navigate(`/workspace/${targetWorkspaceId}/${docId}`);
+        await router.navigate(
+          `/workspace/${targetWorkspace.id}/${docId}?flavour=${encodeURIComponent(
+            targetWorkspace.flavour
+          )}`
+        );
       } catch (error) {
         console.error('Failed to navigate to shared doc', error);
       }
@@ -459,16 +507,20 @@ registerNativeImageFilesPicker(async () => {
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const lastWorkspaceId =
     globalContextService.globalContext.workspaceId.get() ?? null;
+  const lastWorkspaceFlavour =
+    globalContextService.globalContext.workspaceFlavour.get() ?? null;
   const workspaces = workspacesService.list.workspaces$.value.map(meta => {
     const profile = workspacesService.getProfile(meta);
     const name = profile.name$.value || meta.id;
     return {
       id: meta.id,
+      flavour: meta.flavour,
       name,
     };
   });
   return {
     lastWorkspaceId,
+    lastWorkspaceFlavour,
     workspaces,
   };
 };

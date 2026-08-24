@@ -66,7 +66,15 @@ final class ShareInboxStore {
     defaults?.string(forKey: ShareInboxConstants.lastWorkspaceIdKey)
   }
 
-  func updateWorkspaceCache(workspaces: [ShareWorkspaceInfo], lastWorkspaceId: String?) {
+  func lastWorkspaceFlavour() -> String? {
+    defaults?.string(forKey: ShareInboxConstants.lastWorkspaceFlavourKey)
+  }
+
+  func updateWorkspaceCache(
+    workspaces: [ShareWorkspaceInfo],
+    lastWorkspaceId: String?,
+    lastWorkspaceFlavour: String?
+  ) {
     guard let defaults else { return }
     if let data = try? encoder.encode(workspaces) {
       defaults.set(data, forKey: ShareInboxConstants.recentWorkspacesKey)
@@ -74,10 +82,13 @@ final class ShareInboxStore {
     if let lastWorkspaceId, !lastWorkspaceId.isEmpty {
       defaults.set(lastWorkspaceId, forKey: ShareInboxConstants.lastWorkspaceIdKey)
     }
+    if let lastWorkspaceFlavour, !lastWorkspaceFlavour.isEmpty {
+      defaults.set(lastWorkspaceFlavour, forKey: ShareInboxConstants.lastWorkspaceFlavourKey)
+    }
   }
 
   func enqueue(_ item: ShareInboxItem, attachmentData: [(ShareInboxAttachment, Data)] = []) throws {
-    guard ensureDirectories(), let inboxDirectoryURL, let attachmentsDirectoryURL else {
+    guard ensureDirectories(), let inboxDirectoryURL else {
       throw ShareInboxError.containerUnavailable
     }
 
@@ -85,7 +96,9 @@ final class ShareInboxStore {
     var writtenParentURLs: [URL] = []
     do {
       for (attachment, data) in attachmentData {
-        let destination = attachmentsDirectoryURL.appendingPathComponent(attachment.relativePath)
+        guard let destination = attachmentURL(for: attachment) else {
+          throw ShareInboxError.invalidPayload
+        }
         let parent = destination.deletingLastPathComponent()
         try fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
         writtenParentURLs.append(parent)
@@ -128,13 +141,22 @@ final class ShareInboxStore {
 
   func attachmentURL(for attachment: ShareInboxAttachment) -> URL? {
     guard let attachmentsDirectoryURL else { return nil }
-    return attachmentsDirectoryURL.appendingPathComponent(attachment.relativePath)
+    guard !attachment.relativePath.isEmpty,
+          !attachment.relativePath.hasPrefix("/"),
+          !attachment.relativePath.split(separator: "/").contains("..")
+    else {
+      return nil
+    }
+    let base = attachmentsDirectoryURL.standardizedFileURL
+    let candidate = base.appendingPathComponent(attachment.relativePath).standardizedFileURL
+    guard candidate.path.hasPrefix(base.path + "/") else { return nil }
+    return candidate
   }
 
-  func remove(_ item: ShareInboxItem) {
+  func remove(_ item: ShareInboxItem) throws {
     guard let inboxDirectoryURL else { return }
     let fileURL = inboxDirectoryURL.appendingPathComponent("\(item.id).json")
-    try? fileManager.removeItem(at: fileURL)
+    try fileManager.removeItem(at: fileURL)
 
     for attachment in item.attachments {
       if let url = attachmentURL(for: attachment) {

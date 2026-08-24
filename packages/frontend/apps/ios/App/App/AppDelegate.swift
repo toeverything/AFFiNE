@@ -61,13 +61,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // Called when the app was launched with a url. Feel free to add additional processing here,
     // but if you want the App API to support tracking app url opens, make sure to keep this call
     let handled = ApplicationDelegateProxy.shared.application(app, open: url, options: options)
-    if url.scheme == "affine", url.host == "share-inbox" {
+    let isShareInboxURL = url.scheme == "affine" && url.host == "share-inbox"
+    if isShareInboxURL {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
         guard let self, let root = self.window?.rootViewController else { return }
         self.findAffineViewController(from: root)?.processShareInboxIfNeeded()
       }
     }
-    return handled
+    return handled || isShareInboxURL
   }
 
   func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {

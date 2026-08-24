@@ -103,8 +103,12 @@ export const Component = () => {
   const listLoading = useLiveData(workspacesService.list.isRevalidating$);
   const workspaces = useLiveData(workspacesService.list.workspaces$);
   const meta = useMemo(() => {
-    return workspaces.find(({ id }) => id === params.workspaceId);
-  }, [workspaces, params.workspaceId]);
+    const flavour = searchParams.get('flavour');
+    return workspaces.find(
+      ({ id, flavour: workspaceFlavour }) =>
+        id === params.workspaceId && (!flavour || workspaceFlavour === flavour)
+    );
+  }, [workspaces, params.workspaceId, searchParams]);
 
   // if listLoading is false, we can show 404 page, otherwise we should show loading page.
   useEffect(() => {

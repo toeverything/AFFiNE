@@ -7,7 +7,12 @@ import Foundation
 
 struct ShareWorkspaceInfo: Codable, Equatable, Identifiable, Hashable {
   var id: String
+  var flavour: String?
   var name: String
+
+  var selectionKey: String {
+    "\(id)::\(flavour ?? "")"
+  }
 }
 
 struct ShareInboxAttachment: Codable, Equatable {
@@ -24,6 +29,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
   var title: String
   var markdown: String
   var workspaceId: String?
+  var workspaceFlavour: String?
   var previewText: String?
   var attachments: [ShareInboxAttachment]
 
@@ -33,6 +39,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     title: String,
     markdown: String,
     workspaceId: String? = nil,
+    workspaceFlavour: String? = nil,
     previewText: String? = nil,
     attachments: [ShareInboxAttachment] = []
   ) {
@@ -41,6 +48,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     self.title = title
     self.markdown = markdown
     self.workspaceId = workspaceId
+    self.workspaceFlavour = workspaceFlavour
     self.previewText = previewText
     self.attachments = attachments
   }

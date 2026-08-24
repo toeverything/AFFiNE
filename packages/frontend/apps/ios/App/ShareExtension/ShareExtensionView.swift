@@ -52,9 +52,9 @@ struct ShareExtensionView: View {
       Menu {
         ForEach(viewModel.workspaces) { workspace in
           Button {
-            viewModel.selectedWorkspaceId = workspace.id
+            viewModel.selectedWorkspaceKey = workspace.selectionKey
           } label: {
-            if viewModel.selectedWorkspaceId == workspace.id {
+            if viewModel.selectedWorkspaceKey == workspace.selectionKey {
               Label(workspace.name, systemImage: "checkmark")
             } else {
               Text(workspace.name)

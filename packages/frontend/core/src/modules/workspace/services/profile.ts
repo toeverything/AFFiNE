@@ -3,11 +3,15 @@ import { ObjectPool, Service } from '@toeverything/infra';
 import { WorkspaceProfile } from '../entities/profile';
 import type { WorkspaceMetadata } from '../metadata';
 
+const workspaceProfileKey = (metadata: WorkspaceMetadata) =>
+  `${metadata.flavour}:${metadata.id}`;
+
 export class WorkspaceProfileService extends Service {
   pool = new ObjectPool<string, WorkspaceProfile>();
 
   getProfile = (metadata: WorkspaceMetadata): WorkspaceProfile => {
-    const exists = this.pool.get(metadata.id);
+    const key = workspaceProfileKey(metadata);
+    const exists = this.pool.get(key);
     if (exists) {
       return exists.obj;
     }
@@ -16,6 +20,6 @@ export class WorkspaceProfileService extends Service {
       metadata,
     });
 
-    return this.pool.put(metadata.id, profile).obj;
+    return this.pool.put(key, profile).obj;
   };
 }

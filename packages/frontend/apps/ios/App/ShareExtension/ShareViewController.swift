@@ -62,38 +62,15 @@ final class ShareViewController: UIViewController {
   @discardableResult
   private func openMainAppIfPossible() async -> Bool {
     let url = ShareInboxConstants.openInboxURL
-    if let extensionContext {
-      let openedViaExtensionContext = await withCheckedContinuation { continuation in
-        extensionContext.open(url) { success in
-          continuation.resume(returning: success)
-        }
+    guard let extensionContext else { return false }
+    let opened = await withCheckedContinuation { continuation in
+      extensionContext.open(url) { success in
+        continuation.resume(returning: success)
       }
-      #if DEBUG
-        NSLog("[AFFiNE Share] extensionContext.open success=%@", openedViaExtensionContext ? "YES" : "NO")
-      #endif
-      if openedViaExtensionContext {
-        return true
-      }
-    }
-
-    var responder: UIResponder? = self
-    while let current = responder {
-      if let application = current as? UIApplication {
-        let openedViaApplication = await withCheckedContinuation { continuation in
-          application.open(url, options: [:]) { success in
-            continuation.resume(returning: success)
-          }
-        }
-        #if DEBUG
-          NSLog("[AFFiNE Share] UIApplication.open fallback success=%@", openedViaApplication ? "YES" : "NO")
-        #endif
-        return openedViaApplication
-      }
-      responder = current.next
     }
     #if DEBUG
-      NSLog("[AFFiNE Share] UIApplication.open fallback unavailable")
+      NSLog("[AFFiNE Share] extensionContext.open success=%@", opened ? "YES" : "NO")
     #endif
-    return false
+    return opened
   }
 }

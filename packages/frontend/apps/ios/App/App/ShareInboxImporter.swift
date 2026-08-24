@@ -62,7 +62,11 @@ final class ShareInboxImporter {
           for item in items {
             let success = await importItem(item, using: webView)
             if success {
-              store.remove(item)
+              do {
+                try store.remove(item)
+              } catch {
+                remaining = true
+              }
             } else {
               remaining = true
             }
@@ -101,16 +105,23 @@ final class ShareInboxImporter {
     let markdown = SharePayloadBuilder.resolveMarkdown(item: item, store: store)
     let title = item.title
     let workspaceId = item.workspaceId ?? ""
+    let workspaceFlavour = item.workspaceFlavour ?? ""
 
     return await withCheckedContinuation { continuation in
       webView.callAsyncJavaScript(
         """
-        return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title, workspaceId || undefined);
+        return await window.createNewDocByMarkdownInCurrentWorkspace(
+          markdown,
+          title,
+          workspaceId || undefined,
+          workspaceFlavour || undefined
+        );
         """,
         arguments: [
           "markdown": markdown,
           "title": title,
           "workspaceId": workspaceId,
+          "workspaceFlavour": workspaceFlavour,
         ],
         in: nil,
         in: .page
@@ -133,12 +144,22 @@ final class ShareInboxImporter {
   private func applyWorkspaceCache(_ value: Any?) {
     guard let dictionary = value as? [String: Any] else { return }
     let lastWorkspaceId = dictionary["lastWorkspaceId"] as? String
+    let lastWorkspaceFlavour = dictionary["lastWorkspaceFlavour"] as? String
     let rawWorkspaces = dictionary["workspaces"] as? [[String: Any]] ?? []
     let workspaces = rawWorkspaces.compactMap { entry -> ShareWorkspaceInfo? in
       guard let id = entry["id"] as? String, !id.isEmpty else { return nil }
+      let flavour = (entry["flavour"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
       let name = (entry["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-      return ShareWorkspaceInfo(id: id, name: (name?.isEmpty == false ? name! : id))
+      return ShareWorkspaceInfo(
+        id: id,
+        flavour: flavour?.isEmpty == false ? flavour : nil,
+        name: (name?.isEmpty == false ? name! : id)
+      )
     }
-    store.updateWorkspaceCache(workspaces: workspaces, lastWorkspaceId: lastWorkspaceId)
+    store.updateWorkspaceCache(
+      workspaces: workspaces,
+      lastWorkspaceId: lastWorkspaceId,
+      lastWorkspaceFlavour: lastWorkspaceFlavour
+    )
   }
 }
