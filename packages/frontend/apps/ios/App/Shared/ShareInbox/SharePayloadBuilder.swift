@@ -8,6 +8,15 @@ import UIKit
 import UniformTypeIdentifiers
 
 enum SharePayloadBuilder {
+  private static let maxAttachmentBytes = 12 * 1024 * 1024
+  private static let maxRemoteImageBytes = 6 * 1024 * 1024
+  private static let maxTotalAttachmentBytes = 24 * 1024 * 1024
+
+  private struct FileLoadResult {
+    var file: SharePayloadFile?
+    var rejectedAttachmentCount: Int
+  }
+
   static func build(
     from extensionItems: [NSExtensionItem],
     enrichYouTube: Bool = true
@@ -21,15 +30,18 @@ enum SharePayloadBuilder {
     var safariMediaURL: String?
     var safariSourceType: String?
     var files: [SharePayloadFile] = []
+    var rejectedAttachmentCount = 0
 
     for item in extensionItems {
       guard let attachments = item.attachments else { continue }
       for provider in attachments {
         let typeIds = Set(provider.registeredTypeIdentifiers)
-        NSLog(
-          "[AFFiNE Share] provider types=%@",
-          typeIds.sorted().joined(separator: ",")
-        )
+        #if DEBUG
+          NSLog(
+            "[AFFiNE Share] provider types=%@",
+            typeIds.sorted().joined(separator: ",")
+          )
+        #endif
 
         // Safari JS preprocessing results (title / url / page body).
         // Try whenever the provider claims property-list support.
@@ -77,15 +89,17 @@ enum SharePayloadBuilder {
                 safariSourceType = trimmed
               }
             }
-            NSLog(
-              "[AFFiNE Share] safari js titleChars=%d url=%@ contentChars=%d descChars=%d transcriptChars=%d media=%@",
-              results.title?.count ?? 0,
-              results.url ?? "(nil)",
-              results.content?.count ?? 0,
-              results.description?.count ?? 0,
-              results.transcript?.count ?? 0,
-              results.mediaURL ?? "(nil)"
-            )
+            #if DEBUG
+              NSLog(
+                "[AFFiNE Share] safari js titleChars=%d hasURL=%d contentChars=%d descChars=%d transcriptChars=%d hasMedia=%d",
+                results.title?.count ?? 0,
+                results.url == nil ? 0 : 1,
+                results.content?.count ?? 0,
+                results.description?.count ?? 0,
+                results.transcript?.count ?? 0,
+                results.mediaURL == nil ? 0 : 1
+              )
+            #endif
           }
         }
 
@@ -124,19 +138,29 @@ enum SharePayloadBuilder {
         }
 
         // Prefer PDF / webarchive / image file payloads even when a URL is also present.
-        if files.isEmpty {
-          if let file = await loadPreferredFile(from: provider) {
-            // Avoid treating HTML/property-list blobs as generic shared files.
-            let lowerName = file.fileName.lowercased()
-            let isGenericBlob = file.mimeType == "application/octet-stream" && !lowerName.hasSuffix(".pdf")
-            if !isGenericBlob || lowerName.hasSuffix(".webarchive") || lowerName.hasSuffix(".pdf") {
-              files.append(file)
+        // Share sheets can provide multiple photos/files in one action; keep each one.
+        let fileResult = await loadPreferredFile(from: provider)
+        rejectedAttachmentCount += fileResult.rejectedAttachmentCount
+        if let file = fileResult.file {
+          // Avoid treating HTML/property-list blobs as generic shared files.
+          let lowerName = file.fileName.lowercased()
+          let isGenericBlob = file.mimeType == "application/octet-stream" && !lowerName.hasSuffix(".pdf")
+          if file.embedInMarkdownAsImage {
+            let indexedFile = file.withUniquePlaceholder(index: files.count)
+            if canAppend(indexedFile, to: files) {
+              files.append(indexedFile)
               if title == "Shared" || title == (urlString.flatMap { URL(string: $0)?.host } ?? "") {
-                if !file.embedInMarkdownAsImage {
-                  title = file.fileName
-                }
+                title = indexedFile.fileName
               }
+            } else {
+              rejectedAttachmentCount += 1
             }
+          } else if isGenericBlob, !lowerName.hasSuffix(".webarchive"), !lowerName.hasSuffix(".pdf") {
+            rejectedAttachmentCount += 1
+          } else {
+            // Non-image attachments are not importable yet. Keep URL/page/text content,
+            // but count the skipped file so file-only shares do not become fake successes.
+            rejectedAttachmentCount += 1
           }
         }
       }
@@ -162,25 +186,30 @@ enum SharePayloadBuilder {
       var youtubeFiles = files
       if let thumb = YouTubeShareEnricher.thumbnailFile(from: enriched) {
         youtubeFiles.removeAll { $0.placeholder == thumb.placeholder }
-        youtubeFiles.insert(thumb, at: 0)
+        if canAppend(thumb, to: youtubeFiles) {
+          youtubeFiles.insert(thumb, at: 0)
+        }
       }
       let markdown = YouTubeShareEnricher.buildMarkdown(from: enriched)
       let previewSeed =
         enriched.description.isEmpty
         ? enriched.transcriptMarkdown
         : enriched.description
-      NSLog(
-        "[AFFiNE Share] youtube enrich titleChars=%d descChars=%d transcriptChars=%d thumb=%d",
-        enriched.title.count,
-        enriched.description.count,
-        enriched.transcriptMarkdown.count,
-        enriched.thumbnailData?.count ?? 0
-      )
+      #if DEBUG
+        NSLog(
+          "[AFFiNE Share] youtube enrich titleChars=%d descChars=%d transcriptChars=%d thumb=%d",
+          enriched.title.count,
+          enriched.description.count,
+          enriched.transcriptMarkdown.count,
+          enriched.thumbnailData?.count ?? 0
+        )
+      #endif
       return SharePayloadDraft(
         title: sanitizeTitle(enriched.title.isEmpty ? title : enriched.title),
         markdown: markdown,
         previewText: String(previewSeed.prefix(280)),
-        files: youtubeFiles
+        files: youtubeFiles,
+        rejectedAttachmentCount: rejectedAttachmentCount
       )
     }
 
@@ -192,11 +221,13 @@ enum SharePayloadBuilder {
        )
     {
       files.removeAll { $0.placeholder == mediaFile.placeholder }
-      files.insert(mediaFile, at: 0)
-      pageContent = pageContent?.replacingOccurrences(
-        of: safariMediaURL,
-        with: mediaFile.placeholder
-      )
+      if canAppend(mediaFile, to: files) {
+        files.insert(mediaFile, at: 0)
+        pageContent = pageContent?.replacingOccurrences(
+          of: safariMediaURL,
+          with: mediaFile.placeholder
+        )
+      }
     }
 
     // Prefer full page body over short share-sheet title text.
@@ -259,7 +290,8 @@ enum SharePayloadBuilder {
       title: sanitizeTitle(title),
       markdown: markdown.isEmpty ? preview : markdown,
       previewText: String(preview.prefix(280)),
-      files: files
+      files: files,
+      rejectedAttachmentCount: rejectedAttachmentCount
     )
   }
 
@@ -269,7 +301,7 @@ enum SharePayloadBuilder {
   ) -> String {
     var markdown = item.markdown
 
-    for attachment in item.attachments {
+    for attachment in item.attachments.sorted(by: { $0.placeholder.count > $1.placeholder.count }) {
       guard markdown.contains(attachment.placeholder),
             let url = store.attachmentURL(for: attachment),
             let data = try? Data(contentsOf: url)
@@ -465,15 +497,15 @@ enum SharePayloadBuilder {
       .trimmingCharacters(in: .whitespacesAndNewlines)
   }
 
-  private static func loadPreferredFile(from provider: NSItemProvider) async -> SharePayloadFile? {
+  private static func loadPreferredFile(from provider: NSItemProvider) async -> FileLoadResult {
     let candidates: [(UTType, Bool)] = [
       (UTType.pdf, false),
       (UTType(filenameExtension: "webarchive") ?? UTType.data, false),
-      (.image, true),
       (.jpeg, true),
       (.png, true),
       (.heic, true),
       (.webP, true),
+      (.image, true),
       (.fileURL, false),
     ]
 
@@ -484,51 +516,62 @@ enum SharePayloadBuilder {
       if type.conforms(to: .fileURL) || typeId == UTType.fileURL.identifier {
         if let fileURL = try? await loadURL(from: provider, typeIdentifier: typeId),
            fileURL.isFileURL,
-           let data = try? Data(contentsOf: fileURL)
+           let payload = dataIfWithinLimit(at: fileURL, maxBytes: maxAttachmentBytes)
         {
+          if payload.rejectedDueToSize {
+            return FileLoadResult(file: nil, rejectedAttachmentCount: 1)
+          }
+          let data = payload.data
           let fileName = fileURL.lastPathComponent
           let mime = mimeType(forFileName: fileName)
           let embedImage = mime.hasPrefix("image/")
-          return SharePayloadFile(
+          return FileLoadResult(file: SharePayloadFile(
             data: data,
             mimeType: mime,
             fileName: fileName,
             placeholder: embedImage ? "attachment://shared-image" : "attachment://shared-file",
             embedInMarkdownAsImage: embedImage
-          )
+          ), rejectedAttachmentCount: 0)
+        } else if provider.hasItemConformingToTypeIdentifier(typeId) {
+          return FileLoadResult(file: nil, rejectedAttachmentCount: 1)
         }
         continue
       }
 
-      guard let data = try? await loadData(from: provider, typeIdentifier: typeId) else {
+      guard let payload = try? await loadData(from: provider, typeIdentifier: typeId) else {
         continue
       }
+      if payload.rejectedDueToSize {
+        return FileLoadResult(file: nil, rejectedAttachmentCount: 1)
+      }
+      let data = payload.data
 
       // Skip generic data if it looks like a tiny empty payload.
       guard !data.isEmpty else { continue }
 
       let ext = fileExtension(for: type)
+      let mime = mimeType(for: type, data: data)
       let fileName: String
       if type.conforms(to: .pdf) || typeId == UTType.pdf.identifier {
         fileName = "shared.pdf"
       } else if typeId.contains("webarchive") {
         fileName = "shared.webarchive"
       } else if isImage {
-        fileName = "shared.\(ext)"
+        fileName = "shared.\(fileExtension(forMimeType: mime, fallback: ext))"
       } else {
         fileName = "shared.\(ext)"
       }
 
-      return SharePayloadFile(
+      return FileLoadResult(file: SharePayloadFile(
         data: data,
-        mimeType: mimeType(for: type),
+        mimeType: mime,
         fileName: fileName,
         placeholder: isImage ? "attachment://shared-image" : "attachment://shared-file",
         embedInMarkdownAsImage: isImage
-      )
+      ), rejectedAttachmentCount: 0)
     }
 
-    return nil
+    return FileLoadResult(file: nil, rejectedAttachmentCount: 0)
   }
 
   private static func loadRemoteImageFile(
@@ -549,7 +592,7 @@ enum SharePayloadBuilder {
       forHTTPHeaderField: "User-Agent"
     )
     do {
-      let (data, response) = try await URLSession.shared.data(for: request)
+      let (data, response) = try await fetchDataCapped(request: request, maxBytes: maxRemoteImageBytes)
       guard !data.isEmpty,
             let http = response as? HTTPURLResponse,
             (200...299).contains(http.statusCode)
@@ -575,10 +618,37 @@ enum SharePayloadBuilder {
     }
   }
 
+  static func fetchDataCapped(
+    request: URLRequest,
+    maxBytes: Int
+  ) async throws -> (Data, URLResponse) {
+    let (bytes, response) = try await URLSession.shared.bytes(for: request)
+    let expectedLength = response.expectedContentLength
+    if expectedLength >= 0, expectedLength > Int64(maxBytes) {
+      throw ShareInboxError.invalidPayload
+    }
+
+    var data = Data()
+    data.reserveCapacity(min(maxBytes, 256 * 1024))
+    for try await byte in bytes {
+      data.append(byte)
+      if data.count > maxBytes {
+        throw ShareInboxError.invalidPayload
+      }
+    }
+    return (data, response)
+  }
+
   private static func sanitizeTitle(_ title: String) -> String {
     let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
     if trimmed.isEmpty { return "Shared" }
     return String(trimmed.prefix(120))
+  }
+
+  private static func canAppend(_ file: SharePayloadFile, to files: [SharePayloadFile]) -> Bool {
+    let currentBytes = files.reduce(0) { $0 + $1.data.count }
+    return file.data.count <= maxAttachmentBytes
+      && currentBytes + file.data.count <= maxTotalAttachmentBytes
   }
 
   private static func loadURL(from provider: NSItemProvider, typeIdentifier: String) async throws -> URL {
@@ -628,7 +698,7 @@ enum SharePayloadBuilder {
   private static func loadData(
     from provider: NSItemProvider,
     typeIdentifier: String
-  ) async throws -> Data {
+  ) async throws -> (data: Data, rejectedDueToSize: Bool) {
     try await withCheckedThrowingContinuation { continuation in
       provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, error in
         if let error {
@@ -636,11 +706,15 @@ enum SharePayloadBuilder {
           return
         }
         if let data = item as? Data {
-          continuation.resume(returning: data)
-        } else if let url = item as? URL, let data = try? Data(contentsOf: url) {
-          continuation.resume(returning: data)
-        } else if let image = item as? UIImage, let data = image.jpegData(compressionQuality: 0.9) {
-          continuation.resume(returning: data)
+          continuation.resume(returning: (data, data.count > maxAttachmentBytes))
+        } else if let url = item as? URL,
+                  let payload = dataIfWithinLimit(at: url, maxBytes: maxAttachmentBytes)
+        {
+          continuation.resume(returning: (payload.data, payload.rejectedDueToSize))
+        } else if let image = item as? UIImage,
+                  let data = image.jpegData(compressionQuality: 0.85)
+        {
+          continuation.resume(returning: (data, data.count > maxAttachmentBytes))
         } else {
           continuation.resume(throwing: ShareInboxError.invalidPayload)
         }
@@ -648,9 +722,21 @@ enum SharePayloadBuilder {
     }
   }
 
-  private static func mimeType(for type: UTType) -> String {
+  private static func mimeType(for type: UTType, data: Data? = nil) -> String {
     if type.conforms(to: .pdf) { return "application/pdf" }
     if type.identifier.contains("webarchive") { return "application/x-webarchive" }
+    if type.conforms(to: .jpeg) { return "image/jpeg" }
+    if type.conforms(to: .png) { return "image/png" }
+    if type.conforms(to: .heic) { return "image/heic" }
+    if type.conforms(to: .webP) { return "image/webp" }
+    if type.conforms(to: .image) {
+      if let data {
+        if data.starts(with: [0xFF, 0xD8, 0xFF]) { return "image/jpeg" }
+        if data.starts(with: [0x89, 0x50, 0x4E, 0x47]) { return "image/png" }
+        if data.starts(with: [0x52, 0x49, 0x46, 0x46]) { return "image/webp" }
+      }
+      return "image/jpeg"
+    }
     return type.preferredMIMEType ?? "application/octet-stream"
   }
 
@@ -674,13 +760,46 @@ enum SharePayloadBuilder {
     return type.preferredFilenameExtension ?? "bin"
   }
 
-  private static func fileExtension(forMimeType mimeType: String) -> String {
+  private static func fileExtension(forMimeType mimeType: String, fallback: String = "jpg") -> String {
     switch mimeType.lowercased() {
     case "image/png": return "png"
     case "image/webp": return "webp"
     case "image/gif": return "gif"
     case "image/heic": return "heic"
-    default: return "jpg"
+    default: return fallback
     }
+  }
+
+  private static func dataIfWithinLimit(
+    at url: URL,
+    maxBytes: Int
+  ) -> (data: Data, rejectedDueToSize: Bool)? {
+    guard url.isFileURL else { return nil }
+    if let values = try? url.resourceValues(forKeys: [.fileSizeKey]),
+       let fileSize = values.fileSize,
+       fileSize > maxBytes
+    {
+      return (Data(), true)
+    }
+    guard let data = try? Data(contentsOf: url), data.count <= maxBytes else {
+      return (Data(), true)
+    }
+    return (data, false)
+  }
+}
+
+private extension SharePayloadFile {
+  func withUniquePlaceholder(index: Int) -> SharePayloadFile {
+    var copy = self
+    if let url = URL(string: placeholder),
+       let scheme = url.scheme,
+       let host = url.host,
+      url.path.isEmpty
+    {
+      copy.placeholder = "\(scheme)://\(host)-\(String(format: "%04d", index + 1))"
+    } else {
+      copy.placeholder = "\(placeholder)-\(String(format: "%04d", index + 1))"
+    }
+    return copy
   }
 }

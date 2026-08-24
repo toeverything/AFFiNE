@@ -59,4 +59,5 @@ struct SharePayloadDraft: Equatable {
   var markdown: String
   var previewText: String
   var files: [SharePayloadFile]
+  var rejectedAttachmentCount: Int = 0
 }

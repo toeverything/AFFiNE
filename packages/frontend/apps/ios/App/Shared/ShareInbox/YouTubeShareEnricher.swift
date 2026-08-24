@@ -9,6 +9,11 @@
 import Foundation
 
 enum YouTubeShareEnricher {
+  private static let maxMetadataBytes = 2 * 1024 * 1024
+  private static let maxPlayerBytes = 5 * 1024 * 1024
+  private static let maxCaptionBytes = 3 * 1024 * 1024
+  private static let maxThumbnailBytes = 6 * 1024 * 1024
+
   struct Result: Equatable {
     var title: String
     var description: String
@@ -120,7 +125,7 @@ enum YouTubeShareEnricher {
       videoId: videoId
     )
     if thumbnailData == nil, let fallback = player?.thumbnailURL {
-      thumbnailData = await fetchData(from: fallback)
+      thumbnailData = await fetchData(from: fallback, maxBytes: maxThumbnailBytes)
     }
 
     let seededTranscript = nonEmpty(seed?.transcriptMarkdown) ?? ""
@@ -226,7 +231,8 @@ enum YouTubeShareEnricher {
     let watchURL = "https://www.youtube.com/watch?v=\(videoId)&hl=en&bpctr=9999999999&has_verified=1"
     guard let htmlData = await fetchData(
       from: watchURL,
-      userAgent: desktopUserAgent
+      userAgent: desktopUserAgent,
+      maxBytes: maxPlayerBytes
     ),
       let html = String(data: htmlData, encoding: .utf8)
         ?? String(data: htmlData, encoding: .isoLatin1)
@@ -425,7 +431,10 @@ enum YouTubeShareEnricher {
     ])
 
     for candidate in candidates {
-      if let data = await fetchData(from: candidate), !data.isEmpty, data.count > 1000 {
+      if let data = await fetchData(from: candidate, maxBytes: maxThumbnailBytes),
+         !data.isEmpty,
+         data.count > 1000
+      {
         return data
       }
     }
@@ -438,7 +447,8 @@ enum YouTubeShareEnricher {
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
   private static func fetchData(
     from urlString: String,
-    userAgent: String = mobileUserAgent
+    userAgent: String = mobileUserAgent,
+    maxBytes: Int = maxMetadataBytes
   ) async -> Data? {
     guard let url = URL(string: urlString) else { return nil }
     var request = URLRequest(url: url)
@@ -446,7 +456,10 @@ enum YouTubeShareEnricher {
     request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
     request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
     do {
-      let (data, response) = try await URLSession.shared.data(for: request)
+      let (data, response) = try await SharePayloadBuilder.fetchDataCapped(
+        request: request,
+        maxBytes: maxBytes
+      )
       if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
         return nil
       }
@@ -496,7 +509,11 @@ enum YouTubeShareEnricher {
       candidates.append(track.baseURL)
     }
     for candidate in candidates {
-      guard let data = await fetchData(from: candidate, userAgent: desktopUserAgent),
+      guard let data = await fetchData(
+        from: candidate,
+        userAgent: desktopUserAgent,
+        maxBytes: maxCaptionBytes
+      ),
             let lines = parseCaptions(data: data),
             !lines.isEmpty
       else {

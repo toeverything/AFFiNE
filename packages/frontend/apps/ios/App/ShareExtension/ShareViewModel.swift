@@ -17,6 +17,7 @@ final class ShareViewModel: ObservableObject {
   @Published var isLoading = true
   @Published var isSaving = false
   @Published var errorMessage: String?
+  @Published var infoMessage: String?
 
   var hasWorkspaceCache: Bool { !workspaces.isEmpty }
 
@@ -38,6 +39,8 @@ final class ShareViewModel: ObservableObject {
 
   func load(from extensionContext: NSExtensionContext?) async {
     isLoading = true
+    errorMessage = nil
+    infoMessage = nil
     defer { isLoading = false }
 
     workspaces = store.recentWorkspaces()
@@ -96,18 +99,23 @@ final class ShareViewModel: ObservableObject {
       previewImage = UIImage(data: imageFile.data)?
         .preparingThumbnail(of: CGSize(width: 480, height: 480))
     }
+    if built.rejectedAttachmentCount > 0 {
+      infoMessage = "Some attachments won't be imported."
+    }
 
-    NSLog(
-      "[AFFiNE Share] loaded title=%@ markdownChars=%d files=%d",
-      title,
-      markdown.count,
-      built.files.count
-    )
+    #if DEBUG
+      NSLog(
+        "[AFFiNE Share] loaded markdownChars=%d files=%d",
+        markdown.count,
+        built.files.count
+      )
+    #endif
   }
 
   func save() async -> Bool {
     guard !isSaving else { return false }
     isSaving = true
+    errorMessage = nil
     defer { isSaving = false }
 
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -121,7 +129,12 @@ final class ShareViewModel: ObservableObject {
       return false
     }
 
+    let imageFiles = draft.files.filter(\.embedInMarkdownAsImage)
     let body = markdown.trimmingCharacters(in: .whitespacesAndNewlines)
+    if draft.rejectedAttachmentCount > 0, isGenericFallbackBody(body) {
+      errorMessage = "File attachments are not supported yet. Share a link or image."
+      return false
+    }
     guard !body.isEmpty else {
       errorMessage = "Shared content is empty"
       return false
@@ -130,7 +143,7 @@ final class ShareViewModel: ObservableObject {
     var attachments: [ShareInboxAttachment] = []
     var attachmentData: [(ShareInboxAttachment, Data)] = []
 
-    for file in draft.files {
+    for file in imageFiles {
       let relativePath = "\(UUID().uuidString)/\(file.fileName)"
       let attachment = ShareInboxAttachment(
         fileName: file.fileName,
@@ -165,5 +178,10 @@ final class ShareViewModel: ObservableObject {
       || lower.contains("youtu.be/")
       || lower.contains("youtube.com/watch")
       || lower.contains("m.youtube.com/")
+  }
+
+  private func isGenericFallbackBody(_ body: String) -> Bool {
+    let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmed.isEmpty || trimmed == "Shared content"
   }
 }

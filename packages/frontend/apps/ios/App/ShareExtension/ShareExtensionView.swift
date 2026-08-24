@@ -96,6 +96,12 @@ struct ShareExtensionView: View {
             .font(.footnote)
             .foregroundStyle(.red)
         }
+
+        if let infoMessage = viewModel.infoMessage {
+          Text(infoMessage)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
       }
       .padding(.horizontal, 16)
       .padding(.top, 12)

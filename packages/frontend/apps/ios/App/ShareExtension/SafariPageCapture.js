@@ -8,6 +8,9 @@
 
 var SafariPageCapture = function () {};
 
+var MAX_FETCH_TEXT_BYTES = 3 * 1024 * 1024;
+var MAX_TRANSCRIPT_CHARS = 80000;
+
 function normalizeText(value) {
   return String(value || '')
     .replace(/\u00a0/g, ' ')
@@ -241,7 +244,7 @@ function formatTranscript(lines, chapters) {
     }
     parts.push(formatTimestamp(line.start) + ' ' + line.text);
   }
-  return parts.join('\n\n');
+  return truncateText(parts.join('\n\n'), MAX_TRANSCRIPT_CHARS);
 }
 
 function selectCaptionTrack(tracks) {
@@ -271,12 +274,62 @@ function selectCaptionTrack(tracks) {
   return asr[0] || tracks[0];
 }
 
-function fetchText(url) {
-  return fetch(url, { credentials: 'include' }).then(function (response) {
+function truncateText(value, maxChars) {
+  var text = String(value || '');
+  if (text.length <= maxChars) return text;
+  return text.substring(0, maxChars) + '\n\n…';
+}
+
+function fetchText(url, options) {
+  options = options || {};
+  var maxBytes = options.maxBytes || MAX_FETCH_TEXT_BYTES;
+  var timeoutMs = options.timeoutMs || 5000;
+  var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var timer = controller
+    ? setTimeout(function () {
+        controller.abort();
+      }, timeoutMs)
+    : null;
+  return fetch(url, {
+    credentials: 'include',
+    signal: controller ? controller.signal : undefined,
+  }).then(function (response) {
     if (!response.ok) {
       throw new Error('fetch failed');
     }
-    return response.text();
+    var length = Number(response.headers && response.headers.get('content-length'));
+    if (Number.isFinite(length) && length > maxBytes) {
+      throw new Error('fetch too large');
+    }
+    if (!response.body || !response.body.getReader) {
+      return response.text().then(function (text) {
+        if (text.length > maxBytes) throw new Error('fetch too large');
+        return text;
+      });
+    }
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder();
+    var received = 0;
+    var chunks = [];
+    function readNext() {
+      return reader.read().then(function (result) {
+        if (result.done) {
+          return chunks.join('') + decoder.decode();
+        }
+        received += result.value.byteLength;
+        if (received > maxBytes) {
+          try {
+            reader.cancel();
+          } catch (error) {}
+          throw new Error('fetch too large');
+        }
+        chunks.push(decoder.decode(result.value, { stream: true }));
+        return readNext();
+      });
+    }
+    return readNext();
+  }).finally(function () {
+    if (timer) clearTimeout(timer);
   });
 }
 
@@ -892,14 +945,14 @@ SafariPageCapture.prototype = {
         var selected = selectCaptionTrack(tracks);
         var chapters = extractChapters();
 
-        loadYouTubeTranscript(selected, chapters)
+        withTimeout(loadYouTubeTranscript(selected, chapters), 2200, '')
           .then(function (transcript) {
             complete({
               title: title,
               url: url,
               content: description,
               description: description,
-              transcript: transcript || '',
+              transcript: truncateText(transcript || '', MAX_TRANSCRIPT_CHARS),
             });
           })
           .catch(function () {

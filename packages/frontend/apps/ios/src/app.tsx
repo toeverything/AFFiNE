@@ -391,6 +391,8 @@ registerNativeImageFilesPicker(async () => {
         if (meta) {
           return preferred;
         }
+        await wait(500);
+        continue;
       }
       const current = globalContextService.globalContext.workspaceId.get();
       if (current) {

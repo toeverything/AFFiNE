@@ -50,27 +50,50 @@ final class ShareViewController: UIViewController {
       guard let self else { return }
       let success = await viewModel.save()
       guard success else { return }
-      await openMainAppIfPossible()
+      let opened = await openMainAppIfPossible()
+      if !opened {
+        viewModel.infoMessage = "Saved. Open AFFiNE to finish import."
+        try? await Task.sleep(nanoseconds: 1_200_000_000)
+      }
       extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
     }
   }
 
-  /// Walk the responder chain to reach UIApplication and open the host app URL scheme.
-  /// `UIApplication.shared` is unavailable in app extensions at compile time.
   @discardableResult
   private func openMainAppIfPossible() async -> Bool {
     let url = ShareInboxConstants.openInboxURL
+    if let extensionContext {
+      let openedViaExtensionContext = await withCheckedContinuation { continuation in
+        extensionContext.open(url) { success in
+          continuation.resume(returning: success)
+        }
+      }
+      #if DEBUG
+        NSLog("[AFFiNE Share] extensionContext.open success=%@", openedViaExtensionContext ? "YES" : "NO")
+      #endif
+      if openedViaExtensionContext {
+        return true
+      }
+    }
+
     var responder: UIResponder? = self
     while let current = responder {
       if let application = current as? UIApplication {
-        return await withCheckedContinuation { continuation in
+        let openedViaApplication = await withCheckedContinuation { continuation in
           application.open(url, options: [:]) { success in
             continuation.resume(returning: success)
           }
         }
+        #if DEBUG
+          NSLog("[AFFiNE Share] UIApplication.open fallback success=%@", openedViaApplication ? "YES" : "NO")
+        #endif
+        return openedViaApplication
       }
       responder = current.next
     }
+    #if DEBUG
+      NSLog("[AFFiNE Share] UIApplication.open fallback unavailable")
+    #endif
     return false
   }
 }
