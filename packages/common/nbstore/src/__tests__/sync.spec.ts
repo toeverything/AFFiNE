@@ -346,6 +346,20 @@ test('doc', async () => {
     docId: 'doc1',
     bin: update,
   });
+  const prioritizedDocId = 'prioritized-doc';
+  const localPrioritizedDoc = new YDoc();
+  localPrioritizedDoc.getMap('test').set('local', true);
+  const localPrioritizedClock = await peerA.get('doc').pushDocUpdate({
+    docId: prioritizedDocId,
+    bin: encodeStateAsUpdate(localPrioritizedDoc),
+  });
+  await peerASync.setPeerPushedClock('b', localPrioritizedClock);
+  const remotePrioritizedDoc = new YDoc();
+  remotePrioritizedDoc.getMap('test').set('remote', true);
+  await peerB.get('doc').pushDocUpdate({
+    docId: prioritizedDocId,
+    bin: encodeStateAsUpdate(remotePrioritizedDoc),
+  });
   const rootDoc = new YDoc();
   rootDoc.getMap('meta').set('name', 'Self-host workspace');
   await peerB.get('doc').pushDocUpdate({
@@ -386,7 +400,25 @@ test('doc', async () => {
         name: 'Self-host workspace',
       },
     });
+
+    const prioritized = await peerA.get('doc').getDoc(prioritizedDocId);
+    expectYjsEqual(prioritized!.bin, {
+      test: {
+        local: true,
+      },
+    });
   }
+
+  const removeDocPriority = sync.doc.addPriority(prioritizedDocId, 100);
+  await vi.waitFor(async () => {
+    const prioritized = await peerA.get('doc').getDoc(prioritizedDocId);
+    expectYjsEqual(prioritized!.bin, {
+      test: {
+        local: true,
+        remote: true,
+      },
+    });
+  });
 
   doc.getMap('test').set('foo', 'bar');
   const update2 = encodeStateAsUpdate(doc);
@@ -415,6 +447,7 @@ test('doc', async () => {
     });
   }
 
+  removeDocPriority();
   removeRootPriority();
   sync.stop();
   peerA.disconnect();
@@ -590,84 +623,6 @@ test('doc sync peer stops retrying a doc when remote denies permission', async (
     abort.abort();
     local.connection.disconnect();
     syncMetadata.connection.disconnect();
-  }
-});
-
-test('doc sync peer schedules known doc when priority is added during sync', async () => {
-  const id = `ws-priority-${Date.now()}`;
-  const local = new IndexedDBDocStorage({
-    id,
-    flavour: 'local-priority',
-    type: 'workspace',
-  });
-  const syncMetadata = new IndexedDBDocSyncStorage({
-    id,
-    flavour: 'local-priority',
-    type: 'workspace',
-  });
-  const remote = new IndexedDBDocStorage({
-    id,
-    flavour: 'remote-priority',
-    type: 'workspace',
-  });
-  const peer = new DocSyncPeer('remote-priority', local, syncMetadata, remote);
-  const abort = new AbortController();
-  const getPeerPushedClock = vi.spyOn(syncMetadata, 'getPeerPushedClock');
-
-  local.connection.connect();
-  syncMetadata.connection.connect();
-  remote.connection.connect();
-  await local.connection.waitForConnected();
-  await syncMetadata.connection.waitForConnected();
-  await remote.connection.waitForConnected();
-
-  const doc = new YDoc();
-  doc.getMap('test').set('hello', 'world');
-  await local.pushDocUpdate({
-    docId: 'doc-priority',
-    bin: encodeStateAsUpdate(doc),
-  });
-
-  try {
-    void peer.mainLoop(abort.signal);
-
-    await vi.waitFor(async () => {
-      const remoteDoc = await remote.getDoc('doc-priority');
-      expect(remoteDoc).not.toBeNull();
-    });
-    await vi.waitFor(() => {
-      let state:
-        | {
-            syncing: boolean;
-            synced: boolean;
-          }
-        | undefined;
-      const dispose = peer.docState$('doc-priority').subscribe(next => {
-        state = next;
-      });
-      dispose.unsubscribe();
-
-      expect(state).toMatchObject({
-        syncing: false,
-        synced: true,
-      });
-    });
-
-    const callsBeforePriority = getPeerPushedClock.mock.calls.length;
-    const undoPriority = peer.addPriority('doc-priority', 100);
-
-    await vi.waitFor(() => {
-      expect(getPeerPushedClock.mock.calls.length).toBeGreaterThan(
-        callsBeforePriority
-      );
-    });
-
-    undoPriority();
-  } finally {
-    abort.abort();
-    local.connection.disconnect();
-    syncMetadata.connection.disconnect();
-    remote.connection.disconnect();
   }
 });
 
