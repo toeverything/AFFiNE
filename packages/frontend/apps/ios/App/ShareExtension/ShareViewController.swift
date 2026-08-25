@@ -50,11 +50,7 @@ final class ShareViewController: UIViewController {
       guard let self else { return }
       let success = await viewModel.save()
       guard success else { return }
-      let opened = await openMainAppIfPossible()
-      if !opened {
-        viewModel.infoMessage = "Saved. Open AFFiNE to finish import."
-        try? await Task.sleep(nanoseconds: 1_200_000_000)
-      }
+      await openMainAppIfPossible()
       extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
     }
   }
@@ -62,15 +58,32 @@ final class ShareViewController: UIViewController {
   @discardableResult
   private func openMainAppIfPossible() async -> Bool {
     let url = ShareInboxConstants.openInboxURL
-    guard let extensionContext else { return false }
-    let opened = await withCheckedContinuation { continuation in
-      extensionContext.open(url) { success in
+    let openedByContext = await withCheckedContinuation { continuation in
+      extensionContext?.open(url) { success in
         continuation.resume(returning: success)
-      }
+      } ?? continuation.resume(returning: false)
     }
+    let opened = openedByContext || openMainAppViaResponderChain(url)
     #if DEBUG
-      NSLog("[AFFiNE Share] extensionContext.open success=%@", opened ? "YES" : "NO")
+      NSLog(
+        "[AFFiNE Share] open url=%@ extensionContext=%@ final=%@",
+        url.absoluteString,
+        openedByContext ? "YES" : "NO",
+        opened ? "YES" : "NO"
+      )
     #endif
     return opened
+  }
+
+  private func openMainAppViaResponderChain(_ url: URL) -> Bool {
+    var responder: UIResponder? = self
+    while let current = responder {
+      if let application = current as? UIApplication {
+        application.open(url, options: [:], completionHandler: nil)
+        return true
+      }
+      responder = current.next
+    }
+    return false
   }
 }

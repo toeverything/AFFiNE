@@ -17,7 +17,6 @@ final class ShareViewModel: ObservableObject {
   @Published var isLoading = true
   @Published var isSaving = false
   @Published var errorMessage: String?
-  @Published var infoMessage: String?
 
   var hasWorkspaceCache: Bool { !workspaces.isEmpty }
 
@@ -46,8 +45,6 @@ final class ShareViewModel: ObservableObject {
 
   func load(from extensionContext: NSExtensionContext?) async {
     isLoading = true
-    errorMessage = nil
-    infoMessage = nil
     defer { isLoading = false }
 
     workspaces = store.recentWorkspaces()
@@ -108,13 +105,11 @@ final class ShareViewModel: ObservableObject {
       previewImage = UIImage(data: imageFile.data)?
         .preparingThumbnail(of: CGSize(width: 480, height: 480))
     }
-    if built.rejectedAttachmentCount > 0 {
-      infoMessage = "Some attachments won't be imported."
-    }
 
     #if DEBUG
       NSLog(
-        "[AFFiNE Share] loaded markdownChars=%d files=%d",
+        "[AFFiNE Share] loaded title=%@ markdownChars=%d files=%d",
+        title,
         markdown.count,
         built.files.count
       )
@@ -124,7 +119,6 @@ final class ShareViewModel: ObservableObject {
   func save() async -> Bool {
     guard !isSaving else { return false }
     isSaving = true
-    errorMessage = nil
     defer { isSaving = false }
 
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -138,7 +132,6 @@ final class ShareViewModel: ObservableObject {
       return false
     }
 
-    let imageFiles = draft.files.filter(\.embedInMarkdownAsImage)
     let body = markdown.trimmingCharacters(in: .whitespacesAndNewlines)
     let hasImportableContent = ShareInboxSafety.hasImportableContent(
       markdown: body
@@ -155,7 +148,7 @@ final class ShareViewModel: ObservableObject {
     var attachments: [ShareInboxAttachment] = []
     var attachmentData: [(ShareInboxAttachment, Data)] = []
 
-    for file in imageFiles {
+    for file in draft.files {
       let relativePath = "\(UUID().uuidString)/\(file.fileName)"
       let attachment = ShareInboxAttachment(
         fileName: file.fileName,

@@ -34,10 +34,7 @@ import {
 } from '@affine/core/modules/storage';
 import { PopupWindowProvider, UrlService } from '@affine/core/modules/url';
 import { ClientSchemeProvider } from '@affine/core/modules/url/providers/client-schema';
-import {
-  configureBrowserWorkbenchModule,
-  WorkbenchService,
-} from '@affine/core/modules/workbench';
+import { configureBrowserWorkbenchModule } from '@affine/core/modules/workbench';
 import {
   getAFFiNEWorkspaceSchema,
   type WorkspaceMetadata,
@@ -641,7 +638,6 @@ const showNativeSignIn = async () => {
 
   try {
     const workspace = workspaceRef.workspace;
-    const workbench = workspace.scope.get(WorkbenchService).workbench;
     await workspace.engine.doc.waitForDocReady(workspace.id); // wait for root doc ready
     const docId = await MarkdownTransformer.importMarkdownToDoc({
       collection: workspace.docCollection,
@@ -663,11 +659,14 @@ const showNativeSignIn = async () => {
     }
     try {
       docsService.list.setPrimaryMode(docId, 'page');
-      workbench.openDoc(docId);
     } catch (error) {
-      console.error('Failed to open shared doc', error);
+      console.error('Failed to set shared doc mode', error);
     }
-    // Ensure UI navigates into the new doc on cold start / workspace home.
+    workspace.engine.doc.addPriority(workspace.id, 100);
+    workspace.engine.doc.addPriority(docId, 100);
+    await workspace.engine.doc.waitForSynced(workspace.id);
+    await workspace.engine.doc.waitForSynced(docId);
+    // Ensure UI navigates into the synced doc on cold start / workspace home.
     try {
       await router.navigate(
         `/workspace/${targetWorkspace.id}/${docId}?flavour=${encodeURIComponent(
