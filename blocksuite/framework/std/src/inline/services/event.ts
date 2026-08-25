@@ -109,13 +109,19 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       if (otherRoot && otherRoot !== rootElement) return;
     }
 
-    if (this._isComposing) {
+    if (this._isComposing || event.isComposing) {
       if (IS_ANDROID && event.inputType === 'insertCompositionText') {
         const compositionInlineRange = this.editor.toInlineRange(range);
         if (compositionInlineRange) {
           this._compositionInlineRange = compositionInlineRange;
         }
       }
+      // Prevent the native DOM mutation for input we're deferring to
+      // composition handling — otherwise the browser applies it directly to
+      // the contenteditable DOM and `rerenderWholeEditor()` in
+      // `_onCompositionEnd` silently wipes it instead of the model ever
+      // seeing it.
+      event.preventDefault();
       return;
     }
 
@@ -363,47 +369,57 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
   };
 
   private readonly _onCompositionEnd = async (event: CompositionEvent) => {
-    this._isComposing = false;
-    if (!this.editor.rootElement || !this.editor.rootElement.isConnected) {
-      return;
-    }
-
-    const range = this.editor.rangeService.getNativeRange();
-    if (
-      this.editor.isReadonly ||
-      !range ||
-      !this._isRangeCompletelyInRoot(range)
-    )
-      return;
-
-    this.editor.rerenderWholeEditor();
-    await this.editor.waitForUpdate();
-
+    // Captured synchronously, before the `await` below, so a `beforeinput`
+    // racing this handler can't see a stale/cleared value.
     const inlineRange = this._compositionInlineRange;
-    if (!inlineRange) return;
+    try {
+      if (!this.editor.rootElement || !this.editor.rootElement.isConnected) {
+        return;
+      }
 
-    event.preventDefault();
+      const range = this.editor.rangeService.getNativeRange();
+      if (
+        this.editor.isReadonly ||
+        !range ||
+        !this._isRangeCompletelyInRoot(range)
+      ) {
+        return;
+      }
 
-    const ctx: CompositionEndHookCtx<TextAttributes> = {
-      inlineEditor: this.editor,
-      raw: event,
-      inlineRange,
-      data: event.data,
-      attributes: {} as TextAttributes,
-    };
-    this.editor.hooks.compositionEnd?.(ctx);
+      this.editor.rerenderWholeEditor();
+      await this.editor.waitForUpdate();
 
-    const { inlineRange: newInlineRange, data: newData } = ctx;
-    if (newData && newData.length > 0) {
-      this.editor.insertText(newInlineRange, newData, ctx.attributes);
-      this.editor.setInlineRange({
-        index: newInlineRange.index + newData.length,
-        length: 0,
-      });
+      if (!inlineRange) return;
+
+      event.preventDefault();
+
+      const ctx: CompositionEndHookCtx<TextAttributes> = {
+        inlineEditor: this.editor,
+        raw: event,
+        inlineRange,
+        data: event.data,
+        attributes: {} as TextAttributes,
+      };
+      this.editor.hooks.compositionEnd?.(ctx);
+
+      const { inlineRange: newInlineRange, data: newData } = ctx;
+      if (newData && newData.length > 0) {
+        this.editor.insertText(newInlineRange, newData, ctx.attributes);
+        this.editor.setInlineRange({
+          index: newInlineRange.index + newData.length,
+          length: 0,
+        });
+      }
+
+      this.editor.slots.inputting.next(event.data ?? '');
+      this._finishAndroidComposingSession(false);
+    } finally {
+      // Deferred until composition handling (including the rerender/await
+      // above) fully completes, so a `beforeinput` arriving in that window
+      // is still treated as composing and ignored instead of racing in and
+      // duplicating the just-committed text.
+      this._isComposing = false;
     }
-
-    this.editor.slots.inputting.next(event.data ?? '');
-    this._finishAndroidComposingSession(false);
   };
 
   private readonly _onCompositionStart = (event: CompositionEvent) => {
