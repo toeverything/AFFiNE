@@ -19,7 +19,8 @@ import { JournalService } from '@affine/core/modules/journal';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { WorkspaceService } from '@affine/core/modules/workspace';
-import { i18nTime } from '@affine/i18n';
+import { i18nTime, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import { EditIcon, ViewIcon as ViewIconBlocksuite } from '@blocksuite/icons/rc';
@@ -304,6 +305,7 @@ const MobileDetailPageHeader = ({
   isReadOnlyMode?: boolean;
   onToggleReadOnly?: () => void;
 }) => {
+  const t = useI18n();
   const [showTitle, setShowTitle] = useState(getShouldShowTitle);
 
   useEffect(() => {
@@ -349,10 +351,15 @@ const MobileDetailPageHeader = ({
         <>
           {onToggleReadOnly && (
             <IconButton
+              data-testid="readonly-toggle-button"
               size="24"
               onClick={onToggleReadOnly}
               icon={isReadOnlyMode ? <ViewIconBlocksuite /> : <EditIcon />}
-              style={{ marginRight: 8 }}
+              tooltip={
+                isReadOnlyMode
+                  ? t['com.affine.header.readonly-toggle.read-only']()
+                  : t['com.affine.header.readonly-toggle.editing']()
+              }
             />
           )}
           <PageHeaderShareButton />
@@ -395,9 +402,17 @@ const MobileDetailPageContent = ({
 }) => {
   const editor = useService(EditorService).editor;
   const mode = useLiveData(editor.mode$);
+  const doc = useService(DocService).doc;
+  const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
+  const canEdit = useGuard('Doc_Update', pageId);
   const [isLandscape, setIsLandscape] = useState(getIsLandscape);
   const [chromeVisible, setChromeVisible] = useState(true);
   const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
+
+  const onToggleReadOnly = useCallback(() => {
+    setIsReadOnlyMode(prev => !prev);
+    track.$.header.actions.toggleReadOnlyMode({ on: !isReadOnlyMode });
+  }, [isReadOnlyMode]);
   const tapStateRef = useRef<{
     pointerId: number;
     clientX: number;
@@ -529,7 +544,9 @@ const MobileDetailPageContent = ({
           handleDateChange={handleDateChange}
           trackScrollTitle={trackScrollTitle}
           isReadOnlyMode={isReadOnlyMode}
-          onToggleReadOnly={() => setIsReadOnlyMode(prev => !prev)}
+          onToggleReadOnly={
+            canEdit && !isInTrash ? onToggleReadOnly : undefined
+          }
         />
       )}
       <JournalConflictBlock date={date} />
