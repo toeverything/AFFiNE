@@ -7,10 +7,12 @@ export const iconButton = style({
       backgroundColor: cssVar('hoverColor'),
     },
   },
-  // Expand hit target to ~44pt for reliable taps on iPad.
+  // Expand hit target for reliable taps on iPad Pencil and finger input.
   padding: '10px',
-  minWidth: 44,
-  minHeight: 44,
+  width: 72,
+  minWidth: 72,
+  height: 52,
+  minHeight: 52,
   touchAction: 'manipulation',
   position: 'relative',
   zIndex: 1,

@@ -1,3 +1,5 @@
+import { insertTextFromPencilScribble } from '@blocksuite/affine/rich-text';
+
 import type { ScribbleRect } from './definitions';
 import { PencilInput } from './index';
 
@@ -11,9 +13,21 @@ const MAX_RECT_COUNT = 80;
 const MIN_RECT_SIZE = 1;
 const POLL_INTERVAL = 500;
 const STICKY_RECT_TTL = 2500;
-const INLINE_EDITOR_PADDING_X = 220;
-const INLINE_EDITOR_PADDING_TOP = 48;
-const INLINE_EDITOR_PADDING_BOTTOM = 220;
+const INLINE_EDITOR_PADDING_LEFT = 220;
+const INLINE_EDITOR_PADDING_RIGHT = 160;
+const INLINE_EDITOR_PADDING_TOP = 16;
+const INLINE_EDITOR_PADDING_BOTTOM = 180;
+const INLINE_EDITOR_INLINE_PADDING_BOTTOM = 24;
+const SCRIBBLE_CHROME_EXCLUSION_TOP = 96;
+const SCRIBBLE_EDGELESS_TOOLBAR_EXCLUSION_BOTTOM = 112;
+const SCRIBBLE_PROXY_EXCLUSION_SELECTOR = [
+  'edgeless-toolbar-widget',
+  'affine-edgeless-toolbar-widget',
+  'edgeless-zoom-toolbar',
+  'affine-edgeless-zoom-toolbar-widget',
+  '[data-affine-edgeless-ui-chrome="true"]',
+  '[data-affine-scribble-exclusion="true"]',
+].join(',');
 
 interface ScribblePoint {
   x: number;
@@ -21,7 +35,9 @@ interface ScribblePoint {
 }
 
 interface ScribbleProxyRecord {
+  index: number;
   proxy: HTMLTextAreaElement;
+  rect: ScribbleRect;
   target: HTMLElement;
 }
 
@@ -53,6 +69,175 @@ function toScribbleRect(rect: DOMRect): ScribbleRect {
   };
 }
 
+function getViewportSize(doc: Document): { width: number; height: number } {
+  const win = doc.defaultView;
+  return {
+    width: Math.round(win?.innerWidth || doc.documentElement.clientWidth || 0),
+    height: Math.round(
+      win?.innerHeight || doc.documentElement.clientHeight || 0
+    ),
+  };
+}
+
+function hasPositiveArea(rect: ScribbleRect): boolean {
+  return rect.width > MIN_RECT_SIZE && rect.height > MIN_RECT_SIZE;
+}
+
+function intersects(a: ScribbleRect, b: ScribbleRect): boolean {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  );
+}
+
+function subtractRect(
+  source: ScribbleRect,
+  exclusion: ScribbleRect
+): ScribbleRect[] {
+  if (!intersects(source, exclusion)) {
+    return [source];
+  }
+
+  const sourceRight = source.x + source.width;
+  const sourceBottom = source.y + source.height;
+  const exclusionRight = exclusion.x + exclusion.width;
+  const exclusionBottom = exclusion.y + exclusion.height;
+  const overlapLeft = Math.max(source.x, exclusion.x);
+  const overlapRight = Math.min(sourceRight, exclusionRight);
+  const overlapTop = Math.max(source.y, exclusion.y);
+  const overlapBottom = Math.min(sourceBottom, exclusionBottom);
+
+  return [
+    {
+      x: source.x,
+      y: source.y,
+      width: source.width,
+      height: overlapTop - source.y,
+    },
+    {
+      x: source.x,
+      y: overlapBottom,
+      width: source.width,
+      height: sourceBottom - overlapBottom,
+    },
+    {
+      x: source.x,
+      y: overlapTop,
+      width: overlapLeft - source.x,
+      height: overlapBottom - overlapTop,
+    },
+    {
+      x: overlapRight,
+      y: overlapTop,
+      width: sourceRight - overlapRight,
+      height: overlapBottom - overlapTop,
+    },
+  ].filter(hasPositiveArea);
+}
+
+function subtractRects(
+  rects: ScribbleRect[],
+  exclusions: ScribbleRect[]
+): ScribbleRect[] {
+  return exclusions.reduce(
+    (currentRects, exclusion) =>
+      currentRects.flatMap(rect => subtractRect(rect, exclusion)),
+    rects
+  );
+}
+
+function getScribbleProxyExclusionRects(root: ParentNode): ScribbleRect[] {
+  const doc = root.ownerDocument ?? (root as Document);
+  const viewport = getViewportSize(doc);
+  const exclusions = [
+    ...doc.querySelectorAll(SCRIBBLE_PROXY_EXCLUSION_SELECTOR),
+  ]
+    .filter(isVisibleEditable)
+    .map(element => toScribbleRect(element.getBoundingClientRect()))
+    .filter(hasPositiveArea);
+
+  if (doc.querySelector('edgeless-toolbar-widget')) {
+    exclusions.push({
+      x: 0,
+      y: Math.max(
+        0,
+        viewport.height - SCRIBBLE_EDGELESS_TOOLBAR_EXCLUSION_BOTTOM
+      ),
+      width: viewport.width,
+      height: SCRIBBLE_EDGELESS_TOOLBAR_EXCLUSION_BOTTOM,
+    });
+  }
+
+  return exclusions.filter(hasPositiveArea);
+}
+
+function getTargetSummary(target: EventTarget | null): string {
+  if (!(target instanceof Element)) {
+    return String(target);
+  }
+
+  const id = target.id ? `#${target.id}` : '';
+  const className =
+    typeof target.className === 'string' && target.className
+      ? `.${target.className.trim().replace(/\s+/g, '.')}`
+      : '';
+  return `${target.localName}${id}${className}`;
+}
+
+function getNearestInteractiveSummary(target: EventTarget | null): string {
+  if (!(target instanceof Element)) {
+    return '';
+  }
+
+  return getTargetSummary(
+    target.closest(
+      [
+        '[data-affine-edgeless-ui-chrome="true"]',
+        '[data-affine-scribble-proxy="true"]',
+        'edgeless-toolbar-widget',
+        'affine-edgeless-toolbar-widget',
+        'edgeless-zoom-toolbar',
+        'affine-edgeless-zoom-toolbar-widget',
+        'edgeless-tool-icon-button',
+        'edgeless-toolbar-button',
+        'icon-button',
+        'button',
+        '[role="button"]',
+      ].join(',')
+    )
+  );
+}
+
+function getProxyRect(proxy: HTMLTextAreaElement): ScribbleRect {
+  return toScribbleRect(proxy.getBoundingClientRect());
+}
+
+function logPointerHit(event: PointerEvent | TouchEvent): void {
+  const target = event.target;
+  const nearest = getNearestInteractiveSummary(target);
+  if (!nearest) {
+    return;
+  }
+
+  const point =
+    event instanceof PointerEvent
+      ? { x: Math.round(event.clientX), y: Math.round(event.clientY) }
+      : {
+          x: Math.round(event.touches[0]?.clientX ?? 0),
+          y: Math.round(event.touches[0]?.clientY ?? 0),
+        };
+
+  console.warn('[viewport-lifecycle] scribble.hit', {
+    type: event.type,
+    pointerType: event instanceof PointerEvent ? event.pointerType : 'touch',
+    target: getTargetSummary(target),
+    nearest,
+    point,
+  });
+}
+
 function isInlineEditor(element: Element): boolean {
   return (
     isHTMLElement(element) &&
@@ -67,36 +252,50 @@ function getEditableScribbleElements(root: ParentNode): Element[] {
     .slice(0, MAX_RECT_COUNT);
 }
 
-function expandRect(
-  rect: DOMRect,
-  {
-    x,
-    top,
-    bottom,
-  }: {
-    x: number;
-    top: number;
-    bottom: number;
-  }
-): ScribbleRect {
-  return {
-    x: Math.round(rect.left - x),
-    y: Math.round(rect.top - top),
-    width: Math.round(rect.width + x * 2),
-    height: Math.round(rect.height + top + bottom),
-  };
+function toInlineEditorScribbleRects(rect: DOMRect): ScribbleRect[] {
+  const top = Math.max(
+    SCRIBBLE_CHROME_EXCLUSION_TOP,
+    rect.top - INLINE_EDITOR_PADDING_TOP
+  );
+  const inlineBottom = rect.bottom + INLINE_EDITOR_INLINE_PADDING_BOTTOM;
+  return [
+    {
+      x: Math.round(rect.left),
+      y: Math.round(top),
+      width: Math.round(rect.width + INLINE_EDITOR_PADDING_RIGHT),
+      height: Math.round(inlineBottom - top),
+    },
+    {
+      x: Math.round(rect.left - INLINE_EDITOR_PADDING_LEFT),
+      y: Math.round(inlineBottom),
+      width: Math.round(
+        rect.width + INLINE_EDITOR_PADDING_LEFT + INLINE_EDITOR_PADDING_RIGHT
+      ),
+      height: Math.round(
+        rect.bottom + INLINE_EDITOR_PADDING_BOTTOM - inlineBottom
+      ),
+    },
+  ].filter(
+    ({ width, height }) => width > MIN_RECT_SIZE && height > MIN_RECT_SIZE
+  );
 }
 
-function toElementScribbleRect(element: Element): ScribbleRect {
+function toElementScribbleRects(element: Element): ScribbleRect[] {
   const rect = element.getBoundingClientRect();
   if (isInlineEditor(element)) {
-    return expandRect(rect, {
-      x: INLINE_EDITOR_PADDING_X,
-      top: INLINE_EDITOR_PADDING_TOP,
-      bottom: INLINE_EDITOR_PADDING_BOTTOM,
-    });
+    return toInlineEditorScribbleRects(rect);
   }
-  return toScribbleRect(rect);
+  return [toScribbleRect(rect)];
+}
+
+function toClippedElementScribbleRects(
+  element: Element,
+  root: ParentNode
+): ScribbleRect[] {
+  return subtractRects(
+    toElementScribbleRects(element),
+    getScribbleProxyExclusionRects(root)
+  );
 }
 
 function containsPoint(rect: ScribbleRect, point: ScribblePoint): boolean {
@@ -146,6 +345,13 @@ function insertTextIntoTarget(target: HTMLElement, text: string): void {
   target.focus({ preventScroll: true });
   if (isInlineEditor(target)) {
     placeSelectionAtEnd(target);
+    if (insertTextFromPencilScribble(target, text)) {
+      return;
+    }
+    console.warn('[viewport-lifecycle] scribble.insert.fallback', {
+      reason: 'rich-text-helper-rejected',
+      length: text.length,
+    });
   }
 
   const doc = target.ownerDocument;
@@ -187,7 +393,8 @@ function applyProxyStyle(proxy: HTMLTextAreaElement, rect: ScribbleRect): void {
     padding: '0',
     margin: '0',
     overflow: 'hidden',
-    pointerEvents: 'none',
+    pointerEvents: 'auto',
+    touchAction: 'auto',
     WebkitTextFillColor: 'transparent',
   });
 }
@@ -202,6 +409,7 @@ function createScribbleProxyTextarea(
   proxy.autocapitalize = 'off';
   proxy.autocomplete = 'off';
   proxy.autocorrect = 'off';
+  proxy.inputMode = 'text';
   proxy.spellcheck = false;
   proxy.tabIndex = -1;
   proxy.value = '';
@@ -213,6 +421,8 @@ function createScribbleProxyTextarea(
     insertTextIntoTarget(target, text);
     console.warn('[viewport-lifecycle] scribble.proxy.input', {
       length: text.length,
+      proxyRect: getProxyRect(proxy),
+      target: getTargetSummary(target),
     });
   });
   return proxy;
@@ -231,19 +441,39 @@ export function syncScribbleProxyTextareas(
   root: ParentNode = document
 ): number {
   const doc = root.ownerDocument ?? (root as Document);
-  disposeScribbleProxyTextareas(root);
+  const previousRecords = scribbleProxyRecords.get(doc) ?? [];
+  const previousByTarget = new WeakMap<HTMLElement, HTMLTextAreaElement[]>();
+  previousRecords.forEach(({ index, proxy, target }) => {
+    const proxies = previousByTarget.get(target) ?? [];
+    proxies[index] = proxy;
+    previousByTarget.set(target, proxies);
+  });
 
-  const records = getEditableScribbleElements(root)
+  const inlineTargets = getEditableScribbleElements(root)
     .filter(isInlineEditor)
-    .filter(isHTMLElement)
-    .map(target => {
-      const proxy = createScribbleProxyTextarea(
-        target,
-        toElementScribbleRect(target)
-      );
-      doc.body.append(proxy);
-      return { proxy, target };
-    });
+    .filter(isHTMLElement);
+
+  const records = inlineTargets.flatMap(target =>
+    toClippedElementScribbleRects(target, root).map((rect, index) => {
+      const existingProxy = previousByTarget.get(target)?.[index];
+      const proxy =
+        existingProxy && existingProxy.isConnected
+          ? existingProxy
+          : createScribbleProxyTextarea(target, rect);
+      applyProxyStyle(proxy, rect);
+      if (!proxy.isConnected) {
+        doc.body.append(proxy);
+      }
+      return { index, proxy, rect, target };
+    })
+  );
+
+  const activeProxies = new Set(records.map(({ proxy }) => proxy));
+  previousRecords.forEach(({ proxy }) => {
+    if (!activeProxies.has(proxy)) {
+      proxy.remove();
+    }
+  });
 
   scribbleProxyRecords.set(doc, records);
   return records.length;
@@ -253,16 +483,17 @@ export function focusNearestEditableScribbleTarget(
   point: ScribblePoint,
   root: ParentNode = document
 ): boolean {
+  const doc = root.ownerDocument ?? (root as Document);
   const target = getEditableScribbleElements(root)
     .map(element => ({
       element,
-      rect: toElementScribbleRect(element),
+      rects: toClippedElementScribbleRects(element, root),
     }))
-    .filter(({ rect }) => containsPoint(rect, point))
+    .filter(({ rects }) => rects.some(rect => containsPoint(rect, point)))
     .sort(
       (a, b) =>
-        distanceToRectCenter(a.rect, point) -
-        distanceToRectCenter(b.rect, point)
+        Math.min(...a.rects.map(rect => distanceToRectCenter(rect, point))) -
+        Math.min(...b.rects.map(rect => distanceToRectCenter(rect, point)))
     )[0]?.element;
 
   if (!target || !isHTMLElement(target)) {
@@ -272,6 +503,12 @@ export function focusNearestEditableScribbleTarget(
   target.focus({ preventScroll: true });
   if (isInlineEditor(target)) {
     placeSelectionAtEnd(target);
+    const proxy = scribbleProxyRecords
+      .get(doc)
+      ?.find(record => record.target === target)?.proxy;
+    if (proxy?.isConnected) {
+      proxy.focus({ preventScroll: true });
+    }
   }
   return true;
 }
@@ -279,7 +516,9 @@ export function focusNearestEditableScribbleTarget(
 export function collectEditableScribbleRects(
   root: ParentNode = document
 ): ScribbleRect[] {
-  return getEditableScribbleElements(root).map(toElementScribbleRect);
+  return getEditableScribbleElements(root).flatMap(element =>
+    toClippedElementScribbleRects(element, root)
+  );
 }
 
 export function createStickyScribbleRects(
@@ -319,6 +558,7 @@ export function setupNativeScribbleGate(): () => void {
   let scheduled = false;
   const getStickyRects = createStickyScribbleRects();
   let scribbleWillBeginHandle: { remove: () => Promise<void> } | null = null;
+  let scheduleSync = () => {};
 
   PencilInput.addListener('scribbleWillBegin', event => {
     const focused = focusNearestEditableScribbleTarget(event);
@@ -327,6 +567,9 @@ export function setupNativeScribbleGate(): () => void {
       x: event.x,
       y: event.y,
     });
+    if (!focused) {
+      scheduleSync();
+    }
   })
     .then(handle => {
       if (disposed) {
@@ -348,6 +591,7 @@ export function setupNativeScribbleGate(): () => void {
     const { rects, sticky } = getStickyRects(freshRects);
     const payload = {
       enabled: true,
+      nativeInteractionEnabled: false,
       rects,
     };
     const payloadKey = JSON.stringify(payload);
@@ -359,6 +603,10 @@ export function setupNativeScribbleGate(): () => void {
       rects: payload.rects.length,
       freshRects: freshRects.length,
       proxyCount,
+      proxyMaxBottom: Math.max(
+        0,
+        ...payload.rects.map(rect => rect.y + rect.height)
+      ),
       sticky,
     });
 
@@ -367,7 +615,7 @@ export function setupNativeScribbleGate(): () => void {
     });
   };
 
-  const scheduleSync = () => {
+  scheduleSync = () => {
     if (scheduled || disposed) return;
     scheduled = true;
     requestAnimationFrame(sync);
@@ -393,8 +641,17 @@ export function setupNativeScribbleGate(): () => void {
   document.addEventListener('input', scheduleSync, true);
   document.addEventListener('beforeinput', scheduleSync, true);
   document.addEventListener('selectionchange', scheduleSync, true);
-  document.addEventListener('pointerdown', scheduleSync, true);
-  document.addEventListener('touchstart', scheduleSync, true);
+  const onPointerDown = (event: PointerEvent) => {
+    logPointerHit(event);
+    scheduleSync();
+  };
+  const onTouchStart = (event: TouchEvent) => {
+    logPointerHit(event);
+    scheduleSync();
+  };
+
+  document.addEventListener('pointerdown', onPointerDown, true);
+  document.addEventListener('touchstart', onTouchStart, true);
   window.addEventListener('resize', scheduleSync, true);
   window.addEventListener('scroll', scheduleSync, true);
 
@@ -409,8 +666,8 @@ export function setupNativeScribbleGate(): () => void {
     document.removeEventListener('input', scheduleSync, true);
     document.removeEventListener('beforeinput', scheduleSync, true);
     document.removeEventListener('selectionchange', scheduleSync, true);
-    document.removeEventListener('pointerdown', scheduleSync, true);
-    document.removeEventListener('touchstart', scheduleSync, true);
+    document.removeEventListener('pointerdown', onPointerDown, true);
+    document.removeEventListener('touchstart', onTouchStart, true);
     window.removeEventListener('resize', scheduleSync, true);
     window.removeEventListener('scroll', scheduleSync, true);
     window.clearInterval(interval);

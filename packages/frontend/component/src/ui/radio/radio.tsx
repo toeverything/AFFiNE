@@ -194,6 +194,8 @@ export const RadioGroup = memo(function RadioGroup({
       if (!isWithinPenTapSlop(penDown, event)) {
         return;
       }
+      event.preventDefault();
+      event.stopPropagation();
       if (itemValue === value) {
         return;
       }

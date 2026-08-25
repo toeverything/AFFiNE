@@ -99,7 +99,7 @@ describe('PointerControl Scribble routing', () => {
     host.remove();
   });
 
-  test('keeps synthetic pointer and click events for touch input on editable targets', () => {
+  test('does not dispatch synthetic events for touch input on interactive targets', () => {
     const { dispatched, host, input } = setupPointerControl();
 
     input.dispatchEvent(
@@ -119,7 +119,156 @@ describe('PointerControl Scribble routing', () => {
       })
     );
 
-    expect(dispatched).toEqual(['pointerDown', 'pointerUp', 'click']);
+    expect(dispatched).toEqual([]);
+    host.remove();
+  });
+
+  test('does not start a drag when Pencil taps an edgeless toolbar button', () => {
+    const { dispatched, host } = setupPointerControl();
+    const button = document.createElement('edgeless-tool-icon-button');
+    host.append(button);
+
+    button.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerId: 2,
+        pointerType: 'pen',
+        isPrimary: true,
+        clientX: 10,
+        clientY: 10,
+      })
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 2,
+        pointerType: 'pen',
+        isPrimary: true,
+        clientX: 80,
+        clientY: 80,
+      })
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 2,
+        pointerType: 'pen',
+        isPrimary: true,
+        clientX: 80,
+        clientY: 80,
+      })
+    );
+
+    expect(dispatched).not.toContain('dragStart');
+    host.remove();
+  });
+
+  test('does not dispatch canvas events when Pencil taps edgeless chrome wrappers', () => {
+    const { dispatched, host } = setupPointerControl();
+    const toolbar = document.createElement('edgeless-toolbar-widget');
+    const toolbarContainer = document.createElement('div');
+    toolbarContainer.className = 'edgeless-toolbar-container';
+    toolbar.append(toolbarContainer);
+    host.append(toolbar);
+
+    toolbarContainer.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerId: 3,
+        pointerType: 'pen',
+        isPrimary: true,
+        clientX: 10,
+        clientY: 10,
+      })
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 3,
+        pointerType: 'pen',
+        isPrimary: true,
+        clientX: 80,
+        clientY: 80,
+      })
+    );
+    toolbarContainer.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 3,
+        pointerType: 'pen',
+        isPrimary: true,
+        clientX: 80,
+        clientY: 80,
+      })
+    );
+
+    expect(dispatched).toEqual([]);
+    host.remove();
+  });
+
+  test('keeps UI pointer handlers available while suppressing canvas events', () => {
+    const { dispatched, host } = setupPointerControl();
+    const entry = document.createElement('div');
+    entry.role = 'button';
+    host.append(entry);
+    let uiPointerDownCount = 0;
+    entry.addEventListener('pointerdown', () => {
+      uiPointerDownCount++;
+    });
+
+    const event = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 4,
+      pointerType: 'pen',
+      isPrimary: true,
+    });
+    entry.dispatchEvent(event);
+    entry.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 4,
+        pointerType: 'pen',
+        isPrimary: true,
+      })
+    );
+
+    expect(uiPointerDownCount).toBe(1);
+    expect(event.defaultPrevented).toBe(false);
+    expect(dispatched).toEqual([]);
+    host.remove();
+  });
+
+  test('does not dispatch canvas events from mobile detail header chrome gaps', () => {
+    const { dispatched, host } = setupPointerControl();
+    const header = document.createElement('div');
+    header.dataset.affineEdgelessUiChrome = 'true';
+    const suffixGap = document.createElement('span');
+    header.append(suffixGap);
+    host.append(header);
+
+    suffixGap.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerId: 5,
+        pointerType: 'pen',
+        isPrimary: true,
+        clientX: 1140,
+        clientY: 58,
+      })
+    );
+    suffixGap.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 5,
+        pointerType: 'pen',
+        isPrimary: true,
+        clientX: 1140,
+        clientY: 58,
+      })
+    );
+
+    expect(dispatched).toEqual([]);
     host.remove();
   });
 });

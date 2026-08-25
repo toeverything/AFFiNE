@@ -32,6 +32,10 @@ export const EditorModeSwitch = () => {
 
   const onToggle = useCallback(
     (mode: DocMode) => {
+      console.warn('[viewport-lifecycle] mobile.mode-switch', {
+        from: editor.mode$.value,
+        to: mode,
+      });
       // Persist primary mode too — view query-string sync defaults to
       // primaryMode, and a Pencil-driven close can race that default and snap
       // the editor back to `page` after a one-frame flash.
@@ -52,7 +56,7 @@ export const EditorModeSwitch = () => {
   return (
     <div className={styles.radioWrapper}>
       <RadioGroup
-        itemHeight={28}
+        itemHeight={44}
         width="100%"
         borderRadius={8}
         padding={2}

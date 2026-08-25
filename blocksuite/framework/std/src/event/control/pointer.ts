@@ -30,6 +30,45 @@ function createContext(
 }
 
 const POLL_INTERVAL = 1000;
+const INTERACTIVE_POINTER_TARGET_SELECTOR = [
+  'a[href]',
+  'button',
+  'input',
+  'select',
+  'summary',
+  'textarea',
+  '[data-affine-edgeless-ui-chrome="true"]',
+  '[data-affine-scribble-proxy="true"]',
+  '[role="button"]',
+  '[role="menuitem"]',
+  '.affine-edgeless-selected-rect',
+  '.blocksuite-portal',
+  '.edgeless-toolbar-container',
+  '.edgeless-toolbar-smooth-corner',
+  '.edgeless-toolbar-toggle-control',
+  '.edgeless-toolbar-wrapper',
+  '.edgeless-zoom-toolbar-container',
+  'affine-edgeless-zoom-toolbar-widget',
+  'affine-menu',
+  'edgeless-tool-icon-button',
+  'edgeless-toolbar-button',
+  'edgeless-toolbar-widget',
+  'edgeless-zoom-toolbar',
+  'editor-icon-button',
+  'editor-toolbar',
+  'icon-button',
+  'mobile-menu',
+].join(',');
+
+function isInteractivePointerTarget(event: PointerEvent): boolean {
+  return event
+    .composedPath()
+    .some(
+      target =>
+        target instanceof Element &&
+        !!target.closest(INTERACTIVE_POINTER_TARGET_SELECTOR)
+    );
+}
 
 export function isEditableScribbleTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) {
@@ -60,6 +99,11 @@ abstract class PointerControllerBase {
 class PointerEventForward extends PointerControllerBase {
   private readonly _down = (event: PointerEvent) => {
     const { pointerId } = event;
+
+    if (isInteractivePointerTarget(event)) {
+      this._ignoredPointerIds.add(pointerId);
+      return;
+    }
 
     if (isPencilScribbleEvent(event)) {
       this._ignoredPointerIds.add(pointerId);
@@ -155,6 +199,13 @@ class ClickController extends PointerControllerBase {
     // disable for secondary pointer
     if (event.isPrimary === false) return;
 
+    if (isInteractivePointerTarget(event)) {
+      this._ignoredPointerIds.add(event.pointerId);
+      this._downPointerState = null;
+      this._pointerDownCount = 0;
+      return;
+    }
+
     if (isPencilScribbleEvent(event)) {
       this._ignoredPointerIds.add(event.pointerId);
       this._downPointerState = null;
@@ -235,6 +286,11 @@ class ClickController extends PointerControllerBase {
 class DragController extends PointerControllerBase {
   private readonly _down = (event: PointerEvent) => {
     if (this._nativeDragging) return;
+
+    if (isInteractivePointerTarget(event)) {
+      this._reset();
+      return;
+    }
 
     if (isPencilScribbleEvent(event)) {
       this._reset();
@@ -504,6 +560,11 @@ class DragController extends PointerControllerBase {
 
 abstract class DualDragControllerBase extends PointerControllerBase {
   private readonly _down = (event: PointerEvent) => {
+    if (isInteractivePointerTarget(event)) {
+      this._reset();
+      return;
+    }
+
     // Another pointer down
     if (
       this._startPointerStates.primary !== null &&

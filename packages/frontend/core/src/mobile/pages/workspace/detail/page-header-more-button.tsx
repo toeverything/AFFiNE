@@ -1,4 +1,11 @@
-import { IconButton, notify, toast, useConfirmModal } from '@affine/component';
+import {
+  IconButton,
+  isWithinPenTapSlop,
+  notify,
+  type PenDownPoint,
+  toast,
+  useConfirmModal,
+} from '@affine/component';
 import {
   MenuSeparator,
   MenuSub,
@@ -25,14 +32,24 @@ import {
   TocIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { type PointerEvent, useCallback, useEffect, useState } from 'react';
+import {
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { JournalConflictsMenuItem } from './menu/journal-conflicts';
 import { JournalTodayActivityMenuItem } from './menu/journal-today-activity';
 import { EditorModeSwitch } from './menu/mode-switch';
 import * as styles from './page-header-more-button.css';
 
-export const PageHeaderMenuButton = () => {
+export const PageHeaderMenuButton = ({
+  onOpenChange,
+}: {
+  onOpenChange?: (open: boolean) => void;
+}) => {
   const t = useI18n();
 
   const doc = useService(DocService).doc;
@@ -50,6 +67,7 @@ export const PageHeaderMenuButton = () => {
   );
   const primaryMode = useLiveData(editorService.editor.doc.primaryMode$);
   const title = useLiveData(editorService.editor.doc.title$);
+  const penDownRef = useRef<PenDownPoint | null>(null);
 
   const { favorite, toggleFavorite } = useFavorite(docId);
   const { openConfirmModal } = useConfirmModal();
@@ -74,12 +92,16 @@ export const PageHeaderMenuButton = () => {
     });
   }, [primaryMode, editorService, t]);
 
-  const handleMenuOpenChange = useCallback((open: boolean) => {
-    if (open) {
-      track.$.header.docOptions.open();
-    }
-    setOpen(open);
-  }, []);
+  const handleMenuOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        track.$.header.docOptions.open();
+      }
+      setOpen(open);
+      onOpenChange?.(open);
+    },
+    [onOpenChange]
+  );
 
   useEffect(() => {
     // when the location is changed, close the menu
@@ -126,8 +148,37 @@ export const PageHeaderMenuButton = () => {
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
+      if (event.pointerType === 'pen') {
+        penDownRef.current = {
+          pointerId: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+        };
+        event.preventDefault();
+        handleMenuOpenChange(true);
+      }
     },
-    []
+    [handleMenuOpenChange]
+  );
+
+  const handleMorePointerUp = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      const penDown = penDownRef.current;
+      penDownRef.current = null;
+      if (
+        event.pointerType !== 'pen' ||
+        !penDown ||
+        penDown.pointerId !== event.pointerId ||
+        !isWithinPenTapSlop(penDown, event)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      handleMenuOpenChange(true);
+    },
+    [handleMenuOpenChange]
   );
 
   const EditMenu = (
@@ -211,6 +262,7 @@ export const PageHeaderMenuButton = () => {
         data-testid="detail-page-header-more-button"
         className={styles.iconButton}
         onPointerDown={handleMorePointerDown}
+        onPointerUp={handleMorePointerUp}
       >
         <MoreHorizontalIcon />
       </IconButton>

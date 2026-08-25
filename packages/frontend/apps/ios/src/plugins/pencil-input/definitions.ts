@@ -49,8 +49,15 @@ export interface ScribbleWillBeginEvent {
  * plus contact geometry so the web routing layer can make that decision.
  */
 export interface PencilInputPlugin {
-  /** Attach the passive touch observer to the WKWebView. */
-  start: () => Promise<{ value: boolean }>;
+  /**
+   * Attach the native touch observer to the WKWebView.
+   *
+   * This recognizer is disabled by default because device testing showed it can
+   * freeze WKWebView input after the first Pencil stroke.
+   */
+  start: (options?: {
+    allowUnsafeNativeRecognizer?: boolean;
+  }) => Promise<{ value: boolean; disabled?: boolean }>;
   /** Detach the observer. */
   stop: () => Promise<{ value: boolean }>;
   isObserving: () => Promise<{ value: boolean }>;
@@ -62,6 +69,7 @@ export interface PencilInputPlugin {
    */
   updateScribbleState: (options: {
     enabled: boolean;
+    nativeInteractionEnabled?: boolean;
     rects: ScribbleRect[];
   }) => Promise<{ value: boolean }>;
   addListener(

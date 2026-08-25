@@ -6,6 +6,11 @@ import WebKit
 
 private let pencilLog = Logger(subsystem: "app.affine.pro", category: "pencil")
 
+private func logPencil(_ message: String) {
+  pencilLog.warning("\(message, privacy: .public)")
+  NSLog("[affine-pencil] %@", message)
+}
+
 /// Bridges native `UITouch.TouchType` classification to the web layer so the
 /// whiteboard can distinguish Apple Pencil from finger/palm input.
 ///
@@ -16,8 +21,10 @@ private let pencilLog = Logger(subsystem: "app.affine.pro", category: "pencil")
 /// geometry only exist natively, so we observe them here and forward the raw
 /// signals. The web layer owns the routing policy (draw / pan-zoom / discard).
 ///
-/// This plugin is observation-only: it never consumes touches, so existing
-/// WKWebView and blocksuite gesture handling is unaffected.
+/// The native touch recognizer path is intentionally opt-in only: on-device
+/// testing showed it can leave WKWebView unresponsive after the first Pencil
+/// stroke. The safe production path uses WebKit pointer activity plus DOM
+/// textarea proxies instead.
 @objc(PencilInputPlugin)
 public class PencilInputPlugin: CAPPlugin, CAPBridgedPlugin {
   public let identifier = "PencilInputPlugin"
@@ -34,6 +41,11 @@ public class PencilInputPlugin: CAPPlugin, CAPBridgedPlugin {
 
   @objc func start(_ call: CAPPluginCall) {
     DispatchQueue.main.async {
+      guard call.getBool("allowUnsafeNativeRecognizer") == true else {
+        logPencil("affine-pencil native recognizer start blocked")
+        call.resolve(["value": false, "disabled": true])
+        return
+      }
       guard let view = self.bridge?.webView else {
         call.reject("WebView is not available")
         return
@@ -72,6 +84,15 @@ public class PencilInputPlugin: CAPPlugin, CAPBridgedPlugin {
         return
       }
       if #available(iOS 14.0, *) {
+        let nativeInteractionEnabled = call.getBool("nativeInteractionEnabled") ?? true
+        if !nativeInteractionEnabled {
+          if let coordinator = self.scribbleCoordinator as? PencilScribbleCoordinator {
+            coordinator.removeAll()
+            self.scribbleCoordinator = nil
+          }
+          call.resolve(["value": true, "nativeInteractionEnabled": false])
+          return
+        }
         let coordinator = self.getScribbleCoordinator(for: view)
         let enabled = call.getBool("enabled") ?? false
         let rects = (call.getArray("rects") ?? []).compactMap { item -> CGRect? in
@@ -146,7 +167,7 @@ public class PencilInputPlugin: CAPPlugin, CAPBridgedPlugin {
     }) {
       let summary = touches.map { "\($0.kind.rawValue):\($0.phase.rawValue)" }.joined(separator: ",")
       // Use Logger so idevicesyslog captures it (stdout print is often dropped).
-      pencilLog.warning("affine-pencil \(summary, privacy: .public)")
+      logPencil("affine-pencil \(summary)")
     }
     notifyListeners("touchClassified", data: ["touches": payload])
   }
@@ -172,15 +193,28 @@ private final class PencilScribbleCoordinator: NSObject, UIScribbleInteractionDe
     let interaction = UIScribbleInteraction(delegate: self)
     view.addInteraction(interaction)
     interactions[id] = interaction
-    pencilLog.warning(
-      "affine-scribble installed view=\(String(describing: type(of: view)), privacy: .public)"
-    )
+    logPencil("affine-scribble installed view=\(String(describing: type(of: view)))")
   }
 
   func installContentViews(in webView: WKWebView) {
     for subview in webView.scrollView.subviews {
+      let viewName = String(describing: type(of: subview))
+      guard viewName.contains("WKContentView") else {
+        continue
+      }
       install(on: subview, rootView: webView)
     }
+  }
+
+  func removeAll() {
+    interactions.forEach { _, interaction in
+      interaction.view?.removeInteraction(interaction)
+    }
+    interactions.removeAll()
+    rootView = nil
+    rects = []
+    lastLoggedState = ""
+    logPencil("affine-scribble removed native interactions")
   }
 
   func update(enabled: Bool, rects: [CGRect]) {
@@ -189,9 +223,7 @@ private final class PencilScribbleCoordinator: NSObject, UIScribbleInteractionDe
     let state = "\(enabled):\(self.rects.count)"
     if state != lastLoggedState {
       lastLoggedState = state
-      pencilLog.warning(
-        "affine-scribble state enabled=\(enabled, privacy: .public) rects=\(self.rects.count, privacy: .public)"
-      )
+      logPencil("affine-scribble state enabled=\(enabled) rects=\(self.rects.count)")
     }
   }
 
@@ -203,8 +235,8 @@ private final class PencilScribbleCoordinator: NSObject, UIScribbleInteractionDe
     let allowed = enabled && rects.contains { rect in
       rect.insetBy(dx: -hitSlop, dy: -hitSlop).contains(rootLocation)
     }
-    pencilLog.warning(
-      "affine-scribble begin allow=\(allowed, privacy: .public) x=\(rootLocation.x, privacy: .public) y=\(rootLocation.y, privacy: .public) rects=\(self.rects.count, privacy: .public)"
+    logPencil(
+      "affine-scribble begin allow=\(allowed) x=\(rootLocation.x) y=\(rootLocation.y) rects=\(self.rects.count)"
     )
     if allowed {
       onWillBegin?(rootLocation)

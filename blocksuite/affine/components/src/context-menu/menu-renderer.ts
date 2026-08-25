@@ -468,6 +468,9 @@ export const createPopup = (
       .catch(console.error);
   });
   modal.append(content);
+  content.addEventListener('pointerdown', ev => ev.stopPropagation());
+  content.addEventListener('mousedown', ev => ev.stopPropagation());
+  content.addEventListener('touchstart', ev => ev.stopPropagation());
 
   modal.onpointerdown = ev => {
     if (ev.target === modal) {

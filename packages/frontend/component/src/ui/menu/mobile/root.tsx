@@ -165,6 +165,7 @@ export const MobileMenu = ({
           withoutCloseButton={true}
           contentOptions={{
             className: clsx(className, styles.mobileMenuModal),
+            'data-affine-edgeless-ui-overlay': 'true',
             ...otherContentOptions,
           }}
           contentWrapperStyle={contentWrapperStyle}

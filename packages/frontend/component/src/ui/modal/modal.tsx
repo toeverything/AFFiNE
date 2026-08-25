@@ -231,6 +231,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       >
         <Dialog.Portal container={container} {...portalOptions}>
           <Dialog.Overlay
+            data-affine-edgeless-ui-chrome="true"
             className={clsx(
               `anim-${animation}`,
               styles.modalOverlay,
@@ -243,6 +244,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
             {...otherOverlayOptions}
           >
             <SafeArea
+              data-affine-edgeless-ui-chrome="true"
               bottom={BUILD_CONFIG.isMobileEdition}
               bottomOffset={dynamicKeyboardHeight ?? 12}
               data-full-screen={fullScreen}
@@ -256,6 +258,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
               style={contentWrapperStyle}
             >
               <Dialog.Content
+                data-affine-edgeless-ui-chrome="true"
                 onPointerDownOutside={handlePointerDownOutSide}
                 onEscapeKeyDown={handleEscapeKeyDown}
                 className={clsx(styles.modalContent, contentClassName)}
