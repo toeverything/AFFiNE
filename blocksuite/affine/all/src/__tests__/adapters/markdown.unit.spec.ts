@@ -2622,6 +2622,114 @@ hhh
     expect(target.file).toBe(md);
   });
 
+  test('table without a title column', async () => {
+    // A link cell that exists with no value stringifies to undefined,
+    // which is not a throw, and a row can hold a real newline. Neither
+    // used to survive the export.
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'block:8Wb7CSJ9Qe',
+      flavour: 'affine:database',
+      props: {
+        cells: {
+          'block:P_-Wg7Rg9O': {
+            'block:U8lPD59MkF': {
+              columnId: 'block:U8lPD59MkF',
+              value: undefined,
+            },
+          },
+        },
+        columns: [
+          {
+            type: 'link',
+            name: 'Link',
+            data: {},
+            id: 'block:U8lPD59MkF',
+          },
+        ],
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'block:P_-Wg7Rg9O',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'first\nsecond',
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const md = `\
+| Title | Link |
+| - | - |
+| first second | |
+`;
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const target = await mdAdapter.fromBlockSnapshot({
+      snapshot: blockSnapshot,
+    });
+    expect(target.file).toBe(md);
+  });
+
+  test('table keeps a blank title column name', async () => {
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'block:8Wb7CSJ9Qe',
+      flavour: 'affine:database',
+      props: {
+        cells: {},
+        columns: [
+          {
+            type: 'title',
+            name: '',
+            data: {},
+            id: 'block:2VfUaitjf9',
+          },
+        ],
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'block:P_-Wg7Rg9O',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'Task 1',
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const md = `\
+| |
+| - |
+| Task 1 |
+`;
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const target = await mdAdapter.fromBlockSnapshot({
+      snapshot: blockSnapshot,
+    });
+    expect(target.file).toBe(md);
+  });
+
   test('reference', async () => {
     const blockSnapshot: BlockSnapshot = {
       type: 'block',

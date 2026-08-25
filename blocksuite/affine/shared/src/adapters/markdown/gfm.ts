@@ -5,6 +5,7 @@ Copyright (c) 2020 Titus Wormer <tituswormer@gmail.com>
 
 mdast-util-gfm-autolink-literal is from markdown only.
 */
+import type { Nodes, Root } from 'mdast';
 import { gfmAutolinkLiteralFromMarkdown } from 'mdast-util-gfm-autolink-literal';
 import {
   gfmFootnoteFromMarkdown,
@@ -26,6 +27,7 @@ import { gfmTable } from 'micromark-extension-gfm-table';
 import { gfmTaskListItem } from 'micromark-extension-gfm-task-list-item';
 import { combineExtensions } from 'micromark-util-combine-extensions';
 import type { Processor } from 'unified';
+import { visit } from 'unist-util-visit';
 
 export function gfm() {
   return combineExtensions([
@@ -76,4 +78,26 @@ export function remarkGfm(this: Processor) {
   micromarkExtensions.push(gfm());
   fromMarkdownExtensions.push(gfmFromMarkdown());
   toMarkdownExtensions.push(gfmToMarkdown());
+}
+
+// A table cell cannot hold a newline. The serializer writes a character
+// reference for one, which reads as &#xA; in the exported table, so the
+// newline becomes a space first. Code and raw HTML keep their own text.
+const KEEPS_ITS_TEXT = new Set(['code', 'html', 'inlineCode']);
+
+function flattenText(node: Nodes) {
+  if (KEEPS_ITS_TEXT.has(node.type)) return;
+  if (node.type === 'text') {
+    node.value = node.value.replace(/\r?\n/g, ' ');
+    return;
+  }
+  if ('children' in node) {
+    for (const child of node.children) flattenText(child);
+  }
+}
+
+export function flattenTableCellNewlines(tree: Root) {
+  visit(tree, 'tableCell', cell => {
+    flattenText(cell);
+  });
 }

@@ -67,7 +67,7 @@ export const processTable = (
     headers: [
       {
         ...(titleColumn ?? { id: 'title', type: 'title', data: {} }),
-        name: titleColumn?.name || 'Title',
+        name: titleColumn?.name ?? 'Title',
       } as ColumnDataType,
       ...valueColumns,
     ],
