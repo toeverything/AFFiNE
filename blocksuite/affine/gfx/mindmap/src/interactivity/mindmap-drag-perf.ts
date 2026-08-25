@@ -114,6 +114,7 @@ export function mindmapDragPerfMeasure<T>(name: string, fn: () => T): T {
 }
 
 export function mindmapDragPerfOnStart(meta: Record<string, unknown>) {
+  if (!isEnabled()) return;
   ensureWindowApi();
   buckets.clear();
   dragMoveCount = 0;
@@ -122,10 +123,12 @@ export function mindmapDragPerfOnStart(meta: Record<string, unknown>) {
 }
 
 export function mindmapDragPerfOnMove() {
+  if (!isEnabled()) return;
   dragMoveCount += 1;
 }
 
 export function mindmapDragPerfOnEnd() {
+  if (!isEnabled()) return;
   ensureWindowApi();
   const dump =
     (

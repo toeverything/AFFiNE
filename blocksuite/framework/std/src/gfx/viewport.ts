@@ -355,7 +355,14 @@ export class Viewport {
           zooming: this.zooming$.value,
         };
       }
-      if (!this.panning$.value && !this.zooming$.value) return;
+      if (!this.panning$.value && !this.zooming$.value) {
+        const gestureWatchdog = this._gestureWatchdog;
+        if (gestureWatchdog !== null) {
+          clearInterval(gestureWatchdog);
+        }
+        this._gestureWatchdog = null;
+        return;
+      }
       const idleMs = performance.now() - this._lastGestureAt;
       if (idleMs < 1000) return;
       viewportLifecycleLog('gesture.force-clear', {

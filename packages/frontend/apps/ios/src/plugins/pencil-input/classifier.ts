@@ -167,12 +167,20 @@ export async function setupPencilInputClassifier(): Promise<void> {
   if (classifier) return;
   const instance = new NativePointerClassifier();
   try {
-    await PencilInput.start();
-    await PencilInput.addListener('touchClassified', event => {
-      instance.ingest(event.touches);
-    });
+    const result = await PencilInput.start();
+    if (!result.value || result.disabled) {
+      console.warn('[pencil-input] native classifier disabled');
+      return;
+    }
+    const touchClassifiedHandle = await PencilInput.addListener(
+      'touchClassified',
+      event => {
+        instance.ingest(event.touches);
+      }
+    );
     classifier = instance;
     pointerInputClassifierRuntime.classifier = instance;
+    void touchClassifiedHandle;
     (
       window as unknown as {
         __affinePencilDebug?: () => ReturnType<

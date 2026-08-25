@@ -1,4 +1,5 @@
 // eslint-disable-next-line import-x/no-extraneous-dependencies
+// oxlint-disable-next-line import-x-js/no-extraneous-dependencies
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import {
@@ -172,7 +173,7 @@ describe('syncScribbleProxyTextareas', () => {
     expect(proxies[1]?.style.top).toBe('444px');
     expect(proxies[1]?.style.width).toBe('500px');
     expect(proxies[1]?.style.height).toBe('156px');
-    expect(proxies[0]?.style.pointerEvents).toBe('auto');
+    expect(proxies[0]?.style.pointerEvents).toBe('none');
   });
 
   test('clips expanded inline editor proxies away from the edgeless toolbar', () => {
@@ -267,6 +268,7 @@ describe('syncScribbleProxyTextareas', () => {
       focusNearestEditableScribbleTarget({ x: 235, y: 523 }, document)
     ).toBe(true);
     expect(document.activeElement).toBe(proxy);
+    expect(proxy?.style.pointerEvents).toBe('auto');
   });
 
   test('keeps the same proxy textarea across repeated syncs', () => {

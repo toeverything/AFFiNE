@@ -481,12 +481,18 @@ const MobileDetailPageContent = ({
       return;
     }
 
-    const timeout = window.setTimeout(() => {
-      if (menuOpen || hasOpenEdgelessUiOverlay()) {
-        return;
-      }
-      setChromeVisible(false);
-    }, 3000);
+    let timeout = 0;
+    const scheduleAutoHide = () => {
+      timeout = window.setTimeout(() => {
+        if (menuOpen || hasOpenEdgelessUiOverlay()) {
+          scheduleAutoHide();
+          return;
+        }
+        setChromeVisible(false);
+      }, 3000);
+    };
+
+    scheduleAutoHide();
 
     return () => {
       window.clearTimeout(timeout);

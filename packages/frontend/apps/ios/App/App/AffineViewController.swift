@@ -30,9 +30,11 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
     webView?.scrollView.bounces = false
     webView?.scrollView.pinchGestureRecognizer?.isEnabled = false
     webView?.scrollView.delegate = self
-    if #available(iOS 16.4, *) {
-      webView?.isInspectable = true
-    }
+    #if DEBUG
+      if #available(iOS 16.4, *) {
+        webView?.isInspectable = true
+      }
+    #endif
 
     // Inject viewport meta to prevent WKWebView smart zoom
     let viewportScript = """
@@ -64,6 +66,9 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
   }
 
   private func installConsoleBridge() {
+    #if !DEBUG
+      return
+    #else
     guard !consoleBridgeInstalled, let webView else {
       print("[affine-native] console-bridge skipped (webView unavailable)")
       return
@@ -106,6 +111,7 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
     // capacitorDidLoad runs after first navigation may have started — inject live too.
     webView.evaluateJavaScript(consoleBridgeScript, completionHandler: nil)
     print("[affine-native] console-bridge installed")
+    #endif
   }
 
   func userContentController(
@@ -116,8 +122,10 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
     let body = message.body as? [String: Any]
     let level = body?["level"] as? String ?? "log"
     let text = body?["message"] as? String ?? String(describing: message.body)
-    affineLog.warning("affine-js-\(level, privacy: .public) \(text, privacy: .public)")
+    affineLog.warning("affine-js-\(level, privacy: .public) \(text)")
+    #if DEBUG
     print("[affine-js-\(level)] \(text)")
+    #endif
   }
 
   override func didReceiveMemoryWarning() {

@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import {
   createRef,
   memo,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
@@ -162,6 +163,7 @@ export const RadioGroup = memo(function RadioGroup({
   const penDownRef = useRef<(PenDownPoint & { itemValue: string }) | null>(
     null
   );
+  const ignoreNextClickRef = useRef(false);
 
   const onPenPointerDown = useCallback(
     (itemValue: string) => (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -194,6 +196,7 @@ export const RadioGroup = memo(function RadioGroup({
       if (!isWithinPenTapSlop(penDown, event)) {
         return;
       }
+      ignoreNextClickRef.current = true;
       event.preventDefault();
       event.stopPropagation();
       if (itemValue === value) {
@@ -202,6 +205,18 @@ export const RadioGroup = memo(function RadioGroup({
       onChange?.(itemValue);
     },
     [disabled, onChange, value]
+  );
+
+  const onPenClick = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      if (!ignoreNextClickRef.current) {
+        return;
+      }
+      ignoreNextClickRef.current = false;
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    []
   );
 
   const onPenPointerCancel = useCallback(() => {
@@ -241,6 +256,10 @@ export const RadioGroup = memo(function RadioGroup({
             onPointerDown={onPenPointerDown(item.value)}
             onPointerUp={onPenPointerUp(item.value)}
             onPointerCancel={onPenPointerCancel}
+            onClick={event => {
+              item.attrs?.onClick?.(event);
+              onPenClick(event);
+            }}
           >
             <RadixRadioGroup.Indicator
               forceMount

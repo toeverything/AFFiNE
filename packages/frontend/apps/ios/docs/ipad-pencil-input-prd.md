@@ -224,12 +224,12 @@
 
 ### Phase 1：编辑器正式输入 API
 
-- 在 `blocksuite/affine/rich-text` 或 `blocksuite/framework/std/src/inline` 增加 `insertTextFromPencilScribble()`。
-- API 内部通过 `getInlineEditorByModel()` / `InlineEditor.rootElement.inlineEditor` 定位 editor，并复用 `InlineEditor.insertText()`、`InlineEditor.setInlineRange()`。
-- `packages/frontend/apps/ios/src/plugins/pencil-input/scribble-gate.ts` 从代理 input 回调调用该 API；iOS plugin 不直接写入文本模型。
-- 移除生产路径中的 `textContent` fallback。
-- 将 `execCommand` 降级为临时 fallback 并加 telemetry，待 Phase 2 完成后删除。
-- 补齐 undo/redo、selection、composition 测试。
+- ✅ 已在 `blocksuite/affine/rich-text/src/pencil-scribble.ts` 增加 `insertTextFromPencilScribble()`。
+- ✅ API 内部通过 inline editor 入口定位 editor，并复用 `InlineEditor.insertText()`、`InlineEditor.setInlineRange()`。
+- ✅ `packages/frontend/apps/ios/src/plugins/pencil-input/scribble-gate.ts` 从代理 input 回调调用该 API；iOS plugin 不直接写入文本模型。
+- ⏳ 移除生产路径中的 `textContent` fallback。
+- ⏳ 将 `execCommand` 降级为临时 fallback 并加 telemetry，待 Phase 2 完成后删除。
+- ✅ 已覆盖插入与 composition 拒绝；undo/redo、selection 仍需补齐。
 
 ### Phase 2：Scribble target service
 

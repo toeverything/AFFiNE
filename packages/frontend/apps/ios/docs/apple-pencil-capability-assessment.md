@@ -3,7 +3,7 @@
 | 项       | 内容                                                                |
 | -------- | ------------------------------------------------------------------- |
 | 分支     | `feat/ipad-pencil-input-classification`                             |
-| PR       | https://github.com/keepClamDown/AFFiNE/pull/4                       |
+| PR       | https://github.com/toeverything/AFFiNE/pull/15525                   |
 | 评估基线 | 含 WebKit-only `isPencilActive` + pen-click 单测 + 评估文档         |
 | 文档目的 | 盘点能力、记录已完成优化、给出合入门禁与剩余真机项                  |
 | 证据标记 | ✅ 真机已确认 · 📐 代码推断 / 待签核 · 🧪 单测已覆盖 · ⚠ 假说未闭合 |
@@ -19,14 +19,14 @@
 
 ### 0.1 Merge 最低集（全文唯一权威）
 
-| ID       | 场景                            | 期望                        | 证据      | 签核（日期/设备/结果） |
-| -------- | ------------------------------- | --------------------------- | --------- | ---------------------- |
-| M1 / T1  | Pencil + brush 连续画           | 跟手、不断笔                | 📐        |                        |
-| M2 / T4  | More → Edgeless（Pencil）       | 进入 edgeless，不闪回       | ✅        | 已确认                 |
-| M3 / T6  | 首笔后点顶栏（**未挂 GR**）     | 有响应                      | 📐        |                        |
-| M4 / T2a | 画时第二指轻触                  | stroke 不中断               | 📐        |                        |
-| M5 / T10 | Page ↔ Edgeless（Pencil）       | mode / primaryMode 稳定     | 📐        |                        |
-| M6 / T3  | 选中 brush，Pencil 用过后手指拖 | **应 pan**（WebKit active） | 📐 待签核 | **新增：B1 已落地**    |
+| ID       | 场景                            | 期望                        | 证据      | 签核（日期/设备/结果）                        |
+| -------- | ------------------------------- | --------------------------- | --------- | --------------------------------------------- |
+| M1 / T1  | Pencil + brush 连续画           | 跟手、不断笔                | 📐        |                                               |
+| M2 / T4  | More → Edgeless（Pencil）       | 进入 edgeless，不闪回       | ✅        | 2026-08-25 / iPad Pro + Apple Pencil / 已确认 |
+| M3 / T6  | 首笔后点顶栏（**未挂 GR**）     | 有响应                      | 📐        |                                               |
+| M4 / T2a | 画时第二指轻触                  | stroke 不中断               | 📐        |                                               |
+| M5 / T10 | Page ↔ Edgeless（Pencil）       | mode / primaryMode 稳定     | 📐        |                                               |
+| M6 / T3  | 选中 brush，Pencil 用过后手指拖 | **应 pan**（WebKit active） | 📐 待签核 | **新增：B1 已落地**                           |
 
 **合入条件**：§0.1 全绿（含 M6）。不允许用 note 放行最低集。
 

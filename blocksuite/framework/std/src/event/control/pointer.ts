@@ -287,12 +287,13 @@ class DragController extends PointerControllerBase {
   private readonly _down = (event: PointerEvent) => {
     if (this._nativeDragging) return;
 
-    if (isInteractivePointerTarget(event)) {
-      this._reset();
-      return;
-    }
-
-    if (isPencilScribbleEvent(event)) {
+    if (isInteractivePointerTarget(event) || isPencilScribbleEvent(event)) {
+      if (
+        this._startPointerState &&
+        this._startPointerState.raw.pointerId !== event.pointerId
+      ) {
+        return;
+      }
       this._reset();
       return;
     }

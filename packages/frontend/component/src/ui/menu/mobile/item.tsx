@@ -11,6 +11,12 @@ import type { MenuItemProps } from '../menu.types';
 import { useMenuItem } from '../use-menu-item';
 import { MobileMenuContext } from './context';
 
+type PenClickCompatEvent =
+  | MouseEvent<Element>
+  | PointerEvent<Element>
+  | globalThis.MouseEvent
+  | globalThis.PointerEvent;
+
 export const MobileMenuItem = (props: MenuItemProps) => {
   const { setOpen, subMenus, setSubMenus } = useContext(MobileMenuContext);
   const { className, children, otherProps } = useMenuItem(props);
@@ -23,12 +29,11 @@ export const MobileMenuItem = (props: MenuItemProps) => {
   } = otherProps;
 
   const onItemClick = useCallback(
-    (
-      event: MouseEvent<HTMLButtonElement> | PointerEvent<HTMLButtonElement>
-    ) => {
-      onSelect?.(event.nativeEvent);
+    (event: PenClickCompatEvent) => {
+      const nativeEvent = 'nativeEvent' in event ? event.nativeEvent : event;
+      onSelect?.(nativeEvent);
       onClick?.(event as MouseEvent<HTMLButtonElement>);
-      if (event.defaultPrevented || event.nativeEvent.defaultPrevented) {
+      if (event.defaultPrevented || nativeEvent.defaultPrevented) {
         return;
       }
 

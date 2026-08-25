@@ -375,7 +375,11 @@ function toPx(value: number): string {
   return `${value}px`;
 }
 
-function applyProxyStyle(proxy: HTMLTextAreaElement, rect: ScribbleRect): void {
+function applyProxyStyle(
+  proxy: HTMLTextAreaElement,
+  rect: ScribbleRect,
+  interactive = false
+): void {
   Object.assign(proxy.style, {
     position: 'fixed',
     left: toPx(rect.x),
@@ -393,7 +397,7 @@ function applyProxyStyle(proxy: HTMLTextAreaElement, rect: ScribbleRect): void {
     padding: '0',
     margin: '0',
     overflow: 'hidden',
-    pointerEvents: 'auto',
+    pointerEvents: interactive ? 'auto' : 'none',
     touchAction: 'auto',
     WebkitTextFillColor: 'transparent',
   });
@@ -408,11 +412,11 @@ function createScribbleProxyTextarea(
   proxy.dataset.affineScribbleProxy = 'true';
   proxy.autocapitalize = 'off';
   proxy.autocomplete = 'off';
-  proxy.autocorrect = 'off';
   proxy.inputMode = 'text';
   proxy.spellcheck = false;
   proxy.tabIndex = -1;
   proxy.value = '';
+  proxy.setAttribute('autocorrect', 'off');
   proxy.setAttribute('aria-label', 'Scribble input proxy');
   applyProxyStyle(proxy, rect);
   proxy.addEventListener('input', () => {
@@ -460,7 +464,7 @@ export function syncScribbleProxyTextareas(
         existingProxy && existingProxy.isConnected
           ? existingProxy
           : createScribbleProxyTextarea(target, rect);
-      applyProxyStyle(proxy, rect);
+      applyProxyStyle(proxy, rect, doc.activeElement === proxy);
       if (!proxy.isConnected) {
         doc.body.append(proxy);
       }
@@ -507,6 +511,7 @@ export function focusNearestEditableScribbleTarget(
       .get(doc)
       ?.find(record => record.target === target)?.proxy;
     if (proxy?.isConnected) {
+      applyProxyStyle(proxy, getProxyRect(proxy), true);
       proxy.focus({ preventScroll: true });
     }
   }
