@@ -47,20 +47,6 @@ function runPrismaMigrations() {
   });
 }
 
-function repairPgvectorEmbeddingTables() {
-  console.log('repairing copilot pgvector embedding tables.');
-  const sql = fs.readFileSync(
-    path.join(import.meta.dirname, 'repair-pgvector-embedding-tables.sql'),
-    'utf-8'
-  );
-  execSync('yarn prisma db execute --stdin --schema schema.prisma', {
-    encoding: 'utf-8',
-    env: process.env,
-    input: sql,
-    stdio: ['pipe', 'inherit', 'inherit'],
-  });
-}
-
 function runDataMigrations() {
   console.log('running data migrations.');
   execSync('yarn cli run', {
@@ -109,5 +95,4 @@ function fixFailedMigrations() {
 prepare();
 fixFailedMigrations();
 runPrismaMigrations();
-repairPgvectorEmbeddingTables();
 runDataMigrations();

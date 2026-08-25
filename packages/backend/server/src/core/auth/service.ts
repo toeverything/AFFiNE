@@ -1,17 +1,27 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import { Config, SignUpForbidden } from '../../base';
+import {
+  Cache,
+  Config,
+  getRequestClientIp,
+  OnEvent,
+  SignUpForbidden,
+  TooManyRequest,
+} from '../../base';
 import { Models, type User, type UserSession } from '../../models';
+import { EntitlementService } from '../entitlement';
 import { Mailer } from '../mail/mailer';
+import type { MailDeliveryMetadata } from '../mail/types';
+import { AuthSessionService } from './auth-session';
 import { createDevUsers } from './dev';
 import type { VerifiedIdentity } from './identity';
 import {
   CSRF_COOKIE_NAME,
-  extractTokenFromHeader,
   getSessionOptionsFromRequest,
   SESSION_COOKIE_NAME,
   USER_COOKIE_NAME,
@@ -41,7 +51,10 @@ export class AuthService implements OnApplicationBootstrap {
   constructor(
     private readonly config: Config,
     private readonly models: Models,
-    private readonly mailer: Mailer
+    private readonly mailer: Mailer,
+    private readonly authSessions: AuthSessionService,
+    private readonly entitlement: EntitlementService,
+    private readonly cache: Cache
   ) {
     this.cookieOptions = {
       sameSite: 'lax',
@@ -60,13 +73,40 @@ export class AuthService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     if (env.dev) {
-      await createDevUsers(this.models);
+      await createDevUsers(this.models, this.entitlement);
     }
   }
 
-  async canSignIn(_email: string) {
+  async canSignIn(email: string, req: Request) {
+    if (!env.testing) {
+      const { ttl, ipLimit, emailLimit } = this.config.auth.signInRateLimit;
+      const normalizedEmail = email.toLowerCase();
+      const ip = getRequestClientIp(req);
+
+      const emailAttempts = this.cache.increaseWithTtl(
+        this.signInRateLimitKey('email', normalizedEmail),
+        ttl
+      );
+      const ipAttempts = ip
+        ? this.cache.increaseWithTtl(this.signInRateLimitKey('ip', ip), ttl)
+        : Promise.resolve(0);
+      const [emailCount, ipCount] = await Promise.all([
+        emailAttempts,
+        ipAttempts,
+      ]);
+
+      if (emailCount > emailLimit || ipCount > ipLimit) {
+        throw new TooManyRequest();
+      }
+    }
+
     // may add more sign-in check later
     return true;
+  }
+
+  private signInRateLimitKey(scope: 'email' | 'ip', value: string) {
+    const digest = createHash('sha256').update(value).digest('hex');
+    return `auth:sign-in-rate:${scope}:${digest}`;
   }
 
   /**
@@ -127,7 +167,7 @@ export class AuthService implements OnApplicationBootstrap {
     // fallback to the first valid session if user provided userId is invalid
     if (!userSession) {
       // checked
-      // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // oxlint-disable-next-line typescript/no-non-null-assertion
       userSession = sessions.at(-1)!;
     }
 
@@ -205,8 +245,22 @@ export class AuthService implements OnApplicationBootstrap {
     return true;
   }
 
-  async revokeUserSessions(userId: string) {
-    return await this.models.session.deleteUserSessions(userId);
+  @Transactional()
+  async revokeUserSessions(userId: string, reason = 'security_action') {
+    const authSessions = await this.authSessions.revokeUserSessions(
+      userId,
+      reason
+    );
+    const cookieSessions = await this.models.session.deleteUserSessions(userId);
+    return cookieSessions + authSessions;
+  }
+
+  @OnEvent('auth.sessions.revoke_requested')
+  async onRevokeRequested({
+    userId,
+    reason,
+  }: Events['auth.sessions.revoke_requested']) {
+    await this.revokeUserSessions(userId, reason);
   }
 
   async refreshCookies(res: Response, sessionId?: string) {
@@ -259,41 +313,18 @@ export class AuthService implements OnApplicationBootstrap {
     return session;
   }
 
-  async getTokenSessionFromRequest(req: Request) {
-    const tokenHeader = req.headers.authorization;
-    if (!tokenHeader) {
-      return null;
-    }
-
-    const tokenValue = extractTokenFromHeader(tokenHeader);
-
-    if (!tokenValue) {
-      return null;
-    }
-
-    const token = await this.models.accessToken.getByToken(tokenValue);
-
-    if (token) {
-      const user = await this.models.user.get(token.userId);
-
-      if (!user) {
-        return null;
-      }
-
-      return {
-        token,
-        user: sessionUser(user),
-      };
-    }
-
-    return null;
-  }
-
   async changePassword(
     id: string,
     newPassword: string
   ): Promise<Omit<User, 'password'>> {
     return this.models.user.update(id, { password: newPassword });
+  }
+
+  @Transactional()
+  async changePasswordAndRevokeSessions(id: string, newPassword: string) {
+    const user = await this.changePassword(id, newPassword);
+    await this.revokeUserSessions(id);
+    return user;
   }
 
   async changeEmail(
@@ -306,55 +337,87 @@ export class AuthService implements OnApplicationBootstrap {
     });
   }
 
+  @Transactional()
+  async changeEmailAndRevokeSessions(id: string, newEmail: string) {
+    const user = await this.changeEmail(id, newEmail);
+    await this.revokeUserSessions(id);
+    return user;
+  }
+
   async setEmailVerified(id: string) {
     return await this.models.user.update(id, {
       emailVerifiedAt: new Date(),
     });
   }
 
-  async sendChangePasswordEmail(email: string, callbackUrl: string) {
+  async sendChangePasswordEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'ChangePassword',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendSetPasswordEmail(email: string, callbackUrl: string) {
+  async sendSetPasswordEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'SetPassword',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendChangeEmail(email: string, callbackUrl: string) {
+  async sendChangeEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'ChangeEmail',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendVerifyChangeEmail(email: string, callbackUrl: string) {
+  async sendVerifyChangeEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'VerifyChangeEmail',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendVerifyEmail(email: string, callbackUrl: string) {
+  async sendVerifyEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'VerifyEmail',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
   async sendNotificationChangeEmail(email: string) {
@@ -371,7 +434,8 @@ export class AuthService implements OnApplicationBootstrap {
     email: string,
     link: string,
     otp: string,
-    signUp: boolean
+    signUp: boolean,
+    metadata?: MailDeliveryMetadata
   ) {
     return await this.mailer.send({
       name: signUp ? 'SignUp' : 'SignIn',
@@ -381,6 +445,7 @@ export class AuthService implements OnApplicationBootstrap {
         otp,
         serverName: this.getServerName(),
       },
+      metadata,
     });
   }
 }

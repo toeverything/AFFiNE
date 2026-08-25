@@ -1,5 +1,7 @@
 import './setup-worker';
 
+import { MessagePortAuthProvider } from '@affine/mobile-shared/auth/channel';
+import { installAuthRequestProxy } from '@affine/mobile-shared/auth/request';
 import { broadcastChannelStorages } from '@affine/nbstore/broadcast-channel';
 import {
   cloudStorages,
@@ -18,25 +20,19 @@ import {
 import { type MessageCommunicapable, OpConsumer } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 
-let authTokenPort: MessagePort | undefined;
-const pendingTokenRequests = new Map<string, (token: string | null) => void>();
+const authProvider = new MessagePortAuthProvider();
+installAuthRequestProxy(authProvider);
 
 configureSocketAuthMethod((endpoint, cb) => {
-  readEndpointToken(endpoint)
+  authProvider
+    .getValidAccessToken(endpoint)
     .then(token => cb(token ? { token, tokenType: 'jwt' } : {}))
-    .catch(() => cb({}));
+    .catch(() => cb({ error: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE' }));
 });
 
 globalThis.addEventListener('message', e => {
-  if (e.data.type === 'native-auth-token-channel') {
-    authTokenPort = e.ports[0] as MessagePort;
-    authTokenPort.addEventListener('message', e => {
-      const { id, token } = e.data as { id?: string; token?: string | null };
-      if (!id) return;
-      pendingTokenRequests.get(id)?.(token ?? null);
-      pendingTokenRequests.delete(id);
-    });
-    authTokenPort.start();
+  if (e.data.type === 'auth-access-token-channel') {
+    authProvider.setPort(e.ports[0] as MessagePort);
     return;
   }
 
@@ -65,25 +61,6 @@ globalThis.addEventListener('message', e => {
     port.start();
   }
 });
-
-function readEndpointToken(endpoint: string) {
-  if (!authTokenPort) {
-    return Promise.resolve(null);
-  }
-
-  const id = `${Date.now()}:${Math.random()}`;
-  return new Promise<string | null>(resolve => {
-    const timeout = setTimeout(() => {
-      pendingTokenRequests.delete(id);
-      resolve(null);
-    }, 5000);
-    pendingTokenRequests.set(id, token => {
-      clearTimeout(timeout);
-      resolve(token);
-    });
-    authTokenPort?.postMessage({ id, endpoint });
-  });
-}
 
 const consumer = new OpConsumer<WorkerManagerOps>(
   globalThis as MessageCommunicapable

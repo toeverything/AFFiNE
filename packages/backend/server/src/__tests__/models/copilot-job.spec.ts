@@ -8,7 +8,7 @@ import {
 import ava, { TestFn } from 'ava';
 
 import { Config } from '../../base';
-import { CopilotJobModel } from '../../models';
+import { CopilotJobModel, CopilotTranscriptTaskModel } from '../../models';
 import { UserModel } from '../../models/user';
 import { WorkspaceModel } from '../../models/workspace';
 import { createTestingModule, type TestingModule } from '../utils';
@@ -20,6 +20,7 @@ interface Context {
   user: UserModel;
   workspace: WorkspaceModel;
   copilotJob: CopilotJobModel;
+  transcriptTask: CopilotTranscriptTaskModel;
 }
 
 const test = ava as TestFn<Context>;
@@ -29,6 +30,7 @@ test.before(async t => {
   t.context.user = module.get(UserModel);
   t.context.workspace = module.get(WorkspaceModel);
   t.context.copilotJob = module.get(CopilotJobModel);
+  t.context.transcriptTask = module.get(CopilotTranscriptTaskModel);
   t.context.db = module.get(PrismaClient);
   t.context.config = module.get(Config);
   t.context.module = module;

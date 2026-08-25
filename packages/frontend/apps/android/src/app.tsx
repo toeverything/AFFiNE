@@ -2,7 +2,9 @@ import { notify } from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
+import { MobileModalConfigProvider } from '@affine/core/mobile/components/mobile-modal-config-provider';
 import { configureMobileModules } from '@affine/core/mobile/modules';
+import { MobileBackCoordinator } from '@affine/core/mobile/modules/back-coordinator';
 import { VirtualKeyboardProvider } from '@affine/core/mobile/modules/virtual-keyboard';
 import { router } from '@affine/core/mobile/router';
 import { configureCommonModules } from '@affine/core/modules';
@@ -32,6 +34,7 @@ import { WorkspacesService } from '@affine/core/modules/workspace';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { getWorkerUrl } from '@affine/env/worker';
 import { I18n } from '@affine/i18n';
+import { serveAuthRequests } from '@affine/mobile-shared/auth/channel';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { setTelemetryTransport } from '@affine/track';
 import { Container } from '@blocksuite/affine/global/di';
@@ -44,7 +47,13 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { InAppBrowser } from '@capgo/inappbrowser';
-import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
+import {
+  Framework,
+  FrameworkRoot,
+  getCurrentStore,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 import { useTheme } from 'next-themes';
@@ -55,12 +64,13 @@ import { AffineTheme } from './plugins/affine-theme';
 import { AIButton } from './plugins/ai-button';
 import { Auth } from './plugins/auth';
 import { HashCash } from './plugins/hashcash';
+import { MobileBack } from './plugins/mobile-back';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { Preview } from './plugins/preview';
 import {
-  deleteEndpointToken,
-  readEndpointToken,
-  writeEndpointToken,
+  authRequestProvider,
+  clearEndpointSession,
+  getValidAccessToken,
 } from './proxy';
 
 const storeManagerClient = createStoreManagerClient();
@@ -139,6 +149,9 @@ framework.impl(VirtualKeyboardProvider, {
             // even though the `keyboardWillShow` event is still triggered.
             visible: info.keyboardHeight !== 0,
             height: info.keyboardHeight - navBarHeight,
+            // SystemBars applies the IME inset to the WebView parent, so the
+            // keyboard no longer overlaps the web content on Android.
+            overlaysContent: false,
           });
         })().catch(console.error);
       }),
@@ -185,45 +198,43 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
   const endpoint = serverService.server.baseUrl;
   return {
     async signInMagicLink(email, linkToken, clientNonce) {
-      const { token } = await Auth.signInMagicLink({
+      await Auth.signInMagicLink({
         endpoint,
         email,
         token: linkToken,
         clientNonce,
       });
-      await writeEndpointToken(endpoint, token);
     },
     async signInOauth(code, state, _provider, clientNonce) {
-      const { token } = await Auth.signInOauth({
+      await Auth.signInOauth({
         endpoint,
         code,
         state,
         clientNonce,
       });
-      await writeEndpointToken(endpoint, token);
       return {};
     },
     async signInPassword(credential) {
-      const { token } = await Auth.signInPassword({
+      await Auth.signInPassword({
         endpoint,
         ...credential,
       });
-      await writeEndpointToken(endpoint, token);
     },
     async signInOpenAppSignInCode(code) {
-      const { token } = await Auth.signInOpenApp({
+      await Auth.signInOpenApp({
         endpoint,
         code,
       });
-      await writeEndpointToken(endpoint, token);
     },
     async signOut() {
-      const token = await readEndpointToken(endpoint);
       try {
-        await Auth.signOut({ endpoint, token });
+        await Auth.signOut({ endpoint });
       } finally {
-        await deleteEndpointToken(endpoint);
+        await clearEndpointSession(endpoint);
       }
+    },
+    async clearSession() {
+      await clearEndpointSession(endpoint);
     },
   };
 });
@@ -310,6 +321,13 @@ window.addEventListener('focus', () => {
   frameworkProvider.get(LifecycleService).applicationFocus();
 });
 frameworkProvider.get(LifecycleService).applicationStart();
+CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+  if (!isActive) return;
+  const servers = frameworkProvider.get(ServersService).servers$.value;
+  Promise.allSettled(
+    servers.map(server => getValidAccessToken(server.baseUrl))
+  ).catch(console.error);
+}).catch(console.error);
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (typeof error === 'string' && error) {
@@ -408,19 +426,67 @@ const ThemeProvider = () => {
   return null;
 };
 
+const AndroidCapacitorApp = CapacitorApp as typeof CapacitorApp & {
+  toggleBackButtonHandler(options: { enabled: boolean }): Promise<void>;
+};
+
+const AndroidBackAdapter = () => {
+  const coordinator = useService(MobileBackCoordinator);
+  const canHandle = useLiveData(coordinator.canHandle$);
+
+  useEffect(() => {
+    Promise.all([
+      AndroidCapacitorApp.toggleBackButtonHandler({ enabled: !canHandle }),
+      MobileBack.setEnabled({ enabled: canHandle }),
+    ]).catch(console.error);
+  }, [canHandle]);
+
+  useEffect(() => {
+    let disposed = false;
+    let remove = () => {};
+    MobileBack.addListener('back', event => {
+      const handled = coordinator.handleInteractivePhase(event.phase);
+      if (event.phase === 'commit' && !handled) {
+        coordinator.request('system-back');
+      }
+    })
+      .then(handle => {
+        if (disposed) handle.remove().catch(console.error);
+        else
+          remove = () => {
+            handle.remove().catch(console.error);
+          };
+      })
+      .catch(console.error);
+    return () => {
+      disposed = true;
+      remove();
+      Promise.all([
+        AndroidCapacitorApp.toggleBackButtonHandler({ enabled: true }),
+        MobileBack.setEnabled({ enabled: false }),
+      ]).catch(console.error);
+    };
+  }, [coordinator]);
+
+  return null;
+};
+
 export function App() {
   return (
     <Suspense>
       <FrameworkRoot framework={frameworkProvider}>
         <I18nProvider>
-          <AffineContext store={getCurrentStore()}>
-            <ThemeProvider />
-            <RouterProvider
-              fallbackElement={<AppFallback />}
-              router={router}
-              future={future}
-            />
-          </AffineContext>
+          <MobileModalConfigProvider>
+            <AffineContext store={getCurrentStore()}>
+              <ThemeProvider />
+              <AndroidBackAdapter />
+              <RouterProvider
+                fallbackElement={<AppFallback />}
+                router={router}
+                future={future}
+              />
+            </AffineContext>
+          </MobileModalConfigProvider>
         </I18nProvider>
       </FrameworkRoot>
     </Suspense>
@@ -459,16 +525,9 @@ function createStoreManagerClient() {
 
   const { port1: authTokenChannelServer, port2: authTokenChannelClient } =
     new MessageChannel();
-  authTokenChannelServer.addEventListener('message', event => {
-    const { id, endpoint } = event.data as { id?: string; endpoint?: string };
-    if (!id || !endpoint) return;
-    readEndpointToken(endpoint)
-      .then(token => authTokenChannelServer.postMessage({ id, token }))
-      .catch(() => authTokenChannelServer.postMessage({ id, token: null }));
-  });
-  authTokenChannelServer.start();
+  serveAuthRequests(authTokenChannelServer, authRequestProvider);
   worker.postMessage(
-    { type: 'native-auth-token-channel', port: authTokenChannelClient },
+    { type: 'auth-access-token-channel', port: authTokenChannelClient },
     [authTokenChannelClient]
   );
   return new StoreManagerClient(new OpClient(worker));

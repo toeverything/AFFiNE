@@ -1,4 +1,4 @@
-import { toast } from '@affine/component';
+import { notify, toast } from '@affine/component';
 import {
   pushGlobalLoadingEventAtom,
   resolveGlobalLoadingEventAtom,
@@ -15,6 +15,7 @@ import {
   AuthService,
   EventSourceService,
   GraphQLService,
+  RealtimeService,
 } from '@affine/core/modules/cloud';
 import {
   GlobalDialogService,
@@ -39,6 +40,7 @@ import {
   fromPromise,
   onStart,
   throwIfAborted,
+  useLiveData,
   useService,
   useServices,
 } from '@toeverything/infra';
@@ -142,13 +144,44 @@ export const WorkspaceSideEffects = () => {
   const eventSourceService = useService(EventSourceService);
   const authService = useService(AuthService);
   const nbstoreService = useService(NbstoreService);
+  const realtimeConnectionError = useLiveData(
+    useService(RealtimeService).connectionError$
+  );
+
+  useEffect(() => {
+    if (!realtimeConnectionError) return;
+    const message = {
+      authentication:
+        t['com.affine.realtime.connection-error.authentication'](),
+      network: t['com.affine.realtime.connection-error.network'](),
+      server: t['com.affine.realtime.connection-error.server'](),
+      timeout: t['com.affine.realtime.connection-error.timeout'](),
+    }[realtimeConnectionError.type];
+    const id = notify.warning(
+      {
+        title: t['com.affine.realtime.connection-error.title'](),
+        message,
+      },
+      { id: `realtime-connection-error:${realtimeConnectionError.endpoint}` }
+    );
+    return () => {
+      notify.dismiss(id);
+    };
+  }, [realtimeConnectionError, t]);
 
   useEffect(() => {
     const dispose = setupAIProvider(
       createAIRequestService(
         graphqlService.gql,
         eventSourceService.eventSource,
-        nbstoreService.realtime
+        nbstoreService.realtime,
+        async docIds => {
+          await Promise.all(
+            [currentWorkspace.id, 'db$docProperties', ...docIds].map(docId =>
+              currentWorkspace.engine.doc.waitForSynced(docId)
+            )
+          );
+        }
       ),
       globalDialogService,
       authService
@@ -157,9 +190,10 @@ export const WorkspaceSideEffects = () => {
       dispose();
     };
   }, [
+    currentWorkspace.engine.doc,
+    currentWorkspace.id,
     eventSourceService,
     nbstoreService,
-    workspaceDialogService,
     graphqlService,
     globalDialogService,
     authService,

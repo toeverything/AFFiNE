@@ -14,20 +14,18 @@ import {
   ActionForbidden,
   getClientVersionFromRequest,
   MissingOauthQueryParameter,
+  Throttle,
   UnknownOauthProvider,
   URLHelper,
   UseNamedGuard,
 } from '../../base';
-import {
-  OAuthCallbackBodySchema,
-  OAuthPreflightBodySchema,
-  Public,
-  SessionIssuer,
-} from '../../core/auth';
+import { Public, SessionIssuer } from '../../core/auth';
 import { OAuthProviderName } from './config';
 import { OAuthProviderFactory } from './factory';
+import { OAuthCallbackBodySchema, OAuthPreflightBodySchema } from './input';
 import { OAuthService } from './service';
 
+@Throttle('strict')
 @Controller('/api/oauth')
 export class OAuthController {
   constructor(
@@ -47,6 +45,16 @@ export class OAuthController {
       const fields = new Set(input.error.issues.map(issue => issue.path[0]));
       if (fields.has('client_nonce')) {
         throw new MissingOauthQueryParameter({ name: 'client_nonce' });
+      }
+      if (fields.has('client')) {
+        throw new ActionForbidden();
+      }
+      if (fields.has('provider')) {
+        const provider =
+          body && typeof body === 'object' && 'provider' in body
+            ? String(body.provider)
+            : '';
+        throw new UnknownOauthProvider({ name: provider });
       }
       throw new MissingOauthQueryParameter({ name: 'provider' });
     }

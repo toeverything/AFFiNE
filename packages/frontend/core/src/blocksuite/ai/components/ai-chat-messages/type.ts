@@ -36,6 +36,28 @@ const ChatMessageSchema = z.object({
   userId: z.string().optional(),
   userName: z.string().optional(),
   avatarUrl: z.string().optional(),
+  scopeSnapshot: z
+    .object({
+      resolvedAt: z.string(),
+      selectors: z.array(
+        z.object({
+          kind: z.enum([
+            'document',
+            'tag',
+            'collection',
+            'favorite',
+            'artifact',
+          ]),
+          id: z.string(),
+          name: z.string().optional(),
+        })
+      ),
+      requiredDocIds: z.array(z.string()),
+      requiredArtifactIds: z.array(z.string()),
+    })
+    .passthrough()
+    .nullable()
+    .optional(),
 });
 
 export const ChatMessagesSchema = z.array(ChatMessageSchema);

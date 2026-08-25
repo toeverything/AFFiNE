@@ -138,9 +138,24 @@ test('should keep owned workspace writable when quota is within limit', async t 
   const state = await t.context.policy.reconcileWorkspaceQuotaState(
     workspace.id
   );
+  const quotaState = Reflect.get(
+    t.context.policy,
+    'quotaState'
+  ) as QuotaStateService;
+  const reconcile = Sinon.spy(quotaState, 'reconcileWorkspaceQuotaState');
 
   t.false(state.isReadonly);
   t.deepEqual(state.readonlyReasons, []);
+
+  await t.context.policy.getWorkspaceState(workspace.id);
+  t.is(reconcile.callCount, 0);
+
+  await t.context.db.effectiveWorkspaceQuotaState.update({
+    where: { workspaceId: workspace.id },
+    data: { stale: true },
+  });
+  await t.context.policy.getWorkspaceState(workspace.id);
+  t.is(reconcile.callCount, 1);
 });
 
 test('should report readonly state when fallback owner member quota overflows', async t => {
@@ -209,57 +224,14 @@ test('should roll back team cancellation cleanup when cleanup fails', async t =>
   const admin = await t.context.models.user.create({
     email: `${randomUUID()}@affine.pro`,
   });
-  await t.context.db.$transaction(async db => {
-    await db.$executeRaw`
-      SELECT set_config('affine.permission_projection.enabled', 'off', true)
-    `;
-    const pendingPermission = await db.workspaceUserRole.create({
-      data: {
-        workspaceId: workspace.id,
-        userId: pending.id,
-        type: WorkspaceRole.Collaborator,
-        status: WorkspaceMemberStatus.Pending,
-      },
-    });
-    const [invitationShape] = await db.$queryRaw<Array<{ current: boolean }>>`
-      SELECT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'workspace_invitations'
-          AND column_name = 'requested_role'
-      ) AS "current"
-    `;
-    if (invitationShape?.current) {
-      await db.workspaceInvitation.create({
-        data: {
-          workspaceId: workspace.id,
-          inviteeUserId: pending.id,
-          requestedRole: 'member',
-          status: 'pending',
-          kind: 'email',
-          legacyPermissionId: pendingPermission.id,
-        },
-      });
-    } else {
-      await db.$executeRaw`
-        INSERT INTO workspace_invitations (
-          workspace_id,
-          invitee_user_id,
-          role,
-          state,
-          source,
-          updated_at
-        )
-        VALUES (
-          ${workspace.id},
-          ${pending.id},
-          ${'member'},
-          ${'pending'},
-          ${'email'},
-          now()
-        )
-      `;
-    }
+  await t.context.db.workspaceInvitation.create({
+    data: {
+      workspaceId: workspace.id,
+      inviteeUserId: pending.id,
+      requestedRole: 'member',
+      status: 'pending',
+      kind: 'email',
+    },
   });
   await t.context.models.workspaceUser.set(
     workspace.id,
@@ -269,17 +241,10 @@ test('should roll back team cancellation cleanup when cleanup fails', async t =>
       status: WorkspaceMemberStatus.Accepted,
     }
   );
-  await t.context.models.workspaceFeature.add(
-    workspace.id,
-    'team_plan_v1',
-    'test team workspace',
-    {
-      memberLimit: 20,
-    }
-  );
-
   const failure = new Error('cleanup failed');
-  Sinon.stub(t.context.models.workspaceFeature, 'remove').rejects(failure);
+  Sinon.stub(t.context.models.workspaceUser, 'demoteAcceptedAdmins').rejects(
+    failure
+  );
 
   const error = await t.throwsAsync(
     t.context.policy.handleTeamPlanCanceled(workspace.id),
@@ -293,8 +258,5 @@ test('should roll back team cancellation cleanup when cleanup fails', async t =>
   t.is(
     (await t.context.models.workspaceUser.get(workspace.id, admin.id))?.type,
     WorkspaceRole.Admin
-  );
-  t.true(
-    await t.context.models.workspaceFeature.has(workspace.id, 'team_plan_v1')
   );
 });

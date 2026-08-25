@@ -126,37 +126,4 @@ impl BackendRuntime {
 
     Ok(true)
   }
-
-  #[napi]
-  pub async fn delete_doc_storage(&self, workspace_id: String, doc_id: String) -> napi::Result<()> {
-    let pool = self.pool().await?;
-    let mut tx = pool
-      .begin()
-      .await
-      .map_err(|err| RuntimeError::database("DocStorage delete begin transaction failed", err))?;
-
-    sqlx::query("DELETE FROM snapshots WHERE workspace_id = $1 AND guid = $2")
-      .bind(&workspace_id)
-      .bind(&doc_id)
-      .execute(&mut *tx)
-      .await
-      .map_err(|err| RuntimeError::database("DocStorage delete snapshot failed", err))?;
-    sqlx::query("DELETE FROM updates WHERE workspace_id = $1 AND guid = $2")
-      .bind(&workspace_id)
-      .bind(&doc_id)
-      .execute(&mut *tx)
-      .await
-      .map_err(|err| RuntimeError::database("DocStorage delete updates failed", err))?;
-    sqlx::query("DELETE FROM snapshot_histories WHERE workspace_id = $1 AND guid = $2")
-      .bind(&workspace_id)
-      .bind(&doc_id)
-      .execute(&mut *tx)
-      .await
-      .map_err(|err| RuntimeError::database("DocStorage delete histories failed", err))?;
-
-    tx.commit()
-      .await
-      .map_err(|err| RuntimeError::database("DocStorage delete commit failed", err))?;
-    Ok(())
-  }
 }

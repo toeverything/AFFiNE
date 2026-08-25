@@ -165,9 +165,11 @@ export class MenuComponent
     return html`
       ${this.renderTitle()} ${this.renderSearch()}
       <div class="affine-menu-body">
-        ${result.length === 0 && this.menu.enableSearch
-          ? html` <div class="no-results">No Results</div>`
-          : ''}
+        ${
+          result.length === 0 && this.menu.enableSearch
+            ? html` <div class="no-results">No Results</div>`
+            : ''
+        }
         ${result}
       </div>
     `;
@@ -213,35 +215,39 @@ export class MenuComponent
         style="display:flex;align-items:center;gap: 4px;padding:3px 4px 3px 2px"
         @mouseenter="${() => this.menu.closeSubMenu()}"
       >
-        ${title.onBack
-          ? html` <div
-              @click="${() => {
-                const result = title.onBack?.(this.menu);
-                if (result !== false) {
-                  this.menu.close();
-                }
-              }}"
-              class="dv-icon-20 dv-hover dv-pd-2 dv-round-4"
-              style="display:flex;"
-            >
-              ${ArrowLeftBigIcon()}
-            </div>`
-          : nothing}
+        ${
+          title.onBack
+            ? html` <div
+                @click="${() => {
+                  const result = title.onBack?.(this.menu);
+                  if (result !== false) {
+                    this.menu.close();
+                  }
+                }}"
+                class="dv-icon-20 dv-hover dv-pd-2 dv-round-4"
+                style="display:flex;"
+              >
+                ${ArrowLeftBigIcon()}
+              </div>`
+            : nothing
+        }
         <div
           style="flex:1;font-weight:500;font-size: 14px;line-height: 22px;color: var(--affine-text-primary-color)"
         >
           ${title.text}
         </div>
         ${title.postfix?.()}
-        ${title.onClose
-          ? html` <div
-              @click="${title.onClose}"
-              class="dv-icon-20 dv-hover dv-pd-2 dv-round-4"
-              style="display:flex;"
-            >
-              ${CloseIcon()}
-            </div>`
-          : nothing}
+        ${
+          title.onClose
+            ? html` <div
+                @click="${title.onClose}"
+                class="dv-icon-20 dv-hover dv-pd-2 dv-round-4"
+                style="display:flex;"
+              >
+                ${CloseIcon()}
+              </div>`
+            : nothing
+        }
       </div>
     `;
   }
@@ -323,21 +329,23 @@ export class MobileMenuComponent
         @mouseenter="${() => this.menu.closeSubMenu()}"
       >
         <div style="width: 50px;flex-shrink: 0;margin-left: 10px;">
-          ${title?.onBack
-            ? html` <div
-                @click="${() => {
-                  title.onBack?.(this.menu);
-                  this.menu.close();
-                }}"
-                style="
+          ${
+            title?.onBack
+              ? html` <div
+                  @click="${() => {
+                    title.onBack?.(this.menu);
+                    this.menu.close();
+                  }}"
+                  style="
                 display:flex;
                 font-size: 24px;
                 align-items:center;
 "
-              >
-                ${ArrowLeftSmallIcon()}
-              </div>`
-            : nothing}
+                >
+                  ${ArrowLeftSmallIcon()}
+                </div>`
+              : nothing
+          }
         </div>
         <div
           style="

@@ -16,6 +16,11 @@ declare global {
       };
 
       fallbackDomains: ConfigItem<string[]>;
+      deliveryWorker: {
+        batchSize: number;
+        leaseMs: number;
+        retentionDays: number;
+      };
       fallbackSMTP: {
         name: string;
         host: string;
@@ -70,6 +75,21 @@ defineModuleConfig('mailer', {
     desc: 'The emails from these domains are always sent using the fallback SMTP server.',
     default: [],
     shape: z.array(z.string()),
+  },
+  'deliveryWorker.batchSize': {
+    desc: 'Number of mail delivery rows claimed by each worker tick.',
+    default: 50,
+    shape: z.number().int().min(1).max(1000),
+  },
+  'deliveryWorker.leaseMs': {
+    desc: 'Mail delivery worker lease duration in milliseconds.',
+    default: 2 * 60 * 1000,
+    shape: z.number().int().min(1000),
+  },
+  'deliveryWorker.retentionDays': {
+    desc: 'Days to retain anonymized terminal mail delivery ledger rows.',
+    default: 30,
+    shape: z.number().int().min(1),
   },
   'fallbackSMTP.name': {
     desc: 'Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.',

@@ -10,7 +10,9 @@ import { EventBus } from '../../base';
 import { ConfigFactory, ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
+import { EntitlementService } from '../../core/entitlement';
 import { SubscriptionCronJobs } from '../../plugins/payment/cron';
+import { SelfhostTeamSubscriptionManager } from '../../plugins/payment/manager';
 import { RevenueCatService } from '../../plugins/payment/revenuecat';
 import { SubscriptionService } from '../../plugins/payment/service';
 import { StripeFactory } from '../../plugins/payment/stripe';
@@ -226,7 +228,7 @@ test.beforeEach(async t => {
   await db.workspace.create({
     data: {
       id: 'ws_1',
-      public: false,
+      accessPolicy: { create: {} },
     },
   });
   await db.userStripeCustomer.create({
@@ -365,15 +367,17 @@ test('should list normal prices for user with old ai subscriptions', async t => 
 test('should throw if user has subscription already', async t => {
   const { service, u1, db } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
-      stripeSubscriptionId: 'sub_1',
+      externalSubscriptionId: 'sub_1',
       plan: SubscriptionPlan.Pro,
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
-      start: new Date(),
-      end: new Date(Date.now() + 100000),
+      periodStart: new Date(),
+      periodEnd: new Date(Date.now() + 100000),
     },
   });
 
@@ -394,15 +398,17 @@ test('should throw if user has subscription already', async t => {
 test('should allow checkout after local subscription period ended', async t => {
   const { service, u1, db, stripe } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
-      stripeSubscriptionId: 'sub_expired_ai',
+      externalSubscriptionId: 'sub_expired_ai',
       plan: SubscriptionPlan.AI,
       recurring: SubscriptionRecurring.Yearly,
       status: SubscriptionStatus.Active,
-      start: new Date('2026-05-04T13:11:45.000Z'),
-      end: new Date('2026-05-11T13:11:45.000Z'),
+      periodStart: new Date('2026-05-04T13:11:45.000Z'),
+      periodEnd: new Date('2026-05-11T13:11:45.000Z'),
     },
   });
 
@@ -710,10 +716,6 @@ test('should be able to create subscription', async t => {
 
   await service.saveStripeSubscription(sub);
 
-  const subInDB = await db.subscription.findFirst({
-    where: { targetId: u1.id },
-  });
-
   t.true(
     event.emit.calledOnceWith('user.subscription.activated', {
       userId: u1.id,
@@ -721,8 +723,6 @@ test('should be able to create subscription', async t => {
       recurring: SubscriptionRecurring.Monthly,
     })
   );
-  t.is(subInDB?.stripeSubscriptionId, sub.id);
-
   const providerFact = await db.providerSubscription.findUnique({
     where: {
       provider_externalSubscriptionId: {
@@ -760,26 +760,33 @@ test('should be able to update subscription', async t => {
     })
   );
 
-  const subInDB = await db.subscription.findFirst({
-    where: { targetId: u1.id },
+  const subInDB = await db.providerSubscription.findUnique({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: sub.id,
+      },
+    },
   });
 
   t.is(subInDB?.status, SubscriptionStatus.Active);
   t.is(subInDB?.canceledAt?.getTime(), canceledAt * 1000);
 });
 
-test('should replace old subscription row when stripe creates a new subscription for the same plan', async t => {
+test('should preserve old provider fact when stripe creates a new subscription for the same plan', async t => {
   const { service, db, u1 } = t.context;
 
-  const old = await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
-      stripeSubscriptionId: 'sub_old',
+      externalSubscriptionId: 'sub_old',
       plan: SubscriptionPlan.Pro,
       recurring: SubscriptionRecurring.Yearly,
       status: SubscriptionStatus.Canceled,
-      start: new Date('2026-03-26T08:23:57.000Z'),
-      end: new Date('2027-03-26T08:23:57.000Z'),
+      periodStart: new Date('2026-03-26T08:23:57.000Z'),
+      periodEnd: new Date('2027-03-26T08:23:57.000Z'),
     },
   });
 
@@ -801,14 +808,21 @@ test('should replace old subscription row when stripe creates a new subscription
     },
   });
 
-  const subscriptions = await db.subscription.findMany({
-    where: { targetId: u1.id, plan: SubscriptionPlan.Pro },
+  const subscriptions = await db.providerSubscription.findMany({
+    where: {
+      provider: 'stripe',
+      targetType: 'user',
+      targetId: u1.id,
+      plan: SubscriptionPlan.Pro,
+    },
+    orderBy: { externalSubscriptionId: 'asc' },
   });
 
-  t.is(subscriptions.length, 1);
-  t.is(subscriptions[0].id, old.id);
-  t.is(subscriptions[0].stripeSubscriptionId, 'sub_new');
+  t.is(subscriptions.length, 2);
+  t.is(subscriptions[0].externalSubscriptionId, 'sub_new');
   t.is(subscriptions[0].status, SubscriptionStatus.Active);
+  t.is(subscriptions[1].externalSubscriptionId, 'sub_old');
+  t.is(subscriptions[1].status, SubscriptionStatus.Canceled);
 });
 
 test('should be able to delete subscription', async t => {
@@ -828,11 +842,6 @@ test('should be able to delete subscription', async t => {
     })
   );
 
-  const subInDB = await db.subscription.findFirst({
-    where: { targetId: u1.id },
-  });
-
-  t.is(subInDB, null);
   t.like(
     await db.providerSubscription.findUnique({
       where: {
@@ -851,15 +860,18 @@ test('should be able to delete subscription', async t => {
 test('should be able to cancel subscription', async t => {
   const { service, db, u1, stripe } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
-      stripeSubscriptionId: 'sub_1',
+      externalSubscriptionId: 'sub_1',
       plan: SubscriptionPlan.Pro,
       recurring: SubscriptionRecurring.Yearly,
       status: SubscriptionStatus.Active,
-      start: new Date(),
-      end: new Date(Date.now() + 100000),
+      periodStart: new Date(),
+      periodEnd: new Date(Date.now() + 100000),
+      metadata: { preserved: true },
     },
   });
 
@@ -881,6 +893,15 @@ test('should be able to cancel subscription', async t => {
   );
   t.is(subInDB.status, SubscriptionStatus.Active);
   t.truthy(subInDB.canceledAt);
+  const saved = await db.providerSubscription.findUniqueOrThrow({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: 'sub_1',
+      },
+    },
+  });
+  t.like(saved.metadata, { preserved: true, nextBillAt: null });
 });
 
 test('should reconcile canceled stripe subscriptions and revoke local entitlement', async t => {
@@ -897,11 +918,16 @@ test('should reconcile canceled stripe subscriptions and revoke local entitlemen
 
   await cron.reconcileStripeSubscriptions();
 
-  const subInDB = await db.subscription.findFirst({
-    where: { targetId: u1.id, stripeSubscriptionId: sub.id },
+  const subInDB = await db.providerSubscription.findUnique({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: sub.id,
+      },
+    },
   });
 
-  t.is(subInDB, null);
+  t.is(subInDB?.status, SubscriptionStatus.Canceled);
   t.true(
     event.emit.calledWith('user.subscription.canceled', {
       userId: u1.id,
@@ -914,15 +940,17 @@ test('should reconcile canceled stripe subscriptions and revoke local entitlemen
 test('should be able to resume subscription', async t => {
   const { service, db, u1, stripe } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
-      stripeSubscriptionId: 'sub_1',
+      externalSubscriptionId: 'sub_1',
       plan: SubscriptionPlan.Pro,
       recurring: SubscriptionRecurring.Yearly,
       status: SubscriptionStatus.Active,
-      start: new Date(),
-      end: new Date(Date.now() + 100000),
+      periodStart: new Date(),
+      periodEnd: new Date(Date.now() + 100000),
       canceledAt: new Date(),
     },
   });
@@ -976,15 +1004,17 @@ const subscriptionSchedule: Stripe.SubscriptionSchedule = {
 test('should be able to update recurring', async t => {
   const { service, db, u1, stripe } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
-      stripeSubscriptionId: 'sub_1',
+      externalSubscriptionId: 'sub_1',
       plan: SubscriptionPlan.Pro,
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
-      start: new Date(),
-      end: new Date(Date.now() + 100000),
+      periodStart: new Date(),
+      periodEnd: new Date(Date.now() + 100000),
     },
   });
 
@@ -1034,16 +1064,18 @@ test('should be able to update recurring', async t => {
 test('should release the schedule if the new recurring is the same as the current phase', async t => {
   const { service, db, u1, stripe } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
-      stripeSubscriptionId: 'sub_1',
-      stripeScheduleId: 'sub_sched_1',
+      externalSubscriptionId: 'sub_1',
       plan: SubscriptionPlan.Pro,
       recurring: SubscriptionRecurring.Yearly,
       status: SubscriptionStatus.Active,
-      start: new Date(),
-      end: new Date(Date.now() + 100000),
+      periodStart: new Date(),
+      periodEnd: new Date(Date.now() + 100000),
+      metadata: { stripeScheduleId: 'sub_sched_1' },
     },
   });
 
@@ -1253,14 +1285,16 @@ test('should be able to checkout for lifetime recurring', async t => {
 test('should not be able to checkout for lifetime recurring if already subscribed', async t => {
   const { service, u1, db } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
-      stripeSubscriptionId: null,
+      externalSubscriptionId: 'stripe_invoice:existing_lifetime',
       plan: SubscriptionPlan.Pro,
       recurring: SubscriptionRecurring.Lifetime,
       status: SubscriptionStatus.Active,
-      start: new Date(),
+      periodStart: new Date(),
     },
   });
 
@@ -1287,8 +1321,13 @@ test('should be able to subscribe to lifetime recurring', async t => {
 
   await service.saveStripeInvoice(lifetimeInvoice);
 
-  const subInDB = await db.subscription.findFirst({
-    where: { targetId: u1.id },
+  const subInDB = await db.providerSubscription.findFirst({
+    where: {
+      provider: 'stripe',
+      targetType: 'user',
+      targetId: u1.id,
+      recurring: SubscriptionRecurring.Lifetime,
+    },
   });
 
   t.true(
@@ -1301,7 +1340,7 @@ test('should be able to subscribe to lifetime recurring', async t => {
   t.is(subInDB?.plan, SubscriptionPlan.Pro);
   t.is(subInDB?.recurring, SubscriptionRecurring.Lifetime);
   t.is(subInDB?.status, SubscriptionStatus.Active);
-  t.is(subInDB?.stripeSubscriptionId, null);
+  t.is(subInDB?.externalSubscriptionId, `stripe_invoice:${lifetimeInvoice.id}`);
 
   const paymentFact = await db.paymentEvent.findUnique({
     where: {
@@ -1319,28 +1358,88 @@ test('should be able to subscribe to lifetime recurring', async t => {
     currency: lifetimeInvoice.currency,
     processingStatus: 'processed',
   });
+
+  t.context.stripe.invoices.retrieve.resolves(
+    lifetimeInvoice as Stripe.Response<Stripe.Invoice>
+  );
+  await service.handleRefundedInvoice(lifetimeInvoice.id, 'refund');
+  const entitlement = await db.entitlement.findFirstOrThrow({
+    where: {
+      source: 'cloud_subscription',
+      subjectId: `stripe_invoice:${lifetimeInvoice.id}`,
+    },
+  });
+  t.is(entitlement.status, 'revoked');
 });
 
 test('should be able to subscribe to lifetime recurring with old subscription', async t => {
-  const { service, stripe, db, u1, event } = t.context;
+  const { app, service, stripe, db, u1, event } = t.context;
 
-  await db.subscription.create({
+  const previous = await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
-      stripeSubscriptionId: 'sub_1',
+      externalSubscriptionId: 'sub_1',
       plan: SubscriptionPlan.Pro,
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
-      start: new Date(),
-      end: new Date(Date.now() + 100000),
+      periodStart: new Date(),
+      periodEnd: new Date(Date.now() + 100000),
     },
   });
+  await app.get(EntitlementService).upsertFromCloudSubscription({
+    targetId: u1.id,
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Monthly,
+    status: SubscriptionStatus.Active,
+    subscriptionId: previous.id,
+    stripeSubscriptionId: previous.externalSubscriptionId,
+    end: previous.periodEnd,
+  });
+  event.emit.resetHistory();
+
+  stripe.subscriptions.cancel.rejects(new Error('remote cancellation failed'));
+  await t.throwsAsync(() => service.saveStripeInvoice(lifetimeInvoice), {
+    message: 'remote cancellation failed',
+  });
+  const current = await db.providerSubscription.findUniqueOrThrow({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: 'sub_1',
+      },
+    },
+  });
+  t.is(current.status, SubscriptionStatus.Active);
+  t.is(
+    (
+      await db.entitlement.findFirstOrThrow({
+        where: { source: 'cloud_subscription', subjectId: 'sub_1' },
+      })
+    ).status,
+    'active'
+  );
+  t.is(
+    await db.providerSubscription.count({
+      where: {
+        targetId: u1.id,
+        recurring: SubscriptionRecurring.Lifetime,
+      },
+    }),
+    0
+  );
 
   stripe.subscriptions.cancel.resolves(sub as any);
   await service.saveStripeInvoice(lifetimeInvoice);
 
-  const subInDB = await db.subscription.findFirst({
-    where: { targetId: u1.id },
+  const subInDB = await db.providerSubscription.findFirst({
+    where: {
+      provider: 'stripe',
+      targetType: 'user',
+      targetId: u1.id,
+      recurring: SubscriptionRecurring.Lifetime,
+    },
   });
 
   t.true(
@@ -1353,20 +1452,36 @@ test('should be able to subscribe to lifetime recurring with old subscription', 
   t.is(subInDB?.plan, SubscriptionPlan.Pro);
   t.is(subInDB?.recurring, SubscriptionRecurring.Lifetime);
   t.is(subInDB?.status, SubscriptionStatus.Active);
-  t.is(subInDB?.stripeSubscriptionId, null);
+  t.is(subInDB?.externalSubscriptionId, `stripe_invoice:${lifetimeInvoice.id}`);
+  t.is(
+    (
+      await db.entitlement.findFirstOrThrow({
+        where: { source: 'cloud_subscription', subjectId: 'sub_1' },
+      })
+    ).status,
+    'revoked'
+  );
+  t.is(stripe.subscriptions.cancel.callCount, 2);
+  t.deepEqual(
+    stripe.subscriptions.cancel.firstCall.lastArg,
+    stripe.subscriptions.cancel.secondCall.lastArg
+  );
 });
 
 test('should not be able to cancel lifetime subscription', async t => {
   const { service, db, u1 } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
+      externalSubscriptionId: 'stripe_invoice:lifetime_cancel',
       plan: SubscriptionPlan.Pro,
       recurring: SubscriptionRecurring.Lifetime,
       status: SubscriptionStatus.Active,
-      start: new Date(),
-      end: null,
+      periodStart: new Date(),
+      periodEnd: null,
     },
   });
 
@@ -1383,14 +1498,17 @@ test('should not be able to cancel lifetime subscription', async t => {
 test('should not be able to update lifetime recurring', async t => {
   const { service, db, u1 } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'user',
       targetId: u1.id,
+      externalSubscriptionId: 'stripe_invoice:lifetime_update',
       plan: SubscriptionPlan.Pro,
       recurring: SubscriptionRecurring.Lifetime,
       status: SubscriptionStatus.Active,
-      start: new Date(),
-      end: null,
+      periodStart: new Date(),
+      periodEnd: null,
     },
   });
 
@@ -1444,15 +1562,17 @@ test('should be able to checkout for team', async t => {
 test('should not be able to checkout for workspace if subscribed', async t => {
   const { service, u1, db } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'workspace',
       targetId: 'ws_1',
-      stripeSubscriptionId: 'sub_1',
+      externalSubscriptionId: 'sub_1',
       plan: SubscriptionPlan.Team,
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
-      start: new Date(),
-      end: new Date(Date.now() + 100000),
+      periodStart: new Date(),
+      periodEnd: new Date(Date.now() + 100000),
       quantity: 1,
     },
   });
@@ -1478,15 +1598,17 @@ test('should not be able to checkout for workspace if subscribed', async t => {
 test('should be able to checkout for workspace after canceled subscription', async t => {
   const { service, u1, db, stripe } = t.context;
 
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'workspace',
       targetId: 'ws_1',
-      stripeSubscriptionId: 'sub_1',
+      externalSubscriptionId: 'sub_1',
       plan: SubscriptionPlan.Team,
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Canceled,
-      start: new Date(Date.now() - 100000),
-      end: new Date(Date.now() - 1000),
+      periodStart: new Date(Date.now() - 100000),
+      periodEnd: new Date(Date.now() - 1000),
       quantity: 1,
     },
   });
@@ -1537,8 +1659,8 @@ test('should be able to create team subscription', async t => {
 
   await service.saveStripeSubscription(teamSub);
 
-  const subInDB = await db.subscription.findFirst({
-    where: { targetId: 'ws_1' },
+  const subInDB = await db.providerSubscription.findFirst({
+    where: { targetType: 'workspace', targetId: 'ws_1' },
   });
 
   t.true(
@@ -1549,21 +1671,23 @@ test('should be able to create team subscription', async t => {
       quantity: 1,
     })
   );
-  t.is(subInDB?.stripeSubscriptionId, sub.id);
+  t.is(subInDB?.externalSubscriptionId, sub.id);
 });
 
-test('should replace old team subscription row when stripe creates a new subscription', async t => {
+test('should preserve old team provider fact when stripe creates a new subscription', async t => {
   const { service, db } = t.context;
 
-  const old = await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      provider: 'stripe',
+      targetType: 'workspace',
       targetId: 'ws_1',
-      stripeSubscriptionId: 'sub_old_team',
+      externalSubscriptionId: 'sub_old_team',
       plan: SubscriptionPlan.Team,
       recurring: SubscriptionRecurring.Yearly,
       status: SubscriptionStatus.Canceled,
-      start: new Date('2026-03-26T08:23:57.000Z'),
-      end: new Date('2027-03-26T08:23:57.000Z'),
+      periodStart: new Date('2026-03-26T08:23:57.000Z'),
+      periodEnd: new Date('2027-03-26T08:23:57.000Z'),
       quantity: 24,
     },
   });
@@ -1583,15 +1707,22 @@ test('should replace old team subscription row when stripe creates a new subscri
     },
   });
 
-  const subscriptions = await db.subscription.findMany({
-    where: { targetId: 'ws_1', plan: SubscriptionPlan.Team },
+  const subscriptions = await db.providerSubscription.findMany({
+    where: {
+      provider: 'stripe',
+      targetType: 'workspace',
+      targetId: 'ws_1',
+      plan: SubscriptionPlan.Team,
+    },
+    orderBy: { externalSubscriptionId: 'asc' },
   });
 
-  t.is(subscriptions.length, 1);
-  t.is(subscriptions[0].id, old.id);
-  t.is(subscriptions[0].stripeSubscriptionId, 'sub_new_team');
+  t.is(subscriptions.length, 2);
+  t.is(subscriptions[0].externalSubscriptionId, 'sub_new_team');
   t.is(subscriptions[0].status, SubscriptionStatus.Active);
   t.is(subscriptions[0].quantity, 11);
+  t.is(subscriptions[1].externalSubscriptionId, 'sub_old_team');
+  t.is(subscriptions[1].status, SubscriptionStatus.Canceled);
 });
 
 test('should be able to update team subscription', async t => {
@@ -1612,8 +1743,8 @@ test('should be able to update team subscription', async t => {
     },
   });
 
-  const subInDB = await db.subscription.findFirst({
-    where: { targetId: 'ws_1' },
+  const subInDB = await db.providerSubscription.findFirst({
+    where: { targetType: 'workspace', targetId: 'ws_1' },
   });
 
   t.is(subInDB?.quantity, 2);
@@ -1654,9 +1785,6 @@ test('should persist mutable team subscription fields on same stripe subscriptio
     },
   });
 
-  const subInDB = await db.subscription.findFirst({
-    where: { targetId: 'ws_1' },
-  });
   const entitlement = await db.entitlement.findFirst({
     where: {
       source: 'cloud_subscription',
@@ -1672,11 +1800,11 @@ test('should persist mutable team subscription fields on same stripe subscriptio
     },
   });
 
-  t.like(subInDB, {
+  t.like(providerFact, {
     recurring: SubscriptionRecurring.Yearly,
     quantity: 9,
-    start: new Date(1780000000 * 1000),
-    end: new Date(1811536000 * 1000),
+    periodStart: new Date(1780000000 * 1000),
+    periodEnd: new Date(1811536000 * 1000),
     trialStart: new Date(1780000000 * 1000),
     trialEnd: new Date(1780604800 * 1000),
   });
@@ -1748,11 +1876,16 @@ test('should suspend on dispute and restore when dispute won', async t => {
 
   await service.handleRefundedInvoice(invoice.id, 'dispute_open');
 
-  const removed = await db.subscription.findFirst({
-    where: { stripeSubscriptionId: 'sub_1' },
+  const suspended = await db.providerSubscription.findUnique({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: 'sub_1',
+      },
+    },
   });
 
-  t.is(removed, null);
+  t.is(suspended?.status, SubscriptionStatus.Canceled);
   t.true(
     event.emit.calledWith('user.subscription.canceled', {
       userId: t.context.u1.id,
@@ -1766,8 +1899,13 @@ test('should suspend on dispute and restore when dispute won', async t => {
 
   await service.handleRefundedInvoice(invoice.id, 'dispute_won');
 
-  const restored = await db.subscription.findFirst({
-    where: { stripeSubscriptionId: 'sub_1' },
+  const restored = await db.providerSubscription.findUnique({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: 'sub_1',
+      },
+    },
   });
 
   t.truthy(restored);
@@ -1779,6 +1917,99 @@ test('should suspend on dispute and restore when dispute won', async t => {
       recurring: SubscriptionRecurring.Monthly,
     })
   );
+});
+
+test('should keep selfhost provider identity and license source on replay and cancellation', async t => {
+  const { app, db, service } = t.context;
+  const selfhostSubscription = {
+    ...sub,
+    id: 'sub_selfhost',
+    schedule: 'schedule_selfhost',
+    items: {
+      ...sub.items,
+      data: [
+        {
+          ...sub.items.data[0],
+          quantity: 5,
+          subscription: 'sub_selfhost',
+          price: {
+            id: 'price_selfhost',
+            lookup_key: `${SubscriptionPlan.SelfHostedTeam}_${SubscriptionRecurring.Yearly}`,
+            product: 'product_selfhost',
+            currency: 'usd',
+            unit_amount: 12000,
+          },
+        },
+      ],
+    },
+  } as Stripe.Subscription;
+
+  await service.saveStripeSubscription(selfhostSubscription);
+  const first = await db.providerSubscription.findUniqueOrThrow({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: selfhostSubscription.id,
+      },
+    },
+  });
+  await db.providerSubscription.create({
+    data: {
+      provider: 'revenuecat',
+      targetType: 'instance',
+      targetId: first.targetId,
+      plan: SubscriptionPlan.SelfHostedTeam,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Active,
+      iapStore: 'app_store',
+      externalCustomerId: 'selfhost-customer',
+      externalProductId: 'selfhost-product',
+      externalRef: 'selfhost-ref',
+    },
+  });
+  const selected = await app
+    .get(SelfhostTeamSubscriptionManager)
+    .getSubscription({
+      key: first.targetId,
+      plan: SubscriptionPlan.SelfHostedTeam,
+    });
+  t.is(selected?.provider, 'stripe');
+
+  await service.saveStripeSubscription({
+    ...selfhostSubscription,
+    items: {
+      ...selfhostSubscription.items,
+      data: [{ ...selfhostSubscription.items.data[0], quantity: 7 }],
+    },
+  });
+
+  const replayed = await db.providerSubscription.findUniqueOrThrow({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: selfhostSubscription.id,
+      },
+    },
+  });
+  t.is(replayed.targetId, first.targetId);
+  t.is(replayed.quantity, 7);
+  t.is(await db.license.count({ where: { key: first.targetId } }), 1);
+  t.is(app.mails.count('TeamLicense'), 1);
+
+  await service.deleteStripeSubscription({
+    ...selfhostSubscription,
+    status: SubscriptionStatus.Canceled,
+  });
+
+  t.is(
+    (
+      await db.providerSubscription.findUniqueOrThrow({
+        where: { id: first.id },
+      })
+    ).status,
+    SubscriptionStatus.Canceled
+  );
+  t.is(await db.license.count({ where: { key: first.targetId } }), 1);
 });
 
 // NOTE(@forehalo): cancel and resume a team subscription share the same logic with user subscription

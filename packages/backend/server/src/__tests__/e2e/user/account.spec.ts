@@ -4,7 +4,9 @@ import {
   getCurrentUserQuery,
   getWorkspaceQuery,
 } from '@affine/graphql';
+import { WorkspaceMemberStatus } from '@prisma/client';
 
+import { WorkspaceRole } from '../../../models';
 import { app, e2e, Mockers } from '../test';
 
 const admin = await app.create(Mockers.User, {
@@ -94,6 +96,31 @@ e2e('should register deleted account again', async t => {
 
 e2e('should ban account', async t => {
   const user = await app.create(Mockers.User);
+
+  await app.login(admin);
+
+  const { banUser } = await app.gql({
+    query: disableUserMutation,
+    variables: {
+      id: user.id,
+    },
+  });
+
+  t.is(banUser.disabled, true);
+});
+
+e2e('should ban account with pending workspace invitation', async t => {
+  const owner = await app.create(Mockers.User);
+  const user = await app.create(Mockers.User);
+  const workspace = await app.create(Mockers.Workspace, { owner });
+
+  await app.models.workspaceInvitation.set(
+    workspace.id,
+    user.id,
+    WorkspaceRole.Collaborator,
+    WorkspaceMemberStatus.Pending,
+    { inviterId: owner.id }
+  );
 
   await app.login(admin);
 

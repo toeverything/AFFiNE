@@ -12,8 +12,8 @@ import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
 import { NavigationPanelTreeNode } from '../../tree/node';
 import { NavigationPanelDocNode } from '../doc';
 import {
-  useNavigationPanelTagNodeOperations,
-  useNavigationPanelTagNodeOperationsMenu,
+  NavigationPanelTagNodeMenu,
+  useNavigationPanelTagNodeNewDoc,
 } from './operations';
 import * as styles from './styles.css';
 
@@ -67,21 +67,24 @@ export const NavigationPanelTagNode = ({
     [tagColor]
   );
 
-  const option = useMemo(
-    () => ({
-      openNodeCollapsed: () => setCollapsed(false),
-    }),
+  const openNodeCollapsed = useCallback(
+    () => setCollapsed(false),
     [setCollapsed]
   );
-  const operations = useNavigationPanelTagNodeOperationsMenu(tagId, option);
-  const { handleNewDoc } = useNavigationPanelTagNodeOperations(tagId, option);
-
-  const finalOperations = useMemo(() => {
-    if (additionalOperations) {
-      return [...operations, ...additionalOperations];
-    }
-    return operations;
-  }, [additionalOperations, operations]);
+  const handleNewDoc = useNavigationPanelTagNodeNewDoc(
+    tagId,
+    openNodeCollapsed
+  );
+  const menuTarget = useMemo(
+    () => (
+      <NavigationPanelTagNodeMenu
+        tagId={tagId}
+        handleNewDoc={handleNewDoc}
+        additionalOperations={additionalOperations}
+      />
+    ),
+    [additionalOperations, handleNewDoc, tagId]
+  );
 
   if (!tagRecord) {
     return null;
@@ -95,7 +98,7 @@ export const NavigationPanelTagNode = ({
       setCollapsed={setCollapsed}
       to={`/tag/${tagId}`}
       active={active}
-      operations={finalOperations}
+      menuTarget={menuTarget}
       data-testid={`navigation-panel-tag-${tagId}`}
       aria-label={tagName}
       data-role="navigation-panel-tag"

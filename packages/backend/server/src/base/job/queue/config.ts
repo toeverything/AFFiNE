@@ -71,14 +71,6 @@ defineModuleConfig('job', {
     schema,
   },
 
-  'queues.indexer': {
-    desc: 'The config for indexer job queue',
-    default: {
-      concurrency: 1,
-    },
-    schema,
-  },
-
   'queues.notification': {
     desc: 'The config for notification job queue',
     default: {
@@ -97,6 +89,14 @@ defineModuleConfig('job', {
 
   'queues.backendRuntime': {
     desc: 'The config for backend runtime job queue',
+    default: {
+      concurrency: 1,
+    },
+    schema,
+  },
+
+  'queues.inviteAbuse': {
+    desc: 'The config for invite abuse disposition job queue',
     default: {
       concurrency: 1,
     },

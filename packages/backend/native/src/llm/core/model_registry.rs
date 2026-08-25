@@ -21,7 +21,7 @@ pub fn llm_resolve_model_registry_variant(
     request.backend_kind.as_deref(),
     request.model_id.as_str(),
   )
-  .map_err(crate::llm::host::invalid_arg)?
+  .map_err(crate::llm::invalid_arg)?
   {
     Some((variant, matched_by)) => ModelRegistryResolveResponse {
       variant: Some(to_contract_variant(variant)?),
@@ -44,7 +44,7 @@ pub fn llm_match_model_registry(request: ModelRegistryMatchRequest) -> Result<Mo
     .map_err(crate::llm::map_json_error)?;
   let response = ModelRegistryMatchResponse {
     variant: llm_adapter::core::select_model_registry_variant(&variants, request.backend_kind.as_str(), &cond)
-      .map_err(crate::llm::host::invalid_arg)?
+      .map_err(crate::llm::invalid_arg)?
       .map(to_contract_variant)
       .transpose()?,
   };
@@ -58,7 +58,7 @@ mod tests {
   use crate::llm::core::contracts::{ModelConditionsContract, ModelRegistryMatchRequest, ModelRegistryResolveRequest};
 
   #[test]
-  fn should_resolve_backend_scoped_alias() {
+  fn should_resolve_current_chat_models() {
     let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("anthropic_vertex".to_string()),
       model_id: "claude-sonnet-4.6".to_string(),
@@ -67,6 +67,26 @@ mod tests {
 
     assert_eq!(response.matched_by.as_deref(), Some("canonical"));
     assert_eq!(response.variant.unwrap().raw_model_id, "claude-sonnet-4-6");
+
+    for model_id in ["gpt-5.6-luna", "gpt-5.6-terra"] {
+      let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+        backend_kind: Some("openai_responses".to_string()),
+        model_id: model_id.to_string(),
+      })
+      .unwrap();
+
+      assert_eq!(response.matched_by.as_deref(), Some("raw_model_id"));
+      assert_eq!(response.variant.unwrap().raw_model_id, model_id);
+    }
+
+    let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("gemini_api".to_string()),
+      model_id: "gemini-3.7-flash".to_string(),
+    })
+    .unwrap();
+
+    assert_eq!(response.matched_by.as_deref(), Some("raw_model_id"));
+    assert_eq!(response.variant.unwrap().raw_model_id, "gemini-3.7-flash");
   }
 
   #[test]
@@ -112,6 +132,80 @@ mod tests {
   }
 
   #[test]
+  fn should_resolve_deepseek_provider_variants() {
+    let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("deepseek".to_string()),
+      model_id: "deepseek-v4-pro".to_string(),
+    })
+    .unwrap();
+    let variant = response.variant.unwrap();
+
+    assert_eq!(variant.raw_model_id, "deepseek-v4-pro");
+    assert_eq!(variant.request_layer.as_deref(), Some("chat_completions"));
+
+    let legacy = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("deepseek".to_string()),
+      model_id: "deepseek-chat".to_string(),
+    })
+    .unwrap();
+
+    assert_eq!(legacy.matched_by.as_deref(), Some("legacy_alias"));
+    assert_eq!(legacy.variant.unwrap().raw_model_id, "deepseek-v4-flash");
+  }
+
+  #[test]
+  fn should_resolve_kimi_provider_default_model() {
+    let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("kimi".to_string()),
+      model_id: "kimi-k2.7-code-highspeed".to_string(),
+    })
+    .unwrap();
+    let variant = response.variant.unwrap();
+
+    assert_eq!(variant.raw_model_id, "kimi-k2.7-code-highspeed");
+    assert_eq!(variant.protocol.as_deref(), Some("openai_chat"));
+    assert_eq!(variant.request_layer.as_deref(), Some("chat_completions"));
+    assert_eq!(
+      variant.behavior_flags.as_deref(),
+      Some(&["omit_tool_choice".to_string(), "reasoning_supported".to_string()][..])
+    );
+  }
+
+  #[test]
+  fn should_resolve_opencode_go_prefixed_alias() {
+    let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("opencode_go".to_string()),
+      model_id: "opencode-go/kimi-k2.7-code".to_string(),
+    })
+    .unwrap();
+    let variant = response.variant.unwrap();
+
+    assert_eq!(response.matched_by.as_deref(), Some("alias"));
+    assert_eq!(variant.backend_kind, "opencode_go");
+    assert_eq!(variant.raw_model_id, "kimi-k2.7-code");
+  }
+
+  #[test]
+  fn should_match_opencode_zen_default_variant() {
+    let response = llm_match_model_registry(ModelRegistryMatchRequest {
+      backend_kind: "opencode_zen".to_string(),
+      cond: ModelConditionsContract {
+        input_types: Some(vec!["text".to_string()]),
+        attachment_kinds: None,
+        attachment_source_kinds: None,
+        has_remote_attachments: None,
+        model_id: None,
+        output_type: Some("text".to_string()),
+      },
+    })
+    .unwrap();
+    let variant = response.variant.unwrap();
+
+    assert_eq!(variant.raw_model_id, "kimi-k3");
+    assert_eq!(variant.backend_kind, "opencode_zen");
+  }
+
+  #[test]
   fn should_resolve_gemini_embedding_2() {
     let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("gemini_api".to_string()),
@@ -127,7 +221,7 @@ mod tests {
   }
 
   #[test]
-  fn should_keep_same_raw_id_as_two_backend_variants() {
+  fn should_keep_legacy_model_raw_id_across_backend_variants() {
     let api_variant = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("gemini_api".to_string()),
       model_id: "gemini-2.5-flash".to_string(),
@@ -207,7 +301,7 @@ mod tests {
         attachment_kinds: None,
         attachment_source_kinds: None,
         has_remote_attachments: None,
-        model_id: Some("gemini-2.5-flash".to_string()),
+        model_id: Some("gemini-3.7-flash".to_string()),
         output_type: Some("image".to_string()),
       },
     })

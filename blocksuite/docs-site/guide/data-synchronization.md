@@ -81,7 +81,11 @@ function createDoc() {
     });
     doc.addBlock('affine:surface', {}, pageBlockId);
     const noteId = doc.addBlock('affine:note', {}, pageBlockId);
-    doc.addBlock('affine:paragraph', { text: new Text('Hello World!') }, noteId);
+    doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('Hello World!') },
+      noteId
+    );
   });
 }
 

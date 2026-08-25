@@ -13,6 +13,7 @@ import { BaseModel } from './base';
 const DEFAULT_STORAGE_HISTORY_DAYS = 30;
 const DEFAULT_SYNC_HISTORY_HOURS = 48;
 const DEFAULT_SHARED_LINK_WINDOW_DAYS = 28;
+const DEFAULT_COPILOT_WINDOW_DAYS = 7;
 const DEFAULT_ANALYTICS_WINDOW_DAYS = 28;
 const NON_TEAM_ANALYTICS_WINDOW_DAYS = 7;
 const DEFAULT_TIMEZONE = 'UTC';
@@ -50,6 +51,7 @@ export type AdminDashboardOptions = {
   storageHistoryDays?: number;
   syncHistoryHours?: number;
   sharedLinkWindowDays?: number;
+  copilotWindowDays?: number;
   includeTopSharedLinks?: boolean;
 };
 
@@ -99,6 +101,7 @@ export type AdminDashboardDto = {
   }>;
   syncWindow: TimeWindowDto;
   copilotConversations: number;
+  copilotWindow: TimeWindowDto;
   workspaceStorageBytes: number;
   blobStorageBytes: number;
   workspaceStorageHistory: Array<{
@@ -262,6 +265,12 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       90,
       DEFAULT_SHARED_LINK_WINDOW_DAYS
     );
+    const copilotWindowDays = clampInt(
+      options.copilotWindowDays,
+      1,
+      90,
+      DEFAULT_COPILOT_WINDOW_DAYS
+    );
     const includeTopSharedLinks = options.includeTopSharedLinks ?? true;
 
     const now = new Date();
@@ -274,6 +283,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
     const currentDay = startOfUtcDay(now);
     const storageFrom = addUtcDays(currentDay, -(storageHistoryDays - 1));
     const sharedFrom = addUtcDays(currentDay, -(sharedLinkWindowDays - 1));
+    const copilotFrom = addUtcDays(currentDay, -(copilotWindowDays - 1));
 
     const topSharedLinksPromise = includeTopSharedLinks
       ? this.db.$queryRaw<
@@ -316,6 +326,8 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             COALESCE(v.guest_views, 0) AS "guestViews",
             v.last_accessed_at AS "lastAccessedAt"
           FROM workspace_pages wp
+          INNER JOIN doc_access_policies dap
+            ON dap.workspace_id = wp.workspace_id AND dap.doc_id = wp.page_id
           LEFT JOIN snapshots sn
             ON sn.workspace_id = wp.workspace_id AND sn.guid = wp.page_id
           LEFT JOIN view_agg v
@@ -329,7 +341,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             ORDER BY created_at ASC, id ASC
             LIMIT 1
           ) owner ON TRUE
-          WHERE wp.public = TRUE
+          WHERE dap.visibility = 'public' AND dap.public_role = 'external'
           ORDER BY views DESC, "uniqueViews" DESC, "workspaceId" ASC, "docId" ASC
           LIMIT 10
         `
@@ -432,7 +444,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           SELECT COUNT(*) AS conversations
           FROM ai_sessions_messages
           WHERE role = 'user'
-          AND created_at >= ${sharedFrom}
+          AND created_at >= ${copilotFrom}
           AND created_at <= ${now}
         `,
       topSharedLinksPromise,
@@ -497,6 +509,14 @@ export class WorkspaceAnalyticsModel extends BaseModel {
         effectiveSize: syncHistoryHours,
       },
       copilotConversations: Number(copilotCount[0]?.conversations ?? 0),
+      copilotWindow: {
+        from: copilotFrom,
+        to: now,
+        timezone,
+        bucket: 'Day',
+        requestedSize: options.copilotWindowDays ?? DEFAULT_COPILOT_WINDOW_DAYS,
+        effectiveSize: copilotWindowDays,
+      },
       workspaceStorageBytes: currentWorkspaceStorageBytes,
       blobStorageBytes: currentBlobStorageBytes,
       workspaceStorageHistory: storageHistorySeries.map(row => ({
@@ -624,6 +644,8 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           COALESCE(wp.published_at, to_timestamp(0)) AS "sortValueDatePublishedAt",
           COALESCE(v.views, 0) AS "sortValueViews"
         FROM workspace_pages wp
+        INNER JOIN doc_access_policies dap
+          ON dap.workspace_id = wp.workspace_id AND dap.doc_id = wp.page_id
         LEFT JOIN snapshots sn
           ON sn.workspace_id = wp.workspace_id AND sn.guid = wp.page_id
         LEFT JOIN view_agg v
@@ -637,7 +659,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           ORDER BY created_at ASC, id ASC
           LIMIT 1
         ) owner ON TRUE
-        WHERE wp.public = TRUE
+        WHERE dap.visibility = 'public' AND dap.public_role = 'external'
         ${keywordCondition}
         ${workspaceCondition}
         ${updatedAfterCondition}
@@ -1083,7 +1105,9 @@ export class WorkspaceAnalyticsModel extends BaseModel {
     const [row] = await this.db.$queryRaw<{ total: bigint | number }[]>`
       SELECT COUNT(*) AS total
       FROM workspace_pages wp
-      WHERE wp.public = TRUE
+      INNER JOIN doc_access_policies dap
+        ON dap.workspace_id = wp.workspace_id AND dap.doc_id = wp.page_id
+      WHERE dap.visibility = 'public' AND dap.public_role = 'external'
       ${keywordCondition}
       ${workspaceCondition}
       ${updatedAfterCondition}

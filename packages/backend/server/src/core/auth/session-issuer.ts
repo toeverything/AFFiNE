@@ -6,12 +6,12 @@ import type { Request, Response } from 'express';
 import { getClientVersionFromRequest, getRequestCookie } from '../../base';
 import type { VerifiedIdentity } from './identity';
 import { isNativeClientRequest } from './input';
-import { SessionExchangeService } from './native-exchange';
 import { AuthService } from './service';
+import { SessionExchangeService } from './session-exchange';
 
 export type IssuedSession = {
   userId: string;
-  sessionId: string;
+  sessionId?: string;
   exchangeCode?: string;
 };
 
@@ -28,12 +28,24 @@ export class SessionIssuer {
     identity: VerifiedIdentity
   ): Promise<IssuedSession> {
     const nativeClient = isNativeClientRequest(req);
+    const signInClientVersion =
+      identity.clientVersion ?? getClientVersionFromRequest(req);
+    if (nativeClient) {
+      this.auth.clearCookies(res);
+      return {
+        userId: identity.userId,
+        exchangeCode: await this.sessionExchange.createCode(
+          req,
+          identity.userId,
+          signInClientVersion
+        ),
+      };
+    }
+
     const sessionId =
       req.authType === 'jwt'
         ? req.session?.sessionId
         : getRequestCookie(req, AuthService.sessionCookieName);
-    const signInClientVersion =
-      identity.clientVersion ?? getClientVersionFromRequest(req);
     const userSession = await this.auth.createUserSession(
       identity.userId,
       sessionId,
@@ -41,33 +53,22 @@ export class SessionIssuer {
       signInClientVersion
     );
 
-    if (nativeClient) {
-      this.auth.clearCookies(res);
-    } else {
-      res.cookie(AuthService.sessionCookieName, userSession.sessionId, {
-        ...this.auth.cookieOptions,
-        expires: userSession.expiresAt ?? void 0,
-      });
+    res.cookie(AuthService.sessionCookieName, userSession.sessionId, {
+      ...this.auth.cookieOptions,
+      expires: userSession.expiresAt ?? void 0,
+    });
 
-      res.cookie(AuthService.csrfCookieName, randomUUID(), {
-        ...this.auth.cookieOptions,
-        httpOnly: false,
-        expires: userSession.expiresAt ?? void 0,
-      });
+    res.cookie(AuthService.csrfCookieName, randomUUID(), {
+      ...this.auth.cookieOptions,
+      httpOnly: false,
+      expires: userSession.expiresAt ?? void 0,
+    });
 
-      this.auth.setUserCookie(res, identity.userId);
-    }
-
-    const exchangeCode = await this.sessionExchange.createCode(
-      req,
-      identity.userId,
-      userSession.sessionId
-    );
+    this.auth.setUserCookie(res, identity.userId);
 
     return {
       userId: identity.userId,
       sessionId: userSession.sessionId,
-      exchangeCode,
     };
   }
 }

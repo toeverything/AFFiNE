@@ -1,5 +1,7 @@
+import { TransactionHost } from '@nestjs-cls/transactional';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
+import Sinon from 'sinon';
 
 import { CryptoHelper, EventBus, JobQueue } from '../../base';
 import { EntitlementService } from '../../core/entitlement';
@@ -127,16 +129,23 @@ test('onetime selfhost license seat allocation ignores projected license quantit
 });
 
 test('recurring selfhost license activation returns activation projection without remote health recheck', async t => {
+  const transactionHost = Sinon.stub(TransactionHost, 'getInstance').returns({
+    withTransaction: (...args: unknown[]) =>
+      (args.at(-1) as () => Promise<unknown>)(),
+  } as TransactionHost);
+  t.teardown(() => transactionHost.restore());
   const events: Array<{ name: string; payload: unknown }> = [];
   const upserts: unknown[] = [];
   const entitlements: unknown[] = [];
+  const operations: string[] = [];
   const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
   const service = new LicenseService(
     {
       installedLicense: {
         findUnique: async () => null,
-        upsert: async (input: unknown) => {
+        create: async (input: unknown) => {
           upserts.push(input);
+          operations.push('source');
           return {
             workspaceId: 'ws',
             key: 'license-key',
@@ -156,6 +165,7 @@ test('recurring selfhost license activation returns activation projection withou
     {
       upsertFromValidatedSelfhostLicense: async (input: unknown) => {
         entitlements.push(input);
+        operations.push('entitlement');
       },
     } as unknown as EntitlementService,
     {} as unknown as QuotaStateService
@@ -186,6 +196,7 @@ test('recurring selfhost license activation returns activation projection withou
   t.is(entitlements.length, 1);
   t.is(upserts.length, 1);
   t.is(activatedLicenseKey, 'license-key');
+  t.deepEqual(operations, ['source', 'entitlement']);
   t.deepEqual(events, [
     {
       name: 'workspace.subscription.activated',

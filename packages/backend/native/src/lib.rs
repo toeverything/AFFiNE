@@ -1,7 +1,7 @@
 #![deny(clippy::all)]
 
-mod utils;
-
+pub mod auth_session;
+pub mod content_policy;
 pub mod doc;
 pub mod doc_loader;
 pub mod entitlement;
@@ -14,7 +14,10 @@ pub mod llm;
 pub mod permission;
 pub mod runtime;
 pub mod safe_fetch;
+pub(crate) mod search_index;
 pub mod tiktoken;
+mod userdata_acl;
+mod utils;
 
 use affine_common::napi_utils::map_napi_err;
 use napi::{Result, Status, bindgen_prelude::*};
@@ -49,6 +52,11 @@ pub async fn validate_doc_update(update: Buffer) -> Result<bool> {
   tokio::task::spawn_blocking(move || Update::decode_v1(update).is_ok())
     .await
     .map_err(|err| napi::Error::from_reason(format!("Doc update validation task failed: {err}")))
+}
+
+#[napi(catch_unwind)]
+pub fn authorize_userdata_doc_subject(user_id: String, workspace_id: String, doc_id: String) -> bool {
+  userdata_acl::authorize(&user_id, &workspace_id, &doc_id)
 }
 
 #[napi]

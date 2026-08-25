@@ -511,13 +511,18 @@ export class UserSubscriptionResolver {
         variant?: string | null;
         stripeSubscriptionId?: string | null;
       };
+      const providerMetadata = providerFact?.metadata as {
+        variant?: string | null;
+        stripeScheduleId?: string | null;
+        nextBillAt?: string | null;
+      } | null;
 
       return this.normalizeSubscription({
         stripeSubscriptionId:
           providerFact?.externalSubscriptionId ??
           metadata.stripeSubscriptionId ??
           null,
-        stripeScheduleId: null,
+        stripeScheduleId: providerMetadata?.stripeScheduleId ?? null,
         status: providerFact?.status ?? this.subscriptionStatus(entitlement),
         plan,
         recurring:
@@ -527,16 +532,24 @@ export class UserSubscriptionResolver {
             ? SubscriptionRecurring.Lifetime
             : SubscriptionRecurring.Monthly),
         variant:
+          providerMetadata?.variant ??
           metadata.variant ??
           (entitlement.plan === 'lifetime_pro'
             ? SubscriptionVariant.Onetime
             : null),
-        quantity: entitlement.quantity ?? 1,
-        start: entitlement.startsAt ?? entitlement.createdAt,
-        end: entitlement.expiresAt,
+        quantity: providerFact?.quantity ?? entitlement.quantity ?? 1,
+        start:
+          providerFact?.periodStart ??
+          entitlement.startsAt ??
+          entitlement.createdAt,
+        end: providerFact?.periodEnd ?? entitlement.expiresAt,
         trialStart: providerFact?.trialStart ?? null,
         trialEnd: providerFact?.trialEnd ?? entitlement.graceUntil,
-        nextBillAt: providerFact?.periodEnd ?? entitlement.expiresAt,
+        nextBillAt: providerMetadata?.nextBillAt
+          ? new Date(providerMetadata.nextBillAt)
+          : providerFact?.canceledAt
+            ? null
+            : (providerFact?.periodEnd ?? entitlement.expiresAt),
         canceledAt: providerFact?.canceledAt ?? null,
         provider: providerFact?.provider ?? metadata.provider ?? null,
         iapStore: providerFact?.iapStore ?? null,
@@ -613,8 +626,11 @@ export class UserSubscriptionResolver {
       throw new AuthenticationRequired();
     }
 
-    let existsSubscription = await this.db.subscription.findFirst({
-      where: { rcExternalRef: transactionId },
+    const existsSubscription = await this.db.providerSubscription.findFirst({
+      where: {
+        provider: Provider.revenuecat,
+        externalRef: transactionId,
+      },
     });
 
     // subscription with the transactionId already exists
@@ -622,8 +638,7 @@ export class UserSubscriptionResolver {
       if (existsSubscription.targetId !== user.id) {
         throw new InvalidSubscriptionParameters();
       } else {
-        this.normalizeSubscription(existsSubscription);
-        return [existsSubscription];
+        return this.currentUserSubscriptions(user.id);
       }
     }
 
@@ -649,8 +664,9 @@ export class UserSubscriptionResolver {
       throw new AuthenticationRequired();
     }
 
-    let current = await this.db.subscription.findMany({
+    const current = await this.db.providerSubscription.findMany({
       where: {
+        targetType: 'user',
         targetId: user.id,
         ...visibleSubscriptionWhere(),
       },
@@ -727,13 +743,18 @@ export class WorkspaceSubscriptionResolver {
       variant?: string | null;
       stripeSubscriptionId?: string | null;
     };
+    const providerMetadata = providerFact?.metadata as {
+      variant?: string | null;
+      stripeScheduleId?: string | null;
+      nextBillAt?: string | null;
+    } | null;
 
     return {
       stripeSubscriptionId:
         providerFact?.externalSubscriptionId ??
         metadata.stripeSubscriptionId ??
         null,
-      stripeScheduleId: null,
+      stripeScheduleId: providerMetadata?.stripeScheduleId ?? null,
       status:
         providerFact?.status ??
         (entitlement.status === 'grace'
@@ -744,13 +765,20 @@ export class WorkspaceSubscriptionResolver {
         providerFact?.recurring ??
         metadata.recurring ??
         SubscriptionRecurring.Monthly,
-      variant: metadata.variant ?? null,
-      quantity: entitlement.quantity ?? 1,
-      start: entitlement.startsAt ?? entitlement.createdAt,
-      end: entitlement.expiresAt,
+      variant: providerMetadata?.variant ?? metadata.variant ?? null,
+      quantity: providerFact?.quantity ?? entitlement.quantity ?? 1,
+      start:
+        providerFact?.periodStart ??
+        entitlement.startsAt ??
+        entitlement.createdAt,
+      end: providerFact?.periodEnd ?? entitlement.expiresAt,
       trialStart: providerFact?.trialStart ?? null,
       trialEnd: providerFact?.trialEnd ?? entitlement.graceUntil,
-      nextBillAt: providerFact?.periodEnd ?? entitlement.expiresAt,
+      nextBillAt: providerMetadata?.nextBillAt
+        ? new Date(providerMetadata.nextBillAt)
+        : providerFact?.canceledAt
+          ? null
+          : (providerFact?.periodEnd ?? entitlement.expiresAt),
       canceledAt: providerFact?.canceledAt ?? null,
       provider: providerFact?.provider ?? metadata.provider ?? null,
       iapStore: providerFact?.iapStore ?? null,

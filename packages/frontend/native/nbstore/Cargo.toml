@@ -53,5 +53,6 @@ tokio = { workspace = true, features = ["full"] }
 
 
 [dev-dependencies]
-serde_json = { workspace = true }
-uuid       = { workspace = true, features = ["v4"] }
+assert-json-diff = { workspace = true }
+serde_json       = { workspace = true }
+uuid             = { workspace = true, features = ["v4"] }

@@ -85,7 +85,8 @@ impl BackfillCheckpoint {
 
 async fn load_checkpoint(pool: &PgPool, scope: &str) -> RuntimeResult<Option<BackfillCheckpoint>> {
   sqlx::query_as::<_, BackfillCheckpoint>(
-    "SELECT last_key, cursor FROM blob_reconciliation_checkpoints WHERE kind = 'blob_metadata_backfill' AND scope = $1",
+    "SELECT last_key, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'blob_metadata_backfill' AND scope \
+     = $1",
   )
   .bind(scope)
   .fetch_optional(pool)
@@ -103,13 +104,13 @@ async fn upsert_checkpoint(
   let status = if completed { "completed" } else { "running" };
   sqlx::query(
     r#"
-    INSERT INTO blob_reconciliation_checkpoints
+    INSERT INTO storage_reconciliation_checkpoints
       (kind, scope, status, cursor, last_key, completed_at, metadata)
     VALUES ('blob_metadata_backfill', $1, $2, $3, $4, CASE WHEN $5 THEN CURRENT_TIMESTAMP ELSE NULL END, $6)
     ON CONFLICT (kind, scope) DO UPDATE
       SET status = EXCLUDED.status,
           cursor = EXCLUDED.cursor,
-          last_key = COALESCE(EXCLUDED.last_key, blob_reconciliation_checkpoints.last_key),
+          last_key = COALESCE(EXCLUDED.last_key, storage_reconciliation_checkpoints.last_key),
           completed_at = CASE WHEN $5 THEN CURRENT_TIMESTAMP ELSE NULL END,
           updated_at = CURRENT_TIMESTAMP,
           metadata = EXCLUDED.metadata
@@ -247,7 +248,7 @@ impl StorageRuntime {
 
     sqlx::query(
       r#"
-      INSERT INTO blob_reconciliation_runs
+      INSERT INTO storage_reconciliation_runs
         (kind, mode, status, workspace_id, finished_at, scanned, changed, failed, metadata)
       VALUES ('blob_metadata_backfill', 'execute', 'finished', $1, CURRENT_TIMESTAMP, $2, $3, $4, $5)
       "#,

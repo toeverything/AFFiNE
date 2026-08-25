@@ -6,6 +6,8 @@ use std::{
 };
 
 mod content;
+#[cfg(windows)]
+mod windows_fs;
 
 use affine_importer::{
   FolderHierarchyDelta, ImportBatch, ImportBatchLimits, ImportCursor, ImportError, ImportOptions, ImportProgress,
@@ -19,6 +21,8 @@ use onenote_parser::{
   section::{Section, SectionEntry, SectionGroup},
 };
 use typed_path::TypedPath;
+#[cfg(windows)]
+use windows_fs::WindowsFs;
 
 pub struct OneNoteImportProvider;
 
@@ -81,7 +85,7 @@ impl OneNotePlanner {
   }
 
   fn read_file(&mut self, path: &Path) -> ImportResult<()> {
-    let parser = Parser::new();
+    let parser = parser();
     match extension(path).as_deref() {
       Some("one") => {
         let source_path = path.to_string_lossy();
@@ -121,7 +125,7 @@ impl OneNotePlanner {
         path.to_string_lossy()
       ))
     })?;
-    let parser = Parser::new();
+    let parser = parser();
     let toc_path = toc.to_string_lossy();
     let notebook = parser
       .parse_notebook(TypedPath::derive(toc_path.as_ref()))
@@ -208,6 +212,16 @@ impl OneNotePlanner {
       assets,
     });
   }
+}
+
+#[cfg(not(windows))]
+fn parser() -> Parser {
+  Parser::new()
+}
+
+#[cfg(windows)]
+fn parser() -> Parser<WindowsFs> {
+  Parser::new_with_fs(WindowsFs)
 }
 
 struct OneNoteImportCursor {

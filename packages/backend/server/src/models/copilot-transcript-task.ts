@@ -24,12 +24,7 @@ export class CopilotTranscriptTaskModel extends BaseModel {
   async create(
     input: Pick<
       Prisma.AiTranscriptTaskCreateArgs['data'],
-      | 'userId'
-      | 'workspaceId'
-      | 'blobId'
-      | 'strategy'
-      | 'recipeId'
-      | 'recipeVersion'
+      'userId' | 'workspaceId' | 'blobId' | 'recipeId' | 'recipeVersion'
     > &
       Partial<Prisma.AiTranscriptTaskCreateArgs['data']>
   ) {
@@ -39,11 +34,12 @@ export class CopilotTranscriptTaskModel extends BaseModel {
         workspaceId: input.workspaceId,
         blobId: input.blobId,
         status: 'pending',
-        strategy: input.strategy,
         recipeId: input.recipeId,
         recipeVersion: input.recipeVersion,
+        dispatchGeneration: input.dispatchGeneration ?? null,
         inputSnapshot: nullableJson(input.inputSnapshot),
         publicMeta: nullableJson(input.publicMeta),
+        protectedResult: nullableJson(input.protectedResult),
       },
     });
   }
@@ -86,6 +82,145 @@ export class CopilotTranscriptTaskModel extends BaseModel {
       if (isRecordNotFound(error)) return null;
       throw error;
     }
+  }
+
+  async claimRetry(
+    id: string,
+    userId: string,
+    workspaceId: string,
+    actionRunId: string | null,
+    dispatchGeneration: string
+  ) {
+    const { count } = await this.db.aiTranscriptTask.updateMany({
+      where: {
+        id,
+        userId,
+        workspaceId,
+        status: 'failed',
+        actionRunId,
+      },
+      data: {
+        status: 'pending',
+        dispatchGeneration,
+        errorCode: null,
+      },
+    });
+    return count === 1;
+  }
+
+  async claimDispatch(
+    id: string,
+    dispatchGeneration: string,
+    actionRunId: string | null
+  ) {
+    const { count } = await this.db.aiTranscriptTask.updateMany({
+      where: {
+        id,
+        status: 'pending',
+        dispatchGeneration,
+        actionRunId,
+      },
+      data: { status: 'running', errorCode: null },
+    });
+    return count === 1;
+  }
+
+  async attachActionRun(
+    id: string,
+    dispatchGeneration: string,
+    actionRunId: string | null,
+    nextActionRunId: string
+  ) {
+    const { count } = await this.db.aiTranscriptTask.updateMany({
+      where: {
+        id,
+        status: 'running',
+        dispatchGeneration,
+        actionRunId,
+      },
+      data: { actionRunId: nextActionRunId },
+    });
+    return count === 1;
+  }
+
+  async completeDispatch(
+    id: string,
+    dispatchGeneration: string,
+    actionRunId: string | null,
+    input: Prisma.AiTranscriptTaskUpdateArgs['data']
+  ) {
+    const { count } = await this.db.aiTranscriptTask.updateMany({
+      where: {
+        id,
+        status: 'running',
+        dispatchGeneration,
+        actionRunId,
+      },
+      data: {
+        status: input.status,
+        dispatchGeneration: null,
+        publicMeta: nullableJson(input.publicMeta),
+        protectedResult: nullableJson(input.protectedResult),
+        errorCode: input.errorCode ?? null,
+      },
+    });
+    return count === 1;
+  }
+
+  async failPendingDispatch(
+    id: string,
+    dispatchGeneration: string,
+    errorCode: string
+  ) {
+    const { count } = await this.db.aiTranscriptTask.updateMany({
+      where: { id, status: 'pending', dispatchGeneration },
+      data: {
+        status: 'failed',
+        dispatchGeneration: null,
+        errorCode,
+      },
+    });
+    return count === 1;
+  }
+
+  async pendingDispatches(before: Date, take = 100) {
+    return await this.db.aiTranscriptTask.findMany({
+      where: {
+        status: 'pending',
+        dispatchGeneration: { not: null },
+        updatedAt: { lt: before },
+      },
+      orderBy: { updatedAt: 'asc' },
+      take,
+    });
+  }
+
+  async staleRunningDispatches(before: Date, take = 100) {
+    return await this.db.aiTranscriptTask.findMany({
+      where: {
+        status: 'running',
+        dispatchGeneration: { not: null },
+        updatedAt: { lt: before },
+      },
+      orderBy: { updatedAt: 'asc' },
+      take,
+    });
+  }
+
+  async failRunningDispatch(
+    id: string,
+    dispatchGeneration: string,
+    errorCode: string
+  ) {
+    const { count } = await this.db.aiTranscriptTask.updateMany({
+      where: { id, status: 'running', dispatchGeneration },
+      data: {
+        status: 'failed',
+        dispatchGeneration: null,
+        errorCode,
+      },
+    });
+    return count === 1;
   }
 
   async complete(id: string, input: Prisma.AiTranscriptTaskUpdateArgs['data']) {

@@ -39,7 +39,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { AppTabs } from '../../../components';
+import { useMobileShellTabs } from '../../../components';
 import { globalVars } from '../../../styles/variables.css';
 import { JournalConflictBlock } from './journal-conflict-block';
 import { JournalDatePicker } from './journal-date-picker';
@@ -297,7 +297,6 @@ const getIsLandscape = () =>
 
 const MobileDetailPageHeader = ({
   date,
-  fromTab,
   title,
   allJournalDates,
   handleDateChange,
@@ -305,7 +304,6 @@ const MobileDetailPageHeader = ({
   onMenuOpenChange,
 }: {
   date?: string;
-  fromTab: boolean;
   title?: string;
   allJournalDates: Set<string | null | undefined>;
   handleDateChange: (date: string) => void;
@@ -350,7 +348,7 @@ const MobileDetailPageHeader = ({
 
   return (
     <PageHeader
-      back={!fromTab}
+      back
       className={styles.header}
       contentClassName={styles.headerContent}
       suffix={
@@ -383,14 +381,12 @@ const MobileDetailPageHeader = ({
 const MobileDetailPageContent = ({
   pageId,
   date,
-  fromTab,
   title,
   allJournalDates,
   handleDateChange,
 }: {
   pageId: string;
   date?: string;
-  fromTab: boolean;
   title?: string;
   allJournalDates: Set<string | null | undefined>;
   handleDateChange: (date: string) => void;
@@ -409,6 +405,10 @@ const MobileDetailPageContent = ({
 
   const immersive = shouldEnableEdgelessImmersive({ mode, isLandscape });
   const trackScrollTitle = shouldTrackMobileDetailPageTitleScroll(mode);
+  useMobileShellTabs({
+    background: cssVarV2('layer/background/primary'),
+    hidden: immersive && !chromeVisible,
+  });
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(orientation: landscape)');
@@ -549,7 +549,6 @@ const MobileDetailPageContent = ({
       {(!immersive || chromeVisible) && (
         <MobileDetailPageHeader
           date={date}
-          fromTab={fromTab}
           title={title}
           allJournalDates={allJournalDates}
           handleDateChange={handleDateChange}
@@ -562,10 +561,6 @@ const MobileDetailPageContent = ({
         immersive={immersive}
         chromeVisible={chromeVisible}
         immersiveTapHandlers={immersiveTapHandlers}
-      />
-      <AppTabs
-        background={cssVarV2('layer/background/primary')}
-        hidden={immersive && !chromeVisible}
       />
     </>
   );
@@ -587,22 +582,22 @@ const MobileDetailPage = ({
 
   const allJournalDates = useLiveData(journalService.allJournalDates$);
 
-  const location = useLiveData(workbench.location$);
-  const fromTab = location.search.includes('fromTab');
-
   const handleDateChange = useCallback(
     (date: string) => {
       const docs = journalService.journalsByDate$(date).value;
       if (docs.length > 0) {
-        workbench.openDoc(
-          { docId: docs[0].id, fromTab: fromTab ? 'true' : undefined },
-          { replaceHistory: true }
-        );
+        workbench.openDoc(docs[0].id, {
+          at: 'active',
+          replaceHistory: true,
+        });
       } else {
-        workbench.open(`/journals?date=${date}`);
+        workbench.open(`/journals?date=${date}`, {
+          at: 'active',
+          replaceHistory: true,
+        });
       }
     },
-    [fromTab, journalService, workbench]
+    [journalService, workbench]
   );
 
   return (
@@ -617,7 +612,6 @@ const MobileDetailPage = ({
           key={pageId}
           pageId={pageId}
           date={date}
-          fromTab={fromTab}
           title={title}
           allJournalDates={allJournalDates}
           handleDateChange={handleDateChange}

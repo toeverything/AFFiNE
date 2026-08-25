@@ -4,6 +4,7 @@ import { ObjectPool, Service } from '@toeverything/infra';
 
 import type { Workspace } from '../entities/workspace';
 import { WorkspaceInitialized } from '../events';
+import type { WorkspaceMetadata } from '../metadata';
 import type { WorkspaceOpenOptions } from '../open-options';
 import { WorkspaceScope } from '../scopes/workspace';
 import type { WorkspaceFlavoursService } from './flavours';
@@ -12,6 +13,9 @@ import type { WorkspaceProfileService } from './profile';
 import { WorkspaceService } from './workspace';
 
 const logger = new DebugLogger('affine:workspace-repository');
+
+const getWorkspacePoolKey = (metadata: WorkspaceMetadata) =>
+  `${metadata.flavour}:${metadata.id}`;
 
 export class WorkspaceRepositoryService extends Service {
   constructor(
@@ -58,7 +62,7 @@ export class WorkspaceRepositoryService extends Service {
       };
     }
 
-    const exist = this.pool.get(options.metadata.id);
+    const exist = this.pool.get(getWorkspacePoolKey(options.metadata));
     if (exist) {
       return {
         workspace: exist.obj,
@@ -68,7 +72,7 @@ export class WorkspaceRepositoryService extends Service {
 
     const workspace = this.instantiate(options, customEngineWorkerInitOptions);
 
-    const ref = this.pool.put(workspace.meta.id, workspace);
+    const ref = this.pool.put(getWorkspacePoolKey(workspace.meta), workspace);
 
     return {
       workspace: ref.obj,
@@ -76,9 +80,13 @@ export class WorkspaceRepositoryService extends Service {
     };
   };
 
-  openByWorkspaceId = (workspaceId: string) => {
-    const workspaceMetadata =
-      this.workspacesListService.list.workspace$(workspaceId).value;
+  openByWorkspaceId = (workspaceId: string, flavour?: string | null) => {
+    const workspaceMetadata = flavour
+      ? this.workspacesListService.list.workspaces$.value.find(
+          workspace =>
+            workspace.id === workspaceId && workspace.flavour === flavour
+        )
+      : this.workspacesListService.list.workspace$(workspaceId).value;
     return workspaceMetadata && this.open({ metadata: workspaceMetadata });
   };
 

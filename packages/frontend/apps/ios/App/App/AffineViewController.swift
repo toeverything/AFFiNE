@@ -6,8 +6,13 @@ import WebKit
 
 private let affineLog = Logger(subsystem: "app.affine.pro", category: "debug")
 
-class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScriptMessageHandler {
+class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScriptMessageHandler, AffineThemeConfigurable {
   var intelligentsButton: IntelligentsButton?
+  var appThemeUserInterfaceStyle: UIUserInterfaceStyle = .unspecified {
+    didSet {
+      overrideUserInterfaceStyle = appThemeUserInterfaceStyle
+    }
+  }
   private var isWebContentProcessTerminated = false
   private var consoleBridgeInstalled = false
 
@@ -115,11 +120,18 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
     print("[affine-js-\(level)] \(text)")
   }
 
+  override func didReceiveMemoryWarning() {
+    super.didReceiveMemoryWarning()
+    webView?.evaluateJavaScript("window.dispatchEvent(new Event('affine:memory-pressure'))")
+  }
+
   override func capacitorDidLoad() {
     let plugins: [CAPPlugin] = [
+      AffineThemePlugin(associatedController: self),
       AuthPlugin(),
       CookiePlugin(),
       HashcashPlugin(),
+      ImagePickerPlugin(associatedController: self),
       NavigationGesturePlugin(),
       NbStorePlugin(),
       PayWallPlugin(associatedController: self),
@@ -131,6 +143,8 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
     installConsoleBridge()
   }
 
+  private static let intelligentsButtonRefreshInterval: TimeInterval = 0.5
+
   private var intelligentsButtonTimer: Timer?
   private var isCheckingIntelligentEligibility = false
 
@@ -138,7 +152,8 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
     super.viewDidAppear(animated)
     IntelligentContext.shared.webView = webView
     navigationController?.setNavigationBarHidden(false, animated: animated)
-    let timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
+    checkEligibilityOfIntelligent()
+    let timer = Timer.scheduledTimer(withTimeInterval: Self.intelligentsButtonRefreshInterval, repeats: true) { [weak self] _ in
       self?.checkEligibilityOfIntelligent()
     }
     intelligentsButtonTimer = timer
@@ -148,16 +163,40 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
   private func checkEligibilityOfIntelligent() {
     guard !isCheckingIntelligentEligibility else { return }
     assert(intelligentsButton != nil)
-    guard intelligentsButton?.isHidden ?? false else { return }
+    guard let webView else {
+      if intelligentsButton?.isHidden == false {
+        dismissIntelligentsButton()
+      }
+      return
+    }
+
     isCheckingIntelligentEligibility = true
-    IntelligentContext.shared.webView = webView
-    IntelligentContext.shared.preparePresent { [self] result in
-      DispatchQueue.main.async {
-        defer { self.isCheckingIntelligentEligibility = false }
-        switch result {
-        case .failure: break
-        case .success:
-          self.presentIntelligentsButton()
+    Task { @MainActor [weak self, webView] in
+      guard let self else { return }
+
+      guard await PaywallAuthGuard.currentUserIdentifier(in: webView) != nil else {
+        if self.intelligentsButton?.isHidden == false {
+          self.dismissIntelligentsButton()
+        }
+        self.isCheckingIntelligentEligibility = false
+        return
+      }
+
+      guard self.intelligentsButton?.isHidden ?? false else {
+        self.isCheckingIntelligentEligibility = false
+        return
+      }
+
+      IntelligentContext.shared.webView = webView
+      IntelligentContext.shared.preparePresent(createSession: false) { [weak self] result in
+        DispatchQueue.main.async {
+          guard let self else { return }
+          defer { self.isCheckingIntelligentEligibility = false }
+          switch result {
+          case .failure: break
+          case .success:
+            self.presentIntelligentsButton()
+          }
         }
       }
     }
@@ -176,12 +215,6 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
 
   func scrollViewDidZoom(_ scrollView: UIScrollView) {
     scrollView.zoomScale = 1.0
-  }
-
-  func scrollViewDidScroll(_ scrollView: UIScrollView) {
-    if scrollView.contentOffset != .zero {
-      scrollView.contentOffset = .zero
-    }
   }
 
   // MARK: - Web Content Process Crash Recovery

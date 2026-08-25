@@ -214,30 +214,36 @@ export class AIPanelError extends WithDisposable(LitElement) {
         </div>
         ${errorTemplate}
       </div>
-      ${this.withAnswer
-        ? html`<ai-finish-tip
-            .copy=${this.copy}
-            .host=${this.host}
-          ></ai-finish-tip>`
-        : nothing}
-      ${responseGroup.length > 0
-        ? html`
-            <ai-panel-divider></ai-panel-divider>
-            ${responseGroup.map(
-              (group, index) => html`
-                ${index !== 0
-                  ? html`<ai-panel-divider></ai-panel-divider>`
-                  : nothing}
-                <div class="response-list-container">
-                  <ai-item-list
-                    .host=${this.host}
-                    .groups=${[group]}
-                  ></ai-item-list>
-                </div>
-              `
-            )}
-          `
-        : nothing}
+      ${
+        this.withAnswer
+          ? html`<ai-finish-tip
+              .copy=${this.copy}
+              .host=${this.host}
+            ></ai-finish-tip>`
+          : nothing
+      }
+      ${
+        responseGroup.length > 0
+          ? html`
+              <ai-panel-divider></ai-panel-divider>
+              ${responseGroup.map(
+                (group, index) => html`
+                  ${
+                    index !== 0
+                      ? html`<ai-panel-divider></ai-panel-divider>`
+                      : nothing
+                  }
+                  <div class="response-list-container">
+                    <ai-item-list
+                      .host=${this.host}
+                      .groups=${[group]}
+                    ></ai-item-list>
+                  </div>
+                `
+              )}
+            `
+          : nothing
+      }
     `;
   }
 

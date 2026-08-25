@@ -99,7 +99,7 @@ export const registerHandlers = () => {
       return await handleIpcMessage(e, ...args);
     } catch (error) {
       logger.error(`error in ipc handler when calling ${args[0]}`, error);
-      return null;
+      throw error;
     }
   });
 

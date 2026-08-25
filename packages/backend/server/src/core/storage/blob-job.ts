@@ -2,11 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 
-import { EventBus, JobQueue, OnJob } from '../../base';
+import { EventBus, JobQueue, metrics, OnJob } from '../../base';
 import { StorageRuntimeProvider } from '../storage-runtime';
 
-// Queue keys are persisted API; keep the legacy backendRuntime.* names while
-// StorageBlobJob and StorageRuntimeProvider own the implementation.
+// Queue keys are persisted API; StorageBlobJob and StorageRuntimeProvider own
+// the implementation.
 declare global {
   interface Jobs {
     'backendRuntime.backfillMissingBlobMetadata': {
@@ -18,14 +18,20 @@ declare global {
       workspaceLimit?: number;
       objectLimit?: number;
     };
-    'backendRuntime.rebuildWorkspaceDocBlobRefs': {
-      workspaceId: string;
-      limit?: number;
-    };
-    'backendRuntime.rebuildWorkspaceDocBlobRefsBySid': {
+    'backendRuntime.reconcileWorkspaceStorageBySid': {
       lastSid?: number;
       workspaceLimit?: number;
       docLimit?: number;
+    };
+    'backendRuntime.projectWorkspaceDocBlobRefs': {
+      workspaceId: string;
+      docId: string;
+      sourceRevision: number;
+    };
+    'backendRuntime.executeDocumentCleanupCandidates': {
+      workspaceId?: string;
+      gracePeriodDays?: number;
+      limit?: number;
     };
     'backendRuntime.planUnreferencedWorkspaceBlobs': {
       workspaceId: string;
@@ -62,6 +68,14 @@ export class StorageBlobJob {
     private readonly db: PrismaClient
   ) {}
 
+  private autoLog(message: string, shouldDetail: boolean) {
+    if (shouldDetail) {
+      this.logger.log(message);
+    } else {
+      this.logger.verbose(message);
+    }
+  }
+
   async enqueueBackfillMissingBlobMetadata(workspaceId: string, limit = 1000) {
     await this.queue.add('backendRuntime.backfillMissingBlobMetadata', {
       workspaceId,
@@ -78,25 +92,6 @@ export class StorageBlobJob {
       lastSid,
       workspaceLimit,
       objectLimit,
-    });
-  }
-
-  async enqueueRebuildWorkspaceDocBlobRefs(workspaceId: string, limit = 1000) {
-    await this.queue.add('backendRuntime.rebuildWorkspaceDocBlobRefs', {
-      workspaceId,
-      limit,
-    });
-  }
-
-  async enqueueRebuildWorkspaceDocBlobRefsBySid(
-    lastSid = 0,
-    workspaceLimit = 100,
-    docLimit = 1000
-  ) {
-    await this.queue.add('backendRuntime.rebuildWorkspaceDocBlobRefsBySid', {
-      lastSid,
-      workspaceLimit,
-      docLimit,
     });
   }
 
@@ -203,25 +198,21 @@ export class StorageBlobJob {
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
-  async dailyDocBlobRefsRebuild() {
+  async dailyStorageReconciliation() {
     await this.queue.add(
-      'backendRuntime.rebuildWorkspaceDocBlobRefsBySid',
+      'backendRuntime.reconcileWorkspaceStorageBySid',
       {},
-      { jobId: 'daily-backend-runtime-doc-blob-refs-rebuild' }
-    );
-  }
-
-  @Cron(CronExpression.EVERY_DAY_AT_3AM)
-  async dailyBlobCleanupPlanning() {
-    await this.queue.add(
-      'backendRuntime.planUnreferencedWorkspaceBlobsBySid',
-      {},
-      { jobId: 'daily-backend-runtime-blob-cleanup-planning' }
+      { jobId: 'daily-backend-runtime-storage-reconciliation' }
     );
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async dailyBlobCleanupExecution() {
+    await this.queue.add(
+      'backendRuntime.executeDocumentCleanupCandidates',
+      {},
+      { jobId: 'daily-backend-runtime-document-cleanup-execution' }
+    );
     await this.queue.add(
       'backendRuntime.executeBlobCleanupCandidatesByMarkedRuns',
       {},
@@ -241,44 +232,39 @@ export class StorageBlobJob {
     await this.drainBlobMetadataBackfill(workspaceId, limit);
   }
 
-  @OnJob('backendRuntime.rebuildWorkspaceDocBlobRefs')
-  async rebuildWorkspaceDocBlobRefs({
-    workspaceId,
-    limit = 1000,
-  }: Jobs['backendRuntime.rebuildWorkspaceDocBlobRefs']) {
-    await this.drainWorkspaceDocBlobRefs(workspaceId, limit);
-  }
-
-  @OnJob('backendRuntime.rebuildWorkspaceDocBlobRefsBySid')
-  async rebuildWorkspaceDocBlobRefsBySid({
+  @OnJob('backendRuntime.reconcileWorkspaceStorageBySid')
+  async reconcileWorkspaceStorageBySid({
     lastSid = 0,
     workspaceLimit = 100,
     docLimit = 1000,
-  }: Jobs['backendRuntime.rebuildWorkspaceDocBlobRefsBySid']) {
+  }: Jobs['backendRuntime.reconcileWorkspaceStorageBySid']) {
     const workspaces = await this.db.workspace.findMany({
-      where: {
-        sid: {
-          gt: lastSid,
-        },
-      },
-      orderBy: {
-        sid: 'asc',
-      },
-      select: {
-        id: true,
-        sid: true,
-      },
+      where: { sid: { gt: lastSid } },
+      orderBy: { sid: 'asc' },
+      select: { id: true, sid: true },
       take: workspaceLimit,
     });
+    const objectStorageConfigured = await this.hasObjectStorage(
+      'storage reconciliation blob cleanup planning'
+    );
 
     for (const workspace of workspaces) {
       try {
+        await this.rt.reconcileWorkspaceDocuments(workspace.id);
         await this.drainWorkspaceDocBlobRefs(workspace.id, docLimit, {
           sid: workspace.sid,
         });
+        if (objectStorageConfigured) {
+          await this.drainBlobCleanupPlanning(workspace.id, 30, 1000, {
+            sid: workspace.sid,
+          });
+        }
       } catch (err) {
+        metrics.storage
+          .counter('document_cleanup_workspace_failure_total')
+          .add(1);
         this.logger.error(
-          `doc blob refs rebuild failed workspace=${workspace.id} sid=${workspace.sid}`,
+          `storage reconciliation failed workspace=${workspace.id} sid=${workspace.sid}`,
           err
         );
       }
@@ -286,12 +272,57 @@ export class StorageBlobJob {
 
     const nextSid = workspaces.at(-1)?.sid;
     if (nextSid !== undefined && workspaces.length === workspaceLimit) {
-      await this.enqueueRebuildWorkspaceDocBlobRefsBySid(
-        nextSid,
+      await this.queue.add('backendRuntime.reconcileWorkspaceStorageBySid', {
+        lastSid: nextSid,
         workspaceLimit,
-        docLimit
-      );
+        docLimit,
+      });
     }
+  }
+
+  @OnJob('backendRuntime.projectWorkspaceDocBlobRefs')
+  async projectWorkspaceDocBlobRefs({
+    workspaceId,
+    docId,
+    sourceRevision,
+  }: Jobs['backendRuntime.projectWorkspaceDocBlobRefs']) {
+    const result = await this.rt.rebuildDocBlobRefs(
+      workspaceId,
+      docId,
+      sourceRevision
+    );
+    this.autoLog(
+      `projected doc blob refs workspace=${workspaceId} doc=${docId} sourceRevision=${sourceRevision} parsed=${result.parsedDocs} failed=${result.failedDocs}`,
+      Boolean(result.failedDocs)
+    );
+  }
+
+  @OnJob('backendRuntime.executeDocumentCleanupCandidates')
+  async executeDocumentCleanupCandidates({
+    workspaceId,
+    gracePeriodDays = 30,
+    limit = 100,
+  }: Jobs['backendRuntime.executeDocumentCleanupCandidates']) {
+    const result = await this.rt.executeDocumentCleanupCandidates(
+      workspaceId,
+      gracePeriodDays,
+      limit
+    );
+    metrics.storage
+      .counter('document_cleanup_serialization_retry_total')
+      .add(result.serializationRetries);
+    metrics.storage
+      .counter('document_cleanup_execute_failure_total')
+      .add(result.failed);
+    for (const effect of result.effects) {
+      if (effect.commentObjectsDone) {
+        await this.event.emitAsync('workspace.blobs.updated', {
+          workspaceId: effect.workspaceId,
+        });
+      }
+    }
+    await this.recordDocumentCleanupHealth();
+    return result;
   }
 
   @OnJob('backendRuntime.planUnreferencedWorkspaceBlobs')
@@ -381,8 +412,9 @@ export class StorageBlobJob {
         this.event.emitAsync('workspace.blobs.updated', { workspaceId })
       )
     );
-    this.logger.log(
-      `executed blob cleanup run=${runId} deleted=${result.deletedObjects} skipped=${result.skippedStillReferenced} failed=${result.failed}`
+    this.autoLog(
+      `executed blob cleanup run=${runId} deleted=${result.deletedObjects} skipped=${result.skippedStillReferenced} failed=${result.failed}`,
+      Boolean(result.failed)
     );
   }
 
@@ -441,8 +473,9 @@ export class StorageBlobJob {
           this.event.emitAsync('workspace.blobs.updated', { workspaceId })
         )
       );
-      this.logger.log(
-        `backfilled blob metadata workspace=${workspaceId}${context.sid === undefined ? '' : ` sid=${context.sid}`} upserted=${result.upsertedMetadata} scanned=${result.scannedObjects}`
+      this.autoLog(
+        `backfilled blob metadata workspace=${workspaceId}${context.sid === undefined ? '' : ` sid=${context.sid}`} upserted=${result.upsertedMetadata} scanned=${result.scannedObjects}`,
+        Boolean(result.upsertedMetadata)
       );
       if (!result.nextCursor) {
         break;
@@ -460,8 +493,9 @@ export class StorageBlobJob {
         workspaceId,
         limit
       );
-      this.logger.log(
-        `rebuilt doc blob refs workspace=${workspaceId}${context.sid === undefined ? '' : ` sid=${context.sid}`} parsed=${result.parsedDocs} failed=${result.failedDocs}`
+      this.autoLog(
+        `rebuilt doc blob refs workspace=${workspaceId}${context.sid === undefined ? '' : ` sid=${context.sid}`} parsed=${result.parsedDocs} failed=${result.failedDocs}`,
+        Boolean(result.failedDocs)
       );
       if (!result.nextCursor) {
         break;
@@ -481,8 +515,9 @@ export class StorageBlobJob {
         gracePeriodDays,
         limit
       );
-      this.logger.log(
-        `planned blob cleanup workspace=${workspaceId}${context.sid === undefined ? '' : ` sid=${context.sid}`} run=${result.runId} candidates=${result.candidatesMarked} scanned=${result.scannedBlobs}`
+      this.autoLog(
+        `planned blob cleanup workspace=${workspaceId}${context.sid === undefined ? '' : ` sid=${context.sid}`} run=${result.runId} candidates=${result.candidatesMarked} scanned=${result.scannedBlobs}`,
+        Boolean(result.candidatesMarked)
       );
       if (!result.nextCursor) {
         break;
@@ -506,8 +541,9 @@ export class StorageBlobJob {
           this.event.emitAsync('workspace.blobs.updated', { workspaceId })
         )
       );
-      this.logger.log(
-        `executed blob cleanup run=${runId} deleted=${result.deletedObjects} skipped=${result.skippedStillReferenced} failed=${result.failed}`
+      this.autoLog(
+        `executed blob cleanup run=${runId} deleted=${result.deletedObjects} skipped=${result.skippedStillReferenced} failed=${result.failed}`,
+        Boolean(result.failed)
       );
 
       const progressed =
@@ -530,6 +566,82 @@ export class StorageBlobJob {
       LIMIT ${limit}
     `;
     return rows.map(row => row.runId);
+  }
+
+  private async recordDocumentCleanupHealth() {
+    const [health] = await this.db.$queryRaw<
+      {
+        marked: bigint;
+        failed: bigint;
+        effectsPending: bigint;
+        failedWorkspaceCheckpoints: bigint;
+        rootFailureCheckpoints: bigint;
+        staleProjectionBlocks: bigint;
+        oldestFailedSeconds: number | null;
+        oldestEffectsPendingSeconds: number | null;
+      }[]
+    >`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'marked') AS marked,
+        COUNT(*) FILTER (WHERE status = 'failed') AS failed,
+        COUNT(*) FILTER (WHERE status = 'effects_pending') AS "effectsPending",
+        EXTRACT(EPOCH FROM CURRENT_TIMESTAMP -
+          MIN(updated_at) FILTER (WHERE status = 'failed'))::double precision AS "oldestFailedSeconds",
+        EXTRACT(EPOCH FROM CURRENT_TIMESTAMP -
+          MIN(updated_at) FILTER (WHERE status = 'effects_pending'))::double precision AS "oldestEffectsPendingSeconds",
+        (SELECT COUNT(*) FROM storage_reconciliation_checkpoints
+          WHERE kind = 'document_cleanup' AND status = 'failed') AS "failedWorkspaceCheckpoints",
+        (SELECT COUNT(*) FROM storage_reconciliation_checkpoints
+          WHERE kind = 'document_cleanup' AND status = 'failed'
+            AND metadata->>'failureKind' = 'root') AS "rootFailureCheckpoints",
+        (SELECT COUNT(*) FROM storage_reconciliation_runs
+          WHERE kind = 'blob_cleanup_plan'
+            AND started_at >= CURRENT_TIMESTAMP - INTERVAL '1 day'
+            AND jsonb_array_length(COALESCE(metadata->'staleOrFailedProjectionWorkspaces', '[]')) > 0
+        ) AS "staleProjectionBlocks"
+      FROM document_cleanup_candidates
+    `;
+    if (!health) {
+      return;
+    }
+    for (const [name, value] of [
+      ['document_cleanup_marked', health.marked],
+      ['document_cleanup_failed', health.failed],
+      ['document_cleanup_effects_pending', health.effectsPending],
+      [
+        'document_cleanup_failed_workspace_checkpoints',
+        health.failedWorkspaceCheckpoints,
+      ],
+      [
+        'document_cleanup_root_failure_checkpoints',
+        health.rootFailureCheckpoints,
+      ],
+      [
+        'document_cleanup_stale_projection_blocks',
+        health.staleProjectionBlocks,
+      ],
+    ] as const) {
+      metrics.storage.gauge(name).record(Number(value));
+    }
+    metrics.storage
+      .gauge('document_cleanup_oldest_failed_seconds')
+      .record(health.oldestFailedSeconds ?? 0);
+    metrics.storage
+      .gauge('document_cleanup_oldest_effects_pending_seconds')
+      .record(health.oldestEffectsPendingSeconds ?? 0);
+
+    if (
+      health.failedWorkspaceCheckpoints > 0n ||
+      health.rootFailureCheckpoints > 0n ||
+      health.staleProjectionBlocks > 0n ||
+      (health.oldestFailedSeconds ?? 0) >= 86_400 ||
+      (health.oldestEffectsPendingSeconds ?? 0) >= 86_400 ||
+      health.marked >= 10_000n
+    ) {
+      this.logger.warn(
+        `document cleanup health marked=${health.marked} failed=${health.failed} effectsPending=${health.effectsPending} failedWorkspaceCheckpoints=${health.failedWorkspaceCheckpoints} rootFailureCheckpoints=${health.rootFailureCheckpoints} staleProjectionBlocks=${health.staleProjectionBlocks} oldestFailedSeconds=${health.oldestFailedSeconds ?? 0} oldestEffectsPendingSeconds=${health.oldestEffectsPendingSeconds ?? 0}`
+      );
+    }
   }
 
   private async hasMarkedBlobCleanupCandidates() {

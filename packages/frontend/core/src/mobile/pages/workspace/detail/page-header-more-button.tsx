@@ -32,6 +32,7 @@ import {
   TocIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { truncate } from 'lodash-es';
 import {
   type PointerEvent,
   useCallback,
@@ -40,6 +41,7 @@ import {
   useState,
 } from 'react';
 
+import { MobileBackCoordinator } from '../../../modules/back-coordinator';
 import { JournalConflictsMenuItem } from './menu/journal-conflicts';
 import { JournalTodayActivityMenuItem } from './menu/journal-today-activity';
 import { EditorModeSwitch } from './menu/mode-switch';
@@ -71,6 +73,7 @@ export const PageHeaderMenuButton = ({
 
   const { favorite, toggleFavorite } = useFavorite(docId);
   const { openConfirmModal } = useConfirmModal();
+  const backCoordinator = useService(MobileBackCoordinator);
 
   const handleSwitchMode = useCallback(() => {
     const mode = primaryMode === 'page' ? 'edgeless' : 'page';
@@ -120,7 +123,7 @@ export const PageHeaderMenuButton = ({
     openConfirmModal({
       title: t['com.affine.moveToTrash.title'](),
       description: t['com.affine.moveToTrash.confirmModal.description']({
-        title: doc.title$.value,
+        title: truncate(doc.title$.value, { length: 64 }),
       }),
       confirmText: t['com.affine.moveToTrash.confirmModal.confirm'](),
       cancelText: t['com.affine.moveToTrash.confirmModal.cancel'](),
@@ -133,11 +136,12 @@ export const PageHeaderMenuButton = ({
           control: 'button',
         });
         toast(t['com.affine.toastMessage.movedTrash']());
-        // navigate back
-        history.back();
+        if (!backCoordinator.request('ui-back')) {
+          backCoordinator.request('ui-up');
+        }
       },
     });
-  }, [doc, openConfirmModal, t]);
+  }, [backCoordinator, doc, openConfirmModal, t]);
 
   const handleMorePointerDown = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {

@@ -5,7 +5,7 @@ use sqlx::{FromRow, PgPool};
 
 use super::{
   RuntimeBlobCleanupExecuteResult, RuntimeBlobCleanupPlanResult, RuntimeError, RuntimeResult, StorageRuntime,
-  napi_error,
+  doc_blob_refs::PARSER_VERSION, load_workspace_canonical_doc_ids, napi_error,
 };
 
 #[derive(FromRow)]
@@ -35,7 +35,7 @@ fn push_workspace_once(workspace_ids: &mut Vec<String>, workspace_id: &str) {
 
 async fn checkpoint_completed(pool: &PgPool, kind: &str, scope: &str) -> RuntimeResult<bool> {
   sqlx::query_scalar::<_, bool>(
-    "SELECT EXISTS(SELECT 1 FROM blob_reconciliation_checkpoints WHERE kind = $1 AND scope = $2 AND status = \
+    "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind = $1 AND scope = $2 AND status = \
      'completed')",
   )
   .bind(kind)
@@ -46,7 +46,107 @@ async fn checkpoint_completed(pool: &PgPool, kind: &str, scope: &str) -> Runtime
 }
 
 async fn projection_is_stale(pool: &PgPool, workspace_id: &str) -> RuntimeResult<bool> {
-  let checkpoint_fresh = checkpoint_completed(pool, "doc_blob_refs", workspace_id).await?;
+  let checkpoint_completed_at = sqlx::query_scalar::<_, Option<chrono::DateTime<chrono::Utc>>>(
+    r#"
+    SELECT MIN(completed_at)
+    FROM storage_reconciliation_checkpoints
+    WHERE scope = $1
+      AND kind IN ('document_cleanup', 'doc_blob_refs')
+      AND status = 'completed'
+    HAVING COUNT(*) = 2
+    "#,
+  )
+  .bind(workspace_id)
+  .fetch_optional(pool)
+  .await
+  .map_err(|err| RuntimeError::database("Blob cleanup retention checkpoint load failed", err))?
+  .flatten();
+  let Some(checkpoint_completed_at) = checkpoint_completed_at else {
+    return Ok(true);
+  };
+  let activity_after_checkpoint = sqlx::query_scalar::<_, bool>(
+    r#"
+    SELECT EXISTS(
+      SELECT 1 FROM snapshots
+      WHERE workspace_id = $1 AND updated_at > $2
+      UNION ALL
+      SELECT 1 FROM updates
+      WHERE workspace_id = $1 AND created_at > $2
+      UNION ALL
+      SELECT 1 FROM snapshot_histories
+      WHERE workspace_id = $1 AND timestamp > $2
+    )
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(checkpoint_completed_at)
+  .fetch_one(pool)
+  .await
+  .map_err(|err| RuntimeError::database("Blob cleanup retention activity check failed", err))?;
+  if sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM updates WHERE workspace_id = $1)")
+    .bind(workspace_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|err| RuntimeError::database("Blob cleanup pending update check failed", err))?
+  {
+    return Ok(true);
+  }
+  let mut current_doc_ids = match load_workspace_canonical_doc_ids(pool, workspace_id).await {
+    Ok(ids) => ids,
+    Err(_) => return Ok(true),
+  };
+  current_doc_ids.push(workspace_id.to_string());
+  current_doc_ids.extend(
+    sqlx::query_scalar::<_, String>(
+      "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 AND status IN ('marked', 'failed')",
+    )
+    .bind(workspace_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|err| RuntimeError::database("Blob cleanup retained document load failed", err))?,
+  );
+  current_doc_ids.sort();
+  current_doc_ids.dedup();
+  let has_nonfresh_projection = sqlx::query_scalar::<_, bool>(
+    r#"
+    SELECT EXISTS(
+      SELECT 1
+      FROM unnest($2::text[]) AS ids(doc_id)
+      LEFT JOIN snapshots s
+        ON s.workspace_id = $1 AND s.guid = ids.doc_id
+      LEFT JOIN doc_blob_ref_projections p
+        ON p.workspace_id = $1 AND p.doc_id = ids.doc_id
+      WHERE s.guid IS NULL
+         OR p.doc_id IS NULL
+         OR p.status <> 'fresh'
+         OR p.parser_version <> $3
+         OR p.source_revision IS DISTINCT FROM s.updated_at
+    )
+    OR EXISTS(
+      SELECT 1 FROM doc_blob_ref_projections
+      WHERE workspace_id = $1 AND status <> 'fresh'
+    )
+    OR EXISTS(
+      SELECT 1
+      FROM doc_blob_refs r
+      LEFT JOIN doc_blob_ref_projections p
+        ON p.workspace_id = r.workspace_id AND p.doc_id = r.doc_id
+      WHERE r.workspace_id = $1
+        AND (
+          p.doc_id IS NULL
+          OR p.status <> 'fresh'
+          OR r.parser_version <> p.parser_version
+          OR r.snapshot_updated_at IS DISTINCT FROM p.source_revision
+        )
+    )
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(&current_doc_ids)
+  .bind(PARSER_VERSION)
+  .fetch_one(pool)
+  .await
+  .map_err(|err| RuntimeError::database("Blob cleanup projection state check failed", err))?;
   let has_stale_rows = sqlx::query_scalar::<_, bool>(
     "SELECT EXISTS(SELECT 1 FROM doc_blob_refs WHERE workspace_id = $1 AND status <> 'fresh')",
   )
@@ -54,7 +154,7 @@ async fn projection_is_stale(pool: &PgPool, workspace_id: &str) -> RuntimeResult
   .fetch_one(pool)
   .await
   .map_err(|err| RuntimeError::database("Blob cleanup projection freshness check failed", err))?;
-  Ok(!checkpoint_fresh || has_stale_rows)
+  Ok(activity_after_checkpoint || has_nonfresh_projection || has_stale_rows)
 }
 
 async fn stale_projection_workspaces(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
@@ -71,10 +171,25 @@ async fn metadata_backfill_is_complete(pool: &PgPool, workspace_id: &str) -> Run
 
 async fn has_doc_ref(pool: &PgPool, workspace_id: &str, key: &str) -> RuntimeResult<bool> {
   sqlx::query_scalar::<_, bool>(
-    "SELECT EXISTS(SELECT 1 FROM doc_blob_refs WHERE workspace_id = $1 AND blob_key = $2 AND status = 'fresh')",
+    r#"
+    SELECT EXISTS(
+      SELECT 1
+      FROM doc_blob_refs r
+      JOIN doc_blob_ref_projections p
+        ON p.workspace_id = r.workspace_id AND p.doc_id = r.doc_id
+      WHERE r.workspace_id = $1
+        AND r.blob_key = $2
+        AND r.status = 'fresh'
+        AND p.status = 'fresh'
+        AND p.parser_version = $3
+        AND r.parser_version = p.parser_version
+        AND r.snapshot_updated_at = p.source_revision
+    )
+    "#,
   )
   .bind(workspace_id)
   .bind(key)
+  .bind(PARSER_VERSION)
   .fetch_one(pool)
   .await
   .map_err(|err| RuntimeError::database("Blob cleanup doc ref check failed", err))
@@ -87,15 +202,11 @@ async fn has_other_ref(pool: &PgPool, workspace_id: &str, key: &str) -> RuntimeR
       OR EXISTS(SELECT 1 FROM ai_transcript_tasks WHERE workspace_id = $1 AND blob_id = $2)
       OR EXISTS(SELECT 1 FROM ai_jobs WHERE workspace_id = $1 AND blob_id = $2)
       OR EXISTS(
-        SELECT 1
-        FROM ai_contexts c
-        JOIN ai_sessions_metadata s ON s.id = c.session_id
-        WHERE s.workspace_id = $1
-          AND jsonb_path_exists(
-            c.config::jsonb,
-            '$.** ? (@ == $blobKey)',
-            jsonb_build_object('blobKey', to_jsonb($2::text))
-          )
+        SELECT 1 FROM workspace_artifacts
+        WHERE workspace_id = $1
+          AND storage_scope = 'blob'
+          AND storage_key = concat($1, '/', $2)
+          AND status IN ('reserving', 'ready')
       )
     "#,
   )
@@ -107,39 +218,7 @@ async fn has_other_ref(pool: &PgPool, workspace_id: &str, key: &str) -> RuntimeR
   if required_ref {
     return Ok(true);
   }
-  if table_exists(pool, "ai_workspace_files").await?
-    && sqlx::query_scalar::<_, bool>(
-      "SELECT EXISTS(SELECT 1 FROM ai_workspace_files WHERE workspace_id = $1 AND blob_id = $2)",
-    )
-    .bind(workspace_id)
-    .bind(key)
-    .fetch_one(pool)
-    .await
-    .map_err(|err| RuntimeError::database("Blob cleanup workspace file ref check failed", err))?
-  {
-    return Ok(true);
-  }
-  if table_exists(pool, "ai_workspace_blob_embeddings").await?
-    && sqlx::query_scalar::<_, bool>(
-      "SELECT EXISTS(SELECT 1 FROM ai_workspace_blob_embeddings WHERE workspace_id = $1 AND blob_id = $2)",
-    )
-    .bind(workspace_id)
-    .bind(key)
-    .fetch_one(pool)
-    .await
-    .map_err(|err| RuntimeError::database("Blob cleanup workspace blob embedding ref check failed", err))?
-  {
-    return Ok(true);
-  }
   Ok(false)
-}
-
-async fn table_exists(pool: &PgPool, table: &str) -> RuntimeResult<bool> {
-  sqlx::query_scalar::<_, bool>("SELECT to_regclass($1) IS NOT NULL")
-    .bind(format!("public.{table}"))
-    .fetch_one(pool)
-    .await
-    .map_err(|err| RuntimeError::database("Blob cleanup table existence check failed", err))
 }
 
 async fn load_completed_blobs(
@@ -170,7 +249,7 @@ async fn load_completed_blobs(
 
 async fn load_plan_cursor(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Option<String>> {
   let row = sqlx::query_as::<_, (String, serde_json::Value)>(
-    "SELECT status, cursor FROM blob_reconciliation_checkpoints WHERE kind = 'blob_cleanup_plan' AND scope = $1",
+    "SELECT status, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'blob_cleanup_plan' AND scope = $1",
   )
   .bind(workspace_id)
   .fetch_optional(pool)
@@ -199,13 +278,13 @@ async fn upsert_plan_checkpoint(
   let status = if completed { "completed" } else { "running" };
   sqlx::query(
     r#"
-    INSERT INTO blob_reconciliation_checkpoints
+    INSERT INTO storage_reconciliation_checkpoints
       (kind, scope, status, cursor, last_key, completed_at)
     VALUES ('blob_cleanup_plan', $1, $2, $3, $4, CASE WHEN $5 THEN CURRENT_TIMESTAMP ELSE NULL END)
     ON CONFLICT (kind, scope) DO UPDATE
       SET status = EXCLUDED.status,
           cursor = EXCLUDED.cursor,
-          last_key = COALESCE(EXCLUDED.last_key, blob_reconciliation_checkpoints.last_key),
+          last_key = COALESCE(EXCLUDED.last_key, storage_reconciliation_checkpoints.last_key),
           completed_at = CASE WHEN $5 THEN CURRENT_TIMESTAMP ELSE NULL END,
           updated_at = CURRENT_TIMESTAMP
     "#,
@@ -224,7 +303,7 @@ async fn upsert_plan_checkpoint(
 async fn create_run(pool: &PgPool, workspace_id: &str) -> RuntimeResult<String> {
   sqlx::query_scalar::<_, String>(
     r#"
-    INSERT INTO blob_reconciliation_runs (kind, mode, status, workspace_id)
+    INSERT INTO storage_reconciliation_runs (kind, mode, status, workspace_id)
     VALUES ('blob_cleanup_plan', 'mark_only', 'running', $1)
     RETURNING id::text
     "#,
@@ -252,7 +331,7 @@ async fn finish_run(
   .unwrap_or(0);
   sqlx::query(
     r#"
-    UPDATE blob_reconciliation_runs
+    UPDATE storage_reconciliation_runs
     SET status = 'finished',
         finished_at = CURRENT_TIMESTAMP,
         scanned = $2,
@@ -318,7 +397,7 @@ async fn finish_execute_run(
 ) -> RuntimeResult<()> {
   sqlx::query(
     r#"
-    UPDATE blob_reconciliation_runs
+    UPDATE storage_reconciliation_runs
     SET status = 'finished',
         finished_at = CURRENT_TIMESTAMP,
         scanned = $2,
@@ -610,7 +689,7 @@ impl StorageRuntime {
         Ok(outcomes) => outcomes,
         Err(err) => object_keys
           .into_iter()
-          .map(|key| super::object_storage::types::ObjectDeleteOutcome {
+          .map(|key| crate::runtime::object_storage::types::ObjectDeleteOutcome {
             key,
             error: Some(err.to_string()),
           })
@@ -687,5 +766,67 @@ impl StorageRuntime {
 
     finish_execute_run(&pool, &run_id, &result).await?;
     Ok(result)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use uuid::Uuid;
+
+  use super::*;
+
+  #[tokio::test]
+  async fn artifact_blob_alias_is_a_cleanup_reference_until_deleting() {
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      return;
+    };
+    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    let suffix = Uuid::new_v4().simple().to_string();
+    let workspace_id = format!("blob-cleanup-ws-{suffix}");
+    let blob_key = format!("blob-{suffix}");
+    let artifact_id = Uuid::new_v4();
+
+    sqlx::query("INSERT INTO workspaces (id, created_at) VALUES ($1, CURRENT_TIMESTAMP)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      r#"
+      INSERT INTO workspace_artifacts (
+        id, workspace_id, content_hash, canonical_media_type, size_bytes,
+        storage_scope, storage_key, status, ready_at
+      )
+      VALUES ($1, $2, $3, 'application/octet-stream', 1, 'blob', $4, 'reserving', NULL)
+      "#,
+    )
+    .bind(artifact_id)
+    .bind(&workspace_id)
+    .bind(format!("sha256-{suffix}"))
+    .bind(format!("{workspace_id}/{blob_key}"))
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    assert!(has_other_ref(&pool, &workspace_id, &blob_key).await.unwrap());
+    sqlx::query("UPDATE workspace_artifacts SET status = 'ready', ready_at = CURRENT_TIMESTAMP WHERE id = $1")
+      .bind(artifact_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    assert!(has_other_ref(&pool, &workspace_id, &blob_key).await.unwrap());
+    sqlx::query("UPDATE workspace_artifacts SET status = 'deleting' WHERE id = $1")
+      .bind(artifact_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    assert!(!has_other_ref(&pool, &workspace_id, &blob_key).await.unwrap());
+
+    sqlx::query("DELETE FROM workspaces WHERE id = $1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
   }
 }

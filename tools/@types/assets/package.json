@@ -1,0 +1,7 @@
+{
+  "name": "@types/assets",
+  "private": true,
+  "types": "./__all.d.ts",
+  "type": "module",
+  "version": "0.27.0"
+}

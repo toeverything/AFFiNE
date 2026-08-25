@@ -173,67 +173,6 @@ export class CryptoHelper implements OnModuleInit {
     });
   }
 
-  signInternalAccessToken(input: {
-    method: string;
-    path: string;
-    now?: number;
-    nonce?: string;
-  }) {
-    const payload = {
-      v: 1 as const,
-      ts: input.now ?? Date.now(),
-      nonce: input.nonce ?? this.randomBytes(16).toString('base64url'),
-      m: input.method.toUpperCase(),
-      p: input.path,
-    };
-    const data = Buffer.from(JSON.stringify(payload), 'utf8').toString(
-      'base64url'
-    );
-    return this.sign(data);
-  }
-
-  parseInternalAccessToken(signatureWithData: string): {
-    v: 1;
-    ts: number;
-    nonce: string;
-    m: string;
-    p: string;
-  } | null {
-    const [data, signature] = signatureWithData.split(',');
-    if (!signature) {
-      return null;
-    }
-    if (!this.verify(signatureWithData)) {
-      return null;
-    }
-    try {
-      const json = Buffer.from(data, 'base64url').toString('utf8');
-      const payload = JSON.parse(json) as unknown;
-      if (!payload || typeof payload !== 'object') {
-        return null;
-      }
-      const val = payload as {
-        v?: unknown;
-        ts?: unknown;
-        nonce?: unknown;
-        m?: unknown;
-        p?: unknown;
-      };
-      if (
-        val.v !== 1 ||
-        typeof val.ts !== 'number' ||
-        typeof val.nonce !== 'string' ||
-        typeof val.m !== 'string' ||
-        typeof val.p !== 'string'
-      ) {
-        return null;
-      }
-      return { v: 1, ts: val.ts, nonce: val.nonce, m: val.m, p: val.p };
-    } catch {
-      return null;
-    }
-  }
-
   encrypt(data: string) {
     const iv = this.randomBytes();
     const cipher = createCipheriv(
