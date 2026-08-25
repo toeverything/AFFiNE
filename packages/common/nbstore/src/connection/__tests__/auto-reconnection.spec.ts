@@ -3,6 +3,8 @@ import vm from 'node:vm';
 import { expect, test, vitest } from 'vitest';
 
 import { AutoReconnectConnection } from '../connection';
+import { BroadcastChannelAwarenessStorage } from '../../impls/broadcast-channel/awareness';
+import { type AwarenessRecord } from '../../storage';
 
 test('connect and disconnect', async () => {
   class TestConnection extends AutoReconnectConnection<{
@@ -343,8 +345,9 @@ test('cross-realm promise is awaited before becoming connected', async () => {
   expect(foreignPromise instanceof Promise).toBe(false);
 
   class CrossRealmConnection extends AutoReconnectConnection<{ id: string }> {
-    override doConnect() {
-      return foreignPromise as Promise<{ id: string }>;
+    // No cast required: doConnect is PromiseLike<T> | T
+    override doConnect(): PromiseLike<{ id: string }> {
+      return foreignPromise;
     }
     override doDisconnect() {}
   }
@@ -359,4 +362,46 @@ test('cross-realm promise is awaited before becoming connected', async () => {
 
   connection.disconnect();
   expect(connection.status).toBe('closed');
+});
+
+test('synchronous doConnect throwing sets error status', () => {
+  const boom = new Error('sync connect failed');
+  class ThrowingConnection extends AutoReconnectConnection<void> {
+    override doConnect(): void {
+      throw boom;
+    }
+    override doDisconnect() {}
+  }
+
+  const connection = new ThrowingConnection();
+  connection.connect();
+  expect(connection.status).toBe('error');
+  expect(connection.error).toBe(boom);
+  connection.disconnect();
+});
+
+test('BroadcastChannelAwarenessStorage: subscribeUpdate works immediately after connect', () => {
+  const storage = new BroadcastChannelAwarenessStorage({ id: 'test-workspace' });
+  storage.connection.connect();
+  // connection must be synchronously connected — no await / microtask needed
+  expect(storage.connection.status).toBe('connected');
+
+  const updates: AwarenessRecord[] = [];
+  const unsubscribe = storage.subscribeUpdate(
+    'test-doc',
+    update => updates.push(update),
+    () => Promise.resolve(null)
+  );
+
+  // Send a round-trip message; it is a same-origin channel so the update
+  // dispatches synchronously via the connection's channel reference.
+  storage.connection.inner.postMessage({
+    type: 'awareness-update',
+    docId: 'test-doc',
+    bin: new Uint8Array([1, 2, 3]),
+  });
+
+  unsubscribe();
+  storage.connection.disconnect();
+  expect(storage.connection.status).toBe('closed');
 });

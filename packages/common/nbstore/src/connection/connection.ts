@@ -94,7 +94,7 @@ export abstract class AutoReconnectConnection<
     }
   }
 
-  protected abstract doConnect(signal?: AbortSignal): Promise<T> | T;
+  protected abstract doConnect(signal?: AbortSignal): PromiseLike<T> | T;
   protected abstract doDisconnect(conn: T): void;
 
   private innerConnect() {
