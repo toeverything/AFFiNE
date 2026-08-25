@@ -380,7 +380,7 @@ test('synchronous doConnect throwing sets error status', () => {
   connection.disconnect();
 });
 
-test('BroadcastChannelAwarenessStorage: subscribeUpdate works immediately after connect', () => {
+test('BroadcastChannelAwarenessStorage: subscribeUpdate works immediately after connect', async () => {
   const storage = new BroadcastChannelAwarenessStorage({ id: 'test-workspace' });
   storage.connection.connect();
   // connection must be synchronously connected — no await / microtask needed
@@ -393,15 +393,30 @@ test('BroadcastChannelAwarenessStorage: subscribeUpdate works immediately after 
     () => Promise.resolve(null)
   );
 
-  // Send a round-trip message; it is a same-origin channel so the update
-  // dispatches synchronously via the connection's channel reference.
-  storage.connection.inner.postMessage({
+  // BroadcastChannel never delivers a message back to the same channel
+  // instance that posted it (Web API spec). Open a peer channel with the
+  // same name to simulate a message arriving from another context.
+  const peer = new BroadcastChannel(storage.connection.channelName);
+  peer.postMessage({
     type: 'awareness-update',
     docId: 'test-doc',
     bin: new Uint8Array([1, 2, 3]),
   });
 
+  // BroadcastChannel message events are delivered asynchronously (queued as
+  // tasks), so we must wait for the listener to fire before asserting.
+  await vitest.waitFor(() => {
+    expect(updates).toHaveLength(1);
+  });
+
+  expect(updates[0]).toEqual({
+    docId: 'test-doc',
+    bin: new Uint8Array([1, 2, 3]),
+  });
+
   unsubscribe();
+  peer.close();
   storage.connection.disconnect();
   expect(storage.connection.status).toBe('closed');
 });
+
