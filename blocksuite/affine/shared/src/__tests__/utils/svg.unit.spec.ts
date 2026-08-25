@@ -466,4 +466,45 @@ describe('sanitizeSvg no-DOM fallback', () => {
   test('fails closed on input with no svg root', () => {
     expect(sanitizeNoDom('<p>not svg</p>')).toBe('');
   });
+
+  test('recursively sanitizes a mixed-case nested svg data-url', () => {
+    const inner = svgDataUrl(
+      '<svg xmlns="http://www.w3.org/2000/svg"><use href="https://example.com/g.svg#x"></use></svg>'
+    );
+    const outerMixed = svgDataUrl(
+      `<svg xmlns="http://www.w3.org/2000/svg"><image href="${inner}"></image></svg>`
+    ).replace('data:image/svg+xml', 'data:image/SVG+xml');
+    const sanitized = sanitizeSvgHrefsInString(
+      `<svg xmlns="http://www.w3.org/2000/svg"><image href="${outerMixed}"></image></svg>`,
+      'scope-x'
+    );
+
+    expect(sanitized).not.toContain('https://example.com');
+    expect(sanitized).toContain('data:image/svg+xml;base64');
+  });
+
+  test('recursively sanitizes an uppercase nested svg data-url', () => {
+    const inner = svgDataUrl(
+      '<svg xmlns="http://www.w3.org/2000/svg"><use href="https://example.com/g.svg#x"></use></svg>'
+    );
+    const outerUpper = svgDataUrl(
+      `<svg xmlns="http://www.w3.org/2000/svg"><image href="${inner}"></image></svg>`
+    ).replace('data:image/svg+xml', 'DATA:IMAGE/SVG+XML');
+    const sanitized = sanitizeSvgHrefsInString(
+      `<svg xmlns="http://www.w3.org/2000/svg"><image href="${outerUpper}"></image></svg>`,
+      'scope-x'
+    );
+
+    expect(sanitized).not.toContain('https://example.com');
+    expect(sanitized).toContain('data:image/svg+xml;base64');
+  });
+
+  test('preserves a safe non-svg image data url', () => {
+    const sanitized = sanitizeSvgHrefsInString(
+      '<svg xmlns="http://www.w3.org/2000/svg"><image href="data:image/png;base64,AAAA" width="10" height="10"></image></svg>',
+      'scope-x'
+    );
+
+    expect(sanitized).toContain('data:image/png;base64,AAAA');
+  });
 });

@@ -126,7 +126,10 @@ async function waitForRerender(page: Page, previousSnapshot: string) {
           return '';
         }
         current = JSON.stringify(nodes);
-        return current;
+        // Keep polling until the theme actually changed. Otherwise the poll
+        // resolves immediately against the stale (previous) snapshot and the
+        // contrast assertions below validate the wrong theme.
+        return current === previousSnapshot ? '' : current;
       },
       { timeout: 15_000 }
     )

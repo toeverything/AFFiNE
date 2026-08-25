@@ -480,18 +480,22 @@ export function sanitizeSvgCssInString(
  * `tightenSvgTree` filtering:
  * - unsafe/external hrefs are removed;
  * - safe same-document fragment references are kept;
- * - embedded `data:image/svg+xml` images are recursively sanitized up to
+ * - embedded `image` SVG data URLs (any prefix casing) are decoded and
+ *   recursively sanitized through `sanitizeSvgWithDepth` up to
  *   `MAX_NESTED_SVG_IMAGE_DEPTH`, then dropped (fail-closed) beyond it.
  *
  * @param svg - SVG markup to sanitize.
  * @param scopeClass - generated root scope class used when re-sanitizing nested SVG.
  * @param depth - current nested-SVG image depth; `0` for the top level.
+ * @param options - optional DOMPurify/foreignObject overrides propagated to the
+ *   recursive sanitizer for parity with the top-level call.
  * @returns sanitized SVG markup; callers must still verify a valid SVG root.
  */
 export function sanitizeSvgHrefsInString(
   svg: string,
   scopeClass: string,
-  depth: number = 0
+  depth: number = 0,
+  options?: SanitizeSvgOptions
 ): string {
   const SVG_TAG_PATTERN = /<([\w-]+)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
   const HREF_ATTR_PATTERN =
@@ -510,22 +514,24 @@ export function sanitizeSvgHrefsInString(
           return '';
         }
 
-        if (tagName === 'image' && value.startsWith('data:image/svg+xml')) {
-          if (depth >= MAX_NESTED_SVG_IMAGE_DEPTH) {
-            return '';
-          }
-          try {
-            const decoded = decodeSvgDataUrl(value);
-            if (decoded === null) return '';
-            const sanitized = sanitizeSvgHrefsInString(
-              sanitizeSvgCssInString(decoded, scopeClass),
-              scopeClass,
-              depth + 1
-            );
-            if (!hasSvgRoot(sanitized)) return '';
-            return `${nameRaw}="${encodeSvgDataUrl(sanitized)}"`;
-          } catch {
-            return '';
+        if (tagName === 'image') {
+          const decoded = decodeSvgDataUrl(value);
+          if (decoded !== null) {
+            if (depth >= MAX_NESTED_SVG_IMAGE_DEPTH) {
+              return '';
+            }
+            try {
+              const sanitized = sanitizeSvgHrefsInString(
+                sanitizeSvgCssInString(decoded, scopeClass),
+                scopeClass,
+                depth + 1,
+                options
+              );
+              if (!hasSvgRoot(sanitized)) return '';
+              return `${nameRaw}="${encodeSvgDataUrl(sanitized)}"`;
+            } catch {
+              return '';
+            }
           }
         }
 
@@ -599,7 +605,7 @@ function sanitizeSvgWithDepth(
       }
       const withScope = sanitizeSvgCssInString(purified, scopeClass);
       if (!hasSvgRoot(withScope)) return '';
-      const withHrefs = sanitizeSvgHrefsInString(withScope, scopeClass);
+      const withHrefs = sanitizeSvgHrefsInString(withScope, scopeClass, 0, options);
       return hasSvgRoot(withHrefs) ? withHrefs.trim() : '';
     } catch {
       return '';
