@@ -86,18 +86,6 @@
             "concurrency": 1
           }
         },
-        "queues.indexer": {
-          "type": "object",
-          "description": "The config for indexer job queue\n@default {\"concurrency\":1}",
-          "properties": {
-            "concurrency": {
-              "type": "number"
-            }
-          },
-          "default": {
-            "concurrency": 1
-          }
-        },
         "queues.notification": {
           "type": "object",
           "description": "The config for notification job queue\n@default {\"concurrency\":10}",
@@ -199,15 +187,24 @@
           "description": "Whether require email verification before accessing restricted resources(not implemented).\n@default true",
           "default": true
         },
-        "newAccountShareActionDelay": {
+        "newAccountActionDelay": {
           "type": "number",
-          "description": "Minimum account age in seconds before new accounts can invite members or create share links.\n@default 86400",
+          "description": "Minimum account age in seconds before new accounts can invite members, create invite links, or publish documents. Set to 0 to disable.\n@default 86400",
           "default": 86400
         },
         "trustedCloudflareHeaders": {
           "type": "boolean",
           "description": "Whether request abuse source facts should trust Cloudflare headers from the origin edge.\n@default false",
           "default": false
+        },
+        "signInRateLimit": {
+          "type": "object",
+          "description": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds.\n@default {\"ttl\":60000,\"ipLimit\":20,\"emailLimit\":5}",
+          "default": {
+            "ttl": 60000,
+            "ipLimit": 20,
+            "emailLimit": 5
+          }
         },
         "inviteQuotaShadowMode": {
           "type": "boolean",
@@ -971,17 +968,6 @@
         }
       }
     },
-    "docService": {
-      "type": "object",
-      "description": "Configuration for docService module",
-      "properties": {
-        "endpoint": {
-          "type": "string",
-          "description": "The endpoint of the doc service.\n@default \"\"\n@environment `DOC_SERVICE_ENDPOINT`",
-          "default": ""
-        }
-      }
-    },
     "telemetry": {
       "type": "object",
       "description": "Configuration for telemetry module",
@@ -1490,38 +1476,33 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Enable indexer plugin\n@default false\n@environment `AFFINE_INDEXER_ENABLED`",
+          "description": "Enable indexer plugin\n@default false",
           "default": false
         },
         "provider.type": {
           "type": "string",
-          "description": "Indexer search service provider name\n@default \"manticoresearch\"\n@environment `AFFINE_INDEXER_SEARCH_PROVIDER`",
-          "default": "manticoresearch"
+          "description": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.\n@default \"embedded\"",
+          "default": "embedded"
         },
         "provider.endpoint": {
           "type": "string",
-          "description": "Indexer search service endpoint\n@default \"http://localhost:9308\"\n@environment `AFFINE_INDEXER_SEARCH_ENDPOINT`",
-          "default": "http://localhost:9308"
+          "description": "Remote indexer endpoint. Not used by the embedded provider.\n@default \"\"",
+          "default": ""
         },
         "provider.apiKey": {
           "type": "string",
-          "description": "Indexer search service api key. Optional for elasticsearch\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_API_KEY`\n@link https://www.elastic.co/guide/server/current/api-key.html",
+          "description": "Indexer search service api key. Optional for remote providers\n@default \"\"\n@link https://www.elastic.co/guide/server/current/api-key.html",
           "default": ""
         },
         "provider.username": {
           "type": "string",
-          "description": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for elasticsearch\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_USERNAME`\n@link https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
+          "description": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for remote providers\n@default \"\"\n@link https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
           "default": ""
         },
         "provider.password": {
           "type": "string",
-          "description": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for elasticsearch\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_PASSWORD`",
+          "description": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for remote providers\n@default \"\"",
           "default": ""
-        },
-        "autoIndex.batchSize": {
-          "type": "number",
-          "description": "Number of workspaces automatically indexed per batch\n@default 10",
-          "default": 10
         }
       }
     },

@@ -5,7 +5,7 @@ use super::{
   BackendRuntime, RuntimeError, RuntimeInviteAbuseClaimedAction, RuntimeResult, napi_error, workspace_subject_key,
 };
 
-async fn invite_abuse_user_quarantined_or_banned(pool: &PgPool, user_id: &str) -> RuntimeResult<bool> {
+pub(super) async fn invite_abuse_user_quarantined_or_banned(pool: &PgPool, user_id: &str) -> RuntimeResult<bool> {
   let row: Option<i32> = sqlx::query_scalar(
     r#"
     SELECT 1
@@ -22,7 +22,7 @@ async fn invite_abuse_user_quarantined_or_banned(pool: &PgPool, user_id: &str) -
   Ok(row.is_some())
 }
 
-async fn invite_abuse_workspace_quarantined(pool: &PgPool, workspace_id: &str) -> RuntimeResult<bool> {
+pub(super) async fn invite_abuse_workspace_quarantined(pool: &PgPool, workspace_id: &str) -> RuntimeResult<bool> {
   let row: Option<i32> = sqlx::query_scalar(
     r#"
     SELECT 1

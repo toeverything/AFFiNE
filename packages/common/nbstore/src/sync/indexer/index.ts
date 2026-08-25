@@ -349,9 +349,13 @@ export class IndexerSyncImpl implements IndexerSync {
                   IndexerDocument.from(docId, {
                     docId,
                     title,
+                    summary: existingDoc.summary,
                   })
                 );
-                this.status.docsInIndexer.set(docId, { title });
+                this.status.docsInIndexer.set(docId, {
+                  title,
+                  summary: existingDoc.summary,
+                });
                 this.status.statusUpdatedSubject$.next(docId);
               }
             } else {
@@ -461,9 +465,15 @@ export class IndexerSyncImpl implements IndexerSync {
             await this.indexer.update(
               'doc',
               IndexerDocument.from(docId, {
+                docId,
+                title: existingDoc.title,
                 summary: preview,
               })
             );
+            this.status.docsInIndexer.set(docId, {
+              title: existingDoc.title,
+              summary: preview,
+            });
           }
 
           this.pendingIndexedClocks.set(docId, {
@@ -496,18 +506,21 @@ export class IndexerSyncImpl implements IndexerSync {
       this.lastRefreshed + recommendRefreshInterval < Date.now();
     const forceRefresh = recommendRefreshInterval <= 0;
     if (force || needRefresh || forceRefresh) {
-      await this.indexer.refreshIfNeed();
-      await this.flushPendingIndexedClocks();
+      if (this.indexerSync.commitsIndexAtomically) {
+        await this.flushPendingIndexedClocks();
+      } else {
+        await this.indexer.refreshIfNeed();
+        await this.flushPendingIndexedClocks();
+      }
       this.lastRefreshed = Date.now();
     }
   }
 
   private async flushPendingIndexedClocks() {
     if (this.pendingIndexedClocks.size === 0) return;
-    for (const [docId, clock] of this.pendingIndexedClocks) {
-      await this.indexerSync.setDocIndexedClock(clock);
-      this.pendingIndexedClocks.delete(docId);
-    }
+    const clocks = [...this.pendingIndexedClocks.values()];
+    await this.indexerSync.setDocIndexedClocks(clocks);
+    for (const clock of clocks) this.pendingIndexedClocks.delete(clock.docId);
   }
 
   /**
@@ -559,16 +572,20 @@ export class IndexerSyncImpl implements IndexerSync {
         pagination: {
           limit: Infinity,
         },
-        fields: ['docId', 'title'],
+        fields: ['docId', 'title', 'summary'],
       }
     );
 
     return new Map(
       docs.nodes.map(node => {
         const title = node.fields.title;
+        const summary = node.fields.summary;
         return [
           node.id,
-          { title: typeof title === 'string' ? title : undefined },
+          {
+            title: typeof title === 'string' ? title : undefined,
+            summary: typeof summary === 'string' ? summary : undefined,
+          },
         ];
       })
     );
@@ -691,7 +708,10 @@ class IndexerSyncStatus {
   jobs = new AsyncPriorityQueue();
   rootDoc = new YDoc({ guid: this.rootDocId });
   rootDocReady = false;
-  docsInIndexer = new Map<string, { title: string | undefined }>();
+  docsInIndexer = new Map<
+    string,
+    { title: string | undefined; summary?: string }
+  >();
   docsInRootDoc = new Map<string, { title: string | undefined }>();
   currentJob: string | null = null;
   errorMessage: string | null = null;

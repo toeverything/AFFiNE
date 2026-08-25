@@ -8,6 +8,7 @@ import type { StoreClient } from '@affine/nbstore/worker/client';
 import { Entity } from '@toeverything/infra';
 
 import type { ServerService } from '../../cloud';
+import { getSyncProtocol } from '../../cloud/stores/server-config';
 import type { NbstoreService } from '../../storage';
 
 export class UserDBEngine extends Entity<{
@@ -64,6 +65,9 @@ export class UserDBEngine extends Entity<{
               opts: {
                 id: this.userId,
                 serverBaseUrl: serverService.server.baseUrl,
+                syncProtocol: getSyncProtocol(
+                  serverService.server.config$.value.version
+                ),
                 type: 'userspace',
                 isSelfHosted:
                   serverService.server.config$.value.type ===

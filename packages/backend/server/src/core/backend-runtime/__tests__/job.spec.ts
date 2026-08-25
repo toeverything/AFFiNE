@@ -16,15 +16,24 @@ import {
   CopilotSelectedSourcesUnavailable,
 } from '../../../base';
 import { Models } from '../../../models';
-import { BackendRuntimeModule, BackendRuntimeProvider } from '../index';
+import {
+  BackendRuntimeModule,
+  BackendRuntimeProducerModule,
+  BackendRuntimeProvider,
+  BackendRuntimeWorkerModule,
+} from '../index';
 import {
   BackendRuntimeEmbeddingJob,
+  BackendRuntimeEmbeddingProducer,
+  BackendRuntimeEmbeddingService,
   BackendRuntimeHousekeepingJob,
 } from '../job';
 
 interface Context {
   module: TestingModule;
   embeddingJob: BackendRuntimeEmbeddingJob;
+  embeddingProducer: BackendRuntimeEmbeddingProducer;
+  embeddingService: BackendRuntimeEmbeddingService;
   job: BackendRuntimeHousekeepingJob;
   getSnapshot: Sinon.SinonStub;
   allowEmbedding: Sinon.SinonStub;
@@ -55,7 +64,12 @@ test.before(async t => {
     syncEmbeddingState: Sinon.stub(),
   };
   t.context.module = await createTestingModule({
-    imports: [ScheduleModule.forRoot(), BackendRuntimeModule],
+    imports: [
+      ScheduleModule.forRoot(),
+      BackendRuntimeModule,
+      BackendRuntimeProducerModule,
+      BackendRuntimeWorkerModule,
+    ],
     tapModule: builder => {
       builder
         .overrideProvider(BackendRuntimeProvider)
@@ -81,6 +95,12 @@ test.before(async t => {
     'allowEmbedding'
   ).resolves(true);
   t.context.embeddingJob = t.context.module.get(BackendRuntimeEmbeddingJob);
+  t.context.embeddingProducer = t.context.module.get(
+    BackendRuntimeEmbeddingProducer
+  );
+  t.context.embeddingService = t.context.module.get(
+    BackendRuntimeEmbeddingService
+  );
   t.context.job = t.context.module.get(BackendRuntimeHousekeepingJob);
 });
 
@@ -102,7 +122,7 @@ test.after.always(async t => {
 });
 
 test('backend-runtime jobs ingest documents and clean runtime state', async t => {
-  await t.context.embeddingJob.onDocSnapshotUpdated({
+  await t.context.embeddingProducer.onDocSnapshotUpdated({
     workspaceId: 'workspace-1',
     docId: 'doc-1',
     blob: Buffer.alloc(0),
@@ -130,7 +150,7 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   const documentJobCount = t.context.module.queue.count(
     'backendRuntime.syncDocumentEmbedding'
   );
-  await t.context.embeddingJob.onDocSnapshotUpdated({
+  await t.context.embeddingProducer.onDocSnapshotUpdated({
     workspaceId: 'workspace-1',
     docId: 'db$docProperties',
     blob: Buffer.alloc(0),
@@ -140,7 +160,7 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
     documentJobCount
   );
 
-  await t.context.embeddingJob.onDocSnapshotUpdated({
+  await t.context.embeddingProducer.onDocSnapshotUpdated({
     workspaceId: 'workspace-1',
     docId: 'workspace-1',
     blob: Buffer.alloc(0),
@@ -155,7 +175,7 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
     reconcileDocuments: true,
   });
 
-  await t.context.embeddingJob.prepareSelectedDocuments('workspace-1', [
+  await t.context.embeddingService.prepareSelectedDocuments('workspace-1', [
     'doc-1',
     'doc-1',
   ]);
@@ -181,7 +201,9 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   ] as const) {
     t.context.runtime.syncEmbeddingState.rejects(new Error(nativeError));
     const error = await t.throwsAsync(() =>
-      t.context.embeddingJob.prepareSelectedDocuments('workspace-1', ['doc-1'])
+      t.context.embeddingService.prepareSelectedDocuments('workspace-1', [
+        'doc-1',
+      ])
     );
     t.true(error instanceof expectedError);
   }
@@ -189,7 +211,7 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
 
   await t.throwsAsync(
     () =>
-      t.context.embeddingJob.prepareSelectedDocuments(
+      t.context.embeddingService.prepareSelectedDocuments(
         'workspace-1',
         Array.from({ length: 65 }, (_, index) => `doc-${index}`)
       ),
@@ -198,7 +220,7 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   t.context.getSnapshot.resolves(null);
   await t.throwsAsync(
     () =>
-      t.context.embeddingJob.prepareSelectedDocuments('workspace-1', [
+      t.context.embeddingService.prepareSelectedDocuments('workspace-1', [
         'missing-doc',
       ]),
     { instanceOf: CopilotSelectedSourcesUnavailable }

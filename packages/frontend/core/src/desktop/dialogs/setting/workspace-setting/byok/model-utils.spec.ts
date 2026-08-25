@@ -11,6 +11,7 @@ import {
   capabilitiesForUseCases,
   type ModelDeclaration,
   modelUseCases,
+  retainVerifiedCapabilities,
 } from './model-utils';
 
 describe('BYOK model capabilities', () => {
@@ -59,5 +60,54 @@ describe('BYOK model capabilities', () => {
     expect(
       capabilitiesForUseCases(model, ['chat', 'actions', 'vision'])
     ).toEqual([capability]);
+  });
+
+  test('drops capabilities that imply failed uses while keeping independent uses', () => {
+    const embeddingCapability = {
+      input: [ByokModelInput.text],
+      output: [ByokModelOutput.embedding],
+      features: [],
+      attachmentKinds: [],
+      attachmentSources: [],
+    };
+    const model: ModelDeclaration = {
+      modelId: 'multimodal-tools',
+      enabled: true,
+      capabilities: [
+        {
+          input: [ByokModelInput.text, ByokModelInput.image],
+          output: [ByokModelOutput.text],
+          features: [ByokModelFeature.tool_calling],
+          attachmentKinds: [ByokAttachmentKind.image],
+          attachmentSources: [
+            ByokAttachmentSource.url,
+            ByokAttachmentSource.data,
+            ByokAttachmentSource.bytes,
+            ByokAttachmentSource.file_handle,
+          ],
+        },
+        embeddingCapability,
+      ],
+    };
+
+    const retained = retainVerifiedCapabilities(
+      [model],
+      [
+        {
+          modelId: model.modelId,
+          checks: [
+            { operation: 'chat', status: { kind: 'failed' } },
+            { operation: 'tool_calling', status: { kind: 'verified' } },
+            { operation: 'embedding', status: { kind: 'verified' } },
+          ],
+        },
+      ]
+    )[0];
+
+    expect(retained).toEqual({
+      ...model,
+      capabilities: [embeddingCapability],
+    });
+    expect(modelUseCases(retained)).toEqual(['embedding']);
   });
 });

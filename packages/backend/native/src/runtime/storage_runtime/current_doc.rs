@@ -6,8 +6,6 @@ use super::{RuntimeError, RuntimeResult};
 
 #[derive(FromRow)]
 pub(in crate::runtime) struct CurrentDoc {
-  pub(in crate::runtime) workspace_id: String,
-  pub(in crate::runtime) doc_id: String,
   pub(in crate::runtime) blob: Vec<u8>,
   pub(in crate::runtime) updated_at: DateTime<Utc>,
 }
@@ -25,7 +23,7 @@ pub(in crate::runtime) async fn load_current_doc(
 ) -> RuntimeResult<Option<CurrentDoc>> {
   let snapshot = sqlx::query_as::<_, CurrentDoc>(
     r#"
-    SELECT workspace_id, guid AS doc_id, blob, updated_at
+    SELECT blob, updated_at
     FROM snapshots
     WHERE workspace_id = $1 AND guid = $2
     "#,
@@ -48,12 +46,38 @@ pub(in crate::runtime) async fn load_current_doc(
   .fetch_all(pool)
   .await
   .map_err(|err| RuntimeError::database("Current doc updates load failed", err))?;
-  merge_current_doc(workspace_id, doc_id, snapshot, updates)
+  merge_current_doc(snapshot, updates)
+}
+
+pub(super) async fn load_canonical_doc(
+  pool: &PgPool,
+  workspace_id: &str,
+  doc_id: &str,
+) -> RuntimeResult<Option<CurrentDoc>> {
+  sqlx::query_as::<_, CurrentDoc>(
+    r#"
+    SELECT blob, updated_at
+    FROM snapshots
+    WHERE workspace_id = $1 AND guid = $2
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .fetch_optional(pool)
+  .await
+  .map_err(|err| RuntimeError::database("Canonical doc snapshot load failed", err))
+}
+
+pub(super) async fn has_pending_updates(pool: &PgPool, workspace_id: &str, doc_id: &str) -> RuntimeResult<bool> {
+  sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM updates WHERE workspace_id = $1 AND guid = $2)")
+    .bind(workspace_id)
+    .bind(doc_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|err| RuntimeError::database("Pending doc updates check failed", err))
 }
 
 pub(super) fn merge_current_doc(
-  workspace_id: &str,
-  doc_id: &str,
   snapshot: Option<CurrentDoc>,
   updates: Vec<CurrentDocUpdate>,
 ) -> RuntimeResult<Option<CurrentDoc>> {
@@ -84,16 +108,18 @@ pub(super) fn merge_current_doc(
     .encode_update_v1()
     .map_err(|err| RuntimeError::invalid_state(format!("Current doc encode failed: {err}")))?;
 
-  Ok(Some(CurrentDoc {
-    workspace_id: workspace_id.to_string(),
-    doc_id: doc_id.to_string(),
-    blob,
-    updated_at,
-  }))
+  Ok(Some(CurrentDoc { blob, updated_at }))
 }
 
 pub(super) async fn load_workspace_live_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  workspace_live_doc_ids(load_current_doc(pool, workspace_id, workspace_id).await?)
+  load_workspace_canonical_doc_ids(pool, workspace_id).await
+}
+
+pub(super) async fn load_workspace_canonical_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
+  if has_pending_updates(pool, workspace_id, workspace_id).await? {
+    return Err(RuntimeError::invalid_state("Workspace root doc has pending updates"));
+  }
+  workspace_live_doc_ids(load_canonical_doc(pool, workspace_id, workspace_id).await?)
 }
 
 fn workspace_live_doc_ids(root: Option<CurrentDoc>) -> RuntimeResult<Vec<String>> {
@@ -120,11 +146,7 @@ mod tests {
     let snapshot = affine_doc_loader::add_doc_to_root_doc(Vec::new(), "live", None).unwrap();
     let pending = affine_doc_loader::add_doc_to_root_doc(snapshot.clone(), "trash", None).unwrap();
     let merged = merge_current_doc(
-      "workspace",
-      "workspace",
       Some(CurrentDoc {
-        workspace_id: "workspace".to_string(),
-        doc_id: "workspace".to_string(),
         blob: snapshot,
         updated_at: Utc::now(),
       }),
@@ -149,8 +171,6 @@ mod tests {
     trash.insert("trash".to_string(), Value::Any(Any::True)).unwrap();
 
     let ids = workspace_live_doc_ids(Some(CurrentDoc {
-      workspace_id: "workspace".to_string(),
-      doc_id: "workspace".to_string(),
       blob: root.encode_update_v1().unwrap(),
       updated_at: Utc::now(),
     }))
@@ -165,8 +185,6 @@ mod tests {
       .unwrap();
     pages.remove(trash_index as u64, 1).unwrap();
     let ids = workspace_live_doc_ids(Some(CurrentDoc {
-      workspace_id: "workspace".to_string(),
-      doc_id: "workspace".to_string(),
       blob: root.encode_update_v1().unwrap(),
       updated_at: Utc::now(),
     }))
@@ -179,8 +197,6 @@ mod tests {
     assert!(workspace_live_doc_ids(None).is_err());
     assert!(
       workspace_live_doc_ids(Some(CurrentDoc {
-        workspace_id: "workspace".to_string(),
-        doc_id: "workspace".to_string(),
         blob: vec![0xff],
         updated_at: Utc::now(),
       }))
@@ -188,8 +204,6 @@ mod tests {
     );
     assert!(
       workspace_live_doc_ids(Some(CurrentDoc {
-        workspace_id: "workspace".to_string(),
-        doc_id: "workspace".to_string(),
         blob: vec![
           1, 1, 1, 1, 40, 0, 1, 0, 11, 115, 117, 98, 95, 109, 97, 112, 95, 107, 101, 121, 1, 119, 13, 115, 117, 98, 95,
           109, 97, 112, 95, 118, 97, 108, 117, 101, 0,

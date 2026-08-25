@@ -73,6 +73,17 @@ export class ServerService implements OnApplicationBootstrap {
     user: string,
     updates: Array<{ module: string; key: string; value: any }>
   ): Promise<DeepPartial<AppConfig>> {
+    const providerType = updates.find(
+      update => update.module === 'indexer' && update.key === 'provider.type'
+    );
+    if (providerType) {
+      updates = [
+        ...updates.filter(
+          update => !(update.module === 'indexer' && update.key === 'enabled')
+        ),
+        { module: 'indexer', key: 'enabled', value: true },
+      ];
+    }
     const errors = this.validateConfig(updates);
 
     if (errors?.length) {

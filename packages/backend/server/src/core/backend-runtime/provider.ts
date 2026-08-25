@@ -35,6 +35,12 @@ import {
   type RuntimeWorkspaceArtifact,
   type SyncEmbeddingStateInput,
 } from '../../native';
+import {
+  type AggregateRequestInput,
+  encodeAggregateRequest,
+  encodeSearchRequest,
+  type SearchRequestInput,
+} from './search';
 
 type RuntimeInstance = InstanceType<typeof BackendRuntime>;
 
@@ -113,6 +119,12 @@ export type RuntimeWorkspaceInviteQuotaInput = {
 export type RuntimeWorkspaceInviteQuotaUsage = {
   targetCount: number;
   targetDomains: RuntimeQuotaTargetDomainInput[];
+};
+
+export type RuntimeWorkspaceActionDecision = {
+  allowed: boolean;
+  retryAfterSeconds?: number;
+  reason?: string;
 };
 
 export type RuntimeInviteAbuseAction =
@@ -207,6 +219,10 @@ export type RuntimeMailDeliveryQuotaDecision = {
 };
 
 type RuntimeQuotaMethods = RuntimeInstance & {
+  evaluateWorkspaceActionV1(
+    actorUserId: string,
+    workspaceId: string
+  ): Promise<RuntimeWorkspaceActionDecision>;
   assertWorkspaceInviteQuotaV1(
     input: RuntimeWorkspaceInviteQuotaInput
   ): Promise<NativeRuntimeWorkspaceInviteQuotaDecision>;
@@ -299,9 +315,16 @@ export class BackendRuntimeProvider
 
   async start() {
     await this.runtime.start();
-    await this.runMigrationsOnce();
     const health = await this.runtime.health();
     this.logger.log(`backend runtime started: db=${health.databaseConnected}`);
+  }
+
+  /**
+   * Schema changes belong to the explicit predeploy path. Runtime startup only
+   * connects services and must not mutate the database schema.
+   */
+  async runMigrations() {
+    await this.runMigrationsOnce();
   }
 
   async stop() {
@@ -315,6 +338,8 @@ export class BackendRuntimeProvider
       !updates.copilot &&
       !updates.crypto &&
       !updates.db &&
+      !updates.auth &&
+      !updates.indexer &&
       !updates.storages
     ) {
       return;
@@ -329,6 +354,56 @@ export class BackendRuntimeProvider
   async embeddingHealth(): Promise<EmbeddingHealth> {
     return await this.measured('embeddingHealth', runtime =>
       runtime.embeddingHealth()
+    );
+  }
+
+  async searchAuthorized(
+    actorUserId: string,
+    workspaceId: string,
+    request: SearchRequestInput
+  ) {
+    return await this.measured('searchAuthorized', runtime =>
+      runtime.searchAuthorized(
+        actorUserId,
+        workspaceId,
+        encodeSearchRequest(request)
+      )
+    );
+  }
+
+  async aggregateAuthorized(
+    actorUserId: string,
+    workspaceId: string,
+    request: AggregateRequestInput
+  ) {
+    return await this.measured('aggregateAuthorized', runtime =>
+      runtime.aggregateAuthorized(
+        actorUserId,
+        workspaceId,
+        encodeAggregateRequest(request)
+      )
+    );
+  }
+
+  async reconcileSearchProjection(limit = 100) {
+    return await this.measured('reconcileSearchProjection', runtime =>
+      runtime.reconcileSearchProjection(limit)
+    );
+  }
+
+  async filterReadableDocs(
+    actorUserId: string,
+    workspaceId: string,
+    docIds: string[]
+  ) {
+    return await this.measured('filterReadableDocs', runtime =>
+      runtime.filterReadableDocs(actorUserId, workspaceId, docIds)
+    );
+  }
+
+  async searchStatus() {
+    return await this.measured('searchStatus', runtime =>
+      runtime.searchStatus()
     );
   }
 
@@ -452,6 +527,12 @@ export class BackendRuntimeProvider
       await this.measured('assertWorkspaceInviteQuotaV1', rt =>
         this.quotaRuntime(rt).assertWorkspaceInviteQuotaV1(input)
       )
+    );
+  }
+
+  async evaluateWorkspaceActionV1(actorUserId: string, workspaceId: string) {
+    return await this.measured('evaluateWorkspaceActionV1', rt =>
+      this.quotaRuntime(rt).evaluateWorkspaceActionV1(actorUserId, workspaceId)
     );
   }
 

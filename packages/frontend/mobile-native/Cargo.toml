@@ -22,6 +22,7 @@ affine_nbstore = { workspace = true }
 anyhow         = { workspace = true }
 base64-simd    = { workspace = true }
 chrono         = { workspace = true }
+serde_json     = { workspace = true }
 thiserror      = { workspace = true }
 tokio          = { workspace = true, features = ["rt-multi-thread"] }
 uniffi         = { workspace = true, features = ["cli", "tokio"] }
