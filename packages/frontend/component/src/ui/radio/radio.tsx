@@ -197,6 +197,13 @@ export const RadioGroup = memo(function RadioGroup({
         return;
       }
       ignoreNextClickRef.current = true;
+      const scheduleClear =
+        typeof requestAnimationFrame === 'function'
+          ? requestAnimationFrame
+          : (callback: () => void) => window.setTimeout(callback, 0);
+      scheduleClear(() => {
+        ignoreNextClickRef.current = false;
+      });
       event.preventDefault();
       event.stopPropagation();
       if (itemValue === value) {
@@ -210,11 +217,12 @@ export const RadioGroup = memo(function RadioGroup({
   const onPenClick = useCallback(
     (event: ReactMouseEvent<HTMLButtonElement>) => {
       if (!ignoreNextClickRef.current) {
-        return;
+        return false;
       }
       ignoreNextClickRef.current = false;
       event.preventDefault();
       event.stopPropagation();
+      return true;
     },
     []
   );
@@ -257,8 +265,10 @@ export const RadioGroup = memo(function RadioGroup({
             onPointerUp={onPenPointerUp(item.value)}
             onPointerCancel={onPenPointerCancel}
             onClick={event => {
+              if (onPenClick(event)) {
+                return;
+              }
               item.attrs?.onClick?.(event);
-              onPenClick(event);
             }}
           >
             <RadixRadioGroup.Indicator
