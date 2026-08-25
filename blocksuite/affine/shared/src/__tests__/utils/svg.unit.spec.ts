@@ -392,6 +392,53 @@ describe('sanitizeSvgHrefsInString (no-DOM href filtering)', () => {
 
     expect(out).not.toContain('data:image/svg+xml');
   });
+
+  test('drops the third nested svg image at the depth limit', () => {
+    const thirdLevelSvg = svgDataUrl(
+      '<svg id="lvl3" xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"></rect></svg>'
+    );
+    const secondLevelSvg = svgDataUrl(
+      `<svg id="lvl2" xmlns="http://www.w3.org/2000/svg"><image href="${thirdLevelSvg}"></image></svg>`
+    );
+    const firstLevelSvg = svgDataUrl(
+      `<svg id="lvl1" xmlns="http://www.w3.org/2000/svg"><image href="${secondLevelSvg}"></image></svg>`
+    );
+    const out = sanitizeSvgHrefsInString(
+      `<svg id="top"><image href="${firstLevelSvg}"></image></svg>`,
+      'scope-x'
+    );
+
+    const firstLevelHref = out.match(/href="([^"]+)"/)?.[1];
+    const firstLevelSanitized = decodeSvgDataUrl(firstLevelHref ?? '');
+    expect(firstLevelSanitized).toContain('lvl1');
+
+    const secondLevelHref = firstLevelSanitized.match(/href="([^"]+)"/)?.[1];
+    const secondLevelSanitized = decodeSvgDataUrl(secondLevelHref ?? '');
+    expect(secondLevelSanitized).toContain('lvl2');
+
+    const thirdLevelHref = secondLevelSanitized.match(/href="([^"]+)"/)?.[1];
+    expect(thirdLevelHref).toBeUndefined();
+  });
+
+  test('removes an unsafe href even when a safe href precedes it', () => {
+    const out = sanitizeSvgHrefsInString(
+      '<svg><use href="#local" xlink:href="https://example.com/x.svg#y"></use></svg>',
+      'scope-x'
+    );
+
+    expect(out).toContain('href="#local"');
+    expect(out).not.toContain('https://example.com');
+  });
+
+  test('preserves a safe href even when an unsafe href precedes it', () => {
+    const out = sanitizeSvgHrefsInString(
+      '<svg><use xlink:href="https://example.com/x.svg#y" href="#local"></use></svg>',
+      'scope-x'
+    );
+
+    expect(out).toContain('href="#local"');
+    expect(out).not.toContain('https://example.com');
+  });
 });
 
 describe('sanitizeSvg no-DOM fallback', () => {

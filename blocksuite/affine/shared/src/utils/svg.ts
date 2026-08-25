@@ -474,12 +474,28 @@ export function sanitizeSvgCssInString(
   );
 }
 
+/**
+ * Sanitizes every `href`/`xlink:href` attribute on each SVG element using
+ * string processing only (no DOM APIs). Mirrors the DOM-backed
+ * `tightenSvgTree` filtering:
+ * - unsafe/external hrefs are removed;
+ * - safe same-document fragment references are kept;
+ * - embedded `data:image/svg+xml` images are recursively sanitized up to
+ *   `MAX_NESTED_SVG_IMAGE_DEPTH`, then dropped (fail-closed) beyond it.
+ *
+ * @param svg - SVG markup to sanitize.
+ * @param scopeClass - generated root scope class used when re-sanitizing nested SVG.
+ * @param depth - current nested-SVG image depth; `0` for the top level.
+ * @returns sanitized SVG markup; callers must still verify a valid SVG root.
+ */
 export function sanitizeSvgHrefsInString(
   svg: string,
-  scopeClass: string
+  scopeClass: string,
+  depth: number = 0
 ): string {
   const SVG_TAG_PATTERN = /<([\w-]+)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
-  const HREF_ATTR_PATTERN = /(xlink:href|href)\s*=\s*("([^"]*)"|'([^']*)')/i;
+  const HREF_ATTR_PATTERN =
+    /(xlink:href|href)\s*=\s*("([^"]*)"|'([^']*)')/gi;
 
   return svg.replace(SVG_TAG_PATTERN, (tag, tagNameRaw, attrsRaw) => {
     const tagName = String(tagNameRaw).toLowerCase();
@@ -495,12 +511,16 @@ export function sanitizeSvgHrefsInString(
         }
 
         if (tagName === 'image' && value.startsWith('data:image/svg+xml')) {
+          if (depth >= MAX_NESTED_SVG_IMAGE_DEPTH) {
+            return '';
+          }
           try {
             const decoded = decodeSvgDataUrl(value);
             if (decoded === null) return '';
             const sanitized = sanitizeSvgHrefsInString(
               sanitizeSvgCssInString(decoded, scopeClass),
-              scopeClass
+              scopeClass,
+              depth + 1
             );
             if (!hasSvgRoot(sanitized)) return '';
             return `${nameRaw}="${encodeSvgDataUrl(sanitized)}"`;
@@ -550,6 +570,16 @@ export function sanitizeSvg(svg: string, options?: SanitizeSvgOptions): string {
   return sanitizeSvgWithDepth(svg, options, 0);
 }
 
+/**
+ * Sanitizes an SVG string. When DOMParser/XMLSerializer are unavailable the
+ * no-DOM fallback runs DOMPurify + `sanitizeSvgCssInString` + `sanitizeSvgHrefsInString`
+ * and fails closed (returns `''`) unless a valid SVG root survives every stage.
+ * Otherwise the DOM-backed path applies `tightenSvgTree` for equivalent filtering.
+ *
+ * @param svg - SVG markup to sanitize.
+ * @param options - optional DOMPurify/foreignObject overrides.
+ * @param depth - current nested-SVG image depth; `0` for the top level.
+ */
 function sanitizeSvgWithDepth(
   svg: string,
   options: SanitizeSvgOptions | undefined,
