@@ -170,14 +170,13 @@ export const KNOWN_CONFIG_GROUPS = [
       {
         key: 'provider.type',
         type: 'Enum',
-        options: ['embedded', 'manticoresearch', 'elasticsearch'],
-        desc: 'Search provider. Embedded keeps external credentials for later reuse.',
+        options: ['embedded', 'elasticsearch', 'manticoresearch'],
+        desc: 'Search provider. Embedded and Elasticsearch provide full search semantics; Manticore Search provides basic search semantics.',
       },
       'provider.endpoint',
       'provider.apiKey',
       'provider.username',
       'provider.password',
-      'autoIndex.batchSize',
     ],
   } as ConfigGroup<'indexer'>,
 ];

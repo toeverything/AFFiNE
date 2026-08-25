@@ -1,11 +1,6 @@
 use crate::permission::PermissionEvaluationInputV1;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::runtime::backend_runtime) enum SystemSearchCapability {
-  ReconcileIndex,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::runtime::backend_runtime) enum SearchActor {
   User { user_id: String },
 }
@@ -33,12 +28,10 @@ pub(in crate::runtime::backend_runtime) enum DocReadScope {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::runtime::backend_runtime) struct AuthorizedSearchScope {
   pub(in crate::runtime::backend_runtime) workspace_id: String,
-  pub(in crate::runtime::backend_runtime) permission_revision: i64,
   pub(in crate::runtime::backend_runtime) docs: DocReadScope,
 }
 
 pub(super) struct PermissionSnapshot {
-  pub(super) revision: i64,
   pub(super) capability: DocAclCapability,
   pub(super) evaluation: PermissionEvaluationInputV1,
   pub(super) actor_user_id: String,

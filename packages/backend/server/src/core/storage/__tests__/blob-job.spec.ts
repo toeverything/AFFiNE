@@ -13,7 +13,6 @@ interface Context {
     planUnreferencedWorkspaceBlobs: Sinon.SinonStub;
     executeBlobCleanupCandidates: Sinon.SinonStub;
     executeDocumentCleanupCandidates: Sinon.SinonStub;
-    ackDocumentCleanupEffect: Sinon.SinonStub;
   };
   event: {
     emitAsync: Sinon.SinonStub;
@@ -51,7 +50,6 @@ test.beforeEach(t => {
     planUnreferencedWorkspaceBlobs: Sinon.stub(),
     executeBlobCleanupCandidates: Sinon.stub(),
     executeDocumentCleanupCandidates: Sinon.stub(),
-    ackDocumentCleanupEffect: Sinon.stub(),
   };
   t.context.event = {
     emitAsync: Sinon.stub().resolves(undefined),
@@ -316,7 +314,7 @@ test('document projection worker drains metadata incrementally after a document 
   );
 });
 
-test('document cleanup dispatches stable search effects', async t => {
+test('document cleanup emits blob updates after comment object cleanup', async t => {
   t.context.runtime.executeDocumentCleanupCandidates.resolves({
     scannedCandidates: 1,
     serializationRetries: 0,
@@ -331,43 +329,18 @@ test('document cleanup dispatches stable search effects', async t => {
         docId: 'doc-1',
         cleanupVersion: 'version-1',
         commentObjectsDone: true,
-        searchDone: false,
       },
     ],
   });
 
   await t.context.job.executeDocumentCleanupCandidates({});
 
-  t.true(
-    t.context.queue.add.calledWith(
-      'indexer.reconcileDocumentCleanup',
-      Sinon.match({ docId: 'doc-1' }),
-      {
-        jobId: 'document-cleanup:search:workspace-1:doc-1:version-1',
-      }
-    )
-  );
+  t.false(t.context.queue.add.called);
   t.true(
     t.context.event.emitAsync.calledWith('workspace.blobs.updated', {
       workspaceId: 'workspace-1',
     })
   );
-});
-
-test('document cleanup effect ack delegates to storage runtime', async t => {
-  await t.context.job.ackDocumentCleanupEffect({
-    workspaceId: 'workspace-1',
-    docId: 'doc-1',
-    cleanupVersion: 'version-1',
-    effect: 'search',
-  });
-
-  t.deepEqual(t.context.runtime.ackDocumentCleanupEffect.firstCall.args, [
-    'workspace-1',
-    'doc-1',
-    'version-1',
-    'search',
-  ]);
 });
 
 test('blob cleanup execution sweep drains marked runs and continues by page', async t => {

@@ -1,6 +1,13 @@
 import test from 'ava';
 
-import { InternalServerError } from '../../../base';
+import {
+  InternalServerError,
+  SearchIndexFailed,
+  SearchIndexNotReady,
+  SearchPermissionSyncing,
+  SearchProviderUnavailable,
+  SpaceAccessDenied,
+} from '../../../base';
 import { DocRole } from '../../../models';
 import { docLegacyBoundary } from '../context';
 import { PermissionContextLoader } from '../context-loader';
@@ -23,9 +30,11 @@ function createLoader() {
     docPolicies: 0,
     docGrants: 0,
   };
+  const queries: string[] = [];
   const db = {
     $queryRaw: async (strings: TemplateStringsArray) => {
       const sql = strings.join('');
+      queries.push(sql);
       if (sql.includes('FROM workspace_members')) {
         calls.members += 1;
         return [{ role: 'owner', state: 'active' }];
@@ -82,6 +91,7 @@ function createLoader() {
   };
   return {
     calls,
+    queries,
     loader: new PermissionContextLoader(db as never, createCls() as never),
   };
 }
@@ -196,7 +206,7 @@ test('PermissionService supports anonymous preview without doc read', async t =>
 });
 
 test('PermissionContextLoader reads only terminal permission tables', async t => {
-  const { loader } = createLoader();
+  const { loader, queries } = createLoader();
   const input = await loader.load({
     userId: 'u1',
     workspaceId: 'w1',
@@ -212,6 +222,9 @@ test('PermissionContextLoader reads only terminal permission tables', async t =>
   t.is(input.docs?.[0]?.explicitUserRole, 'manager');
   t.is(input.docs?.[0]?.memberDefaultRole, 'manager');
   t.is(input.docs?.[1]?.publicRole, 'external');
+  t.false(
+    queries.some(query => /workspace_permission_|search_runtime_/i.test(query))
+  );
 });
 
 test('PermissionContextLoader treats missing quota state as unknown and stale', async t => {
@@ -260,4 +273,12 @@ test('PermissionService maps native validation errors to internal errors', t => 
   const error = t.throws(() => service.evaluate({ version: 2 } as never));
 
   t.true(error instanceof InternalServerError);
+});
+
+test('search and permission boundaries expose stable HTTP contracts', t => {
+  t.is(new SearchIndexNotReady({ spaceId: 'w1' }).status, 503);
+  t.is(new SearchPermissionSyncing().status, 503);
+  t.is(new SearchProviderUnavailable().status, 503);
+  t.is(new SearchIndexFailed({ diagnosticId: 'w1' }).status, 503);
+  t.is(new SpaceAccessDenied({ spaceId: 'w1' }).status, 403);
 });

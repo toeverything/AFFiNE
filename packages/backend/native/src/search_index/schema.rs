@@ -16,6 +16,9 @@ impl TableSchema {
     let mut fields = HashMap::new();
     keyword(&mut builder, &mut fields, "workspace_id", true, false);
     keyword(&mut builder, &mut fields, "workspace_token", true, false);
+    keyword(&mut builder, &mut fields, "generation_id", true, false);
+    integer(&mut builder, &mut fields, "source_version", true, true);
+    integer(&mut builder, &mut fields, "permission_version", true, false);
     keyword(&mut builder, &mut fields, "doc_id", true, true);
     keyword(&mut builder, &mut fields, "doc_token", true, false);
     fields.insert(
@@ -29,10 +32,19 @@ impl TableSchema {
     keyword(&mut builder, &mut fields, "acl_read_tokens", true, false);
     boolean(&mut builder, &mut fields, "acl_public_readable");
     boolean(&mut builder, &mut fields, "acl_member_default_readable");
-    integer(&mut builder, &mut fields, "acl_revision", true, false);
     integer(&mut builder, &mut fields, "created_at", true, true);
     integer(&mut builder, &mut fields, "updated_at", true, true);
-    Self::finish(builder, fields, &["workspace_id", "doc_id"])
+    Self::finish(
+      builder,
+      fields,
+      &[
+        "generation_id",
+        "workspace_id",
+        "doc_id",
+        "source_version",
+        "permission_version",
+      ],
+    )
   }
 
   pub fn block() -> Self {
@@ -58,6 +70,9 @@ impl TableSchema {
     }
     keyword(&mut builder, &mut fields, "doc_id", true, true);
     keyword(&mut builder, &mut fields, "workspace_token", true, false);
+    keyword(&mut builder, &mut fields, "generation_id", true, false);
+    integer(&mut builder, &mut fields, "source_version", true, true);
+    integer(&mut builder, &mut fields, "permission_version", true, false);
     keyword(&mut builder, &mut fields, "doc_token", true, false);
     keyword(&mut builder, &mut fields, "block_id", true, true);
     keyword(&mut builder, &mut fields, "block_token", true, false);
@@ -74,8 +89,18 @@ impl TableSchema {
     keyword(&mut builder, &mut fields, "acl_read_tokens", true, false);
     boolean(&mut builder, &mut fields, "acl_public_readable");
     boolean(&mut builder, &mut fields, "acl_member_default_readable");
-    integer(&mut builder, &mut fields, "acl_revision", true, false);
-    Self::finish(builder, fields, &["workspace_id", "doc_id", "block_id"])
+    Self::finish(
+      builder,
+      fields,
+      &[
+        "generation_id",
+        "workspace_id",
+        "doc_id",
+        "source_version",
+        "permission_version",
+        "block_id",
+      ],
+    )
   }
 
   fn finish(
@@ -95,10 +120,14 @@ impl TableSchema {
       .id_fields
       .iter()
       .map(|field| {
-        document
+        let value = document
           .get(*field)
-          .and_then(serde_json::Value::as_str)
-          .ok_or_else(|| IndexError::InvalidInput(format!("index document {field} is required")))
+          .ok_or_else(|| IndexError::InvalidInput(format!("index document {field} is required")))?;
+        value
+          .as_str()
+          .map(str::to_string)
+          .or_else(|| value.as_i64().map(|value| value.to_string()))
+          .ok_or_else(|| IndexError::InvalidInput(format!("index document {field} has invalid identity type")))
       })
       .collect::<Result<Vec<_>>>()
       .map(|parts| parts.join("/"))

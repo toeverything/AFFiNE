@@ -38,11 +38,8 @@ vi.mock('./config-input-row', () => ({
       <button type="button" onClick={() => onChange?.(field, 'embedded')}>
         set-embedded-{field}
       </button>
-      <button
-        type="button"
-        onClick={() => onChange?.(field, 'manticoresearch')}
-      >
-        set-manticoresearch-{field}
+      <button type="button" onClick={() => onChange?.(field, 'elasticsearch')}>
+        set-elasticsearch-{field}
       </button>
       <button
         type="button"
@@ -107,7 +104,7 @@ vi.mock('./config', () => ({
         {
           key: 'provider.type',
           type: 'Enum',
-          options: ['embedded', 'manticoresearch', 'elasticsearch'],
+          options: ['embedded', 'elasticsearch', 'manticoresearch'],
         },
         'provider.endpoint',
       ],
@@ -197,7 +194,7 @@ describe('SettingsPage', () => {
     expect(authItem?.dataset.state).toBe('open');
   });
 
-  test('encodes embedded without replacing external provider settings', () => {
+  test('enables the selected provider without replacing external settings', () => {
     const update = vi.fn();
     useAppConfigMock.mockReturnValue({
       ...useAppConfigMock(),
@@ -212,28 +209,27 @@ describe('SettingsPage', () => {
     );
 
     fireEvent.click(screen.getAllByRole('button', { name: /Indexer/i })[0]);
-    expect(screen.getByText('indexer/provider.type:embedded')).toBeTruthy();
-    expect(screen.queryByTestId('field-indexer/provider.endpoint')).toBeNull();
+    expect(
+      screen.getByText('indexer/provider.type:elasticsearch')
+    ).toBeTruthy();
+    expect(screen.getByTestId('field-indexer/provider.endpoint')).toBeTruthy();
     fireEvent.click(
       screen.getByRole('button', {
         name: 'set-embedded-indexer/provider.type',
       })
     );
-    expect(update).toHaveBeenCalledWith('indexer/enabled', false);
-    expect(update).not.toHaveBeenCalledWith(
-      'indexer/provider.type',
-      'embedded'
-    );
+    expect(update).toHaveBeenCalledWith('indexer/enabled', true);
+    expect(update).toHaveBeenCalledWith('indexer/provider.type', 'embedded');
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'set-manticoresearch-indexer/provider.type',
+        name: 'set-elasticsearch-indexer/provider.type',
       })
     );
     expect(update).toHaveBeenCalledWith('indexer/enabled', true);
     expect(update).toHaveBeenCalledWith(
       'indexer/provider.type',
-      'manticoresearch'
+      'elasticsearch'
     );
   });
 

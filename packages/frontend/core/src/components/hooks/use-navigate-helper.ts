@@ -22,6 +22,16 @@ export type WorkspaceSettingsRouteOptions = {
   scrollAnchor?: string;
 };
 
+export type NavigateToPageOptions = Omit<NavigateOptions, 'replace'> & {
+  search?: string | URLSearchParams;
+};
+
+const normalizeSearch = (search?: string | URLSearchParams) => {
+  const value = search?.toString();
+  if (!value) return '';
+  return value.startsWith('?') ? value : `?${value}`;
+};
+
 export function buildWorkspaceSettingsPath(
   workspaceId: string,
   options?: WorkspaceSettingsRouteOptions
@@ -84,11 +94,17 @@ export function useNavigateHelper() {
     (
       workspaceId: string,
       pageId: string,
-      logic: RouteLogic = RouteLogic.PUSH
+      logic: RouteLogic = RouteLogic.PUSH,
+      options?: NavigateToPageOptions
     ) => {
-      return navigate(`/workspace/${workspaceId}/${pageId}`, {
-        replace: logic === RouteLogic.REPLACE,
-      });
+      const { search, ...navigateOptions } = options ?? {};
+      return navigate(
+        `/workspace/${workspaceId}/${pageId}${normalizeSearch(search)}`,
+        {
+          ...navigateOptions,
+          replace: logic === RouteLogic.REPLACE,
+        }
+      );
     },
     [navigate]
   );
@@ -176,8 +192,13 @@ export function useNavigateHelper() {
   );
 
   const openPage = useCallback(
-    (workspaceId: string, pageId: string, logic?: RouteLogic) => {
-      return jumpToPage(workspaceId, pageId, logic);
+    (
+      workspaceId: string,
+      pageId: string,
+      logic?: RouteLogic,
+      options?: NavigateToPageOptions
+    ) => {
+      return jumpToPage(workspaceId, pageId, logic, options);
     },
     [jumpToPage]
   );
