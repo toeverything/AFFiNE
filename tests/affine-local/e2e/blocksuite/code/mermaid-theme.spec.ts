@@ -134,41 +134,52 @@ test.describe('Mermaid Preview Theme Adaptation', () => {
 
     const lightNodes = await sampleNodeStyles(page);
     expect(lightNodes.length).toBeGreaterThan(0);
-    const lightPanel = (await samplePanelBackground(page)) ?? [255, 255, 255];
+    const lightPanel = await samplePanelBackground(page);
+    expect(lightPanel).not.toBeNull();
     const lightText = await sampleTextFill(page);
 
     for (const node of lightNodes) {
       expect(node.fill).not.toBeNull();
       if (node.fill) {
-        expect(contrastRatio(node.fill, lightPanel)).toBeGreaterThan(1.05);
+        expect(
+          contrastRatio(node.fill, lightPanel as number[])
+        ).toBeGreaterThanOrEqual(3);
       }
       if (node.stroke) {
-        expect(contrastRatio(node.stroke, lightPanel)).toBeGreaterThan(1.05);
+        expect(
+          contrastRatio(node.stroke, lightPanel as number[])
+        ).toBeGreaterThanOrEqual(3);
       }
     }
     if (lightText && lightNodes[0].fill) {
-      expect(contrastRatio(lightText, lightNodes[0].fill)).toBeGreaterThan(3);
+      expect(
+        contrastRatio(lightText, lightNodes[0].fill)
+      ).toBeGreaterThanOrEqual(3);
     }
 
     await toggleTheme(page, 'dark-theme-trigger');
-    const darkNodes = await waitForRerender(
-      page,
-      JSON.stringify(lightNodes)
-    );
-    const darkPanel = (await samplePanelBackground(page)) ?? [20, 20, 20];
+    const darkNodes = await waitForRerender(page, JSON.stringify(lightNodes));
+    const darkPanel = await samplePanelBackground(page);
+    expect(darkPanel).not.toBeNull();
     const darkText = await sampleTextFill(page);
 
     for (const node of darkNodes) {
       expect(node.fill).not.toBeNull();
       if (node.fill) {
-        expect(contrastRatio(node.fill, darkPanel)).toBeGreaterThan(1.05);
+        expect(
+          contrastRatio(node.fill, darkPanel as number[])
+        ).toBeGreaterThanOrEqual(3);
       }
       if (node.stroke) {
-        expect(contrastRatio(node.stroke, darkPanel)).toBeGreaterThan(1.05);
+        expect(
+          contrastRatio(node.stroke, darkPanel as number[])
+        ).toBeGreaterThanOrEqual(3);
       }
     }
     if (darkText && darkNodes[0].fill) {
-      expect(contrastRatio(darkText, darkNodes[0].fill)).toBeGreaterThan(3);
+      expect(contrastRatio(darkText, darkNodes[0].fill)).toBeGreaterThanOrEqual(
+        3
+      );
     }
 
     await toggleTheme(page, 'light-theme-trigger');

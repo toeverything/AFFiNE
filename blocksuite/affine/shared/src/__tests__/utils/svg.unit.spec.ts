@@ -1,13 +1,14 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import {
   sanitizeDeclarationList,
   sanitizeStyleSheet,
   sanitizeSvg,
   sanitizeSvgCssInString,
+  sanitizeSvgHrefsInString,
 } from '../../utils/svg.js';
 
 type HappyDOMWindow = Window & {
@@ -272,6 +273,38 @@ describe('sanitizeSvg', () => {
     expect(css).not.toContain('https://evil.example');
   });
 
+  test('preserves double-quoted fragment url() in a <style> block', () => {
+    const css = sanitizeStyleSheet(
+      '.a { fill: url("#gradient"); } .b { fill: url(https://evil.example/x); }',
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).toContain('url(#gradient)');
+    expect(css).not.toContain('https://evil.example');
+  });
+
+  test('preserves single-quoted fragment url() in a <style> block', () => {
+    const css = sanitizeStyleSheet(
+      ".a { fill: url('#gradient'); }",
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).toContain('url(#gradient)');
+  });
+
+  test('neutralizes escaped @import and external urls in a <style> block', () => {
+    const css = sanitizeStyleSheet(
+      '@\\69mport url("https://evil.example/x.css"); .a { fill: url(https://evil.example/y); }',
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).not.toContain('evil.example');
+    expect(css).not.toContain('@import');
+  });
+
   test('no-DOM path validates CSS identically', () => {
     const input = `
       <svg xmlns="http://www.w3.org/2000/svg">
@@ -301,5 +334,89 @@ describe('sanitizeSvg', () => {
 
     const inlineCss = sanitizeDeclarationList('fill: expression(alert(1));');
     expect(inlineCss ?? '').not.toContain('expression');
+  });
+});
+
+describe('sanitizeSvgHrefsInString (no-DOM href filtering)', () => {
+  test('removes external image href', () => {
+    const out = sanitizeSvgHrefsInString(
+      '<svg><image href="https://example.com/x.png" width="10"></image></svg>',
+      'scope-x'
+    );
+
+    expect(out).not.toContain('https://example.com');
+    expect(out).toContain('<image');
+  });
+
+  test('removes external use href', () => {
+    const out = sanitizeSvgHrefsInString(
+      '<svg><use href="https://example.com/g.svg#x"></use></svg>',
+      'scope-x'
+    );
+
+    expect(out).not.toContain('https://example.com');
+  });
+
+  test('preserves local fragment references', () => {
+    const out = sanitizeSvgHrefsInString(
+      '<svg><use href="#glyph-a"></use><use xlink:href="#glyph-a"></use></svg>',
+      'scope-x'
+    );
+
+    expect(out).toContain('href="#glyph-a"');
+    expect(out).toContain('xlink:href="#glyph-a"');
+  });
+
+  test('recursively sanitizes nested svg data-url images', () => {
+    const nested = svgDataUrl(
+      '<svg xmlns="http://www.w3.org/2000/svg"><use href="#g"></use><use href="https://example.com/g.svg#x"></use></svg>'
+    );
+    const out = sanitizeSvgHrefsInString(
+      `<svg><image href="${nested}"></image></svg>`,
+      'scope-x'
+    );
+
+    const encoded = out.match(/href="([^"]+)"/)?.[1] ?? '';
+    expect(encoded).toMatch(/^data:image\/svg\+xml;base64,/);
+    const decoded = decodeSvgDataUrl(encoded);
+    expect(decoded).toContain('#g');
+    expect(decoded).not.toContain('https://example.com');
+  });
+
+  test('drops nested svg data-url that cannot be sanitized', () => {
+    const nested = svgDataUrl('<div>not svg</div>');
+    const out = sanitizeSvgHrefsInString(
+      `<svg><image href="${nested}"></image></svg>`,
+      'scope-x'
+    );
+
+    expect(out).not.toContain('data:image/svg+xml');
+  });
+});
+
+describe('sanitizeSvg no-DOM fallback', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function sanitizeNoDom(input: string) {
+    vi.stubGlobal('DOMParser', undefined);
+    vi.stubGlobal('XMLSerializer', undefined);
+    return sanitizeSvg(input);
+  }
+
+  test('never leaks external hrefs through the no-DOM branch', () => {
+    const sanitized = sanitizeNoDom(`
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <image href="https://example.com/image.png" width="10" height="10"></image>
+        <use href="https://example.com/glyph.svg#x"></use>
+      </svg>
+    `);
+
+    expect(sanitized).not.toContain('https://example.com');
+  });
+
+  test('fails closed on input with no svg root', () => {
+    expect(sanitizeNoDom('<p>not svg</p>')).toBe('');
   });
 });

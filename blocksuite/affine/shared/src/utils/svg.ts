@@ -182,13 +182,16 @@ function isSafeLinkUrl(value: string) {
   }
 }
 
-function isSafeHref(element: Element, value: string) {
+function isSafeHrefValue(tagName: string, value: string): boolean {
   if (value.startsWith('#')) return true;
-  const tagName = element.tagName.toLowerCase();
   if (tagName === 'use') return false;
   if (tagName === 'image') return SAFE_IMAGE_DATA_URL_PATTERN.test(value);
   if (tagName === 'a') return isSafeLinkUrl(value);
   return false;
+}
+
+function isSafeHref(element: Element, value: string) {
+  return isSafeHrefValue(element.tagName.toLowerCase(), value);
 }
 
 function decodeSvgDataUrl(value: string) {
@@ -471,6 +474,49 @@ export function sanitizeSvgCssInString(
   );
 }
 
+export function sanitizeSvgHrefsInString(
+  svg: string,
+  scopeClass: string
+): string {
+  const SVG_TAG_PATTERN = /<([\w-]+)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
+  const HREF_ATTR_PATTERN = /(xlink:href|href)\s*=\s*("([^"]*)"|'([^']*)')/i;
+
+  return svg.replace(SVG_TAG_PATTERN, (tag, tagNameRaw, attrsRaw) => {
+    const tagName = String(tagNameRaw).toLowerCase();
+    let attrs = String(attrsRaw);
+
+    attrs = attrs.replace(
+      HREF_ATTR_PATTERN,
+      (attrMatch, nameRaw, _quote, dq, sq) => {
+        const value = dq !== undefined ? dq : sq;
+
+        if (!isSafeHrefValue(tagName, value)) {
+          return '';
+        }
+
+        if (tagName === 'image' && value.startsWith('data:image/svg+xml')) {
+          try {
+            const decoded = decodeSvgDataUrl(value);
+            if (decoded === null) return '';
+            const sanitized = sanitizeSvgHrefsInString(
+              sanitizeSvgCssInString(decoded, scopeClass),
+              scopeClass
+            );
+            if (!hasSvgRoot(sanitized)) return '';
+            return `${nameRaw}="${encodeSvgDataUrl(sanitized)}"`;
+          } catch {
+            return '';
+          }
+        }
+
+        return attrMatch;
+      }
+    );
+
+    return `<${tagNameRaw}${attrs}>`;
+  });
+}
+
 function tightenSvgTree(
   root: ParentNode,
   options: SanitizeSvgOptions | undefined,
@@ -516,12 +562,18 @@ function sanitizeSvgWithDepth(
     typeof DOMParser === 'undefined' ||
     typeof XMLSerializer === 'undefined'
   ) {
-    const purified = DOMPurify.sanitize(svg, svgConfig);
-    if (typeof purified !== 'string' || !hasSvgRoot(purified)) {
+    try {
+      const purified = DOMPurify.sanitize(svg, svgConfig);
+      if (typeof purified !== 'string' || !hasSvgRoot(purified)) {
+        return '';
+      }
+      const withScope = sanitizeSvgCssInString(purified, scopeClass);
+      if (!hasSvgRoot(withScope)) return '';
+      const withHrefs = sanitizeSvgHrefsInString(withScope, scopeClass);
+      return hasSvgRoot(withHrefs) ? withHrefs.trim() : '';
+    } catch {
       return '';
     }
-    const withScope = sanitizeSvgCssInString(purified, scopeClass);
-    return hasSvgRoot(withScope) ? withScope.trim() : '';
   }
 
   const parser = new DOMParser();
