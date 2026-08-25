@@ -3,7 +3,12 @@
  */
 import { describe, expect, test } from 'vitest';
 
-import { sanitizeSvg } from '../../utils/svg.js';
+import {
+  sanitizeDeclarationList,
+  sanitizeStyleSheet,
+  sanitizeSvg,
+  sanitizeSvgCssInString,
+} from '../../utils/svg.js';
 
 type HappyDOMWindow = Window & {
   happyDOM: {
@@ -199,5 +204,102 @@ describe('sanitizeSvg', () => {
 
     expect(firstLevelSanitizedSvg).toContain('<image');
     expect(secondLevelSanitizedSvg).not.toContain('<image');
+  });
+
+  test('rejects CSS escape obfuscations', () => {
+    const css = sanitizeStyleSheet(
+      '@\\69mport "https://evil.example/a.css"; .a { fill: url(https://evil.example/x); }',
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).not.toContain('evil.example');
+    expect(css).not.toContain('@import');
+  });
+
+  test('rejects resource functions like image-set', () => {
+    const css = sanitizeStyleSheet(
+      '.a { background-image: image-set("https://evil.example/pixel" 1x); }',
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).not.toContain('evil.example');
+    expect(css).not.toContain('image-set');
+  });
+
+  test('scopes selectors to the generated root class', () => {
+    const css = sanitizeStyleSheet(
+      'affine-doc, .node rect { fill: #000; }',
+      'svg-scope-test'
+    );
+
+    expect(css).toContain('.svg-scope-test affine-doc');
+    expect(css).toContain('.svg-scope-test .node rect');
+  });
+
+  test('scopes root-id selectors as the same element', () => {
+    const css = sanitizeStyleSheet(
+      '#mermaid-diagram-123 .node rect { fill: #ECECFF; }',
+      'svg-scope-test'
+    );
+
+    expect(css).toContain('.svg-scope-test .node rect');
+    expect(css).not.toContain('#mermaid-diagram-123');
+  });
+
+  test('preserves quoted fragment references and rejects external urls', () => {
+    const sanitized = sanitizeSvg(`
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <path style='fill: url("#gradient");' d="M0 0h10v10z"></path>
+        <path style="fill: url('#gradient');" d="M0 0h10v10z"></path>
+        <path style="fill: url(https://evil.example/x)" d="M0 0h10v10z"></path>
+      </svg>
+    `);
+
+    expect(sanitized).toContain('url(#gradient)');
+    expect(sanitized).not.toContain('https://evil.example');
+  });
+
+  test('sanitizes a <style> element separately from style attributes', () => {
+    const css = sanitizeStyleSheet(
+      '.a { fill: url(#gradient); } .b { fill: url(https://evil.example/x); }',
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).toContain('url(#gradient)');
+    expect(css).not.toContain('https://evil.example');
+  });
+
+  test('no-DOM path validates CSS identically', () => {
+    const input = `
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <style>@\\69mport "https://evil.example/a.css"; .a { fill: url(#gradient); }</style>
+        <path style="fill: url(https://evil.example/x)" d="M0 0h10v10z"></path>
+        <path style='fill: url("#gradient");' d="M0 0h10v10z"></path>
+      </svg>
+    `;
+    const out = sanitizeSvgCssInString(input, 'svg-scope-test');
+
+    expect(out).not.toContain('evil.example');
+    expect(out).not.toContain('@import');
+    expect(out).toContain('url(#gradient)');
+    expect(out).toContain('svg-scope-test');
+  });
+
+  test('legacy unsafe CSS vectors are still rejected', () => {
+    const styleCss = sanitizeStyleSheet(
+      '@import "https://evil.example/a.css"; .a { behavior: url(https://evil.example/x); -moz-binding: url(https://evil.example/y); }',
+      'svg-scope-test'
+    );
+
+    expect(styleCss).not.toContain('@import');
+    expect(styleCss).not.toContain('evil.example');
+    expect(styleCss).not.toContain('behavior');
+    expect(styleCss).not.toContain('-moz-binding');
+
+    const inlineCss = sanitizeDeclarationList('fill: expression(alert(1));');
+    expect(inlineCss ?? '').not.toContain('expression');
   });
 });

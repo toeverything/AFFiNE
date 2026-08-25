@@ -1,3 +1,9 @@
+import type { CssNode } from 'css-tree';
+import {
+  generate as generateCss,
+  parse as parseCss,
+  walk as walkCss,
+} from 'css-tree';
 import type { Config } from 'dompurify';
 import DOMPurify from 'dompurify';
 import { parse } from 'tldts';
@@ -24,8 +30,6 @@ const SVG_DATA_URL_PATTERN =
   /^data:image\/svg\+xml(?:;charset=[^;,]+)?(?<base64>;base64)?,(?<data>[\s\S]*)$/i;
 const SAFE_IMAGE_DATA_URL_PATTERN =
   /^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i;
-const UNSAFE_CSS_PATTERN =
-  /(?:@import|javascript\s*:|expression\s*\(|-moz-binding|url\s*\(\s*['"]?(?!#))/i;
 
 const SVG_ROOT_ATTRIBUTES = [
   'class',
@@ -216,6 +220,257 @@ function getHrefAttributes(element: Element) {
   );
 }
 
+const SAFE_CSS_FUNCTIONS = new Set([
+  'rgb',
+  'rgba',
+  'hsl',
+  'hsla',
+  'var',
+  'calc',
+]);
+
+const SAFE_DECLARATIONS = new Set([
+  'fill',
+  'fill-opacity',
+  'stroke',
+  'stroke-width',
+  'stroke-opacity',
+  'stroke-dasharray',
+  'stroke-dashoffset',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'stroke-miterlimit',
+  'color',
+  'opacity',
+  'visibility',
+  'display',
+  'overflow',
+  'marker',
+  'marker-start',
+  'marker-mid',
+  'marker-end',
+  'stop-color',
+  'stop-opacity',
+  'font',
+  'font-family',
+  'font-size',
+  'font-style',
+  'font-weight',
+  'font-variant',
+  'text-anchor',
+  'text-decoration',
+  'letter-spacing',
+  'word-spacing',
+  'white-space',
+  'dominant-baseline',
+  'alignment-baseline',
+  'baseline-shift',
+  'paint-order',
+  'vector-effect',
+  'mix-blend-mode',
+  'isolation',
+  'background',
+  'background-color',
+  'background-image',
+  'border',
+  'border-radius',
+  'cursor',
+  'line-height',
+  'text-align',
+  'vertical-align',
+  'pointer-events',
+  'user-select',
+  'transform',
+  'transform-origin',
+  'transition',
+  'box-shadow',
+  'text-shadow',
+  'outline',
+  'z-index',
+  'position',
+  'top',
+  'left',
+  'right',
+  'bottom',
+  'margin',
+  'padding',
+  'width',
+  'height',
+  'min-width',
+  'max-width',
+  'min-height',
+  'max-height',
+  'flex',
+  'justify-content',
+  'align-items',
+  'gap',
+]);
+
+function generateScopeClass() {
+  return `svg-scope-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function isSafeCssValue(node: CssNode): boolean {
+  let safe = true;
+  walkCss(node, {
+    visit: 'Url',
+    enter(urlNode) {
+      const value = String(urlNode.value ?? urlNode.raw ?? '').trim();
+      if (!value.startsWith('#')) {
+        safe = false;
+      }
+    },
+  });
+  walkCss(node, {
+    visit: 'Function',
+    enter(fnNode) {
+      const name = String(fnNode.name ?? '').toLowerCase();
+      if (!SAFE_CSS_FUNCTIONS.has(name)) {
+        safe = false;
+      }
+    },
+  });
+  return safe;
+}
+
+export function sanitizeDeclarationList(css: string): string | null {
+  let ast;
+  try {
+    ast = parseCss(css, { context: 'declarationList' });
+  } catch {
+    return null;
+  }
+  walkCss(ast, {
+    visit: 'Declaration',
+    enter(decl, item, list) {
+      const property = (decl.property ?? '').toLowerCase();
+      if (
+        !SAFE_DECLARATIONS.has(property) ||
+        !isSafeCssValue(decl.value as CssNode)
+      ) {
+        list?.remove(item as CssNode);
+      }
+    },
+  });
+  try {
+    return generateCss(ast);
+  } catch {
+    return null;
+  }
+}
+
+function scopeSelector(selector: string, scopeClass: string): string {
+  const match = selector.match(/^([^ >+~]+)([\s\S]*)$/);
+  const first = match ? match[1] : selector;
+  const rest = match ? match[2] : '';
+  const isRoot =
+    /^:root$/.test(first.trim()) ||
+    /^(svg|html)$/.test(first.trim()) ||
+    first.trim().startsWith('#');
+  return isRoot ? `.${scopeClass}${rest}` : `.${scopeClass} ${selector}`;
+}
+
+export function sanitizeStyleSheet(
+  css: string,
+  scopeClass: string
+): string | null {
+  let ast;
+  try {
+    ast = parseCss(css, { context: 'stylesheet' });
+  } catch {
+    return null;
+  }
+  walkCss(ast, {
+    visit: 'Atrule',
+    enter(_node, item, list) {
+      list?.remove(item as CssNode);
+    },
+  });
+  walkCss(ast, {
+    visit: 'Declaration',
+    enter(decl, item, list) {
+      const property = (decl.property ?? '').toLowerCase();
+      if (
+        !SAFE_DECLARATIONS.has(property) ||
+        !isSafeCssValue(decl.value as CssNode)
+      ) {
+        list?.remove(item as CssNode);
+      }
+    },
+  });
+  if (ast.children) {
+    ast.children.toArray().forEach(rule => {
+      if (
+        rule.type === 'Rule' &&
+        rule.prelude &&
+        rule.prelude.type === 'SelectorList'
+      ) {
+        const scoped = rule.prelude.children
+          ?.toArray()
+          .map(sel => scopeSelector(generateCss(sel), scopeClass));
+        if (scoped) {
+          rule.prelude = parseCss(scoped.join(', '), {
+            context: 'selectorList',
+          });
+        }
+      }
+    });
+  }
+  try {
+    return generateCss(ast);
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeSvgStyles(root: ParentNode, scopeClass: string) {
+  root.querySelectorAll('style').forEach(styleEl => {
+    const text = styleEl.textContent ?? '';
+    const sanitized = sanitizeStyleSheet(text, scopeClass);
+    if (sanitized === null) {
+      styleEl.remove();
+    } else {
+      styleEl.textContent = sanitized;
+    }
+  });
+  root.querySelectorAll('[style]').forEach(el => {
+    const value = el.getAttribute('style') ?? '';
+    const sanitized = sanitizeDeclarationList(value);
+    if (sanitized === null) {
+      el.removeAttribute('style');
+    } else {
+      el.setAttribute('style', sanitized);
+    }
+  });
+}
+
+export function sanitizeSvgCssInString(
+  svg: string,
+  scopeClass: string
+): string {
+  const scoped = svg.replace(/<svg\b([^>]*)>/i, (_match, attrs: string) => {
+    const existingClass = (attrs.match(/class="([^"]*)"/i)?.[1] ?? '').trim();
+    const newClass = (existingClass ? existingClass + ' ' : '') + scopeClass;
+    const withoutClass = attrs.replace(/\s+class="[^"]*"/i, '');
+    return `<svg class="${newClass}"${withoutClass}>`;
+  });
+  const withStyle = scoped.replace(
+    /<style\b[^>]*>([\s\S]*?)<\/style>/gi,
+    (_match, inner: string) => {
+      const sanitized = sanitizeStyleSheet(inner, scopeClass);
+      return sanitized === null ? '' : `<style>${sanitized}</style>`;
+    }
+  );
+  return withStyle.replace(
+    /style\s*=\s*(?:"([^"]*)"|'([^']*)')/gi,
+    (_match, dq: string, sq: string) => {
+      const value = dq !== undefined ? dq : sq;
+      const sanitized = sanitizeDeclarationList(value);
+      return sanitized === null ? '' : `style="${sanitized}"`;
+    }
+  );
+}
+
 function tightenSvgTree(
   root: ParentNode,
   options: SanitizeSvgOptions | undefined,
@@ -242,18 +497,6 @@ function tightenSvgTree(
         element.removeAttribute(attribute.name);
       }
     });
-
-    const style = element.getAttribute('style');
-    if (style && UNSAFE_CSS_PATTERN.test(style)) {
-      element.removeAttribute('style');
-    }
-
-    if (
-      element.tagName.toLowerCase() === 'style' &&
-      UNSAFE_CSS_PATTERN.test(element.textContent ?? '')
-    ) {
-      element.remove();
-    }
   });
 }
 
@@ -267,17 +510,18 @@ function sanitizeSvgWithDepth(
   depth: number
 ): string {
   const svgConfig = getSvgSanitizeConfig(options);
+  const scopeClass = generateScopeClass();
 
   if (
     typeof DOMParser === 'undefined' ||
     typeof XMLSerializer === 'undefined'
   ) {
-    const sanitized = DOMPurify.sanitize(svg, svgConfig);
-
-    if (typeof sanitized !== 'string' || !hasSvgRoot(sanitized)) {
+    const purified = DOMPurify.sanitize(svg, svgConfig);
+    if (typeof purified !== 'string' || !hasSvgRoot(purified)) {
       return '';
     }
-    return sanitized.trim();
+    const withScope = sanitizeSvgCssInString(purified, scopeClass);
+    return hasSvgRoot(withScope) ? withScope.trim() : '';
   }
 
   const parser = new DOMParser();
@@ -289,6 +533,8 @@ function sanitizeSvgWithDepth(
   const sanitizedRoot = ensureSvgRoot(originalRoot, sanitized, parser);
   if (!sanitizedRoot) return '';
   sanitizeForeignObjects(sanitizedRoot, options);
+  sanitizeSvgStyles(sanitizedRoot, scopeClass);
+  sanitizedRoot.classList.add(scopeClass);
   tightenSvgTree(sanitizedRoot, options, depth);
   return new XMLSerializer().serializeToString(sanitizedRoot).trim();
 }

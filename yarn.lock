@@ -2877,6 +2877,7 @@ __metadata:
     "@types/mdast": "npm:^4.0.4"
     "@types/pdfmake": "npm:^0.2.12"
     bytes: "npm:^3.1.2"
+    css-tree: "npm:^2.3.1"
     dompurify: "npm:^3.4.11"
     fractional-indexing: "npm:^3.2.0"
     lit: "npm:^3.2.0"
