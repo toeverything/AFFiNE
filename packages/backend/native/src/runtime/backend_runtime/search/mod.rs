@@ -24,6 +24,7 @@ use super::{
 };
 
 const SCHEMA_FINGERPRINT: i32 = 1;
+const WORKSPACE_RECONCILE_FAILED: &str = "search_workspace_reconcile_failed";
 
 #[cfg(test)]
 pub(crate) static SEARCH_TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());

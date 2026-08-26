@@ -13,6 +13,9 @@ const PROVIDERS = [
 ] as const;
 
 const PROVIDER_IDS = PROVIDERS.map(provider => `copilot.providers.${provider}`);
+const DEFAULT_PROFILE_IDS = new Set(
+  PROVIDERS.map(provider => `${provider}-default`)
+);
 const PROVIDER_MODELS: Record<(typeof PROVIDERS)[number], string[]> = {
   openai: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-image-1', 'gpt-4o-mini'],
   cloudflareWorkersAi: ['@cf/baai/bge-reranker-base'],
@@ -60,16 +63,11 @@ export class ConvergeManagedProviderProfiles1786810000000 {
       const byId = new Map(rows.map(row => [row.id, row]));
       const profileRow = byId.get(PROFILE_KEY);
       const profiles = readProfiles(profileRow?.value);
-      const profileIds = new Set(
-        profiles.flatMap(profile =>
-          isRecord(profile) && typeof profile.id === 'string'
-            ? [profile.id]
-            : []
-        )
-      );
       const assignedModels = new Set(
         profiles.flatMap(profile =>
           isRecord(profile) &&
+          typeof profile.id === 'string' &&
+          !DEFAULT_PROFILE_IDS.has(profile.id) &&
           profile.enabled !== false &&
           Array.isArray(profile.models)
             ? profile.models.filter(
@@ -81,26 +79,60 @@ export class ConvergeManagedProviderProfiles1786810000000 {
 
       for (const [index, provider] of PROVIDERS.entries()) {
         const legacy = byId.get(`copilot.providers.${provider}`);
-        if (!legacy) continue;
-        if (!isRecord(legacy.value)) {
+        if (legacy && !isRecord(legacy.value)) {
           throw new Error(`copilot.providers.${provider} must be an object`);
         }
         const id = `${provider}-default`;
-        if (!profileIds.has(id)) {
-          const models = PROVIDER_MODELS[provider].filter(
-            model => !assignedModels.has(model)
-          );
-          const enabled = models.length > 0;
-          profiles.push({
-            id,
-            type: provider,
-            priority: PROVIDERS.length - index,
-            models: enabled ? models : PROVIDER_MODELS[provider],
-            config: legacy.value,
-            ...(enabled ? {} : { enabled: false }),
+        const profileIndex = profiles.findIndex(
+          profile => isRecord(profile) && profile.id === id
+        );
+        const existing =
+          profileIndex === -1 ? undefined : profiles[profileIndex];
+        if (!legacy && !existing) continue;
+
+        const configuredModels =
+          isRecord(existing) &&
+          Array.isArray(existing.models) &&
+          existing.models.length > 0
+            ? existing.models
+            : PROVIDER_MODELS[provider];
+        const canEnable =
+          !isRecord(existing) ||
+          existing.enabled === undefined ||
+          existing.enabled === true;
+        const modelsAreValid = configuredModels.every(
+          model => typeof model === 'string'
+        );
+        const availableModels =
+          canEnable && modelsAreValid
+            ? configuredModels.filter(model => !assignedModels.has(model))
+            : configuredModels;
+        const hasConflict = canEnable && availableModels.length === 0;
+        const models = hasConflict ? configuredModels : availableModels;
+        const profile: Prisma.JsonObject = {
+          ...(legacy
+            ? {
+                id,
+                type: provider,
+                priority: PROVIDERS.length - index,
+                config: legacy.value,
+              }
+            : {}),
+          ...(isRecord(existing) ? existing : {}),
+          id,
+          type: provider,
+          models,
+          ...(hasConflict ? { enabled: false } : {}),
+        };
+        if (profileIndex === -1) {
+          profiles.push(profile);
+        } else {
+          profiles[profileIndex] = profile;
+        }
+        if (canEnable && !hasConflict) {
+          models.forEach(model => {
+            if (typeof model === 'string') assignedModels.add(model);
           });
-          models.forEach(model => assignedModels.add(model));
-          profileIds.add(id);
         }
       }
 
