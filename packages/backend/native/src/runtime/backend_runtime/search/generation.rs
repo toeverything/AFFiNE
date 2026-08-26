@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use super::{SCHEMA_FINGERPRINT, SearchProvider, SearchTable};
+use super::{SCHEMA_FINGERPRINT, SearchProvider, SearchTable, WORKSPACE_RECONCILE_FAILED};
 use crate::{
   runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig},
   search_index::EmbeddedSearchIndex,
@@ -311,6 +311,7 @@ pub(super) async fn activate(
                 SELECT 1
                 FROM search_projection.workspace_states state
                 WHERE state.generation_id=generation.id
+                  AND state.last_error IS DISTINCT FROM $2
                   AND (
                     NOT state.covered
                     OR state.required_permission_version > state.applied_permission_version
@@ -331,6 +332,12 @@ pub(super) async fn activate(
               NOT EXISTS (
                 SELECT 1 FROM search_projection.document_states state
                 WHERE state.generation_id=generation.id
+                  AND NOT EXISTS (
+                    SELECT 1 FROM search_projection.workspace_states workspace
+                    WHERE workspace.generation_id=state.generation_id
+                      AND workspace.workspace_id=state.workspace_id
+                      AND workspace.last_error=$2
+                  )
                   AND (state.target_source_version <> state.published_source_version
                     OR state.target_source_exists <> state.published_source_exists
                     OR state.target_permission_version <> state.published_permission_version)
@@ -340,6 +347,7 @@ pub(super) async fn activate(
        FOR UPDATE"#,
   )
   .bind(generation.id)
+  .bind(WORKSPACE_RECONCILE_FAILED)
   .fetch_optional(&mut *transaction)
   .await
   .map_err(|error| RuntimeError::database("load search generation activation state", error))?;
