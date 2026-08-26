@@ -85,12 +85,7 @@ export abstract class OAuthProvider {
       timeoutMs: 10_000,
       maxRedirects: 3,
       maxBytes: 1024 * 1024,
-      allowedHeaders: [
-        'authorization',
-        'content-type',
-        'accept',
-        'user-agent',
-      ],
+      allowedHeaders: ['authorization', 'content-type', 'accept', 'user-agent'],
     };
   }
 
