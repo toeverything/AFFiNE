@@ -84,6 +84,9 @@ final class ShareViewModel: ObservableObject {
       }
 
       built = probe
+      if !built.files.isEmpty {
+        break
+      }
 
       let hasBody = built.markdown.count > 40 || !(built.previewText.isEmpty)
       let hasTitleOrURL =

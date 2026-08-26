@@ -113,6 +113,14 @@ enum ShareInboxSafety {
     {
       return "image/webp"
     }
+    if bytes.count >= 12,
+      Array(bytes[4..<8]) == Array("ftyp".utf8)
+    {
+      let brand = String(decoding: bytes[8..<12], as: UTF8.self).lowercased()
+      if ["heic", "heix", "hevc", "hevx", "mif1", "msf1"].contains(brand) {
+        return "image/heic"
+      }
+    }
     return nil
   }
 

@@ -43,6 +43,7 @@ enum SharePayloadBuilder {
     var safariMediaURL: String?
     var safariSourceType: String?
     var files: [SharePayloadFile] = []
+    var rejectedAttachmentCount = 0
 
     for item in extensionItems {
       let attachments = item.attachments ?? []
@@ -133,7 +134,7 @@ enum SharePayloadBuilder {
            provider.hasItemConformingToTypeIdentifier(UTType.html.identifier)
         {
           if let html = try? await loadHTMLString(from: provider) {
-            let plain = await htmlToPlainText(html)
+            let plain = htmlToPlainText(html)
             if plain.count > (pageContent?.count ?? 0) {
               pageContent = plain
             }
@@ -150,19 +151,29 @@ enum SharePayloadBuilder {
         }
 
         // Prefer PDF / webarchive / image file payloads even when a URL is also present.
-        if files.isEmpty {
-          if let file = await loadPreferredFile(from: provider) {
-            // Avoid treating HTML/property-list blobs as generic shared files.
-            let lowerName = file.fileName.lowercased()
-            let isGenericBlob = file.mimeType == "application/octet-stream" && !lowerName.hasSuffix(".pdf")
-            if !isGenericBlob || lowerName.hasSuffix(".webarchive") || lowerName.hasSuffix(".pdf") {
-              files.append(file)
-              if title == "Shared" || title == (urlString.flatMap { URL(string: $0)?.host } ?? "") {
-                if !file.embedInMarkdownAsImage {
-                  title = file.fileName
-                }
+        if let file = await loadPreferredFile(from: provider, existingFileCount: files.count) {
+          guard file.embedInMarkdownAsImage else {
+            rejectedAttachmentCount += 1
+            if title == "Shared" {
+              title = file.fileName
+            }
+            continue
+          }
+
+          // Avoid treating HTML/property-list blobs as generic shared files.
+          let lowerName = file.fileName.lowercased()
+          let isGenericBlob = file.mimeType == "application/octet-stream" && !lowerName.hasSuffix(".pdf")
+          if (!isGenericBlob || lowerName.hasSuffix(".webarchive") || lowerName.hasSuffix(".pdf")),
+             canAppend(file, to: files)
+          {
+            files.append(file)
+            if title == "Shared" || title == (urlString.flatMap { URL(string: $0)?.host } ?? "") {
+              if !file.embedInMarkdownAsImage {
+                title = file.fileName
               }
             }
+          } else {
+            rejectedAttachmentCount += 1
           }
         }
       }
@@ -217,7 +228,8 @@ enum SharePayloadBuilder {
         title: sanitizeTitle(enriched.title.isEmpty ? title : enriched.title),
         markdown: markdown,
         previewText: String(previewSeed.prefix(280)),
-        files: youtubeFiles
+        files: youtubeFiles,
+        rejectedAttachmentCount: rejectedAttachmentCount
       )
     }
 
@@ -273,12 +285,7 @@ enum SharePayloadBuilder {
           markdownParts.append("![Shared Image](\(file.placeholder))")
         }
       } else {
-        markdownParts.append(
-          "Shared file: \(ShareInboxSafety.escapeMarkdownText(file.fileName))"
-        )
-        markdownParts.append(
-          "(\(ShareInboxSafety.escapeMarkdownText(file.mimeType)))"
-        )
+        continue
       }
     }
 
@@ -306,7 +313,8 @@ enum SharePayloadBuilder {
       title: sanitizeTitle(title),
       markdown: markdown,
       previewText: String(preview.prefix(280)),
-      files: files
+      files: files,
+      rejectedAttachmentCount: rejectedAttachmentCount
     )
   }
 
@@ -333,7 +341,7 @@ enum SharePayloadBuilder {
         // Keep a readable note; binary PDF/webarchive is not inlined into markdown.
         markdown = markdown.replacingOccurrences(
           of: attachment.placeholder,
-          with: attachment.fileName
+          with: ShareInboxSafety.escapeMarkdownText(attachment.fileName)
         )
       }
     }
@@ -375,7 +383,8 @@ enum SharePayloadBuilder {
 
     if let data = try? await loadDataRepresentation(
       from: provider,
-      typeIdentifier: UTType.propertyList.identifier
+      typeIdentifier: UTType.propertyList.identifier,
+      maxBytes: maxHTMLPayloadBytes
     ),
       let parsed = parseSafariJavaScriptResults(from: data),
       parsed.hasUsefulPayload
@@ -436,7 +445,8 @@ enum SharePayloadBuilder {
 
   private static func loadDataRepresentation(
     from provider: NSItemProvider,
-    typeIdentifier: String
+    typeIdentifier: String,
+    maxBytes: Int
   ) async throws -> Data {
     try await withCheckedThrowingContinuation { continuation in
       provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
@@ -444,7 +454,7 @@ enum SharePayloadBuilder {
           continuation.resume(throwing: error)
           return
         }
-        if let data {
+        if let data, data.count <= maxBytes {
           continuation.resume(returning: data)
         } else {
           continuation.resume(throwing: ShareInboxError.invalidPayload)
@@ -460,7 +470,11 @@ enum SharePayloadBuilder {
           continuation.resume(throwing: error)
           return
         }
-        if let item {
+        if let data = item as? Data, data.count > maxHTMLPayloadBytes {
+          continuation.resume(throwing: ShareInboxError.invalidPayload)
+        } else if let string = item as? String, string.utf8.count > maxHTMLPayloadBytes {
+          continuation.resume(throwing: ShareInboxError.invalidPayload)
+        } else if let item {
           continuation.resume(returning: item)
         } else {
           continuation.resume(throwing: ShareInboxError.invalidPayload)
@@ -476,15 +490,21 @@ enum SharePayloadBuilder {
           continuation.resume(throwing: error)
           return
         }
-        if let string = item as? String {
+        if let string = item as? String, string.utf8.count <= maxHTMLPayloadBytes {
           continuation.resume(returning: string)
         } else if let data = item as? Data,
+                  data.count <= maxHTMLPayloadBytes,
                   let string = String(data: data, encoding: .utf8)
                     ?? String(data: data, encoding: .utf16)
         {
           continuation.resume(returning: string)
         } else if let attributed = item as? NSAttributedString {
-          continuation.resume(returning: attributed.string)
+          let string = attributed.string
+          guard string.utf8.count <= maxHTMLPayloadBytes else {
+            continuation.resume(throwing: ShareInboxError.invalidPayload)
+            return
+          }
+          continuation.resume(returning: string)
         } else {
           continuation.resume(throwing: ShareInboxError.invalidPayload)
         }
@@ -492,46 +512,29 @@ enum SharePayloadBuilder {
     }
   }
 
-  @MainActor
   private static func htmlToPlainText(_ html: String) -> String {
-    guard html.utf8.count <= maxHTMLPayloadBytes else {
-      return String(
-        ShareInboxSafety.decodeXMLEntitiesOnce(
-          ShareInboxSafety.stripCaptionMarkup(html)
-        ).prefix(maxSafariContentCharacters)
-      )
-    }
-    guard let data = html.data(using: .utf8) else {
-      return ShareInboxSafety.stripCaptionMarkup(html)
-    }
-    let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
-      .documentType: NSAttributedString.DocumentType.html,
-      .characterEncoding: String.Encoding.utf8.rawValue,
-    ]
-    guard let attributed = try? NSAttributedString(
-      data: data,
-      options: options,
-      documentAttributes: nil
-    ) else {
-      return ShareInboxSafety.decodeXMLEntitiesOnce(
-        ShareInboxSafety.stripCaptionMarkup(html)
-      )
-    }
-    return attributed.string
+    ShareInboxSafety.decodeXMLEntitiesOnce(
+      ShareInboxSafety.stripCaptionMarkup(html)
+    )
       .replacingOccurrences(of: "\u{00a0}", with: " ")
       .replacingOccurrences(of: #"\n{3,}"#, with: "\n\n", options: .regularExpression)
       .trimmingCharacters(in: .whitespacesAndNewlines)
+      .prefix(maxSafariContentCharacters)
+      .description
   }
 
-  private static func loadPreferredFile(from provider: NSItemProvider) async -> SharePayloadFile? {
+  private static func loadPreferredFile(
+    from provider: NSItemProvider,
+    existingFileCount: Int
+  ) async -> SharePayloadFile? {
     let candidates: [(UTType, Bool)] = [
       (UTType.pdf, false),
       (UTType(filenameExtension: "webarchive") ?? UTType.data, false),
-      (.image, true),
       (.jpeg, true),
       (.png, true),
       (.heic, true),
       (.webP, true),
+      (.image, true),
       (.fileURL, false),
     ]
 
@@ -551,7 +554,7 @@ enum SharePayloadBuilder {
             data: data,
             mimeType: mime,
             fileName: fileName,
-            placeholder: embedImage ? "attachment://shared-image" : "attachment://shared-file",
+            placeholder: placeholder(forImage: embedImage, index: existingFileCount),
             embedInMarkdownAsImage: embedImage
           )
         }
@@ -565,7 +568,9 @@ enum SharePayloadBuilder {
       // Skip generic data if it looks like a tiny empty payload.
       guard !data.isEmpty else { continue }
 
-      let ext = fileExtension(for: type)
+      let detectedImageMime = isImage ? ShareInboxSafety.detectRasterImageMimeType(data) : nil
+      let mimeType = detectedImageMime ?? mimeType(for: type)
+      let ext = detectedImageMime.map(fileExtension(forMimeType:)) ?? fileExtension(for: type)
       let fileName: String
       if type.conforms(to: .pdf) || typeId == UTType.pdf.identifier {
         fileName = "shared.pdf"
@@ -579,9 +584,9 @@ enum SharePayloadBuilder {
 
       return SharePayloadFile(
         data: data,
-        mimeType: mimeType(for: type),
+        mimeType: mimeType,
         fileName: fileName,
-        placeholder: isImage ? "attachment://shared-image" : "attachment://shared-file",
+        placeholder: placeholder(forImage: isImage, index: existingFileCount),
         embedInMarkdownAsImage: isImage
       )
     }
@@ -710,8 +715,13 @@ enum SharePayloadBuilder {
           return
         }
         if let string = item as? String {
+          guard string.utf8.count <= maxSafariContentCharacters else {
+            continuation.resume(returning: String(string.prefix(maxSafariContentCharacters)))
+            return
+          }
           continuation.resume(returning: string)
         } else if let data = item as? Data,
+                  data.count <= maxSafariContentCharacters,
                   let string = String(data: data, encoding: .utf8)
         {
           continuation.resume(returning: string)
@@ -791,6 +801,11 @@ enum SharePayloadBuilder {
     case "image/heic": return "heic"
     default: return "jpg"
     }
+  }
+
+  private static func placeholder(forImage isImage: Bool, index: Int) -> String {
+    let suffix = index == 0 ? "" : "-\(index + 1)"
+    return isImage ? "attachment://shared-image\(suffix)" : "attachment://shared-file\(suffix)"
   }
 
   private static func dataIfWithinLimit(at url: URL, maxBytes: Int) -> Data? {

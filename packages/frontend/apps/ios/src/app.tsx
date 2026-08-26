@@ -662,10 +662,19 @@ const showNativeSignIn = async () => {
     } catch (error) {
       console.error('Failed to set shared doc mode', error);
     }
-    workspace.engine.doc.addPriority(workspace.id, 100);
-    workspace.engine.doc.addPriority(docId, 100);
-    await workspace.engine.doc.waitForSynced(workspace.id);
-    await workspace.engine.doc.waitForSynced(docId);
+    try {
+      workspace.engine.doc.addPriority(workspace.id, 100);
+      workspace.engine.doc.addPriority(docId, 100);
+      await Promise.race([
+        Promise.allSettled([
+          workspace.engine.doc.waitForSynced(workspace.id),
+          workspace.engine.doc.waitForSynced(docId),
+        ]),
+        new Promise(resolve => setTimeout(resolve, 2000)),
+      ]);
+    } catch (error) {
+      console.error('Failed to wait for shared doc sync', error);
+    }
     // Ensure UI navigates into the synced doc on cold start / workspace home.
     try {
       await router.navigate(

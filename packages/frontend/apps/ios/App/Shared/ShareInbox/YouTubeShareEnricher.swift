@@ -97,6 +97,18 @@ enum YouTubeShareEnricher {
   }
 
   static func enrich(urlString: String, seed: Seed? = nil) async -> Result? {
+    if let result = await withEnrichmentDeadline(
+      nanoseconds: 6_000_000_000,
+      operation: {
+        await enrichWithoutDeadline(urlString: urlString, seed: seed)
+      }
+    ) {
+      return result
+    }
+    return fallbackResult(urlString: urlString, seed: seed)
+  }
+
+  private static func enrichWithoutDeadline(urlString: String, seed: Seed? = nil) async -> Result? {
     guard let videoId = videoId(from: urlString) else { return nil }
     let canonicalURL = "https://www.youtube.com/watch?v=\(videoId)"
 
@@ -153,10 +165,41 @@ enum YouTubeShareEnricher {
     return result.hasUsefulContent ? result : nil
   }
 
+  private static func withEnrichmentDeadline(
+    nanoseconds: UInt64,
+    operation: @escaping @Sendable () async -> Result?
+  ) async -> Result? {
+    await withTaskGroup(of: Result?.self) { group in
+      group.addTask {
+        await operation()
+      }
+      group.addTask {
+        try? await Task.sleep(nanoseconds: nanoseconds)
+        return nil
+      }
+      let result = await group.next() ?? nil
+      group.cancelAll()
+      return result
+    }
+  }
+
   private static func nonEmpty(_ value: String?) -> String? {
     guard let value else { return nil }
     let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
     return trimmed.isEmpty ? nil : trimmed
+  }
+
+  private static func fallbackResult(urlString: String, seed: Seed?) -> Result? {
+    guard let videoId = videoId(from: urlString) else { return nil }
+    let result = Result(
+      title: cleanTitle(nonEmpty(seed?.title) ?? "YouTube"),
+      description: nonEmpty(seed?.description) ?? "",
+      transcriptMarkdown: nonEmpty(seed?.transcriptMarkdown) ?? "",
+      thumbnailData: nil,
+      thumbnailMimeType: "image/jpeg",
+      sourceURL: "https://www.youtube.com/watch?v=\(videoId)"
+    )
+    return result.hasUsefulContent ? result : nil
   }
 
   static func buildMarkdown(from result: Result) -> String {

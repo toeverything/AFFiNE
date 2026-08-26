@@ -78,6 +78,10 @@ final class ShareInboxSafetyTests: XCTestCase {
       ShareInboxSafety.detectRasterImageMimeType(Data([0xFF, 0xD8, 0xFF, 0x00])),
       "image/jpeg"
     )
+    XCTAssertEqual(
+      ShareInboxSafety.detectRasterImageMimeType(Data([0, 0, 0, 0] + Array("ftypheic".utf8))),
+      "image/heic"
+    )
     XCTAssertNil(
       ShareInboxSafety.detectRasterImageMimeType(Data("<svg></svg>".utf8))
     )
