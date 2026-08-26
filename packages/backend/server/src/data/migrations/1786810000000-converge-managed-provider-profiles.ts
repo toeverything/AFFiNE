@@ -67,6 +67,17 @@ export class ConvergeManagedProviderProfiles1786810000000 {
             : []
         )
       );
+      const assignedModels = new Set(
+        profiles.flatMap(profile =>
+          isRecord(profile) &&
+          profile.enabled !== false &&
+          Array.isArray(profile.models)
+            ? profile.models.filter(
+                (model): model is string => typeof model === 'string'
+              )
+            : []
+        )
+      );
 
       for (const [index, provider] of PROVIDERS.entries()) {
         const legacy = byId.get(`copilot.providers.${provider}`);
@@ -76,13 +87,19 @@ export class ConvergeManagedProviderProfiles1786810000000 {
         }
         const id = `${provider}-default`;
         if (!profileIds.has(id)) {
+          const models = PROVIDER_MODELS[provider].filter(
+            model => !assignedModels.has(model)
+          );
+          const enabled = models.length > 0;
           profiles.push({
             id,
             type: provider,
             priority: PROVIDERS.length - index,
-            models: PROVIDER_MODELS[provider],
+            models: enabled ? models : PROVIDER_MODELS[provider],
             config: legacy.value,
+            ...(enabled ? {} : { enabled: false }),
           });
+          models.forEach(model => assignedModels.add(model));
           profileIds.add(id);
         }
       }

@@ -137,10 +137,10 @@ test('managed provider migration preserves explicit profiles and converts legacy
   });
   const profiles = [
     {
-      id: 'openai-default',
-      type: 'openai',
+      id: 'cloudflare-existing',
+      type: 'cloudflareWorkersAi',
       priority: 7,
-      models: ['gpt-5.6-luna'],
+      models: ['@cf/baai/bge-reranker-base'],
       config: { apiKey: 'profile-key' },
     },
   ];
@@ -149,11 +149,15 @@ test('managed provider migration preserves explicit profiles and converts legacy
       { id: 'copilot.providers.profiles', value: profiles },
       {
         id: 'copilot.providers.openai',
-        value: { apiKey: 'shadowed-legacy-key' },
+        value: { apiKey: 'openai-key' },
       },
       {
         id: 'copilot.providers.gemini',
         value: { apiKey: 'gemini-key' },
+      },
+      {
+        id: 'copilot.providers.geminiVertex',
+        value: { projectId: 'gemini-vertex-project' },
       },
       {
         id: 'copilot.providers.defaults',
@@ -171,18 +175,37 @@ test('managed provider migration preserves explicit profiles and converts legacy
   t.deepEqual(migrated.value, [
     ...profiles,
     {
+      id: 'openai-default',
+      type: 'openai',
+      priority: 7,
+      models: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-image-1', 'gpt-4o-mini'],
+      config: { apiKey: 'openai-key' },
+    },
+    {
       id: 'gemini-default',
       type: 'gemini',
       priority: 4,
       models: ['gemini-3.7-flash', 'gemini-embedding-001'],
       config: { apiKey: 'gemini-key' },
     },
+    {
+      id: 'geminiVertex-default',
+      type: 'geminiVertex',
+      priority: 3,
+      models: ['gemini-3.7-flash'],
+      config: { projectId: 'gemini-vertex-project' },
+      enabled: false,
+    },
   ]);
   t.is(
     await t.context.db.appConfig.count({
       where: {
         id: {
-          in: ['copilot.providers.openai', 'copilot.providers.gemini'],
+          in: [
+            'copilot.providers.openai',
+            'copilot.providers.gemini',
+            'copilot.providers.geminiVertex',
+          ],
         },
       },
     }),

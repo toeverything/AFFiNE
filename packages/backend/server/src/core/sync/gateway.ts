@@ -33,7 +33,7 @@ import {
   SpaceAccessDenied,
 } from '../../base';
 import { Models } from '../../models';
-import { authorizeUserdataDocSubject } from '../../native';
+import { authorizeReservedDocSubject } from '../../native';
 import { CurrentUser } from '../auth';
 import {
   DocReader,
@@ -469,7 +469,7 @@ export class SpaceSyncGateway
     await this.ac.user(userId).doc(spaceId, docId).assert(action);
   }
 
-  private assertUserdataSubject(
+  private assertReservedDocSubject(
     spaceType: SpaceType,
     userId: string,
     workspaceId: string,
@@ -477,7 +477,7 @@ export class SpaceSyncGateway
   ) {
     if (
       spaceType === SpaceType.Workspace &&
-      !authorizeUserdataDocSubject(userId, workspaceId, docId)
+      !authorizeReservedDocSubject(userId, workspaceId, docId)
     ) {
       throw new SpaceAccessDenied({ spaceId: workspaceId });
     }
@@ -928,7 +928,12 @@ export class SpaceSyncGateway
         }
 
         try {
-          this.assertUserdataSubject(event.spaceType, userId, spaceId, docId);
+          this.assertReservedDocSubject(
+            event.spaceType,
+            userId,
+            spaceId,
+            docId
+          );
           await this.assertDocActionAllowed(
             event.spaceType,
             userId,
@@ -1095,7 +1100,7 @@ export class SpaceSyncGateway
       if (space.docId === undefined) {
         continue;
       }
-      this.assertUserdataSubject(
+      this.assertReservedDocSubject(
         space.spaceType,
         user.id,
         space.spaceId,
@@ -1212,7 +1217,7 @@ export class SpaceSyncGateway
     const id = new DocID(docId, spaceId);
     const adapter = this.selectAdapter(client, spaceType);
     adapter.assertIn(spaceId);
-    this.assertUserdataSubject(spaceType, user.id, spaceId, id.guid);
+    this.assertReservedDocSubject(spaceType, user.id, spaceId, id.guid);
     await this.assertDocActionAllowed(
       spaceType,
       user.id,
@@ -1247,7 +1252,7 @@ export class SpaceSyncGateway
     @MessageBody() { spaceType, spaceId, docId }: DeleteDocMessage
   ): Promise<EventResponse<{ success: true }>> {
     const adapter = this.selectAdapter(client, spaceType);
-    this.assertUserdataSubject(spaceType, user.id, spaceId, docId);
+    this.assertReservedDocSubject(spaceType, user.id, spaceId, docId);
     await this.assertDocActionAllowed(
       spaceType,
       user.id,
@@ -1273,7 +1278,7 @@ export class SpaceSyncGateway
     const adapter = this.selectAdapter(client, spaceType);
 
     // Quota recovery mode is intentionally not applied to sync.
-    this.assertUserdataSubject(spaceType, user.id, spaceId, docId);
+    this.assertReservedDocSubject(spaceType, user.id, spaceId, docId);
     await this.assertDocActionAllowed(
       spaceType,
       user.id,

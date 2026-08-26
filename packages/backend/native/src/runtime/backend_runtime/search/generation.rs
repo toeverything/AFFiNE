@@ -532,10 +532,14 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
-    let mut previous_config = SearchRuntimeConfig::default();
-    previous_config.api_key = "previous credential".to_string();
-    let mut current_config = previous_config.clone();
-    current_config.api_key = "current credential".to_string();
+    let previous_config = SearchRuntimeConfig {
+      api_key: "previous credential".to_string(),
+      ..Default::default()
+    };
+    let current_config = SearchRuntimeConfig {
+      api_key: "current credential".to_string(),
+      ..previous_config.clone()
+    };
     assert_ne!(config_hash(&previous_config), config_hash(&current_config));
     assert_eq!(provider_identity(&previous_config), provider_identity(&current_config));
     let retired_id = Uuid::new_v4();
