@@ -6,7 +6,7 @@ use uuid::Uuid;
 use super::{ActiveGeneration, LEASE_SECONDS, SearchTable};
 use crate::runtime::{RuntimeError, RuntimeResult};
 
-const ANTI_ENTROPY_INTERVAL_SECONDS: i64 = 300;
+const ANTI_ENTROPY_INTERVAL_SECONDS: i64 = 3600;
 
 pub(super) struct WorkspaceClaim {
   pub(super) fence: i64,

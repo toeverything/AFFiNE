@@ -99,6 +99,13 @@ impl SearchProvider {
     }
   }
 
+  pub(super) async fn drop_generation_asset(&self, physical_table: &str) -> RuntimeResult<()> {
+    match self {
+      Self::Elasticsearch(provider) => provider.drop_generation_asset(physical_table).await,
+      Self::ManticoreSearch(provider) => provider.drop_generation_asset(physical_table).await,
+    }
+  }
+
   pub(super) async fn apply(&self, physical_table: &str, changes: &[SearchChange]) -> RuntimeResult<()> {
     match self {
       Self::Elasticsearch(provider) => provider.apply(physical_table, changes).await,

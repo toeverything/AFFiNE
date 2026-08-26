@@ -128,6 +128,10 @@ impl EmbeddedSearchIndex {
       .retain(|id, _| *id == generation_id);
   }
 
+  pub(crate) async fn remove_generation(&self, generation_id: Uuid) {
+    self.manager.generations.write().await.remove(&generation_id);
+  }
+
   #[cfg(test)]
   pub(crate) async fn write(&self, table: String, documents_json: String) -> napi::Result<()> {
     self.write_for_generation(Uuid::nil(), table, documents_json).await
