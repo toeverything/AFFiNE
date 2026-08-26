@@ -8,8 +8,8 @@ use tokio::{
 use uuid::Uuid;
 
 use super::{
-  ActiveGeneration, PermissionAuthorizer, SearchProvider, activate, config_hash, ensure, load_active,
-  reconcile_workspace, sweep_generation_orphans,
+  ActiveGeneration, PermissionAuthorizer, SearchProvider, activate, cleanup_retired_generation, config_hash, ensure,
+  load_active, reconcile_workspace, sweep_generation_orphans,
 };
 use crate::{
   runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig},
@@ -130,6 +130,15 @@ impl SearchRuntime {
 
     let _lock = self.lifecycle_lock.lock().await;
     let started_at = Instant::now();
+    if cleanup_retired_generation(&self.pool, &self.embedded, self.remote.as_ref(), &self.config)
+      .await
+      .is_err()
+    {
+      self
+        .observability
+        .generation_gc_failures
+        .fetch_add(1, Ordering::Relaxed);
+    }
     let generation = self.candidate_or_active().await?;
     if self.config.provider == "embedded" {
       self.embedded.prepare_generation(generation.id).await;

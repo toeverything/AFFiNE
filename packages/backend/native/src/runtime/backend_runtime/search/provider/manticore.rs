@@ -79,7 +79,32 @@ impl ManticoreSearchProvider {
     let status = response.status();
     let body = read_response(response).await?;
     if !status.is_success() {
-      return Err(RuntimeError::SearchProviderUnavailable);
+      return Err(match status.as_u16() {
+        400 => RuntimeError::invalid_state("provider_schema_failed"),
+        401 | 403 => RuntimeError::config("search provider authentication failed"),
+        status => provider_write_error(status),
+      });
+    }
+    let value: Value = serde_json::from_slice(&body)
+      .map_err(|error| RuntimeError::json("invalid search provider schema response", error))?;
+    if value.get("error").is_some() {
+      return Err(RuntimeError::invalid_state("provider_schema_failed"));
+    }
+    Ok(())
+  }
+
+  pub(super) async fn drop_generation_asset(&self, physical_table: &str) -> RuntimeResult<()> {
+    let response = self
+      .request(reqwest::Method::POST, "sql?mode=raw")
+      .header("content-type", "application/x-www-form-urlencoded")
+      .body(format!("DROP TABLE IF EXISTS {physical_table}"))
+      .send()
+      .await
+      .map_err(|_| RuntimeError::SearchProviderUnavailable)?;
+    let status = response.status();
+    let body = read_response(response).await?;
+    if !status.is_success() {
+      return Err(provider_write_error(status.as_u16()));
     }
     let value: Value = serde_json::from_slice(&body)
       .map_err(|error| RuntimeError::json("invalid search provider schema response", error))?;
