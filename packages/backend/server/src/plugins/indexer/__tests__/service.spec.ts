@@ -104,6 +104,7 @@ test('does not schedule or run native search reconciliation when disabled', asyn
   await job.scheduleReconciliation();
   t.deepEqual(queue.add.firstCall.args[2], {
     jobId: 'backend-runtime-search-reconciliation',
+    attempts: 1,
     removeOnFail: true,
   });
 });

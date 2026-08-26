@@ -13,6 +13,15 @@ const PROVIDERS = [
 ] as const;
 
 const PROVIDER_IDS = PROVIDERS.map(provider => `copilot.providers.${provider}`);
+const PROVIDER_MODELS: Record<(typeof PROVIDERS)[number], string[]> = {
+  openai: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-image-1', 'gpt-4o-mini'],
+  cloudflareWorkersAi: ['@cf/baai/bge-reranker-base'],
+  fal: ['lora/image-to-image', 'workflowutils/teed'],
+  gemini: ['gemini-3.7-flash', 'gemini-embedding-001'],
+  geminiVertex: ['gemini-3.7-flash'],
+  anthropic: ['claude-sonnet-4-6'],
+  anthropicVertex: ['claude-sonnet-4-6'],
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -58,23 +67,39 @@ export class ConvergeManagedProviderProfiles1786810000000 {
             : []
         )
       );
+      const assignedModels = new Set(
+        profiles.flatMap(profile =>
+          isRecord(profile) &&
+          profile.enabled !== false &&
+          Array.isArray(profile.models)
+            ? profile.models.filter(
+                (model): model is string => typeof model === 'string'
+              )
+            : []
+        )
+      );
 
       for (const [index, provider] of PROVIDERS.entries()) {
         const legacy = byId.get(`copilot.providers.${provider}`);
-        if (!legacy) {
-          continue;
-        }
+        if (!legacy) continue;
         if (!isRecord(legacy.value)) {
           throw new Error(`copilot.providers.${provider} must be an object`);
         }
         const id = `${provider}-default`;
         if (!profileIds.has(id)) {
+          const models = PROVIDER_MODELS[provider].filter(
+            model => !assignedModels.has(model)
+          );
+          const enabled = models.length > 0;
           profiles.push({
             id,
             type: provider,
             priority: PROVIDERS.length - index,
+            models: enabled ? models : PROVIDER_MODELS[provider],
             config: legacy.value,
+            ...(enabled ? {} : { enabled: false }),
           });
+          models.forEach(model => assignedModels.add(model));
           profileIds.add(id);
         }
       }
