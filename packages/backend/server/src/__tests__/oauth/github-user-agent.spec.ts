@@ -1,6 +1,5 @@
 import serverNativeModule from '@affine/server-native';
-import { TestFn } from 'ava';
-import ava from 'ava';
+import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
 type NativeSafeFetchRequest = {
