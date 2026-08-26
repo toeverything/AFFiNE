@@ -180,6 +180,8 @@ Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiN
 
 [![Run on Sealos](https://sealos.io/Deploy-on-Sealos.svg)](https://sealos.io/products/app-store/affine)
 
+[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/Affine%20Pro/)
+
 ## Feature Request
 
 For feature requests, please see [discussions](https://github.com/toeverything/AFFiNE/discussions/categories/ideas).
