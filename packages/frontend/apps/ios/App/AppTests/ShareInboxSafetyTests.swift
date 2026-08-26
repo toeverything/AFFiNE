@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import XCTest
 
 final class ShareInboxSafetyTests: XCTestCase {
@@ -87,6 +88,15 @@ final class ShareInboxSafetyTests: XCTestCase {
     )
   }
 
+  func testPDFTextExtractionProducesImportableText() {
+    let data = makePDFData(text: "AFFiNE PDF body")
+
+    XCTAssertEqual(
+      ShareInboxSafety.pdfPlainText(from: data),
+      "AFFiNE PDF body"
+    )
+  }
+
   func testManifestIDsMustBeCanonicalUUIDs() {
     let id = "4BDB8B19-2E54-442F-A2AA-BB1D8A254D3D"
     XCTAssertEqual(ShareInboxSafety.normalizedManifestID(id), id)
@@ -134,5 +144,18 @@ final class ShareInboxSafetyTests: XCTestCase {
         existingText: nil
       )
     )
+  }
+
+  private func makePDFData(text: String) -> Data {
+    let renderer = UIGraphicsPDFRenderer(
+      bounds: CGRect(x: 0, y: 0, width: 320, height: 240)
+    )
+    return renderer.pdfData { context in
+      context.beginPage()
+      text.draw(
+        at: CGPoint(x: 24, y: 24),
+        withAttributes: [.font: UIFont.systemFont(ofSize: 18)]
+      )
+    }
   }
 }

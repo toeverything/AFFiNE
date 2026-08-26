@@ -152,6 +152,23 @@ enum SharePayloadBuilder {
 
         // Prefer PDF / webarchive / image file payloads even when a URL is also present.
         if let file = await loadPreferredFile(from: provider, existingFileCount: files.count) {
+          if file.mimeType == "application/pdf" {
+            if let pdfText = ShareInboxSafety.pdfPlainText(from: file.data) {
+              if title == "Shared" {
+                title = file.fileName
+              }
+              if pageContent == nil || pdfText.count > (pageContent?.count ?? 0) {
+                pageContent = pdfText
+              }
+            } else {
+              rejectedAttachmentCount += 1
+              if title == "Shared" {
+                title = file.fileName
+              }
+            }
+            continue
+          }
+
           guard file.embedInMarkdownAsImage else {
             rejectedAttachmentCount += 1
             if title == "Shared" {

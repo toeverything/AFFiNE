@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import PDFKit
 
 enum ShareInboxSafety {
   private static let xmlEntityRegex = try! NSRegularExpression(
@@ -122,6 +123,34 @@ enum ShareInboxSafety {
       }
     }
     return nil
+  }
+
+  static func pdfPlainText(from data: Data, maxCharacters: Int = 250_000) -> String? {
+    guard let document = PDFDocument(data: data), document.pageCount > 0 else {
+      return nil
+    }
+
+    var pages: [String] = []
+    pages.reserveCapacity(document.pageCount)
+    for index in 0..<document.pageCount {
+      guard let page = document.page(at: index),
+            let text = page.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !text.isEmpty
+      else {
+        continue
+      }
+      pages.append(text)
+      if pages.joined(separator: "\n\n").count >= maxCharacters {
+        break
+      }
+    }
+
+    let text = pages.joined(separator: "\n\n")
+      .replacingOccurrences(of: "\u{00a0}", with: " ")
+      .replacingOccurrences(of: #"\n{3,}"#, with: "\n\n", options: .regularExpression)
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !text.isEmpty else { return nil }
+    return String(text.prefix(maxCharacters))
   }
 
   static func escapeMarkdownText(_ value: String) -> String {
