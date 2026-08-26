@@ -119,3 +119,63 @@ test('compositionend race: a beforeinput arriving mid-await does not duplicate t
     await teardownInlineEditor(ctx);
   }
 });
+
+// Regression test for https://github.com/toeverything/AFFiNE/issues/14033:
+// on Android, backspacing already-synced text right as an IME composition
+// span settles used to make the deleted word "come back". The old
+// `_onBeforeInput` guard returned early without calling `preventDefault()`,
+// so the browser still performed the native DOM deletion while the model
+// never learned about it; the next model-driven rerender (e.g. from
+// `_onCompositionEnd`) then repainted the DOM from the still-unchanged
+// model, undoing the visible deletion.
+test('compositionend race: a racing delete beforeinput is ignored, not silently undone', async () => {
+  const ctx = await setupInlineEditor('Hi');
+  try {
+    const es = ctx.editor.eventService as any;
+
+    const collapsedRange = ctx.editor.toDomRange({ index: 2, length: 0 });
+    expect(collapsedRange).not.toBeNull();
+    setNativeSelection(collapsedRange!);
+
+    // GBoard commonly wraps already-committed text in a composition span
+    // (e.g. for suggestions) even though the user isn't actively typing, so
+    // this composition contributes no new characters of its own (`data: ''`).
+    es._onCompositionStart({ data: '' } as CompositionEvent);
+    expect(es.isComposing).toBe(true);
+
+    // End the (empty) composition, but don't await it yet: this suspends at
+    // `await this.editor.waitForUpdate()` with `_isComposing` still `true`.
+    const compositionEndEvent = {
+      data: '',
+      preventDefault: vi.fn(),
+    } as unknown as CompositionEvent;
+    const compositionEndPromise = es._onCompositionEnd(compositionEndEvent);
+
+    // While still suspended, the user backspaces — the delete `beforeinput`
+    // races in during the same window the space-commit did above.
+    const deleteEvent = {
+      inputType: 'deleteContentBackward',
+      data: null,
+      dataTransfer: null,
+      isComposing: false,
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
+      getTargetRanges: () => [],
+    } as unknown as InputEvent;
+    await es._onBeforeInput(deleteEvent);
+
+    // Ignored: still treated as composing, so it must not mutate the doc
+    // (neither the model nor, via preventDefault, the native DOM).
+    expect(deleteEvent.preventDefault).toHaveBeenCalledOnce();
+    expect(ctx.editor.yTextString).toBe('Hi');
+
+    await compositionEndPromise;
+
+    // Nothing was deleted, and nothing "came back": the text is simply
+    // untouched throughout.
+    expect(ctx.editor.yTextString).toBe('Hi');
+    expect(es.isComposing).toBe(false);
+  } finally {
+    await teardownInlineEditor(ctx);
+  }
+});
