@@ -275,6 +275,38 @@ test('managed provider migration preserves explicit profiles and converts legacy
       where: { id: 'copilot.providers.defaults' },
     })
   );
+  await t.context.db.appConfig.delete({
+    where: { id: 'copilot.providers.defaults' },
+  });
+
+  const defaultOnlyProfiles = profiles.slice(1);
+  await t.context.db.appConfig.update({
+    where: { id: 'copilot.providers.profiles' },
+    data: { value: defaultOnlyProfiles },
+  });
+  await ConvergeManagedProviderProfiles1786810000000.up(t.context.db);
+  t.deepEqual(
+    (
+      await t.context.db.appConfig.findUniqueOrThrow({
+        where: { id: 'copilot.providers.profiles' },
+      })
+    ).value,
+    [
+      {
+        ...defaultOnlyProfiles[0],
+        models: ['lora/image-to-image', 'workflowutils/teed'],
+      },
+      {
+        ...defaultOnlyProfiles[1],
+        models: ['claude-sonnet-4-6'],
+      },
+      {
+        ...defaultOnlyProfiles[2],
+        models: ['claude-sonnet-4-6'],
+        enabled: false,
+      },
+    ]
+  );
 
   await t.context.db.appConfig.update({
     where: { id: 'copilot.providers.profiles' },

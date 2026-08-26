@@ -76,6 +76,7 @@ export class ConvergeManagedProviderProfiles1786810000000 {
             : []
         )
       );
+      let converged = false;
 
       for (const [index, provider] of PROVIDERS.entries()) {
         const legacy = byId.get(`copilot.providers.${provider}`);
@@ -89,6 +90,7 @@ export class ConvergeManagedProviderProfiles1786810000000 {
         const existing =
           profileIndex === -1 ? undefined : profiles[profileIndex];
         if (!legacy && !existing) continue;
+        converged = true;
 
         const configuredModels =
           isRecord(existing) &&
@@ -136,7 +138,7 @@ export class ConvergeManagedProviderProfiles1786810000000 {
         }
       }
 
-      if (PROVIDER_IDS.some(id => byId.has(id))) {
+      if (converged) {
         validateProfiles(profiles);
         await tx.appConfig.upsert({
           where: { id: PROFILE_KEY },
