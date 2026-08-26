@@ -140,6 +140,7 @@ test('managed provider migration preserves explicit profiles and converts legacy
       id: 'openai-default',
       type: 'openai',
       priority: 7,
+      models: ['gpt-5.6-luna'],
       config: { apiKey: 'profile-key' },
     },
   ];
@@ -173,6 +174,7 @@ test('managed provider migration preserves explicit profiles and converts legacy
       id: 'gemini-default',
       type: 'gemini',
       priority: 4,
+      models: ['gemini-3.7-flash', 'gemini-embedding-001'],
       config: { apiKey: 'gemini-key' },
     },
   ]);

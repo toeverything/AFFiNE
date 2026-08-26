@@ -32,6 +32,7 @@ pub(super) async fn ensure(
   rebuild_embedded: bool,
 ) -> RuntimeResult<ActiveGeneration> {
   let expected_config_hash = config_hash(config);
+  let expected_provider_identity = provider_identity(config);
   let mut transaction = pool
     .begin()
     .await
@@ -40,6 +41,18 @@ pub(super) async fn ensure(
     .execute(&mut *transaction)
     .await
     .map_err(|error| RuntimeError::database("lock search generation", error))?;
+  sqlx::query(
+    r#"UPDATE search_projection.generations
+       SET manifest=jsonb_set(manifest,'{providerIdentity}',to_jsonb($1::text),true)
+       WHERE provider=$2 AND config_hash=$3 AND state IN ('building','active','draining')
+         AND NOT manifest ? 'providerIdentity'"#,
+  )
+  .bind(&expected_provider_identity)
+  .bind(&config.provider)
+  .bind(&expected_config_hash)
+  .execute(&mut *transaction)
+  .await
+  .map_err(|error| RuntimeError::database("backfill search provider identity", error))?;
   let existing = sqlx::query(
     r#"SELECT id,provider,config_hash,schema_version,manifest,state
        FROM search_projection.generations
@@ -192,15 +205,18 @@ pub(super) async fn cleanup_retired_generation(
                                   AND newer.created_at > generation.created_at)
                 AS retain_failure_marker
        FROM search_projection.generations generation
-       WHERE provider=$1 AND config_hash=$2 AND schema_version=$3
+       WHERE provider=$1 AND schema_version=$2
+         AND (manifest->>'providerIdentity'=$3
+           OR (NOT manifest ? 'providerIdentity' AND config_hash=$4))
          AND ((state='failed' AND created_at < now() - interval '1 hour'
                AND manifest <> '{}'::jsonb)
            OR (state='draining' AND drained_at < now() - interval '24 hours'))
        ORDER BY COALESCE(drained_at,created_at),id LIMIT 1"#,
   )
   .bind(&config.provider)
-  .bind(config_hash(config))
   .bind(SCHEMA_FINGERPRINT)
+  .bind(provider_identity(config))
+  .bind(config_hash(config))
   .fetch_optional(pool)
   .await
   .map_err(|error| RuntimeError::database("load retired search generation", error))?;
@@ -401,6 +417,16 @@ pub(super) fn config_hash(config: &SearchRuntimeConfig) -> Vec<u8> {
   hash.finalize().to_vec()
 }
 
+pub(super) fn provider_identity(config: &SearchRuntimeConfig) -> String {
+  let mut hash = Sha256::new();
+  hash.update(config.provider.as_bytes());
+  hash.update([0]);
+  if config.provider != "embedded" {
+    hash.update(config.endpoint.trim_end_matches('/').as_bytes());
+  }
+  hash.finalize().iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
 fn decode(row: sqlx::postgres::PgRow) -> RuntimeResult<ActiveGeneration> {
   Ok(ActiveGeneration {
     id: row
@@ -419,12 +445,14 @@ async fn create_generation(
 ) -> RuntimeResult<ActiveGeneration> {
   let generation_id = Uuid::new_v4();
   let suffix = generation_id.simple().to_string();
+  let provider_identity = provider_identity(config);
   let manifest = if config.provider == "embedded" {
-    json!({"doc":"doc","block":"block"})
+    json!({"doc":"doc","block":"block","providerIdentity":provider_identity})
   } else {
     json!({
       "doc":format!("affine_search_doc_{suffix}"),
-      "block":format!("affine_search_block_{suffix}")
+      "block":format!("affine_search_block_{suffix}"),
+      "providerIdentity":provider_identity
     })
   };
   sqlx::query(
@@ -448,10 +476,11 @@ async fn create_generation(
 
 #[cfg(test)]
 mod tests {
+  use serde_json::json;
   use sqlx::PgPool;
   use uuid::Uuid;
 
-  use super::{cleanup_retired_generation, config_hash, ensure};
+  use super::{cleanup_retired_generation, config_hash, ensure, provider_identity};
   use crate::{
     runtime::{
       RuntimeError, SearchRuntimeConfig, backend_runtime::search::SEARCH_TEST_LOCK, migrations::migrate_search_tables,
@@ -503,18 +532,29 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
-    let config = SearchRuntimeConfig::default();
+    let mut previous_config = SearchRuntimeConfig::default();
+    previous_config.api_key = "previous credential".to_string();
+    let mut current_config = previous_config.clone();
+    current_config.api_key = "current credential".to_string();
+    assert_ne!(config_hash(&previous_config), config_hash(&current_config));
+    assert_eq!(provider_identity(&previous_config), provider_identity(&current_config));
     let retired_id = Uuid::new_v4();
     let failed_id = Uuid::new_v4();
+    let manifest = json!({
+      "doc":"doc",
+      "block":"block",
+      "providerIdentity":provider_identity(&previous_config)
+    });
     sqlx::query(
       r#"INSERT INTO search_projection.generations
          (id,provider,state,config_hash,schema_version,manifest,created_at)
-         VALUES($1,'embedded','failed',$3,1,'{"doc":"doc","block":"block"}',now() - interval '10 days'),
-               ($2,'embedded','failed',$3,1,'{"doc":"doc","block":"block"}',now() - interval '2 days')"#,
+         VALUES($1,'embedded','failed',$3,1,$4,now() - interval '10 days'),
+               ($2,'embedded','failed',$3,1,$4,now() - interval '2 days')"#,
     )
     .bind(retired_id)
     .bind(failed_id)
-    .bind(config_hash(&config))
+    .bind(config_hash(&previous_config))
+    .bind(manifest)
     .execute(&pool)
     .await
     .unwrap();
@@ -522,7 +562,7 @@ mod tests {
     embedded.prepare_generation(retired_id).await;
 
     assert!(
-      cleanup_retired_generation(&pool, &embedded, None, &config)
+      cleanup_retired_generation(&pool, &embedded, None, &current_config)
         .await
         .unwrap()
     );
@@ -535,7 +575,7 @@ mod tests {
         .unwrap()
     );
     assert!(
-      cleanup_retired_generation(&pool, &embedded, None, &config)
+      cleanup_retired_generation(&pool, &embedded, None, &current_config)
         .await
         .unwrap()
     );
@@ -548,7 +588,7 @@ mod tests {
       serde_json::json!({})
     );
     assert!(matches!(
-      ensure(&pool, &config, None, false).await,
+      ensure(&pool, &previous_config, None, false).await,
       Err(RuntimeError::SearchIndexFailed(_))
     ));
 

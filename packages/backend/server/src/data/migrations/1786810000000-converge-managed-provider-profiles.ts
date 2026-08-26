@@ -13,6 +13,15 @@ const PROVIDERS = [
 ] as const;
 
 const PROVIDER_IDS = PROVIDERS.map(provider => `copilot.providers.${provider}`);
+const PROVIDER_MODELS: Record<(typeof PROVIDERS)[number], string[]> = {
+  openai: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-image-1', 'gpt-4o-mini'],
+  cloudflareWorkersAi: ['@cf/baai/bge-reranker-base'],
+  fal: ['lora/image-to-image', 'workflowutils/teed'],
+  gemini: ['gemini-3.7-flash', 'gemini-embedding-001'],
+  geminiVertex: ['gemini-3.7-flash'],
+  anthropic: ['claude-sonnet-4-6'],
+  anthropicVertex: ['claude-sonnet-4-6'],
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -61,9 +70,7 @@ export class ConvergeManagedProviderProfiles1786810000000 {
 
       for (const [index, provider] of PROVIDERS.entries()) {
         const legacy = byId.get(`copilot.providers.${provider}`);
-        if (!legacy) {
-          continue;
-        }
+        if (!legacy) continue;
         if (!isRecord(legacy.value)) {
           throw new Error(`copilot.providers.${provider} must be an object`);
         }
@@ -73,6 +80,7 @@ export class ConvergeManagedProviderProfiles1786810000000 {
             id,
             type: provider,
             priority: PROVIDERS.length - index,
+            models: PROVIDER_MODELS[provider],
             config: legacy.value,
           });
           profileIds.add(id);
