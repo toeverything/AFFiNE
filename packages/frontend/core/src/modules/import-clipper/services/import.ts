@@ -1,4 +1,7 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
+import { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
+import { EmbedOptionProvider } from '@blocksuite/affine/shared/services';
+import { Text } from '@blocksuite/affine/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
 
@@ -11,6 +14,35 @@ import {
   type WorkspaceMetadata,
   type WorkspacesService,
 } from '../../workspace';
+import {
+  createShareBlockPlan,
+  type ShareBlockPlanNode,
+} from './share-block-plan';
+
+export interface ShareLinkPreview {
+  url: string;
+  title?: string;
+  siteName?: string;
+  description?: string;
+  images?: string[];
+  favicons?: string[];
+  mediaType?: string;
+  provider?: 'youtube' | 'x';
+  author?: { name: string; handle?: string; avatar?: string };
+  publishedAt?: string;
+  durationSeconds?: number;
+  transcript?: {
+    language?: string;
+    segments: {
+      text: string;
+      startSeconds?: number;
+      durationSeconds?: number;
+      speaker?: string;
+    }[];
+    chapters?: { title: string; startSeconds: number }[];
+    truncated?: boolean;
+  };
+}
 
 export interface ClipperInput {
   title: string;
@@ -28,6 +60,7 @@ export interface ShareImportInput {
     url?: string;
     text?: string;
   };
+  preview?: ShareLinkPreview;
   attachmentUrl?: string;
   tagIds: string[];
   collectionId?: string;
@@ -51,6 +84,28 @@ export interface ShareDestinationOptions {
 }
 
 type WorkspaceVerification = 'confirmed' | 'missing' | 'unavailable';
+
+export function createShareMarkdown(input: ShareImportInput) {
+  const parts: string[] = [];
+  if (input.content.kind === 'image') {
+    if (input.attachmentUrl) {
+      parts.push(`![Shared image](<${input.attachmentUrl}>)`);
+    }
+    if (input.content.text) {
+      parts.push(escapeMarkdown(input.content.text));
+    }
+    if (input.content.url) {
+      parts.push(`[Source](<${input.content.url}>)`);
+    }
+  } else if (input.content.kind === 'text' && input.content.text) {
+    parts.push(escapeMarkdown(input.content.text));
+  }
+  return parts.join('\n\n');
+}
+
+function escapeMarkdown(value: string) {
+  return value.replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');
+}
 
 export class ImportClipperService extends Service {
   constructor(private readonly workspacesService: WorkspacesService) {
@@ -134,13 +189,16 @@ export class ImportClipperService extends Service {
         });
         const noteId = doc.blockSuiteDoc.addBlock('affine:note', {}, page.id);
         if (input.content.kind === 'url' && input.content.url) {
-          doc.blockSuiteDoc.addBlock(
-            'affine:bookmark',
-            { url: input.content.url, style: 'horizontal' },
-            noteId
+          const embedOptions = createBlockStdScope(doc.blockSuiteDoc)
+            .get(EmbedOptionProvider)
+            .getEmbedBlockOptions(input.content.url);
+          this.addShareBlocks(
+            doc.blockSuiteDoc,
+            noteId,
+            createShareBlockPlan(input, embedOptions)
           );
         }
-        const markdown = this.shareMarkdown(input);
+        const markdown = createShareMarkdown(input);
         if (markdown) {
           await MarkdownTransformer.importMarkdownToBlock({
             doc: doc.blockSuiteDoc,
@@ -239,32 +297,25 @@ export class ImportClipperService extends Service {
     }
   }
 
-  private shareMarkdown(input: ShareImportInput) {
-    const parts: string[] = [];
-    if (input.content.kind === 'url') {
-      if (input.content.text) {
-        parts.push(
-          `> ${this.escapeMarkdown(input.content.text).replaceAll('\n', '\n> ')}`
-        );
+  private addShareBlocks(
+    store: Parameters<typeof createBlockStdScope>[0],
+    parentId: string,
+    nodes: ShareBlockPlanNode[]
+  ) {
+    for (const node of nodes) {
+      const props = Object.fromEntries(
+        Object.entries(node.props)
+          .filter(([, value]) => value !== undefined)
+          .map(([key, value]) => [
+            key,
+            key === 'text' ? new Text(value as string) : value,
+          ])
+      );
+      const blockId = store.addBlock(node.flavour, props, parentId);
+      if (node.children) {
+        this.addShareBlocks(store, blockId, node.children);
       }
-    } else if (input.content.kind === 'image') {
-      if (input.attachmentUrl) {
-        parts.push(`![Shared image](<${input.attachmentUrl}>)`);
-      }
-      if (input.content.text) {
-        parts.push(this.escapeMarkdown(input.content.text));
-      }
-      if (input.content.url) {
-        parts.push(`[Source](<${input.content.url}>)`);
-      }
-    } else if (input.content.text) {
-      parts.push(this.escapeMarkdown(input.content.text));
     }
-    return parts.join('\n\n');
-  }
-
-  private escapeMarkdown(value: string) {
-    return value.replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');
   }
 
   private async revalidateWorkspace(

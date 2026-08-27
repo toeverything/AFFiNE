@@ -14,6 +14,9 @@ const blobToDataURL = (blob: Blob) =>
   });
 
 export const shareInboxProvider: ShareInboxProvider = {
+  async updateWorkspaceMode(mode) {
+    await plugin.updateWorkspaceMode({ mode });
+  },
   async listPending() {
     return (await plugin.listPending()).items;
   },
