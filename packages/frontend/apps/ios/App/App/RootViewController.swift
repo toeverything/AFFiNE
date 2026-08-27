@@ -82,7 +82,6 @@ class RootViewController: UINavigationController {
         showOnboardingAlert(message: error.localizedDescription)
         return
       }
-      OnboardingFlag.markCompleted()
       guard isSignedIn else {
         return
       }

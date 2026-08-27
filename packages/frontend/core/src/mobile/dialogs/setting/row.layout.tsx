@@ -13,7 +13,6 @@ export const RowLayout = ({
   children,
   href,
   onClick,
-  ariaLabel,
   className,
   emphasized,
 }: PropsWithChildren<{
@@ -22,7 +21,6 @@ export const RowLayout = ({
   prefix?: ReactNode;
   href?: string;
   onClick?: () => void;
-  ariaLabel?: string;
   className?: string;
   emphasized?: boolean;
 }>) => {
@@ -86,7 +84,6 @@ export const RowLayout = ({
       onKeyDown={isButtonRow ? handleKeyDown : undefined}
       role={isButtonRow ? 'button' : undefined}
       tabIndex={isButtonRow ? 0 : undefined}
-      aria-label={ariaLabel}
     >
       {isLinkRow ? (
         <a

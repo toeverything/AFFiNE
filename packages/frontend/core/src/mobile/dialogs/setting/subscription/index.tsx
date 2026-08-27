@@ -47,7 +47,6 @@ export const PlansGroup = () => {
           description={t[
             'com.affine.mobile.setting.subscription.description'
           ]()}
-          ariaLabel="View AFFiNE Pro plans"
           onClick={handleOpen}
         />
       ) : null}
@@ -57,7 +56,6 @@ export const PlansGroup = () => {
         prefix={<MultiPeopleIcon />}
         label={t['com.affine.mobile.setting.promo.title']()}
         description={t['com.affine.mobile.setting.promo.description']()}
-        ariaLabel="Learn about AFFiNE for teams"
         onClick={() => urlService.openExternal(AFFINE_TEAM_URL)}
       />
     </SettingGroup>
