@@ -13,7 +13,6 @@ export const RowLayout = ({
   children,
   href,
   onClick,
-  ariaLabel,
   className,
   emphasized,
 }: PropsWithChildren<{
@@ -22,7 +21,6 @@ export const RowLayout = ({
   prefix?: ReactNode;
   href?: string;
   onClick?: () => void;
-  ariaLabel?: string;
   className?: string;
   emphasized?: boolean;
 }>) => {
