@@ -12,8 +12,6 @@ import WebKit
 class RootViewController: UINavigationController {
   private var affineViewController: AFFiNEViewController?
   private var didScheduleOnboardingPresentation = false
-  private var didRunColdStartPaywallFlow = false
-  private var coldStartPaywallRetryCount = 0
 
   override init(rootViewController _: UIViewController) {
     fatalError() // "you are not allowed to call this"
@@ -46,9 +44,7 @@ class RootViewController: UINavigationController {
 
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
-    if !presentOnboardingIfNeeded() {
-      runColdStartPaywallFlowIfNeeded()
-    }
+    presentOnboardingIfNeeded()
   }
 
   @discardableResult
@@ -67,110 +63,9 @@ class RootViewController: UINavigationController {
     return true
   }
 
-  private func runColdStartPaywallFlowIfNeeded() {
-    guard OnboardingFlag.isCompleted else { return }
-    guard !didRunColdStartPaywallFlow else { return }
-    guard presentedViewController == nil else {
-      scheduleColdStartPaywallFlowRetry()
-      return
-    }
-    guard let webView = affineViewController?.webView else {
-      scheduleColdStartPaywallFlowRetry()
-      return
-    }
-
-    didRunColdStartPaywallFlow = true
-    Task { @MainActor [weak self, weak webView] in
-      guard let self, let webView else { return }
-
-      do {
-        try await waitForColdStartHomeDocReady(in: webView)
-
-        let isAlreadySignedIn = await PaywallAuthGuard.currentUserIdentifier(in: webView) != nil
-        if !isAlreadySignedIn {
-          let action = await presentColdStartSignInSheet()
-          guard action == .seeProBenefits else { return }
-        }
-
-        let isSignedIn = try await PaywallAuthGuard.ensureSignedIn(using: webView)
-        guard isSignedIn else {
-          return
-        }
-
-        if try await PaywallAuthGuard.hasProSubscription(in: webView) {
-          return
-        }
-
-        presentSharedPaywall(initialPlan: .pro, bindWebView: webView)
-      } catch {
-        didRunColdStartPaywallFlow = false
-        scheduleColdStartPaywallFlowRetry()
-      }
-    }
-  }
-
-  private func scheduleColdStartPaywallFlowRetry() {
-    guard coldStartPaywallRetryCount < 3 else { return }
-    coldStartPaywallRetryCount += 1
-
-    Task { @MainActor [weak self] in
-      try? await Task.sleep(nanoseconds: 1_000_000_000)
-      self?.runColdStartPaywallFlowIfNeeded()
-    }
-  }
-
-  @MainActor
-  private func presentColdStartSignInSheet() async -> ColdStartSignInSheetViewController.Action {
-    guard presentedViewController == nil else { return .continueFree }
-
-    return await withCheckedContinuation { continuation in
-      let controller = ColdStartSignInSheetViewController()
-      controller.onAction = { action in
-        continuation.resume(returning: action)
-      }
-      present(controller, animated: true)
-    }
-  }
-
-  private func waitForColdStartHomeDocReady(in webView: WKWebView) async throws {
-    let deadline = Date().addingTimeInterval(20)
-
-    while Date() < deadline {
-      if await isHomeDocReady(in: webView) {
-        return
-      }
-      try await Task.sleep(nanoseconds: 250_000_000)
-    }
-
-    throw NSError(
-      domain: "RootViewController",
-      code: -1,
-      userInfo: [NSLocalizedDescriptionKey: String(localized: "AFFiNE home is still loading.")]
-    )
-  }
-
-  private func isHomeDocReady(in webView: WKWebView) async -> Bool {
-    do {
-      let result = try await webView.callAsyncJavaScript(
-        """
-        const bridgeReady = typeof window.getCurrentUserIdentifier === 'function'
-          && typeof window.showNativeSignIn === 'function';
-        const bodyReady = Boolean(document.body && document.body.children.length > 0);
-        return document.readyState === 'complete' && bridgeReady && bodyReady;
-        """,
-        contentWorld: .page
-      )
-      return (result as? Bool) == true
-    } catch {
-      return false
-    }
-  }
-
   private func handleOnboardingCompletion(from onboardingController: OnboardingViewController?) {
     Task { @MainActor [weak self, weak onboardingController] in
       guard let self else { return }
-      OnboardingFlag.markCompleted()
-      didRunColdStartPaywallFlow = true
 
       guard let webView = affineViewController?.webView else {
         showOnboardingAlert(message: String(localized: "AFFiNE is still loading. Please try again in a moment."))
@@ -187,9 +82,11 @@ class RootViewController: UINavigationController {
         showOnboardingAlert(message: error.localizedDescription)
         return
       }
+      OnboardingFlag.markCompleted()
       guard isSignedIn else {
         return
       }
+      await dismissOnboardingIfNeeded(onboardingController)
 
       do {
         if try await PaywallAuthGuard.hasProSubscription(in: webView) {
@@ -245,6 +142,15 @@ class RootViewController: UINavigationController {
 
     controller.dismiss(animated: true) { [weak self] in
       self?.didScheduleOnboardingPresentation = true
+    }
+  }
+
+  private func dismissOnboardingIfNeeded(_ controller: UIViewController?) async {
+    guard let controller, controller.presentingViewController != nil else { return }
+    await withCheckedContinuation { continuation in
+      controller.dismiss(animated: false) {
+        continuation.resume()
+      }
     }
   }
 
