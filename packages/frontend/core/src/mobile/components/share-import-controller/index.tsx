@@ -190,6 +190,7 @@ export const ShareImportController = ({
   const selectedWorkspace = workspaces.find(
     workspace => workspaceKey(workspace) === selectedWorkspaceKey
   );
+  const selectedWorkspaceAvailable = !!selectedWorkspace;
   const selectedWorkspaceName = selectedWorkspace
     ? workspacesService.getProfile(selectedWorkspace).name$.value ||
       selectedWorkspace.id
@@ -352,6 +353,7 @@ export const ShareImportController = ({
   useEffect(() => {
     if (!selectedWorkspaceKey) {
       setDestinations(undefined);
+      setIsLoadingDestinations(false);
       return;
     }
     const workspace = workspacesService.list.workspaces$.value.find(
@@ -359,6 +361,7 @@ export const ShareImportController = ({
     );
     if (!workspace) {
       setDestinations(undefined);
+      setIsLoadingDestinations(false);
       return;
     }
     let active = true;
@@ -406,6 +409,7 @@ export const ShareImportController = ({
     itemId,
     provider,
     selectedWorkspaceKey,
+    selectedWorkspaceAvailable,
     updateSelection,
     workspacesService,
   ]);

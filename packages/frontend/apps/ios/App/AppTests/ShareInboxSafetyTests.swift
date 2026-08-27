@@ -152,8 +152,15 @@ final class ShareInboxSafetyTests: XCTestCase {
 
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
-    let current = try encoder.encode(ShareWorkspaceModeSnapshot(mode: .selfHostedPresent))
-    XCTAssertEqual(ShareInboxSafety.workspaceMode(from: current), .selfHostedPresent)
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let current = try encoder.encode(
+      ShareWorkspaceModeSnapshot(mode: .selfHostedPresent, updatedAt: now)
+    )
+    XCTAssertEqual(ShareInboxSafety.workspaceMode(from: current, now: now), .selfHostedPresent)
+    XCTAssertEqual(
+      ShareInboxSafety.workspaceMode(from: current, now: now.addingTimeInterval(24 * 60 * 60 + 1)),
+      .unknown
+    )
   }
 
   func testOldManifestDefaultsToConservativeRouteAndOriginalURLSurvives() throws {

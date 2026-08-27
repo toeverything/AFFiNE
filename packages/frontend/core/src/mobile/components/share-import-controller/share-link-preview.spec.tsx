@@ -1,3 +1,5 @@
+/** @vitest-environment happy-dom */
+
 import { type Server, ServersService } from '@affine/core/modules/cloud';
 import {
   ImportClipperService,
@@ -238,9 +240,20 @@ describe('link preview transport and route ownership', () => {
       'https://first.example/api/worker/link-preview'
     );
     resolve(
-      new Response(JSON.stringify({ url: item().content.url }), { status: 200 })
+      new Response(
+        JSON.stringify({
+          url: item().content.url,
+          title: 42,
+          images: ['https://example.com/image.jpg', 42],
+          transcript: { segments: 'invalid' },
+        }),
+        { status: 200 }
+      )
     );
-    await first;
+    await expect(first).resolves.toEqual({
+      url: item().content.url,
+      images: ['https://example.com/image.jpg'],
+    });
     fetch.mockResolvedValueOnce(
       new Response(JSON.stringify({ url: item().content.url }), { status: 200 })
     );
@@ -458,6 +471,21 @@ describe('share destination selection lifecycle', () => {
     ).toBe(false);
     expect(provider.listPending).toHaveBeenCalledTimes(1);
 
+    workspaces$.value = [];
+    view.rerender(<ShareImportController provider={provider} />);
+    expect(
+      (screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+    workspaces$.value = [{ ...selectedWorkspace }];
+    view.rerender(<ShareImportController provider={provider} />);
+    await waitFor(() =>
+      expect(
+        (screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement)
+          .disabled
+      ).toBe(false)
+    );
+
     window.dispatchEvent(new Event('affine:share-inbox'));
     await waitFor(() => expect(provider.listPending).toHaveBeenCalledTimes(2));
     expect(
@@ -489,23 +517,37 @@ describe('share destination selection lifecycle', () => {
 
 describe('share preview presentation', () => {
   test.each([
-    ['loading', () => new Promise<never>(() => {}), 'Loading link preview'],
+    [
+      'loading',
+      () => new Promise<never>(() => {}),
+      'Loading link preview',
+      undefined,
+    ],
     [
       'failed',
       () => Promise.reject(new Error('unavailable')),
       'Preview unavailable',
+      undefined,
     ],
     [
       'partial',
       () => Promise.resolve({ url: item().content.url! }),
       'youtube.com',
+      undefined,
     ],
     [
       'aborted',
       () => Promise.reject(new DOMException('Aborted', 'AbortError')),
       'youtube.com',
+      undefined,
     ],
-  ])('renders the %s state', async (_name, load, expected) => {
+    [
+      'invalid persisted URL',
+      () => Promise.reject(new Error('unavailable')),
+      'Link',
+      '/relative',
+    ],
+  ])('renders the %s state', async (_name, load, expected, url) => {
     const owner = {
       routeEndpoint: 'https://app.affine.pro/api/worker/link-preview',
       selectWorkspace: vi.fn(),
@@ -513,7 +555,13 @@ describe('share preview presentation', () => {
     } as unknown as SharePreviewRouteOwner;
     render(
       <LinkPreview
-        item={item('official')}
+        item={{
+          ...item('official'),
+          content: {
+            ...item('official').content,
+            url: url ?? item().content.url,
+          },
+        }}
         owner={owner}
         workspace={undefined}
         servers={[]}
@@ -844,10 +892,10 @@ describe('collapsed content accessibility', () => {
     await toggle.updateComplete;
 
     const button = toggle.querySelector('button')!;
+    expect(button.getAttribute('aria-label')).toBe('Expand content');
     expect(button.getAttribute('aria-expanded')).toBe('false');
     expect(button.getAttribute('aria-controls')).toBe('heading-children-id');
     button.click();
     expect(toggle.updateCollapsed).toHaveBeenCalledWith(false);
   });
 });
-/** @vitest-environment happy-dom */

@@ -27,6 +27,8 @@ struct ShareWorkspaceModeSnapshot: Codable, Equatable {
 }
 
 enum ShareInboxSafety {
+  private static let workspaceModeMaxAge: TimeInterval = 24 * 60 * 60
+
   static func manifestTitle(original: String, userEdited: String?) -> String {
     (userEdited ?? original).trimmingCharacters(in: .whitespacesAndNewlines)
   }
@@ -95,12 +97,13 @@ enum ShareInboxSafety {
     }
   }
 
-  static func workspaceMode(from data: Data?) -> ShareWorkspaceMode {
+  static func workspaceMode(from data: Data?, now: Date = Date()) -> ShareWorkspaceMode {
     guard let data else { return .unknown }
     let decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
     guard let snapshot = try? decoder.decode(ShareWorkspaceModeSnapshot.self, from: data),
-          snapshot.schemaVersion == ShareWorkspaceModeSnapshot.schemaVersion
+          snapshot.schemaVersion == ShareWorkspaceModeSnapshot.schemaVersion,
+          (0...workspaceModeMaxAge).contains(now.timeIntervalSince(snapshot.updatedAt))
     else {
       return .unknown
     }

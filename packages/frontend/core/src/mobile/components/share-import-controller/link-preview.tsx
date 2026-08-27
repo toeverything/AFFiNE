@@ -97,9 +97,12 @@ export const LinkPreview = ({
     };
   }, [item.id, onPreview, owner, servers, workspace]);
 
-  const hostname = item.content.url
-    ? new URL(item.content.url).hostname
-    : 'Link';
+  let hostname = 'Link';
+  if (item.content.url) {
+    try {
+      hostname = new URL(item.content.url).hostname || hostname;
+    } catch {}
+  }
   if (state.status === 'loading') {
     return (
       <section

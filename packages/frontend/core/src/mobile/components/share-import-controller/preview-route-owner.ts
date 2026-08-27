@@ -7,6 +7,89 @@ import type { PendingShareItem, ShareLinkPreview } from './types';
 const LINK_PREVIEW_PATH = '/api/worker/link-preview';
 const OFFICIAL_LINK_PREVIEW_ENDPOINT = `https://app.affine.pro${LINK_PREVIEW_PATH}`;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function parseShareLinkPreview(value: unknown): ShareLinkPreview {
+  if (!isRecord(value) || typeof value.url !== 'string') {
+    throw new Error('Invalid link preview response');
+  }
+  const preview: ShareLinkPreview = { url: value.url };
+  for (const key of [
+    'title',
+    'siteName',
+    'description',
+    'mediaType',
+    'publishedAt',
+  ] as const) {
+    if (typeof value[key] === 'string') preview[key] = value[key];
+  }
+  if (value.provider === 'youtube' || value.provider === 'x') {
+    preview.provider = value.provider;
+  }
+  for (const key of ['images', 'favicons'] as const) {
+    if (Array.isArray(value[key])) {
+      preview[key] = value[key].filter(item => typeof item === 'string');
+    }
+  }
+  if (typeof value.durationSeconds === 'number') {
+    preview.durationSeconds = value.durationSeconds;
+  }
+  if (isRecord(value.author) && typeof value.author.name === 'string') {
+    preview.author = {
+      name: value.author.name,
+      ...(typeof value.author.handle === 'string'
+        ? { handle: value.author.handle }
+        : {}),
+      ...(typeof value.author.avatar === 'string'
+        ? { avatar: value.author.avatar }
+        : {}),
+    };
+  }
+  if (isRecord(value.transcript) && Array.isArray(value.transcript.segments)) {
+    preview.transcript = {
+      ...(typeof value.transcript.language === 'string'
+        ? { language: value.transcript.language }
+        : {}),
+      segments: value.transcript.segments
+        .filter(isRecord)
+        .filter(segment => typeof segment.text === 'string')
+        .map(segment => ({
+          text: segment.text as string,
+          ...(typeof segment.startSeconds === 'number'
+            ? { startSeconds: segment.startSeconds }
+            : {}),
+          ...(typeof segment.durationSeconds === 'number'
+            ? { durationSeconds: segment.durationSeconds }
+            : {}),
+          ...(typeof segment.speaker === 'string'
+            ? { speaker: segment.speaker }
+            : {}),
+        })),
+      ...(Array.isArray(value.transcript.chapters)
+        ? {
+            chapters: value.transcript.chapters
+              .filter(isRecord)
+              .filter(
+                chapter =>
+                  typeof chapter.title === 'string' &&
+                  typeof chapter.startSeconds === 'number'
+              )
+              .map(chapter => ({
+                title: chapter.title as string,
+                startSeconds: chapter.startSeconds as number,
+              })),
+          }
+        : {}),
+      ...(typeof value.transcript.truncated === 'boolean'
+        ? { truncated: value.transcript.truncated }
+        : {}),
+    };
+  }
+  return preview;
+}
+
 export class SharePreviewRouteOwner {
   private endpoint: string | undefined;
   private inFlight:
@@ -78,7 +161,7 @@ export class SharePreviewRouteOwner {
       signal: controller.signal,
     }).then(async response => {
       if (!response.ok) throw new Error('Link preview unavailable');
-      return (await response.json()) as ShareLinkPreview;
+      return parseShareLinkPreview(await response.json());
     });
     this.inFlight = { endpoint, controller, request };
     void request.then(

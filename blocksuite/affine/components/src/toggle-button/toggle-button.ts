@@ -35,6 +35,11 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
       background: var(--affine-hover-color);
     }
 
+    .toggle-icon:focus-visible {
+      opacity: 1;
+      outline: 1px solid var(--affine-primary-color);
+    }
+
     .toggle-icon[data-collapsed='true'] {
       opacity: 1;
     }
@@ -64,7 +69,7 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
         contenteditable="false"
         class="toggle-icon"
         data-collapsed=${this.collapsed}
-        aria-label=${this.collapsed ? 'Expand heading' : 'Collapse heading'}
+        aria-label=${this.collapsed ? 'Expand content' : 'Collapse content'}
         aria-expanded=${!this.collapsed}
         aria-controls=${this.controls}
         @click=${() => this.updateCollapsed(!this.collapsed)}

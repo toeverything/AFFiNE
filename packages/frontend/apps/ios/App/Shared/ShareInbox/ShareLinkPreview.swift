@@ -147,8 +147,18 @@ struct ShareLinkPreviewClient {
   }
 
   private static var bundledAppVersion: String {
-    let url = Bundle.main.url(forResource: "capacitor.config", withExtension: "json")!
-    let data = try! Data(contentsOf: url)
-    return try! JSONDecoder().decode(AppConfig.self, from: data).affineVersion
+    if let url = Bundle.main.url(forResource: "capacitor.config", withExtension: "json"),
+       let data = try? Data(contentsOf: url),
+       let version = try? JSONDecoder().decode(AppConfig.self, from: data).affineVersion,
+       !version.isEmpty
+    {
+      return version
+    }
+    if let version = Bundle.main.object(
+      forInfoDictionaryKey: "CFBundleShortVersionString"
+    ) as? String, !version.isEmpty {
+      return version
+    }
+    return "0.2"
   }
 }
