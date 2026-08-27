@@ -21,7 +21,9 @@ enum SharePayloadBuilder {
         {
           title = page.title ?? title
           url = page.url ?? url
-          text = page.selectedText ?? text
+          text = page.selectedText.map {
+            String($0.prefix(maxTextCharacters))
+          } ?? text
         }
 
         if url == nil,

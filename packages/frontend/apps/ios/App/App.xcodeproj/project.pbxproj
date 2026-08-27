@@ -155,6 +155,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				ShareExtension.entitlements,
 			);
 			target = A1010000000000000000000D /* ShareExtension */;
 		};

@@ -43,6 +43,7 @@ export const SelectionPage = ({
                   <button
                     className={styles.selectionRow}
                     type="button"
+                    aria-pressed={selected}
                     onClick={() => onSelect(option.id)}
                   >
                     {option.color ? (
@@ -60,9 +61,14 @@ export const SelectionPage = ({
                       ) : null}
                     </span>
                     {selected ? (
-                      <span className={styles.checkmark}>✓</span>
+                      <span className={styles.checkmark} aria-hidden="true">
+                        ✓
+                      </span>
                     ) : (
-                      <span className={styles.checkmarkPlaceholder} />
+                      <span
+                        className={styles.checkmarkPlaceholder}
+                        aria-hidden="true"
+                      />
                     )}
                   </button>
                 </li>

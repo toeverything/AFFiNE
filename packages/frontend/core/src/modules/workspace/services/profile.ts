@@ -1,16 +1,13 @@
 import { ObjectPool, Service } from '@toeverything/infra';
 
 import { WorkspaceProfile } from '../entities/profile';
-import type { WorkspaceMetadata } from '../metadata';
-
-const workspaceProfileKey = (metadata: WorkspaceMetadata) =>
-  `${metadata.flavour}:${metadata.id}`;
+import { type WorkspaceMetadata, workspaceMetadataKey } from '../metadata';
 
 export class WorkspaceProfileService extends Service {
   pool = new ObjectPool<string, WorkspaceProfile>();
 
   getProfile = (metadata: WorkspaceMetadata): WorkspaceProfile => {
-    const key = workspaceProfileKey(metadata);
+    const key = workspaceMetadataKey(metadata);
     const exists = this.pool.get(key);
     if (exists) {
       return exists.obj;

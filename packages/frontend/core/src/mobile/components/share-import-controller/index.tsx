@@ -96,6 +96,7 @@ export const ShareImportController = ({
   const [isSaving, setIsSaving] = useState(false);
   const [attachmentPreview, setAttachmentPreview] = useState<string>();
   const refreshing = useRef(false);
+  const itemId = item?.id;
 
   const selectedWorkspace = workspaces.find(
     workspace => workspaceKey(workspace) === selectedWorkspaceKey
@@ -170,6 +171,7 @@ export const ShareImportController = ({
     try {
       const pending = await provider.listPending();
       let importedCount = 0;
+      let nextItem: PendingShareItem | undefined;
       for (const candidate of pending) {
         if (candidate.target && !candidate.lastError) {
           const imported = await importItem(candidate, candidate.target, false);
@@ -178,23 +180,22 @@ export const ShareImportController = ({
             continue;
           }
           const latest = await provider.listPending();
-          const updated = latest.find(item => item.id === candidate.id);
-          if (importedCount > 0) {
-            notify.success({ title: `${importedCount} shared item saved` });
-          }
-          if (updated) setManualItem(updated);
-          return;
+          nextItem = latest.find(item => item.id === candidate.id);
+          break;
         }
-        if (importedCount > 0) {
-          notify.success({ title: `${importedCount} shared item saved` });
-        }
-        setManualItem(candidate);
-        return;
+        nextItem = candidate;
+        break;
       }
       if (importedCount > 0) {
-        notify.success({ title: `${importedCount} shared item saved` });
+        notify.success({
+          title: `${importedCount} shared ${importedCount === 1 ? 'item' : 'items'} saved`,
+        });
       }
-      setItem(undefined);
+      if (nextItem) {
+        setManualItem(nextItem);
+      } else {
+        setItem(undefined);
+      }
     } finally {
       refreshing.current = false;
     }
@@ -239,10 +240,11 @@ export const ShareImportController = ({
       .then(async options => {
         if (!active) return;
         if (!options) {
-          if (item) {
-            await provider.setError(item.id, 'workspace-not-found');
+          if (itemId) {
+            await provider.setError(itemId, 'workspace-not-found');
             setItem(current =>
-              current
+              current?.id === itemId &&
+              current.lastError !== 'workspace-not-found'
                 ? { ...current, lastError: 'workspace-not-found' }
                 : current
             );
@@ -265,7 +267,7 @@ export const ShareImportController = ({
     return () => {
       active = false;
     };
-  }, [importer, item, provider, selectedWorkspace]);
+  }, [importer, itemId, provider, selectedWorkspace]);
 
   const save = async (allowOffline: boolean) => {
     if (!item || !selectedWorkspace || isSaving) return;
