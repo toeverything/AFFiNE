@@ -27,10 +27,6 @@ final class ShareInboxStore {
     fileManager.containerURL(forSecurityApplicationGroupIdentifier: ShareInboxConstants.appGroupId)
   }
 
-  private var defaults: UserDefaults? {
-    UserDefaults(suiteName: ShareInboxConstants.appGroupId)
-  }
-
   private var inboxDirectoryURL: URL? {
     guard let containerURL else { return nil }
     return containerURL
@@ -43,89 +39,29 @@ final class ShareInboxStore {
       .appendingPathComponent(ShareInboxConstants.attachmentsDirectoryName, isDirectory: true)
   }
 
+  private var invalidDirectoryURL: URL? {
+    guard let inboxDirectoryURL else { return nil }
+    return inboxDirectoryURL
+      .appendingPathComponent(ShareInboxConstants.invalidDirectoryName, isDirectory: true)
+  }
+
   @discardableResult
   func ensureDirectories() -> Bool {
-    guard let inboxDirectoryURL, let attachmentsDirectoryURL else { return false }
+    guard let inboxDirectoryURL, let attachmentsDirectoryURL, let invalidDirectoryURL else {
+      return false
+    }
     do {
       try fileManager.createDirectory(at: inboxDirectoryURL, withIntermediateDirectories: true)
       try fileManager.createDirectory(at: attachmentsDirectoryURL, withIntermediateDirectories: true)
+      try fileManager.createDirectory(at: invalidDirectoryURL, withIntermediateDirectories: true)
       return true
     } catch {
       return false
     }
   }
 
-  func recentWorkspaces() -> [ShareWorkspaceInfo] {
-    guard let data = defaults?.data(forKey: ShareInboxConstants.recentWorkspacesKey) else {
-      return []
-    }
-    return (try? decoder.decode([ShareWorkspaceInfo].self, from: data)) ?? []
-  }
-
-  func lastWorkspaceId() -> String? {
-    defaults?.string(forKey: ShareInboxConstants.lastWorkspaceIdKey)
-  }
-
-  func lastWorkspaceFlavour() -> String? {
-    defaults?.string(forKey: ShareInboxConstants.lastWorkspaceFlavourKey)
-  }
-
-  func updateWorkspaceCache(
-    workspaces: [ShareWorkspaceInfo],
-    lastWorkspaceId: String?,
-    lastWorkspaceFlavour: String?
-  ) {
-    guard let defaults else { return }
-    if let data = try? encoder.encode(workspaces) {
-      defaults.set(data, forKey: ShareInboxConstants.recentWorkspacesKey)
-    }
-    if let lastWorkspaceId, !lastWorkspaceId.isEmpty {
-      defaults.set(lastWorkspaceId, forKey: ShareInboxConstants.lastWorkspaceIdKey)
-    } else {
-      defaults.removeObject(forKey: ShareInboxConstants.lastWorkspaceIdKey)
-    }
-    if let lastWorkspaceFlavour, !lastWorkspaceFlavour.isEmpty {
-      defaults.set(lastWorkspaceFlavour, forKey: ShareInboxConstants.lastWorkspaceFlavourKey)
-    } else {
-      defaults.removeObject(forKey: ShareInboxConstants.lastWorkspaceFlavourKey)
-    }
-  }
-
-  func isImported(_ item: ShareInboxItem) -> Bool {
-    guard let id = ShareInboxSafety.normalizedManifestID(item.id) else { return false }
-    return importedItemIds().contains(id)
-  }
-
-  @discardableResult
-  func markImported(_ item: ShareInboxItem) -> Bool {
-    guard let defaults,
-          let id = ShareInboxSafety.normalizedManifestID(item.id)
-    else {
-      return false
-    }
-    var ids = importedItemIds()
-    ids.insert(id)
-    defaults.set(Array(ids).sorted(), forKey: ShareInboxConstants.importedItemIdsKey)
-    return defaults.stringArray(forKey: ShareInboxConstants.importedItemIdsKey)?.contains(id) == true
-  }
-
-  func clearImported(_ item: ShareInboxItem) {
-    guard let defaults,
-          let id = ShareInboxSafety.normalizedManifestID(item.id)
-    else {
-      return
-    }
-    var ids = importedItemIds()
-    ids.remove(id)
-    if ids.isEmpty {
-      defaults.removeObject(forKey: ShareInboxConstants.importedItemIdsKey)
-    } else {
-      defaults.set(Array(ids).sorted(), forKey: ShareInboxConstants.importedItemIdsKey)
-    }
-  }
-
   func enqueue(_ item: ShareInboxItem, attachmentData: [(ShareInboxAttachment, Data)] = []) throws {
-    guard ensureDirectories(), let inboxDirectoryURL else {
+    guard ensureDirectories() else {
       throw ShareInboxError.containerUnavailable
     }
 
@@ -159,6 +95,13 @@ final class ShareInboxStore {
     }
   }
 
+  func update(_ item: ShareInboxItem) throws {
+    guard ensureDirectories(), let fileURL = manifestURL(for: item.id) else {
+      throw ShareInboxError.containerUnavailable
+    }
+    try encoder.encode(item).write(to: fileURL, options: .atomic)
+  }
+
   func pendingItems() -> [ShareInboxItem] {
     guard ensureDirectories(), let inboxDirectoryURL else { return [] }
     guard let urls = try? fileManager.contentsOfDirectory(
@@ -172,11 +115,15 @@ final class ShareInboxStore {
     return urls
       .filter { $0.pathExtension.lowercased() == "json" }
       .compactMap { url -> ShareInboxItem? in
-        guard let data = try? Data(contentsOf: url) else { return nil }
+        guard let data = try? Data(contentsOf: url) else {
+          quarantine(url)
+          return nil
+        }
         guard let item = try? decoder.decode(ShareInboxItem.self, from: data),
               let expectedURL = manifestURL(for: item.id),
               expectedURL.lastPathComponent.caseInsensitiveCompare(url.lastPathComponent) == .orderedSame
         else {
+          quarantine(url)
           return nil
         }
         return item
@@ -212,10 +159,6 @@ final class ShareInboxStore {
     }
   }
 
-  private func importedItemIds() -> Set<String> {
-    Set(defaults?.stringArray(forKey: ShareInboxConstants.importedItemIdsKey) ?? [])
-  }
-
   private func manifestURL(for itemId: String) -> URL? {
     guard let inboxDirectoryURL,
           let normalizedId = ShareInboxSafety.normalizedManifestID(itemId)
@@ -229,9 +172,17 @@ final class ShareInboxStore {
     guard candidate.path.hasPrefix(base.path + "/") else { return nil }
     return candidate
   }
+
+  private func quarantine(_ url: URL) {
+    guard let invalidDirectoryURL else { return }
+    let destination = invalidDirectoryURL.appendingPathComponent(url.lastPathComponent)
+    try? fileManager.removeItem(at: destination)
+    try? fileManager.moveItem(at: url, to: destination)
+  }
 }
 
 enum ShareInboxError: Error {
   case containerUnavailable
   case invalidPayload
+  case payloadTooLarge
 }

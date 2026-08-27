@@ -3,6 +3,7 @@ import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
 import { MobileModalConfigProvider } from '@affine/core/mobile/components/mobile-modal-config-provider';
+import { ShareImportController } from '@affine/core/mobile/components/share-import-controller';
 import { configureMobileModules } from '@affine/core/mobile/modules';
 import { MobileBackCoordinator } from '@affine/core/mobile/modules/back-coordinator';
 import { HapticProvider } from '@affine/core/mobile/modules/haptics';
@@ -34,10 +35,12 @@ import {
 } from '@affine/core/modules/storage';
 import { PopupWindowProvider, UrlService } from '@affine/core/modules/url';
 import { ClientSchemeProvider } from '@affine/core/modules/url/providers/client-schema';
-import { configureBrowserWorkbenchModule } from '@affine/core/modules/workbench';
+import {
+  configureBrowserWorkbenchModule,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
 import {
   getAFFiNEWorkspaceSchema,
-  type WorkspaceMetadata,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
@@ -87,12 +90,12 @@ import { NavigationGesture } from './plugins/navigation-gesture';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { PayWall } from './plugins/paywall';
 import { Preview } from './plugins/preview';
+import { shareInboxProvider } from './plugins/share-inbox';
 import {
   authRequestProvider,
   clearEndpointSession,
   getValidAccessToken,
 } from './proxy';
-import { resolveShareTargetWorkspace } from './share-extension/resolve-share-workspace';
 
 const storeManagerClient = createStoreManagerClient();
 setTelemetryTransport(storeManagerClient.telemetry);
@@ -543,27 +546,6 @@ const showNativeSignIn = async () => {
   return await showNativeSignIn();
 };
 
-const withShareImportTimeout = async <T,>(
-  promise: Promise<T>,
-  timeoutMs: number
-): Promise<T> => {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          reject(new Error(`Share import timed out after ${timeoutMs}ms`));
-        }, timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
-};
-
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const globalContext = globalContextService.globalContext;
@@ -626,44 +608,28 @@ const withShareImportTimeout = async <T,>(
 };
 (window as any).createNewDocByMarkdownInCurrentWorkspace = async (
   markdown: string,
-  title: string,
-  workspaceId?: string,
-  workspaceFlavour?: string
+  title: string
 ) => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
+  const globalContext = globalContextService.globalContext;
+  const currentWorkspaceId = globalContext.workspaceId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
-
-  const targetWorkspace: WorkspaceMetadata | null = resolveShareTargetWorkspace(
-    {
-      currentFlavour: globalContextService.globalContext.workspaceFlavour.get(),
-      currentId: globalContextService.globalContext.workspaceId.get(),
-      preferredFlavour: workspaceFlavour,
-      preferredId: workspaceId,
-      workspaces: workspacesService.list.workspaces$.value,
-    }
-  );
-  if (!targetWorkspace) {
-    return null;
-  }
-
-  const workspaceRef = workspacesService.open({ metadata: targetWorkspace });
-  if (!workspaceRef) {
-    return null;
-  }
-  if (
-    workspaceRef.workspace.meta.id !== targetWorkspace.id ||
-    workspaceRef.workspace.meta.flavour !== targetWorkspace.flavour
-  ) {
-    workspaceRef.dispose();
-    return null;
-  }
+  const workspaceRef = currentWorkspaceId
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
+    : null;
 
   try {
-    const workspace = workspaceRef.workspace;
-    await withShareImportTimeout(
-      workspace.engine.doc.waitForDocReady(workspace.id),
-      8000
-    ); // wait for root doc ready
+    const workspace = workspaceRef?.workspace;
+    if (!workspace) {
+      return;
+    }
+
+    const workbench = workspace.scope.get(WorkbenchService).workbench;
+    await workspace.engine.doc.waitForDocReady(workspace.id);
     const docId = await MarkdownTransformer.importMarkdownToDoc({
       collection: workspace.docCollection,
       schema: getAFFiNEWorkspaceSchema(),
@@ -674,71 +640,13 @@ const withShareImportTimeout = async <T,>(
     if (!docId) {
       throw new Error('Failed to import doc');
     }
-
-    // Document creation is the transaction boundary. Decoration and navigation
-    // must not turn an already-created document into a retryable failure.
-    try {
-      await docsService.changeDocTitle(docId, title);
-    } catch (error) {
-      console.error('Failed to title shared doc', error);
-    }
-    try {
-      docsService.list.setPrimaryMode(docId, 'page');
-    } catch (error) {
-      console.error('Failed to set shared doc mode', error);
-    }
-    try {
-      workspace.engine.doc.addPriority(workspace.id, 100);
-      workspace.engine.doc.addPriority(docId, 100);
-      await Promise.race([
-        Promise.allSettled([
-          workspace.engine.doc.waitForSynced(workspace.id),
-          workspace.engine.doc.waitForSynced(docId),
-        ]),
-        new Promise(resolve => setTimeout(resolve, 2000)),
-      ]);
-    } catch (error) {
-      console.error('Failed to wait for shared doc sync', error);
-    }
-    // Ensure UI navigates into the synced doc on cold start / workspace home.
-    try {
-      await router.navigate(
-        `/workspace/${targetWorkspace.id}/${docId}?flavour=${encodeURIComponent(
-          targetWorkspace.flavour
-        )}`
-      );
-    } catch (error) {
-      console.error('Failed to navigate to shared doc', error);
-    }
-    // Delay release so route mount can retain the pooled workspace.
-    setTimeout(() => workspaceRef.dispose(), 1500);
+    await docsService.changeDocTitle(docId, title);
+    docsService.list.setPrimaryMode(docId, 'page');
+    workbench.openDoc(docId);
     return docId;
-  } catch (error) {
-    workspaceRef.dispose();
-    throw error;
+  } finally {
+    workspaceRef?.dispose();
   }
-};
-(window as any).getShareWorkspaceCache = async () => {
-  const globalContextService = frameworkProvider.get(GlobalContextService);
-  const workspacesService = frameworkProvider.get(WorkspacesService);
-  const lastWorkspaceId =
-    globalContextService.globalContext.workspaceId.get() ?? null;
-  const lastWorkspaceFlavour =
-    globalContextService.globalContext.workspaceFlavour.get() ?? null;
-  const workspaces = workspacesService.list.workspaces$.value.map(meta => {
-    const profile = workspacesService.getProfile(meta);
-    const name = profile.name$.value || meta.id;
-    return {
-      id: meta.id,
-      flavour: meta.flavour,
-      name,
-    };
-  });
-  return {
-    lastWorkspaceId,
-    lastWorkspaceFlavour,
-    workspaces,
-  };
 };
 (window as any).getSubscriptionState = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
@@ -970,6 +878,7 @@ export function App() {
             <AffineContext store={getCurrentStore()}>
               <KeyboardThemeProvider />
               <IOSBackAdapter />
+              <ShareImportController provider={shareInboxProvider} />
               <BlocksuiteMenuConfigProvider>
                 <RouterProvider
                   fallbackElement={<AppFallback />}

@@ -265,15 +265,10 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentWorkspaceId =
     globalContextService.globalContext.workspaceId.get();
-  const currentWorkspaceFlavour =
-    globalContextService.globalContext.workspaceFlavour.get();
   const currentDocId = globalContextService.globalContext.docId.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(
-        currentWorkspaceId,
-        currentWorkspaceFlavour
-      )
+    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
     : null;
   if (!workspaceRef) {
     return;

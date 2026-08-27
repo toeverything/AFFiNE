@@ -22,23 +22,16 @@
 	<dict>
 		<key>NSExtensionAttributes</key>
 		<dict>
-			<!--
-			  Apple only runs NSExtensionJavaScriptPreprocessingFile when the activation
-			  rule is a dictionary that includes SupportsWebPageWithMaxCount > 0.
-			  Use MaxCount >= 10 so Safari PDF/webpage shares (URL + file) still match.
-			-->
 			<key>NSExtensionActivationRule</key>
 			<dict>
 				<key>NSExtensionActivationSupportsText</key>
 				<true/>
 				<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
-				<integer>10</integer>
+				<integer>1</integer>
 				<key>NSExtensionActivationSupportsWebPageWithMaxCount</key>
-				<integer>10</integer>
+				<integer>1</integer>
 				<key>NSExtensionActivationSupportsImageWithMaxCount</key>
-				<integer>10</integer>
-				<key>NSExtensionActivationSupportsFileWithMaxCount</key>
-				<integer>10</integer>
+				<integer>1</integer>
 			</dict>
 			<key>NSExtensionJavaScriptPreprocessingFile</key>
 			<string>SafariPageCapture</string>

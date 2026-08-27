@@ -1,40 +1,25 @@
-//
-//  ShareViewModel.swift
-//  ShareExtension
-//
-
 import Foundation
 import UIKit
 
 @MainActor
 final class ShareViewModel: ObservableObject {
-  @Published var title: String = ""
-  @Published var previewText: String = ""
-  @Published var markdown: String = ""
-  @Published var selectedWorkspaceKey: String?
-  @Published var workspaces: [ShareWorkspaceInfo] = []
+  @Published var title = ""
+  @Published var previewText = ""
   @Published var previewImage: UIImage?
   @Published var isLoading = true
   @Published var isSaving = false
   @Published var hasSaved = false
   @Published var errorMessage: String?
 
-  var hasWorkspaceCache: Bool { !workspaces.isEmpty }
-
-  var selectedWorkspaceName: String {
-    if let selectedWorkspace {
-      return selectedWorkspace.name
-    }
-    return workspaces.first?.name ?? "Workspace"
+  var actionTitle: String {
+    "Open AFFiNE"
   }
 
-  var selectedWorkspace: ShareWorkspaceInfo? {
-    if let selectedWorkspaceKey,
-       let match = workspaces.first(where: { $0.selectionKey == selectedWorkspaceKey })
-    {
-      return match
-    }
-    return workspaces.first
+  var canSave: Bool {
+    !isLoading
+      && !isSaving
+      && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      && draft?.content != nil
   }
 
   private var draft: SharePayloadDraft?
@@ -48,76 +33,16 @@ final class ShareViewModel: ObservableObject {
     isLoading = true
     defer { isLoading = false }
 
-    workspaces = store.recentWorkspaces()
-    let cachedLastId = store.lastWorkspaceId()
-    let cachedLastFlavour = store.lastWorkspaceFlavour()
-    if let cachedLastId,
-       let cached = workspaces.first(where: {
-         $0.id == cachedLastId && (cachedLastFlavour == nil || $0.flavour == cachedLastFlavour)
-       })
-    {
-      selectedWorkspaceKey = cached.selectionKey
-    } else {
-      selectedWorkspaceKey = workspaces.first?.selectionKey
-    }
-
     let items = extensionContext?.inputItems.compactMap { $0 as? NSExtensionItem } ?? []
-    var built = SharePayloadDraft(
-      title: "Shared",
-      markdown: "",
-      previewText: "",
-      files: []
-    )
-    for attempt in 0..<8 {
-      let probe = await SharePayloadBuilder.build(from: items, enrichYouTube: false)
-      let looksLikeYouTube =
-        markdownLooksLikeYouTube(probe.markdown) || markdownLooksLikeYouTube(probe.title)
-
-      if looksLikeYouTube, attempt < 3 {
-        built = probe
-        try? await Task.sleep(nanoseconds: 350_000_000)
-        continue
-      }
-
-      if looksLikeYouTube {
-        built = await SharePayloadBuilder.build(from: items, enrichYouTube: true)
-        break
-      }
-
-      built = probe
-      if !built.files.isEmpty {
-        break
-      }
-
-      let hasBody = built.markdown.count > 40 || !(built.previewText.isEmpty)
-      let hasTitleOrURL =
-        built.title != "Shared"
-        || built.markdown.contains("http://")
-        || built.markdown.contains("https://")
-
-      if (hasBody && hasTitleOrURL) || attempt == 7 {
-        break
-      }
-      try? await Task.sleep(nanoseconds: 350_000_000)
-    }
-
+    let built = await SharePayloadBuilder.build(from: items)
     draft = built
     title = built.title
     previewText = built.previewText
-    markdown = built.markdown
-    if let imageFile = built.files.first(where: { $0.embedInMarkdownAsImage }) {
-      previewImage = UIImage(data: imageFile.data)?
+    errorMessage = built.errorMessage
+    if let file = built.file {
+      previewImage = UIImage(data: file.data)?
         .preparingThumbnail(of: CGSize(width: 480, height: 480))
     }
-
-    #if DEBUG
-      NSLog(
-        "[AFFiNE Share] loaded title=%@ markdownChars=%d files=%d",
-        title,
-        markdown.count,
-        built.files.count
-      )
-    #endif
   }
 
   func save() async -> Bool {
@@ -127,49 +52,32 @@ final class ShareViewModel: ObservableObject {
 
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else {
-      errorMessage = "Title is required"
+      errorMessage = "Title is required."
+      return false
+    }
+    guard let draft, let content = draft.content else {
+      errorMessage = draft?.errorMessage ?? "Nothing to share."
       return false
     }
 
-    guard let draft else {
-      errorMessage = "Nothing to share"
-      return false
-    }
-
-    let body = markdown.trimmingCharacters(in: .whitespacesAndNewlines)
-    let hasImportableContent = ShareInboxSafety.hasImportableContent(
-      markdown: body
-    )
-    if draft.rejectedAttachmentCount > 0, !hasImportableContent {
-      errorMessage = "File attachments are not supported yet. Share a link or image."
-      return false
-    }
-    guard hasImportableContent else {
-      errorMessage = "Shared content is empty"
-      return false
-    }
-
+    let itemId = UUID().uuidString
     var attachments: [ShareInboxAttachment] = []
     var attachmentData: [(ShareInboxAttachment, Data)] = []
-
-    for file in draft.files {
-      let relativePath = "\(UUID().uuidString)/\(file.fileName)"
+    if let file = draft.file {
       let attachment = ShareInboxAttachment(
         fileName: file.fileName,
         mimeType: file.mimeType,
-        relativePath: relativePath,
-        placeholder: file.placeholder
+        relativePath: "\(itemId)/\(file.fileName)"
       )
-      attachments.append(attachment)
-      attachmentData.append((attachment, file.data))
+      attachments = [attachment]
+      attachmentData = [(attachment, file.data)]
     }
 
     let item = ShareInboxItem(
+      id: itemId,
       title: trimmedTitle,
-      markdown: body,
-      workspaceId: selectedWorkspace?.id,
-      workspaceFlavour: selectedWorkspace?.flavour,
-      previewText: String(body.prefix(280)),
+      content: content,
+      previewText: draft.previewText,
       attachments: attachments
     )
 
@@ -178,16 +86,8 @@ final class ShareViewModel: ObservableObject {
       hasSaved = true
       return true
     } catch {
-      errorMessage = "Failed to save shared content"
+      errorMessage = "Failed to save shared content."
       return false
     }
-  }
-
-  private func markdownLooksLikeYouTube(_ value: String) -> Bool {
-    let lower = value.lowercased()
-    return lower.contains("youtube.com/")
-      || lower.contains("youtu.be/")
-      || lower.contains("youtube.com/watch")
-      || lower.contains("m.youtube.com/")
   }
 }

@@ -71,6 +71,7 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
       NbStorePlugin(),
       PayWallPlugin(associatedController: self),
       PreviewPlugin(),
+      ShareInboxPlugin(),
     ]
     plugins.forEach { bridge?.registerPluginInstance($0) }
   }
@@ -94,9 +95,10 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
   }
 
   func processShareInboxIfNeeded() {
-    ShareInboxImporter.shared.syncWorkspaceCache(from: webView)
-    // Cold start needs retries until workspace/JS bridge are ready.
-    ShareInboxImporter.shared.processPendingItems(using: webView)
+    guard let webView, !ShareInboxStore.shared.pendingItems().isEmpty else { return }
+    webView.evaluateJavaScript(
+      "window.dispatchEvent(new Event('affine:share-inbox'))"
+    )
   }
 
   private func checkEligibilityOfIntelligent() {

@@ -13,6 +13,7 @@ import type { WorkspaceProfileService } from './profile';
 import { WorkspaceService } from './workspace';
 
 const logger = new DebugLogger('affine:workspace-repository');
+
 const getWorkspacePoolKey = (metadata: WorkspaceMetadata) =>
   `${metadata.flavour}:${metadata.id}`;
 

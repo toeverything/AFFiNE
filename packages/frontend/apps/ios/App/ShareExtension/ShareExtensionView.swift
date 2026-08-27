@@ -1,8 +1,3 @@
-//
-//  ShareExtensionView.swift
-//  ShareExtension
-//
-
 import SwiftUI
 
 struct ShareExtensionView: View {
@@ -17,109 +12,68 @@ struct ShareExtensionView: View {
           ProgressView("Reading shared content…")
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-          contentEditor
+          content
         }
       }
-      .navigationTitle("Save to AFFiNE")
+      .navigationTitle("AFFiNE")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel", action: onCancel)
+          Button("Not now", action: onCancel)
             .disabled(viewModel.isSaving)
-        }
-        ToolbarItem(placement: .principal) {
-          workspaceMenu
         }
         ToolbarItem(placement: .confirmationAction) {
           if viewModel.isSaving {
             ProgressView()
           } else {
-              Button("Save", action: onSave)
-                .fontWeight(.semibold)
-                .disabled(
-                  viewModel.isLoading
-                    || viewModel.hasSaved
-                    || viewModel.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                )
+            Button(viewModel.actionTitle, action: onSave)
+              .fontWeight(.semibold)
+              .disabled(!viewModel.canSave)
           }
         }
       }
     }
   }
 
-  @ViewBuilder
-  private var workspaceMenu: some View {
-    if viewModel.hasWorkspaceCache {
-      Menu {
-        ForEach(viewModel.workspaces) { workspace in
-          Button {
-            viewModel.selectedWorkspaceKey = workspace.selectionKey
-          } label: {
-            if viewModel.selectedWorkspaceKey == workspace.selectionKey {
-              Label(workspace.name, systemImage: "checkmark")
-            } else {
-              Text(workspace.name)
+  private var content: some View {
+    Form {
+      Section {
+        Text("Choose a workspace in AFFiNE. This item will stay saved until then.")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+      }
+
+      Section {
+        HStack(alignment: .top, spacing: 12) {
+          Image(systemName: viewModel.previewImage == nil ? "doc.text" : "photo")
+            .font(.title2)
+            .frame(width: 32, height: 32)
+            .foregroundStyle(.secondary)
+          VStack(alignment: .leading, spacing: 4) {
+            TextField("Title", text: $viewModel.title)
+              .font(.headline)
+            if !viewModel.previewText.isEmpty {
+              Text(viewModel.previewText)
+                .lineLimit(3)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
           }
         }
-      } label: {
-        HStack(spacing: 4) {
-          Image(systemName: "folder")
-          Text(viewModel.selectedWorkspaceName)
-            .lineLimit(1)
-          Image(systemName: "chevron.up.chevron.down")
-            .font(.caption2)
+        if let image = viewModel.previewImage {
+          Image(uiImage: image)
+            .resizable()
+            .scaledToFit()
+            .frame(maxHeight: 180)
         }
-        .font(.subheadline)
       }
-    } else {
-      Text("AFFiNE")
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-    }
-  }
 
-  private var contentEditor: some View {
-    VStack(spacing: 0) {
-      VStack(alignment: .leading, spacing: 8) {
-        TextField("Title", text: $viewModel.title)
-          .font(.title3.weight(.semibold))
-          .textInputAutocapitalization(.sentences)
-
-        if !viewModel.hasWorkspaceCache {
-          Text("Open AFFiNE once to sync workspaces, then share again.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
-
-        if let errorMessage = viewModel.errorMessage {
+      if let errorMessage = viewModel.errorMessage {
+        Section {
           Text(errorMessage)
-            .font(.footnote)
             .foregroundStyle(.red)
         }
       }
-      .padding(.horizontal, 16)
-      .padding(.top, 12)
-      .padding(.bottom, 8)
-
-      Divider()
-
-      if let image = viewModel.previewImage {
-        Image(uiImage: image)
-          .resizable()
-          .scaledToFit()
-          .frame(maxHeight: 160)
-          .padding(.horizontal, 16)
-          .padding(.top, 12)
-      }
-
-      // Competitor-style: show the clip body directly and allow edits before Save.
-      TextEditor(text: $viewModel.markdown)
-        .font(.body)
-        .scrollContentBackground(.hidden)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
   }
 }

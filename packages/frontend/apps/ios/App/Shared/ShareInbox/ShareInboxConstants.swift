@@ -9,9 +9,6 @@ enum ShareInboxConstants {
   static let appGroupId = "group.app.affine.pro"
   static let inboxDirectoryName = "ShareInbox"
   static let attachmentsDirectoryName = "Attachments"
-  static let recentWorkspacesKey = "share.recentWorkspaces"
-  static let lastWorkspaceIdKey = "share.lastWorkspaceId"
-  static let lastWorkspaceFlavourKey = "share.lastWorkspaceFlavour"
-  static let importedItemIdsKey = "share.importedItemIds"
+  static let invalidDirectoryName = "Invalid"
   static let openInboxURL = URL(string: "affine://share-inbox")!
 }

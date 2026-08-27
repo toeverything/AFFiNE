@@ -50,11 +50,7 @@ final class ShareViewController: UIViewController {
       guard let self else { return }
       let success = await viewModel.save()
       guard success else { return }
-      let opened = await openMainAppIfPossible()
-      guard opened else {
-        viewModel.errorMessage = "Saved. Open AFFiNE to finish importing."
-        return
-      }
+      _ = await openMainAppIfPossible()
       extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
     }
   }

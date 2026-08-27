@@ -21,33 +21,22 @@ enum ApplicationBridgedWindowScript: String {
   case getCurrentUserIdentifier = "return await window.getCurrentUserIdentifier();"
   case requestSignIn = "return await window.requestSignIn();"
   case getCurrentThemeMode = "window.getCurrentThemeMode();"
-  case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title, workspaceId, workspaceFlavour);"
-  case getShareWorkspaceCache = "return await window.getShareWorkspaceCache();"
+  case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title);"
 
   var requiresAsyncContext: Bool {
     switch self {
-    case .getCurrentDocContentInMarkdown,
-         .getCurrentUserIdentifier,
-         .requestSignIn,
-         .createNewDocByMarkdownInCurrentWorkspace,
-         .getShareWorkspaceCache:
-      true
-    default:
-      false
+    case .getCurrentDocContentInMarkdown, .getCurrentUserIdentifier, .requestSignIn, .createNewDocByMarkdownInCurrentWorkspace: true
+    default: false
     }
   }
 }
 
 extension WKWebView {
-  func evaluateScript(
-    _ script: ApplicationBridgedWindowScript,
-    arguments: [String: Any] = [:],
-    callback: @escaping (Any?) -> Void
-  ) {
+  func evaluateScript(_ script: ApplicationBridgedWindowScript, callback: @escaping (Any?) -> Void) {
     if script.requiresAsyncContext {
       callAsyncJavaScript(
         script.rawValue,
-        arguments: arguments,
+        arguments: [:],
         in: nil,
         in: .page
       ) { result in
@@ -61,35 +50,5 @@ extension WKWebView {
     } else {
       evaluateJavaScript(script.rawValue) { output, _ in callback(output) }
     }
-  }
-
-  @discardableResult
-  func createDocByMarkdown(
-    markdown: String,
-    title: String,
-    workspaceId: String? = nil,
-    workspaceFlavour: String? = nil,
-    callback: ((Any?) -> Void)? = nil
-  ) -> Bool {
-    var arguments: [String: Any] = [
-      "markdown": markdown,
-      "title": title,
-    ]
-    if let workspaceId, !workspaceId.isEmpty {
-      arguments["workspaceId"] = workspaceId
-    } else {
-      arguments["workspaceId"] = NSNull()
-    }
-    if let workspaceFlavour, !workspaceFlavour.isEmpty {
-      arguments["workspaceFlavour"] = workspaceFlavour
-    } else {
-      arguments["workspaceFlavour"] = NSNull()
-    }
-    evaluateScript(
-      .createNewDocByMarkdownInCurrentWorkspace,
-      arguments: arguments,
-      callback: { callback?($0) }
-    )
-    return true
   }
 }

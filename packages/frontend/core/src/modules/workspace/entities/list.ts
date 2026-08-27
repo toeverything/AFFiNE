@@ -27,12 +27,9 @@ export class WorkspaceList extends Entity {
     false
   );
 
-  workspace$(id: string, flavour?: string | null) {
+  workspace$(id: string) {
     return this.workspaces$.map(workspaces =>
-      workspaces.find(
-        workspace =>
-          workspace.id === id && (!flavour || workspace.flavour === flavour)
-      )
+      workspaces.find(workspace => workspace.id === id)
     );
   }
 
