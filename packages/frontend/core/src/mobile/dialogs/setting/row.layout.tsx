@@ -84,7 +84,6 @@ export const RowLayout = ({
       onKeyDown={isButtonRow ? handleKeyDown : undefined}
       role={isButtonRow ? 'button' : undefined}
       tabIndex={isButtonRow ? 0 : undefined}
-      aria-label={ariaLabel}
     >
       {isLinkRow ? (
         <a
