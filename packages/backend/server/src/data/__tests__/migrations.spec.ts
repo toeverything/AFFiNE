@@ -137,10 +137,29 @@ test('managed provider migration preserves explicit profiles and converts legacy
   });
   const profiles = [
     {
-      id: 'openai-default',
-      type: 'openai',
+      id: 'cloudflare-existing',
+      type: 'cloudflareWorkersAi',
       priority: 7,
+      models: ['@cf/baai/bge-reranker-base'],
       config: { apiKey: 'profile-key' },
+    },
+    {
+      id: 'fal-default',
+      type: 'fal',
+      priority: 5,
+      config: { apiKey: 'existing-fal-key' },
+    },
+    {
+      id: 'anthropic-default',
+      type: 'anthropic',
+      priority: 2,
+      config: { apiKey: 'existing-anthropic-key' },
+    },
+    {
+      id: 'anthropicVertex-default',
+      type: 'anthropicVertex',
+      priority: 1,
+      config: { projectId: 'existing-anthropic-vertex-project' },
     },
   ];
   await t.context.db.appConfig.createMany({
@@ -148,11 +167,31 @@ test('managed provider migration preserves explicit profiles and converts legacy
       { id: 'copilot.providers.profiles', value: profiles },
       {
         id: 'copilot.providers.openai',
-        value: { apiKey: 'shadowed-legacy-key' },
+        value: { apiKey: 'openai-key' },
+      },
+      {
+        id: 'copilot.providers.cloudflareWorkersAi',
+        value: { apiKey: 'legacy-cloudflare-key' },
       },
       {
         id: 'copilot.providers.gemini',
         value: { apiKey: 'gemini-key' },
+      },
+      {
+        id: 'copilot.providers.geminiVertex',
+        value: { projectId: 'gemini-vertex-project' },
+      },
+      {
+        id: 'copilot.providers.fal',
+        value: { apiKey: 'legacy-fal-key' },
+      },
+      {
+        id: 'copilot.providers.anthropic',
+        value: { apiKey: 'legacy-anthropic-key' },
+      },
+      {
+        id: 'copilot.providers.anthropicVertex',
+        value: { projectId: 'legacy-anthropic-vertex-project' },
       },
       {
         id: 'copilot.providers.defaults',
@@ -168,19 +207,64 @@ test('managed provider migration preserves explicit profiles and converts legacy
     where: { id: 'copilot.providers.profiles' },
   });
   t.deepEqual(migrated.value, [
-    ...profiles,
+    profiles[0],
+    {
+      ...profiles[1],
+      models: ['lora/image-to-image', 'workflowutils/teed'],
+    },
+    {
+      ...profiles[2],
+      models: ['claude-sonnet-4-6'],
+    },
+    {
+      ...profiles[3],
+      models: ['claude-sonnet-4-6'],
+      enabled: false,
+    },
+    {
+      id: 'openai-default',
+      type: 'openai',
+      priority: 7,
+      models: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-image-1', 'gpt-4o-mini'],
+      config: { apiKey: 'openai-key' },
+    },
+    {
+      id: 'cloudflareWorkersAi-default',
+      type: 'cloudflareWorkersAi',
+      priority: 6,
+      models: ['@cf/baai/bge-reranker-base'],
+      config: { apiKey: 'legacy-cloudflare-key' },
+      enabled: false,
+    },
     {
       id: 'gemini-default',
       type: 'gemini',
       priority: 4,
+      models: ['gemini-3.7-flash', 'gemini-embedding-001'],
       config: { apiKey: 'gemini-key' },
+    },
+    {
+      id: 'geminiVertex-default',
+      type: 'geminiVertex',
+      priority: 3,
+      models: ['gemini-3.7-flash'],
+      config: { projectId: 'gemini-vertex-project' },
+      enabled: false,
     },
   ]);
   t.is(
     await t.context.db.appConfig.count({
       where: {
         id: {
-          in: ['copilot.providers.openai', 'copilot.providers.gemini'],
+          in: [
+            'copilot.providers.openai',
+            'copilot.providers.cloudflareWorkersAi',
+            'copilot.providers.gemini',
+            'copilot.providers.geminiVertex',
+            'copilot.providers.fal',
+            'copilot.providers.anthropic',
+            'copilot.providers.anthropicVertex',
+          ],
         },
       },
     }),
@@ -190,6 +274,38 @@ test('managed provider migration preserves explicit profiles and converts legacy
     await t.context.db.appConfig.findUnique({
       where: { id: 'copilot.providers.defaults' },
     })
+  );
+  await t.context.db.appConfig.delete({
+    where: { id: 'copilot.providers.defaults' },
+  });
+
+  const defaultOnlyProfiles = profiles.slice(1);
+  await t.context.db.appConfig.update({
+    where: { id: 'copilot.providers.profiles' },
+    data: { value: defaultOnlyProfiles },
+  });
+  await ConvergeManagedProviderProfiles1786810000000.up(t.context.db);
+  t.deepEqual(
+    (
+      await t.context.db.appConfig.findUniqueOrThrow({
+        where: { id: 'copilot.providers.profiles' },
+      })
+    ).value,
+    [
+      {
+        ...defaultOnlyProfiles[0],
+        models: ['lora/image-to-image', 'workflowutils/teed'],
+      },
+      {
+        ...defaultOnlyProfiles[1],
+        models: ['claude-sonnet-4-6'],
+      },
+      {
+        ...defaultOnlyProfiles[2],
+        models: ['claude-sonnet-4-6'],
+        enabled: false,
+      },
+    ]
   );
 
   await t.context.db.appConfig.update({

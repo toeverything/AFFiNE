@@ -33,7 +33,6 @@
 		50C000102F02000000000000 /* NativeSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C000112F02000000000000 /* NativeSignInView.swift */; };
 		50C000122F02000000000000 /* NativeSignInHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C000132F02000000000000 /* NativeSignInHUD.swift */; };
 		50C000142F02000000000000 /* NativeSignInComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C000152F02000000000000 /* NativeSignInComponents.swift */; };
-		50D000032F03000000000000 /* ColdStartSignInSheetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50D000022F03000000000000 /* ColdStartSignInSheetViewController.swift */; };
 		50FF428A2D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */; };
 		50FF428C2D2E77CC0050AA83 /* AffineViewController+AIButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */; };
 		9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */; };
@@ -95,7 +94,6 @@
 		50C000112F02000000000000 /* NativeSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSignInView.swift; sourceTree = "<group>"; };
 		50C000132F02000000000000 /* NativeSignInHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSignInHUD.swift; sourceTree = "<group>"; };
 		50C000152F02000000000000 /* NativeSignInComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSignInComponents.swift; sourceTree = "<group>"; };
-		50D000022F03000000000000 /* ColdStartSignInSheetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColdStartSignInSheetViewController.swift; sourceTree = "<group>"; };
 		50CECF1E2E7C1084004487AA /* AffineResources */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AffineResources; sourceTree = "<group>"; };
 		50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationBridgedWindowScript.swift; sourceTree = "<group>"; };
 		50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AffineViewController+AIButton.swift"; sourceTree = "<group>"; };
@@ -257,7 +255,6 @@
 				9DAE85B72E7BAC3B00DB9F1D /* Plugins */,
 				9D90BE1C2CCB9876006677DB /* AppDelegate.swift */,
 				507513692D1924C600AD60C0 /* RootViewController.swift */,
-				50D000022F03000000000000 /* ColdStartSignInSheetViewController.swift */,
 				9D90BE1B2CCB9876006677DB /* AffineViewController.swift */,
 				50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */,
 				50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */,
@@ -490,7 +487,6 @@
 				50C000142F02000000000000 /* NativeSignInComponents.swift in Sources */,
 				9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */,
 				5075136A2D1924C600AD60C0 /* RootViewController.swift in Sources */,
-				50D000032F03000000000000 /* ColdStartSignInSheetViewController.swift in Sources */,
 				C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */,
 				9DAE9BD92D8D1AB0000C1D5A /* AppConfigManager.swift in Sources */,
 				50FF428A2D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift in Sources */,

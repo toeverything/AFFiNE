@@ -45,26 +45,24 @@ export class IndexerService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    await this.syncFeature();
+    this.syncFeature();
   }
 
   @OnEvent('config.changed.broadcast')
   async onConfigChanged({ updates }: Events['config.changed.broadcast']) {
-    if (updates.indexer) await this.syncFeature();
+    if (updates.indexer) this.syncFeature();
   }
 
-  private async syncFeature() {
-    if (!this.server.getConfig().indexer.enabled) {
+  private syncFeature() {
+    if (this.server.getConfig().indexer.enabled) {
+      this.server.enableFeature(ServerFeature.Indexer);
+    } else {
       this.server.disableFeature(ServerFeature.Indexer);
-      return;
     }
-    const status = (await this.runtime.searchStatus()) as { ready: boolean };
-    if (status.ready) this.server.enableFeature(ServerFeature.Indexer);
-    else this.server.disableFeature(ServerFeature.Indexer);
   }
 
   async search(actorUserId: string, workspaceId: string, input: SearchInput) {
-    await this.syncFeature();
+    this.syncFeature();
     const result = this.unwrap<SearchResult>(
       await this.runtime.searchAuthorized(actorUserId, workspaceId, input),
       workspaceId
@@ -77,7 +75,7 @@ export class IndexerService implements OnApplicationBootstrap {
     workspaceId: string,
     input: AggregateInput
   ) {
-    await this.syncFeature();
+    this.syncFeature();
     const result = this.unwrap<AggregateResult>(
       await this.runtime.aggregateAuthorized(actorUserId, workspaceId, input),
       workspaceId
@@ -104,7 +102,7 @@ export class IndexerService implements OnApplicationBootstrap {
     keyword: string,
     options?: { limit?: number; docIds?: string[] }
   ): Promise<SearchDoc[]> {
-    await this.syncFeature();
+    this.syncFeature();
     if (options?.limit !== undefined && options.limit <= 0) {
       throw new InvalidIndexerInput({
         reason: 'searchDocs limit must be positive',
