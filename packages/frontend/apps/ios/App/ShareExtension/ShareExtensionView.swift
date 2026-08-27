@@ -34,12 +34,13 @@ struct ShareExtensionView: View {
           if viewModel.isSaving {
             ProgressView()
           } else {
-            Button("Save", action: onSave)
-              .fontWeight(.semibold)
-              .disabled(
-                viewModel.isLoading
-                  || viewModel.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-              )
+              Button("Save", action: onSave)
+                .fontWeight(.semibold)
+                .disabled(
+                  viewModel.isLoading
+                    || viewModel.hasSaved
+                    || viewModel.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                )
           }
         }
       }

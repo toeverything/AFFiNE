@@ -121,6 +121,24 @@ final class ShareInboxImporter {
     let workspaceId = item.workspaceId ?? ""
     let workspaceFlavour = item.workspaceFlavour ?? ""
 
+    return await withTimeout(seconds: 12) {
+      await self.callImportScript(
+        markdown: markdown,
+        title: title,
+        workspaceId: workspaceId,
+        workspaceFlavour: workspaceFlavour,
+        using: webView
+      )
+    } ?? false
+  }
+
+  private func callImportScript(
+    markdown: String,
+    title: String,
+    workspaceId: String,
+    workspaceFlavour: String,
+    using webView: WKWebView
+  ) async -> Bool {
     return await withCheckedContinuation { continuation in
       webView.callAsyncJavaScript(
         """
@@ -151,6 +169,33 @@ final class ShareInboxImporter {
         case .failure:
           continuation.resume(returning: false)
         }
+      }
+    }
+  }
+
+  private func withTimeout<T>(
+    seconds: TimeInterval,
+    operation: @escaping @MainActor () async -> T
+  ) async -> T? {
+    await withCheckedContinuation { continuation in
+      let nanoseconds = UInt64(seconds * 1_000_000_000)
+      let lock = NSLock()
+      var didResume = false
+      let resumeOnce: (T?) -> Void = { value in
+        lock.lock()
+        defer { lock.unlock() }
+        guard !didResume else { return }
+        didResume = true
+        continuation.resume(returning: value)
+      }
+
+      Task { @MainActor in
+        let value = await operation()
+        resumeOnce(value)
+      }
+      Task {
+        try? await Task.sleep(nanoseconds: nanoseconds)
+        resumeOnce(nil)
       }
     }
   }

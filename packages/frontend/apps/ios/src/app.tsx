@@ -542,6 +542,28 @@ const showNativeSignIn = async () => {
 (window as any).requestSignIn = async () => {
   return await showNativeSignIn();
 };
+
+const withShareImportTimeout = async <T,>(
+  promise: Promise<T>,
+  timeoutMs: number
+): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`Share import timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+};
+
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const globalContext = globalContextService.globalContext;
@@ -638,7 +660,10 @@ const showNativeSignIn = async () => {
 
   try {
     const workspace = workspaceRef.workspace;
-    await workspace.engine.doc.waitForDocReady(workspace.id); // wait for root doc ready
+    await withShareImportTimeout(
+      workspace.engine.doc.waitForDocReady(workspace.id),
+      8000
+    ); // wait for root doc ready
     const docId = await MarkdownTransformer.importMarkdownToDoc({
       collection: workspace.docCollection,
       schema: getAFFiNEWorkspaceSchema(),

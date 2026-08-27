@@ -25,8 +25,9 @@ private final class XMediaRedirectDelegate: NSObject, URLSessionTaskDelegate {
 
 enum SharePayloadBuilder {
   private static let maxAttachmentBytes = 12 * 1024 * 1024
+  private static let maxImageAttachmentBytes = 3 * 1024 * 1024
   private static let maxRemoteImageBytes = 6 * 1024 * 1024
-  private static let maxTotalAttachmentBytes = 24 * 1024 * 1024
+  private static let maxTotalAttachmentBytes = 10 * 1024 * 1024
   private static let maxHTMLPayloadBytes = 768 * 1024
   private static let maxSafariContentCharacters = 250_000
 
@@ -567,10 +568,26 @@ enum SharePayloadBuilder {
           let fileName = fileURL.lastPathComponent
           let mime = mimeType(forFileName: fileName)
           let embedImage = mime.hasPrefix("image/")
+          let finalData: Data
+          let finalMime: String
+          let finalFileName: String
+          if embedImage, data.count > maxImageAttachmentBytes {
+            guard let compressed = compressedImageData(from: data, maxBytes: maxImageAttachmentBytes)
+            else {
+              continue
+            }
+            finalData = compressed
+            finalMime = "image/jpeg"
+            finalFileName = (fileName as NSString).deletingPathExtension + ".jpg"
+          } else {
+            finalData = data
+            finalMime = mime
+            finalFileName = fileName
+          }
           return SharePayloadFile(
-            data: data,
-            mimeType: mime,
-            fileName: fileName,
+            data: finalData,
+            mimeType: finalMime,
+            fileName: finalFileName,
             placeholder: placeholder(forImage: embedImage, index: existingFileCount),
             embedInMarkdownAsImage: embedImage
           )
@@ -586,8 +603,18 @@ enum SharePayloadBuilder {
       guard !data.isEmpty else { continue }
 
       let detectedImageMime = isImage ? ShareInboxSafety.detectRasterImageMimeType(data) : nil
-      let mimeType = detectedImageMime ?? mimeType(for: type)
-      let ext = detectedImageMime.map(fileExtension(forMimeType:)) ?? fileExtension(for: type)
+      let compressedImage =
+        isImage && data.count > maxImageAttachmentBytes
+        ? compressedImageData(from: data, maxBytes: maxImageAttachmentBytes)
+        : nil
+      if isImage, data.count > maxImageAttachmentBytes, compressedImage == nil {
+        continue
+      }
+      let finalData = compressedImage ?? data
+      let mimeType = compressedImage != nil ? "image/jpeg" : detectedImageMime ?? mimeType(for: type)
+      let ext = compressedImage != nil
+        ? "jpg"
+        : detectedImageMime.map(fileExtension(forMimeType:)) ?? fileExtension(for: type)
       let fileName: String
       if type.conforms(to: .pdf) || typeId == UTType.pdf.identifier {
         fileName = "shared.pdf"
@@ -600,7 +627,7 @@ enum SharePayloadBuilder {
       }
 
       return SharePayloadFile(
-        data: data,
+        data: finalData,
         mimeType: mimeType,
         fileName: fileName,
         placeholder: placeholder(forImage: isImage, index: existingFileCount),
@@ -771,7 +798,7 @@ enum SharePayloadBuilder {
                   let data = dataIfWithinLimit(at: url, maxBytes: maxAttachmentBytes)
         {
           continuation.resume(returning: data)
-        } else if let image = item as? UIImage, let data = image.jpegData(compressionQuality: 0.9) {
+        } else if let image = item as? UIImage, let data = image.jpegData(compressionQuality: 0.82) {
           guard data.count <= maxAttachmentBytes else {
             continuation.resume(throwing: ShareInboxError.invalidPayload)
             return
@@ -823,6 +850,27 @@ enum SharePayloadBuilder {
   private static func placeholder(forImage isImage: Bool, index: Int) -> String {
     let suffix = index == 0 ? "" : "-\(index + 1)"
     return isImage ? "attachment://shared-image\(suffix)" : "attachment://shared-file\(suffix)"
+  }
+
+  private static func compressedImageData(from data: Data, maxBytes: Int) -> Data? {
+    guard let image = UIImage(data: data) else { return nil }
+    let maxDimension: CGFloat = 1800
+    let size = image.size
+    let scale = min(1, maxDimension / max(size.width, size.height))
+    let targetSize = CGSize(width: size.width * scale, height: size.height * scale)
+    let renderer = UIGraphicsImageRenderer(size: targetSize)
+    let resized = renderer.image { _ in
+      image.draw(in: CGRect(origin: .zero, size: targetSize))
+    }
+    for quality in [0.82, 0.72, 0.62, 0.52] {
+      if let jpeg = resized.jpegData(compressionQuality: quality), jpeg.count <= maxBytes {
+        return jpeg
+      }
+    }
+    guard let jpeg = resized.jpegData(compressionQuality: 0.45), jpeg.count <= maxBytes else {
+      return nil
+    }
+    return jpeg
   }
 
   private static func dataIfWithinLimit(at url: URL, maxBytes: Int) -> Data? {

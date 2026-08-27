@@ -16,6 +16,7 @@ final class ShareViewModel: ObservableObject {
   @Published var previewImage: UIImage?
   @Published var isLoading = true
   @Published var isSaving = false
+  @Published var hasSaved = false
   @Published var errorMessage: String?
 
   var hasWorkspaceCache: Bool { !workspaces.isEmpty }
@@ -120,7 +121,7 @@ final class ShareViewModel: ObservableObject {
   }
 
   func save() async -> Bool {
-    guard !isSaving else { return false }
+    guard !isSaving, !hasSaved else { return false }
     isSaving = true
     defer { isSaving = false }
 
@@ -174,6 +175,7 @@ final class ShareViewModel: ObservableObject {
 
     do {
       try store.enqueue(item, attachmentData: attachmentData)
+      hasSaved = true
       return true
     } catch {
       errorMessage = "Failed to save shared content"

@@ -341,6 +341,29 @@ function truncateText(value, maxChars) {
   return text.substring(0, maxChars) + '\n\n…';
 }
 
+function isAllowedXCaptionURL(url) {
+  try {
+    var parsed = new URL(url, document.baseURI || window.location.href);
+    var host = parsed.hostname.toLowerCase();
+    var allowedHost =
+      host === 'x.com' ||
+      host === 'twitter.com' ||
+      host.endsWith('.x.com') ||
+      host.endsWith('.twitter.com') ||
+      host === 'pbs.twimg.com' ||
+      host === 'video.twimg.com' ||
+      host === 'abs.twimg.com' ||
+      host.endsWith('.twimg.com');
+    if (!allowedHost) return false;
+    if (parsed.protocol !== 'https:') return false;
+    if (parsed.username || parsed.password) return false;
+    if (parsed.port && parsed.port !== '443') return false;
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 function fetchText(url, options) {
   options = options || {};
   var maxBytes = options.maxBytes || MAX_FETCH_TEXT_BYTES;
@@ -353,7 +376,7 @@ function fetchText(url, options) {
       }, timeoutMs)
     : null;
   return fetch(url, {
-    credentials: 'include',
+    credentials: options.credentials || 'omit',
     signal: controller ? controller.signal : undefined,
   })
     .then(function (response) {
@@ -823,6 +846,7 @@ function extractXCaptionURLs(article) {
   var seen = Object.create(null);
   return urls.filter(function (url) {
     if (!url || seen[url]) return false;
+    if (!isAllowedXCaptionURL(url)) return false;
     seen[url] = true;
     return true;
   });
