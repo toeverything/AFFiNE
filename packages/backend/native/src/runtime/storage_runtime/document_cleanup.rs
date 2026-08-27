@@ -10,6 +10,7 @@ use super::{
   RuntimeDocumentCleanupReconcileResult, RuntimeError, RuntimeResult, StorageRuntime, load_workspace_live_doc_ids,
   merge_current_doc, napi_error,
 };
+use crate::reserved_doc;
 
 #[derive(FromRow)]
 struct StoredDocActivity {
@@ -114,7 +115,7 @@ async fn reconcile_workspace(
   workspace_id: &str,
 ) -> RuntimeResult<RuntimeDocumentCleanupReconcileResult> {
   let pool = runtime.pool().await?;
-  let live_ids = match load_workspace_live_doc_ids(&pool, workspace_id).await {
+  let mut live_ids = match load_workspace_live_doc_ids(&pool, workspace_id).await {
     Ok(ids) => ids.into_iter().collect::<HashSet<_>>(),
     Err(err) => {
       record_reconcile_failure(&pool, workspace_id, "root", &err.to_string()).await?;
@@ -142,6 +143,10 @@ async fn reconcile_workspace(
   };
 
   for doc in &stored {
+    if reserved_doc::classify(workspace_id, &doc.doc_id).is_some() {
+      live_ids.insert(doc.doc_id.clone());
+      continue;
+    }
     if live_ids.contains(&doc.doc_id) {
       continue;
     }
@@ -517,6 +522,19 @@ async fn execute_one(
       .map_err(|err| RuntimeError::database("Document cleanup empty claim rollback failed", err))?;
     return Ok(None);
   };
+
+  if reserved_doc::classify(&candidate.workspace_id, &candidate.doc_id).is_some() {
+    sqlx::query("DELETE FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2")
+      .bind(&candidate.workspace_id)
+      .bind(&candidate.doc_id)
+      .execute(&mut *tx)
+      .await
+      .map_err(|err| RuntimeError::database("Document cleanup reserved candidate delete failed", err))?;
+    tx.commit()
+      .await
+      .map_err(|err| RuntimeError::database("Document cleanup reserved candidate commit failed", err))?;
+    return Ok(Some((candidate, -1)));
+  }
 
   let root = match load_current_doc_for_update(&mut tx, &candidate.workspace_id, &candidate.workspace_id).await {
     Ok(Some(root)) => root,
@@ -1222,6 +1240,26 @@ mod tests {
     .bind(missing_doc)
     .execute(&pool)
     .await?;
+    let reserved_db_doc_id = format!("db${workspace_id}$docProperties");
+    let reserved_userdata_doc_id = format!("userdata${user_id}${workspace_id}$settings");
+    let invalid_db_doc_id = "db$docProperties";
+    let invalid_userdata_doc_id = format!("userdata$__local__${workspace_id}$favorite");
+    for internal_doc_id in [
+      reserved_db_doc_id.as_str(),
+      reserved_userdata_doc_id.as_str(),
+      invalid_db_doc_id,
+      invalid_userdata_doc_id.as_str(),
+    ] {
+      sqlx::query(
+        "INSERT INTO snapshots (workspace_id, guid, blob, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP - \
+         INTERVAL '90 days')",
+      )
+      .bind(&workspace_id)
+      .bind(internal_doc_id)
+      .bind(affine_doc_loader::build_full_doc("Internal", "", internal_doc_id)?)
+      .execute(&pool)
+      .await?;
+    }
     sqlx::query(
       "INSERT INTO updates (workspace_id, guid, blob, created_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP - INTERVAL \
        '89 days')",
@@ -1252,7 +1290,40 @@ mod tests {
     .await?;
 
     let mark = reconcile_workspace(&runtime, &workspace_id).await?;
-    assert_eq!(mark.marked, 1);
+    assert_eq!(mark.marked, 3);
+    let marked_doc_ids = sqlx::query_scalar::<_, String>(
+      "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 ORDER BY doc_id",
+    )
+    .bind(&workspace_id)
+    .fetch_all(&pool)
+    .await?;
+    assert_eq!(marked_doc_ids.len(), 3);
+    for doc_id in [doc_id, invalid_db_doc_id, invalid_userdata_doc_id.as_str()] {
+      assert!(marked_doc_ids.iter().any(|marked| marked == doc_id));
+    }
+    for doc_id in [&reserved_db_doc_id, &reserved_userdata_doc_id] {
+      assert!(!marked_doc_ids.iter().any(|marked| marked == doc_id));
+    }
+    sqlx::query(
+      "INSERT INTO document_cleanup_candidates (workspace_id, doc_id, status, missing_since, \
+       last_observed_missing_at, last_doc_activity_at) VALUES ($1, $2, 'marked', CURRENT_TIMESTAMP - INTERVAL '31 \
+       days', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '90 days')",
+    )
+    .bind(&workspace_id)
+    .bind(&reserved_db_doc_id)
+    .execute(&pool)
+    .await?;
+    let recovered_reserved = execute_one(&pool, Some(&workspace_id), 30).await?.unwrap();
+    assert_eq!(recovered_reserved.0.doc_id, reserved_db_doc_id);
+    assert_eq!(recovered_reserved.1, -1);
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM snapshots WHERE workspace_id = $1 AND guid = $2")
+        .bind(&workspace_id)
+        .bind(&reserved_db_doc_id)
+        .fetch_one(&pool)
+        .await?,
+      1
+    );
     sqlx::query(
       "UPDATE document_cleanup_candidates SET missing_since = CURRENT_TIMESTAMP - INTERVAL '29 days' WHERE \
        workspace_id = $1 AND doc_id = $2",
