@@ -46,12 +46,25 @@
 		9DAE9BD92D8D1AB0000C1D5A /* AppConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAE9BD82D8D1AA9000C1D5A /* AppConfigManager.swift */; };
 		9DEC59432D323EE40027CEBD /* Mutex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DEC59422D323EE00027CEBD /* Mutex.swift */; };
 		9DFCD1462D27D1D70028C92B /* libaffine_mobile_native.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DFCD1452D27D1D70028C92B /* libaffine_mobile_native.a */; };
+		A10100000000000000000001 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A10100000000000000000003 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA0000040000000000000000 /* AuthDateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000010000000000000000 /* AuthDateParser.swift */; };
 		AA0000050000000000000000 /* AuthDateParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000000 /* AuthDateParserTests.swift */; };
+		AB0000010000000000000000 /* ShareInboxSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000030000000000000000 /* ShareInboxSafety.swift */; };
+		AB0000020000000000000000 /* ShareInboxSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000040000000000000000 /* ShareInboxSafetyTests.swift */; };
 		C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C6F2D0307B700BC2AD1 /* affine_mobile_native.swift */; };
 		C4C97C7D2D030BE000BC2AD1 /* affine_mobile_nativeFFI.h in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C702D0307B700BC2AD1 /* affine_mobile_nativeFFI.h */; };
 		C4C97C7E2D030BE000BC2AD1 /* affine_mobile_nativeFFI.modulemap in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C712D0307B700BC2AD1 /* affine_mobile_nativeFFI.modulemap */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A10100000000000000000006 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1010000000000000000000D;
+			remoteInfo = ShareExtension;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		50E218312E0BE1A700EA4C6E /* Embed Frameworks */ = {
@@ -62,6 +75,17 @@
 			files = (
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1010000000000000000000B /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A10100000000000000000001 /* ShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -109,8 +133,12 @@
 		9DAE9BD82D8D1AA9000C1D5A /* AppConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfigManager.swift; sourceTree = "<group>"; };
 		9DEC59422D323EE00027CEBD /* Mutex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mutex.swift; sourceTree = "<group>"; };
 		9DFCD1452D27D1D70028C92B /* libaffine_mobile_native.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libaffine_mobile_native.a; sourceTree = "<group>"; };
+		A10100000000000000000003 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10100000000000000000005 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		AA0000010000000000000000 /* AuthDateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../App/Plugins/Auth/AuthDateParser.swift; sourceTree = "<group>"; };
 		AA0000020000000000000000 /* AuthDateParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthDateParserTests.swift; sourceTree = "<group>"; };
+		AB0000030000000000000000 /* ShareInboxSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Shared/ShareInbox/ShareInboxSafety.swift; sourceTree = "<group>"; };
+		AB0000040000000000000000 /* ShareInboxSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareInboxSafetyTests.swift; sourceTree = "<group>"; };
 		AA0000030000000000000000 /* AFFiNETests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AFFiNETests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
 		BF48636D7DB5BEE00770FD9A /* Pods_AFFiNE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AFFiNE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -122,12 +150,38 @@
 		FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A10100000000000000000007 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				ShareExtension.entitlements,
+			);
+			target = A1010000000000000000000D /* ShareExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9DAE85B72E7BAC3B00DB9F1D /* Plugins */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 			);
 			path = Plugins;
+			sourceTree = "<group>";
+		};
+		A10100000000000000000008 /* ShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A10100000000000000000007 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */,
+			);
+			path = ShareExtension;
+			sourceTree = "<group>";
+		};
+		A10100000000000000000009 /* Shared/ShareInbox */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = Shared/ShareInbox;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -144,6 +198,13 @@
 				5027D47C2E7C5FC400ADD25A /* AffineGraphQL in Frameworks */,
 				500D72F72E825064006E553F /* Intelligents in Frameworks */,
 				2E0DD47B57B994A104B25EED /* Pods_AFFiNE.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1010000000000000000000A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -173,6 +234,8 @@
 			children = (
 				C4C97C722D0307B700BC2AD1 /* uniffi */,
 				9D90BE242CCB9876006677DB /* App */,
+				A10100000000000000000008 /* ShareExtension */,
+				A10100000000000000000009 /* Shared/ShareInbox */,
 				AA00000D0000000000000000 /* AppTests */,
 				50802D5F2D112F7D00694021 /* Packages */,
 				504EC3051FED79650016851F /* Products */,
@@ -187,6 +250,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* AFFiNE.app */,
+				A10100000000000000000003 /* ShareExtension.appex */,
 				AA0000030000000000000000 /* AFFiNETests.xctest */,
 			);
 			name = Products;
@@ -247,6 +311,7 @@
 		9D90BE242CCB9876006677DB /* App */ = {
 			isa = PBXGroup;
 			children = (
+				A10100000000000000000005 /* App.entitlements */,
 				9DAE9BD82D8D1AA9000C1D5A /* AppConfigManager.swift */,
 				9DEC59422D323EE00027CEBD /* Mutex.swift */,
 				9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */,
@@ -277,6 +342,8 @@
 			children = (
 				AA0000010000000000000000 /* AuthDateParser.swift */,
 				AA0000020000000000000000 /* AuthDateParserTests.swift */,
+				AB0000030000000000000000 /* ShareInboxSafety.swift */,
+				AB0000040000000000000000 /* ShareInboxSafetyTests.swift */,
 			);
 			path = AppTests;
 			sourceTree = "<group>";
@@ -306,24 +373,48 @@
 				504EC3021FED79650016851F /* Resources */,
 				9592DBEFFC6D2A0C8D5DEB22 /* [CP] Embed Pods Frameworks */,
 				50E218312E0BE1A700EA4C6E /* Embed Frameworks */,
+				A1010000000000000000000B /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1010000000000000000000C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				9DAE85B72E7BAC3B00DB9F1D /* Plugins */,
+				A10100000000000000000009 /* Shared/ShareInbox */,
+			);
+			name = AFFiNE;
+			packageProductDependencies = (
+				5027D4792E7C5FC100ADD25A /* AffineResources */,
+				5027D4772E7C5FBD00ADD25A /* AffinePaywall */,
+				5027D47B2E7C5FC400ADD25A /* AffineGraphQL */,
+				500D72F62E825064006E553F /* Intelligents */,
+			);
+			productName = App;
+			productReference = 504EC3041FED79650016851F /* AFFiNE.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A1010000000000000000000D /* ShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1010000000000000000000E /* Build configuration list for PBXNativeTarget "ShareExtension" */;
+			buildPhases = (
+				A1010000000000000000000F /* Sources */,
+				A1010000000000000000000A /* Frameworks */,
+				A10100000000000000000010 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				9DAE85B72E7BAC3B00DB9F1D /* Plugins */,
+				A10100000000000000000008 /* ShareExtension */,
+				A10100000000000000000009 /* Shared/ShareInbox */,
 			);
-			name = AFFiNE;
-			packageProductDependencies = (
-				500D72F62E825064006E553F /* Intelligents */,
-				5027D4772E7C5FBD00ADD25A /* AffinePaywall */,
-				5027D4792E7C5FC100ADD25A /* AffineResources */,
-				5027D47B2E7C5FC400ADD25A /* AffineGraphQL */,
-			);
-			productName = App;
-			productReference = 504EC3041FED79650016851F /* AFFiNE.app */;
-			productType = "com.apple.product-type.application";
+			name = ShareExtension;
+			productName = ShareExtension;
+			productReference = A10100000000000000000003 /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		AA0000090000000000000000 /* AFFiNETests */ = {
 			isa = PBXNativeTarget;
@@ -355,6 +446,19 @@
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1600;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
+					};
+					A1010000000000000000000D = {
+						CreatedOnToolsVersion = 16.0;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 					AA0000090000000000000000 = {
 						CreatedOnToolsVersion = 26.0;
@@ -381,6 +485,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* AFFiNE */,
+				A1010000000000000000000D /* ShareExtension */,
 				AA0000090000000000000000 /* AFFiNETests */,
 			);
 		};
@@ -398,6 +503,13 @@
 				9D90BE2B2CCB9876006677DB /* config.xml in Resources */,
 				9D90BE2D2CCB9876006677DB /* Main.storyboard in Resources */,
 				9D90BE2E2CCB9876006677DB /* public in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10100000000000000000010 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -500,16 +612,33 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1010000000000000000000F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AA0000060000000000000000 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				AA0000040000000000000000 /* AuthDateParser.swift in Sources */,
 				AA0000050000000000000000 /* AuthDateParserTests.swift in Sources */,
+				AB0000010000000000000000 /* ShareInboxSafety.swift in Sources */,
+				AB0000020000000000000000 /* ShareInboxSafetyTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A1010000000000000000000C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1010000000000000000000D /* ShareExtension */;
+			targetProxy = A10100000000000000000006 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		9D90BE222CCB9876006677DB /* Main.storyboard */ = {
@@ -656,6 +785,7 @@
 			baseConfigurationReference = 3256F4410D881A03FE77D092 /* Pods-AFFiNE.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 17;
@@ -692,6 +822,7 @@
 			baseConfigurationReference = E5E5070D1CA1200D4964D91F /* Pods-AFFiNE.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 17;
@@ -720,6 +851,62 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		A10100000000000000000011 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 17;
+				DEVELOPMENT_TEAM = 73YMMDVT2M;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2026.7.14;
+				PRODUCT_BUNDLE_IDENTIFIER = app.affine.pro.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A10100000000000000000012 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 17;
+				DEVELOPMENT_TEAM = 73YMMDVT2M;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2026.7.14;
+				PRODUCT_BUNDLE_IDENTIFIER = app.affine.pro.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -772,6 +959,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1010000000000000000000E /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10100000000000000000011 /* Debug */,
+				A10100000000000000000012 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
