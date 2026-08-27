@@ -182,7 +182,7 @@ pub(crate) struct CopilotManagedProfileConfigFile {
   priority: Option<f64>,
   #[serde(default = "enabled_by_default")]
   enabled: bool,
-  models: Option<Vec<String>>,
+  models: Vec<String>,
   middleware: Option<CopilotProviderMiddlewareConfigFile>,
   config: Map<String, serde_json::Value>,
 }
@@ -216,18 +216,6 @@ impl CopilotManagedProvider {
       Self::GeminiVertex => "geminiVertex",
       Self::OpenAi => "openai",
     }
-  }
-
-  fn legacy_models(self) -> Vec<String> {
-    let models: &[&str] = match self {
-      Self::OpenAi => &["gpt-5.6-luna", "gpt-5.6-terra", "gpt-image-1", "gpt-4o-mini"],
-      Self::CloudflareWorkersAi => &["@cf/baai/bge-reranker-base"],
-      Self::Fal => &["lora/image-to-image", "workflowutils/teed"],
-      Self::Gemini => &["gemini-3.7-flash", "gemini-embedding-001"],
-      Self::GeminiVertex => &["gemini-3.7-flash"],
-      Self::Anthropic | Self::AnthropicVertex => &["claude-sonnet-4-6"],
-    };
-    models.iter().map(|model| (*model).to_string()).collect()
   }
 }
 
@@ -306,12 +294,11 @@ impl TryFrom<CopilotManagedProfileConfigFile> for CopilotManagedProfileConfig {
         "managed copilot profile id must contain only letters, numbers, hyphens, and underscores",
       ));
     }
-    let models = value.models.unwrap_or_else(|| value.provider.legacy_models());
     Ok(Self {
       id: value.id,
       provider: value.provider.as_str().to_string(),
       enabled: value.enabled,
-      models,
+      models: value.models,
       config: serde_json::Value::Object(value.config),
     })
   }
@@ -441,6 +428,7 @@ pub(super) fn validate_copilot_config(config: &CopilotRuntimeConfig) -> RuntimeR
     }
   }
   let mut profile_ids = std::collections::HashSet::new();
+  let mut managed_models = std::collections::HashMap::new();
   for profile in &config.providers.profiles {
     if profile.id.trim().is_empty() || !profile_ids.insert(profile.id.as_str()) {
       return Err(RuntimeError::invalid_state(
@@ -466,6 +454,14 @@ pub(super) fn validate_copilot_config(config: &CopilotRuntimeConfig) -> RuntimeR
       }
       provider_default_capability_upper_bound(&profile.provider, model)
         .ok_or_else(|| RuntimeError::invalid_state("managed copilot profile model is unsupported"))?;
+      if profile.enabled
+        && let Some(existing_profile) = managed_models.insert(model.as_str(), profile.id.as_str())
+      {
+        return Err(RuntimeError::invalid_state(format!(
+          "managed copilot model {model} is assigned to both {existing_profile} and {}",
+          profile.id
+        )));
+      }
     }
   }
   Ok(())
@@ -831,31 +827,15 @@ mod tests {
     assert_eq!(copilot.providers.profiles.len(), 1);
     assert_eq!(copilot.providers.profiles[0].id, "managed-openai");
 
-    for (provider, expected_models) in [
-      (
-        "openai",
-        vec!["gpt-5.6-luna", "gpt-5.6-terra", "gpt-image-1", "gpt-4o-mini"],
-      ),
-      ("cloudflareWorkersAi", vec!["@cf/baai/bge-reranker-base"]),
-      ("fal", vec!["lora/image-to-image", "workflowutils/teed"]),
-      ("gemini", vec!["gemini-3.7-flash", "gemini-embedding-001"]),
-      ("geminiVertex", vec!["gemini-3.7-flash"]),
-      ("anthropic", vec!["claude-sonnet-4-6"]),
-      ("anthropicVertex", vec!["claude-sonnet-4-6"]),
-    ] {
-      let app_config = app_config_from_flat_overrides([(
-        "copilot.providers.profiles",
-        serde_json::json!([{
-          "id": format!("{provider}-default"),
-          "type": provider,
-          "config": {}
-        }]),
-      )])
-      .unwrap();
-      let copilot: CopilotRuntimeConfig = app_config.copilot.unwrap().try_into().unwrap();
-      validate_copilot_config(&copilot).unwrap();
-      assert_eq!(copilot.providers.profiles[0].models, expected_models);
-    }
+    let missing_models = app_config_from_flat_overrides([(
+      "copilot.providers.profiles",
+      serde_json::json!([{
+        "id": "managed-openai",
+        "type": "openai",
+        "config": {}
+      }]),
+    )]);
+    assert!(missing_models.is_err());
 
     let app_config = app_config_from_flat_overrides([(
       "copilot.providers.profiles",
@@ -865,6 +845,27 @@ mod tests {
         "models": [],
         "config": {}
       }]),
+    )])
+    .unwrap();
+    let copilot: CopilotRuntimeConfig = app_config.copilot.unwrap().try_into().unwrap();
+    assert!(validate_copilot_config(&copilot).is_err());
+
+    let app_config = app_config_from_flat_overrides([(
+      "copilot.providers.profiles",
+      serde_json::json!([
+        {
+          "id": "anthropic-direct",
+          "type": "anthropic",
+          "models": ["claude-sonnet-4-6"],
+          "config": {}
+        },
+        {
+          "id": "anthropic-vertex",
+          "type": "anthropicVertex",
+          "models": ["claude-sonnet-4-6"],
+          "config": {}
+        }
+      ]),
     )])
     .unwrap();
     let copilot: CopilotRuntimeConfig = app_config.copilot.unwrap().try_into().unwrap();

@@ -2786,11 +2786,15 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.journal.updated-today"](): string;
     /**
-      * `No Journal`
+      * `No journal for this day`
       */
     ["com.affine.journal.placeholder.title"](): string;
     /**
-      * `Create Daily Journal`
+      * `Create one to start writing.`
+      */
+    ["com.affine.journal.placeholder.description"](): string;
+    /**
+      * `Create journal`
       */
     ["com.affine.journal.placeholder.create"](): string;
     /**
@@ -3104,23 +3108,23 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.danger-zone.title"](): string;
     /**
-      * `Collaborate seamlessly with AFFiNE team, available in Cloud and Self-Hosted versions.`
+      * `Plans`
+      */
+    ["com.affine.mobile.setting.plans.title"](): string;
+    /**
+      * `Collaborate in Cloud or Self-Hosted.`
       */
     ["com.affine.mobile.setting.promo.description"](): string;
     /**
-      * `AFFiNE for team and more`
+      * `AFFiNE for teams`
       */
     ["com.affine.mobile.setting.promo.title"](): string;
     /**
-      * `Go Pro`
-      */
-    ["com.affine.mobile.setting.subscription.button"](): string;
-    /**
-      * `Unlimited space for your notes and boards.`
+      * `More cloud storage and advanced features.`
       */
     ["com.affine.mobile.setting.subscription.description"](): string;
     /**
-      * `Unlock Pro Features`
+      * `AFFiNE Pro`
       */
     ["com.affine.mobile.setting.subscription.title"](): string;
     /**

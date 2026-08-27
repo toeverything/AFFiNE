@@ -2956,9 +2956,9 @@ dependencies = [
 
 [[package]]
 name = "generator"
-version = "0.8.8"
+version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52f04ae4152da20c76fe800fa48659201d5cf627c5149ca0b707b69d7eef6cf9"
+checksum = "b3b854b0e584ead1a33f18b2fcad7cf7be18b3875c78816b753639aa501513ae"
 dependencies = [
  "cc",
  "cfg-if",
@@ -2966,7 +2966,7 @@ dependencies = [
  "log",
  "rustversion",
  "windows-link 0.2.1",
- "windows-result 0.4.1",
+ "windows-result 0.3.4",
 ]
 
 [[package]]
@@ -4758,9 +4758,9 @@ dependencies = [
 
 [[package]]
 name = "llm_adapter"
-version = "0.2.21"
+version = "0.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02c6b4fa5178b8183331a7d51e8f7ece5421ecb966d3431f3d9ce3c724c6fcc0"
+checksum = "bd18d17c60b800981d83224309ff9ce6b4093ae12929f2baad77dd5208383bdc"
 dependencies = [
  "base64",
  "jsonschema",

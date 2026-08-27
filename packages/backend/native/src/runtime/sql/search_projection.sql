@@ -266,16 +266,23 @@ RETURNS boolean LANGUAGE SQL STABLE AS $$
   AND NOT EXISTS (
     SELECT 1 FROM search_projection.workspace_states
     WHERE generation_id = target_generation
+      AND last_error IS DISTINCT FROM 'search_workspace_reconcile_failed'
       AND (NOT covered OR pending_scope <> 'none'
         OR required_permission_version > applied_permission_version
         OR last_error IS NOT NULL)
   )
   AND NOT EXISTS (
-    SELECT 1 FROM search_projection.document_states
-    WHERE generation_id = target_generation
-      AND (target_source_version <> published_source_version
-        OR target_source_exists <> published_source_exists
-        OR target_permission_version <> published_permission_version)
+    SELECT 1 FROM search_projection.document_states document
+    WHERE document.generation_id = target_generation
+      AND NOT EXISTS (
+        SELECT 1 FROM search_projection.workspace_states workspace
+        WHERE workspace.generation_id = document.generation_id
+          AND workspace.workspace_id = document.workspace_id
+          AND workspace.last_error = 'search_workspace_reconcile_failed'
+      )
+      AND (document.target_source_version <> document.published_source_version
+        OR document.target_source_exists <> document.published_source_exists
+        OR document.target_permission_version <> document.published_permission_version)
   )
 $$;
 
