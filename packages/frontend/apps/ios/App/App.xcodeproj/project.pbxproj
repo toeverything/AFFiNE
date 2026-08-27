@@ -51,6 +51,10 @@
 		AA0000050000000000000000 /* AuthDateParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000000 /* AuthDateParserTests.swift */; };
 		AB0000010000000000000000 /* ShareInboxSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000030000000000000000 /* ShareInboxSafety.swift */; };
 		AB0000020000000000000000 /* ShareInboxSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000040000000000000000 /* ShareInboxSafetyTests.swift */; };
+		AB0000060000000000000000 /* ShareInboxModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000050000000000000000 /* ShareInboxModels.swift */; };
+		AB0000080000000000000000 /* ShareInboxConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000070000000000000000 /* ShareInboxConstants.swift */; };
+		AB00000A0000000000000000 /* ShareLinkPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000090000000000000000 /* ShareLinkPreview.swift */; };
+		AB00000B0000000000000000 /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 9D90BE1E2CCB9876006677DB /* capacitor.config.json */; };
 		C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C6F2D0307B700BC2AD1 /* affine_mobile_native.swift */; };
 		C4C97C7D2D030BE000BC2AD1 /* affine_mobile_nativeFFI.h in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C702D0307B700BC2AD1 /* affine_mobile_nativeFFI.h */; };
 		C4C97C7E2D030BE000BC2AD1 /* affine_mobile_nativeFFI.modulemap in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C712D0307B700BC2AD1 /* affine_mobile_nativeFFI.modulemap */; };
@@ -139,6 +143,9 @@
 		AA0000020000000000000000 /* AuthDateParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthDateParserTests.swift; sourceTree = "<group>"; };
 		AB0000030000000000000000 /* ShareInboxSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Shared/ShareInbox/ShareInboxSafety.swift; sourceTree = "<group>"; };
 		AB0000040000000000000000 /* ShareInboxSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareInboxSafetyTests.swift; sourceTree = "<group>"; };
+		AB0000050000000000000000 /* ShareInboxModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Shared/ShareInbox/ShareInboxModels.swift; sourceTree = "<group>"; };
+		AB0000070000000000000000 /* ShareInboxConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Shared/ShareInbox/ShareInboxConstants.swift; sourceTree = "<group>"; };
+		AB0000090000000000000000 /* ShareLinkPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Shared/ShareInbox/ShareLinkPreview.swift; sourceTree = "<group>"; };
 		AA0000030000000000000000 /* AFFiNETests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AFFiNETests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
 		BF48636D7DB5BEE00770FD9A /* Pods_AFFiNE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AFFiNE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -344,6 +351,9 @@
 				AA0000020000000000000000 /* AuthDateParserTests.swift */,
 				AB0000030000000000000000 /* ShareInboxSafety.swift */,
 				AB0000040000000000000000 /* ShareInboxSafetyTests.swift */,
+				AB0000050000000000000000 /* ShareInboxModels.swift */,
+				AB0000070000000000000000 /* ShareInboxConstants.swift */,
+				AB0000090000000000000000 /* ShareLinkPreview.swift */,
 			);
 			path = AppTests;
 			sourceTree = "<group>";
@@ -510,6 +520,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB00000B0000000000000000 /* capacitor.config.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -627,6 +638,9 @@
 				AA0000050000000000000000 /* AuthDateParserTests.swift in Sources */,
 				AB0000010000000000000000 /* ShareInboxSafety.swift in Sources */,
 				AB0000020000000000000000 /* ShareInboxSafetyTests.swift in Sources */,
+				AB0000060000000000000000 /* ShareInboxModels.swift in Sources */,
+				AB0000080000000000000000 /* ShareInboxConstants.swift in Sources */,
+				AB00000A0000000000000000 /* ShareLinkPreview.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

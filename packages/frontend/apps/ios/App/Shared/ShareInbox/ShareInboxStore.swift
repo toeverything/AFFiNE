@@ -102,6 +102,21 @@ final class ShareInboxStore {
     try encoder.encode(item).write(to: fileURL, options: .atomic)
   }
 
+  func updateWorkspaceMode(_ mode: ShareWorkspaceMode) throws {
+    guard let containerURL else { throw ShareInboxError.containerUnavailable }
+    let url = containerURL.appendingPathComponent(ShareInboxConstants.workspaceModeFileName)
+    try encoder.encode(ShareWorkspaceModeSnapshot(mode: mode)).write(to: url, options: .atomic)
+  }
+
+  func workspaceMode() -> ShareWorkspaceMode {
+    guard let containerURL,
+          let data = try? Data(
+            contentsOf: containerURL.appendingPathComponent(ShareInboxConstants.workspaceModeFileName)
+          )
+    else { return .unknown }
+    return ShareInboxSafety.workspaceMode(from: data)
+  }
+
   func pendingItems() -> [ShareInboxItem] {
     guard ensureDirectories(), let inboxDirectoryURL else { return [] }
     guard let urls = try? fileManager.contentsOfDirectory(

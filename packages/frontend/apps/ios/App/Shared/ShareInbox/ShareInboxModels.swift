@@ -36,6 +36,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
   var createdAt: Date
   var title: String
   var content: ShareInboxContent
+  var previewRoute: SharePreviewRoute?
   var target: ShareInboxTarget?
   var previewText: String?
   var attachments: [ShareInboxAttachment]
@@ -48,6 +49,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     createdAt: Date = Date(),
     title: String,
     content: ShareInboxContent,
+    previewRoute: SharePreviewRoute? = nil,
     target: ShareInboxTarget? = nil,
     previewText: String? = nil,
     attachments: [ShareInboxAttachment] = [],
@@ -59,6 +61,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     self.createdAt = createdAt
     self.title = title
     self.content = content
+    self.previewRoute = previewRoute
     self.target = target
     self.previewText = previewText
     self.attachments = attachments
