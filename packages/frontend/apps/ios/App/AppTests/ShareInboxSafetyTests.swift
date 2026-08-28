@@ -1,3 +1,5 @@
+import UIKit
+import UniformTypeIdentifiers
 import XCTest
 
 private final class SharePreviewURLProtocol: URLProtocol {
@@ -11,6 +13,102 @@ private final class SharePreviewURLProtocol: URLProtocol {
 }
 
 final class ShareInboxSafetyTests: XCTestCase {
+  func testSafariPagePayloadUsesCapturedContentAndTranscript() async throws {
+    let item = NSExtensionItem()
+    item.attachments = [
+      NSItemProvider(
+        item: [
+          NSExtensionJavaScriptPreprocessingResultsKey: [
+            "title": "Steak video",
+            "url": "https://www.youtube.com/watch?v=YljWwZwlHQg",
+            "content": "Gordon explains how to cook steak.",
+            "description": "Steak description",
+            "transcript": "0:35 Season the steak\n1:20 Sear the steak",
+          ]
+        ] as NSDictionary,
+        typeIdentifier: UTType.propertyList.identifier
+      )
+    ]
+
+    let draft = await SharePayloadBuilder.build(from: [item])
+
+    XCTAssertNil(draft.errorMessage)
+    XCTAssertEqual(draft.title, "Steak video")
+    XCTAssertEqual(draft.content?.kind, .url)
+    XCTAssertEqual(draft.content?.url, "https://www.youtube.com/watch?v=YljWwZwlHQg")
+    XCTAssertTrue(draft.content?.text?.contains("Gordon explains how to cook steak.") == true)
+    XCTAssertEqual(draft.preview?.transcript?.segments.first?.startSeconds, 35)
+    XCTAssertEqual(draft.preview?.transcript?.segments.first?.text, "Season the steak")
+  }
+
+  func testPDFFileShareExtractsImportableText() async throws {
+    let item = NSExtensionItem()
+    item.attachments = [
+      NSItemProvider(
+        item: makePDFData(text: "AFFiNE PDF body") as NSData,
+        typeIdentifier: UTType.pdf.identifier
+      )
+    ]
+
+    let draft = await SharePayloadBuilder.build(from: [item])
+
+    XCTAssertNil(draft.errorMessage)
+    XCTAssertEqual(draft.content?.kind, .text)
+    XCTAssertEqual(draft.title, "Shared PDF")
+    XCTAssertTrue(draft.content?.text?.contains("AFFiNE PDF body") == true)
+  }
+
+  func testRemotePDFURLTimeoutFallsBackToLink() async throws {
+    let item = NSExtensionItem()
+    item.attachments = [
+      NSItemProvider(
+        item: NSURL(string: "https://example.com/report.pdf")!,
+        typeIdentifier: UTType.url.identifier
+      )
+    ]
+
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let session = URLSession(configuration: configuration)
+    let started = expectation(description: "remote PDF request started")
+    SharePreviewURLProtocol.onStart = { protocolInstance, request in
+      XCTAssertEqual(request.url?.absoluteString, "https://example.com/report.pdf")
+      let response = HTTPURLResponse(
+        url: request.url!,
+        statusCode: 200,
+        httpVersion: nil,
+        headerFields: ["Content-Type": "application/pdf"]
+      )!
+      protocolInstance.client?.urlProtocol(
+        protocolInstance,
+        didReceive: response,
+        cacheStoragePolicy: .notAllowed
+      )
+      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: Data("%PDF-".utf8))
+      started.fulfill()
+    }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+      session.invalidateAndCancel()
+    }
+
+    let task = Task {
+      await SharePayloadBuilder.build(
+        from: [item],
+        remotePDFSession: session,
+        remotePDFTimeout: 0.15
+      )
+    }
+    await fulfillment(of: [started], timeout: 1)
+    let draft = await task.value
+
+    XCTAssertNil(draft.errorMessage)
+    XCTAssertEqual(draft.content?.kind, .url)
+    XCTAssertEqual(draft.content?.url, "https://example.com/report.pdf")
+    XCTAssertNil(draft.content?.text)
+  }
+
   func testManifestTitleIgnoresPreviewAndOnlyAcceptsExplicitEdits() {
     let originalTitle = "Original Safari title"
     let serverPreviewTitle = "Untrusted server preview title"
@@ -62,6 +160,7 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertTrue(rule.contains("public.url"))
     XCTAssertTrue(rule.contains("public.text"))
     XCTAssertTrue(rule.contains("public.image"))
+    XCTAssertTrue(rule.contains("com.adobe.pdf"))
     XCTAssertTrue(rule.contains("com.apple.property-list"))
     XCTAssertTrue(rule.contains(".@count > 0"))
     XCTAssertFalse(rule.contains("TRUEPREDICATE"))
@@ -78,7 +177,7 @@ final class ShareInboxSafetyTests: XCTestCase {
     let unsupportedPayload: [String: Any] = [
       "extensionItems": [[
         "attachments": [[
-          "registeredTypeIdentifiers": ["com.adobe.pdf", "public.movie"]
+          "registeredTypeIdentifiers": ["public.movie"]
         ]]
       ]]
     ]
@@ -305,5 +404,18 @@ final class ShareInboxSafetyTests: XCTestCase {
       XCTAssertTrue(error is CancellationError || urlError?.code == .cancelled)
     }
     await fulfillment(of: [imageStopped], timeout: 1)
+  }
+
+  private func makePDFData(text: String) -> Data {
+    let renderer = UIGraphicsPDFRenderer(
+      bounds: CGRect(x: 0, y: 0, width: 320, height: 240)
+    )
+    return renderer.pdfData { context in
+      context.beginPage()
+      text.draw(
+        at: CGPoint(x: 24, y: 24),
+        withAttributes: [.font: UIFont.systemFont(ofSize: 18)]
+      )
+    }
   }
 }

@@ -12,6 +12,7 @@ export interface PendingShareItem {
     text?: string;
   };
   previewRoute?: 'official' | 'deferred';
+  preview?: ShareLinkPreview;
   target?: ShareImportTarget;
   attachments?: { fileName: string; mimeType: string }[];
   lastError?: string;

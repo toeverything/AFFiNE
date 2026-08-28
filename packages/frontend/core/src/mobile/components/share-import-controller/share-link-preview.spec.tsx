@@ -66,14 +66,19 @@ const cache: LinkPreviewCacheProvider = {
   clear: () => {},
 };
 
-const item = (previewRoute?: PendingShareItem['previewRoute']) =>
-  ({
+const item = (
+  input?: PendingShareItem['previewRoute'] | Partial<PendingShareItem>
+) => {
+  const base = {
     id: 'item',
     documentId: 'doc',
     title: 'Shared',
     content: { kind: 'url', url: 'https://youtube.com/watch?v=123' },
-    previewRoute,
-  }) satisfies PendingShareItem;
+    previewRoute: typeof input === 'string' ? input : undefined,
+  } satisfies PendingShareItem;
+  if (!input || typeof input === 'string') return base;
+  return { ...base, ...input } satisfies PendingShareItem;
+};
 
 const workspace = (flavour: string) =>
   ({ id: 'workspace', flavour }) as WorkspaceMetadata;
@@ -511,6 +516,75 @@ describe('share destination selection lifecycle', () => {
         collectionId: 'collection-one',
       }),
       { allowOffline: false }
+    );
+  });
+
+  test('uses native preview captured by the share extension when saving', async () => {
+    const selectedWorkspace = {
+      id: 'selected-workspace',
+      flavour: 'local',
+    } as WorkspaceMetadata;
+    const importer = {
+      getShareDestinationOptions: vi.fn().mockResolvedValue({
+        verification: 'confirmed',
+        tags: [],
+        collections: [],
+      }),
+      importShareToWorkspace: vi
+        .fn()
+        .mockResolvedValue({ status: 'imported', docId: 'saved-doc' }),
+    };
+    const nativePreview: ShareLinkPreview = {
+      url: 'https://www.youtube.com/watch?v=YljWwZwlHQg',
+      title: 'Steak video',
+      provider: 'youtube',
+      transcript: {
+        segments: [
+          { startSeconds: 35, text: 'Season the steak' },
+          { startSeconds: 80, text: 'Sear the steak' },
+        ],
+      },
+    };
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi.fn(async () => [
+        item({
+          content: {
+            kind: 'url',
+            url: nativePreview.url,
+            text: 'Gordon explains how to cook steak.',
+          },
+          preview: nativePreview,
+        }),
+      ]),
+      updateTarget: vi.fn().mockResolvedValue(undefined),
+      resolveAttachment: vi.fn().mockResolvedValue(undefined),
+      complete: vi.fn().mockResolvedValue(undefined),
+      setError: vi.fn().mockResolvedValue(undefined),
+    };
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [selectedWorkspace] } },
+      getProfile: () => ({ name$: { value: 'Workspace One' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, importer);
+
+    render(<ShareImportController provider={provider} />);
+    await screen.findByText('Choose where to save');
+    fireEvent.click(screen.getByRole('button', { name: /Workspace Choose/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Workspace One/ }));
+    await screen.findByRole('button', { name: 'Save' });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(importer.importShareToWorkspace).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'selected-workspace', flavour: 'local' }),
+        expect.objectContaining({ preview: nativePreview }),
+        { allowOffline: false }
+      )
     );
   });
 });

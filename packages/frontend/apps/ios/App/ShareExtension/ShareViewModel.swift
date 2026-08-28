@@ -82,8 +82,23 @@ final class ShareViewModel: ObservableObject {
       previewImage = UIImage(data: file.data)?
         .preparingThumbnail(of: CGSize(width: 480, height: 480))
     }
+    if let preview = built.preview {
+      linkPreviewState = .loaded(preview)
+      previewTask = Task { [weak self] in
+        guard let self else { return }
+        async let media = previewClient.fetchImageIfPresent(url: preview.images?.first)
+        async let favicon = previewClient.fetchImageIfPresent(url: preview.favicons?.first)
+        let images = await (media, favicon)
+        guard !Task.isCancelled else { return }
+        linkPreviewMediaImage = images.0
+        linkPreviewFaviconImage = images.1
+      }
+    } else {
+      linkPreviewState = .idle
+    }
     guard built.content?.kind == .url, let url = built.content?.url else { return }
     previewRoute = ShareInboxSafety.previewRoute(mode: store.workspaceMode(), url: url)
+    if built.preview != nil { return }
     guard previewRoute == .official else {
       linkPreviewState = .deferred
       return
@@ -142,14 +157,15 @@ final class ShareViewModel: ObservableObject {
       attachmentData = [(attachment, file.data)]
     }
 
-    let item = ShareInboxItem(
-      id: itemId,
-      title: trimmedTitle,
-      content: content,
-      previewRoute: previewRoute,
-      previewText: draft.previewText,
-      attachments: attachments
-    )
+      let item = ShareInboxItem(
+        id: itemId,
+        title: trimmedTitle,
+        content: content,
+        previewRoute: previewRoute,
+        preview: linkPreview ?? draft.preview,
+        previewText: draft.previewText,
+        attachments: attachments
+      )
 
     do {
       try store.enqueue(item, attachmentData: attachmentData)

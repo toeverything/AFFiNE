@@ -101,6 +101,7 @@ async function previewForImport(
   servers: Server[]
 ) {
   if (item.content.kind !== 'url' || current) return current;
+  if (item.preview) return item.preview;
   const owner = currentOwner ?? new SharePreviewRouteOwner(item);
   owner.selectWorkspace(workspace, servers);
   const controller = new AbortController();

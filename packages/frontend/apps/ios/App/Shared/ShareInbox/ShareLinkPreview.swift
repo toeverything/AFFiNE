@@ -1,22 +1,22 @@
 import Foundation
 import UIKit
 
-struct ShareLinkPreview: Decodable, Equatable {
-  struct Author: Decodable, Equatable {
+struct ShareLinkPreview: Codable, Equatable {
+  struct Author: Codable, Equatable {
     var name: String
     var handle: String?
     var avatar: String?
   }
 
-  struct Transcript: Decodable, Equatable {
-    struct Segment: Decodable, Equatable {
+  struct Transcript: Codable, Equatable {
+    struct Segment: Codable, Equatable {
       var text: String
       var startSeconds: Double?
       var durationSeconds: Double?
       var speaker: String?
     }
 
-    struct Chapter: Decodable, Equatable {
+    struct Chapter: Codable, Equatable {
       var title: String
       var startSeconds: Double
     }

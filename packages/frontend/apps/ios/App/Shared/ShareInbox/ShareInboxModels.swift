@@ -37,6 +37,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
   var title: String
   var content: ShareInboxContent
   var previewRoute: SharePreviewRoute?
+  var preview: ShareLinkPreview?
   var target: ShareInboxTarget?
   var previewText: String?
   var attachments: [ShareInboxAttachment]
@@ -50,6 +51,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     title: String,
     content: ShareInboxContent,
     previewRoute: SharePreviewRoute? = nil,
+    preview: ShareLinkPreview? = nil,
     target: ShareInboxTarget? = nil,
     previewText: String? = nil,
     attachments: [ShareInboxAttachment] = [],
@@ -62,6 +64,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     self.title = title
     self.content = content
     self.previewRoute = previewRoute
+    self.preview = preview
     self.target = target
     self.previewText = previewText
     self.attachments = attachments
@@ -80,6 +83,13 @@ struct SharePayloadDraft: Equatable {
   var title: String
   var content: ShareInboxContent?
   var previewText: String
+  var preview: ShareLinkPreview?
   var file: SharePayloadFile?
   var errorMessage: String?
+}
+
+enum ShareInboxError: Error {
+  case containerUnavailable
+  case invalidPayload
+  case payloadTooLarge
 }

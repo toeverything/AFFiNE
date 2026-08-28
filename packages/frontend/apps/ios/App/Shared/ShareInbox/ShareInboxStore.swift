@@ -195,9 +195,3 @@ final class ShareInboxStore {
     try? fileManager.moveItem(at: url, to: destination)
   }
 }
-
-enum ShareInboxError: Error {
-  case containerUnavailable
-  case invalidPayload
-  case payloadTooLarge
-}
