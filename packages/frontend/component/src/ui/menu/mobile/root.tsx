@@ -13,7 +13,7 @@ import {
 
 import { createPenClickCompatHandlers, observeResize } from '../../../utils';
 import { Button } from '../../button';
-import { Modal } from '../../modal';
+import { Modal, type ModalProps } from '../../modal';
 import { Scrollable } from '../../scrollbar';
 import type { MenuProps } from '../menu.types';
 import {
@@ -166,11 +166,13 @@ export const MobileMenu = ({
           animation="slideBottom"
           contentAnimation="none"
           withoutCloseButton={true}
-          contentOptions={{
-            className: clsx(className, styles.mobileMenuModal),
-            'data-affine-edgeless-ui-overlay': 'true',
-            ...otherContentOptions,
-          }}
+          contentOptions={
+            {
+              className: clsx(className, styles.mobileMenuModal),
+              'data-affine-edgeless-ui-overlay': 'true',
+              ...otherContentOptions,
+            } as ModalProps['contentOptions']
+          }
           contentWrapperStyle={contentWrapperStyle}
           disableAutoFocus={true}
           preserveEditingFocusOnAction

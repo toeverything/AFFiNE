@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment happy-dom
+ */
 // eslint-disable-next-line import-x/no-extraneous-dependencies
 // oxlint-disable-next-line import-x-js/no-extraneous-dependencies
 import { afterEach, describe, expect, test, vi } from 'vitest';
