@@ -16,11 +16,16 @@
 
 - [InputTouchKind](type-aliases/InputTouchKind.md)
 
+## Variables
+
+- [WEBKIT\_PENCIL\_ACTIVE\_GRACE\_MS](variables/WEBKIT_PENCIL_ACTIVE_GRACE_MS.md)
+
 ## Functions
 
 - [BlockViewExtension](functions/BlockViewExtension.md)
 - [classifyPointerInput](functions/classifyPointerInput.md)
 - [ConfigExtensionFactory](functions/ConfigExtensionFactory.md)
+- [createWebKitPencilActivityTracker](functions/createWebKitPencilActivityTracker.md)
 - [FlavourExtension](functions/FlavourExtension.md)
 - [isPencilInputActive](functions/isPencilInputActive.md)
 - [KeymapExtension](functions/KeymapExtension.md)

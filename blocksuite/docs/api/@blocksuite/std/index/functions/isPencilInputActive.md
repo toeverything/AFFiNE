@@ -8,8 +8,7 @@
 
 > **isPencilInputActive**(): `boolean`
 
-Whether Apple Pencil input is currently active, or was recently active within
-the runtime grace window.
+Whether an Apple Pencil is currently the active instrument.
 
 ## Returns
 
