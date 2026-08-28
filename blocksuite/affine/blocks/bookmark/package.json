@@ -3,7 +3,7 @@
   "description": "Bookmark block for BlockSuite.",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "yarn run -T tsc"
   },
   "sideEffects": false,
   "keywords": [],
@@ -29,7 +29,7 @@
     "yjs": "^13.6.27"
   },
   "devDependencies": {
-    "@vitest/browser-playwright": "^4.1.8",
+    "@vitest/browser-playwright": "^4.1.10",
     "playwright": "=1.58.2",
     "vitest": "^4.1.8"
   },
@@ -44,5 +44,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.3"
+  "version": "0.27.0"
 }

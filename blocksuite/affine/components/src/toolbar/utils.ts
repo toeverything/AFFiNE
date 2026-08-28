@@ -83,9 +83,11 @@ export function renderActions(
                 ?disabled=${item.disabled}
                 @click=${item.action ? item.action : () => action?.(item)}
               >
-                ${item.icon}${item.label
-                  ? html`<span class="label">${item.label}</span>`
-                  : nothing}
+                ${item.icon}${
+                  item.label
+                    ? html`<span class="label">${item.label}</span>`
+                    : nothing
+                }
               </editor-menu-action>
             `
         )

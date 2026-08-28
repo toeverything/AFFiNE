@@ -40,7 +40,7 @@ impl Stamp {
       // check challenge
       let mut hasher = Sha3_256::new();
       hasher.update(self.format().as_bytes());
-      let result = format!("{:x}", hasher.finalize());
+      let result = hex::encode(hasher.finalize());
       result[..hex_digits] == String::from_utf8(vec![b'0'; hex_digits]).unwrap()
     } else {
       false
@@ -77,7 +77,7 @@ impl Stamp {
         let zeros = String::from_utf8(vec![b'0'; hex_digits]).unwrap();
         loop {
           hasher.update(format!("{challenge}:{counter:x}").as_bytes());
-          let result = format!("{:x}", hasher.finalize_reset());
+          let result = hex::encode(hasher.finalize_reset());
           if result[..hex_digits] == zeros {
             break format!("{counter:x}");
           };

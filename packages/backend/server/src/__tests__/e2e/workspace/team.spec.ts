@@ -6,8 +6,9 @@ import {
   revokePublicPageMutation,
   WorkspaceMemberStatus,
 } from '@affine/graphql';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, WorkspaceMemberSource } from '@prisma/client';
 
+import { WorkspacePolicyService } from '../../../core/permission';
 import { QuotaService } from '../../../core/quota/service';
 import { WorkspaceRole } from '../../../models';
 import {
@@ -109,8 +110,9 @@ const cancelTeamWorkspace = async (workspaceId: string) => {
     },
     data: { status: 'revoked' },
   });
-  await db.subscription.updateMany({
+  await db.providerSubscription.updateMany({
     where: {
+      targetType: 'workspace',
       targetId: workspaceId,
       plan: SubscriptionPlan.Team,
     },
@@ -145,6 +147,28 @@ e2e('should set new invited users to waiting-seat status', async t => {
   t.is(invitationInfo.status, WorkspaceMemberStatus.NeedMoreSeat);
 });
 
+e2e('should allocate existing team seats for new invited users', async t => {
+  const { owner, workspace } = await createTeamWorkspace(4);
+  await app.login(owner);
+
+  const u1 = await app.createUser();
+
+  const result = await app.gql({
+    query: inviteByEmailsMutation,
+    variables: {
+      workspaceId: workspace.id,
+      emails: [u1.email],
+    },
+  });
+
+  t.not(result.inviteMembers[0].inviteId, null);
+
+  const invitationInfo = await getInvitationInfo(
+    result.inviteMembers[0].inviteId!
+  );
+  t.is(invitationInfo.status, WorkspaceMemberStatus.Pending);
+});
+
 e2e('should allocate seats', async t => {
   const { owner, workspace } = await createTeamWorkspace();
   await app.login(owner);
@@ -154,17 +178,18 @@ e2e('should allocate seats', async t => {
     userId: u1.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
-    source: 'Email',
   });
 
   const u2 = await app.createUser();
-  await app.create(Mockers.WorkspaceUser, {
+  const linkInvitation = await app.create(Mockers.WorkspaceUser, {
     userId: u2.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
-    source: 'Link',
+    kind: 'link',
   });
+  t.is(linkInvitation.source, WorkspaceMemberSource.Link);
 
+  const invitationCount = app.queue.count('notification.sendInvitation');
   await app.eventBus.emitAsync('workspace.members.allocateSeats', {
     workspaceId: workspace.id,
     quantity: 5,
@@ -184,7 +209,7 @@ e2e('should allocate seats', async t => {
     WorkspaceMemberStatus.Accepted
   );
 
-  t.is(app.queue.count('notification.sendInvitation'), 1);
+  t.is(app.queue.count('notification.sendInvitation') - invitationCount, 1);
 });
 
 e2e('should set all rests to NeedMoreSeat', async t => {
@@ -196,7 +221,6 @@ e2e('should set all rests to NeedMoreSeat', async t => {
     userId: u1.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
-    source: 'Email',
   });
 
   const u2 = await app.createUser();
@@ -204,7 +228,6 @@ e2e('should set all rests to NeedMoreSeat', async t => {
     userId: u2.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
-    source: 'Email',
   });
 
   const u3 = await app.createUser();
@@ -212,7 +235,6 @@ e2e('should set all rests to NeedMoreSeat', async t => {
     userId: u3.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
-    source: 'Link',
   });
 
   await app.eventBus.emitAsync('workspace.members.allocateSeats', {
@@ -252,7 +274,6 @@ e2e(
       userId: allocating.id,
       workspaceId: workspace.id,
       status: WorkspaceMemberStatus.AllocatingSeat,
-      source: 'Email',
     });
 
     const underReview = await app.create(Mockers.User);
@@ -290,10 +311,8 @@ e2e(
 
     t.false(await app.models.workspace.isTeamWorkspace(workspace.id));
     t.false(
-      await app.models.workspaceFeature.has(
-        workspace.id,
-        'quota_exceeded_readonly_workspace_v1'
-      )
+      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
+        .isReadonly
     );
     t.is(
       (await app.models.workspaceUser.get(workspace.id, admin.id))?.type,
@@ -327,10 +346,8 @@ e2e(
 
     t.false(await app.models.workspace.isTeamWorkspace(workspace.id));
     t.true(
-      await app.models.workspaceFeature.has(
-        workspace.id,
-        'quota_exceeded_readonly_workspace_v1'
-      )
+      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
+        .isReadonly
     );
     t.is(
       (await app.models.workspaceUser.get(workspace.id, admin.id))?.type,
@@ -348,10 +365,8 @@ e2e(
     }
 
     t.false(
-      await app.models.workspaceFeature.has(
-        workspace.id,
-        'quota_exceeded_readonly_workspace_v1'
-      )
+      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
+        .isReadonly
     );
   }
 );

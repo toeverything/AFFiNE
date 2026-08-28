@@ -2,47 +2,26 @@ import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { ClsService } from 'nestjs-cls';
 
-import { DocRole, Models } from '../../models';
 import type { PermissionEvaluationInputV1 } from '../../native';
-import {
-  toNativeDocRole,
-  toNativeExplicitDocGrantRole,
-  toNativeMemberState,
-  toNativeWorkspaceRole,
-} from './context';
 import type { DocAction, WorkspaceAction } from './types';
 
 type PermissionRequestCache = {
-  workspaceMember: Map<
-    string,
-    Awaited<ReturnType<Models['workspaceUser']['get']>>
-  >;
-  workspacePolicy: Map<string, Awaited<ReturnType<Models['workspace']['get']>>>;
-  workspaceRuntime: Map<
-    string,
-    Awaited<ReturnType<Models['workspaceRuntimeState']['get']>>
-  >;
-  workspaceQuotaRuntime: Map<string, NewWorkspaceRuntimeState>;
-  docPolicies: Map<
-    string,
-    Awaited<ReturnType<Models['doc']['findDefaultRoles']>>
-  >;
-  docGrants: Map<string, Awaited<ReturnType<Models['docUser']['findMany']>>>;
+  workspaceQuotaRuntime: Map<string, WorkspaceRuntimeState>;
 };
 
-type NewWorkspaceMemberRow = {
+type WorkspaceMemberRow = {
   role: 'owner' | 'admin' | 'member';
   state: 'active' | 'suspended' | 'left';
 };
 
-type NewWorkspacePolicyRow = {
+type WorkspacePolicyRow = {
   visibility: 'private' | 'public';
   sharingEnabled: boolean;
   urlPreviewEnabled: boolean;
   memberDefaultDocRole: 'none' | 'reader' | 'commenter' | 'editor' | 'manager';
 };
 
-type NewDocPolicyRow = {
+type DocPolicyRow = {
   docId: string;
   visibility: 'private' | 'public';
   publicRole: 'external' | null;
@@ -56,12 +35,12 @@ type NewDocPolicyRow = {
   urlPreviewEnabled: boolean;
 };
 
-type NewDocGrantRow = {
+type DocGrantRow = {
   docId: string;
   role: 'owner' | 'manager' | 'editor' | 'commenter' | 'reader';
 };
 
-type NewWorkspaceRuntimeState = {
+type WorkspaceRuntimeState = {
   known: boolean;
   stale: boolean;
   readonly: boolean;
@@ -73,26 +52,16 @@ const CACHE_KEY = 'permission.context.cache';
 
 function createPermissionRequestCache(): PermissionRequestCache {
   return {
-    workspaceMember: new Map(),
-    workspacePolicy: new Map(),
-    workspaceRuntime: new Map(),
     workspaceQuotaRuntime: new Map(),
-    docPolicies: new Map(),
-    docGrants: new Map(),
   };
 }
 
 export type PermissionWorkspaceAction = WorkspaceAction | 'Workspace.Preview';
 export type PermissionDocAction = DocAction | 'Doc.Preview';
 
-function cacheKey(parts: readonly unknown[]) {
-  return parts.join('\0');
-}
-
 @Injectable()
 export class PermissionContextLoader {
   constructor(
-    private readonly models: Models,
     private readonly db: PrismaClient,
     private readonly cls?: ClsService
   ) {}
@@ -105,94 +74,17 @@ export class PermissionContextLoader {
     docs?: Array<{ docId: string; actions: PermissionDocAction[] }>;
   }): Promise<PermissionEvaluationInputV1> {
     const docs = input.docs ?? [];
-    const [member, workspace, runtime, docPolicies, docGrants] =
+    const docIds = docs.map(doc => doc.docId);
+    const [member, workspacePolicy, runtime, docPolicies, docGrants] =
       await Promise.all([
         input.userId
           ? this.workspaceMember(input.workspaceId, input.userId)
           : Promise.resolve(null),
         this.workspacePolicy(input.workspaceId),
         this.workspaceRuntime(input.workspaceId),
-        this.docPolicies(
-          input.workspaceId,
-          docs.map(doc => doc.docId)
-        ),
+        this.docPolicies(input.workspaceId, docIds),
         input.userId
-          ? this.docGrants(
-              input.workspaceId,
-              docs.map(doc => doc.docId),
-              input.userId
-            )
-          : Promise.resolve([]),
-      ]);
-
-    const docGrantMap = new Map(docGrants.map(grant => [grant.docId, grant]));
-    const workspaceSharingEnabled = workspace?.enableSharing ?? true;
-
-    return {
-      version: 1,
-      legacyCompatMode: true,
-      subject: {
-        userId: input.userId,
-        groupIds: [],
-        allowLocal: input.allowLocal,
-      },
-      runtime: {
-        known: runtime.known,
-        stale: runtime.stale,
-        readonly: runtime.readonly,
-        readonlyReason: runtime.readonlyReasons[0],
-        sharingEnabled: workspaceSharingEnabled,
-        urlPreviewEnabled: workspace?.enableUrlPreview ?? false,
-      },
-      workspace: {
-        role: toNativeWorkspaceRole(member?.type),
-        memberState: toNativeMemberState(member?.status),
-        public: workspace?.public ?? false,
-        sharingEnabled: workspaceSharingEnabled,
-        urlPreviewEnabled: workspace?.enableUrlPreview ?? false,
-        local: !workspace,
-      },
-      workspaceActions: input.workspaceActions,
-      docs: docs.map((doc, index) => {
-        const policy = docPolicies[index];
-        const grant = docGrantMap.get(doc.docId);
-        return {
-          docId: doc.docId,
-          actions: doc.actions,
-          explicitUserRole: toNativeExplicitDocGrantRole(grant?.type),
-          groupGrants: [],
-          groupGrantsEnabled: false,
-          memberDefaultRole: toNativeDocRole(
-            policy?.workspace ?? DocRole.Manager
-          ),
-          publicRole: policy?.external === null ? undefined : 'external',
-          visibility: policy?.external === null ? 'private' : 'public',
-          sharingEnabled: workspaceSharingEnabled,
-          previewEnabled: policy?.external !== null,
-        };
-      }),
-    };
-  }
-
-  async loadFromNewTables(input: {
-    userId?: string;
-    workspaceId: string;
-    allowLocal?: boolean;
-    workspaceActions?: PermissionWorkspaceAction[];
-    docs?: Array<{ docId: string; actions: PermissionDocAction[] }>;
-  }): Promise<PermissionEvaluationInputV1> {
-    const docs = input.docs ?? [];
-    const docIds = docs.map(doc => doc.docId);
-    const [member, workspacePolicy, runtime, docPolicies, docGrants] =
-      await Promise.all([
-        input.userId
-          ? this.newWorkspaceMember(input.workspaceId, input.userId)
-          : Promise.resolve(null),
-        this.newWorkspacePolicy(input.workspaceId),
-        this.newWorkspaceRuntime(input.workspaceId),
-        this.newDocPolicies(input.workspaceId, docIds),
-        input.userId
-          ? this.newDocGrants(input.workspaceId, docIds, input.userId)
+          ? this.docGrants(input.workspaceId, docIds, input.userId)
           : Promise.resolve([]),
       ]);
     const docPolicyMap = new Map(
@@ -293,56 +185,16 @@ export class PermissionContextLoader {
     return promise;
   }
 
-  private workspaceMember(workspaceId: string, userId: string) {
-    return this.memo(
-      this.cache.workspaceMember,
-      cacheKey([workspaceId, userId]),
-      () => this.models.workspaceUser.get(workspaceId, userId)
-    );
-  }
-
-  private workspacePolicy(workspaceId: string) {
-    return this.memo(this.cache.workspacePolicy, workspaceId, () =>
-      this.models.workspace.get(workspaceId)
-    );
-  }
-
-  private async workspaceRuntime(workspaceId: string) {
-    return this.memo(this.cache.workspaceRuntime, workspaceId, () =>
-      this.models.workspaceRuntimeState.get(workspaceId).then(async state => {
-        if (state.known && !state.stale) {
-          return state;
-        }
-
-        const quotaState = await this.newWorkspaceRuntime(workspaceId);
-        if (!quotaState.known) {
-          return state;
-        }
-
-        return {
-          workspaceId,
-          known: quotaState.known,
-          stale: quotaState.stale,
-          readonly: quotaState.readonly,
-          readonlyReasons: quotaState.readonlyReasons,
-          updatedAt: null,
-          lastReconciledAt: null,
-          staleAfter: quotaState.staleAfter,
-        };
-      })
-    );
-  }
-
   invalidateWorkspaceQuotaRuntime(workspaceId: string) {
     this.cache.workspaceQuotaRuntime.delete(workspaceId);
   }
 
-  private newWorkspaceRuntime(workspaceId: string) {
+  private workspaceRuntime(workspaceId: string) {
     return this.memo(
       this.cache.workspaceQuotaRuntime,
       workspaceId,
       async () => {
-        const rows = await this.db.$queryRaw<NewWorkspaceRuntimeState[]>`
+        const rows = await this.db.$queryRaw<WorkspaceRuntimeState[]>`
         SELECT
           known,
           stale,
@@ -374,26 +226,8 @@ export class PermissionContextLoader {
     );
   }
 
-  private docPolicies(workspaceId: string, docIds: string[]) {
-    const uniqueDocIds = [...new Set(docIds)];
-    return this.memo(
-      this.cache.docPolicies,
-      cacheKey([workspaceId, ...uniqueDocIds]),
-      () => this.models.doc.findDefaultRoles(workspaceId, uniqueDocIds)
-    );
-  }
-
-  private docGrants(workspaceId: string, docIds: string[], userId: string) {
-    const uniqueDocIds = [...new Set(docIds)];
-    return this.memo(
-      this.cache.docGrants,
-      cacheKey([workspaceId, userId, ...uniqueDocIds]),
-      () => this.models.docUser.findMany(workspaceId, uniqueDocIds, userId)
-    );
-  }
-
-  private async newWorkspaceMember(workspaceId: string, userId: string) {
-    const rows = await this.db.$queryRaw<NewWorkspaceMemberRow[]>`
+  private async workspaceMember(workspaceId: string, userId: string) {
+    const rows = await this.db.$queryRaw<WorkspaceMemberRow[]>`
       SELECT role, state
       FROM workspace_members
       WHERE workspace_id = ${workspaceId}
@@ -404,8 +238,8 @@ export class PermissionContextLoader {
     return rows[0] ?? null;
   }
 
-  private async newWorkspacePolicy(workspaceId: string) {
-    const rows = await this.db.$queryRaw<NewWorkspacePolicyRow[]>`
+  private async workspacePolicy(workspaceId: string) {
+    const rows = await this.db.$queryRaw<WorkspacePolicyRow[]>`
       SELECT
         visibility,
         sharing_enabled AS "sharingEnabled",
@@ -426,11 +260,11 @@ export class PermissionContextLoader {
     return !!workspace;
   }
 
-  private async newDocPolicies(workspaceId: string, docIds: string[]) {
+  private async docPolicies(workspaceId: string, docIds: string[]) {
     if (docIds.length === 0) {
       return [];
     }
-    return await this.db.$queryRaw<NewDocPolicyRow[]>`
+    return await this.db.$queryRaw<DocPolicyRow[]>`
       SELECT
         doc_id AS "docId",
         visibility,
@@ -443,7 +277,7 @@ export class PermissionContextLoader {
     `;
   }
 
-  private async newDocGrants(
+  private async docGrants(
     workspaceId: string,
     docIds: string[],
     userId: string
@@ -451,7 +285,7 @@ export class PermissionContextLoader {
     if (docIds.length === 0) {
       return [];
     }
-    return await this.db.$queryRaw<NewDocGrantRow[]>`
+    return await this.db.$queryRaw<DocGrantRow[]>`
       SELECT doc_id AS "docId", role
       FROM doc_grants
       WHERE workspace_id = ${workspaceId}

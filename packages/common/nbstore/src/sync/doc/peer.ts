@@ -280,9 +280,14 @@ export class DocSyncPeer {
           (await this.syncMetadata.getPeerPulledRemoteClock(this.peerId, docId))
             ?.timestamp ?? null;
         const remoteClock = this.status.remoteClocks.get(docId);
+        const hasRemoteClock = remoteClock.getTime() > 0;
+        const hasPulled = pulled !== null && pulled.getTime() > 0;
         if (
-          remoteClock &&
-          (pulled === null || pulled.getTime() < remoteClock.getTime())
+          hasRemoteClock
+            ? !hasPulled ||
+              (pulled !== null && pulled.getTime() < remoteClock.getTime())
+            : (this.prioritySettings.get(docId) ?? 0) > 0 &&
+              (!clock || !hasPulled)
         ) {
           await this.jobs.pull(docId, signal);
         }
@@ -503,10 +508,7 @@ export class DocSyncPeer {
       if (!this.status.docs.has(docId)) {
         this.status.docs.add(docId);
         this.statusUpdatedSubject$.next(docId);
-        this.schedule({
-          type: 'connect',
-          docId,
-        });
+        this.schedule({ type: 'connect', docId });
       }
     },
   };
@@ -553,13 +555,16 @@ export class DocSyncPeer {
       this.actions.addDoc(docId);
       this.actions.updateRemoteClock(docId, remoteClock);
 
-      // schedule push job
-      this.schedule({
-        type: 'save',
-        docId,
-        remoteClock: remoteClock,
-        update,
-      });
+      if (isEmptyUpdate(update)) {
+        this.schedule({ type: 'pull', docId });
+      } else {
+        this.schedule({
+          type: 'save',
+          docId,
+          remoteClock: remoteClock,
+          update,
+        });
+      }
     },
   };
 
@@ -753,6 +758,11 @@ export class DocSyncPeer {
       for (const docId of this.status.remoteClocks.keys()) {
         this.actions.addDoc(docId);
       }
+      for (const [docId, priority] of this.prioritySettings) {
+        if (priority > 0) {
+          this.actions.addDoc(docId);
+        }
+      }
 
       // begin to process jobs
 
@@ -887,13 +897,22 @@ export class DocSyncPeer {
 
   addPriority(id: string, priority: number) {
     const oldPriority = this.prioritySettings.get(id) ?? 0;
-    this.prioritySettings.set(id, priority);
-    this.status.jobDocQueue.setPriority(id, oldPriority + priority);
+    const newPriority = oldPriority + priority;
+    this.prioritySettings.set(id, newPriority);
+    this.status.jobDocQueue.setPriority(id, newPriority);
+    if (oldPriority <= 0 && newPriority > 0 && this.status.syncing) {
+      if (!this.status.docs.has(id)) {
+        this.actions.addDoc(id);
+      } else {
+        this.schedule({ type: 'connect', docId: id });
+      }
+    }
 
     return () => {
       const currentPriority = this.prioritySettings.get(id) ?? 0;
-      this.prioritySettings.set(id, currentPriority - priority);
-      this.status.jobDocQueue.setPriority(id, currentPriority - priority);
+      const restoredPriority = currentPriority - priority;
+      this.prioritySettings.set(id, restoredPriority);
+      this.status.jobDocQueue.setPriority(id, restoredPriority);
     };
   }
 

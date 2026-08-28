@@ -1,28 +1,11 @@
-import type {
-  PromptConfig,
-  PromptMessage,
-  PromptParams,
-} from '../providers/types';
-
-export type Prompt = {
-  name: string;
-  model: string;
-  optionalModels?: string[];
-  action?: string;
-  messages: PromptMessage[];
-  config?: PromptConfig;
-};
+import type { PromptConfig, PromptParams } from '../providers/types';
 
 export type ResolvedPrompt = {
   name: string;
-  model: string;
-  optionalModels: string[];
   action?: string;
   config?: PromptConfig;
   paramKeys: string[];
   params: PromptParams;
-  source: 'built_in' | 'compat';
-  messages?: PromptMessage[];
 };
 
 type PromptParamSpec = {
@@ -38,8 +21,6 @@ type PromptSpecMessage = {
 export type PromptSpec = {
   name: string;
   action?: string;
-  model: string;
-  optionalModels?: string[];
   config?: PromptConfig;
   params?: Record<string, PromptParamSpec>;
   messages: PromptSpecMessage[];

@@ -11,7 +11,7 @@ import {
   Post,
   Res,
 } from '@nestjs/common';
-import { PrismaClient, Subscription } from '@prisma/client';
+import { PrismaClient, Provider } from '@prisma/client';
 import type { Response } from 'express';
 import Stripe from 'stripe';
 import { z } from 'zod';
@@ -24,6 +24,7 @@ import {
   Mutex,
 } from '../../../base';
 import { Public } from '../../../core/auth';
+import type { Subscription } from '../manager';
 import { SelfhostTeamSubscriptionManager } from '../manager/selfhost';
 import { SubscriptionService } from '../service';
 import { StripeFactory } from '../stripe';
@@ -237,19 +238,23 @@ export class LicenseController {
 
   @Post('/:license/create-customer-portal')
   async createCustomerPortal(@Param('license') key: string) {
-    const subscription = await this.db.subscription.findFirst({
+    const subscription = await this.db.providerSubscription.findFirst({
       where: {
+        provider: Provider.stripe,
+        targetType: 'instance',
         targetId: key,
+        plan: SubscriptionPlan.SelfHostedTeam,
       },
+      orderBy: { updatedAt: 'desc' },
     });
 
-    if (!subscription || !subscription.stripeSubscriptionId) {
+    if (!subscription?.externalSubscriptionId) {
       throw new LicenseNotFound();
     }
 
     const subscriptionData =
       await this.stripeProvider.stripe.subscriptions.retrieve(
-        subscription.stripeSubscriptionId,
+        subscription.externalSubscriptionId,
         {
           expand: ['customer'],
         }

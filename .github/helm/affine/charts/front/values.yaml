@@ -52,8 +52,10 @@ services:
     name: affine-sync
     type: ClusterIP
     port: 3010
-    annotations:
-      cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
+    backendConfig:
+      name: affine-sync-backendconfig
+      timeoutSec: 10800
+    annotations: {}
   renderer:
     name: affine-renderer
     type: ClusterIP
@@ -65,10 +67,6 @@ services:
     type: ClusterIP
     port: 8080
     annotations: {}
-  doc:
-    type: ClusterIP
-    annotations: {}
-
 nodeSelector: {}
 tolerations: []
 affinity: {}

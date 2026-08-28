@@ -3,7 +3,7 @@
   "description": "Default BlockSuite editable blocks.",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "yarn run -T tsc"
   },
   "sideEffects": false,
   "keywords": [],
@@ -76,5 +76,5 @@
     "@types/pdfmake": "^0.2.12",
     "vitest": "^4.1.8"
   },
-  "version": "0.26.3"
+  "version": "0.27.0"
 }

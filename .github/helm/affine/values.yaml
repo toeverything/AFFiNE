@@ -28,13 +28,12 @@ global:
     password: ''
     database: 0
   indexer:
-    provider: ''
+    enabled: false
+    provider: embedded
     endpoint: ''
+    apiKey: ''
     username: ''
     password: ''
-  docService:
-    name: 'affine-doc'
-    port: 3020
   deployment:
     # change to 'selfhosted' and 'unknown' if this chart is ready to be used for selfhosted deployment
     type: 'affine'
@@ -53,8 +52,10 @@ front:
       name: affine-sync
       type: ClusterIP
       port: 3010
-      annotations:
-        cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
+      backendConfig:
+        name: affine-sync-backendconfig
+        timeoutSec: 10800
+      annotations: {}
     renderer:
       name: affine-renderer
       type: ClusterIP
@@ -65,7 +66,48 @@ front:
       name: affine-web
       type: ClusterIP
       port: 8080
-    doc:
-      type: ClusterIP
-      annotations:
-        cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
+
+worker:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/toeverything/affine
+    tag: ''
+  env: 'production'
+  nodeOptions: '--max-old-space-size=3072'
+  app:
+    port: 3002
+    host: '0.0.0.0'
+    https: true
+  podAnnotations: {}
+  podSecurityContext:
+    fsGroup: 2000
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: 'affine-worker'
+  resources:
+    limits:
+      cpu: '1'
+      memory: 4Gi
+    requests:
+      cpu: '1'
+      memory: 2Gi
+  probe:
+    initialDelaySeconds: 20
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+    liveness:
+      initialDelaySeconds: 60
+      failureThreshold: 12
+    readiness: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}

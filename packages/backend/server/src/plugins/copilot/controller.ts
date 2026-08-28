@@ -36,6 +36,7 @@ import {
   UnsplashIsNotConfigured,
 } from '../../base';
 import { CurrentUser, Public } from '../../core/auth';
+import { CopilotEnabled } from './feature';
 import {
   ActionStreamHost,
   projectActionEventToChatEvent,
@@ -52,6 +53,7 @@ export interface ChatEvent {
 
 const PING_INTERVAL = 5000;
 
+@CopilotEnabled()
 @Controller('/api/copilot')
 export class CopilotController implements BeforeApplicationShutdown {
   private readonly logger = new Logger(CopilotController.name);

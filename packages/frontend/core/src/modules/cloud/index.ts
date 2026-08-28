@@ -12,8 +12,11 @@ export {
   type RealtimeLiveQueryOptions,
 } from './realtime/live-query';
 export { ServerScope } from './scopes/server';
-export { AccessTokenService } from './services/access-token';
-export { AuthService } from './services/auth';
+export {
+  DEFAULT_SELF_HOSTED_SERVER_NAME,
+  getSelfHostedServerName,
+} from './server-name';
+export { AuthService, type DeviceAuthSession } from './services/auth';
 export { CaptchaService } from './services/captcha';
 export { DefaultServerService } from './services/default-server';
 export { DocCreatedByUpdatedBySyncService } from './services/doc-created-by-updated-by-sync';
@@ -22,6 +25,7 @@ export { FetchService } from './services/fetch';
 export { GraphQLService } from './services/graphql';
 export { InvitationService } from './services/invitation';
 export { InvoicesService } from './services/invoices';
+export { McpCredentialService } from './services/mcp-credential';
 export type { PublicUserInfo } from './services/public-user';
 export { PublicUserService } from './services/public-user';
 export { RealtimeService } from './services/realtime';
@@ -111,8 +115,8 @@ import { NbstoreService } from '../storage';
 import { DocScope, DocService, DocsService } from '../doc';
 import { DocCreatedByUpdatedBySyncStore } from './stores/doc-created-by-updated-by-sync';
 import { GlobalDialogService } from '../dialogs';
-import { AccessTokenService } from './services/access-token';
-import { AccessTokenStore } from './stores/access-token';
+import { McpCredentialService } from './services/mcp-credential';
+import { McpCredentialStore } from './stores/mcp-credential';
 
 export function configureCloudModule(framework: Framework) {
   configureDefaultAuthProvider(framework);
@@ -146,6 +150,7 @@ export function configureCloudModule(framework: Framework) {
       UrlService,
       GlobalDialogService,
       NbstoreService,
+      ServerService,
     ])
     .store(AuthStore, [
       FetchService,
@@ -189,8 +194,8 @@ export function configureCloudModule(framework: Framework) {
     .store(PublicUserStore, [GraphQLService])
     .service(UserSettingsService, [UserSettingsStore])
     .store(UserSettingsStore, [GraphQLService, NbstoreService])
-    .service(AccessTokenService, [AccessTokenStore])
-    .store(AccessTokenStore, [GraphQLService, NbstoreService]);
+    .service(McpCredentialService, [McpCredentialStore])
+    .store(McpCredentialStore, [GraphQLService]);
 
   framework
     .scope(WorkspaceScope)

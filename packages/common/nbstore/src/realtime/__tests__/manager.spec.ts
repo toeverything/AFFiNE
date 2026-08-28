@@ -41,8 +41,9 @@ class FakeSocket {
   }
 }
 
-const { resetSharedConnection } = vi.hoisted(() => ({
+const { resetSharedConnection, waitForConnected } = vi.hoisted(() => ({
   resetSharedConnection: vi.fn(),
+  waitForConnected: vi.fn(async () => {}),
 }));
 const socket = new FakeSocket();
 
@@ -56,7 +57,7 @@ vi.mock('../../impls/cloud/socket', () => ({
 
     connect() {}
 
-    async waitForConnected() {}
+    waitForConnected = waitForConnected;
 
     disconnect() {
       socket.disconnected = true;
@@ -74,6 +75,8 @@ beforeEach(() => {
   socket.connected = true;
   socket.disconnected = false;
   resetSharedConnection.mockClear();
+  waitForConnected.mockReset();
+  waitForConnected.mockResolvedValue(undefined);
 });
 
 test('getRealtimeInputKey is deterministic for realtime subscription inputs', () => {
@@ -157,7 +160,7 @@ test('non-bootstrap request still requires authenticated context', async () => {
   );
 });
 
-test('request rejects when aborted', async () => {
+test('request rejects when connection times out or is aborted', async () => {
   const manager = new RealtimeManager();
   manager.setContext({
     endpoint: 'http://server',
@@ -175,6 +178,14 @@ test('request rejects when aborted', async () => {
   controller.abort();
 
   await expect(request).rejects.toThrow('Realtime request aborted');
+
+  waitForConnected.mockImplementationOnce(() => new Promise(() => {}));
+  await expect(
+    manager.request('notification.count.get', {}, { timeoutMs: 1 })
+  ).rejects.toMatchObject({
+    name: 'RealtimeRequestTimeout',
+    message: 'Realtime request timed out: notification.count.get',
+  });
 });
 
 test('subscribe routes events by topic and stable input key', async () => {

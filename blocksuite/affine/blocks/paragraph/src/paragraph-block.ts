@@ -270,7 +270,9 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
       textAlign: this.model.props.textAlign$?.value,
     });
 
+    const childrenId = `heading-children-${this.model.id}`;
     const children = html`<div
+      id=${childrenId}
       class="affine-block-children-container"
       style=${styleMap({
         paddingLeft: `${BLOCK_CHILDREN_CONTAINER_PADDING_LEFT}px`,
@@ -304,38 +306,43 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
             [TOGGLE_BUTTON_PARENT_CLASS]: true,
           })}
         >
-          ${this.model.props.type$.value.startsWith('h')
-            ? html`
-                <affine-paragraph-heading-icon
-                  .model=${this.model}
-                ></affine-paragraph-heading-icon>
-              `
-            : nothing}
-          ${this.model.props.type$.value.startsWith('h') &&
-          collapsedSiblings.length > 0
-            ? html`
-                <blocksuite-toggle-button
-                  .collapsed=${collapsed}
-                  .updateCollapsed=${(value: boolean) => {
-                    if (this.store.readonly) {
-                      this._readonlyCollapsed = value;
-                    } else {
-                      this.store.captureSync();
-                      this.store.updateBlock(this.model, {
-                        collapsed: value,
-                      });
-                    }
+          ${
+            this.model.props.type$.value.startsWith('h')
+              ? html`
+                  <affine-paragraph-heading-icon
+                    .model=${this.model}
+                  ></affine-paragraph-heading-icon>
+                `
+              : nothing
+          }
+          ${
+            this.model.props.type$.value.startsWith('h') &&
+            collapsedSiblings.length > 0
+              ? html`
+                  <blocksuite-toggle-button
+                    .collapsed=${collapsed}
+                    .controls=${childrenId}
+                    .updateCollapsed=${(value: boolean) => {
+                      if (this.store.readonly) {
+                        this._readonlyCollapsed = value;
+                      } else {
+                        this.store.captureSync();
+                        this.store.updateBlock(this.model, {
+                          collapsed: value,
+                        });
+                      }
 
-                    if (this.hasCitationSiblings) {
-                      this.citationService.trackEvent('Expand', {
-                        control: 'Source Button',
-                        type: value ? 'Hide' : 'Show',
-                      });
-                    }
-                  }}
-                ></blocksuite-toggle-button>
-              `
-            : nothing}
+                      if (this.hasCitationSiblings) {
+                        this.citationService.trackEvent('Expand', {
+                          control: 'Source Button',
+                          type: value ? 'Hide' : 'Show',
+                        });
+                      }
+                    }}
+                  ></blocksuite-toggle-button>
+                `
+              : nothing
+          }
           <rich-text
             .yText=${this.model.props.text.yText}
             .inlineEventSource=${this.topContenteditableElement ?? nothing}
@@ -351,19 +358,21 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
             .verticalScrollContainerGetter=${() =>
               getViewportElement(this.host)}
           ></rich-text>
-          ${this.inEdgelessText
-            ? nothing
-            : html`
-                <div
-                  contenteditable="false"
-                  class=${classMap({
-                    'affine-paragraph-placeholder': true,
-                    visible: this._displayPlaceholder.value,
-                  })}
-                >
-                  ${this._placeholder}
-                </div>
-              `}
+          ${
+            this.inEdgelessText
+              ? nothing
+              : html`
+                  <div
+                    contenteditable="false"
+                    class=${classMap({
+                      'affine-paragraph-placeholder': true,
+                      visible: this._displayPlaceholder.value,
+                    })}
+                  >
+                    ${this._placeholder}
+                  </div>
+                `
+          }
         </div>
 
         ${children} ${widgets}

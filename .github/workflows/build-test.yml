@@ -21,7 +21,6 @@ env:
   COVERAGE: true
   MACOSX_DEPLOYMENT_TARGET: '11.6'
   DEPLOYMENT_TYPE: affine
-  AFFINE_INDEXER_ENABLED: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -46,7 +45,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -67,9 +66,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Go (for actionlint)
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version: 'stable'
       - name: Install actionlint
@@ -91,13 +90,11 @@ jobs:
         run: yarn lint:ox
       - name: Run i18n codegen
         run: yarn affine @affine/i18n build
-      - name: Run ESLint
-        run: yarn lint:eslint --max-warnings=0
-      - name: Run Prettier
+      - name: Run Oxfmt
         # Set nmMode in `actions/setup-node` will modify the .yarnrc.yml
         run: |
           git checkout .yarnrc.yml
-          yarn lint:prettier
+          yarn lint:format
       - name: Yarn Dedupe
         run: yarn dedupe --check
 
@@ -107,7 +104,7 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=14384
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -142,7 +139,7 @@ jobs:
       run-android: ${{ steps.mobile-native-filter.outputs.android }}
       run-ios: ${{ steps.mobile-native-filter.outputs.ios }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: dorny/paths-filter@v3
         id: mobile-native-filter
@@ -171,8 +168,12 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - mobile-native-build-filter
+    env:
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+      CARGO_PROFILE_RELEASE_DEBUG: '1'
+      CARGO_PROFILE_RELEASE_LTO: 'thin'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -239,6 +240,98 @@ jobs:
         working-directory: packages/frontend/apps/android/App
         run: ./gradlew :app:assembleCanaryDebug --no-daemon --stacktrace
 
+  test-android-app:
+    name: Test Android app
+    if: ${{ needs.mobile-native-build-filter.outputs.run-android == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs:
+      - mobile-native-build-filter
+    env:
+      AFFINE_ANDROID_NATIVE_TARGET: x86_64
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+      CARGO_PROFILE_RELEASE_DEBUG: '1'
+      CARGO_PROFILE_RELEASE_LTO: 'thin'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo @affine-tools/cli @affine/android
+          electron-install: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Setup Rust
+        uses: ./.github/actions/build-rust
+        with:
+          target: 'x86_64-linux-android'
+          package: 'affine_mobile_native'
+          no-build: 'true'
+
+      - name: Build Android web assets
+        run: yarn affine @affine/android build
+        env:
+          PUBLIC_PATH: '/'
+
+      - name: Write CI Firebase config
+        run: |
+          cat > packages/frontend/apps/android/App/app/google-services.json <<'JSON'
+          {
+            "project_info": {
+              "project_number": "1",
+              "project_id": "affine-ci",
+              "storage_bucket": "affine-ci.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:1:android:0000000000000000",
+                  "android_client_info": {
+                    "package_name": "app.affine.pro"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "ci-placeholder"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          JSON
+
+      - name: Cap sync
+        run: yarn workspace @affine/android cap sync
+
+      - name: Run Android unit tests
+        working-directory: packages/frontend/apps/android/App
+        run: ./gradlew :app:testCanaryDebugUnitTest --no-daemon --stacktrace
+
+      - name: Enable KVM
+        run: sudo chmod 666 /dev/kvm
+
+      - name: Run Android instrumentation tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: cd packages/frontend/apps/android/App && ./gradlew :app:connectedCanaryDebugAndroidTest --no-daemon --stacktrace
+
   build-ios-app:
     name: Build iOS app
     if: ${{ needs.mobile-native-build-filter.outputs.run-ios == 'true' }}
@@ -246,7 +339,7 @@ jobs:
     needs:
       - mobile-native-build-filter
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -288,13 +381,32 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             build
 
+      - name: Run iOS unit tests
+        run: |
+          device_id="$(xcrun simctl list devices available -j | ruby -rjson -e '
+            devices = JSON.parse(STDIN.read).fetch("devices").values.flatten
+            device = devices.find { |candidate| candidate.fetch("name").start_with?("iPhone") }
+            abort "No available iPhone simulator" unless device
+            puts device.fetch("udid")
+          ')"
+          xcrun simctl boot "$device_id" || true
+          xcodebuild \
+            -project packages/frontend/apps/ios/App/App.xcodeproj \
+            -scheme AFFiNETests \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=$device_id" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            test
+
   rust-test-filter:
     name: Rust test filter
     runs-on: ubuntu-latest
     outputs:
       run-rust: ${{ steps.rust-filter.outputs.rust }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: dorny/paths-filter@v3
         id: rust-filter
@@ -315,7 +427,7 @@ jobs:
     needs:
       - rust-test-filter
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/build-rust
         with:
           target: x86_64-unknown-linux-gnu
@@ -338,7 +450,7 @@ jobs:
     needs:
       - build-server-native
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -368,7 +480,7 @@ jobs:
     name: Check yarn binary
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Run check
         run: |
           set -euo pipefail
@@ -384,7 +496,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -412,7 +524,7 @@ jobs:
     name: E2E BlockSuite Cross Browser Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -453,7 +565,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -485,7 +597,7 @@ jobs:
       matrix:
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -517,7 +629,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -548,9 +660,11 @@ jobs:
     name: Build AFFiNE native (x86_64-unknown-linux-gnu)
     runs-on: ubuntu-latest
     env:
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
+      CARGO_PROFILE_RELEASE_LTO: 'thin'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -580,7 +694,9 @@ jobs:
     name: Build AFFiNE native (${{ matrix.spec.target }})
     runs-on: ${{ matrix.spec.os }}
     env:
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
+      CARGO_PROFILE_RELEASE_LTO: 'thin'
     strategy:
       fail-fast: false
       matrix:
@@ -589,7 +705,7 @@ jobs:
           - { os: macos-latest, target: aarch64-apple-darwin }
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -621,7 +737,9 @@ jobs:
     name: Build AFFiNE native (${{ matrix.spec.target }})
     runs-on: ${{ matrix.spec.os }}
     env:
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
+      CARGO_PROFILE_RELEASE_LTO: 'thin'
     strategy:
       fail-fast: false
       matrix:
@@ -630,7 +748,7 @@ jobs:
           - { os: windows-latest, target: aarch64-pc-windows-msvc }
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: samypr100/setup-dev-drive@v3
         with:
           workspace-copy: true
@@ -668,9 +786,11 @@ jobs:
     name: Build Server native
     runs-on: ubuntu-latest
     env:
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
+      CARGO_PROFILE_RELEASE_LTO: 'thin'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -693,7 +813,7 @@ jobs:
     name: Build @affine/electron renderer
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -720,7 +840,7 @@ jobs:
     needs:
       - build-native-linux
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -769,12 +889,8 @@ jobs:
         ports:
           - 1025:1025
           - 8025:8025
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        ports:
-          - 9308:9308
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -817,8 +933,6 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       REDIS_SERVER_HOST: localhost
-      AFFINE_INDEXER_SEARCH_PROVIDER: elasticsearch
-      AFFINE_INDEXER_SEARCH_ENDPOINT: http://localhost:9200
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -855,7 +969,7 @@ jobs:
           stack-version: 9.0.1
           security-enabled: false
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -871,10 +985,155 @@ jobs:
           path: ./packages/backend/native
 
       - name: Prepare Server Test Environment
+        with:
+          indexer-provider: elasticsearch
         uses: ./.github/actions/server-test-env
 
       - name: Run server tests with elasticsearch only
-        run: yarn affine @affine/server test:coverage "**/*/*elasticsearch.spec.ts" --forbid-only
+        run: yarn affine @affine/server e2e:coverage src/__tests__/e2e/indexer/search-docs.spec.ts --forbid-only
+        env:
+          CARGO_TARGET_DIR: '${{ github.workspace }}/target'
+
+      - name: Upload server test coverage results
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/backend/server/.coverage/lcov.info
+          flags: server-test
+          name: affine
+          fail_ci_if_error: false
+
+  server-test-embedded:
+    name: Server Test with Embedded Search
+    runs-on: ubuntu-latest
+    needs:
+      - build-server-native
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      REDIS_SERVER_HOST: localhost
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo @affine/server
+          electron-install: false
+          full-cache: true
+
+      - name: Download server-native.node
+        uses: actions/download-artifact@v4
+        with:
+          name: server-native.node
+          path: ./packages/backend/native
+
+      - name: Prepare Server Test Environment
+        with:
+          indexer-provider: embedded
+        uses: ./.github/actions/server-test-env
+
+      - name: Run embedded Search provider E2E
+        run: >-
+          yarn affine @affine/server e2e:coverage
+          src/__tests__/e2e/indexer/aggregate.spec.ts
+          src/__tests__/e2e/indexer/search-docs.spec.ts
+          src/__tests__/e2e/indexer/search.spec.ts
+          --concurrency 1
+          --forbid-only
+        env:
+          CARGO_TARGET_DIR: '${{ github.workspace }}/target'
+
+      - name: Upload server test coverage results
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/backend/server/.coverage/lcov.info
+          flags: server-test
+          name: affine
+          fail_ci_if_error: false
+
+  server-test-manticoresearch:
+    name: Server Test with Manticore Search
+    runs-on: ubuntu-latest
+    needs:
+      - build-server-native
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      REDIS_SERVER_HOST: localhost
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+      mailer:
+        image: mailhog/mailhog
+        ports:
+          - 1025:1025
+          - 8025:8025
+      manticore:
+        image: manticoresearch/manticore:29.0.2
+        env:
+          'searchd.listen': 'http:9308'
+          'searchd.network_timeout': '30'
+        ports:
+          - 9308:9308
+        options: >-
+          --health-cmd "wget -qO- --post-data='SHOW TABLES' 'http://127.0.0.1:9308/sql?mode=raw' >/dev/null"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo @affine/server
+          electron-install: false
+          full-cache: true
+
+      - name: Download server-native.node
+        uses: actions/download-artifact@v4
+        with:
+          name: server-native.node
+          path: ./packages/backend/native
+
+      - name: Prepare Server Test Environment
+        with:
+          indexer-provider: manticoresearch
+        uses: ./.github/actions/server-test-env
+
+      - name: Run Manticore Search provider E2E
+        run: yarn affine @affine/server e2e:coverage src/__tests__/e2e/indexer/manticore-provider.spec.ts --forbid-only
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
 
@@ -913,12 +1172,8 @@ jobs:
         image: redis
         ports:
           - 6379:6379
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        ports:
-          - 9308:9308
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -934,6 +1189,8 @@ jobs:
           path: ./packages/backend/native
 
       - name: Prepare Server Test Environment
+        with:
+          indexer-provider: disabled
         uses: ./.github/actions/server-test-env
 
       - name: Run server tests
@@ -957,7 +1214,7 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: ./.github/actions/build-rust
         with:
@@ -980,7 +1237,7 @@ jobs:
       run-api: ${{ steps.decision.outputs.run_api }}
       run-e2e: ${{ steps.decision.outputs.run_e2e }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: dorny/paths-filter@v3
         id: copilot-filter
@@ -1044,12 +1301,8 @@ jobs:
         ports:
           - 1025:1025
           - 8025:8025
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        ports:
-          - 9308:9308
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -1117,12 +1370,8 @@ jobs:
         image: redis
         ports:
           - 6379:6379
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        ports:
-          - 9308:9308
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -1200,12 +1449,8 @@ jobs:
         ports:
           - 1025:1025
           - 8025:8025
-      indexer:
-        image: manticoresearch/manticore:10.1.0
-        ports:
-          - 9308:9308
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -1286,7 +1531,7 @@ jobs:
               test: true,
             }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         timeout-minutes: 10
@@ -1390,6 +1635,7 @@ jobs:
       - typecheck
       - mobile-native-build-filter
       - build-android-app
+      - test-android-app
       - build-ios-app
       - lint-rust
       - check-git-status
@@ -1406,6 +1652,9 @@ jobs:
       - build-electron-renderer
       - native-unit-test
       - server-test
+      - server-test-elasticsearch
+      - server-test-embedded
+      - server-test-manticoresearch
       - server-e2e-test
       - rust-test
       - rust-test-filter

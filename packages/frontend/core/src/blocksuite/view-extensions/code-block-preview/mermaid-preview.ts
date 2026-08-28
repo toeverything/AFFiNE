@@ -479,46 +479,50 @@ export class MermaidPreview extends SignalWatcher(
             display: this.state === 'finish' ? undefined : 'none',
           })}
         >
-          ${this.state === 'finish'
-            ? html`
-                <div
-                  class="mermaid-preview-svg"
-                  style=${styleMap({
-                    transform: `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`,
-                  })}
-                >
-                  ${this.svgContent
-                    ? html`<div .innerHTML=${this.svgContent}></div>`
-                    : nothing}
-                </div>
-                <div class="mermaid-controls">
-                  <button
-                    class="mermaid-control-button"
-                    @click=${this._zoomIn}
-                    title="Zoom in"
+          ${
+            this.state === 'finish'
+              ? html`
+                  <div
+                    class="mermaid-preview-svg"
+                    style=${styleMap({
+                      transform: `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`,
+                    })}
                   >
-                    +
-                  </button>
-                  <button
-                    class="mermaid-control-button"
-                    @click=${this._zoomOut}
-                    title="Zoom out"
-                  >
-                    −
-                  </button>
-                  <button
-                    class="mermaid-control-button"
-                    @click=${this._resetTransform}
-                    title="Reset view"
-                  >
-                    ⟳
-                  </button>
-                </div>
-                <div class="mermaid-scale-info">
-                  ${Math.round(this.scale * 100)}%
-                </div>
-              `
-            : nothing}
+                    ${
+                      this.svgContent
+                        ? html`<div .innerHTML=${this.svgContent}></div>`
+                        : nothing
+                    }
+                  </div>
+                  <div class="mermaid-controls">
+                    <button
+                      class="mermaid-control-button"
+                      @click=${this._zoomIn}
+                      title="Zoom in"
+                    >
+                      +
+                    </button>
+                    <button
+                      class="mermaid-control-button"
+                      @click=${this._zoomOut}
+                      title="Zoom out"
+                    >
+                      −
+                    </button>
+                    <button
+                      class="mermaid-control-button"
+                      @click=${this._resetTransform}
+                      title="Reset view"
+                    >
+                      ⟳
+                    </button>
+                  </div>
+                  <div class="mermaid-scale-info">
+                    ${Math.round(this.scale * 100)}%
+                  </div>
+                `
+              : nothing
+          }
         </div>
       </div>
     `;

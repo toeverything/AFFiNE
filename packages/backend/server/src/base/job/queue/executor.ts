@@ -2,7 +2,7 @@ import { getQueueToken, getSharedConfigToken } from '@nestjs/bullmq';
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { Job, Queue as Bullmq, Worker, WorkerOptions } from 'bullmq';
-import { difference, merge } from 'lodash-es';
+import { merge } from 'lodash-es';
 import { CLS_ID, ClsServiceManager } from 'nestjs-cls';
 
 import { Config } from '../../config';
@@ -10,7 +10,8 @@ import { OnEvent } from '../../event';
 import { metrics, wrapCallMetric } from '../../metrics';
 import { QueueRedis } from '../../redis';
 import { genRequestId } from '../../utils';
-import { JOB_SIGNAL, namespace, Queue, QUEUES } from './def';
+import { JOB_SIGNAL, namespace, Queue } from './def';
+import { queuesForRole } from './owner';
 import { JobHandlerScanner } from './scanner';
 
 @Injectable()
@@ -27,18 +28,7 @@ export class JobExecutor implements OnModuleDestroy {
 
   @OnEvent('config.init')
   async onConfigInit() {
-    const queues = env.flavors.graphql
-      ? difference(QUEUES, [Queue.DOC, Queue.INDEXER])
-      : [];
-
-    // Enable doc/indexer queues in both doc and front service.
-    if (env.flavors.doc || env.flavors.front) {
-      queues.push(Queue.DOC);
-      // NOTE(@fengmk2): Once the index task cannot be processed in time, it needs to be separated from the doc service and deployed independently.
-      queues.push(Queue.INDEXER);
-    }
-
-    await this.startWorkers(queues);
+    await this.startWorkers(queuesForRole(env.role));
   }
 
   @OnEvent('config.changed')

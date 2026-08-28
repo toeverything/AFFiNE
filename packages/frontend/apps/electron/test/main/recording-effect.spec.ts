@@ -132,7 +132,6 @@ function createWorkspaceRef() {
       parentId?: string
     ) => string;
     getBlock: (id: string) => MockBlockRecord;
-    // eslint-disable-next-line rxjs/finnish
     getBlock$: (id: string) => MockBlockRecord;
   };
   const attachments: Array<{
@@ -180,7 +179,6 @@ function createWorkspaceRef() {
               addBlock: (...args: Parameters<typeof blockSuiteDoc.addBlock>) =>
                 blockSuiteDoc.addBlock(...args),
               getBlock: (blockId: string) => blockSuiteDoc.getBlock(blockId),
-              // eslint-disable-next-line rxjs/finnish
               getBlock$: (blockId: string) => blockSuiteDoc.getBlock(blockId),
             },
           };

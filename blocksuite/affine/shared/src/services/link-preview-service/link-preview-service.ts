@@ -3,7 +3,6 @@ import { type Container, createIdentifier } from '@blocksuite/global/di';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { Extension } from '@blocksuite/store';
 
-import { DEFAULT_LINK_PREVIEW_ENDPOINT } from '../../consts';
 import { isAbortError } from '../../utils/is-abort-error';
 import {
   LinkPreviewCacheIdentifier,
@@ -34,12 +33,12 @@ export interface LinkPreviewProvider {
   /**
    * Set the endpoint for link preview
    */
-  setEndpoint: (endpoint: string) => void;
+  setEndpoint: (endpoint: string | null) => void;
 
   /**
    * Get the endpoint for link preview
    */
-  endpoint: string;
+  endpoint: string | null;
 }
 
 export const LinkPreviewServiceIdentifier =
@@ -55,9 +54,12 @@ export class LinkPreviewService
     ]);
   }
 
-  private _endpoint: string = DEFAULT_LINK_PREVIEW_ENDPOINT;
+  private _endpoint: string | null = null;
 
-  constructor(private readonly _cache: LinkPreviewCacheProvider) {
+  constructor(
+    private readonly _cache: LinkPreviewCacheProvider,
+    private readonly _fetch: typeof globalThis.fetch = globalThis.fetch
+  ) {
     super();
   }
 
@@ -65,52 +67,16 @@ export class LinkPreviewService
     return this._endpoint;
   }
 
-  setEndpoint = (endpoint: string) => {
+  setEndpoint = (endpoint: string | null) => {
     this._endpoint = endpoint;
-  };
-
-  private readonly _fetchTwitterPreview = async (
-    url: string,
-    signal?: AbortSignal
-  ): Promise<Partial<LinkPreviewData>> => {
-    try {
-      const match = /\/status\/(\d+)/.exec(url);
-      if (!match) {
-        throw new BlockSuiteError(
-          ErrorCode.DefaultRuntimeError,
-          `Invalid tweet URL: ${url}`
-        );
-      }
-      const apiUrl = `https://api.fxtwitter.com/status/${match[1]}`;
-
-      const response = await fetch(apiUrl, { signal }).then(res => res.json());
-      const tweet = response?.tweet;
-      if (!tweet) {
-        throw new BlockSuiteError(
-          ErrorCode.DefaultRuntimeError,
-          `Invalid tweet response: ${url}`
-        );
-      }
-
-      return {
-        title: tweet.author?.name ?? null,
-        icon: tweet.author?.avatar_url ?? null,
-        description: tweet.text ?? null,
-        image:
-          tweet.media?.photos?.[0]?.url || tweet.author?.banner_url || null,
-      };
-    } catch (e) {
-      console.error(`Failed to fetch tweet: ${url}`);
-      console.error(e);
-      return {};
-    }
   };
 
   private readonly _fetchStandardPreview = async (
     url: string,
     signal?: AbortSignal
   ): Promise<Partial<LinkPreviewData>> => {
-    const response = await fetch(this.endpoint, {
+    if (!this.endpoint) return {};
+    const response = await this._fetch(this.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -145,29 +111,6 @@ export class LinkPreviewService
     };
   };
 
-  private readonly _isTwitterUrl = (url: string): boolean => {
-    const twitterDomains = [
-      'https://x.com/',
-      'https://www.x.com/',
-      'https://www.twitter.com/',
-      'https://twitter.com/',
-    ];
-    return (
-      twitterDomains.some(domain => url.startsWith(domain)) &&
-      url.includes('/status/')
-    );
-  };
-
-  private readonly _fetchPreview = async (
-    url: string,
-    signal?: AbortSignal
-  ): Promise<Partial<LinkPreviewData>> => {
-    if (this._isTwitterUrl(url)) {
-      return this._fetchTwitterPreview(url, signal);
-    }
-    return this._fetchStandardPreview(url, signal);
-  };
-
   /**
    * Fetch link preview data for a given URL
    */
@@ -191,7 +134,7 @@ export class LinkPreviewService
     const promise = (async () => {
       try {
         // Fetch new data
-        const data = await this._fetchPreview(url, signal);
+        const data = await this._fetchStandardPreview(url, signal);
         // If the data is not empty, set the data to the cache
         if (data && Object.keys(data).length > 0) {
           this._cache.set(url, data);

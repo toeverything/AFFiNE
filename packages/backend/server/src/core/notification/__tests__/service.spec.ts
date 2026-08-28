@@ -4,7 +4,7 @@ import { mock } from 'node:test';
 import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
-import { Mockers } from '../../../__tests__/mocks';
+import { Mockers, MockMailer } from '../../../__tests__/mocks';
 import { Due, NotificationNotFound } from '../../../base';
 import {
   DocMode,
@@ -18,6 +18,7 @@ import {
 import { DocStorageModule } from '../../doc';
 import { FeatureModule } from '../../features';
 import { MailModule } from '../../mail';
+import { Mailer } from '../../mail/mailer';
 import { PermissionModule } from '../../permission';
 import { StorageModule } from '../../storage';
 import { NotificationModule } from '../index';
@@ -33,9 +34,13 @@ const module = await createModule({
     NotificationModule,
   ],
   providers: [NotificationService],
+  tapModule: builder => {
+    builder.overrideProvider(Mailer).useValue(new MockMailer());
+  },
 });
 const notificationService = module.get(NotificationService);
 const models = module.get(Models);
+const mailer = module.get(Mailer) as unknown as MockMailer;
 
 let owner: User;
 let member: User;
@@ -82,9 +87,9 @@ test('should create invitation notification and email', async t => {
   t.is(notification!.body.inviteId, inviteId);
 
   // should send invitation email
-  const invitationMail = module.queue.last('notification.sendMail');
-  t.is(invitationMail.payload.to, member.email);
-  t.is(invitationMail.payload.name, 'MemberInvitation');
+  const invitationMail = mailer.last('MemberInvitation');
+  t.is(invitationMail.to, member.email);
+  t.is(invitationMail.name, 'MemberInvitation');
 });
 
 test('should not send invitation email when workspace name contains domain', async t => {
@@ -92,10 +97,11 @@ test('should not send invitation email when workspace name contains domain', asy
     owner: {
       id: owner.id,
     },
-    name: 'BTC https://spam.example',
+    name: 'BTC example.com',
   });
   const inviteId = randomUUID();
-  const invitationMailCount = module.queue.count('notification.sendMail');
+  const invitationMailCount = mailer.send.callCount;
+  const skippedMailCount = mailer.skip.callCount;
 
   const notification = await notificationService.createInvitation({
     userId: member.id,
@@ -107,7 +113,9 @@ test('should not send invitation email when workspace name contains domain', asy
   });
 
   t.truthy(notification);
-  t.is(module.queue.count('notification.sendMail'), invitationMailCount);
+  t.is(mailer.send.callCount, invitationMailCount);
+  t.is(mailer.skip.callCount, skippedMailCount + 1);
+  t.is(mailer.skip.lastCall.args[1].reason, 'workspace_name_contains_domain');
 });
 
 test('should not send invitation email if user setting is not to receive invitation email', async t => {
@@ -116,7 +124,8 @@ test('should not send invitation email if user setting is not to receive invitat
     userId: member.id,
     receiveInvitationEmail: false,
   });
-  const invitationMailCount = module.queue.count('notification.sendMail');
+  const invitationMailCount = mailer.send.callCount;
+  const skippedMailCount = mailer.skip.callCount;
 
   const notification = await notificationService.createInvitation({
     userId: member.id,
@@ -130,7 +139,9 @@ test('should not send invitation email if user setting is not to receive invitat
   t.truthy(notification);
 
   // no new invitation email should be sent
-  t.is(module.queue.count('notification.sendMail'), invitationMailCount);
+  t.is(mailer.send.callCount, invitationMailCount);
+  t.is(mailer.skip.callCount, skippedMailCount + 1);
+  t.is(mailer.skip.lastCall.args[1].reason, 'recipient_notification_disabled');
 });
 
 test('should not create invitation notification if user is already a member', async t => {
@@ -174,9 +185,9 @@ test('should create invitation accepted notification and email', async t => {
   t.is(notification!.body.inviteId, inviteId);
 
   // should send email
-  const invitationAcceptedMail = module.queue.last('notification.sendMail');
-  t.is(invitationAcceptedMail.payload.to, owner.email);
-  t.is(invitationAcceptedMail.payload.name, 'MemberAccepted');
+  const invitationAcceptedMail = mailer.last('MemberAccepted');
+  t.is(invitationAcceptedMail.to, owner.email);
+  t.is(invitationAcceptedMail.name, 'MemberAccepted');
 });
 
 test('should not send invitation accepted email if user settings is not receive invitation email', async t => {
@@ -189,9 +200,7 @@ test('should not send invitation accepted email if user settings is not receive 
     userId: owner.id,
     receiveInvitationEmail: false,
   });
-  const invitationAcceptedMailCount = module.queue.count(
-    'notification.sendMail'
-  );
+  const invitationAcceptedMailCount = mailer.send.callCount;
 
   const notification = await notificationService.createInvitationAccepted({
     userId: owner.id,
@@ -205,10 +214,7 @@ test('should not send invitation accepted email if user settings is not receive 
   t.truthy(notification);
 
   // no new invitation accepted email should be sent
-  t.is(
-    module.queue.count('notification.sendMail'),
-    invitationAcceptedMailCount
-  );
+  t.is(mailer.send.callCount, invitationAcceptedMailCount);
 });
 
 test('should not create invitation accepted notification if user is not an active member', async t => {
@@ -286,11 +292,11 @@ test('should create invitation review request notification if user is not an act
   t.is(notification!.body.inviteId, inviteId);
 
   // should send email
-  const invitationReviewRequestMail = module.queue.last(
-    'notification.sendMail'
+  const invitationReviewRequestMail = mailer.last(
+    'LinkInvitationReviewRequest'
   );
-  t.is(invitationReviewRequestMail.payload.to, owner.email);
-  t.is(invitationReviewRequestMail.payload.name, 'LinkInvitationReviewRequest');
+  t.is(invitationReviewRequestMail.to, owner.email);
+  t.is(invitationReviewRequestMail.name, 'LinkInvitationReviewRequest');
 });
 
 test('should not create invitation review request notification if user is an active member', async t => {
@@ -336,11 +342,9 @@ test('should create invitation review approved notification if user is an active
   t.is(notification!.body.inviteId, inviteId);
 
   // should send email
-  const invitationReviewApprovedMail = module.queue.last(
-    'notification.sendMail'
-  );
-  t.is(invitationReviewApprovedMail.payload.to, member.email);
-  t.is(invitationReviewApprovedMail.payload.name, 'LinkInvitationApprove');
+  const invitationReviewApprovedMail = mailer.last('LinkInvitationApprove');
+  t.is(invitationReviewApprovedMail.to, member.email);
+  t.is(invitationReviewApprovedMail.name, 'LinkInvitationApprove');
 });
 
 test('should not create invitation review approved notification if user is not an active member', async t => {
@@ -382,11 +386,9 @@ test('should create invitation review declined notification if user is not an ac
   t.is(notification!.body.createdByUserId, owner.id);
 
   // should send email
-  const invitationReviewDeclinedMail = module.queue.last(
-    'notification.sendMail'
-  );
-  t.is(invitationReviewDeclinedMail.payload.to, member.email);
-  t.is(invitationReviewDeclinedMail.payload.name, 'LinkInvitationDecline');
+  const invitationReviewDeclinedMail = mailer.last('LinkInvitationDecline');
+  t.is(invitationReviewDeclinedMail.to, member.email);
+  t.is(invitationReviewDeclinedMail.name, 'LinkInvitationDecline');
 });
 
 test('should not create invitation review declined notification if user is an active member', async t => {
@@ -618,12 +620,12 @@ test('should send mention email by user setting', async t => {
   t.truthy(notification);
 
   // should send mention email
-  const mentionMail = module.queue.last('notification.sendMail');
-  t.is(mentionMail.payload.to, member.email);
-  t.is(mentionMail.payload.name, 'Mention');
+  const mentionMail = mailer.last('Mention');
+  t.is(mentionMail.to, member.email);
+  t.is(mentionMail.name, 'Mention');
 
   // update user setting to not receive mention email
-  const mentionMailCount = module.queue.count('notification.sendMail');
+  const mentionMailCount = mailer.send.callCount;
   await module.create(Mockers.UserSettings, {
     userId: member.id,
     receiveMentionEmail: false,
@@ -644,7 +646,7 @@ test('should send mention email by user setting', async t => {
   });
 
   // should not send mention email
-  t.is(module.queue.count('notification.sendMail'), mentionMailCount);
+  t.is(mailer.send.callCount, mentionMailCount);
 });
 
 test('should send mention email with use client doc title if server doc title is empty', async t => {
@@ -672,11 +674,10 @@ test('should send mention email with use client doc title if server doc title is
 
   t.truthy(notification);
 
-  const mentionMail = module.queue.last('notification.sendMail');
-  t.is(mentionMail.payload.to, member.email);
-  t.is(mentionMail.payload.name, 'Mention');
-  // @ts-expect-error - payload is not typed
-  t.is(mentionMail.payload.props.doc.title, 'doc-title-1');
+  const mentionMail = mailer.last('Mention');
+  t.is(mentionMail.to, member.email);
+  t.is(mentionMail.name, 'Mention');
+  t.is(mentionMail.props.doc.title, 'doc-title-1');
 });
 
 test('should send comment notification and email', async t => {
@@ -699,9 +700,9 @@ test('should send comment notification and email', async t => {
 
   t.truthy(notification);
 
-  const commentMail = module.queue.last('notification.sendMail');
-  t.is(commentMail.payload.to, member.email);
-  t.is(commentMail.payload.name, 'Comment');
+  const commentMail = mailer.last('Comment');
+  t.is(commentMail.to, member.email);
+  t.is(commentMail.name, 'Comment');
 });
 
 test('should send comment mention notification and email', async t => {
@@ -729,9 +730,9 @@ test('should send comment mention notification and email', async t => {
 
   t.truthy(notification);
 
-  const commentMentionMail = module.queue.last('notification.sendMail');
-  t.is(commentMentionMail.payload.to, member.email);
-  t.is(commentMentionMail.payload.name, 'CommentMention');
+  const commentMentionMail = mailer.last('CommentMention');
+  t.is(commentMentionMail.to, member.email);
+  t.is(commentMentionMail.name, 'CommentMention');
 });
 
 test('should send comment email by user setting', async t => {
@@ -753,12 +754,12 @@ test('should send comment email by user setting', async t => {
 
   t.truthy(notification);
 
-  const commentMail = module.queue.last('notification.sendMail');
-  t.is(commentMail.payload.to, member.email);
-  t.is(commentMail.payload.name, 'Comment');
+  const commentMail = mailer.last('Comment');
+  t.is(commentMail.to, member.email);
+  t.is(commentMail.name, 'Comment');
 
   // update user setting to not receive comment email
-  const commentMailCount = module.queue.count('notification.sendMail');
+  const commentMailCount = mailer.send.callCount;
   await module.create(Mockers.UserSettings, {
     userId: member.id,
     receiveCommentEmail: false,
@@ -779,5 +780,5 @@ test('should send comment email by user setting', async t => {
   });
 
   // should not send comment email
-  t.is(module.queue.count('notification.sendMail'), commentMailCount);
+  t.is(mailer.send.callCount, commentMailCount);
 });

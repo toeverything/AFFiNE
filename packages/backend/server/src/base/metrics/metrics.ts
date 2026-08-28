@@ -63,6 +63,7 @@ export type KnownMetricScopes =
   | 'storage'
   | 'process'
   | 'permission'
+  | 'search'
   | 'workspace';
 
 const metricCreators: MetricCreators = {

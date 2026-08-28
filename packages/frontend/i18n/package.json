@@ -1,6 +1,6 @@
 {
   "name": "@affine/i18n",
-  "version": "0.26.3",
+  "version": "0.27.0",
   "description": "",
   "type": "module",
   "private": true,
@@ -29,6 +29,7 @@
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
     "glob": "^11.0.0",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "vitest": "^4.1.8"
   }
 }

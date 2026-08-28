@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 
 import CONFIG_DESCRIPTORS from '../../config.json';
 import type { ConfigInputProps } from './config-input-row';
+import { AuthSigningKeys } from './operations/auth-signing-keys';
 import { SendTestEmail } from './operations/send-test-email';
 export type ConfigType = 'String' | 'Number' | 'Boolean' | 'JSON' | 'Enum';
 
@@ -57,9 +58,9 @@ export const KNOWN_CONFIG_GROUPS = [
       'allowSignup',
       'allowSignupForOauth',
       {
-        key: 'newAccountShareActionDelay',
+        key: 'newAccountActionDelay',
         type: 'Number',
-        desc: 'Minimum account age in seconds before new accounts can invite members or create share links.',
+        desc: 'Minimum account age in seconds before accounts can invite members, create invite links, or publish documents. Set to 0 to disable.',
       },
       // nested json object
       {
@@ -75,6 +76,7 @@ export const KNOWN_CONFIG_GROUPS = [
         desc: 'Maximum length requirement of password',
       },
     ],
+    operations: [AuthSigningKeys],
   } as ConfigGroup<'auth'>,
   {
     name: 'Notification',
@@ -145,37 +147,38 @@ export const KNOWN_CONFIG_GROUPS = [
     fields: ['providers.google', 'providers.github', 'providers.oidc'],
   } as ConfigGroup<'oauth'>,
   {
-    name: 'AI',
+    name: 'AI BYOK',
     module: 'copilot',
     fields: [
-      'enabled',
-      'providers.openai',
-      'providers.gemini',
-      'providers.anthropic',
-      'providers.fal',
-      'unsplash',
-      'exa',
       {
-        key: 'storage',
-        desc: 'The storage provider for copilot blobs',
-        sub: 'provider',
-        type: 'Enum',
-        options: ['fs', 'aws-s3', 'cloudflare-r2'],
+        key: 'enabled',
+        desc: 'Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.',
       },
+      'byok.enabled',
+      'byok.allowedProviders',
+      'byok.allowCustomEndpoint',
       {
-        key: 'storage',
-        sub: 'bucket',
-        type: 'String',
-        desc: 'The bucket name for copilot blobs storage',
-      },
-      {
-        key: 'storage',
-        sub: 'config',
-        type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
+        key: 'byok.allowPrivateEndpoint',
+        desc: 'Allow workspace owners and admins to connect BYOK providers on private network endpoints. Only enable this for trusted workspaces.',
       },
     ],
   } as ConfigGroup<'copilot'>,
+  {
+    name: 'Indexer',
+    module: 'indexer',
+    fields: [
+      {
+        key: 'provider.type',
+        type: 'Enum',
+        options: ['embedded', 'elasticsearch', 'manticoresearch'],
+        desc: 'Search provider. Embedded and Elasticsearch provide full search semantics; Manticore Search provides basic search semantics.',
+      },
+      'provider.endpoint',
+      'provider.apiKey',
+      'provider.username',
+      'provider.password',
+    ],
+  } as ConfigGroup<'indexer'>,
 ];
 
 export const UNKNOWN_CONFIG_GROUPS = ALL_CONFIGURABLE_MODULES.filter(

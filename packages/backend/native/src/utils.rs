@@ -1,3 +1,9 @@
+use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
+
+pub(crate) fn system_time_millis(time: SystemTime) -> Result<u128, SystemTimeError> {
+  Ok(time.duration_since(UNIX_EPOCH)?.as_millis())
+}
+
 fn collapse_whitespace(s: &str) -> String {
   let mut result = String::new();
   let mut prev_was_whitespace = false;

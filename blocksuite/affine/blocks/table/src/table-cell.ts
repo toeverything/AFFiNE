@@ -138,9 +138,9 @@ export class TableCell extends SignalWatcher(
                   ].map(item =>
                     menu.action({
                       prefix: html`<div
-                        style="color: ${item.color ??
-                        cssVarV2.layer.background
-                          .primary};display: flex;align-items: center;justify-content: center;"
+                        style="color: ${
+                          item.color ?? cssVarV2.layer.background.primary
+                        };display: flex;align-items: center;justify-content: center;"
                       >
                         ${TextBackgroundDuotoneIcon}
                       </div>`,
@@ -264,9 +264,9 @@ export class TableCell extends SignalWatcher(
                   ].map(item =>
                     menu.action({
                       prefix: html`<div
-                        style="color: ${item.color ??
-                        cssVarV2.layer.background
-                          .primary};display: flex;align-items: center;justify-content: center;"
+                        style="color: ${
+                          item.color ?? cssVarV2.layer.background.primary
+                        };display: flex;align-items: center;justify-content: center;"
                       >
                         ${TextBackgroundDuotoneIcon}
                       </div>`,
@@ -376,9 +376,9 @@ export class TableCell extends SignalWatcher(
         items: [{ name: 'Default', color: undefined }, ...colorList].map(item =>
           menu.action({
             prefix: html`<div
-              style="color: ${item.color ??
-              cssVarV2.layer.background
-                .primary};display: flex;align-items: center;justify-content: center;"
+              style="color: ${
+                item.color ?? cssVarV2.layer.background.primary
+              };display: flex;align-items: center;justify-content: center;"
             >
               ${TextBackgroundDuotoneIcon}
             </div>`,
@@ -418,7 +418,7 @@ export class TableCell extends SignalWatcher(
                   name: 'Paste',
                   prefix: PasteIcon(),
                   select: () => {
-                    // oxlint-disable-next-line @typescript-eslint/no-floating-promises
+                    // oxlint-disable-next-line typescript/no-floating-promises
                     navigator.clipboard.readText().then(text => {
                       this.selectionController.doPaste(text, selected);
                     });
@@ -501,12 +501,16 @@ export class TableCell extends SignalWatcher(
       return nothing;
     }
     return html`
-      ${this.rowIndex === 0
-        ? this.renderColumnOptions(this.column, this.columnIndex)
-        : nothing}
-      ${this.columnIndex === 0
-        ? this.renderRowOptions(this.row, this.rowIndex)
-        : nothing}
+      ${
+        this.rowIndex === 0
+          ? this.renderColumnOptions(this.column, this.columnIndex)
+          : nothing
+      }
+      ${
+        this.columnIndex === 0
+          ? this.renderRowOptions(this.row, this.rowIndex)
+          : nothing
+      }
     `;
   }
 

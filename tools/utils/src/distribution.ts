@@ -6,7 +6,6 @@ export const PackageToDistribution = new Map<
 >([
   ['@affine/admin', 'admin'],
   ['@affine/web', 'web'],
-  ['@affine/media-capture-playground', 'web'],
   ['@affine/electron-renderer', 'desktop'],
   ['@affine/electron', 'desktop'],
   ['@affine/mobile', 'mobile'],

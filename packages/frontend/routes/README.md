@@ -27,10 +27,12 @@ function Routes() {
 import { RouteParamsTypes } from '@affine/routes';
 
 function Doc() {
-  const { workspaceId, docId } = useParams<RouteParamsTypes['workspace']['doc']>();
+  const { workspaceId, docId } =
+    useParams<RouteParamsTypes['workspace']['doc']>();
 }
 
 function Attachment() {
-  const { workspaceId, docId, attachmentId } = useParams<RouteParamsTypes['workspace']['doc']['attachment']>();
+  const { workspaceId, docId, attachmentId } =
+    useParams<RouteParamsTypes['workspace']['doc']['attachment']>();
 }
 ```

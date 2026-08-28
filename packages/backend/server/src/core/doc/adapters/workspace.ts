@@ -61,6 +61,9 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       return 0;
     }
 
+    updates = await this.filterValidDocUpdates(workspaceId, docId, updates);
+    if (!updates.length) return 0;
+
     const isNewDoc = !(await this.models.doc.exists(workspaceId, docId));
 
     let pendings = updates;
@@ -134,8 +137,8 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     }));
   }
 
-  async deleteDoc(workspaceId: string, docId: string) {
-    await this.models.doc.delete(workspaceId, docId);
+  async deleteDoc(_workspaceId: string, _docId: string) {
+    return;
   }
 
   async deleteSpace(workspaceId: string) {

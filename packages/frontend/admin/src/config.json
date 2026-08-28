@@ -35,10 +35,6 @@
       "type": "Object",
       "desc": "The config for doc job queue"
     },
-    "queues.indexer": {
-      "type": "Object",
-      "desc": "The config for indexer job queue"
-    },
     "queues.notification": {
       "type": "Object",
       "desc": "The config for notification job queue"
@@ -46,6 +42,14 @@
     "queues.nightly": {
       "type": "Object",
       "desc": "The config for nightly job queue"
+    },
+    "queues.backendRuntime": {
+      "type": "Object",
+      "desc": "The config for backend runtime job queue"
+    },
+    "queues.inviteAbuse": {
+      "type": "Object",
+      "desc": "The config for invite abuse disposition job queue"
     }
   },
   "throttle": {
@@ -79,9 +83,25 @@
       "type": "Boolean",
       "desc": "Whether require email verification before accessing restricted resources(not implemented)."
     },
-    "newAccountShareActionDelay": {
+    "newAccountActionDelay": {
       "type": "Number",
-      "desc": "Minimum account age in seconds before new accounts can invite members or create share links."
+      "desc": "Minimum account age in seconds before new accounts can invite members, create invite links, or publish documents. Set to 0 to disable."
+    },
+    "trustedCloudflareHeaders": {
+      "type": "Boolean",
+      "desc": "Whether request abuse source facts should trust Cloudflare headers from the origin edge."
+    },
+    "signInRateLimit": {
+      "type": "Object",
+      "desc": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds."
+    },
+    "inviteQuotaShadowMode": {
+      "type": "Boolean",
+      "desc": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions."
+    },
+    "inviteQuotaFailOpenOnRuntimeError": {
+      "type": "Boolean",
+      "desc": "Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production."
     },
     "passwordRequirements": {
       "type": "Object",
@@ -94,6 +114,26 @@
     "session.ttr": {
       "type": "Number",
       "desc": "Application auth time to refresh in seconds."
+    },
+    "token.accessTokenTtl": {
+      "type": "Number",
+      "desc": "Access JWT expiration time in seconds."
+    },
+    "token.refreshIdleTtl": {
+      "type": "Number",
+      "desc": "Auth refresh session inactivity expiration in seconds."
+    },
+    "token.refreshAbsoluteTtl": {
+      "type": "Number",
+      "desc": "Auth refresh session absolute expiration in seconds."
+    },
+    "token.refreshGracePeriod": {
+      "type": "Number",
+      "desc": "One-use refresh rotation concurrency grace period in seconds."
+    },
+    "token.refreshRetention": {
+      "type": "Number",
+      "desc": "Retention for expired auth refresh generations in seconds."
     }
   },
   "mailer": {
@@ -136,6 +176,18 @@
       "type": "Array",
       "desc": "The emails from these domains are always sent using the fallback SMTP server."
     },
+    "deliveryWorker.batchSize": {
+      "type": "Number",
+      "desc": "Number of mail delivery rows claimed by each worker tick."
+    },
+    "deliveryWorker.leaseMs": {
+      "type": "Number",
+      "desc": "Mail delivery worker lease duration in milliseconds."
+    },
+    "deliveryWorker.retentionDays": {
+      "type": "Number",
+      "desc": "Days to retain anonymized terminal mail delivery ledger rows."
+    },
     "fallbackSMTP.name": {
       "type": "String",
       "desc": "Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname."
@@ -173,18 +225,6 @@
     "history.interval": {
       "type": "Number",
       "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."
-    }
-  },
-  "permission": {
-    "readModel": {
-      "type": "String",
-      "desc": "Permission data source for Rust evaluation",
-      "env": "AFFINE_PERMISSION_READ_MODEL"
-    },
-    "fallbackLegacyLoader": {
-      "type": "Boolean",
-      "desc": "Fallback from projection loader to legacy loader when projection input loading fails",
-      "env": "AFFINE_PERMISSION_FALLBACK_LEGACY_LOADER"
     }
   },
   "storages": {
@@ -258,13 +298,6 @@
       "desc": "Whether allow guest users to create demo workspaces."
     }
   },
-  "docService": {
-    "endpoint": {
-      "type": "String",
-      "desc": "The endpoint of the doc service.",
-      "env": "DOC_SERVICE_ENDPOINT"
-    }
-  },
   "telemetry": {
     "allowedOrigin": {
       "type": "Array",
@@ -327,56 +360,7 @@
   "copilot": {
     "enabled": {
       "type": "Boolean",
-      "desc": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>"
-    },
-    "byok.enabled": {
-      "type": "Boolean",
-      "desc": "Whether to enable workspace BYOK."
-    },
-    "byok.allowedProviders": {
-      "type": "Array",
-      "desc": "The allowlist for workspace BYOK providers."
-    },
-    "byok.allowCustomEndpoint": {
-      "type": "Boolean",
-      "desc": "Whether workspace BYOK custom endpoints are accepted."
-    },
-    "providers.profiles": {
-      "type": "Array",
-      "desc": "The profile list for copilot providers."
-    },
-    "providers.defaults": {
-      "type": "Object",
-      "desc": "The default provider ids for model output types and global fallback."
-    },
-    "providers.openai": {
-      "type": "Object",
-      "desc": "The config for the openai provider.",
-      "link": "https://github.com/openai/openai-node"
-    },
-    "providers.cloudflareWorkersAi": {
-      "type": "Object",
-      "desc": "The config for the Cloudflare Workers AI provider."
-    },
-    "providers.fal": {
-      "type": "Object",
-      "desc": "The config for the fal provider."
-    },
-    "providers.gemini": {
-      "type": "Object",
-      "desc": "The config for the gemini provider."
-    },
-    "providers.geminiVertex": {
-      "type": "Object",
-      "desc": "The config for the gemini provider in Google Vertex AI."
-    },
-    "providers.anthropic": {
-      "type": "Object",
-      "desc": "The config for the anthropic provider."
-    },
-    "providers.anthropicVertex": {
-      "type": "Object",
-      "desc": "The config for the anthropic provider in Google Vertex AI."
+      "desc": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK."
     },
     "unsplash": {
       "type": "Object",
@@ -389,44 +373,50 @@
     "storage": {
       "type": "Object",
       "desc": "The config for the storage provider."
+    },
+    "byok.enabled": {
+      "type": "Boolean",
+      "desc": "Allow workspace owners and admins to configure AI provider keys through AI BYOK."
+    },
+    "byok.allowedProviders": {
+      "type": "Array",
+      "desc": "AI providers that workspace owners and admins may add through AI BYOK."
+    },
+    "byok.allowCustomEndpoint": {
+      "type": "Boolean",
+      "desc": "Allow AI BYOK keys to use a custom provider endpoint."
+    },
+    "byok.allowPrivateEndpoint": {
+      "type": "Boolean",
+      "desc": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
     }
   },
   "indexer": {
     "enabled": {
       "type": "Boolean",
-      "desc": "Enable indexer plugin",
-      "env": "AFFINE_INDEXER_ENABLED"
+      "desc": "Enable indexer plugin"
     },
     "provider.type": {
       "type": "String",
-      "desc": "Indexer search service provider name",
-      "env": "AFFINE_INDEXER_SEARCH_PROVIDER"
+      "desc": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint."
     },
     "provider.endpoint": {
       "type": "String",
-      "desc": "Indexer search service endpoint",
-      "env": "AFFINE_INDEXER_SEARCH_ENDPOINT"
+      "desc": "Remote indexer endpoint. Not used by the embedded provider."
     },
     "provider.apiKey": {
       "type": "String",
-      "desc": "Indexer search service api key. Optional for elasticsearch",
-      "link": "https://www.elastic.co/guide/server/current/api-key.html",
-      "env": "AFFINE_INDEXER_SEARCH_API_KEY"
+      "desc": "Indexer search service api key. Optional for remote providers",
+      "link": "https://www.elastic.co/guide/server/current/api-key.html"
     },
     "provider.username": {
       "type": "String",
-      "desc": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for elasticsearch",
-      "link": "https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
-      "env": "AFFINE_INDEXER_SEARCH_USERNAME"
+      "desc": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for remote providers",
+      "link": "https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html"
     },
     "provider.password": {
       "type": "String",
-      "desc": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for elasticsearch",
-      "env": "AFFINE_INDEXER_SEARCH_PASSWORD"
-    },
-    "autoIndex.batchSize": {
-      "type": "Number",
-      "desc": "Number of workspaces automatically indexed per batch"
+      "desc": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for remote providers"
     }
   },
   "oauth": {
@@ -442,7 +432,7 @@
     },
     "providers.oidc": {
       "type": "Object",
-      "desc": "OIDC OAuth provider config",
+      "desc": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true",
       "link": "https://openid.net/specs/openid-connect-core-1_0.html"
     },
     "providers.apple": {

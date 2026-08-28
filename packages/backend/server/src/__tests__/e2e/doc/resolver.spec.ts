@@ -306,3 +306,50 @@ e2e('should require Doc.Read to query workspace page meta', async t => {
     })
   );
 });
+
+e2e('should require Doc.Read to query doc histories', async t => {
+  const owner = await app.signup();
+  const member = await app.createUser();
+  await app.login(member);
+
+  await app.switchUser(owner);
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+  await app.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: member.id,
+    type: WorkspaceRole.Collaborator,
+  });
+
+  const docSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+  });
+  const doc = await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: docSnapshot.id,
+    title: 'private-doc',
+    defaultRole: DocRole.None,
+  });
+
+  await app.switchUser(member);
+  await t.throwsAsync(
+    app.gql({
+      query: {
+        id: 'workspaceDocHistoriesPermissionCheck',
+        op: 'workspaceDocHistoriesPermissionCheck',
+        query: `
+          query {
+            workspace(id: "${workspace.id}") {
+              histories(guid: "${doc.docId}") {
+                timestamp
+              }
+            }
+          }
+        `,
+      } satisfies GraphQLQuery,
+      variables: undefined,
+    })
+  );
+});

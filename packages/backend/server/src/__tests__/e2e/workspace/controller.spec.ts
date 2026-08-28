@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
 import { mock } from 'node:test';
 
 import {
@@ -7,6 +8,8 @@ import {
   type StorageProviderConfig,
 } from '../../../base';
 import { CommentAttachmentStorage } from '../../../core/storage';
+import { StorageRuntimeProvider } from '../../../core/storage-runtime';
+import { getMime } from '../../../native';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
@@ -26,14 +29,68 @@ e2e.afterEach.always(() => {
   mock.reset();
 });
 
+const objects = new Map<
+  string,
+  {
+    body: Buffer;
+    metadata?: {
+      contentLength?: number;
+      contentType?: string;
+      checksumCRC32?: string;
+      lastModified?: Date;
+    };
+  }
+>();
+
+e2e.beforeEach(() => {
+  objects.clear();
+  const rt = app.get(StorageRuntimeProvider);
+  mock.method(
+    rt,
+    'putObject',
+    async (
+      _scope: string,
+      key: string,
+      body: Buffer,
+      metadata?: {
+        contentLength?: number;
+        contentType?: string;
+        checksumCRC32?: string;
+      }
+    ) => {
+      const object = {
+        body,
+        metadata: {
+          ...metadata,
+          contentType: metadata?.contentType ?? getMime(body),
+          contentLength: metadata?.contentLength ?? body.length,
+          lastModified: new Date(),
+        },
+      };
+      objects.set(key, object);
+      return object.metadata;
+    }
+  );
+  mock.method(rt, 'getObject', async (_scope: string, key: string) => {
+    const object = objects.get(key);
+    if (!object) {
+      return {};
+    }
+    return {
+      body: Readable.from(object.body),
+      metadata: object.metadata,
+    };
+  });
+  mock.method(rt, 'presignGet', async () => undefined);
+});
+
 async function useCommentAttachmentBlobStorage(storage: StorageProviderConfig) {
   app.get(ConfigFactory).override({ storages: { blob: { storage } } });
-  await app.get(CommentAttachmentStorage).onConfigInit();
 }
 
 // #region comment attachment
 
-e2e(
+e2e.serial(
   'should get comment attachment not found when key is not exists',
   async t => {
     const { owner, workspace } = await createWorkspace();
@@ -50,7 +107,7 @@ e2e(
   }
 );
 
-e2e(
+e2e.serial(
   'should get comment attachment no permission when user is not member',
   async t => {
     const { workspace } = await createWorkspace();
@@ -117,7 +174,7 @@ e2e.serial('should get comment attachment body', async t => {
   }
 });
 
-e2e('should get comment attachment redirect url', async t => {
+e2e.serial('should get comment attachment redirect url', async t => {
   const { owner, workspace } = await createWorkspace();
   await app.login(owner);
 

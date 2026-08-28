@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { Prisma, type Workspace, WorkspaceMemberStatus } from '@prisma/client';
+import { Prisma, type Workspace as WorkspaceRecord } from '@prisma/client';
 
 import { EventBus } from '../base';
 import { BaseModel } from './base';
-import type { WorkspaceFeatureName } from './common';
-import { WorkspaceRole } from './common/role';
 
 type RawWorkspaceSummary = {
   id: string;
@@ -23,7 +21,6 @@ type RawWorkspaceSummary = {
   snapshotSize: bigint | number | null;
   blobCount: bigint | number | null;
   blobSize: bigint | number | null;
-  features: WorkspaceFeatureName[] | null;
   ownerId: string | null;
   ownerName: string | null;
   ownerEmail: string | null;
@@ -46,7 +43,6 @@ export type AdminWorkspaceSummary = {
   snapshotSize: number;
   blobCount: number;
   blobSize: number;
-  features: WorkspaceFeatureName[];
   owner: {
     id: string;
     name: string;
@@ -64,19 +60,24 @@ declare global {
   }
 }
 
-export type { Workspace };
+export type Workspace = WorkspaceRecord & {
+  public: boolean;
+  enableSharing: boolean;
+  enableUrlPreview: boolean;
+};
 export type UpdateWorkspaceInput = Pick<
-  Partial<Workspace>,
-  | 'public'
+  Partial<WorkspaceRecord>,
   | 'enableAi'
-  | 'enableSharing'
-  | 'enableUrlPreview'
   | 'enableDocEmbedding'
   | 'name'
   | 'avatarKey'
   | 'indexed'
   | 'lastCheckEmbeddings'
->;
+> & {
+  public?: boolean;
+  enableSharing?: boolean;
+  enableUrlPreview?: boolean;
+};
 
 @Injectable()
 export class WorkspaceModel extends BaseModel {
@@ -90,44 +91,60 @@ export class WorkspaceModel extends BaseModel {
    */
   @Transactional()
   async create(userId: string) {
-    const workspace = await this.withPermissionProjectionMetric(
-      this.db.workspace.create({
-        data: { public: false },
-      })
-    );
+    const workspace = await this.db.workspace.create({
+      data: {
+        accessPolicy: {
+          create: {
+            visibility: 'private',
+            sharingEnabled: true,
+            urlPreviewEnabled: false,
+          },
+        },
+      },
+      include: { accessPolicy: true },
+    });
     this.logger.log(`Workspace created with id ${workspace.id}`);
     await this.models.workspaceUser.setOwner(workspace.id, userId);
-    return workspace;
+    return this.withAccessPolicy(workspace);
   }
 
   /**
    * Update the workspace with the given data.
    */
+  @Transactional()
   async update(
     workspaceId: string,
     data: UpdateWorkspaceInput,
     notifyUpdate = true
   ) {
+    const {
+      public: isPublic,
+      enableSharing,
+      enableUrlPreview,
+      ...workspaceData
+    } = data;
     if (
-      data.public !== undefined ||
-      data.enableSharing !== undefined ||
-      data.enableUrlPreview !== undefined
+      isPublic !== undefined ||
+      enableSharing !== undefined ||
+      enableUrlPreview !== undefined
     ) {
       await this.models.workspaceAccessPolicy.upsert(workspaceId, {
-        public: data.public,
-        enableSharing: data.enableSharing,
-        enableUrlPreview: data.enableUrlPreview,
+        public: isPublic,
+        enableSharing,
+        enableUrlPreview,
       });
     }
 
-    const workspace = await this.withPermissionProjectionMetric(
-      this.db.workspace.update({
-        where: {
-          id: workspaceId,
-        },
-        data,
-      })
-    );
+    await this.db.workspace.update({
+      where: {
+        id: workspaceId,
+      },
+      data: workspaceData,
+    });
+    const workspace = await this.get(workspaceId);
+    if (!workspace) {
+      throw new Error(`Workspace ${workspaceId} not found after update`);
+    }
     this.logger.debug(
       `Updated workspace ${workspaceId} with data ${JSON.stringify(data)}`
     );
@@ -140,19 +157,23 @@ export class WorkspaceModel extends BaseModel {
   }
 
   async get(workspaceId: string) {
-    return await this.db.workspace.findUnique({
+    const workspace = await this.db.workspace.findUnique({
       where: {
         id: workspaceId,
       },
+      include: { accessPolicy: true },
     });
+    return workspace ? this.withAccessPolicy(workspace) : null;
   }
 
   async findMany(ids: string[]) {
-    return await this.db.workspace.findMany({
+    const workspaces = await this.db.workspace.findMany({
       where: {
         id: { in: ids },
       },
+      include: { accessPolicy: true },
     });
+    return workspaces.map(workspace => this.withAccessPolicy(workspace));
   }
 
   async list<S extends Prisma.WorkspaceSelect>(
@@ -170,14 +191,13 @@ export class WorkspaceModel extends BaseModel {
     })) as Prisma.WorkspaceGetPayload<{ select: S }>[];
   }
 
+  @Transactional()
   async delete(workspaceId: string) {
-    const rawResult = await this.withPermissionProjectionMetric(
-      this.db.workspace.deleteMany({
-        where: {
-          id: workspaceId,
-        },
-      })
-    );
+    const rawResult = await this.db.workspace.deleteMany({
+      where: {
+        id: workspaceId,
+      },
+    });
 
     if (rawResult.count > 0) {
       this.event.emit('workspace.deleted', { id: workspaceId });
@@ -186,13 +206,19 @@ export class WorkspaceModel extends BaseModel {
   }
 
   async allowUrlPreview(workspaceId: string) {
-    const workspace = await this.get(workspaceId);
-    return workspace?.enableUrlPreview ?? false;
+    const policy = await this.db.workspaceAccessPolicy.findUnique({
+      where: { workspaceId },
+      select: { urlPreviewEnabled: true },
+    });
+    return policy?.urlPreviewEnabled ?? false;
   }
 
   async allowSharing(workspaceId: string) {
-    const workspace = await this.get(workspaceId);
-    return workspace?.enableSharing ?? true;
+    const policy = await this.db.workspaceAccessPolicy.findUnique({
+      where: { workspaceId },
+      select: { sharingEnabled: true },
+    });
+    return policy?.sharingEnabled ?? true;
   }
 
   async allowEmbedding(workspaceId: string) {
@@ -219,6 +245,20 @@ export class WorkspaceModel extends BaseModel {
 
     return count > 0;
   }
+
+  private withAccessPolicy(
+    workspace: Prisma.WorkspaceGetPayload<{
+      include: { accessPolicy: true };
+    }>
+  ): Workspace {
+    const { accessPolicy, ...data } = workspace;
+    return {
+      ...data,
+      public: accessPolicy?.visibility === 'public',
+      enableSharing: accessPolicy?.sharingEnabled ?? true,
+      enableUrlPreview: accessPolicy?.urlPreviewEnabled ?? false,
+    };
+  }
   // #endregion
 
   // #region admin
@@ -226,7 +266,6 @@ export class WorkspaceModel extends BaseModel {
     skip: number;
     first: number;
     keyword?: string | null;
-    features?: WorkspaceFeatureName[] | null;
     flags?: {
       public?: boolean;
       enableAi?: boolean;
@@ -245,84 +284,104 @@ export class WorkspaceModel extends BaseModel {
     includeTotal?: boolean;
   }): Promise<{ rows: AdminWorkspaceSummary[]; total: number }> {
     const keyword = options.keyword?.trim();
-    const features = options.features ?? [];
     const flags = options.flags ?? {};
     const includeTotal = options.includeTotal ?? true;
     const total = includeTotal
-      ? await this.adminCountWorkspaces({ keyword, features, flags })
+      ? await this.adminCountWorkspaces({ keyword, flags })
       : 0;
     if (includeTotal && total === 0) {
       return { rows: [], total: 0 };
     }
 
-    const featuresHaving =
-      features.length > 0
-        ? Prisma.sql`
-            HAVING COUNT(
-              DISTINCT CASE
-                WHEN wf.name = ANY(${Prisma.sql`${features}::text[]`}) THEN wf.name
-              END
-            ) = ${features.length}
-          `
-        : Prisma.empty;
+    if (!keyword) {
+      const rows = await this.db.$queryRaw<RawWorkspaceSummary[]>`
+        WITH filtered AS (
+          SELECT w.id,
+                 (wap.visibility = 'public') AS public,
+                 w.created_at AS "createdAt",
+                 w.name,
+                 w.avatar_key AS "avatarKey",
+                 w.enable_ai AS "enableAi",
+                 wap.sharing_enabled AS "enableSharing",
+                 wap.url_preview_enabled AS "enableUrlPreview",
+                 w.enable_doc_embedding AS "enableDocEmbedding"
+          FROM workspaces w
+          JOIN workspace_access_policies wap ON wap.workspace_id = w.id
+          WHERE ${
+            this.buildAdminFlagWhere(flags).length
+              ? Prisma.join(this.buildAdminFlagWhere(flags), ' AND ')
+              : Prisma.sql`TRUE`
+          }
+        ),
+        page AS (
+          SELECT f.*,
+                 COALESCE(s.snapshot_count, 0) AS "snapshotCount",
+                 COALESCE(s.snapshot_size, 0) AS "snapshotSize",
+                 COALESCE(s.blob_count, 0) AS "blobCount",
+                 COALESCE(s.blob_size, 0) AS "blobSize",
+                 COALESCE(s.member_count, 0) AS "memberCount",
+                 COALESCE(s.public_page_count, 0) AS "publicPageCount"
+          FROM filtered f
+          LEFT JOIN workspace_admin_stats s ON s.workspace_id = f.id
+          ORDER BY ${Prisma.raw(this.buildAdminOrder(options.order))}
+          LIMIT ${options.first}
+          OFFSET ${options.skip}
+        )
+        SELECT p.*,
+               o.owner_id AS "ownerId",
+               o.owner_name AS "ownerName",
+               o.owner_email AS "ownerEmail",
+               o.owner_avatar_url AS "ownerAvatarUrl"
+        FROM page p
+        LEFT JOIN LATERAL (
+          SELECT u.id   AS owner_id,
+                 u.name AS owner_name,
+                 u.email AS owner_email,
+                 u.avatar_url AS owner_avatar_url
+          FROM workspace_members AS wm
+          JOIN users u ON wm.user_id = u.id
+          WHERE wm.workspace_id = p.id
+          AND wm.role = 'owner'
+          AND wm.state = 'active'
+          ORDER BY u.created_at ASC, wm.id ASC
+          LIMIT 1
+        ) o ON TRUE
+        ORDER BY ${Prisma.raw(this.buildAdminOrder(options.order))}
+      `;
 
-    const featureJoin =
-      features.length > 0
-        ? Prisma.sql`
-            LEFT JOIN workspace_features wf
-              ON wf.workspace_id = w.id AND wf.activated = TRUE
-          `
-        : Prisma.empty;
-
-    const groupAndHaving =
-      features.length > 0
-        ? Prisma.sql`
-            GROUP BY w.id,
-                     w.public,
-                     w.created_at,
-                     w.name,
-                     w.avatar_key,
-                     w.enable_ai,
-                     w.enable_url_preview,
-                     w.enable_doc_embedding,
-                     o.owner_id,
-                     o.owner_name,
-                     o.owner_email,
-                     o.owner_avatar_url
-            ${featuresHaving}
-          `
-        : Prisma.empty;
+      return { rows: this.mapAdminWorkspaceRows(rows), total };
+    }
 
     const rows = await this.db.$queryRaw<RawWorkspaceSummary[]>`
       WITH filtered AS (
         SELECT w.id,
-               w.public,
+               (wap.visibility = 'public') AS public,
                w.created_at AS "createdAt",
                w.name,
                w.avatar_key AS "avatarKey",
                w.enable_ai AS "enableAi",
-               w.enable_sharing AS "enableSharing",
-               w.enable_url_preview AS "enableUrlPreview",
+               wap.sharing_enabled AS "enableSharing",
+               wap.url_preview_enabled AS "enableUrlPreview",
                w.enable_doc_embedding AS "enableDocEmbedding",
                o.owner_id AS "ownerId",
                o.owner_name AS "ownerName",
                o.owner_email AS "ownerEmail",
                o.owner_avatar_url AS "ownerAvatarUrl"
         FROM workspaces w
+        JOIN workspace_access_policies wap ON wap.workspace_id = w.id
         LEFT JOIN LATERAL (
           SELECT u.id   AS owner_id,
                  u.name AS owner_name,
                  u.email AS owner_email,
                  u.avatar_url AS owner_avatar_url
-          FROM workspace_user_permissions AS wur
-          JOIN users u ON wur.user_id = u.id
-          WHERE wur.workspace_id = w.id
-          AND wur.type = ${WorkspaceRole.Owner}
-          AND wur.status = ${Prisma.sql`${WorkspaceMemberStatus.Accepted}::"WorkspaceMemberStatus"`}
-          ORDER BY u.created_at ASC
+          FROM workspace_members AS wm
+          JOIN users u ON wm.user_id = u.id
+          WHERE wm.workspace_id = w.id
+          AND wm.role = 'owner'
+          AND wm.state = 'active'
+          ORDER BY u.created_at ASC, wm.id ASC
           LIMIT 1
         ) o ON TRUE
-        ${featureJoin}
         WHERE ${
           keyword
             ? Prisma.sql`
@@ -342,7 +401,6 @@ export class WorkspaceModel extends BaseModel {
               )}`
             : Prisma.empty
         }
-        ${groupAndHaving}
       )
       SELECT f.*,
              COALESCE(s.snapshot_count, 0) AS "snapshotCount",
@@ -350,8 +408,7 @@ export class WorkspaceModel extends BaseModel {
              COALESCE(s.blob_count, 0) AS "blobCount",
              COALESCE(s.blob_size, 0) AS "blobSize",
              COALESCE(s.member_count, 0) AS "memberCount",
-             COALESCE(s.public_page_count, 0) AS "publicPageCount",
-             COALESCE(s.features, ARRAY[]::text[]) AS features
+             COALESCE(s.public_page_count, 0) AS "publicPageCount"
       FROM filtered f
       LEFT JOIN workspace_admin_stats s ON s.workspace_id = f.id
       ORDER BY ${Prisma.raw(this.buildAdminOrder(options.order))}
@@ -359,7 +416,11 @@ export class WorkspaceModel extends BaseModel {
       OFFSET ${options.skip}
     `;
 
-    const mapped = rows.map(row => ({
+    return { rows: this.mapAdminWorkspaceRows(rows), total };
+  }
+
+  private mapAdminWorkspaceRows(rows: RawWorkspaceSummary[]) {
+    return rows.map(row => ({
       id: row.id,
       public: row.public,
       createdAt: row.createdAt,
@@ -375,7 +436,6 @@ export class WorkspaceModel extends BaseModel {
       snapshotSize: Number(row.snapshotSize ?? 0),
       blobCount: Number(row.blobCount ?? 0),
       blobSize: Number(row.blobSize ?? 0),
-      features: (row.features ?? []) as WorkspaceFeatureName[],
       owner: row.ownerId
         ? {
             id: row.ownerId,
@@ -385,13 +445,54 @@ export class WorkspaceModel extends BaseModel {
           }
         : null,
     }));
+  }
 
-    return { rows: mapped, total };
+  async adminGetWorkspace(id: string) {
+    const rows = await this.db.$queryRaw<RawWorkspaceSummary[]>`
+      SELECT w.id,
+             (wap.visibility = 'public') AS public,
+             w.created_at AS "createdAt",
+             w.name,
+             w.avatar_key AS "avatarKey",
+             w.enable_ai AS "enableAi",
+             wap.sharing_enabled AS "enableSharing",
+             wap.url_preview_enabled AS "enableUrlPreview",
+             w.enable_doc_embedding AS "enableDocEmbedding",
+             o.owner_id AS "ownerId",
+             o.owner_name AS "ownerName",
+             o.owner_email AS "ownerEmail",
+             o.owner_avatar_url AS "ownerAvatarUrl",
+             COALESCE(s.snapshot_count, 0) AS "snapshotCount",
+             COALESCE(s.snapshot_size, 0) AS "snapshotSize",
+             COALESCE(s.blob_count, 0) AS "blobCount",
+             COALESCE(s.blob_size, 0) AS "blobSize",
+             COALESCE(s.member_count, 0) AS "memberCount",
+             COALESCE(s.public_page_count, 0) AS "publicPageCount"
+      FROM workspaces w
+      JOIN workspace_access_policies wap ON wap.workspace_id = w.id
+      LEFT JOIN LATERAL (
+        SELECT u.id   AS owner_id,
+               u.name AS owner_name,
+               u.email AS owner_email,
+               u.avatar_url AS owner_avatar_url
+        FROM workspace_members AS wm
+        JOIN users u ON wm.user_id = u.id
+        WHERE wm.workspace_id = w.id
+        AND wm.role = 'owner'
+        AND wm.state = 'active'
+        ORDER BY u.created_at ASC, wm.id ASC
+        LIMIT 1
+      ) o ON TRUE
+      LEFT JOIN workspace_admin_stats s ON s.workspace_id = w.id
+      WHERE w.id = ${id}
+      LIMIT 1
+    `;
+
+    return this.mapAdminWorkspaceRows(rows)[0] ?? null;
   }
 
   async adminCountWorkspaces(options: {
     keyword?: string | null;
-    features?: WorkspaceFeatureName[] | null;
     flags?: {
       public?: boolean;
       enableAi?: boolean;
@@ -401,35 +502,22 @@ export class WorkspaceModel extends BaseModel {
     };
   }) {
     const keyword = options.keyword?.trim();
-    const features = options.features ?? [];
     const flags = options.flags ?? {};
 
-    const featuresHaving =
-      features.length > 0
-        ? Prisma.sql`
-            HAVING COUNT(
-              DISTINCT CASE
-                WHEN wf.name = ANY(${Prisma.sql`${features}::text[]`}) THEN wf.name
-              END
-            ) = ${features.length}
-          `
-        : Prisma.empty;
+    if (!keyword) {
+      const [row] = await this.db.$queryRaw<{ total: bigint | number }[]>`
+        SELECT COUNT(*) AS total
+        FROM workspaces w
+        JOIN workspace_access_policies wap ON wap.workspace_id = w.id
+        WHERE ${
+          this.buildAdminFlagWhere(flags).length
+            ? Prisma.join(this.buildAdminFlagWhere(flags), ' AND ')
+            : Prisma.sql`TRUE`
+        }
+      `;
 
-    const featureJoin =
-      features.length > 0
-        ? Prisma.sql`
-            LEFT JOIN workspace_features wf
-              ON wf.workspace_id = w.id AND wf.activated = TRUE
-          `
-        : Prisma.empty;
-
-    const groupAndHaving =
-      features.length > 0
-        ? Prisma.sql`
-            GROUP BY w.id, o.owner_id, o.owner_email
-            ${featuresHaving}
-          `
-        : Prisma.empty;
+      return row?.total ? Number(row.total) : 0;
+    }
 
     const [row] = await this.db.$queryRaw<{ total: bigint | number }[]>`
       WITH filtered AS (
@@ -437,19 +525,19 @@ export class WorkspaceModel extends BaseModel {
                o.owner_id AS "ownerId",
                o.owner_email AS "ownerEmail"
         FROM workspaces w
+        JOIN workspace_access_policies wap ON wap.workspace_id = w.id
         LEFT JOIN LATERAL (
-          SELECT wur.workspace_id,
+          SELECT wm.workspace_id,
                  u.id   AS owner_id,
                  u.email AS owner_email
-          FROM workspace_user_permissions AS wur
-          JOIN users u ON wur.user_id = u.id
-          WHERE wur.workspace_id = w.id
-          AND wur.type = ${WorkspaceRole.Owner}
-          AND wur.status = ${Prisma.sql`${WorkspaceMemberStatus.Accepted}::"WorkspaceMemberStatus"`}
-          ORDER BY u.created_at ASC
+          FROM workspace_members AS wm
+          JOIN users u ON wm.user_id = u.id
+          WHERE wm.workspace_id = w.id
+          AND wm.role = 'owner'
+          AND wm.state = 'active'
+          ORDER BY u.created_at ASC, wm.id ASC
           LIMIT 1
         ) o ON TRUE
-        ${featureJoin}
         WHERE ${
           keyword
             ? Prisma.sql`
@@ -469,7 +557,6 @@ export class WorkspaceModel extends BaseModel {
               )}`
             : Prisma.empty
         }
-        ${groupAndHaving}
       )
       SELECT COUNT(*) AS total FROM filtered
     `;
@@ -486,17 +573,19 @@ export class WorkspaceModel extends BaseModel {
   }) {
     const conditions: Prisma.Sql[] = [];
     if (flags.public !== undefined) {
-      conditions.push(Prisma.sql`w.public = ${flags.public}`);
+      conditions.push(
+        Prisma.sql`(wap.visibility = 'public') = ${flags.public}`
+      );
     }
     if (flags.enableAi !== undefined) {
       conditions.push(Prisma.sql`w.enable_ai = ${flags.enableAi}`);
     }
     if (flags.enableSharing !== undefined) {
-      conditions.push(Prisma.sql`w.enable_sharing = ${flags.enableSharing}`);
+      conditions.push(Prisma.sql`wap.sharing_enabled = ${flags.enableSharing}`);
     }
     if (flags.enableUrlPreview !== undefined) {
       conditions.push(
-        Prisma.sql`w.enable_url_preview = ${flags.enableUrlPreview}`
+        Prisma.sql`wap.url_preview_enabled = ${flags.enableUrlPreview}`
       );
     }
     if (flags.enableDocEmbedding !== undefined) {
@@ -519,20 +608,20 @@ export class WorkspaceModel extends BaseModel {
   ) {
     switch (order) {
       case 'snapshotSize':
-        return `"snapshotSize" DESC NULLS LAST, "createdAt" DESC`;
+        return `"snapshotSize" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'blobCount':
-        return `"blobCount" DESC NULLS LAST, "createdAt" DESC`;
+        return `"blobCount" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'blobSize':
-        return `"blobSize" DESC NULLS LAST, "createdAt" DESC`;
+        return `"blobSize" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'snapshotCount':
-        return `"snapshotCount" DESC NULLS LAST, "createdAt" DESC`;
+        return `"snapshotCount" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'memberCount':
-        return `"memberCount" DESC NULLS LAST, "createdAt" DESC`;
+        return `"memberCount" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'publicPageCount':
-        return `"publicPageCount" DESC NULLS LAST, "createdAt" DESC`;
+        return `"publicPageCount" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'createdAt':
       default:
-        return `"createdAt" DESC`;
+        return `"createdAt" DESC, "id" ASC`;
     }
   }
   // #endregion

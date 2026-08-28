@@ -130,7 +130,7 @@ export const EdgelessSnapshot = (props: Props) => {
   }, [docName, extensions, firstUpdate, updateElements]);
 
   useEffect(() => {
-    // oxlint-disable-next-line @typescript-eslint/no-floating-promises
+    // oxlint-disable-next-line typescript/no-floating-promises
     renderEditor();
     return () => editorHostRef.current?.remove();
   }, [renderEditor]);

@@ -1,0 +1,28 @@
+{
+  "storages": {
+    "blob.storage": {
+      "provider": "assetpack",
+      "bucket": "blobs",
+      "config": {
+        "path": "/tmp/affine-cloud-copilot-storage"
+      }
+    }
+  },
+  "copilot": {
+    "enabled": true,
+    "storage": {
+      "provider": "assetpack",
+      "bucket": "copilot",
+      "config": {
+        "path": "/tmp/affine-cloud-copilot-storage"
+      }
+    }
+  },
+  "indexer": {
+    "enabled": true,
+    "provider": {
+      "type": "embedded",
+      "endpoint": ""
+    }
+  }
+}

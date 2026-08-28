@@ -242,9 +242,13 @@ export class ChatPanelSplitView extends SignalWatcher(
       <div class="ai-chat-panel-split-view-divider">
         <div class="ai-chat-panel-split-view-divider-handle"></div>
       </div>
-      ${this.open || this.isTransitioning
-        ? html` <div class="ai-chat-panel-split-view-right">${this.right}</div>`
-        : nothing}
+      ${
+        this.open || this.isTransitioning
+          ? html` <div class="ai-chat-panel-split-view-right">
+              ${this.right}
+            </div>`
+          : nothing
+      }
     </div>`;
   }
 }

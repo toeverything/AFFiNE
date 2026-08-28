@@ -15,12 +15,10 @@ type MetaState = {
 };
 
 export class WorkspaceMetaImpl implements WorkspaceMeta {
-  /* eslint-disable rxjs/finnish */
   commonFieldsUpdated = new Subject<void>();
   docMetaAdded = new Subject<string>();
   docMetaRemoved = new Subject<string>();
   docMetaUpdated = new Subject<void>();
-  /* eslint-enable rxjs/finnish */
 
   private readonly _handleDocCollectionMetaEvents = (
     events: Y.YEvent<Y.Array<unknown> | Y.Text | Y.Map<unknown>>[]
@@ -137,7 +135,14 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
     this.docMetaUpdated.next();
   }
 
+  private _assertValidDocTitle(meta: Partial<DocMeta>) {
+    if (meta.title !== undefined && typeof meta.title !== 'string') {
+      throw new TypeError('Document title must be a string');
+    }
+  }
+
   addDocMeta(doc: DocMeta, index?: number) {
+    this._assertValidDocTitle(doc);
     this._doc.transact(() => {
       if (!this.docs) {
         return;
@@ -181,6 +186,7 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
   }
 
   setDocMeta(id: string, props: Partial<DocMeta>) {
+    this._assertValidDocTitle(props);
     const docs = (this.docs as DocMeta[]) ?? [];
     const index = docs.findIndex((doc: DocMeta) => id === doc.id);
 

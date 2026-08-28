@@ -9,8 +9,8 @@ import {
 import type { ReactNode } from 'react';
 
 import * as styles from './index.css';
-import { byokT, capabilityRows, warningDescription } from './metadata';
-import type { ByokKey, ByokSettings } from './types';
+import { byokT, capabilityRows } from './metadata';
+import type { ByokKey } from './types';
 
 function coverageIcon(
   icon: (typeof capabilityRows)[number]['icon']
@@ -47,13 +47,7 @@ function isRowCovered(row: (typeof capabilityRows)[number], keys: ByokKey[]) {
   });
 }
 
-export const CoveragePanel = ({
-  keys,
-  settings,
-}: {
-  keys: ByokKey[];
-  settings: ByokSettings;
-}) => {
+export const CoveragePanel = ({ keys }: { keys: ByokKey[] }) => {
   const t = useI18n();
 
   return (
@@ -63,9 +57,6 @@ export const CoveragePanel = ({
       </div>
       <div className={styles.rows}>
         {capabilityRows.map(row => {
-          const warning = settings.warnings.find(
-            w => w.featureKind === row.featureKind
-          );
           const covered = isRowCovered(row, keys);
           return (
             <div
@@ -86,7 +77,7 @@ export const CoveragePanel = ({
               <div className={styles.rowMain}>
                 <div className={styles.rowTitle}>{byokT(t, row.titleKey)}</div>
                 <div className={styles.rowDescription}>
-                  {warningDescription(t, warning) ?? byokT(t, row.fallbackKey)}
+                  {byokT(t, row.fallbackKey)}
                 </div>
               </div>
             </div>

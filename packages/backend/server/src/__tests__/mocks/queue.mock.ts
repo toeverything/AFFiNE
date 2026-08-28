@@ -1,12 +1,16 @@
+import { Global, Module } from '@nestjs/common';
 import { interval, map, take, takeUntil } from 'rxjs';
 import Sinon from 'sinon';
 
 import { JobQueue } from '../../base';
 
 export class MockJobQueue {
-  add = Sinon.createStubInstance(JobQueue).add.resolves();
-  remove = Sinon.createStubInstance(JobQueue).remove.resolves();
-  removeWhere = Sinon.createStubInstance(JobQueue).removeWhere.resolves([]);
+  private readonly sandbox = Sinon.createSandbox();
+
+  add = this.sandbox.stub().resolves();
+  get = this.sandbox.stub().resolves();
+  remove = this.sandbox.stub().resolves();
+  removeWhere = this.sandbox.stub().resolves([]);
 
   last<Job extends JobName>(name: Job): { name: Job; payload: Jobs[Job] } {
     const addJobName = this.add.lastCall?.args[0];
@@ -57,3 +61,10 @@ export class MockJobQueue {
     return this.add.getCalls().filter(call => call.args[0] === name).length;
   }
 }
+
+@Global()
+@Module({
+  providers: [{ provide: JobQueue, useClass: MockJobQueue }],
+  exports: [JobQueue],
+})
+export class MockJobModule {}

@@ -484,12 +484,61 @@ async function prunePrismaQueryEngines(dirPath, keepTarget) {
   for (const name of entries) {
     if (
       name.startsWith('libquery_engine-') &&
-      name.endsWith('.so.node') &&
+      name.endsWith('.node') &&
       name !== keepName
     ) {
       await fs.rm(path.join(dirPath, name), { force: true }).catch(() => {});
     }
   }
+}
+
+async function hardlinkPrismaQueryEngines(appRoot, keepTarget) {
+  const queryEngineName = `libquery_engine-${keepTarget}.so.node`;
+  const paths = [
+    path.join(appRoot, 'node_modules', '.prisma', 'client', queryEngineName),
+    path.join(appRoot, 'node_modules', 'prisma', queryEngineName),
+    path.join(appRoot, 'node_modules', '@prisma', 'engines', queryEngineName),
+  ];
+  const stats = await Promise.all(
+    paths.map(filePath => fs.lstat(filePath).catch(() => null))
+  );
+
+  if (stats.some(stat => !stat?.isFile())) {
+    debug('missing prisma query engine copy, skip hardlinking');
+    return { linked: 0, savedBytes: 0 };
+  }
+
+  const canonicalPath = paths[0];
+  const canonicalStat = stats[0];
+  const canonicalDigest = await sha256(canonicalPath);
+  let linked = 0;
+  let savedBytes = 0;
+
+  for (let i = 1; i < paths.length; i += 1) {
+    const duplicatePath = paths[i];
+    const duplicateStat = stats[i];
+    if (
+      !hasCompatibleHardlinkMetadata(canonicalStat, duplicateStat) ||
+      (await sha256(duplicatePath)) !== canonicalDigest
+    ) {
+      debug(`prisma query engine copy differs: ${duplicatePath}`);
+      continue;
+    }
+
+    if (
+      canonicalStat.dev === duplicateStat.dev &&
+      canonicalStat.ino === duplicateStat.ino
+    ) {
+      continue;
+    }
+
+    if (await hardlinkDuplicate(canonicalPath, duplicatePath)) {
+      linked += 1;
+      savedBytes += duplicateStat.size;
+    }
+  }
+
+  return { linked, savedBytes };
 }
 
 function runPrismaVersion(prismaBinPath, cwd) {
@@ -518,7 +567,7 @@ async function prunePrismaEngines(appRoot, targetKey) {
   const prismaBinPath = path.join(appRoot, 'node_modules', '.bin', 'prisma');
 
   if (!(await exists(prismaClientDir))) {
-    return;
+    return { linked: 0, savedBytes: 0 };
   }
 
   const keepTarget = await pickExistingPrismaTarget(
@@ -528,7 +577,7 @@ async function prunePrismaEngines(appRoot, targetKey) {
 
   if (!keepTarget) {
     debug('no prisma keepTarget detected, skip prisma pruning');
-    return;
+    return { linked: 0, savedBytes: 0 };
   }
 
   await prunePrismaQueryEngines(prismaClientDir, keepTarget);
@@ -545,7 +594,7 @@ async function prunePrismaEngines(appRoot, targetKey) {
 
   if (!(await exists(keepSchemaEngine))) {
     debug(`missing ${keepSchemaEngine}, skip pruning @prisma/engines`);
-    return;
+    return { linked: 0, savedBytes: 0 };
   }
 
   const keepLibQueryEngine = `libquery_engine-${keepTarget}.so.node`;
@@ -566,6 +615,8 @@ async function prunePrismaEngines(appRoot, targetKey) {
         .catch(() => {});
     }
   }
+
+  return hardlinkPrismaQueryEngines(appRoot, keepTarget);
 }
 
 async function prunePrismaRuntimeArtifacts(nodeModulesDir) {
@@ -738,7 +789,12 @@ await pruneOptionalNativeDeps(
   cpuPruneRegexes(targetKey)
 );
 
-await prunePrismaEngines(APP_ROOT, targetKey);
+const prismaQueryEngineDedupe = await prunePrismaEngines(APP_ROOT, targetKey);
+log(
+  `hardlinked prisma query engines: ${prismaQueryEngineDedupe.linked}, saved ${formatMiB(
+    prismaQueryEngineDedupe.savedBytes
+  )}`
+);
 
 const nodeModulesDir = path.join(APP_ROOT, 'node_modules');
 

@@ -1,6 +1,6 @@
 {
   "name": "@affine/doc-diff",
-  "version": "0.26.3",
+  "version": "0.27.0",
   "private": true,
   "type": "module",
   "description": "Diff AFFiNE Yjs snapshot docs (rootdoc/folder/favorite)",
@@ -17,6 +17,6 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   }
 }

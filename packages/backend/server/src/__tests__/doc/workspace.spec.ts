@@ -140,7 +140,7 @@ test('should be able to merge updates as snapshot', async t => {
   await db.workspace.create({
     data: {
       id: '1',
-      public: false,
+      accessPolicy: { create: {} },
     },
   });
 

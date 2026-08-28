@@ -7,9 +7,7 @@ import Sinon from 'sinon';
 import supertest from 'supertest';
 import { applyUpdate, Doc as YDoc, Map as YMap } from 'yjs';
 
-import { ConfigFactory } from '../../base';
 import { PgWorkspaceDocStorageAdapter } from '../../core/doc';
-import { PermissionReadModel } from '../../core/permission/config';
 import { WorkspaceBlobStorage } from '../../core/storage';
 import { Models, PublicDocMode, WorkspaceRole } from '../../models';
 import {
@@ -40,23 +38,27 @@ test.before(async t => {
 
   const db = app.get(PrismaClient);
 
-  t.context.u1 = await app.signupV1('u1@affine.pro');
   t.context.db = db;
   t.context.app = app;
   t.context.storage = app.get(WorkspaceBlobStorage);
   t.context.workspace = app.get(PgWorkspaceDocStorageAdapter);
   t.context.models = app.get(Models);
+});
+
+test.beforeEach(async t => {
+  const { app, db } = t.context;
+  await app.initTestingDB();
+  t.context.u1 = await app.signupV1('u1@affine.pro');
 
   await db.workspaceDoc.create({
     data: {
       workspace: {
         create: {
           id: 'public',
-          public: true,
+          accessPolicy: { create: { visibility: 'public' } },
         },
       },
       docId: 'private',
-      public: false,
     },
   });
 
@@ -65,11 +67,10 @@ test.before(async t => {
       workspace: {
         create: {
           id: 'private',
-          public: false,
+          accessPolicy: { create: {} },
         },
       },
       docId: 'public',
-      public: true,
     },
   });
 
@@ -78,12 +79,27 @@ test.before(async t => {
       workspace: {
         create: {
           id: 'totally-private',
-          public: false,
+          accessPolicy: { create: {} },
         },
       },
       docId: 'private',
-      public: false,
     },
+  });
+  await db.docAccessPolicy.createMany({
+    data: [
+      { workspaceId: 'public', docId: 'private', visibility: 'private' },
+      {
+        workspaceId: 'private',
+        docId: 'public',
+        visibility: 'public',
+        publicRole: 'external',
+      },
+      {
+        workspaceId: 'totally-private',
+        docId: 'private',
+        visibility: 'private',
+      },
+    ],
   });
 });
 
@@ -154,31 +170,6 @@ test('should be able to get private workspace with public pages', async t => {
   t.is(res.text, 'blob');
 });
 
-test('should be able to get private workspace with public pages using new permission model', async t => {
-  const { app, storage } = t.context;
-  const config = app.get(ConfigFactory);
-
-  config.override({
-    permission: {
-      readModel: PermissionReadModel.Projection,
-    },
-  });
-  try {
-    storage.get.resolves(blob());
-    const res = await app.GET('/api/workspaces/private/blobs/test');
-
-    t.is(res.status, HttpStatus.OK);
-    t.is(res.get('content-type'), 'text/plain');
-    t.is(res.text, 'blob');
-  } finally {
-    config.override({
-      permission: {
-        readModel: PermissionReadModel.Legacy,
-      },
-    });
-  }
-});
-
 test('should not be able to get private workspace with no public pages', async t => {
   const { app } = t.context;
 
@@ -212,8 +203,7 @@ test('should be able to get permission granted workspace', async t => {
 test('should return 404 if blob not found', async t => {
   const { app, storage } = t.context;
 
-  // @ts-expect-error mock
-  storage.get.resolves({ body: null });
+  storage.get.resolves({ body: undefined });
   const res = await app.GET('/api/workspaces/public/blobs/test');
 
   t.is(res.status, HttpStatus.NOT_FOUND);

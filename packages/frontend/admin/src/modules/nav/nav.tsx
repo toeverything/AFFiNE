@@ -58,12 +58,6 @@ export function Nav({ isCollapsed = false }: NavProps) {
           label="Queue"
           isCollapsed={isCollapsed}
         />
-        {/* <NavItem
-          to="/admin/ai"
-          icon={<AiOutlineIcon fontSize={20} />}
-          label="AI"
-          isCollapsed={isCollapsed}
-        /> */}
         <SettingsItem isCollapsed={isCollapsed} />
         <NavItem
           to={ROUTES.admin.about}

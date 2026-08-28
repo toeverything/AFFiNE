@@ -56,14 +56,10 @@ public class CreateCopilotSessionWithHistoryMutation: GraphQLMutation {
       public var docId: String? { __data["docId"] }
       public var parentSessionId: String? { __data["parentSessionId"] }
       public var promptName: String { __data["promptName"] }
-      public var model: String { __data["model"] }
-      public var optionalModels: [String] { __data["optionalModels"] }
       /// An mark identifying which view to use to display the session
       public var action: String? { __data["action"] }
       public var pinned: Bool { __data["pinned"] }
       public var title: String? { __data["title"] }
-      /// The number of tokens used in the session
-      public var tokens: Int { __data["tokens"] }
       public var messages: [Message] { __data["messages"] }
       public var createdAt: AffineGraphQL.DateTime { __data["createdAt"] }
       public var updatedAt: AffineGraphQL.DateTime { __data["updatedAt"] }

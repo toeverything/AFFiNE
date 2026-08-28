@@ -55,7 +55,7 @@ jobs:
       GIT_SHORT_HASH: ${{ steps.prepare.outputs.GIT_SHORT_HASH }}
       BUILD_TYPE: ${{ steps.prepare.outputs.BUILD_TYPE }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Prepare Release
         id: prepare
         uses: ./.github/actions/prepare-release
@@ -195,7 +195,7 @@ jobs:
       desktop_macos: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_macos }}
       desktop_windows: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_windows }}
       desktop_linux: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_linux }}
-      require-windows-signing: ${{ needs.prepare.outputs.BUILD_TYPE == 'beta' || needs.prepare.outputs.BUILD_TYPE == 'stable' || (github.event_name == 'workflow_dispatch' && inputs.desktop_windows) }}
+      require-windows-signing: ${{ needs.prepare.outputs.BUILD_TYPE == 'stable' || (github.event_name == 'workflow_dispatch' && inputs.desktop_windows) }}
 
   mobile:
     name: Release Mobile

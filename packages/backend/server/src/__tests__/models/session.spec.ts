@@ -4,7 +4,7 @@ import ava, { TestFn } from 'ava';
 import { Config } from '../../base/config';
 import { SessionModel } from '../../models/session';
 import { UserModel } from '../../models/user';
-import { createTestingModule, type TestingModule } from '../utils';
+import { createTestingModule, sleep, type TestingModule } from '../utils';
 
 interface Context {
   config: Config;
@@ -109,6 +109,7 @@ test('should refresh exists userSession', async t => {
   t.is(userSession.userId, user.id);
   t.not(userSession.expiresAt, null);
 
+  await sleep(1);
   const existsUserSession = await t.context.session.createOrRefreshUserSession(
     user.id,
     session.id
@@ -301,30 +302,5 @@ test('should delete userSession fail when sessionId not match', async t => {
     user.id,
     'not-exists-session-id'
   );
-  t.is(count, 0);
-});
-
-test('should cleanup expired userSessions', async t => {
-  const user = await t.context.user.create({
-    email: 'test@affine.pro',
-  });
-  const session = await t.context.db.session.create({
-    data: {},
-  });
-  const userSession = await t.context.session.createOrRefreshUserSession(
-    user.id,
-    session.id
-  );
-  await t.context.session.cleanExpiredUserSessions();
-  let count = await t.context.db.userSession.count();
-  t.is(count, 1);
-
-  // Set expiresAt to past time
-  await t.context.db.userSession.update({
-    where: { id: userSession.id },
-    data: { expiresAt: new Date('2022-01-01') },
-  });
-  await t.context.session.cleanExpiredUserSessions();
-  count = await t.context.db.userSession.count();
   t.is(count, 0);
 });

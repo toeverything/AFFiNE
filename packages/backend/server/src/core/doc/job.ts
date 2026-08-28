@@ -2,25 +2,25 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { JobQueue, OnJob } from '../../base';
-import { Models } from '../../models';
+import { BackendRuntimeProvider } from '../backend-runtime';
 
 declare global {
   interface Jobs {
-    'nightly.cleanExpiredHistories': {};
+    'doc.cleanExpiredHistories': {};
   }
 }
 
 @Injectable()
 export class DocStorageCronJob {
   constructor(
-    private readonly models: Models,
+    private readonly rt: BackendRuntimeProvider,
     private readonly queue: JobQueue
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async nightlyJob() {
     await this.queue.add(
-      'nightly.cleanExpiredHistories',
+      'doc.cleanExpiredHistories',
       {},
       {
         jobId: 'nightly-doc-clean-expired-histories',
@@ -28,8 +28,11 @@ export class DocStorageCronJob {
     );
   }
 
-  @OnJob('nightly.cleanExpiredHistories')
+  @OnJob('doc.cleanExpiredHistories')
   async cleanExpiredHistories() {
-    await this.models.history.cleanExpired();
+    for (;;) {
+      const count = await this.rt.cleanupExpiredSnapshotHistories(1000);
+      if (count < 1000) break;
+    }
   }
 }

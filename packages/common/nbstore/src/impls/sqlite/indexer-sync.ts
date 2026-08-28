@@ -7,6 +7,7 @@ import { NativeDBConnection, type SqliteNativeDBOptions } from './db';
 
 export class SqliteIndexerSyncStorage extends IndexerSyncStorageBase {
   static readonly identifier = 'SqliteIndexerSyncStorage';
+  override readonly commitsIndexAtomically = true;
 
   override connection = share(new NativeDBConnection(this.options));
 
@@ -30,6 +31,10 @@ export class SqliteIndexerSyncStorage extends IndexerSyncStorageBase {
       clock.timestamp,
       clock.indexerVersion
     );
+  }
+
+  override async setDocIndexedClocks(clocks: DocIndexedClock[]): Promise<void> {
+    await this.db.setDocIndexedClocks(clocks);
   }
 
   override async clearDocIndexedClock(docId: string): Promise<void> {
