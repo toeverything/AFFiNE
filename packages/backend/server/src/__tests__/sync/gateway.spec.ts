@@ -1444,6 +1444,17 @@ test('workspace sync push-doc-update should enforce doc update permissions', asy
     );
     t.is(userdataError.name, 'SPACE_ACCESS_DENIED');
 
+    const malformedDatabaseError = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: 'db$docProperties',
+        update: createYjsUpdateBase64(),
+      })
+    );
+    t.is(malformedDatabaseError.name, 'SPACE_ACCESS_DENIED');
+
     const updates = await db.update.count({
       where: {
         workspaceId: workspace.id,

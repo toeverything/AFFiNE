@@ -293,6 +293,7 @@ mod tests {
     assert!(!SEARCH_PROJECTION_MIGRATION.contains("clock_timestamp()"));
     assert!(!SEARCH_PROJECTION_MIGRATION.contains("CREATE TABLE search_runtime_projections"));
     assert!(!SEARCH_PROJECTION_MIGRATION.contains("payload JSONB NOT NULL"));
+    assert!(SEARCH_PROJECTION_MIGRATION.contains("search_workspace_reconcile_failed"));
   }
 
   #[tokio::test]

@@ -36,7 +36,7 @@ pub(in crate::runtime::backend_runtime::search) async fn sweep_generation_orphan
     "query":{"match_all":{}},
     "fields":["workspace_id"],
     "size":GENERATION_GC_BATCH,
-    "sort":if remote.is_some() { json!([{"doc_id":"asc"},{"_id":"asc"}]) } else { json!(["doc_id","id"]) }
+    "sort":provider_page_sort(table, remote.is_some())
   });
   if let Some(cursor) = cursor.as_deref() {
     dsl["cursor"] = json!(cursor);
@@ -334,7 +334,7 @@ async fn provider_document_page(
     "query":{"term":{"workspace_id":{"value":workspace_id}}},
     "fields":["doc_id"],
     "size":RECONCILE_BATCH,
-    "sort":if remote.is_some() { json!([{"doc_id":"asc"},{"_id":"asc"}]) } else { json!(["doc_id","id"]) }
+    "sort":provider_page_sort(table, remote.is_some())
   });
   if let Some(cursor) = cursor {
     dsl["cursor"] = json!(cursor);
@@ -349,6 +349,17 @@ async fn provider_document_page(
     .collect();
   let next_cursor = result.get("nextCursor").and_then(Value::as_str).map(str::to_string);
   Ok((doc_ids, next_cursor))
+}
+
+fn provider_page_sort(table: SearchTable, remote: bool) -> Value {
+  if !remote {
+    return json!(["doc_id", "id"]);
+  }
+  let mut fields = vec!["workspace_id", "doc_id", "source_version", "permission_version"];
+  if table == SearchTable::Block {
+    fields.push("block_id");
+  }
+  json!(fields.into_iter().map(|field| json!({field:"asc"})).collect::<Vec<_>>())
 }
 
 fn provider_field_string(node: &Value, field: &str) -> Option<String> {
@@ -582,7 +593,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn block_projection_check_rejects_missing_or_stale_rows() {
+  fn anti_entropy_provider_contracts_are_stable() {
     let expected = HashSet::from(["one".to_string(), "two".to_string()]);
     let complete = vec![
       json!({"_source":{"block_id":"one","source_version":7,"permission_version":3}}),
@@ -599,5 +610,15 @@ mod tests {
       7,
       3,
     ));
+    assert_eq!(
+      provider_page_sort(SearchTable::Doc, true),
+      json!([
+        {"workspace_id":"asc"},
+        {"doc_id":"asc"},
+        {"source_version":"asc"},
+        {"permission_version":"asc"}
+      ])
+    );
+    assert_eq!(provider_page_sort(SearchTable::Block, false), json!(["doc_id", "id"]));
   }
 }

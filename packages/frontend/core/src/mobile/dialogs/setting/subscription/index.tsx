@@ -1,18 +1,23 @@
-import { Button } from '@affine/component';
 import { AuthService, ServerService } from '@affine/core/modules/cloud';
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { NativePaywallService } from '@affine/core/modules/paywall';
+import { UrlService } from '@affine/core/modules/url';
 import { useI18n } from '@affine/i18n';
+import { DiamondIcon, MultiPeopleIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-import proDiamond from '../assets/pro-diamond.png';
+import { SettingGroup } from '../group';
+import { RowLayout } from '../row.layout';
 import * as styles from './styles.css';
 
-export const UserSubscription = () => {
+const AFFINE_TEAM_URL = 'https://affine.pro/teamhub';
+
+export const PlansGroup = () => {
   const serverService = useService(ServerService);
   const authService = useService(AuthService);
   const globalDialogService = useService(GlobalDialogService);
+  const urlService = useService(UrlService);
   const nativePaywallProvider =
     useService(NativePaywallService).getNativePaywallProvider();
   const t = useI18n();
@@ -31,30 +36,28 @@ export const UserSubscription = () => {
     void nativePaywallProvider?.showPaywall('Pro').catch(console.error);
   }, [globalDialogService, loggedIn, nativePaywallProvider]);
 
-  if (!nativePaywallProvider || supported === false) {
-    return null;
-  }
-
   return (
-    <div className={styles.root}>
-      <div className={styles.content}>
-        <div className={styles.headerRow}>
-          <div className={styles.perkIconWrapper}>
-            <img className={styles.perkIcon} src={proDiamond} alt="" />
-          </div>
-          <div className={styles.textBlock}>
-            <div className={styles.title}>
-              {t['com.affine.mobile.setting.subscription.title']()}
-            </div>
-            <div className={styles.description}>
-              {t['com.affine.mobile.setting.subscription.description']()}
-            </div>
-          </div>
-        </div>
-      </div>
-      <Button className={styles.button} variant="primary" onClick={handleOpen}>
-        {t['com.affine.mobile.setting.subscription.button']()}
-      </Button>
-    </div>
+    <SettingGroup title={t['com.affine.mobile.setting.plans.title']()}>
+      {nativePaywallProvider && supported !== false ? (
+        <RowLayout
+          className={styles.planRow}
+          emphasized
+          prefix={<DiamondIcon />}
+          label={t['com.affine.mobile.setting.subscription.title']()}
+          description={t[
+            'com.affine.mobile.setting.subscription.description'
+          ]()}
+          onClick={handleOpen}
+        />
+      ) : null}
+      <RowLayout
+        className={styles.planRow}
+        emphasized
+        prefix={<MultiPeopleIcon />}
+        label={t['com.affine.mobile.setting.promo.title']()}
+        description={t['com.affine.mobile.setting.promo.description']()}
+        onClick={() => urlService.openExternal(AFFINE_TEAM_URL)}
+      />
+    </SettingGroup>
   );
 };

@@ -145,6 +145,7 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
       PayWallPlugin(associatedController: self),
       PencilInputPlugin(),
       PreviewPlugin(),
+      ShareInboxPlugin(),
     ]
     plugins.forEach { bridge?.registerPluginInstance($0) }
     // WebView is guaranteed here; viewDidLoad is often too early for Cap.
@@ -166,6 +167,14 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
     }
     intelligentsButtonTimer = timer
     RunLoop.main.add(timer, forMode: .common)
+    processShareInboxIfNeeded()
+  }
+
+  func processShareInboxIfNeeded() {
+    guard let webView, !ShareInboxStore.shared.pendingItems().isEmpty else { return }
+    webView.evaluateJavaScript(
+      "window.dispatchEvent(new Event('affine:share-inbox'))"
+    )
   }
 
   private func checkEligibilityOfIntelligent() {

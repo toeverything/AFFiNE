@@ -141,6 +141,7 @@ e2e('should set new invited users to waiting-seat status', async t => {
 
   t.not(result.inviteMembers[0].inviteId, null);
 
+  await app.login(u1);
   const invitationInfo = await getInvitationInfo(
     result.inviteMembers[0].inviteId!
   );
@@ -163,6 +164,7 @@ e2e('should allocate existing team seats for new invited users', async t => {
 
   t.not(result.inviteMembers[0].inviteId, null);
 
+  await app.login(u1);
   const invitationInfo = await getInvitationInfo(
     result.inviteMembers[0].inviteId!
   );

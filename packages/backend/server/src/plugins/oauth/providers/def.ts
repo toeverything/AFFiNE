@@ -85,7 +85,7 @@ export abstract class OAuthProvider {
       timeoutMs: 10_000,
       maxRedirects: 3,
       maxBytes: 1024 * 1024,
-      allowedHeaders: ['authorization', 'content-type', 'accept'],
+      allowedHeaders: ['authorization', 'content-type', 'accept', 'user-agent'],
     };
   }
 
@@ -96,7 +96,14 @@ export abstract class OAuthProvider {
   ) {
     const response = await safeFetch(
       url,
-      { ...init, headers: { ...init?.headers, Accept: 'application/json' } },
+      {
+        ...init,
+        headers: {
+          ...init?.headers,
+          Accept: 'application/json',
+          'User-Agent': 'AFFiNE-Server',
+        },
+      },
       this.fetchOptions(url)
     );
 

@@ -114,22 +114,51 @@ impl RemoteProvider {
   }
 
   pub(super) async fn provision(&self, physical_table: &str, table: SearchTable) -> RuntimeResult<()> {
-    if self
+    let response = self
       .request(reqwest::Method::HEAD, physical_table)
       .send()
       .await
-      .is_ok_and(|response| response.status().is_success())
-    {
+      .map_err(|_| RuntimeError::SearchProviderUnavailable)?;
+    if response.status().is_success() {
       return Ok(());
+    }
+    if response.status().as_u16() != 404 {
+      return Err(provision_error(response.status().as_u16(), &[]));
     }
     let response = self
       .request(reqwest::Method::PUT, physical_table)
       .json(&super::mapping(table))
       .send()
-      .await;
-    match response {
-      Ok(response) if response.status().is_success() => Ok(()),
-      _ => Err(RuntimeError::SearchProviderUnavailable),
+      .await
+      .map_err(|_| RuntimeError::SearchProviderUnavailable)?;
+    if response.status().is_success() {
+      return Ok(());
+    }
+    let status = response.status();
+    if status.as_u16() == 400
+      && self
+        .request(reqwest::Method::HEAD, physical_table)
+        .send()
+        .await
+        .is_ok_and(|response| response.status().is_success())
+    {
+      return Ok(());
+    }
+    let body = read_response(response).await?;
+    Err(provision_error(status.as_u16(), &body))
+  }
+
+  pub(super) async fn drop_generation_asset(&self, physical_table: &str) -> RuntimeResult<()> {
+    let response = self
+      .request(reqwest::Method::DELETE, physical_table)
+      .send()
+      .await
+      .map_err(|_| RuntimeError::SearchProviderUnavailable)?;
+    let status = response.status();
+    if status.is_success() || status.as_u16() == 404 {
+      Ok(())
+    } else {
+      Err(provider_write_error(status.as_u16()))
     }
   }
 
@@ -262,6 +291,26 @@ impl RemoteProvider {
     }
     request
   }
+}
+
+fn provision_error(status: u16, body: &[u8]) -> RuntimeError {
+  if matches!(status, 401 | 403) {
+    return RuntimeError::config("search provider authentication failed");
+  }
+  if status == 400 {
+    let error_type = serde_json::from_slice::<Value>(body)
+      .ok()
+      .and_then(|value| value.pointer("/error/type").and_then(Value::as_str).map(str::to_string));
+    return if matches!(
+      error_type.as_deref(),
+      Some("mapper_parsing_exception" | "strict_dynamic_mapping_exception" | "illegal_argument_exception")
+    ) {
+      RuntimeError::invalid_state("provider_schema_failed")
+    } else {
+      RuntimeError::SearchProviderUnavailable
+    };
+  }
+  provider_write_error(status)
 }
 
 fn validate_delete_response(value: &Value) -> RuntimeResult<()> {
@@ -411,7 +460,7 @@ fn normalize_hit(hit: &Value) -> Value {
 mod tests {
   use serde_json::json;
 
-  use super::{normalize_aggregate, validate_bulk_response, validate_delete_response};
+  use super::{normalize_aggregate, provision_error, validate_bulk_response, validate_delete_response};
   use crate::runtime::RuntimeError;
 
   #[test]
@@ -447,6 +496,15 @@ mod tests {
       validate_bulk_response(&json!({"errors":true,"items":[{"index":{"status":429,"error":{}}}]}), 1),
       Err(RuntimeError::SearchProviderUnavailable)
     ));
+    assert!(matches!(
+      provision_error(400, br#"{"error":{"type":"validation_exception"}}"#),
+      RuntimeError::SearchProviderUnavailable
+    ));
+    assert!(matches!(
+      provision_error(400, br#"{"error":{"type":"mapper_parsing_exception"}}"#),
+      RuntimeError::InvalidState(_)
+    ));
+    assert!(matches!(provision_error(401, &[]), RuntimeError::Config(_)));
   }
 
   #[test]

@@ -1,4 +1,5 @@
 import serverNativeModule from '@affine/server-native';
+import { Logger } from '@nestjs/common';
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
@@ -91,6 +92,7 @@ const assertAndSnapshotRaw = async (
     referer?: string | null;
     method?: 'GET' | 'OPTIONS' | 'POST';
     body?: any;
+    headers?: Record<string, string>;
     checker?: (res: Response) => any;
   }
 ) => {
@@ -108,6 +110,9 @@ const assertAndSnapshotRaw = async (
   }
   if (referer) {
     req.set('Referer', referer);
+  }
+  if (options?.headers) {
+    req.set(options.headers);
   }
 
   const res = req.send(options?.body).expect(status).expect(checker);
@@ -225,9 +230,19 @@ test('should preview link', async t => {
     {
       status: 204,
       method: 'OPTIONS',
+      headers: {
+        'Access-Control-Request-Headers': 'content-type, x-affine-version',
+      },
       checker: (res: Response) => {
-        if (!res.headers['access-control-allow-methods']) {
-          throw new Error('Missing CORS headers');
+        if (
+          !res.headers['access-control-allow-methods'] ||
+          !res.headers['access-control-allow-headers']
+            ?.toLowerCase()
+            .includes('x-affine-version')
+        ) {
+          throw new Error(
+            `Missing CORS headers: ${JSON.stringify(res.headers)}`
+          );
         }
       },
     }
@@ -289,11 +304,43 @@ test('should preview link', async t => {
         {
           status: 200,
           method: 'POST',
-          body: { url: pageUrl },
+          body: { url: pageUrl, include: ['transcript'] },
         }
       );
     } finally {
       fetchSpy.restore();
+    }
+  }
+
+  {
+    const secret = `secret-${Date.now()}`;
+    const pageUrl = `http://external.com/private/page?token=${secret}&user=name`;
+    const logSpies = [
+      Sinon.spy(Logger.prototype, 'debug'),
+      Sinon.spy(Logger.prototype, 'warn'),
+      Sinon.spy(Logger.prototype, 'error'),
+    ];
+    const fetchSpy = stubSafeFetch(request => ({
+      body: '<title>Safe log test</title>',
+      finalUrl: request.url,
+      headers: { 'content-type': 'text/html;charset=UTF-8' },
+    }));
+    try {
+      await t.context.app
+        .POST('/api/worker/link-preview')
+        .set('Origin', 'http://localhost:3010')
+        .send({ url: pageUrl })
+        .expect(200);
+      const logged = logSpies
+        .flatMap(spy => spy.getCalls())
+        .map(call => JSON.stringify(call.args))
+        .join('\n');
+      t.true(logged.includes('http://external.com/private/page'));
+      t.false(logged.includes(secret));
+      t.false(logged.includes('?token='));
+    } finally {
+      fetchSpy.restore();
+      logSpies.forEach(spy => spy.restore());
     }
   }
 

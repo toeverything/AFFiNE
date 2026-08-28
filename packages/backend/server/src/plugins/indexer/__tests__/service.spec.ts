@@ -31,7 +31,7 @@ function enabledServer() {
   };
 }
 
-test('reflects native search readiness in the Node feature flag', async t => {
+test('exposes the indexer capability while its projection is building', async t => {
   const runtime = {
     searchStatus: Sinon.stub(),
     searchAuthorized: Sinon.stub().resolves({
@@ -39,9 +39,6 @@ test('reflects native search readiness in the Node feature flag', async t => {
       value: { total: 0, nodes: [] },
     }),
   };
-  runtime.searchStatus.onFirstCall().resolves({ ready: true });
-  runtime.searchStatus.onSecondCall().resolves({ ready: false });
-  runtime.searchStatus.onThirdCall().resolves({ ready: true });
   const server = enabledServer();
   const service = new IndexerService(
     runtime as unknown as BackendRuntimeProvider,
@@ -53,9 +50,9 @@ test('reflects native search readiness in the Node feature flag', async t => {
   await service.onConfigChanged({ updates: { indexer: {} } } as never);
   await service.search('actor', 'workspace', {} as never);
 
-  t.is(server.enableFeature.callCount, 2);
-  t.true(server.disableFeature.calledOnce);
-  t.is(runtime.searchStatus.callCount, 3);
+  t.is(server.enableFeature.callCount, 3);
+  t.false(server.disableFeature.called);
+  t.false(runtime.searchStatus.called);
 });
 
 test('does not query native search when the indexer is disabled', async t => {
@@ -104,6 +101,7 @@ test('does not schedule or run native search reconciliation when disabled', asyn
   await job.scheduleReconciliation();
   t.deepEqual(queue.add.firstCall.args[2], {
     jobId: 'backend-runtime-search-reconciliation',
+    attempts: 1,
     removeOnFail: true,
   });
 });
