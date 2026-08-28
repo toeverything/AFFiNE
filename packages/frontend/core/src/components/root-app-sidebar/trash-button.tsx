@@ -1,9 +1,13 @@
 import {
   AnimatedDeleteIcon,
+  IconButton,
+  Menu,
+  MenuItem,
   toast,
   useConfirmModal,
   useDropTarget,
 } from '@affine/component';
+import { useEmptyTrash } from '@affine/core/components/hooks/affine/use-empty-trash';
 import { MenuLinkItem } from '@affine/core/modules/app-sidebar/views';
 import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
@@ -11,15 +15,27 @@ import { GuardService } from '@affine/core/modules/permissions';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
+import {
+  DeletePermanentlyIcon,
+  MoreHorizontalIcon,
+} from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { useCallback, useState } from 'react';
 
 export const TrashButton = () => {
   const t = useI18n();
   const docsService = useService(DocsService);
+  const { confirmAndEmptyTrash } = useEmptyTrash();
   const { openConfirmModal } = useConfirmModal();
   const globalContextService = useService(GlobalContextService);
   const trashActive = useLiveData(globalContextService.globalContext.isTrash.$);
   const guardService = useService(GuardService);
+  const trashDocs = useLiveData(docsService.list.trashDocs$);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleEmptyTrash = useCallback(async () => {
+    await confirmAndEmptyTrash(trashDocs.map(doc => doc.id));
+  }, [confirmAndEmptyTrash, trashDocs]);
 
   const { dropTargetRef, draggedOver } = useDropTarget<AffineDNDData>(
     () => ({
@@ -79,6 +95,28 @@ export const TrashButton = () => {
       icon={<AnimatedDeleteIcon closed={draggedOver} />}
       active={trashActive || draggedOver}
       to={'/trash'}
+      postfix={
+        <Menu
+          rootOptions={{
+            onOpenChange: setMenuOpen,
+          }}
+          items={
+            <MenuItem
+              type="danger"
+              prefixIcon={<DeletePermanentlyIcon />}
+              disabled={!trashDocs.length}
+              onClick={() => void handleEmptyTrash()}
+            >
+              {t['com.affine.workspaceSubPath.trash.empty']()}
+            </MenuItem>
+          }
+        >
+          <IconButton size="16" data-testid="trash-operation-menu-button">
+            <MoreHorizontalIcon />
+          </IconButton>
+        </Menu>
+      }
+      postfixDisplay={menuOpen ? 'always' : 'hover'}
     >
       <span data-testid="trash-page">
         {t['com.affine.workspaceSubPath.trash']()}

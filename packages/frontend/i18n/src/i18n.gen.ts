@@ -8021,6 +8021,12 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.trashOperation.deleteDescription"](): string;
     /**
+      * `This will permanently delete all {{count}} items in Trash. This action cannot be undone.`
+      */
+    ["com.affine.trashOperation.emptyDescription"](options: {
+        readonly count: string;
+    }): string;
+    /**
       * `Delete permanently`
       */
     ["com.affine.trashOperation.deletePermanently"](): string;
@@ -8208,6 +8214,10 @@ export function useAFFiNEI18N(): {
       * `Trash`
       */
     ["com.affine.workspaceSubPath.trash"](): string;
+    /**
+      * `Empty trash`
+      */
+    ["com.affine.workspaceSubPath.trash.empty"](): string;
     /**
       * `Deleted docs will appear here.`
       */
