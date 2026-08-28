@@ -7,7 +7,6 @@ import {
 } from '@blocksuite/affine-model';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import { requestThrottledConnectedFrame } from '@blocksuite/affine-shared/utils';
-import { IS_IOS, IS_IPAD } from '@blocksuite/global/env';
 import { Bound } from '@blocksuite/global/gfx';
 import type { PointerEventState } from '@blocksuite/std';
 import {
@@ -17,8 +16,6 @@ import {
 } from '@blocksuite/std/gfx';
 
 import { handleLayout } from './utils.js';
-
-const SKIP_LAYOUT_APPLY_STYLE = IS_IPAD || IS_IOS;
 
 export class MindMapView extends GfxElementModelView<MindmapElementModel> {
   static override type = 'mindmap';
@@ -133,9 +130,7 @@ export class MindMapView extends GfxElementModelView<MindmapElementModel> {
     ) {
       const { stashed, applyStyle, layoutType } = Object.assign(
         {
-          // fitContent-per-node during layout freezes large mindmaps on iPad
-          // Pencil release; geometry layout is enough after drag/reparent.
-          applyStyle: !SKIP_LAYOUT_APPLY_STYLE,
+          applyStyle: true,
           calculateTreeBound: true,
           stashed: true,
         },

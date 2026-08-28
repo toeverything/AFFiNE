@@ -247,9 +247,22 @@ function isInlineEditor(element: Element): boolean {
 }
 
 function getEditableScribbleElements(root: ParentNode): Element[] {
+  const doc = root.ownerDocument ?? (root as Document);
+  const viewport = {
+    x: 0,
+    y: 0,
+    ...getViewportSize(doc),
+  };
+
   return [...root.querySelectorAll(EDITABLE_SCRIBBLE_SELECTOR)]
     .filter(isVisibleEditable)
-    .slice(0, MAX_RECT_COUNT);
+    .map(element => ({
+      element,
+      rects: toClippedElementScribbleRects(element, root),
+    }))
+    .filter(({ rects }) => rects.some(rect => intersects(rect, viewport)))
+    .slice(0, MAX_RECT_COUNT)
+    .map(({ element }) => element);
 }
 
 function toInlineEditorScribbleRects(rect: DOMRect): ScribbleRect[] {
@@ -423,6 +436,7 @@ function createScribbleProxyTextarea(
     const text = proxy.value;
     proxy.value = '';
     insertTextIntoTarget(target, text);
+    applyProxyStyle(proxy, getProxyRect(proxy));
     console.warn('[viewport-lifecycle] scribble.proxy.input', {
       length: text.length,
       proxyRect: getProxyRect(proxy),

@@ -290,28 +290,6 @@ export class MindMapDragExtension extends InteractivityExtension {
 
         this._responseAreaUpdated.clear();
 
-        if (IS_MOBILE_APPLE) {
-          // Abort overlay now; defer model mutations so pointerup can return
-          // before layout/detach (the freeze the Pencil repro hits).
-          const merge = hoveredCtx?.merge;
-          if (!merge) {
-            hoveredCtx?.abort?.();
-            if (hoveredCtx) hoveredCtx.abort = undefined;
-          }
-
-          const captured = hoveredCtx;
-          hoveredCtx = null;
-
-          requestAnimationFrame(() => {
-            hoveredCtx = captured;
-            mindmapDragPerfMeasure('dragEnd.deferred', () => {
-              commitDragEnd(dragEndContext);
-            });
-            mindmapDragPerfOnEnd();
-          });
-          return;
-        }
-
         commitDragEnd(dragEndContext);
         mindmapDragPerfOnEnd();
       },

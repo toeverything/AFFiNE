@@ -82,6 +82,47 @@ describe('collectEditableScribbleRects', () => {
 
     expect(collectEditableScribbleRects(document)).toEqual([]);
   });
+
+  test('applies the rect budget after filtering to viewport-visible editables', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 800,
+    });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: 600,
+    });
+
+    for (let i = 0; i < 85; i++) {
+      const input = document.createElement('input');
+      input.getBoundingClientRect = () =>
+        ({
+          left: 10,
+          top: -1000 - i * 40,
+          width: 100,
+          height: 30,
+          right: 110,
+          bottom: -970 - i * 40,
+        }) as DOMRect;
+      document.body.append(input);
+    }
+
+    const visibleInput = document.createElement('input');
+    visibleInput.getBoundingClientRect = () =>
+      ({
+        left: 20,
+        top: 30,
+        width: 120,
+        height: 40,
+        right: 140,
+        bottom: 70,
+      }) as DOMRect;
+    document.body.append(visibleInput);
+
+    expect(collectEditableScribbleRects(document)).toEqual([
+      { x: 20, y: 30, width: 120, height: 40 },
+    ]);
+  });
 });
 
 describe('createStickyScribbleRects', () => {
@@ -339,6 +380,7 @@ describe('syncScribbleProxyTextareas', () => {
     proxy!.dispatchEvent(new InputEvent('input', { bubbles: true }));
 
     expect(proxy!.value).toBe('');
+    expect(proxy!.style.pointerEvents).toBe('none');
     expect(inserted).toEqual(['你']);
     expect(inlineRange).toEqual({ index: 1, length: 0 });
     expect(document.execCommand).not.toHaveBeenCalled();
