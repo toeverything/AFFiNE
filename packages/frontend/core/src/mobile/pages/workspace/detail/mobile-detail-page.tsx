@@ -536,22 +536,6 @@ const MobileDetailPageContent = ({
 
   return (
     <>
-      {immersive && !chromeVisible ? (
-        <div
-          data-affine-edgeless-ui-chrome="true"
-          className={styles.immersiveChromeWakeArea}
-          onPointerDown={event => {
-            event.stopPropagation();
-          }}
-          onPointerUp={event => {
-            event.stopPropagation();
-            setChromeVisible(true);
-          }}
-          onPointerCancel={event => {
-            event.stopPropagation();
-          }}
-        />
-      ) : null}
       {(!immersive || chromeVisible) && (
         <MobileDetailPageHeader
           date={date}

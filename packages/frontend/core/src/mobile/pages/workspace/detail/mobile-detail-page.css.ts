@@ -25,18 +25,6 @@ export const header = style({
   pointerEvents: 'auto',
 });
 
-export const immersiveChromeWakeArea = style({
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  height: '96px',
-  zIndex: 100,
-  background: 'transparent',
-  touchAction: 'manipulation',
-  pointerEvents: 'auto',
-});
-
 export const headerContent = style({
   // Title lives in the flex middle slot; keep it from taking pointer hits.
   pointerEvents: 'none',

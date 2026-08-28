@@ -5,15 +5,26 @@
 // oxlint-disable-next-line import-x-js/no-extraneous-dependencies
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
+const pencilInputMock = vi.hoisted(() => ({
+  addListener: vi.fn(async () => ({ remove: vi.fn(async () => {}) })),
+  updateScribbleState: vi.fn(async () => ({ value: true })),
+}));
+
+vi.mock('../index', () => ({
+  PencilInput: pencilInputMock,
+}));
+
 import {
   collectEditableScribbleRects,
   createStickyScribbleRects,
   disposeScribbleProxyTextareas,
   focusNearestEditableScribbleTarget,
+  setupNativeScribbleGate,
   syncScribbleProxyTextareas,
 } from '../scribble-gate';
 
 afterEach(() => {
+  vi.clearAllMocks();
   disposeScribbleProxyTextareas(document);
   document.body.replaceChildren();
 });
@@ -331,5 +342,42 @@ describe('syncScribbleProxyTextareas', () => {
     expect(inserted).toEqual(['你']);
     expect(inlineRange).toEqual({ index: 1, length: 0 });
     expect(document.execCommand).not.toHaveBeenCalled();
+  });
+});
+
+describe('setupNativeScribbleGate', () => {
+  test('keeps the native Scribble gate enabled for first-stroke focus routing', async () => {
+    const inlineEditor = document.createElement('div');
+    inlineEditor.dataset.vRoot = 'true';
+    inlineEditor.contentEditable = 'true';
+    inlineEditor.getBoundingClientRect = () =>
+      ({
+        left: 430,
+        top: 380,
+        width: 120,
+        height: 40,
+        right: 550,
+        bottom: 420,
+      }) as DOMRect;
+    document.body.append(inlineEditor);
+
+    const dispose = setupNativeScribbleGate();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    expect(pencilInputMock.addListener).toHaveBeenCalledWith(
+      'scribbleWillBegin',
+      expect.any(Function)
+    );
+    expect(pencilInputMock.updateScribbleState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: true,
+        nativeInteractionEnabled: true,
+        rects: expect.arrayContaining([
+          expect.objectContaining({ x: 430, y: 364 }),
+        ]),
+      })
+    );
+
+    dispose();
   });
 });

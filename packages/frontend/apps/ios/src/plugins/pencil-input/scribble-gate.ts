@@ -596,7 +596,7 @@ export function setupNativeScribbleGate(): () => void {
     const { rects, sticky } = getStickyRects(freshRects);
     const payload = {
       enabled: true,
-      nativeInteractionEnabled: false,
+      nativeInteractionEnabled: true,
       rects,
     };
     const payloadKey = JSON.stringify(payload);

@@ -483,19 +483,19 @@ class DragController extends PointerControllerBase {
   /**
    * Decide whether a `pointerdown` should be discarded under iPad Apple Pencil
    * routing. Returns `true` only for palm contact or an incidental second touch
-   * during an active pen stroke; otherwise falls through to normal handling.
+   * during a pending or active pen stroke; otherwise falls through to normal
+   * handling.
    */
   private _shouldDiscardForPencilRouting(event: PointerEvent): boolean {
     // A palm is always discarded, whether it lands first (primary) or mid-stroke.
     if (classifyPointerInput(event) === 'palm') {
       return true;
     }
-    // While an Apple Pencil stroke is active, a second incidental contact
+    // While an Apple Pencil stroke is pending or active, a second incidental contact
     // (resting palm/finger) must not end it. WebKit reports the Pencil as
     // pointerType 'pen', so this holds even without native classification.
     if (
       !event.isPrimary &&
-      this._dragging &&
       this._startPointerState?.raw.pointerType === 'pen'
     ) {
       return true;
