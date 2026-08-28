@@ -566,6 +566,11 @@ export class WorkspaceMemberResolver {
   ): Promise<InvitationType> {
     const { workspaceId, inviteeUserId, isLink } =
       await this.workspaceService.getInviteInfo(inviteId);
+
+    if (!isLink && (!user || user.id !== inviteeUserId)) {
+      throw new InvalidInvitation();
+    }
+
     const workspace = await this.workspaceService.getWorkspaceInfo(workspaceId);
     const owner = await this.models.workspaceUser.getOwner(workspaceId);
 
