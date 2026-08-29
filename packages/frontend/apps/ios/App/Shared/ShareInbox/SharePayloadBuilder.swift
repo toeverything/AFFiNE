@@ -5,8 +5,10 @@ import UniformTypeIdentifiers
 enum SharePayloadBuilder {
   private static let maxImageBytes = 12 * 1024 * 1024
   private static let maxTextCharacters = 250_000
+  typealias FileCopy = (URL, URL) throws -> Void
 
   static func build(from extensionItems: [NSExtensionItem]) async -> SharePayloadDraft {
+    removeStaleStagingDirectories()
     var title = "Shared"
     var url: String?
     var text: String?
@@ -50,6 +52,7 @@ enum SharePayloadBuilder {
         if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
           imageProviderCount += 1
           if imageProviderCount > 1 {
+            file.map { removeOwnedStagingFile(at: $0.ownedStagingURL) }
             return failure(title: title, message: "Share one image at a time.")
           }
           do {
@@ -79,7 +82,7 @@ enum SharePayloadBuilder {
     }
     if title == "Shared" {
       if let file {
-        title = (file.fileName as NSString).deletingPathExtension
+        title = (file.name as NSString).deletingPathExtension
       } else if let url, let host = URL(string: url)?.host {
         title = host
       } else if let fallbackText {
@@ -105,7 +108,7 @@ enum SharePayloadBuilder {
       )
     }
 
-    let preview = text ?? url ?? file?.fileName ?? "Shared content"
+    let preview = text ?? url ?? file?.name ?? "Shared content"
     return SharePayloadDraft(
       title: sanitizeTitle(title),
       content: content,
@@ -207,51 +210,187 @@ enum SharePayloadBuilder {
   }
 
   private static func loadImage(from provider: NSItemProvider) async throws -> SharePayloadFile {
-    let item: Any = try await withCheckedThrowingContinuation { continuation in
+    let suggestedName = provider.suggestedName
+    return try await withCheckedThrowingContinuation {
+      (continuation: CheckedContinuation<SharePayloadFile, Error>) in
       provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { item, error in
         if let error {
           continuation.resume(throwing: error)
-        } else if let item {
-          continuation.resume(returning: item)
-        } else {
+          return
+        }
+        guard let item else {
           continuation.resume(throwing: ShareInboxError.invalidPayload)
+          return
+        }
+        do {
+          let file: SharePayloadFile
+          if let url = item as? URL, url.isFileURL {
+            file = try stageImage(from: url, suggestedName: url.lastPathComponent)
+          } else if let data = item as? Data {
+            file = try stageImage(data: data, suggestedName: suggestedName)
+          } else if let image = item as? UIImage,
+                    let data = image.jpegData(compressionQuality: 0.9)
+          {
+            file = try stageImage(data: data, suggestedName: suggestedName)
+          } else {
+            throw ShareInboxError.invalidPayload
+          }
+          continuation.resume(returning: file)
+        } catch {
+          continuation.resume(throwing: error)
         }
       }
     }
+  }
 
-    let data: Data
-    let suggestedName: String?
-    if let value = item as? Data {
-      data = value
-      suggestedName = provider.suggestedName
-    } else if let url = item as? URL, url.isFileURL {
-      let values = try url.resourceValues(forKeys: [.fileSizeKey])
-      if let fileSize = values.fileSize, fileSize > maxImageBytes {
-        throw ShareInboxError.payloadTooLarge
+  static func stageImage(
+    from sourceURL: URL,
+    suggestedName: String?,
+    copyFile: FileCopy = ShareInboxFileCopy.copyCoordinatedFile
+  ) throws -> SharePayloadFile {
+    removeStaleStagingDirectories()
+    let didAccessSecurityScopedResource = sourceURL.startAccessingSecurityScopedResource()
+    defer {
+      if didAccessSecurityScopedResource {
+        sourceURL.stopAccessingSecurityScopedResource()
       }
-      data = try Data(contentsOf: url, options: .mappedIfSafe)
-      suggestedName = url.lastPathComponent
-    } else if let image = item as? UIImage, let jpeg = image.jpegData(compressionQuality: 0.9) {
-      data = jpeg
-      suggestedName = provider.suggestedName
-    } else {
+    }
+    let values = try sourceURL.resourceValues(forKeys: [.fileSizeKey])
+    guard let size = values.fileSize, size <= maxImageBytes else {
+      throw ShareInboxError.payloadTooLarge
+    }
+    guard let mimeType = ShareInboxSafety.detectRasterImageMimeType(
+      try ShareInboxFileCopy.readPrefix(from: sourceURL)
+    ) else {
       throw ShareInboxError.invalidPayload
     }
+    return try stageImage(
+      name: normalizedFileName(suggestedName ?? sourceURL.lastPathComponent, mimeType: mimeType),
+      mimeType: mimeType,
+      size: size,
+      write: { destination in try copyFile(sourceURL, destination) }
+    )
+  }
 
+  private static func stageImage(data: Data, suggestedName: String?) throws -> SharePayloadFile {
     guard data.count <= maxImageBytes else { throw ShareInboxError.payloadTooLarge }
     guard let mimeType = ShareInboxSafety.detectRasterImageMimeType(data) else {
       throw ShareInboxError.invalidPayload
     }
+    return try stageImage(
+      name: normalizedFileName(suggestedName ?? "shared-image", mimeType: mimeType),
+      mimeType: mimeType,
+      size: data.count,
+      write: { destination in try ShareInboxFileCopy.write(data, to: destination) }
+    )
+  }
+
+  static func removeOwnedStagingFile(at url: URL) {
+    let directory = url.deletingLastPathComponent().standardizedFileURL
+    let root = ShareInboxConstants.stagingDirectoryURL.standardizedFileURL
+    guard directory.deletingLastPathComponent() == root,
+          directory.lastPathComponent.hasPrefix(".") == false
+    else {
+      return
+    }
+    try? FileManager.default.removeItem(at: directory)
+  }
+
+  private static func stageImage(
+    name: String,
+    mimeType: String,
+    size: Int,
+    write: (URL) throws -> Void
+  ) throws -> SharePayloadFile {
+    let fileManager = FileManager.default
+    let root = ShareInboxConstants.stagingDirectoryURL
+    try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+    let identifier = UUID().uuidString
+    let temporaryDirectory = root.appendingPathComponent(".\(identifier).tmp", isDirectory: true)
+    let finalDirectory = root.appendingPathComponent(identifier, isDirectory: true)
+    var didPublish = false
+    defer {
+      if !didPublish {
+        try? fileManager.removeItem(at: temporaryDirectory)
+      }
+    }
+
+    try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: false)
+    let destination = temporaryDirectory.appendingPathComponent(name)
+    try write(destination)
+    guard let detectedMimeType = ShareInboxSafety.detectRasterImageMimeType(
+      try ShareInboxFileCopy.readPrefix(from: destination)
+    ), detectedMimeType == mimeType
+    else {
+      throw ShareInboxError.invalidPayload
+    }
+    let actualSize = try destination.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+    guard actualSize == size, actualSize <= maxImageBytes else {
+      throw ShareInboxError.payloadTooLarge
+    }
+    try fileManager.moveItem(at: temporaryDirectory, to: finalDirectory)
+    didPublish = true
+    let ownedStagingURL = finalDirectory.appendingPathComponent(name)
+    return SharePayloadFile(
+      ownedStagingURL: ownedStagingURL,
+      name: name,
+      mimeType: mimeType,
+      size: actualSize,
+      thumbnailData: thumbnailData(for: ownedStagingURL)
+    )
+  }
+
+  private static func removeStaleStagingDirectories(now: Date = .now) {
+    let fileManager = FileManager.default
+    let root = ShareInboxConstants.stagingDirectoryURL
+    try? fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+    guard let directories = try? fileManager.contentsOfDirectory(
+      at: root,
+      includingPropertiesForKeys: [.contentModificationDateKey, .isDirectoryKey],
+      options: []
+    ) else {
+      return
+    }
+    for directory in directories {
+      let values = try? directory.resourceValues(forKeys: [.contentModificationDateKey, .isDirectoryKey])
+      guard values?.isDirectory == true,
+            let modifiedAt = values?.contentModificationDate,
+            now.timeIntervalSince(modifiedAt) > ShareInboxConstants.stagingMaxAge
+      else {
+        continue
+      }
+      try? fileManager.removeItem(at: directory)
+    }
+  }
+
+  private static func thumbnailData(for url: URL) -> Data {
+    guard let image = UIImage(contentsOfFile: url.path),
+          let thumbnail = image.preparingThumbnail(of: CGSize(width: 480, height: 480))
+    else {
+      return (try? ShareInboxFileCopy.readPrefix(
+        from: url,
+        count: ShareInboxConstants.maxThumbnailBytes
+      )) ?? Data()
+    }
+    var quality: CGFloat = 0.8
+    while quality >= 0.2 {
+      if let data = thumbnail.jpegData(compressionQuality: quality),
+         data.count <= ShareInboxConstants.maxThumbnailBytes
+      {
+        return data
+      }
+      quality -= 0.15
+    }
+    return Data()
+  }
+
+  private static func normalizedFileName(_ value: String, mimeType: String) -> String {
     let fileExtension = fileExtension(for: mimeType)
-    let baseName = nonEmpty(suggestedName)
+    let baseName = nonEmpty((value as NSString).lastPathComponent)
       .map { ($0 as NSString).lastPathComponent }
       .flatMap { nonEmpty(($0 as NSString).deletingPathExtension) }
       ?? "shared-image"
-    return SharePayloadFile(
-      data: data,
-      mimeType: mimeType,
-      fileName: "\(baseName).\(fileExtension)"
-    )
+    return "\(baseName).\(fileExtension)"
   }
 
   private static func nonEmpty(_ value: String?) -> String? {

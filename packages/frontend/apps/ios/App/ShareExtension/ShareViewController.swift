@@ -42,6 +42,7 @@ final class ShareViewController: UIViewController {
   }
 
   private func cancel() {
+    viewModel.discard()
     extensionContext?.completeRequest(returningItems: nil)
   }
 

@@ -7,12 +7,14 @@ import Foundation
 
 final class ShareInboxStore {
   typealias DataWriter = (Data, URL, Data.WritingOptions) throws -> Void
+  typealias AttachmentFileCopy = (URL, URL) throws -> Void
 
   static let shared = ShareInboxStore()
 
   private let fileManager: FileManager
   private let configuredContainerURL: URL?
   private let writeData: DataWriter
+  private let copyFile: AttachmentFileCopy
   private let encoder: JSONEncoder = {
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
@@ -28,11 +30,13 @@ final class ShareInboxStore {
   init(
     fileManager: FileManager = .default,
     containerURL: URL? = nil,
-    writeData: DataWriter? = nil
+    writeData: DataWriter? = nil,
+    copyFile: AttachmentFileCopy? = nil
   ) {
     self.fileManager = fileManager
     self.configuredContainerURL = containerURL
     self.writeData = writeData ?? Self.writeAtomically
+    self.copyFile = copyFile ?? ShareInboxFileCopy.copyCoordinatedFile
   }
 
   var containerURL: URL? {
@@ -73,7 +77,10 @@ final class ShareInboxStore {
     }
   }
 
-  func enqueue(_ item: ShareInboxItem, attachmentData: [(ShareInboxAttachment, Data)] = []) throws {
+  func enqueue(
+    _ item: ShareInboxItem,
+    attachmentFiles: [(ShareInboxAttachment, URL)] = []
+  ) throws {
     guard ensureDirectories() else {
       throw ShareInboxError.containerUnavailable
     }
@@ -82,31 +89,68 @@ final class ShareInboxStore {
     }
     try ensureManifestCanMutate(at: fileURL)
 
-    var writtenURLs: [URL] = []
-    var writtenParentURLs: [URL] = []
+    guard attachmentFiles.count == item.attachments.count else {
+      throw ShareInboxError.invalidPayload
+    }
+    let attachmentDirectory = attachmentsDirectoryURL?.appendingPathComponent(item.id, isDirectory: true)
+    let temporaryAttachmentDirectory = attachmentsDirectoryURL?
+      .appendingPathComponent(".\(item.id).tmp", isDirectory: true)
+    if !attachmentFiles.isEmpty,
+       (attachmentDirectory == nil || temporaryAttachmentDirectory == nil)
+    {
+      throw ShareInboxError.containerUnavailable
+    }
+    var publishedAttachmentDirectory: URL?
     do {
-      for (attachment, data) in attachmentData {
-        guard let destination = attachmentURL(for: attachment) else {
+      if !attachmentFiles.isEmpty,
+         let attachmentDirectory,
+         let temporaryAttachmentDirectory
+      {
+        guard !fileManager.fileExists(atPath: attachmentDirectory.path),
+              !fileManager.fileExists(atPath: temporaryAttachmentDirectory.path)
+        else {
           throw ShareInboxError.invalidPayload
         }
-        let parent = destination.deletingLastPathComponent()
-        try fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
-        writtenParentURLs.append(parent)
-        try data.write(to: destination, options: .atomic)
-        writtenURLs.append(destination)
+        try fileManager.createDirectory(at: temporaryAttachmentDirectory, withIntermediateDirectories: false)
+        for (index, entry) in attachmentFiles.enumerated() {
+          let (attachment, sourceURL) = entry
+          guard attachment == item.attachments[index],
+                isValidAttachment(attachment, for: item),
+                fileManager.fileExists(atPath: sourceURL.path)
+          else {
+            throw ShareInboxError.invalidPayload
+          }
+          let destination = temporaryAttachmentDirectory.appendingPathComponent(attachment.fileName)
+          try copyFile(sourceURL, destination)
+        }
+        try fileManager.moveItem(at: temporaryAttachmentDirectory, to: attachmentDirectory)
+        publishedAttachmentDirectory = attachmentDirectory
       }
 
       let data = try encoder.encode(item)
       try writeData(data, fileURL, .atomic)
     } catch {
-      for url in writtenURLs {
-        try? fileManager.removeItem(at: url)
+      if let temporaryAttachmentDirectory {
+        try? fileManager.removeItem(at: temporaryAttachmentDirectory)
       }
-      for url in writtenParentURLs.reversed() {
-        try? fileManager.removeItem(at: url)
+      if let publishedAttachmentDirectory {
+        try? fileManager.removeItem(at: publishedAttachmentDirectory)
       }
       throw error
     }
+  }
+
+  private func isValidAttachment(_ attachment: ShareInboxAttachment, for item: ShareInboxItem) -> Bool {
+    guard !attachment.fileName.isEmpty,
+          attachment.fileName == (attachment.fileName as NSString).lastPathComponent,
+          attachment.fileName != ".",
+          attachment.fileName != "..",
+          attachment.relativePath == "\(item.id)/\(attachment.fileName)",
+          attachmentURL(for: attachment) != nil
+    else {
+      return false
+    }
+    return true
   }
 
   func update(_ item: ShareInboxItem) throws {
@@ -253,4 +297,53 @@ enum ShareInboxError: Error {
   case invalidPayload
   case payloadTooLarge
   case unsupportedVersion
+}
+
+enum ShareInboxFileCopy {
+  private static let chunkSize = 64 * 1024
+
+  static func copyCoordinatedFile(from sourceURL: URL, to destinationURL: URL) throws {
+    var coordinationError: NSError?
+    var copyError: Error?
+    let coordinator = NSFileCoordinator()
+    coordinator.coordinate(readingItemAt: sourceURL, options: [], error: &coordinationError) { source in
+      do {
+        try copyChunkedFile(from: source, to: destinationURL)
+      } catch {
+        copyError = error
+      }
+    }
+    if let coordinationError { throw coordinationError }
+    if let copyError { throw copyError }
+  }
+
+  static func write(_ data: Data, to destinationURL: URL) throws {
+    guard FileManager.default.createFile(atPath: destinationURL.path, contents: nil) else {
+      throw ShareInboxError.invalidPayload
+    }
+    let handle = try FileHandle(forWritingTo: destinationURL)
+    defer { try? handle.close() }
+    try handle.write(contentsOf: data)
+    try handle.synchronize()
+  }
+
+  static func readPrefix(from url: URL, count: Int = 12) throws -> Data {
+    let handle = try FileHandle(forReadingFrom: url)
+    defer { try? handle.close() }
+    return try handle.read(upToCount: count) ?? Data()
+  }
+
+  private static func copyChunkedFile(from sourceURL: URL, to destinationURL: URL) throws {
+    guard FileManager.default.createFile(atPath: destinationURL.path, contents: nil) else {
+      throw ShareInboxError.invalidPayload
+    }
+    let input = try FileHandle(forReadingFrom: sourceURL)
+    defer { try? input.close() }
+    let output = try FileHandle(forWritingTo: destinationURL)
+    defer { try? output.close() }
+    while let data = try input.read(upToCount: chunkSize), !data.isEmpty {
+      try output.write(contentsOf: data)
+    }
+    try output.synchronize()
+  }
 }

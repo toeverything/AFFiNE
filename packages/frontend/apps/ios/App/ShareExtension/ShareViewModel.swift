@@ -25,9 +25,20 @@ final class ShareViewModel: ObservableObject {
   private var draft: SharePayloadDraft?
   private var userEditedTitle: String?
   private let store: ShareInboxStore
+  private let buildPayload: ([NSExtensionItem]) async -> SharePayloadDraft
 
-  init(store: ShareInboxStore = .shared) {
+  init(
+    store: ShareInboxStore = .shared,
+    buildPayload: @escaping ([NSExtensionItem]) async -> SharePayloadDraft = { items in
+      await SharePayloadBuilder.build(from: items)
+    }
+  ) {
     self.store = store
+    self.buildPayload = buildPayload
+  }
+
+  deinit {
+    draft?.discardStagingFiles()
   }
 
   var displayTitle: String {
@@ -51,16 +62,25 @@ final class ShareViewModel: ObservableObject {
     defer { isLoading = false }
 
     let items = extensionContext?.inputItems.compactMap { $0 as? NSExtensionItem } ?? []
-    let built = await SharePayloadBuilder.build(from: items)
+    let built = await buildPayload(items)
+    draft?.discardStagingFiles()
     draft = built
     userEditedTitle = nil
     title = built.title
     previewText = built.previewText
     errorMessage = built.errorMessage
     if let file = built.file {
-      previewImage = UIImage(data: file.data)?
+      previewImage = UIImage(data: file.thumbnailData)?
         .preparingThumbnail(of: CGSize(width: 480, height: 480))
+    } else {
+      previewImage = nil
     }
+  }
+
+  func discard() {
+    draft?.discardStagingFiles()
+    draft = nil
+    previewImage = nil
   }
 
   func save() async -> Bool {
@@ -83,15 +103,15 @@ final class ShareViewModel: ObservableObject {
 
     let itemId = UUID().uuidString
     var attachments: [ShareInboxAttachment] = []
-    var attachmentData: [(ShareInboxAttachment, Data)] = []
+    var attachmentFiles: [(ShareInboxAttachment, URL)] = []
     if let file = draft.file {
       let attachment = ShareInboxAttachment(
-        fileName: file.fileName,
+        fileName: file.name,
         mimeType: file.mimeType,
-        relativePath: "\(itemId)/\(file.fileName)"
+        relativePath: "\(itemId)/\(file.name)"
       )
       attachments = [attachment]
-      attachmentData = [(attachment, file.data)]
+      attachmentFiles = [(attachment, file.ownedStagingURL)]
     }
 
     let item = ShareInboxItem(
@@ -103,8 +123,9 @@ final class ShareViewModel: ObservableObject {
     )
 
     do {
-      try store.enqueue(item, attachmentData: attachmentData)
+      try store.enqueue(item, attachmentFiles: attachmentFiles)
       hasSaved = true
+      draft.discardStagingFiles()
       return true
     } catch {
       errorMessage = "Failed to save shared content."

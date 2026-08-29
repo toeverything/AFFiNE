@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 final class ShareInboxSafetyTests: XCTestCase {
   private func makeStore() throws -> (store: ShareInboxStore, containerURL: URL) {
@@ -25,6 +26,247 @@ final class ShareInboxSafetyTests: XCTestCase {
       }
       """.utf8
     )
+  }
+
+  private func makeImageData(size: Int = 256 * 1024) -> Data {
+    var data = Data([0xFF, 0xD8, 0xFF, 0xE0])
+    data.append(Data(repeating: 0x42, count: size - data.count))
+    return data
+  }
+
+  private func makeProviderFile(data: Data? = nil, name: String = "provider-image.jpg") throws -> URL {
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("ShareInboxProviderTests-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    addTeardownBlock {
+      try? FileManager.default.removeItem(at: directory)
+    }
+    let url = directory.appendingPathComponent(name)
+    try (data ?? makeImageData()).write(to: url)
+    return url
+  }
+
+  private func makeDraft(stagingURL: URL, name: String = "shared-image.jpg") -> SharePayloadDraft {
+    SharePayloadDraft(
+      title: "Shared image",
+      content: ShareInboxContent(kind: .image, url: nil, text: nil),
+      previewText: "shared-image",
+      file: SharePayloadFile(
+        ownedStagingURL: stagingURL,
+        name: name,
+        mimeType: "image/jpeg",
+        size: (try? Data(contentsOf: stagingURL).count) ?? 0,
+        thumbnailData: Data([0xFF, 0xD8, 0xFF])
+      ),
+      errorMessage: nil
+    )
+  }
+
+  func testBuilderStagesProviderFileBeforeTheProviderDisappears() throws {
+    let source = try makeProviderFile()
+    let expected = try Data(contentsOf: source)
+
+    let file = try SharePayloadBuilder.stageImage(from: source, suggestedName: source.lastPathComponent)
+    try FileManager.default.removeItem(at: source)
+
+    XCTAssertTrue(file.ownedStagingURL.path.hasPrefix(ShareInboxConstants.stagingDirectoryURL.path))
+    XCTAssertEqual(try Data(contentsOf: file.ownedStagingURL), expected)
+    XCTAssertEqual(file.size, expected.count)
+    XCTAssertLessThanOrEqual(file.thumbnailData.count, ShareInboxConstants.maxThumbnailBytes)
+  }
+
+  func testBuilderRemovesTemporaryDirectoryWhenProviderCopyIsInterrupted() throws {
+    let source = try makeProviderFile()
+    try FileManager.default.createDirectory(
+      at: ShareInboxConstants.stagingDirectoryURL,
+      withIntermediateDirectories: true
+    )
+    let before = try Set(FileManager.default.contentsOfDirectory(
+      atPath: ShareInboxConstants.stagingDirectoryURL.path
+    ))
+
+    XCTAssertThrowsError(
+      try SharePayloadBuilder.stageImage(
+        from: source,
+        suggestedName: source.lastPathComponent,
+        copyFile: { _, _ in throw TestCopyError.interrupted }
+      )
+    )
+
+    let after = try Set(FileManager.default.contentsOfDirectory(
+      atPath: ShareInboxConstants.stagingDirectoryURL.path
+    ))
+    XCTAssertEqual(after, before)
+  }
+
+  func testBuilderRemovesStagingDirectoriesOlderThanOneDay() throws {
+    let staleDirectory = ShareInboxConstants.stagingDirectoryURL
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: staleDirectory, withIntermediateDirectories: true)
+    try FileManager.default.setAttributes(
+      [.modificationDate: Date.now.addingTimeInterval(-ShareInboxConstants.stagingMaxAge - 1)],
+      ofItemAtPath: staleDirectory.path
+    )
+
+    _ = try SharePayloadBuilder.stageImage(
+      from: makeProviderFile(name: "fresh.jpg"),
+      suggestedName: "fresh.jpg"
+    )
+
+    XCTAssertFalse(FileManager.default.fileExists(atPath: staleDirectory.path))
+  }
+
+  func testStoreRejectsTraversalAttachmentPathBeforePublishingManifest() throws {
+    let (store, containerURL) = try makeStore()
+    let source = try makeProviderFile()
+    let item = ShareInboxItem(
+      title: "Image",
+      content: ShareInboxContent(kind: .image, url: nil, text: nil),
+      attachments: [
+        ShareInboxAttachment(
+          fileName: "image.jpg",
+          mimeType: "image/jpeg",
+          relativePath: "../image.jpg"
+        )
+      ]
+    )
+
+    XCTAssertThrowsError(
+      try store.enqueue(item, attachmentFiles: [(item.attachments[0], source)])
+    )
+    XCTAssertFalse(FileManager.default.fileExists(
+      atPath: containerURL
+        .appendingPathComponent(ShareInboxConstants.inboxDirectoryName)
+        .appendingPathComponent("\(item.id).json").path
+    ))
+  }
+
+  func testStorePublishesManifestOnlyAfterFileCopyCompletes() throws {
+    let (_, containerURL) = try makeStore()
+    let source = try makeProviderFile()
+    var item = ShareInboxItem(
+      title: "Image",
+      content: ShareInboxContent(kind: .image, url: nil, text: nil)
+    )
+    let attachment = ShareInboxAttachment(
+      fileName: "image.jpg",
+      mimeType: "image/jpeg",
+      relativePath: "\(item.id)/image.jpg"
+    )
+    item.attachments = [attachment]
+    let manifestURL = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName)
+      .appendingPathComponent("\(item.id).json")
+    var manifestWasVisibleDuringCopy = false
+    let store = ShareInboxStore(
+      fileManager: .default,
+      containerURL: containerURL,
+      copyFile: { _, destination in
+        manifestWasVisibleDuringCopy = FileManager.default.fileExists(atPath: manifestURL.path)
+        try Data([0xFF, 0xD8, 0xFF]).write(to: destination)
+      }
+    )
+
+    try store.enqueue(item, attachmentFiles: [(attachment, source)])
+
+    XCTAssertFalse(manifestWasVisibleDuringCopy)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: manifestURL.path))
+    XCTAssertEqual(try Data(contentsOf: try XCTUnwrap(store.attachmentURL(for: attachment))), Data([0xFF, 0xD8, 0xFF]))
+  }
+
+  func testStoreDoesNotLeaveAttachmentDirectoryForTextItemAfterRemove() throws {
+    let (store, containerURL) = try makeStore()
+    let item = ShareInboxItem(
+      title: "Shared text",
+      content: ShareInboxContent(kind: .text, url: nil, text: "Hello")
+    )
+    let attachmentDirectory = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName)
+      .appendingPathComponent(ShareInboxConstants.attachmentsDirectoryName)
+      .appendingPathComponent(item.id, isDirectory: true)
+
+    try store.enqueue(item)
+    XCTAssertFalse(FileManager.default.fileExists(atPath: attachmentDirectory.path))
+    try store.remove(item)
+    XCTAssertFalse(FileManager.default.fileExists(atPath: attachmentDirectory.path))
+  }
+
+  @MainActor
+  func testViewModelKeepsOwnedFileUntilDelayedSaveThenCleansItUp() async throws {
+    let (store, _) = try makeStore()
+    let source = try makeProviderFile()
+    let staged = try SharePayloadBuilder.stageImage(from: source, suggestedName: "shared-image.jpg")
+    let expected = try Data(contentsOf: staged.ownedStagingURL)
+    try FileManager.default.removeItem(at: source)
+    let viewModel = ShareViewModel(store: store, buildPayload: { _ in
+      self.makeDraft(stagingURL: staged.ownedStagingURL)
+    })
+
+    await viewModel.load(from: nil)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: staged.ownedStagingURL.path))
+    let didSave = await viewModel.save()
+    XCTAssertTrue(didSave)
+
+    XCTAssertFalse(FileManager.default.fileExists(atPath: staged.ownedStagingURL.path))
+    let item = try XCTUnwrap(store.pendingItems().compactMap { entry -> ShareInboxItem? in
+      guard case let .ready(item) = entry else { return nil }
+      return item
+    }.first)
+    let attachment = try XCTUnwrap(item.attachments.first)
+    XCTAssertEqual(try Data(contentsOf: try XCTUnwrap(store.attachmentURL(for: attachment))), expected)
+  }
+
+  @MainActor
+  func testViewModelDiscardAndDraftReplacementCleanUpOwnedStaging() async throws {
+    let (store, _) = try makeStore()
+    let first = try SharePayloadBuilder.stageImage(
+      from: makeProviderFile(name: "first.jpg"),
+      suggestedName: "first.jpg"
+    )
+    let second = try SharePayloadBuilder.stageImage(
+      from: makeProviderFile(name: "second.jpg"),
+      suggestedName: "second.jpg"
+    )
+    var buildCount = 0
+    let viewModel = ShareViewModel(store: store, buildPayload: { _ in
+      buildCount += 1
+      return self.makeDraft(
+        stagingURL: buildCount == 1 ? first.ownedStagingURL : second.ownedStagingURL,
+        name: buildCount == 1 ? first.name : second.name
+      )
+    })
+
+    await viewModel.load(from: nil)
+    await viewModel.load(from: nil)
+
+    XCTAssertFalse(FileManager.default.fileExists(atPath: first.ownedStagingURL.path))
+    XCTAssertTrue(FileManager.default.fileExists(atPath: second.ownedStagingURL.path))
+    viewModel.discard()
+    viewModel.discard()
+    XCTAssertFalse(FileManager.default.fileExists(atPath: second.ownedStagingURL.path))
+  }
+
+  @MainActor
+  func testViewModelRetainsStagingFileWhenEnqueueFailsForRetry() async throws {
+    let (_, containerURL) = try makeStore()
+    let store = ShareInboxStore(
+      fileManager: .default,
+      containerURL: containerURL,
+      copyFile: { _, _ in throw TestCopyError.interrupted }
+    )
+    let staged = try SharePayloadBuilder.stageImage(
+      from: makeProviderFile(name: "retry.jpg"),
+      suggestedName: "retry.jpg"
+    )
+    let viewModel = ShareViewModel(store: store, buildPayload: { _ in
+      self.makeDraft(stagingURL: staged.ownedStagingURL, name: staged.name)
+    })
+
+    await viewModel.load(from: nil)
+    let didSave = await viewModel.save()
+
+    XCTAssertFalse(didSave)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: staged.ownedStagingURL.path))
   }
 
   func testNewManifestEncodesVersionTwoAndImportAttemptIDWithoutPreviewRoute() throws {
@@ -326,4 +568,8 @@ final class ShareInboxSafetyTests: XCTestCase {
 
 private enum TestWriteError: Error {
   case writeFailed
+}
+
+private enum TestCopyError: Error {
+  case interrupted
 }

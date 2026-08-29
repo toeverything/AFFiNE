@@ -154,9 +154,11 @@ enum ShareInboxPendingEntry: Equatable {
 }
 
 struct SharePayloadFile: Equatable {
-  var data: Data
+  var ownedStagingURL: URL
+  var name: String
   var mimeType: String
-  var fileName: String
+  var size: Int
+  var thumbnailData: Data
 }
 
 struct SharePayloadDraft: Equatable {
@@ -165,4 +167,9 @@ struct SharePayloadDraft: Equatable {
   var previewText: String
   var file: SharePayloadFile?
   var errorMessage: String?
+
+  func discardStagingFiles() {
+    guard let file else { return }
+    SharePayloadBuilder.removeOwnedStagingFile(at: file.ownedStagingURL)
+  }
 }
