@@ -163,6 +163,30 @@ async function createSharePreviewDetailsBlob(
   }
 }
 
+async function authorizeSharePreviewDetails(
+  authorize: NonNullable<ShareLinkPreview['authorizeDetailsWrite']>
+) {
+  const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const authorization = Promise.resolve()
+    .then(() => authorize(controller.signal))
+    .then(
+      authorized => authorized && !controller.signal.aborted,
+      () => false
+    );
+  const expiration = new Promise<false>(resolve => {
+    timeout = setTimeout(() => {
+      controller.abort();
+      resolve(false);
+    }, SHARE_PREVIEW_AUTHORIZATION_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([authorization, expiration]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
 function escapeMarkdown(value: string) {
   return value.replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');
 }
@@ -423,23 +447,15 @@ export class ImportClipperService extends Service {
         let sharePreviewSourceId: string | undefined;
         if (!doc.blockSuiteDoc.getBlock(ids.bookmark)) {
           const detailsBlob = await createSharePreviewDetailsBlob(input);
-          if (detailsBlob && input.preview?.authorizeDetailsWrite) {
-            const controller = new AbortController();
-            const timeout = setTimeout(
-              () => controller.abort(),
-              SHARE_PREVIEW_AUTHORIZATION_TIMEOUT_MS
+          if (
+            detailsBlob &&
+            input.preview?.authorizeDetailsWrite &&
+            !doc.blockSuiteDoc.getBlock(ids.bookmark)
+          ) {
+            const authorized = await authorizeSharePreviewDetails(
+              input.preview.authorizeDetailsWrite
             );
-            let authorized = false;
-            try {
-              authorized = await input.preview.authorizeDetailsWrite(
-                controller.signal
-              );
-            } catch {
-              // Strict authorization failures degrade to an ordinary bookmark.
-            } finally {
-              clearTimeout(timeout);
-            }
-            if (authorized) {
+            if (authorized && !doc.blockSuiteDoc.getBlock(ids.bookmark)) {
               try {
                 sharePreviewSourceId =
                   await workspace.docCollection.blobSync.set(detailsBlob);

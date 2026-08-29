@@ -309,16 +309,32 @@ function routedPreviewServer({
 
 async function loadRoutedPreview(
   preview: ShareLinkPreview,
-  selectedServer: Server,
-  gateCApproved = true
+  selectedServer: Server
 ) {
   const pending = {
     ...item(),
     content: { kind: 'url', url: preview.url },
   } as PendingShareItem;
-  const owner = new SharePreviewRouteOwner(pending, { gateCApproved });
+  const owner = new SharePreviewRouteOwner(pending, { gateCApproved: true });
   owner.selectWorkspace(workspace('self'), [selectedServer]);
   return { owner, preview: await owner.load() };
+}
+
+async function withTestDeadline<T>(promise: Promise<T>, timeoutMs = 1800) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('Authorization did not time out')),
+          timeoutMs
+        );
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 afterEach(() => {
@@ -946,16 +962,41 @@ describe('structured share-preview writer', () => {
       { allowOffline: true }
     );
 
+    await expect(withTestDeadline(importing)).resolves.toEqual({
+      status: 'imported',
+      docId: 'doc',
+    });
+    expect(freshConfig).toHaveBeenCalledTimes(1);
+    expect(freshConfig.mock.calls[0][0].aborted).toBe(true);
+    expect(harness.blobSet).not.toHaveBeenCalled();
+    expect(
+      harness.models.get(shareImportBlockIds('attempt').bookmark)?.props
+    ).not.toHaveProperty('sharePreviewSourceId');
+  });
+
+  test('times out an authorization callback that ignores abort forever', async () => {
+    const freshConfig = vi.fn(
+      (_signal: AbortSignal) => new Promise<never>(() => {})
+    );
+    const response = {
+      url: 'https://example.com/ignores-abort',
+      title: 'Ignored abort',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig,
+    });
+    const routed = await loadRoutedPreview(response, selectedServer);
+    const harness = makeShareWriterHarness();
+
     await expect(
-      Promise.race([
-        importing,
-        new Promise((_, reject) => {
-          setTimeout(
-            () => reject(new Error('Authorization did not time out')),
-            1800
-          );
-        }),
-      ])
+      withTestDeadline(
+        harness.service.importShareToWorkspace(
+          harness.metadata,
+          writerInput(routed.preview),
+          { allowOffline: true }
+        )
+      )
     ).resolves.toEqual({ status: 'imported', docId: 'doc' });
     expect(freshConfig).toHaveBeenCalledTimes(1);
     expect(freshConfig.mock.calls[0][0].aborted).toBe(true);
@@ -963,6 +1004,93 @@ describe('structured share-preview writer', () => {
     expect(
       harness.models.get(shareImportBlockIds('attempt').bookmark)?.props
     ).not.toHaveProperty('sharePreviewSourceId');
+  });
+
+  test('rejects an authorization result that resolves true after abort', async () => {
+    const freshConfig = vi.fn(
+      (signal: AbortSignal) =>
+        new Promise(resolve => {
+          signal.addEventListener(
+            'abort',
+            () => resolve({ features: [ServerFeature.SharePreviewBlobRefs] }),
+            { once: true }
+          );
+        })
+    );
+    const response = {
+      url: 'https://example.com/late-authorization',
+      title: 'Late authorization',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig,
+    });
+    const routed = await loadRoutedPreview(response, selectedServer);
+    const harness = makeShareWriterHarness();
+
+    await expect(
+      withTestDeadline(
+        harness.service.importShareToWorkspace(
+          harness.metadata,
+          writerInput(routed.preview),
+          { allowOffline: true }
+        )
+      )
+    ).resolves.toEqual({ status: 'imported', docId: 'doc' });
+    expect(freshConfig).toHaveBeenCalledTimes(1);
+    expect(freshConfig.mock.calls[0][0].aborted).toBe(true);
+    expect(harness.blobSet).not.toHaveBeenCalled();
+    expect(
+      harness.models.get(shareImportBlockIds('attempt').bookmark)?.props
+    ).not.toHaveProperty('sharePreviewSourceId');
+  });
+
+  test('does not store details when the stable bookmark appears during authorization', async () => {
+    let resolveConfig!: (value: unknown) => void;
+    const freshConfig = vi.fn(
+      () =>
+        new Promise(resolve => {
+          resolveConfig = resolve;
+        })
+    );
+    const response = {
+      url: 'https://example.com/replay-race',
+      title: 'Incoming title',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig,
+    });
+    const routed = await loadRoutedPreview(response, selectedServer);
+    const harness = makeShareWriterHarness();
+    const ids = shareImportBlockIds('attempt');
+    const importing = harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(routed.preview),
+      { allowOffline: true }
+    );
+    await vi.waitFor(() => expect(freshConfig).toHaveBeenCalledTimes(1));
+
+    harness.models.set(ids.bookmark, {
+      id: ids.bookmark,
+      flavour: 'affine:bookmark',
+      parent: { id: ids.note },
+      props: {
+        url: 'https://user-edited.example',
+        title: 'Existing bookmark',
+      },
+    });
+    resolveConfig({ features: [ServerFeature.SharePreviewBlobRefs] });
+
+    await expect(importing).resolves.toEqual({
+      status: 'imported',
+      docId: 'doc',
+    });
+    expect(harness.blobSet).not.toHaveBeenCalled();
+    expect(harness.models.get(ids.bookmark)?.props).toEqual({
+      url: 'https://user-edited.example',
+      title: 'Existing bookmark',
+    });
   });
 
   test('fails closed when the selected server changes during the strict fetch', async () => {
@@ -1016,12 +1144,18 @@ describe('structured share-preview writer', () => {
         features: [ServerFeature.SharePreviewBlobRefs],
       }),
     });
-    const routed = await loadRoutedPreview(response, selectedServer, false);
+    const pending = {
+      ...item(),
+      content: { kind: 'url', url: response.url },
+    } as PendingShareItem;
+    const owner = new SharePreviewRouteOwner(pending);
+    owner.selectWorkspace(workspace('self'), [selectedServer]);
+    const preview = await owner.load();
     const harness = makeShareWriterHarness();
 
     await harness.service.importShareToWorkspace(
       harness.metadata,
-      writerInput(routed.preview),
+      writerInput(preview),
       { allowOffline: true }
     );
 
