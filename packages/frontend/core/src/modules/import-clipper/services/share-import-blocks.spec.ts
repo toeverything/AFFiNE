@@ -95,6 +95,13 @@ describe('share import block plan', () => {
     expect(shareImportBlockIds('attempt-id').image).toBe(ids.image);
   });
 
+  test('uses one deterministic attachment ID for a PDF retry', () => {
+    const ids = shareImportBlockIds('attempt-id');
+
+    expect(ids.attachment).toBe('share-attempt-id-attachment');
+    expect(shareImportBlockIds('attempt-id').attachment).toBe(ids.attachment);
+  });
+
   test('does not plan over user-added blocks because it only names share-owned IDs', () => {
     const ids = shareImportBlockIds('attempt-id');
     const plan = createShareBlockPlan(

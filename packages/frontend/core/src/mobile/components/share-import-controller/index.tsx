@@ -50,7 +50,9 @@ const errorMessage = (error?: string) => {
     case 'offline-confirmation-required':
       return 'AFFiNE could not confirm the latest workspace state.';
     case 'attachment-missing':
-      return 'The shared image is no longer available.';
+      return 'The shared attachment is no longer available.';
+    case 'attachment-too-large':
+      return 'The shared attachment is too large for this workspace.';
     case 'import-conflict':
       return 'This share conflicts with an existing document and was not changed.';
     default:
@@ -88,6 +90,12 @@ const sourceDetails = (item: PendingShareItem) => {
     return {
       title: item.title,
       detail: item.attachments?.[0]?.fileName ?? 'Shared image',
+    };
+  }
+  if (item.content.kind === 'pdf') {
+    return {
+      title: item.title,
+      detail: item.attachments?.[0]?.fileName ?? 'Shared PDF',
     };
   }
   return {
@@ -148,6 +156,8 @@ const SourceIcon = ({
       return <LinkIcon />;
     case 'image':
       return <ImageIcon />;
+    case 'pdf':
+      return <TextIcon />;
     case 'text':
       return <TextIcon />;
   }
@@ -266,12 +276,15 @@ export const ShareImportController = ({
         return false;
       }
       const attachment =
-        pending.content.kind === 'image'
+        pending.content.kind === 'image' || pending.content.kind === 'pdf'
           ? attachmentRef.current?.itemId === pending.id
             ? attachmentRef.current.file
             : await provider.resolveAttachment(pending.id)
           : undefined;
-      if (pending.content.kind === 'image' && !attachment) {
+      if (
+        (pending.content.kind === 'image' || pending.content.kind === 'pdf') &&
+        !attachment
+      ) {
         await provider.setError(pending.id, 'attachment-missing');
         return false;
       }

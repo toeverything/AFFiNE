@@ -1,4 +1,5 @@
 import Foundation
+import UniformTypeIdentifiers
 
 enum ShareWorkspaceMode: String, Codable {
   case selfHostedPresent
@@ -142,5 +143,13 @@ enum ShareInboxSafety {
       }
     }
     return nil
+  }
+
+  static func isPDFTypeIdentifier(_ value: String) -> Bool {
+    UTType(value)?.conforms(to: .pdf) == true
+  }
+
+  static func detectPDFMimeType(_ data: Data) -> String? {
+    data.starts(with: Data("%PDF-".utf8)) ? "application/pdf" : nil
   }
 }

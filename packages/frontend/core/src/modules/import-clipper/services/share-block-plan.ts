@@ -24,6 +24,7 @@ export function shareImportBlockIds(importAttemptId: string) {
     selectedText: `${prefix}-selected-text`,
     sourceLink: `${prefix}-source-link`,
     image: `${prefix}-image`,
+    attachment: `${prefix}-attachment`,
   };
 }
 

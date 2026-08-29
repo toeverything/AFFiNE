@@ -5,6 +5,7 @@ import { DocsService } from '../../doc';
 import { GuardService } from '../../permissions';
 import { TagService } from '../../tag';
 import type { WorkspaceMetadata, WorkspacesService } from '../../workspace';
+import { FileSizeLimitProvider } from '@blocksuite/affine/shared/services';
 import { ImportClipperService, type ShareImportInput } from './import';
 import { shareImportBlockIds } from './share-block-plan';
 import { describe, expect, test, vi } from 'vitest';
@@ -206,10 +207,12 @@ function makeImportHarness({
   receipt,
   recordExists = false,
   blocks = [],
+  maxFileSize = 2 * 1024 * 1024 * 1024,
 }: {
   receipt?: string;
   recordExists?: boolean;
   blocks?: { id: string; flavour: string; parentId?: string }[];
+  maxFileSize?: number;
 } = {}) {
   const events: string[] = [];
   const models = new Map<
@@ -317,6 +320,14 @@ function makeImportHarness({
     addDocToCollection: vi.fn(),
   };
   const blobSet = vi.fn(async () => 'blob-id');
+  const blockStdUnmount = vi.fn();
+  const createShareImportBlockStdScope = vi.fn(() => ({
+    get: (token: unknown) => {
+      if (token === FileSizeLimitProvider) return { maxFileSize };
+      throw new Error('Unexpected BlockStd service token');
+    },
+    unmount: blockStdUnmount,
+  }));
   const workspace = {
     id: 'workspace-id',
     meta: { flavour: 'server' },
@@ -354,11 +365,14 @@ function makeImportHarness({
     tagService,
     collectionService,
     blobSet,
+    blockStdUnmount,
+    createShareImportBlockStdScope,
     waitForRevalidation,
     getWorkspaceProfile,
     service: Object.assign(Object.create(ImportClipperService.prototype), {
       workspacesService: workspaces,
       shareImportTails: new Map(),
+      createShareImportBlockStdScope,
     }) as ImportClipperService,
     metadata,
   };
@@ -592,6 +606,81 @@ describe('share import orchestration', () => {
     );
     expect(harness.blobSet).not.toHaveBeenCalled();
     expect(harness.blocks.has('other-page')).toBe(true);
+  });
+
+  test('rejects a PDF without its File before creating a document', async () => {
+    const harness = makeImportHarness();
+
+    await expect(
+      harness.service.importShareToWorkspace(
+        harness.metadata,
+        { ...input(), content: { kind: 'pdf' } },
+        { allowOffline: true }
+      )
+    ).resolves.toEqual({ status: 'attachment-missing' });
+
+    expect(harness.docs.createDoc).not.toHaveBeenCalled();
+    expect(harness.blobSet).not.toHaveBeenCalled();
+  });
+
+  test('stores one stable attachment block for a valid PDF', async () => {
+    const harness = makeImportHarness();
+    const file = new File(['%PDF-1.7\ncontent'], 'report.pdf', {
+      type: 'application/pdf',
+    });
+    const ids = shareImportBlockIds('attempt-id');
+
+    await expect(
+      harness.service.importShareToWorkspace(
+        harness.metadata,
+        { ...input(), content: { kind: 'pdf' }, attachment: file },
+        { allowOffline: true }
+      )
+    ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
+
+    expect(harness.blobSet).toHaveBeenCalledWith(file);
+    expect(harness.createShareImportBlockStdScope).toHaveBeenCalledTimes(1);
+    expect(harness.blockStdUnmount).toHaveBeenCalledTimes(1);
+    expect(harness.blocks.get(ids.attachment)).toMatchObject({
+      flavour: 'affine:attachment',
+      parent: { id: ids.note },
+      props: {
+        id: ids.attachment,
+        sourceId: 'blob-id',
+        name: 'report.pdf',
+        type: 'application/pdf',
+        size: file.size,
+        embed: false,
+      },
+    });
+    expect(
+      [...harness.blocks.values()].filter(
+        block => block.flavour === 'affine:attachment'
+      )
+    ).toHaveLength(1);
+  });
+
+  test('resolves the PDF limit from BlockStd before blob or block writes', async () => {
+    const harness = makeImportHarness({ maxFileSize: 4 });
+    const file = new File(['%PDF-1.7\ncontent'], 'report.pdf', {
+      type: 'application/pdf',
+    });
+
+    await expect(
+      harness.service.importShareToWorkspace(
+        harness.metadata,
+        { ...input(), content: { kind: 'pdf' }, attachment: file },
+        { allowOffline: true }
+      )
+    ).resolves.toEqual({ status: 'attachment-too-large' });
+
+    expect(harness.docs.createDoc).toHaveBeenCalledTimes(1);
+    expect(harness.blobSet).not.toHaveBeenCalled();
+    expect(harness.events.filter(event => event.startsWith('add:'))).toEqual(
+      []
+    );
+    expect(harness.createShareImportBlockStdScope).toHaveBeenCalledTimes(1);
+    expect(harness.blockStdUnmount).toHaveBeenCalledTimes(1);
   });
 
   test('replays a committed receipt without opening, permissions, metadata, or blobs', async () => {

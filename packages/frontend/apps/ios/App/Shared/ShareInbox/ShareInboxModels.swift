@@ -19,6 +19,7 @@ enum ShareInboxContentKind: String, Codable {
   case url
   case text
   case image
+  case pdf
 }
 
 struct ShareInboxContent: Codable, Equatable {

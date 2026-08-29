@@ -1,5 +1,6 @@
 import XCTest
 import UIKit
+import UniformTypeIdentifiers
 
 final class ShareInboxSafetyTests: XCTestCase {
   private func makeStore() throws -> (store: ShareInboxStore, containerURL: URL) {
@@ -37,6 +38,12 @@ final class ShareInboxSafetyTests: XCTestCase {
   private func makePNGData(size: Int = 64 * 1024) -> Data {
     var data = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
     data.append(Data(repeating: 0x50, count: size - data.count))
+    return data
+  }
+
+  private func makePDFData(size: Int = 64 * 1024) -> Data {
+    var data = Data("%PDF-1.7\n".utf8)
+    data.append(Data(repeating: 0x20, count: size - data.count))
     return data
   }
 
@@ -83,6 +90,219 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertEqual(try Data(contentsOf: file.ownedStagingURL), expected)
     XCTAssertEqual(file.size, expected.count)
     XCTAssertLessThanOrEqual(file.thumbnailData.count, ShareInboxConstants.maxThumbnailBytes)
+  }
+
+  func testBuilderStagesAValidPDFBeforeTheProviderDisappears() throws {
+    let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
+    let expected = try Data(contentsOf: source)
+
+    let file = try SharePayloadBuilder.stagePDF(
+      from: source,
+      suggestedName: source.lastPathComponent,
+      declaredTypeIdentifier: UTType.pdf.identifier
+    )
+    try FileManager.default.removeItem(at: source)
+
+    XCTAssertEqual(file.mimeType, "application/pdf")
+    XCTAssertEqual(file.size, expected.count)
+    XCTAssertEqual(try Data(contentsOf: file.ownedStagingURL), expected)
+    XCTAssertLessThanOrEqual(file.thumbnailData.count, ShareInboxConstants.maxThumbnailBytes)
+  }
+
+  func testBuilderRejectsPDFWithSpoofedDeclaredType() throws {
+    let source = try makeProviderFile(data: makePDFData(), name: "spoofed.pdf")
+
+    XCTAssertThrowsError(
+      try SharePayloadBuilder.stagePDF(
+        from: source,
+        suggestedName: source.lastPathComponent,
+        declaredTypeIdentifier: UTType.jpeg.identifier
+      )
+    )
+  }
+
+  func testBuilderRejectsPDFWithoutPDFMagic() throws {
+    let source = try makeProviderFile(data: Data("not a PDF".utf8), name: "report.pdf")
+
+    XCTAssertThrowsError(
+      try SharePayloadBuilder.stagePDF(
+        from: source,
+        suggestedName: source.lastPathComponent,
+        declaredTypeIdentifier: UTType.pdf.identifier
+      )
+    )
+  }
+
+  func testBuilderRejectsEmptyPDF() throws {
+    let source = try makeProviderFile(data: Data(), name: "empty.pdf")
+
+    XCTAssertThrowsError(
+      try SharePayloadBuilder.stagePDF(
+        from: source,
+        suggestedName: source.lastPathComponent,
+        declaredTypeIdentifier: UTType.pdf.identifier
+      )
+    )
+  }
+
+  func testBuilderRejectsPDFLargerThanShareAttachmentLimit() throws {
+    let source = try makeProviderFile(data: makePDFData(), name: "large.pdf")
+    let handle = try FileHandle(forWritingTo: source)
+    try handle.seek(toOffset: UInt64(64 * 1024 * 1024))
+    try handle.write(contentsOf: Data([0]))
+    try handle.close()
+
+    XCTAssertThrowsError(
+      try SharePayloadBuilder.stagePDF(
+        from: source,
+        suggestedName: source.lastPathComponent,
+        declaredTypeIdentifier: UTType.pdf.identifier
+      )
+    ) { error in
+      XCTAssertEqual(error as? ShareInboxError, .payloadTooLarge)
+    }
+  }
+
+  func testBuilderKeepsAValidPDFWhenThumbnailRenderingFails() throws {
+    let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
+
+    let file = try SharePayloadBuilder.stagePDF(
+      from: source,
+      suggestedName: source.lastPathComponent,
+      declaredTypeIdentifier: UTType.pdf.identifier,
+      renderThumbnail: { _ in throw TestThumbnailError.failed }
+    )
+
+    XCTAssertEqual(file.mimeType, "application/pdf")
+    XCTAssertTrue(file.thumbnailData.isEmpty)
+  }
+
+  func testBuilderRejectsMultipleBinaryAttachmentsBeforeEnqueue() async {
+    let first = NSItemProvider()
+    var didLoadFirst = false
+    first.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadFirst = true
+      completion(nil, false, ShareInboxError.invalidPayload)
+      return nil
+    }
+    let second = NSItemProvider()
+    var didLoadSecond = false
+    second.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadSecond = true
+      completion(nil, false, ShareInboxError.invalidPayload)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [first, second]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertNil(draft.content)
+    XCTAssertEqual(draft.errorMessage, "Share one image or PDF at a time.")
+    XCTAssertFalse(didLoadFirst)
+    XCTAssertFalse(didLoadSecond)
+  }
+
+  func testBuilderRejectsAnImageAndPDFBeforeAnyBinaryLoad() async {
+    let image = NSItemProvider()
+    let imageData = makePNGData()
+    var didLoadImage = false
+    image.registerDataRepresentation(
+      forTypeIdentifier: UTType.png.identifier,
+      visibility: .all
+    ) { completion in
+      didLoadImage = true
+      completion(imageData, nil)
+      return nil
+    }
+    let pdf = NSItemProvider()
+    var didLoadPDF = false
+    pdf.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadPDF = true
+      completion(nil, false, ShareInboxError.invalidPayload)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [image, pdf]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertNil(draft.content)
+    XCTAssertEqual(draft.errorMessage, "Share one image or PDF at a time.")
+    XCTAssertFalse(didLoadImage)
+    XCTAssertFalse(didLoadPDF)
+  }
+
+  func testBuilderTreatsRemotePDFURLAsAURLShare() async {
+    let provider = NSItemProvider(object: URL(string: "https://example.com/report.pdf")! as NSURL)
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [provider]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertEqual(draft.content?.kind, .url)
+    XCTAssertEqual(draft.content?.url, "https://example.com/report.pdf")
+    XCTAssertNil(draft.file)
+  }
+
+  func testBuilderDoesNotLoadPDFRepresentationForARemotePDFURL() async throws {
+    let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
+    let provider = NSItemProvider(object: URL(string: "https://example.com/report.pdf")! as NSURL)
+    var didLoadPDF = false
+    provider.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadPDF = true
+      completion(source, true, nil)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [provider]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertEqual(draft.content?.kind, .url)
+    XCTAssertNil(draft.file)
+    XCTAssertFalse(didLoadPDF)
+  }
+
+  func testBuilderTreatsProviderWithURLAndPDFAsURLAfterAnotherURL() async throws {
+    let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
+    let first = NSItemProvider(object: URL(string: "https://example.com/first")! as NSURL)
+    let second = NSItemProvider(object: URL(string: "https://example.com/report.pdf")! as NSURL)
+    var didLoadPDF = false
+    second.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadPDF = true
+      completion(source, true, nil)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [first, second]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertEqual(draft.content?.kind, .url)
+    XCTAssertEqual(draft.content?.url, "https://example.com/first")
+    XCTAssertNil(draft.file)
+    XCTAssertFalse(didLoadPDF)
   }
 
   func testBuilderRemovesTemporaryDirectoryWhenProviderCopyIsInterrupted() throws {
@@ -564,6 +784,7 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertTrue(rule.contains("public.url"))
     XCTAssertTrue(rule.contains("public.text"))
     XCTAssertTrue(rule.contains("public.image"))
+    XCTAssertTrue(rule.contains("com.adobe.pdf"))
     XCTAssertTrue(rule.contains("com.apple.property-list"))
     XCTAssertTrue(rule.contains(".@count > 0"))
     XCTAssertFalse(rule.contains("TRUEPREDICATE"))
@@ -577,7 +798,7 @@ final class ShareInboxSafetyTests: XCTestCase {
         ]
       ]]
     ]
-    let unsupportedPayload: [String: Any] = [
+    let supportedPDFPayload: [String: Any] = [
       "extensionItems": [[
         "attachments": [[
           "registeredTypeIdentifiers": ["com.adobe.pdf", "public.movie"]
@@ -585,7 +806,7 @@ final class ShareInboxSafetyTests: XCTestCase {
       ]]
     ]
     XCTAssertTrue(predicate.evaluate(with: youtubePayload))
-    XCTAssertFalse(predicate.evaluate(with: unsupportedPayload))
+    XCTAssertTrue(predicate.evaluate(with: supportedPDFPayload))
   }
 
   func testManifestIDsMustBeUUIDs() {
@@ -749,6 +970,10 @@ private enum TestWriteError: Error {
 
 private enum TestCopyError: Error {
   case interrupted
+}
+
+private enum TestThumbnailError: Error {
+  case failed
 }
 
 private actor DraftBuildGate {

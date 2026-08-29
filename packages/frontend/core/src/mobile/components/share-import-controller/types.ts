@@ -9,7 +9,7 @@ export interface PendingShareItem {
   importAttemptId: string;
   title: string;
   content: {
-    kind: 'url' | 'text' | 'image';
+    kind: 'url' | 'text' | 'image' | 'pdf';
     url?: string;
     text?: string;
   };

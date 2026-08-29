@@ -661,6 +661,58 @@ describe('share destination selection lifecycle', () => {
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:shared-image');
   });
 
+  test('keeps a PDF inbox item when its File is missing', async () => {
+    const selectedWorkspace = workspace('local');
+    const shared = {
+      ...item(),
+      content: { kind: 'pdf' as const },
+      attachments: [{ fileName: 'report.pdf', mimeType: 'application/pdf' }],
+    } satisfies PendingShareItem;
+    const importer = {
+      getShareDestinationOptions: vi.fn().mockResolvedValue({
+        verification: 'confirmed',
+        tags: [],
+        collections: [],
+      }),
+      importShareToWorkspace: vi.fn(),
+    };
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [selectedWorkspace] } },
+      getProfile: () => ({ name$: { value: 'Local workspace' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, importer);
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi
+        .fn()
+        .mockResolvedValue([{ status: 'ready' as const, item: shared }]),
+      updateTarget: vi.fn().mockResolvedValue(undefined),
+      resolveAttachment: vi.fn().mockResolvedValue(undefined),
+      complete: vi.fn().mockResolvedValue(undefined),
+      setError: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<ShareImportController provider={provider} />);
+
+    await screen.findByText('Choose where to save');
+    fireEvent.click(screen.getByRole('button', { name: /Workspace Choose/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Local workspace/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(provider.setError).toHaveBeenCalledWith(
+        'item',
+        'attachment-missing'
+      )
+    );
+    expect(importer.importShareToWorkspace).not.toHaveBeenCalled();
+    expect(provider.complete).not.toHaveBeenCalled();
+  });
+
   test('does not save workspace A preview after switching to B before B responds', async () => {
     const workspaceA = {
       id: 'workspace-a',

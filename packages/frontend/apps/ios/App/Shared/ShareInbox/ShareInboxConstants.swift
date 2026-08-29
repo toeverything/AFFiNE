@@ -12,6 +12,7 @@ enum ShareInboxConstants {
   static let invalidDirectoryName = "Invalid"
   static let stagingDirectoryName = "affine-share-inbox-staging"
   static let maxThumbnailBytes = 256 * 1024
+  static let maxShareAttachmentBytes = 64 * 1024 * 1024
   static let stagingMaxAge: TimeInterval = 24 * 60 * 60
   static let workspaceModeFileName = "ShareWorkspaceMode.json"
   static let officialLinkPreviewURL = URL(

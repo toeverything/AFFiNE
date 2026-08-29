@@ -1,6 +1,7 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
-import type { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
+import { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
 import { Text } from '@blocksuite/affine/store';
+import { FileSizeLimitProvider } from '@blocksuite/affine/shared/services';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
 
@@ -67,7 +68,7 @@ export interface ShareImportInput {
   importAttemptId: string;
   title: string;
   content: {
-    kind: 'url' | 'text' | 'image';
+    kind: 'url' | 'text' | 'image' | 'pdf';
     url?: string;
     text?: string;
   };
@@ -87,7 +88,8 @@ export type ShareImportResult =
         | 'permission-denied'
         | 'destination-not-found'
         | 'offline-confirmation-required'
-        | 'attachment-missing';
+        | 'attachment-missing'
+        | 'attachment-too-large';
       missingTagIds?: string[];
     };
 
@@ -98,6 +100,8 @@ export interface ShareDestinationOptions {
 }
 
 type WorkspaceVerification = 'confirmed' | 'missing' | 'unavailable';
+
+export const maxShareAttachmentBytes = 64 * 1024 * 1024;
 
 export function createShareMarkdown(input: ShareImportInput) {
   const parts: string[] = [];
@@ -256,8 +260,15 @@ export class ImportClipperService extends Service {
         return { status: 'destination-not-found', missingTagIds };
       }
 
-      if (input.content.kind === 'image' && !input.attachment) {
+      const isAttachment =
+        input.content.kind === 'image' || input.content.kind === 'pdf';
+      if (isAttachment && !input.attachment) {
         return { status: 'attachment-missing' };
+      }
+      if (input.content.kind === 'pdf' && input.attachment) {
+        if (input.attachment.size > maxShareAttachmentBytes) {
+          return { status: 'attachment-too-large' };
+        }
       }
 
       if (recovery === 'write-preparing-and-create') {
@@ -286,6 +297,18 @@ export class ImportClipperService extends Service {
       const { doc, release } = docsService.open(record.id);
       try {
         await doc.waitForSyncReady();
+        if (input.content.kind === 'pdf' && input.attachment) {
+          const std = this.createShareImportBlockStdScope(doc.blockSuiteDoc);
+          try {
+            const fileSizeLimit = std.get(FileSizeLimitProvider);
+            if (input.attachment.size > fileSizeLimit.maxFileSize) {
+              fileSizeLimit.onOverFileSize?.();
+              return { status: 'attachment-too-large' };
+            }
+          } finally {
+            std.unmount();
+          }
+        }
         const ids = shareImportBlockIds(input.importAttemptId);
         if (
           !this.hasOnlyMatchingSkeleton(doc.blockSuiteDoc, ids) ||
@@ -339,6 +362,18 @@ export class ImportClipperService extends Service {
         ) {
           return { status: 'import-conflict' };
         }
+        const attachmentId = ids.attachment;
+        if (
+          input.content.kind === 'pdf' &&
+          !this.ensureBlock(
+            doc.blockSuiteDoc,
+            attachmentId,
+            'affine:attachment',
+            ids.note
+          )
+        ) {
+          return { status: 'import-conflict' };
+        }
 
         let imageSourceId: string | undefined;
         if (
@@ -347,6 +382,16 @@ export class ImportClipperService extends Service {
           !doc.blockSuiteDoc.getBlock(imageId)
         ) {
           imageSourceId = await workspace.docCollection.blobSync.set(
+            input.attachment
+          );
+        }
+        let attachmentSourceId: string | undefined;
+        if (
+          input.content.kind === 'pdf' &&
+          input.attachment &&
+          !doc.blockSuiteDoc.getBlock(attachmentId)
+        ) {
+          attachmentSourceId = await workspace.docCollection.blobSync.set(
             input.attachment
           );
         }
@@ -360,6 +405,20 @@ export class ImportClipperService extends Service {
               name: input.attachment?.name ?? 'Shared image',
               type: input.attachment?.type ?? '',
               size: input.attachment?.size ?? 0,
+            },
+            ids.note
+          );
+        }
+        if (attachmentSourceId && !doc.blockSuiteDoc.getBlock(attachmentId)) {
+          doc.blockSuiteDoc.addBlock(
+            'affine:attachment',
+            {
+              id: attachmentId,
+              sourceId: attachmentSourceId,
+              name: input.attachment?.name ?? 'Shared PDF',
+              type: input.attachment?.type ?? 'application/pdf',
+              size: input.attachment?.size ?? 0,
+              embed: false,
             },
             ids.note
           );
@@ -470,6 +529,12 @@ export class ImportClipperService extends Service {
     } finally {
       workspaceRef.dispose();
     }
+  }
+
+  protected createShareImportBlockStdScope(
+    store: Parameters<typeof createBlockStdScope>[0]
+  ) {
+    return createBlockStdScope(store);
   }
 
   private addShareBlocks(

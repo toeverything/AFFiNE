@@ -1,4 +1,5 @@
 import Foundation
+import PDFKit
 import UIKit
 import UniformTypeIdentifiers
 
@@ -15,13 +16,25 @@ enum SharePayloadBuilder {
     var text: String?
     var fallbackText: String?
     var file: SharePayloadFile?
-    var imageProviderCount = 0
+    var contexts: [(item: NSExtensionItem, providers: [ProviderContext])] = []
 
     for item in extensionItems {
+      var providers: [ProviderContext] = []
       for provider in item.attachments ?? [] {
-        if provider.hasItemConformingToTypeIdentifier(UTType.propertyList.identifier),
-           let page = try? await loadSafariPage(from: provider)
-        {
+        providers.append(await providerContext(for: provider))
+      }
+      contexts.append((item: item, providers: providers))
+    }
+
+    let localBinaryProviders = contexts.flatMap(\.providers).filter(\.isLocalBinary)
+    guard localBinaryProviders.count <= 1 else {
+      return failure(title: title, message: "Share one image or PDF at a time.")
+    }
+
+    for context in contexts {
+      for providerContext in context.providers {
+        let provider = providerContext.provider
+        if let page = providerContext.safariPage {
           title = page.title ?? title
           url = page.url ?? url
           text = page.selectedText.map {
@@ -29,14 +42,10 @@ enum SharePayloadBuilder {
           } ?? text
         }
 
-        if url == nil,
-           provider.hasItemConformingToTypeIdentifier(UTType.url.identifier),
-           let loadedURL = try? await loadURL(from: provider),
-           let normalized = ShareInboxSafety.normalizedWebURL(loadedURL.absoluteString)
-        {
-          url = normalized
+        if let webURL = providerContext.webURL {
+          url = url ?? webURL.absoluteString
           if title == "Shared" {
-            title = loadedURL.host ?? normalized
+            title = webURL.host ?? webURL.absoluteString
           }
         }
 
@@ -50,23 +59,26 @@ enum SharePayloadBuilder {
           }
         }
 
-        if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-          imageProviderCount += 1
-          if imageProviderCount > 1 {
-            file.map { removeOwnedStagingFile(at: $0.ownedStagingURL) }
-            return failure(title: title, message: "Share one image at a time.")
-          }
+        let hasImage = providerContext.hasImage
+        let hasPDF = providerContext.hasPDF
+        if hasImage || hasPDF {
           do {
-            file = try await loadImage(from: provider)
+            file = try await (hasPDF ? loadPDF(from: provider) : loadImage(from: provider))
           } catch ShareInboxError.payloadTooLarge {
-            return failure(title: title, message: "The image must be smaller than 12 MB.")
+            let message = hasPDF
+              ? "The PDF must be smaller than 64 MB."
+              : "The image must be smaller than 12 MB."
+            return failure(title: title, message: message)
           } catch {
-            return failure(title: title, message: "This image format is not supported.")
+            let message = hasPDF
+              ? "This PDF file is not supported."
+              : "This image format is not supported."
+            return failure(title: title, message: message)
           }
         }
       }
 
-      if let attributedText = nonEmpty(item.attributedContentText?.string),
+      if let attributedText = nonEmpty(context.item.attributedContentText?.string),
          attributedText != url
       {
         if title == "Shared" {
@@ -92,8 +104,12 @@ enum SharePayloadBuilder {
     }
 
     let content: ShareInboxContent?
-    if file != nil {
-      content = ShareInboxContent(kind: .image, url: url, text: text)
+    if let file {
+      content = ShareInboxContent(
+        kind: file.mimeType == "application/pdf" ? .pdf : .image,
+        url: url,
+        text: text
+      )
     } else if let url {
       content = ShareInboxContent(kind: .url, url: url, text: text)
     } else if let text {
@@ -105,7 +121,7 @@ enum SharePayloadBuilder {
     guard let content else {
       return failure(
         title: title,
-        message: "AFFiNE can currently save links, text, or one image."
+        message: "AFFiNE can currently save links, text, one image, or one PDF."
       )
     }
 
@@ -133,6 +149,40 @@ enum SharePayloadBuilder {
     var title: String?
     var url: String?
     var selectedText: String?
+  }
+
+  private struct ProviderContext {
+    let provider: NSItemProvider
+    let safariPage: SafariPage?
+    let webURL: URL?
+    let hasImage: Bool
+    let hasPDF: Bool
+
+    var isLocalBinary: Bool {
+      hasImage || (hasPDF && webURL == nil)
+    }
+  }
+
+  private static func providerContext(for provider: NSItemProvider) async -> ProviderContext {
+    let safariPage = provider.hasItemConformingToTypeIdentifier(UTType.propertyList.identifier)
+      ? try? await loadSafariPage(from: provider)
+      : nil
+    var loadedURL = safariPage?.url.flatMap(URL.init(string:))
+    if loadedURL == nil,
+       provider.hasItemConformingToTypeIdentifier(UTType.url.identifier)
+    {
+      loadedURL = try? await loadURL(from: provider)
+    }
+    let webURL = loadedURL.flatMap { ShareInboxSafety.normalizedWebURL($0.absoluteString) }
+      .flatMap(URL.init(string:))
+    return ProviderContext(
+      provider: provider,
+      safariPage: safariPage,
+      webURL: webURL,
+      hasImage: provider.hasItemConformingToTypeIdentifier(UTType.image.identifier),
+      hasPDF: provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier)
+        && webURL == nil
+    )
   }
 
   private static func loadSafariPage(from provider: NSItemProvider) async throws -> SafariPage {
@@ -176,19 +226,37 @@ enum SharePayloadBuilder {
   }
 
   private static func loadURL(from provider: NSItemProvider) async throws -> URL {
-    try await withCheckedThrowingContinuation { continuation in
+    let item: Any? = try? await withCheckedThrowingContinuation { continuation in
       provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, error in
         if let error {
           continuation.resume(throwing: error)
-        } else if let url = item as? URL {
-          continuation.resume(returning: url)
-        } else if let value = item as? String, let url = URL(string: value) {
+        } else { continuation.resume(returning: item) }
+      }
+    }
+    if let url = url(from: item) { return url }
+    guard provider.canLoadObject(ofClass: NSURL.self) else {
+      throw ShareInboxError.invalidPayload
+    }
+    let object: any NSItemProviderReading = try await withCheckedThrowingContinuation { continuation in
+      provider.loadObject(ofClass: NSURL.self) { url, error in
+        if let error {
+          continuation.resume(throwing: error)
+        } else if let url {
           continuation.resume(returning: url)
         } else {
           continuation.resume(throwing: ShareInboxError.invalidPayload)
         }
       }
     }
+    guard let url = object as? NSURL else { throw ShareInboxError.invalidPayload }
+    return url as URL
+  }
+
+  private static func url(from item: Any?) -> URL? {
+    if let url = item as? URL { return url }
+    if let url = item as? NSURL { return url as URL }
+    if let value = item as? String { return URL(string: value) }
+    return nil
   }
 
   private static func loadText(from provider: NSItemProvider) async throws -> String {
@@ -244,6 +312,34 @@ enum SharePayloadBuilder {
     }
   }
 
+  private static func loadPDF(from provider: NSItemProvider) async throws -> SharePayloadFile {
+    let suggestedName = provider.suggestedName
+    return try await withCheckedThrowingContinuation {
+      (continuation: CheckedContinuation<SharePayloadFile, Error>) in
+      provider.loadFileRepresentation(forTypeIdentifier: UTType.pdf.identifier) { url, error in
+        if let error {
+          continuation.resume(throwing: error)
+          return
+        }
+        guard let url, url.isFileURL else {
+          continuation.resume(throwing: ShareInboxError.invalidPayload)
+          return
+        }
+        do {
+          continuation.resume(
+            returning: try stagePDF(
+              from: url,
+              suggestedName: suggestedName ?? url.lastPathComponent,
+              declaredTypeIdentifier: UTType.pdf.identifier
+            )
+          )
+        } catch {
+          continuation.resume(throwing: error)
+        }
+      }
+    }
+  }
+
   static func stageImage(
     from sourceURL: URL,
     suggestedName: String?,
@@ -273,6 +369,47 @@ enum SharePayloadBuilder {
         mimeType: mimeType,
         size: size,
         write: { destination in try copyFile(coordinatedURL, destination) }
+      )
+    }
+    guard let stagedFile else { throw ShareInboxError.invalidPayload }
+    return stagedFile
+  }
+
+  static func stagePDF(
+    from sourceURL: URL,
+    suggestedName: String?,
+    declaredTypeIdentifier: String,
+    copyFile: @escaping FileCopy = ShareInboxFileCopy.copyChunkedFile,
+    coordinatedRead: @escaping CoordinatedRead = ShareInboxFileCopy.withCoordinatedRead,
+    renderThumbnail: @escaping (URL) throws -> Data = pdfThumbnailData
+  ) throws -> SharePayloadFile {
+    guard ShareInboxSafety.isPDFTypeIdentifier(declaredTypeIdentifier) else {
+      throw ShareInboxError.invalidPayload
+    }
+    removeStaleStagingDirectories()
+    let didAccessSecurityScopedResource = sourceURL.startAccessingSecurityScopedResource()
+    defer {
+      if didAccessSecurityScopedResource {
+        sourceURL.stopAccessingSecurityScopedResource()
+      }
+    }
+    var stagedFile: SharePayloadFile?
+    try coordinatedRead(sourceURL) { coordinatedURL in
+      let values = try coordinatedURL.resourceValues(forKeys: [.fileSizeKey])
+      guard let size = values.fileSize, size > 0 else {
+        throw ShareInboxError.invalidPayload
+      }
+      guard size <= ShareInboxConstants.maxShareAttachmentBytes else {
+        throw ShareInboxError.payloadTooLarge
+      }
+      guard ShareInboxSafety.detectPDFMimeType(try ShareInboxFileCopy.readPrefix(from: coordinatedURL))
+        == "application/pdf"
+      else { throw ShareInboxError.invalidPayload }
+      stagedFile = try stagePDF(
+        name: normalizedPDFFileName(suggestedName ?? coordinatedURL.lastPathComponent),
+        size: size,
+        write: { destination in try copyFile(coordinatedURL, destination) },
+        renderThumbnail: renderThumbnail
       )
     }
     guard let stagedFile else { throw ShareInboxError.invalidPayload }
@@ -347,6 +484,51 @@ enum SharePayloadBuilder {
     )
   }
 
+  private static func stagePDF(
+    name: String,
+    size: Int,
+    write: (URL) throws -> Void,
+    renderThumbnail: (URL) throws -> Data
+  ) throws -> SharePayloadFile {
+    let fileManager = FileManager.default
+    let root = ShareInboxConstants.stagingDirectoryURL
+    try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+    let identifier = UUID().uuidString
+    let temporaryDirectory = root.appendingPathComponent(".\(identifier).tmp", isDirectory: true)
+    let finalDirectory = root.appendingPathComponent(identifier, isDirectory: true)
+    var didPublish = false
+    defer {
+      if !didPublish {
+        try? fileManager.removeItem(at: temporaryDirectory)
+      }
+    }
+
+    try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: false)
+    let destination = temporaryDirectory.appendingPathComponent(name)
+    try write(destination)
+    let actualSize = try destination.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+    guard actualSize == size, actualSize > 0 else {
+      throw ShareInboxError.invalidPayload
+    }
+    guard actualSize <= ShareInboxConstants.maxShareAttachmentBytes else {
+      throw ShareInboxError.payloadTooLarge
+    }
+    guard ShareInboxSafety.detectPDFMimeType(try ShareInboxFileCopy.readPrefix(from: destination))
+      == "application/pdf"
+    else { throw ShareInboxError.invalidPayload }
+    try fileManager.moveItem(at: temporaryDirectory, to: finalDirectory)
+    didPublish = true
+    let ownedStagingURL = finalDirectory.appendingPathComponent(name)
+    let thumbnail = (try? renderThumbnail(ownedStagingURL)) ?? Data()
+    return SharePayloadFile(
+      ownedStagingURL: ownedStagingURL,
+      name: name,
+      mimeType: "application/pdf",
+      size: actualSize,
+      thumbnailData: thumbnail.count <= ShareInboxConstants.maxThumbnailBytes ? thumbnail : Data()
+    )
+  }
+
   private static func removeStaleStagingDirectories(now: Date = .now) {
     let fileManager = FileManager.default
     let root = ShareInboxConstants.stagingDirectoryURL
@@ -391,6 +573,28 @@ enum SharePayloadBuilder {
     return Data()
   }
 
+  private static func pdfThumbnailData(for url: URL) throws -> Data {
+    guard let document = PDFDocument(url: url),
+          let page = document.page(at: 0)
+    else {
+      throw ShareInboxError.invalidPayload
+    }
+    let thumbnail = page.thumbnail(
+      of: CGSize(width: 480, height: 480),
+      for: .mediaBox
+    )
+    var quality: CGFloat = 0.8
+    while quality >= 0.2 {
+      if let data = thumbnail.jpegData(compressionQuality: quality),
+         data.count <= ShareInboxConstants.maxThumbnailBytes
+      {
+        return data
+      }
+      quality -= 0.15
+    }
+    return Data()
+  }
+
   private static func normalizedFileName(_ value: String, mimeType: String) -> String {
     let fileExtension = fileExtension(for: mimeType)
     let baseName = nonEmpty((value as NSString).lastPathComponent)
@@ -398,6 +602,13 @@ enum SharePayloadBuilder {
       .flatMap { nonEmpty(($0 as NSString).deletingPathExtension) }
       ?? "shared-image"
     return "\(baseName).\(fileExtension)"
+  }
+
+  private static func normalizedPDFFileName(_ value: String) -> String {
+    let baseName = nonEmpty((value as NSString).lastPathComponent)
+      .flatMap { nonEmpty(($0 as NSString).deletingPathExtension) }
+      ?? "shared-document"
+    return "\(baseName).pdf"
   }
 
   private static func nonEmpty(_ value: String?) -> String? {

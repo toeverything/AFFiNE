@@ -252,13 +252,26 @@ final class ShareInboxStore {
           values.isSymbolicLink != true,
           values.isRegularFile == true,
           let size = values.fileSize,
-          size > 0,
-          size <= 12 * 1024 * 1024,
-          let detectedMimeType = try? ShareInboxSafety.detectRasterImageMimeType(
-            ShareInboxFileCopy.readPrefix(from: url)
-          ),
-          detectedMimeType == attachment.mimeType
+          size > 0
     else {
+      return nil
+    }
+    let prefix: Data
+    do {
+      prefix = try ShareInboxFileCopy.readPrefix(from: url)
+    } catch {
+      return nil
+    }
+    switch item.content.kind {
+    case .image:
+      guard size <= 12 * 1024 * 1024,
+            ShareInboxSafety.detectRasterImageMimeType(prefix) == attachment.mimeType
+      else { return nil }
+    case .pdf:
+      guard size <= ShareInboxConstants.maxShareAttachmentBytes,
+            ShareInboxSafety.detectPDFMimeType(prefix) == attachment.mimeType
+      else { return nil }
+    case .url, .text:
       return nil
     }
     return ShareInboxResolvedAttachment(
