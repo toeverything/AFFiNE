@@ -285,6 +285,7 @@ function makeImportHarness({
     getCustomPropertyById: vi.fn(() => receiptValue),
     setCustomPropertyById: vi.fn((_id, _property, value: string) => {
       events.push('receipt:set');
+      events.push(`receipt:${parseShareImportReceipt(value)?.state}`);
       receiptValue = value;
     }),
     createDoc: vi.fn((options: { id: string; skipInit: boolean }) => {
@@ -525,6 +526,22 @@ describe('share import orchestration', () => {
     );
     expect(harness.events.indexOf('updated:db$docProperties')).toBeLessThan(
       harness.events.indexOf('create:document-id:true')
+    );
+  });
+
+  test('synchronizes the document before recording the committed receipt', async () => {
+    const harness = makeImportHarness();
+
+    await expect(
+      harness.service.importShareToWorkspace(harness.metadata, input())
+    ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
+
+    const committedReceipt = harness.events.indexOf('receipt:committed');
+    expect(harness.events.indexOf('updated:document-id')).toBeLessThan(
+      committedReceipt
+    );
+    expect(harness.events.indexOf('synced:document-id')).toBeLessThan(
+      committedReceipt
     );
   });
 

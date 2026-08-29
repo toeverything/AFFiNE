@@ -460,6 +460,206 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertFalse(FileManager.default.fileExists(atPath: attachmentDirectory.path))
   }
 
+  func testStoreCompletionRejectsMismatchedDocumentAndPreservesAdjacentItem() throws {
+    let (store, _) = try makeStore()
+    let itemId = "00000000-0000-4000-8000-00000000000A"
+    let adjacentId = "00000000-0000-4000-8000-00000000000B"
+    let item = ShareInboxItem(
+      id: itemId,
+      documentId: "document-a",
+      title: "First",
+      content: ShareInboxContent(kind: .text, url: nil, text: "First")
+    )
+    let adjacent = ShareInboxItem(
+      id: adjacentId,
+      documentId: "document-b",
+      title: "Second",
+      content: ShareInboxContent(kind: .text, url: nil, text: "Second")
+    )
+    try store.enqueue(item)
+    try store.enqueue(adjacent)
+
+    XCTAssertThrowsError(
+      try store.complete(
+        itemId: item.id,
+        docId: adjacent.documentId,
+        committedAt: Date(timeIntervalSince1970: 1_800_000_000)
+      )
+    )
+
+    let pending = store.pendingItems().compactMap { entry -> ShareInboxItem? in
+      guard case let .ready(item) = entry else { return nil }
+      return item
+    }
+    XCTAssertEqual(Set(pending.map(\.id)), Set([item.id, adjacent.id]))
+    XCTAssertTrue(pending.allSatisfy { $0.result == nil })
+  }
+
+  func testStoreCompletionRemovesOnlyMatchingOwnedFilesAfterRecordingResult() throws {
+    let (store, containerURL) = try makeStore()
+    let itemId = "00000000-0000-4000-8000-00000000000a"
+    let adjacentId = "00000000-0000-4000-8000-00000000000b"
+    let sourceA = try makeProviderFile(name: "first.jpg")
+    let sourceB = try makeProviderFile(name: "second.jpg")
+    var item = ShareInboxItem(
+      id: itemId,
+      documentId: "document-a",
+      title: "First",
+      content: ShareInboxContent(kind: .image, url: nil, text: nil)
+    )
+    let attachmentA = ShareInboxAttachment(
+      fileName: "first.jpg",
+      mimeType: "image/jpeg",
+      relativePath: "\(item.id)/first.jpg"
+    )
+    item.attachments = [attachmentA]
+    var adjacent = ShareInboxItem(
+      id: adjacentId,
+      documentId: "document-b",
+      title: "Second",
+      content: ShareInboxContent(kind: .image, url: nil, text: nil)
+    )
+    let attachmentB = ShareInboxAttachment(
+      fileName: "second.jpg",
+      mimeType: "image/jpeg",
+      relativePath: "\(adjacent.id)/second.jpg"
+    )
+    adjacent.attachments = [attachmentB]
+    try store.enqueue(item, attachmentFiles: [(attachmentA, sourceA)])
+    try store.enqueue(adjacent, attachmentFiles: [(attachmentB, sourceB)])
+
+    try store.complete(
+      itemId: item.id,
+      docId: item.documentId,
+      committedAt: Date(timeIntervalSince1970: 1_800_000_000)
+    )
+
+    let inbox = containerURL.appendingPathComponent(
+      ShareInboxConstants.inboxDirectoryName
+    )
+    let attachments = inbox.appendingPathComponent(
+      ShareInboxConstants.attachmentsDirectoryName
+    )
+    let itemManifestId = try XCTUnwrap(
+      ShareInboxSafety.normalizedManifestID(item.id)
+    )
+    let adjacentManifestId = try XCTUnwrap(
+      ShareInboxSafety.normalizedManifestID(adjacent.id)
+    )
+    XCTAssertFalse(FileManager.default.fileExists(
+      atPath: inbox.appendingPathComponent("\(itemManifestId).json").path
+    ))
+    XCTAssertFalse(FileManager.default.fileExists(
+      atPath: attachments.appendingPathComponent(item.id).path
+    ))
+    XCTAssertTrue(FileManager.default.fileExists(
+      atPath: inbox.appendingPathComponent("\(adjacentManifestId).json").path
+    ))
+    XCTAssertTrue(FileManager.default.fileExists(
+      atPath: attachments.appendingPathComponent(adjacent.id).path
+    ))
+  }
+
+  func testStoreCompletionMarkerSurvivesCleanupFailureAndPendingEnumerationRetriesCleanup() throws {
+    let itemId = "00000000-0000-4000-8000-00000000000a"
+    let adjacentId = "00000000-0000-4000-8000-00000000000b"
+    let containerURL = FileManager.default.temporaryDirectory
+      .appendingPathComponent("ShareInboxSafetyTests-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: containerURL, withIntermediateDirectories: true)
+    addTeardownBlock {
+      try? FileManager.default.removeItem(at: containerURL)
+    }
+    let targetAttachmentDirectory = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName)
+      .appendingPathComponent(ShareInboxConstants.attachmentsDirectoryName)
+      .appendingPathComponent(itemId, isDirectory: true)
+    var failTargetCleanup = true
+    let store = ShareInboxStore(
+      fileManager: .default,
+      containerURL: containerURL,
+      removeItem: { url in
+        if failTargetCleanup,
+           url.standardizedFileURL == targetAttachmentDirectory.standardizedFileURL
+        {
+          failTargetCleanup = false
+          throw TestCopyError.interrupted
+        }
+        try FileManager.default.removeItem(at: url)
+      }
+    )
+    let sourceA = try makeProviderFile(name: "first.jpg")
+    let sourceB = try makeProviderFile(name: "second.jpg")
+    var item = ShareInboxItem(
+      id: itemId,
+      documentId: "document-a",
+      title: "First",
+      content: ShareInboxContent(kind: .image, url: nil, text: nil)
+    )
+    let attachmentA = ShareInboxAttachment(
+      fileName: "first.jpg",
+      mimeType: "image/jpeg",
+      relativePath: "\(item.id)/first.jpg"
+    )
+    item.attachments = [attachmentA]
+    var adjacent = ShareInboxItem(
+      id: adjacentId,
+      documentId: "document-b",
+      title: "Second",
+      content: ShareInboxContent(kind: .image, url: nil, text: nil)
+    )
+    let attachmentB = ShareInboxAttachment(
+      fileName: "second.jpg",
+      mimeType: "image/jpeg",
+      relativePath: "\(adjacent.id)/second.jpg"
+    )
+    adjacent.attachments = [attachmentB]
+    try store.enqueue(item, attachmentFiles: [(attachmentA, sourceA)])
+    try store.enqueue(adjacent, attachmentFiles: [(attachmentB, sourceB)])
+    let committedAt = Date(timeIntervalSince1970: 1_800_000_000)
+
+    XCTAssertThrowsError(
+      try store.complete(
+        itemId: item.id,
+        docId: item.documentId,
+        committedAt: committedAt
+      )
+    )
+
+    let manifestURL = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName)
+      .appendingPathComponent(
+        "\(try XCTUnwrap(ShareInboxSafety.normalizedManifestID(item.id))).json"
+      )
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let persisted = try decoder.decode(
+      ShareInboxItem.self,
+      from: Data(contentsOf: manifestURL)
+    )
+    XCTAssertEqual(
+      persisted.result,
+      ShareInboxResult(docId: item.documentId, committedAt: committedAt)
+    )
+    XCTAssertTrue(FileManager.default.fileExists(
+      atPath: targetAttachmentDirectory.path
+    ))
+
+    let pending = store.pendingItems().compactMap { entry -> ShareInboxItem? in
+      guard case let .ready(item) = entry else { return nil }
+      return item
+    }
+    XCTAssertEqual(pending.map(\.id), [adjacent.id])
+    XCTAssertFalse(FileManager.default.fileExists(atPath: manifestURL.path))
+    XCTAssertFalse(FileManager.default.fileExists(
+      atPath: targetAttachmentDirectory.path
+    ))
+    XCTAssertTrue(FileManager.default.fileExists(
+      atPath: targetAttachmentDirectory
+        .deletingLastPathComponent()
+        .appendingPathComponent(adjacent.id).path
+    ))
+  }
+
   @MainActor
   func testViewModelKeepsOwnedFileUntilDelayedSaveThenCleansItUp() async throws {
     let (store, _) = try makeStore()

@@ -108,14 +108,13 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
 
   @objc func complete(_ call: CAPPluginCall) {
     do {
-      var item = try item(from: call)
+      guard let itemId = call.getString("itemId"), !itemId.isEmpty else {
+        throw ShareInboxError.invalidPayload
+      }
       guard let docId = call.getString("docId"), !docId.isEmpty else {
         throw ShareInboxError.invalidPayload
       }
-      item.result = ShareInboxResult(docId: docId, committedAt: Date())
-      item.lastError = nil
-      try store.update(item)
-      try store.remove(item)
+      try store.complete(itemId: itemId, docId: docId, committedAt: Date())
       call.resolve()
     } catch {
       call.reject("Failed to finish importing shared content.", nil, error)

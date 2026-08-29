@@ -26,6 +26,7 @@ import {
 } from '@testing-library/react';
 import { Framework } from '@toeverything/infra';
 import type * as Infra from '@toeverything/infra';
+import { notify } from '@affine/component';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { Array as YArray, Doc as YDoc, Map as YMap, Text as YText } from 'yjs';
 
@@ -340,6 +341,7 @@ async function withTestDeadline<T>(promise: Promise<T>, timeoutMs = 1800) {
 afterEach(() => {
   cleanup();
   controllerServiceMocks.services.clear();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -1432,6 +1434,47 @@ describe('structured share-preview writer', () => {
     });
   });
 
+  test('returns a committed replay without touching user-edited stable content', async () => {
+    const ids = shareImportBlockIds('attempt');
+    const harness = makeShareWriterHarness({
+      receipt: JSON.stringify({
+        version: 1,
+        attemptId: 'attempt',
+        state: 'committed',
+      }),
+      recordExists: true,
+      blocks: [
+        { id: ids.page, flavour: 'affine:page' },
+        { id: ids.surface, flavour: 'affine:surface', parentId: ids.page },
+        { id: ids.note, flavour: 'affine:note', parentId: ids.page },
+        {
+          id: ids.bookmark,
+          flavour: 'affine:bookmark',
+          parentId: ids.note,
+          props: { url: 'https://user-edited.example', title: 'User title' },
+        },
+      ],
+    });
+
+    await expect(
+      harness.service.importShareToWorkspace(
+        harness.metadata,
+        writerInput({
+          url: 'https://example.com/article',
+          title: 'Incoming title',
+        }),
+        { allowOffline: true }
+      )
+    ).resolves.toEqual({ status: 'committed-replay', docId: 'doc' });
+
+    expect(harness.docs.open).not.toHaveBeenCalled();
+    expect(harness.blobSet).not.toHaveBeenCalled();
+    expect(harness.models.get(ids.bookmark)?.props).toEqual({
+      url: 'https://user-edited.example',
+      title: 'User title',
+    });
+  });
+
   test.each([
     [
       'invalid data',
@@ -1593,6 +1636,342 @@ describe('structured share-preview writer', () => {
 });
 
 describe('share destination selection lifecycle', () => {
+  test.each(['imported', 'committed-replay'] as const)(
+    'completes the native item after an %s result',
+    async status => {
+      const selectedWorkspace = workspace('local');
+      const pending = {
+        ...item(),
+        target: {
+          workspaceId: selectedWorkspace.id,
+          workspaceFlavour: selectedWorkspace.flavour,
+          tagIds: [],
+        },
+      } satisfies PendingShareItem;
+      let completed = false;
+      const importer = {
+        getShareDestinationOptions: vi.fn().mockResolvedValue({
+          verification: 'confirmed',
+          tags: [],
+          collections: [],
+        }),
+        importShareToWorkspace: vi
+          .fn()
+          .mockResolvedValue({ status, docId: pending.documentId }),
+      };
+      controllerServiceMocks.services.set(WorkspacesService.name, {
+        list: { workspaces$: { value: [selectedWorkspace] } },
+        getProfile: () => ({ name$: { value: 'Local workspace' } }),
+      });
+      controllerServiceMocks.services.set(ServersService.name, {
+        serversWithAccount$: { value: [] },
+        servers$: { value: [] },
+      });
+      controllerServiceMocks.services.set(ImportClipperService.name, importer);
+      const provider = {
+        updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+        listPending: vi.fn(async () =>
+          completed ? [] : [{ status: 'ready' as const, item: pending }]
+        ),
+        updateTarget: vi.fn().mockResolvedValue(undefined),
+        resolveAttachment: vi.fn().mockResolvedValue(undefined),
+        complete: vi.fn().mockImplementation(async () => {
+          completed = true;
+        }),
+        setError: vi.fn().mockResolvedValue(undefined),
+      };
+
+      render(<ShareImportController provider={provider} />);
+
+      await waitFor(() =>
+        expect(provider.complete).toHaveBeenCalledWith(
+          pending.id,
+          pending.documentId
+        )
+      );
+      expect(provider.setError).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each([
+    'attachment-missing',
+    'permission-denied',
+    'destination-not-found',
+    'offline-confirmation-required',
+    'import-conflict',
+  ] as const)('does not complete a native item after %s', async status => {
+    const selectedWorkspace = workspace('local');
+    const pending = {
+      ...item(),
+      target: {
+        workspaceId: selectedWorkspace.id,
+        workspaceFlavour: selectedWorkspace.flavour,
+        tagIds: [],
+      },
+    } satisfies PendingShareItem;
+    const importer = {
+      getShareDestinationOptions: vi.fn().mockResolvedValue({
+        verification: 'confirmed',
+        tags: [],
+        collections: [],
+      }),
+      importShareToWorkspace: vi.fn().mockResolvedValue({ status }),
+    };
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [selectedWorkspace] } },
+      getProfile: () => ({ name$: { value: 'Local workspace' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, importer);
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi
+        .fn()
+        .mockResolvedValue([{ status: 'ready' as const, item: pending }]),
+      updateTarget: vi.fn().mockResolvedValue(undefined),
+      resolveAttachment: vi.fn().mockResolvedValue(undefined),
+      complete: vi.fn().mockResolvedValue(undefined),
+      setError: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<ShareImportController provider={provider} />);
+
+    await waitFor(() =>
+      expect(provider.setError).toHaveBeenCalledWith(pending.id, status)
+    );
+    expect(provider.complete).not.toHaveBeenCalled();
+    expect(importer.importShareToWorkspace).toHaveBeenCalledTimes(1);
+  });
+
+  test('shows one local recovery error without retrying completion in the same refresh', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const selectedWorkspace = workspace('local');
+    const pending = {
+      ...item(),
+      target: {
+        workspaceId: selectedWorkspace.id,
+        workspaceFlavour: selectedWorkspace.flavour,
+        tagIds: [],
+      },
+    } satisfies PendingShareItem;
+    const importer = {
+      getShareDestinationOptions: vi.fn().mockResolvedValue({
+        verification: 'confirmed',
+        tags: [],
+        collections: [],
+      }),
+      importShareToWorkspace: vi
+        .fn()
+        .mockResolvedValue({ status: 'imported', docId: pending.documentId }),
+    };
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [selectedWorkspace] } },
+      getProfile: () => ({ name$: { value: 'Local workspace' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, importer);
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi
+        .fn()
+        .mockResolvedValue([{ status: 'ready' as const, item: pending }]),
+      updateTarget: vi.fn().mockResolvedValue(undefined),
+      resolveAttachment: vi.fn().mockResolvedValue(undefined),
+      complete: vi.fn().mockRejectedValue(new Error('cleanup failed')),
+      setError: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<ShareImportController provider={provider} />);
+
+    await screen.findByText(
+      'This share was saved, but AFFiNE could not clear it from the inbox. Try again.'
+    );
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(importer.importShareToWorkspace).toHaveBeenCalledTimes(1);
+    expect(provider.complete).toHaveBeenCalledTimes(1);
+    expect(provider.setError).not.toHaveBeenCalledWith(
+      pending.id,
+      'completion-failed'
+    );
+  });
+
+  test('manually retries completion through committed replay and clears the item', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const notifySuccess = vi.spyOn(notify, 'success');
+    const selectedWorkspace = workspace('local');
+    const pending = {
+      ...item(),
+      target: {
+        workspaceId: selectedWorkspace.id,
+        workspaceFlavour: selectedWorkspace.flavour,
+        tagIds: [],
+      },
+    } satisfies PendingShareItem;
+    let completed = false;
+    const committedReplay = {
+      status: 'committed-replay' as const,
+      docId: pending.documentId,
+    };
+    const importer = {
+      getShareDestinationOptions: vi.fn().mockResolvedValue({
+        verification: 'confirmed',
+        tags: [],
+        collections: [],
+      }),
+      importShareToWorkspace: vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: 'imported',
+          docId: pending.documentId,
+        })
+        .mockResolvedValueOnce(committedReplay),
+    };
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [selectedWorkspace] } },
+      getProfile: () => ({ name$: { value: 'Local workspace' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, importer);
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi.fn(async () =>
+        completed ? [] : [{ status: 'ready' as const, item: pending }]
+      ),
+      updateTarget: vi.fn().mockResolvedValue(undefined),
+      resolveAttachment: vi.fn().mockResolvedValue(undefined),
+      complete: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('cleanup failed'))
+        .mockImplementationOnce(async () => {
+          completed = true;
+        }),
+      setError: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<ShareImportController provider={provider} />);
+
+    await screen.findByText(
+      'This share was saved, but AFFiNE could not clear it from the inbox. Try again.'
+    );
+    const saveButton = screen.getByRole('button', { name: 'Save' });
+    await waitFor(() =>
+      expect((saveButton as HTMLButtonElement).disabled).toBe(false)
+    );
+
+    fireEvent.click(saveButton);
+
+    await waitFor(() => expect(provider.complete).toHaveBeenCalledTimes(2));
+    await expect(
+      importer.importShareToWorkspace.mock.results[1]?.value
+    ).resolves.toEqual(committedReplay);
+    expect(importer.importShareToWorkspace).toHaveBeenCalledTimes(2);
+    expect(provider.complete).toHaveBeenNthCalledWith(
+      1,
+      pending.id,
+      pending.documentId
+    );
+    expect(provider.complete).toHaveBeenNthCalledWith(
+      2,
+      pending.id,
+      pending.documentId
+    );
+    expect(provider.setError).not.toHaveBeenCalledWith(
+      pending.id,
+      'completion-failed'
+    );
+    await waitFor(() => expect(notifySuccess).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.queryByText('Choose where to save')).toBeNull()
+    );
+    expect(
+      screen.queryByText(
+        'This share was saved, but AFFiNE could not clear it from the inbox. Try again.'
+      )
+    ).toBeNull();
+  });
+
+  test('cold-start replay retries only completion and emits one success notification', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const notifySuccess = vi.spyOn(notify, 'success');
+    const selectedWorkspace = workspace('local');
+    const pending = {
+      ...item(),
+      target: {
+        workspaceId: selectedWorkspace.id,
+        workspaceFlavour: selectedWorkspace.flavour,
+        tagIds: [],
+      },
+    } satisfies PendingShareItem;
+    let completed = false;
+    const importer = {
+      getShareDestinationOptions: vi.fn().mockResolvedValue({
+        verification: 'confirmed',
+        tags: [],
+        collections: [],
+      }),
+      importShareToWorkspace: vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: 'imported',
+          docId: pending.documentId,
+        })
+        .mockResolvedValueOnce({
+          status: 'committed-replay',
+          docId: pending.documentId,
+        }),
+    };
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [selectedWorkspace] } },
+      getProfile: () => ({ name$: { value: 'Local workspace' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, importer);
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi.fn(async () =>
+        completed ? [] : [{ status: 'ready' as const, item: pending }]
+      ),
+      updateTarget: vi.fn().mockResolvedValue(undefined),
+      resolveAttachment: vi.fn().mockResolvedValue(undefined),
+      complete: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('cleanup failed'))
+        .mockImplementationOnce(async () => {
+          completed = true;
+        }),
+      setError: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const firstLaunch = render(<ShareImportController provider={provider} />);
+    await screen.findByText(
+      'This share was saved, but AFFiNE could not clear it from the inbox. Try again.'
+    );
+    firstLaunch.unmount();
+
+    render(<ShareImportController provider={provider} />);
+
+    await waitFor(() => expect(provider.complete).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(notifySuccess).toHaveBeenCalledTimes(1));
+    expect(importer.importShareToWorkspace).toHaveBeenCalledTimes(2);
+    expect(provider.complete).toHaveBeenLastCalledWith(
+      pending.id,
+      pending.documentId
+    );
+    expect(screen.queryByText('Choose where to save')).toBeNull();
+  });
+
   test('ignores a stale attachment result after the inbox item changes', async () => {
     let resolveA!: (file: File | undefined) => void;
     let resolveB!: (file: File | undefined) => void;

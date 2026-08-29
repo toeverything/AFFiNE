@@ -8,6 +8,7 @@ import Foundation
 final class ShareInboxStore {
   typealias DataWriter = (Data, URL, Data.WritingOptions) throws -> Void
   typealias AttachmentFileCopy = (URL, URL) throws -> Void
+  typealias ItemRemover = (URL) throws -> Void
 
   static let shared = ShareInboxStore()
 
@@ -15,6 +16,7 @@ final class ShareInboxStore {
   private let configuredContainerURL: URL?
   private let writeData: DataWriter
   private let copyFile: AttachmentFileCopy
+  private let removeItem: ItemRemover
   private let encoder: JSONEncoder = {
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
@@ -31,12 +33,14 @@ final class ShareInboxStore {
     fileManager: FileManager = .default,
     containerURL: URL? = nil,
     writeData: DataWriter? = nil,
-    copyFile: AttachmentFileCopy? = nil
+    copyFile: AttachmentFileCopy? = nil,
+    removeItem: ItemRemover? = nil
   ) {
     self.fileManager = fileManager
     self.configuredContainerURL = containerURL
     self.writeData = writeData ?? Self.writeAtomically
     self.copyFile = copyFile ?? ShareInboxFileCopy.copyCoordinatedFile
+    self.removeItem = removeItem ?? { try fileManager.removeItem(at: $0) }
   }
 
   var containerURL: URL? {
@@ -177,6 +181,16 @@ final class ShareInboxStore {
   }
 
   func pendingItems() -> [ShareInboxPendingEntry] {
+    readPendingItems().compactMap { entry in
+      guard case let .ready(item) = entry, item.result != nil else {
+        return entry
+      }
+      try? remove(item)
+      return nil
+    }
+  }
+
+  private func readPendingItems() -> [ShareInboxPendingEntry] {
     guard ensureDirectories(), let inboxDirectoryURL else { return [] }
     guard let urls = try? fileManager.contentsOfDirectory(
       at: inboxDirectoryURL,
@@ -222,6 +236,35 @@ final class ShareInboxStore {
         return .ready(item)
       }
       .sorted { $0.createdAt < $1.createdAt }
+  }
+
+  func complete(itemId: String, docId: String, committedAt: Date) throws {
+    guard !docId.isEmpty,
+          let item = readPendingItems().compactMap({ entry -> ShareInboxItem? in
+            guard case let .ready(item) = entry else { return nil }
+            return item
+          }).first(where: { $0.id == itemId }),
+          item.documentId == docId
+    else {
+      throw ShareInboxError.invalidPayload
+    }
+
+    if let result = item.result {
+      guard result.docId == docId else {
+        throw ShareInboxError.invalidPayload
+      }
+      try remove(item)
+      return
+    }
+
+    var completedItem = item
+    completedItem.result = ShareInboxResult(
+      docId: docId,
+      committedAt: committedAt
+    )
+    completedItem.lastError = nil
+    try update(completedItem)
+    try remove(completedItem)
   }
 
   func attachmentURL(for attachment: ShareInboxAttachment) -> URL? {
@@ -289,14 +332,28 @@ final class ShareInboxStore {
       throw ShareInboxError.invalidPayload
     }
     try ensureManifestCanMutate(at: fileURL)
-    try fileManager.removeItem(at: fileURL)
-
-    for attachment in item.attachments {
-      if let url = attachmentURL(for: attachment) {
-        try? fileManager.removeItem(at: url)
-        try? fileManager.removeItem(at: url.deletingLastPathComponent())
-      }
+    if let attachmentDirectory = attachmentDirectoryURL(for: item.id),
+       fileManager.fileExists(atPath: attachmentDirectory.path)
+    {
+      try removeItem(attachmentDirectory)
     }
+    if fileManager.fileExists(atPath: fileURL.path) {
+      try removeItem(fileURL)
+    }
+  }
+
+  private func attachmentDirectoryURL(for itemId: String) -> URL? {
+    guard let attachmentsDirectoryURL,
+          ShareInboxSafety.normalizedManifestID(itemId) != nil
+    else {
+      return nil
+    }
+    let base = attachmentsDirectoryURL.standardizedFileURL
+    let candidate = base
+      .appendingPathComponent(itemId, isDirectory: true)
+      .standardizedFileURL
+    guard candidate.path.hasPrefix(base.path + "/") else { return nil }
+    return candidate
   }
 
   private func manifestURL(for itemId: String) -> URL? {

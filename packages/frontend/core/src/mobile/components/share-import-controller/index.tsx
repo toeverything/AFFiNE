@@ -55,6 +55,8 @@ const errorMessage = (error?: string) => {
       return 'The shared attachment is too large for this workspace.';
     case 'import-conflict':
       return 'This share conflicts with an existing document and was not changed.';
+    case 'completion-failed':
+      return 'This share was saved, but AFFiNE could not clear it from the inbox. Try again.';
     default:
       return undefined;
   }
@@ -273,7 +275,7 @@ export const ShareImportController = ({
       );
       if (!workspace) {
         await provider.setError(pending.id, 'workspace-not-found');
-        return false;
+        return 'pending' as const;
       }
       const attachment =
         pending.content.kind === 'image' || pending.content.kind === 'pdf'
@@ -286,7 +288,7 @@ export const ShareImportController = ({
         !attachment
       ) {
         await provider.setError(pending.id, 'attachment-missing');
-        return false;
+        return 'pending' as const;
       }
       const preview = await previewForImport(
         pending,
@@ -321,10 +323,14 @@ export const ShareImportController = ({
         result.status !== 'committed-replay'
       ) {
         await provider.setError(pending.id, result.status);
-        return false;
+        return 'pending' as const;
       }
-      await provider.complete(pending.id, result.docId);
-      return true;
+      try {
+        await provider.complete(pending.id, result.docId);
+      } catch {
+        return 'completion-failed' as const;
+      }
+      return 'completed' as const;
     },
     [
       importer,
@@ -351,14 +357,21 @@ export const ShareImportController = ({
         }
         const pendingItem = candidate.item;
         if (pendingItem.target && !pendingItem.lastError) {
-          const imported = await importItem(
+          const outcome = await importItem(
             pendingItem,
             pendingItem.target,
             false
           );
-          if (imported) {
+          if (outcome === 'completed') {
             importedCount += 1;
             continue;
+          }
+          if (outcome === 'completion-failed') {
+            nextEntry = {
+              status: 'ready',
+              item: { ...pendingItem, lastError: 'completion-failed' },
+            };
+            break;
           }
           const latest = await provider.listPending();
           nextEntry = latest.find(
@@ -512,7 +525,7 @@ export const ShareImportController = ({
     if (!item || !selectedWorkspace || isSaving) return;
     setIsSaving(true);
     try {
-      const imported = await importItem(
+      const outcome = await importItem(
         item,
         {
           workspaceId: selectedWorkspace.id,
@@ -522,8 +535,11 @@ export const ShareImportController = ({
         },
         allowOffline
       );
-      if (imported) {
+      if (outcome === 'completed') {
         notify.success({ title: 'Shared content saved' });
+      } else if (outcome === 'completion-failed') {
+        setManualItem({ ...item, lastError: 'completion-failed' });
+        return;
       }
       await refresh();
     } finally {
