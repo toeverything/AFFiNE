@@ -81,7 +81,13 @@ const workspace = (flavour: string) =>
   ({ id: 'workspace', flavour }) as WorkspaceMetadata;
 
 const server = (id: string, baseUrl: string, type?: ServerDeploymentType) =>
-  ({ id, baseUrl, config$: { value: { type } } }) as unknown as Server;
+  ({
+    id,
+    baseUrl,
+    config$: { value: { type } },
+    fetch: (...args: Parameters<typeof globalThis.fetch>) =>
+      globalThis.fetch(...args),
+  }) as unknown as Server;
 
 afterEach(() => {
   cleanup();
@@ -91,17 +97,58 @@ afterEach(() => {
 
 describe('link preview transport and route ownership', () => {
   test('does not let a legacy official preview route override a local workspace', () => {
+    const officialFetch = vi.fn();
     const legacyItem = {
       ...item(),
       previewRoute: 'official',
     } as unknown as PendingShareItem;
     const owner = new SharePreviewRouteOwner(legacyItem);
+    const cloudServer = server(
+      'cloud',
+      'https://app.affine.pro',
+      ServerDeploymentType.Affine
+    );
+    Object.assign(cloudServer, { fetch: officialFetch });
 
-    owner.selectWorkspace(workspace('local'), [
-      server('cloud', 'https://app.affine.pro', ServerDeploymentType.Affine),
-    ]);
+    owner.selectWorkspace(workspace('local'), [cloudServer]);
 
     expect(owner.routeEndpoint).toBeUndefined();
+    expect(owner.load()).toBeUndefined();
+    expect(officialFetch).not.toHaveBeenCalled();
+  });
+
+  test('uses the selected workspace server with a relative URL-only preview request', async () => {
+    const serverFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ url: item().content.url }), {
+        status: 200,
+      })
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ url: item().content.url }), {
+          status: 200,
+        })
+      )
+    );
+    const selectedServer = server(
+      'self',
+      'https://self.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    Object.assign(selectedServer, { fetch: serverFetch });
+    const owner = new SharePreviewRouteOwner(item());
+
+    owner.selectWorkspace(workspace('self'), [selectedServer]);
+
+    await expect(owner.load()).resolves.toEqual({ url: item().content.url });
+    expect(serverFetch).toHaveBeenCalledWith('/api/worker/link-preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: item().content.url }),
+      credentials: 'omit',
+      signal: expect.any(AbortSignal),
+    });
   });
 
   test('adds the app version only in the AFFiNE transport', async () => {
@@ -186,7 +233,7 @@ describe('link preview transport and route ownership', () => {
       'cloud route',
       workspace('cloud'),
       [server('cloud', 'https://cloud.example/', ServerDeploymentType.Affine)],
-      'https://app.affine.pro/api/worker/link-preview',
+      'https://cloud.example/api/worker/link-preview',
     ],
     ['local deferred route', workspace('local'), [], undefined],
     ['missing server', workspace('missing'), [], undefined],
@@ -202,7 +249,7 @@ describe('link preview transport and route ownership', () => {
     expect(owner.routeEndpoint).toBe(endpoint);
   });
 
-  test('freezes a selected workspace route and deduplicates only active requests', async () => {
+  test('uses the current selected workspace server and deduplicates active requests', async () => {
     let resolve!: (response: Response) => void;
     const fetch = vi.fn<typeof globalThis.fetch>(
       () =>
@@ -228,10 +275,9 @@ describe('link preview transport and route ownership', () => {
     expect(owner.load()).toBe(first);
     expect(fetch.mock.calls[0]?.[1]?.headers).toEqual({
       'Content-Type': 'application/json',
-      'x-affine-version': BUILD_CONFIG.appVersion,
     });
     expect(owner.routeEndpoint).toBe(
-      'https://first.example/api/worker/link-preview'
+      'https://changed.example/api/worker/link-preview'
     );
     resolve(
       new Response(
@@ -272,9 +318,36 @@ describe('link preview transport and route ownership', () => {
 
     expect(second).not.toBe(first);
     expect(fetch.mock.calls.map(([url]) => url)).toEqual([
-      'https://self.example/api/worker/link-preview',
-      'https://app.affine.pro/api/worker/link-preview',
+      '/api/worker/link-preview',
+      '/api/worker/link-preview',
     ]);
+  });
+
+  test('rejects a late response after its workspace generation is replaced', async () => {
+    let resolveFirst!: (response: Response) => void;
+    const firstServer = server(
+      'first',
+      'https://first.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    Object.assign(firstServer, {
+      fetch: vi.fn(
+        () =>
+          new Promise<Response>(resolve => {
+            resolveFirst = resolve;
+          })
+      ),
+    });
+    const owner = new SharePreviewRouteOwner(item());
+    owner.selectWorkspace(workspace('first'), [firstServer]);
+    const first = owner.load()!;
+
+    owner.selectWorkspace(workspace('local'), []);
+    resolveFirst(
+      new Response(JSON.stringify({ url: item().content.url }), { status: 200 })
+    );
+
+    await expect(first).rejects.toMatchObject({ name: 'AbortError' });
   });
 
   test('does not reuse an aborted request', async () => {
@@ -328,7 +401,7 @@ describe('link preview transport and route ownership', () => {
       server('cloud', 'https://cloud.example/', ServerDeploymentType.Affine),
     ]);
     expect(owner.routeEndpoint).toBe(
-      'https://app.affine.pro/api/worker/link-preview'
+      'https://cloud.example/api/worker/link-preview'
     );
     await owner.load();
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -366,6 +439,102 @@ describe('link preview transport and route ownership', () => {
 });
 
 describe('share destination selection lifecycle', () => {
+  test('does not save workspace A preview after switching to B before B responds', async () => {
+    const workspaceA = {
+      id: 'workspace-a',
+      flavour: 'server-a',
+    } as WorkspaceMetadata;
+    const workspaceB = {
+      id: 'workspace-b',
+      flavour: 'server-b',
+    } as WorkspaceMetadata;
+    const serverA = server(
+      'server-a',
+      'https://server-a.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    const serverB = server(
+      'server-b',
+      'https://server-b.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    Object.assign(serverA, {
+      fetch: vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ url: item().content.url, title: 'Preview A' }),
+            { status: 200 }
+          )
+        ),
+    });
+    Object.assign(serverB, {
+      fetch: vi.fn(() => new Promise<Response>(() => {})),
+    });
+    const importer = {
+      getShareDestinationOptions: vi.fn().mockResolvedValue({
+        verification: 'confirmed',
+        tags: [],
+        collections: [],
+      }),
+      importShareToWorkspace: vi
+        .fn()
+        .mockResolvedValue({ status: 'imported', docId: 'saved-doc' }),
+    };
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [workspaceA, workspaceB] } },
+      getProfile: (workspace: WorkspaceMetadata) => ({
+        name$: {
+          value: workspace.id === workspaceA.id ? 'Workspace A' : 'Workspace B',
+        },
+      }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [serverA, serverB] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, importer);
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi
+        .fn()
+        .mockResolvedValue([{ status: 'ready' as const, item: item() }]),
+      updateTarget: vi.fn().mockResolvedValue(undefined),
+      resolveAttachment: vi.fn().mockResolvedValue(undefined),
+      complete: vi.fn().mockResolvedValue(undefined),
+      setError: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<ShareImportController provider={provider} />);
+
+    await screen.findByText('Choose where to save');
+    fireEvent.click(screen.getByRole('button', { name: /Workspace Choose/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Workspace A/ }));
+    await screen.findByText('Preview A');
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Workspace Workspace A/ })
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Workspace B/ }));
+    await waitFor(() =>
+      expect(
+        (screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement)
+          .disabled
+      ).toBe(false)
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(
+      () => expect(importer.importShareToWorkspace).toHaveBeenCalled(),
+      { timeout: 2500 }
+    );
+    expect(importer.importShareToWorkspace).toHaveBeenCalledWith(
+      workspaceB,
+      expect.objectContaining({ preview: undefined }),
+      { allowOffline: false }
+    );
+  });
+
   test('keeps one workspace selection across preview completion and refreshes', async () => {
     const selectedWorkspace = {
       id: 'selected-workspace',
@@ -611,6 +780,8 @@ describe('share preview presentation', () => {
     const owner = {
       selectWorkspace: vi.fn(),
       load,
+      workspaceKey: 'self:workspace',
+      generation: 1,
     } as unknown as SharePreviewRouteOwner;
     const onPreview = vi.fn();
     const firstItem = { ...item('official'), id: 'first' };
@@ -643,7 +814,12 @@ describe('share preview presentation', () => {
     await screen.findByText('Current preview');
     expect(onPreview).toHaveBeenCalledTimes(1);
     expect(onPreview).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Current preview' })
+      expect.objectContaining({
+        itemId: 'second',
+        workspaceKey: 'self:workspace',
+        generation: 1,
+        value: expect.objectContaining({ title: 'Current preview' }),
+      })
     );
   });
 

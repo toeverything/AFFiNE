@@ -3,7 +3,10 @@ import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
 import { LinkIcon, WaveRectangleIcon } from '@blocksuite/icons/rc';
 import { useEffect, useRef, useState } from 'react';
 
-import type { SharePreviewRouteOwner } from './preview-route-owner';
+import type {
+  SharePreviewRouteOwner,
+  SharePreviewState,
+} from './preview-route-owner';
 import * as styles from './style.css';
 import type { PendingShareItem, ShareLinkPreview as Preview } from './types';
 
@@ -51,7 +54,7 @@ export const LinkPreview = ({
   owner: SharePreviewRouteOwner;
   workspace: WorkspaceMetadata | undefined;
   servers: Server[];
-  onPreview(preview: Preview | undefined): void;
+  onPreview(preview: SharePreviewState | undefined): void;
 }) => {
   const [state, setState] = useState<PreviewState>({ status: 'idle' });
   const activeRequest = useRef<Promise<Preview> | undefined>(undefined);
@@ -59,12 +62,21 @@ export const LinkPreview = ({
   useEffect(() => {
     let active = true;
     owner.selectWorkspace(workspace, servers);
+    const workspaceKey = owner.workspaceKey;
+    const generation = owner.generation;
+    const updatePreview = (value: Preview | undefined) => {
+      onPreview(
+        value && workspaceKey
+          ? { itemId: item.id, workspaceKey, generation, value }
+          : undefined
+      );
+    };
     const controller = new AbortController();
     const request = owner.load(controller.signal);
     if (!request) {
       activeRequest.current = undefined;
       setState({ status: 'idle' });
-      onPreview(undefined);
+      updatePreview(undefined);
       return () => {
         active = false;
         controller.abort();
@@ -77,17 +89,17 @@ export const LinkPreview = ({
       preview => {
         if (!isCurrent()) return;
         setState({ status: 'loaded', preview });
-        onPreview(preview);
+        updatePreview(preview);
       },
       error => {
         if (!isCurrent()) return;
         if (error instanceof DOMException && error.name === 'AbortError') {
           setState({ status: 'idle' });
-          onPreview(undefined);
+          updatePreview(undefined);
           return;
         }
         setState({ status: 'failed' });
-        onPreview(undefined);
+        updatePreview(undefined);
       }
     );
     return () => {

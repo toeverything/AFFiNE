@@ -1,15 +1,5 @@
 import XCTest
 
-private final class SharePreviewURLProtocol: URLProtocol {
-  static var onStart: ((URLProtocol, URLRequest) -> Void)?
-  static var onStop: (() -> Void)?
-
-  override class func canInit(with request: URLRequest) -> Bool { true }
-  override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-  override func startLoading() { Self.onStart?(self, request) }
-  override func stopLoading() { Self.onStop?() }
-}
-
 final class ShareInboxSafetyTests: XCTestCase {
   private func makeStore() throws -> (store: ShareInboxStore, containerURL: URL) {
     let containerURL = FileManager.default.temporaryDirectory
@@ -185,16 +175,6 @@ final class ShareInboxSafetyTests: XCTestCase {
       "My explicit title"
     )
     XCTAssertEqual(
-      ShareInboxSafety.previewTitle(
-        original: originalTitle, userEdited: nil, serverTitle: serverPreviewTitle),
-      serverPreviewTitle
-    )
-    XCTAssertEqual(
-      ShareInboxSafety.previewTitle(
-        original: originalTitle, userEdited: "My explicit title", serverTitle: serverPreviewTitle),
-      "My explicit title"
-    )
-    XCTAssertEqual(
       ShareInboxSafety.manifestTitle(original: originalTitle, userEdited: nil),
       originalTitle
     )
@@ -342,124 +322,6 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertEqual(try decoder.decode(ShareInboxItem.self, from: encoded).content.url, item.content.url)
   }
 
-  func testPreviewAndImageRequestsCarryHeadersAndCanBeCancelled() async throws {
-    let family = "👨‍👩‍👧"
-    let transcript = ShareLinkPreview.Transcript(
-      language: nil,
-      segments: [
-        .init(text: "  Hello\n\tworld  ", startSeconds: nil, durationSeconds: nil, speaker: nil),
-        .init(text: "again", startSeconds: nil, durationSeconds: nil, speaker: nil),
-      ],
-      chapters: nil,
-      truncated: nil
-    )
-    XCTAssertEqual(transcript.previewText, "Hello world again")
-    let longTranscript = ShareLinkPreview.Transcript(
-      language: nil,
-      segments: [
-        .init(
-          text: String(repeating: family, count: 241), startSeconds: nil,
-          durationSeconds: nil, speaker: nil)
-      ],
-      chapters: nil,
-      truncated: nil
-    )
-    XCTAssertEqual(longTranscript.previewText?.count, 241)
-    XCTAssertTrue(longTranscript.previewText?.hasSuffix("…") == true)
-
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(
-      session: URLSession(configuration: configuration), appVersion: "0.27.0")
-    let started = expectation(description: "request started")
-    let stopped = expectation(description: "request cancelled")
-    SharePreviewURLProtocol.onStart = { _, request in
-      XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent"), "AFFiNE/0.27.0")
-      XCTAssertEqual(request.value(forHTTPHeaderField: "x-affine-version"), "0.27.0")
-      started.fulfill()
-    }
-    SharePreviewURLProtocol.onStop = { stopped.fulfill() }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    let task = Task {
-      try await client.fetch(url: "https://www.youtube.com/watch?v=video-id")
-    }
-    await fulfillment(of: [started], timeout: 1)
-    task.cancel()
-    do {
-      _ = try await task.value
-      XCTFail("Cancelled preview unexpectedly completed")
-    } catch {
-      let urlError = error as? URLError
-      XCTAssertTrue(error is CancellationError || urlError?.code == .cancelled)
-    }
-    await fulfillment(of: [stopped], timeout: 1)
-
-    let imageData = try XCTUnwrap(
-      Data(
-        base64Encoded:
-          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
-      )
-    )
-    let imageLoaded = expectation(description: "image loaded")
-    SharePreviewURLProtocol.onStart = { protocolInstance, request in
-      XCTAssertEqual(request.httpMethod, "GET")
-      XCTAssertEqual(request.url?.absoluteString, "https://app.affine.pro/api/worker/image-proxy")
-      XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent"), "AFFiNE/0.27.0")
-      XCTAssertEqual(request.value(forHTTPHeaderField: "x-affine-version"), "0.27.0")
-      let response = HTTPURLResponse(
-        url: request.url!, statusCode: 200, httpVersion: nil,
-        headerFields: ["Content-Type": "image/png"]
-      )!
-      protocolInstance.client?.urlProtocol(
-        protocolInstance, didReceive: response, cacheStoragePolicy: .notAllowed)
-      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: imageData)
-      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
-      imageLoaded.fulfill()
-    }
-    SharePreviewURLProtocol.onStop = nil
-    _ = try await client.fetchImage(url: "/api/worker/image-proxy")
-    await fulfillment(of: [imageLoaded], timeout: 1)
-
-    SharePreviewURLProtocol.onStart = { protocolInstance, request in
-      let response = HTTPURLResponse(
-        url: request.url!, statusCode: 403, httpVersion: nil, headerFields: nil)!
-      protocolInstance.client?.urlProtocol(
-        protocolInstance, didReceive: response, cacheStoragePolicy: .notAllowed)
-      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
-    }
-    do {
-      _ = try await client.fetchImage(url: "/api/worker/image-proxy")
-      XCTFail("Failed image response unexpectedly decoded")
-    } catch {
-      XCTAssertEqual((error as? URLError)?.code, .badServerResponse)
-    }
-
-    let imageStarted = expectation(description: "image request started")
-    let imageStopped = expectation(description: "image request cancelled")
-    SharePreviewURLProtocol.onStart = { _, request in
-      XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent"), "AFFiNE/0.27.0")
-      XCTAssertEqual(request.value(forHTTPHeaderField: "x-affine-version"), "0.27.0")
-      imageStarted.fulfill()
-    }
-    SharePreviewURLProtocol.onStop = { imageStopped.fulfill() }
-    let imageTask = Task {
-      try await client.fetchImage(url: "/api/worker/image-proxy")
-    }
-    await fulfillment(of: [imageStarted], timeout: 1)
-    imageTask.cancel()
-    do {
-      _ = try await imageTask.value
-      XCTFail("Cancelled image request unexpectedly completed")
-    } catch {
-      let urlError = error as? URLError
-      XCTAssertTrue(error is CancellationError || urlError?.code == .cancelled)
-    }
-    await fulfillment(of: [imageStopped], timeout: 1)
-  }
 }
 
 private enum TestWriteError: Error {

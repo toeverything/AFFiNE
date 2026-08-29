@@ -17,6 +17,7 @@ import { LinkPreview, resolveShareTitle } from './link-preview';
 import {
   resolveShareWorkspaceMode,
   SharePreviewRouteOwner,
+  type SharePreviewState,
 } from './preview-route-owner';
 import { SelectionPage, type SelectionPageOption } from './selection-page';
 import * as styles from './style.css';
@@ -25,7 +26,6 @@ import type {
   ShareInboxEntry,
   ShareImportTarget,
   ShareInboxProvider,
-  ShareLinkPreview,
 } from './types';
 
 export type { ShareInboxProvider } from './types';
@@ -94,22 +94,31 @@ const sourceDetails = (item: PendingShareItem) => {
   };
 };
 
-async function previewForImport(
+export async function previewForImport(
   item: PendingShareItem,
   workspace: WorkspaceMetadata,
-  current: ShareLinkPreview | undefined,
+  current: SharePreviewState | undefined,
   currentOwner: SharePreviewRouteOwner | undefined,
   servers: Server[]
 ) {
-  if (item.content.kind !== 'url' || current) return current;
+  if (item.content.kind !== 'url') return undefined;
   const owner = currentOwner ?? new SharePreviewRouteOwner(item);
   owner.selectWorkspace(workspace, servers);
+  const selectedWorkspaceKey = workspaceKey(workspace);
+  const generation = owner.generation;
+  if (
+    current?.itemId === item.id &&
+    current.workspaceKey === selectedWorkspaceKey &&
+    current.generation === generation
+  ) {
+    return current.value;
+  }
   const controller = new AbortController();
   const request = owner.load(controller.signal);
   if (!request) return undefined;
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    return await Promise.race([
+    const preview = await Promise.race([
       request.catch(() => undefined),
       new Promise<undefined>(resolve => {
         timeout = setTimeout(() => {
@@ -118,6 +127,10 @@ async function previewForImport(
         }, 1200);
       }),
     ]);
+    return owner.workspaceKey === selectedWorkspaceKey &&
+      owner.generation === generation
+      ? preview
+      : undefined;
   } finally {
     if (timeout) clearTimeout(timeout);
   }
@@ -157,7 +170,8 @@ export const ShareImportController = ({
   const [isLoadingDestinations, setIsLoadingDestinations] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [attachmentPreview, setAttachmentPreview] = useState<string>();
-  const [linkPreview, setLinkPreview] = useState<ShareLinkPreview>();
+  const [linkPreview, setLinkPreview] = useState<SharePreviewState>();
+  const linkPreviewRef = useRef<SharePreviewState>();
   const refreshing = useRef(false);
   const itemId = item?.id;
   const activeItemIdRef = useRef(itemId);
@@ -197,6 +211,19 @@ export const ShareImportController = ({
     ? workspacesService.getProfile(selectedWorkspace).name$.value ||
       selectedWorkspace.id
     : undefined;
+  const updateLinkPreview = useCallback(
+    (next: SharePreviewState | undefined) => {
+      if (
+        next &&
+        (next.itemId !== itemId || next.workspaceKey !== selectedWorkspaceKey)
+      ) {
+        return;
+      }
+      linkPreviewRef.current = next;
+      setLinkPreview(next);
+    },
+    [itemId, selectedWorkspaceKey]
+  );
   const setManualItem = useCallback((next: PendingShareItem) => {
     const isCurrentItem = activeItemIdRef.current === next.id;
     activeItemIdRef.current = next.id;
@@ -243,7 +270,9 @@ export const ShareImportController = ({
       const preview = await previewForImport(
         pending,
         workspace,
-        pending.id === item?.id ? linkPreview : undefined,
+        pending.id === item?.id
+          ? (linkPreviewRef.current ?? linkPreview)
+          : undefined,
         pending.id === item?.id ? previewOwner : undefined,
         servers
       );
@@ -352,7 +381,7 @@ export const ShareImportController = ({
   useEffect(() => {
     let active = true;
     setAttachmentPreview(undefined);
-    setLinkPreview(undefined);
+    updateLinkPreview(undefined);
     if (item?.content.kind === 'image') {
       void provider
         .resolveAttachment(item.id)
@@ -364,7 +393,7 @@ export const ShareImportController = ({
     return () => {
       active = false;
     };
-  }, [item?.content.kind, item?.id, provider]);
+  }, [item?.content.kind, item?.id, provider, updateLinkPreview]);
 
   useEffect(() => {
     if (!selectedWorkspaceKey) {
@@ -538,6 +567,7 @@ export const ShareImportController = ({
           selectedIds={selectedWorkspaceKey ? [selectedWorkspaceKey] : []}
           onBack={() => setPage('main')}
           onSelect={id => {
+            if (id !== selectedWorkspaceKey) updateLinkPreview(undefined);
             updateSelection(current =>
               current.workspaceKey === id
                 ? current
@@ -649,7 +679,7 @@ export const ShareImportController = ({
                   owner={previewOwner}
                   workspace={selectedWorkspace}
                   servers={servers}
-                  onPreview={setLinkPreview}
+                  onPreview={updateLinkPreview}
                 />
               ) : (
                 <section className={styles.source}>
