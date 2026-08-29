@@ -1,10 +1,15 @@
 import type { Server } from '@affine/core/modules/cloud';
 import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
-import { ServerDeploymentType } from '@affine/graphql';
+import { ServerDeploymentType, ServerFeature } from '@affine/graphql';
 
 import type { PendingShareItem, ShareLinkPreview } from './types';
 
 const LINK_PREVIEW_PATH = '/api/worker/link-preview';
+const SHARE_PREVIEW_WRITER_GATE_C_APPROVED = false;
+
+interface SharePreviewRouteOwnerOptions {
+  gateCApproved?: boolean;
+}
 
 export type SharePreviewState = {
   itemId: string;
@@ -108,7 +113,10 @@ export class SharePreviewRouteOwner {
   private selectedWorkspaceKey: string | undefined;
   private requestGeneration = 0;
 
-  constructor(private readonly item: PendingShareItem) {
+  constructor(
+    private readonly item: PendingShareItem,
+    private readonly options: SharePreviewRouteOwnerOptions = {}
+  ) {
     this.selectedWorkspaceKey = undefined;
   }
 
@@ -188,6 +196,15 @@ export class SharePreviewRouteOwner {
         ) {
           throw new DOMException('Stale link preview response', 'AbortError');
         }
+        Object.defineProperty(preview, 'authorizeDetailsWrite', {
+          value: this.createDetailsWriteAuthorization({
+            itemId: this.item.id,
+            workspaceKey,
+            generation,
+            server,
+          }),
+          enumerable: false,
+        });
         return preview;
       });
     this.inFlight = { generation, controller, request };
@@ -202,6 +219,53 @@ export class SharePreviewRouteOwner {
       }
     );
     return request;
+  }
+
+  private createDetailsWriteAuthorization({
+    itemId,
+    workspaceKey,
+    generation,
+    server,
+  }: {
+    itemId: string;
+    workspaceKey: string;
+    generation: number;
+    server: Server;
+  }) {
+    return async (signal: AbortSignal) => {
+      const gateCApproved =
+        this.options.gateCApproved ?? SHARE_PREVIEW_WRITER_GATE_C_APPROVED;
+      if (
+        !gateCApproved ||
+        !this.matchesRoute({ itemId, workspaceKey, generation, server })
+      ) {
+        return false;
+      }
+      const config = await server.fetchFreshConfig(signal);
+      return (
+        this.matchesRoute({ itemId, workspaceKey, generation, server }) &&
+        config.features.includes(ServerFeature.SharePreviewBlobRefs)
+      );
+    };
+  }
+
+  private matchesRoute({
+    itemId,
+    workspaceKey,
+    generation,
+    server,
+  }: {
+    itemId: string;
+    workspaceKey: string;
+    generation: number;
+    server: Server;
+  }) {
+    return (
+      this.item.id === itemId &&
+      this.selectedWorkspaceKey === workspaceKey &&
+      this.requestGeneration === generation &&
+      this.server === server
+    );
   }
 
   private setRoute(

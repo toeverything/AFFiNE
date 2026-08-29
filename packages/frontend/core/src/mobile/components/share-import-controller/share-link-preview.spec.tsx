@@ -1,6 +1,8 @@
 /** @vitest-environment happy-dom */
 
-import { type Server, ServersService } from '@affine/core/modules/cloud';
+import { Server, ServersService } from '@affine/core/modules/cloud';
+import { readAllBlocksFromDoc } from '@affine/reader';
+import { parseSharePreviewBlob } from '@blocksuite/affine/model';
 import {
   ImportClipperService,
   type ShareImportInput,
@@ -9,7 +11,7 @@ import {
   type WorkspaceMetadata,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
-import { ServerDeploymentType } from '@affine/graphql';
+import { ServerDeploymentType, ServerFeature } from '@affine/graphql';
 import { ToggleButton } from '@blocksuite/affine/components/toggle-button';
 import {
   type LinkPreviewCacheProvider,
@@ -22,8 +24,10 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import { Framework } from '@toeverything/infra';
 import type * as Infra from '@toeverything/infra';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { Array as YArray, Doc as YDoc, Map as YMap, Text as YText } from 'yjs';
 
 import {
   createAffineLinkPreviewFetch,
@@ -33,6 +37,15 @@ import {
   createCompatibilityShareBlockPlan,
   createShareMarkdown,
 } from '../../../modules/import-clipper/services/import';
+import { CollectionService } from '../../../modules/collection';
+import { DocsService } from '../../../modules/doc';
+import { DocsSearchService } from '../../../modules/docs-search';
+import { UnusedBlobs } from '../../../modules/blob-management/entity/unused-blobs';
+import { GuardService } from '../../../modules/permissions';
+import { TagService } from '../../../modules/tag';
+import { shareImportBlockIds } from '../../../modules/import-clipper/services/share-block-plan';
+import { WorkspaceService } from '../../../modules/workspace';
+import { WorkspaceFlavoursService } from '../../../modules/workspace/services/flavours';
 import { previewForImport, ShareImportController } from './index';
 import {
   LinkPreview,
@@ -90,6 +103,223 @@ const server = (id: string, baseUrl: string, type?: ServerDeploymentType) =>
     fetch: (...args: Parameters<typeof globalThis.fetch>) =>
       globalThis.fetch(...args),
   }) as unknown as Server;
+
+type TestBlock = {
+  id: string;
+  flavour: string;
+  parentId?: string;
+  props?: Record<string, unknown>;
+};
+
+function makeShareWriterHarness({
+  receipt,
+  recordExists = false,
+  blocks = [],
+}: {
+  receipt?: string;
+  recordExists?: boolean;
+  blocks?: TestBlock[];
+} = {}) {
+  const models = new Map<
+    string,
+    {
+      id: string;
+      flavour: string;
+      parent?: { id: string };
+      props: Record<string, any>;
+    }
+  >();
+  for (const block of blocks) {
+    models.set(block.id, {
+      id: block.id,
+      flavour: block.flavour,
+      parent: block.parentId ? { id: block.parentId } : undefined,
+      props: { ...block.props },
+    });
+  }
+  const blockSuiteDoc = {
+    getBlock: (id: string) => {
+      const model = models.get(id);
+      return model ? { id, model } : undefined;
+    },
+    getBlocksByFlavour: (flavour: string) =>
+      [...models.values()]
+        .filter(model => model.flavour === flavour)
+        .map(model => ({ id: model.id, model })),
+    addBlock: (
+      flavour: string,
+      props: Record<string, any>,
+      parentId?: string
+    ) => {
+      const id = props.id as string;
+      const storedProps =
+        flavour === 'affine:page'
+          ? {
+              ...props,
+              title: {
+                value: '',
+                get length() {
+                  return this.value.length;
+                },
+                toString() {
+                  return this.value;
+                },
+                delete() {
+                  this.value = '';
+                },
+                insert(value: string) {
+                  this.value = value;
+                },
+              },
+            }
+          : props;
+      models.set(id, {
+        id,
+        flavour,
+        parent: parentId ? { id: parentId } : undefined,
+        props: storedProps,
+      });
+      return id;
+    },
+  };
+  const record = {
+    id: 'doc',
+    meta$: { value: { tags: [] as string[], title: '' } },
+    setMeta: vi.fn((meta: { title: string }) => {
+      record.meta$.value = { ...record.meta$.value, ...meta };
+    }),
+  };
+  let currentRecord: typeof record | undefined = recordExists
+    ? record
+    : undefined;
+  let receiptValue = receipt;
+  const docs = {
+    list: { doc$: vi.fn(() => ({ value: currentRecord })) },
+    getCustomPropertyById: vi.fn(() => receiptValue),
+    setCustomPropertyById: vi.fn((_id, _property, value: string) => {
+      receiptValue = value;
+    }),
+    createDoc: vi.fn(() => {
+      currentRecord = record;
+      return record;
+    }),
+    open: vi.fn(() => ({
+      doc: {
+        waitForSyncReady: vi.fn(),
+        blockSuiteDoc,
+      },
+      release: vi.fn(),
+    })),
+  };
+  const guard = { can: vi.fn(async () => true) };
+  const tagService = {
+    tagList: {
+      tags$: { value: [] },
+      tagByTagId$: vi.fn(() => ({ value: { tag: vi.fn() } })),
+    },
+  };
+  const collectionService = {
+    collectionMetas$: { value: [] },
+    addDocToCollection: vi.fn(),
+  };
+  const blobSet = vi.fn(async (_blob: Blob) => 'details-content-hash');
+  const engine = {
+    addPriority: vi.fn(),
+    waitForDocReady: vi.fn(),
+    waitForDocLoaded: vi.fn(),
+    waitForUpdated: vi.fn(),
+    waitForSynced: vi.fn(),
+  };
+  const metadata = {
+    id: 'workspace',
+    flavour: 'self',
+  } as WorkspaceMetadata;
+  const workspaceValue = {
+    id: metadata.id,
+    meta: { flavour: metadata.flavour },
+    engine: { doc: engine },
+    docCollection: { blobSync: { set: blobSet } },
+    scope: {
+      get: (token: unknown) => {
+        if (token === DocsService) return docs;
+        if (token === GuardService) return guard;
+        if (token === TagService) return tagService;
+        if (token === CollectionService) return collectionService;
+        throw new Error('Unexpected service token');
+      },
+    },
+  };
+  const workspaces = {
+    list: {
+      workspaces$: { value: [metadata] },
+      waitForRevalidation: vi.fn(),
+    },
+    open: vi.fn(() => ({ workspace: workspaceValue, dispose: vi.fn() })),
+  } as unknown as WorkspacesService;
+  const service = Object.assign(Object.create(ImportClipperService.prototype), {
+    workspacesService: workspaces,
+    shareImportTails: new Map(),
+  }) as ImportClipperService;
+
+  return { service, metadata, models, blobSet };
+}
+
+function writerInput(preview?: ShareLinkPreview): ShareImportInput {
+  return {
+    documentId: 'doc',
+    importAttemptId: 'attempt',
+    title: 'Shared',
+    content: {
+      kind: 'url',
+      url: preview?.url ?? 'https://example.com/article',
+    },
+    preview,
+    tagIds: [],
+  };
+}
+
+function routedPreviewServer({
+  preview,
+  freshConfig,
+}: {
+  preview: ShareLinkPreview;
+  freshConfig: (signal: AbortSignal) => Promise<unknown>;
+}) {
+  const selected = server(
+    'self',
+    'https://self.example/',
+    ServerDeploymentType.Selfhosted
+  );
+  Object.assign(selected, {
+    config$: {
+      value: {
+        type: ServerDeploymentType.Selfhosted,
+        features: [ServerFeature.SharePreviewBlobRefs],
+      },
+    },
+    fetch: vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(preview), {
+        status: 200,
+      })
+    ),
+    fetchFreshConfig: vi.fn(freshConfig),
+  });
+  return selected;
+}
+
+async function loadRoutedPreview(
+  preview: ShareLinkPreview,
+  selectedServer: Server,
+  gateCApproved = true
+) {
+  const pending = {
+    ...item(),
+    content: { kind: 'url', url: preview.url },
+  } as PendingShareItem;
+  const owner = new SharePreviewRouteOwner(pending, { gateCApproved });
+  owner.selectWorkspace(workspace('self'), [selectedServer]);
+  return { owner, preview: await owner.load() };
+}
 
 afterEach(() => {
   cleanup();
@@ -511,6 +741,493 @@ describe('link preview transport and route ownership', () => {
     ['signed-out cloud configuration', [], false, 'signedOut'],
   ])('resolves %s safely', (_name, servers, signedIn, mode) => {
     expect(resolveShareWorkspaceMode(servers, signedIn)).toBe(mode);
+  });
+});
+
+describe('structured share-preview writer', () => {
+  test('fetches fresh server config exactly once without mutating cached state', async () => {
+    const config = {
+      features: [ServerFeature.SharePreviewBlobRefs],
+    };
+    const fetchServerConfig = vi.fn().mockResolvedValue(config);
+    const method = (
+      Server.prototype as unknown as {
+        fetchFreshConfig(
+          this: unknown,
+          signal: AbortSignal
+        ): Promise<typeof config>;
+      }
+    ).fetchFreshConfig;
+    expect(method).toBeTypeOf('function');
+    const signal = new AbortController().signal;
+
+    await expect(
+      method.call(
+        {
+          baseUrl: 'https://self.example/',
+          serverConfigStore: { fetchServerConfig },
+        },
+        signal
+      )
+    ).resolves.toBe(config);
+    expect(fetchServerConfig).toHaveBeenCalledTimes(1);
+    expect(fetchServerConfig).toHaveBeenCalledWith(
+      'https://self.example/',
+      signal
+    );
+  });
+
+  test('propagates strict fresh-config failures', async () => {
+    const failure = new DOMException('Aborted', 'AbortError');
+    const fetchServerConfig = vi.fn().mockRejectedValue(failure);
+    const method = (
+      Server.prototype as unknown as {
+        fetchFreshConfig(this: unknown, signal: AbortSignal): Promise<unknown>;
+      }
+    ).fetchFreshConfig;
+    expect(method).toBeTypeOf('function');
+
+    await expect(
+      method.call(
+        {
+          baseUrl: 'https://self.example/',
+          serverConfigStore: { fetchServerConfig },
+        },
+        new AbortController().signal
+      )
+    ).rejects.toBe(failure);
+    expect(fetchServerConfig).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([
+    [
+      'ordinary page',
+      {
+        url: 'https://example.com/article',
+        title: 'Article title',
+        description: 'Article description',
+        images: ['https://example.com/image.png'],
+      },
+      {
+        version: 1,
+        sourceUrl: 'https://example.com/article',
+        title: 'Article title',
+        description: 'Article description',
+        image: 'https://example.com/image.png',
+      },
+    ],
+    [
+      'YouTube',
+      {
+        url: 'https://youtube.com/watch?v=123',
+        title: 'Video title',
+        provider: 'youtube' as const,
+        durationSeconds: 90,
+        transcript: {
+          language: 'en',
+          segments: [{ text: 'Welcome', startSeconds: 1 }],
+        },
+      },
+      {
+        version: 1,
+        sourceUrl: 'https://youtube.com/watch?v=123',
+        title: 'Video title',
+        provider: 'youtube',
+        durationSeconds: 90,
+        transcript: {
+          language: 'en',
+          segments: [{ text: 'Welcome', startSeconds: 1 }],
+        },
+      },
+    ],
+    [
+      'X',
+      {
+        url: 'https://x.com/affine/status/123',
+        title: 'Post title',
+        description: 'Post body',
+        provider: 'x' as const,
+      },
+      {
+        version: 1,
+        sourceUrl: 'https://x.com/affine/status/123',
+        title: 'Post title',
+        description: 'Post body',
+        provider: 'x',
+      },
+    ],
+  ])(
+    'writes one validated content-addressed record for an %s',
+    async (_name, response, expectedRecord) => {
+      const selectedServer = routedPreviewServer({
+        preview: response,
+        freshConfig: async () => ({
+          features: [ServerFeature.SharePreviewBlobRefs],
+        }),
+      });
+      const routed = await loadRoutedPreview(response, selectedServer);
+      const harness = makeShareWriterHarness();
+
+      await expect(
+        harness.service.importShareToWorkspace(
+          harness.metadata,
+          writerInput(routed.preview),
+          { allowOffline: true }
+        )
+      ).resolves.toEqual({ status: 'imported', docId: 'doc' });
+
+      expect((selectedServer as any).fetchFreshConfig).toHaveBeenCalledTimes(1);
+      expect(harness.blobSet).toHaveBeenCalledTimes(1);
+      const detailsBlob = harness.blobSet.mock.calls[0][0];
+      await expect(parseSharePreviewBlob(detailsBlob)).resolves.toEqual(
+        expectedRecord
+      );
+      expect(
+        harness.models.get(shareImportBlockIds('attempt').bookmark)?.props
+      ).toMatchObject({
+        sharePreviewSourceId: 'details-content-hash',
+        sharePreviewVersion: 1,
+      });
+    }
+  );
+
+  test.each([
+    ['fresh fetch fails', async () => Promise.reject(new Error('offline'))],
+    ['fresh response omits capability', async () => ({ features: [] })],
+  ])('ignores cached capability when %s', async (_name, freshConfig) => {
+    const response = {
+      url: 'https://example.com/article',
+      title: 'Freshness protected',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig,
+    });
+    const routed = await loadRoutedPreview(response, selectedServer);
+    const harness = makeShareWriterHarness();
+
+    await harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(routed.preview),
+      { allowOffline: true }
+    );
+
+    expect((selectedServer as any).fetchFreshConfig).toHaveBeenCalledTimes(1);
+    expect(harness.blobSet).not.toHaveBeenCalled();
+    expect(
+      harness.models.get(shareImportBlockIds('attempt').bookmark)?.props
+    ).not.toHaveProperty('sharePreviewSourceId');
+  });
+
+  test('aborts a half-open strict config request and saves an ordinary bookmark', async () => {
+    const freshConfig = vi.fn(
+      (signal: AbortSignal) =>
+        new Promise<never>((_resolve, reject) => {
+          signal.addEventListener(
+            'abort',
+            () => reject(new DOMException('Aborted', 'AbortError')),
+            { once: true }
+          );
+        })
+    );
+    const response = {
+      url: 'https://example.com/half-open',
+      title: 'Bounded authorization',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig,
+    });
+    const routed = await loadRoutedPreview(response, selectedServer);
+    const harness = makeShareWriterHarness();
+    const importing = harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(routed.preview),
+      { allowOffline: true }
+    );
+
+    await expect(
+      Promise.race([
+        importing,
+        new Promise((_, reject) => {
+          setTimeout(
+            () => reject(new Error('Authorization did not time out')),
+            1800
+          );
+        }),
+      ])
+    ).resolves.toEqual({ status: 'imported', docId: 'doc' });
+    expect(freshConfig).toHaveBeenCalledTimes(1);
+    expect(freshConfig.mock.calls[0][0].aborted).toBe(true);
+    expect(harness.blobSet).not.toHaveBeenCalled();
+    expect(
+      harness.models.get(shareImportBlockIds('attempt').bookmark)?.props
+    ).not.toHaveProperty('sharePreviewSourceId');
+  });
+
+  test('fails closed when the selected server changes during the strict fetch', async () => {
+    let resolveConfig!: (value: unknown) => void;
+    const freshConfig = vi.fn(
+      () =>
+        new Promise(resolve => {
+          resolveConfig = resolve;
+        })
+    );
+    const response = {
+      url: 'https://example.com/article',
+      title: 'Generation protected',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig,
+    });
+    const routed = await loadRoutedPreview(response, selectedServer);
+    const harness = makeShareWriterHarness();
+    const importing = harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(routed.preview),
+      { allowOffline: true }
+    );
+    await vi.waitFor(() => expect(freshConfig).toHaveBeenCalledTimes(1));
+
+    routed.owner.selectWorkspace(workspace('other'), [
+      server('other', 'https://old.example/'),
+    ]);
+    resolveConfig({ features: [ServerFeature.SharePreviewBlobRefs] });
+
+    await expect(importing).resolves.toEqual({
+      status: 'imported',
+      docId: 'doc',
+    });
+    expect(harness.blobSet).not.toHaveBeenCalled();
+    expect(
+      harness.models.get(shareImportBlockIds('attempt').bookmark)?.props
+    ).not.toHaveProperty('sharePreviewSourceId');
+  });
+
+  test('keeps the production Gate C default dormant', async () => {
+    const response = {
+      url: 'https://example.com/article',
+      title: 'Dormant writer',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig: async () => ({
+        features: [ServerFeature.SharePreviewBlobRefs],
+      }),
+    });
+    const routed = await loadRoutedPreview(response, selectedServer, false);
+    const harness = makeShareWriterHarness();
+
+    await harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(routed.preview),
+      { allowOffline: true }
+    );
+
+    expect((selectedServer as any).fetchFreshConfig).not.toHaveBeenCalled();
+    expect(harness.blobSet).not.toHaveBeenCalled();
+  });
+
+  test('does not authorize, write, or mutate an existing stable bookmark on replay', async () => {
+    const ids = shareImportBlockIds('attempt');
+    const authorizeDetailsWrite = vi.fn(async () => true);
+    const harness = makeShareWriterHarness({
+      receipt: JSON.stringify({
+        version: 1,
+        attemptId: 'attempt',
+        state: 'preparing',
+      }),
+      recordExists: true,
+      blocks: [
+        { id: ids.page, flavour: 'affine:page' },
+        { id: ids.surface, flavour: 'affine:surface', parentId: ids.page },
+        { id: ids.note, flavour: 'affine:note', parentId: ids.page },
+        {
+          id: ids.bookmark,
+          flavour: 'affine:bookmark',
+          parentId: ids.note,
+          props: { url: 'https://user-edited.example', title: 'User title' },
+        },
+      ],
+    });
+    const preview = {
+      url: 'https://example.com/article',
+      title: 'Incoming title',
+      authorizeDetailsWrite,
+    } as ShareLinkPreview;
+
+    await harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(preview),
+      { allowOffline: true }
+    );
+
+    expect(authorizeDetailsWrite).not.toHaveBeenCalled();
+    expect(harness.blobSet).not.toHaveBeenCalled();
+    expect(harness.models.get(ids.bookmark)?.props).toEqual({
+      url: 'https://user-edited.example',
+      title: 'User title',
+    });
+  });
+
+  test.each([
+    [
+      'invalid data',
+      {
+        url: 'https://example.com/article',
+        title: 'Invalid image',
+        images: ['not-a-url'],
+      },
+    ],
+    [
+      'oversized data',
+      {
+        url: 'https://example.com/article',
+        title: 'Oversized description',
+        description: 'x'.repeat(256 * 1024),
+      },
+    ],
+  ])(
+    'degrades %s to an ordinary bookmark before authorization',
+    async (_name, response) => {
+      const selectedServer = routedPreviewServer({
+        preview: response,
+        freshConfig: async () => ({
+          features: [ServerFeature.SharePreviewBlobRefs],
+        }),
+      });
+      const routed = await loadRoutedPreview(response, selectedServer);
+      const harness = makeShareWriterHarness();
+
+      await harness.service.importShareToWorkspace(
+        harness.metadata,
+        writerInput(routed.preview),
+        { allowOffline: true }
+      );
+
+      expect((selectedServer as any).fetchFreshConfig).not.toHaveBeenCalled();
+      expect(harness.blobSet).not.toHaveBeenCalled();
+      expect(
+        harness.models.get(shareImportBlockIds('attempt').bookmark)?.props
+      ).not.toHaveProperty('sharePreviewSourceId');
+    }
+  );
+
+  test('keeps local and unrouted previews as ordinary titled bookmarks', async () => {
+    const harness = makeShareWriterHarness();
+    const preview = {
+      url: 'https://example.com/article',
+      title: 'Unrouted preview',
+    };
+
+    await harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(preview),
+      { allowOffline: true }
+    );
+
+    expect(harness.blobSet).not.toHaveBeenCalled();
+    expect(
+      harness.models.get(shareImportBlockIds('attempt').bookmark)?.props
+    ).toMatchObject({ title: 'Unrouted preview' });
+  });
+
+  test('keeps a new writer reference live in the minimum compatible reader and unused-blob collector', async () => {
+    const response = {
+      url: 'https://example.com/mixed-version',
+      title: 'Mixed version',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig: async () => ({
+        features: [ServerFeature.SharePreviewBlobRefs],
+      }),
+    });
+    const routed = await loadRoutedPreview(response, selectedServer);
+    const harness = makeShareWriterHarness();
+    await harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(routed.preview),
+      { allowOffline: true }
+    );
+    const bookmarkProps = harness.models.get(
+      shareImportBlockIds('attempt').bookmark
+    )?.props;
+    const sourceId = bookmarkProps?.sharePreviewSourceId as string;
+
+    const doc = new YDoc({ guid: 'mixed-version-doc' });
+    const blocks = doc.getMap('blocks');
+    const page = new YMap();
+    page.set('sys:id', 'page');
+    page.set('sys:flavour', 'affine:page');
+    page.set('sys:children', YArray.from(['note']));
+    page.set('prop:title', new YText('Page'));
+    blocks.set('page', page);
+    const note = new YMap();
+    note.set('sys:id', 'note');
+    note.set('sys:flavour', 'affine:note');
+    note.set('sys:children', YArray.from(['bookmark']));
+    note.set('prop:displayMode', 'page');
+    blocks.set('note', note);
+    const bookmark = new YMap();
+    bookmark.set('sys:id', 'bookmark');
+    bookmark.set('sys:flavour', 'affine:bookmark');
+    bookmark.set('sys:children', new YArray());
+    bookmark.set('prop:url', response.url);
+    bookmark.set('prop:title', response.title);
+    bookmark.set('prop:sharePreviewSourceId', sourceId);
+    bookmark.set('prop:sharePreviewVersion', 1);
+    blocks.set('bookmark', bookmark);
+
+    const indexed = await readAllBlocksFromDoc({
+      ydoc: doc,
+      spaceId: 'minimum-compatible-reader',
+    });
+    const indexedBlobIds =
+      indexed?.blocks.flatMap(block => block.blob ?? []) ?? [];
+    expect(indexedBlobIds).toContain('details-content-hash');
+
+    const framework = new Framework();
+    framework
+      .service(WorkspaceFlavoursService, {
+        flavours$: {
+          value: [
+            {
+              flavour: 'local',
+              listBlobs: vi
+                .fn()
+                .mockResolvedValue([{ key: 'details-content-hash' }]),
+            },
+          ],
+        },
+      } as unknown as WorkspaceFlavoursService)
+      .service(WorkspaceService, {
+        workspace: {
+          id: 'workspace',
+          flavour: 'local',
+          avatar$: { value: null },
+          engine: { doc: { waitForSynced: vi.fn() } },
+        },
+      } as unknown as WorkspaceService)
+      .service(DocsSearchService, {
+        indexer: {
+          waitForCompleted: vi.fn(),
+          aggregate: vi.fn().mockResolvedValue({
+            pagination: { hasMore: false },
+            buckets: indexedBlobIds.map(key => ({ key })),
+          }),
+        },
+      } as unknown as DocsSearchService)
+      .entity(UnusedBlobs, [
+        WorkspaceFlavoursService,
+        WorkspaceService,
+        DocsSearchService,
+      ]);
+
+    await expect(
+      framework.provider().createEntity(UnusedBlobs).getUnusedBlobs()
+    ).resolves.toEqual([]);
   });
 });
 

@@ -1,5 +1,9 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
+import {
+  parseSharePreviewBlob,
+  type SharePreviewRecord,
+} from '@blocksuite/affine/model';
 import { Text } from '@blocksuite/affine/store';
 import { FileSizeLimitProvider } from '@blocksuite/affine/shared/services';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
@@ -53,6 +57,7 @@ export interface ShareLinkPreview {
     chapters?: { title: string; startSeconds: number }[];
     truncated?: boolean;
   };
+  authorizeDetailsWrite?: (signal: AbortSignal) => Promise<boolean>;
 }
 
 export interface ClipperInput {
@@ -102,6 +107,7 @@ export interface ShareDestinationOptions {
 type WorkspaceVerification = 'confirmed' | 'missing' | 'unavailable';
 
 export const maxShareAttachmentBytes = 64 * 1024 * 1024;
+const SHARE_PREVIEW_AUTHORIZATION_TIMEOUT_MS = 1200;
 
 export function createShareMarkdown(input: ShareImportInput) {
   const parts: string[] = [];
@@ -123,6 +129,38 @@ export function createCompatibilityShareBlockPlan(input: ShareImportInput) {
     ? { ...input.preview, transcript: undefined }
     : undefined;
   return createShareBlockPlan({ ...input, preview }, null);
+}
+
+async function createSharePreviewDetailsBlob(
+  input: ShareImportInput
+): Promise<Blob | undefined> {
+  if (
+    input.content.kind !== 'url' ||
+    !input.content.url ||
+    !input.preview?.authorizeDetailsWrite
+  ) {
+    return undefined;
+  }
+  const preview = input.preview;
+  const record: SharePreviewRecord = {
+    version: 1,
+    sourceUrl: input.content.url,
+    title: preview.title,
+    description: preview.description,
+    image: preview.images?.[0],
+    provider: preview.provider,
+    durationSeconds: preview.durationSeconds,
+    transcript: preview.transcript,
+  };
+  const blob = new Blob([JSON.stringify(record)], {
+    type: 'application/json',
+  });
+  try {
+    await parseSharePreviewBlob(blob);
+    return blob;
+  } catch {
+    return undefined;
+  }
 }
 
 function escapeMarkdown(value: string) {
@@ -382,6 +420,36 @@ export class ImportClipperService extends Service {
           return { status: 'import-conflict' };
         }
 
+        let sharePreviewSourceId: string | undefined;
+        if (!doc.blockSuiteDoc.getBlock(ids.bookmark)) {
+          const detailsBlob = await createSharePreviewDetailsBlob(input);
+          if (detailsBlob && input.preview?.authorizeDetailsWrite) {
+            const controller = new AbortController();
+            const timeout = setTimeout(
+              () => controller.abort(),
+              SHARE_PREVIEW_AUTHORIZATION_TIMEOUT_MS
+            );
+            let authorized = false;
+            try {
+              authorized = await input.preview.authorizeDetailsWrite(
+                controller.signal
+              );
+            } catch {
+              // Strict authorization failures degrade to an ordinary bookmark.
+            } finally {
+              clearTimeout(timeout);
+            }
+            if (authorized) {
+              try {
+                sharePreviewSourceId =
+                  await workspace.docCollection.blobSync.set(detailsBlob);
+              } catch {
+                // Blob write failures preserve the ordinary bookmark fallback.
+              }
+            }
+          }
+        }
+
         let imageSourceId: string | undefined;
         if (
           input.content.kind === 'image' &&
@@ -401,6 +469,13 @@ export class ImportClipperService extends Service {
           attachmentSourceId = await workspace.docCollection.blobSync.set(
             input.attachment
           );
+        }
+        if (sharePreviewSourceId) {
+          const bookmark = leaves.find(node => node.id === ids.bookmark);
+          if (bookmark) {
+            bookmark.props.sharePreviewSourceId = sharePreviewSourceId;
+            bookmark.props.sharePreviewVersion = 1;
+          }
         }
         this.addShareBlocks(doc.blockSuiteDoc, ids.note, leaves);
         if (imageSourceId && !doc.blockSuiteDoc.getBlock(imageId)) {
