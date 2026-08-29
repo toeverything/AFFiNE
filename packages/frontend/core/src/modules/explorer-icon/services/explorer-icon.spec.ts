@@ -69,4 +69,60 @@ describe('ExplorerIconService.setIcon', () => {
       icon: undefined,
     });
   });
+
+  test('discards a blob upload that resolves after a later selection', async () => {
+    const { service, store, blobSync } = createService();
+    let resolveUpload!: (blobId: string) => void;
+    blobSync.set.mockReturnValueOnce(
+      new Promise<string>(resolve => {
+        resolveUpload = resolve;
+      })
+    );
+    const emoji = { type: IconType.Emoji, unicode: '📁' } as const;
+
+    const upload = service.setIcon({
+      where: 'doc',
+      id: 'doc-1',
+      icon: new Blob(['image-bytes']),
+    });
+    await service.setIcon({ where: 'doc', id: 'doc-1', icon: emoji });
+    resolveUpload('stale-id');
+    await upload;
+
+    expect(store.setIcon).toHaveBeenCalledTimes(1);
+    expect(store.setIcon).toHaveBeenCalledWith({
+      where: 'doc',
+      id: 'doc-1',
+      icon: emoji,
+    });
+  });
+
+  test('keeps pending uploads of other targets unaffected', async () => {
+    const { service, store, blobSync } = createService();
+    let resolveUpload!: (blobId: string) => void;
+    blobSync.set.mockReturnValueOnce(
+      new Promise<string>(resolve => {
+        resolveUpload = resolve;
+      })
+    );
+
+    const upload = service.setIcon({
+      where: 'doc',
+      id: 'doc-1',
+      icon: new Blob(['image-bytes']),
+    });
+    await service.setIcon({
+      where: 'doc',
+      id: 'doc-2',
+      icon: { type: IconType.Emoji, unicode: '📁' },
+    });
+    resolveUpload('fresh-id');
+    await upload;
+
+    expect(store.setIcon).toHaveBeenCalledWith({
+      where: 'doc',
+      id: 'doc-1',
+      icon: { type: IconType.Blob, blobId: 'fresh-id' },
+    });
+  });
 });
