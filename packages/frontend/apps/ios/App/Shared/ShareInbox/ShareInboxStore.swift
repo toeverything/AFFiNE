@@ -6,10 +6,13 @@
 import Foundation
 
 final class ShareInboxStore {
+  typealias DataWriter = (Data, URL, Data.WritingOptions) throws -> Void
+
   static let shared = ShareInboxStore()
 
   private let fileManager: FileManager
   private let configuredContainerURL: URL?
+  private let writeData: DataWriter
   private let encoder: JSONEncoder = {
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
@@ -22,9 +25,14 @@ final class ShareInboxStore {
     return decoder
   }()
 
-  init(fileManager: FileManager = .default, containerURL: URL? = nil) {
+  init(
+    fileManager: FileManager = .default,
+    containerURL: URL? = nil,
+    writeData: DataWriter? = nil
+  ) {
     self.fileManager = fileManager
     self.configuredContainerURL = containerURL
+    self.writeData = writeData ?? Self.writeAtomically
   }
 
   var containerURL: URL? {
@@ -69,6 +77,10 @@ final class ShareInboxStore {
     guard ensureDirectories() else {
       throw ShareInboxError.containerUnavailable
     }
+    guard let fileURL = manifestURL(for: item.id) else {
+      throw ShareInboxError.invalidPayload
+    }
+    try ensureManifestCanMutate(at: fileURL)
 
     var writtenURLs: [URL] = []
     var writtenParentURLs: [URL] = []
@@ -84,11 +96,8 @@ final class ShareInboxStore {
         writtenURLs.append(destination)
       }
 
-      guard let fileURL = manifestURL(for: item.id) else {
-        throw ShareInboxError.invalidPayload
-      }
       let data = try encoder.encode(item)
-      try data.write(to: fileURL, options: .atomic)
+      try writeData(data, fileURL, .atomic)
     } catch {
       for url in writtenURLs {
         try? fileManager.removeItem(at: url)
@@ -104,13 +113,14 @@ final class ShareInboxStore {
     guard ensureDirectories(), let fileURL = manifestURL(for: item.id) else {
       throw ShareInboxError.containerUnavailable
     }
-    try encoder.encode(item).write(to: fileURL, options: .atomic)
+    try ensureManifestCanMutate(at: fileURL)
+    try writeData(encoder.encode(item), fileURL, .atomic)
   }
 
   func updateWorkspaceMode(_ mode: ShareWorkspaceMode) throws {
     guard let containerURL else { throw ShareInboxError.containerUnavailable }
     let url = containerURL.appendingPathComponent(ShareInboxConstants.workspaceModeFileName)
-    try encoder.encode(ShareWorkspaceModeSnapshot(mode: mode)).write(to: url, options: .atomic)
+    try writeData(encoder.encode(ShareWorkspaceModeSnapshot(mode: mode)), url, .atomic)
   }
 
   func workspaceMode() -> ShareWorkspaceMode {
@@ -139,14 +149,20 @@ final class ShareInboxStore {
           quarantine(url)
           return nil
         }
-        guard let schemaVersion = ShareInboxSafety.manifestSchemaVersion(from: data),
-              let itemId = ShareInboxSafety.normalizedManifestID(url.deletingPathExtension().lastPathComponent)
-        else {
+        guard let schemaVersion = ShareInboxSafety.manifestSchemaVersion(from: data) else {
           quarantine(url)
           return nil
         }
         if schemaVersion > ShareInboxItem.currentSchemaVersion {
-          return .unsupportedVersion(itemId: itemId, schemaVersion: schemaVersion)
+          return .unsupportedVersion(
+            itemId: url.deletingPathExtension().lastPathComponent,
+            schemaVersion: schemaVersion
+          )
+        }
+        guard ShareInboxSafety.normalizedManifestID(url.deletingPathExtension().lastPathComponent) != nil
+        else {
+          quarantine(url)
+          return nil
         }
         guard var item = try? decoder.decode(ShareInboxItem.self, from: data),
               let expectedURL = manifestURL(for: item.id),
@@ -182,6 +198,7 @@ final class ShareInboxStore {
     guard let fileURL = manifestURL(for: item.id) else {
       throw ShareInboxError.invalidPayload
     }
+    try ensureManifestCanMutate(at: fileURL)
     try fileManager.removeItem(at: fileURL)
 
     for attachment in item.attachments {
@@ -212,10 +229,28 @@ final class ShareInboxStore {
     try? fileManager.removeItem(at: destination)
     try? fileManager.moveItem(at: url, to: destination)
   }
+
+  private static func writeAtomically(
+    _ data: Data,
+    _ url: URL,
+    _ options: Data.WritingOptions
+  ) throws {
+    try data.write(to: url, options: options)
+  }
+
+  private func ensureManifestCanMutate(at url: URL) throws {
+    guard fileManager.fileExists(atPath: url.path) else { return }
+    let data = try Data(contentsOf: url)
+    guard let schemaVersion = ShareInboxSafety.manifestSchemaVersion(from: data),
+          schemaVersion > ShareInboxItem.currentSchemaVersion
+    else { return }
+    throw ShareInboxError.unsupportedVersion
+  }
 }
 
 enum ShareInboxError: Error {
   case containerUnavailable
   case invalidPayload
   case payloadTooLarge
+  case unsupportedVersion
 }

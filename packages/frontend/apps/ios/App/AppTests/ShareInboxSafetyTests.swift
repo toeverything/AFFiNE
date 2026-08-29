@@ -107,6 +107,64 @@ final class ShareInboxSafetyTests: XCTestCase {
     )
   }
 
+  func testStorePreservesFutureManifestWithNonUUIDBasename() throws {
+    let (store, containerURL) = try makeStore()
+    XCTAssertTrue(store.ensureDirectories())
+    let manifestURL = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
+      .appendingPathComponent("future-item.json")
+    let futureManifest = Data("{\"schemaVersion\":99,\"id\":\"future-item\"}".utf8)
+    try futureManifest.write(to: manifestURL)
+
+    XCTAssertEqual(
+      store.pendingItems(),
+      [.unsupportedVersion(itemId: "future-item", schemaVersion: 99)]
+    )
+    XCTAssertEqual(try Data(contentsOf: manifestURL), futureManifest)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: manifestURL.path))
+  }
+
+  func testStoreDoesNotMutateFutureManifest() throws {
+    let (store, containerURL) = try makeStore()
+    XCTAssertTrue(store.ensureDirectories())
+    let id = UUID().uuidString
+    let manifestURL = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
+      .appendingPathComponent("\(id).json")
+    let futureManifest = Data("{\"schemaVersion\":99,\"id\":\"\(id)\"}".utf8)
+    try futureManifest.write(to: manifestURL)
+
+    XCTAssertThrowsError(
+      try store.update(
+        ShareInboxItem(
+          id: id,
+          title: "Replacement",
+          content: ShareInboxContent(kind: .text, url: nil, text: "replacement")
+        )
+      )
+    )
+    XCTAssertEqual(try Data(contentsOf: manifestURL), futureManifest)
+  }
+
+  func testStoreDoesNotReturnReadyWhenV1MigrationWriteFails() throws {
+    let (_, containerURL) = try makeStore()
+    let store = ShareInboxStore(
+      fileManager: .default,
+      containerURL: containerURL,
+      writeData: { _, _, _ in throw TestWriteError.writeFailed }
+    )
+    XCTAssertTrue(store.ensureDirectories())
+    let id = UUID().uuidString
+    let manifestURL = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
+      .appendingPathComponent("\(id).json")
+    let originalManifest = v1Manifest(id: id, documentId: UUID().uuidString)
+    try originalManifest.write(to: manifestURL)
+
+    XCTAssertTrue(store.pendingItems().isEmpty)
+    XCTAssertEqual(try Data(contentsOf: manifestURL), originalManifest)
+  }
+
   func testManifestTitleIgnoresPreviewAndOnlyAcceptsExplicitEdits() {
     let originalTitle = "Original Safari title"
     let serverPreviewTitle = "Untrusted server preview title"
@@ -402,4 +460,8 @@ final class ShareInboxSafetyTests: XCTestCase {
     }
     await fulfillment(of: [imageStopped], timeout: 1)
   }
+}
+
+private enum TestWriteError: Error {
+  case writeFailed
 }
