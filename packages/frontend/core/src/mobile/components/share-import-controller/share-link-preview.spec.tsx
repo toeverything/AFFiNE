@@ -1801,7 +1801,7 @@ describe('share destination selection lifecycle', () => {
     );
   });
 
-  test('manually retries completion through committed replay and clears the item', async () => {
+  test('clears a completion-failed item when native cleanup hides its result marker', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const notifySuccess = vi.spyOn(notify, 'success');
     const selectedWorkspace = workspace('local');
@@ -1812,6 +1812,80 @@ describe('share destination selection lifecycle', () => {
         workspaceFlavour: selectedWorkspace.flavour,
         tagIds: [],
       },
+    } satisfies PendingShareItem;
+    let markerHidden = false;
+    const importer = {
+      getShareDestinationOptions: vi.fn().mockResolvedValue({
+        verification: 'confirmed',
+        tags: [],
+        collections: [],
+      }),
+      importShareToWorkspace: vi
+        .fn()
+        .mockResolvedValue({ status: 'imported', docId: pending.documentId }),
+    };
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [selectedWorkspace] } },
+      getProfile: () => ({ name$: { value: 'Local workspace' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, importer);
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi.fn(async () =>
+        markerHidden ? [] : [{ status: 'ready' as const, item: pending }]
+      ),
+      updateTarget: vi.fn().mockResolvedValue(undefined),
+      resolveAttachment: vi.fn().mockResolvedValue(undefined),
+      complete: vi.fn().mockRejectedValue(new Error('cleanup failed')),
+      setError: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<ShareImportController provider={provider} />);
+
+    await screen.findByText(
+      'This share was saved, but AFFiNE could not clear it from the inbox. Try again.'
+    );
+    const saveButton = screen.getByRole('button', { name: 'Save' });
+    await waitFor(() =>
+      expect((saveButton as HTMLButtonElement).disabled).toBe(false)
+    );
+
+    markerHidden = true;
+    fireEvent.click(saveButton);
+
+    await waitFor(() =>
+      expect(screen.queryByText('Choose where to save')).toBeNull()
+    );
+    expect(importer.importShareToWorkspace).toHaveBeenCalledTimes(1);
+    expect(provider.complete).toHaveBeenCalledTimes(1);
+    expect(provider.setError).not.toHaveBeenCalledWith(
+      pending.id,
+      'completion-failed'
+    );
+    expect(notifySuccess).toHaveBeenCalledTimes(1);
+  });
+
+  test('manually retries completion through committed replay and clears the item', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const notifySuccess = vi.spyOn(notify, 'success');
+    const selectedWorkspace = workspace('local');
+    const uiWorkspace = {
+      id: 'ui-workspace',
+      flavour: 'local',
+    } as WorkspaceMetadata;
+    const persistedTarget = {
+      workspaceId: selectedWorkspace.id,
+      workspaceFlavour: selectedWorkspace.flavour,
+      tagIds: ['persisted-tag'],
+      collectionId: 'persisted-collection',
+    };
+    const pending = {
+      ...item(),
+      target: persistedTarget,
     } satisfies PendingShareItem;
     let completed = false;
     const committedReplay = {
@@ -1833,8 +1907,15 @@ describe('share destination selection lifecycle', () => {
         .mockResolvedValueOnce(committedReplay),
     };
     controllerServiceMocks.services.set(WorkspacesService.name, {
-      list: { workspaces$: { value: [selectedWorkspace] } },
-      getProfile: () => ({ name$: { value: 'Local workspace' } }),
+      list: { workspaces$: { value: [selectedWorkspace, uiWorkspace] } },
+      getProfile: (current: WorkspaceMetadata) => ({
+        name$: {
+          value:
+            current.id === selectedWorkspace.id
+              ? 'Persisted workspace'
+              : 'UI workspace',
+        },
+      }),
     });
     controllerServiceMocks.services.set(ServersService.name, {
       serversWithAccount$: { value: [] },
@@ -1866,14 +1947,35 @@ describe('share destination selection lifecycle', () => {
     await waitFor(() =>
       expect((saveButton as HTMLButtonElement).disabled).toBe(false)
     );
+    fireEvent.click(
+      screen.getByRole('button', { name: /Workspace Persisted workspace/ })
+    );
+    fireEvent.click(screen.getByRole('button', { name: /UI workspace/ }));
+    const retryButton = screen.getByRole('button', { name: 'Save' });
+    await waitFor(() =>
+      expect((retryButton as HTMLButtonElement).disabled).toBe(false)
+    );
 
-    fireEvent.click(saveButton);
+    fireEvent.click(retryButton);
 
     await waitFor(() => expect(provider.complete).toHaveBeenCalledTimes(2));
     await expect(
       importer.importShareToWorkspace.mock.results[1]?.value
     ).resolves.toEqual(committedReplay);
     expect(importer.importShareToWorkspace).toHaveBeenCalledTimes(2);
+    expect(importer.importShareToWorkspace).toHaveBeenNthCalledWith(
+      2,
+      selectedWorkspace,
+      expect.objectContaining({
+        tagIds: persistedTarget.tagIds,
+        collectionId: persistedTarget.collectionId,
+      }),
+      { allowOffline: false }
+    );
+    expect(provider.updateTarget).toHaveBeenLastCalledWith(
+      pending.id,
+      persistedTarget
+    );
     expect(provider.complete).toHaveBeenNthCalledWith(
       1,
       pending.id,

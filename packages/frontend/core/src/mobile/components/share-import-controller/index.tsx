@@ -525,16 +525,32 @@ export const ShareImportController = ({
     if (!item || !selectedWorkspace || isSaving) return;
     setIsSaving(true);
     try {
-      const outcome = await importItem(
-        item,
-        {
-          workspaceId: selectedWorkspace.id,
-          workspaceFlavour: selectedWorkspace.flavour,
-          tagIds: activeSelection?.tagIds ?? [],
-          collectionId: activeSelection?.collectionId || undefined,
-        },
-        allowOffline
-      );
+      let pendingItem = item;
+      let target: ShareImportTarget = {
+        workspaceId: selectedWorkspace.id,
+        workspaceFlavour: selectedWorkspace.flavour,
+        tagIds: activeSelection?.tagIds ?? [],
+        collectionId: activeSelection?.collectionId || undefined,
+      };
+      if (item.lastError === 'completion-failed') {
+        const latest = await provider.listPending();
+        const retryEntry = latest.find(
+          entry => entry.status === 'ready' && entry.item.id === item.id
+        );
+        if (!retryEntry || retryEntry.status !== 'ready') {
+          setEntry(undefined);
+          notify.success({ title: 'Shared content saved' });
+          await refresh();
+          return;
+        }
+        pendingItem = retryEntry.item;
+        if (!pendingItem.target) {
+          await refresh();
+          return;
+        }
+        target = pendingItem.target;
+      }
+      const outcome = await importItem(pendingItem, target, allowOffline);
       if (outcome === 'completed') {
         notify.success({ title: 'Shared content saved' });
       } else if (outcome === 'completion-failed') {
@@ -640,7 +656,13 @@ export const ShareImportController = ({
               current?.status === 'ready'
                 ? {
                     status: 'ready',
-                    item: { ...current.item, lastError: undefined },
+                    item: {
+                      ...current.item,
+                      lastError:
+                        current.item.lastError === 'completion-failed'
+                          ? 'completion-failed'
+                          : undefined,
+                    },
                   }
                 : current
             );
