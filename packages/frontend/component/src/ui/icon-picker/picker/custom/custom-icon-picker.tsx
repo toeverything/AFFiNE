@@ -148,6 +148,8 @@ export const CustomIconPicker = ({ onSelect }: CustomIconPickerProps) => {
         className={styles.fileInput}
         onChange={e => {
           const file = e.target.files?.[0];
+          // Reset the input, so a user can pick the same file again.
+          e.target.value = '';
           if (file) handleFile(file);
         }}
       />
