@@ -447,6 +447,9 @@ export class ImportClipperService extends Service {
         let sharePreviewSourceId: string | undefined;
         if (!doc.blockSuiteDoc.getBlock(ids.bookmark)) {
           const detailsBlob = await createSharePreviewDetailsBlob(input);
+          if (!this.ensurePlan(doc.blockSuiteDoc, leaves, ids.note)) {
+            return { status: 'import-conflict' };
+          }
           if (
             detailsBlob &&
             input.preview?.authorizeDetailsWrite &&
@@ -455,12 +458,22 @@ export class ImportClipperService extends Service {
             const authorized = await authorizeSharePreviewDetails(
               input.preview.authorizeDetailsWrite
             );
+            if (!this.ensurePlan(doc.blockSuiteDoc, leaves, ids.note)) {
+              return { status: 'import-conflict' };
+            }
             if (authorized && !doc.blockSuiteDoc.getBlock(ids.bookmark)) {
+              let storedSourceId: string | undefined;
               try {
-                sharePreviewSourceId =
+                storedSourceId =
                   await workspace.docCollection.blobSync.set(detailsBlob);
               } catch {
                 // Blob write failures preserve the ordinary bookmark fallback.
+              }
+              if (!this.ensurePlan(doc.blockSuiteDoc, leaves, ids.note)) {
+                return { status: 'import-conflict' };
+              }
+              if (!doc.blockSuiteDoc.getBlock(ids.bookmark)) {
+                sharePreviewSourceId = storedSourceId;
               }
             }
           }
@@ -486,7 +499,10 @@ export class ImportClipperService extends Service {
             input.attachment
           );
         }
-        if (sharePreviewSourceId) {
+        if (!this.ensurePlan(doc.blockSuiteDoc, leaves, ids.note)) {
+          return { status: 'import-conflict' };
+        }
+        if (sharePreviewSourceId && !doc.blockSuiteDoc.getBlock(ids.bookmark)) {
           const bookmark = leaves.find(node => node.id === ids.bookmark);
           if (bookmark) {
             bookmark.props.sharePreviewSourceId = sharePreviewSourceId;

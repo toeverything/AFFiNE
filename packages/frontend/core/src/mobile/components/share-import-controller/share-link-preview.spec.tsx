@@ -261,7 +261,7 @@ function makeShareWriterHarness({
     shareImportTails: new Map(),
   }) as ImportClipperService;
 
-  return { service, metadata, models, blobSet };
+  return { service, metadata, models, blobSet, docs };
 }
 
 function writerInput(preview?: ShareLinkPreview): ShareImportInput {
@@ -1091,6 +1091,144 @@ describe('structured share-preview writer', () => {
       url: 'https://user-edited.example',
       title: 'Existing bookmark',
     });
+  });
+
+  test.each([
+    ['wrong flavour', 'affine:paragraph', 'note'],
+    ['wrong parent', 'affine:bookmark', 'page'],
+  ])(
+    'returns a conflict when a stable bookmark with the %s arrives during authorization',
+    async (_name, flavour, parent) => {
+      let resolveConfig!: (value: unknown) => void;
+      const freshConfig = vi.fn(
+        () =>
+          new Promise(resolve => {
+            resolveConfig = resolve;
+          })
+      );
+      const response = {
+        url: 'https://example.com/invalid-replay-race',
+        title: 'Incoming title',
+      };
+      const selectedServer = routedPreviewServer({
+        preview: response,
+        freshConfig,
+      });
+      const routed = await loadRoutedPreview(response, selectedServer);
+      const harness = makeShareWriterHarness();
+      const ids = shareImportBlockIds('attempt');
+      const importing = harness.service.importShareToWorkspace(
+        harness.metadata,
+        writerInput(routed.preview),
+        { allowOffline: true }
+      );
+      await vi.waitFor(() => expect(freshConfig).toHaveBeenCalledTimes(1));
+
+      harness.models.set(ids.bookmark, {
+        id: ids.bookmark,
+        flavour,
+        parent: { id: parent === 'note' ? ids.note : ids.page },
+        props: { title: 'Invalid synced block' },
+      });
+      resolveConfig({ features: [ServerFeature.SharePreviewBlobRefs] });
+
+      await expect(importing).resolves.toEqual({ status: 'import-conflict' });
+      expect(harness.blobSet).not.toHaveBeenCalled();
+      expect(harness.docs.setCustomPropertyById).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  test('returns a conflict when the stable plan becomes invalid during Blob storage', async () => {
+    const response = {
+      url: 'https://example.com/storage-conflict',
+      title: 'Storage conflict',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig: async () => ({
+        features: [ServerFeature.SharePreviewBlobRefs],
+      }),
+    });
+    const routed = await loadRoutedPreview(response, selectedServer);
+    const harness = makeShareWriterHarness();
+    const ids = shareImportBlockIds('attempt');
+    let resolveBlob!: (sourceId: string) => void;
+    harness.blobSet.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          resolveBlob = resolve;
+        })
+    );
+    const importing = harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(routed.preview),
+      { allowOffline: true }
+    );
+    await vi.waitFor(() => expect(harness.blobSet).toHaveBeenCalledTimes(1));
+
+    harness.models.set(ids.bookmark, {
+      id: ids.bookmark,
+      flavour: 'affine:paragraph',
+      parent: { id: ids.note },
+      props: { text: 'Invalid synced block' },
+    });
+    resolveBlob('details-content-hash');
+
+    await expect(importing).resolves.toEqual({ status: 'import-conflict' });
+    expect(harness.docs.setCustomPropertyById).toHaveBeenCalledTimes(1);
+    expect(harness.models.get(ids.bookmark)?.props).toEqual({
+      text: 'Invalid synced block',
+    });
+  });
+
+  test('preserves a valid bookmark that arrives during Blob storage', async () => {
+    const response = {
+      url: 'https://example.com/storage-replay',
+      title: 'Storage replay',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig: async () => ({
+        features: [ServerFeature.SharePreviewBlobRefs],
+      }),
+    });
+    const routed = await loadRoutedPreview(response, selectedServer);
+    const harness = makeShareWriterHarness();
+    const ids = shareImportBlockIds('attempt');
+    let resolveBlob!: (sourceId: string) => void;
+    harness.blobSet.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          resolveBlob = resolve;
+        })
+    );
+    const importing = harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(routed.preview),
+      { allowOffline: true }
+    );
+    await vi.waitFor(() => expect(harness.blobSet).toHaveBeenCalledTimes(1));
+
+    harness.models.set(ids.bookmark, {
+      id: ids.bookmark,
+      flavour: 'affine:bookmark',
+      parent: { id: ids.note },
+      props: {
+        url: 'https://user-edited.example',
+        title: 'Existing bookmark',
+      },
+    });
+    resolveBlob('details-content-hash');
+
+    await expect(importing).resolves.toEqual({
+      status: 'imported',
+      docId: 'doc',
+    });
+    expect(harness.models.get(ids.bookmark)?.props).toEqual({
+      url: 'https://user-edited.example',
+      title: 'Existing bookmark',
+    });
+    expect(harness.docs.setCustomPropertyById).toHaveBeenCalledTimes(2);
   });
 
   test('fails closed when the selected server changes during the strict fetch', async () => {
