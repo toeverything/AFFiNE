@@ -14,7 +14,7 @@ export class BookmarkBlockTransformer extends BaseBlockTransformer<BookmarkBlock
   ): Promise<SnapshotNode<BookmarkBlockProps>> {
     const snapshot = await super.fromSnapshot(payload);
     const sourceId = snapshot.props.sharePreviewSourceId;
-    if (!payload.assets.isEmpty() && sourceId) {
+    if (sourceId && payload.assets.getAssets().has(sourceId)) {
       await payload.assets.writeToBlob(sourceId);
     }
     return snapshot;

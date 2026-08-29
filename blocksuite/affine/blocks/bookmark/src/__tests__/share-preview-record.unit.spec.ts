@@ -241,4 +241,33 @@ describe('BookmarkBlockTransformer structured details', () => {
     expect(restored.props).not.toHaveProperty('sharePreviewSourceId');
     expect(restored.props).not.toHaveProperty('sharePreviewVersion');
   });
+
+  test('keeps a bookmark when its optional details Blob is missing from otherwise non-empty assets', async () => {
+    const assets = new AssetsManager({ blob: new MemoryBlobCRUD() });
+    assets
+      .getAssets()
+      .set('unrelated-blob', new Blob(['unrelated attachment']));
+    const transformer = new BookmarkBlockTransformer(new Map());
+    const snapshot = {
+      id: 'bookmark-with-missing-details',
+      flavour: 'affine:bookmark',
+      version: 1,
+      props: {
+        url: validRecord.sourceUrl,
+        sharePreviewSourceId: 'missing-details-blob',
+        sharePreviewVersion: 1,
+      },
+      children: [],
+    } as never;
+
+    await expect(
+      transformer.fromSnapshot({ json: snapshot, assets, children: [] })
+    ).resolves.toMatchObject({
+      id: 'bookmark-with-missing-details',
+      props: {
+        sharePreviewSourceId: 'missing-details-blob',
+        sharePreviewVersion: 1,
+      },
+    });
+  });
 });

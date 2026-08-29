@@ -818,11 +818,9 @@ mod tests {
     doc.encode_update_v1().expect("share preview fixture should encode")
   }
 
-  async fn share_preview_cleanup_fixture(with_ref: bool) -> AnyResult<Option<SharePreviewCleanupFixture>> {
-    let Ok(database_url) = std::env::var("DATABASE_URL") else {
-      eprintln!("skipping postgres integration test: DATABASE_URL is not set");
-      return Ok(None);
-    };
+  async fn share_preview_cleanup_fixture(with_ref: bool) -> AnyResult<SharePreviewCleanupFixture> {
+    let database_url = std::env::var("DATABASE_URL")
+      .context("DATABASE_URL is required for ignored share preview cleanup integration tests")?;
     let pool = PgPoolOptions::new()
       .max_connections(5)
       .connect(&database_url)
@@ -886,14 +884,14 @@ mod tests {
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
 
-    Ok(Some(SharePreviewCleanupFixture {
+    Ok(SharePreviewCleanupFixture {
       runtime,
       pool,
       object_root,
       workspace_id,
       doc_id,
       blob_key,
-    }))
+    })
   }
 
   async fn complete_share_preview_checkpoints(pool: &PgPool, workspace_id: &str) -> AnyResult<()> {
@@ -996,10 +994,10 @@ mod tests {
   }
 
   #[tokio::test]
+  #[ignore = "requires DATABASE_URL and a migrated PostgreSQL database"]
   async fn share_preview_blob_cleanup_reprojects_reference_removal_before_plan_and_execute() -> AnyResult<()> {
-    let Some(fixture) = share_preview_cleanup_fixture(true).await? else {
-      return Ok(());
-    };
+    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
+    let fixture = share_preview_cleanup_fixture(true).await?;
     let _object_root = &fixture.object_root;
     fixture
       .runtime
@@ -1078,11 +1076,11 @@ mod tests {
   }
 
   #[tokio::test]
+  #[ignore = "requires DATABASE_URL and a migrated PostgreSQL database"]
   async fn share_preview_blob_cleanup_v1_stale_pending_and_failed_projections_fail_closed() -> AnyResult<()> {
+    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
     for status in ["fresh", "pending", "failed"] {
-      let Some(fixture) = share_preview_cleanup_fixture(false).await? else {
-        return Ok(());
-      };
+      let fixture = share_preview_cleanup_fixture(false).await?;
       let _object_root = &fixture.object_root;
       fixture
         .runtime

@@ -266,7 +266,7 @@ yarn vitest --run blocksuite/affine/blocks/bookmark/src/__tests__/share-preview-
 yarn workspace @blocksuite/affine-model build
 yarn workspace @blocksuite/affine-block-bookmark build
 cargo test -p affine_server_native doc_blob_refs
-cargo test -p affine_server_native share_preview_blob_cleanup
+cargo test -p affine_server_native share_preview_blob_cleanup -- --ignored
 yarn workspace @affine/graphql build
 yarn workspace @affine/server test src/core/config/__tests__/service.spec.ts src/core/storage/__tests__/blob-job.spec.ts
 yarn workspace @affine/server e2e src/__tests__/e2e/config/resolver.spec.ts
