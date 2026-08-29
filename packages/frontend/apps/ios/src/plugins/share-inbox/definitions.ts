@@ -12,9 +12,14 @@ export interface ShareInboxPlugin {
     itemId: string;
     target: ShareImportTarget;
   }): Promise<void>;
-  resolveAttachment(options: {
-    itemId: string;
-  }): Promise<{ path?: string; mimeType?: string }>;
+  resolveAttachment(options: { itemId: string }): Promise<{
+    itemId?: string;
+    fileUrl?: string;
+    relativePath?: string;
+    name?: string;
+    mimeType?: string;
+    size?: number;
+  }>;
   complete(options: { itemId: string; docId: string }): Promise<void>;
   setError(options: { itemId: string; error: string }): Promise<void>;
 }

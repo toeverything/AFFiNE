@@ -234,8 +234,41 @@ final class ShareInboxStore {
     }
     let base = attachmentsDirectoryURL.standardizedFileURL
     let candidate = base.appendingPathComponent(attachment.relativePath).standardizedFileURL
-    guard candidate.path.hasPrefix(base.path + "/") else { return nil }
+    let resolvedBase = base.resolvingSymlinksInPath().standardizedFileURL
+    let resolvedCandidate = candidate.resolvingSymlinksInPath().standardizedFileURL
+    guard candidate.path.hasPrefix(base.path + "/"),
+          resolvedCandidate.path.hasPrefix(resolvedBase.path + "/")
+    else { return nil }
     return candidate
+  }
+
+  func resolveAttachment(for item: ShareInboxItem) -> ShareInboxResolvedAttachment? {
+    guard item.attachments.count == 1,
+          let attachment = item.attachments.first,
+          isValidAttachment(attachment, for: item),
+          let url = attachmentURL(for: attachment),
+          fileManager.fileExists(atPath: url.path),
+          let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey, .isSymbolicLinkKey]),
+          values.isSymbolicLink != true,
+          values.isRegularFile == true,
+          let size = values.fileSize,
+          size > 0,
+          size <= 12 * 1024 * 1024,
+          let detectedMimeType = try? ShareInboxSafety.detectRasterImageMimeType(
+            ShareInboxFileCopy.readPrefix(from: url)
+          ),
+          detectedMimeType == attachment.mimeType
+    else {
+      return nil
+    }
+    return ShareInboxResolvedAttachment(
+      itemId: item.id,
+      url: url,
+      relativePath: attachment.relativePath,
+      name: attachment.fileName,
+      mimeType: attachment.mimeType,
+      size: size
+    )
   }
 
   func remove(_ item: ShareInboxItem) throws {

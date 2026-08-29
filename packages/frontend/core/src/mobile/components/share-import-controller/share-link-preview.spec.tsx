@@ -360,7 +360,7 @@ describe('link preview transport and route ownership', () => {
       itemId: item().id,
       workspaceKey: 'self:workspace',
       generation: owner.generation,
-      value: previewA,
+      value: previewA!,
     };
 
     owner.selectWorkspace(selectedWorkspace, [replacementServer]);
@@ -513,6 +513,154 @@ describe('link preview transport and route ownership', () => {
 });
 
 describe('share destination selection lifecycle', () => {
+  test('ignores a stale attachment result after the inbox item changes', async () => {
+    let resolveA!: (file: File | undefined) => void;
+    let resolveB!: (file: File | undefined) => void;
+    const createObjectURL = vi
+      .fn()
+      .mockReturnValueOnce('blob:b')
+      .mockReturnValueOnce('blob:unexpected');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+    const itemA = {
+      ...item(),
+      id: 'a',
+      content: { kind: 'image' as const },
+    } satisfies PendingShareItem;
+    const itemB = { ...itemA, id: 'b' };
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [] } },
+      getProfile: () => ({ name$: { value: '' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, {});
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi
+        .fn()
+        .mockResolvedValueOnce([{ status: 'ready' as const, item: itemA }])
+        .mockResolvedValueOnce([{ status: 'ready' as const, item: itemB }]),
+      updateTarget: vi.fn(),
+      resolveAttachment: vi.fn((id: string) =>
+        id === 'a'
+          ? new Promise<File | undefined>(resolve => (resolveA = resolve))
+          : new Promise<File | undefined>(resolve => (resolveB = resolve))
+      ),
+      complete: vi.fn(),
+      setError: vi.fn(),
+    };
+
+    const view = render(<ShareImportController provider={provider} />);
+    await screen.findByText('Shared');
+    window.dispatchEvent(new Event('affine:share-inbox'));
+    await waitFor(() =>
+      expect(provider.resolveAttachment).toHaveBeenCalledWith('b')
+    );
+
+    resolveB(new File(['b'], 'b.png', { type: 'image/png' }));
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
+    resolveA(new File(['a'], 'a.png', { type: 'image/png' }));
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('blob:b');
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    view.unmount();
+    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:b');
+  });
+
+  test('does not retain or create an object URL when an attachment resolves after unmount', async () => {
+    let resolveAttachment!: (file: File | undefined) => void;
+    const createObjectURL = vi.fn(() => 'blob:late');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+    const shared = {
+      ...item(),
+      content: { kind: 'image' as const },
+    } satisfies PendingShareItem;
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [] } },
+      getProfile: () => ({ name$: { value: '' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, {});
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi
+        .fn()
+        .mockResolvedValue([{ status: 'ready' as const, item: shared }]),
+      updateTarget: vi.fn(),
+      resolveAttachment: vi.fn(
+        () =>
+          new Promise<File | undefined>(
+            resolve => (resolveAttachment = resolve)
+          )
+      ),
+      complete: vi.fn(),
+      setError: vi.fn(),
+    };
+
+    const view = render(<ShareImportController provider={provider} />);
+    await screen.findByText('Shared');
+    view.unmount();
+    resolveAttachment(new File(['late'], 'late.png', { type: 'image/png' }));
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(createObjectURL).not.toHaveBeenCalled();
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+  });
+
+  test('previews the original image File and revokes its object URL on unmount', async () => {
+    const createObjectURL = vi.fn(() => 'blob:shared-image');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+    const image = new File(['image'], 'shared.png', { type: 'image/png' });
+    const shared = {
+      ...item(),
+      content: { kind: 'image' as const },
+      attachments: [{ fileName: 'shared.png', mimeType: 'image/png' }],
+    } satisfies PendingShareItem;
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [] } },
+      getProfile: () => ({ name$: { value: '' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, {});
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi
+        .fn()
+        .mockResolvedValue([{ status: 'ready' as const, item: shared }]),
+      updateTarget: vi.fn(),
+      resolveAttachment: vi.fn().mockResolvedValue(image),
+      complete: vi.fn(),
+      setError: vi.fn(),
+    };
+
+    const view = render(<ShareImportController provider={provider} />);
+
+    await screen.findByText('Shared');
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledWith(image));
+    await waitFor(() =>
+      expect(document.querySelector('img')?.getAttribute('src')).toBe(
+        'blob:shared-image'
+      )
+    );
+    view.unmount();
+    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:shared-image');
+  });
+
   test('does not save workspace A preview after switching to B before B responds', async () => {
     const workspaceA = {
       id: 'workspace-a',
@@ -1002,6 +1150,7 @@ describe('share document block projection', () => {
       'generic metadata',
       {
         documentId: 'doc',
+        importAttemptId: 'attempt',
         title: 'Page',
         content: { kind: 'url', url: 'https://example.com' },
         preview: {
@@ -1016,6 +1165,7 @@ describe('share document block projection', () => {
       null,
       [
         {
+          id: 'share-attempt-bookmark',
           flavour: 'affine:bookmark',
           props: {
             url: 'https://example.com',
@@ -1033,6 +1183,7 @@ describe('share document block projection', () => {
       'YouTube selection, chapters, and structured transcript',
       {
         documentId: 'doc',
+        importAttemptId: 'attempt',
         title: 'Video',
         content: {
           kind: 'url',
@@ -1055,17 +1206,24 @@ describe('share document block projection', () => {
       { flavour: 'affine:embed-youtube', styles: ['video'] },
       [
         {
-          flavour: 'affine:embed-youtube',
+          id: 'share-attempt-bookmark',
+          flavour: 'affine:bookmark',
           props: {
             url: 'https://youtube.com/watch?v=123',
-            style: 'video',
+            title: 'Video',
+            description: undefined,
+            icon: undefined,
+            image: undefined,
+            style: 'horizontal',
           },
         },
         {
+          id: 'share-attempt-selected-text',
           flavour: 'affine:paragraph',
           props: { type: 'quote', text: 'Selected passage' },
         },
         {
+          id: 'share-attempt-transcript',
           flavour: 'affine:callout',
           props: {
             icon: { type: 'emoji', unicode: '💬' },
@@ -1073,18 +1231,22 @@ describe('share document block projection', () => {
           },
           children: [
             {
+              id: 'share-attempt-transcript-heading',
               flavour: 'affine:paragraph',
               props: { type: 'h6', text: 'Transcript', collapsed: true },
             },
             {
+              id: 'share-attempt-transcript-chapter-0',
               flavour: 'affine:paragraph',
               props: { type: 'h6', text: 'Opening' },
             },
             {
+              id: 'share-attempt-transcript-segment-2',
               flavour: 'affine:paragraph',
               props: { type: 'text', text: '[0:01] Host: Welcome' },
             },
             {
+              id: 'share-attempt-transcript-segment-3',
               flavour: 'affine:paragraph',
               props: { type: 'text', text: 'Plain paragraph' },
             },
@@ -1097,6 +1259,7 @@ describe('share document block projection', () => {
       'X duplicate transcript',
       {
         documentId: 'doc',
+        importAttemptId: 'attempt',
         title: 'Post',
         content: { kind: 'url', url: 'https://x.com/affine/status/123' },
         preview: {
@@ -1112,10 +1275,11 @@ describe('share document block projection', () => {
       null,
       [
         {
+          id: 'share-attempt-bookmark',
           flavour: 'affine:bookmark',
           props: {
             url: 'https://x.com/affine/status/123',
-            title: undefined,
+            title: 'Post',
             description: 'A complete post',
             icon: undefined,
             image: undefined,
@@ -1129,6 +1293,7 @@ describe('share document block projection', () => {
       'plain text',
       {
         documentId: 'doc',
+        importAttemptId: 'attempt',
         title: 'Note',
         content: { kind: 'text', text: 'Plain *shared* text' },
         tagIds: [],

@@ -3,6 +3,7 @@ import type { EmbedCardStyle } from '@blocksuite/affine/model';
 import type { ShareImportInput } from './import';
 
 export interface ShareBlockPlanNode {
+  id: string;
   flavour: string;
   props: Record<string, unknown>;
   children?: ShareBlockPlanNode[];
@@ -11,6 +12,70 @@ export interface ShareBlockPlanNode {
 export interface ShareEmbedOptions {
   flavour: string;
   styles: EmbedCardStyle[];
+}
+
+export function shareImportBlockIds(importAttemptId: string) {
+  const prefix = `share-${importAttemptId}`;
+  return {
+    page: `${prefix}-page`,
+    surface: `${prefix}-surface`,
+    note: `${prefix}-note`,
+    bookmark: `${prefix}-bookmark`,
+    selectedText: `${prefix}-selected-text`,
+    sourceLink: `${prefix}-source-link`,
+    image: `${prefix}-image`,
+  };
+}
+
+export function validatesStableBlock(
+  existing:
+    | { flavour: string; parentId?: string; props?: Record<string, unknown> }
+    | undefined,
+  expected: { flavour: string; parentId?: string }
+) {
+  return (
+    !existing ||
+    (existing.flavour === expected.flavour &&
+      (expected.parentId === undefined ||
+        existing.parentId === expected.parentId))
+  );
+}
+
+export function reconcileShareTitles({
+  rootTitle,
+  pageTitle,
+  importTitle,
+}: {
+  rootTitle: string;
+  pageTitle: string;
+  importTitle: string;
+}) {
+  const root = rootTitle.trim();
+  const page = pageTitle.trim();
+  if (root && page) return { rootTitle, pageTitle };
+  const title = root || page || importTitle.trim();
+  return {
+    rootTitle: root ? rootTitle : title,
+    pageTitle: page ? pageTitle : title,
+  };
+}
+
+export function mergeShareDestinationMetadata({
+  existingTagIds,
+  requestedTagIds,
+  existingCollectionIds,
+  requestedCollectionId,
+}: {
+  existingTagIds: Iterable<string>;
+  requestedTagIds: Iterable<string>;
+  existingCollectionIds: Iterable<string>;
+  requestedCollectionId?: string;
+}) {
+  const tagIds = new Set(existingTagIds);
+  for (const id of requestedTagIds) tagIds.add(id);
+  const collectionIds = new Set(existingCollectionIds);
+  if (requestedCollectionId) collectionIds.add(requestedCollectionId);
+  return { tagIds, collectionIds };
 }
 
 function normalized(value: string | undefined) {
@@ -54,6 +119,7 @@ function transcriptNodes(input: ShareImportInput) {
     .sort((left, right) => left.startSeconds - right.startSeconds);
   const children: ShareBlockPlanNode[] = [
     {
+      id: `share-${input.importAttemptId}-transcript-heading`,
       flavour: 'affine:paragraph',
       props: { type: 'h6', text: 'Transcript', collapsed: true },
     },
@@ -66,6 +132,7 @@ function transcriptNodes(input: ShareImportInput) {
       chapters[chapterIndex].startSeconds <= segmentStart
     ) {
       children.push({
+        id: `share-${input.importAttemptId}-transcript-chapter-${chapterIndex}`,
         flavour: 'affine:paragraph',
         props: { type: 'h6', text: chapters[chapterIndex].title },
       });
@@ -80,6 +147,7 @@ function transcriptNodes(input: ShareImportInput) {
       .filter(Boolean)
       .join(' ');
     children.push({
+      id: `share-${input.importAttemptId}-transcript-segment-${children.length}`,
       flavour: 'affine:paragraph',
       props: {
         type: 'text',
@@ -90,6 +158,7 @@ function transcriptNodes(input: ShareImportInput) {
 
   return [
     {
+      id: `share-${input.importAttemptId}-transcript`,
       flavour: 'affine:callout',
       props: {
         icon: { type: 'emoji', unicode: '💬' },
@@ -102,27 +171,33 @@ function transcriptNodes(input: ShareImportInput) {
 
 export function createShareBlockPlan(
   input: ShareImportInput,
-  embedOptions: ShareEmbedOptions | null
+  _embedOptions: ShareEmbedOptions | null
 ) {
   if (input.content.kind !== 'url' || !input.content.url) return [];
 
   const preview = input.preview;
-  const primary: ShareBlockPlanNode = embedOptions
-    ? {
-        flavour: embedOptions.flavour,
-        props: { url: input.content.url, style: embedOptions.styles[0] },
+  const title =
+    preview?.title?.trim() ||
+    input.title.trim() ||
+    (() => {
+      try {
+        return new URL(input.content.url).hostname;
+      } catch {
+        return input.content.url;
       }
-    : {
-        flavour: 'affine:bookmark',
-        props: {
-          url: input.content.url,
-          title: preview?.title,
-          description: preview?.description,
-          icon: preview?.favicons?.[0],
-          image: preview?.images?.[0],
-          style: 'horizontal',
-        },
-      };
+    })();
+  const primary: ShareBlockPlanNode = {
+    id: shareImportBlockIds(input.importAttemptId).bookmark,
+    flavour: 'affine:bookmark',
+    props: {
+      url: input.content.url,
+      title,
+      description: preview?.description,
+      icon: preview?.favicons?.[0],
+      image: preview?.images?.[0],
+      style: 'horizontal',
+    },
+  };
   const selectedText = input.content.text?.trim();
 
   return [
@@ -130,6 +205,7 @@ export function createShareBlockPlan(
     ...(selectedText
       ? [
           {
+            id: shareImportBlockIds(input.importAttemptId).selectedText,
             flavour: 'affine:paragraph',
             props: { type: 'quote', text: selectedText },
           },

@@ -88,16 +88,18 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
   @objc func resolveAttachment(_ call: CAPPluginCall) {
     do {
       let item = try item(from: call)
-      guard let attachment = item.attachments.first,
-            let url = store.attachmentURL(for: attachment),
-            FileManager.default.fileExists(atPath: url.path)
+      guard let attachment = store.resolveAttachment(for: item)
       else {
         call.resolve([:])
         return
       }
       call.resolve([
-        "path": url.absoluteString,
+        "itemId": attachment.itemId,
+        "fileUrl": attachment.url.absoluteString,
+        "relativePath": attachment.relativePath,
+        "name": attachment.name,
         "mimeType": attachment.mimeType,
+        "size": attachment.size,
       ])
     } catch {
       call.reject("Failed to resolve the shared attachment.", nil, error)

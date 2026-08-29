@@ -1,6 +1,5 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
-import { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
-import { EmbedOptionProvider } from '@blocksuite/affine/shared/services';
+import type { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
 import { Text } from '@blocksuite/affine/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
@@ -16,8 +15,19 @@ import {
 } from '../../workspace';
 import {
   createShareBlockPlan,
+  mergeShareDestinationMetadata,
+  reconcileShareTitles,
+  shareImportBlockIds,
   type ShareBlockPlanNode,
+  validatesStableBlock,
 } from './share-block-plan';
+import {
+  createShareImportReceipt,
+  decideShareImportRecovery,
+  serializeShareImportReceipt,
+  shareImportReceiptPropertyId,
+  shouldSynchronizeShareImport,
+} from './share-import-receipt';
 
 export interface ShareLinkPreview {
   url: string;
@@ -54,6 +64,7 @@ export interface ClipperInput {
 
 export interface ShareImportInput {
   documentId: string;
+  importAttemptId: string;
   title: string;
   content: {
     kind: 'url' | 'text' | 'image';
@@ -61,19 +72,22 @@ export interface ShareImportInput {
     text?: string;
   };
   preview?: ShareLinkPreview;
-  attachmentUrl?: string;
+  attachment?: File;
   tagIds: string[];
   collectionId?: string;
 }
 
 export type ShareImportResult =
   | { status: 'imported'; docId: string }
+  | { status: 'committed-replay'; docId: string }
+  | { status: 'import-conflict' }
   | {
       status:
         | 'workspace-not-found'
         | 'permission-denied'
         | 'destination-not-found'
-        | 'offline-confirmation-required';
+        | 'offline-confirmation-required'
+        | 'attachment-missing';
       missingTagIds?: string[];
     };
 
@@ -88,9 +102,6 @@ type WorkspaceVerification = 'confirmed' | 'missing' | 'unavailable';
 export function createShareMarkdown(input: ShareImportInput) {
   const parts: string[] = [];
   if (input.content.kind === 'image') {
-    if (input.attachmentUrl) {
-      parts.push(`![Shared image](<${input.attachmentUrl}>)`);
-    }
     if (input.content.text) {
       parts.push(escapeMarkdown(input.content.text));
     }
@@ -117,7 +128,12 @@ export class ImportClipperService extends Service {
     input: ShareImportInput,
     options: { allowOffline?: boolean } = {}
   ): Promise<ShareImportResult> {
-    const verification = await this.revalidateWorkspace(workspaceMetadata);
+    const allowOffline = options.allowOffline === true;
+    const verification = allowOffline
+      ? this.hasWorkspace(workspaceMetadata)
+        ? 'confirmed'
+        : 'missing'
+      : await this.revalidateWorkspace(workspaceMetadata);
     if (verification === 'missing') {
       return { status: 'workspace-not-found' };
     }
@@ -141,11 +157,42 @@ export class ImportClipperService extends Service {
       const { workspace } = workspaceRef;
       await workspace.engine.doc.waitForDocReady(workspace.id);
       const rootSynced =
+        allowOffline ||
         workspace.meta.flavour === 'local' ||
         (verification === 'confirmed' &&
           (await this.waitForRootSync(workspace)));
       if (!rootSynced && !options.allowOffline) {
         return { status: 'offline-confirmation-required' };
+      }
+
+      const docsService = workspace.scope.get(DocsService);
+      const shouldSync = shouldSynchronizeShareImport({
+        isLocal: workspace.meta.flavour === 'local',
+        verification,
+        allowOffline,
+      });
+      workspace.engine.doc.addPriority('db$docProperties', 100);
+      await workspace.engine.doc.waitForDocLoaded('db$docProperties');
+      if (shouldSync) {
+        await workspace.engine.doc.waitForSynced('db$docProperties');
+      }
+
+      const persistedReceiptValue = docsService.getCustomPropertyById(
+        input.documentId,
+        shareImportReceiptPropertyId
+      );
+      const existingRecord = docsService.list.doc$(input.documentId).value;
+      const recovery = decideShareImportRecovery({
+        receiptValue: persistedReceiptValue,
+        documentId: input.documentId,
+        importAttemptId: input.importAttemptId,
+        documentExists: !!existingRecord,
+      });
+      if (recovery === 'import-conflict') {
+        return { status: 'import-conflict' };
+      }
+      if (recovery === 'committed-replay') {
+        return { status: 'committed-replay', docId: input.documentId };
       }
 
       const guard = workspace.scope.get(GuardService);
@@ -169,84 +216,174 @@ export class ImportClipperService extends Service {
         return { status: 'destination-not-found', missingTagIds };
       }
 
-      const docsService = workspace.scope.get(DocsService);
-      let record = docsService.list.doc$(input.documentId).value;
-      if (!record) {
-        record = docsService.createDoc({
+      if (input.content.kind === 'image' && !input.attachment) {
+        return { status: 'attachment-missing' };
+      }
+
+      if (recovery === 'write-preparing-and-create') {
+        docsService.setCustomPropertyById(
+          input.documentId,
+          shareImportReceiptPropertyId,
+          serializeShareImportReceipt(
+            createShareImportReceipt({
+              documentId: input.documentId,
+              importAttemptId: input.importAttemptId,
+            })
+          )
+        );
+        await workspace.engine.doc.waitForUpdated('db$docProperties');
+        if (shouldSync) {
+          await workspace.engine.doc.waitForSynced('db$docProperties');
+        }
+      }
+
+      const record =
+        existingRecord ??
+        docsService.createDoc({
           id: input.documentId,
           primaryMode: 'page',
+          skipInit: true,
         });
-      }
       const { doc, release } = docsService.open(record.id);
       try {
         await doc.waitForSyncReady();
-        const page = doc.blockSuiteDoc.getBlocksByFlavour('affine:page')[0];
-        if (!page) {
-          throw new Error('Failed to initialize shared doc');
-        }
-        page.model.children.forEach(child => {
-          doc.blockSuiteDoc.deleteBlock(child);
-        });
-        const noteId = doc.blockSuiteDoc.addBlock('affine:note', {}, page.id);
-        if (input.content.kind === 'url' && input.content.url) {
-          const embedOptions = createBlockStdScope(doc.blockSuiteDoc)
-            .get(EmbedOptionProvider)
-            .getEmbedBlockOptions(input.content.url);
-          this.addShareBlocks(
+        const ids = shareImportBlockIds(input.importAttemptId);
+        if (
+          !this.hasOnlyMatchingSkeleton(doc.blockSuiteDoc, ids) ||
+          !this.ensureBlock(doc.blockSuiteDoc, ids.page, 'affine:page') ||
+          !this.ensureBlock(
             doc.blockSuiteDoc,
-            noteId,
-            createShareBlockPlan(input, embedOptions)
-          );
+            ids.surface,
+            'affine:surface',
+            ids.page
+          ) ||
+          !this.ensureBlock(
+            doc.blockSuiteDoc,
+            ids.note,
+            'affine:note',
+            ids.page
+          )
+        ) {
+          return { status: 'import-conflict' };
         }
-        const markdown = createShareMarkdown(input);
-        if (markdown) {
-          await MarkdownTransformer.importMarkdownToBlock({
-            doc: doc.blockSuiteDoc,
-            blockId: noteId,
-            markdown,
-            extensions: getStoreManager().config.init().value.get('store'),
+        if (!doc.blockSuiteDoc.getBlock(ids.page)) {
+          doc.blockSuiteDoc.addBlock('affine:page', {
+            id: ids.page,
+            title: new Text(''),
           });
         }
+        if (!doc.blockSuiteDoc.getBlock(ids.surface)) {
+          doc.blockSuiteDoc.addBlock(
+            'affine:surface',
+            { id: ids.surface },
+            ids.page
+          );
+        }
+        if (!doc.blockSuiteDoc.getBlock(ids.note)) {
+          doc.blockSuiteDoc.addBlock('affine:note', { id: ids.note }, ids.page);
+        }
+        await workspace.engine.doc.waitForUpdated(input.documentId);
+
+        const leaves = this.shareLeaves(input);
+        if (!this.ensurePlan(doc.blockSuiteDoc, leaves, ids.note)) {
+          return { status: 'import-conflict' };
+        }
+        const imageId = ids.image;
+        if (
+          input.content.kind === 'image' &&
+          !this.ensureBlock(
+            doc.blockSuiteDoc,
+            imageId,
+            'affine:image',
+            ids.note
+          )
+        ) {
+          return { status: 'import-conflict' };
+        }
+
+        let imageSourceId: string | undefined;
+        if (
+          input.content.kind === 'image' &&
+          input.attachment &&
+          !doc.blockSuiteDoc.getBlock(imageId)
+        ) {
+          imageSourceId = await workspace.docCollection.blobSync.set(
+            input.attachment
+          );
+        }
+        this.addShareBlocks(doc.blockSuiteDoc, ids.note, leaves);
+        if (imageSourceId && !doc.blockSuiteDoc.getBlock(imageId)) {
+          doc.blockSuiteDoc.addBlock(
+            'affine:image',
+            {
+              id: imageId,
+              sourceId: imageSourceId,
+              name: input.attachment?.name ?? 'Shared image',
+              type: input.attachment?.type ?? '',
+              size: input.attachment?.size ?? 0,
+            },
+            ids.note
+          );
+        }
+        this.reconcileShareTitle(
+          record,
+          doc.blockSuiteDoc.getBlock(ids.page)?.model,
+          input.title
+        );
       } finally {
         release();
       }
-      await docsService.changeDocTitle(input.documentId, input.title);
       const existingTagIds = new Set(record.meta$.value.tags ?? []);
-      const selectedTagIds = new Set(input.tagIds);
-      for (const tagId of existingTagIds) {
-        if (!selectedTagIds.has(tagId)) {
-          tagService.tagList.tagByTagId$(tagId).value?.untag(input.documentId);
-        }
-      }
-      for (const tagId of input.tagIds) {
+      const metadata = mergeShareDestinationMetadata({
+        existingTagIds,
+        requestedTagIds: input.tagIds,
+        existingCollectionIds: [],
+        requestedCollectionId: input.collectionId,
+      });
+      for (const tagId of metadata.tagIds) {
         if (!existingTagIds.has(tagId)) {
           tagService.tagList.tagByTagId$(tagId).value?.tag(input.documentId);
         }
       }
-      for (const collection of collectionService.collections$.value.values()) {
-        if (
-          collection.id !== input.collectionId &&
-          collection.allowList$.value.includes(input.documentId)
-        ) {
-          collectionService.removeDocFromCollection(
-            collection.id,
-            input.documentId
-          );
-        }
-      }
-      if (input.collectionId) {
+      if (
+        input.collectionId &&
+        metadata.collectionIds.has(input.collectionId)
+      ) {
         collectionService.addDocToCollection(
           input.collectionId,
           input.documentId
         );
       }
 
-      workspace.engine.doc.addPriority(workspace.id, 100);
-      workspace.engine.doc.addPriority(input.documentId, 100);
-      await Promise.all([
-        workspace.engine.doc.waitForSynced(workspace.id),
-        workspace.engine.doc.waitForSynced(input.documentId),
-      ]);
+      const syncIds = ['db$docProperties', workspace.id, input.documentId];
+      for (const id of syncIds) {
+        workspace.engine.doc.addPriority(id, 100);
+        await workspace.engine.doc.waitForUpdated(id);
+      }
+      if (shouldSync) {
+        await Promise.all(
+          syncIds.map(id => workspace.engine.doc.waitForSynced(id))
+        );
+      }
+      docsService.setCustomPropertyById(
+        input.documentId,
+        shareImportReceiptPropertyId,
+        serializeShareImportReceipt(
+          createShareImportReceipt({
+            documentId: input.documentId,
+            importAttemptId: input.importAttemptId,
+            status: 'committed',
+          })
+        )
+      );
+      for (const id of syncIds) {
+        await workspace.engine.doc.waitForUpdated(id);
+      }
+      if (shouldSync) {
+        await Promise.all(
+          syncIds.map(id => workspace.engine.doc.waitForSynced(id))
+        );
+      }
       return { status: 'imported', docId: input.documentId };
     } finally {
       workspaceRef.dispose();
@@ -311,10 +448,108 @@ export class ImportClipperService extends Service {
             key === 'text' ? new Text(value as string) : value,
           ])
       );
-      const blockId = store.addBlock(node.flavour, props, parentId);
+      const blockId = store.getBlock(node.id)
+        ? node.id
+        : store.addBlock(node.flavour, { id: node.id, ...props }, parentId);
       if (node.children) {
         this.addShareBlocks(store, blockId, node.children);
       }
+    }
+  }
+
+  private shareLeaves(input: ShareImportInput): ShareBlockPlanNode[] {
+    if (input.content.kind === 'url') {
+      return createShareBlockPlan(input, null);
+    }
+    const nodes: ShareBlockPlanNode[] = [];
+    const selectedText = input.content.text?.trim();
+    if (selectedText) {
+      nodes.push({
+        id: shareImportBlockIds(input.importAttemptId).selectedText,
+        flavour: 'affine:paragraph',
+        props: { type: 'quote', text: selectedText },
+      });
+    }
+    if (input.content.url) {
+      nodes.push({
+        id: shareImportBlockIds(input.importAttemptId).sourceLink,
+        flavour: 'affine:bookmark',
+        props: {
+          url: input.content.url,
+          title: input.title.trim() || new URL(input.content.url).hostname,
+          style: 'horizontal',
+        },
+      });
+    }
+    return nodes;
+  }
+
+  private ensurePlan(
+    store: Parameters<typeof createBlockStdScope>[0],
+    nodes: ShareBlockPlanNode[],
+    parentId: string
+  ): boolean {
+    return nodes.every(node => {
+      if (!this.ensureBlock(store, node.id, node.flavour, parentId)) {
+        return false;
+      }
+      return node.children
+        ? this.ensurePlan(store, node.children, node.id)
+        : true;
+    });
+  }
+
+  private ensureBlock(
+    store: Parameters<typeof createBlockStdScope>[0],
+    id: string,
+    flavour: string,
+    parentId?: string
+  ) {
+    const existing = store.getBlock(id)?.model;
+    return validatesStableBlock(
+      existing && {
+        flavour: existing.flavour,
+        parentId: existing.parent?.id,
+      },
+      { flavour, parentId }
+    );
+  }
+
+  private hasOnlyMatchingSkeleton(
+    store: Parameters<typeof createBlockStdScope>[0],
+    ids: ReturnType<typeof shareImportBlockIds>
+  ) {
+    return (
+      this.hasOnlyBlock(store, 'affine:page', ids.page) &&
+      this.hasOnlyBlock(store, 'affine:surface', ids.surface) &&
+      this.hasOnlyBlock(store, 'affine:note', ids.note)
+    );
+  }
+
+  private hasOnlyBlock(
+    store: Parameters<typeof createBlockStdScope>[0],
+    flavour: string,
+    id: string
+  ) {
+    return store.getBlocksByFlavour(flavour).every(block => block.id === id);
+  }
+
+  private reconcileShareTitle(
+    record: {
+      meta$: { value: { title?: string } };
+      setMeta(meta: { title: string }): void;
+    },
+    page: { props: { title?: Text } } | undefined,
+    importTitle: string
+  ) {
+    if (!page?.props.title) return;
+    const rootTitle = record.meta$.value.title ?? '';
+    const pageTitle = page.props.title.toString();
+    const next = reconcileShareTitles({ rootTitle, pageTitle, importTitle });
+    if (next.rootTitle !== rootTitle) record.setMeta({ title: next.rootTitle });
+    if (next.pageTitle !== pageTitle) {
+      page.props.title.delete(0, page.props.title.length);
+      page.props.title.insert(next.pageTitle, 0);
     }
   }
 

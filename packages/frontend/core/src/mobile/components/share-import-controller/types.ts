@@ -35,7 +35,7 @@ export interface ShareInboxProvider {
   ): Promise<void>;
   listPending(): Promise<ShareInboxEntry[]>;
   updateTarget(itemId: string, target: ShareImportTarget): Promise<void>;
-  resolveAttachment(itemId: string): Promise<string | undefined>;
+  resolveAttachment(itemId: string): Promise<File | undefined>;
   complete(itemId: string, docId: string): Promise<void>;
   setError(itemId: string, error: string): Promise<void>;
 }

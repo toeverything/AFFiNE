@@ -690,6 +690,57 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertEqual(try decoder.decode(ShareInboxItem.self, from: encoded).content.url, item.content.url)
   }
 
+  func testResolvedAttachmentRequiresTheManifestIdentityAndValidatedFileMetadata() throws {
+    let (store, containerURL) = try makeStore()
+    let source = try makeProviderFile(data: makePNGData(), name: "shared.png")
+    var item = ShareInboxItem(
+      title: "Image",
+      content: ShareInboxContent(kind: .image, url: nil, text: nil)
+    )
+    let attachment = ShareInboxAttachment(
+      fileName: "shared.png",
+      mimeType: "image/png",
+      relativePath: "\(item.id)/shared.png"
+    )
+    item.attachments = [attachment]
+    try store.enqueue(item, attachmentFiles: [(attachment, source)])
+    let persisted = try XCTUnwrap(store.pendingItems().compactMap { entry -> ShareInboxItem? in
+      guard case let .ready(value) = entry else { return nil }
+      return value
+    }.first)
+
+    let resolved = try XCTUnwrap(store.resolveAttachment(for: persisted))
+    XCTAssertEqual(resolved.itemId, persisted.id)
+    XCTAssertEqual(resolved.name, "shared.png")
+    XCTAssertEqual(resolved.mimeType, "image/png")
+    XCTAssertEqual(resolved.size, makePNGData().count)
+    XCTAssertTrue(resolved.url.path.hasPrefix(containerURL.path))
+
+    var traversal = persisted
+    traversal.attachments[0].relativePath = "../shared.png"
+    XCTAssertNil(store.resolveAttachment(for: traversal))
+
+    var mismatchedMime = persisted
+    mismatchedMime.attachments[0].mimeType = "image/jpeg"
+    XCTAssertNil(store.resolveAttachment(for: mismatchedMime))
+
+    let outside = try makeProviderFile(data: makePNGData(), name: "outside.png")
+    try FileManager.default.removeItem(at: resolved.url)
+    try FileManager.default.createSymbolicLink(at: resolved.url, withDestinationURL: outside)
+    XCTAssertNil(store.resolveAttachment(for: persisted))
+
+    try FileManager.default.removeItem(at: resolved.url)
+    try FileManager.default.createDirectory(at: resolved.url, withIntermediateDirectories: false)
+    XCTAssertNil(store.resolveAttachment(for: persisted))
+
+    try FileManager.default.removeItem(at: resolved.url)
+    try makePNGData(size: 12 * 1024 * 1024 + 1).write(to: resolved.url)
+    XCTAssertNil(store.resolveAttachment(for: persisted))
+
+    try FileManager.default.removeItem(at: resolved.url)
+    XCTAssertNil(store.resolveAttachment(for: persisted))
+  }
+
 }
 
 private enum TestWriteError: Error {

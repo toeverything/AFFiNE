@@ -6,6 +6,15 @@ struct ShareInboxAttachment: Codable, Equatable {
   var relativePath: String
 }
 
+struct ShareInboxResolvedAttachment: Equatable {
+  var itemId: String
+  var url: URL
+  var relativePath: String
+  var name: String
+  var mimeType: String
+  var size: Int
+}
+
 enum ShareInboxContentKind: String, Codable {
   case url
   case text

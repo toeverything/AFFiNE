@@ -51,6 +51,8 @@ const errorMessage = (error?: string) => {
       return 'AFFiNE could not confirm the latest workspace state.';
     case 'attachment-missing':
       return 'The shared image is no longer available.';
+    case 'import-conflict':
+      return 'This share conflicts with an existing document and was not changed.';
     default:
       return undefined;
   }
@@ -170,8 +172,12 @@ export const ShareImportController = ({
   const [isLoadingDestinations, setIsLoadingDestinations] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [attachmentPreview, setAttachmentPreview] = useState<string>();
+  const attachmentRef = useRef<{ itemId: string; file: File } | undefined>(
+    undefined
+  );
+  const attachmentGeneration = useRef(0);
   const [linkPreview, setLinkPreview] = useState<SharePreviewState>();
-  const linkPreviewRef = useRef<SharePreviewState>();
+  const linkPreviewRef = useRef<SharePreviewState | undefined>(undefined);
   const refreshing = useRef(false);
   const itemId = item?.id;
   const activeItemIdRef = useRef(itemId);
@@ -259,11 +265,13 @@ export const ShareImportController = ({
         await provider.setError(pending.id, 'workspace-not-found');
         return false;
       }
-      const attachmentUrl =
+      const attachment =
         pending.content.kind === 'image'
-          ? await provider.resolveAttachment(pending.id)
+          ? attachmentRef.current?.itemId === pending.id
+            ? attachmentRef.current.file
+            : await provider.resolveAttachment(pending.id)
           : undefined;
-      if (pending.content.kind === 'image' && !attachmentUrl) {
+      if (pending.content.kind === 'image' && !attachment) {
         await provider.setError(pending.id, 'attachment-missing');
         return false;
       }
@@ -281,6 +289,7 @@ export const ShareImportController = ({
         workspace,
         {
           documentId: pending.documentId,
+          importAttemptId: pending.importAttemptId,
           title: resolveShareTitle(
             pending.title,
             preview?.title,
@@ -288,13 +297,16 @@ export const ShareImportController = ({
           ),
           content: pending.content,
           preview,
-          attachmentUrl,
+          attachment,
           tagIds: target.tagIds,
           collectionId: target.collectionId,
         },
         { allowOffline }
       );
-      if (result.status !== 'imported') {
+      if (
+        result.status !== 'imported' &&
+        result.status !== 'committed-replay'
+      ) {
         await provider.setError(pending.id, result.status);
         return false;
       }
@@ -380,18 +392,35 @@ export const ShareImportController = ({
 
   useEffect(() => {
     let active = true;
+    let objectUrl: string | undefined;
+    const generation = ++attachmentGeneration.current;
+    const expectedItemId = item?.id;
     setAttachmentPreview(undefined);
     updateLinkPreview(undefined);
     if (item?.content.kind === 'image') {
       void provider
         .resolveAttachment(item.id)
-        .then(preview => {
-          if (active) setAttachmentPreview(preview);
+        .then(file => {
+          if (
+            !file ||
+            !active ||
+            attachmentGeneration.current !== generation ||
+            activeItemIdRef.current !== expectedItemId
+          ) {
+            return;
+          }
+          attachmentRef.current = { itemId: item.id, file };
+          objectUrl = URL.createObjectURL(file);
+          setAttachmentPreview(objectUrl);
         })
         .catch(console.error);
     }
     return () => {
       active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (attachmentRef.current?.itemId === item?.id) {
+        attachmentRef.current = undefined;
+      }
     };
   }, [item?.content.kind, item?.id, provider, updateLinkPreview]);
 
