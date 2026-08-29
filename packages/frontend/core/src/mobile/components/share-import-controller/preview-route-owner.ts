@@ -209,16 +209,15 @@ export class SharePreviewRouteOwner {
     endpoint: string | undefined,
     workspaceKey?: string
   ) {
-    const workspaceChanged = this.selectedWorkspaceKey !== workspaceKey;
-    if (
-      workspaceChanged ||
+    const routeChanged =
+      this.selectedWorkspaceKey !== workspaceKey ||
       this.server !== server ||
-      this.endpoint !== endpoint
-    ) {
+      this.endpoint !== endpoint;
+    if (routeChanged) {
       this.inFlight?.controller.abort();
       this.inFlight = undefined;
+      this.requestGeneration += 1;
     }
-    if (workspaceChanged) this.requestGeneration += 1;
     this.server = server;
     this.endpoint = endpoint;
     this.selectedWorkspaceKey = workspaceKey;

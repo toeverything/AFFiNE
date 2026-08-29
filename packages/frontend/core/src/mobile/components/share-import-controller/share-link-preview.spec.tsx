@@ -31,7 +31,7 @@ import {
 } from '../../../blocksuite/view-extensions/link-preview-service/link-preview-service';
 import { createShareMarkdown } from '../../../modules/import-clipper/services/import';
 import { createShareBlockPlan } from '../../../modules/import-clipper/services/share-block-plan';
-import { ShareImportController } from './index';
+import { previewForImport, ShareImportController } from './index';
 import {
   LinkPreview,
   resolveShareTitle,
@@ -321,6 +321,80 @@ describe('link preview transport and route ownership', () => {
       '/api/worker/link-preview',
       '/api/worker/link-preview',
     ]);
+  });
+
+  test('uses the replacement server instead of a cached preview for the same workspace', async () => {
+    const selectedWorkspace = workspace('self');
+    const firstServer = server(
+      'self',
+      'https://first.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    Object.assign(firstServer, {
+      fetch: vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ url: item().content.url, title: 'Preview A' }),
+            { status: 200 }
+          )
+        ),
+    });
+    let resolveSecond!: (response: Response) => void;
+    const secondFetch = vi.fn(
+      () =>
+        new Promise<Response>(resolve => {
+          resolveSecond = resolve;
+        })
+    );
+    const replacementServer = server(
+      'self',
+      'https://second.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    Object.assign(replacementServer, { fetch: secondFetch });
+    const owner = new SharePreviewRouteOwner(item());
+    owner.selectWorkspace(selectedWorkspace, [firstServer]);
+    const previewA = await owner.load();
+    const cached = {
+      itemId: item().id,
+      workspaceKey: 'self:workspace',
+      generation: owner.generation,
+      value: previewA,
+    };
+
+    owner.selectWorkspace(selectedWorkspace, [replacementServer]);
+    const preview = previewForImport(item(), selectedWorkspace, cached, owner, [
+      replacementServer,
+    ]);
+
+    expect(secondFetch).toHaveBeenCalledWith(
+      '/api/worker/link-preview',
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    );
+    resolveSecond(
+      new Response(
+        JSON.stringify({ url: item().content.url, title: 'Preview B' }),
+        { status: 200 }
+      )
+    );
+    await expect(preview).resolves.toMatchObject({ title: 'Preview B' });
+  });
+
+  test('keeps the generation stable for the exact same selected route', () => {
+    const selectedWorkspace = workspace('self');
+    const selectedServer = server(
+      'self',
+      'https://self.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    const owner = new SharePreviewRouteOwner(item());
+
+    owner.selectWorkspace(selectedWorkspace, [selectedServer]);
+    const generation = owner.generation;
+    owner.selectWorkspace(selectedWorkspace, [selectedServer]);
+
+    expect(owner.generation).toBe(generation);
   });
 
   test('rejects a late response after its workspace generation is replaced', async () => {
