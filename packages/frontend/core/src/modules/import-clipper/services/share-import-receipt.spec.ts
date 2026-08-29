@@ -5,6 +5,7 @@ import { DocsService } from '../../doc';
 import { GuardService } from '../../permissions';
 import { TagService } from '../../tag';
 import type { WorkspaceMetadata, WorkspacesService } from '../../workspace';
+import { AsyncLock } from '@toeverything/infra/utils';
 import { ImportClipperService, type ShareImportInput } from './import';
 import { shareImportBlockIds } from './share-block-plan';
 import { describe, expect, test, vi } from 'vitest';
@@ -18,18 +19,14 @@ import {
 } from './share-import-receipt';
 
 describe('share import receipt', () => {
-  test('persists a versioned preparing receipt for one import attempt', () => {
+  test('serializes the canonical preparing fixture', () => {
     expect(
-      createShareImportReceipt({
-        documentId: 'document-id',
-        importAttemptId: 'attempt-id',
-      })
-    ).toEqual({
-      version: 1,
-      documentId: 'document-id',
-      importAttemptId: 'attempt-id',
-      status: 'preparing',
-    });
+      serializeShareImportReceipt(
+        createShareImportReceipt({
+          attemptId: 'attempt-id',
+        })
+      )
+    ).toBe('{"version":1,"attemptId":"attempt-id","state":"preparing"}');
   });
 
   test.each([
@@ -48,17 +45,26 @@ describe('share import receipt', () => {
     expect(parseShareImportReceipt(value)).toBeUndefined();
   });
 
-  test('round-trips a committed receipt without accepting extra schema', () => {
+  test('round-trips the canonical committed fixture without accepting extra or old schema', () => {
     const receipt = {
       version: 1 as const,
-      documentId: 'document-id',
-      importAttemptId: 'attempt-id',
-      status: 'committed' as const,
+      attemptId: 'attempt-id',
+      state: 'committed' as const,
     };
 
     expect(parseShareImportReceipt(JSON.stringify(receipt))).toEqual(receipt);
     expect(
       parseShareImportReceipt(JSON.stringify({ ...receipt, unexpected: true }))
+    ).toBeUndefined();
+    expect(
+      parseShareImportReceipt(
+        JSON.stringify({
+          version: 1,
+          documentId: 'document-id',
+          importAttemptId: 'attempt-id',
+          status: 'committed',
+        })
+      )
     ).toBeUndefined();
   });
 
@@ -97,21 +103,19 @@ describe('share import receipt', () => {
     ],
   ] as const)(
     'decides recovery for %s',
-    (_name, status, documentExists, expected) => {
-      const receipt = status
+    (_name, state, documentExists, expected) => {
+      const receipt = state
         ? serializeShareImportReceipt(
             createShareImportReceipt({
-              documentId: 'document-id',
-              importAttemptId: 'attempt-id',
-              status,
+              attemptId: 'attempt-id',
+              state,
             })
           )
         : undefined;
       expect(
         decideShareImportRecovery({
           receiptValue: receipt,
-          documentId: 'document-id',
-          importAttemptId: 'attempt-id',
+          expectedAttemptId: 'attempt-id',
           documentExists,
         })
       ).toBe(expected);
@@ -125,9 +129,8 @@ describe('share import receipt', () => {
       'different attempt',
       JSON.stringify({
         version: 1,
-        documentId: 'document-id',
-        importAttemptId: 'other',
-        status: 'preparing',
+        attemptId: 'other',
+        state: 'preparing',
       }),
       false,
     ],
@@ -138,8 +141,7 @@ describe('share import receipt', () => {
       expect(
         decideShareImportRecovery({
           receiptValue,
-          documentId: 'document-id',
-          importAttemptId: 'attempt-id',
+          expectedAttemptId: 'attempt-id',
           documentExists,
         })
       ).toBe('import-conflict');
@@ -171,10 +173,10 @@ describe('share import receipt', () => {
   });
 });
 
-function input(): ShareImportInput {
+function input(importAttemptId = 'attempt-id'): ShareImportInput {
   return {
     documentId: 'document-id',
-    importAttemptId: 'attempt-id',
+    importAttemptId,
     title: 'Shared',
     content: { kind: 'url', url: 'https://example.com' },
     tagIds: [],
@@ -327,6 +329,7 @@ function makeImportHarness({
     events,
     blocks: models,
     docs,
+    record,
     engine,
     guard,
     tagService,
@@ -336,6 +339,7 @@ function makeImportHarness({
     getWorkspaceProfile,
     service: Object.assign(Object.create(ImportClipperService.prototype), {
       workspacesService: workspaces,
+      shareImportLock: new AsyncLock(),
     }) as ImportClipperService,
     metadata,
   };
@@ -379,8 +383,7 @@ describe('share import orchestration', () => {
     const harness = makeImportHarness({
       receipt: serializeShareImportReceipt(
         createShareImportReceipt({
-          documentId: 'document-id',
-          importAttemptId: 'attempt-id',
+          attemptId: 'attempt-id',
         })
       ),
     });
@@ -409,8 +412,7 @@ describe('share import orchestration', () => {
       recordExists: true,
       receipt: serializeShareImportReceipt(
         createShareImportReceipt({
-          documentId: 'document-id',
-          importAttemptId: 'attempt-id',
+          attemptId: 'attempt-id',
         })
       ),
       blocks: [{ id: ids.page, flavour: 'affine:page' }],
@@ -435,8 +437,7 @@ describe('share import orchestration', () => {
       recordExists: true,
       receipt: serializeShareImportReceipt(
         createShareImportReceipt({
-          documentId: 'document-id',
-          importAttemptId: 'attempt-id',
+          attemptId: 'attempt-id',
         })
       ),
       blocks: [{ id: 'other-page', flavour: 'affine:page' }],
@@ -463,9 +464,8 @@ describe('share import orchestration', () => {
       recordExists: true,
       receipt: serializeShareImportReceipt(
         createShareImportReceipt({
-          documentId: 'document-id',
-          importAttemptId: 'attempt-id',
-          status: 'committed',
+          attemptId: 'attempt-id',
+          state: 'committed',
         })
       ),
     });
@@ -481,5 +481,99 @@ describe('share import orchestration', () => {
     expect(harness.tagService.tagList.tagByTagId$).not.toHaveBeenCalled();
     expect(harness.collectionService.addDocToCollection).not.toHaveBeenCalled();
     expect(harness.blobSet).not.toHaveBeenCalled();
+  });
+
+  test('serializes concurrent retries of one attempt into an import and committed replay', async () => {
+    const harness = makeImportHarness();
+    let releaseFirstGuard!: () => void;
+    const firstGuard = new Promise<void>(resolve => {
+      releaseFirstGuard = resolve;
+    });
+    harness.guard.can.mockImplementationOnce(async () => {
+      await firstGuard;
+      return true;
+    });
+
+    const first = harness.service.importShareToWorkspace(
+      harness.metadata,
+      input('attempt-a'),
+      { allowOffline: true }
+    );
+    await vi.waitFor(() => expect(harness.guard.can).toHaveBeenCalledTimes(1));
+    const second = harness.service.importShareToWorkspace(
+      harness.metadata,
+      input('attempt-a'),
+      { allowOffline: true }
+    );
+    await Promise.resolve();
+    releaseFirstGuard();
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      { status: 'imported', docId: 'document-id' },
+      { status: 'committed-replay', docId: 'document-id' },
+    ]);
+    expect(harness.docs.createDoc).toHaveBeenCalledTimes(1);
+    expect(harness.docs.open).toHaveBeenCalledTimes(1);
+    expect(harness.record.setMeta).toHaveBeenCalledTimes(1);
+    expect(
+      harness.events.filter(event => event === 'receipt:set')
+    ).toHaveLength(2);
+  });
+
+  test('rejects a concurrent different attempt without reopening or mutating the winner document', async () => {
+    const harness = makeImportHarness();
+    let releaseFirstGuard!: () => void;
+    const firstGuard = new Promise<void>(resolve => {
+      releaseFirstGuard = resolve;
+    });
+    harness.guard.can.mockImplementationOnce(async () => {
+      await firstGuard;
+      return true;
+    });
+
+    const first = harness.service.importShareToWorkspace(
+      harness.metadata,
+      input('attempt-a'),
+      { allowOffline: true }
+    );
+    await vi.waitFor(() => expect(harness.guard.can).toHaveBeenCalledTimes(1));
+    const second = harness.service.importShareToWorkspace(
+      harness.metadata,
+      input('attempt-b'),
+      { allowOffline: true }
+    );
+    await Promise.resolve();
+    releaseFirstGuard();
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      { status: 'imported', docId: 'document-id' },
+      { status: 'import-conflict' },
+    ]);
+    expect(harness.docs.createDoc).toHaveBeenCalledTimes(1);
+    expect(harness.docs.open).toHaveBeenCalledTimes(1);
+    expect(harness.docs.setCustomPropertyById).toHaveBeenCalledTimes(2);
+    expect(harness.record.setMeta).toHaveBeenCalledTimes(1);
+    expect(harness.blobSet).not.toHaveBeenCalled();
+  });
+
+  test('releases the share import lock after a failed transaction', async () => {
+    const harness = makeImportHarness();
+    harness.guard.can.mockRejectedValueOnce(new Error('interrupted'));
+
+    await expect(
+      harness.service.importShareToWorkspace(
+        harness.metadata,
+        input('attempt-a'),
+        { allowOffline: true }
+      )
+    ).rejects.toThrow('interrupted');
+    await expect(
+      harness.service.importShareToWorkspace(
+        harness.metadata,
+        input('attempt-b'),
+        { allowOffline: true }
+      )
+    ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
+    expect(harness.docs.createDoc).toHaveBeenCalledTimes(1);
   });
 });

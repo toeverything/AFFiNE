@@ -3,6 +3,7 @@ import type { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
 import { Text } from '@blocksuite/affine/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
+import { AsyncLock } from '@toeverything/infra/utils';
 
 import { CollectionService } from '../../collection';
 import { DocsService } from '../../doc';
@@ -119,11 +120,30 @@ function escapeMarkdown(value: string) {
 }
 
 export class ImportClipperService extends Service {
+  private readonly shareImportLock = new AsyncLock();
+
   constructor(private readonly workspacesService: WorkspacesService) {
     super();
   }
 
   async importShareToWorkspace(
+    workspaceMetadata: WorkspaceMetadata,
+    input: ShareImportInput,
+    options: { allowOffline?: boolean } = {}
+  ): Promise<ShareImportResult> {
+    const lock = await this.shareImportLock.acquire();
+    try {
+      return await this.importShareToWorkspaceUnlocked(
+        workspaceMetadata,
+        input,
+        options
+      );
+    } finally {
+      lock.release();
+    }
+  }
+
+  private async importShareToWorkspaceUnlocked(
     workspaceMetadata: WorkspaceMetadata,
     input: ShareImportInput,
     options: { allowOffline?: boolean } = {}
@@ -184,8 +204,7 @@ export class ImportClipperService extends Service {
       const existingRecord = docsService.list.doc$(input.documentId).value;
       const recovery = decideShareImportRecovery({
         receiptValue: persistedReceiptValue,
-        documentId: input.documentId,
-        importAttemptId: input.importAttemptId,
+        expectedAttemptId: input.importAttemptId,
         documentExists: !!existingRecord,
       });
       if (recovery === 'import-conflict') {
@@ -226,8 +245,7 @@ export class ImportClipperService extends Service {
           shareImportReceiptPropertyId,
           serializeShareImportReceipt(
             createShareImportReceipt({
-              documentId: input.documentId,
-              importAttemptId: input.importAttemptId,
+              attemptId: input.importAttemptId,
             })
           )
         );
@@ -370,9 +388,8 @@ export class ImportClipperService extends Service {
         shareImportReceiptPropertyId,
         serializeShareImportReceipt(
           createShareImportReceipt({
-            documentId: input.documentId,
-            importAttemptId: input.importAttemptId,
-            status: 'committed',
+            attemptId: input.importAttemptId,
+            state: 'committed',
           })
         )
       );

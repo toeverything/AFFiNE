@@ -2,18 +2,16 @@ export const shareImportReceiptPropertyId = 'affine:share-import-receipt-v1';
 
 export interface ShareImportReceipt {
   version: 1;
-  documentId: string;
-  importAttemptId: string;
-  status: 'preparing' | 'committed';
+  attemptId: string;
+  state: 'preparing' | 'committed';
 }
 
 export function createShareImportReceipt({
-  documentId,
-  importAttemptId,
-  status = 'preparing',
-}: Omit<ShareImportReceipt, 'version' | 'status'> &
-  Pick<Partial<ShareImportReceipt>, 'status'>): ShareImportReceipt {
-  return { version: 1, documentId, importAttemptId, status };
+  attemptId,
+  state = 'preparing',
+}: Omit<ShareImportReceipt, 'version' | 'state'> &
+  Pick<Partial<ShareImportReceipt>, 'state'>): ShareImportReceipt {
+  return { version: 1, attemptId, state };
 }
 
 export function parseShareImportReceipt(
@@ -28,13 +26,11 @@ export function parseShareImportReceipt(
     const receipt = parsed as Record<string, unknown>;
     const keys = Object.keys(receipt).sort();
     if (
-      keys.join(',') !== 'documentId,importAttemptId,status,version' ||
+      keys.join(',') !== 'attemptId,state,version' ||
       receipt.version !== 1 ||
-      typeof receipt.documentId !== 'string' ||
-      !receipt.documentId ||
-      typeof receipt.importAttemptId !== 'string' ||
-      !receipt.importAttemptId ||
-      (receipt.status !== 'preparing' && receipt.status !== 'committed')
+      typeof receipt.attemptId !== 'string' ||
+      !receipt.attemptId ||
+      (receipt.state !== 'preparing' && receipt.state !== 'committed')
     ) {
       return undefined;
     }
@@ -57,26 +53,22 @@ export type ShareImportRecovery =
 
 export function decideShareImportRecovery({
   receiptValue,
-  documentId,
-  importAttemptId,
+  expectedAttemptId,
   documentExists,
 }: {
   receiptValue: string | undefined;
-  documentId: string;
-  importAttemptId: string;
+  expectedAttemptId: string;
   documentExists: boolean;
 }): ShareImportRecovery {
   const receipt = parseShareImportReceipt(receiptValue);
   if (
     (receiptValue !== undefined && !receipt) ||
     (documentExists && !receipt) ||
-    (receipt &&
-      (receipt.documentId !== documentId ||
-        receipt.importAttemptId !== importAttemptId))
+    (receipt && receipt.attemptId !== expectedAttemptId)
   ) {
     return 'import-conflict';
   }
-  if (receipt?.status === 'committed') {
+  if (receipt?.state === 'committed') {
     return documentExists ? 'committed-replay' : 'import-conflict';
   }
   if (!receipt) return 'write-preparing-and-create';
