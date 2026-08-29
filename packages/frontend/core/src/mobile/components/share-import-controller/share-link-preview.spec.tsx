@@ -29,8 +29,10 @@ import {
   createAffineLinkPreviewFetch,
   resolveLinkPreviewEndpoint,
 } from '../../../blocksuite/view-extensions/link-preview-service/link-preview-service';
-import { createShareMarkdown } from '../../../modules/import-clipper/services/import';
-import { createShareBlockPlan } from '../../../modules/import-clipper/services/share-block-plan';
+import {
+  createCompatibilityShareBlockPlan,
+  createShareMarkdown,
+} from '../../../modules/import-clipper/services/import';
 import { previewForImport, ShareImportController } from './index';
 import {
   LinkPreview,
@@ -1189,15 +1191,7 @@ describe('share preview presentation', () => {
 });
 
 describe('share document block projection', () => {
-  test.each<
-    [
-      string,
-      ShareImportInput,
-      Parameters<typeof createShareBlockPlan>[1],
-      unknown,
-      string,
-    ]
-  >([
+  test.each<[string, ShareImportInput, unknown, unknown, string]>([
     [
       'generic metadata',
       {
@@ -1232,7 +1226,7 @@ describe('share document block projection', () => {
       '',
     ],
     [
-      'YouTube selection, chapters, and structured transcript',
+      'YouTube selection without a transcript body',
       {
         documentId: 'doc',
         importAttemptId: 'attempt',
@@ -1273,36 +1267,6 @@ describe('share document block projection', () => {
           id: 'share-attempt-selected-text',
           flavour: 'affine:paragraph',
           props: { type: 'quote', text: 'Selected passage' },
-        },
-        {
-          id: 'share-attempt-transcript',
-          flavour: 'affine:callout',
-          props: {
-            icon: { type: 'emoji', unicode: '💬' },
-            backgroundColorName: 'grey',
-          },
-          children: [
-            {
-              id: 'share-attempt-transcript-heading',
-              flavour: 'affine:paragraph',
-              props: { type: 'h6', text: 'Transcript', collapsed: true },
-            },
-            {
-              id: 'share-attempt-transcript-chapter-0',
-              flavour: 'affine:paragraph',
-              props: { type: 'h6', text: 'Opening' },
-            },
-            {
-              id: 'share-attempt-transcript-segment-2',
-              flavour: 'affine:paragraph',
-              props: { type: 'text', text: '[0:01] Host: Welcome' },
-            },
-            {
-              id: 'share-attempt-transcript-segment-3',
-              flavour: 'affine:paragraph',
-              props: { type: 'text', text: 'Plain paragraph' },
-            },
-          ],
         },
       ],
       '',
@@ -1356,9 +1320,14 @@ describe('share document block projection', () => {
     ],
   ])(
     'creates the same stable projection for %s',
-    (_name, input, embed, expected, markdown) => {
-      expect(createShareBlockPlan(input, embed)).toEqual(expected);
-      expect(createShareBlockPlan(input, embed)).toEqual(expected);
+    (_name, input, _embed, expected, markdown) => {
+      const first = createCompatibilityShareBlockPlan(input);
+      expect(first).toEqual(expected);
+      expect(createCompatibilityShareBlockPlan(input)).toEqual(expected);
+      for (const node of first) {
+        expect(node.props).not.toHaveProperty('sharePreviewSourceId');
+        expect(node.props).not.toHaveProperty('sharePreviewVersion');
+      }
       expect(createShareMarkdown(input)).toBe(markdown);
     }
   );

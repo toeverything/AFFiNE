@@ -14,6 +14,7 @@ import type {
   EmbedCardStyle,
   LinkPreviewData,
 } from '../../utils/index.js';
+import { BookmarkBlockTransformer } from './bookmark-transformer.js';
 
 export const BookmarkStyles = [
   'vertical',
@@ -29,6 +30,8 @@ export type BookmarkBlockProps = {
   caption: string | null;
   footnoteIdentifier: string | null;
   comments?: Record<string, boolean>;
+  sharePreviewSourceId?: string;
+  sharePreviewVersion?: number;
 } & LinkPreviewData &
   Omit<GfxCommonBlockProps, 'scale'> &
   BlockMeta;
@@ -54,6 +57,8 @@ const defaultBookmarkProps: BookmarkBlockProps = {
 
   footnoteIdentifier: null,
   comments: undefined,
+  sharePreviewSourceId: undefined,
+  sharePreviewVersion: undefined,
 };
 
 export const BookmarkBlockSchema = defineBlockSchema({
@@ -70,6 +75,8 @@ export const BookmarkBlockSchema = defineBlockSchema({
       'affine:list',
     ],
   },
+  transformer: transformerConfigs =>
+    new BookmarkBlockTransformer(transformerConfigs),
   toModel: () => new BookmarkBlockModel(),
 });
 

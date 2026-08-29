@@ -771,9 +771,174 @@ impl StorageRuntime {
 
 #[cfg(test)]
 mod tests {
+  use std::sync::RwLock;
+
+  use anyhow::{Context, Result as AnyResult};
+  use napi::bindgen_prelude::Buffer;
+  use sqlx::postgres::PgPoolOptions;
+  use tempfile::TempDir;
+  use tokio::sync::Mutex;
   use uuid::Uuid;
+  use y_octo::Doc;
 
   use super::*;
+  use crate::runtime::{
+    migrations::migrate_runtime_tables,
+    object_storage::{FsStorageConfig, StorageBackendConfig},
+    storage_runtime::StorageRuntimeConfig,
+  };
+
+  struct SharePreviewCleanupFixture {
+    runtime: StorageRuntime,
+    pool: PgPool,
+    object_root: TempDir,
+    workspace_id: String,
+    doc_id: String,
+    blob_key: String,
+  }
+
+  fn share_preview_doc(blob_key: Option<&str>) -> Vec<u8> {
+    let doc = Doc::default();
+    let mut blocks = doc.get_or_create_map("blocks").expect("blocks root should build");
+    let mut bookmark = doc.create_map().expect("bookmark should build");
+    bookmark
+      .insert("sys:id".to_string(), "bookmark")
+      .expect("bookmark id should insert");
+    bookmark
+      .insert("sys:flavour".to_string(), "affine:bookmark")
+      .expect("bookmark flavour should insert");
+    if let Some(blob_key) = blob_key {
+      bookmark
+        .insert("prop:sharePreviewSourceId".to_string(), blob_key)
+        .expect("bookmark source should insert");
+    }
+    blocks
+      .insert("bookmark".to_string(), bookmark)
+      .expect("bookmark should insert");
+    doc.encode_update_v1().expect("share preview fixture should encode")
+  }
+
+  async fn share_preview_cleanup_fixture(with_ref: bool) -> AnyResult<Option<SharePreviewCleanupFixture>> {
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      eprintln!("skipping postgres integration test: DATABASE_URL is not set");
+      return Ok(None);
+    };
+    let pool = PgPoolOptions::new()
+      .max_connections(5)
+      .connect(&database_url)
+      .await
+      .context("connect postgres for share preview cleanup tests")?;
+    migrate_runtime_tables(&pool)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    let object_root = tempfile::tempdir()?;
+    let runtime = StorageRuntime {
+      config: RwLock::new(StorageRuntimeConfig {
+        database_url,
+        object_storage: crate::runtime::object_storage::ObjectStorageService {
+          backends: HashMap::from([(
+            "blob".to_string(),
+            StorageBackendConfig::Fs(FsStorageConfig {
+              provider: "fs".to_string(),
+              root: object_root.path().to_string_lossy().to_string(),
+              bucket: "share-preview-cleanup-test".to_string(),
+            }),
+          )]),
+        },
+      }),
+      pool: Mutex::new(Some(pool.clone())),
+    };
+    let suffix = Uuid::new_v4().simple().to_string();
+    let workspace_id = format!("share-preview-cleanup-ws-{suffix}");
+    let doc_id = format!("share-preview-cleanup-doc-{suffix}");
+    let blob_key = format!("share-preview-details-{suffix}");
+    sqlx::query("INSERT INTO workspaces (id, created_at) VALUES ($1, CURRENT_TIMESTAMP)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    let root = affine_doc_loader::add_doc_to_root_doc(Vec::new(), &doc_id, None)?;
+    let doc = share_preview_doc(with_ref.then_some(blob_key.as_str()));
+    sqlx::query(
+      "INSERT INTO snapshots (workspace_id, guid, blob, updated_at) VALUES ($1, $1, $2, CURRENT_TIMESTAMP), ($1, $3, \
+       $4, CURRENT_TIMESTAMP)",
+    )
+    .bind(&workspace_id)
+    .bind(root)
+    .bind(&doc_id)
+    .bind(doc)
+    .execute(&pool)
+    .await?;
+    sqlx::query(
+      "INSERT INTO blobs (workspace_id, key, size, mime, status, created_at) VALUES ($1, $2, 7, 'application/json', \
+       'completed', CURRENT_TIMESTAMP)",
+    )
+    .bind(&workspace_id)
+    .bind(&blob_key)
+    .execute(&pool)
+    .await?;
+    runtime
+      .put_object(
+        "blob".to_string(),
+        format!("{workspace_id}/{blob_key}"),
+        Buffer::from(b"details".to_vec()),
+        None,
+      )
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+
+    Ok(Some(SharePreviewCleanupFixture {
+      runtime,
+      pool,
+      object_root,
+      workspace_id,
+      doc_id,
+      blob_key,
+    }))
+  }
+
+  async fn complete_share_preview_checkpoints(pool: &PgPool, workspace_id: &str) -> AnyResult<()> {
+    for kind in ["document_cleanup", "blob_metadata_backfill", "doc_blob_refs"] {
+      sqlx::query(
+        "INSERT INTO storage_reconciliation_checkpoints (kind, scope, status, cursor, completed_at, metadata) VALUES \
+         ($1, $2, 'completed', '{}', CURRENT_TIMESTAMP, '{}') ON CONFLICT (kind, scope) DO UPDATE SET status = \
+         'completed', completed_at = CURRENT_TIMESTAMP, metadata = CASE WHEN $1 = 'doc_blob_refs' THEN \
+         storage_reconciliation_checkpoints.metadata ELSE '{}'::jsonb END",
+      )
+      .bind(kind)
+      .bind(workspace_id)
+      .execute(pool)
+      .await?;
+    }
+    Ok(())
+  }
+
+  async fn cleanup_share_preview_fixture(fixture: &SharePreviewCleanupFixture) -> AnyResult<()> {
+    for table in [
+      "blob_cleanup_candidates",
+      "doc_blob_refs",
+      "doc_blob_ref_projections",
+      "snapshots",
+      "blobs",
+    ] {
+      sqlx::query(&format!("DELETE FROM {table} WHERE workspace_id = $1"))
+        .bind(&fixture.workspace_id)
+        .execute(&fixture.pool)
+        .await?;
+    }
+    sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE scope = $1")
+      .bind(&fixture.workspace_id)
+      .execute(&fixture.pool)
+      .await?;
+    sqlx::query("DELETE FROM storage_reconciliation_runs WHERE workspace_id = $1")
+      .bind(&fixture.workspace_id)
+      .execute(&fixture.pool)
+      .await?;
+    sqlx::query("DELETE FROM workspaces WHERE id = $1")
+      .bind(&fixture.workspace_id)
+      .execute(&fixture.pool)
+      .await?;
+    Ok(())
+  }
 
   #[tokio::test]
   async fn artifact_blob_alias_is_a_cleanup_reference_until_deleting() {
@@ -828,5 +993,174 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
+  }
+
+  #[tokio::test]
+  async fn share_preview_blob_cleanup_reprojects_reference_removal_before_plan_and_execute() -> AnyResult<()> {
+    let Some(fixture) = share_preview_cleanup_fixture(true).await? else {
+      return Ok(());
+    };
+    let _object_root = &fixture.object_root;
+    fixture
+      .runtime
+      .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    complete_share_preview_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+
+    let referenced = fixture
+      .runtime
+      .plan_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((referenced.candidates_marked, referenced.protected_by_doc_refs), (0, 1));
+    assert!(
+      fixture
+        .runtime
+        .head_object(
+          "blob".to_string(),
+          format!("{}/{}", fixture.workspace_id, fixture.blob_key)
+        )
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?
+        .is_some()
+    );
+
+    sqlx::query("UPDATE snapshots SET blob = $3, updated_at = clock_timestamp() WHERE workspace_id = $1 AND guid = $2")
+      .bind(&fixture.workspace_id)
+      .bind(&fixture.doc_id)
+      .bind(share_preview_doc(None))
+      .execute(&fixture.pool)
+      .await?;
+    let stale = fixture
+      .runtime
+      .plan_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((stale.candidates_marked, stale.protected_by_metadata), (0, 1));
+
+    fixture
+      .runtime
+      .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    complete_share_preview_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+
+    let eligible = fixture
+      .runtime
+      .plan_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(eligible.candidates_marked, 1);
+    let executed = fixture
+      .runtime
+      .execute_blob_cleanup_candidates(eligible.run_id.expect("cleanup run should exist"), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(
+      (executed.deleted_objects, executed.deleted_metadata, executed.failed),
+      (1, 1, 0)
+    );
+    assert!(
+      fixture
+        .runtime
+        .head_object(
+          "blob".to_string(),
+          format!("{}/{}", fixture.workspace_id, fixture.blob_key)
+        )
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?
+        .is_none()
+    );
+
+    cleanup_share_preview_fixture(&fixture).await?;
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn share_preview_blob_cleanup_v1_stale_pending_and_failed_projections_fail_closed() -> AnyResult<()> {
+    for status in ["fresh", "pending", "failed"] {
+      let Some(fixture) = share_preview_cleanup_fixture(false).await? else {
+        return Ok(());
+      };
+      let _object_root = &fixture.object_root;
+      fixture
+        .runtime
+        .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+      complete_share_preview_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+      sqlx::query(
+        "UPDATE doc_blob_ref_projections SET parser_version = 1, status = $3 WHERE workspace_id = $1 AND doc_id = $2",
+      )
+      .bind(&fixture.workspace_id)
+      .bind(&fixture.doc_id)
+      .bind(status)
+      .execute(&fixture.pool)
+      .await?;
+
+      let blocked_plan = fixture
+        .runtime
+        .plan_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+      assert_eq!(
+        (blocked_plan.candidates_marked, blocked_plan.protected_by_metadata),
+        (0, 1)
+      );
+
+      sqlx::query(
+        "UPDATE doc_blob_ref_projections p SET parser_version = $3, status = 'fresh', source_revision = s.updated_at FROM \
+         snapshots s WHERE p.workspace_id = $1 AND p.doc_id = $2 AND s.workspace_id = p.workspace_id AND s.guid = \
+         p.doc_id",
+      )
+      .bind(&fixture.workspace_id)
+      .bind(&fixture.doc_id)
+      .bind(PARSER_VERSION)
+      .execute(&fixture.pool)
+      .await?;
+      complete_share_preview_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+      let eligible = fixture
+        .runtime
+        .plan_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+      assert_eq!(eligible.candidates_marked, 1);
+      sqlx::query(
+        "UPDATE doc_blob_ref_projections SET parser_version = 1, status = $3 WHERE workspace_id = $1 AND doc_id = $2",
+      )
+      .bind(&fixture.workspace_id)
+      .bind(&fixture.doc_id)
+      .bind(status)
+      .execute(&fixture.pool)
+      .await?;
+      let blocked_execute = fixture
+        .runtime
+        .execute_blob_cleanup_candidates(eligible.run_id.expect("cleanup run should exist"), 0, 100)
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+      assert_eq!(
+        (
+          blocked_execute.deleted_objects,
+          blocked_execute.deleted_metadata,
+          blocked_execute.skipped_still_referenced,
+        ),
+        (0, 0, 1),
+        "v1 {status} projections must fail closed during execute"
+      );
+      assert!(
+        fixture
+          .runtime
+          .head_object(
+            "blob".to_string(),
+            format!("{}/{}", fixture.workspace_id, fixture.blob_key)
+          )
+          .await
+          .map_err(|err| anyhow::anyhow!(err.to_string()))?
+          .is_some()
+      );
+      cleanup_share_preview_fixture(&fixture).await?;
+    }
+    Ok(())
   }
 }

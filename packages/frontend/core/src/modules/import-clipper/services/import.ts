@@ -118,6 +118,13 @@ export function createShareMarkdown(input: ShareImportInput) {
   return parts.join('\n\n');
 }
 
+export function createCompatibilityShareBlockPlan(input: ShareImportInput) {
+  const preview = input.preview
+    ? { ...input.preview, transcript: undefined }
+    : undefined;
+  return createShareBlockPlan({ ...input, preview }, null);
+}
+
 function escapeMarkdown(value: string) {
   return value.replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');
 }
@@ -562,7 +569,7 @@ export class ImportClipperService extends Service {
 
   private shareLeaves(input: ShareImportInput): ShareBlockPlanNode[] {
     if (input.content.kind === 'url') {
-      return createShareBlockPlan(input, null);
+      return createCompatibilityShareBlockPlan(input);
     }
     const nodes: ShareBlockPlanNode[] = [];
     const selectedText = input.content.text?.trim();

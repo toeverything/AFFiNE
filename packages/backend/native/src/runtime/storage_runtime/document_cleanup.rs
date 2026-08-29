@@ -1054,7 +1054,7 @@ mod tests {
 
     sqlx::query(
       "UPDATE storage_reconciliation_checkpoints SET status = 'failed', metadata = \
-       '{\"parserVersion\":1,\"failedDocs\":99}' WHERE kind = 'doc_blob_refs' AND scope = $1",
+       '{\"parserVersion\":2,\"failedDocs\":99}' WHERE kind = 'doc_blob_refs' AND scope = $1",
     )
     .bind(&workspace_id)
     .execute(&pool)

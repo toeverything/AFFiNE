@@ -9,6 +9,78 @@ export const styles = css`
     width: 100%;
   }
 
+  .affine-bookmark-details {
+    border-top: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
+    padding: 8px 12px 0;
+  }
+
+  .affine-bookmark-details-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 0;
+    padding: 4px 0;
+    color: var(--affine-text-secondary-color);
+    background: transparent;
+    font-family: var(--affine-font-family);
+    font-size: var(--affine-font-xs);
+    line-height: 20px;
+    cursor: pointer;
+  }
+
+  .affine-bookmark-details-toggle:hover {
+    color: var(--affine-text-primary-color);
+  }
+
+  .affine-bookmark-details-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .affine-bookmark-details-content {
+    display: grid;
+    gap: 8px;
+    padding: 4px 0 8px 20px;
+    color: var(--affine-text-primary-color);
+    font-family: var(--affine-font-family);
+    font-size: var(--affine-font-xs);
+    line-height: 20px;
+    user-select: text;
+  }
+
+  .affine-bookmark-details-status,
+  .affine-bookmark-details-segment {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .affine-bookmark-details-status svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+  }
+
+  .affine-bookmark-details-meta {
+    color: var(--affine-text-secondary-color);
+  }
+
+  .affine-bookmark-details-description,
+  .affine-bookmark-details-segment span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .affine-bookmark-details-transcript {
+    display: grid;
+    gap: 6px;
+  }
+
+  .affine-bookmark-details-chapter {
+    margin-top: 4px;
+    font-weight: 600;
+  }
+
   .affine-bookmark-card {
     container: affine-bookmark-card / inline-size;
     margin: 0 auto;

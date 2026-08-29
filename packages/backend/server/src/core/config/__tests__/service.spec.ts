@@ -5,10 +5,11 @@ import Sinon from 'sinon';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
-import { InvalidAppConfigInput } from '../../../base';
+import { ConfigFactory, InvalidAppConfigInput } from '../../../base';
 import { Models } from '../../../models';
 import { SearchProviderType } from '../../../plugins/indexer/config';
 import { ServerService } from '../service';
+import { ServerFeature } from '../types';
 
 const module = await createModule({
   providers: [ServerService],
@@ -196,4 +197,29 @@ test('should emit config changed event', async t => {
       updates,
     })
   );
+});
+
+test('share preview Blob refs capability follows the default-false rollout flag', async t => {
+  t.false(new ConfigFactory().config.flags.sharePreviewBlobRefs);
+
+  try {
+    await service.updateConfig(user.id, [
+      { module: 'flags', key: 'sharePreviewBlobRefs', value: false },
+    ]);
+    service.onConfigChanged({ updates: { flags: {} } });
+    t.false(service.features.includes(ServerFeature.SharePreviewBlobRefs));
+
+    await service.updateConfig(user.id, [
+      { module: 'flags', key: 'sharePreviewBlobRefs', value: true },
+    ]);
+    service.onConfigChanged({ updates: { flags: {} } });
+    t.true(service.features.includes(ServerFeature.SharePreviewBlobRefs));
+  } finally {
+    await service.updateConfig(user.id, [
+      { module: 'flags', key: 'sharePreviewBlobRefs', value: false },
+    ]);
+    service.onConfigChanged({ updates: { flags: {} } });
+  }
+
+  t.false(service.features.includes(ServerFeature.SharePreviewBlobRefs));
 });

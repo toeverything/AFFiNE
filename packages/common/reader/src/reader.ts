@@ -858,7 +858,16 @@ export async function readAllBlocksFromDoc({
         content: contents,
       });
     } else if (bookmarkFlavours.has(flavour)) {
-      blockDocuments.push({ ...commonBlockProps });
+      const detailsBlobId =
+        flavour === 'affine:bookmark'
+          ? block.get('prop:sharePreviewSourceId')
+          : undefined;
+      blockDocuments.push({
+        ...commonBlockProps,
+        ...(typeof detailsBlobId === 'string' && detailsBlobId
+          ? { blob: [detailsBlobId] }
+          : {}),
+      });
     }
   }
   // #endregion
