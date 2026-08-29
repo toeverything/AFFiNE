@@ -1138,6 +1138,59 @@ describe('structured share-preview writer', () => {
     }
   );
 
+  test.each([
+    ['note wrong flavour', 'note', 'affine:paragraph', 'page'],
+    ['note wrong parent', 'note', 'affine:note', 'surface'],
+    ['surface wrong flavour', 'surface', 'affine:paragraph', 'page'],
+    ['surface wrong parent', 'surface', 'affine:surface', 'note'],
+  ])(
+    'returns a conflict when the stable %s invariant changes during authorization',
+    async (_name, target, flavour, parent) => {
+      let resolveConfig!: (value: unknown) => void;
+      const freshConfig = vi.fn(
+        () =>
+          new Promise(resolve => {
+            resolveConfig = resolve;
+          })
+      );
+      const response = {
+        url: 'https://example.com/skeleton-authorization-race',
+        title: 'Skeleton authorization race',
+      };
+      const selectedServer = routedPreviewServer({
+        preview: response,
+        freshConfig,
+      });
+      const routed = await loadRoutedPreview(response, selectedServer);
+      const harness = makeShareWriterHarness();
+      const ids = shareImportBlockIds('attempt');
+      const importing = harness.service.importShareToWorkspace(
+        harness.metadata,
+        writerInput(routed.preview),
+        { allowOffline: true }
+      );
+      await vi.waitFor(() => expect(freshConfig).toHaveBeenCalledTimes(1));
+
+      const model = harness.models.get(
+        target === 'note' ? ids.note : ids.surface
+      )!;
+      model.flavour = flavour;
+      model.parent = {
+        id:
+          parent === 'page'
+            ? ids.page
+            : parent === 'surface'
+              ? ids.surface
+              : ids.note,
+      };
+      resolveConfig({ features: [ServerFeature.SharePreviewBlobRefs] });
+
+      await expect(importing).resolves.toEqual({ status: 'import-conflict' });
+      expect(harness.blobSet).not.toHaveBeenCalled();
+      expect(harness.docs.setCustomPropertyById).toHaveBeenCalledTimes(1);
+    }
+  );
+
   test('returns a conflict when the stable plan becomes invalid during Blob storage', async () => {
     const response = {
       url: 'https://example.com/storage-conflict',
@@ -1179,6 +1232,42 @@ describe('structured share-preview writer', () => {
     expect(harness.models.get(ids.bookmark)?.props).toEqual({
       text: 'Invalid synced block',
     });
+  });
+
+  test('returns a conflict when the stable skeleton changes during Blob storage', async () => {
+    const response = {
+      url: 'https://example.com/skeleton-storage-conflict',
+      title: 'Skeleton storage conflict',
+    };
+    const selectedServer = routedPreviewServer({
+      preview: response,
+      freshConfig: async () => ({
+        features: [ServerFeature.SharePreviewBlobRefs],
+      }),
+    });
+    const routed = await loadRoutedPreview(response, selectedServer);
+    const harness = makeShareWriterHarness();
+    const ids = shareImportBlockIds('attempt');
+    let resolveBlob!: (sourceId: string) => void;
+    harness.blobSet.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          resolveBlob = resolve;
+        })
+    );
+    const importing = harness.service.importShareToWorkspace(
+      harness.metadata,
+      writerInput(routed.preview),
+      { allowOffline: true }
+    );
+    await vi.waitFor(() => expect(harness.blobSet).toHaveBeenCalledTimes(1));
+
+    harness.models.get(ids.note)!.parent = { id: ids.surface };
+    resolveBlob('details-content-hash');
+
+    await expect(importing).resolves.toEqual({ status: 'import-conflict' });
+    expect(harness.blobSet).toHaveBeenCalledTimes(1);
+    expect(harness.docs.setCustomPropertyById).toHaveBeenCalledTimes(1);
   });
 
   test('preserves a valid bookmark that arrives during Blob storage', async () => {

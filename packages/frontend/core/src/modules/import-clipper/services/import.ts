@@ -379,22 +379,8 @@ export class ImportClipperService extends Service {
           }
         }
         const ids = shareImportBlockIds(input.importAttemptId);
-        if (
-          !this.hasOnlyMatchingSkeleton(doc.blockSuiteDoc, ids) ||
-          !this.ensureBlock(doc.blockSuiteDoc, ids.page, 'affine:page') ||
-          !this.ensureBlock(
-            doc.blockSuiteDoc,
-            ids.surface,
-            'affine:surface',
-            ids.page
-          ) ||
-          !this.ensureBlock(
-            doc.blockSuiteDoc,
-            ids.note,
-            'affine:note',
-            ids.page
-          )
-        ) {
+        const leaves = this.shareLeaves(input);
+        if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
           return { status: 'import-conflict' };
         }
         if (!doc.blockSuiteDoc.getBlock(ids.page)) {
@@ -415,8 +401,7 @@ export class ImportClipperService extends Service {
         }
         await workspace.engine.doc.waitForUpdated(input.documentId);
 
-        const leaves = this.shareLeaves(input);
-        if (!this.ensurePlan(doc.blockSuiteDoc, leaves, ids.note)) {
+        if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
           return { status: 'import-conflict' };
         }
         const imageId = ids.image;
@@ -447,7 +432,7 @@ export class ImportClipperService extends Service {
         let sharePreviewSourceId: string | undefined;
         if (!doc.blockSuiteDoc.getBlock(ids.bookmark)) {
           const detailsBlob = await createSharePreviewDetailsBlob(input);
-          if (!this.ensurePlan(doc.blockSuiteDoc, leaves, ids.note)) {
+          if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
             return { status: 'import-conflict' };
           }
           if (
@@ -458,7 +443,7 @@ export class ImportClipperService extends Service {
             const authorized = await authorizeSharePreviewDetails(
               input.preview.authorizeDetailsWrite
             );
-            if (!this.ensurePlan(doc.blockSuiteDoc, leaves, ids.note)) {
+            if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
               return { status: 'import-conflict' };
             }
             if (authorized && !doc.blockSuiteDoc.getBlock(ids.bookmark)) {
@@ -469,7 +454,7 @@ export class ImportClipperService extends Service {
               } catch {
                 // Blob write failures preserve the ordinary bookmark fallback.
               }
-              if (!this.ensurePlan(doc.blockSuiteDoc, leaves, ids.note)) {
+              if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
                 return { status: 'import-conflict' };
               }
               if (!doc.blockSuiteDoc.getBlock(ids.bookmark)) {
@@ -499,7 +484,7 @@ export class ImportClipperService extends Service {
             input.attachment
           );
         }
-        if (!this.ensurePlan(doc.blockSuiteDoc, leaves, ids.note)) {
+        if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
           return { status: 'import-conflict' };
         }
         if (sharePreviewSourceId && !doc.blockSuiteDoc.getBlock(ids.bookmark)) {
@@ -699,6 +684,20 @@ export class ImportClipperService extends Service {
       });
     }
     return nodes;
+  }
+
+  private hasValidSharePlan(
+    store: Parameters<typeof createBlockStdScope>[0],
+    ids: ReturnType<typeof shareImportBlockIds>,
+    leaves: ShareBlockPlanNode[]
+  ): boolean {
+    return (
+      this.hasOnlyMatchingSkeleton(store, ids) &&
+      this.ensureBlock(store, ids.page, 'affine:page') &&
+      this.ensureBlock(store, ids.surface, 'affine:surface', ids.page) &&
+      this.ensureBlock(store, ids.note, 'affine:note', ids.page) &&
+      this.ensurePlan(store, leaves, ids.note)
+    );
   }
 
   private ensurePlan(
