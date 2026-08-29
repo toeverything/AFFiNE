@@ -5,6 +5,10 @@ import { Bound, clamp, Point } from '@blocksuite/global/gfx';
 import { signal } from '@preact/signals-core';
 import last from 'lodash-es/last.js';
 
+import {
+  classifyPointerInput,
+  isPencilInputActive,
+} from '../../event/control/input-classifier.js';
 import type { PointerEventState } from '../../event/state/pointer.js';
 import { getTopElements } from '../../utils/tree.js';
 import type { GfxBlockComponent } from '../../view/index.js';
@@ -501,9 +505,11 @@ export class InteractivityManager extends GfxExtension {
       const isCancel =
         event.type === 'pointercancel' || event.type === 'lostpointercapture';
       const shouldCommitCancel =
-        IS_IPAD &&
         event.type === 'pointercancel' &&
-        event.pointerType === 'pen';
+        event.pointerType === 'pen' &&
+        (IS_IPAD ||
+          classifyPointerInput(event) === 'pencil' ||
+          isPencilInputActive());
 
       if (isCancel && !shouldCommitCancel) {
         dragMoveCoalescer.cancel();

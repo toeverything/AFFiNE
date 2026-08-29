@@ -2,18 +2,22 @@
  * @vitest-environment happy-dom
  */
 
-import type * as GlobalEnv from '@blocksuite/global/env';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 
-vi.mock('@blocksuite/global/env', async importOriginal => ({
-  ...(await importOriginal<typeof GlobalEnv>()),
-  IS_IPAD: true,
-}));
-
+import { pointerInputClassifierRuntime } from '../event/control/input-classifier.js';
 import { PointerControl } from '../event/control/pointer.js';
 
 describe('PointerControl iPad Pencil routing', () => {
+  afterEach(() => {
+    pointerInputClassifierRuntime.classifier = null;
+  });
+
   function setupPointerControl() {
+    pointerInputClassifierRuntime.classifier = {
+      classify: event => (event.pointerType === 'pen' ? 'pencil' : undefined),
+      isPencilActive: () => true,
+    };
+
     const host = document.createElement('div');
     (host as any).std = {
       dnd: {

@@ -11,7 +11,10 @@ import {
 } from '../state/index.js';
 import { EventScopeSourceType, EventSourceState } from '../state/source.js';
 import { isFarEnough } from '../utils.js';
-import { classifyPointerInput } from './input-classifier.js';
+import {
+  classifyPointerInput,
+  pointerInputClassifierRuntime,
+} from './input-classifier.js';
 
 type PointerId = typeof PointerEvent.prototype.pointerId;
 
@@ -302,7 +305,10 @@ class DragController extends PointerControllerBase {
     // stroke, and an incidental second contact must not interrupt an active pen
     // stroke. Host-native classification (UITouch.TouchType) is consulted when
     // injected; on other platforms this is a no-op and behavior is unchanged.
-    if (IS_IPAD && this._shouldDiscardForPencilRouting(event)) {
+    if (
+      this._shouldUsePencilRouting() &&
+      this._shouldDiscardForPencilRouting(event)
+    ) {
       return;
     }
 
@@ -501,6 +507,10 @@ class DragController extends PointerControllerBase {
       return true;
     }
     return false;
+  }
+
+  private _shouldUsePencilRouting(): boolean {
+    return IS_IPAD || !!pointerInputClassifierRuntime.classifier;
   }
 
   // https://mikepk.com/2020/10/iOS-safari-scribble-bug/

@@ -2,15 +2,10 @@
  * @vitest-environment happy-dom
  */
 
-import type * as GlobalEnv from '@blocksuite/global/env';
 import { Bound } from '@blocksuite/global/gfx';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
-vi.mock('@blocksuite/global/env', async importOriginal => ({
-  ...(await importOriginal<typeof GlobalEnv>()),
-  IS_IPAD: true,
-}));
-
+import { pointerInputClassifierRuntime } from '../event/control/input-classifier.js';
 import { InteractivityManager } from '../gfx/interactivity/manager.js';
 
 function createPointerEvent(
@@ -83,6 +78,10 @@ function setupManager() {
 }
 
 describe('InteractivityManager pointer ownership', () => {
+  afterEach(() => {
+    pointerInputClassifierRuntime.classifier = null;
+  });
+
   test('ignores move and up events from non-owner pointers', () => {
     const { host, manager, model, view } = setupManager();
     const startEvent = createPointerEvent('pointerdown', {
@@ -162,6 +161,11 @@ describe('InteractivityManager pointer ownership', () => {
   });
 
   test('keeps iPad Pencil pointercancel compatible with successful release', () => {
+    pointerInputClassifierRuntime.classifier = {
+      classify: event => (event.pointerType === 'pen' ? 'pencil' : undefined),
+      isPencilActive: () => true,
+    };
+
     const { host, manager, model, view } = setupManager();
 
     manager.handleElementMove({
