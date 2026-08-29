@@ -98,7 +98,9 @@ yarn vitest --run packages/frontend/core/src/mobile/components/share-import-cont
 - [ ] Commit: `refactor(ios-share): route previews through selected workspace`
 
 ```bash
-yarn workspace @affine/server ava "src/plugins/worker/__tests__/service.spec.ts"
+NODE_OPTIONS="--import=file://$PWD/tools/cli/tsx-register.js" \
+  yarn workspace @affine/server ava --serial --no-worker-threads \
+  "src/plugins/worker/__tests__/service.spec.ts"
 yarn vitest --run packages/frontend/core/src/mobile/components/share-import-controller/share-link-preview.spec.tsx
 ```
 
@@ -274,9 +276,9 @@ yarn workspace @affine/server e2e src/__tests__/e2e/config/resolver.spec.ts
 
 ## Compatibility Gate C: Enable the Structured-Detail Writer
 
-Do not start Task 7 until release/compatibility owners confirm that every supported client version contains Task 6's bookmark schema, reader blob indexing, and snapshot transformer. For cloud and self-hosted workspaces, a strict config response from the selected server must also expose `ServerFeature.SharePreviewBlobRefs`; official deployment and supported self-host matrix owners must confirm parser-v2 rollout and rollout-flag activation. If either client minimum or server capability cannot be enforced, leave the writer disabled and create an ordinary bookmark. Rendering on an old client is insufficient because its unused-blob cleanup can delete the details Blob, and a new client cannot protect an object from an old server's cleanup projection.
+Task 7 may implement and test the writer behind an injected gate while this gate is blocked, but the production Gate C constant must remain `false`. Do not enable the production writer until release/compatibility owners confirm that every supported client version contains Task 6's bookmark schema, reader blob indexing, and snapshot transformer. For cloud and self-hosted workspaces, a strict config response from the selected server must also expose `ServerFeature.SharePreviewBlobRefs`; official deployment and supported self-host matrix owners must confirm parser-v2 rollout and rollout-flag activation. If either client minimum or server capability cannot be enforced, leave the writer disabled and create an ordinary bookmark. Rendering on an old client is insufficient because its unused-blob cleanup can delete the details Blob, and a new client cannot protect an object from an old server's cleanup projection.
 
-## Task 7: Enable the Structured-Detail Writer After Gate C
+## Task 7: Implement the Fail-Closed Structured-Detail Writer
 
 **Files:**
 
@@ -292,7 +294,7 @@ Do not start Task 7 until release/compatibility owners confirm that every suppor
 - Produces a bounded `SharePreviewRecord` Blob and places its content-hash ID/version on the stable bookmark.
 - Local workspaces use the release-level client Gate C. Cloud/self-hosted workspaces additionally require a successful strict fetch from the currently selected server to include `ServerFeature.SharePreviewBlobRefs` at write time; persisted `Server.config$` is never write authority.
 
-- [ ] Record Gate C approval, the enforced minimum client version, official server rollout, and supported self-host server matrix in the release issue before writing production references.
+- [ ] Keep the production Gate C constant `false` until the release issue records approval, the enforced minimum client version, official server rollout, and supported self-host server matrix. Tests may inject approval; implementation completion does not imply rollout approval.
 - [ ] Add failing tests proving ordinary pages, YouTube, and X create bookmarks with a content-hash details reference after Gate C when a strict config fetch from the target server advertises the capability. Capability missing, config unavailable, or switching to an unsupported server must create an ordinary titled bookmark without a details Blob; add explicit fixtures where cached `config$` contains the capability but the strict fetch fails or returns no capability. Local/no-preview imports remain ordinary bookmarks because there is no routed details record.
 - [ ] Serialize the routed `SharePreviewRecord` to a bounded JSON Blob with `blobSync.set`, then place source/version props on a newly created stable bookmark. Replay of an existing bookmark remains validate-only and never changes its props.
 - [ ] Add `Server.fetchFreshConfig(signal)`, implemented as one `ServerConfigStore.fetchServerConfig(this.baseUrl, signal)` call that returns the fetched config and propagates network/abort/schema errors. Do not implement it through `revalidateConfig` or `waitForConfigRevalidation`, which retries or swallows errors and leaves cached state observable.
@@ -323,7 +325,7 @@ Do not start Task 7 until release/compatibility owners confirm that every suppor
 
 - Modify: `docs/ios-share-extension-feasibility.md` only if verification reveals a factual mismatch.
 
-- [ ] Run all targeted Worker, frontend, reader, BlockSuite, and Swift tests from Tasks 1-8. Task 7 writer assertions are required only after Gate C passes; Task 6 compatibility assertions are always required.
+- [ ] Run all targeted Worker, frontend, reader, BlockSuite, and Swift tests from Tasks 1-8. Task 6 compatibility, Task 7 injected-gate writer, and Task 7 production fail-closed assertions are always required; only a production-enabled writer acceptance check depends on Gate C passing.
 - [ ] Run `yarn workspace @blocksuite/affine-model build` and `yarn workspace @blocksuite/affine-block-bookmark build`.
 - [ ] Run `BUILD_TYPE=canary PUBLIC_PATH="/" yarn affine @affine/ios build`.
 - [ ] Run `yarn workspace @affine/ios sync`.
