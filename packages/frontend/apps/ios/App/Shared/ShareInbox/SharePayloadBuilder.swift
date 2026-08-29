@@ -6,6 +6,7 @@ enum SharePayloadBuilder {
   private static let maxImageBytes = 12 * 1024 * 1024
   private static let maxTextCharacters = 250_000
   typealias FileCopy = (URL, URL) throws -> Void
+  typealias CoordinatedRead = (URL, (URL) throws -> Void) throws -> Void
 
   static func build(from extensionItems: [NSExtensionItem]) async -> SharePayloadDraft {
     removeStaleStagingDirectories()
@@ -246,7 +247,8 @@ enum SharePayloadBuilder {
   static func stageImage(
     from sourceURL: URL,
     suggestedName: String?,
-    copyFile: FileCopy = ShareInboxFileCopy.copyCoordinatedFile
+    copyFile: @escaping FileCopy = ShareInboxFileCopy.copyChunkedFile,
+    coordinatedRead: @escaping CoordinatedRead = ShareInboxFileCopy.withCoordinatedRead
   ) throws -> SharePayloadFile {
     removeStaleStagingDirectories()
     let didAccessSecurityScopedResource = sourceURL.startAccessingSecurityScopedResource()
@@ -255,21 +257,26 @@ enum SharePayloadBuilder {
         sourceURL.stopAccessingSecurityScopedResource()
       }
     }
-    let values = try sourceURL.resourceValues(forKeys: [.fileSizeKey])
-    guard let size = values.fileSize, size <= maxImageBytes else {
-      throw ShareInboxError.payloadTooLarge
+    var stagedFile: SharePayloadFile?
+    try coordinatedRead(sourceURL) { coordinatedURL in
+      let values = try coordinatedURL.resourceValues(forKeys: [.fileSizeKey])
+      guard let size = values.fileSize, size <= maxImageBytes else {
+        throw ShareInboxError.payloadTooLarge
+      }
+      guard let mimeType = ShareInboxSafety.detectRasterImageMimeType(
+        try ShareInboxFileCopy.readPrefix(from: coordinatedURL)
+      ) else {
+        throw ShareInboxError.invalidPayload
+      }
+      stagedFile = try stageImage(
+        name: normalizedFileName(suggestedName ?? coordinatedURL.lastPathComponent, mimeType: mimeType),
+        mimeType: mimeType,
+        size: size,
+        write: { destination in try copyFile(coordinatedURL, destination) }
+      )
     }
-    guard let mimeType = ShareInboxSafety.detectRasterImageMimeType(
-      try ShareInboxFileCopy.readPrefix(from: sourceURL)
-    ) else {
-      throw ShareInboxError.invalidPayload
-    }
-    return try stageImage(
-      name: normalizedFileName(suggestedName ?? sourceURL.lastPathComponent, mimeType: mimeType),
-      mimeType: mimeType,
-      size: size,
-      write: { destination in try copyFile(sourceURL, destination) }
-    )
+    guard let stagedFile else { throw ShareInboxError.invalidPayload }
+    return stagedFile
   }
 
   private static func stageImage(data: Data, suggestedName: String?) throws -> SharePayloadFile {

@@ -303,18 +303,27 @@ enum ShareInboxFileCopy {
   private static let chunkSize = 64 * 1024
 
   static func copyCoordinatedFile(from sourceURL: URL, to destinationURL: URL) throws {
+    try withCoordinatedRead(sourceURL) { source in
+      try copyChunkedFile(from: source, to: destinationURL)
+    }
+  }
+
+  static func withCoordinatedRead(
+    _ sourceURL: URL,
+    _ read: (URL) throws -> Void
+  ) throws {
     var coordinationError: NSError?
-    var copyError: Error?
+    var readError: Error?
     let coordinator = NSFileCoordinator()
     coordinator.coordinate(readingItemAt: sourceURL, options: [], error: &coordinationError) { source in
       do {
-        try copyChunkedFile(from: source, to: destinationURL)
+        try read(source)
       } catch {
-        copyError = error
+        readError = error
       }
     }
     if let coordinationError { throw coordinationError }
-    if let copyError { throw copyError }
+    if let readError { throw readError }
   }
 
   static func write(_ data: Data, to destinationURL: URL) throws {
@@ -333,7 +342,7 @@ enum ShareInboxFileCopy {
     return try handle.read(upToCount: count) ?? Data()
   }
 
-  private static func copyChunkedFile(from sourceURL: URL, to destinationURL: URL) throws {
+  static func copyChunkedFile(from sourceURL: URL, to destinationURL: URL) throws {
     guard FileManager.default.createFile(atPath: destinationURL.path, contents: nil) else {
       throw ShareInboxError.invalidPayload
     }

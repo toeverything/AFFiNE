@@ -24,6 +24,7 @@ final class ShareViewModel: ObservableObject {
 
   private var draft: SharePayloadDraft?
   private var userEditedTitle: String?
+  private var loadGeneration = 0
   private let store: ShareInboxStore
   private let buildPayload: ([NSExtensionItem]) async -> SharePayloadDraft
 
@@ -58,11 +59,16 @@ final class ShareViewModel: ObservableObject {
   }
 
   func load(from extensionContext: NSExtensionContext?) async {
+    loadGeneration &+= 1
+    let generation = loadGeneration
     isLoading = true
-    defer { isLoading = false }
 
     let items = extensionContext?.inputItems.compactMap { $0 as? NSExtensionItem } ?? []
     let built = await buildPayload(items)
+    guard generation == loadGeneration else {
+      built.discardStagingFiles()
+      return
+    }
     draft?.discardStagingFiles()
     draft = built
     userEditedTitle = nil
@@ -75,12 +81,15 @@ final class ShareViewModel: ObservableObject {
     } else {
       previewImage = nil
     }
+    isLoading = false
   }
 
   func discard() {
+    loadGeneration &+= 1
     draft?.discardStagingFiles()
     draft = nil
     previewImage = nil
+    isLoading = false
   }
 
   func save() async -> Bool {

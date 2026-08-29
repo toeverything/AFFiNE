@@ -34,6 +34,12 @@ final class ShareInboxSafetyTests: XCTestCase {
     return data
   }
 
+  private func makePNGData(size: Int = 64 * 1024) -> Data {
+    var data = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+    data.append(Data(repeating: 0x50, count: size - data.count))
+    return data
+  }
+
   private func makeProviderFile(data: Data? = nil, name: String = "provider-image.jpg") throws -> URL {
     let directory = FileManager.default.temporaryDirectory
       .appendingPathComponent("ShareInboxProviderTests-\(UUID().uuidString)", isDirectory: true)
@@ -46,9 +52,13 @@ final class ShareInboxSafetyTests: XCTestCase {
     return url
   }
 
-  private func makeDraft(stagingURL: URL, name: String = "shared-image.jpg") -> SharePayloadDraft {
+  private func makeDraft(
+    stagingURL: URL,
+    name: String = "shared-image.jpg",
+    title: String = "Shared image"
+  ) -> SharePayloadDraft {
     SharePayloadDraft(
-      title: "Shared image",
+      title: title,
       content: ShareInboxContent(kind: .image, url: nil, text: nil),
       previewText: "shared-image",
       file: SharePayloadFile(
@@ -97,6 +107,45 @@ final class ShareInboxSafetyTests: XCTestCase {
       atPath: ShareInboxConstants.stagingDirectoryURL.path
     ))
     XCTAssertEqual(after, before)
+  }
+
+  func testBuilderLeavesNoStagingDirectoryWhenCoordinatedReadFails() throws {
+    let source = try makeProviderFile()
+    try FileManager.default.createDirectory(
+      at: ShareInboxConstants.stagingDirectoryURL,
+      withIntermediateDirectories: true
+    )
+    let before = try Set(FileManager.default.contentsOfDirectory(
+      atPath: ShareInboxConstants.stagingDirectoryURL.path
+    ))
+
+    XCTAssertThrowsError(
+      try SharePayloadBuilder.stageImage(
+        from: source,
+        suggestedName: source.lastPathComponent,
+        coordinatedRead: { _, _ in throw TestCopyError.interrupted }
+      )
+    )
+
+    XCTAssertEqual(
+      try Set(FileManager.default.contentsOfDirectory(atPath: ShareInboxConstants.stagingDirectoryURL.path)),
+      before
+    )
+  }
+
+  func testBuilderUsesCoordinatedURLForImageMetadataAndContents() throws {
+    let original = try makeProviderFile(name: "original.jpg")
+    let coordinated = try makeProviderFile(data: makePNGData(), name: "changed.png")
+
+    let staged = try SharePayloadBuilder.stageImage(
+      from: original,
+      suggestedName: original.lastPathComponent,
+      coordinatedRead: { _, read in try read(coordinated) }
+    )
+
+    XCTAssertEqual(staged.mimeType, "image/png")
+    XCTAssertEqual(staged.size, try Data(contentsOf: coordinated).count)
+    XCTAssertEqual(try Data(contentsOf: staged.ownedStagingURL), try Data(contentsOf: coordinated))
   }
 
   func testBuilderRemovesStagingDirectoriesOlderThanOneDay() throws {
@@ -267,6 +316,83 @@ final class ShareInboxSafetyTests: XCTestCase {
 
     XCTAssertFalse(didSave)
     XCTAssertTrue(FileManager.default.fileExists(atPath: staged.ownedStagingURL.path))
+  }
+
+  @MainActor
+  func testViewModelDiscardsLateBuildAfterDiscard() async throws {
+    let (store, _) = try makeStore()
+    let staged = try SharePayloadBuilder.stageImage(
+      from: makeProviderFile(name: "late.jpg"),
+      suggestedName: "late.jpg"
+    )
+    let gate = DraftBuildGate()
+    let viewModel = ShareViewModel(store: store, buildPayload: { _ in
+      await gate.next()
+    })
+
+    let load = Task { await viewModel.load(from: nil) }
+    await gate.waitForPending(count: 1)
+    viewModel.discard()
+    await gate.resume(at: 0, with: makeDraft(stagingURL: staged.ownedStagingURL, name: staged.name))
+    await load.value
+
+    XCTAssertFalse(FileManager.default.fileExists(atPath: staged.ownedStagingURL.path))
+    XCTAssertFalse(viewModel.canSave)
+    XCTAssertEqual(viewModel.title, "")
+  }
+
+  @MainActor
+  func testViewModelKeepsNewestConcurrentLoadWhenOlderBuildReturnsLast() async throws {
+    let (store, _) = try makeStore()
+    let old = try SharePayloadBuilder.stageImage(
+      from: makeProviderFile(name: "old.jpg"),
+      suggestedName: "old.jpg"
+    )
+    let latest = try SharePayloadBuilder.stageImage(
+      from: makeProviderFile(name: "latest.jpg"),
+      suggestedName: "latest.jpg"
+    )
+    let gate = DraftBuildGate()
+    let viewModel = ShareViewModel(store: store, buildPayload: { _ in
+      await gate.next()
+    })
+
+    let firstLoad = Task { await viewModel.load(from: nil) }
+    await gate.waitForPending(count: 1)
+    let latestLoad = Task { await viewModel.load(from: nil) }
+    await gate.waitForPending(count: 2)
+    await gate.resume(
+      at: 1,
+      with: makeDraft(stagingURL: latest.ownedStagingURL, name: latest.name, title: "Latest image")
+    )
+    await latestLoad.value
+    await gate.resume(
+      at: 0,
+      with: makeDraft(stagingURL: old.ownedStagingURL, name: old.name, title: "Old image")
+    )
+    await firstLoad.value
+
+    XCTAssertEqual(viewModel.title, "Latest image")
+    XCTAssertFalse(FileManager.default.fileExists(atPath: old.ownedStagingURL.path))
+    XCTAssertTrue(FileManager.default.fileExists(atPath: latest.ownedStagingURL.path))
+    viewModel.discard()
+  }
+
+  @MainActor
+  func testViewModelDeinitDiscardsOwnedStagingFile() async throws {
+    let (store, _) = try makeStore()
+    let staged = try SharePayloadBuilder.stageImage(
+      from: makeProviderFile(name: "deinit.jpg"),
+      suggestedName: "deinit.jpg"
+    )
+    var viewModel: ShareViewModel? = ShareViewModel(store: store, buildPayload: { _ in
+      self.makeDraft(stagingURL: staged.ownedStagingURL, name: staged.name)
+    })
+
+    await viewModel?.load(from: nil)
+    viewModel = nil
+
+    XCTAssertFalse(FileManager.default.fileExists(atPath: staged.ownedStagingURL.path))
   }
 
   func testNewManifestEncodesVersionTwoAndImportAttemptIDWithoutPreviewRoute() throws {
@@ -572,4 +698,34 @@ private enum TestWriteError: Error {
 
 private enum TestCopyError: Error {
   case interrupted
+}
+
+private actor DraftBuildGate {
+  private var continuations: [CheckedContinuation<SharePayloadDraft, Never>] = []
+  private var waiters: [(Int, CheckedContinuation<Void, Never>)] = []
+
+  func next() async -> SharePayloadDraft {
+    await withCheckedContinuation { continuation in
+      continuations.append(continuation)
+      resumeWaiters()
+    }
+  }
+
+  func waitForPending(count: Int) async {
+    guard continuations.count < count else { return }
+    await withCheckedContinuation { continuation in
+      waiters.append((count, continuation))
+    }
+  }
+
+  func resume(at index: Int, with draft: SharePayloadDraft) {
+    continuations.remove(at: index).resume(returning: draft)
+  }
+
+  private func resumeWaiters() {
+    let ready = waiters.enumerated().filter { continuations.count >= $0.element.0 }
+    for (index, _) in ready.reversed() {
+      waiters.remove(at: index).1.resume()
+    }
+  }
 }
