@@ -170,12 +170,45 @@ async fn purge_removed_doc_refs(pool: &PgPool, workspace_id: &str, current_doc_i
   Ok(result.rows_affected() as i64)
 }
 
+/// Extract blob references from a content doc in one y-octo parse. Image and
+/// attachment blocks reference their file through `prop:sourceId` (the same
+/// refs `affine_doc_loader::get_blob_refs_from_binary` extracts, mirrored here
+/// so each doc is parsed once), and callout blocks reference their custom icon
+/// through a nested `prop:icon` map.
 fn extract_refs(blob: Vec<u8>) -> RuntimeResult<Vec<ExtractedRef>> {
-  let mut refs = extract_callout_icon_refs(&blob)?;
-  let mut block_refs = doc_loader::get_blob_refs_from_binary(blob)
+  let mut doc = Doc::default();
+  doc
+    .apply_update_from_binary_v1(&blob)
     .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))?;
-  block_refs.append(&mut refs);
-  Ok(block_refs)
+  // A doc without a `blocks` root (e.g. the workspace root or a db/userdata
+  // table doc) has no block refs.
+  let Ok(blocks) = doc.get_map("blocks") else {
+    return Ok(Vec::new());
+  };
+  let mut refs = Vec::new();
+  for (block_key, value) in blocks.iter() {
+    let Some(block) = value.to_map() else {
+      continue;
+    };
+    let Some(flavour) = read_string(block.get("sys:flavour")) else {
+      continue;
+    };
+    let blob_key = match flavour.as_str() {
+      "affine:image" | "affine:attachment" => read_string(block.get("prop:sourceId")),
+      CALLOUT_FLAVOUR => block.get("prop:icon").and_then(blob_icon_key),
+      _ => None,
+    };
+    let Some(blob_key) = blob_key else {
+      continue;
+    };
+    let block_id = read_string(block.get("sys:id")).unwrap_or_else(|| block_key.to_string());
+    refs.push(ExtractedRef {
+      blob_key,
+      block_id,
+      flavour,
+    });
+  }
+  Ok(refs)
 }
 
 /// Extract blob references from a workspace's synced `explorerIcon` table:
@@ -205,41 +238,6 @@ fn extract_explorer_icon_refs(blob: &[u8]) -> RuntimeResult<Vec<ExtractedRef>> {
       })
       .collect(),
   )
-}
-
-/// `affine_doc_loader` only extracts `prop:sourceId` refs from image and
-/// attachment blocks; callout blocks reference their custom icon blob from a
-/// nested `prop:icon` map instead, so those are walked here.
-fn extract_callout_icon_refs(blob: &[u8]) -> RuntimeResult<Vec<ExtractedRef>> {
-  let mut doc = Doc::default();
-  doc
-    .apply_update_from_binary_v1(blob)
-    .map_err(|err| RuntimeError::invalid_state(format!("Callout icon refs parse failed: {err}")))?;
-  // Mirror `get_blob_refs_from_binary`: a doc without a `blocks` root (e.g.
-  // the workspace root or a db/userdata table doc) simply has no block refs.
-  let Ok(blocks) = doc.get_map("blocks") else {
-    return Ok(Vec::new());
-  };
-  let mut refs = Vec::new();
-  for (block_key, value) in blocks.iter() {
-    let block_key = block_key.to_string();
-    let Some(block) = value.to_map() else {
-      continue;
-    };
-    if read_string(block.get("sys:flavour")).as_deref() != Some(CALLOUT_FLAVOUR) {
-      continue;
-    }
-    let Some(blob_key) = block.get("prop:icon").and_then(blob_icon_key) else {
-      continue;
-    };
-    let block_id = read_string(block.get("sys:id")).unwrap_or(block_key);
-    refs.push(ExtractedRef {
-      blob_key,
-      block_id,
-      flavour: CALLOUT_FLAVOUR.to_string(),
-    });
-  }
-  Ok(refs)
 }
 
 /// Read `{ type: 'blob', blobId }` from an icon value that may be a nested
@@ -286,6 +284,9 @@ mod tests {
       updated_at: Utc::now(),
     };
 
+    // The single-pass walk must stay in parity with the loader's extractor
+    // for the image/attachment refs it mirrors.
+    let loader_refs = doc_loader::get_blob_refs_from_binary(snapshot.blob.clone()).expect("loader refs should parse");
     let refs = extract_refs(snapshot.blob).expect("refs should parse");
 
     assert!(
@@ -293,6 +294,18 @@ mod tests {
         .iter()
         .any(|reference| { reference.blob_key == "image-blob-key" && reference.flavour == "affine:image" })
     );
+    let key = |reference: &ExtractedRef| {
+      (
+        reference.blob_key.clone(),
+        reference.block_id.clone(),
+        reference.flavour.clone(),
+      )
+    };
+    let mut ours = refs.iter().map(key).collect::<Vec<_>>();
+    let mut theirs = loader_refs.iter().map(key).collect::<Vec<_>>();
+    ours.sort();
+    theirs.sort();
+    assert_eq!(ours, theirs);
 
     let root = Doc::default();
     let mut meta = root.get_or_create_map("meta").expect("root meta should build");
@@ -330,7 +343,6 @@ mod tests {
 
     assert!(extract_refs(snapshot.blob).is_err());
     assert!(extract_explorer_icon_refs(&[0xff]).is_err());
-    assert!(extract_callout_icon_refs(&[0xff]).is_err());
   }
 
   #[test]
@@ -437,30 +449,31 @@ mod tests {
 
     let blob = doc.encode_update_v1().expect("doc should encode");
 
-    let mut callout_refs = extract_callout_icon_refs(&blob).expect("refs parse");
-    callout_refs.sort_by(|left, right| left.blob_key.cmp(&right.blob_key));
-    assert_eq!(callout_refs.len(), 2);
-    assert_eq!(callout_refs[0].blob_key, "callout-nested-key");
-    assert_eq!(callout_refs[0].block_id, "block-nested");
-    assert_eq!(callout_refs[0].flavour, CALLOUT_FLAVOUR);
-    assert_eq!(callout_refs[1].blob_key, "callout-plain-key");
-    assert_eq!(callout_refs[1].block_id, "block-plain");
-
-    // The full doc-content path merges the loader's image/attachment refs
-    // with the supplemental callout refs.
-    let mut all_refs = extract_refs(blob).expect("refs parse");
-    all_refs.sort_by(|left, right| left.blob_key.cmp(&right.blob_key));
+    // One walk yields the callout icon refs and the image ref together; the
+    // emoji callout contributes nothing.
+    let mut refs = extract_refs(blob).expect("refs parse");
+    refs.sort_by(|left, right| left.blob_key.cmp(&right.blob_key));
     assert_eq!(
-      all_refs
+      refs
         .iter()
-        .map(|reference| reference.blob_key.as_str())
+        .map(|reference| {
+          (
+            reference.blob_key.as_str(),
+            reference.block_id.as_str(),
+            reference.flavour.as_str(),
+          )
+        })
         .collect::<Vec<_>>(),
-      vec!["callout-nested-key", "callout-plain-key", "image-blob-key"]
+      vec![
+        ("callout-nested-key", "block-nested", CALLOUT_FLAVOUR),
+        ("callout-plain-key", "block-plain", CALLOUT_FLAVOUR),
+        ("image-blob-key", "block-image", "affine:image"),
+      ]
     );
 
-    // A doc without a `blocks` root has no callout refs.
+    // A doc without a `blocks` root has no refs.
     let empty = Doc::default().encode_update_v1().expect("doc should encode");
-    assert!(extract_callout_icon_refs(&empty).expect("refs parse").is_empty());
+    assert!(extract_refs(empty).expect("refs parse").is_empty());
   }
 }
 
