@@ -66,14 +66,16 @@ const cache: LinkPreviewCacheProvider = {
   clear: () => {},
 };
 
-const item = (previewRoute?: PendingShareItem['previewRoute']) =>
+const item = (previewRoute?: 'official' | 'deferred') =>
   ({
     id: 'item',
     documentId: 'doc',
+    schemaVersion: 2,
+    importAttemptId: 'attempt',
     title: 'Shared',
     content: { kind: 'url', url: 'https://youtube.com/watch?v=123' },
-    previewRoute,
-  }) satisfies PendingShareItem;
+    ...(previewRoute ? { previewRoute } : {}),
+  }) as unknown as PendingShareItem;
 
 const workspace = (flavour: string) =>
   ({ id: 'workspace', flavour }) as WorkspaceMetadata;
@@ -88,6 +90,20 @@ afterEach(() => {
 });
 
 describe('link preview transport and route ownership', () => {
+  test('does not let a legacy official preview route override a local workspace', () => {
+    const legacyItem = {
+      ...item(),
+      previewRoute: 'official',
+    } as unknown as PendingShareItem;
+    const owner = new SharePreviewRouteOwner(legacyItem);
+
+    owner.selectWorkspace(workspace('local'), [
+      server('cloud', 'https://app.affine.pro', ServerDeploymentType.Affine),
+    ]);
+
+    expect(owner.routeEndpoint).toBeUndefined();
+  });
+
   test('adds the app version only in the AFFiNE transport', async () => {
     const fetch = vi
       .fn()
@@ -155,15 +171,7 @@ describe('link preview transport and route ownership', () => {
 
   test.each([
     [
-      'official route',
-      'official' as const,
-      workspace('local'),
-      [] as Server[],
-      'https://app.affine.pro/api/worker/link-preview',
-    ],
-    [
       'self-hosted route',
-      'deferred' as const,
       workspace('self'),
       [
         server(
@@ -176,34 +184,20 @@ describe('link preview transport and route ownership', () => {
     ],
     [
       'cloud route',
-      'deferred' as const,
       workspace('cloud'),
       [server('cloud', 'https://cloud.example/', ServerDeploymentType.Affine)],
       'https://app.affine.pro/api/worker/link-preview',
     ],
-    [
-      'local deferred route',
-      'deferred' as const,
-      workspace('local'),
-      [],
-      undefined,
-    ],
-    [
-      'missing server',
-      'deferred' as const,
-      workspace('missing'),
-      [],
-      undefined,
-    ],
+    ['local deferred route', workspace('local'), [], undefined],
+    ['missing server', workspace('missing'), [], undefined],
     [
       'server with unknown config',
-      'deferred' as const,
       workspace('unknown'),
       [server('unknown', 'https://unknown.example/')],
       undefined,
     ],
-  ])('selects the %s', (_name, route, target, servers, endpoint) => {
-    const owner = new SharePreviewRouteOwner(item(route));
+  ])('selects the %s', (_name, target, servers, endpoint) => {
+    const owner = new SharePreviewRouteOwner(item());
     owner.selectWorkspace(target, servers);
     expect(owner.routeEndpoint).toBe(endpoint);
   });
@@ -217,7 +211,7 @@ describe('link preview transport and route ownership', () => {
         })
     );
     vi.stubGlobal('fetch', fetch);
-    const owner = new SharePreviewRouteOwner(item('deferred'));
+    const owner = new SharePreviewRouteOwner(item());
     const selected = workspace('self');
     owner.selectWorkspace(selected, [
       server('self', 'https://first.example/', ServerDeploymentType.Selfhosted),
@@ -266,7 +260,7 @@ describe('link preview transport and route ownership', () => {
       () => new Promise<Response>(() => {})
     );
     vi.stubGlobal('fetch', fetch);
-    const owner = new SharePreviewRouteOwner(item('deferred'));
+    const owner = new SharePreviewRouteOwner(item());
     owner.selectWorkspace(workspace('self'), [
       server('self', 'https://self.example/', ServerDeploymentType.Selfhosted),
     ]);
@@ -297,8 +291,10 @@ describe('link preview transport and route ownership', () => {
         })
     );
     vi.stubGlobal('fetch', fetch);
-    const owner = new SharePreviewRouteOwner(item('official'));
-    owner.selectWorkspace(undefined, []);
+    const owner = new SharePreviewRouteOwner(item());
+    owner.selectWorkspace(workspace('cloud'), [
+      server('cloud', 'https://app.affine.pro/', ServerDeploymentType.Affine),
+    ]);
     const controller = new AbortController();
     const first = owner.load(controller.signal)!;
 
@@ -321,7 +317,7 @@ describe('link preview transport and route ownership', () => {
       })
     );
     vi.stubGlobal('fetch', fetch);
-    const owner = new SharePreviewRouteOwner(item(undefined));
+    const owner = new SharePreviewRouteOwner(item());
 
     owner.selectWorkspace(undefined, []);
     expect(owner.routeEndpoint).toBeUndefined();
@@ -378,18 +374,16 @@ describe('share destination selection lifecycle', () => {
     const workspaces$ = { value: [selectedWorkspace] };
     const servers$ = { value: [] as Server[] };
     const pending = {
-      ...item('official'),
+      ...item(),
       content: {
         kind: 'url' as const,
         url: 'https://youtube.com/watch?v=selection',
       },
     } satisfies PendingShareItem;
-    let resolvePreview!: (response: Response) => void;
-    const previewFetch = vi.fn(
-      () =>
-        new Promise<Response>(resolve => {
-          resolvePreview = resolve;
-        })
+    const previewFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ url: pending.content.url }), {
+        status: 200,
+      })
     );
     vi.stubGlobal('fetch', previewFetch);
 
@@ -415,7 +409,9 @@ describe('share destination selection lifecycle', () => {
 
     const provider = {
       updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
-      listPending: vi.fn().mockResolvedValue([pending]),
+      listPending: vi
+        .fn()
+        .mockResolvedValue([{ status: 'ready' as const, item: pending }]),
       updateTarget: vi.fn().mockResolvedValue(undefined),
       resolveAttachment: vi.fn().mockResolvedValue(undefined),
       complete: vi.fn().mockResolvedValue(undefined),
@@ -437,16 +433,6 @@ describe('share destination selection lifecycle', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Tags Optional/ }));
     await screen.findByRole('button', { name: /Tag One/ });
-    resolvePreview(
-      new Response(JSON.stringify({ url: pending.content.url }), {
-        status: 200,
-      })
-    );
-    previewFetch.mockResolvedValue(
-      new Response(JSON.stringify({ url: pending.content.url }), {
-        status: 200,
-      })
-    );
     await waitFor(() => expect(provider.listPending).toHaveBeenCalledTimes(1));
     expect(screen.getByText('Tags')).toBeTruthy();
 
@@ -512,6 +498,38 @@ describe('share destination selection lifecycle', () => {
       }),
       { allowOffline: false }
     );
+  });
+
+  test('leaves an unsupported inbox entry intact while showing the upgrade-required state', async () => {
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [] } },
+      getProfile: () => ({ name$: { value: '' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, {});
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi.fn().mockResolvedValue([
+        {
+          status: 'unsupported-version' as const,
+          id: 'item',
+          schemaVersion: 3,
+        },
+      ]),
+      updateTarget: vi.fn(),
+      resolveAttachment: vi.fn(),
+      complete: vi.fn(),
+      setError: vi.fn(),
+    };
+
+    render(<ShareImportController provider={provider} />);
+
+    await screen.findByText('Update required');
+    expect(screen.getByText(/stay in your inbox until then/i)).toBeTruthy();
+    expect(provider.complete).not.toHaveBeenCalled();
   });
 });
 
@@ -631,9 +649,9 @@ describe('share preview presentation', () => {
 
   test('uses one media-first card for rich preview content', async () => {
     const shared = {
-      ...item('official'),
+      ...item(),
       content: {
-        ...item('official').content,
+        ...item().content,
         text: 'Selected passage',
       },
     } satisfies PendingShareItem;

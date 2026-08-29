@@ -23,13 +23,25 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
 
   @objc func listPending(_ call: CAPPluginCall) {
     do {
-      let items = try store.pendingItems().compactMap { item -> [String: Any]? in
-        if item.result != nil {
-          try? store.remove(item)
-          return nil
+      let items = try store.pendingItems().compactMap { entry -> [String: Any]? in
+        switch entry {
+        case let .ready(item):
+          if item.result != nil {
+            try? store.remove(item)
+            return nil
+          }
+          let data = try encoder.encode(item)
+          guard let item = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+          }
+          return ["status": "ready", "item": item]
+        case let .unsupportedVersion(itemId, schemaVersion):
+          return [
+            "status": "unsupported-version",
+            "id": itemId,
+            "schemaVersion": schemaVersion,
+          ]
         }
-        let data = try encoder.encode(item)
-        return try JSONSerialization.jsonObject(with: data) as? [String: Any]
       }
       call.resolve(["items": items])
     } catch {
@@ -124,7 +136,10 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
 
   private func item(from call: CAPPluginCall) throws -> ShareInboxItem {
     guard let itemId = call.getString("itemId"),
-          let item = store.pendingItems().first(where: { $0.id == itemId })
+          let item = store.pendingItems().compactMap({ entry -> ShareInboxItem? in
+            guard case let .ready(item) = entry else { return nil }
+            return item
+          }).first(where: { $0.id == itemId })
     else {
       throw ShareInboxError.invalidPayload
     }

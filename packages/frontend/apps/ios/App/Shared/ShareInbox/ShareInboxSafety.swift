@@ -43,6 +43,14 @@ enum ShareInboxSafety {
     UUID(uuidString: value)?.uuidString
   }
 
+  static func manifestSchemaVersion(from data: Data) -> Int? {
+    guard let manifest = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+      return nil
+    }
+    guard let schemaVersion = manifest["schemaVersion"] else { return 1 }
+    return schemaVersion as? Int
+  }
+
   static func normalizedWebURL(_ value: String) -> String? {
     guard
       let components = URLComponents(

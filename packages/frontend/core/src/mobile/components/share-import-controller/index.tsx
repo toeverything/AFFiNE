@@ -22,6 +22,7 @@ import { SelectionPage, type SelectionPageOption } from './selection-page';
 import * as styles from './style.css';
 import type {
   PendingShareItem,
+  ShareInboxEntry,
   ShareImportTarget,
   ShareInboxProvider,
   ShareLinkPreview,
@@ -148,7 +149,8 @@ export const ShareImportController = ({
   const workspaces = useLiveData(workspacesService.list.workspaces$);
   const serverAccounts = useLiveData(serversService.serversWithAccount$);
   const servers = useLiveData(serversService.servers$);
-  const [item, setItem] = useState<PendingShareItem>();
+  const [entry, setEntry] = useState<ShareInboxEntry>();
+  const item = entry?.status === 'ready' ? entry.item : undefined;
   const [page, setPage] = useState<Page>('main');
   const [selection, setSelection] = useState<ShareDestinationSelection>();
   const [destinations, setDestinations] = useState<ShareDestinationOptions>();
@@ -198,7 +200,7 @@ export const ShareImportController = ({
   const setManualItem = useCallback((next: PendingShareItem) => {
     const isCurrentItem = activeItemIdRef.current === next.id;
     activeItemIdRef.current = next.id;
-    setItem(next);
+    setEntry({ status: 'ready', item: next });
     if (!isCurrentItem) setPage('main');
     setSelection(current => reconcileShareDestinationSelection(current, next));
   }, []);
@@ -287,19 +289,31 @@ export const ShareImportController = ({
     try {
       const pending = await provider.listPending();
       let importedCount = 0;
-      let nextItem: PendingShareItem | undefined;
+      let nextEntry: ShareInboxEntry | undefined;
       for (const candidate of pending) {
-        if (candidate.target && !candidate.lastError) {
-          const imported = await importItem(candidate, candidate.target, false);
+        if (candidate.status === 'unsupported-version') {
+          nextEntry = candidate;
+          break;
+        }
+        const pendingItem = candidate.item;
+        if (pendingItem.target && !pendingItem.lastError) {
+          const imported = await importItem(
+            pendingItem,
+            pendingItem.target,
+            false
+          );
           if (imported) {
             importedCount += 1;
             continue;
           }
           const latest = await provider.listPending();
-          nextItem = latest.find(item => item.id === candidate.id);
+          nextEntry = latest.find(
+            entry =>
+              entry.status === 'ready' && entry.item.id === pendingItem.id
+          );
           break;
         }
-        nextItem = candidate;
+        nextEntry = candidate;
         break;
       }
       if (importedCount > 0) {
@@ -307,10 +321,12 @@ export const ShareImportController = ({
           title: `${importedCount} shared ${importedCount === 1 ? 'item' : 'items'} saved`,
         });
       }
-      if (nextItem) {
-        setManualItem(nextItem);
+      if (nextEntry?.status === 'ready') {
+        setManualItem(nextEntry.item);
+      } else if (nextEntry) {
+        setEntry(nextEntry);
       } else {
-        setItem(undefined);
+        setEntry(undefined);
       }
     } finally {
       refreshing.current = false;
@@ -374,10 +390,17 @@ export const ShareImportController = ({
         if (!options) {
           if (itemId) {
             await provider.setError(itemId, 'workspace-not-found');
-            setItem(current =>
-              current?.id === itemId &&
-              current.lastError !== 'workspace-not-found'
-                ? { ...current, lastError: 'workspace-not-found' }
+            setEntry(current =>
+              current?.status === 'ready' &&
+              current.item.id === itemId &&
+              current.item.lastError !== 'workspace-not-found'
+                ? {
+                    status: 'ready',
+                    item: {
+                      ...current.item,
+                      lastError: 'workspace-not-found',
+                    },
+                  }
                 : current
             );
           }
@@ -437,6 +460,39 @@ export const ShareImportController = ({
     }
   };
 
+  if (!entry) return null;
+
+  if (entry.status === 'unsupported-version') {
+    return (
+      <Modal
+        fullScreen
+        animation="slideBottom"
+        open
+        withoutCloseButton
+        onOpenChange={() => setEntry(undefined)}
+        contentOptions={{ style: { padding: 0 } }}
+      >
+        <div className={styles.page}>
+          <PageHeader
+            suffix={
+              <Button variant="plain" onClick={() => setEntry(undefined)}>
+                Not now
+              </Button>
+            }
+          >
+            <span className={styles.headerTitle}>Update required</span>
+          </PageHeader>
+          <main className={styles.main}>
+            <div className={styles.warning}>
+              Update AFFiNE to import this shared item. It will stay in your
+              inbox until then.
+            </div>
+          </main>
+        </div>
+      </Modal>
+    );
+  }
+
   if (!item) return null;
 
   const tagIds = activeSelection?.tagIds ?? [];
@@ -492,8 +548,13 @@ export const ShareImportController = ({
                     collectionId: '',
                   }
             );
-            setItem(current =>
-              current ? { ...current, lastError: undefined } : current
+            setEntry(current =>
+              current?.status === 'ready'
+                ? {
+                    status: 'ready',
+                    item: { ...current.item, lastError: undefined },
+                  }
+                : current
             );
             setPage('main');
           }}
@@ -570,7 +631,7 @@ export const ShareImportController = ({
       <div className={styles.page}>
         <PageHeader
           suffix={
-            <Button variant="plain" onClick={() => setItem(undefined)}>
+            <Button variant="plain" onClick={() => setEntry(undefined)}>
               Not now
             </Button>
           }
@@ -706,7 +767,7 @@ export const ShareImportController = ({
       animation="slideBottom"
       open
       withoutCloseButton
-      onOpenChange={() => setItem(undefined)}
+      onOpenChange={() => setEntry(undefined)}
       contentOptions={{ style: { padding: 0 } }}
     >
       {content}

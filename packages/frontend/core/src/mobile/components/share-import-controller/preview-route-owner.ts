@@ -110,10 +110,6 @@ export class SharePreviewRouteOwner {
   }
 
   selectWorkspace(workspace: WorkspaceMetadata | undefined, servers: Server[]) {
-    if (this.item.previewRoute === 'official') {
-      this.endpoint ??= OFFICIAL_LINK_PREVIEW_ENDPOINT;
-      return;
-    }
     if (!workspace || workspace.flavour === 'local') {
       this.setEndpoint(
         undefined,

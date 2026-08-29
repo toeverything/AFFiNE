@@ -1,5 +1,5 @@
 import type {
-  PendingShareItem,
+  ShareInboxEntry,
   ShareImportTarget,
 } from '@affine/core/mobile/components/share-import-controller/types';
 
@@ -7,7 +7,7 @@ export interface ShareInboxPlugin {
   updateWorkspaceMode(options: {
     mode: 'selfHostedPresent' | 'cloudOnly' | 'signedOut' | 'unknown';
   }): Promise<void>;
-  listPending(): Promise<{ items: PendingShareItem[] }>;
+  listPending(): Promise<{ items: ShareInboxEntry[] }>;
   updateTarget(options: {
     itemId: string;
     target: ShareImportTarget;

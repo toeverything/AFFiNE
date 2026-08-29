@@ -8,7 +8,8 @@ import Foundation
 final class ShareInboxStore {
   static let shared = ShareInboxStore()
 
-  private let fileManager = FileManager.default
+  private let fileManager: FileManager
+  private let configuredContainerURL: URL?
   private let encoder: JSONEncoder = {
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
@@ -21,10 +22,14 @@ final class ShareInboxStore {
     return decoder
   }()
 
-  private init() {}
+  init(fileManager: FileManager = .default, containerURL: URL? = nil) {
+    self.fileManager = fileManager
+    self.configuredContainerURL = containerURL
+  }
 
   var containerURL: URL? {
-    fileManager.containerURL(forSecurityApplicationGroupIdentifier: ShareInboxConstants.appGroupId)
+    configuredContainerURL
+      ?? fileManager.containerURL(forSecurityApplicationGroupIdentifier: ShareInboxConstants.appGroupId)
   }
 
   private var inboxDirectoryURL: URL? {
@@ -117,7 +122,7 @@ final class ShareInboxStore {
     return ShareInboxSafety.workspaceMode(from: data)
   }
 
-  func pendingItems() -> [ShareInboxItem] {
+  func pendingItems() -> [ShareInboxPendingEntry] {
     guard ensureDirectories(), let inboxDirectoryURL else { return [] }
     guard let urls = try? fileManager.contentsOfDirectory(
       at: inboxDirectoryURL,
@@ -129,19 +134,32 @@ final class ShareInboxStore {
 
     return urls
       .filter { $0.pathExtension.lowercased() == "json" }
-      .compactMap { url -> ShareInboxItem? in
+      .compactMap { url -> ShareInboxPendingEntry? in
         guard let data = try? Data(contentsOf: url) else {
           quarantine(url)
           return nil
         }
-        guard let item = try? decoder.decode(ShareInboxItem.self, from: data),
+        guard let schemaVersion = ShareInboxSafety.manifestSchemaVersion(from: data),
+              let itemId = ShareInboxSafety.normalizedManifestID(url.deletingPathExtension().lastPathComponent)
+        else {
+          quarantine(url)
+          return nil
+        }
+        if schemaVersion > ShareInboxItem.currentSchemaVersion {
+          return .unsupportedVersion(itemId: itemId, schemaVersion: schemaVersion)
+        }
+        guard var item = try? decoder.decode(ShareInboxItem.self, from: data),
               let expectedURL = manifestURL(for: item.id),
               expectedURL.lastPathComponent.caseInsensitiveCompare(url.lastPathComponent) == .orderedSame
         else {
           quarantine(url)
           return nil
         }
-        return item
+        if item.schemaVersion < ShareInboxItem.currentSchemaVersion {
+          item.schemaVersion = ShareInboxItem.currentSchemaVersion
+          guard (try? update(item)) != nil else { return nil }
+        }
+        return .ready(item)
       }
       .sorted { $0.createdAt < $1.createdAt }
   }

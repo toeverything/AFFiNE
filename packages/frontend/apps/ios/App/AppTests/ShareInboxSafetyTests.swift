@@ -11,6 +11,102 @@ private final class SharePreviewURLProtocol: URLProtocol {
 }
 
 final class ShareInboxSafetyTests: XCTestCase {
+  private func makeStore() throws -> (store: ShareInboxStore, containerURL: URL) {
+    let containerURL = FileManager.default.temporaryDirectory
+      .appendingPathComponent("ShareInboxSafetyTests-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: containerURL, withIntermediateDirectories: true)
+    addTeardownBlock {
+      try? FileManager.default.removeItem(at: containerURL)
+    }
+    return (ShareInboxStore(fileManager: .default, containerURL: containerURL), containerURL)
+  }
+
+  private func v1Manifest(id: String, documentId: String) -> Data {
+    Data(
+      """
+      {
+        "id":"\(id)",
+        "documentId":"\(documentId)",
+        "createdAt":"2026-08-27T00:00:00Z",
+        "title":"Original",
+        "content":{"kind":"url","url":"https://example.com/original?token=value"},
+        "previewRoute":"official",
+        "attachments":[]
+      }
+      """.utf8
+    )
+  }
+
+  func testNewManifestEncodesVersionTwoAndImportAttemptIDWithoutPreviewRoute() throws {
+    let item = ShareInboxItem(
+      title: "Shared",
+      content: ShareInboxContent(kind: .url, url: "https://example.com", text: nil)
+    )
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let manifest = try XCTUnwrap(
+      JSONSerialization.jsonObject(with: encoder.encode(item)) as? [String: Any]
+    )
+
+    XCTAssertEqual(manifest["schemaVersion"] as? Int, 2)
+    XCTAssertFalse((manifest["importAttemptId"] as? String ?? "").isEmpty)
+    XCTAssertNil(manifest["previewRoute"])
+  }
+
+  func testStoreMigratesV1ManifestOnceAndAtomicallyPersistsV2BeforeReturningReady() throws {
+    let (store, containerURL) = try makeStore()
+    XCTAssertTrue(store.ensureDirectories())
+    let id = UUID().uuidString
+    let manifestURL = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
+      .appendingPathComponent("\(id).json")
+    try v1Manifest(id: id, documentId: UUID().uuidString).write(to: manifestURL)
+
+    let entries = store.pendingItems()
+    XCTAssertEqual(entries.count, 1)
+    guard case let .ready(migrated) = entries[0] else {
+      return XCTFail("Expected the v1 manifest to migrate to a ready entry")
+    }
+    XCTAssertEqual(migrated.schemaVersion, 2)
+    XCTAssertFalse(migrated.importAttemptId.isEmpty)
+    XCTAssertEqual(migrated.previewRoute, .official)
+
+    let rewritten = try XCTUnwrap(
+      JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any]
+    )
+    XCTAssertEqual(rewritten["schemaVersion"] as? Int, 2)
+    XCTAssertEqual(rewritten["importAttemptId"] as? String, migrated.importAttemptId)
+    XCTAssertNil(rewritten["previewRoute"])
+
+    guard case let .ready(reloaded) = try XCTUnwrap(store.pendingItems().first) else {
+      return XCTFail("Expected the rewritten v2 manifest to remain ready")
+    }
+    XCTAssertEqual(reloaded.importAttemptId, migrated.importAttemptId)
+  }
+
+  func testStorePreservesUnknownFutureVersionAndReturnsUnsupportedEntry() throws {
+    let (store, containerURL) = try makeStore()
+    XCTAssertTrue(store.ensureDirectories())
+    let id = UUID().uuidString
+    let manifestURL = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
+      .appendingPathComponent("\(id).json")
+    let futureManifest = Data("{\"schemaVersion\":99,\"id\":\"\(id)\"}".utf8)
+    try futureManifest.write(to: manifestURL)
+
+    let entries = store.pendingItems()
+    XCTAssertEqual(entries, [.unsupportedVersion(itemId: id, schemaVersion: 99)])
+    XCTAssertEqual(try Data(contentsOf: manifestURL), futureManifest)
+    XCTAssertFalse(
+      FileManager.default.fileExists(
+        atPath: containerURL
+          .appendingPathComponent(ShareInboxConstants.inboxDirectoryName)
+          .appendingPathComponent(ShareInboxConstants.invalidDirectoryName)
+          .appendingPathComponent("\(id).json").path
+      )
+    )
+  }
+
   func testManifestTitleIgnoresPreviewAndOnlyAcceptsExplicitEdits() {
     let originalTitle = "Original Safari title"
     let serverPreviewTitle = "Untrusted server preview title"
