@@ -280,6 +280,92 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertFalse(didLoadPDF)
   }
 
+  func testBuilderDoesNotLoadBinaryRepresentationsForARemotePDFURL() async throws {
+    let pdf = try makeProviderFile(data: makePDFData(), name: "report.pdf")
+    let provider = NSItemProvider(object: URL(string: "https://example.com/report.pdf")! as NSURL)
+    var didLoadImage = false
+    var didLoadPDF = false
+    provider.registerDataRepresentation(
+      forTypeIdentifier: UTType.png.identifier,
+      visibility: .all
+    ) { completion in
+      didLoadImage = true
+      completion(self.makePNGData(), nil)
+      return nil
+    }
+    provider.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadPDF = true
+      completion(pdf, true, nil)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [provider]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertEqual(draft.content?.kind, .url)
+    XCTAssertEqual(draft.content?.url, "https://example.com/report.pdf")
+    XCTAssertNil(draft.file)
+    XCTAssertFalse(didLoadImage)
+    XCTAssertFalse(didLoadPDF)
+  }
+
+  func testBuilderDoesNotLoadPDFWhenDeclaredURLRepresentationFails() async throws {
+    let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
+    let provider = NSItemProvider()
+    provider.registerDataRepresentation(
+      forTypeIdentifier: UTType.url.identifier,
+      visibility: .all
+    ) { completion in
+      completion(nil, ShareInboxError.invalidPayload)
+      return nil
+    }
+    var didLoadPDF = false
+    provider.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadPDF = true
+      completion(source, true, nil)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [provider]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertNil(draft.file)
+    XCTAssertFalse(didLoadPDF)
+  }
+
+  func testBuilderLoadsPDFWhenURLRepresentationIsALocalFile() async throws {
+    let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
+    let provider = NSItemProvider(object: source as NSURL)
+    var didLoadPDF = false
+    provider.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadPDF = true
+      completion(source, true, nil)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [provider]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertEqual(draft.content?.kind, .pdf)
+    XCTAssertEqual(draft.file?.mimeType, "application/pdf")
+    XCTAssertTrue(didLoadPDF)
+  }
+
   func testBuilderTreatsProviderWithURLAndPDFAsURLAfterAnotherURL() async throws {
     let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
     let first = NSItemProvider(object: URL(string: "https://example.com/first")! as NSURL)
@@ -303,6 +389,68 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertEqual(draft.content?.url, "https://example.com/first")
     XCTAssertNil(draft.file)
     XCTAssertFalse(didLoadPDF)
+  }
+
+  func testBuilderDoesNotLoadSeparatePDFProviderWhenShareContainsRemoteURL() async throws {
+    let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
+    let remoteURL = NSItemProvider(
+      object: URL(string: "https://example.com/report.pdf")! as NSURL
+    )
+    let pdf = NSItemProvider()
+    var didLoadPDF = false
+    pdf.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadPDF = true
+      completion(source, true, nil)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [remoteURL, pdf]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertEqual(draft.content?.kind, .url)
+    XCTAssertEqual(draft.content?.url, "https://example.com/report.pdf")
+    XCTAssertNil(draft.file)
+    XCTAssertFalse(didLoadPDF)
+  }
+
+  func testBuilderRejectsTwoLocalPDFsEvenWhenShareContainsAURL() async {
+    let remoteURL = NSItemProvider(object: URL(string: "https://example.com")! as NSURL)
+    let first = NSItemProvider()
+    let second = NSItemProvider()
+    var didLoadFirst = false
+    var didLoadSecond = false
+    first.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadFirst = true
+      completion(nil, false, ShareInboxError.invalidPayload)
+      return nil
+    }
+    second.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadSecond = true
+      completion(nil, false, ShareInboxError.invalidPayload)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [remoteURL, first, second]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertNil(draft.content)
+    XCTAssertEqual(draft.errorMessage, "Share one image or PDF at a time.")
+    XCTAssertFalse(didLoadFirst)
+    XCTAssertFalse(didLoadSecond)
   }
 
   func testBuilderRemovesTemporaryDirectoryWhenProviderCopyIsInterrupted() throws {
@@ -441,6 +589,36 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertFalse(manifestWasVisibleDuringCopy)
     XCTAssertTrue(FileManager.default.fileExists(atPath: manifestURL.path))
     XCTAssertEqual(try Data(contentsOf: try XCTUnwrap(store.attachmentURL(for: attachment))), Data([0xFF, 0xD8, 0xFF]))
+  }
+
+  func testStoreRemovesStaleTemporaryAndManifestlessAttachmentDirectories() throws {
+    let (store, containerURL) = try makeStore()
+    XCTAssertTrue(store.ensureDirectories())
+    let attachmentsDirectory = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
+      .appendingPathComponent(ShareInboxConstants.attachmentsDirectoryName, isDirectory: true)
+    let staleTemporary = attachmentsDirectory
+      .appendingPathComponent(".\(UUID().uuidString).tmp", isDirectory: true)
+    let stalePublished = attachmentsDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let freshTemporary = attachmentsDirectory
+      .appendingPathComponent(".\(UUID().uuidString).tmp", isDirectory: true)
+    for directory in [staleTemporary, stalePublished, freshTemporary] {
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+    }
+    let staleDate = Date.now.addingTimeInterval(-ShareInboxConstants.stagingMaxAge - 1)
+    for directory in [staleTemporary, stalePublished] {
+      try FileManager.default.setAttributes(
+        [.modificationDate: staleDate],
+        ofItemAtPath: directory.path
+      )
+    }
+
+    _ = store.pendingItems()
+
+    XCTAssertFalse(FileManager.default.fileExists(atPath: staleTemporary.path))
+    XCTAssertFalse(FileManager.default.fileExists(atPath: stalePublished.path))
+    XCTAssertTrue(FileManager.default.fileExists(atPath: freshTemporary.path))
   }
 
   func testStoreDoesNotLeaveAttachmentDirectoryForTextItemAfterRemove() throws {
@@ -882,6 +1060,33 @@ final class ShareInboxSafetyTests: XCTestCase {
           .appendingPathComponent(ShareInboxConstants.invalidDirectoryName)
           .appendingPathComponent("\(id).json").path
       )
+    )
+  }
+
+  func testStoreReturnsSupportedItemsBeforeFutureVersionEntries() throws {
+    let (store, containerURL) = try makeStore()
+    let ready = ShareInboxItem(
+      createdAt: Date(timeIntervalSince1970: 1_800_000_000),
+      title: "Ready",
+      content: ShareInboxContent(kind: .text, url: nil, text: "ready")
+    )
+    try store.enqueue(ready)
+    let futureId = UUID().uuidString
+    let futureManifestURL = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
+      .appendingPathComponent("\(futureId).json")
+    try Data("{\"schemaVersion\":99,\"id\":\"\(futureId)\"}".utf8)
+      .write(to: futureManifestURL)
+
+    let entries = store.pendingItems()
+
+    guard case let .ready(first) = try XCTUnwrap(entries.first) else {
+      return XCTFail("Expected supported share before future-version entry")
+    }
+    XCTAssertEqual(first.id, ready.id)
+    XCTAssertEqual(
+      entries.last,
+      .unsupportedVersion(itemId: futureId, schemaVersion: 99)
     )
   }
 

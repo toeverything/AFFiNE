@@ -1,8 +1,8 @@
 import ava from 'ava';
 
 import { URLHelper } from '../../../base/helpers';
-import { isOriginAllowed } from '../utils';
 import { WorkerService } from '../service';
+import { isOriginAllowed } from '../utils';
 
 const test = ava;
 

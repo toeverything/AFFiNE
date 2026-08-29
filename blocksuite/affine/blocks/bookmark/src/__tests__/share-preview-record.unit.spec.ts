@@ -1,6 +1,6 @@
 import {
-  BookmarkBlockTransformer,
   type BookmarkBlockProps,
+  BookmarkBlockTransformer,
   MAX_SHARE_PREVIEW_BLOB_BYTES,
   MAX_SHARE_PREVIEW_CHAPTERS,
   MAX_SHARE_PREVIEW_SEGMENTS,
@@ -143,6 +143,24 @@ describe('SharePreviewRecord v1', () => {
 
     await expect(missing.load()).resolves.toEqual({ status: 'unavailable' });
     await expect(invalid.load()).resolves.toEqual({ status: 'unavailable' });
+  });
+
+  test('retries after a temporarily unavailable Blob and caches the successful result', async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(
+        new Blob([JSON.stringify(validRecord)], { type: 'application/json' })
+      );
+    const loader = new SharePreviewRecordLoader('details-blob', 1, get);
+
+    await expect(loader.load()).resolves.toEqual({ status: 'unavailable' });
+    await expect(loader.load()).resolves.toEqual({
+      status: 'loaded',
+      record: validRecord,
+    });
+    await loader.load();
+    expect(get).toHaveBeenCalledTimes(2);
   });
 
   test('ordinary bookmarks have no details loader work', async () => {

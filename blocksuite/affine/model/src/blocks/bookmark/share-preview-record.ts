@@ -214,7 +214,20 @@ export class SharePreviewRecordLoader {
 
   load(): Promise<SharePreviewLoadState> {
     if (!this.pending) {
-      this.pending = this.loadOnce();
+      const pending = this.loadOnce();
+      this.pending = pending;
+      pending.then(
+        state => {
+          if (state.status === 'unavailable' && this.pending === pending) {
+            this.pending = undefined;
+          }
+        },
+        () => {
+          if (this.pending === pending) {
+            this.pending = undefined;
+          }
+        }
+      );
     }
     return this.pending;
   }

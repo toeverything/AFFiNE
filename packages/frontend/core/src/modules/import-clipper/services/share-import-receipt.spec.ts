@@ -1,15 +1,15 @@
 /** @vitest-environment happy-dom */
 
+import { FileSizeLimitProvider } from '@blocksuite/affine/shared/services';
+import { describe, expect, test, vi } from 'vitest';
+
 import { CollectionService } from '../../collection';
 import { DocsService } from '../../doc';
 import { GuardService } from '../../permissions';
 import { TagService } from '../../tag';
 import type { WorkspaceMetadata, WorkspacesService } from '../../workspace';
-import { FileSizeLimitProvider } from '@blocksuite/affine/shared/services';
 import { ImportClipperService, type ShareImportInput } from './import';
 import { shareImportBlockIds } from './share-block-plan';
-import { describe, expect, test, vi } from 'vitest';
-
 import {
   createShareImportReceipt,
   decideShareImportRecovery,
@@ -545,6 +545,25 @@ describe('share import orchestration', () => {
     );
   });
 
+  test('synchronizes existing content before recovering stable blocks', async () => {
+    const harness = makeImportHarness({
+      receipt: serializeShareImportReceipt(
+        createShareImportReceipt({ attemptId: 'attempt-id' })
+      ),
+      recordExists: true,
+    });
+
+    await expect(
+      harness.service.importShareToWorkspace(harness.metadata, input())
+    ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
+
+    expect(harness.events.indexOf('synced:document-id')).toBeLessThan(
+      harness.events.indexOf(
+        `add:affine:page:${shareImportBlockIds('attempt-id').page}`
+      )
+    );
+  });
+
   test('creates an orphan preparing receipt with skipInit and restores the stable skeleton', async () => {
     const harness = makeImportHarness({
       receipt: serializeShareImportReceipt(
@@ -676,6 +695,36 @@ describe('share import orchestration', () => {
       )
     ).toHaveLength(1);
   });
+
+  test.each(['image', 'pdf'] as const)(
+    'returns a recoverable status when a %s Blob write fails',
+    async kind => {
+      const harness = makeImportHarness();
+      const file = new File(
+        [kind === 'pdf' ? '%PDF-1.7\n' : 'image'],
+        `shared.${kind}`,
+        {
+          type: kind === 'pdf' ? 'application/pdf' : 'image/png',
+        }
+      );
+      harness.blobSet.mockRejectedValueOnce(new Error('storage unavailable'));
+
+      await expect(
+        harness.service.importShareToWorkspace(
+          harness.metadata,
+          { ...input(), content: { kind }, attachment: file },
+          { allowOffline: true }
+        )
+      ).resolves.toEqual({ status: 'attachment-write-failed' });
+
+      expect(
+        [...harness.blocks.values()].filter(block =>
+          ['affine:image', 'affine:attachment'].includes(block.flavour)
+        )
+      ).toEqual([]);
+      expect(harness.events).not.toContain('receipt:committed');
+    }
+  );
 
   test('resolves the PDF limit from BlockStd before blob or block writes', async () => {
     const harness = makeImportHarness({ maxFileSize: 4 });

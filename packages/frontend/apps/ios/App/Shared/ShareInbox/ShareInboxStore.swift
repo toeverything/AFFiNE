@@ -75,6 +75,7 @@ final class ShareInboxStore {
       try fileManager.createDirectory(at: inboxDirectoryURL, withIntermediateDirectories: true)
       try fileManager.createDirectory(at: attachmentsDirectoryURL, withIntermediateDirectories: true)
       try fileManager.createDirectory(at: invalidDirectoryURL, withIntermediateDirectories: true)
+      removeStaleAttachmentDirectories()
       return true
     } catch {
       return false
@@ -375,6 +376,33 @@ final class ShareInboxStore {
     let destination = invalidDirectoryURL.appendingPathComponent(url.lastPathComponent)
     try? fileManager.removeItem(at: destination)
     try? fileManager.moveItem(at: url, to: destination)
+  }
+
+  private func removeStaleAttachmentDirectories() {
+    guard let attachmentsDirectoryURL,
+          let urls = try? fileManager.contentsOfDirectory(
+            at: attachmentsDirectoryURL,
+            includingPropertiesForKeys: [.contentModificationDateKey, .isDirectoryKey],
+            options: []
+          )
+    else { return }
+    let staleBefore = Date.now.addingTimeInterval(-ShareInboxConstants.stagingMaxAge)
+    for url in urls {
+      guard let values = try? url.resourceValues(
+        forKeys: [.contentModificationDateKey, .isDirectoryKey]
+      ),
+        values.isDirectory == true,
+        let modifiedAt = values.contentModificationDate,
+        modifiedAt < staleBefore
+      else { continue }
+      let name = url.lastPathComponent
+      let isTemporary = name.hasPrefix(".") && name.hasSuffix(".tmp")
+      let isPublishedOrphan = ShareInboxSafety.normalizedManifestID(name) != nil
+        && manifestURL(for: name).map { !fileManager.fileExists(atPath: $0.path) } == true
+      if isTemporary || isPublishedOrphan {
+        try? removeItem(url)
+      }
+    }
   }
 
   private static func writeAtomically(

@@ -4,8 +4,8 @@ import {
   parseSharePreviewBlob,
   type SharePreviewRecord,
 } from '@blocksuite/affine/model';
-import { Text } from '@blocksuite/affine/store';
 import { FileSizeLimitProvider } from '@blocksuite/affine/shared/services';
+import { Text } from '@blocksuite/affine/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
 
@@ -22,8 +22,8 @@ import {
   createShareBlockPlan,
   mergeShareDestinationMetadata,
   reconcileShareTitles,
-  shareImportBlockIds,
   type ShareBlockPlanNode,
+  shareImportBlockIds,
   validatesStableBlock,
 } from './share-block-plan';
 import {
@@ -94,7 +94,8 @@ export type ShareImportResult =
         | 'destination-not-found'
         | 'offline-confirmation-required'
         | 'attachment-missing'
-        | 'attachment-too-large';
+        | 'attachment-too-large'
+        | 'attachment-write-failed';
       missingTagIds?: string[];
     };
 
@@ -314,30 +315,35 @@ export class ImportClipperService extends Service {
       }
 
       const tagService = workspace.scope.get(TagService);
-      const tags = tagService.tagList.tags$.value;
-      const missingTagIds = input.tagIds.filter(
-        id => !tags.some(tag => tag.id === id)
-      );
       const collectionService = workspace.scope.get(CollectionService);
-      if (
-        missingTagIds.length > 0 ||
-        (input.collectionId &&
+      const validateDestination = () => {
+        const tags = tagService.tagList.tags$.value;
+        const missingTagIds = input.tagIds.filter(
+          id => !tags.some(tag => tag.id === id)
+        );
+        const collectionMissing =
+          !!input.collectionId &&
           !collectionService.collectionMetas$.value.some(
             collection => collection.id === input.collectionId
-          ))
-      ) {
-        return { status: 'destination-not-found', missingTagIds };
-      }
+          );
+        return missingTagIds.length > 0 || collectionMissing
+          ? ({ status: 'destination-not-found', missingTagIds } as const)
+          : undefined;
+      };
+      const initialDestinationError = validateDestination();
+      if (initialDestinationError) return initialDestinationError;
 
       const isAttachment =
         input.content.kind === 'image' || input.content.kind === 'pdf';
       if (isAttachment && !input.attachment) {
         return { status: 'attachment-missing' };
       }
-      if (input.content.kind === 'pdf' && input.attachment) {
-        if (input.attachment.size > maxShareAttachmentBytes) {
-          return { status: 'attachment-too-large' };
-        }
+      if (
+        input.content.kind === 'pdf' &&
+        input.attachment &&
+        input.attachment.size > maxShareAttachmentBytes
+      ) {
+        return { status: 'attachment-too-large' };
       }
 
       if (recovery === 'write-preparing-and-create') {
@@ -366,6 +372,10 @@ export class ImportClipperService extends Service {
       const { doc, release } = docsService.open(record.id);
       try {
         await doc.waitForSyncReady();
+        if (shouldSync) {
+          workspace.engine.doc.addPriority(input.documentId, 100);
+          await workspace.engine.doc.waitForSynced(input.documentId);
+        }
         if (input.content.kind === 'pdf' && input.attachment) {
           const std = this.createShareImportBlockStdScope(doc.blockSuiteDoc);
           try {
@@ -380,7 +390,14 @@ export class ImportClipperService extends Service {
         }
         const ids = shareImportBlockIds(input.importAttemptId);
         const leaves = this.shareLeaves(input);
-        if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
+        if (
+          !this.hasValidSharePlan(
+            doc.blockSuiteDoc,
+            ids,
+            leaves,
+            input.content.kind
+          )
+        ) {
           return { status: 'import-conflict' };
         }
         if (!doc.blockSuiteDoc.getBlock(ids.page)) {
@@ -401,7 +418,14 @@ export class ImportClipperService extends Service {
         }
         await workspace.engine.doc.waitForUpdated(input.documentId);
 
-        if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
+        if (
+          !this.hasValidSharePlan(
+            doc.blockSuiteDoc,
+            ids,
+            leaves,
+            input.content.kind
+          )
+        ) {
           return { status: 'import-conflict' };
         }
         const imageId = ids.image;
@@ -432,7 +456,14 @@ export class ImportClipperService extends Service {
         let sharePreviewSourceId: string | undefined;
         if (!doc.blockSuiteDoc.getBlock(ids.bookmark)) {
           const detailsBlob = await createSharePreviewDetailsBlob(input);
-          if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
+          if (
+            !this.hasValidSharePlan(
+              doc.blockSuiteDoc,
+              ids,
+              leaves,
+              input.content.kind
+            )
+          ) {
             return { status: 'import-conflict' };
           }
           if (
@@ -443,7 +474,14 @@ export class ImportClipperService extends Service {
             const authorized = await authorizeSharePreviewDetails(
               input.preview.authorizeDetailsWrite
             );
-            if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
+            if (
+              !this.hasValidSharePlan(
+                doc.blockSuiteDoc,
+                ids,
+                leaves,
+                input.content.kind
+              )
+            ) {
               return { status: 'import-conflict' };
             }
             if (authorized && !doc.blockSuiteDoc.getBlock(ids.bookmark)) {
@@ -454,7 +492,14 @@ export class ImportClipperService extends Service {
               } catch {
                 // Blob write failures preserve the ordinary bookmark fallback.
               }
-              if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
+              if (
+                !this.hasValidSharePlan(
+                  doc.blockSuiteDoc,
+                  ids,
+                  leaves,
+                  input.content.kind
+                )
+              ) {
                 return { status: 'import-conflict' };
               }
               if (!doc.blockSuiteDoc.getBlock(ids.bookmark)) {
@@ -470,9 +515,13 @@ export class ImportClipperService extends Service {
           input.attachment &&
           !doc.blockSuiteDoc.getBlock(imageId)
         ) {
-          imageSourceId = await workspace.docCollection.blobSync.set(
-            input.attachment
-          );
+          try {
+            imageSourceId = await workspace.docCollection.blobSync.set(
+              input.attachment
+            );
+          } catch {
+            return { status: 'attachment-write-failed' };
+          }
         }
         let attachmentSourceId: string | undefined;
         if (
@@ -480,11 +529,22 @@ export class ImportClipperService extends Service {
           input.attachment &&
           !doc.blockSuiteDoc.getBlock(attachmentId)
         ) {
-          attachmentSourceId = await workspace.docCollection.blobSync.set(
-            input.attachment
-          );
+          try {
+            attachmentSourceId = await workspace.docCollection.blobSync.set(
+              input.attachment
+            );
+          } catch {
+            return { status: 'attachment-write-failed' };
+          }
         }
-        if (!this.hasValidSharePlan(doc.blockSuiteDoc, ids, leaves)) {
+        if (
+          !this.hasValidSharePlan(
+            doc.blockSuiteDoc,
+            ids,
+            leaves,
+            input.content.kind
+          )
+        ) {
           return { status: 'import-conflict' };
         }
         if (sharePreviewSourceId && !doc.blockSuiteDoc.getBlock(ids.bookmark)) {
@@ -530,6 +590,8 @@ export class ImportClipperService extends Service {
       } finally {
         release();
       }
+      const currentDestinationError = validateDestination();
+      if (currentDestinationError) return currentDestinationError;
       const existingTagIds = new Set(record.meta$.value.tags ?? []);
       const metadata = mergeShareDestinationMetadata({
         existingTagIds,
@@ -689,14 +751,19 @@ export class ImportClipperService extends Service {
   private hasValidSharePlan(
     store: Parameters<typeof createBlockStdScope>[0],
     ids: ReturnType<typeof shareImportBlockIds>,
-    leaves: ShareBlockPlanNode[]
+    leaves: ShareBlockPlanNode[],
+    contentKind: ShareImportInput['content']['kind']
   ): boolean {
     return (
       this.hasOnlyMatchingSkeleton(store, ids) &&
       this.ensureBlock(store, ids.page, 'affine:page') &&
       this.ensureBlock(store, ids.surface, 'affine:surface', ids.page) &&
       this.ensureBlock(store, ids.note, 'affine:note', ids.page) &&
-      this.ensurePlan(store, leaves, ids.note)
+      this.ensurePlan(store, leaves, ids.note) &&
+      (contentKind !== 'image' ||
+        this.ensureBlock(store, ids.image, 'affine:image', ids.note)) &&
+      (contentKind !== 'pdf' ||
+        this.ensureBlock(store, ids.attachment, 'affine:attachment', ids.note))
     );
   }
 

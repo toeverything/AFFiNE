@@ -158,7 +158,7 @@ enum ShareInboxPendingEntry: Equatable {
     case let .ready(item):
       item.createdAt
     case .unsupportedVersion:
-      .distantPast
+      .distantFuture
     }
   }
 }

@@ -26,7 +26,10 @@ enum SharePayloadBuilder {
       contexts.append((item: item, providers: providers))
     }
 
-    let localBinaryProviders = contexts.flatMap(\.providers).filter(\.isLocalBinary)
+    let containsWebURL = contexts.flatMap(\.providers).contains { $0.webURL != nil }
+    let localBinaryProviders = contexts.flatMap(\.providers).filter {
+      ($0.hasImage || $0.hasPDF) && !$0.blocksBinaryFallback
+    }
     guard localBinaryProviders.count <= 1 else {
       return failure(title: title, message: "Share one image or PDF at a time.")
     }
@@ -60,7 +63,11 @@ enum SharePayloadBuilder {
         }
 
         let hasImage = providerContext.hasImage
+          && !providerContext.blocksBinaryFallback
+          && !containsWebURL
         let hasPDF = providerContext.hasPDF
+          && !providerContext.blocksBinaryFallback
+          && !containsWebURL
         if hasImage || hasPDF {
           do {
             file = try await (hasPDF ? loadPDF(from: provider) : loadImage(from: provider))
@@ -155,22 +162,20 @@ enum SharePayloadBuilder {
     let provider: NSItemProvider
     let safariPage: SafariPage?
     let webURL: URL?
+    let blocksBinaryFallback: Bool
     let hasImage: Bool
     let hasPDF: Bool
 
-    var isLocalBinary: Bool {
-      hasImage || (hasPDF && webURL == nil)
-    }
   }
 
   private static func providerContext(for provider: NSItemProvider) async -> ProviderContext {
-    let safariPage = provider.hasItemConformingToTypeIdentifier(UTType.propertyList.identifier)
+    let hasPropertyList = provider.hasItemConformingToTypeIdentifier(UTType.propertyList.identifier)
+    let hasURL = provider.hasItemConformingToTypeIdentifier(UTType.url.identifier)
+    let safariPage = hasPropertyList
       ? try? await loadSafariPage(from: provider)
       : nil
     var loadedURL = safariPage?.url.flatMap(URL.init(string:))
-    if loadedURL == nil,
-       provider.hasItemConformingToTypeIdentifier(UTType.url.identifier)
-    {
+    if loadedURL == nil, hasURL {
       loadedURL = try? await loadURL(from: provider)
     }
     let webURL = loadedURL.flatMap { ShareInboxSafety.normalizedWebURL($0.absoluteString) }
@@ -179,9 +184,9 @@ enum SharePayloadBuilder {
       provider: provider,
       safariPage: safariPage,
       webURL: webURL,
+      blocksBinaryFallback: (hasPropertyList || hasURL) && loadedURL?.isFileURL != true,
       hasImage: provider.hasItemConformingToTypeIdentifier(UTType.image.identifier),
       hasPDF: provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier)
-        && webURL == nil
     )
   }
 

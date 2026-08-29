@@ -166,52 +166,6 @@ export const previewMeta = style([
   },
 ]);
 
-export const transcriptPreview = style({
-  minWidth: 0,
-  marginTop: 8,
-  paddingTop: 10,
-  borderTop: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
-});
-
-export const transcriptLabel = style({
-  minWidth: 0,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  fontSize: 13,
-  fontWeight: 600,
-  lineHeight: '18px',
-  color: cssVarV2('text/secondary'),
-});
-
-export const transcriptIcon = style({
-  width: 16,
-  height: 16,
-  flex: '0 0 auto',
-});
-
-const transcriptExcerptBase = {
-  minWidth: 0,
-  marginTop: 4,
-  display: '-webkit-box',
-  overflow: 'hidden',
-  fontSize: 14,
-  fontWeight: 400,
-  lineHeight: '20px',
-  color: cssVarV2('text/secondary'),
-  WebkitBoxOrient: 'vertical' as const,
-};
-
-export const transcriptExcerpt = style({
-  ...transcriptExcerptBase,
-  WebkitLineClamp: 3,
-});
-
-export const transcriptExcerptWithSelectedText = style({
-  ...transcriptExcerptBase,
-  WebkitLineClamp: 2,
-});
-
 export const previewMedia = style({
   width: '100%',
   maxHeight: 180,

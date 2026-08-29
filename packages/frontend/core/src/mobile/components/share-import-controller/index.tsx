@@ -23,8 +23,8 @@ import { SelectionPage, type SelectionPageOption } from './selection-page';
 import * as styles from './style.css';
 import type {
   PendingShareItem,
-  ShareInboxEntry,
   ShareImportTarget,
+  ShareInboxEntry,
   ShareInboxProvider,
 } from './types';
 
@@ -38,6 +38,8 @@ interface ShareDestinationSelection {
   tagIds: string[];
   collectionId: string;
 }
+
+type ShareImportOutcome = 'pending' | 'completion-failed' | 'completed';
 
 const errorMessage = (error?: string) => {
   switch (error) {
@@ -53,6 +55,8 @@ const errorMessage = (error?: string) => {
       return 'The shared attachment is no longer available.';
     case 'attachment-too-large':
       return 'The shared attachment is too large for this workspace.';
+    case 'attachment-write-failed':
+      return 'AFFiNE could not store this attachment in the selected workspace. Try again or choose another workspace.';
     case 'import-conflict':
       return 'This share conflicts with an existing document and was not changed.';
     case 'completion-failed':
@@ -191,6 +195,11 @@ export const ShareImportController = ({
   const [linkPreview, setLinkPreview] = useState<SharePreviewState>();
   const linkPreviewRef = useRef<SharePreviewState | undefined>(undefined);
   const refreshing = useRef(false);
+  const refreshRequested = useRef(false);
+  const refreshRef = useRef<() => Promise<void>>(async () => {});
+  const importOperations = useRef(
+    new Map<string, Promise<ShareImportOutcome>>()
+  );
   const itemId = item?.id;
   const activeItemIdRef = useRef(itemId);
   activeItemIdRef.current = itemId;
@@ -223,6 +232,12 @@ export const ShareImportController = ({
   const selectedWorkspaceKey = activeSelection?.workspaceKey ?? '';
   const selectedWorkspace = workspaces.find(
     workspace => workspaceKey(workspace) === selectedWorkspaceKey
+  );
+  const selectedPreviewServer = servers.find(
+    server => server.id === selectedWorkspace?.flavour
+  );
+  const selectedPreviewServerConfig = useLiveData(
+    selectedPreviewServer?.config$
   );
   const selectedWorkspaceAvailable = !!selectedWorkspace;
   const selectedWorkspaceName = selectedWorkspace
@@ -261,7 +276,7 @@ export const ShareImportController = ({
     [itemId]
   );
 
-  const importItem = useCallback(
+  const performImportItem = useCallback(
     async (
       pending: PendingShareItem,
       target: ShareImportTarget,
@@ -343,8 +358,34 @@ export const ShareImportController = ({
     ]
   );
 
+  const importItem = useCallback(
+    async (
+      pending: PendingShareItem,
+      target: ShareImportTarget,
+      allowOffline: boolean
+    ) => {
+      const existing = importOperations.current.get(pending.id);
+      if (existing) {
+        return { outcome: await existing, ownsOperation: false };
+      }
+      const operation = performImportItem(pending, target, allowOffline);
+      importOperations.current.set(pending.id, operation);
+      try {
+        return { outcome: await operation, ownsOperation: true };
+      } finally {
+        if (importOperations.current.get(pending.id) === operation) {
+          importOperations.current.delete(pending.id);
+        }
+      }
+    },
+    [performImportItem]
+  );
+
   const refresh = useCallback(async () => {
-    if (refreshing.current) return;
+    if (refreshing.current) {
+      refreshRequested.current = true;
+      return;
+    }
     refreshing.current = true;
     try {
       const pending = await provider.listPending();
@@ -357,13 +398,13 @@ export const ShareImportController = ({
         }
         const pendingItem = candidate.item;
         if (pendingItem.target && !pendingItem.lastError) {
-          const outcome = await importItem(
+          const { outcome, ownsOperation } = await importItem(
             pendingItem,
             pendingItem.target,
             false
           );
           if (outcome === 'completed') {
-            importedCount += 1;
+            if (ownsOperation) importedCount += 1;
             continue;
           }
           if (outcome === 'completion-failed') {
@@ -397,10 +438,15 @@ export const ShareImportController = ({
       }
     } finally {
       refreshing.current = false;
+      if (refreshRequested.current) {
+        refreshRequested.current = false;
+        queueMicrotask(() => {
+          void refreshRef.current().catch(console.error);
+        });
+      }
     }
   }, [importItem, provider, setManualItem]);
 
-  const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
 
   useEffect(() => {
@@ -550,9 +596,13 @@ export const ShareImportController = ({
         }
         target = pendingItem.target;
       }
-      const outcome = await importItem(pendingItem, target, allowOffline);
+      const { outcome, ownsOperation } = await importItem(
+        pendingItem,
+        target,
+        allowOffline
+      );
       if (outcome === 'completed') {
-        notify.success({ title: 'Shared content saved' });
+        if (ownsOperation) notify.success({ title: 'Shared content saved' });
       } else if (outcome === 'completion-failed') {
         setManualItem({ ...item, lastError: 'completion-failed' });
         return;
@@ -759,6 +809,7 @@ export const ShareImportController = ({
                   owner={previewOwner}
                   workspace={selectedWorkspace}
                   servers={servers}
+                  serverConfigType={selectedPreviewServerConfig?.type}
                   onPreview={updateLinkPreview}
                 />
               ) : (

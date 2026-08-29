@@ -248,11 +248,11 @@ root meta title 和稳定 page block title：两者都空才写入导入标题�
 | 5. Enrichment 实现     | 仅在 G 通过后新增认证路由与 adapter；客户端固定使用目标 `Server.fetch(..., { credentials: 'include' })`；按版本/include/provider/授权作用域隔离缓存                         | Worker e2e 覆盖认证、跨 workspace 拒绝、有/无 transcript、限流、超限、公共/授权缓存隔离和降级                                                   | `feat(worker): add optional enriched link preview data`            | 等待 G                 |
 | 6. 发布收尾            | 六类输入回归，更新隐私/网络说明并关闭评审项                                                                                                                                 | 定向前端/Swift 测试；`BUILD_TYPE=canary PUBLIC_PATH="/" yarn affine @affine/ios build`；`yarn workspace @affine/ios sync`；Xcode 构建和真机手测 | `docs(ios-share): document routed preview and attachment behavior` | 自动化完成，真机待验收 |
 
-### 2026-08-29 验证记录
+### 2026-08-30 验证记录
 
 - Worker 定向测试在仓库 Node 22 下使用 `tsx-register` 和 `--no-worker-threads` 运行，结果
-  1/1；前端/reader/BlockSuite 定向测试 178/178、Swift
-  `ShareInboxSafetyTests` 43/43、server unit 24/24、config e2e 4/4、native parser
+  1/1；前端/reader/BlockSuite 定向测试 189/189、Swift
+  `ShareInboxSafetyTests` 50/50、server unit 24/24、config e2e 4/4、native parser
   5/5 和 PostgreSQL 对象清理集成测试 2/2 均通过。
 - `yarn typecheck`、变更文件 `oxfmt`、`cargo fmt`、GraphQL 生成物一致性、两个
   BlockSuite package build、canary iOS bundle、Capacitor sync、App 与 ShareExtension
@@ -260,6 +260,9 @@ root meta title 和稳定 page block title：两者都空才写入导入标题�
 - Gate C 尚未通过。生产 writer 的 rollout 常量保持 `false`，自动化覆盖能力缓存过期、实时
   config 失败、服务器/workspace 切换和异步竞态，以上场景均不写
   `sharePreviewSourceId`。
+- Gate G 尚未通过。通用 link-preview 响应中的 unsolicited provider、duration 和 transcript
+  字段会被忽略，主 App 不渲染时长或 transcript；结构化记录的只读兼容 schema 不等同于
+  启用 enrichment。
 - 当前 Xcode 设备列表没有在线物理 iPhone/iPad，因而六类输入 × cloud/self-hosted/local 的
   18 项真机分享矩阵、Extension 网络抓包和本地 workspace 网络抓包尚未执行。模拟器构建与
   自动化结果不能替代这些发布验收；连接真机并完成矩阵前，阶段 3/6 和发布门槛 6 不得标记为

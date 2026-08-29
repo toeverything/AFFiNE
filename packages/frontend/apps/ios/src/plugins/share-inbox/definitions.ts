@@ -1,6 +1,6 @@
 import type {
-  ShareInboxEntry,
   ShareImportTarget,
+  ShareInboxEntry,
 } from '@affine/core/mobile/components/share-import-controller/types';
 
 export interface ShareInboxPlugin {

@@ -1,6 +1,7 @@
 import type { Server } from '@affine/core/modules/cloud';
 import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
-import { LinkIcon, WaveRectangleIcon } from '@blocksuite/icons/rc';
+import type { ServerDeploymentType } from '@affine/graphql';
+import { LinkIcon } from '@blocksuite/icons/rc';
 import { useEffect, useRef, useState } from 'react';
 
 import type {
@@ -24,36 +25,19 @@ export function resolveShareTitle(
     : originalTitle || fallback;
 }
 
-const graphemeSegmenter = new Intl.Segmenter(undefined, {
-  granularity: 'grapheme',
-});
-
-export function transcriptPreviewText(
-  transcript: Preview['transcript']
-): string | undefined {
-  const text = transcript?.segments
-    .map(segment => segment.text.trim().replace(/\s+/g, ' '))
-    .filter(Boolean)
-    .join(' ');
-  if (!text) return undefined;
-  const graphemes = Array.from(
-    graphemeSegmenter.segment(text),
-    segment => segment.segment
-  );
-  return graphemes.length > 240 ? `${graphemes.slice(0, 240).join('')}…` : text;
-}
-
 export const LinkPreview = ({
   item,
   owner,
   workspace,
   servers,
+  serverConfigType,
   onPreview,
 }: {
   item: PendingShareItem;
   owner: SharePreviewRouteOwner;
   workspace: WorkspaceMetadata | undefined;
   servers: Server[];
+  serverConfigType?: ServerDeploymentType;
   onPreview(preview: SharePreviewState | undefined): void;
 }) => {
   const [state, setState] = useState<PreviewState>({ status: 'idle' });
@@ -107,7 +91,7 @@ export const LinkPreview = ({
       if (activeRequest.current === request) activeRequest.current = undefined;
       controller.abort();
     };
-  }, [item.id, onPreview, owner, servers, workspace]);
+  }, [item.id, onPreview, owner, serverConfigType, servers, workspace]);
 
   let hostname = 'Link';
   if (item.content.url) {
@@ -178,14 +162,7 @@ export const LinkPreview = ({
     preview.description && preview.description !== title
       ? preview.description
       : undefined;
-  const metadata = [
-    preview.author?.name,
-    formatDuration(preview.durationSeconds),
-  ]
-    .filter(Boolean)
-    .slice(0, 2)
-    .join(' · ');
-  const transcript = transcriptPreviewText(preview.transcript);
+  const metadata = preview.author?.name;
   return (
     <section className={styles.linkPreview} aria-label="Link preview">
       {preview.images?.[0] ? (
@@ -215,28 +192,6 @@ export const LinkPreview = ({
             <div className={styles.previewMeta}>{metadata}</div>
           ) : null}
         </div>
-        {transcript ? (
-          <div
-            className={styles.transcriptPreview}
-            role="group"
-            aria-label={`Transcript preview: ${transcript}`}
-          >
-            <div className={styles.transcriptLabel} aria-hidden="true">
-              <WaveRectangleIcon className={styles.transcriptIcon} />
-              Transcript
-            </div>
-            <div
-              className={
-                item.content.text
-                  ? styles.transcriptExcerptWithSelectedText
-                  : styles.transcriptExcerpt
-              }
-              aria-hidden="true"
-            >
-              {transcript}
-            </div>
-          </div>
-        ) : null}
       </div>
       {item.content.text ? (
         <blockquote className={styles.selectedText}>
@@ -247,11 +202,3 @@ export const LinkPreview = ({
     </section>
   );
 };
-
-function formatDuration(duration?: number) {
-  if (duration === undefined) return undefined;
-  const minutes = Math.floor(duration / 60);
-  return `${minutes}:${Math.floor(duration % 60)
-    .toString()
-    .padStart(2, '0')}`;
-}

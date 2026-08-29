@@ -1,8 +1,7 @@
 /** @vitest-environment happy-dom */
 
+import { notify } from '@affine/component';
 import { Server, ServersService } from '@affine/core/modules/cloud';
-import { readAllBlocksFromDoc } from '@affine/reader';
-import { parseSharePreviewBlob } from '@blocksuite/affine/model';
 import {
   ImportClipperService,
   type ShareImportInput,
@@ -12,7 +11,9 @@ import {
   WorkspacesService,
 } from '@affine/core/modules/workspace';
 import { ServerDeploymentType, ServerFeature } from '@affine/graphql';
+import { readAllBlocksFromDoc } from '@affine/reader';
 import { ToggleButton } from '@blocksuite/affine/components/toggle-button';
+import { parseSharePreviewBlob } from '@blocksuite/affine/model';
 import {
   type LinkPreviewCacheProvider,
   LinkPreviewService,
@@ -24,9 +25,8 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { Framework } from '@toeverything/infra';
 import type * as Infra from '@toeverything/infra';
-import { notify } from '@affine/component';
+import { Framework } from '@toeverything/infra';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { Array as YArray, Doc as YDoc, Map as YMap, Text as YText } from 'yjs';
 
@@ -34,25 +34,21 @@ import {
   createAffineLinkPreviewFetch,
   resolveLinkPreviewEndpoint,
 } from '../../../blocksuite/view-extensions/link-preview-service/link-preview-service';
+import { UnusedBlobs } from '../../../modules/blob-management/entity/unused-blobs';
+import { CollectionService } from '../../../modules/collection';
+import { DocsService } from '../../../modules/doc';
+import { DocsSearchService } from '../../../modules/docs-search';
 import {
   createCompatibilityShareBlockPlan,
   createShareMarkdown,
 } from '../../../modules/import-clipper/services/import';
-import { CollectionService } from '../../../modules/collection';
-import { DocsService } from '../../../modules/doc';
-import { DocsSearchService } from '../../../modules/docs-search';
-import { UnusedBlobs } from '../../../modules/blob-management/entity/unused-blobs';
+import { shareImportBlockIds } from '../../../modules/import-clipper/services/share-block-plan';
 import { GuardService } from '../../../modules/permissions';
 import { TagService } from '../../../modules/tag';
-import { shareImportBlockIds } from '../../../modules/import-clipper/services/share-block-plan';
 import { WorkspaceService } from '../../../modules/workspace';
 import { WorkspaceFlavoursService } from '../../../modules/workspace/services/flavours';
 import { previewForImport, ShareImportController } from './index';
-import {
-  LinkPreview,
-  resolveShareTitle,
-  transcriptPreviewText,
-} from './link-preview';
+import { LinkPreview, resolveShareTitle } from './link-preview';
 import {
   resolveShareWorkspaceMode,
   SharePreviewRouteOwner,
@@ -67,7 +63,7 @@ vi.mock('@toeverything/infra', async importOriginal => {
   const original = await importOriginal<typeof Infra>();
   return {
     ...original,
-    useLiveData: (source: { value: unknown }) => source.value,
+    useLiveData: (source: { value: unknown } | undefined) => source?.value,
     useService: (token: { name: string }) =>
       controllerServiceMocks.services.get(token.name),
   };
@@ -215,12 +211,12 @@ function makeShareWriterHarness({
   const guard = { can: vi.fn(async () => true) };
   const tagService = {
     tagList: {
-      tags$: { value: [] },
+      tags$: { value: [] as { id: string }[] },
       tagByTagId$: vi.fn(() => ({ value: { tag: vi.fn() } })),
     },
   };
   const collectionService = {
-    collectionMetas$: { value: [] },
+    collectionMetas$: { value: [] as { id: string }[] },
     addDocToCollection: vi.fn(),
   };
   const blobSet = vi.fn(async (_blob: Blob) => 'details-content-hash');
@@ -262,7 +258,15 @@ function makeShareWriterHarness({
     shareImportTails: new Map(),
   }) as ImportClipperService;
 
-  return { service, metadata, models, blobSet, docs };
+  return {
+    service,
+    metadata,
+    models,
+    blobSet,
+    docs,
+    tagService,
+    collectionService,
+  };
 }
 
 function writerInput(preview?: ShareLinkPreview): ShareImportInput {
@@ -535,7 +539,9 @@ describe('link preview transport and route ownership', () => {
           url: item().content.url,
           title: 42,
           images: ['https://example.com/image.jpg', 42],
-          transcript: { segments: 'invalid' },
+          provider: 'youtube',
+          durationSeconds: 90,
+          transcript: { segments: [{ text: 'must stay dormant' }] },
         }),
         { status: 200 }
       )
@@ -850,12 +856,6 @@ describe('structured share-preview writer', () => {
         version: 1,
         sourceUrl: 'https://youtube.com/watch?v=123',
         title: 'Video title',
-        provider: 'youtube',
-        durationSeconds: 90,
-        transcript: {
-          language: 'en',
-          segments: [{ text: 'Welcome', startSeconds: 1 }],
-        },
       },
     ],
     [
@@ -871,7 +871,6 @@ describe('structured share-preview writer', () => {
         sourceUrl: 'https://x.com/affine/status/123',
         title: 'Post title',
         description: 'Post body',
-        provider: 'x',
       },
     ],
   ])(
@@ -910,7 +909,12 @@ describe('structured share-preview writer', () => {
   );
 
   test.each([
-    ['fresh fetch fails', async () => Promise.reject(new Error('offline'))],
+    [
+      'fresh fetch fails',
+      async () => {
+        throw new Error('offline');
+      },
+    ],
     ['fresh response omits capability', async () => ({ features: [] })],
   ])('ignores cached capability when %s', async (_name, freshConfig) => {
     const response = {
@@ -1269,6 +1273,107 @@ describe('structured share-preview writer', () => {
 
     await expect(importing).resolves.toEqual({ status: 'import-conflict' });
     expect(harness.blobSet).toHaveBeenCalledTimes(1);
+    expect(harness.docs.setCustomPropertyById).toHaveBeenCalledTimes(1);
+  });
+
+  test('returns a conflict when the stable image block changes during Blob storage', async () => {
+    const harness = makeShareWriterHarness();
+    const ids = shareImportBlockIds('attempt');
+    let resolveBlob!: (sourceId: string) => void;
+    harness.blobSet.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          resolveBlob = resolve;
+        })
+    );
+    const importing = harness.service.importShareToWorkspace(
+      harness.metadata,
+      {
+        ...writerInput(),
+        content: { kind: 'image' },
+        attachment: new File(['image'], 'shared.png', { type: 'image/png' }),
+      },
+      { allowOffline: true }
+    );
+    await vi.waitFor(() => expect(harness.blobSet).toHaveBeenCalledTimes(1));
+
+    harness.models.set(ids.image, {
+      id: ids.image,
+      flavour: 'affine:paragraph',
+      parent: { id: ids.note },
+      props: { text: 'Synced collision' },
+    });
+    resolveBlob('image-content-hash');
+
+    await expect(importing).resolves.toEqual({ status: 'import-conflict' });
+    expect(harness.docs.setCustomPropertyById).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not commit when a requested tag disappears during Blob storage', async () => {
+    const harness = makeShareWriterHarness();
+    harness.tagService.tagList.tags$.value = [{ id: 'requested-tag' }];
+    let resolveBlob!: (sourceId: string) => void;
+    harness.blobSet.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          resolveBlob = resolve;
+        })
+    );
+    const importing = harness.service.importShareToWorkspace(
+      harness.metadata,
+      {
+        ...writerInput({
+          url: 'https://example.com/tag-race',
+          authorizeDetailsWrite: async () => true,
+        }),
+        tagIds: ['requested-tag'],
+      },
+      { allowOffline: true }
+    );
+    await vi.waitFor(() => expect(harness.blobSet).toHaveBeenCalledTimes(1));
+
+    harness.tagService.tagList.tags$.value = [];
+    resolveBlob('details-content-hash');
+
+    await expect(importing).resolves.toEqual({
+      status: 'destination-not-found',
+      missingTagIds: ['requested-tag'],
+    });
+    expect(harness.docs.setCustomPropertyById).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not commit when the requested collection disappears during Blob storage', async () => {
+    const harness = makeShareWriterHarness();
+    harness.collectionService.collectionMetas$.value = [
+      { id: 'requested-collection' },
+    ];
+    let resolveBlob!: (sourceId: string) => void;
+    harness.blobSet.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          resolveBlob = resolve;
+        })
+    );
+    const importing = harness.service.importShareToWorkspace(
+      harness.metadata,
+      {
+        ...writerInput({
+          url: 'https://example.com/collection-race',
+          authorizeDetailsWrite: async () => true,
+        }),
+        collectionId: 'requested-collection',
+      },
+      { allowOffline: true }
+    );
+    await vi.waitFor(() => expect(harness.blobSet).toHaveBeenCalledTimes(1));
+
+    harness.collectionService.collectionMetas$.value = [];
+    resolveBlob('details-content-hash');
+
+    await expect(importing).resolves.toEqual({
+      status: 'destination-not-found',
+      missingTagIds: [],
+    });
     expect(harness.docs.setCustomPropertyById).toHaveBeenCalledTimes(1);
   });
 
@@ -1699,6 +1804,7 @@ describe('share destination selection lifecycle', () => {
     'destination-not-found',
     'offline-confirmation-required',
     'import-conflict',
+    'attachment-write-failed',
   ] as const)('does not complete a native item after %s', async status => {
     const selectedWorkspace = workspace('local');
     const pending = {
@@ -2132,6 +2238,114 @@ describe('share destination selection lifecycle', () => {
     view.unmount();
     expect(revokeObjectURL).toHaveBeenCalledTimes(1);
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:b');
+  });
+
+  test('queues an inbox refresh event received while listPending is in flight', async () => {
+    let resolveFirst!: (entries: []) => void;
+    const pending = item();
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [] } },
+      getProfile: () => ({ name$: { value: '' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, {});
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise<[]>(resolve => {
+              resolveFirst = resolve;
+            })
+        )
+        .mockResolvedValueOnce([{ status: 'ready' as const, item: pending }]),
+      updateTarget: vi.fn(),
+      resolveAttachment: vi.fn(),
+      complete: vi.fn(),
+      setError: vi.fn(),
+    };
+
+    render(<ShareImportController provider={provider} />);
+    await waitFor(() => expect(provider.listPending).toHaveBeenCalledTimes(1));
+    window.dispatchEvent(new Event('affine:share-inbox'));
+    resolveFirst([]);
+
+    await screen.findByText('Choose where to save');
+    expect(provider.listPending).toHaveBeenCalledTimes(2);
+  });
+
+  test('does not import or complete an item twice when refresh joins a manual save', async () => {
+    const selectedWorkspace = workspace('local');
+    const shared = item();
+    let savedTarget: PendingShareItem['target'];
+    let completed = false;
+    let resolveImport!: (result: { status: 'imported'; docId: string }) => void;
+    const importResult = new Promise<{ status: 'imported'; docId: string }>(
+      resolve => {
+        resolveImport = resolve;
+      }
+    );
+    const importer = {
+      getShareDestinationOptions: vi.fn().mockResolvedValue({
+        verification: 'confirmed',
+        tags: [],
+        collections: [],
+      }),
+      importShareToWorkspace: vi.fn(() => importResult),
+    };
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [selectedWorkspace] } },
+      getProfile: () => ({ name$: { value: 'Local workspace' } }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, importer);
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi.fn(async () =>
+        completed
+          ? []
+          : [
+              {
+                status: 'ready' as const,
+                item: savedTarget ? { ...shared, target: savedTarget } : shared,
+              },
+            ]
+      ),
+      updateTarget: vi.fn(
+        async (_itemId: string, target: PendingShareItem['target']) => {
+          savedTarget = target;
+        }
+      ),
+      resolveAttachment: vi.fn().mockResolvedValue(undefined),
+      complete: vi.fn(async () => {
+        if (completed) throw new Error('already completed');
+        completed = true;
+      }),
+      setError: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<ShareImportController provider={provider} />);
+    await screen.findByText('Choose where to save');
+    fireEvent.click(screen.getByRole('button', { name: /Workspace Choose/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Local workspace/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(importer.importShareToWorkspace).toHaveBeenCalledTimes(1)
+    );
+
+    window.dispatchEvent(new Event('affine:share-inbox'));
+    await waitFor(() => expect(provider.listPending).toHaveBeenCalledTimes(2));
+    resolveImport({ status: 'imported', docId: shared.documentId });
+
+    await waitFor(() => expect(provider.complete).toHaveBeenCalledTimes(1));
+    expect(importer.importShareToWorkspace).toHaveBeenCalledTimes(1);
   });
 
   test('does not retain or create an object URL when an attachment resolves after unmount', async () => {
@@ -2674,6 +2888,7 @@ describe('share preview presentation', () => {
           url: shared.content.url!,
           title: 'Provider title',
           images: ['https://youtube.com/thumbnail.jpg'],
+          durationSeconds: 90,
           transcript: {
             segments: [{ text: '  Hello\n\tworld  ' }, { text: ' again ' }],
           },
@@ -2689,32 +2904,14 @@ describe('share preview presentation', () => {
       />
     );
 
-    await screen.findByText('Transcript');
-    expect(screen.getByText('Hello world again')).toBeTruthy();
-    expect(
-      screen.getByRole('group', {
-        name: 'Transcript preview: Hello world again',
-      })
-    ).toBeTruthy();
+    await screen.findByText('Provider title');
+    expect(screen.queryByText('Transcript')).toBeNull();
+    expect(screen.queryByText('Hello world again')).toBeNull();
+    expect(screen.queryByText('1:30')).toBeNull();
     expect(screen.getByText('Selected passage')).toBeTruthy();
     expect(container.querySelector('section > img')?.getAttribute('src')).toBe(
       'https://youtube.com/thumbnail.jpg'
     );
-    const family = String.fromCodePoint(
-      0x1f468,
-      0x200d,
-      0x1f469,
-      0x200d,
-      0x1f467
-    );
-    expect(
-      transcriptPreviewText({
-        segments: [{ text: '  ' }, { text: family.repeat(241) }],
-      })
-    ).toBe(`${family.repeat(240)}…`);
-    expect(
-      transcriptPreviewText({ segments: [{ text: '\n\t' }] })
-    ).toBeUndefined();
   });
 
   test('keeps failure compact without an empty media region', async () => {
@@ -2735,6 +2932,53 @@ describe('share preview presentation', () => {
 
     await screen.findByText('Preview unavailable');
     expect(container.querySelector('section > img')).toBeNull();
+  });
+
+  test('loads a routed preview when the selected server config becomes available', async () => {
+    const shared = item();
+    const selectedWorkspace = workspace('self');
+    const selectedServer = server('self', 'https://self.example/');
+    const fetchPreview = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          url: shared.content.url,
+          title: 'Loaded after config',
+        }),
+        { status: 200 }
+      )
+    );
+    Object.assign(selectedServer, { fetch: fetchPreview });
+    const servers = [selectedServer];
+    const owner = new SharePreviewRouteOwner(shared);
+    const onPreview = vi.fn();
+    const view = render(
+      <LinkPreview
+        item={shared}
+        owner={owner}
+        workspace={selectedWorkspace}
+        servers={servers}
+        serverConfigType={undefined}
+        onPreview={onPreview}
+      />
+    );
+    expect(fetchPreview).not.toHaveBeenCalled();
+
+    (selectedServer.config$ as any).value = {
+      type: ServerDeploymentType.Selfhosted,
+    };
+    view.rerender(
+      <LinkPreview
+        item={shared}
+        owner={owner}
+        workspace={selectedWorkspace}
+        servers={servers}
+        serverConfigType={ServerDeploymentType.Selfhosted}
+        onPreview={onPreview}
+      />
+    );
+
+    await screen.findByText('Loaded after config');
+    expect(fetchPreview).toHaveBeenCalledTimes(1);
   });
 
   test.each([
