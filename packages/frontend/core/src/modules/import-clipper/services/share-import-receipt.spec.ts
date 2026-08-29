@@ -5,7 +5,6 @@ import { DocsService } from '../../doc';
 import { GuardService } from '../../permissions';
 import { TagService } from '../../tag';
 import type { WorkspaceMetadata, WorkspacesService } from '../../workspace';
-import { AsyncLock } from '@toeverything/infra/utils';
 import { ImportClipperService, type ShareImportInput } from './import';
 import { shareImportBlockIds } from './share-block-plan';
 import { describe, expect, test, vi } from 'vitest';
@@ -183,6 +182,26 @@ function input(importAttemptId = 'attempt-id'): ShareImportInput {
   };
 }
 
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>(done => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+function makeQueuedImportService(
+  importShareToWorkspaceUnlocked: (
+    workspaceMetadata: WorkspaceMetadata,
+    input: ShareImportInput
+  ) => Promise<{ status: 'imported'; docId: string }>
+) {
+  return Object.assign(Object.create(ImportClipperService.prototype), {
+    shareImportTails: new Map(),
+    importShareToWorkspaceUnlocked,
+  }) as ImportClipperService;
+}
+
 function makeImportHarness({
   receipt,
   recordExists = false,
@@ -339,13 +358,129 @@ function makeImportHarness({
     getWorkspaceProfile,
     service: Object.assign(Object.create(ImportClipperService.prototype), {
       workspacesService: workspaces,
-      shareImportLock: new AsyncLock(),
+      shareImportTails: new Map(),
     }) as ImportClipperService,
     metadata,
   };
 }
 
 describe('share import orchestration', () => {
+  test('queues A, B, C, and a post-release D for one workspace document without overlap', async () => {
+    const gates = new Map(
+      ['A', 'B', 'C', 'D'].map(label => [label, deferred()])
+    );
+    const started: string[] = [];
+    let active = 0;
+    let maxActive = 0;
+    const service = makeQueuedImportService(async (_, currentInput) => {
+      const label = currentInput.importAttemptId;
+      started.push(label);
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await gates.get(label)?.promise;
+      active -= 1;
+      return { status: 'imported', docId: currentInput.documentId };
+    });
+    const metadata = {
+      id: 'workspace-id',
+      flavour: 'server',
+    } as WorkspaceMetadata;
+
+    const a = service.importShareToWorkspace(metadata, input('A'));
+    await vi.waitFor(() => expect(started).toEqual(['A']));
+    const b = service.importShareToWorkspace(metadata, input('B'));
+    const c = service.importShareToWorkspace(metadata, input('C'));
+    gates.get('A')?.resolve();
+    await vi.waitFor(() => expect(started).toEqual(['A', 'B']));
+    const d = service.importShareToWorkspace(metadata, input('D'));
+
+    gates.get('B')?.resolve();
+    await vi.waitFor(() => expect(started).toEqual(['A', 'B', 'C']));
+    gates.get('C')?.resolve();
+    await vi.waitFor(() => expect(started).toEqual(['A', 'B', 'C', 'D']));
+    gates.get('D')?.resolve();
+    await Promise.all([a, b, c, d]);
+
+    expect(maxActive).toBe(1);
+    expect((service as any).shareImportTails.size).toBe(0);
+  });
+
+  test('allows different workspace or document keys to complete while one key is blocked', async () => {
+    const firstGate = deferred();
+    const started: string[] = [];
+    const service = makeQueuedImportService(async (metadata, currentInput) => {
+      const label = `${metadata.id}:${currentInput.documentId}`;
+      started.push(label);
+      if (label === 'workspace-id:document-id') {
+        await firstGate.promise;
+      }
+      return { status: 'imported', docId: currentInput.documentId };
+    });
+    const metadata = {
+      id: 'workspace-id',
+      flavour: 'server',
+    } as WorkspaceMetadata;
+    const otherWorkspace = {
+      id: 'other-workspace-id',
+      flavour: 'server',
+    } as WorkspaceMetadata;
+
+    const a = service.importShareToWorkspace(metadata, input('A'));
+    await vi.waitFor(() =>
+      expect(started).toEqual(['workspace-id:document-id'])
+    );
+    const b = service.importShareToWorkspace(metadata, {
+      ...input('B'),
+      documentId: 'other-document-id',
+    });
+    const c = service.importShareToWorkspace(otherWorkspace, input('C'));
+
+    await expect(Promise.all([b, c])).resolves.toEqual([
+      { status: 'imported', docId: 'other-document-id' },
+      { status: 'imported', docId: 'document-id' },
+    ]);
+    expect(started).toEqual(
+      expect.arrayContaining([
+        'workspace-id:other-document-id',
+        'other-workspace-id:document-id',
+      ])
+    );
+    firstGate.resolve();
+    await a;
+    expect((service as any).shareImportTails.size).toBe(0);
+  });
+
+  test('does not conflate queue keys whose identifiers contain separators', async () => {
+    const firstGate = deferred();
+    const started: string[] = [];
+    const service = makeQueuedImportService(async (_metadata, currentInput) => {
+      started.push(currentInput.importAttemptId);
+      if (currentInput.importAttemptId === 'A') {
+        await firstGate.promise;
+      }
+      return { status: 'imported', docId: currentInput.documentId };
+    });
+
+    const a = service.importShareToWorkspace(
+      { id: 'workspace:document', flavour: 'server' } as WorkspaceMetadata,
+      { ...input('A'), documentId: 'id' }
+    );
+    await vi.waitFor(() => expect(started).toEqual(['A']));
+    const b = service.importShareToWorkspace(
+      { id: 'workspace', flavour: 'server' } as WorkspaceMetadata,
+      { ...input('B'), documentId: 'document:id' }
+    );
+
+    await expect(b).resolves.toEqual({
+      status: 'imported',
+      docId: 'document:id',
+    });
+    expect(started).toEqual(['A', 'B']);
+    firstGate.resolve();
+    await a;
+    expect((service as any).shareImportTails.size).toBe(0);
+  });
+
   test('confirmed offline import uses only loaded local state and local update waits', async () => {
     const harness = makeImportHarness();
 

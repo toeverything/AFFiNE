@@ -3,7 +3,6 @@ import type { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
 import { Text } from '@blocksuite/affine/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
-import { AsyncLock } from '@toeverything/infra/utils';
 
 import { CollectionService } from '../../collection';
 import { DocsService } from '../../doc';
@@ -120,7 +119,7 @@ function escapeMarkdown(value: string) {
 }
 
 export class ImportClipperService extends Service {
-  private readonly shareImportLock = new AsyncLock();
+  private readonly shareImportTails = new Map<string, Promise<void>>();
 
   constructor(private readonly workspacesService: WorkspacesService) {
     super();
@@ -131,15 +130,37 @@ export class ImportClipperService extends Service {
     input: ShareImportInput,
     options: { allowOffline?: boolean } = {}
   ): Promise<ShareImportResult> {
-    const lock = await this.shareImportLock.acquire();
+    const key = JSON.stringify([
+      workspaceMetadata.flavour,
+      workspaceMetadata.id,
+      input.documentId,
+    ]);
+    return this.enqueueShareImport(key, () =>
+      this.importShareToWorkspaceUnlocked(workspaceMetadata, input, options)
+    );
+  }
+
+  private async enqueueShareImport<T>(
+    key: string,
+    operation: () => Promise<T>
+  ) {
+    const previous = this.shareImportTails.get(key) ?? Promise.resolve();
+    const settledPrevious = previous.catch(() => undefined);
+    let releaseCurrent!: () => void;
+    const current = new Promise<void>(resolve => {
+      releaseCurrent = resolve;
+    });
+    const tail = settledPrevious.then(() => current);
+    this.shareImportTails.set(key, tail);
+
+    await settledPrevious;
     try {
-      return await this.importShareToWorkspaceUnlocked(
-        workspaceMetadata,
-        input,
-        options
-      );
+      return await operation();
     } finally {
-      lock.release();
+      releaseCurrent();
+      if (this.shareImportTails.get(key) === tail) {
+        this.shareImportTails.delete(key);
+      }
     }
   }
 
