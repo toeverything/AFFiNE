@@ -126,10 +126,7 @@ export function createShareMarkdown(input: ShareImportInput) {
 }
 
 export function createCompatibilityShareBlockPlan(input: ShareImportInput) {
-  const preview = input.preview
-    ? { ...input.preview, transcript: undefined }
-    : undefined;
-  return createShareBlockPlan({ ...input, preview }, null);
+  return createShareBlockPlan(input, null);
 }
 
 async function createSharePreviewDetailsBlob(
@@ -703,7 +700,22 @@ export class ImportClipperService extends Service {
     parentId: string,
     nodes: ShareBlockPlanNode[]
   ) {
-    for (const node of nodes) {
+    const parent = store.getBlock(parentId)?.model;
+    const siblingIndex = (id: string) =>
+      parent?.children.findIndex(child => child.id === id) ?? -1;
+    const insertionIndex = (nodeIndex: number) => {
+      for (let index = nodeIndex + 1; index < nodes.length; index++) {
+        const existingIndex = siblingIndex(nodes[index].id);
+        if (existingIndex >= 0) return existingIndex;
+      }
+      for (let index = nodeIndex - 1; index >= 0; index--) {
+        const existingIndex = siblingIndex(nodes[index].id);
+        if (existingIndex >= 0) return existingIndex + 1;
+      }
+      return undefined;
+    };
+
+    for (const [nodeIndex, node] of nodes.entries()) {
       const props = Object.fromEntries(
         Object.entries(node.props)
           .filter(([, value]) => value !== undefined)
@@ -714,7 +726,12 @@ export class ImportClipperService extends Service {
       );
       const blockId = store.getBlock(node.id)
         ? node.id
-        : store.addBlock(node.flavour, { id: node.id, ...props }, parentId);
+        : store.addBlock(
+            node.flavour,
+            { id: node.id, ...props },
+            parentId,
+            insertionIndex(nodeIndex)
+          );
       if (node.children) {
         this.addShareBlocks(store, blockId, node.children);
       }

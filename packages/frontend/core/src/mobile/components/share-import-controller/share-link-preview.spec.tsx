@@ -3558,7 +3558,7 @@ describe('share document block projection', () => {
       '',
     ],
     [
-      'YouTube selection without a transcript body',
+      'YouTube selection with a transcript body',
       {
         documentId: 'doc',
         importAttemptId: 'attempt',
@@ -3596,9 +3596,41 @@ describe('share document block projection', () => {
           },
         },
         {
+          id: 'share-attempt-metadata',
+          flavour: 'affine:paragraph',
+          props: { type: 'text', text: 'YouTube' },
+        },
+        {
           id: 'share-attempt-selected-text',
           flavour: 'affine:paragraph',
           props: { type: 'quote', text: 'Selected passage' },
+        },
+        {
+          id: 'share-attempt-transcript',
+          flavour: 'affine:callout',
+          props: { backgroundColorName: 'grey' },
+          children: [
+            {
+              id: 'share-attempt-transcript-heading',
+              flavour: 'affine:paragraph',
+              props: { type: 'h6', text: 'Transcript', collapsed: true },
+            },
+            {
+              id: 'share-attempt-transcript-chapter-0',
+              flavour: 'affine:paragraph',
+              props: { type: 'text', text: '[0:00] Opening' },
+            },
+            {
+              id: 'share-attempt-transcript-segment-0',
+              flavour: 'affine:paragraph',
+              props: { type: 'text', text: '[0:01] Host: Welcome' },
+            },
+            {
+              id: 'share-attempt-transcript-segment-1',
+              flavour: 'affine:paragraph',
+              props: { type: 'text', text: 'Plain paragraph' },
+            },
+          ],
         },
       ],
       '',
@@ -3633,6 +3665,11 @@ describe('share document block projection', () => {
             image: undefined,
             style: 'horizontal',
           },
+        },
+        {
+          id: 'share-attempt-metadata',
+          flavour: 'affine:paragraph',
+          props: { type: 'text', text: 'X' },
         },
       ],
       '',
