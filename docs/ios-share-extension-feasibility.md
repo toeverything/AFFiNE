@@ -295,10 +295,10 @@ root meta title 和稳定 page block title：两者都空才写入导入标题�
   duration 和可选 transcript；本轮仅在 Extension 获取并持久化有界快照。Gate C 仍关闭，
   不写 `sharePreviewSourceId`。
 - `demo_ace_iPhone` 已通过 CoreDevice 连接；当前 canary App 与 ShareExtension 完成 arm64
-  签名构建、嵌入校验和覆盖安装。设备仍处于锁定状态，系统拒绝命令行启动，因此 Rick Astley、
-  中文煎牛排视频及六类输入 × cloud/self-hosted/local 的分享矩阵、Extension 网络抓包和本地
-  workspace 网络抓包尚未执行。构建安装和自动化结果不能替代这些发布验收；设备解锁并完成
-  手工矩阵前，阶段 3/6 和发布门槛 6 不得标记为完成。
+  签名构建、嵌入校验、覆盖安装和应用启动。Rick Astley、中文煎牛排视频及六类输入 ×
+  cloud/self-hosted/local 的分享矩阵、Extension 网络抓包和本地 workspace 网络抓包尚未执行。
+  构建安装和自动化结果不能替代这些发布验收；完成手工矩阵前，阶段 3/6 和发布门槛 6 不得
+  标记为完成。
 
 阶段 0-3 是可直接实施、可独立发布的稳定导入路径，4A 在客户端和服务端投影同时完成后可作为
 只读兼容版本发布；无 transcript/结构化 writer 时仍可安全保存链接和 PDF。C 通过后才启用
