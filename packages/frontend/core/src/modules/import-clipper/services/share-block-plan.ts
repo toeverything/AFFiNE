@@ -48,6 +48,14 @@ function normalizedComparison(value: string | undefined) {
   return normalizedWhitespace(value).toLowerCase();
 }
 
+export function shareUrlTitle(url: string) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
 function boundedTime(value: number | undefined) {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
@@ -262,13 +270,7 @@ export function createShareBlockPlan(
   const title =
     (inputTitle && inputTitle !== 'Shared' ? inputTitle : previewTitle) ||
     inputTitle ||
-    (() => {
-      try {
-        return new URL(input.content.url).hostname;
-      } catch {
-        return input.content.url;
-      }
-    })();
+    shareUrlTitle(input.content.url);
   const primary: ShareBlockPlanNode = {
     id: shareImportBlockIds(input.importAttemptId).bookmark,
     flavour: 'affine:bookmark',

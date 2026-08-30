@@ -24,6 +24,7 @@ import {
   reconcileShareTitles,
   type ShareBlockPlanNode,
   shareImportBlockIds,
+  shareUrlTitle,
   validatesStableBlock,
 } from './share-block-plan';
 import {
@@ -757,7 +758,7 @@ export class ImportClipperService extends Service {
         flavour: 'affine:bookmark',
         props: {
           url: input.content.url,
-          title: input.title.trim() || new URL(input.content.url).hostname,
+          title: input.title.trim() || shareUrlTitle(input.content.url),
           style: 'horizontal',
         },
       });

@@ -435,6 +435,31 @@ function makeImportHarness({
 }
 
 describe('share import orchestration', () => {
+  test('imports non-URL content with an unparseable source URL', async () => {
+    const harness = makeImportHarness();
+    const ids = shareImportBlockIds('attempt-id');
+
+    await expect(
+      harness.service.importShareToWorkspace(
+        harness.metadata,
+        {
+          ...input(),
+          title: '   ',
+          content: {
+            kind: 'text',
+            text: 'Shared text',
+            url: 'not an absolute URL',
+          },
+        },
+        { allowOffline: true }
+      )
+    ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
+    expect(harness.blocks.get(ids.sourceLink)?.props).toMatchObject({
+      url: 'not an absolute URL',
+      title: 'not an absolute URL',
+    });
+  });
+
   test('queues A, B, C, and a post-release D for one workspace document without overlap', async () => {
     const gates = new Map(
       ['A', 'B', 'C', 'D'].map(label => [label, deferred()])

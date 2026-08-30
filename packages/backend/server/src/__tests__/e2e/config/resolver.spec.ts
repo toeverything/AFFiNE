@@ -39,26 +39,30 @@ e2e(
   'should expose share preview Blob refs only while its rollout flag is enabled',
   async t => {
     const server = app.get(ServerService);
-    server.onConfigChangedBroadcast({
-      updates: { flags: { sharePreviewBlobRefs: false } },
-    });
-    const disabled = await app.gql({ query: serverConfigQuery });
-    t.false(
-      disabled.serverConfig.features.includes(
-        ServerFeature.SharePreviewBlobRefs
-      )
-    );
+    try {
+      server.onConfigChangedBroadcast({
+        updates: { flags: { sharePreviewBlobRefs: false } },
+      });
+      const disabled = await app.gql({ query: serverConfigQuery });
+      t.false(
+        disabled.serverConfig.features.includes(
+          ServerFeature.SharePreviewBlobRefs
+        )
+      );
 
-    server.onConfigChangedBroadcast({
-      updates: { flags: { sharePreviewBlobRefs: true } },
-    });
-    const enabled = await app.gql({ query: serverConfigQuery });
-    t.true(
-      enabled.serverConfig.features.includes(ServerFeature.SharePreviewBlobRefs)
-    );
-
-    server.onConfigChangedBroadcast({
-      updates: { flags: { sharePreviewBlobRefs: false } },
-    });
+      server.onConfigChangedBroadcast({
+        updates: { flags: { sharePreviewBlobRefs: true } },
+      });
+      const enabled = await app.gql({ query: serverConfigQuery });
+      t.true(
+        enabled.serverConfig.features.includes(
+          ServerFeature.SharePreviewBlobRefs
+        )
+      );
+    } finally {
+      server.onConfigChangedBroadcast({
+        updates: { flags: { sharePreviewBlobRefs: false } },
+      });
+    }
   }
 );

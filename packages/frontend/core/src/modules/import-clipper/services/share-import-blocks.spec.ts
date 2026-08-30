@@ -292,6 +292,29 @@ describe('share import block plan', () => {
     });
   });
 
+  test('does not concatenate transcript segments without a delimiter for deduplication', () => {
+    const plan = createShareBlockPlan(
+      {
+        documentId: 'document-id',
+        importAttemptId: 'attempt-id',
+        title: 'Post',
+        content: {
+          kind: 'url',
+          url: 'https://example.com',
+          text: 'foobar',
+        },
+        preview: {
+          url: 'https://example.com',
+          transcript: { segments: [{ text: 'foo' }, { text: 'bar' }] },
+        },
+        tagIds: [],
+      },
+      null
+    );
+
+    expect(plan.find(node => node.flavour === 'affine:callout')).toBeDefined();
+  });
+
   test('caps projection at 500 original segments and never invents ids for empty entries', () => {
     const plan = createShareBlockPlan(
       {

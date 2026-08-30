@@ -109,7 +109,8 @@ entries are filtered, so IDs use the original response index. Chapters sort by
 Deduplication normalizes text by splitting Unicode whitespace, joining with one ASCII space,
 trimming, and lowercasing. A segment equal to the normalized selected text or description is
 removed. If the normalized concatenation of all retained segment text equals either value, the
-whole transcript is omitted. Timestamps use floor-to-whole-seconds formatting. Chapter titles,
+whole transcript is omitted; this comparison joins retained segments with one ASCII space.
+Timestamps use floor-to-whole-seconds formatting. Chapter titles,
 speaker labels, and segment text are ordinary paragraph text; only the deterministic heading uses
 `{type:'h6', text:'Transcript', collapsed:true}` inside one grey callout.
 

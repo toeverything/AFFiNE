@@ -281,8 +281,9 @@ final class ShareInboxSafetyTests: XCTestCase {
       XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
       XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent"), "AFFiNE/0.27.0")
       XCTAssertEqual(request.value(forHTTPHeaderField: "x-affine-version"), "0.27.0")
-      let body = try? XCTUnwrap(sharePreviewRequestBody(request)).flatMap {
-        try JSONSerialization.jsonObject(with: $0) as? [String: Any]
+      let bodyData = try? XCTUnwrap(sharePreviewRequestBody(request))
+      let body = bodyData.flatMap {
+        try? JSONSerialization.jsonObject(with: $0) as? [String: Any]
       }
       XCTAssertEqual(body?["url"] as? String, "https://www.youtube.com/watch?v=video-id")
       XCTAssertEqual(body?["include"] as? [String], ["transcript"])
@@ -2229,8 +2230,16 @@ final class ShareInboxSafetyTests: XCTestCase {
         ]]
       ]]
     ]
+    let unsupportedPayload: [String: Any] = [
+      "extensionItems": [[
+        "attachments": [[
+          "registeredTypeIdentifiers": ["public.movie", "public.audio"]
+        ]]
+      ]]
+    ]
     XCTAssertTrue(predicate.evaluate(with: youtubePayload))
     XCTAssertTrue(predicate.evaluate(with: supportedPDFPayload))
+    XCTAssertFalse(predicate.evaluate(with: unsupportedPayload))
   }
 
   func testManifestIDsMustBeUUIDs() {

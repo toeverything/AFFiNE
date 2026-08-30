@@ -421,7 +421,10 @@ describe('persisted share preview parsing', () => {
         url: 'https://example.com',
         title: '\u200BVideo',
       })
-    ).toBeUndefined();
+    ).toEqual({
+      url: 'https://example.com',
+      title: '\u200BVideo',
+    });
   });
 
   test('accepts every per-field limit at its inclusive UTF-8 boundary', () => {
@@ -2816,6 +2819,75 @@ describe('share destination selection lifecycle', () => {
     view.unmount();
     expect(revokeObjectURL).toHaveBeenCalledTimes(1);
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:shared-image');
+  });
+
+  test('keeps the resolved image attachment while switching workspaces', async () => {
+    const createObjectURL = vi.fn(() => 'blob:shared-image');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+    const image = new File(['image'], 'shared.png', { type: 'image/png' });
+    const shared = {
+      ...item(),
+      content: { kind: 'image' as const },
+      attachments: [{ fileName: 'shared.png', mimeType: 'image/png' }],
+    } satisfies PendingShareItem;
+    const workspaceA = {
+      id: 'workspace-a',
+      flavour: 'local',
+    } as WorkspaceMetadata;
+    const workspaceB = {
+      id: 'workspace-b',
+      flavour: 'local',
+    } as WorkspaceMetadata;
+    controllerServiceMocks.services.set(WorkspacesService.name, {
+      list: { workspaces$: { value: [workspaceA, workspaceB] } },
+      getProfile: (metadata: WorkspaceMetadata) => ({
+        name$: {
+          value: metadata.id === workspaceA.id ? 'Workspace A' : 'Workspace B',
+        },
+      }),
+    });
+    controllerServiceMocks.services.set(ServersService.name, {
+      serversWithAccount$: { value: [] },
+      servers$: { value: [] },
+    });
+    controllerServiceMocks.services.set(ImportClipperService.name, {
+      getShareDestinationOptions: vi.fn().mockResolvedValue({
+        verification: 'confirmed',
+        tags: [],
+        collections: [],
+      }),
+    });
+    const provider = {
+      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
+      listPending: vi
+        .fn()
+        .mockResolvedValue([{ status: 'ready' as const, item: shared }]),
+      updateTarget: vi.fn(),
+      resolveAttachment: vi.fn().mockResolvedValue(image),
+      complete: vi.fn(),
+      setError: vi.fn(),
+    };
+
+    render(<ShareImportController provider={provider} />);
+
+    await waitFor(() =>
+      expect(provider.resolveAttachment).toHaveBeenCalledTimes(1)
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Workspace Choose/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Workspace A/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /Workspace Workspace A/ })
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Workspace B/ }));
+
+    await waitFor(() =>
+      expect(provider.resolveAttachment).toHaveBeenCalledTimes(1)
+    );
+    expect(document.querySelector('img')?.getAttribute('src')).toBe(
+      'blob:shared-image'
+    );
+    expect(revokeObjectURL).not.toHaveBeenCalled();
   });
 
   test('keeps a PDF inbox item when its File is missing', async () => {

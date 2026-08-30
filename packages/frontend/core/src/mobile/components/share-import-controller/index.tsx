@@ -469,7 +469,6 @@ export const ShareImportController = ({
     const generation = ++attachmentGeneration.current;
     const expectedItemId = item?.id;
     setAttachmentPreview(undefined);
-    updateLinkPreview(undefined);
     if (item?.content.kind === 'image') {
       void provider
         .resolveAttachment(item.id)
@@ -495,7 +494,11 @@ export const ShareImportController = ({
         attachmentRef.current = undefined;
       }
     };
-  }, [item?.content.kind, item?.id, provider, updateLinkPreview]);
+  }, [item?.content.kind, item?.id, provider]);
+
+  useEffect(() => {
+    updateLinkPreview(undefined);
+  }, [item?.id, updateLinkPreview]);
 
   useEffect(() => {
     if (!selectedWorkspaceKey) {
