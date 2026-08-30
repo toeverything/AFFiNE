@@ -2,6 +2,45 @@ import XCTest
 import UIKit
 import UniformTypeIdentifiers
 
+private final class SharePreviewURLProtocol: URLProtocol {
+  static var onStart: ((SharePreviewURLProtocol, URLRequest) -> Void)?
+  static var onStop: (() -> Void)?
+
+  override class func canInit(with request: URLRequest) -> Bool { true }
+  override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+  override func startLoading() { Self.onStart?(self, request) }
+  override func stopLoading() { Self.onStop?() }
+}
+
+private func sharePreviewRequestBody(_ request: URLRequest) -> Data? {
+  if let body = request.httpBody { return body }
+  guard let stream = request.httpBodyStream else { return nil }
+  stream.open()
+  defer { stream.close() }
+  var data = Data()
+  var buffer = [UInt8](repeating: 0, count: 4_096)
+  while stream.hasBytesAvailable {
+    let count = stream.read(&buffer, maxLength: buffer.count)
+    guard count >= 0 else { return nil }
+    if count == 0 { break }
+    data.append(buffer, count: count)
+  }
+  return data
+}
+
+private func sharePreviewPNGData(width: Int = 1, height: Int = 1) -> Data {
+  let format = UIGraphicsImageRendererFormat.default()
+  format.scale = 1
+  let renderer = UIGraphicsImageRenderer(
+    size: CGSize(width: width, height: height),
+    format: format
+  )
+  return renderer.pngData { context in
+    UIColor.red.setFill()
+    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+  }
+}
+
 final class ShareInboxSafetyTests: XCTestCase {
   private func makeStore() throws -> (store: ShareInboxStore, containerURL: URL) {
     let containerURL = FileManager.default.temporaryDirectory
@@ -90,6 +129,457 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertEqual(try Data(contentsOf: file.ownedStagingURL), expected)
     XCTAssertEqual(file.size, expected.count)
     XCTAssertLessThanOrEqual(file.thumbnailData.count, ShareInboxConstants.maxThumbnailBytes)
+  }
+
+  func testRichPreviewDecodesProviderMetadataAndFormatsTranscript() throws {
+    let data = Data(
+      #"""
+      {
+        "url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "images":["https://app.affine.pro/api/worker/image-proxy?url=thumbnail"],
+        "favicons":["https://app.affine.pro/api/worker/image-proxy?url=favicon"],
+        "provider":"youtube",
+        "siteName":"YouTube",
+        "title":"Rick Astley - Never Gonna Give You Up",
+        "description":"The official video",
+        "author":{"name":"Rick Astley"},
+        "durationSeconds":214,
+        "transcript":{"language":"en","segments":[
+          {"text":"  We're no strangers\n to love  ","startSeconds":18.64},
+          {"text":"You know the rules and so do I","startSeconds":22.64}
+        ]}
+      }
+      """#.utf8
+    )
+
+    let preview = try JSONDecoder().decode(ShareLinkPreview.self, from: data)
+
+    XCTAssertEqual(preview.provider, "youtube")
+    XCTAssertEqual(preview.author?.name, "Rick Astley")
+    XCTAssertEqual(preview.formattedDuration, "3:34")
+    XCTAssertEqual(
+      preview.transcript?.previewText,
+      "We're no strangers to love You know the rules and so do I"
+    )
+    XCTAssertNotNil(preview.persistable())
+  }
+
+  func testPersistablePreviewTruncatesTranscriptToTheEncodedLimit() throws {
+    let preview = ShareLinkPreview(
+      url: "https://www.youtube.com/watch?v=video-id",
+      title: "Video",
+      siteName: "YouTube",
+      description: "Description",
+      images: ["https://app.affine.pro/api/worker/image-proxy?url=thumbnail"],
+      favicons: ["https://app.affine.pro/api/worker/image-proxy?url=favicon"],
+      mediaType: "video.movie",
+      provider: "youtube",
+      author: .init(name: "Author", handle: nil, avatar: nil),
+      publishedAt: nil,
+      durationSeconds: 214,
+      transcript: .init(
+        language: "zh-CN",
+        segments: (0..<100).map { index in
+          .init(
+            text: "\(index) " + String(repeating: "中", count: 4_000),
+            startSeconds: Double(index),
+            durationSeconds: 1,
+            speaker: nil
+          )
+        },
+        chapters: nil,
+        truncated: nil
+      )
+    )
+
+    let persisted = try XCTUnwrap(preview.persistable())
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.sortedKeys]
+    let encoded = try encoder.encode(persisted)
+
+    XCTAssertLessThanOrEqual(encoded.count, ShareLinkPreview.maxPersistedBytes)
+    XCTAssertLessThan(persisted.transcript?.segments.count ?? 0, 100)
+    XCTAssertEqual(persisted.transcript?.truncated, true)
+  }
+
+  func testPersistablePreviewRejectsInvalidSourceAndFiltersNonProxyMedia() throws {
+    let invalidSource = ShareLinkPreview(
+      url: "https://user@example.com/private",
+      title: "Private"
+    )
+    XCTAssertNil(invalidSource.persistable())
+
+    let preview = ShareLinkPreview(
+      url: "https://example.com/article",
+      title: String(repeating: "👨‍👩‍👧", count: 600),
+      images: [
+        "https://example.com/direct.png",
+        "https://app.affine.pro/not-image-proxy",
+        "https://app.affine.pro/api/worker/image-proxy?url=allowed",
+      ],
+      favicons: ["file:///private/favicon.png"]
+    )
+    let persisted = try XCTUnwrap(preview.persistable())
+
+    XCTAssertLessThanOrEqual(persisted.title?.utf8.count ?? 0, 4_096)
+    XCTAssertEqual(
+      persisted.images,
+      ["https://app.affine.pro/api/worker/image-proxy?url=allowed"]
+    )
+    XCTAssertEqual(persisted.favicons, [])
+  }
+
+  func testPersistablePreviewTruncatesUnicodeAtAnExactUTF8Boundary() throws {
+    let preview = ShareLinkPreview(
+      url: "https://example.com/article",
+      title: String(repeating: "中", count: 1_364) + "abcdz"
+    )
+
+    let persisted = try XCTUnwrap(preview.persistable())
+
+    XCTAssertEqual(persisted.title?.utf8.count, 4_096)
+    XCTAssertEqual(persisted.title?.suffix(4), "abcd")
+  }
+
+  func testPreviewClientSendsOfficialRequestAndDecodesBoundedResponse() async throws {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
+    let requested = expectation(description: "preview requested")
+    SharePreviewURLProtocol.onStart = { protocolInstance, request in
+      XCTAssertEqual(request.url, ShareInboxConstants.officialLinkPreviewURL)
+      XCTAssertEqual(request.httpMethod, "POST")
+      XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
+      XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent"), "AFFiNE/0.27.0")
+      XCTAssertEqual(request.value(forHTTPHeaderField: "x-affine-version"), "0.27.0")
+      let body = try? XCTUnwrap(sharePreviewRequestBody(request)).flatMap {
+        try JSONSerialization.jsonObject(with: $0) as? [String: Any]
+      }
+      XCTAssertEqual(body?["url"] as? String, "https://www.youtube.com/watch?v=video-id")
+      XCTAssertEqual(body?["include"] as? [String], ["transcript"])
+
+      let response = HTTPURLResponse(
+        url: request.url!,
+        statusCode: 200,
+        httpVersion: nil,
+        headerFields: ["Content-Type": "application/json"]
+      )!
+      let data = Data(
+        #"{"url":"https://www.youtube.com/watch?v=video-id","provider":"youtube","title":"Video"}"#.utf8
+      )
+      protocolInstance.client?.urlProtocol(
+        protocolInstance,
+        didReceive: response,
+        cacheStoragePolicy: .notAllowed
+      )
+      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: data)
+      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
+      requested.fulfill()
+    }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+    }
+
+    let preview = try await client.fetch(url: "https://www.youtube.com/watch?v=video-id")
+
+    XCTAssertEqual(preview.provider, "youtube")
+    XCTAssertEqual(preview.title, "Video")
+    await fulfillment(of: [requested], timeout: 1)
+  }
+
+  func testPreviewClientCancelsFalseSmallContentLengthAtTheByteLimit() async throws {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
+    let stopped = expectation(description: "oversized request stopped")
+    SharePreviewURLProtocol.onStart = { protocolInstance, request in
+      let response = HTTPURLResponse(
+        url: request.url!,
+        statusCode: 200,
+        httpVersion: nil,
+        headerFields: [
+          "Content-Type": "application/json",
+          "Content-Length": "1",
+        ]
+      )!
+      protocolInstance.client?.urlProtocol(
+        protocolInstance,
+        didReceive: response,
+        cacheStoragePolicy: .notAllowed
+      )
+      protocolInstance.client?.urlProtocol(
+        protocolInstance,
+        didLoad: Data(repeating: 0x20, count: ShareLinkPreview.maxResponseBytes + 1)
+      )
+    }
+    SharePreviewURLProtocol.onStop = { stopped.fulfill() }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+    }
+
+    do {
+      _ = try await client.fetch(url: "https://example.com/large")
+      XCTFail("Oversized response unexpectedly decoded")
+    } catch {
+      XCTAssertEqual((error as? URLError)?.code, .dataLengthExceedsMaximum)
+    }
+    await fulfillment(of: [stopped], timeout: 1)
+  }
+
+  func testPreviewClientRejectsJSONLikeButInvalidMIMEType() async {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
+    SharePreviewURLProtocol.onStart = { protocolInstance, request in
+      let response = HTTPURLResponse(
+        url: request.url!,
+        statusCode: 200,
+        httpVersion: nil,
+        headerFields: ["Content-Type": "application/jsonp"]
+      )!
+      let data = Data(#"{"url":"https://example.com/article"}"#.utf8)
+      protocolInstance.client?.urlProtocol(
+        protocolInstance,
+        didReceive: response,
+        cacheStoragePolicy: .notAllowed
+      )
+      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: data)
+      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
+    }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+    }
+
+    do {
+      _ = try await client.fetch(url: "https://example.com/article")
+      XCTFail("Invalid JSON MIME unexpectedly accepted")
+    } catch {
+      XCTAssertEqual((error as? URLError)?.code, .badServerResponse)
+    }
+  }
+
+  func testPreviewClientPropagatesTaskCancellation() async throws {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
+    let started = expectation(description: "preview started")
+    let stopped = expectation(description: "preview stopped")
+    SharePreviewURLProtocol.onStart = { _, _ in started.fulfill() }
+    SharePreviewURLProtocol.onStop = { stopped.fulfill() }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+    }
+
+    let task = Task {
+      try await client.fetch(url: "https://example.com/cancel")
+    }
+    await fulfillment(of: [started], timeout: 1)
+    task.cancel()
+    do {
+      _ = try await task.value
+      XCTFail("Cancelled request unexpectedly completed")
+    } catch {
+      let code = (error as? URLError)?.code
+      XCTAssertTrue(error is CancellationError || code == .cancelled)
+    }
+    await fulfillment(of: [stopped], timeout: 1)
+  }
+
+  func testPreviewClientDoesNotStartAnAlreadyCancelledRequest() async {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
+    SharePreviewURLProtocol.onStart = { _, _ in
+      XCTFail("An already cancelled request should not start loading")
+    }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+    }
+
+    let task = Task {
+      while !Task.isCancelled {
+        await Task.yield()
+      }
+      return try await client.fetch(url: "https://example.com/cancelled-before-fetch")
+    }
+    task.cancel()
+
+    do {
+      _ = try await task.value
+      XCTFail("Already cancelled request unexpectedly completed")
+    } catch {
+      let code = (error as? URLError)?.code
+      XCTAssertTrue(error is CancellationError || code == .cancelled)
+    }
+  }
+
+  func testPreviewClientLoadsBoundedImageFromOfficialProxy() async throws {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
+    let imageURL = "https://app.affine.pro/api/worker/image-proxy?url=thumbnail"
+    SharePreviewURLProtocol.onStart = { protocolInstance, request in
+      XCTAssertEqual(request.url?.absoluteString, imageURL)
+      let data = sharePreviewPNGData(width: 2, height: 3)
+      let response = HTTPURLResponse(
+        url: request.url!,
+        statusCode: 200,
+        httpVersion: nil,
+        headerFields: [
+          "Content-Type": "image/png",
+          "Content-Length": String(data.count),
+        ]
+      )!
+      protocolInstance.client?.urlProtocol(
+        protocolInstance,
+        didReceive: response,
+        cacheStoragePolicy: .notAllowed
+      )
+      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: data)
+      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
+    }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+    }
+
+    let image = try await client.fetchImage(url: imageURL)
+
+    XCTAssertEqual(image.size.width, 2)
+    XCTAssertEqual(image.size.height, 3)
+  }
+
+  func testPreviewClientRejectsImageOutsideOfficialProxyWithoutRequestingIt() async {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
+    SharePreviewURLProtocol.onStart = { _, _ in
+      XCTFail("Non-proxy image URL should not reach the network")
+    }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+    }
+
+    do {
+      _ = try await client.fetchImage(url: "https://example.com/thumbnail.png")
+      XCTFail("Non-proxy image URL unexpectedly loaded")
+    } catch {
+      XCTAssertEqual((error as? URLError)?.code, .badURL)
+    }
+  }
+
+  func testPreviewClientRejectsNonImageMediaResponse() async {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
+    let imageURL = "https://app.affine.pro/api/worker/image-proxy?url=thumbnail"
+    SharePreviewURLProtocol.onStart = { protocolInstance, request in
+      let response = HTTPURLResponse(
+        url: request.url!,
+        statusCode: 200,
+        httpVersion: nil,
+        headerFields: ["Content-Type": "text/html"]
+      )!
+      protocolInstance.client?.urlProtocol(
+        protocolInstance,
+        didReceive: response,
+        cacheStoragePolicy: .notAllowed
+      )
+      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: Data("not an image".utf8))
+      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
+    }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+    }
+
+    do {
+      _ = try await client.fetchImage(url: imageURL)
+      XCTFail("Non-image response unexpectedly decoded")
+    } catch {
+      XCTAssertEqual((error as? URLError)?.code, .cannotDecodeContentData)
+    }
+  }
+
+  func testPreviewClientCancelsFalseSmallMediaResponseAtTheByteLimit() async {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
+    let imageURL = "https://app.affine.pro/api/worker/image-proxy?url=thumbnail"
+    let stopped = expectation(description: "oversized media request stopped")
+    SharePreviewURLProtocol.onStart = { protocolInstance, request in
+      let response = HTTPURLResponse(
+        url: request.url!,
+        statusCode: 200,
+        httpVersion: nil,
+        headerFields: [
+          "Content-Type": "image/png",
+          "Content-Length": "1",
+        ]
+      )!
+      protocolInstance.client?.urlProtocol(
+        protocolInstance,
+        didReceive: response,
+        cacheStoragePolicy: .notAllowed
+      )
+      protocolInstance.client?.urlProtocol(
+        protocolInstance,
+        didLoad: Data(repeating: 0x20, count: ShareLinkPreview.maxMediaBytes + 1)
+      )
+    }
+    SharePreviewURLProtocol.onStop = { stopped.fulfill() }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+    }
+
+    do {
+      _ = try await client.fetchImage(url: imageURL)
+      XCTFail("Oversized media response unexpectedly decoded")
+    } catch {
+      XCTAssertEqual((error as? URLError)?.code, .dataLengthExceedsMaximum)
+    }
+    await fulfillment(of: [stopped], timeout: 1)
+  }
+
+  func testPreviewClientRejectsImageDimensionAboveLimit() async {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [SharePreviewURLProtocol.self]
+    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
+    let imageURL = "https://app.affine.pro/api/worker/image-proxy?url=thumbnail"
+    SharePreviewURLProtocol.onStart = { protocolInstance, request in
+      let data = sharePreviewPNGData(width: ShareLinkPreview.maxMediaDimension + 1)
+      let response = HTTPURLResponse(
+        url: request.url!,
+        statusCode: 200,
+        httpVersion: nil,
+        headerFields: ["Content-Type": "image/png"]
+      )!
+      protocolInstance.client?.urlProtocol(
+        protocolInstance,
+        didReceive: response,
+        cacheStoragePolicy: .notAllowed
+      )
+      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: data)
+      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
+    }
+    defer {
+      SharePreviewURLProtocol.onStart = nil
+      SharePreviewURLProtocol.onStop = nil
+    }
+
+    do {
+      _ = try await client.fetchImage(url: imageURL)
+      XCTFail("Oversized image dimensions unexpectedly decoded")
+    } catch {
+      XCTAssertEqual((error as? URLError)?.code, .cannotDecodeContentData)
+    }
   }
 
   func testBuilderStagesAValidPDFBeforeTheProviderDisappears() throws {

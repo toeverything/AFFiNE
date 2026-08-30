@@ -56,6 +56,7 @@
 		AB00000C0000000000000000 /* ShareInboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB00000D0000000000000000 /* ShareInboxStore.swift */; };
 		AB00000E0000000000000000 /* SharePayloadBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB00000F0000000000000000 /* SharePayloadBuilder.swift */; };
 		AB0000100000000000000000 /* ShareViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000110000000000000000 /* ShareViewModel.swift */; };
+		AB0000120000000000000000 /* ShareLinkPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000130000000000000000 /* ShareLinkPreview.swift */; };
 		AB00000B0000000000000000 /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 9D90BE1E2CCB9876006677DB /* capacitor.config.json */; };
 		C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C6F2D0307B700BC2AD1 /* affine_mobile_native.swift */; };
 		C4C97C7D2D030BE000BC2AD1 /* affine_mobile_nativeFFI.h in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C702D0307B700BC2AD1 /* affine_mobile_nativeFFI.h */; };
@@ -150,6 +151,7 @@
 		AB00000D0000000000000000 /* ShareInboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Shared/ShareInbox/ShareInboxStore.swift; sourceTree = "<group>"; };
 		AB00000F0000000000000000 /* SharePayloadBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Shared/ShareInbox/SharePayloadBuilder.swift; sourceTree = "<group>"; };
 		AB0000110000000000000000 /* ShareViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ShareExtension/ShareViewModel.swift; sourceTree = "<group>"; };
+		AB0000130000000000000000 /* ShareLinkPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Shared/ShareInbox/ShareLinkPreview.swift; sourceTree = "<group>"; };
 		AA0000030000000000000000 /* AFFiNETests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AFFiNETests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
 		BF48636D7DB5BEE00770FD9A /* Pods_AFFiNE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AFFiNE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -360,6 +362,7 @@
 				AB00000D0000000000000000 /* ShareInboxStore.swift */,
 				AB00000F0000000000000000 /* SharePayloadBuilder.swift */,
 				AB0000110000000000000000 /* ShareViewModel.swift */,
+				AB0000130000000000000000 /* ShareLinkPreview.swift */,
 			);
 			path = AppTests;
 			sourceTree = "<group>";
@@ -649,6 +652,7 @@
 				AB00000C0000000000000000 /* ShareInboxStore.swift in Sources */,
 				AB00000E0000000000000000 /* SharePayloadBuilder.swift in Sources */,
 				AB0000100000000000000000 /* ShareViewModel.swift in Sources */,
+				AB0000120000000000000000 /* ShareLinkPreview.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
