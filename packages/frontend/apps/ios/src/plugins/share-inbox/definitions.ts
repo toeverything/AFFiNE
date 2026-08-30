@@ -1,13 +1,21 @@
 import type {
+  PendingShareItem,
   ShareImportTarget,
   ShareInboxEntry,
 } from '@affine/core/mobile/components/share-import-controller/types';
+
+export type NativeShareInboxEntry =
+  | {
+      status: 'ready';
+      item: Omit<PendingShareItem, 'preview'> & { preview?: unknown };
+    }
+  | Extract<ShareInboxEntry, { status: 'unsupported-version' }>;
 
 export interface ShareInboxPlugin {
   updateWorkspaceMode(options: {
     mode: 'selfHostedPresent' | 'cloudOnly' | 'signedOut' | 'unknown';
   }): Promise<void>;
-  listPending(): Promise<{ items: ShareInboxEntry[] }>;
+  listPending(): Promise<{ items: NativeShareInboxEntry[] }>;
   updateTarget(options: {
     itemId: string;
     target: ShareImportTarget;

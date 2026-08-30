@@ -5,7 +5,7 @@ export type { ShareLinkPreview };
 export interface PendingShareItem {
   id: string;
   documentId: string;
-  schemaVersion: 2;
+  schemaVersion: 3;
   importAttemptId: string;
   title: string;
   content: {
@@ -13,6 +13,7 @@ export interface PendingShareItem {
     url?: string;
     text?: string;
   };
+  preview?: ShareLinkPreview;
   target?: ShareImportTarget;
   attachments?: { fileName: string; mimeType: string }[];
   lastError?: string;

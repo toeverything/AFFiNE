@@ -42,7 +42,7 @@ export interface ShareLinkPreview {
   images?: string[];
   favicons?: string[];
   mediaType?: string;
-  provider?: 'youtube' | 'x';
+  provider?: string;
   author?: { name: string; handle?: string; avatar?: string };
   publishedAt?: string;
   durationSeconds?: number;

@@ -50,6 +50,7 @@ import { WorkspaceFlavoursService } from '../../../modules/workspace/services/fl
 import { previewForImport, ShareImportController } from './index';
 import { LinkPreview, resolveShareTitle } from './link-preview';
 import {
+  parseShareLinkPreview,
   resolveShareWorkspaceMode,
   SharePreviewRouteOwner,
 } from './preview-route-owner';
@@ -82,12 +83,35 @@ const item = (previewRoute?: 'official' | 'deferred') =>
   ({
     id: 'item',
     documentId: 'doc',
-    schemaVersion: 2,
+    schemaVersion: 3,
     importAttemptId: 'attempt',
     title: 'Shared',
     content: { kind: 'url', url: 'https://youtube.com/watch?v=123' },
     ...(previewRoute ? { previewRoute } : {}),
   }) as unknown as PendingShareItem;
+
+const officialMedia = (name: string) =>
+  `https://app.affine.pro/api/worker/image-proxy?url=${name}`;
+
+const utf8Size = (value: unknown) =>
+  new TextEncoder().encode(JSON.stringify(value)).byteLength;
+
+function aggregateBoundaryPreview(targetBytes: number) {
+  const segments = Array.from({ length: 15 }, () => ({
+    text: 'x'.repeat(16_384),
+  }));
+  const preview = {
+    url: 'https://example.com/article',
+    transcript: { segments: [...segments, { text: '' }] },
+  };
+  const remaining = targetBytes - utf8Size(preview);
+  preview.transcript.segments[15]!.text = 'x'.repeat(remaining);
+  return preview;
+}
+
+const exactASCII = (length: number) => 'x'.repeat(length);
+const exactURL = (prefix: string) =>
+  `${prefix}${'x'.repeat(8192 - new TextEncoder().encode(prefix).byteLength)}`;
 
 const workspace = (flavour: string) =>
   ({ id: 'workspace', flavour }) as WorkspaceMetadata;
@@ -347,6 +371,312 @@ afterEach(() => {
   controllerServiceMocks.services.clear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+});
+
+describe('persisted share preview parsing', () => {
+  test('accepts the complete bounded native snapshot without changing it', () => {
+    const preview = {
+      url: 'https://www.youtube.com/watch?v=video-id',
+      title: '标题 🎬',
+      siteName: 'YouTube',
+      description: 'A rich description',
+      images: [officialMedia('thumbnail')],
+      favicons: [officialMedia('favicon')],
+      mediaType: 'video',
+      provider: 'youtube',
+      author: {
+        name: 'Creator',
+        handle: '@creator',
+        avatar: officialMedia('avatar'),
+      },
+      publishedAt: '2026-08-30T00:00:00Z',
+      durationSeconds: 214,
+      transcript: {
+        language: 'zh-CN',
+        segments: [
+          {
+            text: '第一段 🎵',
+            startSeconds: 1.5,
+            durationSeconds: 2,
+            speaker: 'Narrator',
+          },
+        ],
+        chapters: [{ title: 'Intro', startSeconds: 0 }],
+        truncated: false,
+      },
+    } satisfies ShareLinkPreview;
+
+    expect(parseShareLinkPreview(preview)).toEqual(preview);
+  });
+
+  test('uses the same trimming character set as Swift', () => {
+    const preview = {
+      url: 'https://example.com',
+      title: '\uFEFFVideo',
+    };
+
+    expect(parseShareLinkPreview(preview)).toEqual(preview);
+    expect(
+      parseShareLinkPreview({
+        url: 'https://example.com',
+        title: '\u200BVideo',
+      })
+    ).toBeUndefined();
+  });
+
+  test('accepts every per-field limit at its inclusive UTF-8 boundary', () => {
+    const mediaURL = exactURL(
+      'https://app.affine.pro/api/worker/image-proxy?url='
+    );
+    const preview = {
+      url: exactURL('https://example.com/'),
+      title: exactASCII(4096),
+      siteName: exactASCII(512),
+      description: exactASCII(32_768),
+      images: Array.from({ length: 8 }, () => mediaURL),
+      favicons: Array.from({ length: 8 }, () => mediaURL),
+      mediaType: exactASCII(256),
+      provider: exactASCII(256),
+      author: {
+        name: exactASCII(512),
+        handle: exactASCII(512),
+        avatar: mediaURL,
+      },
+      publishedAt: exactASCII(128),
+      durationSeconds: 604_800,
+      transcript: {
+        language: exactASCII(128),
+        segments: [
+          {
+            text: exactASCII(16_384),
+            startSeconds: 604_800,
+            durationSeconds: 604_800,
+            speaker: exactASCII(512),
+          },
+        ],
+        chapters: [{ title: exactASCII(4096), startSeconds: 604_800 }],
+        truncated: true,
+      },
+    } satisfies ShareLinkPreview;
+
+    expect(utf8Size(preview)).toBeLessThanOrEqual(256 * 1024);
+    expect(parseShareLinkPreview(preview)).toEqual(preview);
+  });
+
+  test.each([
+    ['missing source URL', {}],
+    ['relative source URL', { url: '/relative' }],
+    ['missing URL slashes', { url: 'https:example.com' }],
+    ['single URL slash', { url: 'https:/example.com' }],
+    ['raw URL space', { url: 'https://example.com/a b' }],
+    ['invalid URL escape', { url: 'https://example.com/%zz' }],
+    ['whitespace source URL', { url: ' https://example.com ' }],
+    ['credential source URL', { url: 'https://user:pass@example.com' }],
+    [
+      'oversized source URL',
+      { url: `https://example.com/${'x'.repeat(8192)}` },
+    ],
+    ['trimmed title', { url: 'https://example.com', title: ' title ' }],
+    [
+      'oversized title',
+      { url: 'https://example.com', title: '界'.repeat(1366) },
+    ],
+    [
+      'oversized description',
+      { url: 'https://example.com', description: 'x'.repeat(32_769) },
+    ],
+    [
+      'oversized provider',
+      { url: 'https://example.com', provider: 'x'.repeat(257) },
+    ],
+    [
+      'oversized media type',
+      { url: 'https://example.com', mediaType: 'x'.repeat(257) },
+    ],
+    [
+      'oversized site name',
+      { url: 'https://example.com', siteName: 'x'.repeat(513) },
+    ],
+    [
+      'non-proxy image',
+      { url: 'https://example.com', images: ['https://example.com/image.jpg'] },
+    ],
+    [
+      'proxy image without scheme slashes',
+      {
+        url: 'https://example.com',
+        images: ['https:app.affine.pro/api/worker/image-proxy?url=image'],
+      },
+    ],
+    [
+      'too many images',
+      {
+        url: 'https://example.com',
+        images: Array.from({ length: 9 }, (_, index) =>
+          officialMedia(`i${index}`)
+        ),
+      },
+    ],
+    [
+      'oversized author',
+      { url: 'https://example.com', author: { name: 'x'.repeat(513) } },
+    ],
+    [
+      'oversized author handle',
+      {
+        url: 'https://example.com',
+        author: { name: 'Creator', handle: 'x'.repeat(513) },
+      },
+    ],
+    [
+      'non-proxy avatar',
+      {
+        url: 'https://example.com',
+        author: { name: 'Creator', avatar: 'https://example.com/avatar.jpg' },
+      },
+    ],
+    [
+      'NaN duration',
+      { url: 'https://example.com', durationSeconds: Number.NaN },
+    ],
+    [
+      'infinite duration',
+      { url: 'https://example.com', durationSeconds: Infinity },
+    ],
+    ['negative duration', { url: 'https://example.com', durationSeconds: -1 }],
+    [
+      'overlong duration',
+      { url: 'https://example.com', durationSeconds: 604_801 },
+    ],
+    [
+      'oversized published time',
+      { url: 'https://example.com', publishedAt: 'x'.repeat(129) },
+    ],
+    [
+      'empty transcript',
+      { url: 'https://example.com', transcript: { segments: [] } },
+    ],
+    [
+      'oversized transcript language',
+      {
+        url: 'https://example.com',
+        transcript: {
+          language: 'x'.repeat(129),
+          segments: [{ text: 'segment' }],
+        },
+      },
+    ],
+    [
+      'too many transcript segments',
+      {
+        url: 'https://example.com',
+        transcript: {
+          segments: Array.from({ length: 501 }, () => ({ text: 'segment' })),
+        },
+      },
+    ],
+    [
+      'oversized segment',
+      {
+        url: 'https://example.com',
+        transcript: { segments: [{ text: '界'.repeat(5462) }] },
+      },
+    ],
+    [
+      'oversized speaker',
+      {
+        url: 'https://example.com',
+        transcript: {
+          segments: [{ text: 'segment', speaker: 'x'.repeat(513) }],
+        },
+      },
+    ],
+    [
+      'too many chapters',
+      {
+        url: 'https://example.com',
+        transcript: {
+          segments: [{ text: 'segment' }],
+          chapters: Array.from({ length: 101 }, () => ({
+            title: 'Chapter',
+            startSeconds: 0,
+          })),
+        },
+      },
+    ],
+    [
+      'invalid segment timestamp',
+      {
+        url: 'https://example.com',
+        transcript: { segments: [{ text: 'segment', startSeconds: -1 }] },
+      },
+    ],
+    [
+      'oversized chapter title',
+      {
+        url: 'https://example.com',
+        transcript: {
+          segments: [{ text: 'segment' }],
+          chapters: [{ title: 'x'.repeat(4097), startSeconds: 0 }],
+        },
+      },
+    ],
+    [
+      'invalid transcript truncation marker',
+      {
+        url: 'https://example.com',
+        transcript: { segments: [{ text: 'segment' }], truncated: 'yes' },
+      },
+    ],
+  ])('rejects %s', (_name, preview) => {
+    expect(parseShareLinkPreview(preview)).toBeUndefined();
+  });
+
+  test('accepts the exact aggregate limit and rejects one byte over it', () => {
+    const exact = aggregateBoundaryPreview(256 * 1024 - 3);
+    expect(utf8Size(exact)).toBe(256 * 1024 - 3);
+    expect(parseShareLinkPreview(exact)).toEqual(exact);
+
+    const over = structuredClone(exact);
+    over.transcript.segments[15]!.text += 'x';
+    expect(utf8Size(over)).toBe(256 * 1024 - 2);
+    expect(parseShareLinkPreview(over)).toBeUndefined();
+  });
+
+  test('rejects a raw snapshot that exceeds the Swift escaped-slash limit', () => {
+    const prefix = 'https://app.affine.pro/api/worker/image-proxy?url=';
+    const slashHeavyURL = `${prefix}${'/'.repeat(8192 - utf8Size(prefix) + 2)}`;
+    const preview = {
+      url: 'https://example.com',
+      images: Array.from({ length: 8 }, () => slashHeavyURL),
+      favicons: Array.from({ length: 8 }, () => slashHeavyURL),
+      author: { name: 'Creator', avatar: slashHeavyURL },
+    };
+
+    expect(new TextEncoder().encode(slashHeavyURL).byteLength).toBe(8192);
+    expect(utf8Size(preview)).toBeLessThan(256 * 1024);
+    expect(parseShareLinkPreview(preview)).toBeUndefined();
+  });
+
+  test('counts Swift negative-zero encoding at the exact aggregate boundary', () => {
+    const exact = aggregateBoundaryPreview(256 * 1024 - 3) as ReturnType<
+      typeof aggregateBoundaryPreview
+    > & { durationSeconds: number };
+    exact.durationSeconds = -0;
+    const targetJSONSize = 256 * 1024 - 4;
+    const finalSegment = exact.transcript.segments[15]!;
+    finalSegment.text = finalSegment.text.slice(
+      0,
+      finalSegment.text.length - (utf8Size(exact) - targetJSONSize)
+    );
+
+    expect(utf8Size(exact)).toBe(targetJSONSize);
+    expect(Object.is(exact.durationSeconds, -0)).toBe(true);
+    expect(parseShareLinkPreview(exact)).toEqual(exact);
+
+    finalSegment.text += 'x';
+    expect(parseShareLinkPreview(exact)).toBeUndefined();
+  });
 });
 
 describe('link preview transport and route ownership', () => {
@@ -735,6 +1065,58 @@ describe('link preview transport and route ownership', () => {
     );
     await owner.load();
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  test('imports a valid persisted snapshot without selecting or loading a route', async () => {
+    const persisted = {
+      url: item().content.url!,
+      title: 'Persisted preview',
+      images: [officialMedia('thumbnail')],
+    } satisfies ShareLinkPreview;
+    const pending = {
+      ...item(),
+      schemaVersion: 3,
+      preview: persisted,
+    } satisfies PendingShareItem;
+    const owner = {
+      selectWorkspace: vi.fn(),
+      load: vi.fn(),
+    } as unknown as SharePreviewRouteOwner;
+
+    await expect(
+      previewForImport(pending, workspace('local'), undefined, owner, [])
+    ).resolves.toEqual(persisted);
+    expect(owner.selectWorkspace).not.toHaveBeenCalled();
+    expect(owner.load).not.toHaveBeenCalled();
+  });
+
+  test('keeps a migrated v3 item without a preview on the workspace route', async () => {
+    const pending = {
+      ...item(),
+      schemaVersion: 3,
+      preview: undefined,
+    } satisfies PendingShareItem;
+    const fetchPreview = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ url: pending.content.url, title: 'Legacy route' }),
+          { status: 200 }
+        )
+      );
+    const selectedServer = server(
+      'self',
+      'https://self.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    Object.assign(selectedServer, { fetch: fetchPreview });
+
+    await expect(
+      previewForImport(pending, workspace('self'), undefined, undefined, [
+        selectedServer,
+      ])
+    ).resolves.toMatchObject({ title: 'Legacy route' });
+    expect(fetchPreview).toHaveBeenCalledTimes(1);
   });
 
   test.each([
@@ -2752,6 +3134,117 @@ describe('share destination selection lifecycle', () => {
 });
 
 describe('share preview presentation', () => {
+  test('renders a persisted rich snapshot immediately without a route request', async () => {
+    const persisted = {
+      url: item().content.url!,
+      title: 'Persisted video title',
+      siteName: 'YouTube',
+      description: 'The official video description',
+      images: [officialMedia('thumbnail')],
+      favicons: [officialMedia('favicon')],
+      provider: 'youtube',
+      author: { name: 'Rick Astley' },
+      durationSeconds: 214,
+      transcript: {
+        segments: [
+          { text: '  Never\n gonna   give you up ' },
+          { text: ' never gonna let you down ' },
+        ],
+      },
+    } satisfies ShareLinkPreview;
+    const owner = {
+      selectWorkspace: vi.fn(),
+      load: vi.fn(),
+    } as unknown as SharePreviewRouteOwner;
+    const onPreview = vi.fn();
+    const { container } = render(
+      <LinkPreview
+        item={{ ...item(), schemaVersion: 3, preview: persisted }}
+        owner={owner}
+        workspace={workspace('local')}
+        servers={[]}
+        onPreview={onPreview}
+      />
+    );
+
+    expect(screen.getByText('Persisted video title')).toBeTruthy();
+    expect(screen.getByText('YouTube')).toBeTruthy();
+    expect(screen.getByText('The official video description')).toBeTruthy();
+    expect(screen.getByText('Rick Astley · 3:34')).toBeTruthy();
+    expect(screen.getByText('Transcript')).toBeTruthy();
+    expect(
+      screen.getByText('Never gonna give you up never gonna let you down')
+    ).toBeTruthy();
+    expect(container.querySelector('section > img')?.getAttribute('src')).toBe(
+      officialMedia('thumbnail')
+    );
+    expect(
+      container.querySelector(`img[src="${officialMedia('favicon')}"]`)
+    ).toBeTruthy();
+    expect(owner.selectWorkspace).not.toHaveBeenCalled();
+    expect(owner.load).not.toHaveBeenCalled();
+    expect(onPreview).toHaveBeenCalledWith(undefined);
+  });
+
+  test('falls back to a stable rich placeholder when persisted media fails', () => {
+    const owner = {
+      selectWorkspace: vi.fn(),
+      load: vi.fn(),
+    } as unknown as SharePreviewRouteOwner;
+    const { container } = render(
+      <LinkPreview
+        item={{
+          ...item(),
+          preview: {
+            url: item().content.url!,
+            title: 'Rich without working media',
+            images: [officialMedia('missing')],
+          },
+        }}
+        owner={owner}
+        workspace={workspace('local')}
+        servers={[]}
+        onPreview={() => {}}
+      />
+    );
+    const image = container.querySelector('section > img');
+    expect(image).toBeTruthy();
+
+    fireEvent.error(image!);
+
+    expect(container.querySelector('section > img')).toBeNull();
+    expect(
+      container.querySelector('section > div[aria-hidden="true"]')
+    ).toBeTruthy();
+  });
+
+  test('truncates transcript excerpts at Swift grapheme boundaries', () => {
+    const family = '👨‍👩‍👧‍👦';
+    const owner = {
+      selectWorkspace: vi.fn(),
+      load: vi.fn(),
+    } as unknown as SharePreviewRouteOwner;
+    render(
+      <LinkPreview
+        item={{
+          ...item(),
+          preview: {
+            url: item().content.url!,
+            transcript: {
+              segments: [{ text: `${family.repeat(240)} tail` }],
+            },
+          },
+        }}
+        owner={owner}
+        workspace={workspace('local')}
+        servers={[]}
+        onPreview={() => {}}
+      />
+    );
+
+    expect(screen.getByText(`${family.repeat(239)}…`)).toBeTruthy();
+  });
+
   test.each([
     [
       'loading',
@@ -2872,6 +3365,42 @@ describe('share preview presentation', () => {
     );
   });
 
+  test('does not retain loaded content when the item identity changes', () => {
+    const owner = {
+      selectWorkspace: vi.fn(),
+      load: vi.fn(() => new Promise<never>(() => {})),
+      workspaceKey: 'self:workspace',
+      generation: 1,
+    } as unknown as SharePreviewRouteOwner;
+    const view = render(
+      <LinkPreview
+        item={{
+          ...item(),
+          id: 'first',
+          preview: { url: item().content.url!, title: 'First private title' },
+        }}
+        owner={owner}
+        workspace={workspace('self')}
+        servers={[]}
+        onPreview={() => {}}
+      />
+    );
+    expect(screen.getByText('First private title')).toBeTruthy();
+
+    view.rerender(
+      <LinkPreview
+        item={{ ...item(), id: 'second' }}
+        owner={owner}
+        workspace={workspace('self')}
+        servers={[]}
+        onPreview={() => {}}
+      />
+    );
+
+    expect(screen.queryByText('First private title')).toBeNull();
+    expect(screen.getByText('Loading link preview')).toBeTruthy();
+  });
+
   test('uses one media-first card for rich preview content', async () => {
     const shared = {
       ...item(),
@@ -2905,9 +3434,9 @@ describe('share preview presentation', () => {
     );
 
     await screen.findByText('Provider title');
-    expect(screen.queryByText('Transcript')).toBeNull();
-    expect(screen.queryByText('Hello world again')).toBeNull();
-    expect(screen.queryByText('1:30')).toBeNull();
+    expect(screen.getByText('Transcript')).toBeTruthy();
+    expect(screen.getByText('Hello world again')).toBeTruthy();
+    expect(screen.getByText('1:30')).toBeTruthy();
     expect(screen.getByText('Selected passage')).toBeTruthy();
     expect(container.querySelector('section > img')?.getAttribute('src')).toBe(
       'https://youtube.com/thumbnail.jpg'

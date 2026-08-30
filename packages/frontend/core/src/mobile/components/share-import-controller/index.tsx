@@ -118,6 +118,7 @@ export async function previewForImport(
   servers: Server[]
 ) {
   if (item.content.kind !== 'url') return undefined;
+  if (item.preview) return item.preview;
   const owner = currentOwner ?? new SharePreviewRouteOwner(item);
   owner.selectWorkspace(workspace, servers);
   const selectedWorkspaceKey = workspaceKey(workspace);

@@ -2,7 +2,10 @@
 
 import { describe, expect, test, vi } from 'vitest';
 
-import { resolveShareInboxAttachment } from './index';
+import {
+  resolveShareInboxAttachment,
+  sanitizeShareInboxEntries,
+} from './index';
 
 const resolved = {
   itemId: 'item',
@@ -78,5 +81,47 @@ describe('resolveShareInboxAttachment', () => {
     expect(fetchFile).toHaveBeenCalledWith(
       'capacitor://file:///safe/image.png'
     );
+  });
+});
+
+describe('sanitizeShareInboxEntries', () => {
+  const ready = (preview: unknown) => [
+    {
+      status: 'ready' as const,
+      item: {
+        id: 'item',
+        documentId: 'doc',
+        schemaVersion: 3 as const,
+        importAttemptId: 'attempt',
+        title: 'Shared',
+        content: { kind: 'url' as const, url: 'https://example.com' },
+        preview,
+      },
+    },
+  ];
+
+  test('preserves a valid native preview snapshot', () => {
+    const preview = {
+      url: 'https://example.com',
+      title: 'Preview',
+      images: ['https://app.affine.pro/api/worker/image-proxy?url=thumbnail'],
+    };
+
+    expect(sanitizeShareInboxEntries(ready(preview))[0]).toMatchObject({
+      status: 'ready',
+      item: { preview },
+    });
+  });
+
+  test('drops a malformed preview but preserves its inbox item', () => {
+    const [entry] = sanitizeShareInboxEntries(
+      ready({ url: 'https://user:password@example.com' })
+    );
+
+    expect(entry).toMatchObject({
+      status: 'ready',
+      item: { id: 'item', content: { url: 'https://example.com' } },
+    });
+    expect(entry?.status === 'ready' && entry.item.preview).toBeUndefined();
   });
 });

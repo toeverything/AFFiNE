@@ -166,6 +166,34 @@ export const previewMeta = style([
   },
 ]);
 
+export const previewTranscript = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+  marginTop: 6,
+  paddingTop: 10,
+  borderTop: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
+});
+
+export const previewTranscriptLabel = style([
+  footnoteRegular,
+  {
+    fontWeight: 600,
+    color: cssVarV2('text/primary'),
+  },
+]);
+
+export const previewTranscriptText = style([
+  footnoteRegular,
+  {
+    display: '-webkit-box',
+    overflow: 'hidden',
+    color: cssVarV2('text/secondary'),
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: 4,
+  },
+]);
+
 export const previewMedia = style({
   width: '100%',
   maxHeight: 180,

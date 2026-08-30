@@ -1,13 +1,29 @@
 import type { ShareInboxProvider } from '@affine/core/mobile/components/share-import-controller';
+import { parseShareLinkPreview } from '@affine/core/mobile/components/share-import-controller/preview-route-owner';
+import type { ShareInboxEntry } from '@affine/core/mobile/components/share-import-controller/types';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
-import type { ShareInboxPlugin } from './definitions';
+import type { NativeShareInboxEntry, ShareInboxPlugin } from './definitions';
 
 const plugin = registerPlugin<ShareInboxPlugin>('ShareInbox');
 
 type AttachmentResolution = Awaited<
   ReturnType<ShareInboxPlugin['resolveAttachment']>
 >;
+
+export function sanitizeShareInboxEntries(
+  entries: NativeShareInboxEntry[]
+): ShareInboxEntry[] {
+  return entries.map(entry => {
+    if (entry.status !== 'ready') return entry;
+    const { preview: rawPreview, ...item } = entry.item;
+    const preview = parseShareLinkPreview(rawPreview);
+    return {
+      status: 'ready',
+      item: preview ? { ...item, preview } : item,
+    };
+  });
+}
 
 export async function resolveShareInboxAttachment(
   itemId: string,
@@ -52,7 +68,7 @@ export const shareInboxProvider: ShareInboxProvider = {
     await plugin.updateWorkspaceMode({ mode });
   },
   async listPending() {
-    return (await plugin.listPending()).items;
+    return sanitizeShareInboxEntries((await plugin.listPending()).items);
   },
   async updateTarget(itemId, target) {
     await plugin.updateTarget({ itemId, target });
