@@ -3,6 +3,7 @@ import { expect } from '@playwright/test';
 
 import {
   captureHistory,
+  copyByKeyboard,
   dragBetweenIndices,
   dragOverTitle,
   enterPlaygroundRoom,
@@ -10,6 +11,7 @@ import {
   focusRichTextEnd,
   focusTitle,
   getBlockIds,
+  getClipboardText,
   getIndexCoordinate,
   getInlineSelectionIndex,
   getPageSnapshot,
@@ -35,6 +37,7 @@ import {
   setInlineRangeInInlineEditor,
   setSelection,
   SHORT_KEY,
+  switchEditorMode,
   switchReadonly,
   type,
   undoByClick,
@@ -56,6 +59,7 @@ import {
   assertDocTitleFocus,
   assertRichTextInlineRange,
   assertRichTexts,
+  assertTextSelection,
   assertTitle,
 } from './utils/asserts.js';
 import { test } from './utils/playwright.js';
@@ -1329,6 +1333,48 @@ test('select divider using delete keyboard from prev/next paragraph', async ({
 });
 
 test.describe('readonly mode', () => {
+  test('expanded heading stays open after selecting shared content', async ({
+    page,
+  }) => {
+    // Given a heading persisted as collapsed before the document becomes readonly
+    await enterPlaygroundRoom(page);
+    await initEmptyEdgelessState(page);
+    await focusRichText(page);
+    await type(page, 'Heading');
+    await updateBlockType(page, 'affine:paragraph', 'h2');
+    await pressEnter(page);
+    await type(page, 'Shared content');
+
+    const content = page.locator('affine-paragraph').nth(1);
+    await page.getByRole('button', { name: 'Collapse content' }).click();
+    await expect(content).not.toBeVisible();
+
+    await switchReadonly(page);
+    await switchEditorMode(page);
+    await switchEditorMode(page);
+
+    // When a reader expands the heading and selects its revealed content
+    await page.getByRole('button', { name: 'Expand content' }).click();
+    await expect(content).toBeVisible();
+    await dragBetweenIndices(page, [1, 0], [1, 6]);
+
+    // Then the reader's local expansion and text selection remain intact
+    await expect(content).toBeVisible();
+    const contentId = await content.getAttribute('data-block-id');
+    expect(contentId).not.toBeNull();
+    await assertTextSelection(page, {
+      blockId: contentId ?? '',
+      index: 0,
+      length: 6,
+    });
+    await copyByKeyboard(page);
+    expect(await getClipboardText(page)).toBe('Shared');
+
+    await page.getByRole('button', { name: 'Collapse content' }).click();
+    await expect(content).not.toBeVisible();
+    await assertTextSelection(page);
+  });
+
   test('should placeholder not show at readonly mode', async ({ page }) => {
     await enterPlaygroundRoom(page);
     await initEmptyParagraphState(page);
