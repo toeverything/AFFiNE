@@ -10,7 +10,7 @@
 
 **Spec:** [`docs/ios-share-extension-feasibility.md`](../../ios-share-extension-feasibility.md)
 
-**Implementation status (2026-08-30):** Tasks 1-9 are implemented and covered by automated tests. Unchecked items are deliberate external gates: physical-device/share-sheet verification, network captures, and Gate C rollout approval. Pull request submission remains pending.
+**Implementation status (2026-08-30):** Tasks 1-9 are implemented and covered by automated tests. The approved pre-workspace enrichment amendment is implemented by the [rich preview follow-up plan](2026-08-30-ios-share-rich-preview.md). The current canary app, including ShareExtension, has been signed, built, and installed on `demo_ace_iPhone`; launch and share-sheet acceptance remain pending while the device is locked. Gate C remains closed.
 
 ## Global Constraints
 
