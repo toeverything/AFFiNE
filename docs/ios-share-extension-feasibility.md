@@ -266,18 +266,18 @@ root meta title 和稳定 page block title：两者都空才写入导入标题�
 
 ## 执行步骤和提交计划
 
-| 阶段                   | 完成条件                                                                                                                                            | 验证                                                                                                                                            | 建议 commit 信息                                                   | 状态                     |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------ |
-| 0. 隐私与清单基线      | manifest v2 自定义迁移并稳定回填 `importAttemptId`；删除 Extension 网络；Worker 复用全局移动端 Origin；preview 绑定 item/workspace/generation       | Swift/TS/Worker 测试覆盖 v1、未来版本、Capacitor Origin、A→B 未返回即保存、本地/离线；MVP 请求体无 `include`                                    | `refactor(ios-share): make share inbox workspace routed`           | 已完成                   |
-| 1. 文件型 Inbox 基础   | provider 回调内复制到 Extension-owned staging；将现有图片 payload/store 从 `Data` 改成可注入、受协调的文件 URL 复制；暂不激活 PDF 输入              | XCTest target 正确执行 Store/Builder/ViewModel 延迟保存测试；中断复制不产生 manifest；取消/成功/销毁清理 staging；现有图片分享仍可用            | `refactor(ios-share): stage inbox attachments as files`            | 已完成                   |
-| 2. 事务与 File Bridge  | 建文档前持久化 `preparing`；稳定骨架/块只补缺失；root/page 标题双源单调协调，标签/集合只加不删；bookmark 始终有标题                                 | 覆盖 root-only/空内容、page-only/root-only/冲突标题、block/元数据编辑、本地 bookmark 零预览请求、图片 Blob 重试                                 | `fix(ios-share): make file imports transactional`                  | 已完成                   |
-| 3. PDF 端到端启用      | 同一提交更新激活规则、Swift/TS 判别、PDF 校验/缩略图和 attachment importer；禁止缺少 File 或附件块时 `complete`                                     | Swift/TS 测试覆盖 PDF 边界、远程 PDF URL、空导入拒绝、Blob/块复用；真机验证 Files/Safari 分享入口                                               | `feat(ios-share): import shared pdfs as attachment blocks`         | 代码完成，真机待验收     |
-| 4A. 详情只读兼容       | 发布 bookmark 可选 props/视图、reader blob 索引和 snapshot transformer；升级服务端 parser、投影版本并暴露 `SharePreviewBlobRefs`；importer 不写引用 | 客户端 fixture/snapshot；native 投影与对象清理测试证明引用存在时保留、删除引用并重建后可清理；GraphQL capability e2e                            | `feat(bookmark): read and retain structured share details`         | 已完成                   |
-| C. Writer 兼容门槛     | 最低受支持客户端已包含 4A；云端/自托管目标服务器还必须运行时声明 `SharePreviewBlobRefs`                                                             | 发布/兼容性 owner 确认客户端清理兼容；官方与支持的自托管矩阵确认 parser v2 已部署，旧服务器能力缺失时 writer 关闭                               | 不产生代码 commit                                                  | 阻塞                     |
-| 4B. 详情 Writer        | C 通过后，本地 writer 按发布门禁开启；云端/自托管仅在严格实时 config 请求成功且当前服务器声明能力时写 Blob 和 bookmark source/version props         | 覆盖 YouTube/X/普通页、失败降级、最低 reader 混用，以及缓存有能力但刷新失败/响应缺能力/切换服务器时不写引用                                     | `feat(ios-share): write structured bookmark details`               | 代码完成，默认关闭       |
-| G. Enrichment 决策门槛 | 请求 owner 已确认 cloud/local/self-hosted 均可在 Extension 选择工作区前将共享 URL 发往官方 enrichment endpoint；失败降级为普通 URL                  | 生产 native-equivalent 请求实测 YouTube 有/无 transcript；Swift fixture 固定响应契约和超时/超限/降级                                            | 不产生代码 commit                                                  | 已批准，见顶部修订       |
-| 5. Enrichment 实现     | Extension 复用已部署的官方 provider enrichment，持久化有界 v3 快照；主 App 不做第二次请求，标准块投影不依赖 Gate C                                  | Swift/TS 覆盖有/无 transcript、大小限制、媒体代理限制、离线导入和降级；真机抓包确认仅访问官方 preview/image-proxy                               | `feat(ios-share): persist and import rich previews`                | 代码与自动化完成         |
-| 6. 发布收尾            | 六类输入回归，更新隐私/网络说明并关闭评审项                                                                                                         | 定向前端/Swift 测试；`BUILD_TYPE=canary PUBLIC_PATH="/" yarn affine @affine/ios build`；`yarn workspace @affine/ios sync`；Xcode 构建和真机手测 | `docs(ios-share): document routed preview and attachment behavior` | 真机构建安装，手测待验收 |
+| 阶段                   | 完成条件                                                                                                                                            | 验证                                                                                                                                            | 建议 commit 信息                                                   | 状态                  |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | --------------------- |
+| 0. 隐私与清单基线      | manifest v2 自定义迁移并稳定回填 `importAttemptId`；删除 Extension 网络；Worker 复用全局移动端 Origin；preview 绑定 item/workspace/generation       | Swift/TS/Worker 测试覆盖 v1、未来版本、Capacitor Origin、A→B 未返回即保存、本地/离线；MVP 请求体无 `include`                                    | `refactor(ios-share): make share inbox workspace routed`           | 已完成                |
+| 1. 文件型 Inbox 基础   | provider 回调内复制到 Extension-owned staging；将现有图片 payload/store 从 `Data` 改成可注入、受协调的文件 URL 复制；暂不激活 PDF 输入              | XCTest target 正确执行 Store/Builder/ViewModel 延迟保存测试；中断复制不产生 manifest；取消/成功/销毁清理 staging；现有图片分享仍可用            | `refactor(ios-share): stage inbox attachments as files`            | 已完成                |
+| 2. 事务与 File Bridge  | 建文档前持久化 `preparing`；稳定骨架/块只补缺失；root/page 标题双源单调协调，标签/集合只加不删；bookmark 始终有标题                                 | 覆盖 root-only/空内容、page-only/root-only/冲突标题、block/元数据编辑、本地 bookmark 零预览请求、图片 Blob 重试                                 | `fix(ios-share): make file imports transactional`                  | 已完成                |
+| 3. PDF 端到端启用      | 同一提交更新激活规则、Swift/TS 判别、PDF 校验/缩略图和 attachment importer；禁止缺少 File 或附件块时 `complete`                                     | Swift/TS 测试覆盖 PDF 边界、远程 PDF URL、空导入拒绝、Blob/块复用；真机验证 Files/Safari 分享入口                                               | `feat(ios-share): import shared pdfs as attachment blocks`         | 代码完成，真机待验收  |
+| 4A. 详情只读兼容       | 发布 bookmark 可选 props/视图、reader blob 索引和 snapshot transformer；升级服务端 parser、投影版本并暴露 `SharePreviewBlobRefs`；importer 不写引用 | 客户端 fixture/snapshot；native 投影与对象清理测试证明引用存在时保留、删除引用并重建后可清理；GraphQL capability e2e                            | `feat(bookmark): read and retain structured share details`         | 已完成                |
+| C. Writer 兼容门槛     | 最低受支持客户端已包含 4A；云端/自托管目标服务器还必须运行时声明 `SharePreviewBlobRefs`                                                             | 发布/兼容性 owner 确认客户端清理兼容；官方与支持的自托管矩阵确认 parser v2 已部署，旧服务器能力缺失时 writer 关闭                               | 不产生代码 commit                                                  | 阻塞                  |
+| 4B. 详情 Writer        | C 通过后，本地 writer 按发布门禁开启；云端/自托管仅在严格实时 config 请求成功且当前服务器声明能力时写 Blob 和 bookmark source/version props         | 覆盖 YouTube/X/普通页、失败降级、最低 reader 混用，以及缓存有能力但刷新失败/响应缺能力/切换服务器时不写引用                                     | `feat(ios-share): write structured bookmark details`               | 代码完成，默认关闭    |
+| G. Enrichment 决策门槛 | 请求 owner 已确认 cloud/local/self-hosted 均可在 Extension 选择工作区前将共享 URL 发往官方 enrichment endpoint；失败降级为普通 URL                  | 生产 native-equivalent 请求实测 YouTube 有/无 transcript；Swift fixture 固定响应契约和超时/超限/降级                                            | 不产生代码 commit                                                  | 已批准，见顶部修订    |
+| 5. Enrichment 实现     | Extension 复用已部署的官方 provider enrichment，持久化有界 v3 快照；主 App 不做第二次请求，标准块投影不依赖 Gate C                                  | Swift/TS 覆盖有/无 transcript、大小限制、媒体代理限制、离线导入和降级；真机抓包确认仅访问官方 preview/image-proxy                               | `feat(ios-share): persist and import rich previews`                | 中文 YouTube 真机通过 |
+| 6. 发布收尾            | 六类输入回归，更新隐私/网络说明并关闭评审项                                                                                                         | 定向前端/Swift 测试；`BUILD_TYPE=canary PUBLIC_PATH="/" yarn affine @affine/ios build`；`yarn workspace @affine/ios sync`；Xcode 构建和真机手测 | `docs(ios-share): document routed preview and attachment behavior` | 单例通过，矩阵待验收  |
 
 ### 2026-08-30 验证记录
 
@@ -295,10 +295,13 @@ root meta title 和稳定 page block title：两者都空才写入导入标题�
   duration 和可选 transcript；本轮仅在 Extension 获取并持久化有界快照。Gate C 仍关闭，
   不写 `sharePreviewSourceId`。
 - `demo_ace_iPhone` 已通过 CoreDevice 连接；当前 canary App 与 ShareExtension 完成 arm64
-  签名构建、嵌入校验、覆盖安装和应用启动。Rick Astley、中文煎牛排视频及六类输入 ×
-  cloud/self-hosted/local 的分享矩阵、Extension 网络抓包和本地 workspace 网络抓包尚未执行。
-  构建安装和自动化结果不能替代这些发布验收；完成手工矩阵前，阶段 3/6 和发布门槛 6 不得
-  标记为完成。
+  签名构建、嵌入校验、覆盖安装和应用启动。中文煎牛排视频完成 Share Extension 和导入验收：
+  富卡片包含真实缩略图、YouTube 标识、标题、描述、作者、5:50 时长和 transcript；导入文档
+  保持相同 bookmark 内容，并生成 metadata 与带时间戳的 transcript callout。实时 provider
+  实际返回了 transcript，因此原计划中的“中文视频无 transcript”假设不成立。Rick Astley、
+  无 transcript 实际响应，以及六类输入 × cloud/self-hosted/local 的分享矩阵、Extension 网络
+  抓包和本地 workspace 网络抓包尚未执行。单例验收不能替代完整发布矩阵；完成手工矩阵前，
+  阶段 3/6 和发布门槛 6 不得标记为完成。
 
 阶段 0-3 是可直接实施、可独立发布的稳定导入路径，4A 在客户端和服务端投影同时完成后可作为
 只读兼容版本发布；无 transcript/结构化 writer 时仍可安全保存链接和 PDF。C 通过后才启用

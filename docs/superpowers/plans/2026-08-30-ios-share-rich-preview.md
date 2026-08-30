@@ -161,11 +161,12 @@ yarn vitest --run packages/frontend/core/src/modules/import-clipper/services/sha
 
 - [x] Run all targeted Swift, Vitest, and server regression suites.
 - [x] Build canary frontend, sync Capacitor/CocoaPods, and build App/ShareExtension for simulator and connected device.
-- [ ] Install and launch on the iPhone; share Rick Astley (with transcript) and the supplied Chinese steak video (without transcript).
-- [ ] Import both; verify bookmark image/title/description, metadata, optional transcript, source URL, and retry behavior.
+- [x] Install and launch on the iPhone; share the supplied Chinese steak video. The live provider returned a transcript, contrary to the original no-transcript assumption.
+- [x] Import the Chinese steak video; verify bookmark image/title/description, `YouTube · Author · 5:50` metadata, timestamped transcript, and source URL from the supplied device screenshots.
+- [ ] Share and import Rick Astley, then verify retry behavior and the no-transcript fallback with a provider response that actually omits transcript.
 - [x] Request final P0/P1/P2/P3 review against the design and full PR diff; repeat until no new P0/P1/P2 findings.
 - [x] Update document status and verification evidence.
-- [ ] Commit docs, push `codex/ios-share-extension`, update PR #15547, and inspect available checks.
+- [x] Commit docs, push `codex/ios-share-extension`, update PR #15547, and inspect available checks.
 
 ```bash
 BUILD_TYPE=canary PUBLIC_PATH="/" yarn affine @affine/ios build
