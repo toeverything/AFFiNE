@@ -3547,7 +3547,7 @@ describe('share document block projection', () => {
           flavour: 'affine:bookmark',
           props: {
             url: 'https://example.com',
-            title: 'Example',
+            title: 'Page',
             description: 'Description',
             icon: 'https://example.com/icon.png',
             image: 'https://example.com/image.png',

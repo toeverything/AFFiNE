@@ -730,6 +730,68 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertFalse(didLoadSecond)
   }
 
+  func testBuilderStopsWaitingForPendingProviderLoadWhenTaskIsCancelled() async {
+    let started = expectation(description: "provider load started")
+    let finished = expectation(description: "builder stopped waiting")
+    let provider = NSItemProvider()
+    provider.registerDataRepresentation(
+      forTypeIdentifier: UTType.plainText.identifier,
+      visibility: .all
+    ) { completion in
+      started.fulfill()
+      DispatchQueue.global().asyncAfter(deadline: .now() + 0.25) {
+        completion(Data("late provider result".utf8), nil)
+      }
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [provider]
+
+    let task = Task {
+      let draft = await SharePayloadBuilder.build(from: [extensionItem])
+      finished.fulfill()
+      return draft
+    }
+    await fulfillment(of: [started], timeout: 1)
+    task.cancel()
+    await fulfillment(of: [finished], timeout: 0.1)
+    _ = await task.value
+  }
+
+  func testBuilderCancelsPendingFileProviderProgressWhenTaskIsCancelled() async throws {
+    let started = expectation(description: "file provider load started")
+    let cancelled = expectation(description: "file provider load cancelled")
+    let source = try makeProviderFile(data: makePDFData(), name: "cancelled.pdf")
+    let provider = NSItemProvider()
+    provider.registerFileRepresentation(
+      forTypeIdentifier: UTType.pdf.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      let progress = Progress(totalUnitCount: 1)
+      progress.cancellationHandler = {
+        cancelled.fulfill()
+        completion(nil, false, CancellationError())
+      }
+      started.fulfill()
+      DispatchQueue.global().asyncAfter(deadline: .now() + 0.25) {
+        guard !progress.isCancelled else { return }
+        completion(source, true, nil)
+      }
+      return progress
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [provider]
+
+    let task = Task {
+      await SharePayloadBuilder.build(from: [extensionItem])
+    }
+    await fulfillment(of: [started], timeout: 1)
+    task.cancel()
+    await fulfillment(of: [cancelled], timeout: 0.1)
+    _ = await task.value
+  }
+
   func testBuilderRejectsAnImageAndPDFBeforeAnyBinaryLoad() async {
     let image = NSItemProvider()
     let imageData = makePNGData()

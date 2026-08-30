@@ -9,6 +9,77 @@ enum SharePayloadBuilder {
   typealias FileCopy = (URL, URL) throws -> Void
   typealias CoordinatedRead = (URL, (URL) throws -> Void) throws -> Void
 
+  private final class ProviderLoadState<Value>: @unchecked Sendable {
+    private let lock = NSLock()
+    private let discard: (Value) -> Void
+    private var continuation: CheckedContinuation<Value, Error>?
+    private var progress: Progress?
+    private var isFinished = false
+    private var isCancelled = false
+
+    init(discard: @escaping (Value) -> Void) {
+      self.discard = discard
+    }
+
+    func install(_ continuation: CheckedContinuation<Value, Error>) {
+      lock.lock()
+      if isCancelled {
+        lock.unlock()
+        continuation.resume(throwing: CancellationError())
+        return
+      }
+      self.continuation = continuation
+      lock.unlock()
+    }
+
+    func install(_ progress: Progress?) {
+      lock.lock()
+      if isCancelled {
+        lock.unlock()
+        progress?.cancel()
+        return
+      }
+      if !isFinished {
+        self.progress = progress
+      }
+      lock.unlock()
+    }
+
+    func resume(with result: Result<Value, Error>) {
+      lock.lock()
+      guard !isFinished else {
+        lock.unlock()
+        if case .success(let value) = result {
+          discard(value)
+        }
+        return
+      }
+      isFinished = true
+      let continuation = continuation
+      self.continuation = nil
+      progress = nil
+      lock.unlock()
+      continuation?.resume(with: result)
+    }
+
+    func cancel() {
+      lock.lock()
+      guard !isFinished else {
+        lock.unlock()
+        return
+      }
+      isFinished = true
+      isCancelled = true
+      let continuation = continuation
+      let progress = progress
+      self.continuation = nil
+      self.progress = nil
+      lock.unlock()
+      progress?.cancel()
+      continuation?.resume(throwing: CancellationError())
+    }
+  }
+
   static func build(from extensionItems: [NSExtensionItem]) async -> SharePayloadDraft {
     removeStaleStagingDirectories()
     var title = "Shared"
@@ -18,10 +89,19 @@ enum SharePayloadBuilder {
     var file: SharePayloadFile?
     var contexts: [(item: NSExtensionItem, providers: [ProviderContext])] = []
 
+    defer {
+      if Task.isCancelled, let file {
+        removeOwnedStagingFile(at: file.ownedStagingURL)
+      }
+    }
+
     for item in extensionItems {
       var providers: [ProviderContext] = []
       for provider in item.attachments ?? [] {
         providers.append(await providerContext(for: provider))
+        guard !Task.isCancelled else {
+          return failure(title: title, message: "Share cancelled.")
+        }
       }
       contexts.append((item: item, providers: providers))
     }
@@ -36,6 +116,9 @@ enum SharePayloadBuilder {
 
     for context in contexts {
       for providerContext in context.providers {
+        guard !Task.isCancelled else {
+          return failure(title: title, message: "Share cancelled.")
+        }
         let provider = providerContext.provider
         if let page = providerContext.safariPage {
           title = page.title ?? title
@@ -61,6 +144,9 @@ enum SharePayloadBuilder {
             fallbackText = String(trimmed.prefix(maxTextCharacters))
           }
         }
+        guard !Task.isCancelled else {
+          return failure(title: title, message: "Share cancelled.")
+        }
 
         let hasImage = providerContext.hasImage
           && !providerContext.blocksBinaryFallback
@@ -71,6 +157,9 @@ enum SharePayloadBuilder {
         if hasImage || hasPDF {
           do {
             file = try await (hasPDF ? loadPDF(from: provider) : loadImage(from: provider))
+            try Task.checkCancellation()
+          } catch is CancellationError {
+            return failure(title: title, message: "Share cancelled.")
           } catch ShareInboxError.payloadTooLarge {
             let message = hasPDF
               ? "The PDF must be smaller than 64 MB."
@@ -175,7 +264,7 @@ enum SharePayloadBuilder {
       ? try? await loadSafariPage(from: provider)
       : nil
     var loadedURL = safariPage?.url.flatMap(URL.init(string:))
-    if loadedURL == nil, hasURL {
+    if loadedURL == nil, hasURL, !Task.isCancelled {
       loadedURL = try? await loadURL(from: provider)
     }
     let webURL = loadedURL.flatMap { ShareInboxSafety.normalizedWebURL($0.absoluteString) }
@@ -191,19 +280,20 @@ enum SharePayloadBuilder {
   }
 
   private static func loadSafariPage(from provider: NSItemProvider) async throws -> SafariPage {
-    let item: Any = try await withCheckedThrowingContinuation { continuation in
+    let item: Any = try await loadProviderValue { completion in
       provider.loadItem(
         forTypeIdentifier: UTType.propertyList.identifier,
         options: nil
       ) { item, error in
         if let error {
-          continuation.resume(throwing: error)
+          completion(.failure(error))
         } else if let item {
-          continuation.resume(returning: item)
+          completion(.success(item))
         } else {
-          continuation.resume(throwing: ShareInboxError.invalidPayload)
+          completion(.failure(ShareInboxError.invalidPayload))
         }
       }
+      return nil
     }
 
     let dictionary: [String: Any]?
@@ -231,25 +321,29 @@ enum SharePayloadBuilder {
   }
 
   private static func loadURL(from provider: NSItemProvider) async throws -> URL {
-    let item: Any? = try? await withCheckedThrowingContinuation { continuation in
+    let item: Any? = try? await loadProviderValue { completion in
       provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, error in
         if let error {
-          continuation.resume(throwing: error)
-        } else { continuation.resume(returning: item) }
+          completion(.failure(error))
+        } else {
+          completion(.success(item))
+        }
       }
+      return nil
     }
+    try Task.checkCancellation()
     if let url = url(from: item) { return url }
     guard provider.canLoadObject(ofClass: NSURL.self) else {
       throw ShareInboxError.invalidPayload
     }
-    let object: any NSItemProviderReading = try await withCheckedThrowingContinuation { continuation in
+    let object: any NSItemProviderReading = try await loadProviderValue { completion in
       provider.loadObject(ofClass: NSURL.self) { url, error in
         if let error {
-          continuation.resume(throwing: error)
+          completion(.failure(error))
         } else if let url {
-          continuation.resume(returning: url)
+          completion(.success(url))
         } else {
-          continuation.resume(throwing: ShareInboxError.invalidPayload)
+          completion(.failure(ShareInboxError.invalidPayload))
         }
       }
     }
@@ -265,35 +359,37 @@ enum SharePayloadBuilder {
   }
 
   private static func loadText(from provider: NSItemProvider) async throws -> String {
-    try await withCheckedThrowingContinuation { continuation in
+    try await loadProviderValue { completion in
       provider.loadItem(
         forTypeIdentifier: UTType.plainText.identifier,
         options: nil
       ) { item, error in
         if let error {
-          continuation.resume(throwing: error)
+          completion(.failure(error))
         } else if let text = item as? String {
-          continuation.resume(returning: text)
+          completion(.success(text))
         } else if let attributed = item as? NSAttributedString {
-          continuation.resume(returning: attributed.string)
+          completion(.success(attributed.string))
         } else {
-          continuation.resume(throwing: ShareInboxError.invalidPayload)
+          completion(.failure(ShareInboxError.invalidPayload))
         }
       }
+      return nil
     }
   }
 
   private static func loadImage(from provider: NSItemProvider) async throws -> SharePayloadFile {
     let suggestedName = provider.suggestedName
-    return try await withCheckedThrowingContinuation {
-      (continuation: CheckedContinuation<SharePayloadFile, Error>) in
+    return try await loadProviderValue(discard: { file in
+      removeOwnedStagingFile(at: file.ownedStagingURL)
+    }) { completion in
       provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { item, error in
         if let error {
-          continuation.resume(throwing: error)
+          completion(.failure(error))
           return
         }
         guard let item else {
-          continuation.resume(throwing: ShareInboxError.invalidPayload)
+          completion(.failure(ShareInboxError.invalidPayload))
           return
         }
         do {
@@ -309,39 +405,63 @@ enum SharePayloadBuilder {
           } else {
             throw ShareInboxError.invalidPayload
           }
-          continuation.resume(returning: file)
+          completion(.success(file))
         } catch {
-          continuation.resume(throwing: error)
+          completion(.failure(error))
         }
       }
+      return nil
     }
   }
 
   private static func loadPDF(from provider: NSItemProvider) async throws -> SharePayloadFile {
     let suggestedName = provider.suggestedName
-    return try await withCheckedThrowingContinuation {
-      (continuation: CheckedContinuation<SharePayloadFile, Error>) in
+    return try await loadProviderValue(discard: { file in
+      removeOwnedStagingFile(at: file.ownedStagingURL)
+    }) { completion in
       provider.loadFileRepresentation(forTypeIdentifier: UTType.pdf.identifier) { url, error in
         if let error {
-          continuation.resume(throwing: error)
+          completion(.failure(error))
           return
         }
         guard let url, url.isFileURL else {
-          continuation.resume(throwing: ShareInboxError.invalidPayload)
+          completion(.failure(ShareInboxError.invalidPayload))
           return
         }
         do {
-          continuation.resume(
-            returning: try stagePDF(
+          completion(
+            .success(try stagePDF(
               from: url,
               suggestedName: suggestedName ?? url.lastPathComponent,
               declaredTypeIdentifier: UTType.pdf.identifier
-            )
+            ))
           )
         } catch {
-          continuation.resume(throwing: error)
+          completion(.failure(error))
         }
       }
+    }
+  }
+
+  private static func loadProviderValue<Value>(
+    discard: @escaping (Value) -> Void = { _ in },
+    operation: (@escaping (Result<Value, Error>) -> Void) -> Progress?
+  ) async throws -> Value {
+    let state = ProviderLoadState<Value>(discard: discard)
+    return try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { continuation in
+        state.install(continuation)
+        guard !Task.isCancelled else {
+          state.cancel()
+          return
+        }
+        let progress = operation { result in
+          state.resume(with: result)
+        }
+        state.install(progress)
+      }
+    } onCancel: {
+      state.cancel()
     }
   }
 

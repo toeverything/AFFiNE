@@ -9,6 +9,11 @@ import UIKit
 final class ShareViewController: UIViewController {
   private let viewModel = ShareViewModel()
   private var hostingController: UIHostingController<ShareExtensionView>?
+  private var loadTask: Task<Void, Never>?
+
+  deinit {
+    loadTask?.cancel()
+  }
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -36,12 +41,17 @@ final class ShareViewController: UIViewController {
     ])
     hosting.didMove(toParent: self)
 
-    Task {
+    let viewModel = viewModel
+    let extensionContext = extensionContext
+    loadTask = Task { [weak self] in
       await viewModel.load(from: extensionContext)
+      self?.loadTask = nil
     }
   }
 
   private func cancel() {
+    loadTask?.cancel()
+    loadTask = nil
     viewModel.discard()
     extensionContext?.completeRequest(returningItems: nil)
   }
@@ -51,6 +61,8 @@ final class ShareViewController: UIViewController {
       guard let self else { return }
       let success = await viewModel.save()
       guard success else { return }
+      loadTask?.cancel()
+      loadTask = nil
       _ = await openMainAppIfPossible()
       extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
     }

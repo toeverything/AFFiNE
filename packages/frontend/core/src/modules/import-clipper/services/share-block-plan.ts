@@ -257,9 +257,11 @@ export function createShareBlockPlan(
   if (input.content.kind !== 'url' || !input.content.url) return [];
 
   const preview = input.preview;
+  const inputTitle = input.title.trim();
+  const previewTitle = preview?.title?.trim();
   const title =
-    preview?.title?.trim() ||
-    input.title.trim() ||
+    (inputTitle && inputTitle !== 'Shared' ? inputTitle : previewTitle) ||
+    inputTitle ||
     (() => {
       try {
         return new URL(input.content.url).hostname;

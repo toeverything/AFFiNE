@@ -34,7 +34,7 @@ describe('share import block plan', () => {
         flavour: 'affine:bookmark',
         props: expect.objectContaining({
           url: input.content.url,
-          title: 'Preview',
+          title: 'Saved title',
         }),
       }),
       expect.objectContaining({
@@ -206,6 +206,28 @@ describe('share import block plan', () => {
         ],
       },
     ]);
+  });
+
+  test('preserves a resolved non-generic title over the remote preview title', () => {
+    const [bookmark] = createShareBlockPlan(
+      {
+        documentId: 'document-id',
+        importAttemptId: 'attempt-id',
+        title: 'My edited title',
+        content: {
+          kind: 'url',
+          url: 'https://youtube.com/watch?v=123',
+        },
+        preview: {
+          url: 'https://youtube.com/watch?v=123',
+          title: 'Provider title',
+        },
+        tagIds: [],
+      },
+      null
+    );
+
+    expect(bookmark?.props.title).toBe('My edited title');
   });
 
   test('omits absent metadata and transcripts duplicated by description or selected text', () => {
