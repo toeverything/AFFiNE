@@ -1,10 +1,9 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
-import { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
+import type { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
 import {
   parseSharePreviewBlob,
   type SharePreviewRecord,
 } from '@blocksuite/affine/model';
-import { FileSizeLimitProvider } from '@blocksuite/affine/shared/services';
 import { Text } from '@blocksuite/affine/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
@@ -337,11 +336,21 @@ export class ImportClipperService extends Service {
         return { status: 'attachment-missing' };
       }
       if (
-        input.content.kind === 'pdf' &&
+        isAttachment &&
         input.attachment &&
-        input.attachment.size > maxShareAttachmentBytes
+        input.attachment.size > this.getShareImportAttachmentLimit()
       ) {
         return { status: 'attachment-too-large' };
+      }
+
+      let admittedAttachmentSourceId: string | undefined;
+      if (isAttachment && input.attachment && !existingRecord) {
+        try {
+          admittedAttachmentSourceId =
+            await workspace.docCollection.blobSync.set(input.attachment);
+        } catch {
+          return { status: 'attachment-write-failed' };
+        }
       }
 
       if (recovery === 'write-preparing-and-create') {
@@ -373,18 +382,6 @@ export class ImportClipperService extends Service {
         if (shouldSync) {
           workspace.engine.doc.addPriority(input.documentId, 100);
           await workspace.engine.doc.waitForSynced(input.documentId);
-        }
-        if (input.content.kind === 'pdf' && input.attachment) {
-          const std = this.createShareImportBlockStdScope(doc.blockSuiteDoc);
-          try {
-            const fileSizeLimit = std.get(FileSizeLimitProvider);
-            if (input.attachment.size > fileSizeLimit.maxFileSize) {
-              fileSizeLimit.onOverFileSize?.();
-              return { status: 'attachment-too-large' };
-            }
-          } finally {
-            std.unmount();
-          }
         }
         const ids = shareImportBlockIds(input.importAttemptId);
         const leaves = this.shareLeaves(input);
@@ -513,12 +510,15 @@ export class ImportClipperService extends Service {
           input.attachment &&
           !doc.blockSuiteDoc.getBlock(imageId)
         ) {
-          try {
-            imageSourceId = await workspace.docCollection.blobSync.set(
-              input.attachment
-            );
-          } catch {
-            return { status: 'attachment-write-failed' };
+          imageSourceId = admittedAttachmentSourceId;
+          if (!imageSourceId) {
+            try {
+              imageSourceId = await workspace.docCollection.blobSync.set(
+                input.attachment
+              );
+            } catch {
+              return { status: 'attachment-write-failed' };
+            }
           }
         }
         let attachmentSourceId: string | undefined;
@@ -527,12 +527,15 @@ export class ImportClipperService extends Service {
           input.attachment &&
           !doc.blockSuiteDoc.getBlock(attachmentId)
         ) {
-          try {
-            attachmentSourceId = await workspace.docCollection.blobSync.set(
-              input.attachment
-            );
-          } catch {
-            return { status: 'attachment-write-failed' };
+          attachmentSourceId = admittedAttachmentSourceId;
+          if (!attachmentSourceId) {
+            try {
+              attachmentSourceId = await workspace.docCollection.blobSync.set(
+                input.attachment
+              );
+            } catch {
+              return { status: 'attachment-write-failed' };
+            }
           }
         }
         if (
@@ -690,10 +693,8 @@ export class ImportClipperService extends Service {
     }
   }
 
-  protected createShareImportBlockStdScope(
-    store: Parameters<typeof createBlockStdScope>[0]
-  ) {
-    return createBlockStdScope(store);
+  protected getShareImportAttachmentLimit() {
+    return maxShareAttachmentBytes;
   }
 
   private addShareBlocks(

@@ -9,6 +9,8 @@ enum SharePayloadBuilder {
   typealias FileCopy = (URL, URL) throws -> Void
   typealias CoordinatedRead = (URL, (URL) throws -> Void) throws -> Void
 
+  private struct ImageFileRepresentationUnavailable: Error {}
+
   private final class ProviderLoadState<Value>: @unchecked Sendable {
     private let lock = NSLock()
     private let discard: (Value) -> Void
@@ -380,37 +382,62 @@ enum SharePayloadBuilder {
 
   private static func loadImage(from provider: NSItemProvider) async throws -> SharePayloadFile {
     let suggestedName = provider.suggestedName
-    return try await loadProviderValue(discard: { file in
-      removeOwnedStagingFile(at: file.ownedStagingURL)
-    }) { completion in
-      provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { item, error in
-        if let error {
-          completion(.failure(error))
-          return
-        }
-        guard let item else {
-          completion(.failure(ShareInboxError.invalidPayload))
-          return
-        }
-        do {
-          let file: SharePayloadFile
-          if let url = item as? URL, url.isFileURL {
-            file = try stageImage(from: url, suggestedName: url.lastPathComponent)
-          } else if let data = item as? Data {
-            file = try stageImage(data: data, suggestedName: suggestedName)
-          } else if let image = item as? UIImage,
-                    let data = image.jpegData(compressionQuality: 0.9)
-          {
-            file = try stageImage(data: data, suggestedName: suggestedName)
-          } else {
-            throw ShareInboxError.invalidPayload
+    let typeIdentifier = provider.registeredTypeIdentifiers.first { identifier in
+      guard identifier != UTType.image.identifier, let type = UTType(identifier) else {
+        return false
+      }
+      return type.conforms(to: .image)
+    } ?? UTType.image.identifier
+    do {
+      return try await loadProviderValue(discard: { file in
+        removeOwnedStagingFile(at: file.ownedStagingURL)
+      }) { completion in
+        provider.loadInPlaceFileRepresentation(forTypeIdentifier: typeIdentifier) { url, _, error in
+          if let error {
+            completion(.failure(error))
+            return
           }
-          completion(.success(file))
-        } catch {
-          completion(.failure(error))
+          guard let url, url.isFileURL else {
+            completion(.failure(ImageFileRepresentationUnavailable()))
+            return
+          }
+          do {
+            completion(.success(try stageImage(
+              from: url,
+              suggestedName: suggestedName ?? url.lastPathComponent
+            )))
+          } catch {
+            completion(.failure(error))
+          }
         }
       }
-      return nil
+    } catch is CancellationError {
+      throw CancellationError()
+    } catch let error as ShareInboxError {
+      throw error
+    } catch {
+      return try await loadProviderValue(discard: { file in
+        removeOwnedStagingFile(at: file.ownedStagingURL)
+      }) { completion in
+        provider.loadFileRepresentation(forTypeIdentifier: typeIdentifier) { url, error in
+          if let error {
+            completion(.failure(error))
+            return
+          }
+          guard let url, url.isFileURL else {
+            completion(.failure(ShareInboxError.invalidPayload))
+            return
+          }
+          do {
+            completion(.success(try stageImage(
+              from: url,
+              suggestedName: suggestedName ?? url.lastPathComponent
+            )))
+          } catch {
+            completion(.failure(error))
+          }
+        }
+      }
     }
   }
 
@@ -539,19 +566,6 @@ enum SharePayloadBuilder {
     }
     guard let stagedFile else { throw ShareInboxError.invalidPayload }
     return stagedFile
-  }
-
-  private static func stageImage(data: Data, suggestedName: String?) throws -> SharePayloadFile {
-    guard data.count <= maxImageBytes else { throw ShareInboxError.payloadTooLarge }
-    guard let mimeType = ShareInboxSafety.detectRasterImageMimeType(data) else {
-      throw ShareInboxError.invalidPayload
-    }
-    return try stageImage(
-      name: normalizedFileName(suggestedName ?? "shared-image", mimeType: mimeType),
-      mimeType: mimeType,
-      size: data.count,
-      write: { destination in try ShareInboxFileCopy.write(data, to: destination) }
-    )
   }
 
   static func removeOwnedStagingFile(at url: URL) {

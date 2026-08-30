@@ -1108,9 +1108,9 @@ mod tests {
       );
 
       sqlx::query(
-        "UPDATE doc_blob_ref_projections p SET parser_version = $3, status = 'fresh', source_revision = s.updated_at FROM \
-         snapshots s WHERE p.workspace_id = $1 AND p.doc_id = $2 AND s.workspace_id = p.workspace_id AND s.guid = \
-         p.doc_id",
+        "UPDATE doc_blob_ref_projections p SET parser_version = $3, status = 'fresh', source_revision = s.updated_at \
+         FROM snapshots s WHERE p.workspace_id = $1 AND p.doc_id = $2 AND s.workspace_id = p.workspace_id AND s.guid \
+         = p.doc_id",
       )
       .bind(&fixture.workspace_id)
       .bind(&fixture.doc_id)

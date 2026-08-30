@@ -299,19 +299,34 @@ async fn purge_removed_doc_projections(
 }
 
 fn extract_refs(blob: Vec<u8>) -> RuntimeResult<Vec<ExtractedRef>> {
-  let mut refs = doc_loader::get_blob_refs_from_binary(blob.clone())
-    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))?;
   let doc = ReadDoc::from_full_update_v1(blob)
-    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs local projection failed: {err}")))?;
-  if let Some(blocks) = doc.map("blocks") {
-    refs.extend(blocks.values().filter_map(|value| {
+    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))?;
+  let mut refs = extract_refs_from_doc(&doc);
+  refs.sort_by(|left, right| {
+    (&left.blob_key, &left.block_id, &left.flavour).cmp(&(&right.blob_key, &right.block_id, &right.flavour))
+  });
+  refs.dedup_by(|left, right| {
+    left.blob_key == right.blob_key && left.block_id == right.block_id && left.flavour == right.flavour
+  });
+  Ok(refs)
+}
+
+fn extract_refs_from_doc(doc: &ReadDoc) -> Vec<ExtractedRef> {
+  let Some(blocks) = doc.map("blocks") else {
+    return Vec::new();
+  };
+  blocks
+    .values()
+    .filter_map(|value| {
       let block = value.as_map()?;
       let flavour = block.get("sys:flavour")?.as_any()?.as_str()?;
-      if flavour != "affine:bookmark" {
-        return None;
-      }
+      let source_key = match flavour {
+        "affine:attachment" | "affine:image" => "prop:sourceId",
+        "affine:bookmark" => "prop:sharePreviewSourceId",
+        _ => return None,
+      };
       let block_id = block.get("sys:id")?.as_any()?.as_str()?;
-      let blob_key = block.get("prop:sharePreviewSourceId")?.as_any()?.as_str()?;
+      let blob_key = block.get(source_key)?.as_any()?.as_str()?;
       if block_id.is_empty() || blob_key.is_empty() {
         return None;
       }
@@ -320,15 +335,8 @@ fn extract_refs(blob: Vec<u8>) -> RuntimeResult<Vec<ExtractedRef>> {
         block_id: block_id.to_string(),
         flavour: flavour.to_string(),
       })
-    }));
-  }
-  refs.sort_by(|left, right| {
-    (&left.blob_key, &left.block_id, &left.flavour).cmp(&(&right.blob_key, &right.block_id, &right.flavour))
-  });
-  refs.dedup_by(|left, right| {
-    left.blob_key == right.blob_key && left.block_id == right.block_id && left.flavour == right.flavour
-  });
-  Ok(refs)
+    })
+    .collect()
 }
 
 async fn replace_doc_refs_if_current(
@@ -753,6 +761,57 @@ mod tests {
         },
       ]
     );
+  }
+
+  #[test]
+  fn doc_blob_refs_v2_projects_from_an_already_decoded_snapshot() {
+    let blob = blob_ref_fixture(&[
+      (
+        "image-map-key",
+        "image-block",
+        "affine:image",
+        FixtureSource::Text("image-blob"),
+      ),
+      (
+        "bookmark-map-key",
+        "bookmark-block",
+        "affine:bookmark",
+        FixtureSource::Text("details-blob"),
+      ),
+    ]);
+    let doc = ReadDoc::from_full_update_v1(blob).expect("snapshot should decode once");
+
+    let refs = extract_refs_from_doc(&doc);
+
+    assert_eq!(refs.len(), 2);
+    assert!(refs.iter().any(|reference| reference.blob_key == "image-blob"));
+    assert!(refs.iter().any(|reference| reference.blob_key == "details-blob"));
+  }
+
+  #[test]
+  fn doc_blob_refs_v2_projects_a_large_snapshot_in_one_pass() {
+    let doc = Doc::default();
+    let mut blocks = doc.get_or_create_map("blocks").expect("blocks root should build");
+    for index in 0..512 {
+      let block_id = format!("image-{index}");
+      let blob_key = format!("blob-{index}");
+      let mut block = doc.create_map().expect("image block should build");
+      block
+        .insert("sys:id".to_string(), block_id.clone())
+        .expect("image id should insert");
+      block
+        .insert("sys:flavour".to_string(), "affine:image")
+        .expect("image flavour should insert");
+      block
+        .insert("prop:sourceId".to_string(), blob_key)
+        .expect("image source should insert");
+      blocks.insert(block_id, block).expect("image block should insert");
+    }
+    let encoded = doc.encode_update_v1().expect("large snapshot should encode");
+
+    let refs = extract_refs(encoded).expect("large snapshot should project");
+
+    assert_eq!(refs.len(), 512);
   }
 
   #[test]

@@ -697,6 +697,64 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertTrue(file.thumbnailData.isEmpty)
   }
 
+  func testBuilderRejectsOversizedImageFromSpecificFileRepresentationBeforeGenericDataLoad() async throws {
+    let source = try makeProviderFile(data: makePNGData(), name: "oversized.png")
+    let handle = try FileHandle(forWritingTo: source)
+    try handle.truncate(atOffset: UInt64(12 * 1024 * 1024 + 1))
+    try handle.close()
+    let provider = NSItemProvider()
+    let genericData = makePNGData()
+    var didLoadSpecificFile = false
+    var didLoadGenericData = false
+    provider.registerFileRepresentation(
+      forTypeIdentifier: UTType.png.identifier,
+      fileOptions: [],
+      visibility: .all
+    ) { completion in
+      didLoadSpecificFile = true
+      completion(source, true, nil)
+      return nil
+    }
+    provider.registerDataRepresentation(
+      forTypeIdentifier: UTType.image.identifier,
+      visibility: .all
+    ) { completion in
+      didLoadGenericData = true
+      completion(genericData, nil)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [provider]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertNil(draft.content)
+    XCTAssertEqual(draft.errorMessage, "The image must be smaller than 12 MB.")
+    XCTAssertTrue(didLoadSpecificFile)
+    XCTAssertFalse(didLoadGenericData)
+  }
+
+  func testBuilderStagesImageFromADataOnlyProviderThroughFileRepresentation() async throws {
+    let imageData = makePNGData()
+    let provider = NSItemProvider()
+    provider.registerDataRepresentation(
+      forTypeIdentifier: UTType.png.identifier,
+      visibility: .all
+    ) { completion in
+      completion(imageData, nil)
+      return nil
+    }
+    let extensionItem = NSExtensionItem()
+    extensionItem.attachments = [provider]
+
+    let draft = await SharePayloadBuilder.build(from: [extensionItem])
+
+    XCTAssertEqual(draft.content?.kind, .image)
+    let file = try XCTUnwrap(draft.file)
+    XCTAssertEqual(file.mimeType, "image/png")
+    XCTAssertEqual(try Data(contentsOf: file.ownedStagingURL), imageData)
+  }
+
   func testBuilderRejectsMultipleBinaryAttachmentsBeforeEnqueue() async {
     let first = NSItemProvider()
     var didLoadFirst = false

@@ -1213,6 +1213,21 @@ jobs:
       - rust-test-filter
     env:
       CARGO_TERM_COLOR: always
+      DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: affine
+          POSTGRES_PASSWORD: affine
+          POSTGRES_USER: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v7
       - name: Setup Rust
@@ -1229,6 +1244,9 @@ jobs:
 
       - name: Run tests
         run: cargo nextest run --workspace --exclude affine_server_native --features use-as-lib --release --no-fail-fast
+
+      - name: Run native storage cleanup integration tests
+        run: cargo test -p affine_server_native --release share_preview_blob_cleanup_ -- --ignored --nocapture
 
   copilot-test-filter:
     name: Copilot test filter

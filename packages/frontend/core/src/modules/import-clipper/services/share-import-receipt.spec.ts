@@ -1,6 +1,5 @@
 /** @vitest-environment happy-dom */
 
-import { FileSizeLimitProvider } from '@blocksuite/affine/shared/services';
 import { describe, expect, test, vi } from 'vitest';
 
 import { CollectionService } from '../../collection';
@@ -230,12 +229,14 @@ function makeImportHarness({
   blocks = [],
   maxFileSize = 2 * 1024 * 1024 * 1024,
   failAfterBlockId,
+  workspaceId = 'workspace-id',
 }: {
   receipt?: string;
   recordExists?: boolean;
   blocks?: { id: string; flavour: string; parentId?: string }[];
   maxFileSize?: number;
   failAfterBlockId?: string;
+  workspaceId?: string;
 } = {}) {
   const events: string[] = [];
   type HarnessModel = {
@@ -368,16 +369,8 @@ function makeImportHarness({
     addDocToCollection: vi.fn(),
   };
   const blobSet = vi.fn(async () => 'blob-id');
-  const blockStdUnmount = vi.fn();
-  const createShareImportBlockStdScope = vi.fn(() => ({
-    get: (token: unknown) => {
-      if (token === FileSizeLimitProvider) return { maxFileSize };
-      throw new Error('Unexpected BlockStd service token');
-    },
-    unmount: blockStdUnmount,
-  }));
   const workspace = {
-    id: 'workspace-id',
+    id: workspaceId,
     meta: { flavour: 'server' },
     engine: { doc: engine },
     docCollection: { blobSync: { set: blobSet } },
@@ -392,7 +385,7 @@ function makeImportHarness({
     },
   };
   const metadata = {
-    id: 'workspace-id',
+    id: workspaceId,
     flavour: 'server',
   } as WorkspaceMetadata;
   const waitForRevalidation = vi.fn(async () => events.push('revalidate'));
@@ -421,14 +414,12 @@ function makeImportHarness({
     tagService,
     collectionService,
     blobSet,
-    blockStdUnmount,
-    createShareImportBlockStdScope,
     waitForRevalidation,
     getWorkspaceProfile,
     service: Object.assign(Object.create(ImportClipperService.prototype), {
       workspacesService: workspaces,
       shareImportTails: new Map(),
-      createShareImportBlockStdScope,
+      getShareImportAttachmentLimit: () => maxFileSize,
     }) as ImportClipperService,
     metadata,
   };
@@ -953,8 +944,6 @@ describe('share import orchestration', () => {
     ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
 
     expect(harness.blobSet).toHaveBeenCalledWith(file);
-    expect(harness.createShareImportBlockStdScope).toHaveBeenCalledTimes(1);
-    expect(harness.blockStdUnmount).toHaveBeenCalledTimes(1);
     expect(harness.blocks.get(ids.attachment)).toMatchObject({
       flavour: 'affine:attachment',
       parent: { id: ids.note },
@@ -1000,11 +989,13 @@ describe('share import orchestration', () => {
           ['affine:image', 'affine:attachment'].includes(block.flavour)
         )
       ).toEqual([]);
+      expect(harness.docs.createDoc).not.toHaveBeenCalled();
+      expect(harness.events).not.toContain('receipt:preparing');
       expect(harness.events).not.toContain('receipt:committed');
     }
   );
 
-  test('resolves the PDF limit from BlockStd before blob or block writes', async () => {
+  test('rejects an attachment before creating a receipt or document', async () => {
     const harness = makeImportHarness({ maxFileSize: 4 });
     const file = new File(['%PDF-1.7\ncontent'], 'report.pdf', {
       type: 'application/pdf',
@@ -1018,13 +1009,39 @@ describe('share import orchestration', () => {
       )
     ).resolves.toEqual({ status: 'attachment-too-large' });
 
-    expect(harness.docs.createDoc).toHaveBeenCalledTimes(1);
+    expect(harness.docs.createDoc).not.toHaveBeenCalled();
+    expect(harness.events).not.toContain('receipt:preparing');
     expect(harness.blobSet).not.toHaveBeenCalled();
     expect(harness.events.filter(event => event.startsWith('add:'))).toEqual(
       []
     );
-    expect(harness.createShareImportBlockStdScope).toHaveBeenCalledTimes(1);
-    expect(harness.blockStdUnmount).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not strand workspace A when its blob write fails and workspace B succeeds', async () => {
+    const workspaceA = makeImportHarness({ workspaceId: 'workspace-a' });
+    const workspaceB = makeImportHarness({ workspaceId: 'workspace-b' });
+    const file = new File(['image'], 'shared.png', { type: 'image/png' });
+    const share = {
+      ...input(),
+      content: { kind: 'image' as const },
+      attachment: file,
+    };
+    workspaceA.blobSet.mockRejectedValueOnce(new Error('storage unavailable'));
+
+    await expect(
+      workspaceA.service.importShareToWorkspace(workspaceA.metadata, share, {
+        allowOffline: true,
+      })
+    ).resolves.toEqual({ status: 'attachment-write-failed' });
+    await expect(
+      workspaceB.service.importShareToWorkspace(workspaceB.metadata, share, {
+        allowOffline: true,
+      })
+    ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
+
+    expect(workspaceA.docs.createDoc).not.toHaveBeenCalled();
+    expect(workspaceA.events).not.toContain('receipt:preparing');
+    expect(workspaceB.events).toContain('receipt:committed');
   });
 
   test('replays a committed receipt without opening, permissions, metadata, or blobs', async () => {
