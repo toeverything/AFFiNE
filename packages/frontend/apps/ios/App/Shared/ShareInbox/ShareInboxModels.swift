@@ -41,7 +41,7 @@ struct ShareInboxResult: Codable, Equatable {
 }
 
 struct ShareInboxItem: Codable, Equatable, Identifiable {
-  static let currentSchemaVersion = 2
+  static let currentSchemaVersion = 3
 
   private enum CodingKeys: String, CodingKey {
     case schemaVersion
@@ -54,6 +54,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     case previewRoute
     case target
     case previewText
+    case preview
     case attachments
     case result
     case lastError
@@ -69,6 +70,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
   var previewRoute: SharePreviewRoute?
   var target: ShareInboxTarget?
   var previewText: String?
+  var preview: ShareLinkPreview?
   var attachments: [ShareInboxAttachment]
   var result: ShareInboxResult?
   var lastError: String?
@@ -83,6 +85,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     previewRoute: SharePreviewRoute? = nil,
     target: ShareInboxTarget? = nil,
     previewText: String? = nil,
+    preview: ShareLinkPreview? = nil,
     attachments: [ShareInboxAttachment] = [],
     result: ShareInboxResult? = nil,
     lastError: String? = nil
@@ -97,6 +100,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     self.previewRoute = previewRoute
     self.target = target
     self.previewText = previewText
+    self.preview = preview?.persistable()
     self.attachments = attachments
     self.result = result
     self.lastError = lastError
@@ -106,7 +110,9 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     let schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
     self.schemaVersion = schemaVersion
-    if schemaVersion >= Self.currentSchemaVersion {
+    if schemaVersion == 1 {
+      self.importAttemptId = UUID().uuidString
+    } else {
       let importAttemptId = try container.decode(String.self, forKey: .importAttemptId)
       guard !importAttemptId.isEmpty else {
         throw DecodingError.dataCorruptedError(
@@ -116,8 +122,6 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
         )
       }
       self.importAttemptId = importAttemptId
-    } else {
-      self.importAttemptId = UUID().uuidString
     }
     self.id = try container.decode(String.self, forKey: .id)
     self.documentId = try container.decode(String.self, forKey: .documentId)
@@ -127,7 +131,16 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     self.previewRoute = try container.decodeIfPresent(SharePreviewRoute.self, forKey: .previewRoute)
     self.target = try container.decodeIfPresent(ShareInboxTarget.self, forKey: .target)
     self.previewText = try container.decodeIfPresent(String.self, forKey: .previewText)
-    self.attachments = try container.decodeIfPresent([ShareInboxAttachment].self, forKey: .attachments) ?? []
+    if schemaVersion >= 3,
+      container.contains(.preview),
+      let decodedPreview = try? container.decode(ShareLinkPreview.self, forKey: .preview)
+    {
+      self.preview = decodedPreview.validatedPersistedSnapshot()
+    } else {
+      self.preview = nil
+    }
+    self.attachments =
+      try container.decodeIfPresent([ShareInboxAttachment].self, forKey: .attachments) ?? []
     self.result = try container.decodeIfPresent(ShareInboxResult.self, forKey: .result)
     self.lastError = try container.decodeIfPresent(String.self, forKey: .lastError)
   }
@@ -143,6 +156,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     try container.encode(content, forKey: .content)
     try container.encodeIfPresent(target, forKey: .target)
     try container.encodeIfPresent(previewText, forKey: .previewText)
+    try container.encodeIfPresent(preview, forKey: .preview)
     try container.encode(attachments, forKey: .attachments)
     try container.encodeIfPresent(result, forKey: .result)
     try container.encodeIfPresent(lastError, forKey: .lastError)
@@ -155,7 +169,7 @@ enum ShareInboxPendingEntry: Equatable {
 
   var createdAt: Date {
     switch self {
-    case let .ready(item):
+    case .ready(let item):
       item.createdAt
     case .unsupportedVersion:
       .distantFuture

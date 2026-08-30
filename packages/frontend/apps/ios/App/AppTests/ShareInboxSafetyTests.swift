@@ -68,6 +68,35 @@ final class ShareInboxSafetyTests: XCTestCase {
     )
   }
 
+  private func v2Manifest(
+    id: String,
+    documentId: String,
+    importAttemptId: String
+  ) -> Data {
+    Data(
+      """
+      {
+        "schemaVersion":2,
+        "importAttemptId":"\(importAttemptId)",
+        "id":"\(id)",
+        "documentId":"\(documentId)",
+        "createdAt":"2026-08-27T00:00:00Z",
+        "title":"Original",
+        "content":{"kind":"url","url":"https://example.com/original"},
+        "target":{
+          "workspaceId":"workspace-id",
+          "workspaceFlavour":"local",
+          "tagIds":["tag-a","tag-b"],
+          "collectionId":"collection-id"
+        },
+        "previewText":"Original preview",
+        "attachments":[],
+        "lastError":"retry-me"
+      }
+      """.utf8
+    )
+  }
+
   private func makeImageData(size: Int = 256 * 1024) -> Data {
     var data = Data([0xFF, 0xD8, 0xFF, 0xE0])
     data.append(Data(repeating: 0x42, count: size - data.count))
@@ -1483,7 +1512,296 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertFalse(FileManager.default.fileExists(atPath: staged.ownedStagingURL.path))
   }
 
-  func testNewManifestEncodesVersionTwoAndImportAttemptIDWithoutPreviewRoute() throws {
+  @MainActor
+  func testViewModelLoadsRichPreviewButKeepsOriginalTitleWhenSaving() async throws {
+    let (store, _) = try makeStore()
+    let requested = expectation(description: "rich preview requested")
+    let preview = ShareLinkPreview(
+      url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      title: "Remote rich title",
+      siteName: "YouTube",
+      description: "Remote description",
+      provider: "youtube",
+      author: .init(name: "Rick Astley"),
+      durationSeconds: 214
+    )
+    let viewModel = ShareViewModel(
+      store: store,
+      buildPayload: { _ in
+        SharePayloadDraft(
+          title: "Original shared title",
+          content: ShareInboxContent(
+            kind: .url,
+            url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            text: nil
+          ),
+          previewText: "Original preview",
+          file: nil,
+          errorMessage: nil
+        )
+      },
+      fetchLinkPreview: { _ in
+        requested.fulfill()
+        return preview
+      },
+      fetchRemoteImage: { _ in nil }
+    )
+
+    await viewModel.load(from: nil)
+    await fulfillment(of: [requested], timeout: 1)
+    await waitForMainActorCondition {
+      viewModel.linkPreviewState == .loaded(preview)
+    }
+
+    XCTAssertEqual(viewModel.displayTitle, "Remote rich title")
+    XCTAssertNil(viewModel.remoteMediaImage)
+    let didSave = await viewModel.save()
+    XCTAssertTrue(didSave)
+    guard case let .ready(saved) = try XCTUnwrap(store.pendingItems().first) else {
+      return XCTFail("Expected saved rich share")
+    }
+    XCTAssertEqual(saved.title, "Original shared title")
+    XCTAssertEqual(saved.preview, preview)
+  }
+
+  @MainActor
+  func testViewModelPreviewFailureFallsBackAndStillSaves() async throws {
+    let (store, _) = try makeStore()
+    let viewModel = ShareViewModel(
+      store: store,
+      buildPayload: { _ in
+        SharePayloadDraft(
+          title: "Fallback title",
+          content: ShareInboxContent(kind: .url, url: "https://example.com/article", text: nil),
+          previewText: "Fallback preview",
+          file: nil,
+          errorMessage: nil
+        )
+      },
+      fetchLinkPreview: { _ in throw TestPreviewError.failed },
+      fetchRemoteImage: { _ in nil }
+    )
+
+    await viewModel.load(from: nil)
+    await waitForMainActorCondition { viewModel.linkPreviewState == .failed }
+
+    XCTAssertTrue(viewModel.canSave)
+    let didSave = await viewModel.save()
+    XCTAssertTrue(didSave)
+    guard case let .ready(saved) = try XCTUnwrap(store.pendingItems().first) else {
+      return XCTFail("Expected fallback share")
+    }
+    XCTAssertNil(saved.preview)
+  }
+
+  @MainActor
+  func testViewModelSaveCancelsLoadingPreviewAndFreezesNilSnapshot() async throws {
+    let (store, _) = try makeStore()
+    let started = expectation(description: "preview started")
+    let cancelled = expectation(description: "preview cancelled")
+    let viewModel = ShareViewModel(
+      store: store,
+      buildPayload: { _ in
+        SharePayloadDraft(
+          title: "Save now",
+          content: ShareInboxContent(kind: .url, url: "https://example.com/article", text: nil),
+          previewText: "Fallback",
+          file: nil,
+          errorMessage: nil
+        )
+      },
+      fetchLinkPreview: { _ in
+        started.fulfill()
+        return try await withTaskCancellationHandler {
+          try await Task.sleep(nanoseconds: 60_000_000_000)
+          return ShareLinkPreview(url: "https://example.com/article", title: "Late")
+        } onCancel: {
+          cancelled.fulfill()
+        }
+      },
+      fetchRemoteImage: { _ in nil }
+    )
+
+    await viewModel.load(from: nil)
+    await fulfillment(of: [started], timeout: 1)
+    XCTAssertEqual(viewModel.linkPreviewState, .loading)
+
+    let didSave = await viewModel.save()
+    XCTAssertTrue(didSave)
+    await fulfillment(of: [cancelled], timeout: 1)
+    guard case let .ready(saved) = try XCTUnwrap(store.pendingItems().first) else {
+      return XCTFail("Expected saved fallback snapshot")
+    }
+    XCTAssertNil(saved.preview)
+  }
+
+  @MainActor
+  func testViewModelSaveFailureLeavesCancelledPreviewInFallbackState() async throws {
+    let (_, containerURL) = try makeStore()
+    let store = ShareInboxStore(
+      fileManager: .default,
+      containerURL: containerURL,
+      writeData: { _, _, _ in throw TestWriteError.writeFailed }
+    )
+    let started = expectation(description: "preview started")
+    let cancelled = expectation(description: "preview cancelled")
+    let viewModel = ShareViewModel(
+      store: store,
+      buildPayload: { _ in
+        SharePayloadDraft(
+          title: "Retry",
+          content: ShareInboxContent(kind: .url, url: "https://example.com/article", text: nil),
+          previewText: "Fallback",
+          file: nil,
+          errorMessage: nil
+        )
+      },
+      fetchLinkPreview: { _ in
+        started.fulfill()
+        return try await withTaskCancellationHandler {
+          try await Task.sleep(nanoseconds: 60_000_000_000)
+          return ShareLinkPreview(url: "https://example.com/article")
+        } onCancel: {
+          cancelled.fulfill()
+        }
+      },
+      fetchRemoteImage: { _ in nil }
+    )
+
+    await viewModel.load(from: nil)
+    await fulfillment(of: [started], timeout: 1)
+    XCTAssertEqual(viewModel.linkPreviewState, .loading)
+
+    let didSave = await viewModel.save()
+
+    XCTAssertFalse(didSave)
+    await fulfillment(of: [cancelled], timeout: 1)
+    XCTAssertEqual(viewModel.linkPreviewState, .failed)
+    XCTAssertTrue(viewModel.canSave)
+  }
+
+  @MainActor
+  func testViewModelIgnoresLatePreviewFromReplacedDraft() async throws {
+    let (store, _) = try makeStore()
+    let gate = PreviewFetchGate()
+    var buildCount = 0
+    let viewModel = ShareViewModel(
+      store: store,
+      buildPayload: { _ in
+        buildCount += 1
+        let suffix = buildCount == 1 ? "first" : "second"
+        return SharePayloadDraft(
+          title: suffix,
+          content: ShareInboxContent(
+            kind: .url,
+            url: "https://example.com/\(suffix)",
+            text: nil
+          ),
+          previewText: suffix,
+          file: nil,
+          errorMessage: nil
+        )
+      },
+      fetchLinkPreview: { url in try await gate.next(url: url) },
+      fetchRemoteImage: { _ in nil }
+    )
+
+    await viewModel.load(from: nil)
+    await gate.waitForPending(count: 1)
+    await viewModel.load(from: nil)
+    await gate.waitForPending(count: 2)
+    let second = ShareLinkPreview(url: "https://example.com/second", title: "Second rich")
+    await gate.resume(at: 1, with: .success(second))
+    await waitForMainActorCondition { viewModel.linkPreviewState == .loaded(second) }
+    let first = ShareLinkPreview(url: "https://example.com/first", title: "First rich")
+    await gate.resume(at: 0, with: .success(first))
+    await Task.yield()
+
+    XCTAssertEqual(viewModel.linkPreviewState, .loaded(second))
+    XCTAssertEqual(viewModel.displayTitle, "Second rich")
+  }
+
+  @MainActor
+  func testViewModelDeinitCancelsRichPreviewRequest() async throws {
+    let (store, _) = try makeStore()
+    let started = expectation(description: "preview started")
+    let cancelled = expectation(description: "preview cancelled")
+    var viewModel: ShareViewModel? = ShareViewModel(
+      store: store,
+      buildPayload: { _ in
+        SharePayloadDraft(
+          title: "Shared",
+          content: ShareInboxContent(kind: .url, url: "https://example.com/article", text: nil),
+          previewText: "Shared",
+          file: nil,
+          errorMessage: nil
+        )
+      },
+      fetchLinkPreview: { _ in
+        started.fulfill()
+        return try await withTaskCancellationHandler {
+          try await Task.sleep(nanoseconds: 60_000_000_000)
+          return ShareLinkPreview(url: "https://example.com/article")
+        } onCancel: {
+          cancelled.fulfill()
+        }
+      },
+      fetchRemoteImage: { _ in nil }
+    )
+    weak var weakViewModel = viewModel
+
+    await viewModel?.load(from: nil)
+    await fulfillment(of: [started], timeout: 1)
+    viewModel = nil
+
+    await fulfillment(of: [cancelled], timeout: 1)
+    XCTAssertNil(weakViewModel)
+  }
+
+  @MainActor
+  func testViewModelDeinitCancelsRemoteMediaRequestAfterPreviewLoads() async throws {
+    let (store, _) = try makeStore()
+    let mediaStarted = expectation(description: "media started")
+    let mediaCancelled = expectation(description: "media cancelled")
+    let preview = ShareLinkPreview(
+      url: "https://example.com/article",
+      title: "Rich",
+      images: ["https://app.affine.pro/api/worker/image-proxy?url=thumbnail"]
+    )
+    var viewModel: ShareViewModel? = ShareViewModel(
+      store: store,
+      buildPayload: { _ in
+        SharePayloadDraft(
+          title: "Shared",
+          content: ShareInboxContent(kind: .url, url: "https://example.com/article", text: nil),
+          previewText: "Shared",
+          file: nil,
+          errorMessage: nil
+        )
+      },
+      fetchLinkPreview: { _ in preview },
+      fetchRemoteImage: { url in
+        guard url != nil else { return nil }
+        mediaStarted.fulfill()
+        return await withTaskCancellationHandler {
+          try? await Task.sleep(nanoseconds: 60_000_000_000)
+          return nil
+        } onCancel: {
+          mediaCancelled.fulfill()
+        }
+      }
+    )
+    weak var weakViewModel = viewModel
+
+    await viewModel?.load(from: nil)
+    await fulfillment(of: [mediaStarted], timeout: 1)
+    viewModel = nil
+
+    await fulfillment(of: [mediaCancelled], timeout: 1)
+    XCTAssertNil(weakViewModel)
+  }
+
+  func testNewManifestEncodesVersionThreeAndImportAttemptIDWithoutPreviewRoute() throws {
     let item = ShareInboxItem(
       title: "Shared",
       content: ShareInboxContent(kind: .url, url: "https://example.com", text: nil)
@@ -1494,12 +1812,12 @@ final class ShareInboxSafetyTests: XCTestCase {
       JSONSerialization.jsonObject(with: encoder.encode(item)) as? [String: Any]
     )
 
-    XCTAssertEqual(manifest["schemaVersion"] as? Int, 2)
+    XCTAssertEqual(manifest["schemaVersion"] as? Int, 3)
     XCTAssertFalse((manifest["importAttemptId"] as? String ?? "").isEmpty)
     XCTAssertNil(manifest["previewRoute"])
   }
 
-  func testStoreMigratesV1ManifestOnceAndAtomicallyPersistsV2BeforeReturningReady() throws {
+  func testStoreMigratesV1ManifestOnceAndAtomicallyPersistsV3BeforeReturningReady() throws {
     let (store, containerURL) = try makeStore()
     XCTAssertTrue(store.ensureDirectories())
     let id = UUID().uuidString
@@ -1513,21 +1831,170 @@ final class ShareInboxSafetyTests: XCTestCase {
     guard case let .ready(migrated) = entries[0] else {
       return XCTFail("Expected the v1 manifest to migrate to a ready entry")
     }
-    XCTAssertEqual(migrated.schemaVersion, 2)
+    XCTAssertEqual(migrated.schemaVersion, 3)
     XCTAssertFalse(migrated.importAttemptId.isEmpty)
     XCTAssertEqual(migrated.previewRoute, .official)
 
     let rewritten = try XCTUnwrap(
       JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any]
     )
-    XCTAssertEqual(rewritten["schemaVersion"] as? Int, 2)
+    XCTAssertEqual(rewritten["schemaVersion"] as? Int, 3)
     XCTAssertEqual(rewritten["importAttemptId"] as? String, migrated.importAttemptId)
     XCTAssertNil(rewritten["previewRoute"])
 
     guard case let .ready(reloaded) = try XCTUnwrap(store.pendingItems().first) else {
-      return XCTFail("Expected the rewritten v2 manifest to remain ready")
+      return XCTFail("Expected the rewritten v3 manifest to remain ready")
     }
     XCTAssertEqual(reloaded.importAttemptId, migrated.importAttemptId)
+  }
+
+  func testStoreMigratesV2ToV3WithoutChangingAttemptOrDestinationState() throws {
+    let (store, containerURL) = try makeStore()
+    XCTAssertTrue(store.ensureDirectories())
+    let id = UUID().uuidString
+    let documentId = UUID().uuidString
+    let importAttemptId = "attempt-preserved-byte-for-byte"
+    let manifestURL = containerURL
+      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
+      .appendingPathComponent("\(id).json")
+    try v2Manifest(
+      id: id,
+      documentId: documentId,
+      importAttemptId: importAttemptId
+    ).write(to: manifestURL)
+
+    guard case let .ready(migrated) = try XCTUnwrap(store.pendingItems().first) else {
+      return XCTFail("Expected the v2 manifest to migrate")
+    }
+
+    XCTAssertEqual(migrated.schemaVersion, 3)
+    XCTAssertEqual(migrated.importAttemptId, importAttemptId)
+    XCTAssertEqual(migrated.documentId, documentId)
+    XCTAssertEqual(migrated.target?.workspaceId, "workspace-id")
+    XCTAssertEqual(migrated.target?.tagIds, ["tag-a", "tag-b"])
+    XCTAssertEqual(migrated.target?.collectionId, "collection-id")
+    XCTAssertEqual(migrated.lastError, "retry-me")
+    XCTAssertNil(migrated.preview)
+
+    let rewritten = try XCTUnwrap(
+      JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any]
+    )
+    XCTAssertEqual(rewritten["schemaVersion"] as? Int, 3)
+    XCTAssertEqual(rewritten["importAttemptId"] as? String, importAttemptId)
+  }
+
+  func testV2CommittedReceiptIdentitySurvivesV3Reencoding() throws {
+    let id = UUID().uuidString
+    let documentId = UUID().uuidString
+    let importAttemptId = "committed-attempt-id"
+    let committedAt = "2026-08-27T01:02:03Z"
+    var manifest = try XCTUnwrap(
+      JSONSerialization.jsonObject(
+        with: v2Manifest(
+          id: id,
+          documentId: documentId,
+          importAttemptId: importAttemptId
+        )
+      ) as? [String: Any]
+    )
+    manifest["result"] = [
+      "docId": documentId,
+      "committedAt": committedAt,
+    ]
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+
+    let decoded = try decoder.decode(
+      ShareInboxItem.self,
+      from: JSONSerialization.data(withJSONObject: manifest)
+    )
+    let reencoded = try XCTUnwrap(
+      JSONSerialization.jsonObject(with: encoder.encode(decoded)) as? [String: Any]
+    )
+    let result = try XCTUnwrap(reencoded["result"] as? [String: Any])
+
+    XCTAssertEqual(decoded.importAttemptId, importAttemptId)
+    XCTAssertEqual(decoded.result?.docId, documentId)
+    XCTAssertEqual(reencoded["schemaVersion"] as? Int, 3)
+    XCTAssertEqual(reencoded["importAttemptId"] as? String, importAttemptId)
+    XCTAssertEqual(result["docId"] as? String, documentId)
+    XCTAssertEqual(result["committedAt"] as? String, committedAt)
+  }
+
+  func testVersionThreeManifestRoundTripsRichPreview() throws {
+    let expectedPreview = ShareLinkPreview(
+      url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      title: "Rick Astley - Never Gonna Give You Up",
+      siteName: "YouTube",
+      description: "The official video",
+      images: ["https://app.affine.pro/api/worker/image-proxy?url=thumbnail"],
+      provider: "youtube",
+      author: .init(name: "Rick Astley"),
+      durationSeconds: 214,
+      transcript: .init(
+        language: "en",
+        segments: [.init(text: "We're no strangers to love", startSeconds: 18.64)]
+      )
+    )
+    let item = ShareInboxItem(
+      title: "Shared",
+      content: ShareInboxContent(
+        kind: .url,
+        url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        text: nil
+      ),
+      preview: expectedPreview
+    )
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+
+    let decoded = try decoder.decode(ShareInboxItem.self, from: encoder.encode(item))
+
+    XCTAssertEqual(decoded.schemaVersion, 3)
+    XCTAssertEqual(decoded.preview, expectedPreview)
+  }
+
+  func testMalformedOrOversizedV3PreviewIsDiscardedWithoutDiscardingItem() throws {
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let base: [String: Any] = [
+      "schemaVersion": 3,
+      "importAttemptId": "attempt-id",
+      "id": UUID().uuidString,
+      "documentId": UUID().uuidString,
+      "createdAt": "2026-08-27T00:00:00Z",
+      "title": "Shared",
+      "content": ["kind": "url", "url": "https://example.com/article"],
+      "attachments": [],
+    ]
+    var malformed = base
+    malformed["preview"] = [
+      "url": "https://example.com/article",
+      "title": 42,
+    ]
+    var oversized = base
+    oversized["preview"] = [
+      "url": "https://example.com/article",
+      "description": String(repeating: "x", count: 32_769),
+    ]
+
+    let malformedItem = try decoder.decode(
+      ShareInboxItem.self,
+      from: JSONSerialization.data(withJSONObject: malformed)
+    )
+    let oversizedItem = try decoder.decode(
+      ShareInboxItem.self,
+      from: JSONSerialization.data(withJSONObject: oversized)
+    )
+
+    XCTAssertEqual(malformedItem.title, "Shared")
+    XCTAssertNil(malformedItem.preview)
+    XCTAssertEqual(oversizedItem.title, "Shared")
+    XCTAssertNil(oversizedItem.preview)
   }
 
   func testStorePreservesUnknownFutureVersionAndReturnsUnsupportedEntry() throws {
@@ -1869,6 +2336,51 @@ private enum TestCopyError: Error {
 
 private enum TestThumbnailError: Error {
   case failed
+}
+
+private enum TestPreviewError: Error {
+  case failed
+}
+
+@MainActor
+private func waitForMainActorCondition(
+  attempts: Int = 200,
+  _ condition: () -> Bool
+) async {
+  for _ in 0..<attempts {
+    if condition() { return }
+    try? await Task.sleep(nanoseconds: 5_000_000)
+  }
+}
+
+private actor PreviewFetchGate {
+  private var continuations: [CheckedContinuation<ShareLinkPreview, Error>] = []
+  private var waiters: [(Int, CheckedContinuation<Void, Never>)] = []
+
+  func next(url: String) async throws -> ShareLinkPreview {
+    try await withCheckedThrowingContinuation { continuation in
+      continuations.append(continuation)
+      resumeWaiters()
+    }
+  }
+
+  func waitForPending(count: Int) async {
+    guard continuations.count < count else { return }
+    await withCheckedContinuation { continuation in
+      waiters.append((count, continuation))
+    }
+  }
+
+  func resume(at index: Int, with result: Result<ShareLinkPreview, Error>) {
+    continuations.remove(at: index).resume(with: result)
+  }
+
+  private func resumeWaiters() {
+    let ready = waiters.enumerated().filter { continuations.count >= $0.element.0 }
+    for (index, _) in ready.reversed() {
+      waiters.remove(at: index).1.resume()
+    }
+  }
 }
 
 private actor DraftBuildGate {

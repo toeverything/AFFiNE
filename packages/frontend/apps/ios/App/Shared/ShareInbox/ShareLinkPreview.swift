@@ -156,6 +156,11 @@ struct ShareLinkPreview: Codable, Equatable {
     return value.encodedSize() <= Self.maxPersistedBytes ? value : nil
   }
 
+  func validatedPersistedSnapshot() -> ShareLinkPreview? {
+    guard let validated = persistable(), validated == self else { return nil }
+    return self
+  }
+
   static func isOfficialMediaURL(_ value: String) -> Bool {
     guard
       value.utf8.count <= Limits.url,
@@ -232,8 +237,9 @@ struct ShareLinkPreview: Codable, Equatable {
     )
   }
 
-  private static func proxyURLs(_ values: [String]?) -> [String] {
-    Array((values ?? []).filter(isOfficialMediaURL).prefix(Limits.urls))
+  private static func proxyURLs(_ values: [String]?) -> [String]? {
+    guard let values else { return nil }
+    return Array(values.filter(isOfficialMediaURL).prefix(Limits.urls))
   }
 
   private static func boundedNumber(_ value: Double?) -> Double? {
