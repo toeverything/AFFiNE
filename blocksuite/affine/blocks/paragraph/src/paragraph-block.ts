@@ -192,7 +192,9 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
 
     this.disposables.add(
       effect(() => {
-        this._setReadonlyCollapsed(this.model.props.collapsed$.value);
+        if (this.store.readonly$.value) {
+          this._setReadonlyCollapsed(this.model.props.collapsed$.value);
+        }
       })
     );
 
