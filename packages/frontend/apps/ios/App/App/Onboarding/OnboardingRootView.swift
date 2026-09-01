@@ -51,15 +51,6 @@ struct OnboardingRootView: View {
         OnboardingBackground(isIntroPage: isIntroPage)
 
         onboardingContent(layout: layout)
-
-        #if DEBUG
-          if isIntroPage {
-            IntroGridOverlay()
-              .ignoresSafeArea()
-              .allowsHitTesting(false)
-              .zIndex(999)
-          }
-        #endif
       }
       .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
     }
