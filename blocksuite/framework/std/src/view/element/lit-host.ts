@@ -104,6 +104,28 @@ export class EditorHost extends SignalWatcher(
     )}`;
   };
 
+  private readonly _handlePaste = (e: ClipboardEvent) => {
+    const files = e.clipboardData?.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    // when copy-pasting from some websites, the clipboard may contain both an image file
+    // and an html string with a `blob:` url. The `blob:` url is not accessible,
+    // so we should prioritize handling the image file.
+    const imageFile = Array.from(files).find(file =>
+      file.type.startsWith('image/')
+    );
+
+    if (imageFile) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.command.execute('editor:insert-file', {
+        file: imageFile,
+      });
+    }
+  };
+
   get command(): CommandManager {
     return this.std.command;
   }
@@ -136,11 +158,13 @@ export class EditorHost extends SignalWatcher(
 
     this.std.mount();
     this.tabIndex = 0;
+    this.addEventListener('paste', this._handlePaste);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     this.std.unmount();
+    this.removeEventListener('paste', this._handlePaste);
   }
 
   override async getUpdateComplete(): Promise<boolean> {
