@@ -33,6 +33,12 @@ describe('FootnoteReferenceMarkdownPreprocessorExtension', () => {
     expect(preprocessFootnoteReference(content)).toBe(expected);
   });
 
+  it('should not add space when there is not a footnote reference after URL', () => {
+    const content = 'https://example.com[^label';
+    const expected = 'https://example.com[^label';
+    expect(preprocessFootnoteReference(content)).toBe(expected);
+  });
+
   it('should handle multiple footnote references with mixed URL and non-URL text', () => {
     const content = 'https://example.com[^1]normal text[^2]http://test.com[^3]';
     const expected =
