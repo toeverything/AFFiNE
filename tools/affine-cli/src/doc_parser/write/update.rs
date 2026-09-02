@@ -3,7 +3,7 @@
 //! Provides functionality to update existing AFFiNE documents by applying
 //! surgical y-octo operations based on content differences.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::{
     super::{
@@ -110,6 +110,23 @@ fn load_doc_state(binary: &[u8], doc_id: &str) -> Result<DocState, ParseError> {
 }
 
 fn build_stored_tree(block_id: &str, block: &Map, pool: &HashMap<String, Map>) -> Result<StoredNode, ParseError> {
+    // A corrupt doc can make sys:children cyclic; fail instead of recursing until the stack
+    // overflows. `visited` holds the ids on the current root-to-node path.
+    let mut visited: HashSet<String> = HashSet::new();
+    build_stored_tree_inner(block_id, block, pool, &mut visited)
+}
+
+fn build_stored_tree_inner(
+    block_id: &str,
+    block: &Map,
+    pool: &HashMap<String, Map>,
+    visited: &mut HashSet<String>,
+) -> Result<StoredNode, ParseError> {
+    if !visited.insert(block_id.to_string()) {
+        return Err(ParseError::ParserError(format!(
+            "cyclic sys:children at block: {block_id}"
+        )));
+    }
     let spec = BlockSpec::from_block_map(block)?;
 
     let child_ids = collect_child_ids(block);
@@ -123,8 +140,9 @@ fn build_stored_tree(block_id: &str, block: &Map, pool: &HashMap<String, Map>) -
         let child_block = pool
             .get(&child_id)
             .ok_or_else(|| ParseError::ParserError("child block not found".into()))?;
-        children.push(build_stored_tree(&child_id, child_block, pool)?);
+        children.push(build_stored_tree_inner(&child_id, child_block, pool, visited)?);
     }
+    visited.remove(block_id);
 
     Ok(StoredNode {
         id: block_id.to_string(),
@@ -319,7 +337,7 @@ fn check_limits(current: &[StoredNode], target: &[BlockNode]) -> Result<(), Pars
 
 #[cfg(test)]
 mod tests {
-    use y_octo::{Any, DocOptions, TextDeltaOp, TextInsert};
+    use y_octo::{Any, DocOptions, TextDeltaOp, TextInsert, Value};
 
     use super::{super::builder::text_ops_from_plain, *};
     use crate::doc_parser::{
@@ -629,6 +647,46 @@ mod tests {
         assert!(
             final_count > base_count,
             "Expected merged blocks after concurrent updates, got {final_count} vs {base_count}"
+        );
+    }
+
+    #[test]
+    fn test_update_ydoc_child_cycle_errors() {
+        // Regression: a corrupt doc whose sys:children forms a cycle (list a -> b -> a) must
+        // surface an error from `doc update`, not overflow the stack while building the tree.
+        let doc_id = "child-cycle-test";
+        let initial_bin = build_full_doc("Title", "- a\n  - b", doc_id).expect("Should create initial doc");
+
+        let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+        doc.apply_update_from_binary_v1(&initial_bin).expect("apply initial");
+        let blocks = doc.get_map("blocks").expect("blocks map");
+        let mut lists: Vec<(String, String)> = blocks
+            .iter()
+            .filter_map(|(id, value)| {
+                let block = value.to_map()?;
+                (get_string(&block, "sys:flavour").as_deref() == Some("affine:list"))
+                    .then(|| (id.to_string(), get_string(&block, "prop:text").unwrap_or_default()))
+            })
+            .collect();
+        lists.sort_by(|x, y| x.1.cmp(&y.1));
+        let [(outer_id, _), (inner_id, _)] = lists.as_slice() else {
+            panic!("expected two list blocks, got {lists:?}");
+        };
+
+        // Point the inner list back at the outer one.
+        let mut inner = blocks.get(inner_id).and_then(|v| v.to_map()).expect("inner list");
+        let mut children = doc.create_array().expect("array");
+        children.push(outer_id.as_str()).expect("push");
+        inner
+            .insert("sys:children".into(), Value::Array(children))
+            .expect("insert children");
+        let corrupt_bin = doc.encode_update_v1().expect("encode");
+
+        let err =
+            update_doc(&corrupt_bin, "- a\n  - b\n  - c", doc_id).expect_err("cyclic sys:children must be rejected");
+        assert!(
+            err.to_string().contains("cyclic sys:children"),
+            "unexpected error: {err}"
         );
     }
 

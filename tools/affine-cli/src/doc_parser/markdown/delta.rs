@@ -332,9 +332,10 @@ struct Group {
 /// Escape the `$` characters that pulldown-cmark (ENABLE_MATH, parser.rs) would read back as a
 /// math delimiter, so literal dollar text like `the set $S$` survives a doc→markdown→doc
 /// round-trip instead of silently becoming an equation. Mirrors the parser's own rules: a `$`
-/// followed by an ASCII digit (currency: `$5`), whitespace, or end-of-text can never OPEN an
-/// inline equation, and with every possible opener escaped no closer can pair either — those
-/// stay verbatim so currency text is byte-stable across round-trips.
+/// followed by whitespace or end-of-text can never OPEN an inline equation, and with every
+/// possible opener escaped no closer can pair either, so those stay bare. A `$` before a digit
+/// is NOT exempt: pulldown-cmark reads `$10-$20` as the equation `10-`, so currency exports as
+/// `\$10` (which the parser reads back as a literal `$`).
 /// `next_char` is the first character that will follow `text` in the final rendered markdown
 /// (the next delta op's leading char, a style marker, or a newline) — without it a `$` that
 /// ends one op but is followed by more inline content in the next would escape wrongly.
@@ -346,7 +347,7 @@ fn escape_math_dollars(text: &str, next_char: Option<char>) -> std::borrow::Cow<
     let mut chars = text.chars().peekable();
     while let Some(c) = chars.next() {
         let following = chars.peek().copied().or(next_char);
-        if c == '$' && following.is_some_and(|n| !n.is_ascii_digit() && !n.is_whitespace()) {
+        if c == '$' && following.is_some_and(|n| !n.is_whitespace()) {
             out.push('\\');
         }
         out.push(c);
@@ -877,9 +878,24 @@ mod tests {
             "trailing $ before styled run must escape: {rendered}"
         );
         assert!(
-            rendered.contains(" plus $5 tax") && !rendered.contains("\\$5"),
-            "currency must stay literal: {rendered}"
+            rendered.contains(" plus \\$5 tax"),
+            "currency $ before a digit can open math and must escape: {rendered}"
         );
+    }
+
+    #[test]
+    fn test_dollar_before_digit_is_escaped() {
+        // Regression: `$` before a digit used to be exempt as "currency", but pulldown-cmark
+        // reads `$10-$20` as the inline equation `10-`. Every `$` followed by non-whitespace
+        // must escape; a `$` before whitespace or at end-of-text can never open math.
+        let delta = vec![TextDeltaOp::Insert {
+            insert: TextInsert::Text("a $10-$20 range, $ alone, and trailing $".into()),
+            format: None,
+        }];
+
+        let options = DeltaToMdOptions::new(None);
+        let rendered = delta_to_markdown_with_options(&delta, &options, false);
+        assert_eq!(rendered, "a \\$10-\\$20 range, $ alone, and trailing $");
     }
 
     #[test]

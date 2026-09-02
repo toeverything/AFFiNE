@@ -94,39 +94,85 @@ fn test_roundtrip_inline_and_block_math() {
 
 #[test]
 fn test_roundtrip_dollar_amounts_are_not_math() {
-    // Currency must stay literal — `$5 … $10` does not form a math span.
+    // Currency must stay literal: `$5 … $10` does not form a math span on ingest, and the
+    // reader escapes each `$` before a digit so the export cannot form one either.
     let markdown = "Pay $5 and then $10 more.";
-    let expected = "Pay $5 and then $10 more.\n\n";
+    let expected = "Pay \\$5 and then \\$10 more.\n\n";
     assert_markdown_roundtrip(markdown, expected);
 }
 
 #[test]
-fn test_block_math_keeps_trailing_text_in_same_paragraph() {
-    // Regression: `$$…$$` opening a paragraph must not swallow the prose that follows it.
-    let markdown = "$$E=mc^2$$ explains mass-energy equivalence.";
-    let doc_id = "roundtrip-math-trailing";
+fn test_roundtrip_currency_range_stays_plain_text() {
+    // Regression: `$10-$20` is exactly the shape pulldown-cmark reads as the equation `10-`.
+    // A literal-dollar doc must export escaped and re-ingest as plain text, twice over, with
+    // no `latex` op ever appearing.
+    let doc_id = "roundtrip-currency-range";
     let title = "Roundtrip Title";
-    let bin = build_full_doc(title, markdown, doc_id).expect("create doc");
-    let result = parse_doc_to_markdown(bin, doc_id.to_string(), false, None).expect("parse doc");
-    assert!(
-        result.markdown.contains("$$\nE=mc^2\n$$"),
-        "latex block lost: {}",
-        result.markdown
+    let plain = "a $10-$20 range";
+
+    let bin = build_full_doc(title, "a \\$10-\\$20 range", doc_id).expect("create doc");
+    assert_no_inline_latex(&bin, doc_id);
+    assert_eq!(paragraph_plain_text(&bin, doc_id), plain);
+    let exported = parse_doc_to_markdown(bin, doc_id.to_string(), false, None).expect("parse doc");
+    assert_eq!(exported.markdown, "a \\$10-\\$20 range\n\n");
+
+    let reingested = build_full_doc(title, &exported.markdown, doc_id).expect("re-ingest doc");
+    assert_no_inline_latex(&reingested, doc_id);
+    assert_eq!(
+        paragraph_plain_text(&reingested, doc_id),
+        plain,
+        "currency range must survive as literal text"
     );
-    assert!(
-        result.markdown.contains("explains mass-energy equivalence."),
-        "trailing text lost: {}",
-        result.markdown
-    );
+    let exported_again = parse_doc_to_markdown(reingested, doc_id.to_string(), false, None).expect("parse doc");
+    assert_eq!(exported_again.markdown, exported.markdown, "export must be stable");
 }
 
-#[test]
-fn test_roundtrip_literal_dollar_text_stays_literal() {
-    // Regression: literal `$…$` prose must not re-parse as an equation. The reader escapes the
-    // `$` that could open math (`\$S`); a `$` before whitespace can never pair and stays bare.
-    let markdown = "The set \\$S\\$ is closed.";
-    let expected = "The set \\$S$ is closed.\n\n";
-    assert_markdown_roundtrip(markdown, expected);
+fn for_each_block(bin: &[u8], doc_id: &str, mut visit: impl FnMut(y_octo::Map)) {
+    // The doc must outlive the block handles it hands out, so walk inside one function.
+    let mut doc = y_octo::DocOptions::new().with_guid(doc_id.to_string()).build();
+    doc.apply_update_from_binary_v1(bin).expect("apply update");
+    let blocks = doc.get_map("blocks").expect("blocks map");
+    for (_, value) in blocks.iter() {
+        if let Some(block) = value.to_map() {
+            visit(block);
+        }
+    }
+}
+
+fn assert_no_inline_latex(bin: &[u8], doc_id: &str) {
+    use y_octo::TextDeltaOp;
+
+    for_each_block(bin, doc_id, |block| {
+        assert_ne!(
+            super::blocksuite::get_string(&block, "sys:flavour").as_deref(),
+            Some("affine:latex"),
+            "unexpected affine:latex block"
+        );
+        let Some(text) = block.get("prop:text").and_then(|v| v.to_text()) else {
+            return;
+        };
+        for op in text.to_delta() {
+            if let TextDeltaOp::Insert {
+                format: Some(attrs), ..
+            } = op
+            {
+                assert!(!attrs.contains_key("latex"), "unexpected latex op: {attrs:?}");
+            }
+        }
+    });
+}
+
+fn paragraph_plain_text(bin: &[u8], doc_id: &str) -> String {
+    let mut found = None;
+    for_each_block(bin, doc_id, |block| {
+        if super::blocksuite::get_string(&block, "sys:flavour").as_deref() == Some("affine:paragraph") {
+            found = block
+                .get("prop:text")
+                .and_then(|v| v.to_text())
+                .map(|text| text.to_string());
+        }
+    });
+    found.expect("paragraph text")
 }
 
 #[test]

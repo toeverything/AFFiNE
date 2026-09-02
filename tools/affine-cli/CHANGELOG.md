@@ -4,6 +4,19 @@ All notable changes to the `affine-cli` crate (and its skill, compat harness, an
 loosely follows [Keep a Changelog](https://keepachangelog.com); the crate is unpublished
 (`0.0.0`), so entries are grouped by date / branch state rather than versions.
 
+## Unreleased
+
+Fixes for the maintainer review findings on upstream PR #15374.
+
+### Fixed
+
+- **`$` before a digit is now escaped on export.**
+  `escape_math_dollars` exempted `$` followed by a digit as "currency", but pulldown-cmark reads `$10-$20` as the inline equation `10-`, so `a $10-$20 range` exported unescaped and re-ingested as math.
+  Every `$` followed by non-whitespace now escapes (`\$10`), which the parser reads back as a literal `$`; a `$` before whitespace or end-of-text still stays bare.
+- **`doc update` rejects cyclic `sys:children` instead of overflowing the stack.**
+  `build_stored_tree` recursed over children with no visited set, so a corrupt doc with a child cycle aborted the CLI.
+  It now carries a path-visited set like the four parent-chain walks and returns a `cyclic sys:children at block` error.
+
 ## 2026-07-31
 
 Fixes for the CodeRabbit review findings on upstream PR #15374.
