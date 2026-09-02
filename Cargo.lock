@@ -103,7 +103,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d45f91ca0f91431eeaa05937033d97efd93c4e01d21855938b437c2d2f0684f6"
 dependencies = [
  "chrono",
- "nanoid",
+ "nanoid 0.5.0",
  "pulldown-cmark 0.13.1",
  "serde",
  "serde_json",
@@ -120,7 +120,7 @@ checksum = "5826d670f6d43faa7809ef6a06d4a8c5ff493b970399c5c3c5659d25e572746b"
 dependencies = [
  "affine_doc_loader",
  "chrono",
- "nanoid",
+ "nanoid 0.5.0",
  "pulldown-cmark 0.13.1",
  "serde",
  "serde_json",
@@ -5296,6 +5296,15 @@ dependencies = [
  "num-traits",
  "simba",
  "typenum",
+]
+
+[[package]]
+name = "nanoid"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ffa00dec017b5b1a8b7cf5e2c008bfda1aa7e0697ac1508b491fdf2622fb4d8"
+dependencies = [
+ "rand 0.8.6",
 ]
 
 [[package]]
@@ -10928,7 +10937,7 @@ dependencies = [
  "byteorder",
  "log",
  "loom",
- "nanoid",
+ "nanoid 0.5.0",
  "nom 8.0.0",
  "ordered-float",
  "rand 0.10.1",
