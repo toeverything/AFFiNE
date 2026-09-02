@@ -1,4 +1,4 @@
-import { toast, useConfirmModal } from '@affine/component';
+import { Button, toast, useConfirmModal } from '@affine/component';
 import {
   createDocExplorerContext,
   DocExplorerContext,
@@ -12,7 +12,7 @@ import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { useI18n } from '@affine/i18n';
 import { DeleteIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import {
   useIsActiveView,
@@ -24,14 +24,50 @@ import {
 import { EmptyPageList } from './page-list-empty';
 import * as styles from './trash-page.css';
 
-const TrashHeader = () => {
+const TrashHeader = ({ canManageTrash }: { canManageTrash: boolean }) => {
   const t = useI18n();
+  const contextValue = useContext(DocExplorerContext);
+  const groups = useLiveData(contextValue.groups$);
+  const selectMode = useLiveData(contextValue.selectMode$);
+  const selectedDocIds = useLiveData(contextValue.selectedDocIds$);
+
+  const allDocIds = useMemo(
+    () => Array.from(new Set(groups.flatMap(group => group.items))),
+    [groups]
+  );
+  const allSelected = useMemo(() => {
+    const selectedDocIdSet = new Set(selectedDocIds);
+    return (
+      allDocIds.length > 0 && allDocIds.every(id => selectedDocIdSet.has(id))
+    );
+  }, [allDocIds, selectedDocIds]);
+
+  const handleToggleSelectAll = useCallback(() => {
+    contextValue.selectedDocIds$.next(allSelected ? [] : allDocIds);
+    contextValue.prevCheckAnchorId$?.next(null);
+  }, [allDocIds, allSelected, contextValue]);
+
   return (
     <Header
       left={
         <div className={styles.trashTitle}>
           <DeleteIcon className={styles.trashIcon} />
           {t['com.affine.workspaceSubPath.trash']()}
+          {selectMode && canManageTrash && allDocIds.length > 0 ? (
+            <Button
+              className={styles.selectAllButton}
+              data-testid="trash-select-all"
+              onClick={handleToggleSelectAll}
+              size="custom"
+              variant="plain"
+            >
+              {t[
+                allSelected
+                  ? 'com.affine.page.group-header.clear'
+                  : 'com.affine.page.group-header.select-all'
+              ]()}
+            </Button>
+          ) : null}
         </div>
       }
     />
@@ -69,6 +105,7 @@ export const TrashPage = () => {
 
   const isAdmin = useLiveData(permissionService.permission.isAdmin$);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
+  const canManageTrash = !!isAdmin || !!isOwner;
   const groups = useLiveData(explorerContextValue.groups$);
   const isEmpty =
     groups.length === 0 ||
@@ -171,7 +208,7 @@ export const TrashPage = () => {
       <ViewTitle title={t['Trash']()} />
       <ViewIcon icon={'trash'} />
       <ViewHeader>
-        <TrashHeader />
+        <TrashHeader canManageTrash={canManageTrash} />
       </ViewHeader>
       <ViewBody>
         <div className={styles.body}>
@@ -179,11 +216,9 @@ export const TrashPage = () => {
             <EmptyPageList type="trash" />
           ) : (
             <DocsExplorer
-              disableMultiDelete={!isAdmin && !isOwner}
-              onRestore={isAdmin || isOwner ? handleMultiRestore : undefined}
-              onDelete={
-                isAdmin || isOwner ? onConfirmPermanentlyDelete : undefined
-              }
+              disableMultiDelete={!canManageTrash}
+              onRestore={canManageTrash ? handleMultiRestore : undefined}
+              onDelete={canManageTrash ? onConfirmPermanentlyDelete : undefined}
             />
           )}
         </div>
