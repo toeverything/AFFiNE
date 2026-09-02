@@ -245,11 +245,18 @@ Async (tokio). Pool keyed by `universal_id`; per-workspace SQLite file.
 - **Therefore: write while the target workspace is not open in the app** (or accept that a reopen is
   needed to pick up changes). Use SQLite WAL-safe access; treat "app running on same workspace" as a
   caution. (`packages/common/nbstore/src/frontend/doc.ts`, `.../sync/doc/peer.ts`.)
+  The CLI enforces this with a one-shot pre-flight probe of the WAL lock byte (`error:locked`,
+  `--force` to skip) - a point-in-time check with a TOCTOU window, not a held lock, and not
+  implemented on Windows (writes proceed with a `warnings` entry).
+- **nbstore migrates on `connect()`.** The CLI therefore checks `_sqlx_migrations` read-only first
+  and refuses behind-schema databases (`error:migration_required`, `--allow-migrate` to opt in) and
+  newer-than-CLI databases (`error:db_newer`); only `workspace create` migrates a fresh file.
 
 ## 8. Command surface (proposed)
 
 Single binary **`affine-cli`** (crate at `tools/affine-cli`), every command emits JSON (`--json` default for
-agents; `--pretty` for humans). Examples below abbreviate the binary as `affine`.
+agents; `--pretty` for humans), including command-line usage errors (`"error":"usage"`, exit 2; only
+`--help`/`--version` stay plain text). Examples below abbreviate the binary as `affine`.
 Global: `--affine-dir` (override storage root), `--workspace <id>`, `--editor-id <id>`,
 `--peer <local|affine-cloud|serverId>`.
 

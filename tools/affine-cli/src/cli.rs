@@ -41,11 +41,18 @@ pub struct GlobalArgs {
     #[arg(long, global = true)]
     pub pretty: bool,
 
-    /// Write even when the workspace database is open in another process (normally the CLI
-    /// refuses: the AFFiNE app does not see external writes while running and may overwrite
-    /// them when it saves).
+    /// Write even when the pre-flight check finds the workspace database open in another
+    /// process (normally the CLI refuses: the AFFiNE app does not see external writes while
+    /// running and may overwrite them when it saves).
     #[arg(long, global = true)]
     pub force: bool,
+
+    /// Allow the CLI to apply pending nbstore schema migrations to an existing workspace
+    /// database. By default every command except `workspace create` refuses to open a database
+    /// whose schema is older than the one this CLI embeds (`"error":"migration_required"`),
+    /// because an older installed app may fail to open a database migrated by a newer CLI.
+    #[arg(long, global = true)]
+    pub allow_migrate: bool,
 }
 
 #[derive(Subcommand, Debug)]

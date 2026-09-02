@@ -1,9 +1,12 @@
 //! affine-cli — a headless CLI over the AFFiNE local-first store.
 //!
 //! Thin clap dispatcher over the `affine_cli` library (see `src/lib.rs`); every command prints
-//! one JSON value on success or a stable error envelope on failure — never a panic.
+//! one JSON value on success or a stable error envelope on failure - never a panic. Command-line
+//! usage errors (unknown subcommand, missing/conflicting flags) go through the same envelope with
+//! `"error":"usage"` and exit code 2; `--help` / `--version` keep clap's plain text and exit 0.
 
 use clap::Parser;
+use clap::error::ErrorKind;
 
 use affine_cli::cli::{BlobCmd, Cli, Commands, DiagramCmd, DocCmd, WorkspaceCmd};
 use affine_cli::error::CliError;
@@ -11,24 +14,35 @@ use affine_cli::{commands, output};
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    let cli = Cli::parse();
-    let global = cli.global.clone();
-    let pretty = global.pretty;
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(e) if matches!(e.kind(), ErrorKind::DisplayHelp | ErrorKind::DisplayVersion) => e.exit(),
+        Err(e) => {
+            // `--pretty` is a global flag, but parsing failed, so honor it by inspecting argv.
+            let pretty = std::env::args().skip(1).any(|a| a == "--pretty");
+            let message = e.render().to_string().trim_end().to_string();
+            fail(&CliError::Usage(message), pretty);
+        }
+    };
+    let pretty = cli.global.pretty;
 
-    let result = dispatch(&cli).await;
-
-    match result {
-        Ok(value) => {
+    match dispatch(&cli).await {
+        Ok(mut value) => {
+            output::attach_warnings(&mut value);
             output::print_value(&value, pretty);
         }
-        Err(err) => {
-            let envelope = err.to_envelope();
-            let value = serde_json::to_value(&envelope)
-                .unwrap_or_else(|_| serde_json::json!({ "ok": false, "error": "error", "message": err.to_string() }));
-            output::print_value(&value, pretty);
-            std::process::exit(1);
-        }
+        Err(err) => fail(&err, pretty),
     }
+}
+
+/// Print the JSON error envelope for `err` to stdout and exit with its code.
+fn fail(err: &CliError, pretty: bool) -> ! {
+    let envelope = err.to_envelope();
+    let mut value = serde_json::to_value(&envelope)
+        .unwrap_or_else(|_| serde_json::json!({ "ok": false, "error": "error", "message": err.to_string() }));
+    output::attach_warnings(&mut value);
+    output::print_value(&value, pretty);
+    std::process::exit(err.exit_code());
 }
 
 async fn dispatch(cli: &Cli) -> Result<serde_json::Value, CliError> {

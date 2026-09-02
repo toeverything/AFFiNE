@@ -12,16 +12,35 @@ A single static binary over the AFFiNE local-first store. JSON in / JSON out. Bu
 | `--peer <local\|serverId>` | `local` | Storage peer. `local` = local-first. Cloud = the server id (e.g. `affine-cloud`). |
 | `--product <name>` | `AFFiNE` | Product dir under the data dir (`AFFiNE-canary`, `AFFiNE-beta`, …). |
 | `--pretty` | off | Pretty-print JSON (default is one compact line). |
-| `--force` | off | Bypass the open-workspace write guard (see below). |
+| `--force` | off | Skip the pre-flight open-app check (see below). |
+| `--allow-migrate` | off | Let the CLI apply pending schema migrations to an existing workspace DB (see below). |
 
 **Output contract:** success → a JSON object/array with `"ok":true` (objects) or a bare array (lists);
 failure → `{"ok":false,"error":"<code>","message":"<text>"}` and a non-zero exit code. Never panics.
+Command-line usage errors (unknown subcommand, missing or conflicting flags) use the same envelope
+with `"error":"usage"` and exit code 2, on stdout; only `--help` and `--version` print clap's plain
+text and exit 0. Non-fatal notices are attached to object outputs as `"warnings":["..."]`.
 
-**Write guard:** every mutating command first checks whether another process (normally the running
-AFFiNE app) has the workspace database open; if so it refuses with `"error":"locked"` instead of
-writing a change the app could clobber on save. Close the workspace in the app and retry, or pass
-`--force` if you're sure. Read commands (`list`, `read`, `blob get`) are never blocked; `search`
-IS guarded because its index refresh writes search-index rows into the workspace database.
+**Pre-flight open-app check:** every mutating command first probes whether another process
+(normally the running AFFiNE app) has the workspace database open; if so it refuses with
+`"error":"locked"` instead of writing a change the app could clobber on save. Close the workspace in
+the app and retry, or pass `--force` if you're sure. This is a one-shot probe of SQLite's WAL
+lock byte, not a lock the CLI holds: an app that opens the workspace between the probe and the
+write is not detected (SQLite keeps the file consistent either way; the risk is only the app
+overwriting the change on its next save). On Windows the probe is not implemented: writes proceed
+as if `--force` were given and the output carries a `warnings` entry saying so; `"error":"locked"`
+never fires there. Read commands (`list`, `read`, `blob get`) are never checked; `search` IS
+checked because its index refresh writes search-index rows into the workspace database.
+
+**Schema check:** the store library migrates a database on open, so before opening an existing
+workspace the CLI reads its `_sqlx_migrations` table and compares it with the migrations the CLI
+was built with. If the database is behind, the CLI refuses with `"error":"migration_required"`
+rather than upgrading a schema the installed app may not be able to open; open the workspace in
+the app (which migrates it), or pass `--allow-migrate` when the app is at least as new as the CLI
+(the output then carries a `warnings` entry). If the database carries migrations the CLI does not
+know, it refuses with `"error":"db_newer"`; rebuild the CLI from a matching source tree. Only
+`workspace create` (a fresh database) migrates without the flag. Nothing is written before the
+check passes.
 
 **Reserved ids:** mutating doc/diagram commands reject `--doc` values that name the workspace's
 root doc (id == workspace id) or internal database docs (`db$…`, `userdata$…`) with
@@ -112,11 +131,14 @@ affine-cli diagram create --workspace=<ws> --doc=<id> --spec graph.json \
     [--replace]                   # clear existing surface elements first (re-run friendly)
 ```
 
-The whole graph — including the `--replace` clear — is written as **one atomic store update**, so
-a failed run never leaves a half-built diagram or a wiped surface. The spec is fully validated
-first (shape types, edge modes, duplicate node ids, unknown edge endpoints, node sizes), so a bad
-spec writes nothing. A spec is capped at **500 nodes / 2000 edges**; anything larger is rejected
-with `"error":"config"` before any layout or store work (split the graph across docs instead).
+The whole graph - including the `--replace` clear - is written as **one store update** (one
+delta), so a failed run never leaves a half-built diagram or a wiped surface. The spec is fully
+validated first (shape types, edge modes, duplicate node ids, unknown edge endpoints, node sizes),
+so a bad spec writes nothing. A spec is capped at **500 nodes / 2000 edges**; anything larger is
+rejected with `"error":"config"` before any layout or store work (split the graph across docs
+instead). The edgeless mode flag (`db$docProperties`) is a separate write performed *before* the
+element delta: if the element write fails, the doc is merely marked edgeless and its surface is
+untouched. The same order applies to `diagram add-*`.
 
 `--spec` schema (nodes are auto-sized to their labels and arranged without overlaps when x/y are
 omitted; nodes become shapes, edges become connectors anchored to the node element ids):
@@ -161,9 +183,13 @@ Idempotent: re-running is safe, since a labelled connector is re-written to the 
 
 ## Gotchas (repeat of the important ones)
 
-- **Open-workspace writes are blocked automatically** (`"error":"locked"`): close the workspace in
-  the app and retry, or `--force`. Note the app still doesn't auto-reload — (re)open the workspace
-  to see CLI-written changes.
+- **Open-workspace writes are refused by a pre-flight check** (`"error":"locked"`): close the
+  workspace in the app and retry, or `--force`. The check is a point-in-time probe (not a lock)
+  and is not implemented on Windows (see "Pre-flight open-app check" above). Note the app still
+  doesn't auto-reload - (re)open the workspace to see CLI-written changes.
+- **Behind-schema databases are refused** (`"error":"migration_required"`) instead of being
+  migrated silently; open the workspace in the app or pass `--allow-migrate`. Databases newer than
+  the CLI are refused with `"error":"db_newer"`.
 - **Pass ids in `=` form** (`--workspace=$WS`) — ids can start with `-`.
 - **Cloud workspaces** must already exist locally (sign in + open once); the CLI writes into the
   existing db with `--peer <serverId>`, it can't create a cloud workspace.

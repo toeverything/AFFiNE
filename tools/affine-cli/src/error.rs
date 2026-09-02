@@ -24,6 +24,20 @@ pub enum CliError {
     #[error("{0}")]
     Locked(String),
 
+    /// Command-line usage error (unknown subcommand, missing/conflicting flags). Produced from
+    /// clap's parse error so the JSON contract holds for that class too; exits with code 2.
+    #[error("{0}")]
+    Usage(String),
+
+    /// The workspace database is behind the schema this CLI embeds; opening it through nbstore
+    /// would migrate it in place, which an older installed app may not be able to open again.
+    #[error("{0}")]
+    MigrationRequired(String),
+
+    /// The workspace database carries migrations this CLI does not know (written by a newer app).
+    #[error("{0}")]
+    DbNewer(String),
+
     #[error("store error: {0}")]
     Store(#[from] affine_nbstore::error::Error),
 
@@ -55,12 +69,24 @@ impl CliError {
         CliError::Other(msg.into())
     }
 
+    /// Process exit code for this error: 2 for usage errors (the conventional clap code), 1 for
+    /// everything else.
+    pub fn exit_code(&self) -> i32 {
+        match self {
+            CliError::Usage(_) => 2,
+            _ => 1,
+        }
+    }
+
     /// A short, machine-friendly code for the JSON envelope.
     pub fn code(&self) -> &'static str {
         match self {
             CliError::NotImplemented => "not_implemented",
             CliError::Config(_) => "config",
             CliError::Locked(_) => "locked",
+            CliError::Usage(_) => "usage",
+            CliError::MigrationRequired(_) => "migration_required",
+            CliError::DbNewer(_) => "db_newer",
             CliError::Store(_) => "store",
             CliError::Parse(_) => "parse",
             CliError::Crdt(_) => "crdt",

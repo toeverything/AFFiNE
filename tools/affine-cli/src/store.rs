@@ -94,13 +94,48 @@ impl LocalBackend {
     /// `open` materializes the workspace directory + DB as a side effect, so routing every
     /// command except `workspace create` through this variant keeps a typo'd `--workspace`
     /// id from silently creating an empty workspace that `workspace list` then reports.
-    pub async fn open_existing(base: &Path, peer: &str, workspace_id: &str) -> Result<Self, CliError> {
+    ///
+    /// Before handing the file to nbstore (whose `connect()` migrates unconditionally) the
+    /// schema is checked read-only; see `check_schema`. `allow_migrate` (the `--allow-migrate`
+    /// flag) lets a behind-schema database be migrated; a database newer than this CLI is
+    /// always refused.
+    pub async fn open_existing(
+        base: &Path,
+        peer: &str,
+        workspace_id: &str,
+        allow_migrate: bool,
+    ) -> Result<Self, CliError> {
         let db_path = paths::workspace_db_path(base, peer, workspace_id);
         if !db_path.is_file() {
             return Err(CliError::config(format!(
                 "workspace not found: {workspace_id} (no database at {})",
                 db_path.display()
             )));
+        }
+        match check_schema(&db_path).await? {
+            SchemaState::Current => {}
+            SchemaState::Behind { pending } if allow_migrate => {
+                crate::output::warn(format!(
+                    "applied {} pending schema migration(s) to workspace {workspace_id} (--allow-migrate)",
+                    pending.len()
+                ));
+            }
+            SchemaState::Behind { pending } => {
+                return Err(CliError::MigrationRequired(format!(
+                    "workspace {workspace_id} database schema is behind this CLI ({} pending migration(s): {}); \
+                     open the workspace in the AFFiNE app first so the app migrates it, or pass \
+                     --allow-migrate to let the CLI migrate it (an older installed app may then fail to open it)",
+                    pending.len(),
+                    pending.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ")
+                )));
+            }
+            SchemaState::Newer { unknown } => {
+                return Err(CliError::DbNewer(format!(
+                    "workspace {workspace_id} database carries schema migration(s) this CLI does not know ({}); \
+                     it was written by a newer AFFiNE build - rebuild the CLI from a matching source tree",
+                    unknown.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ")
+                )));
+            }
         }
         Self::open(base, peer, workspace_id).await
     }
@@ -110,8 +145,89 @@ impl LocalBackend {
     }
 }
 
+/// Result of comparing a workspace database's `_sqlx_migrations` against the migration list
+/// this CLI embeds (`affine_schema::get_migrator`, the same list nbstore applies on connect).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SchemaState {
+    /// Every embedded migration is applied and nothing unknown is present.
+    Current,
+    /// Embedded migrations the database has not applied yet (nbstore would apply them).
+    Behind { pending: Vec<i64> },
+    /// Applied migration versions this CLI has no knowledge of (database from a newer build).
+    /// Takes precedence over `Behind` when both hold.
+    Newer { unknown: Vec<i64> },
+}
+
+/// Inspect `_sqlx_migrations` in `db_path` read-only (no nbstore, no migration run) and classify
+/// the schema relative to the migrations this CLI embeds.
+///
+/// A file without a `_sqlx_migrations` table (v1 schema, empty file) counts as `Behind` with
+/// every migration pending. Only the "up" migrations are considered; nbstore never records
+/// the reversible-down entries.
+pub async fn check_schema(db_path: &Path) -> Result<SchemaState, CliError> {
+    use sqlx::migrate::MigrationType;
+    use sqlx::sqlite::{SqliteConnectOptions, SqliteConnection};
+    use sqlx::{ConnectOptions, Row};
+
+    let err = |e: sqlx::Error| CliError::other(format!("schema check failed for {}: {e}", db_path.display()));
+
+    let opts = SqliteConnectOptions::new().filename(db_path).read_only(true);
+    let mut conn: SqliteConnection = opts.connect().await.map_err(err)?;
+
+    let has_table = sqlx::query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = '_sqlx_migrations'")
+        .fetch_optional(&mut conn)
+        .await
+        .map_err(err)?
+        .is_some();
+    let applied: Vec<i64> = if has_table {
+        sqlx::query("SELECT version FROM _sqlx_migrations ORDER BY version")
+            .fetch_all(&mut conn)
+            .await
+            .map_err(err)?
+            .iter()
+            .map(|row| row.get::<i64, _>("version"))
+            .collect()
+    } else {
+        Vec::new()
+    };
+    drop(conn);
+
+    let known: Vec<i64> = affine_schema::get_migrator()
+        .iter()
+        .filter(|m| m.migration_type != MigrationType::ReversibleDown)
+        .map(|m| m.version)
+        .collect();
+
+    let unknown: Vec<i64> = applied.iter().copied().filter(|v| !known.contains(v)).collect();
+    if !unknown.is_empty() {
+        return Ok(SchemaState::Newer { unknown });
+    }
+    let pending: Vec<i64> = known.iter().copied().filter(|v| !applied.contains(v)).collect();
+    if !pending.is_empty() {
+        return Ok(SchemaState::Behind { pending });
+    }
+    Ok(SchemaState::Current)
+}
+
+/// Outcome of the pre-flight "is the database open in another process" probe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InUseProbe {
+    /// Another process holds the WAL dead-man-switch lock right now.
+    InUse,
+    /// No other process held it at probe time (the probe is a point-in-time check: a process
+    /// may open the database between the probe and the CLI's write).
+    Free,
+    /// This platform has no probe implementation; the caller cannot know either way.
+    Unsupported,
+}
+
 /// True when ANOTHER process currently has this SQLite database open in WAL mode (nbstore
 /// always opens WAL — storage.rs `journal_mode(Wal)`).
+///
+/// This is a one-shot pre-flight probe, NOT a lock: nothing is acquired or held, so a process
+/// that opens the database after the probe returns is not detected (TOCTOU window). SQLite's
+/// own locking keeps the file consistent regardless; the probe only exists to warn before the
+/// app can clobber an external write on its next save.
 ///
 /// Every SQLite connection to a WAL database holds a SHARED advisory lock on the "dead-man
 /// switch" byte of the `-shm` file — offset 128 == `UNIX_SHM_DMS` in sqlite os_unix.c
@@ -124,13 +240,13 @@ impl LocalBackend {
 /// or a stale file after a crash — stale files carry no locks) and any probe failure both
 /// report "not in use". False negatives allow a risky write; false positives are impossible.
 #[cfg(unix)]
-pub fn db_in_use_elsewhere(db_path: &Path) -> bool {
+pub fn db_in_use_elsewhere(db_path: &Path) -> InUseProbe {
     use std::os::fd::AsRawFd;
 
     let shm = std::path::PathBuf::from(format!("{}-shm", db_path.display()));
     let file = match std::fs::File::open(&shm) {
         Ok(f) => f,
-        Err(_) => return false,
+        Err(_) => return InUseProbe::Free,
     };
     let mut lk: libc::flock = unsafe { std::mem::zeroed() };
     lk.l_type = libc::F_WRLCK as _;
@@ -139,13 +255,19 @@ pub fn db_in_use_elsewhere(db_path: &Path) -> bool {
     lk.l_len = 1;
     let rc = unsafe { libc::fcntl(file.as_raw_fd(), libc::F_GETLK, &mut lk) };
     // F_UNLCK's C type differs per platform (c_int on Linux, c_short on macOS) — widen both.
-    rc == 0 && i64::from(lk.l_type) != libc::F_UNLCK as i64
+    if rc == 0 && i64::from(lk.l_type) != libc::F_UNLCK as i64 {
+        InUseProbe::InUse
+    } else {
+        InUseProbe::Free
+    }
 }
 
-/// Non-unix fallback: no reliable cross-process probe — never report "in use".
+/// Non-unix (Windows) fallback: the probe is not implemented, so the open-app check cannot run
+/// and writes proceed as if `--force` were given. The caller surfaces this as a warning in the
+/// JSON output; `error:locked` never fires on this platform.
 #[cfg(not(unix))]
-pub fn db_in_use_elsewhere(_db_path: &Path) -> bool {
-    false
+pub fn db_in_use_elsewhere(_db_path: &Path) -> InUseProbe {
+    InUseProbe::Unsupported
 }
 
 impl DocBackend for LocalBackend {

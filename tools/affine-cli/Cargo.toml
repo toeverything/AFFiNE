@@ -16,6 +16,12 @@ path = "src/main.rs"
 affine_nbstore = { workspace = true, features = ["use-as-lib"] }
 y-octo         = { workspace = true }
 
+# Schema check before opening a workspace through nbstore (store::check_schema): affine_schema
+# is the migration list nbstore embeds; sqlx opens the file read-only to read `_sqlx_migrations`
+# without applying anything. nbstore's `connect()` would otherwise migrate every DB it touches.
+affine_schema = { path = "../../packages/frontend/native/schema" }
+sqlx          = { workspace = true, default-features = false, features = ["migrate", "runtime-tokio", "sqlite"] }
+
 # Markdown parsing for the vendored doc_parser (`$…$`/`$$…$$` math needs ENABLE_MATH).
 pulldown-cmark = { workspace = true }
 

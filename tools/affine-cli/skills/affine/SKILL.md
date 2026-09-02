@@ -8,6 +8,8 @@ description: Create and edit AFFiNE notes (markdown docs) and edgeless diagrams 
 `affine-cli` writes AFFiNE content directly into the desktop app's **local-first** store; the
 app syncs it on open. Every command prints **JSON** (one compact line; add `--pretty` for humans)
 and exits non-zero on error with `{"ok":false,"error":...,"message":...}`. Parse stdout as JSON.
+Command-line mistakes (unknown subcommand, missing flag) use the same envelope with
+`"error":"usage"` and exit code 2; only `--help` / `--version` print plain text.
 
 The binary is installed at `~/.cargo/bin/affine-cli` (on PATH). If it's missing, build it:
 `cargo install --path tools/affine-cli` from the AFFiNE fork.
@@ -39,18 +41,26 @@ affine-cli doc update --workspace="$WS" --doc="$DOC" --content $'# Ideas\n\nrevi
   (full-text, BM25 — ranked, not substring).
 - **Diagrams (edgeless whiteboard):** build a graph in one shot with `diagram create --spec graph.json`
   (`{nodes,edges}`), or place elements precisely with `diagram add-shape|add-text|add-connector`.
-  Diagram commands auto-switch the doc to edgeless mode. Connect shapes by their returned `elementId`.
+  Diagram commands first flag the doc as edgeless (a separate small write), then write the elements
+  as one delta. Connect shapes by their returned `elementId`.
 - **Attachments:** `blob put|get|list` (images/files; keyed by SHA-256 of contents by default).
 
 ## Critical gotchas
 
 1. **Writes are refused while the workspace is open elsewhere** — `{"ok":false,"error":"locked"}`
-   means another process (normally the AFFiNE app) has the workspace DB open. Close the workspace in
-   the app and retry, or pass `--force` if you accept the risk. The app does **not** auto-reload:
-   (re)open the workspace there to see CLI-written changes.
-2. **Ids can start with `-`.** Always pass them in `=` form — `--workspace=$WS`, `--doc=$DOC` — so the
+   means the pre-flight open-app check found another process (normally the AFFiNE app) holding the
+   workspace DB. Close the workspace in the app and retry, or pass `--force` if you accept the risk.
+   The check is a one-shot probe, not a lock: it cannot see an app that opens the workspace after
+   the check, and on Windows it is not implemented (writes proceed as with `--force` and the output
+   carries a `warnings` entry saying so). The app does **not** auto-reload: (re)open the workspace
+   there to see CLI-written changes.
+2. **The CLI never migrates an existing workspace DB on its own.** `"error":"migration_required"`
+   means the DB schema is older than this CLI build expects; open the workspace in the AFFiNE app
+   (which migrates it) or pass `--allow-migrate` if the installed app is at least as new as the
+   CLI. `"error":"db_newer"` means the DB was written by a newer app than the CLI; rebuild the CLI.
+3. **Ids can start with `-`.** Always pass them in `=` form - `--workspace=$WS`, `--doc=$DOC` - so the
    CLI doesn't parse the id as a flag.
-3. **Default is local-first** (`--peer local`). Cloud workspaces use `--peer <serverId>` and must
+4. **Default is local-first** (`--peer local`). Cloud workspaces use `--peer <serverId>` and must
    already exist locally (signed-in + opened once in the app); the CLI can't provision a cloud workspace.
 
 ## Full reference

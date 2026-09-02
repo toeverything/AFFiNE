@@ -749,3 +749,235 @@ fn workspace_list_survives_a_corrupt_workspace_db() {
         "corrupt workspace reports an error field: {bad}"
     );
 }
+
+// ----------------------------------------------------------------------------
+// JSON contract for command-line usage errors
+// ----------------------------------------------------------------------------
+
+#[test]
+fn unknown_subcommand_emits_json_usage_error_with_exit_2() {
+    let base = TempBase::new("usage-unknown");
+    let out = run_raw(base.path(), &["bogus"]);
+    assert_eq!(out.status.code(), Some(2), "usage errors keep clap's exit code 2");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let v: Value = serde_json::from_str(stdout.trim())
+        .unwrap_or_else(|e| panic!("usage error stdout was not JSON: {e}\nstdout: {stdout}"));
+    assert_eq!(v["ok"], Value::Bool(false));
+    assert_eq!(v["error"], "usage");
+    assert!(
+        v["message"].as_str().is_some_and(|m| m.contains("bogus")),
+        "message names the offending token: {v}"
+    );
+    assert!(
+        out.stderr.is_empty(),
+        "nothing on stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+}
+
+#[test]
+fn missing_required_flag_emits_json_usage_error_with_exit_2() {
+    let base = TempBase::new("usage-missing");
+    // `doc read` requires --doc; also exercise --pretty from argv on the failure path.
+    let out = run_raw(base.path(), &["doc", "read", "--workspace", "w", "--pretty"]);
+    assert_eq!(out.status.code(), Some(2));
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let v: Value = serde_json::from_str(stdout.trim()).expect("JSON on stdout");
+    assert_eq!(v["error"], "usage");
+    assert!(v["message"].as_str().is_some_and(|m| m.contains("--doc")), "{v}");
+    assert!(
+        stdout.trim().contains('\n'),
+        "--pretty honored for usage errors: {stdout}"
+    );
+}
+
+#[test]
+fn help_and_version_keep_plain_text_and_exit_0() {
+    let base = TempBase::new("usage-help");
+    for flag in ["--help", "--version"] {
+        let out = run_raw(base.path(), &[flag]);
+        assert_eq!(out.status.code(), Some(0), "{flag} exits 0");
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        assert!(
+            !stdout.trim_start().starts_with('{'),
+            "{flag} prints plain text, not JSON: {stdout}"
+        );
+        assert!(!stdout.trim().is_empty(), "{flag} prints something");
+    }
+    let out = run_raw(base.path(), &["--help"]);
+    assert!(String::from_utf8_lossy(&out.stdout).contains("Usage"));
+}
+
+// ----------------------------------------------------------------------------
+// Schema check: refuse to migrate an existing workspace DB implicitly
+// ----------------------------------------------------------------------------
+
+/// Run raw SQL against a workspace DB file through sqlx (the same driver nbstore uses), then
+/// close the connection so the WAL is checkpointed before the CLI reopens the file.
+fn sql_exec(db: &Path, sql: &str) {
+    use sqlx::ConnectOptions;
+    use sqlx::Connection;
+    let rt = tokio::runtime::Runtime::new().expect("rt");
+    rt.block_on(async {
+        let mut conn = sqlx::sqlite::SqliteConnectOptions::new()
+            .filename(db)
+            .connect()
+            .await
+            .expect("open db");
+        sqlx::raw_sql(sql).execute(&mut conn).await.expect("exec sql");
+        conn.close().await.expect("close db");
+    });
+}
+
+/// Applied migration versions recorded in `_sqlx_migrations`.
+fn applied_migrations(db: &Path) -> Vec<i64> {
+    use sqlx::ConnectOptions;
+    use sqlx::Connection;
+    use sqlx::Row;
+    let rt = tokio::runtime::Runtime::new().expect("rt");
+    rt.block_on(async {
+        let mut conn = sqlx::sqlite::SqliteConnectOptions::new()
+            .filename(db)
+            .read_only(true)
+            .connect()
+            .await
+            .expect("open db");
+        let rows = sqlx::query("SELECT version FROM _sqlx_migrations ORDER BY version")
+            .fetch_all(&mut conn)
+            .await
+            .expect("select");
+        conn.close().await.expect("close db");
+        rows.iter().map(|r| r.get::<i64, _>("version")).collect()
+    })
+}
+
+fn ws_db(base: &Path, ws: &str) -> PathBuf {
+    base.join("workspaces").join("local").join(ws).join("storage.db")
+}
+
+/// Roll the DB back one migration: drop the last migration's row AND the table it created, so
+/// re-applying it under `--allow-migrate` succeeds. Pinned to the current tail of the nbstore
+/// migration list; the assertion makes a list change fail here loudly rather than mysteriously.
+fn roll_back_last_migration(db: &Path) -> i64 {
+    let migrator = affine_schema::get_migrator();
+    let last = migrator
+        .iter()
+        .rfind(|m| m.migration_type != sqlx::migrate::MigrationType::ReversibleDown)
+        .expect("at least one migration");
+    assert_eq!(
+        last.description.as_ref(),
+        "add_indexer_sync",
+        "nbstore's last migration changed; update roll_back_last_migration's DROP statement"
+    );
+    sql_exec(
+        db,
+        &format!(
+            "DELETE FROM _sqlx_migrations WHERE version = {}; DROP TABLE indexer_sync;",
+            last.version
+        ),
+    );
+    last.version
+}
+
+#[test]
+fn doc_read_on_current_schema_succeeds_without_warnings() {
+    let base = TempBase::new("schema-current");
+    let ws = create_ws(base.path(), "Schema");
+    let doc = create_doc(base.path(), &ws, "Doc", "# hi");
+    let v = run_ok(base.path(), &["doc", "read", "--workspace", &ws, "--doc", &doc]);
+    assert_eq!(v["ok"], json_true());
+    assert!(v.get("warnings").is_none(), "no warnings on a current-schema DB: {v}");
+}
+
+#[test]
+fn doc_read_refuses_db_behind_schema_unless_allow_migrate() {
+    let base = TempBase::new("schema-behind");
+    let ws = create_ws(base.path(), "Schema");
+    let doc = create_doc(base.path(), &ws, "Doc", "# hi");
+    let db = ws_db(base.path(), &ws);
+
+    let last = roll_back_last_migration(&db);
+    let before = applied_migrations(&db);
+    assert!(!before.contains(&last));
+
+    // Read-only command on a behind-schema DB: refused, and nothing was migrated.
+    let out = run_raw(base.path(), &["doc", "read", "--workspace", &ws, "--doc", &doc]);
+    assert_eq!(out.status.code(), Some(1));
+    let v: Value = serde_json::from_str(String::from_utf8_lossy(&out.stdout).trim()).expect("JSON");
+    assert_eq!(v["ok"], Value::Bool(false));
+    assert_eq!(v["error"], "migration_required", "{v}");
+    assert!(
+        v["message"].as_str().is_some_and(|m| m.contains("--allow-migrate")),
+        "{v}"
+    );
+    assert_eq!(
+        applied_migrations(&db),
+        before,
+        "refusal must not touch _sqlx_migrations"
+    );
+
+    // Mutating commands are refused the same way (the check runs before nbstore opens the file).
+    let v = run_err(
+        base.path(),
+        &["doc", "update", "--workspace", &ws, "--doc", &doc, "--content", "x"],
+    );
+    assert_eq!(v["error"], "migration_required", "{v}");
+    assert_eq!(applied_migrations(&db), before);
+
+    // `workspace list` degrades to a per-entry error instead of failing wholesale.
+    let v = run_ok(base.path(), &["workspace", "list"]);
+    let entry = v
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|w| w["id"] == ws.as_str())
+        .expect("listed");
+    assert!(entry["error"].as_str().is_some_and(|e| e.contains("behind")), "{entry}");
+
+    // Opt in: the CLI migrates, says so in `warnings`, and the DB is current afterwards.
+    let v = run_ok(
+        base.path(),
+        &["doc", "read", "--workspace", &ws, "--doc", &doc, "--allow-migrate"],
+    );
+    assert_eq!(v["ok"], json_true());
+    let warnings = v["warnings"].as_array().expect("warnings array present");
+    assert!(
+        warnings
+            .iter()
+            .any(|w| w.as_str().is_some_and(|s| s.contains("--allow-migrate"))),
+        "{v}"
+    );
+    assert!(applied_migrations(&db).contains(&last));
+
+    let v = run_ok(base.path(), &["doc", "read", "--workspace", &ws, "--doc", &doc]);
+    assert_eq!(v["ok"], json_true());
+    assert!(v.get("warnings").is_none(), "{v}");
+}
+
+#[test]
+fn doc_read_refuses_db_newer_than_cli() {
+    let base = TempBase::new("schema-newer");
+    let ws = create_ws(base.path(), "Schema");
+    let doc = create_doc(base.path(), &ws, "Doc", "# hi");
+    let db = ws_db(base.path(), &ws);
+
+    sql_exec(
+        &db,
+        "INSERT INTO _sqlx_migrations (version, description, success, checksum, execution_time) \
+         VALUES (999, 'from_the_future', 1, X'00', 0);",
+    );
+    let before = applied_migrations(&db);
+
+    for extra in [&[][..], &["--allow-migrate"][..]] {
+        let mut args = vec!["doc", "read", "--workspace", &ws, "--doc", &doc];
+        args.extend_from_slice(extra);
+        let v = run_err(base.path(), &args);
+        assert_eq!(v["error"], "db_newer", "{v}");
+        assert!(v["message"].as_str().is_some_and(|m| m.contains("999")), "{v}");
+    }
+    assert_eq!(
+        applied_migrations(&db),
+        before,
+        "refusal must not touch _sqlx_migrations"
+    );
+}

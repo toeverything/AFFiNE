@@ -7,6 +7,7 @@ loosely follows [Keep a Changelog](https://keepachangelog.com); the crate is unp
 ## Unreleased
 
 Fixes for the maintainer review findings and the second CodeRabbit pass on upstream PR #15374.
+Where the documented contract was stronger than the mechanism, the mechanism is fixed where feasible and the docs now describe what the code does.
 
 ### Fixed
 
@@ -35,6 +36,29 @@ Fixes for the maintainer review findings and the second CodeRabbit pass on upstr
 - **`MAX_MARKDOWN_CHARS` is enforced as a character count** rather than a byte length, so non-ASCII documents are no longer rejected below the advertised budget.
 - **Default data directory matches the Electron app on Linux.**
   `base_dir` now uses `dirs::config_dir()` (Electron's `appData`), which is `~/.config/AFFiNE` on Linux; macOS and Windows resolve to the same paths as before.
+- **Usage errors emit the JSON envelope.**
+  `main` uses `Cli::try_parse()`; unknown subcommands and missing/conflicting flags now print
+  `{"ok":false,"error":"usage","message":...}` on stdout and exit 2 (clap's code).
+  Previously clap wrote plain text to stderr with empty stdout, breaking the "parse stdout as JSON" contract.
+  `--help` / `--version` still print plain text and exit 0.
+  `--pretty` is honored on this path by scanning argv.
+- **Diagram commands write the mode flag before the elements.**
+  `diagram create|add-shape|add-text|add-connector` used to push the surface element delta and then
+  `ensure_edgeless` (`db$docProperties`); a failure in the second write left the element persisted
+  behind an `ok:false`.
+  The order is now flag first, element delta second, so a failed run leaves at most a harmless
+  edgeless flag.
+  Docs no longer call the whole command atomic: the element write is one delta; the mode flag is a separate prior write.
+- **The CLI no longer migrates an existing workspace database implicitly.**
+  nbstore's `connect()` runs sqlx migrations unconditionally, so every command (even `doc read`)
+  could upgrade `_sqlx_migrations` in place and leave an older installed app unable to open its own DB.
+  `LocalBackend::open_existing` now reads `_sqlx_migrations` read-only (`store::check_schema`)
+  and compares it with `affine_schema::get_migrator()`: a behind-schema DB is refused with
+  `"error":"migration_required"` unless the new global `--allow-migrate` flag is passed (the
+  output then carries a `warnings` entry); a DB with migrations the CLI does not know is refused
+  with `"error":"db_newer"`. Nothing is written before the check passes.
+  `workspace create` (fresh file) migrates as before; `workspace list` reports a refused DB as a per-entry `error`.
+  New deps: `affine_schema` (path) and `sqlx` (read-only probe).
 
 ### Changed
 
@@ -46,6 +70,20 @@ Fixes for the maintainer review findings and the second CodeRabbit pass on upstr
   The layout's overlap-separation pass now reports non-convergence (a `warning:` line on stderr after its 200-pass bound) instead of silently returning a possibly overlapping layout.
 - `diagram add-connector --mode` and the `--spec` edge `mode` document (and the parser error lists) `orthogonal` as an alias of `elbow`.
 - `add_shape_sets_doc_edgeless` (diagram e2e) asserts `primaryMode == "edgeless"` from `db$docProperties` instead of only checking that a surface element exists.
+- **"Write lock" is now documented as a pre-flight open-app check.**
+  `store::db_in_use_elsewhere` returns `InUseProbe::{InUse, Free, Unsupported}` instead of a bool.
+  The docs state that it is a one-shot `F_GETLK` probe with a TOCTOU window, not a held lock, and
+  that on Windows it is not implemented: writes proceed as if `--force` were given and the JSON
+  output carries a `warnings` entry saying so.
+  The unix `error:locked` contract is unchanged.
+- **`warnings` field.**
+  `output::warn` collects non-fatal notices; `main` attaches them to object outputs (success or error) as `"warnings":[...]`.
+- Tests: `unknown_subcommand_emits_json_usage_error_with_exit_2`,
+  `missing_required_flag_emits_json_usage_error_with_exit_2`,
+  `help_and_version_keep_plain_text_and_exit_0`,
+  `doc_read_on_current_schema_succeeds_without_warnings`,
+  `doc_read_refuses_db_behind_schema_unless_allow_migrate`,
+  `doc_read_refuses_db_newer_than_cli` in `tests/commands_e2e.rs`.
 
 ### Docs
 
