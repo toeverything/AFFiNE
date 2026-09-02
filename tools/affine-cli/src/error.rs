@@ -33,6 +33,12 @@ pub enum CliError {
     #[error("crdt error: {0}")]
     Crdt(String),
 
+    /// A surface element id named by the caller (connector `--from`/`--to`) is not on the
+    /// target doc's surface. Distinct from `Other` so agents can pattern-match
+    /// `"error":"unknown_element"` and re-list the surface instead of retrying blindly.
+    #[error("unknown element id: {0}")]
+    UnknownElement(String),
+
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
 
@@ -58,6 +64,7 @@ impl CliError {
             CliError::Store(_) => "store",
             CliError::Parse(_) => "parse",
             CliError::Crdt(_) => "crdt",
+            CliError::UnknownElement(_) => "unknown_element",
             CliError::Io(_) => "io",
             CliError::Other(_) => "error",
         }

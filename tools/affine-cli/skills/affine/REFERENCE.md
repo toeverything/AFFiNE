@@ -115,7 +115,8 @@ affine-cli diagram create --workspace=<ws> --doc=<id> --spec graph.json \
 The whole graph — including the `--replace` clear — is written as **one atomic store update**, so
 a failed run never leaves a half-built diagram or a wiped surface. The spec is fully validated
 first (shape types, edge modes, duplicate node ids, unknown edge endpoints, node sizes), so a bad
-spec writes nothing.
+spec writes nothing. A spec is capped at **500 nodes / 2000 edges**; anything larger is rejected
+with `"error":"config"` before any layout or store work (split the graph across docs instead).
 
 `--spec` schema (nodes are auto-sized to their labels and arranged without overlaps when x/y are
 omitted; nodes become shapes, edges become connectors anchored to the node element ids):
@@ -140,8 +141,10 @@ Node fields: `id` (required), `label?`, `shape?` (rect|ellipse|diamond|triangle)
 validated and canonicalized; malformed boxes, non-finite numbers, or non-positive `w`/`h` are
 rejected with `"error":"config"` (a bad box would otherwise break the app's whiteboard rendering).
 Colors are hex strings like `"#ffe838"` (omit to let the app apply theme defaults). Element `index`
-ordering and `seed` are handled for you. Connector endpoints are anchored by `elementId` — there's
-currently **no existence check**, so a wrong id creates a dangling connector (no error).
+ordering and `seed` are handled for you (including on docs where elements were grouped in the app).
+Connector endpoints are anchored by `elementId` and must already exist on the doc's surface: an
+unknown `--from`/`--to` id is refused with `"error":"unknown_element"` and nothing is written, so
+re-read the ids from the `add-shape`/`add-text`/`create` output rather than guessing them.
 
 ## Gotchas (repeat of the important ones)
 

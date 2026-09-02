@@ -154,7 +154,13 @@ pub fn layout(nodes: &[Node], edges: &[Edge], mode: LayoutMode, dir: Direction) 
         }
     }
 
-    separate(&mut rects, SEP_MARGIN);
+    if !separate(&mut rects, SEP_MARGIN, SEPARATE_MAX_ITERS) {
+        // Consistent with the crate's other non-fatal diagnostics (commands.rs `warning:`
+        // lines): the result is still usable, some boxes may just overlap.
+        eprintln!(
+            "warning: layout separation did not converge after {SEPARATE_MAX_ITERS} passes; some nodes may overlap"
+        );
+    }
     normalize(&mut rects);
     rects
 }
@@ -434,14 +440,21 @@ fn radial(nodes: &[Node], edges: &[Edge], sizes: &[(f64, f64)]) -> Vec<Rect> {
 
 // --- collision separation + normalization ------------------------------------
 
-/// Push overlapping rects apart along their center-to-center axis until none overlap (or a cap
-/// is hit). Cheap O(n²·iters) relaxation — fine for the modest node counts diagrams carry.
-fn separate(rects: &mut [Rect], margin: f64) {
+/// Upper bound on `separate` relaxation passes. Each pass is O(n²) over the rects; together
+/// with the `diagram create --spec` node cap (commands.rs `MAX_SPEC_NODES`) this bounds the
+/// layout cost of a hostile spec.
+const SEPARATE_MAX_ITERS: usize = 200;
+
+/// Push overlapping rects apart along their center-to-center axis until none overlap or
+/// `max_iters` passes have run. Cheap O(n²·iters) relaxation - fine for the modest node counts
+/// diagrams carry. Returns `true` when a pass found nothing left to move (converged), `false`
+/// when the cap cut it off with overlaps possibly remaining.
+fn separate(rects: &mut [Rect], margin: f64, max_iters: usize) -> bool {
     let n = rects.len();
     if n < 2 {
-        return;
+        return true;
     }
-    for _ in 0..200 {
+    for _ in 0..max_iters {
         let mut moved = false;
         for i in 0..n {
             for j in (i + 1)..n {
@@ -468,9 +481,10 @@ fn separate(rects: &mut [Rect], margin: f64) {
             }
         }
         if !moved {
-            break;
+            return true;
         }
     }
+    false
 }
 
 /// Translate the whole layout so its top-left bounding corner sits at a small positive margin
@@ -594,6 +608,46 @@ mod tests {
         let rects = layout(&nodes, &edges, LayoutMode::Radial, Direction::LeftRight);
         assert_eq!(rects.len(), 6);
         assert!(no_overlaps(&rects), "radial layout must not overlap");
+    }
+
+    #[test]
+    fn separate_reports_convergence_and_bounded_cutoff() {
+        // Eight coincident boxes: one pass cannot untangle them, the default cap can.
+        let stacked = || {
+            vec![
+                Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    w: 100.0,
+                    h: 60.0
+                };
+                8
+            ]
+        };
+
+        let mut rects = stacked();
+        assert!(
+            !separate(&mut rects, SEP_MARGIN, 1),
+            "one pass must report non-convergence"
+        );
+
+        let mut rects = stacked();
+        assert!(
+            separate(&mut rects, SEP_MARGIN, SEPARATE_MAX_ITERS),
+            "default cap must converge"
+        );
+        assert!(no_overlaps(&rects), "converged layout has no overlaps");
+
+        let mut single = vec![Rect {
+            x: 0.0,
+            y: 0.0,
+            w: 10.0,
+            h: 10.0,
+        }];
+        assert!(
+            separate(&mut single, SEP_MARGIN, 0),
+            "nothing to separate is trivially converged"
+        );
     }
 
     #[test]

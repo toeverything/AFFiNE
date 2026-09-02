@@ -489,6 +489,83 @@ fn add_shape_missing_doc_errors() {
 }
 
 #[test]
+fn add_connector_unknown_endpoint_errors() {
+    let base = TempBase::new("dangling");
+    let ws = create_ws(base.path(), "WS");
+    let doc = create_doc(base.path(), &ws, "Flow");
+
+    let a = run_ok(
+        base.path(),
+        &["diagram", "add-shape", "--workspace", &ws, "--doc", &doc],
+    );
+    let a_id = a["elementId"].as_str().unwrap().to_string();
+
+    let err = run_err(
+        base.path(),
+        &[
+            "diagram",
+            "add-connector",
+            "--workspace",
+            &ws,
+            "--doc",
+            &doc,
+            "--from",
+            &a_id,
+            "--to",
+            "ghost-element",
+        ],
+    );
+    assert_eq!(err["ok"], Value::Bool(false));
+    assert_eq!(err["error"], "unknown_element");
+    assert!(
+        err["message"].as_str().unwrap().contains("ghost-element"),
+        "message names the missing id: {err}"
+    );
+
+    // No dangling connector was persisted.
+    let (_doc, value) = decode_surface_value(base.path(), "local", &ws, &doc);
+    assert_eq!(value.len(), 1, "only the shape remains on the surface");
+}
+
+#[test]
+fn diagram_create_rejects_oversized_spec() {
+    let base = TempBase::new("cap");
+    let ws = create_ws(base.path(), "WS");
+    let doc = create_doc(base.path(), &ws, "Huge");
+
+    let nodes: Vec<String> = (0..=affine_cli::commands::MAX_SPEC_NODES)
+        .map(|i| format!(r#"{{"id":"n{i}"}}"#))
+        .collect();
+    let spec = format!(r#"{{"nodes":[{}]}}"#, nodes.join(","));
+    let spec_path = base.path().join("spec.json");
+    std::fs::write(&spec_path, spec).unwrap();
+
+    let err = run_err(
+        base.path(),
+        &[
+            "diagram",
+            "create",
+            "--workspace",
+            &ws,
+            "--doc",
+            &doc,
+            "--spec",
+            spec_path.to_str().unwrap(),
+        ],
+    );
+    assert_eq!(err["ok"], Value::Bool(false));
+    assert_eq!(err["error"], "config");
+    assert!(
+        err["message"].as_str().unwrap().contains("limit is"),
+        "message states the cap: {err}"
+    );
+
+    // The oversized spec wrote nothing.
+    let (_doc, value) = decode_surface_value(base.path(), "local", &ws, &doc);
+    assert_eq!(value.len(), 0);
+}
+
+#[test]
 fn diagram_create_unknown_edge_node_errors() {
     let base = TempBase::new("badedge");
     let ws = create_ws(base.path(), "WS");

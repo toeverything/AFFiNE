@@ -834,6 +834,13 @@ pub async fn diagram_repair_labels(
 
 // --- diagram create --spec ---
 
+/// Size limits for a `--spec` graph. The layout pass is O(n²) per relaxation iteration
+/// (layout.rs `separate`), every node and edge becomes a surface element in one delta, and the
+/// app renders the whole surface at once; a spec past these bounds is almost certainly an
+/// agent bug rather than a diagram anyone will read. Rejected up front with `"error":"config"`.
+pub const MAX_SPEC_NODES: usize = 500;
+pub const MAX_SPEC_EDGES: usize = 2000;
+
 #[derive(serde::Deserialize)]
 struct DiagramSpec {
     nodes: Vec<SpecNode>,
@@ -895,6 +902,19 @@ pub async fn diagram_create(global: &GlobalArgs, args: &DiagramCreateArgs) -> Re
     })?;
     let dir = layout::Direction::parse(&args.direction)
         .ok_or_else(|| CliError::config(format!("invalid --direction '{}' (expected lr | tb)", args.direction)))?;
+
+    if spec.nodes.len() > MAX_SPEC_NODES {
+        return Err(CliError::config(format!(
+            "spec has {} nodes; the limit is {MAX_SPEC_NODES}",
+            spec.nodes.len()
+        )));
+    }
+    if spec.edges.len() > MAX_SPEC_EDGES {
+        return Err(CliError::config(format!(
+            "spec has {} edges; the limit is {MAX_SPEC_EDGES}",
+            spec.edges.len()
+        )));
+    }
 
     // Validate the WHOLE spec before touching the store: shape types, edge modes, duplicate
     // node ids (silently last-wins otherwise — almost certainly an agent bug), edge node refs,

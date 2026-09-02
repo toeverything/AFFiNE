@@ -326,7 +326,7 @@ fn adaptive_label_color() -> Any {
 ///
 /// Wrapping once (`Any::Array([Any::Array([..])])`) makes `values` a single element that IS the
 /// array, so yjs returns a plain JS array — byte-identical to what the app itself writes via
-/// `yMap.set(key, [x,y,w,h])`. Verified against yjs 13.6.31 (examples/probe_array_encoding.rs).
+/// `yMap.set(key, [x,y,w,h])`. Verified against yjs 13.6.21 (examples/probe_array_encoding.rs).
 ///
 /// NOTE: only arrays stored DIRECTLY as a Y.Map value need this. Arrays nested inside an
 /// `Any::Object` value (e.g. connector source/target `position`) already round-trip correctly —
@@ -466,19 +466,48 @@ fn surface_value_map(surface: &Map) -> Result<Map, CliError> {
         .ok_or_else(|| CliError::other("boxed prop:elements has no value map"))
 }
 
+/// Strip the group suffix from a surface element `index`. Elements inside a group carry a
+/// compound index `<layer>-<local>` (e.g. `a1-a0V`); only the part before the first `-` is a
+/// plain fractional key. Mirrors `ungroupIndex` in
+/// blocksuite/framework/std/src/utils/layer.ts (`index.split('-')[0]`), which
+/// `LayerManager.generateIndex` applies before handing the max index to `generateKeyBetween`.
+fn ungroup_index(index: &str) -> &str {
+    index.split('-').next().unwrap_or(index)
+}
+
 /// Compute the next fractional `index` by appending after the current max element index.
-/// Empty surface => "a0"; otherwise generate_key_between(Some(max), None).
+/// Empty surface => "a0"; otherwise generate_key_between(Some(max), None). Group suffixes are
+/// stripped first (see `ungroup_index`): a raw compound index wins the string-max and then
+/// fails `validate_order_key` on the `-`, which used to break every add on a doc where the
+/// user had ever grouped canvas elements.
 fn next_index(value_map: &Map) -> Result<String, CliError> {
     let mut max: Option<String> = None;
     for v in value_map.values() {
         if let Some(el) = v.to_map()
             && let Some(Any::String(idx)) = el.get("index").and_then(|x| x.to_any())
-            && max.as_deref().map(|m| idx.as_str() > m).unwrap_or(true)
         {
-            max = Some(idx);
+            let idx = ungroup_index(&idx);
+            if max.as_deref().map(|m| idx > m).unwrap_or(true) {
+                max = Some(idx.to_string());
+            }
         }
     }
     generate_key_between(max.as_deref(), None).map_err(|e| CliError::other(format!("index generation failed: {e}")))
+}
+
+/// Verify every id-anchored connector endpoint names an element that is on the surface. Runs
+/// before the connector is attached so a dangling `--from`/`--to` id is rejected instead of
+/// persisting a connector the app renders pointing at nothing. Endpoints given as a bare
+/// `position` (no id) are free-floating by design and skip the check.
+fn check_endpoints_exist(value_map: &Map, endpoints: [&Endpoint; 2]) -> Result<(), CliError> {
+    for ep in endpoints {
+        if let Some(id) = &ep.id
+            && value_map.get(id).and_then(|v| v.to_map()).is_none()
+        {
+            return Err(CliError::UnknownElement(id.clone()));
+        }
+    }
+    Ok(())
 }
 
 /// Resolve a seed: explicit override (tests) or a random uint32 truncated to i32 bit-pattern.
@@ -623,6 +652,11 @@ fn connector_label_style() -> Any {
 /// nested Y.Map. No xywh/rotate are persisted for connectors in-app, but we stamp the canonical
 /// "[0,0,0,0]" placeholder.
 fn insert_connector(doc: &Doc, params: &ConnectorParams) -> Result<String, CliError> {
+    {
+        let surface = find_surface_block(doc)?;
+        let value_map = surface_value_map(&surface)?;
+        check_endpoints_exist(&value_map, [&params.source, &params.target])?;
+    }
     let (element_id, mut el) = attach_element(doc, "connector", params.seed)?;
 
     el.insert("xywh".to_string(), Any::String("[0,0,0,0]".to_string()))?;
@@ -787,10 +821,13 @@ fn any_to_f64(a: &Any) -> Option<f64> {
 /// repair path: a plain note is silently skipped, but corruption must surface to the caller.
 pub fn rewrap_connector_labels(doc_bin: &[u8]) -> Result<Option<(Vec<u8>, usize)>, CliError> {
     // Pre-flight on a throwaway load: a missing surface block is a skip, not an error. Any
-    // failure to APPLY the binary, however, propagates — that is real corruption.
+    // failure to APPLY the binary, however, propagates - that is real corruption. The empty-bin
+    // guard matches the other entry points (`with_delta`): an unwritten doc has no surface.
     {
         let mut doc: Doc = DocOptions::new().build();
-        doc.apply_update_from_binary_v1(doc_bin)?;
+        if !is_empty_doc_bin(doc_bin) {
+            doc.apply_update_from_binary_v1(doc_bin)?;
+        }
         if find_surface_block(&doc).is_err() {
             return Ok(None);
         }
@@ -1114,6 +1151,79 @@ mod surface_tests {
     }
 
     #[test]
+    fn next_index_strips_group_suffix_before_generating() {
+        // Grouped canvas elements carry compound indexes (`<layer>-<local>`). The raw string
+        // `a1-a0V` wins the string-max over `a1`, and `generate_key_between` rejects the `-`.
+        let base = fresh_doc();
+        let (delta, _) = with_delta(&base, None, |doc| {
+            let surface = find_surface_block(doc)?;
+            let mut value_map = surface_value_map(&surface)?;
+            for (id, index) in [("plain", "a0"), ("grouped", "a1-a0V")] {
+                let mut el: Map = doc.create_map()?;
+                value_map.insert(id.to_string(), Value::Map(el.clone()))?;
+                el.insert("type".to_string(), Any::String("shape".to_string()))?;
+                el.insert("index".to_string(), Any::String(index.to_string()))?;
+            }
+            Ok(())
+        })
+        .unwrap();
+        let full = apply_delta(&base, &delta);
+        let (_doc, value_map) = decode_value_map(&full);
+
+        let next = next_index(&value_map).expect("grouped index must not break generation");
+        assert!(!next.contains('-'), "generated index is a plain key: {next}");
+        assert!(next.as_str() > "a1", "next index sorts after the ungrouped max: {next}");
+        assert_eq!(ungroup_index("a1-a0V"), "a1");
+        assert_eq!(ungroup_index("a1"), "a1");
+    }
+
+    #[test]
+    fn add_connector_rejects_unknown_endpoint_id() {
+        let base = fresh_doc();
+        let (d1, a_id) = add_shape(
+            &base,
+            &ShapeParams {
+                xywh: "[0,0,100,100]".to_string(),
+                shape_type: "rect".to_string(),
+                fill: None,
+                stroke: None,
+                text: None,
+                seed: Some(1),
+            },
+        )
+        .unwrap();
+        let full = apply_delta(&base, &d1);
+
+        let err = add_connector(
+            &full,
+            &ConnectorParams {
+                source: Endpoint {
+                    id: Some(a_id),
+                    position: None,
+                },
+                target: Endpoint {
+                    id: Some("no-such-element".to_string()),
+                    position: None,
+                },
+                mode: 1,
+                label: None,
+                label_xywh: None,
+                seed: Some(2),
+            },
+        )
+        .unwrap_err();
+        assert!(
+            matches!(&err, CliError::UnknownElement(id) if id == "no-such-element"),
+            "expected UnknownElement, got {err:?}"
+        );
+        assert_eq!(err.code(), "unknown_element");
+
+        // Nothing was written: the surface still holds exactly the one shape.
+        let (_doc, value) = decode_value_map(&full);
+        assert_eq!(value.len(), 1);
+    }
+
+    #[test]
     fn add_text_element_round_trips() {
         let base = fresh_doc();
         let (delta, id) = add_text(
@@ -1269,7 +1379,7 @@ mod surface_tests {
     #[test]
     fn yjs_number_array_is_wrapped_for_real_yjs_compat() {
         // A bare top-level `Any::Array` decodes to its LAST element in the real browser yjs lib
-        // (proven in examples/probe_array_encoding.rs against yjs 13.6.31 — it crashed every
+        // (proven in examples/probe_array_encoding.rs against yjs 13.6.21 - it crashed every
         // connector-label render). CAVEAT / seam gap: y-octo's OWN reader collapses BOTH the bare
         // and the wrapped form back to `Array([..])`, so no round-trip test through y-octo can tell
         // the fix from the bug. This structural assertion on the helper's output is therefore the

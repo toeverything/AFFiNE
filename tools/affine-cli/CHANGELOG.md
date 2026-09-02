@@ -22,10 +22,20 @@ Fixes for the maintainer review findings on upstream PR #15374.
 - **Malformed table keys no longer panic the writer.**
   `existing_table_ids` extracts the id with `strip_prefix`/`strip_suffix` and skips an empty id, so a hostile `prop:rows.order` key (prefix and suffix with no id between them) is ignored instead of slicing out of range.
   The same key class is swept by the update as garbage rather than kept.
+- **`diagram add-*` no longer fails on docs with grouped canvas elements.**
+  Grouped elements carry a compound `index` (`a1-a0V`); the raw value won the string-max in `next_index` and then failed fractional-key validation on the `-`, so every add errored on any doc where the user had ever grouped elements.
+  The group suffix is now stripped first, matching the app's `ungroupIndex` (`blocksuite/framework/std/src/utils/layer.ts`).
+- **`rewrap_connector_labels` guards the empty-doc binary** before applying it in its pre-flight load, like every other engine entry point.
+- Doc comments cite the yjs version the compat harness actually pins (13.6.21), not 13.6.31.
 
 ### Changed
 
 - The table id stability test now compares `prop:cells.` keys as well as `prop:rows.`/`prop:columns.`, covering the full `<rowId>:<columnId>` id contract.
+- **Connector endpoints must exist.**
+  `diagram add-connector` (and the connectors `diagram create` builds) verify every id-anchored `--from`/`--to` against the loaded surface and refuse with the new structured `"error":"unknown_element"` instead of persisting a dangling connector.
+  Position-only endpoints are still allowed.
+- **`diagram create --spec` is capped at 500 nodes / 2000 edges** (`"error":"config"` past that, before any layout or store work).
+  The layout's overlap-separation pass now reports non-convergence (a `warning:` line on stderr after its 200-pass bound) instead of silently returning a possibly overlapping layout.
 
 ## 2026-07-31
 
