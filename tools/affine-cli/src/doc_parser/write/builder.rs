@@ -18,7 +18,7 @@ pub(super) const NOTE_BG_LIGHT: &str = "#ffffff";
 pub(super) const NOTE_BG_DARK: &str = "#252525";
 const TABLE_ORDER_WIDTH: usize = 6;
 
-pub(super) fn block_version(flavour: &str) -> i32 {
+pub(crate) fn block_version(flavour: &str) -> i32 {
     match flavour {
         "affine:page" => 2,
         "affine:surface" => 5,

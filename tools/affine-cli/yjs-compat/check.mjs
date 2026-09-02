@@ -17,13 +17,44 @@ import * as Y from 'yjs';
 const dir = process.argv[2] ?? '/tmp/affine-cli-yjs-fixtures';
 const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'));
 
+// Known merge-semantics gaps in the CLI's writers, keyed by check label. These are NOT
+// encoding divergences: real yjs decodes the delta exactly as y-octo wrote it. They fail
+// because `doc update` rewrites a whole Y.Array / Y.Text instead of editing it in place, so a
+// concurrent app edit inside the replaced container is dropped. A known gap that starts
+// passing is reported as XPASS and fails the run, so the entry must be removed once the
+// writer is fixed. Do not add entries to silence a new failure.
+const KNOWN_GAPS = new Map([
+  [
+    'interleave B (app paragraph + CLI structural diff): app paragraph still in note children',
+    "doc update replaces the note's sys:children with a NEW Y.Array (src/doc_parser/write/builder.rs insert_children), " +
+      'so an id the app pushed into the old array after the CLI read the doc is dropped from the order (the block map survives, orphaned).',
+  ],
+  [
+    'interleave C (app typing + CLI edit in the same paragraph): app typing survived',
+    'doc update replaces prop:text with a NEW Y.Text (src/doc_parser/write/builder.rs insert_text) instead of applying a text delta, ' +
+      'so characters the app typed into the old Y.Text after the CLI read the doc are lost.',
+  ],
+]);
+
 let failures = 0;
+let knownGaps = 0;
 function check(label, cond, detail) {
+  const gap = KNOWN_GAPS.get(label);
+  if (gap !== undefined) {
+    if (cond) {
+      failures++;
+      console.error(`XPASS ${label} - this known gap now passes; remove it from KNOWN_GAPS`);
+    } else {
+      knownGaps++;
+      console.log(`xfail ${label}\n      known gap: ${gap}`);
+    }
+    return;
+  }
   if (cond) {
     console.log(`ok   ${label}`);
   } else {
     failures++;
-    console.error(`FAIL ${label}${detail === undefined ? '' : ` — got: ${JSON.stringify(detail)}`}`);
+    console.error(`FAIL ${label}${detail === undefined ? '' : ` - got: ${JSON.stringify(detail)}`}`);
   }
 }
 
@@ -193,8 +224,347 @@ function sweepElement(label, el, arrayFields) {
   check('props row primaryMode', row.get('primaryMode') === 'edgeless', row.get('primaryMode'));
 }
 
+// ============================================================================
+// Per-row delta sequences.
+//
+// The app never applies a merged full state: it reads the `updates` rows from the workspace
+// DB and applies them to a Y.Doc one by one. Every deletion-bearing CLI path (`doc update`
+// structural diff, `diagram create --replace`, `remove_doc_from_root`, table row removal, key
+// overwrites) therefore ships as a delta carrying a delete set, and delete-set / skip
+// encoding is the historic y-octo <-> yjs divergence area. Each sequence below is the exact
+// bytes `push_update` receives, in push order, with y-octo's own view of the doc after each
+// row (`<i>.expected.json`) to compare against real yjs's view.
+// ============================================================================
+
+// Generic Y.Doc -> JSON projection, mirroring `value_to_json` in emit_yjs_fixtures.rs.
+function toJson(v) {
+  if (v instanceof Y.Text) return { $text: v.toString() };
+  if (v instanceof Y.Array) return v.toArray().map(toJson);
+  if (v instanceof Y.Map) {
+    const out = {};
+    for (const k of [...v.keys()].sort()) out[k] = toJson(v.get(k));
+    return out;
+  }
+  if (v instanceof Y.AbstractType) return { $unsupported: v.constructor.name };
+  if (v === undefined) return { $undefined: true };
+  return canon(v);
+}
+
+// Plain JSON with sorted object keys so two projections compare as strings.
+function canon(v) {
+  if (Array.isArray(v)) return v.map(canon);
+  if (v && typeof v === 'object') {
+    const out = {};
+    for (const k of Object.keys(v).sort()) out[k] = canon(v[k]);
+    return out;
+  }
+  if (typeof v === 'number' && Number.isNaN(v)) return { $nan: true };
+  return v;
+}
+
+function projectRoots(doc, rootNames) {
+  const out = {};
+  for (const name of [...rootNames].sort()) out[name] = toJson(doc.getMap(name));
+  return out;
+}
+
+// First differing path between two canonical JSON values, for readable failures.
+function firstDiff(a, b, path = '$') {
+  if (JSON.stringify(a) === JSON.stringify(b)) return null;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return `${path}: array length ${a.length} vs ${b.length}`;
+    for (let i = 0; i < a.length; i++) {
+      const d = firstDiff(a[i], b[i], `${path}[${i}]`);
+      if (d) return d;
+    }
+  }
+  if (a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a) && !Array.isArray(b)) {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    for (const k of [...keys].sort()) {
+      if (!(k in a)) return `${path}.${k}: missing in expected (y-octo view), present in yjs`;
+      if (!(k in b)) return `${path}.${k}: present in expected (y-octo view), missing in yjs`;
+      const d = firstDiff(a[k], b[k], `${path}.${k}`);
+      if (d) return d;
+    }
+  }
+  return `${path}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`;
+}
+
+function readJson(name) {
+  return JSON.parse(readFileSync(join(dir, name), 'utf8'));
+}
+
+function applyRow(doc, name) {
+  Y.applyUpdate(doc, new Uint8Array(readFileSync(join(dir, name))));
+}
+
+function noPending(doc) {
+  return doc.store.pendingStructs === null && doc.store.pendingDs === null;
+}
+
+function blocksByFlavour(doc, flavour) {
+  const out = [];
+  doc.getMap('blocks').forEach((v, k) => {
+    if (v instanceof Y.Map && v.get('sys:flavour') === flavour) out.push([k, v]);
+  });
+  return out;
+}
+
+const sequences = manifest.sequences ?? [];
+check('manifest lists delta sequences', sequences.length > 0, sequences.length);
+
+const bySeq = new Map();
+for (const seq of sequences) {
+  const label = `seq ${seq.name}`;
+  const doc = new Y.Doc();
+  let lastExpected = null;
+  seq.rows.forEach((row, i) => {
+    let threw = null;
+    try {
+      applyRow(doc, row);
+    } catch (e) {
+      threw = e;
+    }
+    check(`${label} row ${i} applies without throwing`, threw === null, threw?.message);
+    check(`${label} row ${i} leaves no pending structs / delete sets`, noPending(doc), {
+      pendingStructs: doc.store.pendingStructs !== null,
+      pendingDs: doc.store.pendingDs !== null,
+    });
+    const expected = canon(readJson(seq.expected[i]));
+    lastExpected = expected;
+    const rootNames = Object.keys(expected.roots);
+    const shareNames = [...doc.share.keys()].sort();
+    check(`${label} row ${i} root type names match`, JSON.stringify(shareNames) === JSON.stringify(rootNames), {
+      yjs: shareNames,
+      yocto: rootNames,
+    });
+    const actual = canon(projectRoots(doc, rootNames));
+    const diff = firstDiff(expected.roots, actual);
+    check(`${label} row ${i} yjs view matches y-octo view`, diff === null, diff);
+  });
+
+  // Re-encoding the yjs-side result and replaying it into a fresh doc must reproduce the
+  // same state (the app persists a yjs-encoded full snapshot on compaction).
+  {
+    const fresh = new Y.Doc();
+    let threw = null;
+    try {
+      Y.applyUpdate(fresh, Y.encodeStateAsUpdate(doc));
+    } catch (e) {
+      threw = e;
+    }
+    check(`${label} encodeStateAsUpdate re-applies to a fresh doc`, threw === null, threw?.message);
+    const rootNames = Object.keys(lastExpected.roots);
+    const diff = firstDiff(canon(projectRoots(doc, rootNames)), canon(projectRoots(fresh, rootNames)));
+    check(`${label} re-encoded state equals the row-by-row state`, diff === null, diff);
+  }
+
+  // Tie the yjs view back to what the CLI's own reader printed for the final state.
+  const reader = lastExpected.reader;
+  if (seq.kind === 'page' && reader) {
+    const blocks = doc.getMap('blocks');
+    for (const b of reader.blocks) {
+      const m = blocks.get(b.block_id);
+      check(
+        `${label} reader block ${b.block_id} (${b.flavour}) exists in yjs with the same flavour`,
+        m instanceof Y.Map && m.get('sys:flavour') === b.flavour,
+        m?.get?.('sys:flavour')
+      );
+    }
+  }
+  if (seq.kind === 'root' && reader) {
+    const pages = doc.getMap('meta').get('pages');
+    const ids = pages instanceof Y.Array ? pages.toArray().filter(p => p.get('trash') !== true).map(p => p.get('id')) : null;
+    check(
+      `${label} reader page ids equal yjs meta.pages ids`,
+      JSON.stringify(ids) === JSON.stringify(reader.pages.map(p => p.id)),
+      { yjs: ids, reader: reader.pages.map(p => p.id) }
+    );
+  }
+  bySeq.set(seq.name, { seq, lastExpected });
+}
+
+// ============================================================================
+// Interleaving: a CLI delta applied on top of a doc that already carries a concurrent,
+// app-style edit made with real yjs. This is the merge-semantics risk from #15361: the CLI
+// computed its delta against the DB state it read, the app edited in between, and both
+// edits must survive.
+// ============================================================================
+
+// Doc state right before row `rowIndex` of a sequence.
+function docBefore(seqName, rowIndex) {
+  const { seq } = bySeq.get(seqName);
+  const doc = new Y.Doc();
+  for (let i = 0; i < rowIndex; i++) applyRow(doc, seq.rows[i]);
+  return { doc, seq };
+}
+
+// Insert a paragraph the way BlockSuite does: a Y.Map in `blocks` with sys:*/prop:* fields,
+// then its id appended to the note's `sys:children`.
+function appInsertParagraph(doc, id, text) {
+  const blocks = doc.getMap('blocks');
+  const [, note] = blocksByFlavour(doc, 'affine:note')[0];
+  doc.transact(() => {
+    const m = new Y.Map();
+    blocks.set(id, m);
+    m.set('sys:id', id);
+    m.set('sys:flavour', 'affine:paragraph');
+    m.set('sys:version', 1);
+    m.set('sys:children', new Y.Array());
+    m.set('prop:type', 'text');
+    const t = new Y.Text();
+    m.set('prop:text', t);
+    t.insert(0, text);
+    note.get('sys:children').push([id]);
+  });
+}
+
+function noteChildren(doc) {
+  const [, note] = blocksByFlavour(doc, 'affine:note')[0];
+  return note.get('sys:children').toArray();
+}
+
+function paragraphTexts(doc) {
+  return blocksByFlavour(doc, 'affine:paragraph').map(([, m]) => m.get('prop:text')?.toString());
+}
+
+// A. App appends a paragraph; CLI edits the text of another paragraph (update_text row 1).
+{
+  const label = 'interleave A (app paragraph + CLI text edit)';
+  const { doc, seq } = docBefore('update_text', 1);
+  appInsertParagraph(doc, 'app-para-a', 'app paragraph');
+  let threw = null;
+  try {
+    applyRow(doc, seq.rows[1]);
+  } catch (e) {
+    threw = e;
+  }
+  check(`${label}: CLI delta applies`, threw === null, threw?.message);
+  check(`${label}: no pending structs`, noPending(doc));
+  const texts = paragraphTexts(doc);
+  check(`${label}: CLI text edit survived`, texts.includes('Hello brave new world'), texts);
+  check(`${label}: app paragraph block survived`, texts.includes('app paragraph'), texts);
+  check(`${label}: app paragraph still in note children`, noteChildren(doc).includes('app-para-a'), noteChildren(doc));
+}
+
+// B. App appends a paragraph; CLI structural diff removes/reorders blocks (update_structural row 1).
+{
+  const label = 'interleave B (app paragraph + CLI structural diff)';
+  const { doc, seq } = docBefore('update_structural', 1);
+  appInsertParagraph(doc, 'app-para-b', 'app paragraph');
+  let threw = null;
+  try {
+    applyRow(doc, seq.rows[1]);
+  } catch (e) {
+    threw = e;
+  }
+  check(`${label}: CLI delta applies`, threw === null, threw?.message);
+  check(`${label}: no pending structs`, noPending(doc));
+  const { lastExpected } = bySeq.get('update_structural');
+  const expectedNote = Object.values(lastExpected.roots.blocks).find(b => b['sys:flavour'] === 'affine:note');
+  const children = noteChildren(doc);
+  const cliOrder = children.filter(id => id !== 'app-para-b');
+  check(
+    `${label}: CLI reorder/removal survived`,
+    JSON.stringify(cliOrder) === JSON.stringify(expectedNote['sys:children']),
+    { yjs: cliOrder, expected: expectedNote['sys:children'] }
+  );
+  check(`${label}: app paragraph block survived`, paragraphTexts(doc).includes('app paragraph'), paragraphTexts(doc));
+  check(`${label}: app paragraph still in note children`, children.includes('app-para-b'), children);
+}
+
+// C. App types inside the SAME paragraph the CLI edits (update_text row 1).
+{
+  const label = 'interleave C (app typing + CLI edit in the same paragraph)';
+  const { doc, seq } = docBefore('update_text', 1);
+  const [, para] = blocksByFlavour(doc, 'affine:paragraph').find(([, m]) => m.get('prop:text')?.toString() === 'Hello world');
+  doc.transact(() => {
+    const t = para.get('prop:text');
+    t.insert(t.length, ' (app)');
+  });
+  let threw = null;
+  try {
+    applyRow(doc, seq.rows[1]);
+  } catch (e) {
+    threw = e;
+  }
+  check(`${label}: CLI delta applies`, threw === null, threw?.message);
+  check(`${label}: no pending structs`, noPending(doc));
+  const text = para.get('prop:text')?.toString();
+  check(`${label}: CLI edit survived`, typeof text === 'string' && text.includes('brave new'), text);
+  check(`${label}: app typing survived`, typeof text === 'string' && text.includes('(app)'), text);
+}
+
+// D. App registers a page in meta.pages; CLI removes a different page (root_remove last row).
+{
+  const label = 'interleave D (app meta.pages push + CLI remove_doc_from_root)';
+  const { seq } = bySeq.get('root_remove');
+  const last = seq.rows.length - 1;
+  const { doc } = docBefore('root_remove', last);
+  doc.transact(() => {
+    const m = new Y.Map();
+    doc.getMap('meta').get('pages').push([m]);
+    m.set('id', 'app-doc');
+    m.set('title', 'App doc');
+    m.set('createDate', Date.now());
+    m.set('tags', new Y.Array());
+  });
+  let threw = null;
+  try {
+    applyRow(doc, seq.rows[last]);
+  } catch (e) {
+    threw = e;
+  }
+  check(`${label}: CLI delta applies`, threw === null, threw?.message);
+  check(`${label}: no pending structs`, noPending(doc));
+  const ids = doc.getMap('meta').get('pages').toArray().map(p => p.get('id'));
+  check(`${label}: CLI removal survived (doc-a gone)`, !ids.includes('doc-a'), ids);
+  check(`${label}: app page survived`, ids.includes('app-doc'), ids);
+  check(`${label}: untouched page survived`, ids.includes('doc-b'), ids);
+}
+
+// E. App adds a surface element; CLI `diagram create --replace` (diagram_replace last row).
+{
+  const label = 'interleave E (app surface element + CLI diagram --replace)';
+  const { seq } = bySeq.get('diagram_replace');
+  const last = seq.rows.length - 1;
+  const { doc } = docBefore('diagram_replace', last);
+  const [, surface] = blocksByFlavour(doc, 'affine:surface')[0];
+  const value = surface.get('prop:elements').get('value');
+  const before = [...value.keys()];
+  doc.transact(() => {
+    const el = new Y.Map();
+    value.set('app-el', el);
+    el.set('id', 'app-el');
+    el.set('type', 'shape');
+    el.set('shapeType', 'rect');
+    el.set('xywh', '[500,500,100,100]');
+    el.set('index', 'a9');
+    el.set('seed', 99);
+    el.set('rotate', 0);
+  });
+  let threw = null;
+  try {
+    applyRow(doc, seq.rows[last]);
+  } catch (e) {
+    threw = e;
+  }
+  check(`${label}: CLI delta applies`, threw === null, threw?.message);
+  check(`${label}: no pending structs`, noPending(doc));
+  const after = [...value.keys()];
+  check(`${label}: CLI clear removed the prior elements`, before.every(k => !after.includes(k)), { before, after });
+  check(`${label}: app element survived`, after.includes('app-el'), after);
+  const { lastExpected } = bySeq.get('diagram_replace');
+  const expectedSurface = Object.values(lastExpected.roots.blocks).find(b => b['sys:flavour'] === 'affine:surface');
+  const expectedIds = Object.keys(expectedSurface['prop:elements'].value);
+  check(`${label}: CLI new elements present`, expectedIds.every(k => after.includes(k)), { expectedIds, after });
+}
+
+if (knownGaps > 0) {
+  console.log(`\n${knownGaps} known merge-semantics gap(s) reported as xfail (see KNOWN_GAPS).`);
+}
 if (failures > 0) {
-  console.error(`\n${failures} check(s) FAILED — y-octo output does not decode correctly in real yjs.`);
+  console.error(`\n${failures} check(s) FAILED - CLI-written updates do not decode or merge correctly in real yjs.`);
   process.exit(1);
 }
 console.log('\nall real-yjs decode checks passed');

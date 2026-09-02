@@ -30,6 +30,23 @@ pub enum BlockFlavour {
 }
 
 impl BlockFlavour {
+    /// Every content flavour the parser reads and writes, in declaration order. Kept next to
+    /// the enum so a new variant cannot be added without extending this list (the schema
+    /// drift test in `tests/schema_drift.rs` iterates it).
+    pub const ALL: [BlockFlavour; 11] = [
+        BlockFlavour::Paragraph,
+        BlockFlavour::List,
+        BlockFlavour::Code,
+        BlockFlavour::Divider,
+        BlockFlavour::Image,
+        BlockFlavour::Table,
+        BlockFlavour::Bookmark,
+        BlockFlavour::EmbedYoutube,
+        BlockFlavour::EmbedIframe,
+        BlockFlavour::Callout,
+        BlockFlavour::Latex,
+    ];
+
     pub fn as_str(&self) -> &'static str {
         match self {
             BlockFlavour::Paragraph => "affine:paragraph",

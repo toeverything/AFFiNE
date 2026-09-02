@@ -60,6 +60,17 @@ Where the documented contract was stronger than the mechanism, the mechanism is 
   `workspace create` (fresh file) migrates as before; `workspace list` reports a refused DB as a per-entry `error`.
   New deps: `affine_schema` (path) and `sqlx` (read-only probe).
 
+### Added
+
+- **Per-row delta sequences in the yjs compat harness.**
+  `examples/emit_yjs_fixtures.rs` now records, per scenario, the exact bytes each CLI command pushes through nbstore `push_update` (`seq/<name>/<i>.bin`) together with y-octo's projection of the doc after every row and the CLI reader's output (`<i>.expected.json`).
+  Scenarios: `doc create`, `doc update` structural diff (block removal and reorder), `doc update` text edit, a three-update chain, `diagram create` then `--replace`, root doc lifecycle ending in `remove_doc_from_root`, a table edit removing a row, `doc set-title`, and a `db$docProperties` mode flip.
+- **`check.mjs` applies each sequence one row at a time to a real `Y.Doc`** and asserts no throw, no pending structs or delete sets, an exact match between the yjs view and the y-octo view, and that `Y.encodeStateAsUpdate` of the result re-applies to a fresh doc unchanged.
+  This is the deletion coverage the harness lacked: every deletion-bearing path (`doc update` structural diff, `diagram create --replace`, `remove_doc_from_root`, table row removal) now has its delete set decoded by real yjs in CI.
+- **Interleaving cases**: an app-style edit made with real yjs (append paragraph, type in a paragraph, push a `meta.pages` entry, add a surface element) followed by the CLI delta computed without that edit; both must survive.
+- **Schema drift test** (`tests/schema_drift.rs`): scans the BlockSuite schema definitions in the checkout and fails when the declared block flavours or versions change, or when a flavour the CLI writes disagrees with upstream.
+  `doc_parser::written_block_schemas()` and `BlockFlavour::ALL` expose the CLI's hardcoded list for it.
+
 ### Changed
 
 - The table id stability test now compares `prop:cells.` keys as well as `prop:rows.`/`prop:columns.`, covering the full `<rowId>:<columnId>` id contract.
@@ -85,12 +96,23 @@ Where the documented contract was stronger than the mechanism, the mechanism is 
   `doc_read_refuses_db_behind_schema_unless_allow_migrate`,
   `doc_read_refuses_db_newer_than_cli` in `tests/commands_e2e.rs`.
 
+- **Compat workflow trigger paths** now include the sources the CLI hardcodes conventions from: `blocksuite/affine/model/**`, `blocksuite/affine/blocks/surface/**`, `blocksuite/framework/store/**`, `blocksuite/framework/std/src/utils/**`, the app's `db` and `doc` modules, the electron workspace helper, `Cargo.toml` / `Cargo.lock` (y-octo bumps) and the root `package.json` / yjs patch (reader pin).
+  A BlockSuite schema change used to leave the compat check unrun.
+
 ### Docs
 
 - `skills/affine/REFERENCE.md` documents `diagram repair-labels` (syntax, JSON output, locking, idempotence); the postmortem points at it.
 - `skills/README.md` pins the `skills` installer version and uses a commit-SHA source path.
 - `docs/agent-cli-design.md` carries a status header marking it as the historical design study, drops the personal absolute path, annotates the stale "no latex" and "no code yet" notes, and loses a stray code fence.
 - `cli.rs` module doc no longer claims most subcommands return `not_implemented`; `yjs-compat/check.mjs` describes its presence sweep honestly.
+- `yjs-compat/README.md` documents the harness: how to run it, every fixture and delta sequence it covers, the interleaving cases, and the known gaps.
+
+### Known gaps (found by the new harness, not fixed)
+
+- `doc update` replaces the note's `sys:children` with a new Y.Array and a changed paragraph's `prop:text` with a new Y.Text instead of editing them in place.
+  A paragraph the app appended, or characters the app typed, between the CLI's read and its write are therefore dropped (interleaving cases B and C).
+  Real yjs decodes these deltas exactly as y-octo wrote them; this is write semantics, not an encoding divergence.
+  Both cases are listed in `KNOWN_GAPS` in `check.mjs` and reported as `xfail`; a fix must remove the entries or the run fails with `XPASS`.
 
 ## 2026-07-31
 
