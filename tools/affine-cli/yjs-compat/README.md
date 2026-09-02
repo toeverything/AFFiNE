@@ -35,13 +35,13 @@ Every deletion-bearing path produces a delta carrying a delete set, and delete-s
 | Sequence | Rows | Deletion exercised |
 | --- | --- | --- |
 | `create_doc` | `doc create` | none (baseline) |
-| `update_structural` | create, `doc update` removing a block, moving one, dropping a list item | block maps removed, `sys:children` replaced |
-| `update_text` | create, `doc update` editing one paragraph | `prop:text` Y.Text replaced |
+| `update_structural` | create, `doc update` removing a block, moving one, dropping a list item | block maps removed, `sys:children` spliced in place |
+| `update_text` | create, `doc update` editing one paragraph | a text delta over the existing `prop:text` Y.Text |
 | `update_chain` | create, structural update, text update, re-insert | delete sets referencing items created by earlier deltas |
 | `diagram_replace` | create, `diagram create`, `diagram create --replace` | every surface element key removed and a new graph added in one update |
 | `root_remove` | `workspace create`, two `doc create` root rows, `doc set-title`, `doc delete` | in-place `meta.pages` array removal, page entry title overwrite |
 | `table_remove_row` | create with a 3-row table, `doc update` to 2 rows | stale `prop:rows.*` / `prop:cells.*` keys removed |
-| `set_title` | create, `doc set-title` | page block `prop:title` replaced |
+| `set_title` | create, `doc set-title` | a text delta over the page block's `prop:title` |
 | `props_mode_flip` | `doc set-mode edgeless`, `doc set-mode page` | scalar key overwrite in `db$docProperties` |
 
 For every row `check.mjs` asserts: `Y.applyUpdate` does not throw, the doc has no pending structs or pending delete sets (a missing dependency would leave the row parked instead of applied), the set of root types matches, and the yjs projection equals the y-octo projection exactly (blocks map, children order, text content, surface elements, every scalar prop).
@@ -54,14 +54,17 @@ Each case builds the doc from the rows before a CLI delta, makes an app-style ed
 | Case | App edit (real yjs) | CLI delta | Result |
 | --- | --- | --- | --- |
 | A | append a paragraph to the note | `doc update` text edit in another paragraph | both survive |
-| B | append a paragraph to the note | `doc update` structural diff | known gap: the app paragraph's block survives but is dropped from `sys:children` |
-| C | type inside a paragraph | `doc update` editing that same paragraph | known gap: the app's characters are lost |
+| B | append a paragraph to the note | `doc update` structural diff | both survive |
+| C | type inside a paragraph | `doc update` editing that same paragraph | both survive |
 | D | push a page entry into `meta.pages` | `doc delete` of another page | both survive |
 | E | add a surface element | `diagram create --replace` | both survive |
 
-B and C are not encoding divergences: real yjs decodes the delta exactly as y-octo wrote it.
-They fail because `doc update` replaces the whole `sys:children` Y.Array (`src/doc_parser/write/builder.rs`, `insert_children`) and the whole `prop:text` Y.Text (`insert_text`) instead of editing them in place, so anything the app put inside the replaced container after the CLI read the doc is discarded.
-They are listed in `KNOWN_GAPS` in `check.mjs` and reported as `xfail`; if one starts passing the run fails with `XPASS` so the entry is removed together with the writer fix.
+B and C used to fail, and not because of an encoding divergence: real yjs decoded the delta exactly as y-octo wrote it.
+`doc update` replaced the whole `sys:children` Y.Array and the whole `prop:text` Y.Text, so anything the app put inside the replaced container after the CLI read the doc was discarded.
+Both containers are now edited in place (`src/doc_parser/write/inplace.rs`), and the CLI only creates a container for a block that does not have one yet.
+
+`KNOWN_GAPS` in `check.mjs` is the mechanism for recording a writer defect the harness has found but that is not fixed yet; it is currently empty.
+An entry is reported as `xfail`, and if it starts passing the run fails with `XPASS` so the entry is removed together with the writer fix.
 Do not add entries to `KNOWN_GAPS` to silence a new failure.
 
 ## Schema drift guard

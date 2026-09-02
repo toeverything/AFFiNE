@@ -25,6 +25,14 @@ Where the documented contract was stronger than the mechanism, the mechanism is 
   On Windows the lock is not implemented and the output carries a `warnings` entry instead; a
   missing or malformed id file is regenerated with a warning.
 
+- **`doc update` edits `sys:children` and `prop:text` in place, so concurrent app edits survive.**
+  The writer replaced a container's `sys:children` with a NEW `Y.Array` and a changed paragraph's `prop:text` with a NEW `Y.Text`, which makes the CLI's update authoritative for the whole container: a paragraph the app appended, or characters the app typed, between the CLI's read and its write were still in the doc but no longer reachable, because the map key pointed at a different type (harness interleaving cases B and C).
+  `write_children` now splices the EXISTING array with the minimal insert/remove operations derived from an LCS of the old and the new child order, and `write_text` applies a retain/insert/delete delta, computed from a character-level LCS of the old and the new content, to the EXISTING `Y.Text`.
+  A block that does not have the container yet still gets a fresh one, so `doc create` is unchanged.
+  Retained characters whose attributes changed are re-formatted with `Retain { format }` (an attribute the new content drops is set to `Any::Null`) instead of being deleted and reinserted, so a formatting-only edit no longer rewrites the text.
+  Above a 1,000,000-cell diff matrix the text delta degrades to a delete-all plus insert, which is still applied to the existing `Y.Text`, so concurrently inserted characters survive that path too.
+  `doc set-title` writes `prop:title` through the same helper.
+  Both entries are gone from `KNOWN_GAPS` in `check.mjs`, and `test_update_ydoc_keeps_concurrently_appended_child` / `test_update_ydoc_keeps_concurrently_typed_characters` apply a concurrent y-octo edit between the CLI's read and its write and assert it survives the merge.
 - **`$` before a digit is now escaped on export.**
   `escape_math_dollars` exempted `$` followed by a digit as "currency", but pulldown-cmark reads `$10-$20` as the inline equation `10-`, so `a $10-$20 range` exported unescaped and re-ingested as math.
   Every `$` followed by non-whitespace now escapes (`\$10`), which the parser reads back as a literal `$`; a `$` before whitespace or end-of-text still stays bare.
@@ -119,14 +127,7 @@ Where the documented contract was stronger than the mechanism, the mechanism is 
 - `skills/README.md` pins the `skills` installer version and uses a commit-SHA source path.
 - `docs/agent-cli-design.md` carries a status header marking it as the historical design study, drops the personal absolute path, annotates the stale "no latex" and "no code yet" notes, and loses a stray code fence.
 - `cli.rs` module doc no longer claims most subcommands return `not_implemented`; `yjs-compat/check.mjs` describes its presence sweep honestly.
-- `yjs-compat/README.md` documents the harness: how to run it, every fixture and delta sequence it covers, the interleaving cases, and the known gaps.
-
-### Known gaps (found by the new harness, not fixed)
-
-- `doc update` replaces the note's `sys:children` with a new Y.Array and a changed paragraph's `prop:text` with a new Y.Text instead of editing them in place.
-  A paragraph the app appended, or characters the app typed, between the CLI's read and its write are therefore dropped (interleaving cases B and C).
-  Real yjs decodes these deltas exactly as y-octo wrote them; this is write semantics, not an encoding divergence.
-  Both cases are listed in `KNOWN_GAPS` in `check.mjs` and reported as `xfail`; a fix must remove the entries or the run fails with `XPASS`.
+- `yjs-compat/README.md` documents the harness: how to run it, every fixture and delta sequence it covers, the interleaving cases, and the `KNOWN_GAPS` mechanism.
 
 ## 2026-07-31
 

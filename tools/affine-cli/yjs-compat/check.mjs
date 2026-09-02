@@ -17,24 +17,12 @@ import * as Y from 'yjs';
 const dir = process.argv[2] ?? '/tmp/affine-cli-yjs-fixtures';
 const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'));
 
-// Known merge-semantics gaps in the CLI's writers, keyed by check label. These are NOT
-// encoding divergences: real yjs decodes the delta exactly as y-octo wrote it. They fail
-// because `doc update` rewrites a whole Y.Array / Y.Text instead of editing it in place, so a
-// concurrent app edit inside the replaced container is dropped. A known gap that starts
-// passing is reported as XPASS and fails the run, so the entry must be removed once the
-// writer is fixed. Do not add entries to silence a new failure.
-const KNOWN_GAPS = new Map([
-  [
-    'interleave B (app paragraph + CLI structural diff): app paragraph still in note children',
-    "doc update replaces the note's sys:children with a NEW Y.Array (src/doc_parser/write/builder.rs insert_children), " +
-      'so an id the app pushed into the old array after the CLI read the doc is dropped from the order (the block map survives, orphaned).',
-  ],
-  [
-    'interleave C (app typing + CLI edit in the same paragraph): app typing survived',
-    'doc update replaces prop:text with a NEW Y.Text (src/doc_parser/write/builder.rs insert_text) instead of applying a text delta, ' +
-      'so characters the app typed into the old Y.Text after the CLI read the doc are lost.',
-  ],
-]);
+// Known merge-semantics gaps in the CLI's writers, keyed by check label. Currently empty: every
+// case the harness covers is expected to pass. An entry is only ever a deliberate, documented
+// record of a writer defect, reported as xfail; a known gap that starts passing is reported as
+// XPASS and fails the run, so the entry must be removed together with the writer fix. Do not add
+// entries to silence a new failure.
+const KNOWN_GAPS = new Map([]);
 
 let failures = 0;
 let knownGaps = 0;

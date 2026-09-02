@@ -1,5 +1,6 @@
 use super::{
-    builder::{insert_text, text_ops_from_plain},
+    builder::text_ops_from_plain,
+    inplace::write_text,
     root_doc::{ensure_pages_array, insert_page_stub},
     *,
 };
@@ -16,7 +17,7 @@ pub fn update_doc_title(existing_binary: &[u8], doc_id: &str, title: &str) -> Re
     let mut page_block = find_page_block(&blocks_map)?;
     let current = get_string(&page_block, PROP_TITLE).unwrap_or_default();
     if current != title {
-        insert_text(&doc, &mut page_block, PROP_TITLE, &text_ops_from_plain(title))?;
+        write_text(&doc, &mut page_block, PROP_TITLE, &text_ops_from_plain(title))?;
     }
 
     Ok(doc.encode_state_as_update_v1(&state_before)?)

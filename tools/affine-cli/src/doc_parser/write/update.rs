@@ -11,7 +11,8 @@ use super::{
         blocksuite::{collect_child_ids, find_child_id_by_flavour},
         markdown::{MAX_BLOCKS, parse_markdown_blocks},
     },
-    builder::{ApplyBlockOptions, apply_block_spec, insert_block_tree, insert_children},
+    builder::{ApplyBlockOptions, apply_block_spec, insert_block_tree},
+    inplace::write_children,
     *,
 };
 
@@ -305,10 +306,7 @@ fn sync_children(doc: &Doc, blocks_map: &mut Map, block_id: &str, children: &[St
         return Err(ParseError::ParserError("Block not found".into()));
     };
 
-    let current_children = collect_child_ids(&block);
-    if current_children != children {
-        insert_children(doc, &mut block, children)?;
-    }
+    write_children(doc, &mut block, children)?;
 
     Ok(())
 }
@@ -688,6 +686,125 @@ mod tests {
             err.to_string().contains("cyclic sys:children"),
             "unexpected error: {err}"
         );
+    }
+
+    /// Load `binary` into a doc with its own client id, the way the app has its own.
+    fn app_doc(binary: &[u8], doc_id: &str) -> Doc {
+        let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+        doc.apply_update_from_binary_v1(binary).expect("apply base");
+        doc
+    }
+
+    fn find_block(doc: &Doc, flavour: &str) -> (String, Map) {
+        doc.get_map("blocks")
+            .expect("blocks map")
+            .iter()
+            .find_map(|(id, value)| {
+                let block = value.to_map()?;
+                (get_string(&block, "sys:flavour").as_deref() == Some(flavour)).then(|| (id.to_string(), block))
+            })
+            .unwrap_or_else(|| panic!("no {flavour} block"))
+    }
+
+    fn note_children(doc: &Doc) -> Vec<String> {
+        collect_child_ids(&find_block(doc, NOTE_FLAVOUR).1)
+    }
+
+    fn paragraph_texts(doc: &Doc) -> Vec<String> {
+        doc.get_map("blocks")
+            .expect("blocks map")
+            .iter()
+            .filter_map(|(_, value)| {
+                let block = value.to_map()?;
+                if get_string(&block, "sys:flavour").as_deref() != Some("affine:paragraph") {
+                    return None;
+                }
+                block.get("prop:text").and_then(|v| v.to_text()).map(|t| t.to_string())
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_update_ydoc_keeps_concurrently_appended_child() {
+        // The app appends a paragraph to the note AFTER the CLI has read the doc. The CLI's
+        // structural diff must splice the note's existing sys:children instead of replacing the
+        // array, or the app's paragraph stays in the blocks map but drops out of the child order
+        // and becomes invisible.
+        let doc_id = "concurrent-children-test";
+        let base_bin = build_full_doc("Title", "First paragraph.\n\nSecond paragraph.", doc_id).expect("base doc");
+
+        let delta = update_doc(&base_bin, "Second paragraph.", doc_id).expect("delta");
+
+        let doc = app_doc(&base_bin, doc_id);
+        let mut blocks = doc.get_map("blocks").expect("blocks map");
+        blocks
+            .insert("app-para".to_string(), Value::Map(doc.create_map().expect("map")))
+            .expect("insert app block");
+        let mut app_para = blocks.get("app-para").and_then(|v| v.to_map()).expect("app block");
+        app_para
+            .insert("sys:id".to_string(), Any::String("app-para".to_string()))
+            .expect("sys:id");
+        app_para
+            .insert("sys:flavour".to_string(), Any::String("affine:paragraph".to_string()))
+            .expect("sys:flavour");
+        app_para
+            .insert("sys:version".to_string(), Any::Integer(1))
+            .expect("version");
+        let mut app_text = doc.create_text().expect("text");
+        app_para
+            .insert("prop:text".to_string(), Value::Text(app_text.clone()))
+            .expect("prop:text");
+        app_text.insert(0, "app paragraph").expect("type");
+        let (_, note) = find_block(&doc, NOTE_FLAVOUR);
+        note.get("sys:children")
+            .and_then(|v| v.to_array())
+            .expect("children array")
+            .push("app-para")
+            .expect("push child");
+
+        let mut doc = doc;
+        doc.apply_update_from_binary_v1(&delta).expect("apply CLI delta");
+
+        let children = note_children(&doc);
+        assert!(
+            children.contains(&"app-para".to_string()),
+            "concurrent app child dropped from the note order: {children:?}"
+        );
+        let texts = paragraph_texts(&doc);
+        assert!(
+            texts.contains(&"app paragraph".to_string()),
+            "app block lost: {texts:?}"
+        );
+        assert!(
+            texts.contains(&"Second paragraph.".to_string()),
+            "CLI edit lost: {texts:?}"
+        );
+        assert!(
+            !texts.contains(&"First paragraph.".to_string()),
+            "CLI removal lost: {texts:?}"
+        );
+    }
+
+    #[test]
+    fn test_update_ydoc_keeps_concurrently_typed_characters() {
+        // The app types into the very paragraph the CLI is rewriting. The CLI must apply a text
+        // delta to the existing Y.Text; replacing it would discard the typed characters.
+        let doc_id = "concurrent-text-test";
+        let base_bin = build_full_doc("Title", "Hello world", doc_id).expect("base doc");
+
+        let delta = update_doc(&base_bin, "Hello brave new world", doc_id).expect("delta");
+
+        let mut doc = app_doc(&base_bin, doc_id);
+        let (_, para) = find_block(&doc, "affine:paragraph");
+        let mut text = para.get("prop:text").and_then(|v| v.to_text()).expect("prop:text");
+        let end = text.len();
+        text.insert(end, " (app)").expect("type");
+
+        doc.apply_update_from_binary_v1(&delta).expect("apply CLI delta");
+
+        let merged = paragraph_texts(&doc).join("|");
+        assert!(merged.contains("brave new"), "CLI edit lost: {merged}");
+        assert!(merged.contains("(app)"), "concurrent app typing lost: {merged}");
     }
 
     #[test]

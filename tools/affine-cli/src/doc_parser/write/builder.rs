@@ -10,6 +10,7 @@ use super::{
         SYS_FLAVOUR, SYS_ID, SYS_VERSION, table_cell_text_key, table_column_id_key, table_column_order_key,
         table_row_id_key, table_row_order_key,
     },
+    inplace::write_text,
     *,
 };
 
@@ -174,10 +175,17 @@ pub(super) fn apply_text_block_props(
         }
     }
 
-    if !preserve_text && !props.text.is_empty() {
-        insert_text(doc, block, PROP_TEXT, props.text)?;
-    } else if !preserve_text && clear_missing && block.get(PROP_TEXT).is_some() {
-        block.remove(PROP_TEXT);
+    if !preserve_text {
+        if !props.text.is_empty() {
+            write_text(doc, block, PROP_TEXT, props.text)?;
+        } else if block.get(PROP_TEXT).and_then(|value| value.to_text()).is_some() {
+            // Empty the EXISTING Y.Text rather than dropping the key: removing it would strip a
+            // container the app may be typing into concurrently, and an empty text is exactly what
+            // BlockSuite leaves on a cleared paragraph.
+            write_text(doc, block, PROP_TEXT, &[])?;
+        } else if clear_missing && block.get(PROP_TEXT).is_some() {
+            block.remove(PROP_TEXT);
+        }
     }
 
     match props.checked {

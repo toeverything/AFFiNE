@@ -2,6 +2,7 @@ pub mod builder;
 mod create;
 mod doc_meta;
 mod doc_properties;
+mod inplace;
 mod root_doc;
 mod update;
 
