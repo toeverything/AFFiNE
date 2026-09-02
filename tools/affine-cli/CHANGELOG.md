@@ -1,4 +1,4 @@
-# Changelog — affine-cli
+# Changelog - affine-cli
 
 All notable changes to the `affine-cli` crate (and its skill, compat harness, and CI). Format
 loosely follows [Keep a Changelog](https://keepachangelog.com); the crate is unpublished
@@ -178,14 +178,14 @@ Pre-submission review fixes (code-review findings on the PR branches).
 
 ### Fixed
 
-- **`search` now takes the open-workspace write guard** — it was classified read-only but its
+- **`search` now takes the open-workspace write guard** - it was classified read-only but its
   index refresh persists `idx_snapshots` rows into the workspace DB, bypassing the locked-DB
   check every mutating command honors. `--force` still overrides; skill docs updated.
-- **`parse_hex` no longer panics on multibyte fill colors** — `--fill '#1é'` (or a spec node
+- **`parse_hex` no longer panics on multibyte fill colors** - `--fill '#1é'` (or a spec node
   fill) byte-sliced mid-character and aborted the CLI; non-ASCII bodies now fall back to the
   default text color like any other unparseable fill.
 - (Stacked parser branch) standalone `$$…$$` no longer swallows trailing text in the same
-  paragraph, and doc→markdown now escapes literal `$` that would re-parse as math — both were
+  paragraph, and doc→markdown now escapes literal `$` that would re-parse as math - both were
   silent data-loss paths in the latex port.
 
 ## 2026-06-10
@@ -195,15 +195,15 @@ guards replacing documentation-only warnings, and fixes for the discovered failu
 
 ### Added
 
-- **Real-yjs decode check in CI** — the cross-library encoding seam (y-octo writer ↔ real yjs
+- **Real-yjs decode check in CI** - the cross-library encoding seam (y-octo writer ↔ real yjs
   reader) that caused the labelXYWH incident is now guarded automatically:
-  - `examples/emit_yjs_fixtures.rs`: emits fixture binaries through the CLI's own library code —
+  - `examples/emit_yjs_fixtures.rs`: emits fixture binaries through the CLI's own library code  - 
     shape / text / labeled connector, the single-delta `create_diagram` path, markdown with
     inline `$…$` and block `$$…$$` math, an `affine:latex` block, the workspace root doc, and a
     `db$docProperties` doc.
   - `yjs-compat/check.mjs` + `yjs-compat/package.json`: decodes the fixtures with the **real
     yjs library, pinned to 13.6.21** (the version the app resolves at the repo root) and asserts
-    the decoded shapes — including `labelXYWH` as a plain `[x,y,w,h]` array (the exact prior
+    the decoded shapes - including `labelXYWH` as a plain `[x,y,w,h]` array (the exact prior
     regression) and a generic sweep that fails if any element field decodes to `undefined`.
   - `.github/workflows/affine-cli-yjs-compat.yml`: runs fixtures → node check →
     `cargo test -p affine-cli` on PRs/pushes touching `tools/affine-cli`,
@@ -215,7 +215,7 @@ guards replacing documentation-only warnings, and fixes for the discovered failu
   Read-only commands (`list`, `read`, `search`, `blob get`) are never blocked. Previously this
   hazard was only a skill-doc gotcha; agents that never read the skill got silent data loss.
 - **Reserved doc-id guard**: mutating doc/diagram commands reject `--doc` values naming the
-  workspace's root doc (`doc id == workspace id` — deleting it destroyed the page registry) or
+  workspace's root doc (`doc id == workspace id` - deleting it destroyed the page registry) or
   internal database docs (`db$…`, `userdata$…`) with `"error":"config"`.
 - **Geometry validation**: `--xywh` is parsed and canonicalized; malformed strings, non-finite
   numbers, and non-positive `w`/`h` are rejected (same for diagram-spec node `w`/`h`). A bad box
@@ -234,7 +234,7 @@ guards replacing documentation-only warnings, and fixes for the discovered failu
 
 ### Changed
 
-- **`diagram create` is now atomic**: the whole graph — including the `--replace` clear — is
+- **`diagram create` is now atomic**: the whole graph - including the `--replace` clear - is
   computed as ONE delta and pushed with ONE store write. Previously the clear was pushed first
   and each element pushed separately, so a crash mid-command could leave a half-built diagram or
   a wiped surface; it also re-merged the full doc after every element (O(n²)).
@@ -248,7 +248,7 @@ guards replacing documentation-only warnings, and fixes for the discovered failu
 - **`diagram repair-labels` reports errors honestly**: docs without an edgeless surface are
   skipped via a typed no-surface result, while real decode/store failures are returned in an
   `errors` array (with `"ok":false`) instead of being silently swallowed as "scanned".
-- `engine::rewrap_connector_labels` returns `Result<Option<(delta, count)>>` — `None` = no
+- `engine::rewrap_connector_labels` returns `Result<Option<(delta, count)>>` - `None` = no
   surface (skip), `Err` = real corruption.
 - `engine::add_shape` / `add_text` / `add_connector` are now thin `with_delta` wrappers over
   in-doc `insert_*` functions (completes the uncommitted `with_delta` refactor; one load →
@@ -260,7 +260,7 @@ guards replacing documentation-only warnings, and fixes for the discovered failu
   per-workspace `error` entries in `workspace list`, and the private search index. The
   installed copy under `.claude/skills/affine/` was synced.
 - `layout::layout` doc comment fixed: explicit per-node coordinates place a node initially, but
-  the separation pass may still nudge any node — no-overlap wins over exact placement (the code
+  the separation pass may still nudge any node - no-overlap wins over exact placement (the code
   always behaved this way; the docs claimed otherwise).
 
 ### Internal
@@ -283,13 +283,13 @@ guards replacing documentation-only warnings, and fixes for the discovered failu
 
 ## 2026-06-09
 
-- **feat: inline & block math equations in markdown** (`9ca79317b`) — `$x$` → inline latex
+- **feat: inline & block math equations in markdown** (`9ca79317b`) - `$x$` → inline latex
   delta, `$$x$$` alone on a line → `affine:latex` block; both round-trip through
   `doc read --format md`. Documents `doc add-latex`. **Note:** implemented in the shared
   `packages/common/native` doc_parser crate, so it also changes markdown parsing for the
   desktop app, mobile, and backend server (enables `ENABLE_MATH`, removes the
   `unsupported_markdown:math` rejection, un-blacklists `affine:latex` on markdown read-back).
-- **fix: edgeless render repair — connector `labelXYWH` yjs array encoding** (`cfe498cea`) —
+- **fix: edgeless render repair - connector `labelXYWH` yjs array encoding** (`cfe498cea`)  - 
   a bare top-level `Any::Array` stored as a Y.Map value decodes in real yjs to its LAST element,
   throwing in BlockSuite's renderer and poisoning the whole surface. Added `yjs_number_array`
   wrapping, the `diagram repair-labels` command for existing docs, and
@@ -298,16 +298,16 @@ guards replacing documentation-only warnings, and fixes for the discovered failu
 ## 2026-06-05
 
 - **refactor: move the `affine` skill** out of `.claude/skills` into `tools/affine-cli/skills`
-  (`af63a26ad`) — the repo copy is the source of truth; `.claude/skills/affine` is the local
+  (`af63a26ad`) - the repo copy is the source of truth; `.claude/skills/affine` is the local
   install location.
 
 ## 2026-06-04
 
-- **Phase 4 — `affine` Claude Code skill** wrapping the CLI (`9d4c380f2`).
-- **Phase 2 — edgeless diagrams** (`7c6c87f4a`): surface elements (shape / text / connector),
+- **Phase 4 - `affine` Claude Code skill** wrapping the CLI (`9d4c380f2`).
+- **Phase 2 - edgeless diagrams** (`7c6c87f4a`): surface elements (shape / text / connector),
   `diagram create --spec` with grid/tree/radial layout, fractional-index port, theme-aware
   colors, `doc set-mode`.
-- **Phase 1 — full local MCP-parity command surface** (`1c981f48c`): workspace list, doc
+- **Phase 1 - full local MCP-parity command surface** (`1c981f48c`): workspace list, doc
   list/read/update/set-title/delete, full-text search, blobs.
 - **Phase 0 spike** (`6e2c7aa40`): workspace/doc create + markdown round-trip over
   `affine_common` + `affine_nbstore` (napi-free), proving the in-fork crate-linking approach.

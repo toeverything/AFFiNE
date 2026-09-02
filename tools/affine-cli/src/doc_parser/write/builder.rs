@@ -61,7 +61,7 @@ pub(super) fn apply_latex_block_props(
         block.insert(PROP_LATEX.to_string(), Any::String(latex))?;
     }
 
-    // Static GfxBlock defaults — set only when absent to avoid churn on updates.
+    // Static GfxBlock defaults - set only when absent to avoid churn on updates.
     if block.get(PROP_XYWH).is_none() {
         block.insert(PROP_XYWH.to_string(), Any::String("[0,0,16,16]".to_string()))?;
     }

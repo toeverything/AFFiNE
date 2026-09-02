@@ -2,7 +2,7 @@
 //
 // Applies the fixture binaries emitted by `examples/emit_yjs_fixtures.rs` to a fresh Y.Doc
 // using the REAL yjs library (same version the app pins) and asserts the decoded shapes.
-// This is the only seam that can catch encodings y-octo's own reader normalizes away — the
+// This is the only seam that can catch encodings y-octo's own reader normalizes away - the
 // labelXYWH bug class: a bare top-level Any::Array stored as a Y.Map value decodes in real
 // yjs to its LAST element (a scalar), which throws inside BlockSuite's renderer and poisons
 // the entire edgeless surface. y-octo reads both the broken and fixed form identically, so
@@ -111,7 +111,7 @@ function sweepElement(label, el, arrayFields) {
     tcolor
   );
 
-  // Connector — THE regression fixture.
+  // Connector - THE regression fixture.
   const conn = value.get(manifest.connectorId);
   sweepElement('connector', conn, ['labelXYWH']);
   const lx = conn?.get('labelXYWH');
