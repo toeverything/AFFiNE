@@ -3,7 +3,7 @@ import { ConfirmModal } from '@affine/component/ui/modal';
 import { DocService } from '@affine/core/modules/doc';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
-import { DeleteIcon, ResetIcon } from '@blocksuite/icons/rc';
+import { DeletePermanentlyIcon, ResetIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
@@ -15,12 +15,11 @@ import * as styles from './styles.css';
 
 export const TrashPageFooter = () => {
   const workspace = useService(WorkspaceService).workspace;
-  const docCollection = workspace.docCollection;
   const doc = useService(DocService).doc;
   const t = useI18n();
   const { appSettings } = useAppSettingHelper();
   const { jumpToPage } = useNavigateHelper();
-  const { restoreFromTrash } = useBlockSuiteMetaHelper();
+  const { restoreFromTrash, permanentlyDeletePage } = useBlockSuiteMetaHelper();
   const [open, setOpen] = useState(false);
   const hintText = t['com.affine.cmdk.affine.editor.trash-footer-hint']();
 
@@ -35,9 +34,9 @@ export const TrashPageFooter = () => {
 
   const onConfirmDelete = useCallback(() => {
     jumpToPage(workspace.id, 'all');
-    docCollection.removeDoc(doc.id);
+    permanentlyDeletePage(doc.id);
     toast(t['com.affine.toastMessage.permanentlyDeleted']());
-  }, [jumpToPage, workspace.id, docCollection, doc.id, t]);
+  }, [jumpToPage, workspace.id, doc.id, permanentlyDeletePage, t]);
 
   const onDelete = useCallback(() => {
     setOpen(true);
@@ -64,7 +63,7 @@ export const TrashPageFooter = () => {
           variant="error"
           onClick={onDelete}
           className={styles.buttonContainer}
-          prefix={<DeleteIcon />}
+          prefix={<DeletePermanentlyIcon />}
           prefixClassName={styles.icon}
         />
       </div>
