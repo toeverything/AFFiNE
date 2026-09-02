@@ -9,7 +9,7 @@ import { WorkspacePropertyService } from '@affine/core/modules/workspace-propert
 import { Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { memo, useCallback, useContext, useEffect, useMemo } from 'react';
+import { memo, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 
 import { EmptyDocs } from '../../affine/empty';
 import { ListFloatingToolbar } from '../../page-list/components/list-floating-toolbar';
@@ -18,6 +18,7 @@ import { WorkspacePropertyTypes } from '../../workspace-property-types';
 import { DocExplorerContext } from '../context';
 import { DocListItem } from './doc-list-item';
 import * as styles from './docs-list.css';
+
 
 const GroupHeader = memo(function GroupHeader({
   groupId,
@@ -68,18 +69,14 @@ const GroupHeader = memo(function GroupHeader({
     }
   }, [allProperties, collapsed, groupId, groupKey, groupType, itemCount]);
 
-  if (!groupType) {
-    return null;
-  }
+  if (!groupType) return null;
 
   return header;
 });
 
 const ratios = [1.26, 1.304, 1.13, 1.391, 1.521];
 const calcCardRatioById = (id: string) => {
-  if (!id) {
-    return ratios[0];
-  }
+  if (!id) return ratios[0];
   const code = id.charCodeAt(0);
   return ratios[code % ratios.length];
 };
@@ -107,7 +104,6 @@ export const DocsExplorer = ({
   disableMultiDelete?: boolean;
   masonryItemWidthMin?: number;
   onRestore?: (ids: string[]) => void;
-  /** Override the default delete action */
   onDelete?: (
     ids: string[],
     callbacks?: {
@@ -131,7 +127,7 @@ export const DocsExplorer = ({
   const { openConfirmModal } = useConfirmModal();
 
   const masonryItems = useMemo(() => {
-    const items = groups.map((group: any) => {
+    return groups.map((group: any) => {
       return {
         id: group.key,
         Component: groupBy ? GroupHeader : undefined,
@@ -153,7 +149,6 @@ export const DocsExplorer = ({
         }),
       } satisfies MasonryGroup;
     });
-    return items;
   }, [groupBy, groups, view]);
 
   const handleCloseFloatingToolbar = useCallback(() => {
@@ -166,14 +161,11 @@ export const DocsExplorer = ({
       handleCloseFloatingToolbar();
       return;
     }
-    if (selectedDocIds.length === 0) {
-      return;
-    }
+    if (selectedDocIds.length === 0) return;
+
     if (onDelete) {
       onDelete(contextValue.selectedDocIds$.value, {
-        onFinished: () => {
-          handleCloseFloatingToolbar();
-        },
+        onFinished: handleCloseFloatingToolbar,
       });
       return;
     }
@@ -182,9 +174,7 @@ export const DocsExplorer = ({
       title: t['com.affine.moveToTrash.confirmModal.title.multiple']({
         number: selectedDocIds.length.toString(),
       }),
-      description: t[
-        'com.affine.moveToTrash.confirmModal.description.multiple'
-      ]({
+      description: t['com.affine.moveToTrash.confirmModal.description.multiple']({
         number: selectedDocIds.length.toString(),
       }),
       cancelText: t['com.affine.confirmModal.button.cancel'](),
@@ -193,8 +183,8 @@ export const DocsExplorer = ({
         variant: 'error',
       },
       onConfirm: () => {
-        const selectedDocIds = contextValue.selectedDocIds$.value;
-        for (const docId of selectedDocIds) {
+        const selected = contextValue.selectedDocIds$.value;
+        for (const docId of selected) {
           const doc = docsService.list.doc$(docId).value;
           doc?.moveToTrash();
         }
@@ -211,15 +201,12 @@ export const DocsExplorer = ({
     selectedDocIds.length,
     t,
   ]);
+
   const handleMultiRestore = useCallback(() => {
-    const selectedDocIds = contextValue.selectedDocIds$.value;
-    onRestore?.(selectedDocIds);
+    const selected = contextValue.selectedDocIds$.value;
+    onRestore?.(selected);
     handleCloseFloatingToolbar();
-  }, [
-    contextValue.selectedDocIds$.value,
-    handleCloseFloatingToolbar,
-    onRestore,
-  ]);
+  }, [contextValue.selectedDocIds$.value, handleCloseFloatingToolbar, onRestore]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -242,12 +229,30 @@ export const DocsExplorer = ({
 
   const isEmpty = masonryItems.length === 0;
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Scroll restore logic
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.scrollTop = getDocsListScrollPosition();
+    }
+    return () => {
+      if (container) {
+        setDocsListScrollPosition(container.scrollTop);
+      }
+    };
+  }, []);
+
   if (isEmpty) {
     return <EmptyDocs allowCreate={false} style={{ height: '100%' }} />;
   }
 
   return (
-    <>
+    <div
+      ref={scrollContainerRef}
+      style={{ overflowY: 'auto', height: '100%' }}
+    >
       <Masonry
         className={className}
         items={masonryItems}
@@ -283,6 +288,15 @@ export const DocsExplorer = ({
           }
         />
       ) : null}
-    </>
+    </div>
   );
+};
+
+// ✅ Scroll state management
+let lastScrollPosition = 0;
+
+export const getDocsListScrollPosition = () => lastScrollPosition;
+
+export const setDocsListScrollPosition = (pos: number) => {
+  lastScrollPosition = pos;
 };
