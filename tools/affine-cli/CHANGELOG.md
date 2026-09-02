@@ -16,6 +16,16 @@ Fixes for the maintainer review findings on upstream PR #15374.
 - **`doc update` rejects cyclic `sys:children` instead of overflowing the stack.**
   `build_stored_tree` recursed over children with no visited set, so a corrupt doc with a child cycle aborted the CLI.
   It now carries a path-visited set like the four parent-chain walks and returns a `cyclic sys:children at block` error.
+- **Table updates keep app-authored row and column props.**
+  The stale-key sweep in `apply_table_block_props` now keys on the id segment of each `prop:rows.<id>.*`, `prop:columns.<id>.*`, and `prop:cells.<rowId>:<columnId>.*` key and only removes keys whose row/column id was dropped.
+  Previously it whitelisted the exact keys the CLI writes (`.rowId`/`.columnId`/`.order`/`.text`), so a one-cell edit deleted `prop:columns.<id>.width`, `prop:rows.<id>.backgroundColor`, and any other prop the app had set on rows/columns that were retained.
+- **Malformed table keys no longer panic the writer.**
+  `existing_table_ids` extracts the id with `strip_prefix`/`strip_suffix` and skips an empty id, so a hostile `prop:rows.order` key (prefix and suffix with no id between them) is ignored instead of slicing out of range.
+  The same key class is swept by the update as garbage rather than kept.
+
+### Changed
+
+- The table id stability test now compares `prop:cells.` keys as well as `prop:rows.`/`prop:columns.`, covering the full `<rowId>:<columnId>` id contract.
 
 ## 2026-07-31
 

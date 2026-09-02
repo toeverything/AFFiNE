@@ -313,28 +313,14 @@ pub(super) fn apply_table_block_props(block: &mut Map, rows: &[Vec<String>]) -> 
         .map(|i| prior_columns.get(i).cloned().unwrap_or_else(|| nanoid::nanoid!()))
         .collect();
 
-    // Remove every table key that is not part of the grid we are about to write (metadata of
-    // dropped rows/columns and their cells).
-    let mut expected: HashSet<String> = HashSet::new();
-    for column_id in &column_ids {
-        expected.insert(table_column_id_key(column_id));
-        expected.insert(table_column_order_key(column_id));
-    }
-    for row_id in &row_ids {
-        expected.insert(table_row_id_key(row_id));
-        expected.insert(table_row_order_key(row_id));
-        for column_id in &column_ids {
-            expected.insert(table_cell_text_key(row_id, column_id));
-        }
-    }
+    // Remove the keys of dropped rows/columns and of their cells. The sweep keys on the id segment
+    // of each key, not on exact-key membership, so app-authored sibling props on retained ids
+    // (`prop:columns.<id>.width`, `prop:rows.<id>.backgroundColor`, ...) survive the update.
+    let retained_rows: HashSet<&str> = row_ids.iter().map(String::as_str).collect();
+    let retained_columns: HashSet<&str> = column_ids.iter().map(String::as_str).collect();
     let stale: Vec<String> = block
         .keys()
-        .filter(|key| {
-            (key.starts_with(PROP_ROWS_PREFIX)
-                || key.starts_with(PROP_COLUMNS_PREFIX)
-                || key.starts_with(PROP_CELLS_PREFIX))
-                && !expected.contains(*key)
-        })
+        .filter(|key| table_key_is_stale(key, &retained_rows, &retained_columns))
         .map(|s| s.to_string())
         .collect();
     for key in stale {
@@ -360,6 +346,34 @@ pub(super) fn apply_table_block_props(block: &mut Map, rows: &[Vec<String>]) -> 
     Ok(())
 }
 
+/// `true` when `key` is a table row/column/cell key whose referenced row or column id is not in
+/// the retained sets. Keys outside the three table namespaces are never stale. A key with no id
+/// segment (`prop:rows.order`) or a cell key without a `<rowId>:<columnId>` pair references
+/// nothing the grid can own, so it is swept too.
+fn table_key_is_stale(key: &str, retained_rows: &HashSet<&str>, retained_columns: &HashSet<&str>) -> bool {
+    if let Some(id) = table_id_segment(key, PROP_ROWS_PREFIX) {
+        return !retained_rows.contains(id);
+    }
+    if let Some(id) = table_id_segment(key, PROP_COLUMNS_PREFIX) {
+        return !retained_columns.contains(id);
+    }
+    if let Some(cell_id) = table_id_segment(key, PROP_CELLS_PREFIX) {
+        return match cell_id.split_once(':') {
+            Some((row_id, column_id)) => !retained_rows.contains(row_id) || !retained_columns.contains(column_id),
+            None => true,
+        };
+    }
+    false
+}
+
+/// The id segment of a table key under `prefix`: `prop:rows.<id>.order` gives `<id>` and
+/// `prop:cells.<rowId>:<columnId>.text` gives `<rowId>:<columnId>`. `Some("")` when the key sits
+/// in the namespace but carries no id, `None` when it is outside the namespace.
+fn table_id_segment<'a>(key: &'a str, prefix: &str) -> Option<&'a str> {
+    let rest = key.strip_prefix(prefix)?;
+    Some(rest.split_once('.').map_or(rest, |(id, _)| id))
+}
+
 /// Row or column ids currently stored on the block under `prefix`, sorted by their `.order`
 /// value (i.e. display position).
 fn existing_table_ids(block: &Map, prefix: &str) -> Vec<String> {
@@ -371,9 +385,14 @@ fn existing_table_ids(block: &Map, prefix: &str) -> Vec<String> {
     let mut entries: Vec<(String, String)> = order_keys
         .into_iter()
         .filter_map(|key| {
-            let id = key[prefix.len()..key.len() - PROP_ORDER_SUFFIX.len()].to_string();
+            // `strip_*` rather than index arithmetic: a hostile `prop:rows.order` key (prefix and
+            // suffix with no id between them) would otherwise slice out of range and panic.
+            let id = key.strip_prefix(prefix)?.strip_suffix(PROP_ORDER_SUFFIX)?;
+            if id.is_empty() {
+                return None;
+            }
             let order = get_string(block, &key)?;
-            Some((order, id))
+            Some((order, id.to_string()))
         })
         .collect();
     entries.sort();
@@ -520,4 +539,81 @@ pub(super) fn boxed_empty_map(doc: &Doc) -> Result<Map, ParseError> {
 
 pub(super) fn note_background_map(doc: &Doc) -> Result<Map, ParseError> {
     doc.create_map().map_err(ParseError::from)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use y_octo::{Any, Doc};
+
+    use super::{apply_table_block_props, existing_table_ids, table_key_is_stale};
+    use crate::doc_parser::{
+        blocksuite::get_string,
+        schema::{PROP_CELLS_PREFIX, PROP_ROWS_PREFIX},
+    };
+
+    #[test]
+    fn test_existing_table_ids_ignores_key_without_id_segment() {
+        // Regression: `prop:rows.order` is prefix + suffix with no id between them; the old
+        // `key[prefix.len()..key.len() - suffix.len()]` slice computed the range 10..9 and panicked.
+        let doc = Doc::default();
+        let mut block = doc.create_map().expect("create map");
+        block
+            .insert("prop:rows.order".to_string(), Any::String("000000".to_string()))
+            .expect("insert hostile key");
+        block
+            .insert("prop:rows.r1.order".to_string(), Any::String("000001".to_string()))
+            .expect("insert order key");
+
+        assert_eq!(existing_table_ids(&block, PROP_ROWS_PREFIX), vec!["r1".to_string()]);
+    }
+
+    #[test]
+    fn test_apply_table_block_props_survives_key_without_id_segment() {
+        let doc = Doc::default();
+        let mut block = doc.create_map().expect("create map");
+        block
+            .insert("prop:rows.order".to_string(), Any::String("000000".to_string()))
+            .expect("insert hostile key");
+
+        apply_table_block_props(&mut block, &[vec!["a".to_string()]]).expect("apply table");
+
+        assert!(block.get("prop:rows.order").is_none(), "malformed key must be swept");
+        assert_eq!(existing_table_ids(&block, PROP_ROWS_PREFIX).len(), 1);
+        let cell_keys: Vec<String> = block
+            .keys()
+            .filter(|key| key.starts_with(PROP_CELLS_PREFIX))
+            .map(|s| s.to_string())
+            .collect();
+        assert_eq!(cell_keys.len(), 1);
+        assert_eq!(get_string(&block, &cell_keys[0]).as_deref(), Some("a"));
+    }
+
+    #[test]
+    fn test_table_key_is_stale_keys_on_id_segment() {
+        let rows: HashSet<&str> = ["r1"].into_iter().collect();
+        let columns: HashSet<&str> = ["c1"].into_iter().collect();
+
+        // Retained ids keep every sibling prop, not only the ones the CLI writes itself.
+        assert!(!table_key_is_stale("prop:rows.r1.rowId", &rows, &columns));
+        assert!(!table_key_is_stale("prop:rows.r1.backgroundColor", &rows, &columns));
+        assert!(!table_key_is_stale("prop:columns.c1.width", &rows, &columns));
+        assert!(!table_key_is_stale("prop:cells.r1:c1.text", &rows, &columns));
+        assert!(!table_key_is_stale("prop:cells.r1:c1.backgroundColor", &rows, &columns));
+
+        // Dropped ids are swept, whichever side of the cell pair they sit on.
+        assert!(table_key_is_stale("prop:rows.r2.order", &rows, &columns));
+        assert!(table_key_is_stale("prop:columns.c2.columnId", &rows, &columns));
+        assert!(table_key_is_stale("prop:cells.r2:c1.text", &rows, &columns));
+        assert!(table_key_is_stale("prop:cells.r1:c2.text", &rows, &columns));
+
+        // Malformed keys reference nothing the grid owns.
+        assert!(table_key_is_stale("prop:rows.order", &rows, &columns));
+        assert!(table_key_is_stale("prop:cells.r1.text", &rows, &columns));
+
+        // Keys outside the table namespaces are never touched.
+        assert!(!table_key_is_stale("sys:flavour", &rows, &columns));
+        assert!(!table_key_is_stale("prop:rows", &rows, &columns));
+    }
 }
