@@ -61,11 +61,9 @@ const TrashHeader = ({ canManageTrash }: { canManageTrash: boolean }) => {
               size="custom"
               variant="plain"
             >
-              {t[
-                allSelected
-                  ? 'com.affine.page.group-header.clear'
-                  : 'com.affine.page.group-header.select-all'
-              ]()}
+              {allSelected
+                ? t['com.affine.page.group-header.clear']()
+                : t['com.affine.page.group-header.select-all']()}
             </Button>
           ) : null}
         </div>
