@@ -35,10 +35,10 @@ affine-cli doc update --workspace="$WS" --doc="$DOC" --content $'# Ideas\n\nrevi
 - **Notes:** `doc create|read|update|set-title|delete`. Body is markdown (`--content` inline or
   `--md-file path`). `doc read --format json` returns structured blocks; `--format md` returns text.
 - **Math:** write `$x$` in markdown for an inline equation and `$$x$$` (on its own line) for a block
-  equation — both round-trip. `$5`-style currency stays literal. `doc add-latex` appends a block
+  equation - both round-trip. `$5`-style currency stays literal. `doc add-latex` appends a block
   equation directly (handy when you don't want to round-trip the whole body).
 - **Find things:** `doc list --workspace=$WS` (titles + ids); `search --workspace=$WS --query "term"`
-  (full-text, BM25 — ranked, not substring).
+  (full-text, BM25 - ranked, not substring).
 - **Diagrams (edgeless whiteboard):** build a graph in one shot with `diagram create --spec graph.json`
   (`{nodes,edges}`), or place elements precisely with `diagram add-shape|add-text|add-connector`.
   Diagram commands first flag the doc as edgeless (a separate small write), then write the elements
@@ -47,7 +47,7 @@ affine-cli doc update --workspace="$WS" --doc="$DOC" --content $'# Ideas\n\nrevi
 
 ## Critical gotchas
 
-1. **Writes are refused while the workspace is open elsewhere** — `{"ok":false,"error":"locked"}`
+1. **Writes are refused while the workspace is open elsewhere** - `{"ok":false,"error":"locked"}`
    means the pre-flight open-app check found another process (normally the AFFiNE app) holding the
    workspace DB. Close the workspace in the app and retry, or pass `--force` if you accept the risk.
    The check is a one-shot probe, not a lock: it cannot see an app that opens the workspace after

@@ -66,7 +66,7 @@ async fn main() {
     let blocks: Map = match doc.get_map("blocks") {
         Ok(b) => b,
         Err(_) => {
-            eprintln!("(no `blocks` map — doc has no block tree)");
+            eprintln!("(no `blocks` map - doc has no block tree)");
             return;
         }
     };

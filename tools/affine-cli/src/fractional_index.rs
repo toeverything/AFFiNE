@@ -195,7 +195,7 @@ fn midpoint(a: &str, b: &str) -> Result<String, FracIndexError> {
         let mut i = 0usize;
         loop {
             let ca = a_chars.get(i).copied().unwrap_or(ZERO);
-            // JS `b.charAt(i)` yields "" past the end, which never equals `ca` — so exhausting
+            // JS `b.charAt(i)` yields "" past the end, which never equals `ca` - so exhausting
             // b ends the prefix walk there too.
             let Some(&cb) = b_chars.get(i) else { break };
             if ca == cb {
@@ -246,7 +246,7 @@ fn midpoint(a: &str, b: &str) -> Result<String, FracIndexError> {
     }
 }
 
-/// `Math.round(num / den)` for non-negative integers — round-half-up, matching JS `Math.round`.
+/// `Math.round(num / den)` for non-negative integers - round-half-up, matching JS `Math.round`.
 fn round_half_up(num: usize, den: usize) -> usize {
     (num + den / 2) / den
 }
@@ -304,7 +304,7 @@ pub fn generate_key_between(a: Option<&str>, b: Option<&str>) -> Result<String, 
     }
 }
 
-/// Generate `n` keys strictly between `a` and `b` (exclusive), recursively bisected — matching
+/// Generate `n` keys strictly between `a` and `b` (exclusive), recursively bisected - matching
 /// `generateNKeysBetween` exactly. Not used by the single-element CLI paths today, but part of
 /// the faithful port and exercised by the unit tests (multi-element batches / mindmap ordering).
 #[allow(dead_code)]

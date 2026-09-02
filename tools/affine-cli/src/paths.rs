@@ -44,12 +44,12 @@ pub fn client_id_path(base: &std::path::Path, peer: &str, id: &str) -> PathBuf {
         .join(crate::lease::CLIENT_FILE)
 }
 
-/// `<base>/workspaces/<peer>` — used by the `workspace list` scan.
+/// `<base>/workspaces/<peer>` - used by the `workspace list` scan.
 pub fn workspaces_dir(base: &std::path::Path, peer: &str) -> PathBuf {
     base.join("workspaces").join(peer)
 }
 
-/// `@peer(<peer>);@type(workspace);@id(<id>);` — trailing semicolon is part of the format.
+/// `@peer(<peer>);@type(workspace);@id(<id>);` - trailing semicolon is part of the format.
 pub fn universal_id(peer: &str, id: &str) -> String {
     format!("@peer({peer});@type(workspace);@id({id});")
 }

@@ -2,7 +2,7 @@
 # config: the crate was written before its first fmt-gated PR and a wholesale reformat would
 # bury its history. rustfmt resolves the NEAREST config per file, so CI's
 # `cargo +nightly fmt --all -- --check` applies this file to everything under tools/affine-cli.
-# Only stable options here — the crate stays verifiable with stable rustfmt too.
+# Only stable options here - the crate stays verifiable with stable rustfmt too.
 edition       = "2024"
 style_edition = "2024"
 max_width     = 120

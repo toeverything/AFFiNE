@@ -21,7 +21,7 @@ pub(super) enum InlineStyle {
     /// Inline math equation. The text delta carries a single-space insert whose `latex`
     /// attribute holds the TeX source (mirrors BlockSuite's inline latex delta
     /// `{ insert: ' ', attributes: { latex } }`). Not a wrapping style, so it has no delimiter
-    /// and never opens an inline node — the renderer emits `$…$` directly.
+    /// and never opens an inline node - the renderer emits `$…$` directly.
     Latex,
 }
 

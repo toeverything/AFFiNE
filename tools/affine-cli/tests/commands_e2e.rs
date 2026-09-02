@@ -638,7 +638,7 @@ fn mutating_commands_refuse_reserved_doc_ids() {
     let ws = create_ws(base.path(), "Guard");
     let _doc = create_doc(base.path(), &ws, "Doc", "# t\n\nbody");
 
-    // The workspace's root doc (doc id == workspace id) is the page registry — deleting it
+    // The workspace's root doc (doc id == workspace id) is the page registry - deleting it
     // would destroy the workspace. Must be rejected before anything is written.
     let v = run_err(base.path(), &["doc", "delete", "--workspace", &ws, "--doc", &ws]);
     assert_eq!(v["error"], "config", "root-doc delete must be rejected: {v}");
@@ -691,7 +691,7 @@ fn writes_refused_while_db_open_elsewhere_and_force_overrides() {
             .await
             .expect("connect holder");
         let s = pool.get(uid).await.expect("get holder");
-        // The pool connects lazily — run a real query so a connection (and its WAL DMS lock)
+        // The pool connects lazily - run a real query so a connection (and its WAL DMS lock)
         // actually exists, and stays checked into the pool (idle timeout is minutes).
         let _ = s.get_doc_snapshot("warmup".to_string()).await.expect("warmup query");
     });

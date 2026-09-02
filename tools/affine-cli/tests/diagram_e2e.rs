@@ -611,7 +611,7 @@ fn add_shape_rejects_malformed_xywh() {
     let ws = create_ws(base.path(), "Geom");
     let doc = create_doc(base.path(), &ws, "D");
     // A malformed xywh string written into the doc would throw inside the app's renderer and
-    // poison the whole edgeless surface (the labelXYWH postmortem class) — must be rejected.
+    // poison the whole edgeless surface (the labelXYWH postmortem class) - must be rejected.
     for bad in [
         "garbage",
         "[1,2,3]",

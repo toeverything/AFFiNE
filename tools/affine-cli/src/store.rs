@@ -32,7 +32,7 @@ pub trait DocBackend {
     async fn get_doc_updates(&self, doc_id: &str) -> Result<Vec<DocUpdate>, CliError>;
 
     /// Delete a doc (its updates, snapshots, clocks and indexer-sync rows) in one tx.
-    /// Does NOT touch the root doc's `meta.pages` entry — that is a separate root-doc delta.
+    /// Does NOT touch the root doc's `meta.pages` entry - that is a separate root-doc delta.
     async fn delete_doc(&self, doc_id: &str) -> Result<(), CliError>;
 
     // --- blobs ---
@@ -51,7 +51,7 @@ pub trait DocBackend {
     async fn search(&self, index_name: &str, query: &str) -> Result<Vec<SearchHit>, CliError>;
 }
 
-/// The single index name the CLI uses for doc search — deliberately PRIVATE to the CLI
+/// The single index name the CLI uses for doc search - deliberately PRIVATE to the CLI
 /// (`cli:doc`), not the app's `doc:title`.
 ///
 /// The desktop app maintains one fts index per `table:field` and puts ONLY the title under
@@ -80,7 +80,7 @@ impl LocalBackend {
     /// the workspace write lease.
     ///
     /// Mirrors electron handlers.ts: ensure the parent dir, then `pool.connect(uid, path)`
-    /// which runs the 4-migration schema. Does NOT call set_space_id — callers that create
+    /// which runs the 4-migration schema. Does NOT call set_space_id - callers that create
     /// a workspace must do that explicitly afterward. This is the `workspace create` path; the
     /// lease is taken (and the client-id file minted) before the database exists so the root
     /// doc is written with the workspace's permanent client id.
@@ -284,7 +284,7 @@ pub enum InUseProbe {
 }
 
 /// True when ANOTHER process currently has this SQLite database open in WAL mode (nbstore
-/// always opens WAL — storage.rs `journal_mode(Wal)`).
+/// always opens WAL - storage.rs `journal_mode(Wal)`).
 ///
 /// This is a one-shot pre-flight probe, NOT a lock: nothing is acquired or held, so a process
 /// that opens the database after the probe returns is not detected (TOCTOU window). SQLite's
@@ -292,14 +292,14 @@ pub enum InUseProbe {
 /// app can clobber an external write on its next save.
 ///
 /// Every SQLite connection to a WAL database holds a SHARED advisory lock on the "dead-man
-/// switch" byte of the `-shm` file — offset 128 == `UNIX_SHM_DMS` in sqlite os_unix.c
-/// (`UNIX_SHM_BASE` = (22+SQLITE_SHM_NLOCK)*4 = 120, DMS = BASE + 8) — for the connection's
+/// switch" byte of the `-shm` file - offset 128 == `UNIX_SHM_DMS` in sqlite os_unix.c
+/// (`UNIX_SHM_BASE` = (22+SQLITE_SHM_NLOCK)*4 = 120, DMS = BASE + 8) - for the connection's
 /// whole lifetime. `F_GETLK` probing a write lock on that byte reports a conflicting lock
 /// held by any OTHER process without acquiring anything ourselves (POSIX record locks never
 /// conflict within one process, so our own pool can't trip it).
 ///
 /// Best-effort by design: a missing `-shm` (DB never opened in WAL / cleanly checkpointed,
-/// or a stale file after a crash — stale files carry no locks) and any probe failure both
+/// or a stale file after a crash - stale files carry no locks) and any probe failure both
 /// report "not in use". False negatives allow a risky write; false positives are impossible.
 #[cfg(unix)]
 pub fn db_in_use_elsewhere(db_path: &Path) -> InUseProbe {
@@ -316,7 +316,7 @@ pub fn db_in_use_elsewhere(db_path: &Path) -> InUseProbe {
     lk.l_start = 128; // UNIX_SHM_DMS
     lk.l_len = 1;
     let rc = unsafe { libc::fcntl(file.as_raw_fd(), libc::F_GETLK, &mut lk) };
-    // F_UNLCK's C type differs per platform (c_int on Linux, c_short on macOS) — widen both.
+    // F_UNLCK's C type differs per platform (c_int on Linux, c_short on macOS) - widen both.
     if rc == 0 && i64::from(lk.l_type) != libc::F_UNLCK as i64 {
         InUseProbe::InUse
     } else {

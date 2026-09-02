@@ -1,4 +1,4 @@
-# affine-cli — full reference
+# affine-cli - full reference
 
 A single static binary over the AFFiNE local-first store. JSON in / JSON out. Built in-fork
 (`tools/affine-cli`), installed to `~/.cargo/bin/affine-cli`.
@@ -8,7 +8,7 @@ A single static binary over the AFFiNE local-first store. JSON in / JSON out. Bu
 | Flag | Default | Meaning |
 |---|---|---|
 | `--affine-dir <dir>` | `~/Library/Application Support/AFFiNE` (macOS) | Override the AFFiNE data base dir. Useful for tests / non-default installs. |
-| `--workspace <id>` | — | Default workspace id (a command's own `--workspace` overrides it). |
+| `--workspace <id>` | - | Default workspace id (a command's own `--workspace` overrides it). |
 | `--peer <local\|serverId>` | `local` | Storage peer. `local` = local-first. Cloud = the server id (e.g. `affine-cloud`). |
 | `--product <name>` | `AFFiNE` | Product dir under the data dir (`AFFiNE-canary`, `AFFiNE-beta`, …). |
 | `--pretty` | off | Pretty-print JSON (default is one compact line). |
@@ -59,7 +59,7 @@ Delete it only with the workspace.
 
 **Reserved ids:** mutating doc/diagram commands reject `--doc` values that name the workspace's
 root doc (id == workspace id) or internal database docs (`db$…`, `userdata$…`) with
-`"error":"config"` — those would corrupt the workspace, not edit a page.
+`"error":"config"` - those would corrupt the workspace, not edit a page.
 
 ## Workspaces
 
@@ -90,11 +90,11 @@ affine-cli doc delete    --workspace=<ws> --doc=<id>                    # -> { o
 - **Markdown supported:** headings, paragraphs, quote, lists (bulleted/numbered/todo, nested), code,
   divider, image (`blob://<key>`), tables, inline bold/italic/strike/link, and **math**: `$x$` →
   inline equation, `$$x$$` (alone on a line) → block equation (`affine:latex`). Both round-trip via
-  `doc read --format md`. Dollar amounts (`$5`, `$10`) stay literal — they don't form equations.
+  `doc read --format md`. Dollar amounts (`$5`, `$10`) stay literal - they don't form equations.
   **Not** supported on the write path: diagrams (use `diagram …`), database blocks, callout,
   attachments, synced/linked embeds. Limits: ~200k markdown chars, ~2000 blocks.
 - `doc add-latex --latex "<tex>"` appends one block equation (an `affine:latex` block) without
-  rewriting the body — equivalent to adding a `$$<tex>$$` line via `doc update`. Pass raw TeX, e.g.
+  rewriting the body - equivalent to adding a `$$<tex>$$` line via `doc update`. Pass raw TeX, e.g.
   `--latex 'E = mc^2'` or `--latex '\begin{aligned}a&=b\\c&=d\end{aligned}'`.
 - `set-mode edgeless` is what makes a doc open as a whiteboard; `diagram …` commands set it for you.
 
@@ -103,9 +103,9 @@ affine-cli doc delete    --workspace=<ws> --doc=<id>                    # -> { o
 ```
 affine-cli search --workspace=<ws> --query "<terms>"     # -> [{ docId, title, score, terms }]
 ```
-Local full-text (BM25, fuzzy + CJK/pinyin tokenizer) — **ranked relevance, not `LIKE` substring**.
+Local full-text (BM25, fuzzy + CJK/pinyin tokenizer) - **ranked relevance, not `LIKE` substring**.
 Re-indexes the workspace on each call, so newly created/updated docs are searchable immediately.
-The CLI keeps its own index (`cli:doc`, title + body) separate from the app's — neither pollutes
+The CLI keeps its own index (`cli:doc`, title + body) separate from the app's - neither pollutes
 the other.
 
 ## Blobs (attachments)
@@ -137,7 +137,7 @@ affine-cli diagram add-connector --workspace=<ws> --doc=<id> --from=<elementId> 
     [--label "<t>"]
 ```
 
-High-level — build an entire graph from one JSON file:
+High-level - build an entire graph from one JSON file:
 
 ```
 affine-cli diagram create --workspace=<ws> --doc=<id> --spec graph.json \
@@ -175,7 +175,7 @@ Node fields: `id` (required), `label?`, `shape?` (rect|ellipse|diamond|triangle)
 `fill?`. Edge fields: `from`,`to` (node ids, required), `label?`, `mode?` (straight|elbow|orthogonal|curve;
 `orthogonal` is an alias of `elbow`).
 
-**Formats:** `xywh` is the string `"[x,y,w,h]"` (numbers, top-left origin, y grows down) — it is
+**Formats:** `xywh` is the string `"[x,y,w,h]"` (numbers, top-left origin, y grows down) - it is
 validated and canonicalized; malformed boxes, non-finite numbers, or non-positive `w`/`h` are
 rejected with `"error":"config"` (a bad box would otherwise break the app's whiteboard rendering).
 Colors are hex strings like `"#ffe838"` (omit to let the app apply theme defaults). Element `index`
@@ -208,8 +208,8 @@ Idempotent: re-running is safe, since a labelled connector is re-written to the 
 - **Two concurrent writes serialize, then fail** (`"error":"busy"`): the second process waits about
   two seconds on the workspace write lease (`affine-cli.client`) and then errors without writing.
   Retry it.
-- **Pass ids in `=` form** (`--workspace=$WS`) — ids can start with `-`.
+- **Pass ids in `=` form** (`--workspace=$WS`) - ids can start with `-`.
 - **Cloud workspaces** must already exist locally (sign in + open once); the CLI writes into the
   existing db with `--peer <serverId>`, it can't create a cloud workspace.
-- `diagram add-*` is **additive** — repeated calls add more elements (use `diagram create --replace`
+- `diagram add-*` is **additive** - repeated calls add more elements (use `diagram create --replace`
   for re-runnable whole-diagram builds); there's no element delete/update yet (Phase 3).

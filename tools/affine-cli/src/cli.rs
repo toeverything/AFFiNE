@@ -115,7 +115,7 @@ pub struct DocAddLatexArgs {
     #[arg(long)]
     pub doc: String,
     /// LaTeX/TeX source for the equation, e.g. "E = mc^2" or a full `\begin{aligned}...` block.
-    /// This is AFFiNE's native math syntax (an `affine:latex` block) — NOT Obsidian `$$` markup.
+    /// This is AFFiNE's native math syntax (an `affine:latex` block) - NOT Obsidian `$$` markup.
     #[arg(long)]
     pub latex: String,
 }

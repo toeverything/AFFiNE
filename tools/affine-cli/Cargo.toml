@@ -11,7 +11,7 @@ path = "src/main.rs"
 [dependencies]
 # Core engine crates. VERIFIED napi-free under these features (mobile-native proves the recipe).
 # affine_nbstore use-as-lib noop-shims napi/napi-derive and flips Result -> anyhow, Data -> Vec<u8>.
-# The doc parser (Y.Doc ↔ blocks ↔ markdown) is vendored in src/doc_parser — it was
+# The doc parser (Y.Doc ↔ blocks ↔ markdown) is vendored in src/doc_parser - it was
 # affine_common::doc_parser until PR #15197 removed it from packages/common/native.
 affine_nbstore = { workspace = true, features = ["use-as-lib"] }
 y-octo         = { workspace = true }
@@ -38,7 +38,7 @@ clap       = { version = "4.4", features = ["derive"] }
 serde      = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 
-# IDs — app uses bare nanoid() (~21 chars, URL-safe) for workspaceId (== root doc guid) and docId.
+# IDs - app uses bare nanoid() (~21 chars, URL-safe) for workspaceId (== root doc guid) and docId.
 nanoid = { workspace = true }
 
 # Surface element `seed` is a random uint32 in-app. Workspace already pins rand 0.9.

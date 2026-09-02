@@ -1,10 +1,10 @@
-# affine-cli — Agent Skills
+# affine-cli - Agent Skills
 
 Portable **Agent Skills** that teach an AI coding agent how to drive `affine-cli` to create and edit
 AFFiNE notes and edgeless diagrams. These ship **with the tool** (versioned alongside the crate) and are
 **model- and harness-agnostic**: a skill is just a directory with a `SKILL.md` (Markdown + YAML
 frontmatter), which is the open "Agent Skills" convention understood by Claude Code, Cursor, Codex,
-Windsurf, and the [skills.sh](https://skills.sh) ecosystem. Nothing here depends on a specific agent — the
+Windsurf, and the [skills.sh](https://skills.sh) ecosystem. Nothing here depends on a specific agent - the
 skill only instructs the agent to run the `affine-cli` binary.
 
 ```
@@ -27,7 +27,7 @@ cargo install --path tools/affine-cli      # installs affine-cli to ~/.cargo/bin
 These skills are the **source of truth**; install (copy or symlink) them into whatever directory your
 agent loads skills from. Symlinking keeps a single canonical copy that updates with the repo.
 
-**Manual — works with any harness:**
+**Manual - works with any harness:**
 
 ```bash
 # Claude Code, project-scoped (loads only in this repo):
@@ -39,7 +39,7 @@ mkdir -p ~/.claude/skills && ln -s "$(pwd)/tools/affine-cli/skills/affine" ~/.cl
 # Any other agent: copy or symlink tools/affine-cli/skills/affine into that agent's skills directory.
 ```
 
-**Automated — via the skills.sh CLI (multi-harness):**
+**Automated - via the skills.sh CLI (multi-harness):**
 
 ```bash
 # Installs the skill into the chosen agent's convention, pulling from the published repo.
@@ -56,9 +56,9 @@ skill and the CLI can never drift apart.
 ## Why it's portable
 
 - `SKILL.md` frontmatter (`name`, `description`) is the only thing an agent needs to discover the skill and
-  decide when to load it — no harness-specific manifest.
+  decide when to load it - no harness-specific manifest.
 - The body and `REFERENCE.md` are plain Markdown.
-- The skill's instructions are "run `affine-cli <subcommand>` and parse the JSON" — no agent/runtime APIs,
+- The skill's instructions are "run `affine-cli <subcommand>` and parse the JSON" - no agent/runtime APIs,
   so the same skill works regardless of model or harness.
 
 If `affine-cli` is ever extracted to its own repo (see `docs/agent-cli-design.md`), `skills/` sits at that

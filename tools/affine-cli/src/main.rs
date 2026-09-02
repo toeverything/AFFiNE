@@ -1,4 +1,4 @@
-//! affine-cli — a headless CLI over the AFFiNE local-first store.
+//! affine-cli - a headless CLI over the AFFiNE local-first store.
 //!
 //! Thin clap dispatcher over the `affine_cli` library (see `src/lib.rs`); every command prints
 //! one JSON value on success or a stable error envelope on failure - never a panic. Command-line

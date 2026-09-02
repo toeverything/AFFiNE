@@ -65,14 +65,14 @@ fn guard_workspace_writable(global: &GlobalArgs, base: &std::path::Path, workspa
 }
 
 /// Reject doc ids that mutating doc/diagram commands must never target: the workspace's own
-/// root doc (doc_id == workspace_id — deleting it would destroy the page registry) and the
-/// internal database docs (`db$docProperties`, `db$folders`, `userdata$…` — writing markdown
+/// root doc (doc_id == workspace_id - deleting it would destroy the page registry) and the
+/// internal database docs (`db$docProperties`, `db$folders`, `userdata$…` - writing markdown
 /// blocks into them garbles app state). Agents pass ids programmatically; one swapped variable
 /// must fail loudly, not corrupt the store.
 fn validate_doc_target(doc_id: &str, workspace_id: &str) -> Result<(), CliError> {
     if doc_id == workspace_id {
         return Err(CliError::config(format!(
-            "doc id equals the workspace id ({workspace_id}) — that is the workspace's root \
+            "doc id equals the workspace id ({workspace_id}) - that is the workspace's root \
              doc, which doc/diagram commands must not modify"
         )));
     }
@@ -86,7 +86,7 @@ fn validate_doc_target(doc_id: &str, workspace_id: &str) -> Result<(), CliError>
 
 /// Parse and canonicalize an `"[x,y,w,h]"` box. Malformed geometry must be rejected HERE: the
 /// app `JSON.parse`s this string inside the renderer, and one throwing element poisons the
-/// whole edgeless surface (no selection, ghost-trails on pan — see
+/// whole edgeless surface (no selection, ghost-trails on pan - see
 /// docs/affine-cli-edgeless-render-postmortem.md for the labelXYWH instance of this class).
 fn parse_xywh(s: &str) -> Result<String, CliError> {
     let bad = || {
@@ -120,7 +120,7 @@ async fn merge_target(backend: &LocalBackend, doc_id: &str) -> Result<Vec<u8>, C
 }
 
 // ----------------------------------------------------------------------------
-// Phase 0 — fully implemented
+// Phase 0 - fully implemented
 // ----------------------------------------------------------------------------
 
 /// `workspace create --name` (R7 §d).
@@ -223,10 +223,10 @@ pub async fn doc_read(global: &GlobalArgs, args: &DocReadArgs) -> Result<Value, 
 }
 
 // ----------------------------------------------------------------------------
-// Phase 1 — workspace + doc management
+// Phase 1 - workspace + doc management
 // ----------------------------------------------------------------------------
 
-/// `workspace list` — scan `<base>/workspaces/<peer>/*/storage.db`, skipping deleted-workspace
+/// `workspace list` - scan `<base>/workspaces/<peer>/*/storage.db`, skipping deleted-workspace
 /// ids, then read each root doc's name + (non-trashed) page count. Mirrors electron's
 /// `listLocalWorkspaceIds`.
 pub async fn workspace_list(global: &GlobalArgs) -> Result<Value, CliError> {
@@ -264,7 +264,7 @@ pub async fn workspace_list(global: &GlobalArgs) -> Result<Value, CliError> {
 
         let db_path = LocalBackend::db_path(&base, &global.peer, &id);
         // One unreadable workspace (corrupt DB, schema from a newer app, …) must not brick the
-        // whole listing — report it as an entry with an `error` field and keep going.
+        // whole listing - report it as an entry with an `error` field and keep going.
         match read_workspace_entry(&base, global, &id).await {
             Ok((name, doc_count)) => out.push(json!({
                 "id": id,
@@ -301,7 +301,7 @@ async fn read_workspace_entry(
     Ok((name, ids.len()))
 }
 
-/// `doc list --workspace` — enumerate the (non-trashed) pages from the workspace root meta.
+/// `doc list --workspace` - enumerate the (non-trashed) pages from the workspace root meta.
 pub async fn doc_list(global: &GlobalArgs, args: &DocListArgs) -> Result<Value, CliError> {
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
@@ -316,7 +316,7 @@ pub async fn doc_list(global: &GlobalArgs, args: &DocListArgs) -> Result<Value, 
     Ok(json!(pages))
 }
 
-/// `doc update --workspace --doc (--content | --md-file)` — replace the page body from markdown.
+/// `doc update --workspace --doc (--content | --md-file)` - replace the page body from markdown.
 /// Does NOT touch the title or root meta.pages (by design of `update_doc`).
 pub async fn doc_update(global: &GlobalArgs, args: &DocUpdateArgs) -> Result<Value, CliError> {
     let base = base(global)?;
@@ -347,7 +347,7 @@ pub async fn doc_update(global: &GlobalArgs, args: &DocUpdateArgs) -> Result<Val
     }))
 }
 
-/// `doc set-title --workspace --doc --title` — push BOTH the page-doc title delta AND the
+/// `doc set-title --workspace --doc --title` - push BOTH the page-doc title delta AND the
 /// root meta.pages title delta, so `doc list` / `workspace list` reflect the new title.
 pub async fn doc_set_title(global: &GlobalArgs, args: &DocSetTitleArgs) -> Result<Value, CliError> {
     let base = base(global)?;
@@ -384,7 +384,7 @@ pub async fn doc_set_title(global: &GlobalArgs, args: &DocSetTitleArgs) -> Resul
     }))
 }
 
-/// `doc set-mode --workspace --doc --mode page|edgeless` — write `primaryMode` into the local
+/// `doc set-mode --workspace --doc --mode page|edgeless` - write `primaryMode` into the local
 /// `db$docProperties` Y.Doc row (top-level map named by docId).
 pub async fn doc_set_mode(global: &GlobalArgs, args: &DocSetModeArgs) -> Result<Value, CliError> {
     if args.mode != "page" && args.mode != "edgeless" {
@@ -411,7 +411,7 @@ pub async fn doc_set_mode(global: &GlobalArgs, args: &DocSetModeArgs) -> Result<
     }))
 }
 
-/// `doc delete --workspace --doc` — delete the page-doc rows AND remove its meta.pages entry.
+/// `doc delete --workspace --doc` - delete the page-doc rows AND remove its meta.pages entry.
 pub async fn doc_delete(global: &GlobalArgs, args: &DocDeleteArgs) -> Result<Value, CliError> {
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
@@ -445,7 +445,7 @@ pub async fn doc_delete(global: &GlobalArgs, args: &DocDeleteArgs) -> Result<Val
 }
 
 // ----------------------------------------------------------------------------
-// Phase 1 — full-text search
+// Phase 1 - full-text search
 // ----------------------------------------------------------------------------
 
 /// Crawl one doc and (re-)index its title + body plaintext under `DOC_SEARCH_INDEX`.
@@ -453,7 +453,7 @@ pub async fn doc_delete(global: &GlobalArgs, args: &DocDeleteArgs) -> Result<Val
 async fn reindex_doc(backend: &LocalBackend, doc_id: &str) -> Result<(), CliError> {
     let text = match backend.crawl_doc_data(doc_id).await {
         Ok(cr) => doc_plaintext(&cr),
-        // Stale or empty doc — index empty text rather than failing the whole op.
+        // Stale or empty doc - index empty text rather than failing the whole op.
         Err(_) => String::new(),
     };
     backend.index_doc(DOC_SEARCH_INDEX, doc_id, &text).await?;
@@ -479,7 +479,7 @@ fn doc_plaintext(cr: &affine_nbstore::indexer::NativeCrawlResult) -> String {
     parts.join(" ")
 }
 
-/// `search --workspace --query` — index every doc in the workspace on-demand, persist the
+/// `search --workspace --query` - index every doc in the workspace on-demand, persist the
 /// snapshots, then run a ranked search over the `doc:title` in-memory index.
 pub async fn search(global: &GlobalArgs, args: &SearchArgs) -> Result<Value, CliError> {
     let base = base(global)?;
@@ -506,7 +506,7 @@ pub async fn search(global: &GlobalArgs, args: &SearchArgs) -> Result<Value, Cli
                 let text = doc_plaintext(&cr);
                 backend.index_doc(DOC_SEARCH_INDEX, &page.id, &text).await?;
             }
-            // A stale meta.pages entry with no doc rows — skip rather than fail the search.
+            // A stale meta.pages entry with no doc rows - skip rather than fail the search.
             Err(_) => continue,
         }
     }
@@ -530,10 +530,10 @@ pub async fn search(global: &GlobalArgs, args: &SearchArgs) -> Result<Value, Cli
 }
 
 // ----------------------------------------------------------------------------
-// Phase 1 — blobs
+// Phase 1 - blobs
 // ----------------------------------------------------------------------------
 
-/// `blob put --workspace --file [--key] [--mime]` — upload a file. Key defaults to the
+/// `blob put --workspace --file [--key] [--mime]` - upload a file. Key defaults to the
 /// lowercase hex SHA-256 of the contents (app convention); mime defaults to octet-stream.
 pub async fn blob_put(global: &GlobalArgs, args: &BlobPutArgs) -> Result<Value, CliError> {
     use sha2::{Digest, Sha256};
@@ -568,7 +568,7 @@ pub async fn blob_put(global: &GlobalArgs, args: &BlobPutArgs) -> Result<Value, 
     }))
 }
 
-/// `blob get --workspace --key [--out]` — fetch a blob. With `--out`, raw bytes are written to
+/// `blob get --workspace --key [--out]` - fetch a blob. With `--out`, raw bytes are written to
 /// that path; otherwise the bytes are base64-encoded in the JSON result.
 pub async fn blob_get(global: &GlobalArgs, args: &BlobGetArgs) -> Result<Value, CliError> {
     let base = base(global)?;
@@ -605,7 +605,7 @@ pub async fn blob_get(global: &GlobalArgs, args: &BlobGetArgs) -> Result<Value, 
     }
 }
 
-/// `blob list --workspace` — list blobs (most-recent first).
+/// `blob list --workspace` - list blobs (most-recent first).
 pub async fn blob_list(global: &GlobalArgs, args: &BlobListArgs) -> Result<Value, CliError> {
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
@@ -637,7 +637,7 @@ fn hex_lower(bytes: &[u8]) -> String {
 }
 
 // ----------------------------------------------------------------------------
-// Phase 2 — edgeless diagram surface elements
+// Phase 2 - edgeless diagram surface elements
 // ----------------------------------------------------------------------------
 
 use crate::engine::{ConnectorParams, Endpoint, ShapeParams, TextParams};
@@ -678,7 +678,7 @@ async fn ensure_edgeless(backend: &LocalBackend, doc_id: &str) -> Result<(), Cli
     Ok(())
 }
 
-/// `diagram add-shape` — insert a shape element into the doc's edgeless surface.
+/// `diagram add-shape` - insert a shape element into the doc's edgeless surface.
 pub async fn diagram_add_shape(global: &GlobalArgs, args: &DiagramAddShapeArgs) -> Result<Value, CliError> {
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
@@ -713,7 +713,7 @@ pub async fn diagram_add_shape(global: &GlobalArgs, args: &DiagramAddShapeArgs) 
     }))
 }
 
-/// `diagram add-text` — insert a standalone text element into the doc's edgeless surface.
+/// `diagram add-text` - insert a standalone text element into the doc's edgeless surface.
 pub async fn diagram_add_text(global: &GlobalArgs, args: &DiagramAddTextArgs) -> Result<Value, CliError> {
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
@@ -746,7 +746,7 @@ pub async fn diagram_add_text(global: &GlobalArgs, args: &DiagramAddTextArgs) ->
     }))
 }
 
-/// `diagram add-connector` — connect two existing surface elements by element id.
+/// `diagram add-connector` - connect two existing surface elements by element id.
 pub async fn diagram_add_connector(global: &GlobalArgs, args: &DiagramAddConnectorArgs) -> Result<Value, CliError> {
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
@@ -791,7 +791,7 @@ pub async fn diagram_add_connector(global: &GlobalArgs, args: &DiagramAddConnect
     }))
 }
 
-/// `diagram repair-labels` — rewrite connector `labelXYWH` values written by an older CLI so they
+/// `diagram repair-labels` - rewrite connector `labelXYWH` values written by an older CLI so they
 /// survive the round-trip through the real yjs lib (see engine::rewrap_connector_labels). Repairs
 /// one `--doc`, or every doc in the workspace when `--doc` is omitted. Docs without an edgeless
 /// surface (plain notes) are skipped.
@@ -835,7 +835,7 @@ pub async fn diagram_repair_labels(
             continue;
         }
         match engine::rewrap_connector_labels(&current) {
-            // A doc with no affine:surface block (a plain note) isn't an error — just skip it.
+            // A doc with no affine:surface block (a plain note) isn't an error - just skip it.
             Ok(None) => continue,
             Ok(Some((delta, count))) => {
                 if count > 0 {
@@ -844,7 +844,7 @@ pub async fn diagram_repair_labels(
                     total_fixed += count;
                 }
             }
-            // A doc that fails to DECODE is corruption the caller must hear about — keep
+            // A doc that fails to DECODE is corruption the caller must hear about - keep
             // scanning the rest, but report it instead of pretending the doc was fine.
             Err(e) => errors.push(json!({ "docId": doc_id, "error": e.to_string() })),
         }
@@ -906,7 +906,7 @@ struct SpecEdge {
     mode: Option<String>,
 }
 
-/// `diagram create --spec <file>` — size nodes to their labels, arrange them with the chosen
+/// `diagram create --spec <file>` - size nodes to their labels, arrange them with the chosen
 /// layout (grid | tree | radial) so boxes never overlap, write one shape per node + one
 /// connector per edge, mark the doc edgeless, and return the node-id -> elementId mapping.
 ///
@@ -946,7 +946,7 @@ pub async fn diagram_create(global: &GlobalArgs, args: &DiagramCreateArgs) -> Re
     }
 
     // Validate the WHOLE spec before touching the store: shape types, edge modes, duplicate
-    // node ids (silently last-wins otherwise — almost certainly an agent bug), edge node refs,
+    // node ids (silently last-wins otherwise - almost certainly an agent bug), edge node refs,
     // and explicit node geometry (a non-finite or non-positive size would poison the rendered
     // surface the same way a malformed xywh string does).
     let mut node_index = std::collections::HashMap::<&str, usize>::new();
@@ -960,7 +960,7 @@ pub async fn diagram_create(global: &GlobalArgs, args: &DiagramCreateArgs) -> Re
                 let positive_size = name == "x" || name == "y" || v > 0.0;
                 if !v.is_finite() || !positive_size {
                     return Err(CliError::config(format!(
-                        "node '{}': invalid {name} ({v}) — must be finite{}",
+                        "node '{}': invalid {name} ({v}) - must be finite{}",
                         node.id,
                         if name == "w" || name == "h" { " and > 0" } else { "" }
                     )));
@@ -1087,7 +1087,7 @@ pub async fn diagram_create(global: &GlobalArgs, args: &DiagramCreateArgs) -> Re
     }))
 }
 
-/// `doc add-latex` — append an `affine:latex` equation block to a doc's note.
+/// `doc add-latex` - append an `affine:latex` equation block to a doc's note.
 pub async fn doc_add_latex(global: &GlobalArgs, args: &DocAddLatexArgs) -> Result<Value, CliError> {
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;

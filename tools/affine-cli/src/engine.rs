@@ -37,7 +37,7 @@ pub fn build_root_doc(workspace_id: &str, name: &str) -> Result<Vec<u8>, CliErro
 /// Merge a snapshot binary (optional) and a series of update binaries into one full-state
 /// binary, the canonical y-octo load-and-replay pattern (root_doc.rs:273-277).
 ///
-/// Returns an empty Vec when there is nothing to merge — `add_doc_to_root_doc` accepts an
+/// Returns an empty Vec when there is nothing to merge - `add_doc_to_root_doc` accepts an
 /// empty Vec and bootstraps a fresh root.
 pub fn merge_doc(snapshot: Option<&[u8]>, updates: &[Vec<u8>]) -> Result<Vec<u8>, CliError> {
     if snapshot.is_none() && updates.is_empty() {
@@ -58,7 +58,7 @@ pub fn merge_doc(snapshot: Option<&[u8]>, updates: &[Vec<u8>]) -> Result<Vec<u8>
 }
 
 /// Append a page entry to the root doc's `meta.pages` and return the DELTA update.
-/// Wraps `doc_parser::add_doc_to_root_doc` (root_doc.rs:71) — takes root bin
+/// Wraps `doc_parser::add_doc_to_root_doc` (root_doc.rs:71) - takes root bin
 /// BY VALUE, returns `encode_state_as_update_v1`.
 pub fn add_doc_to_root(root_bin: Vec<u8>, doc_id: &str, title: Option<&str>) -> Result<Vec<u8>, CliError> {
     Ok(doc_parser::add_doc_to_root_doc(root_bin, doc_id, title)?)
@@ -110,7 +110,7 @@ fn with_delta<T>(
 }
 
 // ----------------------------------------------------------------------------
-// Phase 1 — doc_parser thin wrappers
+// Phase 1 - doc_parser thin wrappers
 // ----------------------------------------------------------------------------
 
 /// Replace a page doc's body from markdown. Wraps `doc_parser::update_doc` (update.rs:61).
@@ -146,13 +146,13 @@ pub fn parse_workspace_name(root_bin: Vec<u8>) -> Result<Option<String>, CliErro
 }
 
 /// List the (non-trashed) page ids registered in a root doc's `meta.pages`. Wraps
-/// `get_doc_ids_from_binary(.., include_trash = false)` — matches the app's docCount semantics.
+/// `get_doc_ids_from_binary(.., include_trash = false)` - matches the app's docCount semantics.
 pub fn list_root_doc_ids(root_bin: Vec<u8>) -> Result<Vec<String>, CliError> {
     Ok(doc_parser::get_doc_ids_from_binary(root_bin, false)?)
 }
 
 // ----------------------------------------------------------------------------
-// Phase 1 — net-new direct y-octo transforms
+// Phase 1 - net-new direct y-octo transforms
 // ----------------------------------------------------------------------------
 
 /// One page entry as read from the root doc's `meta.pages` (for `doc list`).
@@ -183,7 +183,7 @@ pub fn read_root_meta(root_bin: Vec<u8>) -> Result<(Option<String>, Vec<RootPage
     let mut doc: Doc = crate::lease::doc_options().build();
     doc.apply_update_from_binary_v1(&root_bin)?;
 
-    // A brand-new root may have no `meta` map yet — treat that as an empty list, not an error.
+    // A brand-new root may have no `meta` map yet - treat that as an empty list, not an error.
     let meta: Map = match doc.get_map("meta") {
         Ok(m) => m,
         Err(_) => return Ok((None, Vec::new())),
@@ -246,7 +246,7 @@ pub fn remove_doc_from_root(root_bin: Vec<u8>, doc_id: &str) -> Result<Vec<u8>, 
 
 /// Set a doc's `primaryMode` ("page" | "edgeless") in the local `db$docProperties` Y.Doc and
 /// return the DELTA update. The ORM stores each row as a TOP-LEVEL Y.Map named by the docId,
-/// so the row is reached with `get_or_create_map(doc_id)` — NOT nested under a container.
+/// so the row is reached with `get_or_create_map(doc_id)` - NOT nested under a container.
 /// We also stamp `id` to mirror exactly what the ORM's `create()` writes. The passed-in bin
 /// must be a merged full-state binary (or empty for a brand-new properties doc).
 pub fn set_doc_primary_mode(props_doc_bin: Vec<u8>, doc_id: &str, mode: &str) -> Result<Vec<u8>, CliError> {
@@ -260,7 +260,7 @@ pub fn set_doc_primary_mode(props_doc_bin: Vec<u8>, doc_id: &str, mode: &str) ->
 }
 
 // ----------------------------------------------------------------------------
-// Phase 2 — edgeless surface element writers
+// Phase 2 - edgeless surface element writers
 // ----------------------------------------------------------------------------
 //
 // Each writer loads the page doc's FULL-state binary into a fresh Doc, captures the state
@@ -274,26 +274,26 @@ pub fn set_doc_primary_mode(props_doc_bin: Vec<u8>, doc_id: &str, mode: &str) ->
 //   shape:     type, id, index, seed, xywh, shapeType, [text], [fillColor+filled], [strokeColor]
 //   text:      type, id, index, seed, xywh, text(Y.Text), [color]
 //   connector: type, id, index, seed, xywh("[0,0,0,0]"), source{}, target{}, mode, [text]
-// source/target are PLAIN Any::Object{ id?, position? } — NOT nested Y.Map.
+// source/target are PLAIN Any::Object{ id?, position? } - NOT nested Y.Map.
 
 /// The Boxed native-type marker stored on `prop:elements.type` (BlockSuite `BOXED_NATIVE_TYPE`).
 const BOXED_NATIVE_TYPE: &str = "$blocksuite:internal:native$";
 
 // ----------------------------------------------------------------------------
-// Colors — theme-aware visibility
+// Colors - theme-aware visibility
 // ----------------------------------------------------------------------------
 //
 // BlockSuite's `Color` is `string | { normal } | { dark, light }` (themes/color.ts), and
 // `resolveColor(color, scheme)` reads `.light` on the light theme and `.dark` on the dark
 // theme. The old CLI left text/stroke colors unset, so they fell back to the schema default
-// (`pureBlack` for shape text) — invisible on AFFiNE's dark canvas. We now always set readable
+// (`pureBlack` for shape text) - invisible on AFFiNE's dark canvas. We now always set readable
 // colors: shapes get a solid fill (the shape paints its own background) with a luminance-picked
 // black/white label, and label-only elements (text elements, connector labels) get a
 // theme-adaptive `{light,dark}` color so they read on both themes.
 
-/// Default soft fill for shapes when none is given — a light tint that reads on any canvas.
+/// Default soft fill for shapes when none is given - a light tint that reads on any canvas.
 const DEFAULT_SHAPE_FILL: &str = "#E8F0FE";
-/// Default shape stroke — a mid grey that contrasts with both light fills and dark canvases.
+/// Default shape stroke - a mid grey that contrasts with both light fills and dark canvases.
 const DEFAULT_SHAPE_STROKE: &str = "#5F6368";
 /// Near-black / near-white label pair for theme-adaptive text.
 const LABEL_LIGHT: &str = "#1E1E1E";
@@ -316,7 +316,7 @@ fn adaptive_label_color() -> Any {
 /// browser yjs library.
 ///
 /// y-octo maps a bare top-level `Any::Array([a,b,c])` (stored directly as a Y.Map value) onto a
-/// yjs `ContentAny` whose internal `values` list is `[a,b,c]` — i.e. THREE separate values. The
+/// yjs `ContentAny` whose internal `values` list is `[a,b,c]` - i.e. THREE separate values. The
 /// real yjs then returns only the LAST element from `Y.Map.get`, so `labelXYWH=[x,y,w,h]` was
 /// read back in-app as the scalar `h`. BlockSuite's `serializeXYWH(...labelXYWH)` (connector view)
 /// and the connector renderer then spread/iterate a number → `TypeError: Spread syntax requires
@@ -325,11 +325,11 @@ fn adaptive_label_color() -> Any {
 /// stale pixels on pan (ghost-trails), no shape selection, no connector tool.
 ///
 /// Wrapping once (`Any::Array([Any::Array([..])])`) makes `values` a single element that IS the
-/// array, so yjs returns a plain JS array — byte-identical to what the app itself writes via
+/// array, so yjs returns a plain JS array - byte-identical to what the app itself writes via
 /// `yMap.set(key, [x,y,w,h])`. Verified against yjs 13.6.21 (examples/probe_array_encoding.rs).
 ///
 /// NOTE: only arrays stored DIRECTLY as a Y.Map value need this. Arrays nested inside an
-/// `Any::Object` value (e.g. connector source/target `position`) already round-trip correctly —
+/// `Any::Object` value (e.g. connector source/target `position`) already round-trip correctly  -
 /// wrapping those would double-nest them. So this helper is for top-level element fields only.
 fn yjs_number_array(nums: &[f64]) -> Any {
     Any::Array(vec![Any::Array(
@@ -563,7 +563,7 @@ fn insert_shape(doc: &Doc, params: &ShapeParams) -> Result<String, CliError> {
     el.insert("strokeStyle".to_string(), Any::String("solid".to_string()))?;
     // CRITICAL for visibility: `shapeStyle` is a no-fallback `@field()`, so when we write the
     // element map directly (bypassing the model's init that would seed it), the renderer reads
-    // it as `undefined` and falls into the rough.js HACHURE path — light fills then render as
+    // it as `undefined` and falls into the rough.js HACHURE path - light fills then render as
     // faint scratchy lines (near-invisible on the dark canvas), and rects break outright on the
     // `undefined` `radius`. Pinning "General" routes every shape to the clean solid renderer.
     el.insert("shapeStyle".to_string(), Any::String("General".to_string()))?;
@@ -678,7 +678,7 @@ fn insert_connector(doc: &Doc, params: &ConnectorParams) -> Result<String, CliEr
         // `hasLabel()` (and thus label rendering) requires a truthy `labelXYWH`. Provide one when
         // the caller knows the connector's geometry; otherwise the label simply doesn't render
         // (no throw). Stored as a number array `[x,y,w,h]` (XYWH), not the serialized string form.
-        // MUST go through `yjs_number_array` — a bare top-level `Any::Array` decodes to its last
+        // MUST go through `yjs_number_array` - a bare top-level `Any::Array` decodes to its last
         // element in the real yjs lib, which crashes the connector view + renderer (see helper).
         if let Some([x, y, w, h]) = params.label_xywh {
             el.insert("labelXYWH".to_string(), yjs_number_array(&[x, y, w, h]))?;
@@ -694,7 +694,7 @@ pub fn add_connector(doc_bin: &[u8], params: &ConnectorParams) -> Result<(Vec<u8
 }
 
 /// One edge of a `create_diagram` graph. `from`/`to` index into the `shapes` slice passed
-/// alongside it — the connector anchors to the element ids minted for those shapes within the
+/// alongside it - the connector anchors to the element ids minted for those shapes within the
 /// same delta.
 #[derive(Debug, Clone)]
 pub struct DiagramEdgeParams {
@@ -719,7 +719,7 @@ pub struct DiagramDelta {
 ///
 /// Single-delta construction is what makes `diagram create` atomic at the store level: the
 /// caller pushes exactly one update, so a crash mid-command can never leave a half-written
-/// graph behind — and `replace` clears and rebuilds in the same update, closing the window
+/// graph behind - and `replace` clears and rebuilds in the same update, closing the window
 /// where the old per-push flow had already wiped the surface but not yet written the new
 /// elements. It also avoids the old O(n²) re-merge of the full doc after every element.
 pub fn create_diagram(
@@ -811,11 +811,11 @@ fn any_to_f64(a: &Any) -> Option<f64> {
 ///
 /// A bare top-level `Any::Array` decoded to its LAST element in the real yjs lib, crashing the
 /// whole edgeless surface (see `yjs_number_array`). y-octo's own reader, however, still returns
-/// the full `[x,y,w,h]` for the bare form — so we can read the original coordinates back, then
+/// the full `[x,y,w,h]` for the bare form - so we can read the original coordinates back, then
 /// re-write them in the wrapped form that real yjs reads correctly. Idempotent: re-running on an
 /// already-fixed doc reads the same `[x,y,w,h]` and re-wraps to the identical value.
 ///
-/// Returns `Ok(None)` when the doc has no edgeless surface (a plain note — nothing to repair),
+/// Returns `Ok(None)` when the doc has no edgeless surface (a plain note - nothing to repair),
 /// `Ok(Some((delta, repaired_count)))` otherwise. A connector with no `labelXYWH` (unlabeled)
 /// is left alone. Distinguishing no-surface from a real decode/store error matters for the bulk
 /// repair path: a plain note is silently skipped, but corruption must surface to the caller.
@@ -867,7 +867,7 @@ pub fn rewrap_connector_labels(doc_bin: &[u8]) -> Result<Option<(Vec<u8>, usize)
 }
 
 // ----------------------------------------------------------------------------
-// Phase 3 — math equations (affine:latex block)
+// Phase 3 - math equations (affine:latex block)
 // ----------------------------------------------------------------------------
 
 /// Locate the live `affine:note` block map inside a loaded page doc (the content container).
@@ -974,7 +974,7 @@ mod surface_tests {
 
     #[test]
     fn parse_hex_rejects_multibyte_instead_of_panicking() {
-        // `#1é` is 3 bytes after `#` but slicing it byte-wise lands mid-char — must be None.
+        // `#1é` is 3 bytes after `#` but slicing it byte-wise lands mid-char - must be None.
         assert_eq!(parse_hex("#1é"), None);
         assert_eq!(parse_hex("#12é4"), None);
         assert_eq!(parse_hex("#ééé"), None);
@@ -1445,7 +1445,7 @@ mod surface_tests {
 
         let (_d, value) = decode_value_map(&full3);
         let el = value.get(&c_id).and_then(|v| v.to_map()).unwrap();
-        // y-octo reads the wrapped form back as the flat 4-array — coordinates preserved exactly.
+        // y-octo reads the wrapped form back as the flat 4-array - coordinates preserved exactly.
         match el.get("labelXYWH").and_then(|v| v.to_any()) {
             Some(Any::Array(items)) => {
                 let nums: Vec<f64> = items.iter().filter_map(any_to_f64).collect();
@@ -1461,7 +1461,7 @@ mod surface_tests {
 
     #[test]
     fn rewrap_connector_labels_skips_docs_without_surface() {
-        // A root/workspace doc has no `blocks` map at all — that's a skip (None), not an error.
+        // A root/workspace doc has no `blocks` map at all - that's a skip (None), not an error.
         let root = build_root_doc("w", "name").unwrap();
         assert!(rewrap_connector_labels(&root).unwrap().is_none());
     }
@@ -1469,7 +1469,7 @@ mod surface_tests {
     #[test]
     fn create_diagram_is_one_delta_and_replace_clears() {
         let base = fresh_doc();
-        // Pre-existing element that `replace` must remove — in the SAME delta as the new graph.
+        // Pre-existing element that `replace` must remove - in the SAME delta as the new graph.
         let (d0, old_id) = add_shape(
             &base,
             &ShapeParams {

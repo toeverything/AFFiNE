@@ -8,7 +8,7 @@
 //!   * runs a final separation pass that nudges any residual overlaps apart.
 //!
 //! Output is one `Rect` per input node (parallel indices) in canvas coordinates (top-left
-//! origin, y grows down) — exactly the `[x,y,w,h]` the surface elements expect.
+//! origin, y grows down) - exactly the `[x,y,w,h]` the surface elements expect.
 
 use std::collections::HashMap;
 
@@ -130,7 +130,7 @@ fn node_size(n: &Node) -> (f64, f64) {
 // --- public entry -------------------------------------------------------------
 
 /// Compute one `Rect` per node. Explicit per-node coordinates place the node there initially,
-/// but the final separation pass may still nudge ANY node (pinned or not) — no-overlap is the
+/// but the final separation pass may still nudge ANY node (pinned or not) - no-overlap is the
 /// stronger guarantee and wins over exact placement when the two conflict.
 pub fn layout(nodes: &[Node], edges: &[Edge], mode: LayoutMode, dir: Direction) -> Vec<Rect> {
     if nodes.is_empty() {

@@ -337,7 +337,7 @@ struct Group {
 /// is NOT exempt: pulldown-cmark reads `$10-$20` as the equation `10-`, so currency exports as
 /// `\$10` (which the parser reads back as a literal `$`).
 /// `next_char` is the first character that will follow `text` in the final rendered markdown
-/// (the next delta op's leading char, a style marker, or a newline) — without it a `$` that
+/// (the next delta op's leading char, a style marker, or a newline) - without it a `$` that
 /// ends one op but is followed by more inline content in the next would escape wrongly.
 fn escape_math_dollars(text: &str, next_char: Option<char>) -> std::borrow::Cow<'_, str> {
     if !text.contains('$') {

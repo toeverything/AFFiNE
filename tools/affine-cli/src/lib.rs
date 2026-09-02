@@ -1,8 +1,8 @@
 //! affine-cli library target.
 //!
 //! The binary (`src/main.rs`) is a thin clap dispatcher over these modules. The library target
-//! exists so `examples/` and integration harnesses can drive the SAME engine code the CLI ships
-//! — most importantly `examples/emit_yjs_fixtures.rs`, which feeds the real-yjs decode check in
+//! exists so `examples/` and integration harnesses can drive the SAME engine code the CLI ships,
+//! most importantly `examples/emit_yjs_fixtures.rs`, which feeds the real-yjs decode check in
 //! CI (`yjs-compat/check.mjs`). Without a lib target, examples could only link external crates
 //! and the cross-library encoding seam (y-octo writer ↔ real yjs reader) would go unverified.
 
