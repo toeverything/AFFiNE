@@ -2,6 +2,7 @@ mod block_spec;
 mod blocksuite;
 mod doc_loader;
 mod error;
+mod html;
 mod markdown;
 mod read;
 #[cfg(test)]

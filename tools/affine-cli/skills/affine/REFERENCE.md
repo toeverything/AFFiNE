@@ -99,7 +99,7 @@ affine-cli diagram add-shape --workspace=<ws> --doc=<id> \
 affine-cli diagram add-text --workspace=<ws> --doc=<id> --text "<t>" [--xywh "[x,y,w,h]"] [--color "#rrggbb"]
 
 affine-cli diagram add-connector --workspace=<ws> --doc=<id> --from=<elementId> --to=<elementId> \
-    [--mode straight|elbow|curve]   # default elbow; invalid values error
+    [--mode straight|elbow|orthogonal|curve]   # default elbow; orthogonal is an alias of elbow; invalid values error
     [--label "<t>"]
 ```
 
@@ -135,7 +135,8 @@ omitted; nodes become shapes, edges become connectors anchored to the node eleme
 }
 ```
 Node fields: `id` (required), `label?`, `shape?` (rect|ellipse|diamond|triangle), `x?,y?,w?,h?`,
-`fill?`. Edge fields: `from`,`to` (node ids, required), `label?`, `mode?` (straight|elbow|curve).
+`fill?`. Edge fields: `from`,`to` (node ids, required), `label?`, `mode?` (straight|elbow|orthogonal|curve;
+`orthogonal` is an alias of `elbow`).
 
 **Formats:** `xywh` is the string `"[x,y,w,h]"` (numbers, top-left origin, y grows down) — it is
 validated and canonicalized; malformed boxes, non-finite numbers, or non-positive `w`/`h` are
@@ -145,6 +146,18 @@ ordering and `seed` are handled for you (including on docs where elements were g
 Connector endpoints are anchored by `elementId` and must already exist on the doc's surface: an
 unknown `--from`/`--to` id is refused with `"error":"unknown_element"` and nothing is written, so
 re-read the ids from the `add-shape`/`add-text`/`create` output rather than guessing them.
+
+Maintenance - re-encode connector labels written by CLI versions before the `labelXYWH` fix
+(background in `docs/affine-cli-edgeless-render-postmortem.md`):
+
+```
+affine-cli diagram repair-labels --workspace=<ws> [--doc=<id>]   # one doc, or every doc in the workspace when --doc is omitted
+```
+
+Returns `{ ok, workspaceId, docsScanned, docsRepaired, connectorsFixed, repaired: [{ docId, connectorsFixed }], errors: [{ docId, error }] }`.
+It is a write command, so the open-workspace lock applies (`"error":"locked"` unless `--force`), and each repaired doc is written as one store update.
+Docs without an edgeless surface (plain notes) are skipped silently; a doc that fails to decode is listed in `errors` and makes `ok` false, but the scan continues over the remaining docs.
+Idempotent: re-running is safe, since a labelled connector is re-written to the identical value each time, so `connectorsFixed` counts labelled connectors touched rather than connectors that were actually broken.
 
 ## Gotchas (repeat of the important ones)
 

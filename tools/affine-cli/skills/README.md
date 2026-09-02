@@ -42,9 +42,16 @@ mkdir -p ~/.claude/skills && ln -s "$(pwd)/tools/affine-cli/skills/affine" ~/.cl
 **Automated — via the skills.sh CLI (multi-harness):**
 
 ```bash
-# Installs the skill into the chosen agent's convention. Pulls from the published repo.
-npx -y skills add wongkang01/AFFiNE-next@affine -y -g --agent claude-code   # or: cursor | codex | windsurf
+# Installs the skill into the chosen agent's convention, pulling from the published repo.
+# Both the installer and the source are pinned: `skills@1.5.23` is an explicit release, and the
+# `tree/<sha>` path selects one immutable commit. Replace the SHA with the commit you reviewed.
+npx -y skills@1.5.23 add \
+  https://github.com/wongkang01/AFFiNE-next/tree/dae0c0ea589a33d9d9d4320de275fd97456384d5/tools/affine-cli/skills/affine \
+  -y -g --agent claude-code   # or: cursor | codex | windsurf
 ```
+
+The local symlink above stays the preferred path: it tracks the checkout you build the binary from, so the
+skill and the CLI can never drift apart.
 
 ## Why it's portable
 

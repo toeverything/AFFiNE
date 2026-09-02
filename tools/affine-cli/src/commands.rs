@@ -634,13 +634,14 @@ fn shape_type(s: &str) -> Result<String, CliError> {
 }
 
 /// Map an edge `mode` string to a `ConnectorMode` int (0 straight, 1 elbow, 2 curve); error on unknown.
+/// `orthogonal` is accepted as an alias of `elbow` (BlockSuite's own name for mode 1).
 fn conn_mode(s: &str) -> Result<i32, CliError> {
     match s {
         "straight" => Ok(0),
         "elbow" | "orthogonal" => Ok(1),
         "curve" => Ok(2),
         other => Err(CliError::config(format!(
-            "invalid connector mode '{other}' (expected one of: straight, elbow, curve)"
+            "invalid connector mode '{other}' (expected one of: straight, elbow, orthogonal, curve)"
         ))),
     }
 }

@@ -45,11 +45,17 @@ impl<'a> MarkdownWriter<'a> {
     }
 
     pub(crate) fn push_code_block(&mut self, lang: &str, text: &str) {
-        self.output.push_str("```");
+        // A fence must be longer than any backtick run inside the block, or the content
+        // terminates it early (CommonMark closes on a run at least as long as the opener).
+        let longest_run = text.split(|c| c != '`').map(str::len).max().unwrap_or(0);
+        let fence = "`".repeat(longest_run.max(2) + 1);
+        self.output.push_str(&fence);
         self.output.push_str(lang);
         self.output.push('\n');
         self.output.push_str(text);
-        self.output.push_str("\n```\n\n");
+        self.output.push('\n');
+        self.output.push_str(&fence);
+        self.output.push_str("\n\n");
     }
 
     pub(crate) fn push_latex(&mut self, latex: &str) {

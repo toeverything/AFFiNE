@@ -99,7 +99,8 @@ fn create_doc(base: &Path, ws: &str, title: &str) -> String {
 /// Re-merge the page doc's stored snapshot+updates and return the owning `Doc` plus the surface
 /// `prop:elements.value` element map, decoded directly with y-octo (Proof A). The `Doc` MUST be
 /// kept alive by the caller: y-octo `Map` handles are weak-backed views into the live `Doc`.
-fn decode_surface_value(base: &Path, peer: &str, ws: &str, doc_id: &str) -> (Doc, Map) {
+/// Merge every stored update for `doc_id` straight from the workspace sqlite file into a fresh Doc.
+fn load_doc(base: &Path, peer: &str, ws: &str, doc_id: &str) -> Doc {
     let db = base.join("workspaces").join(peer).join(ws).join("storage.db");
     assert!(db.exists(), "storage.db should exist at {db:?}");
 
@@ -129,6 +130,11 @@ fn decode_surface_value(base: &Path, peer: &str, ws: &str, doc_id: &str) -> (Doc
         }
         doc.apply_update_from_binary_v1(b).expect("apply page update");
     }
+    doc
+}
+
+fn decode_surface_value(base: &Path, peer: &str, ws: &str, doc_id: &str) -> (Doc, Map) {
+    let doc = load_doc(base, peer, ws, doc_id);
 
     let blocks = doc.get_map("blocks").expect("blocks map");
     let surface = blocks
@@ -216,10 +222,19 @@ fn add_shape_sets_doc_edgeless() {
         base.path(),
         &["diagram", "add-shape", "--workspace", &ws, "--doc", &doc],
     );
-    // doc list still works, and the surface element exists -> doc became edgeless silently.
-    // We assert edgeless by reading the db$docProperties row via the surface decode helper's db.
+    // The surface element exists, and the doc's primaryMode was flipped to edgeless.
     let (_doc, value) = decode_surface_value(base.path(), "local", &ws, &doc);
     assert_eq!(value.len(), 1);
+    let props = load_doc(base.path(), "local", &ws, "db$docProperties");
+    let mode = props
+        .get_map(&doc)
+        .ok()
+        .and_then(|row| row.get("primaryMode").and_then(|v| v.to_any()))
+        .and_then(|a| match a {
+            Any::String(s) => Some(s),
+            _ => None,
+        });
+    assert_eq!(mode.as_deref(), Some("edgeless"));
 }
 
 #[test]

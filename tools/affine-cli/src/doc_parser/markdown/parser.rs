@@ -12,6 +12,7 @@ use super::{
             BlockFlavour, BlockNode, BlockSpec, BlockType, BookmarkSpec, EmbedIframeSpec, EmbedYoutubeSpec, ImageSpec,
             TableSpec, count_tree_nodes,
         },
+        html::unescape_html,
     },
     inline::InlineStyle,
 };
@@ -297,7 +298,7 @@ impl TableState {
 
 pub(crate) fn parse_markdown_blocks(markdown: &str) -> Result<Vec<BlockNode>, ParseError> {
     let normalized = normalize_markdown(markdown);
-    if normalized.len() > MAX_MARKDOWN_CHARS {
+    if normalized.chars().count() > MAX_MARKDOWN_CHARS {
         return Err(ParseError::ParserError("markdown_too_large".into()));
     }
 
@@ -1394,7 +1395,9 @@ fn parse_html_attrs(tag: &str) -> HashMap<String, String> {
             chars[start..i].iter().collect()
         };
         if !key.is_empty() && !value.is_empty() {
-            attrs.insert(key, value);
+            // Values are written entity-escaped (see `html::escape_html`); decode them here so
+            // captions with quotes or ampersands round-trip.
+            attrs.insert(key, unescape_html(&value).into_owned());
         }
     }
     attrs

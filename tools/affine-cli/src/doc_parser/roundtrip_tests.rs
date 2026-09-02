@@ -325,3 +325,27 @@ fn test_empty_display_math_produces_no_block() {
     let result = parse_doc_to_markdown(bin, doc_id.to_string(), false, None).expect("parse doc");
     assert_eq!(result.markdown, "", "expected no blocks, got: {}", result.markdown);
 }
+
+#[test]
+fn test_roundtrip_image_caption_with_quotes() {
+    // A `"` in the caption must be entity-escaped inside the alt attribute, and decoded on read.
+    let markdown = "<img src=\"blob://image-id\" alt=\"say &quot;hi&quot; &amp; bye\" />";
+    let expected = "<img\n  src=\"blob://image-id\"\n  alt=\"say &quot;hi&quot; &amp; bye\"\n  width=\"auto\"\n  height=\"auto\"\n/>\n\n";
+    assert_markdown_roundtrip(markdown, expected);
+}
+
+#[test]
+fn test_roundtrip_table_cell_with_pipe() {
+    // A literal `|` in a cell is escaped on render so it does not split the cell on read-back.
+    let markdown = "| A |\n| --- |\n| x \\| y |";
+    let expected = "|A|\n|---|\n|x \\| y|\n\n";
+    assert_markdown_roundtrip(markdown, expected);
+}
+
+#[test]
+fn test_roundtrip_code_block_containing_fence() {
+    // The emitted fence must be longer than any backtick run inside the block.
+    let markdown = "````md\n```\ninner\n```\n````";
+    let expected = "````md\n```\ninner\n```\n\n````\n\n";
+    assert_markdown_roundtrip(markdown, expected);
+}

@@ -49,9 +49,10 @@ function surfaceElements(doc) {
   return value;
 }
 
-// Generic sweep over one element: every top-level field must decode to SOMETHING (a field
-// decoding to undefined, or an array field decoding to a scalar, is the bug class). Fields
-// listed in arrayFields must decode as real JS arrays.
+// Generic sweep over one element. The forEach is only a presence smoke-test (every top-level
+// field decodes to something other than undefined); it CANNOT catch the labelXYWH bug class,
+// where an array field collapses to a scalar that is still defined. That guard is the explicit
+// arrayFields loop, so every array-valued field an element writes must be listed there.
 function sweepElement(label, el, arrayFields) {
   check(`${label}: element is a Y.Map`, el instanceof Y.Map);
   if (!(el instanceof Y.Map)) return;

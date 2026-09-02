@@ -6,7 +6,7 @@ loosely follows [Keep a Changelog](https://keepachangelog.com); the crate is unp
 
 ## Unreleased
 
-Fixes for the maintainer review findings on upstream PR #15374.
+Fixes for the maintainer review findings and the second CodeRabbit pass on upstream PR #15374.
 
 ### Fixed
 
@@ -27,6 +27,14 @@ Fixes for the maintainer review findings on upstream PR #15374.
   The group suffix is now stripped first, matching the app's `ungroupIndex` (`blocksuite/framework/std/src/utils/layer.ts`).
 - **`rewrap_connector_labels` guards the empty-doc binary** before applying it in its pre-flight load, like every other engine entry point.
 - Doc comments cite the yjs version the compat harness actually pins (13.6.21), not 13.6.31.
+- **Raw HTML emitted by the markdown adapter is entity-escaped.**
+  Image captions inside `<img alt="...">` and database option `<span>` attributes/text now escape `& < > " '`, and `parse_html_attrs` decodes them on read-back, so a quote in a caption no longer produces malformed HTML or a lossy round trip.
+- **Rendered tables escape `|` in cell text**, so a literal pipe stays inside its cell when the markdown is parsed again.
+- **Code fences are sized to the content.**
+  A code block containing a triple-backtick run is emitted with a longer fence instead of being terminated early.
+- **`MAX_MARKDOWN_CHARS` is enforced as a character count** rather than a byte length, so non-ASCII documents are no longer rejected below the advertised budget.
+- **Default data directory matches the Electron app on Linux.**
+  `base_dir` now uses `dirs::config_dir()` (Electron's `appData`), which is `~/.config/AFFiNE` on Linux; macOS and Windows resolve to the same paths as before.
 
 ### Changed
 
@@ -36,6 +44,15 @@ Fixes for the maintainer review findings on upstream PR #15374.
   Position-only endpoints are still allowed.
 - **`diagram create --spec` is capped at 500 nodes / 2000 edges** (`"error":"config"` past that, before any layout or store work).
   The layout's overlap-separation pass now reports non-convergence (a `warning:` line on stderr after its 200-pass bound) instead of silently returning a possibly overlapping layout.
+- `diagram add-connector --mode` and the `--spec` edge `mode` document (and the parser error lists) `orthogonal` as an alias of `elbow`.
+- `add_shape_sets_doc_edgeless` (diagram e2e) asserts `primaryMode == "edgeless"` from `db$docProperties` instead of only checking that a surface element exists.
+
+### Docs
+
+- `skills/affine/REFERENCE.md` documents `diagram repair-labels` (syntax, JSON output, locking, idempotence); the postmortem points at it.
+- `skills/README.md` pins the `skills` installer version and uses a commit-SHA source path.
+- `docs/agent-cli-design.md` carries a status header marking it as the historical design study, drops the personal absolute path, annotates the stale "no latex" and "no code yet" notes, and loses a stray code fence.
+- `cli.rs` module doc no longer claims most subcommands return `not_implemented`; `yjs-compat/check.mjs` describes its presence sweep honestly.
 
 ## 2026-07-31
 

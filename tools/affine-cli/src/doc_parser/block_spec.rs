@@ -3,6 +3,7 @@ use y_octo::{Any, Map, TextAttributes, TextDeltaOp, TextInsert};
 use super::{
     ParseError,
     blocksuite::get_string,
+    html::escape_html,
     schema::{
         PROP_CAPTION, PROP_CHECKED, PROP_COLUMN_ID_SUFFIX, PROP_COLUMNS_PREFIX, PROP_HEIGHT, PROP_LANGUAGE, PROP_LATEX,
         PROP_ORDER, PROP_ORDER_SUFFIX, PROP_ROW_ID_SUFFIX, PROP_ROWS_PREFIX, PROP_SOURCE_ID, PROP_TEXT, PROP_TYPE,
@@ -145,8 +146,11 @@ impl ImageSpec {
                 .height
                 .map(|value| value.to_string())
                 .unwrap_or_else(|| "auto".into());
+            // The caption lands inside a quoted attribute, so it must be entity-escaped or a
+            // `"` in it terminates the attribute early (and `parse_img_tag` cannot read it back).
+            let caption_attr = escape_html(caption);
             return format!(
-                "<img\n  src=\"{blob_url}\"\n  alt=\"{caption}\"\n  width=\"{width_text}\"\n  height=\"{height_text}\"\n/>\n\n"
+                "<img\n  src=\"{blob_url}\"\n  alt=\"{caption_attr}\"\n  width=\"{width_text}\"\n  height=\"{height_text}\"\n/>\n\n"
             );
         }
 
@@ -254,7 +258,8 @@ impl TableSpec {
     }
 
     pub(super) fn render_markdown(&self) -> Option<String> {
-        let options = MarkdownTableOptions::new(false, "<br />", true);
+        // Escape `|` in cell text: an unescaped pipe would split the cell on read-back.
+        let options = MarkdownTableOptions::new(true, "<br />", true);
         render_markdown_table(&self.rows, options)
     }
 }

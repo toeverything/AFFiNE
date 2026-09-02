@@ -1,8 +1,11 @@
 # AFFiNE Agent CLI — Design & Research Notes
 
-> Status: **research / pre-implementation**. This document captures everything gathered
-> before writing code, so implementation can start from a solid spec.
-> Repo: `/Users/wk01/code/AFFiNE-CLI` (origin `wongkang01/AFFiNE-next`, upstream `toeverything/AFFiNE`, v0.26.3).
+> Status: **historical design study**.
+> This document is the research gathered before the CLI was written and is kept as the design record.
+> The CLI now exists at `tools/affine-cli` (binary `affine-cli`).
+> For current behaviour see `tools/affine-cli/CHANGELOG.md` and `tools/affine-cli/skills/affine/REFERENCE.md`; where a section below conflicts with the shipped CLI, the CLI documentation wins.
+> Notable drift: latex/math is supported on both the markdown read and write paths (section 13.3), and diagrams are built by the `diagram` commands rather than through markdown.
+> Repo: the AFFiNE monorepo checkout (origin `wongkang01/AFFiNE-next`, upstream `toeverything/AFFiNE`, v0.26.3).
 
 ## 1. Goal
 
@@ -198,6 +201,7 @@ Limits: `MAX_MARKDOWN_CHARS = 200_000`, `MAX_BLOCKS = 2_000`.
 Markdown write-path supports: headings, paragraph, quote, lists (bulleted/numbered/todo, nested),
 code, divider, image (`blob://id`), tables, inline bold/italic/strike/link. **Not** supported:
 surface/diagrams, database blocks, callout, latex, attachments, synced/linked-doc embeds.
+(Historical: latex/math was ported afterwards, see section 13.3 and the CHANGELOG; the shipped CLI supports it in both directions.)
 
 ## 6. `affine_nbstore` API (with `use-as-lib`)
 
@@ -369,7 +373,7 @@ higher latency).
 - Verify the ⚠️ items in §9 (rlib build, docProperties guid, connector encoding, fractional index)
   before depending on them.
 - This is research-only so far — no code or branches were created this session.
-```
+  (Historical: superseded, the CLI ships at `tools/affine-cli`; see the status header.)
 
 ### 13.3 Shared `doc_parser` latex/math change — split to a stacked branch (done)
 

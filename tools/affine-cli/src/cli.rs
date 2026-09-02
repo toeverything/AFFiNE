@@ -1,7 +1,7 @@
 //! clap derive definitions for the full affine-cli surface.
 //!
-//! Phase 0 fully implements `workspace create` and `doc create`. Every other subcommand is
-//! present in the tree (so the shape is stable) but returns a clean `not_implemented` error.
+//! Every subcommand declared here is dispatched from `main.rs` to its handler in `commands.rs`;
+//! `skills/affine/REFERENCE.md` is the user-facing description of the same tree.
 
 use clap::{Args, Parser, Subcommand};
 
@@ -254,7 +254,7 @@ pub struct DiagramAddConnectorArgs {
     /// Target element id (anchors the connector end).
     #[arg(long)]
     pub to: String,
-    /// straight | elbow | curve (default elbow).
+    /// straight | elbow | orthogonal | curve (default elbow; orthogonal is an alias of elbow).
     #[arg(long, default_value = "elbow")]
     pub mode: String,
     /// Optional connector label.

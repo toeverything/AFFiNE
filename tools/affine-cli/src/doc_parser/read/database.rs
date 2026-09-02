@@ -5,6 +5,7 @@ use y_octo::{Any, Map, Value};
 use super::{text_content, text_content_for_summary};
 use crate::doc_parser::{
     blocksuite::{DocContext, collect_child_ids, get_string},
+    html::escape_html,
     markdown::{
         DeltaToMdOptions, InlineReferencePayload, delta_value_to_inline_markdown, extract_inline_references_from_value,
         text_to_inline_markdown,
@@ -88,7 +89,7 @@ pub(super) fn database_table_markdown(table: DatabaseTable) -> Option<String> {
     rows.push(header);
     rows.extend(table.rows);
 
-    let options = MarkdownTableOptions::new(false, "<br />", true);
+    let options = MarkdownTableOptions::new(true, "<br />", true);
     render_markdown_table(&rows, options)
 }
 
@@ -236,9 +237,11 @@ fn parse_database_options(column: &Map) -> Vec<DatabaseOption> {
 }
 
 fn format_option_tag(option: &DatabaseOption) -> String {
-    let id = option.id.as_deref().unwrap_or_default();
-    let value = option.value.as_deref().unwrap_or_default();
-    let color = option.color.as_deref().unwrap_or_default();
+    // All three come from document data; escape them so a quote or angle bracket cannot break
+    // out of the attribute or text node in the exported markdown.
+    let id = escape_html(option.id.as_deref().unwrap_or_default());
+    let value = escape_html(option.value.as_deref().unwrap_or_default());
+    let color = escape_html(option.color.as_deref().unwrap_or_default());
 
     format!("<span data-affine-option data-value=\"{id}\" data-option-color=\"{color}\">{value}</span>")
 }

@@ -136,6 +136,9 @@ re-encodes them in place (idempotent; preserves exact layout):
 affine-cli diagram repair-labels [--doc <id>]      # one doc, or the whole workspace if --doc omitted
 ```
 
+The command ships in the CLI; flags, JSON output, locking, and idempotence are documented in
+`tools/affine-cli/skills/affine/REFERENCE.md` under Diagrams.
+
 Applied to the live workspace: **CLI Flowchart — 3 connectors repaired** (then verified crash-free
 and selectable in the app). The Mind Map had no labelled connectors, so it was never affected.
 
