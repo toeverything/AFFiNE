@@ -4,6 +4,7 @@ import {
 } from '@blocksuite/affine-components/caption';
 import {
   getAttachmentFileIcon,
+  HelpIcon,
   LoadingIcon,
 } from '@blocksuite/affine-components/icons';
 import { Peekable } from '@blocksuite/affine-components/peek';
@@ -266,6 +267,29 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     }
   }
 
+  protected renderProxySizeLimitInfoButton = () => {
+    if (this.std.store.readonly) return null;
+
+    const onProxySizeLimit = this.std.get(
+      FileSizeLimitProvider
+    ).onProxySizeLimit;
+
+    return when(
+      onProxySizeLimit,
+      () => html`
+        <button
+          class="affine-attachment-content-button"
+          @click=${(event: MouseEvent) => {
+            event.stopPropagation();
+            onProxySizeLimit?.();
+          }}
+        >
+          ${HelpIcon} Learn More
+        </button>
+      `
+    );
+  };
+
   protected renderUpgradeButton = () => {
     if (this.std.store.readonly) return null;
 
@@ -371,6 +395,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
             ${choose(state, [
               ['error', () => this.renderNormalButton(needUpload)],
               ['error:oversize', this.renderUpgradeButton],
+              ['error:proxy-limit', this.renderProxySizeLimitInfoButton],
             ])}
           </div>
         </div>
@@ -411,6 +436,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
           ${choose(state, [
             ['error', () => this.renderNormalButton(needUpload)],
             ['error:oversize', this.renderUpgradeButton],
+            ['error:proxy-limit', this.renderProxySizeLimitInfoButton],
           ])}
         </div>
       </div>

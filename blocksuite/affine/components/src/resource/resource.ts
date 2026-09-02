@@ -15,6 +15,7 @@ export type StateKind =
   | 'uploading'
   | 'error'
   | 'error:oversize'
+  | 'error:proxy-limit'
   | 'none';
 
 export type StateInfo = {
@@ -46,12 +47,15 @@ export class ResourceController implements Disposable {
       uploading = false,
       downloading = false,
       overSize = false,
+      proxyLimit = false,
       errorMessage,
     } = this.state$.value;
     const hasExceeded = overSize;
-    const hasError = hasExceeded || Boolean(errorMessage);
+    const hasProxyLimit = proxyLimit;
+    const hasError = hasExceeded || hasProxyLimit || Boolean(errorMessage);
     const state = this.determineState(
       hasExceeded,
+      hasProxyLimit,
       hasError,
       uploading,
       downloading
@@ -83,11 +87,13 @@ export class ResourceController implements Disposable {
 
   determineState(
     hasExceeded: boolean,
+    hasProxyLimit: boolean,
     hasError: boolean,
     uploading: boolean,
     downloading: boolean
   ): StateKind {
     if (hasExceeded) return 'error:oversize';
+    if (hasProxyLimit) return 'error:proxy-limit';
     if (hasError) return 'error';
     if (uploading) return 'uploading';
     if (downloading) return 'loading';
@@ -140,7 +146,7 @@ export class ResourceController implements Disposable {
 
       const subscription = blobState$.subscribe(state => {
         let { uploading, downloading, errorMessage } = state;
-        if (state.overSize) {
+        if (state.overSize || state.proxyLimit) {
           uploading = false;
           downloading = false;
         } else if ((uploading || downloading) && errorMessage) {

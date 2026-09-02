@@ -25,6 +25,7 @@ export interface BlobSyncBlobState {
   downloading: boolean;
   errorMessage?: string | null;
   overSize: boolean;
+  proxyLimit: boolean;
 }
 
 export interface BlobSync {
@@ -107,6 +108,7 @@ export class BlobSyncImpl implements BlobSync {
             downloading: peers.some(p => p.downloading),
             errorMessage: peers.find(p => p.errorMessage)?.errorMessage,
             overSize: peers.some(p => p.overSize),
+            proxyLimit: peers.some(p => p.proxyLimit),
             needUpload: peers.some(p => p.needUpload),
             needDownload: peers.some(p => p.needDownload),
           }) satisfies BlobSyncBlobState

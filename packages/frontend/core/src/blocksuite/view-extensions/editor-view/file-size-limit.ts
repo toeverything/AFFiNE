@@ -26,6 +26,10 @@ export function patchFileSizeLimitExtension(framework: FrameworkProvider) {
       track.$.paywall.storage.viewPlans();
     }
 
+    onProxySizeLimit() {
+      window.open('https://affine.pro', '_blank');
+    }
+
     static override setup(di: Container) {
       di.override(FileSizeLimitProvider, AffineFileSizeLimitService);
     }
