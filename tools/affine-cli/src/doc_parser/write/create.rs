@@ -3,7 +3,7 @@
 //! Converts markdown content into AFFiNE-compatible y-octo document binary
 //! format.
 
-use y_octo::DocOptions;
+use crate::lease::doc_options;
 
 use super::{
     super::{
@@ -34,7 +34,7 @@ pub fn build_full_doc(title: &str, markdown: &str, doc_id: &str) -> Result<Vec<u
 }
 
 fn build_doc_update(doc_id: &str, title: &str, blocks: &[BlockNode]) -> Result<Vec<u8>, ParseError> {
-    let doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    let doc = doc_options().with_guid(doc_id.to_string()).build();
     let mut blocks_map = doc.get_or_create_map("blocks")?;
 
     let page_id = nanoid::nanoid!();

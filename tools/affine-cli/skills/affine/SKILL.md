@@ -58,9 +58,15 @@ affine-cli doc update --workspace="$WS" --doc="$DOC" --content $'# Ideas\n\nrevi
    means the DB schema is older than this CLI build expects; open the workspace in the AFFiNE app
    (which migrates it) or pass `--allow-migrate` if the installed app is at least as new as the
    CLI. `"error":"db_newer"` means the DB was written by a newer app than the CLI; rebuild the CLI.
-3. **Ids can start with `-`.** Always pass them in `=` form - `--workspace=$WS`, `--doc=$DOC` - so the
+3. **Only one CLI write per workspace at a time** - `{"ok":false,"error":"busy"}` means another
+   `affine-cli` process holds the workspace write lease (an advisory lock on the `affine-cli.client`
+   file beside `storage.db`, which also stores the single CRDT client id every CLI write reuses).
+   The second process already waited about two seconds and wrote nothing, so just retry. Read
+   commands are never blocked, and on Windows the lock is not implemented (the output warns
+   instead).
+4. **Ids can start with `-`.** Always pass them in `=` form - `--workspace=$WS`, `--doc=$DOC` - so the
    CLI doesn't parse the id as a flag.
-4. **Default is local-first** (`--peer local`). Cloud workspaces use `--peer <serverId>` and must
+5. **Default is local-first** (`--peer local`). Cloud workspaces use `--peer <serverId>` and must
    already exist locally (signed-in + opened once in the app); the CLI can't provision a cloud workspace.
 
 ## Full reference

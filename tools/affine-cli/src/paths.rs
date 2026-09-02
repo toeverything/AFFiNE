@@ -35,6 +35,15 @@ pub fn workspace_db_path(base: &std::path::Path, peer: &str, id: &str) -> PathBu
     base.join("workspaces").join(peer).join(id).join("storage.db")
 }
 
+/// `<base>/workspaces/<peer>/<id>/affine-cli.client`: the CLI's persisted y-octo client id for
+/// this workspace, also the file mutating commands `flock` (see `crate::lease`).
+pub fn client_id_path(base: &std::path::Path, peer: &str, id: &str) -> PathBuf {
+    base.join("workspaces")
+        .join(peer)
+        .join(id)
+        .join(crate::lease::CLIENT_FILE)
+}
+
 /// `<base>/workspaces/<peer>` — used by the `workspace list` scan.
 pub fn workspaces_dir(base: &std::path::Path, peer: &str) -> PathBuf {
     base.join("workspaces").join(peer)

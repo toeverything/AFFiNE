@@ -24,6 +24,13 @@ pub enum CliError {
     #[error("{0}")]
     Locked(String),
 
+    /// Another affine-cli process holds this workspace's write lease (the `flock` on its
+    /// client-id file) and did not release it within the bounded retry window. Distinct from
+    /// `Locked` (the app has the DB open) so agents can pattern-match `"error":"busy"` and simply
+    /// retry.
+    #[error("{0}")]
+    Busy(String),
+
     /// Command-line usage error (unknown subcommand, missing/conflicting flags). Produced from
     /// clap's parse error so the JSON contract holds for that class too; exits with code 2.
     #[error("{0}")]
@@ -84,6 +91,7 @@ impl CliError {
             CliError::NotImplemented => "not_implemented",
             CliError::Config(_) => "config",
             CliError::Locked(_) => "locked",
+            CliError::Busy(_) => "busy",
             CliError::Usage(_) => "usage",
             CliError::MigrationRequired(_) => "migration_required",
             CliError::DbNewer(_) => "db_newer",

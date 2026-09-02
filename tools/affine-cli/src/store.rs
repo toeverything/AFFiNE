@@ -11,6 +11,7 @@ use affine_nbstore::pool::SqliteDocStoragePool;
 use affine_nbstore::{Blob, DocRecord, DocUpdate, ListedBlob, SetBlob};
 
 use crate::error::CliError;
+use crate::lease::WriteLease;
 use crate::paths;
 
 /// A single full-text-search hit, decoupled from the nbstore `NativeSearchHit` type so the
@@ -62,22 +63,39 @@ pub trait DocBackend {
 pub const DOC_SEARCH_INDEX: &str = "cli:doc";
 
 /// A connected local workspace store.
+///
+/// `lease` is `Some` only for backends opened through a write entry point (`open` for
+/// `workspace create`, `open_existing_for_write` for every other mutating command): it holds
+/// the workspace's persisted y-octo client id and the exclusive `flock` that keeps a second CLI
+/// process from reusing that id concurrently (see `crate::lease`). Read-only opens leave it
+/// `None` and never contend for the lock.
 pub struct LocalBackend {
     pool: SqliteDocStoragePool,
     universal_id: String,
+    lease: Option<WriteLease>,
 }
 
 impl LocalBackend {
-    /// Open (creating + migrating if needed) the local SQLite store for `workspace_id`.
+    /// Open (creating + migrating if needed) the local SQLite store for `workspace_id`, holding
+    /// the workspace write lease.
     ///
     /// Mirrors electron handlers.ts: ensure the parent dir, then `pool.connect(uid, path)`
     /// which runs the 4-migration schema. Does NOT call set_space_id — callers that create
-    /// a workspace must do that explicitly afterward.
+    /// a workspace must do that explicitly afterward. This is the `workspace create` path; the
+    /// lease is taken (and the client-id file minted) before the database exists so the root
+    /// doc is written with the workspace's permanent client id.
     pub async fn open(base: &Path, peer: &str, workspace_id: &str) -> Result<Self, CliError> {
         let db_path = paths::workspace_db_path(base, peer, workspace_id);
         if let Some(parent) = db_path.parent() {
             std::fs::create_dir_all(parent)?;
         }
+        let lease = WriteLease::acquire(&paths::client_id_path(base, peer, workspace_id))?;
+        Self::connect(base, peer, workspace_id, Some(lease)).await
+    }
+
+    /// `pool.connect` on the workspace database; `lease` is carried into the backend as-is.
+    async fn connect(base: &Path, peer: &str, workspace_id: &str, lease: Option<WriteLease>) -> Result<Self, CliError> {
+        let db_path = paths::workspace_db_path(base, peer, workspace_id);
         let db_path_str = db_path
             .to_str()
             .ok_or_else(|| CliError::config("db path is not valid UTF-8"))?
@@ -86,7 +104,21 @@ impl LocalBackend {
         let universal_id = paths::universal_id(peer, workspace_id);
         let pool = SqliteDocStoragePool::default();
         pool.connect(universal_id.clone(), db_path_str).await?;
-        Ok(LocalBackend { pool, universal_id })
+        Ok(LocalBackend {
+            pool,
+            universal_id,
+            lease,
+        })
+    }
+
+    /// The y-octo client id every doc write through this backend must use. Only available on a
+    /// backend opened for writing; a read-only backend has no lease, and an engine call that
+    /// needs a client id from one is a programming error surfaced as `CliError::Other`.
+    pub fn client_id(&self) -> Result<u64, CliError> {
+        self.lease
+            .as_ref()
+            .map(WriteLease::client_id)
+            .ok_or_else(|| CliError::other("internal error: workspace was opened read-only but a write was attempted"))
     }
 
     /// Open an EXISTING workspace store; errors when the database file is absent.
@@ -112,7 +144,14 @@ impl LocalBackend {
                 db_path.display()
             )));
         }
-        match check_schema(&db_path).await? {
+        Self::check_schema_for_open(&db_path, workspace_id, allow_migrate).await?;
+        Self::connect(base, peer, workspace_id, None).await
+    }
+
+    /// Classify the database schema and turn `Behind`/`Newer` into the user-facing errors (or the
+    /// `--allow-migrate` warning) shared by both `open_existing` variants.
+    async fn check_schema_for_open(db_path: &Path, workspace_id: &str, allow_migrate: bool) -> Result<(), CliError> {
+        match check_schema(db_path).await? {
             SchemaState::Current => {}
             SchemaState::Behind { pending } if allow_migrate => {
                 crate::output::warn(format!(
@@ -137,7 +176,30 @@ impl LocalBackend {
                 )));
             }
         }
-        Self::open(base, peer, workspace_id).await
+        Ok(())
+    }
+
+    /// `open_existing` plus the workspace write lease: the entry point for every mutating command
+    /// on an existing workspace. The lease (exclusive `flock` on `affine-cli.client`) is taken
+    /// BEFORE the database is opened, so a concurrent CLI writer is serialized ahead of the
+    /// schema check and the read-merge-write cycle, not just the final push. Fails with
+    /// `CliError::Busy` when another process still holds the lease after the bounded retry.
+    pub async fn open_existing_for_write(
+        base: &Path,
+        peer: &str,
+        workspace_id: &str,
+        allow_migrate: bool,
+    ) -> Result<Self, CliError> {
+        let db_path = paths::workspace_db_path(base, peer, workspace_id);
+        if !db_path.is_file() {
+            return Err(CliError::config(format!(
+                "workspace not found: {workspace_id} (no database at {})",
+                db_path.display()
+            )));
+        }
+        let lease = WriteLease::acquire(&paths::client_id_path(base, peer, workspace_id))?;
+        Self::check_schema_for_open(&db_path, workspace_id, allow_migrate).await?;
+        Self::connect(base, peer, workspace_id, Some(lease)).await
     }
 
     pub fn db_path(base: &Path, peer: &str, workspace_id: &str) -> std::path::PathBuf {

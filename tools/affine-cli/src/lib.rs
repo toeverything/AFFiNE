@@ -19,6 +19,7 @@ pub mod engine;
 pub mod error;
 pub mod fractional_index;
 pub mod layout;
+pub mod lease;
 pub mod output;
 pub mod paths;
 pub mod store;

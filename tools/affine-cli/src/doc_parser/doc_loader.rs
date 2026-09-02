@@ -1,4 +1,6 @@
-use y_octo::{Doc, DocOptions};
+use y_octo::Doc;
+
+use crate::lease::doc_options;
 
 use super::ParseError;
 
@@ -19,17 +21,17 @@ pub(super) fn load_doc(binary: &[u8], doc_id: Option<&str>) -> Result<Doc, Parse
 
 pub(super) fn load_doc_or_new(binary: &[u8]) -> Result<Doc, ParseError> {
     if is_empty_doc(binary) {
-        return Ok(DocOptions::new().build());
+        return Ok(doc_options().build());
     }
 
-    let mut doc = DocOptions::new().build();
+    let mut doc = doc_options().build();
     doc.apply_update_from_binary_v1(binary)
         .map_err(|_| ParseError::InvalidBinary)?;
     Ok(doc)
 }
 
 fn build_doc(doc_id: Option<&str>) -> Doc {
-    let options = DocOptions::new();
+    let options = doc_options();
     match doc_id {
         Some(doc_id) => options.with_guid(doc_id.to_string()).build(),
         None => options.build(),

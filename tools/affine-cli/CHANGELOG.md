@@ -11,6 +11,20 @@ Where the documented contract was stronger than the mechanism, the mechanism is 
 
 ### Fixed
 
+- **The CLI reuses one y-octo client id per workspace instead of minting a new one per invocation.**
+  Every `DocOptions::new()` took y-octo's default random client id, and every peer that writes to a
+  doc stays in its state vector forever, so an agent editing a doc N times left N dead clients
+  behind in every copy of that doc and in every sync message carrying it.
+  The id is now generated once and persisted in `affine-cli.client` next to `storage.db`, and
+  `lease::doc_options()` is the factory every write path builds its `Doc` from.
+  Because reusing an id is only safe for a single writer, that file doubles as the write lock:
+  mutating commands hold an exclusive advisory `flock` on it for their whole run, and a second CLI
+  process retries for about two seconds and then fails with the new `"error":"busy"` rather than
+  minting colliding `(client, clock)` item ids.
+  Read-only commands never take the lease.
+  On Windows the lock is not implemented and the output carries a `warnings` entry instead; a
+  missing or malformed id file is regenerated with a warning.
+
 - **`$` before a digit is now escaped on export.**
   `escape_math_dollars` exempted `$` followed by a digit as "currency", but pulldown-cmark reads `$10-$20` as the inline equation `10-`, so `a $10-$20 range` exported unescaped and re-ingested as math.
   Every `$` followed by non-whitespace now escapes (`\$10`), which the parser reads back as a literal `$`; a `$` before whitespace or end-of-text still stays bare.

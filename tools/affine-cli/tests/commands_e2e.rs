@@ -981,3 +981,126 @@ fn doc_read_refuses_db_newer_than_cli() {
         "refusal must not touch _sqlx_migrations"
     );
 }
+
+// ----------------------------------------------------------------------------
+// Workspace client id + write lease (src/lease.rs)
+// ----------------------------------------------------------------------------
+
+/// `<base>/workspaces/local/<ws>/affine-cli.client`.
+fn ws_client_file(base: &Path, ws: &str) -> PathBuf {
+    base.join("workspaces")
+        .join("local")
+        .join(ws)
+        .join(affine_cli::lease::CLIENT_FILE)
+}
+
+/// Every y-octo client that has an item in the stored doc, read back from the update blobs.
+fn stored_doc_clients(base: &Path, ws: &str, doc_id: &str) -> Vec<u64> {
+    let mut doc: Doc = DocOptions::new().build();
+    for b in read_doc_update_blobs(&ws_db(base, ws), doc_id) {
+        if b.is_empty() || b.as_slice() == [0, 0] {
+            continue;
+        }
+        doc.apply_update_from_binary_v1(&b).expect("apply stored update");
+    }
+    let mut clients = doc.clients();
+    clients.sort_unstable();
+    clients
+}
+
+#[test]
+fn repeated_writes_reuse_one_client_id() {
+    // Regression: every invocation used to mint a fresh y-octo client id, so an agent editing a
+    // doc N times left N dead entries in that doc's state vector forever.
+    let base = TempBase::new("client-reuse");
+    let ws = create_ws(base.path(), "Reuse");
+    let doc = create_doc(base.path(), &ws, "Doc", "# Doc\n\nv0");
+
+    for i in 1..=5 {
+        let v = run_ok(
+            base.path(),
+            &[
+                "doc",
+                "update",
+                "--workspace",
+                &ws,
+                "--doc",
+                &doc,
+                "--content",
+                &format!("# Doc\n\nv{i}"),
+            ],
+        );
+        assert_eq!(v["ok"], json_true());
+    }
+
+    let persisted: u64 = std::fs::read_to_string(ws_client_file(base.path(), &ws))
+        .expect("client id file")
+        .trim()
+        .parse()
+        .expect("client id is a u64");
+
+    for target in [doc.as_str(), ws.as_str()] {
+        assert_eq!(
+            stored_doc_clients(base.path(), &ws, target),
+            vec![persisted],
+            "doc {target} should carry exactly the workspace's one CLI client"
+        );
+    }
+}
+
+#[test]
+fn write_while_lease_is_held_reports_busy() {
+    let base = TempBase::new("lease-busy");
+    let ws = create_ws(base.path(), "Busy");
+    let doc = create_doc(base.path(), &ws, "Doc", "# Doc\n\nbody");
+
+    // Hold the lease from this process; `flock` is per open file description, so the CLI's own
+    // open of the same path conflicts.
+    let held = affine_cli::lease::WriteLease::acquire(&ws_client_file(base.path(), &ws)).expect("hold lease");
+
+    let v = run_err(
+        base.path(),
+        &["doc", "update", "--workspace", &ws, "--doc", &doc, "--content", "# x"],
+    );
+    assert_eq!(v["error"], "busy", "{v}");
+
+    // Read-only commands never take the lease, so they still work while it is held.
+    let read = run_ok(base.path(), &["doc", "read", "--workspace", &ws, "--doc", &doc]);
+    assert_eq!(read["ok"], json_true());
+
+    drop(held);
+    let v = run_ok(
+        base.path(),
+        &["doc", "update", "--workspace", &ws, "--doc", &doc, "--content", "# x"],
+    );
+    assert_eq!(v["ok"], json_true(), "the write must succeed once the lease is free");
+}
+
+#[test]
+fn malformed_client_id_file_is_regenerated_with_a_warning() {
+    let base = TempBase::new("client-malformed");
+    let ws = create_ws(base.path(), "Malformed");
+    let doc = create_doc(base.path(), &ws, "Doc", "# Doc\n\nbody");
+
+    let client_file = ws_client_file(base.path(), &ws);
+    std::fs::write(&client_file, "not-a-client-id\n").expect("corrupt the client id file");
+
+    let v = run_ok(
+        base.path(),
+        &["doc", "update", "--workspace", &ws, "--doc", &doc, "--content", "# x"],
+    );
+    let warnings = v["warnings"].as_array().cloned().unwrap_or_default();
+    assert!(
+        warnings
+            .iter()
+            .any(|w| w.as_str().is_some_and(|s| s.contains("client id file"))),
+        "expected a regeneration warning, got {v}"
+    );
+
+    let regenerated: u64 = std::fs::read_to_string(&client_file)
+        .expect("client id file")
+        .trim()
+        .parse()
+        .expect("client id is a u64 again");
+    assert_ne!(regenerated, 0);
+}

@@ -5,7 +5,7 @@
 //! makes them trivially unit-testable.
 
 use crate::doc_parser;
-use y_octo::{AHashMap, Any, Array, Doc, DocOptions, HashMapExt, Map, Value};
+use y_octo::{AHashMap, Any, Array, Doc, HashMapExt, Map, Value};
 
 use crate::error::CliError;
 use crate::fractional_index::generate_key_between;
@@ -22,7 +22,7 @@ pub fn build_full_doc(title: &str, markdown: &str, doc_id: &str) -> Result<Vec<u
 /// shape the app + `add_doc_to_root_doc` expect: a `meta` Y.Map with a `name` string and an
 /// empty `pages` Y.Array. The doc's guid is set to the workspace id (== root doc guid).
 pub fn build_root_doc(workspace_id: &str, name: &str) -> Result<Vec<u8>, CliError> {
-    let doc = DocOptions::new().with_guid(workspace_id.to_string()).build();
+    let doc = crate::lease::doc_options().with_guid(workspace_id.to_string()).build();
 
     let mut meta: Map = doc.get_or_create_map("meta")?;
     meta.insert("name".to_string(), Any::String(name.to_string()))?;
@@ -43,7 +43,7 @@ pub fn merge_doc(snapshot: Option<&[u8]>, updates: &[Vec<u8>]) -> Result<Vec<u8>
     if snapshot.is_none() && updates.is_empty() {
         return Ok(Vec::new());
     }
-    let mut doc: Doc = DocOptions::new().build();
+    let mut doc: Doc = crate::lease::doc_options().build();
     if let Some(snap) = snapshot
         && !is_empty_doc_bin(snap)
     {
@@ -98,8 +98,8 @@ fn with_delta<T>(
     mutate: impl FnOnce(&Doc) -> Result<T, CliError>,
 ) -> Result<(Vec<u8>, T), CliError> {
     let mut doc: Doc = match guid {
-        Some(g) => DocOptions::new().with_guid(g.to_string()).build(),
-        None => DocOptions::new().build(),
+        Some(g) => crate::lease::doc_options().with_guid(g.to_string()).build(),
+        None => crate::lease::doc_options().build(),
     };
     if !is_empty_doc_bin(bin) {
         doc.apply_update_from_binary_v1(bin)?;
@@ -180,7 +180,7 @@ pub fn read_root_meta(root_bin: Vec<u8>) -> Result<(Option<String>, Vec<RootPage
     if is_empty_doc_bin(&root_bin) {
         return Ok((None, Vec::new()));
     }
-    let mut doc: Doc = DocOptions::new().build();
+    let mut doc: Doc = crate::lease::doc_options().build();
     doc.apply_update_from_binary_v1(&root_bin)?;
 
     // A brand-new root may have no `meta` map yet — treat that as an empty list, not an error.
@@ -824,7 +824,7 @@ pub fn rewrap_connector_labels(doc_bin: &[u8]) -> Result<Option<(Vec<u8>, usize)
     // failure to APPLY the binary, however, propagates - that is real corruption. The empty-bin
     // guard matches the other entry points (`with_delta`): an unwritten doc has no surface.
     {
-        let mut doc: Doc = DocOptions::new().build();
+        let mut doc: Doc = crate::lease::doc_options().build();
         if !is_empty_doc_bin(doc_bin) {
             doc.apply_update_from_binary_v1(doc_bin)?;
         }
@@ -935,6 +935,7 @@ pub fn add_latex_block(doc_bin: &[u8], latex: &str) -> Result<(Vec<u8>, String),
 #[cfg(test)]
 mod surface_tests {
     use super::*;
+    use y_octo::DocOptions;
 
     /// Build a fresh edgeless page doc (already carries an `affine:surface` block).
     fn fresh_doc() -> Vec<u8> {

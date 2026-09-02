@@ -194,7 +194,7 @@ pub fn build_public_root_doc(root_doc_bin: &[u8], doc_metas: &[(&str, Option<&st
         .map(|(doc_id, _title)| (*doc_id).to_string())
         .collect::<HashSet<_>>();
 
-    let doc = Doc::default();
+    let doc = crate::lease::doc_options().build();
     let mut meta = doc.get_or_create_map("meta")?;
     let mut pages = ensure_pages_array(&doc, &mut meta)?;
     let mut copied = HashSet::new();

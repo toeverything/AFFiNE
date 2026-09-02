@@ -248,6 +248,17 @@ Async (tokio). Pool keyed by `universal_id`; per-workspace SQLite file.
   The CLI enforces this with a one-shot pre-flight probe of the WAL lock byte (`error:locked`,
   `--force` to skip) - a point-in-time check with a TOCTOU window, not a held lock, and not
   implemented on Windows (writes proceed with a `warnings` entry).
+- **One y-octo client id per workspace.** Every `Doc` a peer writes through stays in that doc's
+  state vector forever, so a CLI that minted a fresh client id per invocation would grow the state
+  vector of every doc an agent touches without bound.
+  The id is generated once (in y-octo's own `prefer_small_random` range, so it stays short in the
+  varint item ids) and persisted in `affine-cli.client` beside `storage.db`; clock continuation is
+  safe because every CLI write loads the merged binary first, and y-octo continues the clock from
+  the loaded state for that client.
+  Reusing an id demands a single writer, so that file is also the write lock: mutating commands
+  hold an exclusive advisory `flock` on it for their whole run and a second process retries briefly
+  and then fails with `error:busy` (not implemented on Windows, where writes proceed with a
+  `warnings` entry). See `tools/affine-cli/src/lease.rs`.
 - **nbstore migrates on `connect()`.** The CLI therefore checks `_sqlx_migrations` read-only first
   and refuses behind-schema databases (`error:migration_required`, `--allow-migrate` to opt in) and
   newer-than-CLI databases (`error:db_newer`); only `workspace create` migrates a fresh file.

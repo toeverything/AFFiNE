@@ -1,4 +1,6 @@
-use y_octo::{Any, DocOptions, Map};
+use y_octo::{Any, Map};
+
+use crate::lease::doc_options;
 
 use super::{
     super::{doc_loader::is_empty_doc, value::value_to_string},
@@ -13,7 +15,7 @@ pub fn update_doc_properties(
     updated_by: Option<&str>,
 ) -> Result<Vec<u8>, ParseError> {
     let doc = if is_empty_doc(existing_binary) {
-        DocOptions::new().with_guid(properties_doc_id.to_string()).build()
+        doc_options().with_guid(properties_doc_id.to_string()).build()
     } else {
         super::load_doc(existing_binary, Some(properties_doc_id))?
     };

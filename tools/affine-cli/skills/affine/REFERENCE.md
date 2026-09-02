@@ -42,6 +42,21 @@ know, it refuses with `"error":"db_newer"`; rebuild the CLI from a matching sour
 `workspace create` (a fresh database) migrates without the flag. Nothing is written before the
 check passes.
 
+**Write lease (one CLI writer per workspace):** each workspace directory holds an
+`affine-cli.client` file next to `storage.db`.
+It stores the single y-octo client id the CLI writes every doc with, so repeated edits stay one
+entry in a doc's state vector instead of adding a dead peer per invocation.
+Reusing an id is only safe for one writer at a time, so every mutating command holds an exclusive
+advisory `flock` on that file for its whole run.
+A second CLI process retries for about two seconds and then fails with `"error":"busy"`; that is
+always safe to retry, and nothing has been written when it fires.
+Read commands never take the lease and run fine while it is held.
+On Windows the lock is not implemented: writes proceed and the output carries a `warnings` entry,
+so do not run two `affine-cli` writes against one workspace at once there.
+If the file is missing or unreadable it is regenerated and the command warns; docs written with
+the previous id keep it in their state vector.
+Delete it only with the workspace.
+
 **Reserved ids:** mutating doc/diagram commands reject `--doc` values that name the workspace's
 root doc (id == workspace id) or internal database docs (`db$…`, `userdata$…`) with
 `"error":"config"` — those would corrupt the workspace, not edit a page.
@@ -190,6 +205,9 @@ Idempotent: re-running is safe, since a labelled connector is re-written to the 
 - **Behind-schema databases are refused** (`"error":"migration_required"`) instead of being
   migrated silently; open the workspace in the app or pass `--allow-migrate`. Databases newer than
   the CLI are refused with `"error":"db_newer"`.
+- **Two concurrent writes serialize, then fail** (`"error":"busy"`): the second process waits about
+  two seconds on the workspace write lease (`affine-cli.client`) and then errors without writing.
+  Retry it.
 - **Pass ids in `=` form** (`--workspace=$WS`) — ids can start with `-`.
 - **Cloud workspaces** must already exist locally (sign in + open once); the CLI writes into the
   existing db with `--peer <serverId>`, it can't create a cloud workspace.
