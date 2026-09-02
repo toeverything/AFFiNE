@@ -823,9 +823,9 @@ mod tests {
         reference.insert("pageId".into(), Any::String("target-doc".into()));
         let mut params = AHashMap::default();
         params.insert("mode".into(), Any::String("page".into()));
-        reference.insert("params".into(), Any::Object(params));
+        reference.insert("params".into(), Any::Object(Box::new(params)));
         let mut attrs = TextAttributes::new();
-        attrs.insert("reference".into(), Any::Object(reference));
+        attrs.insert("reference".into(), Any::Object(Box::new(reference)));
         cell_text
             .apply_delta(&[
                 TextDeltaOp::Insert {

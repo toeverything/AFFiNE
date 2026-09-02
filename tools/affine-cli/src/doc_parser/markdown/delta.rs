@@ -173,7 +173,7 @@ fn parse_inline_reference(value: &Any) -> Option<InlineReference> {
     let title = map.get("title").and_then(any_as_string).map(str::to_string);
     let ref_type = map.get("type").and_then(any_as_string).map(str::to_string);
     let params = map.get("params").and_then(|value| match value {
-        Any::Object(map) => Some(map.clone()),
+        Any::Object(map) => Some((**map).clone()),
         _ => None,
     });
     let mode = params
@@ -908,7 +908,7 @@ mod tests {
         ref_map.insert("type".into(), Any::String("LinkedPage".into()));
 
         let mut attrs = TextAttributes::new();
-        attrs.insert(InlineStyle::Reference.key().into(), Any::Object(ref_map));
+        attrs.insert(InlineStyle::Reference.key().into(), Any::Object(Box::new(ref_map)));
 
         let delta = vec![TextDeltaOp::Insert {
             insert: TextInsert::Text("Doc Title".into()),

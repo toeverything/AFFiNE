@@ -75,7 +75,7 @@ pub(super) fn value_to_any(value: &Value) -> Option<Any> {
                 }
             }
         }
-        return Some(Any::Object(values));
+        return Some(Any::Object(Box::new(values)));
     }
 
     None

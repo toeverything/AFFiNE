@@ -50,7 +50,8 @@ fn main() {
             "position".to_string(),
             Any::Array(vec![Any::Float64(10.0.into()), Any::Float64(20.0.into())]),
         );
-        m.insert("obj_with_array".to_string(), Any::Object(o)).unwrap();
+        m.insert("obj_with_array".to_string(), Any::Object(Box::new(o)))
+            .unwrap();
     }
 
     // What does y-octo's OWN reader return for each form? (Determines if a Rust test can see it.)

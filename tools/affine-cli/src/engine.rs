@@ -304,7 +304,7 @@ fn adaptive_color(light: &str, dark: &str) -> Any {
     let mut m = AHashMap::<String, Any>::new();
     m.insert("light".to_string(), Any::String(light.to_string()));
     m.insert("dark".to_string(), Any::String(dark.to_string()));
-    Any::Object(m)
+    Any::Object(Box::new(m))
 }
 
 /// Theme-adaptive label color: near-black on light theme, near-white on dark theme.
@@ -392,7 +392,7 @@ impl Endpoint {
                 Any::Array(vec![Any::Float64(x.into()), Any::Float64(y.into())]),
             );
         }
-        Any::Object(m)
+        Any::Object(Box::new(m))
     }
 }
 
@@ -615,7 +615,7 @@ fn connector_label_style() -> Any {
     m.insert("fontStyle".to_string(), Any::String("normal".to_string()));
     m.insert("fontWeight".to_string(), Any::String("400".to_string()));
     m.insert("textAlign".to_string(), Any::String("center".to_string()));
-    Any::Object(m)
+    Any::Object(Box::new(m))
 }
 
 /// Insert a connector element into an already-loaded doc. Returns the element id.

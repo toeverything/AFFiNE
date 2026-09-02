@@ -27,7 +27,7 @@ fn any_to_value(doc: &Doc, any: Any) -> Result<Value, ParseError> {
         }
         Any::Object(values) => {
             let mut map = doc.create_map()?;
-            for (key, value) in values {
+            for (key, value) in *values {
                 let item = any_to_value(doc, value)?;
                 map.insert(key, item)?;
             }
@@ -214,11 +214,11 @@ pub fn build_public_root_doc(root_doc_bin: &[u8], doc_metas: &[(&str, Option<&st
                     continue;
                 }
 
-                let page_object = Any::Object(
+                let page_object = Any::Object(Box::new(
                     page.iter()
                         .filter_map(|(key, value)| value.to_any().map(|any| (key.to_string(), any)))
                         .collect(),
-                );
+                ));
                 if let Some(inserted_page_id) = insert_page_from_any(&doc, &mut pages, page_object)? {
                     copied.insert(inserted_page_id);
                 }
