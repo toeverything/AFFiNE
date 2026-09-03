@@ -75,7 +75,7 @@
     "@react-email/section": "0.0.17",
     "@react-email/text": "0.1.6",
     "@socket.io/redis-adapter": "^8.3.0",
-    "bullmq": "^5.79.0",
+    "bullmq": "^6.0.0",
     "commander": "^13.1.0",
     "cookie-parser": "^1.4.7",
     "cross-env": "^10.1.0",

@@ -995,7 +995,7 @@ __metadata:
     "@types/sinon": "npm:^21.0.0"
     "@types/supertest": "npm:^7.0.0"
     ava: "npm:^7.0.0"
-    bullmq: "npm:^5.79.0"
+    bullmq: "npm:^6.0.0"
     c8: "npm:^10.1.3"
     commander: "npm:^13.1.0"
     cookie-parser: "npm:^1.4.7"
@@ -19744,22 +19744,30 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bullmq@npm:^5.79.0":
-  version: 5.79.0
-  resolution: "bullmq@npm:5.79.0"
+"bullmq@npm:^6.0.0":
+  version: 6.0.11
+  resolution: "bullmq@npm:6.0.11"
   dependencies:
-    cron-parser: "npm:4.9.0"
-    ioredis: "npm:5.10.1"
-    msgpackr: "npm:2.0.2"
+    cron-parser: "npm:5.8.1"
+    msgpackr: "npm:2.0.5"
     node-abort-controller: "npm:3.1.1"
-    semver: "npm:7.8.1"
+    semver: "npm:7.8.5"
     tslib: "npm:2.8.1"
   peerDependencies:
+    bullmq-otel: ">=2.0.0"
+    ioredis: ">=5.0.0"
+    pg: ">=8.0.0"
     redis: ">=5.0.0"
   peerDependenciesMeta:
+    bullmq-otel:
+      optional: true
+    ioredis:
+      optional: true
+    pg:
+      optional: true
     redis:
       optional: true
-  checksum: 10/09419a8c5e51bb3f1c12f974300ed881b9d7c455da42ff9691cd040463e489da435676f334fd84d406e3467b1b449a74da2d8ebda367f9106feb2b9c3258ea32
+  checksum: 10/32dca075a2faa158ae194c847dd6a87716c656308e496da04a7191f4ab81a111dda96c527c744519bcbd0c18cc82f031c1be078c19fad40353b43931a9414da6
   languageName: node
   linkType: hard
 
@@ -21187,12 +21195,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cron-parser@npm:4.9.0":
-  version: 4.9.0
-  resolution: "cron-parser@npm:4.9.0"
+"cron-parser@npm:5.8.1":
+  version: 5.8.1
+  resolution: "cron-parser@npm:5.8.1"
   dependencies:
-    luxon: "npm:^3.2.1"
-  checksum: 10/ffca5e532a5ee0923412ee6e4c7f9bbceacc6ddf8810c16d3e9fb4fe5ec7e2de1b6896d7956f304bb6bc96b0ce37ad7e3935304179d52951c18d84107184faa7
+    luxon: "npm:^3.7.2"
+  checksum: 10/7c50cbef62d9287dc51f23153741c71435fb2287c383765e1ee170d7ebd4be1479925008a4c36c8fc10aee0e20ba9427f0649113c8cbb3373abc120802a2d8ab
   languageName: node
   linkType: hard
 
@@ -27586,7 +27594,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"luxon@npm:^3.2.1, luxon@npm:~3.7.0":
+"luxon@npm:^3.7.2, luxon@npm:~3.7.0":
   version: 3.7.2
   resolution: "luxon@npm:3.7.2"
   checksum: 10/b24cd205ed306ce7415991687897dcc4027921ae413c9116590bc33a95f93b86ce52cf74ba72b4f5c5ab1c10090517f54ac8edfb127c049e0bf55b90dc2260be
@@ -28823,15 +28831,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"msgpackr@npm:2.0.2":
-  version: 2.0.2
-  resolution: "msgpackr@npm:2.0.2"
+"msgpackr@npm:2.0.5":
+  version: 2.0.5
+  resolution: "msgpackr@npm:2.0.5"
   dependencies:
     msgpackr-extract: "npm:^3.0.4"
   dependenciesMeta:
     msgpackr-extract:
       optional: true
-  checksum: 10/36e0e9480e3a6193e0e756c80454f994561790286f74d80b17471549af6c899983ebc4b2a7f172f814bde61539e7221d2e1c08833e4f4ff6cd179f611d2b1b6a
+  checksum: 10/2eda64f30bf89a8195d732b9eea82a79091c56e2da4a0146a03ccf68b87a2871b18aa371a9f881f6bec53b09a5d63057de4e28942b08aaf8b0cb024b38e9daee
   languageName: node
   linkType: hard
 
@@ -32885,12 +32893,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:7.8.1, semver@npm:^7.1.1, semver@npm:^7.1.3, semver@npm:^7.2.1, semver@npm:^7.3.2, semver@npm:^7.3.5, semver@npm:^7.3.8, semver@npm:^7.5.3, semver@npm:^7.5.4, semver@npm:^7.6.0, semver@npm:^7.6.2, semver@npm:^7.6.3, semver@npm:^7.7.2, semver@npm:^7.7.3, semver@npm:^7.7.4":
-  version: 7.8.1
-  resolution: "semver@npm:7.8.1"
+"semver@npm:7.8.5, semver@npm:^7.1.1, semver@npm:^7.1.3, semver@npm:^7.2.1, semver@npm:^7.3.2, semver@npm:^7.3.5, semver@npm:^7.3.8, semver@npm:^7.5.3, semver@npm:^7.5.4, semver@npm:^7.6.0, semver@npm:^7.6.2, semver@npm:^7.6.3, semver@npm:^7.7.2, semver@npm:^7.7.3, semver@npm:^7.7.4":
+  version: 7.8.5
+  resolution: "semver@npm:7.8.5"
   bin:
     semver: bin/semver.js
-  checksum: 10/3244f6c4cb3f8126fea0426d353829ed4967e41e1f4696337c6fdcad87426466fe2badaf49d7dc85849acfc496ea0599432a4aecc33802d2d774e723acfa30e6
+  checksum: 10/9b01d2ff11e6e4a4539b7ca3c5f280c8704cb397a28504469f2ed4f00ad2194748d756647362a9712fff30984d15772ab7f083108c2fb508e2096ae9e708f22c
   languageName: node
   linkType: hard
 
