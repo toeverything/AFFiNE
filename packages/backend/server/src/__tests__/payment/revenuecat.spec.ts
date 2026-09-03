@@ -1113,6 +1113,9 @@ test('should not dispatch webhook event when authorization header is missing or 
 
 test('should refresh user subscriptions (empty / revenuecat / stripe-only)', async t => {
   const { subResolver, db, mockAlias, mockSubSeq } = t.context;
+  const now = Date.now();
+  const relativeDate = (days: number) =>
+    new Date(now + days * 24 * 60 * 60 * 1000);
 
   mockAlias(user.id);
   const currentUser = {
@@ -1134,8 +1137,8 @@ test('should refresh user subscriptions (empty / revenuecat / stripe-only)', asy
         identifier: 'Pro',
         isTrial: false,
         isActive: true,
-        latestPurchaseDate: new Date('2025-09-01T00:00:00.000Z'),
-        expirationDate: new Date('2026-09-01T00:00:00.000Z'),
+        latestPurchaseDate: relativeDate(-2),
+        expirationDate: relativeDate(364),
         productId: 'app.affine.pro.Annual',
         store: 'app_store',
         willRenew: true,
@@ -1147,8 +1150,8 @@ test('should refresh user subscriptions (empty / revenuecat / stripe-only)', asy
         identifier: 'AI',
         isTrial: false,
         isActive: true,
-        latestPurchaseDate: new Date('2025-09-02T00:00:00.000Z'),
-        expirationDate: new Date('2026-09-02T00:00:00.000Z'),
+        latestPurchaseDate: relativeDate(-1),
+        expirationDate: relativeDate(365),
         productId: 'app.affine.pro.ai.Annual',
         store: 'play_store',
         willRenew: true,
