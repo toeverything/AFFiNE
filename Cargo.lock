@@ -61,6 +61,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "affine-cli"
+version = "0.0.0"
+dependencies = [
+ "affine_nbstore",
+ "affine_schema",
+ "anyhow",
+ "assert-json-diff",
+ "base64-simd",
+ "clap",
+ "dirs 5.0.1",
+ "libc",
+ "nanoid 0.4.0",
+ "pulldown-cmark 0.13.1",
+ "rand 0.9.4",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "sqlx",
+ "thiserror 2.0.18",
+ "tokio",
+ "y-octo",
+]
+
+[[package]]
 name = "affine_common"
 version = "0.1.0"
 dependencies = [
@@ -81,7 +105,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d45f91ca0f91431eeaa05937033d97efd93c4e01d21855938b437c2d2f0684f6"
 dependencies = [
  "chrono",
- "nanoid",
+ "nanoid 0.5.0",
  "pulldown-cmark 0.13.1",
  "serde",
  "serde_json",
@@ -98,7 +122,7 @@ checksum = "5826d670f6d43faa7809ef6a06d4a8c5ff493b970399c5c3c5659d25e572746b"
 dependencies = [
  "affine_doc_loader",
  "chrono",
- "nanoid",
+ "nanoid 0.5.0",
  "pulldown-cmark 0.13.1",
  "serde",
  "serde_json",
@@ -1338,6 +1362,7 @@ version = "4.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "714a53001bf66416adb0e2ef5ac857140e7dc3a0c48fb28b2f10762fc4b5069f"
 dependencies = [
+ "anstream",
  "anstyle",
  "clap_lex",
  "strsim 0.11.1",
@@ -2143,11 +2168,20 @@ dependencies = [
 
 [[package]]
 name = "dirs"
+version = "5.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44c45a9d03d6676652bcb5e724c7e988de1acad23a711b5217ab9cbecbec2225"
+dependencies = [
+ "dirs-sys 0.4.1",
+]
+
+[[package]]
+name = "dirs"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3e8aa94d75141228480295a7d0e7feb620b1a5ad9f12bc40be62411e38cce4e"
 dependencies = [
- "dirs-sys",
+ "dirs-sys 0.5.0",
 ]
 
 [[package]]
@@ -2158,6 +2192,18 @@ checksum = "b98cf8ebf19c3d1b223e151f99a4f9f0690dca41414773390fc824184ac833e1"
 dependencies = [
  "cfg-if",
  "dirs-sys-next",
+]
+
+[[package]]
+name = "dirs-sys"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "520f05a5cbd335fae5a99ff7a6ab8627577660ee5cfd6a94a6a929b52ff0321c"
+dependencies = [
+ "libc",
+ "option-ext",
+ "redox_users 0.4.6",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -5259,6 +5305,15 @@ dependencies = [
  "num-traits",
  "simba",
  "typenum",
+]
+
+[[package]]
+name = "nanoid"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ffa00dec017b5b1a8b7cf5e2c008bfda1aa7e0697ac1508b491fdf2622fb4d8"
+dependencies = [
+ "rand 0.8.6",
 ]
 
 [[package]]
@@ -9186,7 +9241,7 @@ dependencies = [
  "binstall-tar",
  "chrono",
  "comemo",
- "dirs",
+ "dirs 6.0.0",
  "ecow",
  "flate2",
  "thiserror 2.0.18",
@@ -10902,7 +10957,7 @@ dependencies = [
  "byteorder",
  "log",
  "loom",
- "nanoid",
+ "nanoid 0.5.0",
  "nom 8.0.0",
  "ordered-float",
  "rand 0.10.1",

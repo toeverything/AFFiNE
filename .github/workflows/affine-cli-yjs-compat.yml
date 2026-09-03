@@ -1,0 +1,104 @@
+# Real-yjs decode check + tests for tools/affine-cli.
+#
+# affine-cli writes CRDT updates with y-octo; the app reads them with the real yjs library.
+# y-octo's own reader normalizes encodings that real yjs decodes differently (the labelXYWH
+# incident - docs/affine-cli-edgeless-render-postmortem.md), so the only trustworthy guard is
+# to decode CLI-written binaries with the actual yjs package in CI. The fixtures are emitted
+# by the crate's own library code (examples/emit_yjs_fixtures.rs) and asserted by
+# tools/affine-cli/yjs-compat/check.mjs: full-state binaries, the raw per-row deltas the CLI
+# pushes (delete sets included), and CLI deltas applied on top of concurrent yjs edits.
+#
+# Trigger paths cover the sources the CLI hardcodes conventions from, so a schema or
+# dependency change upstream runs this check even when tools/affine-cli is untouched:
+#   blocksuite/affine/model/**                 block schemas (flavours, prop keys, versions),
+#                                              surface element models (connector labelXYWH,
+#                                              xywh wire format), theme colors
+#   blocksuite/affine/blocks/surface/**        affine:surface schema (version, prop:elements)
+#   blocksuite/framework/store/**              Boxed marker, sys:* block keys, schema machinery
+#   blocksuite/framework/std/src/utils/**      element fractional-index conventions
+#   packages/frontend/core/src/modules/db/**   db$docProperties ORM schema (primaryMode)
+#   packages/frontend/core/src/modules/doc/**  root doc meta.pages entry shape
+#   packages/frontend/apps/electron/src/helper/workspace/**  on-disk workspace layout
+#   Cargo.toml / Cargo.lock                    y-octo (writer) version bumps
+#   package.json / .yarn/patches/yjs-*         yjs (reader) version pin the harness must track
+
+name: affine-cli yjs compat
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - canary
+    paths:
+      - 'tools/affine-cli/**'
+      - 'packages/frontend/native/nbstore/**'
+      - 'blocksuite/affine/model/**'
+      - 'blocksuite/affine/blocks/surface/**'
+      - 'blocksuite/framework/store/**'
+      - 'blocksuite/framework/std/src/utils/**'
+      - 'packages/frontend/core/src/modules/db/**'
+      - 'packages/frontend/core/src/modules/doc/**'
+      - 'packages/frontend/apps/electron/src/helper/workspace/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'package.json'
+      - '.yarn/patches/yjs-*'
+      - '.github/workflows/affine-cli-yjs-compat.yml'
+  pull_request:
+    paths:
+      - 'tools/affine-cli/**'
+      - 'packages/frontend/native/nbstore/**'
+      - 'blocksuite/affine/model/**'
+      - 'blocksuite/affine/blocks/surface/**'
+      - 'blocksuite/framework/store/**'
+      - 'blocksuite/framework/std/src/utils/**'
+      - 'packages/frontend/core/src/modules/db/**'
+      - 'packages/frontend/core/src/modules/doc/**'
+      - 'packages/frontend/apps/electron/src/helper/workspace/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'package.json'
+      - '.yarn/patches/yjs-*'
+      - '.github/workflows/affine-cli-yjs-compat.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  yjs-compat:
+    name: real-yjs decode check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          # The job builds and runs PR-authored code; it only needs to read the repo.
+          persist-credentials: false
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: affine-cli
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Emit fixtures with the CLI's own writers
+        run: cargo run -p affine-cli --example emit_yjs_fixtures -- /tmp/yjs-fixtures
+
+      - name: Decode fixtures with real yjs
+        working-directory: tools/affine-cli/yjs-compat
+        run: |
+          npm ci --no-audit --no-fund
+          node check.mjs /tmp/yjs-fixtures
+
+      - name: Rust unit + e2e tests
+        run: cargo test -p affine-cli

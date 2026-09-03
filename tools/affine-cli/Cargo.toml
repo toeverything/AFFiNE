@@ -1,0 +1,61 @@
+[package]
+name    = "affine-cli"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "affine-cli"
+path = "src/main.rs"
+
+[dependencies]
+# Core engine crates. VERIFIED napi-free under these features (mobile-native proves the recipe).
+# affine_nbstore use-as-lib noop-shims napi/napi-derive and flips Result -> anyhow, Data -> Vec<u8>.
+# The doc parser (Y.Doc ↔ blocks ↔ markdown) is vendored in src/doc_parser - it was
+# affine_common::doc_parser until PR #15197 removed it from packages/common/native.
+affine_nbstore = { workspace = true, features = ["use-as-lib"] }
+y-octo         = { workspace = true }
+
+# Schema check before opening a workspace through nbstore (store::check_schema): affine_schema
+# is the migration list nbstore embeds; sqlx opens the file read-only to read `_sqlx_migrations`
+# without applying anything. nbstore's `connect()` would otherwise migrate every DB it touches.
+affine_schema = { path = "../../packages/frontend/native/schema" }
+sqlx          = { workspace = true, default-features = false, features = ["migrate", "runtime-tokio", "sqlite"] }
+
+# Markdown parsing for the vendored doc_parser (`$…$`/`$$…$$` math needs ENABLE_MATH).
+pulldown-cmark = { workspace = true }
+
+# Async runtime: nbstore is tokio + sqlx(runtime-tokio, sqlite).
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+
+# Errors. nbstore use-as-lib Result is anyhow::Result; affine_common returns ParseError;
+# nbstore::error::Error impls From<ParseError>. anyhow at the CLI boundary.
+anyhow    = { workspace = true }
+thiserror = { workspace = true }
+
+# CLI + JSON output. clap is not a workspace dep upstream, so it is declared here.
+clap       = { version = "4.4", features = ["derive"] }
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# IDs - app uses bare nanoid() (~21 chars, URL-safe) for workspaceId (== root doc guid) and docId.
+nanoid = { workspace = true }
+
+# Surface element `seed` is a random uint32 in-app. Workspace already pins rand 0.9.
+rand = { workspace = true }
+
+# Blob keys default to the content's SHA-256 (app convention); blob get encodes bytes as base64
+# in JSON when no --out is given. Both are workspace deps already (used by native packages).
+sha2        = { workspace = true }
+base64-simd = { workspace = true }
+
+# Resolve ~/Library/Application Support/AFFiNE on macOS. No workspace entry; declared directly.
+dirs = "5"
+
+# F_GETLK probe of SQLite's WAL dead-man-switch lock (store::db_in_use_elsewhere): detects a
+# workspace DB held open by another process (the app) before the CLI writes into it.
+libc = { workspace = true }
+
+[dev-dependencies]
+# Strict JSON comparison for the vendored doc_parser's parse_doc_from_binary fixture test.
+assert-json-diff = { workspace = true }
