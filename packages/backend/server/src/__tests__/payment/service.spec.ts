@@ -6,12 +6,14 @@ import Sinon from 'sinon';
 import Stripe from 'stripe';
 
 import { AppModule } from '../../app.module';
-import { EventBus } from '../../base';
+import { EventBus, Lock, Mutex } from '../../base';
 import { ConfigFactory, ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
 import { EntitlementService } from '../../core/entitlement';
+import { Models } from '../../models';
 import { SubscriptionCronJobs } from '../../plugins/payment/cron';
+import { DubAffiliateService } from '../../plugins/payment/dub-affiliate';
 import { SelfhostTeamSubscriptionManager } from '../../plugins/payment/manager';
 import { RevenueCatService } from '../../plugins/payment/revenuecat';
 import { SubscriptionService } from '../../plugins/payment/service';
@@ -221,6 +223,8 @@ test.beforeEach(async t => {
   app.get(ConfigFactory).override({
     payment: {
       showLifetimePrice: true,
+      dubAffiliateEnabled: false,
+      dubAffiliateExcludedPromotionCodes: [],
       revenuecat: {
         enabled: false,
       },
@@ -722,6 +726,221 @@ test('should apply user coupon for checking out', async t => {
     price: PRO_MONTHLY,
     coupon: 'coupon_1',
   });
+});
+
+test('should add Dub attribution to eligible Pro checkout without listing subscriptions twice', async t => {
+  const { app, service, stripe, u1 } = t.context;
+  app.get(ConfigFactory).override({
+    payment: { dubAffiliateEnabled: true },
+  });
+  stripe.customers.retrieve.resolves({
+    id: 'cus_1',
+    deleted: false,
+    metadata: {},
+  } as any);
+  stripe.customers.update.resolves({ id: 'cus_1' } as any);
+  const tryAcquire = Sinon.stub(app.get(Mutex), 'tryAcquire').resolves(
+    new Lock(async () => {})
+  );
+  t.teardown(() => tryAcquire.restore());
+
+  await service.checkout(
+    {
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Yearly,
+      successCallbackLink: '/settings',
+    },
+    { user: u1, dubClickId: 'click_pro' }
+  );
+
+  t.is(stripe.subscriptions.list.callCount, 1);
+  t.like(stripe.customers.update.firstCall.args[1], {
+    metadata: {
+      dubCustomerExternalId: u1.id,
+      dubClickId: 'click_pro',
+    },
+  });
+  t.deepEqual(getLastCheckoutParams(stripe.checkout.sessions.create), {
+    customer: 'cus_1',
+    line_items: [{ price: PRO_YEARLY, quantity: 1 }],
+    mode: 'subscription',
+    subscription_data: undefined,
+    allow_promotion_codes: true,
+    success_url: 'http://localhost:3010/settings',
+    metadata: { dubCustomerExternalId: u1.id },
+  });
+});
+
+test('should preserve AI trial parameters when adding Dub metadata', async t => {
+  const { app, service, stripe, u1 } = t.context;
+  app.get(ConfigFactory).override({
+    payment: { dubAffiliateEnabled: true },
+  });
+  stripe.customers.retrieve.resolves({
+    id: 'cus_1',
+    deleted: false,
+    metadata: {},
+  } as any);
+  stripe.customers.update.resolves({ id: 'cus_1' } as any);
+  const tryAcquire = Sinon.stub(app.get(Mutex), 'tryAcquire').resolves(
+    new Lock(async () => {})
+  );
+  t.teardown(() => tryAcquire.restore());
+  const prepareCheckout = Sinon.spy(
+    app.get(DubAffiliateService),
+    'prepareCheckout'
+  );
+  t.teardown(() => prepareCheckout.restore());
+  t.is(
+    (app.get(DubAffiliateService) as unknown as { mutex: Mutex }).mutex,
+    app.get(Mutex)
+  );
+
+  await service.checkout(
+    {
+      plan: SubscriptionPlan.AI,
+      recurring: SubscriptionRecurring.Yearly,
+      successCallbackLink: '',
+    },
+    { user: u1, dubClickId: 'click_ai' }
+  );
+
+  t.is(prepareCheckout.callCount, 1);
+  t.deepEqual(await prepareCheckout.firstCall.returnValue, {
+    status: 'attributed',
+    sessionMetadata: { dubCustomerExternalId: u1.id },
+  });
+  t.like(getLastCheckoutParams(stripe.checkout.sessions.create), {
+    mode: 'subscription',
+    subscription_data: { trial_period_days: 7 },
+    metadata: { dubCustomerExternalId: u1.id },
+  });
+});
+
+test('should preserve Lifetime payment parameters when adding Dub metadata', async t => {
+  const { app, service, stripe, u1 } = t.context;
+  app.get(ConfigFactory).override({
+    payment: { dubAffiliateEnabled: true },
+  });
+  stripe.customers.retrieve.resolves({
+    id: 'cus_1',
+    deleted: false,
+    metadata: {},
+  } as any);
+  stripe.customers.update.resolves({ id: 'cus_1' } as any);
+  const tryAcquire = Sinon.stub(app.get(Mutex), 'tryAcquire').resolves(
+    new Lock(async () => {})
+  );
+  t.teardown(() => tryAcquire.restore());
+
+  await service.checkout(
+    {
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Lifetime,
+      successCallbackLink: '',
+    },
+    { user: u1, dubClickId: 'click_lifetime' }
+  );
+
+  t.like(getLastCheckoutParams(stripe.checkout.sessions.create), {
+    mode: 'payment',
+    invoice_creation: { enabled: true },
+    metadata: { dubCustomerExternalId: u1.id },
+  });
+});
+
+test('should preserve Team seats and workspace metadata when adding Dub metadata', async t => {
+  const { app, service, stripe, u1 } = t.context;
+  app.get(ConfigFactory).override({
+    payment: { dubAffiliateEnabled: true },
+  });
+  stripe.customers.retrieve.resolves({
+    id: 'cus_1',
+    deleted: false,
+    metadata: {},
+  } as any);
+  stripe.customers.update.resolves({ id: 'cus_1' } as any);
+  const tryAcquire = Sinon.stub(app.get(Mutex), 'tryAcquire').resolves(
+    new Lock(async () => {})
+  );
+  t.teardown(() => tryAcquire.restore());
+  const count = Sinon.stub(app.get(Models).workspaceUser, 'count').resolves(3);
+  t.teardown(() => count.restore());
+
+  await service.checkout(
+    {
+      plan: SubscriptionPlan.Team,
+      recurring: SubscriptionRecurring.Monthly,
+      successCallbackLink: '',
+    },
+    { user: u1, workspaceId: 'ws_1', dubClickId: 'click_team' }
+  );
+
+  t.like(getLastCheckoutParams(stripe.checkout.sessions.create), {
+    line_items: [{ price: TEAM_MONTHLY, quantity: 3 }],
+    subscription_data: { metadata: { workspaceId: 'ws_1' } },
+    metadata: { dubCustomerExternalId: u1.id },
+  });
+});
+
+for (const [name, enabled, dubClickId] of [
+  ['disabled', false, 'click_disabled'],
+  ['missing click', true, undefined],
+] as const) {
+  test(`should omit Dub metadata and attribution Stripe calls when ${name}`, async t => {
+    const { app, service, stripe, u1 } = t.context;
+    app.get(ConfigFactory).override({
+      payment: { dubAffiliateEnabled: enabled },
+    });
+
+    await service.checkout(
+      {
+        plan: SubscriptionPlan.Pro,
+        recurring: SubscriptionRecurring.Monthly,
+        successCallbackLink: '',
+      },
+      { user: u1, dubClickId }
+    );
+
+    const checkout = getLastCheckoutParams(stripe.checkout.sessions.create);
+    t.false('metadata' in checkout);
+    t.is(stripe.customers.retrieve.callCount, 0);
+    t.is(stripe.customers.update.callCount, 0);
+    t.is(stripe.invoices.list.callCount, 0);
+    t.is(stripe.charges.list.callCount, 0);
+    t.is(stripe.subscriptions.list.callCount, 1);
+  });
+}
+
+test('should keep the coupon path and skip Dub for an excluded FirstPromoter code', async t => {
+  const { app, service, stripe, u1 } = t.context;
+  app.get(ConfigFactory).override({
+    payment: {
+      dubAffiliateEnabled: true,
+      dubAffiliateExcludedPromotionCodes: [' legacy-code '],
+    },
+  });
+  stripe.promotionCodes.list.resolves({
+    data: [{ coupon: { id: 'coupon_legacy' } }],
+  } as any);
+
+  await service.checkout(
+    {
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
+      successCallbackLink: '',
+      coupon: 'LEGACY-CODE',
+    },
+    { user: u1, dubClickId: 'click_legacy' }
+  );
+
+  const checkout = getLastCheckoutParams(stripe.checkout.sessions.create);
+  t.deepEqual(checkout.discounts, [{ coupon: 'coupon_legacy' }]);
+  t.false('metadata' in checkout);
+  t.is(stripe.customers.retrieve.callCount, 0);
+  t.is(stripe.customers.update.callCount, 0);
+  t.is(stripe.invoices.list.callCount, 0);
+  t.is(stripe.charges.list.callCount, 0);
 });
 
 // =============== subscriptions ===============

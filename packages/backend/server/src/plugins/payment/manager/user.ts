@@ -22,6 +22,7 @@ import {
   URLHelper,
 } from '../../../base';
 import { EntitlementService } from '../../../core/entitlement';
+import { DubAffiliateService } from '../dub-affiliate';
 import { resolveProductMapping, RevenueCatService } from '../revenuecat';
 import { StripeFactory } from '../stripe';
 import {
@@ -52,6 +53,7 @@ export const UserSubscriptionCheckoutArgs = z.object({
     id: z.string(),
     email: z.string(),
   }),
+  dubClickId: z.string().optional(),
 });
 
 @Injectable()
@@ -66,7 +68,8 @@ export class UserSubscriptionManager extends SubscriptionManager {
     private readonly url: URLHelper,
     private readonly mutex: Mutex,
     private readonly entitlement: EntitlementService,
-    private readonly revenueCat: RevenueCatService
+    private readonly revenueCat: RevenueCatService,
+    private readonly dubAffiliate: DubAffiliateService
   ) {
     super(stripeProvider, db);
   }
@@ -89,7 +92,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
   async checkout(
     lookupKey: LookupKey,
     params: z.infer<typeof CheckoutParams>,
-    { user }: z.infer<typeof UserSubscriptionCheckoutArgs>
+    { user, dubClickId }: z.infer<typeof UserSubscriptionCheckoutArgs>
   ) {
     if (
       (lookupKey.plan !== SubscriptionPlan.Pro &&
@@ -171,6 +174,23 @@ export class UserSubscriptionManager extends SubscriptionManager {
             subscription_data: subscriptionData,
           };
 
+    const dubAttribution = await this.dubAffiliate.prepareCheckout({
+      stripeCustomerId: customer.stripeCustomerId,
+      affineUserId: user.id,
+      dubClickId,
+      promotionCode: params.coupon ?? undefined,
+      knownSubscriptions: stripeSubscriptions.data,
+      plan:
+        lookupKey.recurring === SubscriptionRecurring.Lifetime
+          ? 'lifetime'
+          : lookupKey.plan,
+    });
+    const dubMetadata =
+      dubAttribution.status === 'attributed' ||
+      dubAttribution.status === 'existing_owner'
+        ? { metadata: dubAttribution.sessionMetadata }
+        : {};
+
     const session = await this.stripe.checkout.sessions.create({
       customer: customer.stripeCustomerId,
       line_items: [
@@ -181,6 +201,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
       ],
       ...mode,
       ...discounts,
+      ...dubMetadata,
       success_url: this.url.safeLink(params.successCallbackLink || '/'),
     });
 

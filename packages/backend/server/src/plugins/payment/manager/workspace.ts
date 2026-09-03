@@ -12,6 +12,7 @@ import {
 } from '../../../base';
 import { EntitlementService } from '../../../core/entitlement';
 import { Models } from '../../../models';
+import { DubAffiliateService } from '../dub-affiliate';
 import { StripeFactory } from '../stripe';
 import {
   KnownStripeInvoice,
@@ -43,6 +44,7 @@ export const WorkspaceSubscriptionCheckoutArgs = z.object({
     id: z.string(),
     email: z.string(),
   }),
+  dubClickId: z.string().optional(),
 });
 
 @Injectable()
@@ -53,7 +55,8 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     private readonly url: URLHelper,
     private readonly event: EventBus,
     private readonly models: Models,
-    private readonly entitlement: EntitlementService
+    private readonly entitlement: EntitlementService,
+    private readonly dubAffiliate: DubAffiliateService
   ) {
     super(stripeProvider, db);
   }
@@ -108,6 +111,19 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
 
     const count = await this.models.workspaceUser.count(args.workspaceId);
 
+    const dubAttribution = await this.dubAffiliate.prepareCheckout({
+      stripeCustomerId: customer.stripeCustomerId,
+      affineUserId: args.user.id,
+      dubClickId: args.dubClickId,
+      promotionCode: params.coupon ?? undefined,
+      plan: 'team',
+    });
+    const dubMetadata =
+      dubAttribution.status === 'attributed' ||
+      dubAttribution.status === 'existing_owner'
+        ? { metadata: dubAttribution.sessionMetadata }
+        : {};
+
     return this.stripe.checkout.sessions.create({
       customer: customer.stripeCustomerId,
       line_items: [
@@ -123,6 +139,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
         },
       },
       ...discounts,
+      ...dubMetadata,
       success_url: this.url.safeLink(params.successCallbackLink || '/'),
     });
   }

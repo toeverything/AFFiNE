@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
 
 import { Config, Lock, metrics, Mutex } from '../../base';
+import { StripeFactory } from './stripe';
 
 const DUB_CLICK_ID_PATTERN = /^[A-Za-z0-9_-]{1,255}$/;
 const STRIPE_READ_OPTIONS = {
@@ -125,10 +126,14 @@ function outcome(result: DubAffiliatePrepareResult) {
 @Injectable()
 export class DubAffiliateService {
   constructor(
-    private readonly stripe: Stripe,
+    private readonly stripeProvider: StripeFactory,
     private readonly config: Config,
     private readonly mutex: Mutex
   ) {}
+
+  private get stripe() {
+    return this.stripeProvider.stripe;
+  }
 
   async prepareCheckout(
     input: DubAffiliatePrepareInput

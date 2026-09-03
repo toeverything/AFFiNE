@@ -7,6 +7,7 @@ import {
   type DubAffiliatePrepareInput,
   DubAffiliateService,
 } from '../../plugins/payment/dub-affiliate';
+import { StripeFactory } from '../../plugins/payment/stripe';
 
 type StripeStubs = {
   customers: {
@@ -96,7 +97,7 @@ function createHarness(options?: {
     stripe,
     mutex,
     service: new DubAffiliateService(
-      stripe as unknown as Stripe,
+      { stripe } as unknown as StripeFactory,
       config,
       mutex as unknown as Mutex
     ),
