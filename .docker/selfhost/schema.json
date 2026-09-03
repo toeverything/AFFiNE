@@ -1613,6 +1613,16 @@
           "description": "Whether enable lifetime price and allow user to pay for it.\n@default true",
           "default": true
         },
+        "dubAffiliateEnabled": {
+          "type": "boolean",
+          "description": "Whether to attribute eligible Stripe customers to Dub affiliates.\n@default false",
+          "default": false
+        },
+        "dubAffiliateExcludedPromotionCodes": {
+          "type": "array",
+          "description": "Promotion codes that must not also receive Dub attribution.\n@default []",
+          "default": []
+        },
         "stripe": {
           "type": "object",
           "description": "Stripe sdk options and credentials\n@default {\"apiKey\":\"\",\"webhookKey\":\"\"}\n@link https://docs.stripe.com/api",

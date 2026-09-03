@@ -450,6 +450,14 @@
       "type": "Boolean",
       "desc": "Whether enable lifetime price and allow user to pay for it."
     },
+    "dubAffiliateEnabled": {
+      "type": "Boolean",
+      "desc": "Whether to attribute eligible Stripe customers to Dub affiliates."
+    },
+    "dubAffiliateExcludedPromotionCodes": {
+      "type": "Array",
+      "desc": "Promotion codes that must not also receive Dub attribution."
+    },
     "stripe": {
       "type": "Object",
       "desc": "Stripe sdk options and credentials",
