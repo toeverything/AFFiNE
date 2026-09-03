@@ -99,6 +99,7 @@ export class TestingApp extends ApplyType<INestApplication>() {
   private currentUserCookie: string | null = null;
   private csrfCookie: string | null = null;
   private readonly userCookies: Set<string> = new Set();
+  private readonly additionalCookies = new Map<string, string>();
 
   readonly create!: ReturnType<typeof createFactory>;
   readonly mails!: MockMailer;
@@ -119,6 +120,15 @@ export class TestingApp extends ApplyType<INestApplication>() {
     this.currentUserCookie = null;
     this.csrfCookie = null;
     this.userCookies.clear();
+    this.additionalCookies.clear();
+  }
+
+  withCookies(cookies: Readonly<Record<string, string>>) {
+    for (const [name, value] of Object.entries(cookies)) {
+      this.additionalCookies.set(name, value);
+    }
+
+    return this;
   }
 
   url() {
@@ -133,17 +143,23 @@ export class TestingApp extends ApplyType<INestApplication>() {
     method: 'options' | 'get' | 'post' | 'put' | 'delete' | 'patch',
     path: string
   ): supertest.Test {
-    const cookies = [
-      `${AuthService.sessionCookieName}=${this.sessionCookie ?? ''}`,
-      `${AuthService.userCookieName}=${this.currentUserCookie ?? ''}`,
-    ];
+    const cookies = new Map([
+      [AuthService.sessionCookieName, this.sessionCookie ?? ''],
+      [AuthService.userCookieName, this.currentUserCookie ?? ''],
+    ]);
     if (this.csrfCookie) {
-      cookies.push(`${AuthService.csrfCookieName}=${this.csrfCookie}`);
+      cookies.set(AuthService.csrfCookieName, this.csrfCookie);
+    }
+    for (const [name, value] of this.additionalCookies) {
+      cookies.set(name, value);
     }
 
     const req = supertest(this.getHttpServer())
       [method](path)
-      .set('Cookie', cookies);
+      .set(
+        'Cookie',
+        Array.from(cookies, ([name, value]) => `${name}=${value}`).join('; ')
+      );
 
     if (this.csrfCookie) {
       req.set('x-affine-csrf-token', this.csrfCookie);

@@ -144,6 +144,7 @@ const test = ava as TestFn<{
     prices: Sinon.SinonStubbedInstance<Stripe.PricesResource>;
     subscriptions: Sinon.SinonStubbedInstance<Stripe.SubscriptionsResource>;
     subscriptionSchedules: Sinon.SinonStubbedInstance<Stripe.SubscriptionSchedulesResource>;
+    charges: Sinon.SinonStubbedInstance<Stripe.ChargesResource>;
     checkout: {
       sessions: Sinon.SinonStubbedInstance<Stripe.Checkout.SessionsResource>;
     };
@@ -201,6 +202,7 @@ test.before(async t => {
     prices: Sinon.stub(stripe.prices),
     subscriptions: Sinon.stub(stripe.subscriptions),
     subscriptionSchedules: Sinon.stub(stripe.subscriptionSchedules),
+    charges: Sinon.stub(stripe.charges),
     invoices: Sinon.stub(stripe.invoices),
     checkout: {
       sessions: Sinon.stub(stripe.checkout.sessions),
@@ -254,11 +256,23 @@ test.beforeEach(async t => {
   // @ts-expect-error stub
   stripe.subscriptions.list.resolves({ data: [] });
   // @ts-expect-error stub
+  stripe.charges.list.resolves({ data: [], has_more: false });
+  // @ts-expect-error stub
+  stripe.invoices.list.resolves({ data: [], has_more: false });
+  // @ts-expect-error stub
   stripe.checkout.sessions.create.resolves({ id: 'cs_1' });
 });
 
 test.after.always(async t => {
   await t.context.app.close();
+});
+
+test('should initialize empty Stripe billing history test doubles', async t => {
+  const charges = await t.context.stripe.charges.list({ customer: 'cus_1' });
+  const invoices = await t.context.stripe.invoices.list({ customer: 'cus_1' });
+
+  t.deepEqual(charges, { data: [], has_more: false });
+  t.deepEqual(invoices, { data: [], has_more: false });
 });
 
 // ============== prices ==============
