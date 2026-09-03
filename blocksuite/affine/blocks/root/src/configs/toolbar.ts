@@ -106,6 +106,14 @@ const conversionsActionGroup = {
         .run();
     };
 
+    // Hide "Callout" from the menu when every selected block is already a
+    // direct child of a Callout — the schema forbids nested Callouts and the
+    // command layer would silently no-op, which is confusing to the user.
+    const allInsideCallout = selectedModels.every(model => {
+      const parent = model.store.getParent(model);
+      return parent?.flavour === 'affine:callout';
+    });
+
     return {
       content: html`
         <editor-menu-button
@@ -121,7 +129,11 @@ const conversionsActionGroup = {
         >
           <div data-size="large" data-orientation="vertical">
             ${repeat(
-              textConversionConfigs.filter(c => c.flavour !== 'affine:divider'),
+              textConversionConfigs.filter(
+                c =>
+                  c.flavour !== 'affine:divider' &&
+                  !(allInsideCallout && c.flavour === 'affine:callout')
+              ),
               item => item.name,
               ({ flavour, type, name, icon }) => html`
                 <editor-menu-action
