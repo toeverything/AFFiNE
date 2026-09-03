@@ -1,9 +1,14 @@
 import { type ServiceIdentifier } from '@blocksuite/global/di';
 import { DisposableGroup } from '@blocksuite/global/disposable';
+import { IS_IPAD } from '@blocksuite/global/env';
 import { Bound, clamp, Point } from '@blocksuite/global/gfx';
 import { signal } from '@preact/signals-core';
 import last from 'lodash-es/last.js';
 
+import {
+  classifyPointerInput,
+  isPencilInputActive,
+} from '../../event/control/input-classifier.js';
 import type { PointerEventState } from '../../event/state/pointer.js';
 import { getTopElements } from '../../utils/tree.js';
 import type { GfxBlockComponent } from '../../view/index.js';
@@ -382,6 +387,9 @@ export class InteractivityManager extends GfxExtension {
 
     const host = this.std.host;
     const { event } = options;
+    const ownerPointerId = 'pointerId' in event ? event.pointerId : null;
+    const isOwnerPointer = (event: PointerEvent) =>
+      ownerPointerId === null || event.pointerId === ownerPointerId;
     const internal = {
       elements: context.elements.map(model => {
         return {
@@ -471,6 +479,8 @@ export class InteractivityManager extends GfxExtension {
       dragMoveCoalescer.flush();
     };
     const onDragMove = (event: PointerEvent) => {
+      if (!isOwnerPointer(event)) return;
+
       if (!shouldCoalesceDragMove) {
         applyDragMove(event);
         return;
@@ -482,11 +492,33 @@ export class InteractivityManager extends GfxExtension {
       onDragMove(lastEvent as PointerEvent);
     });
     const onDragEnd = (event: PointerEvent) => {
+      if (!isOwnerPointer(event)) return;
+
       this.activeInteraction$.value = null;
 
       host.removeEventListener('pointermove', onDragMove, false);
       host.removeEventListener('pointerup', onDragEnd, false);
+      host.removeEventListener('pointercancel', onDragEnd, false);
+      host.removeEventListener('lostpointercapture', onDragEnd, false);
       viewportWatcher.unsubscribe();
+
+      const isCancel =
+        event.type === 'pointercancel' || event.type === 'lostpointercapture';
+      const shouldCommitCancel =
+        event.type === 'pointercancel' &&
+        event.pointerType === 'pen' &&
+        (IS_IPAD ||
+          classifyPointerInput(event) === 'pencil' ||
+          isPencilInputActive());
+
+      if (isCancel && !shouldCommitCancel) {
+        dragMoveCoalescer.cancel();
+        this._safeExecute(() => {
+          activeExtensionHandlers.forEach(handler => handler?.clear?.());
+        }, 'Error while executing extension `clear` handler');
+        return;
+      }
+
       flushPendingDragMove();
 
       dragLastPos = Point.from(
@@ -528,6 +560,10 @@ export class InteractivityManager extends GfxExtension {
     const listenEvent = () => {
       host.addEventListener('pointermove', onDragMove, false);
       host.addEventListener('pointerup', onDragEnd, false);
+      // iPad Pencil frequently ends strokes with pointercancel instead of
+      // pointerup. Without this, activeInteraction$ stays set and the UI freezes.
+      host.addEventListener('pointercancel', onDragEnd, false);
+      host.addEventListener('lostpointercapture', onDragEnd, false);
     };
     const dragStart = () => {
       this.activeInteraction$.value = {
