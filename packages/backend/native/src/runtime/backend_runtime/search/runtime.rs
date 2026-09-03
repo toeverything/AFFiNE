@@ -8,8 +8,8 @@ use tokio::{
 use uuid::Uuid;
 
 use super::{
-  ActiveGeneration, PermissionAuthorizer, SearchProvider, activate, config_hash, ensure, load_active,
-  reconcile_workspace, sweep_generation_orphans,
+  ActiveGeneration, PermissionAuthorizer, SearchProvider, WORKSPACE_RECONCILE_FAILED, activate,
+  cleanup_retired_generation, config_hash, ensure, load_active, reconcile_workspace, sweep_generation_orphans,
 };
 use crate::{
   runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig},
@@ -130,6 +130,15 @@ impl SearchRuntime {
 
     let _lock = self.lifecycle_lock.lock().await;
     let started_at = Instant::now();
+    if cleanup_retired_generation(&self.pool, &self.embedded, self.remote.as_ref(), &self.config)
+      .await
+      .is_err()
+    {
+      self
+        .observability
+        .generation_gc_failures
+        .fetch_add(1, Ordering::Relaxed);
+    }
     let generation = self.candidate_or_active().await?;
     if self.config.provider == "embedded" {
       self.embedded.prepare_generation(generation.id).await;
@@ -203,12 +212,16 @@ impl SearchRuntime {
       .await
       .map_err(|error| RuntimeError::database("count search workspaces", error))?;
     let pending: bool = sqlx::query_scalar(
-      "SELECT EXISTS (SELECT 1 FROM search_projection.workspace_states WHERE generation_id=$1 AND (NOT covered OR \
-       pending_scope <> 'none')) OR EXISTS (SELECT 1 FROM search_projection.document_states WHERE generation_id=$1 \
-       AND (target_source_version <> published_source_version OR target_source_exists <> published_source_exists OR \
-       target_permission_version <> published_permission_version))",
+      "SELECT EXISTS (SELECT 1 FROM search_projection.workspace_states WHERE generation_id=$1 AND last_error IS \
+       DISTINCT FROM $2 AND (NOT covered OR pending_scope <> 'none')) OR EXISTS (SELECT 1 FROM \
+       search_projection.document_states document WHERE generation_id=$1 AND NOT EXISTS (SELECT 1 FROM \
+       search_projection.workspace_states workspace WHERE workspace.generation_id=document.generation_id AND \
+       workspace.workspace_id=document.workspace_id AND workspace.last_error=$2) AND (target_source_version <> \
+       published_source_version OR target_source_exists <> published_source_exists OR target_permission_version <> \
+       published_permission_version))",
     )
     .bind(generation.id)
+    .bind(WORKSPACE_RECONCILE_FAILED)
     .fetch_one(&self.pool)
     .await
     .map_err(|error| RuntimeError::database("check pending search projection", error))?;
@@ -309,6 +322,12 @@ impl SearchRuntime {
       r#"SELECT id,provider,state,scan_cursor_sid,scan_high_water_sid,
                 (SELECT count(*) FROM search_projection.document_states document
                  WHERE document.generation_id=generations.id
+                   AND NOT EXISTS (
+                     SELECT 1 FROM search_projection.workspace_states workspace
+                     WHERE workspace.generation_id=document.generation_id
+                       AND workspace.workspace_id=document.workspace_id
+                       AND workspace.last_error=$4
+                   )
                    AND (document.target_source_version <> document.published_source_version
                      OR document.target_source_exists <> document.published_source_exists
                      OR document.target_permission_version <> document.published_permission_version)) AS pending_publications,
@@ -323,6 +342,7 @@ impl SearchRuntime {
     .bind(&self.config.provider)
     .bind(config_hash(&self.config))
     .bind(super::SCHEMA_FINGERPRINT)
+    .bind(WORKSPACE_RECONCILE_FAILED)
     .fetch_optional(&self.pool)
     .await
     .map_err(|error| RuntimeError::database("load search projection status", error))?;

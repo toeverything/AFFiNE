@@ -8,13 +8,21 @@ import * as styles from './style.css';
 
 export const RowLayout = ({
   label,
+  description,
+  prefix,
   children,
   href,
   onClick,
+  className,
+  emphasized,
 }: PropsWithChildren<{
   label: ReactNode;
+  description?: ReactNode;
+  prefix?: ReactNode;
   href?: string;
   onClick?: () => void;
+  className?: string;
+  emphasized?: boolean;
 }>) => {
   const isLinkRow = !!href && !onClick;
   const isButtonRow = !!onClick;
@@ -42,7 +50,19 @@ export const RowLayout = ({
 
   const content = (
     <>
-      <div className={styles.baseSettingItemName}>{label}</div>
+      {prefix ? <div className={styles.rowPrefix}>{prefix}</div> : null}
+      <div className={styles.rowText}>
+        <div
+          className={clsx(styles.baseSettingItemName, {
+            [styles.emphasizedSettingItemName]: emphasized,
+          })}
+        >
+          {label}
+        </div>
+        {description ? (
+          <div className={styles.rowDescription}>{description}</div>
+        ) : null}
+      </div>
       <div className={styles.baseSettingItemAction}>
         {children ??
           (isInteractive ? (
@@ -55,9 +75,11 @@ export const RowLayout = ({
   return (
     <ConfigModal.Row
       data-testid="setting-row"
-      className={clsx(styles.baseSettingItem, {
-        [styles.interactiveRow]: isInteractive,
-      })}
+      className={clsx(
+        styles.baseSettingItem,
+        { [styles.interactiveRow]: isInteractive },
+        className
+      )}
       onClick={isButtonRow ? handleTrigger : undefined}
       onKeyDown={isButtonRow ? handleKeyDown : undefined}
       role={isButtonRow ? 'button' : undefined}

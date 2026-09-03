@@ -602,6 +602,12 @@ export class InvalidInvitation extends UserFriendlyError {
     super('invalid_input', 'invalid_invitation', message);
   }
 }
+
+export class InvitationAccountMismatch extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'invitation_account_mismatch', message);
+  }
+}
 @ObjectType()
 class NoMoreSeatDataType {
   @Field() spaceId!: string
@@ -1283,6 +1289,7 @@ export enum ErrorNames {
   CAN_NOT_BATCH_GRANT_DOC_OWNER_PERMISSIONS,
   NEW_OWNER_IS_NOT_ACTIVE_MEMBER,
   INVALID_INVITATION,
+  INVITATION_ACCOUNT_MISMATCH,
   NO_MORE_SEAT,
   UNSUPPORTED_SUBSCRIPTION_PLAN,
   FAILED_TO_CHECKOUT,

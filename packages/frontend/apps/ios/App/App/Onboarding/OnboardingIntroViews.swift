@@ -85,29 +85,3 @@ private struct IntroHeroArtwork: View {
       .accessibilityHidden(true)
   }
 }
-
-struct IntroGridOverlay: View {
-  private let spacing: CGFloat = 12
-
-  var body: some View {
-    GeometryReader { geometry in
-      let drawWidth = geometry.size.width
-      let drawHeight = geometry.size.height
-
-      Path { path in
-        stride(from: 0, through: drawWidth, by: spacing).forEach { x in
-          path.move(to: CGPoint(x: x, y: 0))
-          path.addLine(to: CGPoint(x: x, y: drawHeight))
-        }
-
-        stride(from: 0, through: drawHeight, by: spacing).forEach { y in
-          path.move(to: CGPoint(x: 0, y: y))
-          path.addLine(to: CGPoint(x: drawWidth, y: y))
-        }
-      }
-      .stroke(Color.red.opacity(0.4), lineWidth: 0.4)
-      .frame(width: drawWidth, height: drawHeight, alignment: .topLeading)
-    }
-    .ignoresSafeArea()
-  }
-}

@@ -180,7 +180,7 @@ export interface AssertSafeUrlRequest {
   url: string
 }
 
-export declare function authorizeUserdataDocSubject(userId: string, workspaceId: string, docId: string): boolean
+export declare function authorizeReservedDocSubject(userId: string, workspaceId: string, docId: string): boolean
 
 export declare function authSessionAccessTokenKeyId(token: string): string | null
 
