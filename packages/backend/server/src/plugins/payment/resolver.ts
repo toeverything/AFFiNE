@@ -1,6 +1,7 @@
 import { Headers } from '@nestjs/common';
 import {
   Args,
+  Context,
   Field,
   InputType,
   Int,
@@ -23,10 +24,13 @@ import {
   AccessDenied,
   AuthenticationRequired,
   FailedToCheckout,
+  getRequestCookie,
+  getRequestHeader,
   InvalidSubscriptionParameters,
   Throttle,
   WorkspaceIdRequiredToUpdateTeamSubscription,
 } from '../../base';
+import type { GraphqlContext } from '../../base/graphql';
 import { CurrentUser, Public } from '../../core/auth';
 import { EntitlementService } from '../../core/entitlement';
 import { PermissionAccess } from '../../core/permission';
@@ -283,9 +287,15 @@ export class SubscriptionResolver {
   async createCheckoutSession(
     @CurrentUser() user: CurrentUser | null,
     @Args({ name: 'input', type: () => CreateCheckoutSessionInput })
-    input: CreateCheckoutSessionInput
+    input: CreateCheckoutSessionInput,
+    @Context() context: GraphqlContext
   ) {
     let session: Stripe.Checkout.Session;
+    const clientKind = getRequestHeader(context.req, 'x-affine-client-kind');
+    const dubClickId =
+      input.plan !== SubscriptionPlan.SelfHostedTeam && clientKind !== 'native'
+        ? getRequestCookie(context.req, 'dub_id')
+        : undefined;
 
     if (input.plan === SubscriptionPlan.SelfHostedTeam) {
       session = await this.service.checkout(input, {
@@ -302,6 +312,7 @@ export class SubscriptionResolver {
         plan: input.plan as any,
         user,
         workspaceId: input.args?.workspaceId,
+        dubClickId,
       });
     }
 
