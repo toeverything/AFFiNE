@@ -1,9 +1,15 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
-import { sanitizeSvg } from '../../utils/svg.js';
+import {
+  sanitizeDeclarationList,
+  sanitizeStyleSheet,
+  sanitizeSvg,
+  sanitizeSvgCssInString,
+  sanitizeSvgHrefsInString,
+} from '../../utils/svg.js';
 
 type HappyDOMWindow = Window & {
   happyDOM: {
@@ -100,6 +106,18 @@ describe('sanitizeSvg', () => {
     expect(sanitized).not.toContain('url(');
   });
 
+  test('preserves same-document fragment url() references in inline styles', () => {
+    const sanitized = sanitizeSvg(`
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <path style="fill: url(#gradient);" d="M0 0h10v10z"></path>
+        <path style="fill: url(https://evil.example/x)" d="M0 0h10v10z"></path>
+      </svg>
+    `);
+
+    expect(sanitized).toContain('url(#gradient)');
+    expect(sanitized).not.toContain('https://evil.example');
+  });
+
   test('removes links sharing the current registrable domain', () => {
     setLocation('https://sub.example.co.uk/workspace');
 
@@ -187,5 +205,306 @@ describe('sanitizeSvg', () => {
 
     expect(firstLevelSanitizedSvg).toContain('<image');
     expect(secondLevelSanitizedSvg).not.toContain('<image');
+  });
+
+  test('rejects CSS escape obfuscations', () => {
+    const css = sanitizeStyleSheet(
+      '@\\69mport "https://evil.example/a.css"; .a { fill: url(https://evil.example/x); }',
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).not.toContain('evil.example');
+    expect(css).not.toContain('@import');
+  });
+
+  test('rejects resource functions like image-set', () => {
+    const css = sanitizeStyleSheet(
+      '.a { background-image: image-set("https://evil.example/pixel" 1x); }',
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).not.toContain('evil.example');
+    expect(css).not.toContain('image-set');
+  });
+
+  test('scopes selectors to the generated root class', () => {
+    const css = sanitizeStyleSheet(
+      'affine-doc, .node rect { fill: #000; }',
+      'svg-scope-test'
+    );
+
+    expect(css).toContain('.svg-scope-test affine-doc');
+    expect(css).toContain('.svg-scope-test .node rect');
+  });
+
+  test('scopes root-id selectors as the same element', () => {
+    const css = sanitizeStyleSheet(
+      '#mermaid-diagram-123 .node rect { fill: #ECECFF; }',
+      'svg-scope-test'
+    );
+
+    expect(css).toContain('.svg-scope-test .node rect');
+    expect(css).not.toContain('#mermaid-diagram-123');
+  });
+
+  test('preserves quoted fragment references and rejects external urls', () => {
+    const sanitized = sanitizeSvg(`
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <path style='fill: url("#gradient");' d="M0 0h10v10z"></path>
+        <path style="fill: url('#gradient');" d="M0 0h10v10z"></path>
+        <path style="fill: url(https://evil.example/x)" d="M0 0h10v10z"></path>
+      </svg>
+    `);
+
+    expect(sanitized).toContain('url(#gradient)');
+    expect(sanitized).not.toContain('https://evil.example');
+  });
+
+  test('sanitizes a <style> element separately from style attributes', () => {
+    const css = sanitizeStyleSheet(
+      '.a { fill: url(#gradient); } .b { fill: url(https://evil.example/x); }',
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).toContain('url(#gradient)');
+    expect(css).not.toContain('https://evil.example');
+  });
+
+  test('preserves double-quoted fragment url() in a <style> block', () => {
+    const css = sanitizeStyleSheet(
+      '.a { fill: url("#gradient"); } .b { fill: url(https://evil.example/x); }',
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).toContain('url(#gradient)');
+    expect(css).not.toContain('https://evil.example');
+  });
+
+  test('preserves single-quoted fragment url() in a <style> block', () => {
+    const css = sanitizeStyleSheet(
+      ".a { fill: url('#gradient'); }",
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).toContain('url(#gradient)');
+  });
+
+  test('neutralizes escaped @import and external urls in a <style> block', () => {
+    const css = sanitizeStyleSheet(
+      '@\\69mport url("https://evil.example/x.css"); .a { fill: url(https://evil.example/y); }',
+      'svg-scope-test'
+    );
+
+    expect(css).not.toBeNull();
+    expect(css).not.toContain('evil.example');
+    expect(css).not.toContain('@import');
+  });
+
+  test('no-DOM path validates CSS identically', () => {
+    const input = `
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <style>@\\69mport "https://evil.example/a.css"; .a { fill: url(#gradient); }</style>
+        <path style="fill: url(https://evil.example/x)" d="M0 0h10v10z"></path>
+        <path style='fill: url("#gradient");' d="M0 0h10v10z"></path>
+      </svg>
+    `;
+    const out = sanitizeSvgCssInString(input, 'svg-scope-test');
+
+    expect(out).not.toContain('evil.example');
+    expect(out).not.toContain('@import');
+    expect(out).toContain('url(#gradient)');
+    expect(out).toContain('svg-scope-test');
+  });
+
+  test('legacy unsafe CSS vectors are still rejected', () => {
+    const styleCss = sanitizeStyleSheet(
+      '@import "https://evil.example/a.css"; .a { behavior: url(https://evil.example/x); -moz-binding: url(https://evil.example/y); }',
+      'svg-scope-test'
+    );
+
+    expect(styleCss).not.toContain('@import');
+    expect(styleCss).not.toContain('evil.example');
+    expect(styleCss).not.toContain('behavior');
+    expect(styleCss).not.toContain('-moz-binding');
+
+    const inlineCss = sanitizeDeclarationList('fill: expression(alert(1));');
+    expect(inlineCss ?? '').not.toContain('expression');
+  });
+});
+
+describe('sanitizeSvgHrefsInString (no-DOM href filtering)', () => {
+  test('removes external image href', () => {
+    const out = sanitizeSvgHrefsInString(
+      '<svg><image href="https://example.com/x.png" width="10"></image></svg>',
+      'scope-x'
+    );
+
+    expect(out).not.toContain('https://example.com');
+    expect(out).toContain('<image');
+  });
+
+  test('removes external use href', () => {
+    const out = sanitizeSvgHrefsInString(
+      '<svg><use href="https://example.com/g.svg#x"></use></svg>',
+      'scope-x'
+    );
+
+    expect(out).not.toContain('https://example.com');
+  });
+
+  test('preserves local fragment references', () => {
+    const out = sanitizeSvgHrefsInString(
+      '<svg><use href="#glyph-a"></use><use xlink:href="#glyph-a"></use></svg>',
+      'scope-x'
+    );
+
+    expect(out).toContain('href="#glyph-a"');
+    expect(out).toContain('xlink:href="#glyph-a"');
+  });
+
+  test('recursively sanitizes nested svg data-url images', () => {
+    const nested = svgDataUrl(
+      '<svg xmlns="http://www.w3.org/2000/svg"><use href="#g"></use><use href="https://example.com/g.svg#x"></use></svg>'
+    );
+    const out = sanitizeSvgHrefsInString(
+      `<svg><image href="${nested}"></image></svg>`,
+      'scope-x'
+    );
+
+    const encoded = out.match(/href="([^"]+)"/)?.[1] ?? '';
+    expect(encoded).toMatch(/^data:image\/svg\+xml;base64,/);
+    const decoded = decodeSvgDataUrl(encoded);
+    expect(decoded).toContain('#g');
+    expect(decoded).not.toContain('https://example.com');
+  });
+
+  test('drops nested svg data-url that cannot be sanitized', () => {
+    const nested = svgDataUrl('<div>not svg</div>');
+    const out = sanitizeSvgHrefsInString(
+      `<svg><image href="${nested}"></image></svg>`,
+      'scope-x'
+    );
+
+    expect(out).not.toContain('data:image/svg+xml');
+  });
+
+  test('drops the third nested svg image at the depth limit', () => {
+    const thirdLevelSvg = svgDataUrl(
+      '<svg id="lvl3" xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"></rect></svg>'
+    );
+    const secondLevelSvg = svgDataUrl(
+      `<svg id="lvl2" xmlns="http://www.w3.org/2000/svg"><image href="${thirdLevelSvg}"></image></svg>`
+    );
+    const firstLevelSvg = svgDataUrl(
+      `<svg id="lvl1" xmlns="http://www.w3.org/2000/svg"><image href="${secondLevelSvg}"></image></svg>`
+    );
+    const out = sanitizeSvgHrefsInString(
+      `<svg id="top"><image href="${firstLevelSvg}"></image></svg>`,
+      'scope-x'
+    );
+
+    const firstLevelHref = out.match(/href="([^"]+)"/)?.[1];
+    const firstLevelSanitized = decodeSvgDataUrl(firstLevelHref ?? '');
+    expect(firstLevelSanitized).toContain('lvl1');
+
+    const secondLevelHref = firstLevelSanitized.match(/href="([^"]+)"/)?.[1];
+    const secondLevelSanitized = decodeSvgDataUrl(secondLevelHref ?? '');
+    expect(secondLevelSanitized).toContain('lvl2');
+
+    const thirdLevelHref = secondLevelSanitized.match(/href="([^"]+)"/)?.[1];
+    expect(thirdLevelHref).toBeUndefined();
+  });
+
+  test('removes an unsafe href even when a safe href precedes it', () => {
+    const out = sanitizeSvgHrefsInString(
+      '<svg><use href="#local" xlink:href="https://example.com/x.svg#y"></use></svg>',
+      'scope-x'
+    );
+
+    expect(out).toContain('href="#local"');
+    expect(out).not.toContain('https://example.com');
+  });
+
+  test('preserves a safe href even when an unsafe href precedes it', () => {
+    const out = sanitizeSvgHrefsInString(
+      '<svg><use xlink:href="https://example.com/x.svg#y" href="#local"></use></svg>',
+      'scope-x'
+    );
+
+    expect(out).toContain('href="#local"');
+    expect(out).not.toContain('https://example.com');
+  });
+});
+
+describe('sanitizeSvg no-DOM fallback', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function sanitizeNoDom(input: string) {
+    vi.stubGlobal('DOMParser', undefined);
+    vi.stubGlobal('XMLSerializer', undefined);
+    return sanitizeSvg(input);
+  }
+
+  test('never leaks external hrefs through the no-DOM branch', () => {
+    const sanitized = sanitizeNoDom(`
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <image href="https://example.com/image.png" width="10" height="10"></image>
+        <use href="https://example.com/glyph.svg#x"></use>
+      </svg>
+    `);
+
+    expect(sanitized).not.toContain('https://example.com');
+  });
+
+  test('fails closed on input with no svg root', () => {
+    expect(sanitizeNoDom('<p>not svg</p>')).toBe('');
+  });
+
+  test('recursively sanitizes a mixed-case nested svg data-url', () => {
+    const inner = svgDataUrl(
+      '<svg xmlns="http://www.w3.org/2000/svg"><use href="https://example.com/g.svg#x"></use></svg>'
+    );
+    const outerMixed = svgDataUrl(
+      `<svg xmlns="http://www.w3.org/2000/svg"><image href="${inner}"></image></svg>`
+    ).replace('data:image/svg+xml', 'data:image/SVG+xml');
+    const sanitized = sanitizeSvgHrefsInString(
+      `<svg xmlns="http://www.w3.org/2000/svg"><image href="${outerMixed}"></image></svg>`,
+      'scope-x'
+    );
+
+    expect(sanitized).not.toContain('https://example.com');
+    expect(sanitized).toContain('data:image/svg+xml;base64');
+  });
+
+  test('recursively sanitizes an uppercase nested svg data-url', () => {
+    const inner = svgDataUrl(
+      '<svg xmlns="http://www.w3.org/2000/svg"><use href="https://example.com/g.svg#x"></use></svg>'
+    );
+    const outerUpper = svgDataUrl(
+      `<svg xmlns="http://www.w3.org/2000/svg"><image href="${inner}"></image></svg>`
+    ).replace('data:image/svg+xml', 'DATA:IMAGE/SVG+XML');
+    const sanitized = sanitizeSvgHrefsInString(
+      `<svg xmlns="http://www.w3.org/2000/svg"><image href="${outerUpper}"></image></svg>`,
+      'scope-x'
+    );
+
+    expect(sanitized).not.toContain('https://example.com');
+    expect(sanitized).toContain('data:image/svg+xml;base64');
+  });
+
+  test('preserves a safe non-svg image data url', () => {
+    const sanitized = sanitizeSvgHrefsInString(
+      '<svg xmlns="http://www.w3.org/2000/svg"><image href="data:image/png;base64,AAAA" width="10" height="10"></image></svg>',
+      'scope-x'
+    );
+
+    expect(sanitized).toContain('data:image/png;base64,AAAA');
   });
 });
