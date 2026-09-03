@@ -158,7 +158,7 @@ export class TestingApp extends ApplyType<INestApplication>() {
       [method](path)
       .set(
         'Cookie',
-        Array.from(cookies, ([name, value]) => `${name}=${value}`).join('; ')
+        Array.from(cookies, ([name, value]) => `${name}=${value}`)
       );
 
     if (this.csrfCookie) {
