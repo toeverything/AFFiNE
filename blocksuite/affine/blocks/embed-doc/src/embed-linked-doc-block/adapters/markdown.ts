@@ -84,9 +84,13 @@ export const embedLinkedDocBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatc
         if (!o.node.props.pageId) {
           return;
         }
-        const title = configs.get('title:' + o.node.props.pageId) ?? 'untitled';
+        const title = configs.get('title:' + o.node.props.pageId);
+        const docLinkBaseUrl = configs.get('docLinkBaseUrl');
+        if (!title && !docLinkBaseUrl) {
+          return;
+        }
         const url = AdapterTextUtils.generateDocUrl(
-          configs.get('docLinkBaseUrl') ?? '',
+          docLinkBaseUrl ?? '',
           String(o.node.props.pageId),
           o.node.props.params ?? Object.create(null)
         );
@@ -106,7 +110,7 @@ export const embedLinkedDocBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatc
               children: [
                 {
                   type: 'text',
-                  value: title,
+                  value: title ?? 'untitled',
                 },
               ],
             },
