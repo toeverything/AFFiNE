@@ -79,3 +79,13 @@ test('should be able to acquire lock parallel', async t => {
     'should be able to acquire lock parallel'
   );
 });
+
+test('tryAcquire should only attempt to acquire the lock once', async t => {
+  const { locker } = t.context;
+  const lock = Sinon.stub(locker, 'lock').rejects(new Error('contended'));
+  t.teardown(() => lock.restore());
+  const mutex = new Mutex(locker);
+
+  t.is(await mutex.tryAcquire(`${lockerPrefix}4`), undefined);
+  t.is(lock.callCount, 1);
+});

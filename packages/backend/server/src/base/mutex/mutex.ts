@@ -20,6 +20,23 @@ export class Mutex {
   constructor(protected readonly locker: Locker) {}
 
   /**
+   * Attempt to lock a resource once, without the retries used by {@link acquire}.
+   *
+   * This is intended for best-effort work that must not delay the caller when
+   * another request already owns the lock.
+   */
+  async tryAcquire(
+    key: string,
+    owner: string = `${this.clusterIdentifier}:${nanoid()}`
+  ) {
+    try {
+      return await this.locker.lock(owner, key);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
    * lock an resource and return a lock guard, which will release the lock when disposed
    *
    * if the lock is not available, it will retry for [MUTEX_RETRY] times

@@ -1,4 +1,5 @@
 import type { Stripe } from 'stripe';
+import { z } from 'zod';
 
 import { defineModuleConfig } from '../../base';
 
@@ -20,6 +21,8 @@ export interface PaymentStartupConfig {
 
 export interface PaymentRuntimeConfig {
   showLifetimePrice: boolean;
+  dubAffiliateEnabled: boolean;
+  dubAffiliateExcludedPromotionCodes: string[];
 }
 
 declare global {
@@ -27,6 +30,8 @@ declare global {
     payment: {
       enabled: boolean;
       showLifetimePrice: boolean;
+      dubAffiliateEnabled: boolean;
+      dubAffiliateExcludedPromotionCodes: ConfigItem<string[]>;
       stripe: ConfigItem<
         {
           /** Preferred place for Stripe API key */
@@ -61,6 +66,15 @@ defineModuleConfig('payment', {
   showLifetimePrice: {
     desc: 'Whether enable lifetime price and allow user to pay for it.',
     default: true,
+  },
+  dubAffiliateEnabled: {
+    desc: 'Whether to attribute eligible Stripe customers to Dub affiliates.',
+    default: false,
+  },
+  dubAffiliateExcludedPromotionCodes: {
+    desc: 'Promotion codes that must not also receive Dub attribution.',
+    default: [],
+    shape: z.array(z.string()),
   },
   stripe: {
     desc: 'Stripe sdk options and credentials',

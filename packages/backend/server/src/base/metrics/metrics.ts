@@ -63,6 +63,7 @@ export type KnownMetricScopes =
   | 'storage'
   | 'process'
   | 'permission'
+  | 'payment'
   | 'search'
   | 'workspace';
 

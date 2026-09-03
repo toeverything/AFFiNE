@@ -12,6 +12,7 @@ import { UserModule } from '../../core/user';
 import { WorkspaceModule } from '../../core/workspaces';
 import { StripeWebhookController } from './controller';
 import { SubscriptionCronJobs } from './cron';
+import { DubAffiliateService } from './dub-affiliate';
 import { PaymentEventHandlers } from './event';
 import { LicenseController } from './license/controller';
 import {
@@ -59,6 +60,7 @@ import { StripeWebhook } from './webhook';
     SubscriptionCronJobs,
     WorkspaceSubscriptionResolver,
     PaymentEventHandlers,
+    DubAffiliateService,
   ],
   controllers: [
     StripeWebhookController,
