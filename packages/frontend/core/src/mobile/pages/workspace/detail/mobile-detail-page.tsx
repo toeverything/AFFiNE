@@ -1,4 +1,4 @@
-import { useThemeColorV2 } from '@affine/component';
+import { IconButton, useThemeColorV2 } from '@affine/component';
 import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
@@ -19,9 +19,11 @@ import { JournalService } from '@affine/core/modules/journal';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { WorkspaceService } from '@affine/core/modules/workspace';
-import { i18nTime } from '@affine/i18n';
+import { i18nTime, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
+import { EditIcon, ViewIcon as ViewIconBlocksuite } from '@blocksuite/icons/rc';
 import {
   customImageProxyMiddleware,
   ImageProxyService,
@@ -68,10 +70,12 @@ const DetailPageImpl = ({
   immersive,
   chromeVisible,
   immersiveTapHandlers,
+  isReadOnlyMode,
 }: {
   immersive: boolean;
   chromeVisible: boolean;
   immersiveTapHandlers?: ImmersiveTapHandlers;
+  isReadOnlyMode?: boolean;
 }) => {
   const {
     editorService,
@@ -213,7 +217,8 @@ const DetailPageImpl = ({
     !canEdit ||
     isInTrash ||
     !enableKeyboardToolbar ||
-    (mode === 'edgeless' && !enableEdgelessEditing);
+    (mode === 'edgeless' && !enableEdgelessEditing) ||
+    isReadOnlyMode;
 
   const immersiveZoomToolbarBottom = getImmersiveZoomToolbarBottom({
     immersive,
@@ -289,13 +294,18 @@ const MobileDetailPageHeader = ({
   allJournalDates,
   handleDateChange,
   trackScrollTitle,
+  isReadOnlyMode,
+  onToggleReadOnly,
 }: {
   date?: string;
   title?: string;
   allJournalDates: Set<string | null | undefined>;
   handleDateChange: (date: string) => void;
   trackScrollTitle: boolean;
+  isReadOnlyMode?: boolean;
+  onToggleReadOnly?: () => void;
 }) => {
+  const t = useI18n();
   const [showTitle, setShowTitle] = useState(getShouldShowTitle);
 
   useEffect(() => {
@@ -339,6 +349,19 @@ const MobileDetailPageHeader = ({
       contentClassName={styles.headerContent}
       suffix={
         <>
+          {onToggleReadOnly && (
+            <IconButton
+              data-testid="readonly-toggle-button"
+              size="24"
+              onClick={onToggleReadOnly}
+              icon={isReadOnlyMode ? <ViewIconBlocksuite /> : <EditIcon />}
+              tooltip={
+                isReadOnlyMode
+                  ? t['com.affine.header.readonly-toggle.read-only']()
+                  : t['com.affine.header.readonly-toggle.editing']()
+              }
+            />
+          )}
           <PageHeaderShareButton />
           <PageHeaderMenuButton />
         </>
@@ -379,8 +402,17 @@ const MobileDetailPageContent = ({
 }) => {
   const editor = useService(EditorService).editor;
   const mode = useLiveData(editor.mode$);
+  const doc = useService(DocService).doc;
+  const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
+  const canEdit = useGuard('Doc_Update', pageId);
   const [isLandscape, setIsLandscape] = useState(getIsLandscape);
   const [chromeVisible, setChromeVisible] = useState(true);
+  const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
+
+  const onToggleReadOnly = useCallback(() => {
+    setIsReadOnlyMode(prev => !prev);
+    track.$.header.actions.toggleReadOnlyMode({ on: !isReadOnlyMode });
+  }, [isReadOnlyMode]);
   const tapStateRef = useRef<{
     pointerId: number;
     clientX: number;
@@ -511,6 +543,10 @@ const MobileDetailPageContent = ({
           allJournalDates={allJournalDates}
           handleDateChange={handleDateChange}
           trackScrollTitle={trackScrollTitle}
+          isReadOnlyMode={isReadOnlyMode}
+          onToggleReadOnly={
+            canEdit && !isInTrash ? onToggleReadOnly : undefined
+          }
         />
       )}
       <JournalConflictBlock date={date} />
@@ -518,6 +554,7 @@ const MobileDetailPageContent = ({
         immersive={immersive}
         chromeVisible={chromeVisible}
         immersiveTapHandlers={immersiveTapHandlers}
+        isReadOnlyMode={isReadOnlyMode}
       />
     </>
   );
