@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid';
 
 import { GraphqlContext } from '../graphql';
 import { retryable } from '../utils/promise';
-import { Locker } from './locker';
+import { Locker, LockUnavailableError } from './locker';
 
 export const MUTEX_RETRY = 5;
 export const MUTEX_WAIT = 100;
@@ -31,8 +31,11 @@ export class Mutex {
   ) {
     try {
       return await this.locker.lock(owner, key);
-    } catch {
-      return undefined;
+    } catch (error) {
+      if (error instanceof LockUnavailableError) {
+        return undefined;
+      }
+      throw error;
     }
   }
 

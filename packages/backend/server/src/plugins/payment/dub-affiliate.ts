@@ -231,7 +231,7 @@ export class DubAffiliateService {
       const existingClickId = customer.metadata.dubClickId;
 
       if (
-        isNonEmpty(existingExternalId) &&
+        isRawNonEmpty(existingExternalId) &&
         existingExternalId !== input.affineUserId
       ) {
         return finish({ status: 'skipped', reason: 'conflict' });
@@ -307,13 +307,8 @@ export class DubAffiliateService {
       });
       return finish({ status: 'skipped', reason });
     } finally {
-      try {
-        await lock.release();
-      } catch {
-        // The production Lock currently swallows release failures. Keep this
-        // boundary fail-open for alternate implementations and test doubles.
-        lockErrorCounter.add(1, { operation: 'release' });
-      }
+      // Lock.release already retries and logs failures without rejecting.
+      await lock.release();
     }
   }
 

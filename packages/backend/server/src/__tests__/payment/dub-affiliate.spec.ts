@@ -282,6 +282,23 @@ test('treats non-empty malformed ownership metadata as a conflict', async t => {
   t.is(h.releases(), 1);
 });
 
+test('does not replace a whitespace-only existing external owner', async t => {
+  const h = createHarness({
+    customer: {
+      id: input.stripeCustomerId,
+      deleted: false,
+      metadata: { dubCustomerExternalId: '   ' },
+    },
+  });
+
+  t.deepEqual(await h.service.prepareCheckout(input), {
+    status: 'skipped',
+    reason: 'conflict',
+  });
+  t.is(h.stripe.customers.update.callCount, 0);
+  t.is(h.releases(), 1);
+});
+
 test('fails open for an existing click with missing ownership metadata', async t => {
   const h = createHarness({
     customer: {

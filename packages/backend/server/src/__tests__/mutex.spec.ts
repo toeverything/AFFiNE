@@ -4,7 +4,7 @@ import { TestingModule } from '@nestjs/testing';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
-import { Locker, Mutex } from '../base/mutex';
+import { Locker, LockUnavailableError, Mutex } from '../base/mutex';
 import { SessionRedis } from '../base/redis';
 import { createTestingModule, sleep } from './utils';
 
@@ -82,10 +82,24 @@ test('should be able to acquire lock parallel', async t => {
 
 test('tryAcquire should only attempt to acquire the lock once', async t => {
   const { locker } = t.context;
-  const lock = Sinon.stub(locker, 'lock').rejects(new Error('contended'));
+  const lock = Sinon.stub(locker, 'lock').rejects(
+    new LockUnavailableError('contended')
+  );
   t.teardown(() => lock.restore());
   const mutex = new Mutex(locker);
 
   t.is(await mutex.tryAcquire(`${lockerPrefix}4`), undefined);
+  t.is(lock.callCount, 1);
+});
+
+test('tryAcquire should expose infrastructure errors to the caller', async t => {
+  const { locker } = t.context;
+  const lock = Sinon.stub(locker, 'lock').rejects(new Error('redis offline'));
+  t.teardown(() => lock.restore());
+  const mutex = new Mutex(locker);
+
+  await t.throwsAsync(mutex.tryAcquire(`${lockerPrefix}5`), {
+    message: 'redis offline',
+  });
   t.is(lock.callCount, 1);
 });

@@ -4,6 +4,8 @@ import { Command } from 'ioredis';
 import { SessionRedis } from '../redis';
 import { Lock } from './lock';
 
+export class LockUnavailableError extends Error {}
+
 // === atomic mutex lock ===
 // acquire lock
 // return 1 if lock is acquired
@@ -62,6 +64,8 @@ export class Locker {
       });
     }
 
-    throw new Error(`Failed to acquire lock for resource [${key}]`);
+    throw new LockUnavailableError(
+      `Failed to acquire lock for resource [${key}]`
+    );
   }
 }
