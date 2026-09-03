@@ -408,6 +408,7 @@ __metadata:
     "@preact/signals-core": "npm:^1.8.0"
     "@radix-ui/react-collapsible": "npm:^1.1.2"
     "@radix-ui/react-dialog": "npm:^1.1.3"
+    "@radix-ui/react-direction": "npm:1.1.1"
     "@radix-ui/react-popover": "npm:^1.1.3"
     "@radix-ui/react-scroll-area": "npm:^1.2.2"
     "@radix-ui/react-slot": "npm:^1.1.1"
