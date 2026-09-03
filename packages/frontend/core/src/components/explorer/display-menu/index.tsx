@@ -122,7 +122,11 @@ export const ExplorerDisplayMenuButton = ({
       }
       {...menuProps}
     >
-      <Button className={className} style={style}>
+      <Button
+        className={className}
+        style={style}
+        data-testid="explorer-display-menu-button"
+      >
         {t['com.affine.explorer.display-menu.button']()}
       </Button>
     </Menu>
