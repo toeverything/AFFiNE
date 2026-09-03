@@ -1,4 +1,5 @@
-import { PrismaClient, type User } from '@prisma/client';
+import { UnauthorizedException } from '@nestjs/common';
+import { PrismaClient, Provider, type User } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import { omit } from 'lodash-es';
 import Sinon from 'sinon';
@@ -1102,13 +1103,51 @@ test('should map via entitlement+duration when productId not whitelisted (P1M/P1
   );
 });
 
-test('should not dispatch webhook event when authorization header is missing or mismatched', async t => {
+test('should reject webhook event when authorization header is missing or mismatched', async t => {
   const { controller, event } = t.context;
-  const before = event.emitAsync.getCalls()?.length || 0;
-  const e = { id: '42', type: 'INITIAL_PURCHASE', app_user_id: user.id };
-  await controller.handleWebhook({ body: { event: e } } as any, undefined);
-  const after = event.emitAsync.getCalls()?.length || 0;
-  t.is(after - before, 0, 'should not emit event');
+  const e = {
+    id: '42',
+    type: 'INITIAL_PURCHASE',
+    app_id: 'app.affine.pro',
+    environment: 'PRODUCTION',
+    app_user_id: user.id,
+  };
+
+  await t.throwsAsync(() => controller.handleWebhook({ event: e } as any), {
+    instanceOf: UnauthorizedException,
+  });
+  await t.throwsAsync(
+    () => controller.handleWebhook({ event: e } as any, 'x'),
+    {
+      instanceOf: UnauthorizedException,
+    }
+  );
+  t.is(event.emitAsync.getCalls()?.length || 0, 0, 'should not emit event');
+});
+
+test('should deduplicate RevenueCat webhook events by event id', async t => {
+  const { controller, db, event } = t.context;
+  event.emitAsync.resolves([]);
+
+  const e = {
+    id: 'evt_duplicate',
+    type: 'INITIAL_PURCHASE',
+    app_id: 'app.affine.pro',
+    environment: 'PRODUCTION',
+    app_user_id: user.id,
+  };
+
+  await controller.handleWebhook({ event: e } as any, '42');
+  await controller.handleWebhook({ event: e } as any, '42');
+
+  t.is(event.emitAsync.getCalls()?.length || 0, 1, 'should emit once');
+  t.is(
+    await db.paymentEvent.count({
+      where: { provider: Provider.revenuecat, externalEventId: e.id },
+    }),
+    1,
+    'should persist one deduplication record'
+  );
 });
 
 test('should refresh user subscriptions (empty / revenuecat / stripe-only)', async t => {
