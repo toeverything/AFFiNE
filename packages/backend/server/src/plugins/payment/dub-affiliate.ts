@@ -24,6 +24,7 @@ export type DubAffiliateSkipReason =
   | 'invalid'
   | 'legacy_promotion_code'
   | 'lock_contention'
+  | 'lock_error'
   | 'deleted_customer'
   | 'conflict'
   | 'incomplete_metadata'
@@ -140,10 +141,15 @@ export class DubAffiliateService {
   ): Promise<DubAffiliatePrepareResult> {
     const startedAt = performance.now();
     const plan = input.plan ?? 'unknown';
+    // Pre-lock skips do no work worth timing; recording them would flood the
+    // histogram with ~0ms samples and hide the real attribution latency.
+    let lockAttempted = false;
     const finish = (result: DubAffiliatePrepareResult) => {
       const attributes = { outcome: outcome(result), plan };
       prepareCounter.add(1, attributes);
-      prepareDuration.record(performance.now() - startedAt, attributes);
+      if (lockAttempted) {
+        prepareDuration.record(performance.now() - startedAt, attributes);
+      }
       return result;
     };
 
@@ -173,13 +179,14 @@ export class DubAffiliateService {
     }
 
     let lock: Lock | undefined;
+    lockAttempted = true;
     try {
       lock = await this.mutex.tryAcquire(
         `dub-affiliate:customer:${hash(input.stripeCustomerId)}`
       );
     } catch {
       lockErrorCounter.add(1, { operation: 'acquire' });
-      return finish({ status: 'skipped', reason: 'stripe_error' });
+      return finish({ status: 'skipped', reason: 'lock_error' });
     }
 
     if (!lock) {

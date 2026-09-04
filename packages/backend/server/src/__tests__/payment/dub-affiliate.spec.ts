@@ -2,7 +2,7 @@ import test from 'ava';
 import Sinon from 'sinon';
 import Stripe from 'stripe';
 
-import { Config, Lock, Mutex } from '../../base';
+import { Config, Lock, metrics, Mutex } from '../../base';
 import {
   type DubAffiliatePrepareInput,
   DubAffiliateService,
@@ -146,6 +146,40 @@ for (const [name, dubClickId, reason] of [
     t.is(totalStripeCalls(h.stripe), 0);
   });
 }
+
+test('records prepare duration only after a lock attempt', async t => {
+  const record = Sinon.stub(
+    metrics.payment.histogram('dub_affiliate_prepare_duration_ms'),
+    'record'
+  );
+
+  const disabled = createHarness({ enabled: false });
+  await disabled.service.prepareCheckout(input);
+  const missing = createHarness();
+  await missing.service.prepareCheckout({ ...input, dubClickId: undefined });
+  const invalid = createHarness();
+  await invalid.service.prepareCheckout({ ...input, dubClickId: 'bad id' });
+  const legacy = createHarness({ excludedPromotionCodes: ['legacy'] });
+  await legacy.service.prepareCheckout({ ...input, promotionCode: 'legacy' });
+  t.is(record.callCount, 0);
+
+  const contended = createHarness();
+  contended.mutex.tryAcquire.resolves(undefined);
+  await contended.service.prepareCheckout(input);
+  t.is(record.callCount, 1);
+  t.like(record.lastCall.args[1], { outcome: 'lock_contention', plan: 'pro' });
+
+  const errored = createHarness();
+  errored.mutex.tryAcquire.rejects(new Error('redis unavailable'));
+  await errored.service.prepareCheckout(input);
+  t.is(record.callCount, 2);
+  t.like(record.lastCall.args[1], { outcome: 'lock_error', plan: 'pro' });
+
+  const attributed = createHarness();
+  await attributed.service.prepareCheckout(input);
+  t.is(record.callCount, 3);
+  t.like(record.lastCall.args[1], { outcome: 'attributed', plan: 'pro' });
+});
 
 test('skips normalized excluded promotion code before lock and Stripe', async t => {
   const h = createHarness({ excludedPromotionCodes: ['  Legacy-Code  '] });
@@ -444,8 +478,10 @@ test('lock errors fail open without Stripe calls', async t => {
 
   t.deepEqual(await h.service.prepareCheckout(input), {
     status: 'skipped',
-    reason: 'stripe_error',
+    reason: 'lock_error',
   });
+  t.is(h.mutex.tryAcquire.callCount, 1);
+  t.is(h.releases(), 0);
   t.is(totalStripeCalls(h.stripe), 0);
 });
 
