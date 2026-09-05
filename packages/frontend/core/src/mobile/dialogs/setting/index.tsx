@@ -12,7 +12,6 @@ import { useCallback, useEffect } from 'react';
 
 import { AboutGroup } from './about';
 import { AppearanceGroup } from './appearance';
-import teamPeople from './assets/team-people.png';
 import { DevicesGroup } from './devices';
 import { ExperimentalFeatureSetting } from './experimental';
 import { SettingGroup } from './group';
@@ -20,7 +19,7 @@ import { OthersGroup } from './others';
 import { DeleteAccount } from './others/delete-account';
 import { RowLayout } from './row.layout';
 import * as styles from './style.css';
-import { UserSubscription } from './subscription';
+import { PlansGroup } from './subscription';
 import { SwipeDialog } from './swipe-dialog';
 import { UserProfile } from './user-profile';
 import { UserUsage } from './user-usage';
@@ -31,7 +30,6 @@ const AFFINE_MOBILE_STORE_URL = BUILD_CONFIG.isIOS
     ? 'https://play.google.com/store/apps/details?id=app.affine.pro'
     : undefined;
 const AFFINE_DOWNLOAD_URL = 'https://affine.pro/download';
-const AFFINE_TEAM_URL = 'https://affine.pro/teamhub';
 
 const SupportGroup = () => {
   const t = useI18n();
@@ -80,29 +78,6 @@ const SupportGroup = () => {
   );
 };
 
-const TeamPromotionCard = () => {
-  const t = useI18n();
-  const urlService = useService(UrlService);
-
-  return (
-    <button
-      type="button"
-      className={styles.promoCard}
-      onClick={() => urlService.openExternal(AFFINE_TEAM_URL)}
-    >
-      <span className={styles.promoCardContent}>
-        <span className={styles.promoCardTitle}>
-          {t['com.affine.mobile.setting.promo.title']()}
-        </span>
-        <span className={styles.promoCardDescription}>
-          {t['com.affine.mobile.setting.promo.description']()}
-        </span>
-      </span>
-      <img className={styles.promoCardArt} src={teamPeople} alt="" />
-    </button>
-  );
-};
-
 const DangerZoneGroup = ({
   onDeleteFinished,
 }: {
@@ -143,14 +118,13 @@ const MobileSetting = ({
 
   return (
     <div className={styles.root}>
-      <UserSubscription />
       <UserProfile />
       <UserUsage />
+      <PlansGroup />
       {status === 'authenticated' ? <DevicesGroup /> : null}
       <AppearanceGroup />
       <AboutGroup />
       <ExperimentalFeatureSetting />
-      <TeamPromotionCard />
       <SupportGroup />
       <OthersGroup />
       <DangerZoneGroup onDeleteFinished={onDeleteFinished} />

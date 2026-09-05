@@ -144,20 +144,9 @@ fn estimated_message_bytes(message: &PromptMessageContract) -> usize {
       )
     });
   }
-  for value in [
-    message.params.as_ref().map(|params| {
-      let mut metadata = params.clone();
-      if let Some(Value::Array(attachments)) = metadata.get_mut("attachments") {
-        for attachment in attachments {
-          *attachment = attachment_metadata(attachment);
-        }
-      }
-      serde_json::to_vec(&metadata)
-    }),
-    message.response_format.as_ref().map(serde_json::to_vec),
-  ]
-  .into_iter()
-  .flatten()
+  for value in [message.response_format.as_ref().map(serde_json::to_vec)]
+    .into_iter()
+    .flatten()
   {
     size = size.saturating_add(value.map(|bytes| bytes.len()).unwrap_or(usize::MAX));
   }
@@ -199,7 +188,7 @@ fn select_history_turns(
     size.saturating_add(estimated_message_bytes(message))
   });
   if size > history_input_bytes {
-    return Err("session input exceeds history byte budget".to_string());
+    return Err("session prompt and latest turn exceed input byte budget".to_string());
   }
   let mut picked = Vec::new();
   for message in history.iter().rev() {
@@ -366,6 +355,13 @@ mod tests {
       estimated_message_bytes(&params_small),
       estimated_message_bytes(&params_large)
     );
+    let without_params = message("system", "system");
+    let mut with_large_params = without_params.clone();
+    with_large_params.params = Some(json!({ "document": "x".repeat(200_000) }));
+    assert_eq!(
+      estimated_message_bytes(&with_large_params),
+      estimated_message_bytes(&without_params)
+    );
   }
 
   #[test]
@@ -394,7 +390,7 @@ mod tests {
     let prompt = vec![message("system", "{{content}}")];
     let turns = vec![message("user", "large input")];
     let error = render_session_prompt_with_budget(&prompt, None, &turns, &Map::new(), &Map::new(), 1).unwrap_err();
-    assert_eq!(error, "session input exceeds history byte budget");
+    assert_eq!(error, "session prompt and latest turn exceed input byte budget");
   }
 
   #[test]

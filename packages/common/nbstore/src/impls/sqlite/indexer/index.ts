@@ -24,6 +24,7 @@ import {
 import { createNode } from './node-builder';
 
 const SQLITE_INDEXER_VERSION_OFFSET = 1;
+const NATIVE_INDEXER_MAX_LIMIT = 0xffffffff;
 
 export class SqliteIndexerStorage extends IndexerStorageBase {
   static readonly identifier = 'SqliteIndexerStorage';
@@ -83,7 +84,7 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
       String(table),
       toNativeQuery(query),
       String(field),
-      limit,
+      toNativeLimit(limit),
       skip,
       options?.hits
         ? toNativeOptions(options.hits, hitLimit, hitSkip)
@@ -240,11 +241,15 @@ function toNativeOptions(
 ): NativeIndexSearchOptions {
   const highlights = options?.highlights?.map(item => String(item.field)) ?? [];
   return {
-    limit,
+    limit: toNativeLimit(limit),
     offset,
     fields: [
       ...new Set([...(options?.fields?.map(String) ?? []), ...highlights]),
     ],
     highlights,
   };
+}
+
+function toNativeLimit(limit: number) {
+  return limit === Infinity ? NATIVE_INDEXER_MAX_LIMIT : limit;
 }

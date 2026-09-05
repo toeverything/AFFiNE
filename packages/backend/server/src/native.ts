@@ -231,8 +231,8 @@ import type {
 } from './plugins/copilot/runtime/contracts/tool-contract';
 
 export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
-export const authorizeUserdataDocSubject =
-  serverNativeModule.authorizeUserdataDocSubject;
+export const authorizeReservedDocSubject =
+  serverNativeModule.authorizeReservedDocSubject;
 export const authSessionAccessTokenKeyId =
   serverNativeModule.authSessionAccessTokenKeyId;
 export const createAuthSessionRefreshToken =

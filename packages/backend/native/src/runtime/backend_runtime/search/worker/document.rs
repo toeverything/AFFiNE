@@ -23,8 +23,6 @@ struct ProjectionTuple {
   permission_version: i64,
 }
 
-const HISTORY_GC_BATCH: usize = 100;
-
 pub(super) async fn upsert_document(
   pool: &PgPool,
   embedded: &EmbeddedSearchIndex,
@@ -108,7 +106,6 @@ pub(super) async fn upsert_document(
       )
       .await?;
       apply_changes(embedded, remote, generation, changes).await?;
-      gc_document_history(pool, embedded, remote, generation, workspace_id, doc_id).await;
     }
     return Ok(());
   };
@@ -127,67 +124,7 @@ pub(super) async fn upsert_document(
   renew_document_claim(pool, generation.id, workspace_id, doc_id, claim.fence).await?;
   apply_changes(embedded, remote, generation, changes).await?;
   complete_document(pool, generation.id, workspace_id, doc_id, &claim).await?;
-  gc_document_history(pool, embedded, remote, generation, workspace_id, doc_id).await;
   Ok(())
-}
-
-async fn gc_document_history(
-  pool: &PgPool,
-  embedded: &EmbeddedSearchIndex,
-  remote: Option<&SearchProvider>,
-  generation: &ActiveGeneration,
-  workspace_id: &str,
-  doc_id: &str,
-) {
-  let Ok(Some((source_version, permission_version))) = sqlx::query_as::<_, (i64, i64)>(
-    r#"SELECT published_source_version,published_permission_version
-       FROM search_projection.document_states
-       WHERE generation_id=$1 AND workspace_id=$2 AND doc_id=$3
-         AND target_source_version=published_source_version
-         AND target_source_exists=published_source_exists
-         AND target_permission_version=published_permission_version"#,
-  )
-  .bind(generation.id)
-  .bind(workspace_id)
-  .bind(doc_id)
-  .fetch_optional(pool)
-  .await
-  else {
-    return;
-  };
-  for table in [ProviderTable::Doc, ProviderTable::Block] {
-    let result = match remote {
-      Some(provider) => {
-        let Ok(physical_table) = generation.physical_table(table) else {
-          return;
-        };
-        provider
-          .gc_document_history(
-            physical_table,
-            workspace_id,
-            doc_id,
-            source_version,
-            permission_version,
-            HISTORY_GC_BATCH,
-          )
-          .await
-      }
-      None => embedded
-        .gc_document_history_for_generation(
-          generation.id,
-          table.as_str(),
-          workspace_id,
-          doc_id,
-          (source_version, permission_version),
-          HISTORY_GC_BATCH,
-        )
-        .await
-        .map_err(|error| RuntimeError::invalid_state(format!("embedded search history GC failed: {error}"))),
-    };
-    if result.is_err() {
-      return;
-    }
-  }
 }
 
 async fn projection_changes(

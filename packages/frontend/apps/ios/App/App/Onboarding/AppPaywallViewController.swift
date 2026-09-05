@@ -189,13 +189,6 @@ enum AppPaywallPlan: String, CaseIterable {
     }
   }
 
-  var badge: String? {
-    switch self {
-    case .pro: "BEST FOR YOU"
-    case .lite, .ai: nil
-    }
-  }
-
   var description: String {
     switch self {
     case .pro: "Keep your knowledge available everywhere."
@@ -205,7 +198,11 @@ enum AppPaywallPlan: String, CaseIterable {
   }
 
   var buttonTitle: String {
-    "Continue"
+    switch self {
+    case .pro: "Continue with Pro"
+    case .lite: "Continue with Lite"
+    case .ai: "Continue with AI"
+    }
   }
 
   var features: [String] {

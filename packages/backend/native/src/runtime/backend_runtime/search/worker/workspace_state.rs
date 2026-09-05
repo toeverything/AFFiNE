@@ -3,10 +3,10 @@ use serde_json::Value;
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use super::{ActiveGeneration, LEASE_SECONDS, SearchTable};
+use super::{ActiveGeneration, LEASE_SECONDS, SearchTable, WORKSPACE_RECONCILE_FAILED};
 use crate::runtime::{RuntimeError, RuntimeResult};
 
-const ANTI_ENTROPY_INTERVAL_SECONDS: i64 = 300;
+const ANTI_ENTROPY_INTERVAL_SECONDS: i64 = 3600;
 
 pub(super) struct WorkspaceClaim {
   pub(super) fence: i64,
@@ -350,29 +350,9 @@ pub(super) async fn mark_workspace_failed(
     .begin()
     .await
     .map_err(|error| RuntimeError::database("begin failed search workspace update", error))?;
-  let generation_state: Option<String> = sqlx::query_scalar(
-    r#"SELECT generation.state
-       FROM search_projection.workspace_states state
-       JOIN search_projection.generations generation ON generation.id=state.generation_id
-       WHERE state.generation_id=$1 AND state.workspace_id=$2 AND state.claim_fence=$3
-       FOR UPDATE"#,
-  )
-  .bind(generation_id)
-  .bind(workspace_id)
-  .bind(fence)
-  .fetch_optional(&mut *transaction)
-  .await
-  .map_err(|error| RuntimeError::database("load failed search workspace claim", error))?;
-  let Some(generation_state) = generation_state else {
-    transaction
-      .commit()
-      .await
-      .map_err(|error| RuntimeError::database("commit empty search workspace update", error))?;
-    return Ok(());
-  };
-  sqlx::query(
+  let updated = sqlx::query(
     r#"UPDATE search_projection.workspace_states
-       SET covered=false, pending_scope='workspace', last_error='search_workspace_reconcile_failed',
+       SET covered=false, pending_scope='workspace', last_error=$4,
            progress=NULL, available_at='infinity'::timestamptz,
            lease_owner=NULL, lease_expires_at=NULL, updated_at=now()
        WHERE generation_id=$1 AND workspace_id=$2 AND claim_fence=$3"#,
@@ -380,9 +360,17 @@ pub(super) async fn mark_workspace_failed(
   .bind(generation_id)
   .bind(workspace_id)
   .bind(fence)
+  .bind(WORKSPACE_RECONCILE_FAILED)
   .execute(&mut *transaction)
   .await
   .map_err(|error| RuntimeError::database("mark search workspace failed", error))?;
+  if updated.rows_affected() == 0 {
+    transaction
+      .commit()
+      .await
+      .map_err(|error| RuntimeError::database("commit empty search workspace update", error))?;
+    return Ok(());
+  }
   sqlx::query(
     r#"UPDATE search_projection.document_states
        SET available_at='infinity'::timestamptz, lease_owner=NULL, lease_expires_at=NULL, updated_at=now()
@@ -393,17 +381,6 @@ pub(super) async fn mark_workspace_failed(
   .execute(&mut *transaction)
   .await
   .map_err(|error| RuntimeError::database("pause failed search document publications", error))?;
-  if generation_state != "active" {
-    sqlx::query(
-      r#"UPDATE search_projection.generations
-         SET state='failed', last_error='search_workspace_reconcile_failed'
-         WHERE id=$1 AND state='building'"#,
-    )
-    .bind(generation_id)
-    .execute(&mut *transaction)
-    .await
-    .map_err(|error| RuntimeError::database("mark search generation failed", error))?;
-  }
   transaction
     .commit()
     .await
@@ -416,7 +393,11 @@ mod tests {
   use serde_json::json;
 
   use super::*;
-  use crate::runtime::{backend_runtime::search::SEARCH_TEST_LOCK, migrations::migrate_search_tables};
+  use crate::runtime::{
+    SearchRuntimeConfig,
+    backend_runtime::search::{SEARCH_TEST_LOCK, SearchRuntime, config_hash},
+    migrations::migrate_search_tables,
+  };
 
   #[test]
   fn progress_round_trips_versioned_context_for_each_phase() {
@@ -465,6 +446,7 @@ mod tests {
     migrate_search_tables(&pool).await.unwrap();
     let generation_id = Uuid::new_v4();
     let workspace_id = format!("claim-workspace-{}", Uuid::new_v4().simple());
+    let config = SearchRuntimeConfig::default();
     sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
       .bind(&workspace_id)
       .execute(&pool)
@@ -485,10 +467,12 @@ mod tests {
     .await
     .unwrap();
     sqlx::query(
-      r#"INSERT INTO search_projection.generations(id,provider,state,config_hash,schema_version)
-         VALUES($1,'embedded','failed',decode(repeat('00',32),'hex'),1)"#,
+      r#"INSERT INTO search_projection.generations(
+           id,provider,state,config_hash,schema_version,scan_high_water_sid,scan_cursor_sid
+         ) VALUES($1,'embedded','building',$2,1,0,0)"#,
     )
     .bind(generation_id)
+    .bind(config_hash(&config))
     .execute(&pool)
     .await
     .unwrap();
@@ -536,14 +520,9 @@ mod tests {
     checkpoint_workspace(&pool, generation_id, &workspace_id, first.fence, checkpoint)
       .await
       .unwrap();
-    sqlx::query("UPDATE snapshots SET updated_at='2026-01-02 UTC' WHERE workspace_id=$1 AND guid=$1")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
     sqlx::query(
-      "UPDATE search_projection.workspace_states SET required_permission_version=4 WHERE generation_id=$1 AND \
-       workspace_id=$2",
+      "UPDATE search_projection.workspace_states SET target_root_revision=target_root_revision+1, \
+       required_permission_version=4 WHERE generation_id=$1 AND workspace_id=$2",
     )
     .bind(generation_id)
     .bind(&workspace_id)
@@ -557,12 +536,25 @@ mod tests {
       .unwrap();
     assert_eq!(second.progress.captured_root_revision, initial_root);
     assert_eq!(second.progress.captured_permission_version, 3);
+    sqlx::query(
+      r#"INSERT INTO search_projection.document_states(
+           generation_id,workspace_id,doc_id,target_source_version,target_source_exists
+         ) VALUES($1,$2,'pending-doc',1,true)"#,
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
     mark_workspace_failed(&pool, generation_id, &workspace_id, second.fence)
       .await
       .unwrap();
-    let failed: (bool, Option<String>, Option<Value>, bool) = sqlx::query_as(
-      r#"SELECT covered,last_error,progress,available_at='infinity'::timestamptz
-         FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2"#,
+    let failed: (bool, Option<String>, Option<Value>, bool, String) = sqlx::query_as(
+      r#"SELECT state.covered,state.last_error,state.progress,state.available_at='infinity'::timestamptz,
+                generation.state
+         FROM search_projection.workspace_states state
+         JOIN search_projection.generations generation ON generation.id=state.generation_id
+         WHERE state.generation_id=$1 AND state.workspace_id=$2"#,
     )
     .bind(generation_id)
     .bind(&workspace_id)
@@ -571,8 +563,27 @@ mod tests {
     .unwrap();
     assert_eq!(
       failed,
-      (false, Some("search_workspace_reconcile_failed".to_string()), None, true)
+      (
+        false,
+        Some(WORKSPACE_RECONCILE_FAILED.to_string()),
+        None,
+        true,
+        "building".to_string()
+      )
     );
+
+    let runtime = SearchRuntime::new(pool.clone(), config).unwrap();
+    runtime.embedded.prepare_generation(generation_id).await;
+    assert_eq!(runtime.reconcile_pending(1).await.unwrap(), 0);
+    assert_eq!(
+      sqlx::query_scalar::<_, String>("SELECT state FROM search_projection.generations WHERE id=$1")
+        .bind(generation_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap(),
+      "active"
+    );
+    assert_eq!(runtime.status().await.unwrap()["metrics"]["pendingPublications"], 0);
 
     sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
       .bind(generation_id)

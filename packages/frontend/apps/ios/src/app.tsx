@@ -3,6 +3,7 @@ import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
 import { MobileModalConfigProvider } from '@affine/core/mobile/components/mobile-modal-config-provider';
+import { ShareImportController } from '@affine/core/mobile/components/share-import-controller';
 import { configureMobileModules } from '@affine/core/mobile/modules';
 import { MobileBackCoordinator } from '@affine/core/mobile/modules/back-coordinator';
 import { HapticProvider } from '@affine/core/mobile/modules/haptics';
@@ -89,6 +90,7 @@ import { NavigationGesture } from './plugins/navigation-gesture';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { PayWall } from './plugins/paywall';
 import { Preview } from './plugins/preview';
+import { shareInboxProvider } from './plugins/share-inbox';
 import {
   authRequestProvider,
   clearEndpointSession,
@@ -335,15 +337,31 @@ registerNativeImageFilesPicker(async () => {
 });
 
 // ------ some apis for native ------
-(window as any).getCurrentServerBaseUrl = () => {
+const getCurrentServerForNative = () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentServerId = globalContext.serverId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
   const serversService = frameworkProvider.get(ServersService);
   const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
+
+  if (currentWorkspaceFlavour && currentWorkspaceFlavour !== 'local') {
+    const workspaceServer = serversService.server$(
+      currentWorkspaceFlavour
+    ).value;
+    if (workspaceServer) {
+      return workspaceServer;
+    }
+  }
+
+  return (
     (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
-  return currentServer.baseUrl;
+    defaultServerService.server
+  );
+};
+
+(window as any).getCurrentServerBaseUrl = () => {
+  return getCurrentServerForNative().baseUrl;
 };
 (window as any).getCurrentI18nLocale = () => {
   return I18n.language;
@@ -365,11 +383,15 @@ registerNativeImageFilesPicker(async () => {
 };
 (window as any).waitForSelectedSources = async (documentIds: string[]) => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentWorkspaceId =
-    globalContextService.globalContext.workspaceId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentWorkspaceId = globalContext.workspaceId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
   if (!workspaceRef) {
     throw new Error('Current workspace is unavailable');
@@ -408,13 +430,7 @@ registerNativeImageFilesPicker(async () => {
   return true;
 };
 const getCurrentNativeSignInContext = () => {
-  const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
-  const serversService = frameworkProvider.get(ServersService);
-  const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
-    (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
+  const currentServer = getCurrentServerForNative();
   const authService = currentServer.scope.get(AuthService);
   return { authService, currentServer };
 };
@@ -529,14 +545,19 @@ const showNativeSignIn = async () => {
 (window as any).requestSignIn = async () => {
   return await showNativeSignIn();
 };
+
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentWorkspaceId =
-    globalContextService.globalContext.workspaceId.get();
-  const currentDocId = globalContextService.globalContext.docId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentWorkspaceId = globalContext.workspaceId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
+  const currentDocId = globalContext.docId.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
   if (!workspaceRef) {
     return;
@@ -547,6 +568,7 @@ const showNativeSignIn = async () => {
   const docsService = workspace.scope.get(DocsService);
   const docRef = currentDocId ? docsService.open(currentDocId) : null;
   if (!docRef) {
+    disposeWorkspace();
     return;
   }
   const { doc, release: disposeDoc } = docRef;
@@ -589,11 +611,15 @@ const showNativeSignIn = async () => {
   title: string
 ) => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentWorkspaceId =
-    globalContextService.globalContext.workspaceId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentWorkspaceId = globalContext.workspaceId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
 
   try {
@@ -603,7 +629,7 @@ const showNativeSignIn = async () => {
     }
 
     const workbench = workspace.scope.get(WorkbenchService).workbench;
-    await workspace.engine.doc.waitForDocReady(workspace.id); // wait for root doc ready
+    await workspace.engine.doc.waitForDocReady(workspace.id);
     const docId = await MarkdownTransformer.importMarkdownToDoc({
       collection: workspace.docCollection,
       schema: getAFFiNEWorkspaceSchema(),
@@ -611,15 +637,13 @@ const showNativeSignIn = async () => {
       extensions: getStoreManager().config.init().value.get('store'),
     });
     const docsService = workspace.scope.get(DocsService);
-    if (docId) {
-      // only support page mode for now
-      await docsService.changeDocTitle(docId, title);
-      docsService.list.setPrimaryMode(docId, 'page');
-      workbench.openDoc(docId);
-      return docId;
-    } else {
+    if (!docId) {
       throw new Error('Failed to import doc');
     }
+    await docsService.changeDocTitle(docId, title);
+    docsService.list.setPrimaryMode(docId, 'page');
+    workbench.openDoc(docId);
+    return docId;
   } finally {
     workspaceRef?.dispose();
   }
@@ -854,6 +878,7 @@ export function App() {
             <AffineContext store={getCurrentStore()}>
               <KeyboardThemeProvider />
               <IOSBackAdapter />
+              <ShareImportController provider={shareInboxProvider} />
               <BlocksuiteMenuConfigProvider>
                 <RouterProvider
                   fallbackElement={<AppFallback />}

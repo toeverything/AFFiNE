@@ -1,3 +1,7 @@
+import {
+  headlineRegular,
+  subHeadlineRegular,
+} from '@toeverything/theme/typography';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
@@ -14,10 +18,10 @@ export const emptyState = style({
 });
 
 export const illustration = style({
-  width: 96,
-  height: 96,
+  width: 80,
+  height: 80,
   objectFit: 'contain',
-  marginBottom: 24,
+  marginBottom: 16,
   userSelect: 'none',
 });
 
@@ -25,31 +29,27 @@ export const copy = style({
   width: '100%',
   maxWidth: 280,
   textAlign: 'center',
-  marginBottom: 28,
+  marginBottom: 20,
 });
 
-export const title = style({
-  margin: 0,
-  fontSize: 21,
-  lineHeight: '28px',
-  fontWeight: 700,
-  color: cssVarV2('text/primary'),
-});
+export const title = style([
+  headlineRegular,
+  {
+    margin: 0,
+    color: cssVarV2('text/primary'),
+  },
+]);
 
-export const description = style({
-  margin: '10px 0 0',
-  fontSize: 18,
-  lineHeight: '24px',
-  fontWeight: 400,
-  color: cssVarV2('text/secondary'),
-});
+export const description = style([
+  subHeadlineRegular,
+  {
+    margin: '6px 0 0',
+    color: cssVarV2('text/secondary'),
+  },
+]);
 
 export const actionButton = style({
-  minWidth: 164,
-  borderRadius: 10,
-  fontSize: 20,
-  fontWeight: 600,
-  boxShadow: `0 8px 18px ${cssVarV2('layer/insideBorder/border')}`,
+  borderRadius: 8,
 });
 
 export const actionIcon = style({
