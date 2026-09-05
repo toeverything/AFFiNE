@@ -2886,6 +2886,7 @@ __metadata:
     mdast-util-gfm-strikethrough: "npm:^2.0.0"
     mdast-util-gfm-table: "npm:^2.0.0"
     mdast-util-gfm-task-list-item: "npm:^2.0.0"
+    mdast-util-to-markdown: "npm:^2.1.2"
     micromark-extension-gfm-autolink-literal: "npm:^2.1.0"
     micromark-extension-gfm-footnote: "npm:^2.1.0"
     micromark-extension-gfm-strikethrough: "npm:^2.1.0"
@@ -27947,7 +27948,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mdast-util-to-markdown@npm:^2.0.0, mdast-util-to-markdown@npm:^2.1.0":
+"mdast-util-to-markdown@npm:^2.0.0, mdast-util-to-markdown@npm:^2.1.0, mdast-util-to-markdown@npm:^2.1.2":
   version: 2.1.2
   resolution: "mdast-util-to-markdown@npm:2.1.2"
   dependencies:
