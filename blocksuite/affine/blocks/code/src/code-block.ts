@@ -60,7 +60,10 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
 
   languageName$: Signal<string> = computed(() => {
     const lang = this.model.props.language$.value;
-    if (lang === null) {
+    if (
+      lang === null ||
+      ['text', 'plaintext', 'empty'].includes(lang.toLowerCase())
+    ) {
       return 'Plain Text';
     }
 
@@ -119,7 +122,10 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
 
   private _updateHighlightTokens() {
     const modelLang = this.model.props.language$.value;
-    if (modelLang === null) {
+    if (
+      modelLang === null ||
+      ['text', 'plaintext', 'empty'].includes(modelLang.toLowerCase())
+    ) {
       this.highlightTokens$.value = [];
       return;
     }
