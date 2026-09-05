@@ -4,6 +4,7 @@ import { defineModuleConfig } from '../../base';
 
 export interface ServerFlags {
   allowGuestDemoWorkspace: boolean;
+  sharePreviewBlobRefs: boolean;
 }
 
 declare global {
@@ -80,5 +81,9 @@ defineModuleConfig('flags', {
   allowGuestDemoWorkspace: {
     desc: 'Whether allow guest users to create demo workspaces.',
     default: true,
+  },
+  sharePreviewBlobRefs: {
+    desc: 'Expose parser-v2 bookmark Blob reference support after every cleanup worker in the deployment is upgraded.',
+    default: false,
   },
 });

@@ -23,13 +23,25 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
 
   @objc func listPending(_ call: CAPPluginCall) {
     do {
-      let items = try store.pendingItems().compactMap { item -> [String: Any]? in
-        if item.result != nil {
-          try? store.remove(item)
-          return nil
+      let items = try store.pendingItems().compactMap { entry -> [String: Any]? in
+        switch entry {
+        case let .ready(item):
+          if item.result != nil {
+            try? store.remove(item)
+            return nil
+          }
+          let data = try encoder.encode(item)
+          guard let item = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+          }
+          return ["status": "ready", "item": item]
+        case let .unsupportedVersion(itemId, schemaVersion):
+          return [
+            "status": "unsupported-version",
+            "id": itemId,
+            "schemaVersion": schemaVersion,
+          ]
         }
-        let data = try encoder.encode(item)
-        return try JSONSerialization.jsonObject(with: data) as? [String: Any]
       }
       call.resolve(["items": items])
     } catch {
@@ -76,16 +88,18 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
   @objc func resolveAttachment(_ call: CAPPluginCall) {
     do {
       let item = try item(from: call)
-      guard let attachment = item.attachments.first,
-            let url = store.attachmentURL(for: attachment),
-            FileManager.default.fileExists(atPath: url.path)
+      guard let attachment = store.resolveAttachment(for: item)
       else {
         call.resolve([:])
         return
       }
       call.resolve([
-        "path": url.absoluteString,
+        "itemId": attachment.itemId,
+        "fileUrl": attachment.url.absoluteString,
+        "relativePath": attachment.relativePath,
+        "name": attachment.name,
         "mimeType": attachment.mimeType,
+        "size": attachment.size,
       ])
     } catch {
       call.reject("Failed to resolve the shared attachment.", nil, error)
@@ -94,14 +108,13 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
 
   @objc func complete(_ call: CAPPluginCall) {
     do {
-      var item = try item(from: call)
+      guard let itemId = call.getString("itemId"), !itemId.isEmpty else {
+        throw ShareInboxError.invalidPayload
+      }
       guard let docId = call.getString("docId"), !docId.isEmpty else {
         throw ShareInboxError.invalidPayload
       }
-      item.result = ShareInboxResult(docId: docId, committedAt: Date())
-      item.lastError = nil
-      try store.update(item)
-      try store.remove(item)
+      try store.complete(itemId: itemId, docId: docId, committedAt: Date())
       call.resolve()
     } catch {
       call.reject("Failed to finish importing shared content.", nil, error)
@@ -124,7 +137,10 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
 
   private func item(from call: CAPPluginCall) throws -> ShareInboxItem {
     guard let itemId = call.getString("itemId"),
-          let item = store.pendingItems().first(where: { $0.id == itemId })
+          let item = store.pendingItems().compactMap({ entry -> ShareInboxItem? in
+            guard case let .ready(item) = entry else { return nil }
+            return item
+          }).first(where: { $0.id == itemId })
     else {
       throw ShareInboxError.invalidPayload
     }

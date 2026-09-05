@@ -1,15 +1,28 @@
 import type { Server } from '@affine/core/modules/cloud';
 import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
-import { LinkIcon, WaveRectangleIcon } from '@blocksuite/icons/rc';
+import type { ServerDeploymentType } from '@affine/graphql';
+import { LinkIcon } from '@blocksuite/icons/rc';
 import { useEffect, useRef, useState } from 'react';
 
-import type { SharePreviewRouteOwner } from './preview-route-owner';
+import type {
+  SharePreviewRouteOwner,
+  SharePreviewState,
+} from './preview-route-owner';
 import * as styles from './style.css';
 import type { PendingShareItem, ShareLinkPreview as Preview } from './types';
 
 type PreviewState =
-  | { status: 'idle' | 'loading' | 'failed' }
-  | { status: 'loaded'; preview: Preview };
+  | {
+      status: 'idle' | 'loading' | 'failed';
+      itemId: string;
+      workspaceKey: string | undefined;
+    }
+  | {
+      status: 'loaded';
+      itemId: string;
+      workspaceKey: string | undefined;
+      preview: Preview;
+    };
 
 export function resolveShareTitle(
   originalTitle: string,
@@ -21,23 +34,31 @@ export function resolveShareTitle(
     : originalTitle || fallback;
 }
 
-const graphemeSegmenter = new Intl.Segmenter(undefined, {
-  granularity: 'grapheme',
-});
+function formatDuration(value: number | undefined) {
+  if (value === undefined || !Number.isFinite(value) || value < 0)
+    return undefined;
+  const total = Math.floor(value);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    : `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
 
-export function transcriptPreviewText(
-  transcript: Preview['transcript']
-): string | undefined {
-  const text = transcript?.segments
-    .map(segment => segment.text.trim().replace(/\s+/g, ' '))
+function transcriptExcerpt(preview: Preview) {
+  const value = preview.transcript?.segments
+    .map(segment => segment.text.split(/\s+/u).filter(Boolean).join(' '))
     .filter(Boolean)
     .join(' ');
-  if (!text) return undefined;
-  const graphemes = Array.from(
-    graphemeSegmenter.segment(text),
+  if (!value) return undefined;
+  const characters = Array.from(
+    new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(value),
     segment => segment.segment
   );
-  return graphemes.length > 240 ? `${graphemes.slice(0, 240).join('')}…` : text;
+  return characters.length > 240
+    ? `${characters.slice(0, 239).join('')}…`
+    : value;
 }
 
 export const LinkPreview = ({
@@ -45,49 +66,115 @@ export const LinkPreview = ({
   owner,
   workspace,
   servers,
+  serverConfigType,
   onPreview,
 }: {
   item: PendingShareItem;
   owner: SharePreviewRouteOwner;
   workspace: WorkspaceMetadata | undefined;
   servers: Server[];
-  onPreview(preview: Preview | undefined): void;
+  serverConfigType?: ServerDeploymentType;
+  onPreview(preview: SharePreviewState | undefined): void;
 }) => {
-  const [state, setState] = useState<PreviewState>({ status: 'idle' });
+  const selectedWorkspaceKey = workspace
+    ? `${workspace.flavour}:${workspace.id}`
+    : undefined;
+  const [state, setState] = useState<PreviewState>(() =>
+    item.preview
+      ? {
+          status: 'loaded',
+          itemId: item.id,
+          workspaceKey: undefined,
+          preview: item.preview,
+        }
+      : { status: 'idle', itemId: item.id, workspaceKey: selectedWorkspaceKey }
+  );
+  const [failedMedia, setFailedMedia] = useState<{
+    itemId: string;
+    url: string;
+  }>();
   const activeRequest = useRef<Promise<Preview> | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
+    if (item.preview) {
+      activeRequest.current = undefined;
+      setState({
+        status: 'loaded',
+        itemId: item.id,
+        workspaceKey: undefined,
+        preview: item.preview,
+      });
+      onPreview(undefined);
+      return () => {
+        active = false;
+      };
+    }
     owner.selectWorkspace(workspace, servers);
+    const routeWorkspaceKey = owner.workspaceKey;
+    const generation = owner.generation;
+    const updatePreview = (value: Preview | undefined) => {
+      onPreview(
+        value && routeWorkspaceKey
+          ? {
+              itemId: item.id,
+              workspaceKey: routeWorkspaceKey,
+              generation,
+              value,
+            }
+          : undefined
+      );
+    };
     const controller = new AbortController();
     const request = owner.load(controller.signal);
     if (!request) {
       activeRequest.current = undefined;
-      setState({ status: 'idle' });
-      onPreview(undefined);
+      setState({
+        status: 'idle',
+        itemId: item.id,
+        workspaceKey: selectedWorkspaceKey,
+      });
+      updatePreview(undefined);
       return () => {
         active = false;
         controller.abort();
       };
     }
     activeRequest.current = request;
-    setState({ status: 'loading' });
+    setState({
+      status: 'loading',
+      itemId: item.id,
+      workspaceKey: selectedWorkspaceKey,
+    });
     const isCurrent = () => active && activeRequest.current === request;
     void request.then(
       preview => {
         if (!isCurrent()) return;
-        setState({ status: 'loaded', preview });
-        onPreview(preview);
+        setState({
+          status: 'loaded',
+          itemId: item.id,
+          workspaceKey: selectedWorkspaceKey,
+          preview,
+        });
+        updatePreview(preview);
       },
       error => {
         if (!isCurrent()) return;
         if (error instanceof DOMException && error.name === 'AbortError') {
-          setState({ status: 'idle' });
-          onPreview(undefined);
+          setState({
+            status: 'idle',
+            itemId: item.id,
+            workspaceKey: selectedWorkspaceKey,
+          });
+          updatePreview(undefined);
           return;
         }
-        setState({ status: 'failed' });
-        onPreview(undefined);
+        setState({
+          status: 'failed',
+          itemId: item.id,
+          workspaceKey: selectedWorkspaceKey,
+        });
+        updatePreview(undefined);
       }
     );
     return () => {
@@ -95,7 +182,16 @@ export const LinkPreview = ({
       if (activeRequest.current === request) activeRequest.current = undefined;
       controller.abort();
     };
-  }, [item.id, onPreview, owner, servers, workspace]);
+  }, [
+    item.id,
+    item.preview,
+    onPreview,
+    owner,
+    selectedWorkspaceKey,
+    serverConfigType,
+    servers,
+    workspace,
+  ]);
 
   let hostname = 'Link';
   if (item.content.url) {
@@ -103,7 +199,21 @@ export const LinkPreview = ({
       hostname = new URL(item.content.url).hostname || hostname;
     } catch {}
   }
-  if (state.status === 'loading') {
+  const visibleState: PreviewState = item.preview
+    ? {
+        status: 'loaded',
+        itemId: item.id,
+        workspaceKey: undefined,
+        preview: item.preview,
+      }
+    : state.itemId === item.id && state.workspaceKey === selectedWorkspaceKey
+      ? state
+      : {
+          status: 'idle',
+          itemId: item.id,
+          workspaceKey: selectedWorkspaceKey,
+        };
+  if (visibleState.status === 'loading') {
     return (
       <section
         className={styles.linkPreview}
@@ -129,7 +239,7 @@ export const LinkPreview = ({
     );
   }
 
-  if (state.status !== 'loaded') {
+  if (visibleState.status !== 'loaded') {
     return (
       <section className={styles.linkPreview} aria-label="Link preview">
         <div className={styles.previewContent}>
@@ -142,7 +252,7 @@ export const LinkPreview = ({
                 {item.title || hostname}
               </div>
               <div className={styles.previewSite}>{hostname}</div>
-              {state.status === 'failed' ? (
+              {visibleState.status === 'failed' ? (
                 <div className={styles.previewSite} aria-live="polite">
                   Preview unavailable
                 </div>
@@ -160,7 +270,7 @@ export const LinkPreview = ({
     );
   }
 
-  const { preview } = state;
+  const { preview } = visibleState;
   const title = resolveShareTitle(item.title, preview.title, hostname);
   const description =
     preview.description && preview.description !== title
@@ -171,13 +281,22 @@ export const LinkPreview = ({
     formatDuration(preview.durationSeconds),
   ]
     .filter(Boolean)
-    .slice(0, 2)
     .join(' · ');
-  const transcript = transcriptPreviewText(preview.transcript);
+  const transcript = transcriptExcerpt(preview);
+  const mediaURL = preview.images?.[0];
+  const mediaFailed =
+    !!mediaURL &&
+    failedMedia?.itemId === item.id &&
+    failedMedia.url === mediaURL;
   return (
     <section className={styles.linkPreview} aria-label="Link preview">
-      {preview.images?.[0] ? (
-        <img className={styles.previewMedia} src={preview.images[0]} alt="" />
+      {mediaURL && !mediaFailed ? (
+        <img
+          className={styles.previewMedia}
+          src={mediaURL}
+          alt=""
+          onError={() => setFailedMedia({ itemId: item.id, url: mediaURL })}
+        />
       ) : (
         <div className={styles.previewMediaPlaceholder} aria-hidden="true">
           <LinkIcon />
@@ -202,29 +321,13 @@ export const LinkPreview = ({
           {metadata ? (
             <div className={styles.previewMeta}>{metadata}</div>
           ) : null}
+          {transcript ? (
+            <div className={styles.previewTranscript}>
+              <div className={styles.previewTranscriptLabel}>Transcript</div>
+              <div className={styles.previewTranscriptText}>{transcript}</div>
+            </div>
+          ) : null}
         </div>
-        {transcript ? (
-          <div
-            className={styles.transcriptPreview}
-            role="group"
-            aria-label={`Transcript preview: ${transcript}`}
-          >
-            <div className={styles.transcriptLabel} aria-hidden="true">
-              <WaveRectangleIcon className={styles.transcriptIcon} />
-              Transcript
-            </div>
-            <div
-              className={
-                item.content.text
-                  ? styles.transcriptExcerptWithSelectedText
-                  : styles.transcriptExcerpt
-              }
-              aria-hidden="true"
-            >
-              {transcript}
-            </div>
-          </div>
-        ) : null}
       </div>
       {item.content.text ? (
         <blockquote className={styles.selectedText}>
@@ -235,11 +338,3 @@ export const LinkPreview = ({
     </section>
   );
 };
-
-function formatDuration(duration?: number) {
-  if (duration === undefined) return undefined;
-  const minutes = Math.floor(duration / 60);
-  return `${minutes}:${Math.floor(duration % 60)
-    .toString()
-    .padStart(2, '0')}`;
-}

@@ -11,6 +11,7 @@ export enum ServerFeature {
   Indexer = 'indexer',
   Comment = 'comment',
   LocalWorkspace = 'local_workspace',
+  SharePreviewBlobRefs = 'share_preview_blob_refs',
 }
 
 registerEnumType(ServerFeature, {

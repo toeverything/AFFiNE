@@ -2960,6 +2960,7 @@ export enum ServerFeature {
   LocalWorkspace = 'LocalWorkspace',
   OAuth = 'OAuth',
   Payment = 'Payment',
+  SharePreviewBlobRefs = 'SharePreviewBlobRefs',
 }
 
 export interface SpaceAccessDeniedDataType {

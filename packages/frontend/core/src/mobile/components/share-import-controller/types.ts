@@ -5,17 +5,23 @@ export type { ShareLinkPreview };
 export interface PendingShareItem {
   id: string;
   documentId: string;
+  schemaVersion: 3;
+  importAttemptId: string;
   title: string;
   content: {
-    kind: 'url' | 'text' | 'image';
+    kind: 'url' | 'text' | 'image' | 'pdf';
     url?: string;
     text?: string;
   };
-  previewRoute?: 'official' | 'deferred';
+  preview?: ShareLinkPreview;
   target?: ShareImportTarget;
   attachments?: { fileName: string; mimeType: string }[];
   lastError?: string;
 }
+
+export type ShareInboxEntry =
+  | { status: 'ready'; item: PendingShareItem }
+  | { status: 'unsupported-version'; id: string; schemaVersion: number };
 
 export interface ShareImportTarget {
   workspaceId: string;
@@ -28,9 +34,9 @@ export interface ShareInboxProvider {
   updateWorkspaceMode(
     mode: 'selfHostedPresent' | 'cloudOnly' | 'signedOut' | 'unknown'
   ): Promise<void>;
-  listPending(): Promise<PendingShareItem[]>;
+  listPending(): Promise<ShareInboxEntry[]>;
   updateTarget(itemId: string, target: ShareImportTarget): Promise<void>;
-  resolveAttachment(itemId: string): Promise<string | undefined>;
+  resolveAttachment(itemId: string): Promise<File | undefined>;
   complete(itemId: string, docId: string): Promise<void>;
   setError(itemId: string, error: string): Promise<void>;
 }

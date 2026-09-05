@@ -1,4 +1,5 @@
 import Foundation
+import UniformTypeIdentifiers
 
 enum ShareWorkspaceMode: String, Codable {
   case selfHostedPresent
@@ -41,6 +42,14 @@ enum ShareInboxSafety {
 
   static func normalizedManifestID(_ value: String) -> String? {
     UUID(uuidString: value)?.uuidString
+  }
+
+  static func manifestSchemaVersion(from data: Data) -> Int? {
+    guard let manifest = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+      return nil
+    }
+    guard let schemaVersion = manifest["schemaVersion"] else { return 1 }
+    return schemaVersion as? Int
   }
 
   static func normalizedWebURL(_ value: String) -> String? {
@@ -134,5 +143,13 @@ enum ShareInboxSafety {
       }
     }
     return nil
+  }
+
+  static func isPDFTypeIdentifier(_ value: String) -> Bool {
+    UTType(value)?.conforms(to: .pdf) == true
+  }
+
+  static func detectPDFMimeType(_ data: Data) -> String? {
+    data.starts(with: Data("%PDF-".utf8)) ? "application/pdf" : nil
   }
 }

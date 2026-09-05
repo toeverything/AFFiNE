@@ -296,6 +296,10 @@
     "allowGuestDemoWorkspace": {
       "type": "Boolean",
       "desc": "Whether allow guest users to create demo workspaces."
+    },
+    "sharePreviewBlobRefs": {
+      "type": "Boolean",
+      "desc": "Expose parser-v2 bookmark Blob reference support after every cleanup worker in the deployment is upgraded."
     }
   },
   "telemetry": {

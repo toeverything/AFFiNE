@@ -1,6 +1,7 @@
 import { serverConfigQuery, ServerFeature } from '@affine/graphql';
 
 import { Config } from '../../../base';
+import { ServerService } from '../../../core/config';
 import { app, e2e } from '../test';
 
 e2e('should expose the indexer feature when it is enabled', async t => {
@@ -33,3 +34,35 @@ e2e('should enable local workspace feature by default', async t => {
     JSON.stringify(serverConfig, null, 2)
   );
 });
+
+e2e(
+  'should expose share preview Blob refs only while its rollout flag is enabled',
+  async t => {
+    const server = app.get(ServerService);
+    try {
+      server.onConfigChangedBroadcast({
+        updates: { flags: { sharePreviewBlobRefs: false } },
+      });
+      const disabled = await app.gql({ query: serverConfigQuery });
+      t.false(
+        disabled.serverConfig.features.includes(
+          ServerFeature.SharePreviewBlobRefs
+        )
+      );
+
+      server.onConfigChangedBroadcast({
+        updates: { flags: { sharePreviewBlobRefs: true } },
+      });
+      const enabled = await app.gql({ query: serverConfigQuery });
+      t.true(
+        enabled.serverConfig.features.includes(
+          ServerFeature.SharePreviewBlobRefs
+        )
+      );
+    } finally {
+      server.onConfigChangedBroadcast({
+        updates: { flags: { sharePreviewBlobRefs: false } },
+      });
+    }
+  }
+);

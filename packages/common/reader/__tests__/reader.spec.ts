@@ -242,3 +242,48 @@ test('should index references from database rich-text cells', async () => {
     JSON.stringify({ docId: 'target-doc', mode: 'page' }),
   ]);
 });
+
+test('indexes and removes bookmark structured-detail Blob references', async () => {
+  const doc = new YDoc({ guid: 'bookmark-doc' });
+  const blocks = doc.getMap('blocks');
+
+  const page = new YMap();
+  page.set('sys:id', 'page');
+  page.set('sys:flavour', 'affine:page');
+  page.set('sys:children', YArray.from(['note']));
+  page.set('prop:title', new YText('Page'));
+  blocks.set('page', page);
+
+  const note = new YMap();
+  note.set('sys:id', 'note');
+  note.set('sys:flavour', 'affine:note');
+  note.set('sys:children', YArray.from(['bookmark']));
+  note.set('prop:displayMode', 'page');
+  blocks.set('note', note);
+
+  const bookmark = new YMap();
+  bookmark.set('sys:id', 'bookmark');
+  bookmark.set('sys:flavour', 'affine:bookmark');
+  bookmark.set('sys:children', new YArray());
+  bookmark.set('prop:url', 'https://example.com');
+  bookmark.set('prop:title', 'Example');
+  bookmark.set('prop:sharePreviewSourceId', 'details-blob');
+  blocks.set('bookmark', bookmark);
+
+  const referenced = await readAllBlocksFromDoc({
+    ydoc: doc,
+    spaceId: 'test-space',
+  });
+  expect(
+    referenced?.blocks.find(block => block.blockId === 'bookmark')?.blob
+  ).toEqual(['details-blob']);
+
+  bookmark.delete('prop:sharePreviewSourceId');
+  const removed = await readAllBlocksFromDoc({
+    ydoc: doc,
+    spaceId: 'test-space',
+  });
+  expect(
+    removed?.blocks.find(block => block.blockId === 'bookmark')?.blob
+  ).toBeUndefined();
+});

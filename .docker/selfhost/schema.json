@@ -965,6 +965,11 @@
           "type": "boolean",
           "description": "Whether allow guest users to create demo workspaces.\n@default true",
           "default": true
+        },
+        "sharePreviewBlobRefs": {
+          "type": "boolean",
+          "description": "Expose parser-v2 bookmark Blob reference support after every cleanup worker in the deployment is upgraded.\n@default false",
+          "default": false
         }
       }
     },

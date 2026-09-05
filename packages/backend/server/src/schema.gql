@@ -2279,6 +2279,7 @@ enum ServerFeature {
   LocalWorkspace
   OAuth
   Payment
+  SharePreviewBlobRefs
 }
 
 type SpaceAccessDeniedDataType {

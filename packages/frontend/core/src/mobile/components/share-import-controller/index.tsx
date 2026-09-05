@@ -17,14 +17,15 @@ import { LinkPreview, resolveShareTitle } from './link-preview';
 import {
   resolveShareWorkspaceMode,
   SharePreviewRouteOwner,
+  type SharePreviewState,
 } from './preview-route-owner';
 import { SelectionPage, type SelectionPageOption } from './selection-page';
 import * as styles from './style.css';
 import type {
   PendingShareItem,
   ShareImportTarget,
+  ShareInboxEntry,
   ShareInboxProvider,
-  ShareLinkPreview,
 } from './types';
 
 export type { ShareInboxProvider } from './types';
@@ -38,6 +39,8 @@ interface ShareDestinationSelection {
   collectionId: string;
 }
 
+type ShareImportOutcome = 'pending' | 'completion-failed' | 'completed';
+
 const errorMessage = (error?: string) => {
   switch (error) {
     case 'workspace-not-found':
@@ -49,7 +52,15 @@ const errorMessage = (error?: string) => {
     case 'offline-confirmation-required':
       return 'AFFiNE could not confirm the latest workspace state.';
     case 'attachment-missing':
-      return 'The shared image is no longer available.';
+      return 'The shared attachment is no longer available.';
+    case 'attachment-too-large':
+      return 'The shared attachment is too large for this workspace.';
+    case 'attachment-write-failed':
+      return 'AFFiNE could not store this attachment in the selected workspace. Try again or choose another workspace.';
+    case 'import-conflict':
+      return 'This share conflicts with an existing document and was not changed.';
+    case 'completion-failed':
+      return 'This share was saved, but AFFiNE could not clear it from the inbox. Try again.';
     default:
       return undefined;
   }
@@ -87,28 +98,44 @@ const sourceDetails = (item: PendingShareItem) => {
       detail: item.attachments?.[0]?.fileName ?? 'Shared image',
     };
   }
+  if (item.content.kind === 'pdf') {
+    return {
+      title: item.title,
+      detail: item.attachments?.[0]?.fileName ?? 'Shared PDF',
+    };
+  }
   return {
     title: item.title,
     detail: `${item.content.text?.length ?? 0} characters`,
   };
 };
 
-async function previewForImport(
+export async function previewForImport(
   item: PendingShareItem,
   workspace: WorkspaceMetadata,
-  current: ShareLinkPreview | undefined,
+  current: SharePreviewState | undefined,
   currentOwner: SharePreviewRouteOwner | undefined,
   servers: Server[]
 ) {
-  if (item.content.kind !== 'url' || current) return current;
+  if (item.content.kind !== 'url') return undefined;
+  if (item.preview) return item.preview;
   const owner = currentOwner ?? new SharePreviewRouteOwner(item);
   owner.selectWorkspace(workspace, servers);
+  const selectedWorkspaceKey = workspaceKey(workspace);
+  const generation = owner.generation;
+  if (
+    current?.itemId === item.id &&
+    current.workspaceKey === selectedWorkspaceKey &&
+    current.generation === generation
+  ) {
+    return current.value;
+  }
   const controller = new AbortController();
   const request = owner.load(controller.signal);
   if (!request) return undefined;
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    return await Promise.race([
+    const preview = await Promise.race([
       request.catch(() => undefined),
       new Promise<undefined>(resolve => {
         timeout = setTimeout(() => {
@@ -117,6 +144,10 @@ async function previewForImport(
         }, 1200);
       }),
     ]);
+    return owner.workspaceKey === selectedWorkspaceKey &&
+      owner.generation === generation
+      ? preview
+      : undefined;
   } finally {
     if (timeout) clearTimeout(timeout);
   }
@@ -132,6 +163,8 @@ const SourceIcon = ({
       return <LinkIcon />;
     case 'image':
       return <ImageIcon />;
+    case 'pdf':
+      return <TextIcon />;
     case 'text':
       return <TextIcon />;
   }
@@ -148,15 +181,26 @@ export const ShareImportController = ({
   const workspaces = useLiveData(workspacesService.list.workspaces$);
   const serverAccounts = useLiveData(serversService.serversWithAccount$);
   const servers = useLiveData(serversService.servers$);
-  const [item, setItem] = useState<PendingShareItem>();
+  const [entry, setEntry] = useState<ShareInboxEntry>();
+  const item = entry?.status === 'ready' ? entry.item : undefined;
   const [page, setPage] = useState<Page>('main');
   const [selection, setSelection] = useState<ShareDestinationSelection>();
   const [destinations, setDestinations] = useState<ShareDestinationOptions>();
   const [isLoadingDestinations, setIsLoadingDestinations] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [attachmentPreview, setAttachmentPreview] = useState<string>();
-  const [linkPreview, setLinkPreview] = useState<ShareLinkPreview>();
+  const attachmentRef = useRef<{ itemId: string; file: File } | undefined>(
+    undefined
+  );
+  const attachmentGeneration = useRef(0);
+  const [linkPreview, setLinkPreview] = useState<SharePreviewState>();
+  const linkPreviewRef = useRef<SharePreviewState | undefined>(undefined);
   const refreshing = useRef(false);
+  const refreshRequested = useRef(false);
+  const refreshRef = useRef<() => Promise<void>>(async () => {});
+  const importOperations = useRef(
+    new Map<string, Promise<ShareImportOutcome>>()
+  );
   const itemId = item?.id;
   const activeItemIdRef = useRef(itemId);
   activeItemIdRef.current = itemId;
@@ -190,15 +234,34 @@ export const ShareImportController = ({
   const selectedWorkspace = workspaces.find(
     workspace => workspaceKey(workspace) === selectedWorkspaceKey
   );
+  const selectedPreviewServer = servers.find(
+    server => server.id === selectedWorkspace?.flavour
+  );
+  const selectedPreviewServerConfig = useLiveData(
+    selectedPreviewServer?.config$
+  );
   const selectedWorkspaceAvailable = !!selectedWorkspace;
   const selectedWorkspaceName = selectedWorkspace
     ? workspacesService.getProfile(selectedWorkspace).name$.value ||
       selectedWorkspace.id
     : undefined;
+  const updateLinkPreview = useCallback(
+    (next: SharePreviewState | undefined) => {
+      if (
+        next &&
+        (next.itemId !== itemId || next.workspaceKey !== selectedWorkspaceKey)
+      ) {
+        return;
+      }
+      linkPreviewRef.current = next;
+      setLinkPreview(next);
+    },
+    [itemId, selectedWorkspaceKey]
+  );
   const setManualItem = useCallback((next: PendingShareItem) => {
     const isCurrentItem = activeItemIdRef.current === next.id;
     activeItemIdRef.current = next.id;
-    setItem(next);
+    setEntry({ status: 'ready', item: next });
     if (!isCurrentItem) setPage('main');
     setSelection(current => reconcileShareDestinationSelection(current, next));
   }, []);
@@ -214,7 +277,7 @@ export const ShareImportController = ({
     [itemId]
   );
 
-  const importItem = useCallback(
+  const performImportItem = useCallback(
     async (
       pending: PendingShareItem,
       target: ShareImportTarget,
@@ -228,20 +291,27 @@ export const ShareImportController = ({
       );
       if (!workspace) {
         await provider.setError(pending.id, 'workspace-not-found');
-        return false;
+        return 'pending' as const;
       }
-      const attachmentUrl =
-        pending.content.kind === 'image'
-          ? await provider.resolveAttachment(pending.id)
+      const attachment =
+        pending.content.kind === 'image' || pending.content.kind === 'pdf'
+          ? attachmentRef.current?.itemId === pending.id
+            ? attachmentRef.current.file
+            : await provider.resolveAttachment(pending.id)
           : undefined;
-      if (pending.content.kind === 'image' && !attachmentUrl) {
+      if (
+        (pending.content.kind === 'image' || pending.content.kind === 'pdf') &&
+        !attachment
+      ) {
         await provider.setError(pending.id, 'attachment-missing');
-        return false;
+        return 'pending' as const;
       }
       const preview = await previewForImport(
         pending,
         workspace,
-        pending.id === item?.id ? linkPreview : undefined,
+        pending.id === item?.id
+          ? (linkPreviewRef.current ?? linkPreview)
+          : undefined,
         pending.id === item?.id ? previewOwner : undefined,
         servers
       );
@@ -250,6 +320,7 @@ export const ShareImportController = ({
         workspace,
         {
           documentId: pending.documentId,
+          importAttemptId: pending.importAttemptId,
           title: resolveShareTitle(
             pending.title,
             preview?.title,
@@ -257,18 +328,25 @@ export const ShareImportController = ({
           ),
           content: pending.content,
           preview,
-          attachmentUrl,
+          attachment,
           tagIds: target.tagIds,
           collectionId: target.collectionId,
         },
         { allowOffline }
       );
-      if (result.status !== 'imported') {
+      if (
+        result.status !== 'imported' &&
+        result.status !== 'committed-replay'
+      ) {
         await provider.setError(pending.id, result.status);
-        return false;
+        return 'pending' as const;
       }
-      await provider.complete(pending.id, result.docId);
-      return true;
+      try {
+        await provider.complete(pending.id, result.docId);
+      } catch {
+        return 'completion-failed' as const;
+      }
+      return 'completed' as const;
     },
     [
       importer,
@@ -281,25 +359,70 @@ export const ShareImportController = ({
     ]
   );
 
+  const importItem = useCallback(
+    async (
+      pending: PendingShareItem,
+      target: ShareImportTarget,
+      allowOffline: boolean
+    ) => {
+      const existing = importOperations.current.get(pending.id);
+      if (existing) {
+        return { outcome: await existing, ownsOperation: false };
+      }
+      const operation = performImportItem(pending, target, allowOffline);
+      importOperations.current.set(pending.id, operation);
+      try {
+        return { outcome: await operation, ownsOperation: true };
+      } finally {
+        if (importOperations.current.get(pending.id) === operation) {
+          importOperations.current.delete(pending.id);
+        }
+      }
+    },
+    [performImportItem]
+  );
+
   const refresh = useCallback(async () => {
-    if (refreshing.current) return;
+    if (refreshing.current) {
+      refreshRequested.current = true;
+      return;
+    }
     refreshing.current = true;
     try {
       const pending = await provider.listPending();
       let importedCount = 0;
-      let nextItem: PendingShareItem | undefined;
+      let nextEntry: ShareInboxEntry | undefined;
       for (const candidate of pending) {
-        if (candidate.target && !candidate.lastError) {
-          const imported = await importItem(candidate, candidate.target, false);
-          if (imported) {
-            importedCount += 1;
-            continue;
-          }
-          const latest = await provider.listPending();
-          nextItem = latest.find(item => item.id === candidate.id);
+        if (candidate.status === 'unsupported-version') {
+          nextEntry = candidate;
           break;
         }
-        nextItem = candidate;
+        const pendingItem = candidate.item;
+        if (pendingItem.target && !pendingItem.lastError) {
+          const { outcome, ownsOperation } = await importItem(
+            pendingItem,
+            pendingItem.target,
+            false
+          );
+          if (outcome === 'completed') {
+            if (ownsOperation) importedCount += 1;
+            continue;
+          }
+          if (outcome === 'completion-failed') {
+            nextEntry = {
+              status: 'ready',
+              item: { ...pendingItem, lastError: 'completion-failed' },
+            };
+            break;
+          }
+          const latest = await provider.listPending();
+          nextEntry = latest.find(
+            entry =>
+              entry.status === 'ready' && entry.item.id === pendingItem.id
+          );
+          break;
+        }
+        nextEntry = candidate;
         break;
       }
       if (importedCount > 0) {
@@ -307,17 +430,24 @@ export const ShareImportController = ({
           title: `${importedCount} shared ${importedCount === 1 ? 'item' : 'items'} saved`,
         });
       }
-      if (nextItem) {
-        setManualItem(nextItem);
+      if (nextEntry?.status === 'ready') {
+        setManualItem(nextEntry.item);
+      } else if (nextEntry) {
+        setEntry(nextEntry);
       } else {
-        setItem(undefined);
+        setEntry(undefined);
       }
     } finally {
       refreshing.current = false;
+      if (refreshRequested.current) {
+        refreshRequested.current = false;
+        queueMicrotask(() => {
+          void refreshRef.current().catch(console.error);
+        });
+      }
     }
   }, [importItem, provider, setManualItem]);
 
-  const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
 
   useEffect(() => {
@@ -335,20 +465,40 @@ export const ShareImportController = ({
 
   useEffect(() => {
     let active = true;
+    let objectUrl: string | undefined;
+    const generation = ++attachmentGeneration.current;
+    const expectedItemId = item?.id;
     setAttachmentPreview(undefined);
-    setLinkPreview(undefined);
     if (item?.content.kind === 'image') {
       void provider
         .resolveAttachment(item.id)
-        .then(preview => {
-          if (active) setAttachmentPreview(preview);
+        .then(file => {
+          if (
+            !file ||
+            !active ||
+            attachmentGeneration.current !== generation ||
+            activeItemIdRef.current !== expectedItemId
+          ) {
+            return;
+          }
+          attachmentRef.current = { itemId: item.id, file };
+          objectUrl = URL.createObjectURL(file);
+          setAttachmentPreview(objectUrl);
         })
         .catch(console.error);
     }
     return () => {
       active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (attachmentRef.current?.itemId === item?.id) {
+        attachmentRef.current = undefined;
+      }
     };
   }, [item?.content.kind, item?.id, provider]);
+
+  useEffect(() => {
+    updateLinkPreview(undefined);
+  }, [item?.id, updateLinkPreview]);
 
   useEffect(() => {
     if (!selectedWorkspaceKey) {
@@ -374,10 +524,17 @@ export const ShareImportController = ({
         if (!options) {
           if (itemId) {
             await provider.setError(itemId, 'workspace-not-found');
-            setItem(current =>
-              current?.id === itemId &&
-              current.lastError !== 'workspace-not-found'
-                ? { ...current, lastError: 'workspace-not-found' }
+            setEntry(current =>
+              current?.status === 'ready' &&
+              current.item.id === itemId &&
+              current.item.lastError !== 'workspace-not-found'
+                ? {
+                    status: 'ready',
+                    item: {
+                      ...current.item,
+                      lastError: 'workspace-not-found',
+                    },
+                  }
                 : current
             );
           }
@@ -418,24 +575,80 @@ export const ShareImportController = ({
     if (!item || !selectedWorkspace || isSaving) return;
     setIsSaving(true);
     try {
-      const imported = await importItem(
-        item,
-        {
-          workspaceId: selectedWorkspace.id,
-          workspaceFlavour: selectedWorkspace.flavour,
-          tagIds: activeSelection?.tagIds ?? [],
-          collectionId: activeSelection?.collectionId || undefined,
-        },
+      let pendingItem = item;
+      let target: ShareImportTarget = {
+        workspaceId: selectedWorkspace.id,
+        workspaceFlavour: selectedWorkspace.flavour,
+        tagIds: activeSelection?.tagIds ?? [],
+        collectionId: activeSelection?.collectionId || undefined,
+      };
+      if (item.lastError === 'completion-failed') {
+        const latest = await provider.listPending();
+        const retryEntry = latest.find(
+          entry => entry.status === 'ready' && entry.item.id === item.id
+        );
+        if (!retryEntry || retryEntry.status !== 'ready') {
+          setEntry(undefined);
+          notify.success({ title: 'Shared content saved' });
+          await refresh();
+          return;
+        }
+        pendingItem = retryEntry.item;
+        if (!pendingItem.target) {
+          await refresh();
+          return;
+        }
+        target = pendingItem.target;
+      }
+      const { outcome, ownsOperation } = await importItem(
+        pendingItem,
+        target,
         allowOffline
       );
-      if (imported) {
-        notify.success({ title: 'Shared content saved' });
+      if (outcome === 'completed') {
+        if (ownsOperation) notify.success({ title: 'Shared content saved' });
+      } else if (outcome === 'completion-failed') {
+        setManualItem({ ...item, lastError: 'completion-failed' });
+        return;
       }
       await refresh();
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (!entry) return null;
+
+  if (entry.status === 'unsupported-version') {
+    return (
+      <Modal
+        fullScreen
+        animation="slideBottom"
+        open
+        withoutCloseButton
+        onOpenChange={() => setEntry(undefined)}
+        contentOptions={{ style: { padding: 0 } }}
+      >
+        <div className={styles.page}>
+          <PageHeader
+            suffix={
+              <Button variant="plain" onClick={() => setEntry(undefined)}>
+                Not now
+              </Button>
+            }
+          >
+            <span className={styles.headerTitle}>Update required</span>
+          </PageHeader>
+          <main className={styles.main}>
+            <div className={styles.warning}>
+              Update AFFiNE to import this shared item. It will stay in your
+              inbox until then.
+            </div>
+          </main>
+        </div>
+      </Modal>
+    );
+  }
 
   if (!item) return null;
 
@@ -482,6 +695,7 @@ export const ShareImportController = ({
           selectedIds={selectedWorkspaceKey ? [selectedWorkspaceKey] : []}
           onBack={() => setPage('main')}
           onSelect={id => {
+            if (id !== selectedWorkspaceKey) updateLinkPreview(undefined);
             updateSelection(current =>
               current.workspaceKey === id
                 ? current
@@ -492,8 +706,19 @@ export const ShareImportController = ({
                     collectionId: '',
                   }
             );
-            setItem(current =>
-              current ? { ...current, lastError: undefined } : current
+            setEntry(current =>
+              current?.status === 'ready'
+                ? {
+                    status: 'ready',
+                    item: {
+                      ...current.item,
+                      lastError:
+                        current.item.lastError === 'completion-failed'
+                          ? 'completion-failed'
+                          : undefined,
+                    },
+                  }
+                : current
             );
             setPage('main');
           }}
@@ -570,7 +795,7 @@ export const ShareImportController = ({
       <div className={styles.page}>
         <PageHeader
           suffix={
-            <Button variant="plain" onClick={() => setItem(undefined)}>
+            <Button variant="plain" onClick={() => setEntry(undefined)}>
               Not now
             </Button>
           }
@@ -588,7 +813,8 @@ export const ShareImportController = ({
                   owner={previewOwner}
                   workspace={selectedWorkspace}
                   servers={servers}
-                  onPreview={setLinkPreview}
+                  serverConfigType={selectedPreviewServerConfig?.type}
+                  onPreview={updateLinkPreview}
                 />
               ) : (
                 <section className={styles.source}>
@@ -706,7 +932,7 @@ export const ShareImportController = ({
       animation="slideBottom"
       open
       withoutCloseButton
-      onOpenChange={() => setItem(undefined)}
+      onOpenChange={() => setEntry(undefined)}
       contentOptions={{ style: { padding: 0 } }}
     >
       {content}
