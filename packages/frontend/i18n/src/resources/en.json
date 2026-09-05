@@ -1464,6 +1464,8 @@
   "com.affine.settings.editorSettings.page.edgeless-default-theme.specified": "Specified by current color mode",
   "com.affine.settings.editorSettings.page.edgeless-scroll-wheel-zoom.title": "Scroll wheel zoom",
   "com.affine.settings.editorSettings.page.edgeless-scroll-wheel-zoom.description": "Use the scroll wheel to zoom in and out.",
+  "com.affine.settings.editorSettings.page.edgeless-right-mouse-button-panning.title": "Right-click panning",
+  "com.affine.settings.editorSettings.page.edgeless-right-mouse-button-panning.description": "Use right mouse button to pan.",
   "com.affine.settings.editorSettings.preferences": "Preferences",
   "com.affine.settings.editorSettings.preferences.export.description": "You can export the entire preferences data for backup, and the exported data can be re-imported.",
   "com.affine.settings.editorSettings.preferences.export.title": "Export Settings",
