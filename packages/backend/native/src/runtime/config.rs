@@ -20,6 +20,30 @@ pub(crate) struct BackendRuntimeConfig {
   pub(crate) private_key: Arc<Zeroizing<String>>,
   pub(crate) deployment: Deployment,
   pub(crate) copilot: CopilotRuntimeConfig,
+  pub(crate) search: SearchRuntimeConfig,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct SearchRuntimeConfig {
+  pub(crate) enabled: bool,
+  pub(crate) provider: String,
+  pub(crate) endpoint: String,
+  pub(crate) api_key: String,
+  pub(crate) username: String,
+  pub(crate) password: String,
+}
+
+impl Default for SearchRuntimeConfig {
+  fn default() -> Self {
+    Self {
+      enabled: false,
+      provider: "embedded".to_string(),
+      endpoint: String::new(),
+      api_key: String::new(),
+      username: String::new(),
+      password: String::new(),
+    }
+  }
 }
 
 #[derive(Clone, Debug)]
@@ -158,7 +182,7 @@ pub(crate) struct CopilotManagedProfileConfigFile {
   priority: Option<f64>,
   #[serde(default = "enabled_by_default")]
   enabled: bool,
-  models: Option<Vec<String>>,
+  models: Vec<String>,
   middleware: Option<CopilotProviderMiddlewareConfigFile>,
   config: Map<String, serde_json::Value>,
 }
@@ -192,18 +216,6 @@ impl CopilotManagedProvider {
       Self::GeminiVertex => "geminiVertex",
       Self::OpenAi => "openai",
     }
-  }
-
-  fn legacy_models(self) -> Vec<String> {
-    let models: &[&str] = match self {
-      Self::OpenAi => &["gpt-5.6-luna", "gpt-5.6-terra", "gpt-image-1", "gpt-4o-mini"],
-      Self::CloudflareWorkersAi => &["@cf/baai/bge-reranker-base"],
-      Self::Fal => &["lora/image-to-image", "workflowutils/teed"],
-      Self::Gemini => &["gemini-3.7-flash", "gemini-embedding-001"],
-      Self::GeminiVertex => &["gemini-3.7-flash"],
-      Self::Anthropic | Self::AnthropicVertex => &["claude-sonnet-4-6"],
-    };
-    models.iter().map(|model| (*model).to_string()).collect()
   }
 }
 
@@ -282,12 +294,11 @@ impl TryFrom<CopilotManagedProfileConfigFile> for CopilotManagedProfileConfig {
         "managed copilot profile id must contain only letters, numbers, hyphens, and underscores",
       ));
     }
-    let models = value.models.unwrap_or_else(|| value.provider.legacy_models());
     Ok(Self {
       id: value.id,
       provider: value.provider.as_str().to_string(),
       enabled: value.enabled,
-      models,
+      models: value.models,
       config: serde_json::Value::Object(value.config),
     })
   }
@@ -295,6 +306,7 @@ impl TryFrom<CopilotManagedProfileConfigFile> for CopilotManagedProfileConfig {
 
 #[derive(Clone, Debug)]
 pub(crate) struct InviteQuotaConfig {
+  pub(crate) new_account_action_delay_seconds: i64,
   pub(crate) high_risk_target_domains: Vec<String>,
   pub(crate) subject_hash_salt: String,
   pub(crate) mail_class_mapping: BTreeMap<String, String>,
@@ -303,6 +315,7 @@ pub(crate) struct InviteQuotaConfig {
 impl Default for InviteQuotaConfig {
   fn default() -> Self {
     Self {
+      new_account_action_delay_seconds: 24 * 60 * 60,
       high_risk_target_domains: [
         "qq.com",
         "proton.me",
@@ -348,6 +361,7 @@ impl BackendRuntimeConfig {
         .map(TryInto::try_into)
         .transpose()?
         .unwrap_or_default(),
+      search: app_config.indexer.map(Into::into).unwrap_or_default(),
     }
     .validated()
   }
@@ -385,6 +399,10 @@ impl BackendRuntimeConfig {
         .map(TryInto::try_into)
         .transpose()?
         .unwrap_or_else(|| self.copilot.clone()),
+      search: app_config
+        .indexer
+        .map(Into::into)
+        .unwrap_or_else(|| self.search.clone()),
     }
     .validated()
   }
@@ -410,6 +428,7 @@ pub(super) fn validate_copilot_config(config: &CopilotRuntimeConfig) -> RuntimeR
     }
   }
   let mut profile_ids = std::collections::HashSet::new();
+  let mut managed_models = std::collections::HashMap::new();
   for profile in &config.providers.profiles {
     if profile.id.trim().is_empty() || !profile_ids.insert(profile.id.as_str()) {
       return Err(RuntimeError::invalid_state(
@@ -435,6 +454,14 @@ pub(super) fn validate_copilot_config(config: &CopilotRuntimeConfig) -> RuntimeR
       }
       provider_default_capability_upper_bound(&profile.provider, model)
         .ok_or_else(|| RuntimeError::invalid_state("managed copilot profile model is unsupported"))?;
+      if profile.enabled
+        && let Some(existing_profile) = managed_models.insert(model.as_str(), profile.id.as_str())
+      {
+        return Err(RuntimeError::invalid_state(format!(
+          "managed copilot model {model} is assigned to both {existing_profile} and {}",
+          profile.id
+        )));
+      }
     }
   }
   Ok(())
@@ -450,9 +477,52 @@ fn deployment_from_env() -> Deployment {
 
 #[derive(Default, Deserialize)]
 struct AppConfigFile {
+  auth: Option<AuthConfigFile>,
   db: Option<DbConfigFile>,
   crypto: Option<CryptoConfigFile>,
   copilot: Option<CopilotRuntimeConfigFile>,
+  indexer: Option<SearchRuntimeConfigFile>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AuthConfigFile {
+  new_account_action_delay: Option<i64>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct SearchRuntimeConfigFile {
+  enabled: bool,
+  provider: SearchProviderConfigFile,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct SearchProviderConfigFile {
+  #[serde(rename = "type")]
+  provider: String,
+  endpoint: String,
+  api_key: String,
+  username: String,
+  password: String,
+}
+
+impl From<SearchRuntimeConfigFile> for SearchRuntimeConfig {
+  fn from(value: SearchRuntimeConfigFile) -> Self {
+    Self {
+      enabled: value.enabled,
+      provider: if value.provider.provider.is_empty() {
+        "embedded".to_string()
+      } else {
+        value.provider.provider
+      },
+      endpoint: value.provider.endpoint,
+      api_key: value.provider.api_key,
+      username: value.provider.username,
+      password: value.provider.password,
+    }
+  }
 }
 
 #[derive(Default, Deserialize)]
@@ -477,7 +547,11 @@ impl AppConfigFile {
   }
 
   fn invite_quota_config(&self) -> InviteQuotaConfig {
-    InviteQuotaConfig::default()
+    let mut config = InviteQuotaConfig::default();
+    if let Some(delay) = self.auth.as_ref().and_then(|auth| auth.new_account_action_delay) {
+      config.new_account_action_delay_seconds = delay.max(0);
+    }
+    config
   }
 }
 
@@ -753,31 +827,15 @@ mod tests {
     assert_eq!(copilot.providers.profiles.len(), 1);
     assert_eq!(copilot.providers.profiles[0].id, "managed-openai");
 
-    for (provider, expected_models) in [
-      (
-        "openai",
-        vec!["gpt-5.6-luna", "gpt-5.6-terra", "gpt-image-1", "gpt-4o-mini"],
-      ),
-      ("cloudflareWorkersAi", vec!["@cf/baai/bge-reranker-base"]),
-      ("fal", vec!["lora/image-to-image", "workflowutils/teed"]),
-      ("gemini", vec!["gemini-3.7-flash", "gemini-embedding-001"]),
-      ("geminiVertex", vec!["gemini-3.7-flash"]),
-      ("anthropic", vec!["claude-sonnet-4-6"]),
-      ("anthropicVertex", vec!["claude-sonnet-4-6"]),
-    ] {
-      let app_config = app_config_from_flat_overrides([(
-        "copilot.providers.profiles",
-        serde_json::json!([{
-          "id": format!("{provider}-default"),
-          "type": provider,
-          "config": {}
-        }]),
-      )])
-      .unwrap();
-      let copilot: CopilotRuntimeConfig = app_config.copilot.unwrap().try_into().unwrap();
-      validate_copilot_config(&copilot).unwrap();
-      assert_eq!(copilot.providers.profiles[0].models, expected_models);
-    }
+    let missing_models = app_config_from_flat_overrides([(
+      "copilot.providers.profiles",
+      serde_json::json!([{
+        "id": "managed-openai",
+        "type": "openai",
+        "config": {}
+      }]),
+    )]);
+    assert!(missing_models.is_err());
 
     let app_config = app_config_from_flat_overrides([(
       "copilot.providers.profiles",
@@ -787,6 +845,27 @@ mod tests {
         "models": [],
         "config": {}
       }]),
+    )])
+    .unwrap();
+    let copilot: CopilotRuntimeConfig = app_config.copilot.unwrap().try_into().unwrap();
+    assert!(validate_copilot_config(&copilot).is_err());
+
+    let app_config = app_config_from_flat_overrides([(
+      "copilot.providers.profiles",
+      serde_json::json!([
+        {
+          "id": "anthropic-direct",
+          "type": "anthropic",
+          "models": ["claude-sonnet-4-6"],
+          "config": {}
+        },
+        {
+          "id": "anthropic-vertex",
+          "type": "anthropicVertex",
+          "models": ["claude-sonnet-4-6"],
+          "config": {}
+        }
+      ]),
     )])
     .unwrap();
     let copilot: CopilotRuntimeConfig = app_config.copilot.unwrap().try_into().unwrap();
@@ -813,6 +892,45 @@ mod tests {
       .unwrap();
     assert!(!copilot.byok.enabled);
     assert!(copilot.byok.allow_custom_endpoint);
+  }
+
+  #[test]
+  fn search_config_keeps_disabled_state_separate_from_embedded_provider() {
+    let disabled = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(false)),
+      ("indexer.provider.type", serde_json::json!("embedded")),
+    ])
+    .unwrap();
+    let disabled: SearchRuntimeConfig = disabled.indexer.unwrap().into();
+    assert!(!disabled.enabled);
+    assert_eq!(disabled.provider, "embedded");
+
+    let enabled = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(true)),
+      ("indexer.provider.type", serde_json::json!("elasticsearch")),
+    ])
+    .unwrap();
+    let enabled: SearchRuntimeConfig = enabled.indexer.unwrap().into();
+    assert!(enabled.enabled);
+    assert_eq!(enabled.provider, "elasticsearch");
+
+    let enabled_without_provider = app_config_from_module_json(serde_json::json!({
+      "indexer": { "enabled": true }
+    }))
+    .unwrap();
+    let enabled_without_provider: SearchRuntimeConfig = enabled_without_provider.indexer.unwrap().into();
+    assert!(enabled_without_provider.enabled);
+    assert_eq!(enabled_without_provider.provider, "embedded");
+
+    let manticore = app_config_from_flat_overrides([
+      ("indexer.enabled", serde_json::json!(true)),
+      ("indexer.provider.type", serde_json::json!("manticoresearch")),
+      ("indexer.provider.endpoint", serde_json::json!("http://localhost:9308")),
+    ])
+    .unwrap();
+    let manticore: SearchRuntimeConfig = manticore.indexer.unwrap().into();
+    assert!(manticore.enabled);
+    assert_eq!(manticore.provider, "manticoresearch");
   }
 
   #[test]
@@ -874,6 +992,7 @@ mod tests {
       private_key: Arc::new(Zeroizing::new("active-private-key".to_string())),
       deployment: Deployment::Cloud,
       copilot: CopilotRuntimeConfig::default(),
+      search: SearchRuntimeConfig::default(),
     };
     let empty = serde_json::Value::Object(Map::new());
 
@@ -890,14 +1009,16 @@ mod tests {
   }
 
   #[test]
-  fn invite_quota_policy_is_internal_not_app_configurable() {
+  fn invite_abuse_policy_is_internal_while_action_delay_is_configurable() {
     let app_config = app_config_from_flat_overrides([
+      ("auth.newAccountActionDelay", serde_json::json!(123)),
       ("auth.untrustedPolicyOverride", serde_json::json!("runtime-salt-v2")),
       ("auth.untrustedDomainList", serde_json::json!(["Example.COM."])),
     ])
     .unwrap();
 
     let config = app_config.invite_quota_config();
+    assert_eq!(config.new_account_action_delay_seconds, 123);
     assert!(!config.high_risk_target_domains.contains(&"example.com".to_string()));
     assert_ne!(config.subject_hash_salt, "runtime-salt-v2");
     assert_eq!(

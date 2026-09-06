@@ -1,6 +1,12 @@
 name: 'Prepare Server Test Environment'
 description: 'Prepare Server Test Environment'
 
+inputs:
+  indexer-provider:
+    description: 'Search provider used by the server test runtime'
+    required: false
+    default: embedded
+
 runs:
   using: 'composite'
   steps:
@@ -19,12 +25,33 @@ runs:
         NODE_ENV: test
       run: |
         yarn affine @affine/server prisma generate
+        yarn affine @affine/server data-migration admit-legacy-context-blobs
         yarn affine @affine/server prisma migrate deploy
         yarn affine @affine/server data-migration run
 
     - name: Import config
       shell: bash
-      env:
-        DEFAULT_CONFIG: '{}'
       run: |
-        printf '%s\n' "${SERVER_CONFIG:-$DEFAULT_CONFIG}" > ./packages/backend/server/config.json
+        case '${{ inputs.indexer-provider }}' in
+          disabled)
+            default_indexer='{"enabled":false,"provider":{"type":"embedded","endpoint":""}}'
+            ;;
+          embedded)
+            default_indexer='{"enabled":true,"provider":{"type":"embedded","endpoint":""}}'
+            ;;
+          elasticsearch)
+            default_indexer='{"enabled":true,"provider":{"type":"elasticsearch","endpoint":"http://localhost:9200"}}'
+            ;;
+          manticoresearch)
+            default_indexer='{"enabled":true,"provider":{"type":"manticoresearch","endpoint":"http://localhost:9308"}}'
+            ;;
+          *)
+            echo "Unsupported test indexer provider: ${{ inputs.indexer-provider }}" >&2
+            exit 1
+            ;;
+        esac
+        if [[ -n "${SERVER_CONFIG:-}" ]]; then
+          jq --argjson indexer "$default_indexer" '.indexer = $indexer' <<<"$SERVER_CONFIG" > ./packages/backend/server/config.json
+        else
+          jq -n --argjson indexer "$default_indexer" '{indexer: $indexer}' > ./packages/backend/server/config.json
+        fi

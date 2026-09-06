@@ -10,6 +10,11 @@ use napi_derive::napi;
 use serde_json::Value;
 pub use types::*;
 
+pub(crate) fn doc_role_allows(role: &str, action: &str) -> anyhow::Result<bool> {
+  let role = candidates::parse_doc_role(role)?;
+  Ok(actions::doc_actions_for_role(role).contains(action))
+}
+
 #[napi]
 pub fn evaluate_permission_v1(input: Value) -> Result<Value> {
   let input = serde_json::from_value::<PermissionEvaluationInputV1>(input)

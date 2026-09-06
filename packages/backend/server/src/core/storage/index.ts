@@ -14,22 +14,23 @@ import {
 
 @Module({
   imports: [StorageRuntimeModule],
-  controllers: [R2UploadController],
-  providers: [
-    WorkspaceBlobStorage,
-    AvatarStorage,
-    CommentAttachmentStorage,
-    StorageBlobJob,
-    BlobUploadCleanupJob,
-  ],
-  exports: [
-    WorkspaceBlobStorage,
-    AvatarStorage,
-    CommentAttachmentStorage,
-    StorageBlobJob,
-  ],
+  providers: [WorkspaceBlobStorage, AvatarStorage, CommentAttachmentStorage],
+  exports: [WorkspaceBlobStorage, AvatarStorage, CommentAttachmentStorage],
 })
 export class StorageModule {}
+
+@Module({
+  imports: [StorageModule],
+  controllers: [R2UploadController],
+})
+export class StorageApiModule {}
+
+@Module({
+  imports: [StorageModule],
+  providers: [StorageBlobJob, BlobUploadCleanupJob],
+  exports: [StorageBlobJob],
+})
+export class StorageWorkerModule {}
 
 export { StorageBlobJob } from './blob-job';
 export { AvatarStorage, CommentAttachmentStorage, WorkspaceBlobStorage };

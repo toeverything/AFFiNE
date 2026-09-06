@@ -33,12 +33,16 @@ export function isRefererAllowed(referer: string, allowedOrigin: OriginRules) {
 }
 
 const headerFilters = [/^Sec-/i, /^Accept/i, /^User-Agent$/i];
+const headerExcludes = [/^Accept-Encoding$/i];
 
 export function cloneHeader(source: IncomingHttpHeaders) {
   const headers: Record<string, string> = {};
 
   Object.entries(source).forEach(([key, value]) => {
-    if (headerFilters.some(filter => filter.test(key))) {
+    if (
+      headerFilters.some(filter => filter.test(key)) &&
+      !headerExcludes.some(filter => filter.test(key))
+    ) {
       if (Array.isArray(value)) {
         headers[key] = value.join(',');
       } else if (value) {

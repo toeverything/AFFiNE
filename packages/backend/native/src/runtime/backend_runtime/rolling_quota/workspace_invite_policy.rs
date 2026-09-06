@@ -10,6 +10,7 @@ use super::{
   InviteQuotaConfig, RuntimeQuotaTargetDomainInput, RuntimeWorkspaceInviteQuotaInput, ScopeLimit, bucket_seconds,
   high_risk_domain, napi_error, normalize_domain, scope, short_hash, source_prefix, workspace_subject_key,
 };
+use crate::llm::Deployment;
 
 #[derive(Clone, Debug)]
 pub(super) struct ActorFacts {
@@ -18,6 +19,7 @@ pub(super) struct ActorFacts {
   pub(super) registered: bool,
   pub(super) email_verified: bool,
   pub(super) disabled: bool,
+  pub(super) quota_plan: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -108,9 +110,6 @@ fn base_invite_limits(
   let mut per_day = 15;
   let mut per_week = 30;
 
-  if account_age < Duration::hours(24) {
-    return (0, 0, 0, 0);
-  }
   if !actor.email_verified {
     single = 1;
     per_hour = 1;
@@ -183,6 +182,31 @@ pub(super) fn evaluate_projection(quota: &QuotaFacts, now: DateTime<Utc>) -> Opt
     return Some("quota_projection_stale");
   }
   None
+}
+
+pub(super) fn new_account_action_retry_after(
+  deployment: Deployment,
+  config: &InviteQuotaConfig,
+  actor: &ActorFacts,
+  workspace_quota: Option<&QuotaFacts>,
+  now: DateTime<Utc>,
+) -> Option<i32> {
+  if deployment == Deployment::SelfHosted || config.new_account_action_delay_seconds <= 0 {
+    return None;
+  }
+  if actor
+    .quota_plan
+    .as_deref()
+    .is_some_and(|plan| matches!(plan, "pro" | "lifetime_pro" | "ai"))
+    || workspace_quota.map(|quota| quota.plan.as_str()).is_some_and(|plan| {
+      matches!(plan, "pro" | "lifetime_pro" | "ai") || plan.contains("team") && !plan.contains("trial")
+    })
+  {
+    return None;
+  }
+
+  let remaining = config.new_account_action_delay_seconds - (now - actor.created_at).num_seconds();
+  (remaining > 0).then(|| remaining.min(i64::from(i32::MAX)) as i32)
 }
 
 pub(super) fn build_invite_scopes(
@@ -442,6 +466,7 @@ mod tests {
       registered: true,
       email_verified: true,
       disabled: false,
+      quota_plan: None,
     }
   }
 
@@ -467,7 +492,7 @@ mod tests {
   }
 
   #[test]
-  fn seat_based_weekly_limit_binds_paid_team_and_high_risk_domain() {
+  fn invite_scopes_apply_plan_ceiling_domain_risk_and_graduated_limits() {
     let now = Utc.with_ymd_and_hms(2026, 7, 6, 0, 0, 0).single().unwrap();
     let input = RuntimeWorkspaceInviteQuotaInput {
       actor_user_id: "u1".to_string(),
@@ -500,6 +525,67 @@ mod tests {
       .find(|scope| scope.scope_key == "invite:quota_subject_domain:workspace:w1:qq.com")
       .unwrap();
     assert_eq!(high_risk.limit, 5);
+
+    let fresh_actor_scopes = build_invite_scopes(
+      &input,
+      &user(now - Duration::hours(1)),
+      &workspace(now - Duration::hours(1)),
+      &quota("paid_team", 10),
+      &InviteActivityFacts::default(),
+      &invite_config(),
+      now,
+    )
+    .unwrap();
+    assert_eq!(fresh_actor_scopes[0].limit, 3);
+
+    let mut fresh_actor = user(now - Duration::hours(1));
+    assert_eq!(
+      new_account_action_retry_after(
+        Deployment::Cloud,
+        &invite_config(),
+        &fresh_actor,
+        Some(&quota("free", 3)),
+        now,
+      ),
+      Some(23 * 60 * 60)
+    );
+    assert_eq!(
+      new_account_action_retry_after(
+        Deployment::SelfHosted,
+        &invite_config(),
+        &fresh_actor,
+        Some(&quota("free", 3)),
+        now,
+      ),
+      None
+    );
+    assert_eq!(
+      new_account_action_retry_after(
+        Deployment::Cloud,
+        &invite_config(),
+        &fresh_actor,
+        Some(&quota("paid_team", 10)),
+        now,
+      ),
+      None
+    );
+    let mut no_delay = invite_config();
+    no_delay.new_account_action_delay_seconds = 0;
+    assert_eq!(
+      new_account_action_retry_after(Deployment::Cloud, &no_delay, &fresh_actor, Some(&quota("free", 3)), now,),
+      None
+    );
+    fresh_actor.quota_plan = Some("pro".to_string());
+    assert_eq!(
+      new_account_action_retry_after(
+        Deployment::Cloud,
+        &invite_config(),
+        &fresh_actor,
+        Some(&quota("free", 3)),
+        now,
+      ),
+      None
+    );
   }
 
   #[test]

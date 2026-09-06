@@ -23,7 +23,7 @@ pub(super) fn parse_workspace_role(role: &str) -> anyhow::Result<WorkspaceRole> 
   }
 }
 
-fn parse_doc_role(role: &str) -> anyhow::Result<DocRole> {
+pub(super) fn parse_doc_role(role: &str) -> anyhow::Result<DocRole> {
   match role {
     "none" => Ok(DocRole::None),
     "external" => Ok(DocRole::External),

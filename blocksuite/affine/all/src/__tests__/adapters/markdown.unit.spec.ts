@@ -3929,48 +3929,40 @@ describe('markdown to snapshot', () => {
     });
   });
 
-  test('html inline color span imports to nearest supported text color', async () => {
-    const markdown = `<span style="color: #00afde;">Hello</span>`;
-    const blockSnapshot: BlockSnapshot = {
-      type: 'block',
-      id: 'matchesReplaceMap[0]',
-      flavour: 'affine:note',
-      props: {
-        xywh: '[0,0,800,95]',
-        background: DefaultTheme.noteBackgrounColor,
-        index: 'a0',
-        hidden: false,
-        displayMode: NoteDisplayMode.DocAndEdgeless,
-      },
-      children: [
-        {
-          type: 'block',
-          id: 'matchesReplaceMap[1]',
-          flavour: 'affine:paragraph',
-          props: {
-            type: 'text',
-            text: {
-              '$blocksuite:internal:text$': true,
-              delta: [
-                {
-                  insert: 'Hello',
-                  attributes: {
-                    color: 'var(--affine-v2-text-highlight-fg-blue)',
-                  },
-                },
-              ],
-            },
-          },
-          children: [],
-        },
-      ],
-    };
-
+  test.each([
+    ['#00afde', 'blue'],
+    ['rgb(0 175 222 / 100%)', 'blue'],
+    ['#c83030', 'red'],
+    ['red', 'red'],
+    ['hsl(0, 100%, 50%)', 'red'],
+    ['#db7123', 'orange'],
+    ['#ac7400', 'yellow'],
+    ['#04b745', 'green'],
+    ['#0e4841', 'teal'],
+    ['#7c3aed', 'purple'],
+    ['#7a7a7a', 'grey'],
+    ['rgb(26, 26, 26)', null],
+    ['#333', null],
+    ['#fff', null],
+    ['rgba(0, 175, 222, 0.5)', null],
+  ])('maps supported HTML color %s conservatively', async (color, mapped) => {
     const mdAdapter = new MarkdownAdapter(createJob(), provider);
     const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
-      file: markdown,
+      file: `<span style="color: ${color};">Hello</span>`,
     });
-    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+    expect(rawBlockSnapshot.children[0]?.props.text).toEqual({
+      '$blocksuite:internal:text$': true,
+      delta: [
+        mapped
+          ? {
+              insert: 'Hello',
+              attributes: {
+                color: `var(--affine-v2-text-highlight-fg-${mapped})`,
+              },
+            }
+          : { insert: 'Hello' },
+      ],
+    });
   });
 
   test('paragraph', async () => {

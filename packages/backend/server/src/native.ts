@@ -45,6 +45,7 @@ import serverNativeModule, {
   type RemoteMimeTypeRequest,
   type ResolvedEntitlement,
   type ResolveEntitlementInput,
+  type RuntimeAggregateRequest,
   type RuntimeBlobCleanupExecuteResult,
   type RuntimeBlobCleanupPlanResult,
   type RuntimeBlobCleanupResult,
@@ -64,11 +65,12 @@ import serverNativeModule, {
   type RuntimeObjectStoragePutOptions,
   type RuntimePresignedObjectRequest,
   type RuntimeRetrievalScope,
+  type RuntimeSearchQuery,
+  type RuntimeSearchRequest,
   type RuntimeTurnScopeSnapshot,
   type RuntimeVerificationTokenRecord,
   type RuntimeWorkspaceArtifact,
   type RuntimeWorkspaceInviteLinkRecord,
-  type RuntimeWorkspaceStatsDailyRecalibrationResult,
   type SafeFetchRequest,
   type SafeFetchResponse,
   type StorageProviderCapabilities,
@@ -144,6 +146,7 @@ export type {
   RemoteMimeTypeRequest,
   ResolvedEntitlement,
   ResolveEntitlementInput,
+  RuntimeAggregateRequest,
   RuntimeBlobCleanupExecuteResult,
   RuntimeBlobCleanupPlanResult,
   RuntimeBlobCleanupResult,
@@ -163,11 +166,12 @@ export type {
   RuntimeObjectStoragePutOptions,
   RuntimePresignedObjectRequest,
   RuntimeRetrievalScope,
+  RuntimeSearchQuery,
+  RuntimeSearchRequest,
   RuntimeTurnScopeSnapshot,
   RuntimeVerificationTokenRecord,
   RuntimeWorkspaceArtifact,
   RuntimeWorkspaceInviteLinkRecord,
-  RuntimeWorkspaceStatsDailyRecalibrationResult,
   SafeFetchRequest,
   SafeFetchResponse,
   StorageProviderCapabilities,
@@ -227,8 +231,8 @@ import type {
 } from './plugins/copilot/runtime/contracts/tool-contract';
 
 export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
-export const authorizeUserdataDocSubject =
-  serverNativeModule.authorizeUserdataDocSubject;
+export const authorizeReservedDocSubject =
+  serverNativeModule.authorizeReservedDocSubject;
 export const authSessionAccessTokenKeyId =
   serverNativeModule.authSessionAccessTokenKeyId;
 export const createAuthSessionRefreshToken =

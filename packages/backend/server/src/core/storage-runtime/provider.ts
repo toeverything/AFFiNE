@@ -49,7 +49,6 @@ export class StorageRuntimeProvider
   async start() {
     this.configureRuntime();
     await this.runtime.start();
-    await this.runMigrationsOnce();
     const health = await this.runtime.health();
     this.logger.log(
       `storage runtime started: db=${health.databaseConnected} provider=${health.provider ?? 'none'}`
@@ -80,6 +79,10 @@ export class StorageRuntimeProvider
 
   async health(): Promise<StorageRuntimeHealth> {
     return await this.runtime.health();
+  }
+
+  async runMigrations() {
+    await this.runMigrationsOnce();
   }
 
   async providerCapabilities(
@@ -258,6 +261,16 @@ export class StorageRuntimeProvider
     );
   }
 
+  async rebuildDocBlobRefs(
+    workspaceId: string,
+    docId: string,
+    sourceRevision: number
+  ) {
+    return await this.measured('rebuildDocBlobRefs', rt =>
+      rt.rebuildDocBlobRefs(workspaceId, docId, sourceRevision)
+    );
+  }
+
   async reconcileWorkspaceDocuments(workspaceId: string) {
     return await this.measured('reconcileWorkspaceDocuments', rt =>
       rt.reconcileWorkspaceDocuments(workspaceId)
@@ -271,17 +284,6 @@ export class StorageRuntimeProvider
   ) {
     return await this.measured('executeDocumentCleanupCandidates', rt =>
       rt.executeDocumentCleanupCandidates(workspaceId, gracePeriodDays, limit)
-    );
-  }
-
-  async ackDocumentCleanupEffect(
-    workspaceId: string,
-    docId: string,
-    cleanupVersion: string,
-    effect: 'search' | 'copilot'
-  ) {
-    return await this.measured('ackDocumentCleanupEffect', rt =>
-      rt.ackDocumentCleanupEffect(workspaceId, docId, cleanupVersion, effect)
     );
   }
 

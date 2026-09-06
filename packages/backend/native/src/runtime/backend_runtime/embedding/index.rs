@@ -160,7 +160,7 @@ mod tests {
       .unwrap();
     assert_eq!(first.active_index_id, repeated.active_index_id);
     assert_eq!(first.index_epoch, repeated.index_epoch);
-    let failed_probe = super::super::store::claim_index_probe(&pool, "probe-a")
+    let failed_probe = super::super::store::claim_index_probe_for_workspace(&pool, "probe-a", &workspace_id)
       .await
       .unwrap()
       .unwrap();
@@ -178,7 +178,7 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
-    let recovered_probe = super::super::store::claim_index_probe(&pool, "probe-b")
+    let recovered_probe = super::super::store::claim_index_probe_for_workspace(&pool, "probe-b", &workspace_id)
       .await
       .unwrap()
       .unwrap();

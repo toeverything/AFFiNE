@@ -2,5 +2,9 @@
   "$schema": "https://github.com/toeverything/affine/releases/latest/download/config.schema.json",
   "server": {
     "name": "AFFiNE Self Hosted Server"
+  },
+  "indexer": {
+    "enabled": true,
+    "provider.type": "embedded"
   }
 }

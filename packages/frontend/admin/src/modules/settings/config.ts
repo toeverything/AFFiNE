@@ -58,9 +58,9 @@ export const KNOWN_CONFIG_GROUPS = [
       'allowSignup',
       'allowSignupForOauth',
       {
-        key: 'newAccountShareActionDelay',
+        key: 'newAccountActionDelay',
         type: 'Number',
-        desc: 'Minimum account age in seconds before new accounts can invite members or create share links.',
+        desc: 'Minimum account age in seconds before accounts can invite members, create invite links, or publish documents. Set to 0 to disable.',
       },
       // nested json object
       {
@@ -163,6 +163,22 @@ export const KNOWN_CONFIG_GROUPS = [
       },
     ],
   } as ConfigGroup<'copilot'>,
+  {
+    name: 'Indexer',
+    module: 'indexer',
+    fields: [
+      {
+        key: 'provider.type',
+        type: 'Enum',
+        options: ['embedded', 'elasticsearch', 'manticoresearch'],
+        desc: 'Search provider. Embedded and Elasticsearch provide full search semantics; Manticore Search provides basic search semantics.',
+      },
+      'provider.endpoint',
+      'provider.apiKey',
+      'provider.username',
+      'provider.password',
+    ],
+  } as ConfigGroup<'indexer'>,
 ];
 
 export const UNKNOWN_CONFIG_GROUPS = ALL_CONFIGURABLE_MODULES.filter(

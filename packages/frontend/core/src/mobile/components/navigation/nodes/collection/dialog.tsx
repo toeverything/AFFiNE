@@ -30,6 +30,7 @@ const CollectionDesc = () => {
 export const CollectionRenameDialog = ({
   title,
   confirmText,
+  descRenderer,
   ...props
 }: RenameDialogProps) => {
   return (
@@ -37,7 +38,7 @@ export const CollectionRenameDialog = ({
       title={title}
       confirmText={confirmText}
       {...props}
-      descRenderer={CollectionDesc}
+      descRenderer={descRenderer ?? CollectionDesc}
     />
   );
 };

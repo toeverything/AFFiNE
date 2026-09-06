@@ -175,6 +175,7 @@ dependencies = [
  "lru 0.16.3",
  "objc2",
  "objc2-foundation",
+ "serde_json",
  "thiserror 2.0.18",
  "tokio",
  "uniffi",
@@ -288,6 +289,7 @@ dependencies = [
  "llm_adapter",
  "llm_runtime",
  "matroska",
+ "memory-indexer",
  "mimalloc",
  "mp4parse",
  "napi",
@@ -3000,9 +3002,9 @@ dependencies = [
 
 [[package]]
 name = "generator"
-version = "0.8.8"
+version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52f04ae4152da20c76fe800fa48659201d5cf627c5149ca0b707b69d7eef6cf9"
+checksum = "b3b854b0e584ead1a33f18b2fcad7cf7be18b3875c78816b753639aa501513ae"
 dependencies = [
  "cc",
  "cfg-if",
@@ -3010,7 +3012,7 @@ dependencies = [
  "log",
  "rustversion",
  "windows-link 0.2.1",
- "windows-result 0.4.1",
+ "windows-result 0.3.4",
 ]
 
 [[package]]
@@ -4802,9 +4804,9 @@ dependencies = [
 
 [[package]]
 name = "llm_adapter"
-version = "0.2.20"
+version = "0.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d13be366ea35d2a9966ad5770e3d070e495af4e1e6dd009638dee4b55ab45ed"
+checksum = "bd18d17c60b800981d83224309ff9ce6b4093ae12929f2baad77dd5208383bdc"
 dependencies = [
  "base64",
  "jsonschema",
@@ -5082,19 +5084,24 @@ dependencies = [
 
 [[package]]
 name = "memory-indexer"
-version = "0.3.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53a349dd43a5b5efb437a192d7fe37e58feb94f094839d303482dc8bcc8d1043"
+checksum = "ff94e8411d369f3197d3bf8b57414651cbfe01353959f91dbc3bfb1f903ef9d3"
 dependencies = [
+ "bincode 2.0.1",
+ "crc32fast",
  "jieba-rs",
  "once_cell",
  "pinyin",
+ "roaring",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "smol_str",
  "strsim 0.11.1",
  "unicode-normalization",
  "unicode-script",
+ "zstd",
 ]
 
 [[package]]
@@ -7035,6 +7042,17 @@ name = "rle-decode-fast"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3582f63211428f83597b51b2ddb88e2a91a9d52d12831f9d08f5e624e8977422"
+
+[[package]]
+name = "roaring"
+version = "0.11.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1dedc5658c6ecb3bdb5ef5f3295bb9253f42dcf3fd1402c03f6b1f7659c3c4a9"
+dependencies = [
+ "bytemuck",
+ "byteorder",
+ "serde",
+]
 
 [[package]]
 name = "roman-numerals-rs"

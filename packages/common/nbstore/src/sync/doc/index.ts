@@ -34,6 +34,8 @@ export interface DocSyncDocState {
   errorMessage: string | null;
 }
 
+const RESET_SYNC_CONNECT_TIMEOUT_MS = 30_000;
+
 export interface DocSync {
   readonly state$: Observable<DocSyncState>;
   docState$(docId: string): Observable<DocSyncDocState>;
@@ -50,6 +52,8 @@ export class DocSyncImpl implements DocSync {
       new DocSyncPeer(peerId, this.storages.local, this.sync, remote)
   );
   private abort: AbortController | null = null;
+  private running: Promise<void> = Promise.resolve();
+  private resetting: Promise<void> | null = null;
 
   private readonly _state$ = combineLatest(
     this.peers.map(peer => peer.peerState$)
@@ -155,12 +159,16 @@ export class DocSyncImpl implements DocSync {
     if (this.abort) {
       this.abort.abort(MANUALLY_STOP);
     }
+    const previous = this.running;
     const abort = new AbortController();
     this.abort = abort;
-    Promise.allSettled(
-      this.peers.map(peer => peer.mainLoop(abort.signal))
-    ).catch(error => {
-      console.error(error);
+    this.running = previous.then(async () => {
+      if (abort.signal.aborted) {
+        return;
+      }
+      await Promise.allSettled(
+        this.peers.map(peer => peer.mainLoop(abort.signal))
+      );
     });
   }
 
@@ -174,12 +182,50 @@ export class DocSyncImpl implements DocSync {
     return () => undo.forEach(fn => fn());
   }
 
-  async resetSync() {
+  resetSync() {
+    if (this.resetting) {
+      return this.resetting;
+    }
+    const resetting = this.performReset().finally(() => {
+      if (this.resetting === resetting) {
+        this.resetting = null;
+      }
+    });
+    this.resetting = resetting;
+    return resetting;
+  }
+
+  private async performReset() {
     const running = this.abort !== null;
+    const activeRun = this.running;
+    const shouldConnectSyncStorage =
+      this.sync.connection.status === 'idle' ||
+      this.sync.connection.status === 'closed';
     this.stop();
-    await this.sync.clearClocks();
-    if (running) {
-      this.start();
+    await activeRun;
+    if (shouldConnectSyncStorage) {
+      this.sync.connection.connect();
+    }
+    const abort = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abort.abort(new Error('Connect to remote timeout'));
+    }, RESET_SYNC_CONNECT_TIMEOUT_MS) as ReturnType<typeof setTimeout> & {
+      unref?: () => void;
+    };
+    timeoutId.unref?.();
+    try {
+      await this.sync.connection.waitForConnected(abort.signal);
+      await this.sync.clearClocks();
+    } catch (error) {
+      console.error('Failed to reset sync', error);
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+      if (running) {
+        this.start();
+      } else if (shouldConnectSyncStorage) {
+        this.sync.connection.disconnect();
+      }
     }
   }
 }

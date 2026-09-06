@@ -38,12 +38,17 @@ test.before(async t => {
 
   const db = app.get(PrismaClient);
 
-  t.context.u1 = await app.signupV1('u1@affine.pro');
   t.context.db = db;
   t.context.app = app;
   t.context.storage = app.get(WorkspaceBlobStorage);
   t.context.workspace = app.get(PgWorkspaceDocStorageAdapter);
   t.context.models = app.get(Models);
+});
+
+test.beforeEach(async t => {
+  const { app, db } = t.context;
+  await app.initTestingDB();
+  t.context.u1 = await app.signupV1('u1@affine.pro');
 
   await db.workspaceDoc.create({
     data: {

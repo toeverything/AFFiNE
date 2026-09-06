@@ -1,113 +1,44 @@
-import { type Query, type SearchOptions } from '../../../storage';
+import { type SearchOptions } from '../../../storage';
 import { highlighter } from '../../idb/indexer/highlighter';
-import { type NativeDBConnection } from '../db';
-import { tryParseArrayField } from './utils';
+import type { NativeIndexHit } from '../db';
 
-export async function createNode(
-  connection: NativeDBConnection,
-  table: string,
-  id: string,
-  score: number,
-  options: SearchOptions<any>,
-  query: Query<any>
-) {
-  const node: any = { id, score };
+export function createNode(hit: NativeIndexHit, options: SearchOptions<any>) {
+  const node: any = { id: hit.id, score: hit.score };
+  const fields = new Map(hit.fields.map(field => [field.field, field.values]));
 
   if (options.fields) {
-    const fields: Record<string, any> = {};
-    for (const field of options.fields) {
-      const text = await connection.apis.ftsGetDocument(
-        `${table}:${field as string}`,
-        id
-      );
-      if (typeof text === 'string') {
-        const parsed = tryParseArrayField(text);
-        if (parsed) {
-          fields[field as string] = parsed;
-        } else {
-          fields[field as string] = text;
-        }
-      } else if (text == null) {
-        fields[field as string] = '';
-      } else {
-        console.warn('[nbstore] invalid indexed field type', {
-          table,
-          field: field as string,
-          id,
-          type: typeof text,
-        });
-        fields[field as string] = '';
-      }
-    }
-    node.fields = fields;
+    node.fields = Object.fromEntries(
+      options.fields.map(field => {
+        const values = fields.get(String(field)) ?? [];
+        return [String(field), values.length > 1 ? values : (values[0] ?? '')];
+      })
+    );
   }
 
   if (options.highlights) {
-    const highlights: Record<string, string[]> = {};
-    const queryStrings = extractQueryStrings(query);
-
-    for (const h of options.highlights) {
-      const text = await connection.apis.ftsGetDocument(
-        `${table}:${h.field as string}`,
-        id
-      );
-      if (typeof text === 'string' && text.length > 0) {
-        const queryString = Array.from(queryStrings).join(' ');
-        const matches = await connection.apis.ftsGetMatches(
-          `${table}:${h.field as string}`,
-          id,
-          queryString
-        );
-
-        if (matches.length > 0) {
-          const highlighted = highlighter(
+    const highlights = new Map(
+      hit.highlights.map(item => [item.field, item.values])
+    );
+    node.highlights = Object.fromEntries(
+      options.highlights.map(option => {
+        const field = String(option.field);
+        const source = fields.get(field) ?? [];
+        const fragments = (highlights.get(field) ?? []).flatMap(value => {
+          const text = source[value.valueIndex];
+          if (!text) return [];
+          const fragment = highlighter(
             text,
-            h.before,
-            h.end,
-            matches.map(m => [m.start, m.end]),
-            {
-              maxPrefix: 20,
-              maxLength: 50,
-            }
+            option.before,
+            option.end,
+            value.spans.map(span => [span.start, span.end]),
+            { maxPrefix: 20, maxLength: 50 }
           );
-          highlights[h.field as string] = highlighted ? [highlighted] : [];
-        } else {
-          highlights[h.field as string] = [];
-        }
-      } else {
-        if (text != null && typeof text !== 'string') {
-          console.warn('[nbstore] invalid indexed highlight type', {
-            table,
-            field: h.field as string,
-            id,
-            type: typeof text,
-          });
-        }
-        highlights[h.field as string] = [];
-      }
-    }
-    node.highlights = highlights;
+          return fragment ? [fragment] : [];
+        });
+        return [field, fragments];
+      })
+    );
   }
 
   return node;
-}
-
-function extractQueryStrings(query: Query<any>): Set<string> {
-  const terms = new Set<string>();
-  if (query.type === 'match') {
-    terms.add(query.match);
-  } else if (query.type === 'boolean') {
-    for (const q of query.queries) {
-      const subTerms = extractQueryStrings(q);
-      for (const term of subTerms) {
-        terms.add(term);
-      }
-    }
-  } else if (query.type === 'boost') {
-    const subTerms = extractQueryStrings(query.query);
-    for (const term of subTerms) {
-      terms.add(term);
-    }
-  }
-  return terms;
 }

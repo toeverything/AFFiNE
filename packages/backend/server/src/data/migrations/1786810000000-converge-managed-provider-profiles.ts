@@ -13,6 +13,18 @@ const PROVIDERS = [
 ] as const;
 
 const PROVIDER_IDS = PROVIDERS.map(provider => `copilot.providers.${provider}`);
+const DEFAULT_PROFILE_IDS = new Set(
+  PROVIDERS.map(provider => `${provider}-default`)
+);
+const PROVIDER_MODELS: Record<(typeof PROVIDERS)[number], string[]> = {
+  openai: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-image-1', 'gpt-4o-mini'],
+  cloudflareWorkersAi: ['@cf/baai/bge-reranker-base'],
+  fal: ['lora/image-to-image', 'workflowutils/teed'],
+  gemini: ['gemini-3.7-flash', 'gemini-embedding-001'],
+  geminiVertex: ['gemini-3.7-flash'],
+  anthropic: ['claude-sonnet-4-6'],
+  anthropicVertex: ['claude-sonnet-4-6'],
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -51,35 +63,82 @@ export class ConvergeManagedProviderProfiles1786810000000 {
       const byId = new Map(rows.map(row => [row.id, row]));
       const profileRow = byId.get(PROFILE_KEY);
       const profiles = readProfiles(profileRow?.value);
-      const profileIds = new Set(
+      const assignedModels = new Set(
         profiles.flatMap(profile =>
-          isRecord(profile) && typeof profile.id === 'string'
-            ? [profile.id]
+          isRecord(profile) &&
+          typeof profile.id === 'string' &&
+          !DEFAULT_PROFILE_IDS.has(profile.id) &&
+          profile.enabled !== false &&
+          Array.isArray(profile.models)
+            ? profile.models.filter(
+                (model): model is string => typeof model === 'string'
+              )
             : []
         )
       );
+      let converged = false;
 
       for (const [index, provider] of PROVIDERS.entries()) {
         const legacy = byId.get(`copilot.providers.${provider}`);
-        if (!legacy) {
-          continue;
-        }
-        if (!isRecord(legacy.value)) {
+        if (legacy && !isRecord(legacy.value)) {
           throw new Error(`copilot.providers.${provider} must be an object`);
         }
         const id = `${provider}-default`;
-        if (!profileIds.has(id)) {
-          profiles.push({
-            id,
-            type: provider,
-            priority: PROVIDERS.length - index,
-            config: legacy.value,
+        const profileIndex = profiles.findIndex(
+          profile => isRecord(profile) && profile.id === id
+        );
+        const existing =
+          profileIndex === -1 ? undefined : profiles[profileIndex];
+        if (!legacy && !existing) continue;
+        converged = true;
+
+        const configuredModels =
+          isRecord(existing) &&
+          Array.isArray(existing.models) &&
+          existing.models.length > 0
+            ? existing.models
+            : PROVIDER_MODELS[provider];
+        const canEnable =
+          !isRecord(existing) ||
+          existing.enabled === undefined ||
+          existing.enabled === true;
+        const modelsAreValid = configuredModels.every(
+          model => typeof model === 'string'
+        );
+        const availableModels =
+          canEnable && modelsAreValid
+            ? configuredModels.filter(model => !assignedModels.has(model))
+            : configuredModels;
+        const hasConflict = canEnable && availableModels.length === 0;
+        const models = hasConflict ? configuredModels : availableModels;
+        const profile: Prisma.JsonObject = {
+          ...(legacy
+            ? {
+                id,
+                type: provider,
+                priority: PROVIDERS.length - index,
+                config: legacy.value,
+              }
+            : {}),
+          ...(isRecord(existing) ? existing : {}),
+          id,
+          type: provider,
+          models,
+          ...(hasConflict ? { enabled: false } : {}),
+        };
+        if (profileIndex === -1) {
+          profiles.push(profile);
+        } else {
+          profiles[profileIndex] = profile;
+        }
+        if (canEnable && !hasConflict) {
+          models.forEach(model => {
+            if (typeof model === 'string') assignedModels.add(model);
           });
-          profileIds.add(id);
         }
       }
 
-      if (PROVIDER_IDS.some(id => byId.has(id))) {
+      if (converged) {
         validateProfiles(profiles);
         await tx.appConfig.upsert({
           where: { id: PROFILE_KEY },

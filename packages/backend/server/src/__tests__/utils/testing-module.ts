@@ -75,8 +75,10 @@ export async function createTestingModule(
   moduleDef: TestingModuleMetadata = {},
   autoInitialize = true
 ): Promise<TestingModule> {
+  const config = new ConfigFactory().config;
   const runtimeConfig = await createTestRuntimeConfig(
-    new ConfigFactory().config.db.datasourceUrl
+    config.db.datasourceUrl,
+    config.indexer
   );
   // setting up
   let imports = moduleDef.imports ?? [buildAppModule(globalThis.env)];

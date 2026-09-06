@@ -12,8 +12,12 @@ pub enum Error {
   ConnectionInProgress,
   #[error("Invalid operation")]
   InvalidOperation,
+  #[error("Index is rebuilding")]
+  IndexNotReady,
   #[error("Serialization Error: {0}")]
   Serialization(String),
+  #[error(transparent)]
+  Indexer(#[from] memory_indexer::Error),
   #[error(transparent)]
   Parse(#[from] ParseError),
 }

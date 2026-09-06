@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: affine_rfc6_remote_e2e
+      POSTGRES_USER: ds
+      POSTGRES_PASSWORD: ds
+    ports:
+      - '55432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ds -d affine_rfc6_remote_e2e']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 5s
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    environment:
+      discovery.type: single-node
+      DISABLE_INSTALL_DEMO_CONFIG: 'true'
+      DISABLE_SECURITY_PLUGIN: 'true'
+      bootstrap.memory_lock: 'true'
+      OPENSEARCH_JAVA_OPTS: '-Xms512m -Xmx512m'
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - '9200:9200'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fsS http://localhost:9200/_cluster/health >/dev/null',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    ports:
+      - '8474:8474'
+      - '8666:8666'
+
+  proxy-init:
+    image: curlimages/curl:8.12.1
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      toxiproxy:
+        condition: service_started
+    entrypoint: ['/bin/sh', '-ec']
+    command:
+      - >-
+        until curl -fsS http://toxiproxy:8474/version >/dev/null; do sleep 1; done;
+        curl -fsS http://toxiproxy:8474/proxies/opensearch >/dev/null 2>&1 ||
+        curl -fsS -X POST http://toxiproxy:8474/proxies
+        -H 'content-type: application/json'
+        -d '{"name":"opensearch","listen":"0.0.0.0:8666","upstream":"opensearch:9200"}';
+        tail -f /dev/null
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fsS http://toxiproxy:8474/proxies/opensearch >/dev/null',
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 2s

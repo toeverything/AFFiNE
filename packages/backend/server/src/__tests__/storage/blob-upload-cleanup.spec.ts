@@ -4,7 +4,11 @@ import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
 import { OneDay } from '../../base';
-import { StorageModule, WorkspaceBlobStorage } from '../../core/storage';
+import {
+  StorageModule,
+  StorageWorkerModule,
+  WorkspaceBlobStorage,
+} from '../../core/storage';
 import { BlobUploadCleanupJob } from '../../core/storage/job';
 import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import { MockUser, MockWorkspace } from '../mocks';
@@ -25,7 +29,7 @@ test.before(async t => {
     cleanupExpiredPendingBlobs: Sinon.stub(),
   };
   t.context.module = await createTestingModule({
-    imports: [ScheduleModule.forRoot(), StorageModule],
+    imports: [ScheduleModule.forRoot(), StorageModule, StorageWorkerModule],
     tapModule: builder => {
       builder
         .overrideProvider(StorageRuntimeProvider)
