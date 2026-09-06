@@ -20,7 +20,7 @@
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@preact/signals-core": "^1.8.0",
-    "katex": "^0.16.27",
+    "katex": "^0.18.0",
     "lit": "^3.2.0",
     "remark-math": "^6.0.0",
     "shiki": "^3.19.0",

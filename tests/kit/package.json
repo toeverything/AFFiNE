@@ -14,7 +14,7 @@
     "@affine-tools/utils": "workspace:*",
     "@blocksuite/affine": "workspace:*",
     "@node-rs/argon2": "^2.0.2",
-    "@playwright/test": "=1.58.2",
+    "@playwright/test": "=1.62.1",
     "@toeverything/infra": "workspace:*",
     "express": "^5.1.0",
     "http-proxy-middleware": "^3.0.5"

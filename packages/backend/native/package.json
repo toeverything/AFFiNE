@@ -33,7 +33,7 @@
     "build:debug": "napi build --no-const-enum"
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.5.0",
+    "@napi-rs/cli": "3.8.6",
     "tiktoken": "^1.0.17"
   }
 }

@@ -38,7 +38,7 @@
     "micromark-extension-gfm-table": "^2.1.0",
     "micromark-extension-gfm-task-list-item": "^2.1.0",
     "micromark-util-combine-extensions": "^2.0.0",
-    "pdfmake": "^0.2.20",
+    "pdfmake": "^0.3.0",
     "quick-lru": "^7.3.0",
     "rehype-parse": "^9.0.0",
     "rehype-stringify": "^10.0.0",
@@ -73,7 +73,7 @@
     "!dist/__tests__"
   ],
   "devDependencies": {
-    "@types/pdfmake": "^0.2.12",
+    "@types/pdfmake": "^0.3.0",
     "vitest": "^4.1.8"
   },
   "version": "0.27.0"
