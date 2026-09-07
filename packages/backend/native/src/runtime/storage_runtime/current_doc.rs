@@ -11,9 +11,9 @@ pub(in crate::runtime) struct CurrentDoc {
 }
 
 #[derive(FromRow)]
-pub(super) struct CurrentDocUpdate {
-  pub(super) blob: Vec<u8>,
-  pub(super) created_at: DateTime<Utc>,
+pub(in crate::runtime) struct CurrentDocUpdate {
+  pub(in crate::runtime) blob: Vec<u8>,
+  pub(in crate::runtime) created_at: DateTime<Utc>,
 }
 
 pub(in crate::runtime) async fn load_current_doc(
@@ -77,7 +77,7 @@ pub(super) async fn has_pending_updates(pool: &PgPool, workspace_id: &str, doc_i
     .map_err(|err| RuntimeError::database("Pending doc updates check failed", err))
 }
 
-pub(super) fn merge_current_doc(
+pub(in crate::runtime) fn merge_current_doc(
   snapshot: Option<CurrentDoc>,
   updates: Vec<CurrentDocUpdate>,
 ) -> RuntimeResult<Option<CurrentDoc>> {

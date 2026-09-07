@@ -3,7 +3,10 @@ use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use super::{SCHEMA_FINGERPRINT, SearchProvider, SearchTable, WORKSPACE_RECONCILE_FAILED};
+use super::{
+  DOCUMENT_PROJECTION_FAILED, EMBEDDED_GENERATION_LOST, SCHEMA_FINGERPRINT, SearchProvider, SearchTable,
+  WORKSPACE_RECONCILE_FAILED,
+};
 use crate::{
   runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig},
   search_index::EmbeddedSearchIndex,
@@ -21,7 +24,7 @@ impl ActiveGeneration {
       .manifest
       .get(table.as_str())
       .and_then(Value::as_str)
-      .ok_or_else(|| RuntimeError::invalid_state("search generation manifest is incomplete"))
+      .ok_or_else(|| RuntimeError::SearchGenerationInvalid("generation manifest is incomplete".to_string()))
   }
 }
 
@@ -96,14 +99,14 @@ pub(super) async fn ensure(
       if rebuild_embedded {
         if state == "building" {
           sqlx::query(
-            "UPDATE search_projection.generations SET state='failed', last_error='embedded generation lost on \
-             restart' WHERE id=$1 AND state='building'",
+            "UPDATE search_projection.generations SET state='failed', last_error=$2 WHERE id=$1 AND state='building'",
           )
           .bind(
             row
               .try_get::<Uuid, _>("id")
               .map_err(|error| RuntimeError::database("decode search generation id", error))?,
           )
+          .bind(EMBEDDED_GENERATION_LOST)
           .execute(&mut *transaction)
           .await
           .map_err(|error| RuntimeError::database("fail stale embedded generation", error))?;
@@ -153,9 +156,16 @@ pub(super) async fn ensure(
     .await
     .map_err(|error| RuntimeError::database("commit search generation", error))?;
 
-  if let Some(remote) = remote {
-    for table in [SearchTable::Doc, SearchTable::Block] {
-      if let Err(error) = remote.provision(generation.physical_table(table)?, table).await {
+  for table in [SearchTable::Doc, SearchTable::Block] {
+    let physical_table = match generation.physical_table(table) {
+      Ok(physical_table) => physical_table,
+      Err(error) => {
+        fail(pool, &generation, &error.to_string()).await?;
+        return Err(error);
+      }
+    };
+    if let Some(remote) = remote {
+      if let Err(error) = remote.provision(physical_table, table).await {
         if !matches!(error, RuntimeError::SearchProviderUnavailable) {
           fail(pool, &generation, &error.to_string()).await?;
         }
@@ -194,6 +204,7 @@ pub(super) async fn cleanup_retired_generation(
   let row = sqlx::query(
     r#"SELECT id,manifest,
               generation.state='failed'
+                AND generation.last_error IS DISTINCT FROM $5
                 AND NOT EXISTS (SELECT 1 FROM search_projection.generations active
                                 WHERE active.state='active' AND active.provider=generation.provider
                                   AND active.config_hash=generation.config_hash
@@ -217,6 +228,7 @@ pub(super) async fn cleanup_retired_generation(
   .bind(SCHEMA_FINGERPRINT)
   .bind(provider_identity(config))
   .bind(config_hash(config))
+  .bind(EMBEDDED_GENERATION_LOST)
   .fetch_optional(pool)
   .await
   .map_err(|error| RuntimeError::database("load retired search generation", error))?;
@@ -252,10 +264,10 @@ pub(super) async fn cleanup_retired_generation(
   Ok(true)
 }
 
-async fn fail(pool: &PgPool, generation: &ActiveGeneration, message: &str) -> RuntimeResult<()> {
+pub(super) async fn fail(pool: &PgPool, generation: &ActiveGeneration, message: &str) -> RuntimeResult<()> {
   sqlx::query(
-    "UPDATE search_projection.generations SET state='failed', last_error=$2 WHERE id=$1 AND state NOT IN \
-     ('active','draining')",
+    "UPDATE search_projection.generations SET state='failed', last_error=$2 WHERE id=$1 AND state IN \
+     ('building','active')",
   )
   .bind(generation.id)
   .bind(message)
@@ -274,11 +286,13 @@ async fn create_or_reject_failed(
     r#"SELECT COALESCE(last_error,'search generation build failed')
        FROM search_projection.generations
        WHERE state='failed' AND provider=$1 AND config_hash=$2 AND schema_version=$3
+         AND last_error IS DISTINCT FROM $4
        ORDER BY created_at DESC LIMIT 1"#,
   )
   .bind(&config.provider)
   .bind(&config_hash)
   .bind(SCHEMA_FINGERPRINT)
+  .bind(EMBEDDED_GENERATION_LOST)
   .fetch_optional(&mut **transaction)
   .await
   .map_err(|error| RuntimeError::database("load failed search generation", error))?;
@@ -332,6 +346,7 @@ pub(super) async fn activate(
               NOT EXISTS (
                 SELECT 1 FROM search_projection.document_states state
                 WHERE state.generation_id=generation.id
+                  AND state.last_error IS DISTINCT FROM $3
                   AND NOT EXISTS (
                     SELECT 1 FROM search_projection.workspace_states workspace
                     WHERE workspace.generation_id=state.generation_id
@@ -348,6 +363,7 @@ pub(super) async fn activate(
   )
   .bind(generation.id)
   .bind(WORKSPACE_RECONCILE_FAILED)
+  .bind(DOCUMENT_PROJECTION_FAILED)
   .fetch_optional(&mut *transaction)
   .await
   .map_err(|error| RuntimeError::database("load search generation activation state", error))?;
@@ -488,7 +504,7 @@ mod tests {
   use sqlx::PgPool;
   use uuid::Uuid;
 
-  use super::{cleanup_retired_generation, config_hash, ensure, provider_identity};
+  use super::{EMBEDDED_GENERATION_LOST, cleanup_retired_generation, config_hash, ensure, provider_identity};
   use crate::{
     runtime::{
       RuntimeError, SearchRuntimeConfig, backend_runtime::search::SEARCH_TEST_LOCK, migrations::migrate_search_tables,
@@ -504,10 +520,15 @@ mod tests {
     };
     let pool = PgPool::connect(&database_url).await.unwrap();
     migrate_search_tables(&pool).await.unwrap();
-    sqlx::query("DELETE FROM search_projection.generations WHERE state='building'")
-      .execute(&pool)
-      .await
-      .unwrap();
+    let default_config = SearchRuntimeConfig::default();
+    sqlx::query(
+      "DELETE FROM search_projection.generations WHERE state IN ('building','active') OR (provider='embedded' AND \
+       config_hash=$1)",
+    )
+    .bind(config_hash(&default_config))
+    .execute(&pool)
+    .await
+    .unwrap();
 
     let stale_id = Uuid::new_v4();
     sqlx::query(
@@ -519,9 +540,7 @@ mod tests {
     .await
     .unwrap();
 
-    let generation = ensure(&pool, &SearchRuntimeConfig::default(), None, false)
-      .await
-      .unwrap();
+    let generation = ensure(&pool, &default_config, None, false).await.unwrap();
     assert_ne!(generation.id, stale_id);
     let stale: (String, Option<String>) =
       sqlx::query_as("SELECT state,last_error FROM search_projection.generations WHERE id=$1")
@@ -535,8 +554,39 @@ mod tests {
       Some("search generation superseded by configuration")
     );
 
-    sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
+    let replacement = ensure(&pool, &default_config, None, true).await.unwrap();
+    assert_ne!(replacement.id, generation.id);
+    assert_eq!(
+      sqlx::query_scalar::<_, Option<String>>("SELECT last_error FROM search_projection.generations WHERE id=$1")
+        .bind(generation.id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+        .as_deref(),
+      Some(EMBEDDED_GENERATION_LOST)
+    );
+    sqlx::query(
+      "UPDATE search_projection.generations SET scan_high_water_sid=0,scan_cursor_sid=0 WHERE id=$1 AND \
+       state='building'",
+    )
+    .bind(replacement.id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "UPDATE search_projection.generations SET state='active',activated_at=now() WHERE id=$1 AND state='building'",
+    )
+    .bind(replacement.id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let restarted = ensure(&pool, &default_config, None, true).await.unwrap();
+    assert_ne!(restarted.id, replacement.id);
+
+    sqlx::query("DELETE FROM search_projection.generations WHERE id IN ($1,$2,$3)")
       .bind(generation.id)
+      .bind(replacement.id)
+      .bind(restarted.id)
       .execute(&pool)
       .await
       .unwrap();
@@ -604,9 +654,53 @@ mod tests {
       Err(RuntimeError::SearchIndexFailed(_))
     ));
 
-    sqlx::query("DELETE FROM search_projection.generations WHERE id IN ($1,$2)")
+    let malformed_config = SearchRuntimeConfig {
+      provider: "elasticsearch".to_string(),
+      endpoint: "https://search.example.invalid".to_string(),
+      ..Default::default()
+    };
+    sqlx::query("DELETE FROM search_projection.generations WHERE provider='elasticsearch' AND config_hash=$1")
+      .bind(config_hash(&malformed_config))
+      .execute(&pool)
+      .await
+      .unwrap();
+    let malformed_id = Uuid::new_v4();
+    sqlx::query(
+      r#"INSERT INTO search_projection.generations
+         (id,provider,state,config_hash,schema_version,manifest)
+         VALUES($1,'elasticsearch','building',$2,1,$3)"#,
+    )
+    .bind(malformed_id)
+    .bind(config_hash(&malformed_config))
+    .bind(json!({
+      "doc":"affine_search_doc_malformed",
+      "providerIdentity":provider_identity(&malformed_config)
+    }))
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert!(matches!(
+      ensure(&pool, &malformed_config, None, false).await,
+      Err(RuntimeError::SearchGenerationInvalid(_))
+    ));
+    assert_eq!(
+      sqlx::query_as::<_, (String, Option<String>)>(
+        "SELECT state,last_error FROM search_projection.generations WHERE id=$1"
+      )
+      .bind(malformed_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap(),
+      (
+        "failed".to_string(),
+        Some("search generation is invalid: generation manifest is incomplete".to_string())
+      )
+    );
+
+    sqlx::query("DELETE FROM search_projection.generations WHERE id IN ($1,$2,$3)")
       .bind(stale_id)
       .bind(failed_id)
+      .bind(malformed_id)
       .execute(&pool)
       .await
       .unwrap();

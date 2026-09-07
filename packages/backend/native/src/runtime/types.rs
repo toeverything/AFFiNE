@@ -1,18 +1,22 @@
 use napi::bindgen_prelude::Buffer;
 
 #[napi_derive::napi(object)]
-pub struct RuntimeVerificationTokenRecord {
-  pub token_type: i32,
-  pub token: String,
-  pub credential: Option<String>,
-  pub expires_at_ms: i64,
-}
-
-#[napi_derive::napi(object)]
 pub struct BackendRuntimeHealth {
   pub started: bool,
   pub database_connected: bool,
   pub embedding: EmbeddingHealth,
+  pub invalidation: InvalidationHealth,
+}
+
+#[napi_derive::napi(object)]
+#[derive(Clone, Debug)]
+pub struct InvalidationHealth {
+  pub state: String,
+  pub reconnects: i64,
+  pub decode_failures: i64,
+  pub received: i64,
+  pub published: i64,
+  pub publish_failures: i64,
 }
 
 #[napi_derive::napi(object)]
@@ -313,7 +317,6 @@ pub struct RuntimeMailDeliveryQuotaMetadataInput {
 #[napi_derive::napi(object)]
 pub struct RuntimeMailDeliveryQuotaRecipientInput {
   pub email: String,
-  pub domain: String,
   pub user_id: Option<String>,
 }
 
@@ -341,18 +344,111 @@ pub struct RuntimeMailDeliveryQuotaDecision {
 }
 
 #[napi_derive::napi(object)]
+pub struct RuntimeStorageReservationInput {
+  pub workspace_id: String,
+  pub user_id: String,
+  pub key: String,
+  #[napi(ts_type = "number")]
+  pub size: i64,
+  pub mime: String,
+  pub kind: String,
+  pub doc_id: Option<String>,
+  pub name: Option<String>,
+  pub upload_id: Option<String>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeStorageReservationDecision {
+  pub allowed: bool,
+  pub reservation_id: Option<String>,
+  pub already_uploaded: bool,
+  pub reason: Option<String>,
+  #[napi(ts_type = "number")]
+  pub limit: Option<i64>,
+  #[napi(ts_type = "number")]
+  pub current: Option<i64>,
+  #[napi(ts_type = "number")]
+  pub requested: i64,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeStorageReservationMutation {
+  pub workspace_id: String,
+  pub user_id: String,
+  pub key: String,
+  pub reservation_id: String,
+  pub kind: String,
+  pub doc_id: Option<String>,
+  pub size: Option<i64>,
+  pub mime: Option<String>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeManagedBlob {
+  pub key: String,
+  pub mime: String,
+  pub size: i32,
+  pub created_at: String,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeBlobManagementInput {
+  pub workspace_id: String,
+  pub actor_user_id: String,
+  pub key: String,
+  pub permanently: bool,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeSeatReservationTarget {
+  pub email: String,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeSeatReservationInput {
+  pub workspace_id: String,
+  pub actor_user_id: String,
+  pub targets: Vec<RuntimeSeatReservationTarget>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeSeatActivationInput {
+  pub workspace_id: String,
+  pub actor_user_id: String,
+  pub target_user_id: String,
+  pub require_manage_permission: bool,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeSeatReviewInput {
+  pub workspace_id: String,
+  pub target_user_id: String,
+  pub inviter_user_id: String,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeSeatReservation {
+  pub invitation_id: String,
+  pub user_id: String,
+  pub email: String,
+  pub status: String,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeSeatReservationDecision {
+  pub allowed: bool,
+  pub reason: Option<String>,
+  pub limit: i32,
+  pub current: i32,
+  pub reservations: Vec<RuntimeSeatReservation>,
+}
+
+#[napi_derive::napi(object)]
 pub struct CoordinationLeaseGrant {
   pub key: String,
   pub owner: String,
   #[napi(ts_type = "bigint | number")]
   pub fencing_token: i64,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeMagicLinkOtpConsumeResult {
-  pub ok: bool,
-  pub token: Option<String>,
-  pub reason: Option<String>,
 }
 
 #[napi_derive::napi(object)]
@@ -420,23 +516,6 @@ pub struct RuntimeMultipartUploadInit {
 pub struct RuntimeMultipartUploadPart {
   pub part_number: i32,
   pub etag: String,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeBlobCleanupResult {
-  pub scanned: i64,
-  pub deleted: i64,
-  pub aborted_multipart: i64,
-  pub workspace_ids: Vec<String>,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeBlobCompleteResult {
-  pub ok: bool,
-  pub reason: Option<String>,
-  pub content_type: Option<String>,
-  pub content_length: Option<i64>,
-  pub last_modified_ms: Option<i64>,
 }
 
 #[napi_derive::napi(object)]
@@ -532,4 +611,33 @@ pub struct SearchOperationOutput {
   pub ok: bool,
   pub value: Option<serde_json::Value>,
   pub error_code: Option<String>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeUserQuotaState {
+  pub plan: String,
+  pub seat_limit: i32,
+  pub blob_limit: i64,
+  pub storage_quota: i64,
+  pub used_storage_quota: i64,
+  pub history_period_seconds: i64,
+  pub copilot_action_limit: Option<i32>,
+  pub unlimited_copilot: bool,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeWorkspaceQuotaState {
+  pub plan: String,
+  pub owner_user_id: String,
+  pub uses_owner_quota: bool,
+  pub seat_limit: i32,
+  pub member_count: i32,
+  pub overcapacity_member_count: i32,
+  pub blob_limit: i64,
+  pub storage_quota: i64,
+  pub used_storage_quota: i64,
+  pub history_period_seconds: i64,
+  pub readonly: bool,
+  pub readonly_reasons: Vec<String>,
+  pub unlimited_copilot: bool,
 }

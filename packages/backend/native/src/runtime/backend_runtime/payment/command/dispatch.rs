@@ -1,0 +1,229 @@
+use serde::Deserialize;
+
+use super::*;
+
+#[derive(Deserialize)]
+#[serde(tag = "action", rename_all = "snake_case", rename_all_fields = "camelCase")]
+enum PaymentCommand {
+  ProvisionStripeCatalog,
+  ListPrices,
+  ListSubscriptions {
+    target_type: String,
+    target_id: String,
+  },
+  ListInvoices {
+    target_id: String,
+  },
+  CreateCheckout {
+    actor_user_id: Option<String>,
+    user_email: Option<String>,
+    target_type: String,
+    target_id: Option<String>,
+    plan: String,
+    recurring: String,
+    variant: Option<String>,
+    coupon: Option<String>,
+    quantity: Option<u32>,
+    success_url: String,
+    intent_id: String,
+  },
+  CreatePortal {
+    actor_user_id: String,
+    intent_id: String,
+  },
+  MutateSubscription {
+    actor_user_id: String,
+    target_type: String,
+    target_id: String,
+    plan: String,
+    mutation: String,
+    intent_id: String,
+  },
+  UpdateRecurring {
+    actor_user_id: Option<String>,
+    target_type: String,
+    target_id: String,
+    plan: String,
+    recurring: String,
+    intent_id: String,
+  },
+  UpdateQuantity {
+    target_type: String,
+    target_id: String,
+    plan: String,
+    quantity: u32,
+    intent_id: String,
+  },
+  RefreshRevenuecat {
+    user_id: String,
+  },
+  RequestApplyRevenuecat {
+    user_id: String,
+    transaction_id: String,
+    intent_id: String,
+  },
+  RevealLicense {
+    session_id: String,
+    intent_id: String,
+  },
+  ActivateLicense {
+    license_key: String,
+    workspace_id: String,
+    operation_id: String,
+  },
+  DeactivateLicense {
+    license_key: String,
+    validate_key: String,
+  },
+  CheckLicenseHealth {
+    license_key: String,
+    validate_key: String,
+  },
+  CreateLicensePortal {
+    license_key: String,
+    intent_id: String,
+  },
+  PrepareUserDeletion {
+    user_id: String,
+  },
+}
+
+impl PaymentRuntime {
+  pub(in crate::runtime::backend_runtime::payment) async fn execute(
+    &self,
+    input: Value,
+  ) -> RuntimeResult<PaymentCommandOutcome> {
+    let command: PaymentCommand =
+      serde_json::from_value(input).map_err(|error| RuntimeError::json("invalid payment command", error))?;
+    let _permit = self
+      .permits
+      .acquire()
+      .await
+      .map_err(|_| RuntimeError::invalid_state("payment runtime stopped"))?;
+    let mut changes = super::super::PaymentApplyResult::default();
+    let value = match command {
+      PaymentCommand::ProvisionStripeCatalog => self.provision_stripe_catalog(&mut changes).await,
+      PaymentCommand::ListPrices => self.list_prices().await,
+      PaymentCommand::ListSubscriptions { target_type, target_id } => {
+        self.list_subscriptions(&target_type, &target_id).await
+      }
+      PaymentCommand::ListInvoices { target_id } => self.list_invoices(&target_id).await,
+      PaymentCommand::CreateCheckout {
+        actor_user_id,
+        user_email,
+        target_type,
+        target_id,
+        plan,
+        recurring,
+        variant,
+        coupon,
+        quantity,
+        success_url,
+        intent_id,
+      } => {
+        self
+          .create_checkout(
+            &mut changes,
+            actor_user_id.as_deref(),
+            user_email.as_deref(),
+            &target_type,
+            target_id.as_deref(),
+            &plan,
+            &recurring,
+            variant.as_deref(),
+            coupon.as_deref(),
+            quantity,
+            &success_url,
+            &intent_id,
+          )
+          .await
+      }
+      PaymentCommand::CreatePortal {
+        actor_user_id,
+        intent_id,
+      } => self.create_portal(&mut changes, &actor_user_id, &intent_id).await,
+      PaymentCommand::MutateSubscription {
+        actor_user_id,
+        target_type,
+        target_id,
+        plan,
+        mutation,
+        intent_id,
+      } => {
+        self
+          .mutate_subscription(
+            &mut changes,
+            &actor_user_id,
+            &target_type,
+            &target_id,
+            &plan,
+            &mutation,
+            &intent_id,
+          )
+          .await
+      }
+      PaymentCommand::UpdateRecurring {
+        actor_user_id,
+        target_type,
+        target_id,
+        plan,
+        recurring,
+        intent_id,
+      } => {
+        self
+          .update_recurring(
+            &mut changes,
+            actor_user_id.as_deref(),
+            &target_type,
+            &target_id,
+            &plan,
+            &recurring,
+            &intent_id,
+          )
+          .await
+      }
+      PaymentCommand::UpdateQuantity {
+        target_type,
+        target_id,
+        plan,
+        quantity,
+        intent_id,
+      } => {
+        self
+          .update_quantity(&mut changes, &target_type, &target_id, &plan, quantity, &intent_id)
+          .await
+      }
+      PaymentCommand::RefreshRevenuecat { user_id } => self.refresh_revenuecat(&mut changes, &user_id).await,
+      PaymentCommand::RequestApplyRevenuecat {
+        user_id,
+        transaction_id,
+        intent_id,
+      } => {
+        self
+          .request_apply_revenuecat(&mut changes, &user_id, &transaction_id, &intent_id)
+          .await
+      }
+      PaymentCommand::RevealLicense { session_id, intent_id } => {
+        self.reveal_license(&mut changes, &session_id, &intent_id).await
+      }
+      PaymentCommand::ActivateLicense {
+        license_key,
+        workspace_id,
+        operation_id,
+      } => self.activate_license(&license_key, &workspace_id, &operation_id).await,
+      PaymentCommand::DeactivateLicense {
+        license_key,
+        validate_key,
+      } => self.deactivate_license(&license_key, &validate_key).await,
+      PaymentCommand::CheckLicenseHealth {
+        license_key,
+        validate_key,
+      } => self.check_license_health(&license_key, &validate_key).await,
+      PaymentCommand::CreateLicensePortal { license_key, intent_id } => {
+        self.create_license_portal(&mut changes, &license_key, &intent_id).await
+      }
+      PaymentCommand::PrepareUserDeletion { user_id } => self.prepare_user_deletion(&user_id).await,
+    }?;
+    Ok(PaymentCommandOutcome { value, changes })
+  }
+}

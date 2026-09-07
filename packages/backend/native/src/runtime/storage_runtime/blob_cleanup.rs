@@ -631,6 +631,30 @@ impl StorageRuntime {
           .await?;
           continue;
         }
+        let denied = sqlx::query_scalar::<_, bool>(
+          "UPDATE blobs SET deleted_at=COALESCE(deleted_at,clock_timestamp()),reservation_expires_at=NULL WHERE \
+           workspace_id=$1 AND key=$2 AND status='completed' RETURNING true",
+        )
+        .bind(&row.workspace_id)
+        .bind(&row.blob_key)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|err| RuntimeError::database("Blob cleanup deny candidate before object delete failed", err))?
+        .unwrap_or(false);
+        if !denied {
+          result.skipped_still_referenced += 1;
+          mark_candidate_status(
+            &pool,
+            &run_id,
+            &row.workspace_id,
+            &row.blob_key,
+            "skipped",
+            serde_json::json!({ "skipReason": "ledger_not_live" }),
+            None,
+          )
+          .await?;
+          continue;
+        }
         deletable_candidates.push(DeletableCandidate {
           workspace_id: row.workspace_id,
           blob_key: row.blob_key,
@@ -640,7 +664,7 @@ impl StorageRuntime {
       }
 
       let deleted_metadata =
-        match sqlx::query("DELETE FROM blobs WHERE workspace_id = $1 AND key = $2 AND deleted_at IS NULL")
+        match sqlx::query("DELETE FROM blobs WHERE workspace_id = $1 AND key = $2 AND status='completed'")
           .bind(&row.workspace_id)
           .bind(&row.blob_key)
           .execute(&pool)
@@ -723,7 +747,7 @@ impl StorageRuntime {
         result.deleted_objects += 1;
 
         let deleted_metadata =
-          match sqlx::query("DELETE FROM blobs WHERE workspace_id = $1 AND key = $2 AND deleted_at IS NULL")
+          match sqlx::query("DELETE FROM blobs WHERE workspace_id = $1 AND key = $2 AND deleted_at IS NOT NULL")
             .bind(&row.workspace_id)
             .bind(&row.blob_key)
             .execute(&pool)

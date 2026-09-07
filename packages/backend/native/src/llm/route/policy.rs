@@ -4,13 +4,7 @@ use llm_adapter::{
 };
 
 use super::CatalogSlot;
-use crate::llm::byok::ByokModelDeclaration;
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Deployment {
-  Cloud,
-  SelfHosted,
-}
+use crate::{llm::byok::ByokModelDeclaration, runtime::Deployment};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ProfileSource {

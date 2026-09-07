@@ -2,7 +2,7 @@ use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use super::{
-  ActiveGeneration, DOCUMENT_LEASE_SECONDS, ProjectionInput, SearchChange, SearchProvider,
+  ActiveGeneration, DOCUMENT_LEASE_SECONDS, DOCUMENT_PROJECTION_FAILED, ProjectionInput, SearchChange, SearchProvider,
   SearchTable as ProviderTable, project_document, projection_external_id, provider_payload,
 };
 use crate::{
@@ -42,7 +42,7 @@ pub(super) async fn upsert_document(
   let updated = sqlx::query(
     r#"UPDATE search_projection.document_states state
        SET target_permission_version=GREATEST(state.target_permission_version,workspace.required_permission_version),
-           last_error=NULL, available_at=now(), updated_at=now()
+           available_at=CASE WHEN state.last_error IS NULL THEN now() ELSE state.available_at END, updated_at=now()
        FROM search_projection.workspace_states workspace
        WHERE state.generation_id=$1 AND state.workspace_id=$2 AND state.doc_id=$3
          AND workspace.generation_id=state.generation_id AND workspace.workspace_id=state.workspace_id"#,
@@ -58,8 +58,7 @@ pub(super) async fn upsert_document(
     sqlx::query(
       r#"INSERT INTO search_projection.document_states
          (generation_id,workspace_id,doc_id,target_source_version,target_source_exists,target_permission_version)
-         SELECT $1,$2,$3,nextval('search_projection.source_mutation_version'),
-                EXISTS(SELECT 1 FROM snapshots WHERE workspace_id=$2 AND guid=$3),
+         SELECT $1,$2,$3,nextval('search_projection.source_mutation_version'),false,
                 required_permission_version
          FROM search_projection.workspace_states
          WHERE generation_id=$1 AND workspace_id=$2"#,
@@ -93,34 +92,28 @@ pub(super) async fn upsert_document(
     .await
     .map_err(|error| RuntimeError::database("load published search repair tuple", error))?;
     if let Some((source_version, source_exists, permission_version)) = published {
-      let changes = projection_changes(
-        pool,
-        generation,
-        workspace_id,
-        doc_id,
-        ProjectionTuple {
-          source_version,
-          source_exists,
-          permission_version,
-        },
-      )
-      .await?;
+      let projection_tuple = ProjectionTuple {
+        source_version,
+        source_exists,
+        permission_version,
+      };
+      let Some(changes) = projection_changes_or_fail(pool, generation, workspace_id, doc_id, &projection_tuple).await?
+      else {
+        return Ok(());
+      };
       apply_changes(embedded, remote, generation, changes).await?;
     }
     return Ok(());
   };
-  let changes = projection_changes(
-    pool,
-    generation,
-    workspace_id,
-    doc_id,
-    ProjectionTuple {
-      source_version: claim.target_source_version,
-      source_exists: claim.target_source_exists,
-      permission_version: claim.target_permission_version,
-    },
-  )
-  .await?;
+  let projection_tuple = ProjectionTuple {
+    source_version: claim.target_source_version,
+    source_exists: claim.target_source_exists,
+    permission_version: claim.target_permission_version,
+  };
+  let Some(changes) = projection_changes_or_fail(pool, generation, workspace_id, doc_id, &projection_tuple).await?
+  else {
+    return Ok(());
+  };
   renew_document_claim(pool, generation.id, workspace_id, doc_id, claim.fence).await?;
   apply_changes(embedded, remote, generation, changes).await?;
   complete_document(pool, generation.id, workspace_id, doc_id, &claim).await?;
@@ -138,7 +131,9 @@ async fn projection_changes(
     return Ok(Vec::new());
   }
   let Some((document, blocks)) = project_document(pool, workspace_id, doc_id).await? else {
-    return Ok(Vec::new());
+    return Err(RuntimeError::SearchSourceInvalid(
+      "document declared by workspace root is missing".to_string(),
+    ));
   };
   let mut changes = Vec::with_capacity(blocks.len() + 1);
   changes.push(change(
@@ -163,6 +158,63 @@ async fn projection_changes(
       .collect::<RuntimeResult<Vec<_>>>()?,
   );
   Ok(changes)
+}
+
+async fn projection_changes_or_fail(
+  pool: &PgPool,
+  generation: &ActiveGeneration,
+  workspace_id: &str,
+  doc_id: &str,
+  projection_tuple: &ProjectionTuple,
+) -> RuntimeResult<Option<Vec<SearchChange>>> {
+  match projection_changes(
+    pool,
+    generation,
+    workspace_id,
+    doc_id,
+    ProjectionTuple {
+      source_version: projection_tuple.source_version,
+      source_exists: projection_tuple.source_exists,
+      permission_version: projection_tuple.permission_version,
+    },
+  )
+  .await
+  {
+    Ok(changes) => Ok(Some(changes)),
+    Err(error) if error.is_permanent_search_source() => {
+      mark_document_failed(pool, generation.id, workspace_id, doc_id, projection_tuple).await?;
+      Ok(None)
+    }
+    Err(error) => Err(error),
+  }
+}
+
+async fn mark_document_failed(
+  pool: &PgPool,
+  generation_id: Uuid,
+  workspace_id: &str,
+  doc_id: &str,
+  projection_tuple: &ProjectionTuple,
+) -> RuntimeResult<()> {
+  sqlx::query(
+    r#"UPDATE search_projection.document_states
+       SET last_error=$7, available_at='infinity'::timestamptz,
+           claim_fence=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=now()
+       WHERE generation_id=$1 AND workspace_id=$2 AND doc_id=$3
+         AND target_source_version=$4 AND target_source_exists=$5
+         AND target_permission_version=$6"#,
+  )
+  .bind(generation_id)
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(projection_tuple.source_version)
+  .bind(projection_tuple.source_exists)
+  .bind(projection_tuple.permission_version)
+  .bind(DOCUMENT_PROJECTION_FAILED)
+  .execute(pool)
+  .await
+  .map_err(|error| RuntimeError::database("mark search document projection failed", error))?;
+  Ok(())
 }
 
 async fn renew_document_claim(
@@ -326,6 +378,7 @@ async fn complete_document(
            AND NOT EXISTS(
              SELECT 1 FROM search_projection.document_states document
              WHERE document.generation_id=state.generation_id AND document.workspace_id=state.workspace_id
+               AND document.last_error IS NULL
                AND document.target_permission_version <> document.published_permission_version
            )"#,
     )
@@ -525,6 +578,38 @@ mod tests {
       .unwrap();
       assert_eq!(applied, if pending_scope == "none" { 5 } else { 4 });
     }
+
+    sqlx::query("UPDATE search_projection.generations SET scan_high_water_sid=0,scan_cursor_sid=0 WHERE id=$1")
+      .bind(generation_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      "UPDATE search_projection.workspace_states SET last_error='search_workspace_reconcile_failed' WHERE \
+       generation_id=$1 AND workspace_id='workspace-scope'",
+    )
+    .bind(generation_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      r#"INSERT INTO search_projection.document_states(
+           generation_id,workspace_id,doc_id,target_source_version,target_source_exists,
+           target_permission_version,published_source_version,published_source_exists,
+           published_permission_version,last_error,available_at
+         ) VALUES($1,'document-scope','failed',2,true,5,1,true,4,
+           'search_document_projection_failed','infinity')"#,
+    )
+    .bind(generation_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let build_complete: bool = sqlx::query_scalar("SELECT search_projection.generation_build_complete($1)")
+      .bind(generation_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert!(build_complete);
 
     sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
       .bind(generation_id)

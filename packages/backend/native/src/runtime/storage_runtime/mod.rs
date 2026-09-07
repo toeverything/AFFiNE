@@ -5,37 +5,34 @@ use sqlx::{PgPool, Row, postgres::PgPoolOptions};
 use tokio::sync::Mutex;
 
 mod blob_cleanup;
-mod blob_completion;
-mod blob_reclaimer;
 mod blob_reconciliation;
 mod capabilities;
 mod config;
 mod current_doc;
 mod doc_blob_refs;
 mod document_cleanup;
+mod workspace_cleanup;
 pub use capabilities::StorageProviderCapabilities;
 use capabilities::storage_provider_capabilities;
 use config::StorageRuntimeConfig;
 pub(super) use current_doc::load_current_doc;
-use current_doc::{
-  CurrentDoc, CurrentDocUpdate, load_canonical_doc, load_workspace_canonical_doc_ids, load_workspace_live_doc_ids,
-  merge_current_doc,
-};
+pub(in crate::runtime) use current_doc::{CurrentDoc, CurrentDocUpdate, merge_current_doc};
+use current_doc::{load_canonical_doc, load_workspace_canonical_doc_ids, load_workspace_live_doc_ids};
 
 use super::object_storage::{
   self, ObjectStorageService, StorageBackendConfig,
   types::{ObjectDeleteOutcome, ObjectKey, ObjectLocator, ObjectPrefix, StorageScope},
 };
 pub(super) use super::{
-  RuntimeError, RuntimeResult,
+  BlobRefProjectionError, RuntimeError, RuntimeResult, blob_ref_projection_error_code, extract_blob_refs,
   migrations::migrate_runtime_tables,
   napi_error, to_napi_error,
   types::{
-    RuntimeBlobCleanupExecuteResult, RuntimeBlobCleanupPlanResult, RuntimeBlobCleanupResult, RuntimeBlobCompleteResult,
-    RuntimeBlobMetadataBackfillResult, RuntimeDocBlobRefsResult, RuntimeDocumentCleanupEffect,
-    RuntimeDocumentCleanupExecuteResult, RuntimeDocumentCleanupReconcileResult, RuntimeMultipartUploadInit,
-    RuntimeMultipartUploadPart, RuntimeObjectGetResult, RuntimeObjectListEntry, RuntimeObjectMetadata,
-    RuntimeObjectStoragePutOptions, RuntimePresignedObjectRequest,
+    RuntimeBlobCleanupExecuteResult, RuntimeBlobCleanupPlanResult, RuntimeBlobMetadataBackfillResult,
+    RuntimeDocBlobRefsResult, RuntimeDocumentCleanupEffect, RuntimeDocumentCleanupExecuteResult,
+    RuntimeDocumentCleanupReconcileResult, RuntimeMultipartUploadInit, RuntimeMultipartUploadPart,
+    RuntimeObjectGetResult, RuntimeObjectListEntry, RuntimeObjectMetadata, RuntimeObjectStoragePutOptions,
+    RuntimePresignedObjectRequest,
   },
 };
 
@@ -327,20 +324,6 @@ impl StorageRuntime {
       .map_err(to_napi_error)
   }
 
-  #[napi]
-  pub async fn complete_workspace_blob_upload(
-    &self,
-    workspace_id: String,
-    key: String,
-    expected_size: i64,
-    expected_mime: String,
-  ) -> napi::Result<RuntimeBlobCompleteResult> {
-    self
-      .complete_workspace_blob(workspace_id, key, expected_size, expected_mime)
-      .await
-      .map_err(napi::Error::from)
-  }
-
   fn config(&self) -> Result<StorageRuntimeConfig> {
     self
       .config
@@ -366,26 +349,12 @@ impl StorageRuntime {
     self.config()?.object_storage.backend_for_scope(scope)
   }
 
-  pub(crate) async fn object_storage_delete_object(&self, key: &str) -> Result<()> {
-    let locator = ObjectLocator::new(StorageScope::Blob, ObjectKey::new(key)?);
-    self.object_storage()?.delete(&locator).await
-  }
-
   pub(crate) async fn object_storage_delete_many(&self, keys: Vec<String>) -> Result<Vec<ObjectDeleteOutcome>> {
     let keys = keys
       .into_iter()
       .map(ObjectKey::new)
       .collect::<object_storage::error::ObjectStorageResult<Vec<_>>>()?;
     self.object_storage()?.delete_many(StorageScope::Blob, keys).await
-  }
-
-  pub(crate) async fn object_storage_abort_upload(&self, key: &str, upload_id: &str) -> Result<()> {
-    let locator = ObjectLocator::new(StorageScope::Blob, ObjectKey::new(key)?);
-    self
-      .object_storage()?
-      .abort_multipart_upload(&locator, upload_id)
-      .await?;
-    Ok(())
   }
 
   pub(crate) async fn object_storage_list_page(

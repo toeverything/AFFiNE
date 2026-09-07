@@ -8,11 +8,12 @@ use tokio::{
 use uuid::Uuid;
 
 use super::{
-  ActiveGeneration, PermissionAuthorizer, SearchProvider, WORKSPACE_RECONCILE_FAILED, activate,
-  cleanup_retired_generation, config_hash, ensure, load_active, reconcile_workspace, sweep_generation_orphans,
+  ActiveGeneration, DOCUMENT_PROJECTION_FAILED, EMBEDDED_GENERATION_LOST, PermissionAuthorizer, PermissionTelemetry,
+  SearchProvider, WORKSPACE_RECONCILE_FAILED, activate, cleanup_retired_generation, config_hash, ensure, fail,
+  load_active, reconcile_workspace, sweep_generation_orphans,
 };
 use crate::{
-  runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig},
+  runtime::{Deployment, RuntimeError, RuntimeResult, SearchRuntimeConfig},
   search_index::EmbeddedSearchIndex,
 };
 
@@ -38,7 +39,21 @@ pub(in crate::runtime::backend_runtime) struct SearchRuntime {
 }
 
 impl SearchRuntime {
-  pub(in crate::runtime::backend_runtime) fn new(pool: PgPool, config: SearchRuntimeConfig) -> RuntimeResult<Self> {
+  #[cfg(test)]
+  pub(in crate::runtime::backend_runtime) fn new(
+    pool: PgPool,
+    config: SearchRuntimeConfig,
+    deployment: Deployment,
+  ) -> RuntimeResult<Self> {
+    Self::with_telemetry(pool, config, deployment, PermissionTelemetry::default())
+  }
+
+  pub(in crate::runtime::backend_runtime) fn with_telemetry(
+    pool: PgPool,
+    config: SearchRuntimeConfig,
+    deployment: Deployment,
+    telemetry: PermissionTelemetry,
+  ) -> RuntimeResult<Self> {
     if !matches!(
       config.provider.as_str(),
       "embedded" | "elasticsearch" | "manticoresearch"
@@ -49,7 +64,7 @@ impl SearchRuntime {
       .then(|| SearchProvider::new(&config))
       .transpose()?;
     Ok(Self {
-      authorizer: PermissionAuthorizer::new(pool.clone()),
+      authorizer: PermissionAuthorizer::with_telemetry(pool.clone(), deployment, telemetry),
       embedded: EmbeddedSearchIndex::new(),
       remote,
       config,
@@ -101,14 +116,31 @@ impl SearchRuntime {
   pub(super) async fn active_generation(&self) -> RuntimeResult<ActiveGeneration> {
     let generation = load_active(&self.pool, &self.config).await?;
     let Some(generation) = generation else {
+      let building: bool = sqlx::query_scalar(
+        r#"SELECT EXISTS(
+             SELECT 1 FROM search_projection.generations
+             WHERE state='building' AND provider=$1 AND config_hash=$2 AND schema_version=$3
+           )"#,
+      )
+      .bind(&self.config.provider)
+      .bind(config_hash(&self.config))
+      .bind(super::SCHEMA_FINGERPRINT)
+      .fetch_one(&self.pool)
+      .await
+      .map_err(|error| RuntimeError::database("load building search generation", error))?;
+      if building {
+        return Err(RuntimeError::SearchIndexNotReady);
+      }
       if let Some(error) = sqlx::query_scalar::<_, Option<String>>(
         r#"SELECT last_error FROM search_projection.generations
            WHERE state='failed' AND provider=$1 AND config_hash=$2 AND schema_version=$3
+             AND last_error IS DISTINCT FROM $4
            ORDER BY created_at DESC LIMIT 1"#,
       )
       .bind(&self.config.provider)
       .bind(config_hash(&self.config))
       .bind(super::SCHEMA_FINGERPRINT)
+      .bind(EMBEDDED_GENERATION_LOST)
       .fetch_optional(&self.pool)
       .await
       .map_err(|error| RuntimeError::database("load failed search generation", error))?
@@ -148,11 +180,14 @@ impl SearchRuntime {
 
     let workspaces = sqlx::query(
       r#"SELECT workspace_id FROM search_projection.workspace_states
-         WHERE generation_id=$1 AND (
+         WHERE generation_id=$1
+           AND last_error IS DISTINCT FROM 'search_workspace_reconcile_failed'
+           AND (
            available_at <= now()
            OR EXISTS (SELECT 1 FROM search_projection.document_states document
                       WHERE document.generation_id=workspace_states.generation_id
                         AND document.workspace_id=workspace_states.workspace_id
+                        AND document.last_error IS NULL
                         AND document.available_at <= now()
                         AND (document.target_source_version <> document.published_source_version
                           OR document.target_source_exists <> document.published_source_exists
@@ -186,14 +221,19 @@ impl SearchRuntime {
       {
         Ok(true) => reconciled += 1,
         Ok(false) => {}
+        Err(error) if error.is_permanent_search_generation() => {
+          fail(&self.pool, &generation, &error.to_string()).await?;
+          return Err(error);
+        }
         Err(error) => return Err(error),
       }
     }
 
-    if sweep_generation_orphans(&self.pool, &self.embedded, self.remote.as_ref(), &generation)
-      .await
-      .is_err()
-    {
+    if let Err(error) = sweep_generation_orphans(&self.pool, &self.embedded, self.remote.as_ref(), &generation).await {
+      if error.is_permanent_search_generation() {
+        fail(&self.pool, &generation, &error.to_string()).await?;
+        return Err(error);
+      }
       self
         .observability
         .generation_gc_failures
@@ -214,14 +254,15 @@ impl SearchRuntime {
     let pending: bool = sqlx::query_scalar(
       "SELECT EXISTS (SELECT 1 FROM search_projection.workspace_states WHERE generation_id=$1 AND last_error IS \
        DISTINCT FROM $2 AND (NOT covered OR pending_scope <> 'none')) OR EXISTS (SELECT 1 FROM \
-       search_projection.document_states document WHERE generation_id=$1 AND NOT EXISTS (SELECT 1 FROM \
-       search_projection.workspace_states workspace WHERE workspace.generation_id=document.generation_id AND \
-       workspace.workspace_id=document.workspace_id AND workspace.last_error=$2) AND (target_source_version <> \
-       published_source_version OR target_source_exists <> published_source_exists OR target_permission_version <> \
-       published_permission_version))",
+       search_projection.document_states document WHERE generation_id=$1 AND last_error IS DISTINCT FROM $3 AND NOT \
+       EXISTS (SELECT 1 FROM search_projection.workspace_states workspace WHERE \
+       workspace.generation_id=document.generation_id AND workspace.workspace_id=document.workspace_id AND \
+       workspace.last_error=$2) AND (target_source_version <> published_source_version OR target_source_exists <> \
+       published_source_exists OR target_permission_version <> published_permission_version))",
     )
     .bind(generation.id)
     .bind(WORKSPACE_RECONCILE_FAILED)
+    .bind(DOCUMENT_PROJECTION_FAILED)
     .fetch_one(&self.pool)
     .await
     .map_err(|error| RuntimeError::database("check pending search projection", error))?;
@@ -322,6 +363,7 @@ impl SearchRuntime {
       r#"SELECT id,provider,state,scan_cursor_sid,scan_high_water_sid,
                 (SELECT count(*) FROM search_projection.document_states document
                  WHERE document.generation_id=generations.id
+                   AND document.last_error IS DISTINCT FROM $5
                    AND NOT EXISTS (
                      SELECT 1 FROM search_projection.workspace_states workspace
                      WHERE workspace.generation_id=document.generation_id
@@ -343,6 +385,7 @@ impl SearchRuntime {
     .bind(config_hash(&self.config))
     .bind(super::SCHEMA_FINGERPRINT)
     .bind(WORKSPACE_RECONCILE_FAILED)
+    .bind(DOCUMENT_PROJECTION_FAILED)
     .fetch_optional(&self.pool)
     .await
     .map_err(|error| RuntimeError::database("load search projection status", error))?;
@@ -400,7 +443,7 @@ mod tests {
     SearchRuntimeConfig,
     backend_runtime::{
       permission::{DocReadScope, SearchActor},
-      search::{ActiveGeneration, SEARCH_TEST_LOCK, SearchTable},
+      search::{ActiveGeneration, SEARCH_TEST_LOCK, SearchTable, config_hash},
     },
     migrations::migrate_search_tables,
   };
@@ -456,7 +499,12 @@ mod tests {
     .execute(&pool)
     .await
     .unwrap();
-    let runtime = SearchRuntime::new(pool.clone(), SearchRuntimeConfig::default()).unwrap();
+    let runtime = SearchRuntime::new(
+      pool.clone(),
+      SearchRuntimeConfig::default(),
+      crate::runtime::Deployment::Cloud,
+    )
+    .unwrap();
     runtime.embedded.prepare_generation(generation_id).await;
     let docs = ["a", "b", "c", "d", "e", "f"]
       .into_iter()
@@ -494,6 +542,36 @@ mod tests {
     assert_eq!(result["total"], 2);
     assert_eq!(result["nodes"][0]["fields"]["doc_id"], json!(["e"]));
     assert_eq!(result["nodes"][1]["fields"]["doc_id"], json!(["f"]));
+
+    sqlx::query(
+      "UPDATE search_projection.document_states SET last_error='search_document_projection_failed' WHERE \
+       generation_id=$1 AND workspace_id=$2 AND doc_id='e'",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let filtered = runtime
+      .execute_visible_search(
+        &ActiveGeneration {
+          id: generation_id,
+          manifest: json!({}),
+        },
+        &workspace_id,
+        "user",
+        &DocReadScope::All,
+        SearchTable::Doc,
+        json!({
+          "query":{"term":{"workspace_id":{"value":workspace_id}}},
+          "fields":["doc_id","source_version","permission_version"],
+          "sort":["doc_id"],"size":2
+        }),
+      )
+      .await
+      .unwrap();
+    assert_eq!(filtered["total"], 1);
+    assert_eq!(filtered["nodes"][0]["fields"]["doc_id"], json!(["f"]));
 
     sqlx::query("DELETE FROM workspaces WHERE id=$1")
       .bind(&workspace_id)
@@ -547,7 +625,12 @@ mod tests {
       .await
       .unwrap();
 
-    let runtime = SearchRuntime::new(pool.clone(), SearchRuntimeConfig::default()).unwrap();
+    let runtime = SearchRuntime::new(
+      pool.clone(),
+      SearchRuntimeConfig::default(),
+      crate::runtime::Deployment::Cloud,
+    )
+    .unwrap();
     let (_, complete) = runtime.seed_generation(generation_id, 100).await.unwrap();
     assert!(complete);
     let cursor: i32 = sqlx::query_scalar("SELECT scan_cursor_sid FROM search_projection.generations WHERE id=$1")
@@ -591,13 +674,51 @@ mod tests {
       endpoint: Uuid::new_v4().to_string(),
       ..SearchRuntimeConfig::default()
     };
-    let runtime = SearchRuntime::new(pool.clone(), config).unwrap();
+    let runtime = SearchRuntime::new(pool.clone(), config, crate::runtime::Deployment::Cloud).unwrap();
+    assert!(matches!(
+      runtime.active_generation().await,
+      Err(crate::runtime::RuntimeError::SearchIndexNotReady)
+    ));
+
+    sqlx::query("DELETE FROM search_projection.generations WHERE state='building'")
+      .execute(&pool)
+      .await
+      .unwrap();
+    let failed_id = Uuid::new_v4();
+    let building_id = Uuid::new_v4();
+    sqlx::query(
+      r#"INSERT INTO search_projection.generations(
+           id,provider,state,config_hash,schema_version,last_error,created_at
+         ) VALUES($1,$3,'failed',$4,1,'current provider failed',now() - interval '1 minute'),
+                 ($2,$3,'building',$4,1,NULL,now())"#,
+    )
+    .bind(failed_id)
+    .bind(building_id)
+    .bind(&runtime.config.provider)
+    .bind(config_hash(&runtime.config))
+    .execute(&pool)
+    .await
+    .unwrap();
     assert!(matches!(
       runtime.active_generation().await,
       Err(crate::runtime::RuntimeError::SearchIndexNotReady)
     ));
     sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
+      .bind(building_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    assert!(matches!(
+      runtime.active_generation().await,
+      Err(crate::runtime::RuntimeError::SearchIndexFailed(error)) if error == "current provider failed"
+    ));
+    sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
       .bind(generation_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
+      .bind(failed_id)
       .execute(&pool)
       .await
       .unwrap();
@@ -631,7 +752,12 @@ mod tests {
     .execute(&pool)
     .await
     .unwrap();
-    let runtime = SearchRuntime::new(pool.clone(), SearchRuntimeConfig::default()).unwrap();
+    let runtime = SearchRuntime::new(
+      pool.clone(),
+      SearchRuntimeConfig::default(),
+      crate::runtime::Deployment::Cloud,
+    )
+    .unwrap();
     assert!(
       !runtime
         .query_snapshot_is_current(&workspace_id, generation_id, 7)
@@ -759,7 +885,12 @@ mod tests {
     .execute(&pool)
     .await
     .unwrap();
-    let runtime = SearchRuntime::new(pool.clone(), SearchRuntimeConfig::default()).unwrap();
+    let runtime = SearchRuntime::new(
+      pool.clone(),
+      SearchRuntimeConfig::default(),
+      crate::runtime::Deployment::Cloud,
+    )
+    .unwrap();
     let mut result = serde_json::json!({
       "total":8,
       "nodes":[

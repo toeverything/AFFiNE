@@ -182,8 +182,6 @@ async fn upsert_projection_checkpoint(
 ) -> RuntimeResult<()> {
   let status = if result.next_cursor.is_some() {
     "running"
-  } else if result.failed_docs > 0 {
-    "failed"
   } else {
     "completed"
   };
@@ -297,9 +295,8 @@ async fn purge_removed_doc_projections(
   Ok(refs)
 }
 
-fn extract_refs(blob: Vec<u8>) -> RuntimeResult<Vec<ExtractedRef>> {
-  doc_loader::get_blob_refs_from_binary(blob)
-    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))
+fn extract_refs(blob: Vec<u8>) -> std::result::Result<Vec<ExtractedRef>, super::BlobRefProjectionError> {
+  super::extract_blob_refs(blob).map(|extraction| extraction.refs)
 }
 
 async fn replace_doc_refs_if_current(
@@ -548,15 +545,16 @@ async fn rebuild_doc_blob_refs_inner(
   let CurrentDoc { blob, updated_at, .. } = snapshot;
   let refs = match extract_refs(blob) {
     Ok(refs) => refs,
-    Err(_) => {
+    Err(error) => {
+      let error_code = super::blob_ref_projection_error_code(error);
       upsert_projection_state(
         &pool,
         workspace_id,
         doc_id,
         Some(updated_at),
         "failed",
-        Some("parse_failed"),
-        Some("canonical snapshot parser rejected the document"),
+        Some(error_code),
+        Some(error_code),
       )
       .await?;
       stats.result.failed_docs = 1;
@@ -581,59 +579,7 @@ async fn rebuild_doc_blob_refs_inner(
 
 #[cfg(test)]
 mod tests {
-  use chrono::Utc;
-  use y_octo::Doc;
-
   use super::*;
-
-  #[test]
-  fn doc_blob_refs_projection_semantics() {
-    let doc_id = "doc-blob-ref-test".to_string();
-    let blob =
-      doc_loader::build_full_doc("Doc", "![Alt](blob://image-blob-key)", &doc_id).expect("doc fixture should build");
-    let snapshot = CurrentDoc {
-      blob,
-      updated_at: Utc::now(),
-    };
-    let refs = extract_refs(snapshot.blob).expect("refs should parse");
-    assert!(
-      refs
-        .iter()
-        .any(|reference| { reference.blob_key == "image-blob-key" && reference.flavour == "affine:image" })
-    );
-
-    let root = Doc::default();
-    let mut meta = root.get_or_create_map("meta").expect("root meta should build");
-    let mut pages = root.create_array().expect("root pages should build");
-    let mut active = root.create_map().expect("active doc meta should build");
-    active
-      .insert("id".to_string(), "active-doc")
-      .expect("active doc id should insert");
-    pages.push(active).expect("active doc should insert");
-    let mut trashed = root.create_map().expect("trashed doc meta should build");
-    trashed
-      .insert("id".to_string(), "trashed-doc")
-      .expect("trashed doc id should insert");
-    trashed
-      .insert("trash".to_string(), true)
-      .expect("trash flag should insert");
-    pages.push(trashed).expect("trashed doc should insert");
-    meta
-      .insert("pages".to_string(), pages)
-      .expect("root pages should insert");
-    let root = root.encode_update_v1().expect("root doc should encode");
-    let ids = doc_loader::get_doc_ids_from_binary(root, true).expect("root doc ids should parse");
-    assert_eq!(ids, vec!["active-doc", "trashed-doc"]);
-  }
-
-  #[test]
-  fn doc_blob_refs_rejects_corrupt_docs_without_a_failure_ref() {
-    let snapshot = CurrentDoc {
-      blob: vec![0xff],
-      updated_at: Utc::now(),
-    };
-    assert!(extract_refs(snapshot.blob).is_err());
-  }
 
   #[test]
   fn error_summary_is_bounded() {

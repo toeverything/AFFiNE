@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use affine_core::access_control::classify_reserved_document;
 use chrono::{DateTime, Utc};
 use serde_json::{Value, json};
 use sqlx::{FromRow, PgPool, Postgres, Row, Transaction};
@@ -10,7 +11,6 @@ use super::{
   RuntimeDocumentCleanupReconcileResult, RuntimeError, RuntimeResult, StorageRuntime, load_workspace_live_doc_ids,
   merge_current_doc, napi_error,
 };
-use crate::reserved_doc;
 
 #[derive(FromRow)]
 struct StoredDocActivity {
@@ -143,7 +143,7 @@ async fn reconcile_workspace(
   };
 
   for doc in &stored {
-    if reserved_doc::classify(workspace_id, &doc.doc_id).is_some() {
+    if classify_reserved_document(workspace_id, &doc.doc_id).is_valid_reserved() {
       live_ids.insert(doc.doc_id.clone());
       continue;
     }
@@ -523,7 +523,7 @@ async fn execute_one(
     return Ok(None);
   };
 
-  if reserved_doc::classify(&candidate.workspace_id, &candidate.doc_id).is_some() {
+  if classify_reserved_document(&candidate.workspace_id, &candidate.doc_id).is_valid_reserved() {
     sqlx::query("DELETE FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2")
       .bind(&candidate.workspace_id)
       .bind(&candidate.doc_id)
@@ -921,10 +921,14 @@ mod tests {
 
   #[tokio::test]
   async fn doc_blob_refs_projection_semantics_and_document_cleanup_mark_only_postgres() -> AnyResult<()> {
+    let _search_guard = SEARCH_TEST_LOCK.lock().await;
     let Some((runtime, pool)) = runtime_from_database_url().await? else {
       eprintln!("skipping postgres integration test: DATABASE_URL is not set");
       return Ok(());
     };
+    migrate_search_tables(&pool)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
     let workspace_id = format!("rust-test-dc-{}", Uuid::new_v4());
     let doc_id = "missing-doc";
     let root = affine_doc_loader::add_doc_to_root_doc(Vec::new(), "live-doc", None)?;
@@ -965,15 +969,56 @@ mod tests {
       .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert_eq!(projection.failed_docs, 0);
-    assert_eq!(projection.parsed_docs, 3);
+    assert_eq!(projection.failed_docs, 1);
+    assert_eq!(projection.parsed_docs, 2);
     let projection_checkpoint = sqlx::query(
-      "SELECT metadata FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
+      "SELECT status, metadata FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
     )
     .bind(&workspace_id)
     .fetch_one(&pool)
     .await?;
     assert_eq!(projection_checkpoint.get::<Value, _>("metadata")["shadowMismatches"], 1);
+    assert_eq!(projection_checkpoint.get::<String, _>("status"), "completed");
+    assert_eq!(projection_checkpoint.get::<Value, _>("metadata")["failedDocs"], 1);
+    let root_projection =
+      sqlx::query("SELECT status, error_code FROM doc_blob_ref_projections WHERE workspace_id = $1 AND doc_id = $1")
+        .bind(&workspace_id)
+        .fetch_one(&pool)
+        .await?;
+    assert_eq!(root_projection.get::<String, _>("status"), "failed");
+    assert_eq!(root_projection.get::<String, _>("error_code"), "yocto_unsupported");
+    let cleanup = runtime
+      .plan_unreferenced_workspace_blobs(workspace_id.clone(), 30, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(cleanup.candidates_marked, 0);
+    let cleanup_metadata =
+      sqlx::query_scalar::<_, Value>("SELECT metadata FROM storage_reconciliation_runs WHERE id = $1::uuid")
+        .bind(&cleanup.run_id)
+        .fetch_one(&pool)
+        .await?;
+    assert_eq!(
+      cleanup_metadata["staleOrFailedProjectionWorkspaces"],
+      serde_json::json!([workspace_id])
+    );
+    sqlx::query(
+      "INSERT INTO blob_cleanup_candidates (workspace_id, blob_key, reason, status, object_size, \
+       object_last_modified, run_id, evidence) VALUES ($1, 'unknown-ref', 'unreferenced_completed_blob', 'marked', 1, \
+       CURRENT_TIMESTAMP - INTERVAL '90 days', $2::uuid, '{}')",
+    )
+    .bind(&workspace_id)
+    .bind(&cleanup.run_id)
+    .execute(&pool)
+    .await?;
+    let executed = runtime
+      .execute_blob_cleanup_candidates(cleanup.run_id.unwrap(), 30, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(executed.skipped_still_referenced, 1);
+    assert_eq!(
+      (executed.deleted_objects, executed.deleted_metadata, executed.failed),
+      (0, 0, 0)
+    );
     assert_eq!(
       sqlx::query_scalar::<_, String>(
         "SELECT status FROM doc_blob_ref_projections WHERE workspace_id = $1 AND doc_id = 'live-doc'",
@@ -1000,7 +1045,7 @@ mod tests {
       .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert_eq!(pending.failed_docs, 0);
+    assert_eq!(pending.failed_docs, 1);
     assert_eq!(
       sqlx::query_scalar::<_, String>(
         "SELECT status FROM doc_blob_ref_projections WHERE workspace_id = $1 AND doc_id = 'live-doc'",
@@ -1030,18 +1075,45 @@ mod tests {
       1
     );
 
-    sqlx::query("UPDATE snapshots SET blob = $2 WHERE workspace_id = $1 AND guid = 'live-doc'")
+    sqlx::query(
+      "UPDATE snapshots SET blob = $2, updated_at = updated_at + interval '1 millisecond' WHERE workspace_id = $1 AND \
+       guid = 'live-doc'",
+    )
+    .bind(&workspace_id)
+    .bind(vec![0xff_u8])
+    .execute(&pool)
+    .await?;
+    let corrupt_timestamp = sqlx::query_scalar::<_, DateTime<Utc>>(
+      "SELECT updated_at FROM snapshots WHERE workspace_id=$1 AND guid='live-doc'",
+    )
+    .bind(&workspace_id)
+    .fetch_one(&pool)
+    .await?;
+    let corrupt = runtime
+      .rebuild_doc_blob_refs(
+        workspace_id.clone(),
+        "live-doc".to_string(),
+        corrupt_timestamp.timestamp_millis(),
+      )
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(corrupt.failed_docs, 1);
+    assert_eq!(
+      sqlx::query_scalar::<_, String>(
+        "SELECT error_code FROM doc_blob_ref_projections WHERE workspace_id=$1 AND doc_id='live-doc'",
+      )
       .bind(&workspace_id)
-      .bind(vec![0xff_u8])
-      .execute(&pool)
-      .await?;
+      .fetch_one(&pool)
+      .await?,
+      "invalid_binary_corrupt"
+    );
     let partial = runtime
       .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 1)
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
     assert_eq!(
       (partial.failed_docs, partial.next_cursor.as_deref()),
-      (0, Some("live-doc"))
+      (1, Some("live-doc"))
     );
     let partial_checkpoint = sqlx::query(
       "SELECT status, metadata FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
@@ -1050,11 +1122,27 @@ mod tests {
     .fetch_one(&pool)
     .await?;
     assert_eq!(partial_checkpoint.get::<String, _>("status"), "running");
-    assert_eq!(partial_checkpoint.get::<Value, _>("metadata")["failedDocs"], 0);
+    assert_eq!(partial_checkpoint.get::<Value, _>("metadata")["failedDocs"], 1);
+
+    let drained = runtime
+      .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((drained.failed_docs, drained.next_cursor), (2, None));
+    assert_eq!(
+      sqlx::query_scalar::<_, String>(
+        "SELECT status FROM doc_blob_ref_projections WHERE workspace_id = $1 AND doc_id = $2",
+      )
+      .bind(&workspace_id)
+      .bind(doc_id)
+      .fetch_one(&pool)
+      .await?,
+      "fresh"
+    );
 
     sqlx::query(
-      "UPDATE storage_reconciliation_checkpoints SET status = 'failed', metadata = \
-       '{\"parserVersion\":1,\"failedDocs\":99}' WHERE kind = 'doc_blob_refs' AND scope = $1",
+      "UPDATE storage_reconciliation_checkpoints SET status = 'failed', cursor = '{\"lastDocId\":\"live-doc\"}', \
+       metadata = '{\"parserVersion\":1,\"failedDocs\":99}' WHERE kind = 'doc_blob_refs' AND scope = $1",
     )
     .bind(&workspace_id)
     .execute(&pool)
@@ -1085,7 +1173,7 @@ mod tests {
       .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert_eq!(recovered_projection.failed_docs, 0);
+    assert_eq!(recovered_projection.failed_docs, 1);
     assert_eq!(
       sqlx::query_scalar::<_, String>(
         "SELECT status FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
@@ -1094,6 +1182,21 @@ mod tests {
       .fetch_one(&pool)
       .await?,
       "completed"
+    );
+
+    let retried = runtime
+      .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((retried.parsed_docs, retried.failed_docs), (1, 1));
+    assert_eq!(
+      sqlx::query_scalar::<_, String>(
+        "SELECT status FROM doc_blob_ref_projections WHERE workspace_id = $1 AND doc_id = 'live-doc'",
+      )
+      .bind(&workspace_id)
+      .fetch_one(&pool)
+      .await?,
+      "fresh"
     );
 
     sqlx::query(
@@ -1107,7 +1210,7 @@ mod tests {
       .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert_eq!((parser_upgrade.scanned_docs, parser_upgrade.failed_docs), (3, 0));
+    assert_eq!((parser_upgrade.scanned_docs, parser_upgrade.failed_docs), (3, 1));
     assert_eq!(
       sqlx::query_scalar::<_, String>(
         "SELECT status FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
@@ -1168,6 +1271,17 @@ mod tests {
     assert_eq!(failure.get::<String, _>("status"), "failed");
     assert_eq!(failure.get::<Value, _>("metadata")["rootFailed"], 1);
 
+    assert!(
+      runtime
+        .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
+        .await
+        .is_err()
+    );
+
+    sqlx::query("DELETE FROM blob_cleanup_candidates WHERE workspace_id = $1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
     sqlx::query("DELETE FROM storage_reconciliation_runs WHERE workspace_id = $1")
       .bind(&workspace_id)
       .execute(&pool)
@@ -1336,7 +1450,7 @@ mod tests {
       .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert_eq!(refs.failed_docs, 0);
+    assert_eq!(refs.failed_docs, 1);
     let ref_count = sqlx::query_scalar::<_, i64>(
       "SELECT COUNT(*) FROM doc_blob_refs WHERE workspace_id = $1 AND doc_id = $2 AND blob_key = 'image-blob-key'",
     )
