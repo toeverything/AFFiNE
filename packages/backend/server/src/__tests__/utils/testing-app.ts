@@ -22,6 +22,7 @@ import {
 } from '../../base';
 import { SocketIoAdapter } from '../../base/websocket';
 import { AuthService, AuthSigningKeyRing } from '../../core/auth';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { Mailer } from '../../core/mail';
 import { UserModel } from '../../models';
 import {
@@ -112,6 +113,42 @@ export class TestingApp extends ApplyType<INestApplication>() {
     await initTestingDB(this);
     await this.get(AuthSigningKeyRing).onConfigInit();
     this.clearAuth();
+  }
+
+  async createNativeAuthSession(
+    userId: string,
+    metadata: {
+      installationId?: string;
+      platform?: 'ios' | 'android' | 'electron';
+      deviceName?: string;
+      appVersion?: string;
+    } = {}
+  ) {
+    const rt = this.get(BackendRuntimeProvider);
+    const issued = await rt.executeAuthSessionCommandV1<{
+      exchangeCode: string;
+    }>({
+      action: 'issue_user',
+      userId,
+      issue: { type: 'native', clientVersion: metadata.appVersion },
+    });
+    return await rt.executeAuthSessionCommandV1<{
+      userId: string;
+      tokenType: 'Bearer';
+      accessToken: string;
+      expiresIn: number;
+      refreshToken: string;
+      refreshExpiresAt: string;
+      session: { id: string; absoluteExpiresAt: string };
+      isNewDevice: boolean;
+    }>({
+      action: 'exchange',
+      code: issued.exchangeCode,
+      installationId: metadata.installationId ?? `test-${randomUUID()}`,
+      platform: metadata.platform ?? 'ios',
+      deviceName: metadata.deviceName,
+      appVersion: metadata.appVersion,
+    });
   }
 
   clearAuth() {

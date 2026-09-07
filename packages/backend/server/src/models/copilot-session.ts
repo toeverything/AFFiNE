@@ -71,6 +71,37 @@ type StoredChatMessage = Prisma.AiSessionMessageGetPayload<{
   };
 }>;
 
+const SESSION_META_SELECT = {
+  id: true,
+  userId: true,
+  workspaceId: true,
+  docId: true,
+  parentSessionId: true,
+  pinned: true,
+  title: true,
+  focus: true,
+  promptName: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.AiSessionSelect;
+
+const SESSION_SELECT = {
+  ...SESSION_META_SELECT,
+  messages: {
+    select: {
+      id: true,
+      role: true,
+      content: true,
+      attachments: true,
+      streamObjects: true,
+      params: true,
+      scopeSnapshot: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'asc' },
+  },
+} satisfies Prisma.AiSessionSelect;
+
 type PureChatSession = {
   sessionId: string;
   workspaceId: string;
@@ -81,6 +112,7 @@ type PureChatSession = {
   // connect ids
   userId: string;
   parentSessionId?: string | null;
+  personal?: boolean;
 };
 
 type ChatSession = PureChatSession & {
@@ -103,15 +135,16 @@ export type ForkSessionOptions = Omit<
   messages: ChatMessage[];
 };
 
-type UpdateChatSessionMessage = ChatSessionBaseState & {
-  messages: ChatMessage[];
-};
+type UpdateChatSessionMessage = ChatSessionBaseState &
+  Pick<ChatSession, 'workspaceId'> & {
+    messages: ChatMessage[];
+  };
 
 export type UpdateChatSessionOptions = ChatSessionBaseState &
   Pick<
     Partial<ChatSession>,
     'docId' | 'pinned' | 'promptName' | 'promptAction' | 'title'
-  >;
+  > & { workspaceId: string; personal?: boolean };
 
 export type UpdateChatSession = ChatSessionBaseState & UpdateChatSessionOptions;
 
@@ -119,13 +152,14 @@ export type ListSessionOptions = Pick<
   Partial<ChatSession>,
   'sessionId' | 'workspaceId' | 'docId' | 'pinned'
 > & {
-  userId: string | undefined;
+  userId: string;
   action?: boolean;
   fork?: boolean;
   limit?: number;
   skip?: number;
   sessionOrder?: 'asc' | 'desc';
   messageOrder?: 'asc' | 'desc';
+  personal?: boolean;
 
   // extra condition
   withPrompt?: boolean;
@@ -137,10 +171,20 @@ export type CleanupSessionOptions = Pick<
   'userId' | 'workspaceId' | 'docId'
 > & {
   sessionIds: string[];
+  personal?: boolean;
 };
 
 @Injectable()
 export class CopilotSessionModel extends BaseModel {
+  private async lockPersonalScope(workspaceId: string, personal?: boolean) {
+    if (!personal) return;
+    await this.db
+      .$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`copilot-personal:${workspaceId}`}, 0))`;
+    const canonical = await this.db.workspace.count({
+      where: { id: workspaceId },
+    });
+    if (canonical) throw new CopilotSessionNotFound();
+  }
   private noActionPromptCondition(): Prisma.AiSessionWhereInput {
     return {
       OR: [{ promptAction: null }, { promptAction: '' }],
@@ -375,6 +419,7 @@ export class CopilotSessionModel extends BaseModel {
 
   @Transactional()
   async create(state: ChatSession, reuseChat = false): Promise<string> {
+    await this.lockPersonalScope(state.workspaceId, state.personal);
     // find and return existing session if session is chat session
     if (reuseChat && !state.promptAction) {
       const sessionId = await this.find(state);
@@ -486,49 +531,51 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async get(sessionId: string) {
-    return await this.getExists(sessionId, {
-      id: true,
-      userId: true,
-      workspaceId: true,
-      docId: true,
-      parentSessionId: true,
-      pinned: true,
-      title: true,
-      focus: true,
-      promptName: true,
-      createdAt: true,
-      updatedAt: true,
-      messages: {
-        select: {
-          id: true,
-          role: true,
-          content: true,
-          attachments: true,
-          streamObjects: true,
-          params: true,
-          scopeSnapshot: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: 'asc' },
-      },
+  async get(
+    sessionId: string,
+    userId: string,
+    workspaceId: string,
+    personal?: boolean
+  ) {
+    await this.lockPersonalScope(workspaceId, personal);
+    return await this.getExists(sessionId, SESSION_SELECT, {
+      userId,
+      workspaceId,
     });
   }
 
   @Transactional()
-  async getMeta(sessionId: string) {
-    return await this.getExists(sessionId, {
-      id: true,
-      userId: true,
-      workspaceId: true,
-      docId: true,
-      parentSessionId: true,
-      pinned: true,
-      title: true,
-      focus: true,
-      promptName: true,
-      createdAt: true,
-      updatedAt: true,
+  async getMeta(
+    sessionId: string,
+    userId: string,
+    workspaceId: string,
+    personal?: boolean
+  ) {
+    await this.lockPersonalScope(workspaceId, personal);
+    return await this.getExists(sessionId, SESSION_META_SELECT, {
+      userId,
+      workspaceId,
+    });
+  }
+
+  @Transactional()
+  async getOwnedScope(sessionId: string, userId: string) {
+    return await this.getExists(
+      sessionId,
+      { workspaceId: true, docId: true },
+      { userId }
+    );
+  }
+
+  @Transactional()
+  async getForBackground(
+    sessionId: string,
+    userId: string,
+    workspaceId: string
+  ) {
+    return await this.getExists(sessionId, SESSION_SELECT, {
+      userId,
+      workspaceId,
     });
   }
 
@@ -541,49 +588,36 @@ export class CopilotSessionModel extends BaseModel {
       return maybeValue !== undefined ? maybeValue : undefined;
     }
 
-    const conditions: Prisma.AiSessionWhereInput['OR'] = [
-      {
-        userId,
-        workspaceId,
-        docId: getEqCond(docId),
-        id: getEqCond(sessionId),
-        deletedAt: null,
-        pinned: getEqCond(options.pinned),
-        ...(action === false ? this.noActionPromptCondition() : {}),
-        ...(action === true ? { NOT: this.noActionPromptCondition() } : {}),
-        ...(fork === true
-          ? { parentSessionId: { not: null } }
-          : fork === false
-            ? { parentSessionId: null }
-            : {}),
-      },
-    ];
-
-    if (!action && fork) {
-      // query forked sessions from other users
-      // only query forked session if fork == true and action == false
-      conditions.push({
-        userId: { not: userId },
-        workspaceId: workspaceId,
-        docId: docId ?? null,
-        id: getEqCond(sessionId),
-        ...this.noActionPromptCondition(),
-        // should only find forked session
-        parentSessionId: { not: null },
-        deletedAt: null,
-      });
-    }
-
-    return { OR: conditions };
+    return {
+      userId,
+      workspaceId,
+      docId: getEqCond(docId),
+      id: getEqCond(sessionId),
+      deletedAt: null,
+      pinned: getEqCond(options.pinned),
+      ...(action === false ? this.noActionPromptCondition() : {}),
+      ...(action === true ? { NOT: this.noActionPromptCondition() } : {}),
+      ...(fork === true
+        ? { parentSessionId: { not: null } }
+        : fork === false
+          ? { parentSessionId: null }
+          : {}),
+    };
   }
 
+  @Transactional()
   async count(options: ListSessionOptions) {
+    if (options.workspaceId)
+      await this.lockPersonalScope(options.workspaceId, options.personal);
     return await this.db.aiSession.count({
       where: this.getListConditions(options),
     });
   }
 
+  @Transactional()
   async list(options: ListSessionOptions) {
+    if (options.workspaceId)
+      await this.lockPersonalScope(options.workspaceId, options.personal);
     return await this.db.aiSession.findMany({
       where: this.getListConditions(options),
       select: {
@@ -642,6 +676,8 @@ export class CopilotSessionModel extends BaseModel {
   ): Promise<string> {
     const { userId, sessionId, docId, promptName, pinned, title } = options;
     const sanitizedTitle = this.sanitizeString(title);
+    if (options.workspaceId)
+      await this.lockPersonalScope(options.workspaceId, options.personal);
     const session = await this.getExists(
       sessionId,
       {
@@ -652,7 +688,7 @@ export class CopilotSessionModel extends BaseModel {
         pinned: true,
         promptAction: true,
       },
-      { userId }
+      { userId, workspaceId: options.workspaceId }
     );
     if (!session) {
       throw new CopilotSessionNotFound();
@@ -691,7 +727,7 @@ export class CopilotSessionModel extends BaseModel {
     }
 
     await this.db.aiSession.update({
-      where: { id: sessionId },
+      where: { id: sessionId, userId, workspaceId: options.workspaceId },
       data: {
         docId,
         promptName,
@@ -706,6 +742,7 @@ export class CopilotSessionModel extends BaseModel {
 
   @Transactional()
   async cleanup(options: CleanupSessionOptions): Promise<string[]> {
+    await this.lockPersonalScope(options.workspaceId, options.personal);
     const sessions = await this.db.aiSession.findMany({
       where: {
         id: { in: options.sessionIds },
@@ -734,20 +771,31 @@ export class CopilotSessionModel extends BaseModel {
   @Transactional()
   async getMessages(
     sessionId: string,
+    userId: string,
+    workspaceId: string,
     select?: Prisma.AiSessionMessageSelect,
     orderBy?: Prisma.AiSessionMessageOrderByWithRelationInput
   ) {
     return this.db.aiSessionMessage.findMany({
-      where: { sessionId },
+      where: { sessionId, session: { userId, workspaceId } },
       select,
       orderBy: orderBy ?? { createdAt: 'asc' },
     });
   }
 
   @Transactional()
-  async getMessage(sessionId: string, messageId: string) {
+  async getMessage(
+    sessionId: string,
+    userId: string,
+    workspaceId: string,
+    messageId: string
+  ) {
     const message = await this.db.aiSessionMessage.findFirst({
-      where: { id: messageId, sessionId },
+      where: {
+        id: messageId,
+        sessionId,
+        session: { userId, workspaceId },
+      },
       select: {
         id: true,
         compatSubmissionId: true,
@@ -767,10 +815,16 @@ export class CopilotSessionModel extends BaseModel {
   @Transactional()
   async findMessageByCompatSubmissionId(
     sessionId: string,
+    userId: string,
+    workspaceId: string,
     compatSubmissionId: string
   ) {
     const message = await this.db.aiSessionMessage.findFirst({
-      where: { sessionId, compatSubmissionId },
+      where: {
+        sessionId,
+        compatSubmissionId,
+        session: { userId, workspaceId },
+      },
       select: {
         id: true,
         compatSubmissionId: true,
@@ -790,8 +844,8 @@ export class CopilotSessionModel extends BaseModel {
 
   @Transactional()
   async updateMessages(state: UpdateChatSessionMessage) {
-    const { sessionId, userId, messages } = state;
-    const haveSession = await this.has(sessionId, userId);
+    const { sessionId, userId, workspaceId, messages } = state;
+    const haveSession = await this.has(sessionId, userId, { workspaceId });
     if (!haveSession) {
       throw new CopilotSessionNotFound();
     }
@@ -815,7 +869,7 @@ export class CopilotSessionModel extends BaseModel {
       // only count message generated by user
       const userMessages = sanitizedMessages.filter(m => m.role === 'user');
       await this.db.aiSession.update({
-        where: { id: sessionId },
+        where: { id: sessionId, userId, workspaceId },
         data: {
           messageCost: { increment: userMessages.length },
         },
@@ -827,6 +881,8 @@ export class CopilotSessionModel extends BaseModel {
   async appendMessage(state: {
     sessionId: string;
     userId: string;
+    workspaceId: string;
+    personal?: boolean;
     message: ChatMessage;
     focus?: SessionFocus;
     artifacts?: Array<{
@@ -836,10 +892,11 @@ export class CopilotSessionModel extends BaseModel {
       metadata?: Record<string, unknown>;
     }>;
   }) {
+    await this.lockPersonalScope(state.workspaceId, state.personal);
     const session = await this.getExists(
       state.sessionId,
       { id: true, workspaceId: true },
-      { userId: state.userId }
+      { userId: state.userId, workspaceId: state.workspaceId }
     );
     if (!session) {
       throw new CopilotSessionNotFound();
@@ -899,7 +956,11 @@ export class CopilotSessionModel extends BaseModel {
     });
 
     await this.db.aiSession.update({
-      where: { id: state.sessionId },
+      where: {
+        id: state.sessionId,
+        userId: state.userId,
+        workspaceId: state.workspaceId,
+      },
       data: {
         messageCost:
           message.role === AiSessionMessageRole.user
@@ -915,18 +976,24 @@ export class CopilotSessionModel extends BaseModel {
   @Transactional()
   async trimAfterMessage(
     sessionId: string,
+    userId: string,
+    workspaceId: string,
     messageId: string,
     removeTargetMessage = false
   ) {
-    const session = await this.getExists(sessionId, {
-      id: true,
-    });
+    const session = await this.getExists(
+      sessionId,
+      { id: true },
+      { userId, workspaceId }
+    );
     if (!session) {
       throw new CopilotSessionNotFound();
     }
 
     const messages = await this.getMessages(
       sessionId,
+      userId,
+      workspaceId,
       { id: true, role: true, content: true, params: true },
       { createdAt: 'asc' }
     );
@@ -943,18 +1010,23 @@ export class CopilotSessionModel extends BaseModel {
       return;
     }
 
-    await this.db.aiSessionMessage.deleteMany({ where: { id: { in: ids } } });
-
-    const remainingMessages = await this.getMessages(sessionId, {
-      role: true,
+    await this.db.aiSessionMessage.deleteMany({
+      where: { id: { in: ids }, session: { userId, workspaceId } },
     });
+
+    const remainingMessages = await this.getMessages(
+      sessionId,
+      userId,
+      workspaceId,
+      { role: true }
+    );
     const userMessageCount = remainingMessages.filter(message =>
       this.isCountedUserMessage(message)
     ).length;
 
     if (userMessageCount <= 1) {
       await this.db.aiSession.update({
-        where: { id: sessionId },
+        where: { id: sessionId, userId, workspaceId },
         data: { title: null },
       });
     }
@@ -963,15 +1035,21 @@ export class CopilotSessionModel extends BaseModel {
   @Transactional()
   async revertLatestMessage(
     sessionId: string,
-    removeLatestUserMessage: boolean
+    userId: string,
+    removeLatestUserMessage: boolean,
+    workspaceId: string,
+    personal?: boolean
   ) {
-    const session = await this.getExists(sessionId, {
-      id: true,
-    });
+    await this.lockPersonalScope(workspaceId, personal);
+    const session = await this.getExists(
+      sessionId,
+      { id: true },
+      { userId, workspaceId }
+    );
     if (!session) {
       throw new CopilotSessionNotFound();
     }
-    const messages = await this.getMessages(session.id, {
+    const messages = await this.getMessages(session.id, userId, workspaceId, {
       id: true,
       role: true,
       content: true,
@@ -985,19 +1063,24 @@ export class CopilotSessionModel extends BaseModel {
       .map(({ id }) => id);
 
     if (ids.length) {
-      await this.db.aiSessionMessage.deleteMany({ where: { id: { in: ids } } });
+      await this.db.aiSessionMessage.deleteMany({
+        where: { id: { in: ids }, session: { userId, workspaceId } },
+      });
 
       // clear the title if there only one round of conversation left
-      const remainingMessages = await this.getMessages(session.id, {
-        role: true,
-      });
+      const remainingMessages = await this.getMessages(
+        session.id,
+        userId,
+        workspaceId,
+        { role: true }
+      );
       const userMessageCount = remainingMessages.filter(message =>
         this.isCountedUserMessage(message)
       ).length;
 
       if (userMessageCount <= 1) {
         await this.db.aiSession.update({
-          where: { id: session.id },
+          where: { id: session.id, userId, workspaceId },
           data: { title: null },
         });
       }
@@ -1077,6 +1160,8 @@ export class CopilotSessionModel extends BaseModel {
         },
         select: {
           id: true,
+          userId: true,
+          workspaceId: true,
           // count assistant messages
           _count: { select: { messages: { where: { role: 'assistant' } } } },
         },

@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 import {
   Controller,
@@ -14,7 +16,6 @@ import type { Request, Response } from 'express';
 
 import {
   applyAttachHeaders,
-  BlobNotFound,
   CallMetric,
   CommentAttachmentNotFound,
   DocActionDenied,
@@ -22,27 +23,27 @@ import {
   DocNotFound,
   getRequestTrackerId,
   InvalidHistoryTimestamp,
-  SpaceAccessDenied,
+  UnsupportedClientVersion,
 } from '../../base';
 import { DocMode, Models, PublicDocMode } from '../../models';
-import { buildPublicRootDoc } from '../../native';
+import { buildPublicRootDoc, canonicalizeDocumentIdentity } from '../../native';
 import { CurrentUser, Public } from '../auth';
+import { BackendRuntimeProvider, type BlobSourceV1 } from '../backend-runtime';
 import { PgWorkspaceDocStorageAdapter } from '../doc';
 import { DocReader } from '../doc/reader';
 import { PermissionAccess } from '../permission';
-import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
-import { DocID } from '../utils/doc';
+import { CommentAttachmentStorage } from '../storage';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {
   logger = new Logger(WorkspacesController.name);
   constructor(
-    private readonly storage: WorkspaceBlobStorage,
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
     private readonly ac: PermissionAccess,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly docReader: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   private buildVisitorId(req: Request, workspaceId: string, docId: string) {
@@ -94,80 +95,116 @@ export class WorkspacesController {
     return binResponse;
   }
 
-  // get workspace blob
-  //
-  // NOTE: because graphql can't represent a File, so we have to use REST API to get blob
   @Public()
-  @Get('/:id/blobs/:name')
-  @CallMetric('controllers', 'workspace_get_blob')
-  async blob(
+  @Get('/:id/blob-manifest/v1')
+  async blobManifestV1(
+    @CurrentUser() user: CurrentUser | undefined,
+    @Param('id') workspaceId: string,
+    @Query('sourceType') sourceType: string,
+    @Query('docId') docId: string,
+    @Query('timestampMs') timestampMs: string | undefined,
+    @Res() res: Response
+  ) {
+    const source = this.blobSource(workspaceId, sourceType, docId, timestampMs);
+    const manifest = await this.runtime.getDocBlobManifestV1(user?.id, source);
+    res.setHeader('cache-control', 'private, no-store');
+    return res.json(manifest);
+  }
+
+  @Get('/:id/readable-blob-manifest/v1')
+  async readableBlobManifestV1(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Query('cursor') cursor: string | undefined,
+    @Query('limit') rawLimit: string | undefined,
+    @Res() res: Response
+  ) {
+    const limit = rawLimit === undefined ? undefined : Number(rawLimit);
+    const manifest = await this.runtime.getReadableWorkspaceBlobManifestV1({
+      actorUserId: user.id,
+      workspaceId,
+      cursor,
+      limit: Number.isInteger(limit) ? limit : undefined,
+    });
+    res.setHeader('cache-control', 'private, no-store');
+    return res.json(manifest);
+  }
+
+  @Public()
+  @Get('/:id/blobs/v1/:name')
+  @CallMetric('controllers', 'workspace_get_blob_v1')
+  async blobV1(
     @CurrentUser() user: CurrentUser | undefined,
     @Param('id') workspaceId: string,
     @Param('name') name: string,
-    @Query('redirect') redirect: string | undefined,
+    @Query('sourceType') sourceType: string,
+    @Query('docId') docId: string,
+    @Query('timestampMs') timestampMs: string | undefined,
     @Res() res: Response
   ) {
-    const canReadWorkspace = await this.ac
-      .user(user?.id ?? 'anonymous')
-      .workspace(workspaceId)
-      .can('Workspace.Read');
-    const canReadSharedWorkspaceBlobs =
-      await this.canReadSharedWorkspaceBlobs(workspaceId);
-    if (!canReadWorkspace && !canReadSharedWorkspaceBlobs) {
-      throw new SpaceAccessDenied({ spaceId: workspaceId });
-    }
-    const { body, metadata, redirectUrl } = await this.storage.get(
-      workspaceId,
-      name,
-      true
+    const source = this.blobSource(workspaceId, sourceType, docId, timestampMs);
+    const blob = await this.runtime.openBlobV1(user?.id, source, name);
+    res.setHeader('content-type', blob.mime);
+    res.setHeader('content-length', blob.size);
+    res.setHeader('last-modified', new Date(blob.lastModifiedMs).toUTCString());
+    res.setHeader('cache-control', 'private, no-store');
+    applyAttachHeaders(res, { contentType: blob.mime, filename: name });
+    const body = Readable.from(
+      (async function* (runtime: BackendRuntimeProvider) {
+        while (true) {
+          const chunk = await runtime.readBlobStreamChunkV1(blob.streamId);
+          if (chunk.body.length) yield chunk.body;
+          if (chunk.done) return;
+        }
+      })(this.runtime)
     );
-
-    if (redirectUrl) {
-      // redirect to signed url
-      if (redirect === 'manual') {
-        return res.send({
-          url: redirectUrl,
-        });
-      } else {
-        return res.redirect(redirectUrl);
-      }
+    try {
+      await pipeline(body, res);
+    } finally {
+      await this.runtime.closeBlobStreamV1(blob.streamId);
     }
-
-    if (!body) {
-      throw new BlobNotFound({
-        spaceId: workspaceId,
-        blobId: name,
-      });
-    }
-
-    // metadata should always exists if body is not null
-    if (metadata) {
-      res.setHeader(
-        'content-type',
-        metadata.contentType.startsWith('application/json') // application/json is reserved for redirect url
-          ? 'text/json'
-          : metadata.contentType
-      );
-      res.setHeader('last-modified', metadata.lastModified.toUTCString());
-      res.setHeader('content-length', metadata.contentLength);
-    } else {
-      this.logger.warn(`Blob ${workspaceId}/${name} has no metadata`);
-    }
-    applyAttachHeaders(res, {
-      contentType: metadata?.contentType,
-      filename: name,
-    });
-
-    res.setHeader('cache-control', 'public, max-age=2592000, immutable');
-    body.pipe(res);
   }
 
-  private async canReadSharedWorkspaceBlobs(workspaceId: string) {
-    const [sharingEnabled, publicDocs] = await Promise.all([
-      this.models.workspace.allowSharing(workspaceId),
-      this.models.docAccessPolicy.hasPublicExternal(workspaceId),
-    ]);
-    return sharingEnabled && publicDocs;
+  @Public()
+  @Get('/:id/blobs/:name')
+  @CallMetric('controllers', 'workspace_get_blob')
+  async blob(@Req() req: Request) {
+    const clientVersion = req.header('x-affine-version');
+    throw new UnsupportedClientVersion({
+      clientVersion: clientVersion ?? 'unset_or_invalid',
+      requiredVersion: '>=0.27.0 (source-scoped blob protocol)',
+    });
+  }
+
+  private blobSource(
+    workspaceId: string,
+    sourceType: string,
+    docId: string,
+    rawTimestamp: string | undefined
+  ): BlobSourceV1 {
+    if (sourceType === 'currentDoc' && docId) {
+      const identity = canonicalizeDocumentIdentity(docId, workspaceId);
+      return {
+        type: 'currentDoc',
+        workspaceId: identity.workspaceId,
+        docId: identity.docId,
+      };
+    }
+    const timestampMs = Number(rawTimestamp);
+    if (
+      sourceType === 'history' &&
+      docId &&
+      Number.isSafeInteger(timestampMs)
+    ) {
+      const identity = canonicalizeDocumentIdentity(docId, workspaceId);
+      return {
+        type: 'history',
+        workspaceId: identity.workspaceId,
+        docId: identity.docId,
+        timestampMs,
+      };
+    }
+    throw new InvalidHistoryTimestamp({ timestamp: rawTimestamp ?? '' });
   }
 
   // get doc binary
@@ -181,7 +218,7 @@ export class WorkspacesController {
     @Param('guid') guid: string,
     @Res() res: Response
   ) {
-    const docId = new DocID(guid, ws);
+    const docId = canonicalizeDocumentIdentity(guid, ws);
     if (docId.isWorkspace) {
       await this.ac
         .user(user?.id ?? 'anonymous')
@@ -190,33 +227,33 @@ export class WorkspacesController {
     } else {
       await this.ac
         .user(user?.id ?? 'anonymous')
-        .doc(ws, guid)
+        .doc(docId.workspaceId, docId.docId)
         .assert('Doc.Read');
     }
     const binResponse = await this.docReader.getDoc(
-      docId.workspace,
-      docId.guid
+      docId.workspaceId,
+      docId.docId
     );
 
     if (!binResponse) {
       throw new DocNotFound({
-        spaceId: docId.workspace,
-        docId: docId.guid,
+        spaceId: docId.workspaceId,
+        docId: docId.docId,
       });
     }
 
     if (!docId.isWorkspace) {
       void this.models.workspaceAnalytics
         .recordDocView({
-          workspaceId: docId.workspace,
-          docId: docId.guid,
+          workspaceId: docId.workspaceId,
+          docId: docId.docId,
           userId: user?.id,
-          visitorId: this.buildVisitorId(req, docId.workspace, docId.guid),
+          visitorId: this.buildVisitorId(req, docId.workspaceId, docId.docId),
           isGuest: !user,
         })
         .catch(error => {
           this.logger.warn(
-            `Failed to record doc view: ${docId.workspace}/${docId.guid}`,
+            `Failed to record doc view: ${docId.workspaceId}/${docId.docId}`,
             error as Error
           );
         });
@@ -225,8 +262,8 @@ export class WorkspacesController {
     if (!docId.isWorkspace) {
       // fetch the publish page mode for publish page
       const docMeta = await this.models.doc.getMeta(
-        docId.workspace,
-        docId.guid,
+        docId.workspaceId,
+        docId.docId,
         {
           select: {
             mode: true,
@@ -342,30 +379,44 @@ export class WorkspacesController {
     @Param('timestamp') timestamp: string,
     @Res() res: Response
   ) {
-    const docId = new DocID(guid, ws);
-    let ts;
-    try {
-      ts = new Date(timestamp);
-    } catch {
+    const docId = canonicalizeDocumentIdentity(guid, ws);
+    const ts = new Date(timestamp);
+    if (Number.isNaN(ts.getTime())) {
       throw new InvalidHistoryTimestamp({ timestamp });
     }
-
-    await this.ac.user(user.id).doc(ws, guid).assert('Doc.Read');
+    const permission = await this.runtime.authorizePermissionV1({
+      version: 1,
+      workspaceId: docId.workspaceId,
+      actorUserId: user.id,
+      workspaceActions: ['Workspace.Sync'],
+      docs: [{ docId: docId.docId, actions: ['Doc.Read', 'Doc.History.Read'] }],
+    });
+    if (
+      !permission.workspace.decisions[0]?.allowed ||
+      permission.docs[0]?.decisions.length !== 2 ||
+      !permission.docs[0].decisions.every(decision => decision.allowed)
+    ) {
+      throw new DocActionDenied({
+        docId: docId.docId,
+        spaceId: docId.workspaceId,
+        action: 'Doc.History.Read',
+      });
+    }
 
     const history = await this.workspace.getDocHistory(
-      docId.workspace,
-      docId.guid,
+      docId.workspaceId,
+      docId.docId,
       ts.getTime()
     );
 
     if (history) {
       res.setHeader('content-type', 'application/octet-stream');
-      res.setHeader('cache-control', 'private, max-age=2592000, immutable');
+      res.setHeader('cache-control', 'private, no-store');
       res.send(history.bin);
     } else {
       throw new DocHistoryNotFound({
-        spaceId: docId.workspace,
-        docId: guid,
+        spaceId: docId.workspaceId,
+        docId: docId.docId,
         timestamp: ts.getTime(),
       });
     }
@@ -382,12 +433,11 @@ export class WorkspacesController {
   ) {
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Read');
 
-    const { body, metadata, redirectUrl } =
-      await this.commentAttachmentStorage.get(workspaceId, docId, key, true);
-
-    if (redirectUrl) {
-      return res.redirect(redirectUrl);
-    }
+    const { body, metadata } = await this.commentAttachmentStorage.get({
+      workspaceId,
+      docId,
+      key,
+    });
 
     if (!body) {
       throw new CommentAttachmentNotFound();
@@ -408,7 +458,7 @@ export class WorkspacesController {
       filename: key,
     });
 
-    res.setHeader('cache-control', 'private, max-age=2592000, immutable');
+    res.setHeader('cache-control', 'private, no-store');
     body.pipe(res);
   }
 }

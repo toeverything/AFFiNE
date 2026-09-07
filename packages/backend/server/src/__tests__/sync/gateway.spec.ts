@@ -1,20 +1,31 @@
 import { PrismaClient } from '@prisma/client';
 import test, { type ExecutionContext } from 'ava';
+import Sinon from 'sinon';
 import { io, type Socket as SocketIOClient } from 'socket.io-client';
-import { Doc, encodeStateAsUpdate } from 'yjs';
+import { applyUpdate, Doc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS, EventBus } from '../../base';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import {
   DocRole,
   Models,
   WorkspaceMemberStatus,
   WorkspaceRole,
 } from '../../models';
+import { addDocToRootDoc } from '../../native';
 import { createTestingApp, TestingApp } from '../utils';
 
-type WebsocketResponse<T> =
-  | { error: { name: string; message: string } }
-  | { data: T };
+type WebsocketError = {
+  name: string;
+  message: string;
+  code?: string;
+  data?: Record<string, unknown>;
+  requestId?: string;
+  status?: number;
+  type?: string;
+};
+
+type WebsocketResponse<T> = { error: WebsocketError } | { data: T };
 
 const WS_TIMEOUT_MS = 5_000;
 
@@ -34,11 +45,27 @@ function unwrapResponse<T>(t: ExecutionContext, res: WebsocketResponse<T>): T {
 function getErrorResponse<T>(
   t: ExecutionContext,
   res: WebsocketResponse<T>
-): { name: string; message: string } {
+): WebsocketError {
   if ('error' in res) return res.error;
 
   t.log(res);
   throw new Error(`Expected websocket error response, got data instead`);
+}
+
+function stableError(error: WebsocketError, spaceId: string) {
+  return {
+    ...error,
+    message: error.message.replaceAll(spaceId, '<space>'),
+    data: error.data
+      ? Object.fromEntries(
+          Object.entries(error.data).map(([key, value]) => [
+            key,
+            value === spaceId ? '<space>' : value,
+          ])
+        )
+      : undefined,
+    requestId: error.requestId ? '<request>' : undefined,
+  };
 }
 
 async function withTimeout<T>(
@@ -312,7 +339,7 @@ test('should reject websocket jwt auth after session deletion', async t => {
   }
 });
 
-test('clientVersion>=0.26.0 should receive legacy space:broadcast-doc-updates', async t => {
+test('push requires an authorized document subscription', async t => {
   const { user, cookieHeader } = await loginWithCookie(app);
   const spaceId = user.id;
   const update = createYjsUpdateBase64();
@@ -323,50 +350,26 @@ test('clientVersion>=0.26.0 should receive legacy space:broadcast-doc-updates', 
   try {
     await Promise.all([waitForConnect(sender), waitForConnect(receiver)]);
 
-    const receiverJoin = unwrapResponse(
+    const batch = {
+      spaces: [{ spaceType: 'userspace', spaceId }],
+      clientVersion: '0.27.5',
+    };
+    for (const socket of [sender, receiver]) {
+      unwrapResponse(t, await emitWithAck(socket, 'space:join-batch', batch));
+    }
+
+    const noUpdate = expectNoEvent(receiver, 'space:broadcast-doc-updates');
+    const error = getErrorResponse(
       t,
-      await emitWithAck<{ clientId: string; success: boolean }>(
-        receiver,
-        'space:join',
-        { spaceType: 'userspace', spaceId, clientVersion: '0.26.7' }
-      )
-    );
-    t.true(receiverJoin.success);
-
-    const senderJoin = unwrapResponse(
-      t,
-      await emitWithAck<{ clientId: string; success: boolean }>(
-        sender,
-        'space:join',
-        { spaceType: 'userspace', spaceId, clientVersion: '0.26.0' }
-      )
-    );
-    t.true(senderJoin.success);
-
-    const onUpdates = waitForEvent<{
-      spaceType: string;
-      spaceId: string;
-      docId: string;
-      updates: string[];
-    }>(receiver, 'space:broadcast-doc-updates');
-
-    const pushRes = await emitWithAck<{ accepted: true; timestamp?: number }>(
-      sender,
-      'space:push-doc-update',
-      {
+      await emitWithAck(sender, 'space:push-doc-update', {
         spaceType: 'userspace',
         spaceId,
         docId: 'doc-2',
         update,
-      }
+      })
     );
-    unwrapResponse(t, pushRes);
-
-    const message = await onUpdates;
-    t.is(message.spaceType, 'userspace');
-    t.is(message.spaceId, spaceId);
-    t.is(message.docId, 'doc-2');
-    t.deepEqual(message.updates, [update]);
+    t.snapshot(stableError(error, spaceId));
+    await noUpdate;
   } finally {
     sender.disconnect();
     receiver.disconnect();
@@ -456,30 +459,6 @@ test('canary date clientVersion should use sync-027 in canary namespace', async 
   }
 });
 
-test('clientVersion<0.26.0 should be rejected and disconnected', async t => {
-  const { user, cookieHeader } = await login(app);
-  const spaceId = user.id;
-
-  const socket = createClient(url, cookieHeader);
-  try {
-    await waitForConnect(socket);
-
-    const res = unwrapResponse(
-      t,
-      await emitWithAck<{ clientId: string; success: boolean }>(
-        socket,
-        'space:join',
-        { spaceType: 'userspace', spaceId, clientVersion: '0.25.0' }
-      )
-    );
-    t.false(res.success);
-
-    await waitForDisconnect(socket);
-  } finally {
-    socket.disconnect();
-  }
-});
-
 test('old canary date clientVersion should be rejected and disconnected in canary namespace', async t => {
   const prevNamespace = env.NAMESPACE;
   // @ts-expect-error test
@@ -502,10 +481,9 @@ test('old canary date clientVersion should be rejected and disconnected in canar
         t,
         await emitWithAck<{ clientId: string; success: boolean }>(
           socket,
-          'space:join',
+          'space:join-batch',
           {
-            spaceType: 'userspace',
-            spaceId,
+            spaces: [{ spaceType: 'userspace', spaceId }],
             clientVersion: makeCanaryDateVersion(old, '015'),
           }
         )
@@ -539,10 +517,9 @@ test('canary date clientVersion should be rejected outside canary namespace', as
         t,
         await emitWithAck<{ clientId: string; success: boolean }>(
           socket,
-          'space:join',
+          'space:join-batch',
           {
-            spaceType: 'userspace',
-            spaceId,
+            spaces: [{ spaceType: 'userspace', spaceId }],
             clientVersion: makeCanaryDateVersion(new Date(), '15'),
           }
         )
@@ -556,77 +533,6 @@ test('canary date clientVersion should be rejected outside canary namespace', as
   } finally {
     // @ts-expect-error test
     env.NAMESPACE = prevNamespace;
-  }
-});
-
-test('space:join-awareness should reject clientVersion<0.26.0', async t => {
-  const { user, cookieHeader } = await login(app);
-  const spaceId = user.id;
-
-  const socket = createClient(url, cookieHeader);
-  try {
-    await waitForConnect(socket);
-
-    const res = unwrapResponse(
-      t,
-      await emitWithAck<{ clientId: string; success: boolean }>(
-        socket,
-        'space:join-awareness',
-        {
-          spaceType: 'userspace',
-          spaceId,
-          docId: 'doc-awareness',
-          clientVersion: '0.25.0',
-        }
-      )
-    );
-    t.false(res.success);
-
-    await waitForDisconnect(socket);
-  } finally {
-    socket.disconnect();
-  }
-});
-
-test('new clients must use batch join endpoints on new servers', async t => {
-  const { user, cookieHeader } = await login(app);
-  const requests = [
-    {
-      event: 'space:join',
-      payload: {
-        spaceType: 'userspace',
-        spaceId: user.id,
-        clientVersion: '0.27.5',
-      },
-    },
-    {
-      event: 'space:join-awareness',
-      payload: {
-        spaceType: 'userspace',
-        spaceId: user.id,
-        docId: 'doc-awareness',
-        clientVersion: '0.27.5',
-      },
-    },
-  ] as const;
-
-  for (const request of requests) {
-    const socket = createClient(url, cookieHeader);
-    try {
-      await waitForConnect(socket);
-      const result = unwrapResponse(
-        t,
-        await emitWithAck<{ clientId: string; success: boolean }>(
-          socket,
-          request.event,
-          request.payload
-        )
-      );
-      t.false(result.success);
-      await waitForDisconnect(socket);
-    } finally {
-      socket.disconnect();
-    }
   }
 });
 
@@ -893,7 +799,11 @@ test('batch doc entries require Doc.Read atomically', async t => {
       await emitWithAck(socket, 'space:join-batch', {
         spaces: [
           { spaceType: 'workspace', spaceId: workspace.id },
-          { spaceType: 'workspace', spaceId: workspace.id, docId },
+          {
+            spaceType: 'workspace',
+            spaceId: workspace.id,
+            docId: `space:${docId}`,
+          },
         ],
         clientVersion: '0.27.5',
       })
@@ -1032,7 +942,7 @@ test('batch sync routes active updates and only broadcasts invalidation to contr
   }
 });
 
-test('permission revocation removes a active document subscription', async t => {
+test('permission revocation removes an active document subscription', async t => {
   const db = app.get(PrismaClient);
   const models = app.get(Models);
   const { user: owner, cookieHeader: ownerCookie } = await login(app);
@@ -1052,7 +962,7 @@ test('permission revocation removes a active document subscription', async t => 
     workspace.id,
     docId,
     collaborator.id,
-    DocRole.Reader
+    DocRole.Editor
   );
   await createSnapshot(db, {
     workspaceId: workspace.id,
@@ -1068,29 +978,141 @@ test('permission revocation removes a active document subscription', async t => 
       waitForConnect(collaboratorSocket),
     ]);
 
-    for (const socket of [ownerSocket, collaboratorSocket]) {
-      const response = unwrapResponse(
-        t,
-        await emitWithAck<{ clientId: string; success: boolean }>(
-          socket,
-          'space:join-batch',
-          {
-            spaces: [
-              { spaceType: 'workspace', spaceId: workspace.id },
-              { spaceType: 'workspace', spaceId: workspace.id, docId },
-            ],
-            clientVersion: '0.27.5',
-          }
-        )
-      );
-      t.true(response.success);
-    }
+    const join = {
+      spaces: [
+        { spaceType: 'workspace', spaceId: workspace.id },
+        { spaceType: 'workspace', spaceId: workspace.id, docId },
+      ],
+      clientVersion: '0.27.5',
+    };
+    const ownerJoin = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        ownerSocket,
+        'space:join-batch',
+        join
+      )
+    );
+    t.true(ownerJoin.success);
 
-    await models.docUser.delete(workspace.id, docId, collaborator.id);
+    const runtime = app.get(BackendRuntimeProvider);
+    const loadGeneration = runtime.getSyncPermissionGenerationV1.bind(runtime);
+    let generationReads = 0;
+    const generationStub = Sinon.stub(
+      runtime,
+      'getSyncPermissionGenerationV1'
+    ).callsFake(async workspaceId => {
+      generationReads += 1;
+      const generation = await loadGeneration(workspaceId);
+      if (generationReads === 2) {
+        await db.docGrant.deleteMany({
+          where: {
+            workspaceId: workspace.id,
+            docId,
+            principalType: 'user',
+            principalId: collaborator.id,
+          },
+        });
+      }
+      return generation;
+    });
+    let racedJoinResponse: WebsocketResponse<unknown>;
+    try {
+      racedJoinResponse = await emitWithAck(
+        collaboratorSocket,
+        'space:join-batch',
+        join
+      );
+    } finally {
+      generationStub.restore();
+    }
+    const racedJoin = getErrorResponse(t, racedJoinResponse);
+    t.snapshot(stableError(racedJoin, workspace.id));
+
+    await models.docUser.set(
+      workspace.id,
+      docId,
+      collaborator.id,
+      DocRole.Editor
+    );
+    const collaboratorJoin = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        collaboratorSocket,
+        'space:join-batch',
+        join
+      )
+    );
+    t.true(collaboratorJoin.success);
+
+    const updatedWorkspace = await models.workspace.get(workspace.id);
+    if (!updatedWorkspace) {
+      throw new Error('Workspace disappeared during permission test');
+    }
+    await app.get(EventBus).emitAsync('workspace.updated', updatedWorkspace);
+    const policyChangeLoad = getErrorResponse(
+      t,
+      await emitWithAck(collaboratorSocket, 'space:load-doc', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId,
+      })
+    );
+    t.snapshot(stableError(policyChangeLoad, workspace.id));
+    unwrapResponse(
+      t,
+      await emitWithAck(collaboratorSocket, 'space:join-batch', join)
+    );
+
+    await db.docGrant.deleteMany({
+      where: {
+        workspaceId: workspace.id,
+        docId,
+        principalType: 'user',
+        principalId: collaborator.id,
+      },
+    });
+    const staleGenerationLoad = getErrorResponse(
+      t,
+      await emitWithAck(collaboratorSocket, 'space:load-doc', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId,
+      })
+    );
+    t.snapshot(stableError(staleGenerationLoad, workspace.id));
     await app.get(EventBus).emitAsync('doc.grants.changed', {
       workspaceId: workspace.id,
       docId,
     });
+
+    const revokedPush = getErrorResponse(
+      t,
+      await emitWithAck(collaboratorSocket, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId,
+        update: createYjsUpdateBase64(),
+      })
+    );
+    t.snapshot(stableError(revokedPush, workspace.id));
+    t.is(
+      await db.update.count({
+        where: { workspaceId: workspace.id, id: docId },
+      }),
+      0
+    );
+
+    unwrapResponse(
+      t,
+      await emitWithAck(ownerSocket, 'space:join-batch', {
+        spaces: [
+          { spaceType: 'workspace', spaceId: workspace.id },
+          { spaceType: 'workspace', spaceId: workspace.id, docId },
+        ],
+        clientVersion: '0.27.5',
+      })
+    );
 
     const noRevokedUpdate = expectNoEvent(
       collaboratorSocket,
@@ -1229,6 +1251,13 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
     }
   );
   await models.doc.setDefaultRole(workspace.id, docId, DocRole.None);
+  const rootBlob = addDocToRootDoc(Buffer.from([0, 0]), docId, docId);
+  await createSnapshot(db, {
+    workspaceId: workspace.id,
+    docId: workspace.id,
+    userId: owner.id,
+    blob: rootBlob,
+  });
   await createSnapshot(db, {
     workspaceId: workspace.id,
     docId,
@@ -1245,11 +1274,10 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
       t,
       await emitWithAck<{ clientId: string; success: boolean }>(
         socket,
-        'space:join',
+        'space:join-batch',
         {
-          spaceType: 'workspace',
-          spaceId: workspace.id,
-          clientVersion: '0.26.0',
+          spaces: [{ spaceType: 'workspace', spaceId: workspace.id }],
+          clientVersion: '0.27.5',
         }
       )
     );
@@ -1279,15 +1307,43 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
       t,
       await emitWithAck<{ clientId: string; success: boolean }>(
         ownerSocket,
-        'space:join',
+        'space:join-batch',
         {
-          spaceType: 'workspace',
-          spaceId: workspace.id,
-          clientVersion: '0.26.0',
+          spaces: [
+            { spaceType: 'workspace', spaceId: workspace.id },
+            {
+              spaceType: 'workspace',
+              spaceId: workspace.id,
+              docId: workspace.id,
+            },
+          ],
+          clientVersion: '0.27.5',
         }
       )
     );
     t.true(ownerJoin.success);
+
+    const staleRoot = new Doc();
+    applyUpdate(staleRoot, rootBlob);
+    const state = encodeStateVector(staleRoot);
+    const pages = staleRoot.getMap('meta').get('pages') as {
+      get(index: number): { set(key: string, value: unknown): void };
+    };
+    pages.get(0).set('trash', true);
+    const bypassError = getErrorResponse(
+      t,
+      await emitWithAck(ownerSocket, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: workspace.id,
+        update: Buffer.from(encodeStateAsUpdate(staleRoot, state)).toString(
+          'base64'
+        ),
+      })
+    );
+    t.is(bypassError.name, 'DOC_ACTION_DENIED');
+    t.true(bypassError.message.includes('Doc.Update'));
+
     unwrapResponse(
       t,
       await emitWithAck(ownerSocket, 'space:delete-doc', {
@@ -1300,7 +1356,7 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
       await db.snapshot.count({
         where: { workspaceId: workspace.id, id: docId },
       }),
-      1
+      0
     );
   } finally {
     socket.disconnect();
@@ -1308,7 +1364,7 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
   }
 });
 
-test('workspace sync load-doc should enforce doc read permissions', async t => {
+test('workspace sync load-doc requires an active document subscription', async t => {
   const db = app.get(PrismaClient);
   const models = app.get(Models);
   const { user: owner } = await login(app);
@@ -1325,6 +1381,12 @@ test('workspace sync load-doc should enforce doc read permissions', async t => {
     }
   );
   await models.doc.setDefaultRole(workspace.id, docId, DocRole.None);
+  await models.docUser.set(
+    workspace.id,
+    docId,
+    collaborator.id,
+    DocRole.Reader
+  );
   await createSnapshot(db, {
     workspaceId: workspace.id,
     docId,
@@ -1340,11 +1402,10 @@ test('workspace sync load-doc should enforce doc read permissions', async t => {
       t,
       await emitWithAck<{ clientId: string; success: boolean }>(
         socket,
-        'space:join',
+        'space:join-batch',
         {
-          spaceType: 'workspace',
-          spaceId: workspace.id,
-          clientVersion: '0.26.0',
+          spaces: [{ spaceType: 'workspace', spaceId: workspace.id }],
+          clientVersion: '0.27.5',
         }
       )
     );
@@ -1358,7 +1419,7 @@ test('workspace sync load-doc should enforce doc read permissions', async t => {
         docId,
       })
     );
-    t.true(error.message.includes('Doc.Read'));
+    t.snapshot(stableError(error, workspace.id));
 
     const userdataError = getErrorResponse(
       t,
@@ -1412,11 +1473,13 @@ test('workspace sync push-doc-update should enforce doc update permissions', asy
       t,
       await emitWithAck<{ clientId: string; success: boolean }>(
         socket,
-        'space:join',
+        'space:join-batch',
         {
-          spaceType: 'workspace',
-          spaceId: workspace.id,
-          clientVersion: '0.26.0',
+          spaces: [
+            { spaceType: 'workspace', spaceId: workspace.id },
+            { spaceType: 'workspace', spaceId: workspace.id, docId },
+          ],
+          clientVersion: '0.27.5',
         }
       )
     );
@@ -1514,11 +1577,10 @@ test('workspace sync load-doc-timestamps should filter unreadable docs', async t
       t,
       await emitWithAck<{ clientId: string; success: boolean }>(
         socket,
-        'space:join',
+        'space:join-batch',
         {
-          spaceType: 'workspace',
-          spaceId: workspace.id,
-          clientVersion: '0.26.0',
+          spaces: [{ spaceType: 'workspace', spaceId: workspace.id }],
+          clientVersion: '0.27.5',
         }
       )
     );

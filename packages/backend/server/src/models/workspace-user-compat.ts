@@ -7,7 +7,6 @@ import {
   WorkspaceMemberSource,
   WorkspaceMemberStatus,
 } from '@prisma/client';
-import { groupBy } from 'lodash-es';
 
 import { WorkspaceRole, workspaceUserSelect } from './common';
 import {
@@ -332,85 +331,6 @@ export async function hasSharedWorkspace(
   `;
 
   return shared.length > 0;
-}
-
-export async function allocateWorkspaceSeats(
-  db: WorkspaceUserCompatDb,
-  models: {
-    workspaceMember: {
-      setActive(
-        workspaceId: string,
-        userId: string,
-        role: WorkspaceRole
-      ): Promise<unknown>;
-    };
-  },
-  workspaceId: string,
-  limit: number
-) {
-  const [activeCount, pendingCount] = await Promise.all([
-    db.workspaceMember.count({
-      where: {
-        workspaceId,
-        state: 'active',
-      },
-    }),
-    db.workspaceInvitation.count({
-      where: {
-        workspaceId,
-        status: 'pending',
-      },
-    }),
-  ]);
-  const usedCount = activeCount + pendingCount;
-
-  if (limit <= usedCount) {
-    return [];
-  }
-
-  const invitationsToAllocate = await db.workspaceInvitation.findMany({
-    where: {
-      workspaceId,
-      status: 'waiting_seat',
-      inviteeUserId: {
-        not: null,
-      },
-    },
-    orderBy: { createdAt: 'asc' },
-    take: limit - usedCount,
-  });
-
-  const groups = groupBy(invitationsToAllocate, invitation =>
-    workspaceSourceFromNew(invitation.kind as never)
-  ) as Record<WorkspaceMemberSource, WorkspaceInvitation[]>;
-
-  if (groups.Email?.length > 0) {
-    await db.workspaceInvitation.updateMany({
-      where: { id: { in: groups.Email.map(invitation => invitation.id) } },
-      data: { status: 'pending' },
-    });
-  }
-
-  if (groups.Link?.length > 0) {
-    await Promise.all(
-      groups.Link.map(invitation =>
-        models.workspaceMember.setActive(
-          invitation.workspaceId,
-          invitation.inviteeUserId as string,
-          invitation.requestedRole === 'admin'
-            ? WorkspaceRole.Admin
-            : WorkspaceRole.Collaborator
-        )
-      )
-    );
-  }
-
-  return (groups.Email ?? []).map(invitation =>
-    workspaceInvitationToCompat({
-      ...invitation,
-      status: 'pending',
-    })
-  );
 }
 
 export function workspaceRoleToNewFilter(role: WorkspaceRole) {

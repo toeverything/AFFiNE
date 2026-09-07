@@ -3,6 +3,7 @@ import { generateKeyPairSync } from 'node:crypto';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
+import { AFFINE_PRO_PUBLIC_KEY } from '../../../native';
 import { CryptoHelper } from '../crypto';
 
 const test = ava as TestFn<{
@@ -97,14 +98,30 @@ test('should be able to digest', t => {
   t.is(hash, 'uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=');
 });
 
+test('uses the native verifier public key', t => {
+  const deployment = globalThis.env.DEPLOYMENT_TYPE;
+  // @ts-expect-error test mutates deployment mode before the lifecycle hook
+  globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
+  try {
+    t.context.crypto.onModuleInit();
+    t.is(
+      t.context.crypto.AFFiNEProPublicKey?.toString() ?? null,
+      AFFINE_PRO_PUBLIC_KEY ?? null
+    );
+  } finally {
+    // @ts-expect-error test restores deployment mode after the lifecycle hook
+    globalThis.env.DEPLOYMENT_TYPE = deployment;
+  }
+});
+
 test('should be able to safe compare', t => {
   t.true(t.context.crypto.compare('abc', 'abc'));
   t.false(t.context.crypto.compare('abc', 'def'));
 });
 
-test('should be able to hash and verify password', async t => {
+test('should be able to hash password for native verification', async t => {
   const password = 'mySecurePassword';
   const hash = await t.context.crypto.encryptPassword(password);
-  t.true(await t.context.crypto.verifyPassword(password, hash));
-  t.false(await t.context.crypto.verifyPassword('wrong-password', hash));
+  t.true(hash.startsWith('$argon2id$'));
+  t.not(hash, password);
 });

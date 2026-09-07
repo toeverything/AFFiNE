@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { getStreamAsBuffer } from 'get-stream';
+import { PrismaClient } from '@prisma/client';
 
 import { Cache, JobQueue, NotFound, URLHelper } from '../../base';
 import {
@@ -8,12 +8,11 @@ import {
   Models,
 } from '../../models';
 import { BackendRuntimeProvider } from '../backend-runtime';
-import { DocReader } from '../doc';
+import { DocReader, PgWorkspaceDocStorageAdapter } from '../doc';
 import { Mailer } from '../mail';
 import type { SendMailCommand } from '../mail/types';
 import { WorkspaceRole } from '../permission';
-import { QuotaStateService } from '../quota/state';
-import { WorkspaceBlobStorage } from '../storage';
+import { StorageRuntimeProvider } from '../storage-runtime';
 
 export type InviteInfo = {
   isLink: boolean;
@@ -31,12 +30,30 @@ export class WorkspaceService {
     private readonly models: Models,
     private readonly url: URLHelper,
     private readonly doc: DocReader,
-    private readonly blobStorage: WorkspaceBlobStorage,
     private readonly mailer: Mailer,
     private readonly queue: JobQueue,
-    private readonly quotaState: QuotaStateService,
-    private readonly runtime: BackendRuntimeProvider
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly db: PrismaClient,
+    private readonly storageRuntime: StorageRuntimeProvider,
+    private readonly workspaceDocs: PgWorkspaceDocStorageAdapter
   ) {}
+
+  async delete(workspaceId: string) {
+    const deletedAt = new Date();
+    await this.db.$transaction([
+      this.db.blob.updateMany({
+        where: { workspaceId, deletedAt: null },
+        data: { deletedAt },
+      }),
+      this.db.commentAttachment.updateMany({
+        where: { workspaceId, deletedAt: null },
+        data: { deletedAt },
+      }),
+    ]);
+    await this.storageRuntime.deleteWorkspaceObjects(workspaceId);
+    await this.models.workspace.delete(workspaceId);
+    await this.workspaceDocs.deleteSpace(workspaceId);
+  }
 
   async getInviteInfo(inviteId: string): Promise<InviteInfo> {
     // invite link
@@ -69,14 +86,14 @@ export class WorkspaceService {
 
     let avatar = DEFAULT_WORKSPACE_AVATAR;
     if (workspaceContent?.avatarKey) {
-      const avatarBlob = await this.blobStorage.get(
-        workspaceId,
-        workspaceContent.avatarKey
-      );
-
-      if (avatarBlob.body) {
-        avatar = (await getStreamAsBuffer(avatarBlob.body)).toString('base64');
-      }
+      const owner = await this.models.workspaceUser.getOwner(workspaceId);
+      avatar = (
+        await this.runtime.readWorkspaceAvatarV1(
+          owner.id,
+          workspaceId,
+          workspaceContent.avatarKey
+        )
+      ).toString('base64');
     }
 
     return {
@@ -104,9 +121,8 @@ export class WorkspaceService {
 
   // ================ Team ================
   async isTeamWorkspace(workspaceId: string) {
-    const state =
-      await this.quotaState.reconcileWorkspaceQuotaState(workspaceId);
-    return ['team', 'selfhost_team'].includes(state.plan);
+    const state = await this.runtime.getWorkspaceQuotaStateV1(workspaceId);
+    return !state.usesOwnerQuota;
   }
 
   async sendTeamWorkspaceUpgradedEmail(workspaceId: string) {
@@ -317,28 +333,5 @@ export class WorkspaceService {
       return false;
     }
     return await this.mailer.trySend(command);
-  }
-
-  async allocateSeats(workspaceId: string, quantity: number) {
-    const pendings = await this.models.workspaceUser.allocateSeats(
-      workspaceId,
-      quantity
-    );
-
-    if (!pendings.length) {
-      return;
-    }
-
-    const owner = await this.models.workspaceUser.getOwner(workspaceId);
-    for (const member of pendings) {
-      try {
-        await this.queue.add('notification.sendInvitation', {
-          inviterId: member.inviterId ?? owner.id,
-          inviteId: member.id,
-        });
-      } catch (e) {
-        this.logger.error('Failed to send invitation notification', e);
-      }
-    }
   }
 }

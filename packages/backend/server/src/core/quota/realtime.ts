@@ -1,30 +1,28 @@
 import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
 import { z } from 'zod';
 
-import { OnEvent, SpaceAccessDenied } from '../../base';
-import { Models } from '../../models';
+import { SpaceAccessDenied } from '../../base';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { registerRealtimeLiveQuery } from '../realtime/provider';
-import { RealtimePublisher } from '../realtime/publisher';
 import { RealtimeRegistry } from '../realtime/registry';
 import {
   realtimeUserQuotaStateRoom,
   realtimeWorkspaceQuotaStateRoom,
 } from '../realtime/rooms';
-import { QuotaStateService } from './state';
-
-type UserQuotaStateSnapshot = import('@affine/realtime').UserQuotaStateSnapshot;
-type WorkspaceQuotaStateSnapshot =
-  import('@affine/realtime').WorkspaceQuotaStateSnapshot;
 
 declare module '@affine/realtime' {
   interface RealtimeRequestMap {
     'user.quota-state.get': {
       input: Record<string, never>;
-      output: { state: UserQuotaStateSnapshot };
+      output: {
+        state: import('@affine/realtime').UserQuotaStateSnapshot;
+      };
     };
     'workspace.quota-state.get': {
       input: { workspaceId: string };
-      output: { state: WorkspaceQuotaStateSnapshot };
+      output: {
+        state: import('@affine/realtime').WorkspaceQuotaStateSnapshot;
+      };
     };
   }
 
@@ -43,10 +41,8 @@ declare module '@affine/realtime' {
 @Injectable()
 export class QuotaStateRealtimeProvider implements OnModuleInit {
   constructor(
-    private readonly models: Models,
-    private readonly quotaState: QuotaStateService,
-    @Optional() private readonly registry?: RealtimeRegistry,
-    @Optional() private readonly publisher?: RealtimePublisher
+    private readonly runtime: BackendRuntimeProvider,
+    @Optional() private readonly registry?: RealtimeRegistry
   ) {}
 
   onModuleInit() {
@@ -60,9 +56,7 @@ export class QuotaStateRealtimeProvider implements OnModuleInit {
         name: 'user.quota-state.get',
         input: z.object({}),
         handle: async user => ({
-          state: this.serializeState(
-            await this.quotaState.reconcileUserQuotaState(user.id)
-          ) as unknown as UserQuotaStateSnapshot,
+          state: await this.runtime.getUserQuotaStateV1(user.id),
         }),
       },
       topic: {
@@ -85,11 +79,9 @@ export class QuotaStateRealtimeProvider implements OnModuleInit {
         handle: async (user, payload) => {
           await this.assertWorkspace(user.id, payload.workspaceId);
           return {
-            state: this.serializeState(
-              await this.quotaState.reconcileWorkspaceQuotaState(
-                payload.workspaceId
-              )
-            ) as unknown as WorkspaceQuotaStateSnapshot,
+            state: await this.runtime.getWorkspaceQuotaStateV1(
+              payload.workspaceId
+            ),
           };
         },
       },
@@ -105,43 +97,16 @@ export class QuotaStateRealtimeProvider implements OnModuleInit {
     });
   }
 
-  @OnEvent('user.quota_state.changed', { suppressError: true })
-  async onUserQuotaStateChanged({
-    userId,
-  }: Events['user.quota_state.changed']) {
-    this.publisher?.publish(
-      'user.quota-state.changed',
-      {},
-      { changed: true },
-      { room: realtimeUserQuotaStateRoom(userId) }
-    );
-  }
-
-  @OnEvent('workspace.quota_state.changed', { suppressError: true })
-  async onWorkspaceQuotaStateChanged({
-    workspaceId,
-  }: Events['workspace.quota_state.changed']) {
-    this.publisher?.publish(
-      'workspace.quota-state.changed',
-      { workspaceId },
-      { changed: true },
-      { room: realtimeWorkspaceQuotaStateRoom(workspaceId) }
-    );
-  }
-
   private async assertWorkspace(userId: string, workspaceId: string) {
-    const role = await this.models.workspaceUser.getActive(workspaceId, userId);
-    if (!role) {
+    const authorization = await this.runtime.authorizePermissionV1({
+      version: 1,
+      workspaceId,
+      actorUserId: userId,
+      workspaceActions: ['Workspace.Read'],
+      docs: [],
+    });
+    if (!authorization.workspace.decisions[0]?.allowed) {
       throw new SpaceAccessDenied({ spaceId: workspaceId });
     }
-  }
-
-  private serializeState<T extends Record<string, unknown>>(state: T) {
-    return Object.fromEntries(
-      Object.entries(state).map(([key, value]) => [
-        key,
-        typeof value === 'bigint' ? Number(value) : value,
-      ])
-    );
   }
 }

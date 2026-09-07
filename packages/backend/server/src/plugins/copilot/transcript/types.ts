@@ -54,6 +54,7 @@ declare global {
       taskId: string;
       payload: TranscriptionPayloadV2;
       generation: string;
+      scopeMode: 'personal' | 'canonical';
       retryOf?: string;
     };
   }

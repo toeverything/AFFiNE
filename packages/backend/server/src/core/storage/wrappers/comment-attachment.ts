@@ -1,35 +1,40 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { EventBus, metrics, OnEvent, URLHelper } from '../../../base';
+import {
+  CommentAttachmentQuotaExceeded,
+  metrics,
+  URLHelper,
+} from '../../../base';
 import { Models } from '../../../models';
+import { getMime } from '../../../native';
+import { BackendRuntimeProvider } from '../../backend-runtime';
 import {
   type StorageRuntimeGetObjectResult,
   StorageRuntimeProvider,
 } from '../../storage-runtime';
-
-declare global {
-  interface Events {
-    'comment.attachment.delete': {
-      workspaceId: string;
-      docId: string;
-      key: string;
-    };
-  }
-}
 
 @Injectable()
 export class CommentAttachmentStorage {
   private readonly logger = new Logger(CommentAttachmentStorage.name);
 
   constructor(
-    private readonly event: EventBus,
-    private readonly models: Models,
     private readonly url: URLHelper,
-    private readonly rt: StorageRuntimeProvider
+    private readonly rt: StorageRuntimeProvider,
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly models: Models
   ) {}
 
   private storageKey(workspaceId: string, docId: string, key: string) {
     return `comment-attachments/${workspaceId}/${docId}/${key}`;
+  }
+
+  private reservationStorageKey(
+    workspaceId: string,
+    docId: string,
+    key: string,
+    reservationId: string
+  ) {
+    return `comment-attachments/${workspaceId}/${docId}/.reservations/${reservationId}/${key}`;
   }
 
   async put(
@@ -40,22 +45,66 @@ export class CommentAttachmentStorage {
     blob: Buffer,
     userId: string
   ) {
-    const metadata = await this.rt.putObject(
-      'blob',
-      this.storageKey(workspaceId, docId, key),
-      blob
-    );
-    const mime = metadata.contentType;
-    const size = metadata.contentLength;
-    await this.models.commentAttachment.upsert({
+    const reservation = await this.runtime.reserveStorageQuotaV1({
+      workspaceId,
+      userId,
+      key,
+      size: blob.byteLength,
+      mime: getMime(blob),
+      kind: 'comment_attachment',
+      docId,
+      name,
+    });
+    if (!reservation.allowed) throw new CommentAttachmentQuotaExceeded();
+    if (reservation.alreadyUploaded) return;
+    if (!reservation.reservationId)
+      throw new Error('Missing comment attachment reservation');
+    const reservationKey = this.reservationStorageKey(
       workspaceId,
       docId,
       key,
-      name,
-      mime,
-      size,
-      createdBy: userId,
-    });
+      reservation.reservationId
+    );
+    let metadata;
+    try {
+      metadata = await this.rt.putObject('blob', reservationKey, blob);
+    } catch (error) {
+      try {
+        await this.runtime.abortStorageReservationV1({
+          workspaceId,
+          userId,
+          key,
+          reservationId: reservation.reservationId,
+          kind: 'comment_attachment',
+          docId,
+        });
+      } finally {
+        await this.rt.deleteObject('blob', reservationKey);
+      }
+      throw error;
+    }
+    const mime = metadata.contentType;
+    const size = metadata.contentLength;
+    let finalized: boolean;
+    try {
+      finalized = await this.runtime.finalizeStorageReservationV1({
+        workspaceId,
+        userId,
+        docId,
+        key,
+        reservationId: reservation.reservationId,
+        kind: 'comment_attachment',
+        mime,
+        size,
+      });
+    } catch (error) {
+      await this.rt.deleteObject('blob', reservationKey);
+      throw error;
+    }
+    if (!finalized) {
+      await this.rt.deleteObject('blob', reservationKey);
+      throw new Error('Comment attachment reservation changed');
+    }
 
     metrics.storage.histogram('comment_attachment_size').record(size, { mime });
     metrics.storage.counter('comment_attachment_total').add(1, { mime });
@@ -64,58 +113,22 @@ export class CommentAttachmentStorage {
     );
   }
 
-  async get(
-    workspaceId: string,
-    docId: string,
-    key: string,
-    signedUrl?: boolean
-  ): Promise<StorageRuntimeGetObjectResult> {
-    const storageKey = this.storageKey(workspaceId, docId, key);
-    if (signedUrl) {
-      const presigned = await this.rt.presignGet('blob', storageKey);
-      if (presigned) {
-        return { redirectUrl: presigned.url };
-      }
+  async get(source: {
+    workspaceId: string;
+    docId: string;
+    key: string;
+  }): Promise<StorageRuntimeGetObjectResult> {
+    const { workspaceId, docId, key } = source;
+    if (!(await this.models.commentAttachment.get(workspaceId, docId, key))) {
+      return {};
     }
+    const storageKey = this.storageKey(workspaceId, docId, key);
     return await this.rt.getObject('blob', storageKey);
-  }
-
-  async delete(workspaceId: string, docId: string, key: string) {
-    await this.rt.deleteObject(
-      'blob',
-      this.storageKey(workspaceId, docId, key)
-    );
-    await this.models.commentAttachment.delete(workspaceId, docId, key);
-    this.logger.log(
-      `deleted comment attachment ${workspaceId}/${docId}/${key}`
-    );
   }
 
   getUrl(workspaceId: string, docId: string, key: string) {
     return this.url.link(
       `/api/workspaces/${workspaceId}/docs/${docId}/comment-attachments/${key}`
     );
-  }
-
-  @OnEvent('workspace.deleted')
-  async onWorkspaceDeleted({ id }: Events['workspace.deleted']) {
-    const attachments = await this.models.commentAttachment.list(id);
-
-    for (const attachment of attachments) {
-      this.event.emit('comment.attachment.delete', {
-        workspaceId: id,
-        docId: attachment.docId,
-        key: attachment.key,
-      });
-    }
-  }
-
-  @OnEvent('comment.attachment.delete')
-  async onCommentAttachmentDelete({
-    workspaceId,
-    docId,
-    key,
-  }: Events['comment.attachment.delete']) {
-    await this.delete(workspaceId, docId, key);
   }
 }

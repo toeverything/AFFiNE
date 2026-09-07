@@ -9,6 +9,7 @@ import {
   SearchPermissionSyncing,
   SearchProviderUnavailable,
   SpaceAccessDenied,
+  UserFriendlyError,
 } from '../../../base';
 import { ConfigFactory } from '../../../base/config';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
@@ -178,6 +179,7 @@ test('maps native search results and typed errors at the Node boundary', async t
   );
   t.is(aggregateResult.pagination.count, 1);
 
+  const mappings = [];
   for (const [errorCode, expected] of [
     ['workspace_denied', SpaceAccessDenied],
     ['invalid_request', InvalidIndexerInput],
@@ -192,8 +194,18 @@ test('maps native search results and typed errors at the Node boundary', async t
     const error = await t.throwsAsync(
       service.search('actor', 'workspace', input)
     );
+    if (!(error instanceof UserFriendlyError)) {
+      throw error;
+    }
     t.true(error instanceof expected, errorCode);
+    mappings.push({
+      errorCode,
+      name: error.name,
+      status: error.status,
+      type: error.type,
+    });
   }
+  t.snapshot(mappings);
 });
 
 test('searchDocs keeps filtering and enrichment in Node', async t => {

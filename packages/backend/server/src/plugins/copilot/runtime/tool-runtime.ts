@@ -202,20 +202,17 @@ export class ToolRuntime {
           break;
         }
         case 'docCreate': {
-          const createDoc = buildDocCreateHandler(this.ac, this.docWriter);
+          const createDoc = buildDocCreateHandler(this.docWriter);
           tools.doc_create = createDocCreateTool(createDoc.bind(null, options));
           break;
         }
         case 'docUpdate': {
-          const updateDoc = buildDocUpdateHandler(this.ac, this.docWriter);
+          const updateDoc = buildDocUpdateHandler(this.docWriter);
           tools.doc_update = createDocUpdateTool(updateDoc.bind(null, options));
           break;
         }
         case 'docUpdateMeta': {
-          const updateDocMeta = buildDocUpdateMetaHandler(
-            this.ac,
-            this.docWriter
-          );
+          const updateDocMeta = buildDocUpdateMetaHandler(this.docWriter);
           tools.doc_update_meta = createDocUpdateMetaTool(
             updateDocMeta.bind(null, options)
           );

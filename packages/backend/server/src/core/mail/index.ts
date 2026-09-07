@@ -13,7 +13,7 @@ import { MailSender } from './sender';
 @Module({
   imports: [BackendRuntimeModule, DocStorageModule, StorageModule],
   providers: [MailSender, Mailer, MailJob, MailResolver],
-  exports: [Mailer],
+  exports: [Mailer, MailSender],
 })
 export class MailModule {}
 export { Mailer };

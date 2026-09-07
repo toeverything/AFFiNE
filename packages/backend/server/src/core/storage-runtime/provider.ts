@@ -133,6 +133,12 @@ export class StorageRuntimeProvider
     await this.measured('deleteObject', rt => rt.deleteObject(scope, key));
   }
 
+  async deleteWorkspaceObjects(workspaceId: string) {
+    return await this.measured('deleteWorkspaceObjects', rt =>
+      rt.deleteWorkspaceObjects(workspaceId)
+    );
+  }
+
   async presignPut(scope: string, key: string, metadata?: PutObjectMetadata) {
     const result = await this.measured('presignPut', rt =>
       rt.presignPut(scope, key, toRuntimeMetadata(metadata))
@@ -216,33 +222,6 @@ export class StorageRuntimeProvider
   async abortMultipartUpload(scope: string, key: string, uploadId: string) {
     return await this.measured('abortMultipartUpload', rt =>
       rt.abortMultipartUpload(scope, key, uploadId)
-    );
-  }
-
-  async completeWorkspaceBlobUpload(
-    workspaceId: string,
-    key: string,
-    expected: { size: number; mime: string }
-  ) {
-    return await this.measured('completeWorkspaceBlobUpload', rt =>
-      rt.completeWorkspaceBlobUpload(
-        workspaceId,
-        key,
-        expected.size,
-        expected.mime
-      )
-    );
-  }
-
-  async cleanupExpiredPendingBlobs(cutoffMs: number, limit: number) {
-    return await this.measured('cleanupExpiredPendingBlobs', rt =>
-      rt.cleanupExpiredPendingBlobs(cutoffMs, limit)
-    );
-  }
-
-  async releaseDeletedBlobs(workspaceId: string, limit: number) {
-    return await this.measured('releaseDeletedBlobs', rt =>
-      rt.releaseDeletedBlobs(workspaceId, limit)
     );
   }
 

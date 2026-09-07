@@ -18,6 +18,7 @@ import {
   Cache,
   DocActionDenied,
   DocDefaultRoleCanNotBeOwner,
+  DocIsNotPublic,
   DocNotFound,
   EventBus,
   ExpectToGrantDocUserRoles,
@@ -43,8 +44,8 @@ import {
   mapPermissionsToGraphqlPermissions,
   PermissionAccess,
 } from '../../permission';
+import { toNativeExplicitDocGrantRole } from '../../permission/context';
 import { PublicUserType, WorkspaceUserType } from '../../user';
-import { InviteQuotaAssertService } from '../abuse';
 import { DocGrantsService } from '../doc-grants';
 import { WorkspaceType } from '../types';
 import { TimeBucket, TimeWindow } from './analytics-types';
@@ -53,6 +54,17 @@ registerEnumType(PublicDocMode, {
   name: 'PublicDocMode',
   description: 'The mode which the public doc default in',
 });
+
+function toDomainDocRole(role: DocRole) {
+  const native = toNativeExplicitDocGrantRole(role);
+  return native === 'reader' ||
+    native === 'commenter' ||
+    native === 'editor' ||
+    native === 'manager' ||
+    native === 'owner'
+    ? native
+    : undefined;
+}
 
 @ObjectType()
 class DocType {
@@ -300,8 +312,7 @@ export class WorkspaceDocResolver {
     private readonly models: Models,
     private readonly cache: Cache,
     private readonly event: EventBus,
-    private readonly runtime: BackendRuntimeProvider,
-    private readonly inviteQuota: InviteQuotaAssertService
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   @ResolveField(() => WorkspaceDocMeta, {
@@ -364,13 +375,17 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('pagination', PaginationInput.decode) pagination: PaginationInput
   ): Promise<PaginatedDocType> {
-    const readable = await this.runtime.filterReadableDocs(
-      me.id,
-      workspace.id,
-      await this.models.doc.listWorkspaceDocIds(workspace.id)
-    );
+    const readable = await this.ac
+      .user(me.id)
+      .workspace(workspace.id)
+      .docs(
+        (await this.models.doc.listWorkspaceDocIds(workspace.id)).map(
+          docId => ({ docId })
+        ),
+        'Doc.Read'
+      );
     const predicate = readable.length
-      ? Prisma.sql`"workspace_pages"."page_id" IN (${Prisma.join(readable)})`
+      ? Prisma.sql`"workspace_pages"."page_id" IN (${Prisma.join(readable.map(doc => doc.docId))})`
       : Prisma.sql`FALSE`;
     const [count, rows] = await this.models.doc.paginateDocInfoByUpdatedAt(
       workspace.id,
@@ -431,15 +446,34 @@ export class WorkspaceDocResolver {
       throw new ExpectToPublishDoc();
     }
 
-    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
-    await this.inviteQuota.assertWorkspaceActionAllowed({
-      actorUserId: user.id,
-      workspaceId,
-      docId,
-      action: 'publishDoc',
-    });
-
-    const doc = await this.models.doc.publish(workspaceId, docId, mode);
+    try {
+      await this.runtime.executeDomainCommandV1({
+        command: 'publish_doc',
+        actorUserId: user.id,
+        workspaceId,
+        docId,
+        mode,
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('domain_permission_denied:Doc.Publish')
+      ) {
+        throw new DocActionDenied({
+          action: 'Doc.Publish',
+          docId,
+          spaceId: workspaceId,
+        });
+      }
+      if (error instanceof Error && error.message.includes('doc_not_found')) {
+        throw new DocNotFound({ spaceId: workspaceId, docId });
+      }
+      throw error;
+    }
+    const doc = await this.models.doc.getMeta(workspaceId, docId);
+    if (!doc) {
+      throw new DocNotFound({ spaceId: workspaceId, docId });
+    }
     this.event.emit('doc.public_state.changed', { workspaceId, docId });
 
     this.logger.log(
@@ -463,9 +497,36 @@ export class WorkspaceDocResolver {
       throw new ExpectToRevokePublicDoc('Expect doc not to be workspace');
     }
 
-    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
-
-    const doc = await this.models.doc.unpublish(workspaceId, docId);
+    try {
+      await this.runtime.executeDomainCommandV1({
+        command: 'unpublish_doc',
+        actorUserId: user.id,
+        workspaceId,
+        docId,
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('domain_permission_denied:Doc.Unpublish')
+      ) {
+        throw new DocActionDenied({
+          action: 'Doc.Unpublish',
+          docId,
+          spaceId: workspaceId,
+        });
+      }
+      if (
+        error instanceof Error &&
+        error.message.includes('doc_is_not_public')
+      ) {
+        throw new DocIsNotPublic();
+      }
+      throw error;
+    }
+    const doc = await this.models.doc.getMeta(workspaceId, docId);
+    if (!doc) {
+      throw new DocNotFound({ spaceId: workspaceId, docId });
+    }
     this.event.emit('doc.public_state.changed', { workspaceId, docId });
 
     this.logger.log(`Revoke public doc ${docId} in workspace ${workspaceId}`);
@@ -537,7 +598,8 @@ export class DocResolver {
     private readonly ac: PermissionAccess,
     private readonly models: Models,
     private readonly grants: DocGrantsService,
-    private readonly event: EventBus
+    private readonly event: EventBus,
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   @ResolveField(() => PublicUserType, {
@@ -595,7 +657,7 @@ export class DocResolver {
     @Args('input', { nullable: true, type: () => DocPageAnalyticsInput })
     input?: DocPageAnalyticsInput
   ): Promise<DocPageAnalytics> {
-    await this.ac.user(me.id).doc(doc).assert('Doc.Read');
+    await this.ac.user(me.id).doc(doc).assert('Doc.Analytics.Read');
 
     const analytics = await this.models.workspaceAnalytics.getDocPageAnalytics({
       workspaceId: doc.workspaceId,
@@ -628,10 +690,7 @@ export class DocResolver {
     @Args('includeTotal', { nullable: true, defaultValue: false })
     includeTotal?: boolean
   ): Promise<PaginatedDocMemberLastAccess> {
-    await this.ac
-      .user(me.id)
-      .workspace(doc.workspaceId)
-      .assert('Workspace.Users.Manage');
+    await this.ac.user(me.id).doc(doc).assert('Doc.Analytics.Viewers.Read');
 
     return this.models.workspaceAnalytics.paginateDocLastAccessedMembers({
       workspaceId: doc.workspaceId,
@@ -690,14 +749,18 @@ export class DocResolver {
       );
     }
 
-    await this.ac.user(user.id).doc(input).assert('Doc.Users.Manage');
-
-    await this.models.docUser.batchSetUserRoles(
-      input.workspaceId,
-      input.docId,
-      input.userIds,
-      input.role
-    );
+    const role = toDomainDocRole(input.role);
+    if (!role || role === 'owner') {
+      throw new ExpectToGrantDocUserRoles(pairs, 'Invalid grant role');
+    }
+    await this.runtime.executeDomainCommandV1({
+      command: 'grant_doc_roles',
+      actorUserId: user.id,
+      workspaceId: input.workspaceId,
+      docId: input.docId,
+      targetUserIds: input.userIds,
+      newRole: role,
+    });
     this.event.emit('doc.grants.changed', {
       workspaceId: input.workspaceId,
       docId: input.docId,
@@ -731,13 +794,13 @@ export class DocResolver {
         'Expect doc not to be workspace'
       );
     }
-    await this.ac.user(user.id).doc(input).assert('Doc.Users.Manage');
-
-    await this.models.docUser.delete(
-      input.workspaceId,
-      input.docId,
-      input.userId
-    );
+    await this.runtime.executeDomainCommandV1({
+      command: 'transition_doc_role',
+      actorUserId: user.id,
+      workspaceId: input.workspaceId,
+      docId: input.docId,
+      targetUserId: input.userId,
+    });
     this.event.emit('doc.grants.changed', {
       workspaceId: input.workspaceId,
       docId: input.docId,
@@ -777,13 +840,19 @@ export class DocResolver {
       role: input.role,
     };
 
+    const role = toDomainDocRole(input.role);
+    if (!role) {
+      throw new ExpectToUpdateDocUserRole(pairs, 'Invalid doc role');
+    }
+    await this.runtime.executeDomainCommandV1({
+      command: 'transition_doc_role',
+      actorUserId: user.id,
+      workspaceId: input.workspaceId,
+      docId: input.docId,
+      targetUserId: input.userId,
+      newRole: role,
+    });
     if (input.role === DocRole.Owner) {
-      await this.ac.user(user.id).doc(input).assert('Doc.TransferOwner');
-      await this.models.docUser.setOwner(
-        input.workspaceId,
-        input.docId,
-        input.userId
-      );
       this.event.emit('doc.owner.changed', {
         workspaceId: input.workspaceId,
         docId: input.docId,
@@ -791,13 +860,6 @@ export class DocResolver {
       });
       this.logger.log(`Transfer doc owner (${JSON.stringify(info)})`);
     } else {
-      await this.ac.user(user.id).doc(input).assert('Doc.Users.Manage');
-      await this.models.docUser.set(
-        input.workspaceId,
-        input.docId,
-        input.userId,
-        input.role
-      );
       this.event.emit('doc.grants.changed', {
         workspaceId: input.workspaceId,
         docId: input.docId,
@@ -833,26 +895,21 @@ export class DocResolver {
         'Expect doc not to be workspace'
       );
     }
-    try {
-      await this.ac.user(user.id).doc(input).assert('Doc.Users.Manage');
-    } catch (error) {
-      if (error instanceof DocActionDenied) {
-        this.logger.debug(
-          `User does not have permission to update page default role (${JSON.stringify(
-            {
-              ...pairs,
-              userId: user.id,
-            }
-          )})`
-        );
-      }
-      throw error;
+    const newRole =
+      input.role === DocRole.None ? 'none' : toDomainDocRole(input.role);
+    if (!newRole) {
+      throw new ExpectToUpdateDocUserRole(pairs, 'Invalid doc default role');
     }
-    await this.models.doc.setDefaultRole(
-      input.workspaceId,
-      input.docId,
-      input.role
-    );
+    if (newRole === 'owner') {
+      throw new DocDefaultRoleCanNotBeOwner();
+    }
+    await this.runtime.executeDomainCommandV1({
+      command: 'set_doc_default_role',
+      actorUserId: user.id,
+      workspaceId: input.workspaceId,
+      docId: input.docId,
+      newRole,
+    });
     this.event.emit('doc.default_role.changed', {
       workspaceId: input.workspaceId,
       docId: input.docId,

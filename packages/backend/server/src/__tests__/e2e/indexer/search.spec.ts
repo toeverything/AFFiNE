@@ -5,13 +5,17 @@ import {
 } from '@affine/graphql';
 
 import { Config } from '../../../base';
-import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { DocRole } from '../../../models';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
-import { app, e2e } from '../test';
+import {
+  addDocumentToRoot,
+  app,
+  e2e,
+  reconcileSearchProjection,
+} from '../test';
 
-const indexerE2e = app.get(Config).indexer.enabled ? e2e : e2e.skip;
+const indexerE2e = app.get(Config).indexer.enabled ? e2e.serial : e2e.skip;
 
 async function indexDoc(
   workspaceId: string,
@@ -21,13 +25,14 @@ async function indexDoc(
   defaultRole = DocRole.Manager
 ) {
   await app.create(Mockers.DocMeta, { workspaceId, docId, defaultRole });
+  await addDocumentToRoot(workspaceId, docId);
   await app.create(Mockers.DocSnapshot, {
     workspaceId,
     docId,
     user,
     blob: createDocWithMarkdown(docId, markdown, docId),
   });
-  await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+  await reconcileSearchProjection();
 }
 
 indexerE2e('should search with query', async t => {
@@ -142,7 +147,7 @@ indexerE2e(
       workspaceId: workspace.id,
       userId: member.id,
     });
-    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    await reconcileSearchProjection();
     const denied = await app.gql({
       query: indexerSearchQuery,
       variables: {
@@ -166,7 +171,7 @@ indexerE2e(
       userId: member.id,
       type: DocRole.Reader,
     });
-    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    await reconcileSearchProjection();
     const allowed = await app.gql({
       query: indexerSearchQuery,
       variables: {
@@ -185,7 +190,7 @@ indexerE2e(
     t.true(allowed.workspace.search.pagination.count > 0);
 
     await app.models.docUser.delete(workspace.id, 'private-doc', member.id);
-    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    await reconcileSearchProjection();
     const revoked = await app.gql({
       query: indexerSearchQuery,
       variables: {
@@ -213,7 +218,7 @@ indexerE2e(
       owner,
       snapshot: true,
     });
-    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    await reconcileSearchProjection();
     const result = await app.gql({
       query: indexerSearchQuery,
       variables: {

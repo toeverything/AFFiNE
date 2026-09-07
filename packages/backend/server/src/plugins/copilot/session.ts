@@ -10,7 +10,6 @@ import {
   CopilotPromptNotFound,
   CopilotSessionInvalidInput,
   CopilotSessionNotFound,
-  JobQueue,
   OnJob,
 } from '../../base';
 import {
@@ -37,14 +36,13 @@ declare global {
   interface Jobs {
     'copilot.session.generateTitle': {
       sessionId: string;
+      userId: string;
+      workspaceId: string;
     };
   }
 }
 
-const BACKGROUND_COPILOT_JOB_PRIORITY = 100;
-
-export class ChatSession implements AsyncDisposable {
-  private stashTurnCount = 0;
+export class ChatSession {
   private readonly renderPromptSession: (
     prompt: ResolvedPrompt,
     turns: PromptMessage[],
@@ -58,8 +56,7 @@ export class ChatSession implements AsyncDisposable {
       turns: PromptMessage[],
       params: PromptParams,
       sessionId?: string
-    ) => PromptMessage[],
-    private readonly dispose?: (state: ChatSessionState) => Promise<void>
+    ) => PromptMessage[]
   ) {
     this.renderPromptSession = renderPromptSession;
   }
@@ -85,11 +82,6 @@ export class ChatSession implements AsyncDisposable {
     };
   }
 
-  get stashTurns() {
-    if (!this.stashTurnCount) return [];
-    return this.state.turns.slice(-this.stashTurnCount);
-  }
-
   get latestUserTurn() {
     return this.state.turns.findLast(({ role }) => role === 'user');
   }
@@ -98,7 +90,7 @@ export class ChatSession implements AsyncDisposable {
     return this.state.turns.find(({ id }) => id === turnId);
   }
 
-  private appendTurn(turn: Turn, persisted: boolean) {
+  pushPersistedTurn(turn: Turn) {
     if (
       this.state.prompt.action &&
       this.state.turns.length > 0 &&
@@ -107,17 +99,6 @@ export class ChatSession implements AsyncDisposable {
       throw new CopilotActionTaken();
     }
     this.state.turns.push(turn);
-    if (!persisted) {
-      this.stashTurnCount += 1;
-    }
-  }
-
-  pushTurn(turn: Turn) {
-    this.appendTurn(turn, false);
-  }
-
-  pushPersistedTurn(turn: Turn) {
-    this.appendTurn(turn, true);
   }
 
   revertLatestMessage(removeLatestUserMessage: boolean) {
@@ -135,18 +116,6 @@ export class ChatSession implements AsyncDisposable {
       params,
       this.state.sessionId
     );
-  }
-
-  async save() {
-    await this.dispose?.({
-      ...this.state,
-      turns: this.state.turns.slice(-this.stashTurnCount),
-    });
-    this.stashTurnCount = 0;
-  }
-
-  async [Symbol.asyncDispose]() {
-    await this.save?.();
   }
 }
 
@@ -177,7 +146,6 @@ export class ChatSessionService {
 
   constructor(
     private readonly models: Models,
-    private readonly jobs: JobQueue,
     private readonly store: ConversationStore,
     private readonly conversationPolicy: ConversationPolicy,
     private readonly prompts: PromptService,
@@ -225,17 +193,35 @@ export class ChatSessionService {
     };
   }
 
-  async getState(sessionId: string): Promise<ConversationState | undefined> {
-    const session = await this.store.get(sessionId);
+  async getState(
+    sessionId: string,
+    userId: string,
+    workspaceId: string,
+    personal?: boolean
+  ): Promise<ConversationState | undefined> {
+    const session = await this.store.get(
+      sessionId,
+      userId,
+      workspaceId,
+      personal
+    );
     if (!session) return;
 
     return await this.toConversationState(session);
   }
 
   async getMetaState(
-    sessionId: string
+    sessionId: string,
+    userId: string,
+    workspaceId: string,
+    personal?: boolean
   ): Promise<ConversationMetaState | undefined> {
-    const session = await this.store.getMeta(sessionId);
+    const session = await this.store.getMeta(
+      sessionId,
+      userId,
+      workspaceId,
+      personal
+    );
     if (!session) return;
 
     return await this.toConversationMetaState(session);
@@ -330,7 +316,12 @@ export class ChatSessionService {
 
   @Transactional()
   async update(options: UpdateChatSession): Promise<string> {
-    const state = await this.getState(options.sessionId);
+    const state = await this.getState(
+      options.sessionId,
+      options.userId,
+      options.workspaceId,
+      options.personal
+    );
     if (!state) {
       throw new CopilotSessionNotFound();
     }
@@ -338,6 +329,8 @@ export class ChatSessionService {
     const finalData: UpdateChatSessionOptions = {
       userId: options.userId,
       sessionId: options.sessionId,
+      workspaceId: options.workspaceId,
+      personal: options.personal,
     };
     if (options.promptName) {
       const prompt = await this.prompts.get(options.promptName);
@@ -374,7 +367,12 @@ export class ChatSessionService {
 
   @Transactional()
   async fork(options: ChatSessionForkOptions): Promise<string> {
-    const state = await this.getState(options.sessionId);
+    const state = await this.getState(
+      options.sessionId,
+      options.userId,
+      options.workspaceId,
+      options.personal
+    );
     if (!state) {
       throw new CopilotSessionNotFound();
     }
@@ -402,6 +400,7 @@ export class ChatSessionService {
       parentSessionId: options.sessionId,
       pinned: state.conversation.pinned,
       title: state.conversation.title,
+      personal: options.personal,
       prompt: {
         name: state.prompt.name,
         action: state.prompt.action,
@@ -414,9 +413,16 @@ export class ChatSessionService {
     return await this.store.cleanup(options);
   }
 
-  async getMessage(sessionId: string, messageId: string) {
+  async getMessage(
+    sessionId: string,
+    userId: string,
+    workspaceId: string,
+    messageId: string
+  ) {
     const message = await this.models.copilotSession.getMessage(
       sessionId,
+      userId,
+      workspaceId,
       messageId
     );
     if (!message) {
@@ -428,6 +434,8 @@ export class ChatSessionService {
   async appendTurn(input: {
     sessionId: string;
     userId: string;
+    workspaceId: string;
+    personal?: boolean;
     turn: Turn;
     compatSubmissionId?: string;
     focus?: ChatSessionState['focus'];
@@ -443,10 +451,14 @@ export class ChatSessionService {
 
   async findTurnByCompatSubmissionId(
     sessionId: string,
+    userId: string,
+    workspaceId: string,
     compatSubmissionId: string
   ) {
     return await this.store.findTurnByCompatSubmissionId(
       sessionId,
+      userId,
+      workspaceId,
       compatSubmissionId
     );
   }
@@ -455,26 +467,27 @@ export class ChatSessionService {
   // after revert, we can retry the action
   async revertLatestMessage(
     sessionId: string,
-    removeLatestUserMessage: boolean
+    userId: string,
+    removeLatestUserMessage: boolean,
+    workspaceId: string,
+    personal?: boolean
   ) {
-    await this.store.revertLatestTurn(sessionId, removeLatestUserMessage);
+    await this.store.revertLatestTurn(
+      sessionId,
+      userId,
+      removeLatestUserMessage,
+      workspaceId,
+      personal
+    );
   }
 
-  /**
-   * usage:
-   * ``` typescript
-   * {
-   *     // allocate a session, can be reused chat in about 12 hours with same session
-   *     await using session = await session.get(sessionId);
-   *     session.pushTurn(turn);
-   *     copilot.text({ modelId }, session.finish());
-   * }
-   * // session will be disposed after the block
-   * @param sessionId session id
-   * @returns
-   */
-  async get(sessionId: string): Promise<ChatSession | null> {
-    const state = await this.getState(sessionId);
+  async get(
+    sessionId: string,
+    userId: string,
+    workspaceId: string,
+    personal?: boolean
+  ): Promise<ChatSession | null> {
+    const state = await this.getState(sessionId, userId, workspaceId, personal);
     if (state) {
       return new ChatSession(
         {
@@ -487,28 +500,41 @@ export class ChatSessionService {
           prompt: state.prompt,
         },
         (prompt, turns, params, sessionId) =>
-          this.prompts.renderSession(prompt, turns, params, sessionId),
-        async state => {
-          await this.store.appendTurns(state);
-          if (this.conversationPolicy.shouldScheduleTitle(state.prompt)) {
-            await this.jobs.add(
-              'copilot.session.generateTitle',
-              { sessionId: state.sessionId },
-              { priority: BACKGROUND_COPILOT_JOB_PRIORITY }
-            );
-          }
-        }
+          this.prompts.renderSession(prompt, turns, params, sessionId)
       );
     }
     return null;
   }
 
+  async getInScope(input: {
+    sessionId: string;
+    userId: string;
+    workspaceId: string;
+    personal: boolean;
+  }) {
+    return await this.get(
+      input.sessionId,
+      input.userId,
+      input.workspaceId,
+      input.personal
+    );
+  }
+
+  async getOwnedScope(sessionId: string, userId: string) {
+    return await this.models.copilotSession.getOwnedScope(sessionId, userId);
+  }
+
   @OnJob('copilot.session.generateTitle')
   async generateSessionTitle(job: Jobs['copilot.session.generateTitle']) {
-    const { sessionId } = job;
+    const { sessionId, userId, workspaceId } = job;
 
     try {
-      const state = await this.getState(sessionId);
+      const stored = await this.store.getForBackground(
+        sessionId,
+        userId,
+        workspaceId
+      );
+      const state = stored ? await this.toConversationState(stored) : undefined;
       if (!state) {
         this.logger.warn(
           `Session ${sessionId} not found when generating title`
@@ -556,6 +582,7 @@ export class ChatSessionService {
       await this.models.copilotSession.update({
         userId: conversation.userId,
         sessionId,
+        workspaceId: conversation.workspaceId,
         title: generatedTitle,
       });
     } catch (error) {

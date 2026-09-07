@@ -18,12 +18,12 @@ import {
 import { Models } from '../../models';
 import type { WorkspaceUserCompat } from '../../models/workspace-user-compat';
 import type { CurrentUser } from '../auth';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import {
   mapPermissionsToGraphqlPermissions,
   PermissionAccess,
   WorkspaceRole,
 } from '../permission';
-import { QuotaStateService } from '../quota';
 import { registerRealtimeLiveQuery } from '../realtime/provider';
 import { RealtimePublisher } from '../realtime/publisher';
 import { RealtimeRegistry } from '../realtime/registry';
@@ -58,7 +58,7 @@ function serializeWorkspaceMember(
 export class WorkspaceAccessRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly ac: PermissionAccess,
-    private readonly quotaState: QuotaStateService,
+    private readonly runtime: BackendRuntimeProvider,
     @Optional() private readonly registry?: RealtimeRegistry,
     @Optional() private readonly publisher?: RealtimePublisher
   ) {}
@@ -105,13 +105,6 @@ export class WorkspaceAccessRealtimeProvider implements OnModuleInit {
     this.publish(workspaceId, 'owner-changed');
   }
 
-  @OnEvent('workspace.quota_state.changed', { suppressError: true })
-  onWorkspaceQuotaStateChanged({
-    workspaceId,
-  }: Events['workspace.quota_state.changed']) {
-    this.publish(workspaceId, 'quota-state-changed');
-  }
-
   private async getAccess(
     user: CurrentUser,
     workspaceId: string
@@ -130,9 +123,8 @@ export class WorkspaceAccessRealtimeProvider implements OnModuleInit {
   }
 
   private async isTeamWorkspace(workspaceId: string) {
-    const state = await this.quotaState.getWorkspaceQuotaState(workspaceId);
-    if (!state?.known) return false;
-    return ['team', 'selfhost_team'].includes(state.plan);
+    const state = await this.runtime.getWorkspaceQuotaStateV1(workspaceId);
+    return !state.usesOwnerQuota;
   }
 
   private publish(workspaceId: string, reason: string) {

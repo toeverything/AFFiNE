@@ -650,11 +650,14 @@ export class NotificationService {
   }
 
   private async isActiveWorkspaceUser(workspaceId: string, userId: string) {
-    const isActive = await this.models.workspaceUser.getActive(
+    const authorization = await this.runtime.authorizePermissionV1({
+      version: 1,
       workspaceId,
-      userId
-    );
-    return !!isActive;
+      actorUserId: userId,
+      workspaceActions: ['Workspace.Read'],
+      docs: [],
+    });
+    return authorization.workspace.decisions[0]?.allowed ?? false;
   }
 
   private async trySendMail(command: SendMailCommand, mailClass: string) {

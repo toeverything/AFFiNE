@@ -1,85 +1,43 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import {
-  DocActionDenied,
-  InternalServerError,
-  SpaceAccessDenied,
-} from '../../base';
-import {
-  evaluatePermissionV1,
-  type PermissionEvaluationInputV1,
-  type PermissionEvaluationOutputV1,
+import { DocActionDenied, SpaceAccessDenied } from '../../base';
+import type {
+  DocPreviewExposure,
+  PermissionDecisionV1,
+  PermissionDocRole,
+  PermissionEvaluationOutputV1,
+  PermissionWorkspaceRole,
 } from '../../native';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { docLegacyBoundary, workspaceLegacyBoundary } from './context';
 import {
-  PermissionContextLoader,
-  type PermissionDocAction,
-  type PermissionWorkspaceAction,
-} from './context-loader';
-import { WorkspacePolicyService } from './policy';
+  type DocAction,
+  DocRole,
+  type WorkspaceAction,
+  WorkspaceRole,
+} from './types';
 
-const RUNTIME_RESTRICTED_WORKSPACE_ACTIONS = new Set<PermissionWorkspaceAction>(
-  [
-    'Workspace.Sync',
-    'Workspace.CreateDoc',
-    'Workspace.Delete',
-    'Workspace.TransferOwner',
-    'Workspace.Users.Manage',
-    'Workspace.Administrators.Manage',
-    'Workspace.Settings.Update',
-    'Workspace.Properties.Create',
-    'Workspace.Properties.Update',
-    'Workspace.Properties.Delete',
-    'Workspace.Blobs.Write',
-    'Workspace.Payment.Manage',
-  ]
-);
-
-const RUNTIME_RESTRICTED_DOC_ACTIONS = new Set<PermissionDocAction>([
-  'Doc.Duplicate',
-  'Doc.Trash',
-  'Doc.Restore',
-  'Doc.Delete',
-  'Doc.Update',
-  'Doc.Publish',
-  'Doc.TransferOwner',
-  'Doc.Properties.Update',
-  'Doc.Users.Manage',
-  'Doc.Comments.Create',
-  'Doc.Comments.Update',
-  'Doc.Comments.Delete',
-  'Doc.Comments.Resolve',
-]);
+export type PermissionWorkspaceAction = WorkspaceAction | 'Workspace.Preview';
+export type PermissionDocAction = DocAction | 'Doc.Preview';
+type PermissionResult<Role> = {
+  effectiveRole: Role | null;
+  legacyApiRole: DocRole | WorkspaceRole | null;
+  decisions: PermissionDecisionV1[];
+};
 
 @Injectable()
 export class PermissionService {
-  constructor(
-    private readonly loader: PermissionContextLoader,
-    @Optional()
-    private readonly workspacePolicy?: WorkspacePolicyService
-  ) {}
-
-  evaluate(input: PermissionEvaluationInputV1) {
-    try {
-      return evaluatePermissionV1(input);
-    } catch (error) {
-      throw new InternalServerError(
-        error instanceof Error ? error.message : undefined
-      );
-    }
-  }
+  constructor(private readonly runtime: BackendRuntimeProvider) {}
 
   async workspacePermissions(input: {
     userId?: string;
     workspaceId: string;
     actions: PermissionWorkspaceAction[];
-    allowLocal?: boolean;
-  }) {
-    const output = await this.evaluateLoaded({
-      userId: input.userId,
+  }): Promise<PermissionResult<PermissionWorkspaceRole>> {
+    const output = await this.authorize({
+      actorUserId: input.userId,
       workspaceId: input.workspaceId,
       workspaceActions: input.actions,
-      allowLocal: input.allowLocal,
     });
     return {
       ...workspaceLegacyBoundary(output.workspace),
@@ -91,7 +49,6 @@ export class PermissionService {
     userId?: string;
     workspaceId: string;
     action: PermissionWorkspaceAction;
-    allowLocal?: boolean;
   }) {
     const output = await this.workspacePermissions({
       ...input,
@@ -104,7 +61,6 @@ export class PermissionService {
     userId?: string;
     workspaceId: string;
     action: PermissionWorkspaceAction;
-    allowLocal?: boolean;
   }) {
     if (!(await this.canWorkspace(input))) {
       throw new SpaceAccessDenied({ spaceId: input.workspaceId });
@@ -116,13 +72,11 @@ export class PermissionService {
     workspaceId: string;
     docId: string;
     actions: PermissionDocAction[];
-    allowLocal?: boolean;
-  }) {
-    const output = await this.evaluateLoaded({
-      userId: input.userId,
+  }): Promise<PermissionResult<PermissionDocRole>> {
+    const output = await this.authorize({
+      actorUserId: input.userId,
       workspaceId: input.workspaceId,
       docs: [{ docId: input.docId, actions: input.actions }],
-      allowLocal: input.allowLocal,
     });
     const doc = output.docs[0];
     return {
@@ -136,7 +90,6 @@ export class PermissionService {
     workspaceId: string;
     docId: string;
     action: PermissionDocAction;
-    allowLocal?: boolean;
   }) {
     const output = await this.docPermissions({
       ...input,
@@ -150,7 +103,6 @@ export class PermissionService {
     workspaceId: string;
     docId: string;
     action: PermissionDocAction;
-    allowLocal?: boolean;
   }) {
     if (!(await this.canDoc(input))) {
       throw new DocActionDenied({
@@ -161,32 +113,16 @@ export class PermissionService {
     }
   }
 
-  async filterReadableDocs<T extends { docId: string }>(input: {
-    userId?: string;
-    workspaceId: string;
-    docs: T[];
-    allowLocal?: boolean;
-  }) {
-    const decisions = await this.batchDocPermissions({
-      ...input,
-      docs: input.docs.map(doc => ({
-        docId: doc.docId,
-        actions: ['Doc.Read'],
-      })),
-    });
-    const readableDocIds = new Set(
-      decisions.filter(doc => doc.decisions[0]?.allowed).map(doc => doc.docId)
-    );
-    return input.docs.filter(doc => readableDocIds.has(doc.docId));
-  }
-
   async batchDocPermissions(input: {
     userId?: string;
     workspaceId: string;
     docs: Array<{ docId: string; actions: PermissionDocAction[] }>;
-    allowLocal?: boolean;
-  }) {
-    const output = await this.evaluateLoaded(input);
+  }): Promise<Array<PermissionResult<PermissionDocRole> & { docId: string }>> {
+    const output = await this.authorize({
+      actorUserId: input.userId,
+      workspaceId: input.workspaceId,
+      docs: input.docs,
+    });
     return output.docs.map(doc => ({
       docId: doc.docId,
       ...docLegacyBoundary(doc),
@@ -194,68 +130,41 @@ export class PermissionService {
     }));
   }
 
-  async canPreviewWorkspace(input: {
+  async workspacePreviewExposure(input: {
     userId?: string;
     workspaceId: string;
-    allowLocal?: boolean;
-  }) {
-    return await this.canWorkspace({
-      ...input,
-      action: 'Workspace.Preview',
+  }): Promise<DocPreviewExposure> {
+    const output = await this.authorize({
+      actorUserId: input.userId,
+      workspaceId: input.workspaceId,
+      workspaceActions: ['Workspace.Preview'],
     });
+    return output.workspace.previewExposure ?? 'denied';
   }
 
-  async canPreviewDoc(input: {
+  async docPreviewExposure(input: {
     userId?: string;
     workspaceId: string;
     docId: string;
-    allowLocal?: boolean;
-  }) {
-    return await this.canDoc({
-      ...input,
-      action: 'Doc.Preview',
+  }): Promise<DocPreviewExposure> {
+    const output = await this.authorize({
+      actorUserId: input.userId,
+      workspaceId: input.workspaceId,
+      docs: [{ docId: input.docId, actions: ['Doc.Preview'] }],
     });
+    return output.docs[0]?.previewExposure ?? 'denied';
   }
 
-  private async evaluateLoaded(
-    input: Parameters<PermissionContextLoader['load']>[0]
-  ) {
-    try {
-      if (
-        this.needsFreshRuntimeState(input) &&
-        (await this.loader.workspaceExists(input.workspaceId))
-      ) {
-        await this.workspacePolicy?.getWorkspaceState(input.workspaceId);
-        this.loader.invalidateWorkspaceQuotaRuntime(input.workspaceId);
-      }
-      return this.evaluate(await this.loader.load(input));
-    } catch (error) {
-      if (
-        input.allowLocal &&
-        error instanceof Error &&
-        error.message === 'Workspace owner not found'
-      ) {
-        const loaded = await this.loader.load(input);
-        if (loaded.workspace?.local) {
-          return this.evaluate(loaded);
-        }
-      }
-      throw error;
-    }
-  }
-
-  private needsFreshRuntimeState(
-    input: Parameters<PermissionContextLoader['load']>[0]
-  ) {
-    return (
-      input.workspaceActions?.some(action =>
-        RUNTIME_RESTRICTED_WORKSPACE_ACTIONS.has(action)
-      ) ||
-      input.docs?.some(doc =>
-        doc.actions.some(action => RUNTIME_RESTRICTED_DOC_ACTIONS.has(action))
-      ) ||
-      false
-    );
+  private async authorize(
+    input: Omit<
+      Parameters<BackendRuntimeProvider['authorizePermissionV1']>[0],
+      'version'
+    >
+  ): Promise<PermissionEvaluationOutputV1> {
+    return await this.runtime.authorizePermissionV1({
+      version: 1,
+      ...input,
+    });
   }
 }
 

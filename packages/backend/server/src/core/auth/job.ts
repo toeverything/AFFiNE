@@ -37,6 +37,9 @@ export class AuthCronJob {
       const count = await this.rt.cleanupExpiredUserSessions(1000);
       if (count < 1000) break;
     }
-    await this.authSessions.cleanup();
+    for (;;) {
+      const count = await this.authSessions.cleanup(1000);
+      if (count < 1000) break;
+    }
   }
 }

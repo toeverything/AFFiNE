@@ -1,25 +1,16 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { Transactional } from '@nestjs-cls/transactional';
 import type { Request } from 'express';
 
 import {
   ActionForbidden,
-  Cache,
+  EventBus,
   InvalidAuthState,
   TooManyRequest,
   UserFriendlyError,
 } from '../../base';
-import { Models } from '../../models';
-import { AccessTokenService } from './access-token';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { AuthSessionErrorCode, AuthSessionService } from './auth-session';
-import { AuthChallengeStore } from './challenge-store';
 import { isNativeClientRequest } from './input';
-import { AuthService } from './service';
-
-interface SessionExchangePayload {
-  userId: string;
-  clientVersion?: string;
-}
 
 export interface AuthSessionMetadata {
   installationId: string;
@@ -50,72 +41,63 @@ export class AuthSessionHttpError extends UserFriendlyError {
   }
 
   override toJSON() {
-    return {
-      ...super.toJSON(),
-      code: this.authCode,
-    };
+    return { ...super.toJSON(), code: this.authCode };
   }
+}
+
+interface NativeTokenPair {
+  userId: string;
+  tokenType: 'Bearer';
+  accessToken: string;
+  expiresIn: number;
+  refreshToken: string;
+  refreshExpiresAt: string | Date;
+  session: { id: string; absoluteExpiresAt: string | Date };
+  isNewDevice?: boolean;
 }
 
 @Injectable()
 export class SessionExchangeService {
   constructor(
-    private readonly auth: AuthService,
-    private readonly challenges: AuthChallengeStore,
-    private readonly cache: Cache,
-    private readonly models: Models,
-    private readonly accessTokens: AccessTokenService,
+    private readonly event: EventBus,
+    private readonly rt: BackendRuntimeProvider,
     private readonly authSessions: AuthSessionService
   ) {}
 
-  async createCode(req: Request, userId: string, clientVersion?: string) {
-    if (!isNativeClientRequest(req)) return;
-    return this.challenges.create<SessionExchangePayload>(
-      'auth_session_exchange',
-      { userId, clientVersion },
-      60 * 1000
-    );
-  }
-
-  @Transactional()
   async exchange(req: Request, code: string, metadata: AuthSessionMetadata) {
     if (!isNativeClientRequest(req)) throw new ActionForbidden();
-    const payload = await this.challenges.consume<SessionExchangePayload>(
-      'auth_session_exchange',
-      code
-    );
-    if (!payload?.userId) throw new InvalidAuthState();
-    const user = await this.models.user.lockForAuthIssuance(payload.userId);
-    if (!user || user.disabled) throw new InvalidAuthState();
-    const userSession = await this.auth.createUserSession(
-      payload.userId,
-      undefined,
-      undefined,
-      payload.clientVersion
-    );
-
-    const issued = await this.authSessions.create({
-      userSessionId: userSession.id,
-      ...metadata,
+    let pair: NativeTokenPair;
+    try {
+      pair = await this.rt.executeAuthSessionCommandV1<NativeTokenPair>({
+        action: 'exchange',
+        code,
+        ...metadata,
+      });
+    } catch (error) {
+      if (String(error).includes('invalid_auth_state')) {
+        throw new InvalidAuthState();
+      }
+      throw error;
+    }
+    this.event.emit('auth.session.created', {
+      authSessionId: pair.session.id,
+      platform: metadata.platform,
     });
-    return this.tokenPair(
-      payload.userId,
-      issued.session.id,
-      issued.refreshToken,
-      issued.refreshExpiresAt,
-      issued.session.absoluteExpiresAt
-    );
+    if (pair.isNewDevice) {
+      this.event.emit('auth.security.detected', {
+        type: 'new_device_login',
+        userId: pair.userId,
+        authSessionId: pair.session.id,
+        notification: 'policy_pending',
+      });
+    }
+    return publicPair(pair);
   }
 
   async refresh(req: Request, refreshToken: string, appVersion?: string) {
     if (!isNativeClientRequest(req)) throw new ActionForbidden();
-    const selector = refreshToken.split('.')[1];
-    if (selector) {
-      const rateKey = `auth:session-refresh-rate:${selector}`;
-      const attempts = await this.cache.increaseWithTtl(rateKey, 60_000);
-      if (attempts > 30) throw new TooManyRequest();
-    }
     const refreshed = await this.authSessions.refresh(refreshToken, appVersion);
+    if (refreshed.status === 'rate_limited') throw new TooManyRequest();
     if (refreshed.status !== 'rotated') {
       const status =
         refreshed.code === AuthSessionErrorCode.temporarilyUnavailable
@@ -123,37 +105,17 @@ export class SessionExchangeService {
           : HttpStatus.UNAUTHORIZED;
       throw new AuthSessionHttpError(refreshed.code, status);
     }
-    const session = await this.authSessions.get(refreshed.authSessionId);
-    if (!session) {
-      throw new AuthSessionHttpError(AuthSessionErrorCode.revoked);
-    }
-    return this.tokenPair(
-      session.userSession.userId,
-      refreshed.authSessionId,
-      refreshed.refreshToken,
-      refreshed.refreshExpiresAt,
-      session.absoluteExpiresAt
-    );
+    const {
+      userId: _,
+      authSessionId: __,
+      platform: ___,
+      grace: ____,
+      ...pair
+    } = refreshed;
+    return pair;
   }
+}
 
-  private async tokenPair(
-    userId: string,
-    authSessionId: string,
-    refreshToken: string,
-    refreshTokenExpiresAt: Date,
-    absoluteExpiresAt: Date
-  ) {
-    const access = await this.accessTokens.sign(userId, authSessionId);
-    return {
-      tokenType: 'Bearer',
-      accessToken: access.token,
-      expiresIn: this.authSessions.accessTokenTtl,
-      refreshToken,
-      refreshExpiresAt: refreshTokenExpiresAt,
-      session: {
-        id: authSessionId,
-        absoluteExpiresAt,
-      },
-    };
-  }
+function publicPair({ userId: _, isNewDevice: __, ...pair }: NativeTokenPair) {
+  return pair;
 }

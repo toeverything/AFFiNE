@@ -50,6 +50,12 @@ spec:
               secretKeyRef:
                 name: "{{ .Values.global.secret.secretName }}"
                 key: key
+          - name: AFFINE_PRO_LICENSE_PRIVATE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.global.secret.secretName }}"
+                key: "{{ .Values.global.secret.licensePrivateKeyKey }}"
+                optional: true
           - name: NODE_ENV
             value: "{{ .Values.env }}"
           - name: NODE_OPTIONS

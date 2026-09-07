@@ -1,6 +1,6 @@
 import '../../plugins/copilot';
 
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { createCopilotMessageMutation } from '@affine/graphql';
 import { McpAccessMode, PrismaClient } from '@prisma/client';
@@ -9,7 +9,6 @@ import ava from 'ava';
 
 import { Config } from '../../base';
 import { ServerFeature, ServerService } from '../../core';
-import { AuthService } from '../../core/auth';
 import { Models } from '../../models';
 import { CopilotFeatureService } from '../../plugins/copilot/feature';
 import { McpCredentialService } from '../../plugins/copilot/mcp/credential';
@@ -132,9 +131,35 @@ test('session, message, local context restriction and durable history share one 
   t.is(history.messages.filter(message => message.role === 'user').length, 1);
   t.not(history.messages[0].id, token);
 
+  const attachment = Buffer.from('canonical attachment');
+  const attachmentKey = createHash('sha256')
+    .update(attachment)
+    .digest('base64url');
+  const attachmentPath = `/api/copilot/chat/${sessionId}/attachments/${attachmentKey}?workspaceId=${workspace.id}&mimeType=text%2Fplain&fileName=note.txt`;
+  const attachmentUpload = await app
+    .PUT(attachmentPath)
+    .set('content-type', 'application/octet-stream')
+    .send(attachment)
+    .expect(200);
+  const attachmentRead = await app.GET(attachmentUpload.body.url).expect(200);
+  t.snapshot({
+    upload: {
+      url: attachmentUpload.body.url
+        .replace(sessionId, ':session')
+        .replace(workspace.id, ':workspace'),
+    },
+    read: {
+      body: attachmentRead.text,
+      contentType: attachmentRead.headers['content-type'],
+      contentLength: attachmentRead.headers['content-length'],
+      cacheControl: attachmentRead.headers['cache-control'],
+    },
+  });
+
+  const localWorkspaceId = randomUUID();
   const localSessionId = await createCopilotSession(
     app,
-    randomUUID(),
+    localWorkspaceId,
     null,
     'Chat With AFFiNE AI'
   );
@@ -174,6 +199,13 @@ test('session, message, local context restriction and durable history share one 
       message: "Local workspaces don't support attachments or references.",
     }
   );
+  const localAttachmentUpload = await app
+    .PUT(
+      `/api/copilot/chat/${localSessionId}/attachments/${attachmentKey}?workspaceId=${localWorkspaceId}&mimeType=text%2Fplain`
+    )
+    .set('content-type', 'application/octet-stream')
+    .send(attachment);
+  t.is(localAttachmentUpload.status, 400);
 });
 
 test('chat and history endpoints reject a different user', async t => {
@@ -218,12 +250,14 @@ test('image SSE emits persisted attachment events for action sessions', async t 
 
 test('MCP credentials remain endpoint-bound through rotate, revoke and expiry', async t => {
   const { app } = t.context;
-  const auth = app.get(AuthService);
   const credentials = app.get(McpCredentialService);
   const db = app.get(PrismaClient);
   const models = app.get(Models);
   const provider = app.get(WorkspaceMcpProvider);
-  const user = await auth.signUp(`mcp-${randomUUID()}@affine.pro`, '123456');
+  const user = await models.user.create({
+    email: `mcp-${randomUUID()}@affine.pro`,
+    password: '123456',
+  });
   const target = await models.workspace.create(user.id);
   const other = await models.workspace.create(user.id);
   const issued = await credentials.create({
@@ -274,9 +308,9 @@ test('MCP credentials remain endpoint-bound through rotate, revoke and expiry', 
     accessMode: McpAccessMode.READ_ONLY,
     expirationDays: 30,
   });
-  await models.user.update(user.id, { disabled: true });
+  await db.user.update({ where: { id: user.id }, data: { disabled: true } });
   await t.throwsAsync(credentials.authenticate(disabled.token, target.id));
-  await models.user.update(user.id, { disabled: false });
+  await db.user.update({ where: { id: user.id }, data: { disabled: false } });
   await db.mcpCredential.update({
     where: { id: disabled.credential.id },
     data: { expiresAt: new Date(0) },

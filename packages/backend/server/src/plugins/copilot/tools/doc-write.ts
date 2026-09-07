@@ -2,7 +2,6 @@ import { Logger } from '@nestjs/common';
 import { z } from 'zod';
 
 import { DocWriter } from '../../../core/doc';
-import { PermissionAccess } from '../../../core/permission';
 import { toolError } from './error';
 import { defineTool } from './tool';
 import type { CopilotChatOptions } from './types';
@@ -14,10 +13,7 @@ const stripLeadingH1 = (content: string) =>
 
 const sanitizeTitle = (title: string) => title.replace(/[\r\n]+/g, ' ').trim();
 
-export const buildDocCreateHandler = (
-  ac: PermissionAccess,
-  writer: DocWriter
-) => {
+export const buildDocCreateHandler = (writer: DocWriter) => {
   return async (
     options: CopilotChatOptions,
     title: string,
@@ -29,11 +25,6 @@ export const buildDocCreateHandler = (
         'Missing user or workspace context'
       );
     }
-
-    await ac
-      .user(options.user)
-      .workspace(options.workspace)
-      .assert('Workspace.CreateDoc');
 
     const sanitizedTitle = sanitizeTitle(title);
     if (!sanitizedTitle) {
@@ -56,10 +47,7 @@ export const buildDocCreateHandler = (
   };
 };
 
-export const buildDocUpdateHandler = (
-  ac: PermissionAccess,
-  writer: DocWriter
-) => {
+export const buildDocUpdateHandler = (writer: DocWriter) => {
   return async (
     options: CopilotChatOptions,
     docId: string,
@@ -74,17 +62,11 @@ export const buildDocUpdateHandler = (
       return notFound;
     }
 
-    const canAccess = await ac
-      .user(options.user)
-      .workspace(options.workspace)
-      .doc(docId)
-      .can('Doc.Update');
-
-    if (!canAccess) {
+    try {
+      await writer.updateDoc(options.workspace, docId, content, options.user);
+    } catch {
       return notFound;
     }
-
-    await writer.updateDoc(options.workspace, docId, content, options.user);
 
     return {
       success: true,
@@ -94,10 +76,7 @@ export const buildDocUpdateHandler = (
   };
 };
 
-export const buildDocUpdateMetaHandler = (
-  ac: PermissionAccess,
-  writer: DocWriter
-) => {
+export const buildDocUpdateMetaHandler = (writer: DocWriter) => {
   return async (options: CopilotChatOptions, docId: string, title: string) => {
     const notFound = toolError(
       'Doc Meta Update Failed',
@@ -108,27 +87,21 @@ export const buildDocUpdateMetaHandler = (
       return notFound;
     }
 
-    const canAccess = await ac
-      .user(options.user)
-      .workspace(options.workspace)
-      .doc(docId)
-      .can('Doc.Update');
-
-    if (!canAccess) {
-      return notFound;
-    }
-
     const sanitizedTitle = sanitizeTitle(title);
     if (!sanitizedTitle) {
       return toolError('Doc Meta Update Failed', 'Title cannot be empty');
     }
 
-    await writer.updateDocMeta(
-      options.workspace,
-      docId,
-      { title: sanitizedTitle },
-      options.user
-    );
+    try {
+      await writer.updateDocMeta(
+        options.workspace,
+        docId,
+        { title: sanitizedTitle },
+        options.user
+      );
+    } catch {
+      return notFound;
+    }
 
     return {
       success: true,

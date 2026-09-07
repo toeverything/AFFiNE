@@ -3,31 +3,23 @@ import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 
 import {
+  BadRequest,
   type BlobInputType,
   BlobQuotaExceeded,
   CallMetric,
   type FileUpload,
   OneMB,
-  readBuffer,
+  readBufferWithLimit,
   toBuffer,
-  URLHelper,
 } from '../../base';
-import { QuotaService } from '../../core/quota';
-import {
-  type StorageRuntimeGetObjectResult,
-  StorageRuntimeProvider,
-} from '../../core/storage-runtime';
+import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import { fetchRemoteAttachment } from '../../native';
 
-const REMOTE_BLOB_MAX_BYTES = 20 * OneMB;
+const COPILOT_BLOB_MAX_BYTES = 20 * OneMB;
 
 @Injectable()
 export class CopilotStorage {
-  constructor(
-    private readonly url: URLHelper,
-    private readonly rt: StorageRuntimeProvider,
-    private readonly quota: QuotaService
-  ) {}
+  constructor(private readonly rt: StorageRuntimeProvider) {}
 
   @CallMetric('ai', 'blob_put')
   async put(
@@ -44,25 +36,99 @@ export class CopilotStorage {
       contentLength: buffer.length,
     });
     if (!env.prod) {
-      // return image base64url for dev environment
       return `data:${mimeType};base64,${buffer.toString('base64')}`;
     }
-    return this.url.link(`/api/copilot/blob/${name}`);
+    try {
+      const signedUrl = await this.presignGet(userId, workspaceId, key);
+      if (!signedUrl) {
+        throw new Error('Copilot blob signing is required');
+      }
+      return signedUrl;
+    } catch (error) {
+      await this.rt.deleteObject('copilot', name);
+      throw error;
+    }
   }
 
-  @CallMetric('ai', 'blob_get')
-  async get(
+  @CallMetric('ai', 'session_attachment_put')
+  async putSessionAttachment(
     userId: string,
     workspaceId: string,
     key: string,
-    signedUrl?: boolean
-  ): Promise<StorageRuntimeGetObjectResult> {
-    const name = `${userId}/${workspaceId}/${key}`;
-    if (signedUrl) {
-      const redirectUrl = await this.presignGet(userId, workspaceId, key);
-      if (redirectUrl) return { redirectUrl };
+    buffer: Buffer,
+    mimeType: string
+  ) {
+    await this.rt.putObject(
+      'copilot',
+      `${userId}/${workspaceId}/${key}`,
+      buffer,
+      {
+        contentType: mimeType,
+        contentLength: buffer.length,
+      }
+    );
+  }
+
+  @CallMetric('ai', 'session_attachment_get')
+  async getSessionAttachment(userId: string, workspaceId: string, key: string) {
+    return await this.rt.getObject(
+      'copilot',
+      `${userId}/${workspaceId}/${key}`
+    );
+  }
+
+  sessionAttachmentUrl(
+    sessionId: string,
+    workspaceId: string,
+    key: string,
+    fileName?: string
+  ) {
+    const query = new URLSearchParams({ workspaceId });
+    if (fileName) query.set('fileName', fileName);
+    return `/api/copilot/chat/${encodeURIComponent(sessionId)}/attachments/${encodeURIComponent(key)}?${query}`;
+  }
+
+  sessionAttachmentFromUrl(
+    url: string,
+    context: { sessionId?: string; workspaceId: string }
+  ) {
+    let parsed: URL;
+    try {
+      parsed = new URL(url, 'http://copilot.local');
+    } catch {
+      return;
     }
-    return this.rt.getObject('copilot', name);
+    const segments = parsed.pathname.split('/').filter(Boolean);
+    if (
+      segments[0] !== 'api' ||
+      segments[1] !== 'copilot' ||
+      segments[2] !== 'chat'
+    ) {
+      return;
+    }
+    if (
+      segments.length !== 6 ||
+      segments[4] !== 'attachments' ||
+      !context.sessionId
+    ) {
+      throw new BadRequest('Invalid Copilot attachment locator');
+    }
+    const sessionId = decodeURIComponent(segments[3]);
+    const key = decodeURIComponent(segments[5]);
+    const workspaceId = parsed.searchParams.get('workspaceId');
+    if (
+      sessionId !== context.sessionId ||
+      workspaceId !== context.workspaceId ||
+      !key ||
+      key.includes('/') ||
+      key.includes('\\')
+    ) {
+      throw new BadRequest('Copilot attachment scope mismatch');
+    }
+    return {
+      key,
+      fileName: parsed.searchParams.get('fileName') || undefined,
+    };
   }
 
   async presignGet(userId: string, workspaceId: string, key: string) {
@@ -90,14 +156,11 @@ export class CopilotStorage {
   }
 
   @CallMetric('ai', 'blob_upload')
-  async handleUpload(userId: string, blob: FileUpload) {
-    const checkExceeded = await this.quota.getUserQuotaCalculator(userId);
-
-    if (checkExceeded(0)) {
-      throw new BlobQuotaExceeded();
-    }
-
-    const buffer = await readBuffer(blob.createReadStream(), checkExceeded);
+  async handleUpload(blob: FileUpload) {
+    const buffer = await readBufferWithLimit(
+      blob.createReadStream(),
+      COPILOT_BLOB_MAX_BYTES
+    );
 
     return {
       buffer,
@@ -105,11 +168,18 @@ export class CopilotStorage {
     };
   }
 
+  async handleUploadBuffer(buffer: Buffer) {
+    if (buffer.length > COPILOT_BLOB_MAX_BYTES) {
+      throw new BlobQuotaExceeded();
+    }
+    return buffer;
+  }
+
   @CallMetric('ai', 'blob_proxy_remote_url')
   async handleRemoteLink(userId: string, workspaceId: string, link: string) {
     const { body, mimeType } = await fetchRemoteAttachment({
       url: link,
-      maxBytes: REMOTE_BLOB_MAX_BYTES,
+      maxBytes: COPILOT_BLOB_MAX_BYTES,
       expectedContentTypePrefix: 'image/',
       maxImageHeight: 4096,
       maxImageWidth: 4096,

@@ -358,39 +358,3 @@ test('should paginate workspace user roles', async t => {
       .map(r => r.id)
   );
 });
-
-test('should allocate seats for AllocatingSeat and NeedMoreSeat members', async t => {
-  const users = await module.create(Mockers.User, 4);
-  const workspace = await module.create(Mockers.Workspace);
-
-  for (const user of users) {
-    await models.workspaceUser.set(
-      workspace.id,
-      user.id,
-      WorkspaceRole.Collaborator,
-      { status: WorkspaceMemberStatus.AllocatingSeat }
-    );
-  }
-
-  await models.workspaceUser.allocateSeats(workspace.id, 1);
-
-  let count = await db.workspaceInvitation.count({
-    where: {
-      workspaceId: workspace.id,
-      status: 'pending',
-    },
-  });
-
-  t.is(count, 1);
-
-  await models.workspaceUser.allocateSeats(workspace.id, 3);
-
-  count = await db.workspaceInvitation.count({
-    where: {
-      workspaceId: workspace.id,
-      status: 'pending',
-    },
-  });
-
-  t.is(count, 3);
-});

@@ -2,20 +2,20 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { getStreamAsBuffer } from 'get-stream';
 
-import { Config, metrics, OnEvent } from '../../base';
+import { Config, metrics, OnEvent, URLHelper } from '../../base';
 import { type MailName, Renderers } from '../../mails';
 import { UserProps, WorkspaceProps } from '../../mails/components';
 import { MailDeliveryRow, Models } from '../../models';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { containsUrlOrDomain } from '../content-policy';
 import { DocReader } from '../doc/reader';
-import { WorkspaceBlobStorage } from '../storage';
 import { MailSender, SendOptions } from './sender';
 import { SendMailPayload } from './types';
 
 type DynamicProp = Record<string, unknown> & {
   $$workspaceId?: string;
+  $$workspaceUrl?: string;
   $$userId?: string;
 };
 
@@ -27,9 +27,10 @@ export class MailJob {
   constructor(
     private readonly sender: MailSender,
     private readonly doc: DocReader,
-    private readonly workspaceBlob: WorkspaceBlobStorage,
+    private readonly runtime: BackendRuntimeProvider,
     private readonly models: Models,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly url: URLHelper
   ) {}
 
   @OnEvent('user.deleted')
@@ -191,14 +192,18 @@ export class MailJob {
 
   private async renderPayload(payload: SendMailPayload) {
     let options: Partial<SendOptions> = {};
-    const renderedProps = { ...payload.props };
+    const renderedProps: Record<string, unknown> = { ...payload.props };
 
     for (const key in renderedProps) {
       const val = renderedProps[key as keyof typeof renderedProps] as
         | DynamicProp
         | undefined;
       if (val && typeof val === 'object') {
-        if (typeof val.$$workspaceId === 'string') {
+        if (typeof val.$$workspaceUrl === 'string') {
+          renderedProps[key] = this.url.link(
+            `/workspace/${val.$$workspaceUrl}`
+          );
+        } else if (typeof val.$$workspaceId === 'string') {
           const workspaceProps = await this.fetchWorkspaceProps(
             val.$$workspaceId
           );
@@ -278,16 +283,14 @@ export class MailJob {
     };
 
     if (workspace.avatarKey) {
-      const avatar = await this.workspaceBlob.get(
-        workspace.id,
-        workspace.avatarKey
-      );
-
-      if (avatar.body) {
-        props.avatar = (await getStreamAsBuffer(avatar.body)).toString(
-          'base64'
-        );
-      }
+      const owner = await this.models.workspaceUser.getOwner(workspace.id);
+      props.avatar = (
+        await this.runtime.readWorkspaceAvatarV1(
+          owner.id,
+          workspace.id,
+          workspace.avatarKey
+        )
+      ).toString('base64');
     }
 
     return props;

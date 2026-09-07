@@ -1,3 +1,4 @@
+import { Prisma, PrismaClient } from '@prisma/client';
 import test from 'ava';
 
 import { createModule } from '../../__tests__/create-module';
@@ -6,124 +7,66 @@ import { Models } from '../index';
 
 const module = await createModule();
 const models = module.get(Models);
+const db = module.get(PrismaClient);
+const seedAttachment = (data: Prisma.CommentAttachmentUncheckedCreateInput) =>
+  db.commentAttachment.upsert({
+    where: {
+      workspaceId_docId_key: {
+        workspaceId: data.workspaceId,
+        docId: data.docId,
+        key: data.key,
+      },
+    },
+    update: data,
+    create: data,
+  });
 
 test.after.always(async () => {
   await module.close();
 });
 
-test('should upsert comment attachment', async t => {
+test('comment attachment projections include only live completed rows', async t => {
   const workspace = await module.create(Mockers.Workspace);
-  const user = await module.create(Mockers.User);
-
-  // add
-  const item = await models.commentAttachment.upsert({
+  const live = await seedAttachment({
     workspaceId: workspace.id,
-    docId: 'test-doc-id',
-    key: 'test-key',
-    name: 'test-name',
+    docId: 'doc',
+    name: 'live',
+    key: 'live',
     mime: 'text/plain',
     size: 100,
-    createdBy: user.id,
+    status: 'completed',
   });
-
-  t.is(item.workspaceId, workspace.id);
-  t.is(item.docId, 'test-doc-id');
-  t.is(item.key, 'test-key');
-  t.is(item.mime, 'text/plain');
-  t.is(item.size, 100);
-  t.truthy(item.createdAt);
-  t.is(item.createdBy, user.id);
-
-  // update
-  const item2 = await models.commentAttachment.upsert({
+  await seedAttachment({
     workspaceId: workspace.id,
-    docId: 'test-doc-id',
-    name: 'test-name',
-    key: 'test-key',
-    mime: 'text/html',
-    size: 200,
-  });
-
-  t.is(item2.workspaceId, workspace.id);
-  t.is(item2.docId, 'test-doc-id');
-  t.is(item2.key, 'test-key');
-  t.is(item2.mime, 'text/html');
-  t.is(item2.size, 200);
-  t.is(item2.createdBy, user.id);
-
-  // make sure only one blob is created
-  const items = await models.commentAttachment.list(workspace.id);
-  t.is(items.length, 1);
-  t.deepEqual(items[0], item2);
-});
-
-test('should delete comment attachment', async t => {
-  const workspace = await module.create(Mockers.Workspace);
-  const item = await models.commentAttachment.upsert({
-    workspaceId: workspace.id,
-    docId: 'test-doc-id',
-    key: 'test-key',
-    name: 'test-name',
-    mime: 'text/plain',
-    size: 100,
-  });
-
-  await models.commentAttachment.delete(workspace.id, item.docId, item.key);
-
-  const item2 = await models.commentAttachment.get(
-    workspace.id,
-    item.docId,
-    item.key
-  );
-
-  t.is(item2, null);
-});
-
-test('should list comment attachments', async t => {
-  const workspace = await module.create(Mockers.Workspace);
-  const item1 = await models.commentAttachment.upsert({
-    workspaceId: workspace.id,
-    docId: 'test-doc-id',
-    name: 'test-name',
-    key: 'test-key',
-    mime: 'text/plain',
-    size: 100,
-  });
-
-  const item2 = await models.commentAttachment.upsert({
-    workspaceId: workspace.id,
-    docId: 'test-doc-id2',
-    name: 'test-name2',
-    key: 'test-key2',
+    docId: 'doc',
+    name: 'pending',
+    key: 'pending',
     mime: 'text/plain',
     size: 200,
+    status: 'pending',
   });
-
-  const items = await models.commentAttachment.list(workspace.id);
-
-  t.is(items.length, 2);
-  items.sort((a, b) => a.key.localeCompare(b.key));
-  t.is(items[0].key, item1.key);
-  t.is(items[1].key, item2.key);
-});
-
-test('should get comment attachment', async t => {
-  const workspace = await module.create(Mockers.Workspace);
-  const item = await models.commentAttachment.upsert({
+  await seedAttachment({
     workspaceId: workspace.id,
-    docId: 'test-doc-id',
-    name: 'test-name',
-    key: 'test-key',
+    docId: 'doc',
+    name: 'deleted',
+    key: 'deleted',
     mime: 'text/plain',
-    size: 100,
+    size: 300,
+    status: 'completed',
+    deletedAt: new Date(),
   });
 
-  const item2 = await models.commentAttachment.get(
-    workspace.id,
-    item.docId,
-    item.key
+  t.deepEqual(
+    (await models.commentAttachment.list(workspace.id, 'doc')).map(
+      item => item.key
+    ),
+    [live.key]
   );
-
-  t.truthy(item2);
-  t.is(item2?.key, item.key);
+  t.is(
+    (await models.commentAttachment.get(workspace.id, 'doc', live.key))?.key,
+    live.key
+  );
+  for (const key of ['pending', 'deleted']) {
+    t.is(await models.commentAttachment.get(workspace.id, 'doc', key), null);
+  }
 });

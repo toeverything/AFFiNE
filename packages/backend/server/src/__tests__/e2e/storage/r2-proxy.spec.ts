@@ -17,11 +17,7 @@ import {
   MULTIPART_THRESHOLD,
 } from '../../../core/storage/constants';
 import { StorageRuntimeProvider } from '../../../core/storage-runtime';
-import {
-  SubscriptionPlan,
-  SubscriptionRecurring,
-  SubscriptionStatus,
-} from '../../../plugins/payment/types';
+import { SubscriptionPlan } from '../../../plugins/payment/types';
 import { app, e2e, Mockers } from '../test';
 
 class MockStorageRuntime {
@@ -306,11 +302,10 @@ async function getBlobUploadPartUrl(
 
 async function setupWorkspace() {
   const owner = await app.signup();
-  await app.get(EntitlementService).upsertFromCloudSubscription({
+  await app.get(EntitlementService).upsertAdminGrant({
+    targetType: 'user',
     targetId: owner.id,
     plan: SubscriptionPlan.Pro,
-    recurring: SubscriptionRecurring.Monthly,
-    status: SubscriptionStatus.Active,
   });
   const workspace = await app.create(Mockers.Workspace, { owner });
   return { owner, workspace };

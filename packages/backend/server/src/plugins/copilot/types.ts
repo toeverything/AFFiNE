@@ -137,6 +137,7 @@ export type ChatSessionOptions = {
   promptName: string;
   pinned: boolean;
   reuseLatestChat?: boolean;
+  personal?: boolean;
 };
 
 export type ChatSessionForkOptions = {
@@ -145,6 +146,7 @@ export type ChatSessionForkOptions = {
   workspaceId: string;
   docId: string;
   latestMessageId?: string;
+  personal?: boolean;
 };
 
 export type ChatSessionState = {

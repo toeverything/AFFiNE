@@ -10,7 +10,6 @@ import { EventBus, NewOwnerIsNotActiveMember, PaginationInput } from '../base';
 import { BaseModel } from './base';
 import { WorkspaceRole, workspaceUserSelect } from './common';
 import {
-  allocateWorkspaceSeats,
   countChargedWorkspaceUsers,
   countWorkspaceUsers,
   findUserActiveWorkspaceRoles,
@@ -73,11 +72,10 @@ export class WorkspaceUserModel extends BaseModel {
         state: 'active',
       },
     });
-    const fallbackRole = (await this.models.workspace.isTeamWorkspace(
-      workspaceId
-    ))
-      ? WorkspaceRole.Admin
-      : WorkspaceRole.Collaborator;
+    const fallbackRole =
+      oldOwner && (await this.models.workspace.isTeamWorkspace(workspaceId))
+        ? WorkspaceRole.Admin
+        : WorkspaceRole.Collaborator;
 
     try {
       await this.models.workspaceMember.setOwner(
@@ -332,7 +330,7 @@ export class WorkspaceUserModel extends BaseModel {
     return active ? workspaceMemberToCompat(active) : null;
   }
 
-  async getOwner(workspaceId: string) {
+  async findOwner(workspaceId: string) {
     const role = await this.db.workspaceMember.findFirst({
       include: {
         user: {
@@ -346,11 +344,17 @@ export class WorkspaceUserModel extends BaseModel {
       },
     });
 
-    if (!role?.user) {
+    return role?.user ?? null;
+  }
+
+  async getOwner(workspaceId: string) {
+    const owner = await this.findOwner(workspaceId);
+
+    if (!owner) {
       throw new Error('Workspace owner not found');
     }
 
-    return role.user;
+    return owner;
   }
 
   async getAdmins(workspaceId: string) {
@@ -491,15 +495,5 @@ export class WorkspaceUserModel extends BaseModel {
       OFFSET ${options.offset}
       LIMIT ${options.first}
     `;
-  }
-
-  @Transactional()
-  async allocateSeats(workspaceId: string, limit: number) {
-    return await allocateWorkspaceSeats(
-      this.db,
-      this.models,
-      workspaceId,
-      limit
-    );
   }
 }

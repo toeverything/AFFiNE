@@ -1,32 +1,33 @@
 import { Injectable } from '@nestjs/common';
 
 import { InvalidAuthState } from '../../base';
-import { AuthChallengeStore } from './challenge-store';
-import type { VerifiedIdentity } from './identity';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import type { CurrentUser } from './session';
+import type { NativeLoginResult, SessionIssueInput } from './session-issuer';
 
 @Injectable()
 export class OpenAppAuthService {
-  constructor(private readonly challenges: AuthChallengeStore) {}
+  constructor(private readonly runtime: BackendRuntimeProvider) {}
 
   async createSignInCode(user: CurrentUser) {
-    return this.challenges.create(
-      'open_app_sign_in',
-      { userId: user.id },
-      5 * 60 * 1000
-    );
+    return await this.runtime.executeAuthSessionCommandV1<string>({
+      action: 'create_open_app_code',
+      userId: user.id,
+    });
   }
 
-  async verifySignInCode(code: string): Promise<VerifiedIdentity> {
-    const payload = await this.challenges.consume<{ userId?: string }>(
-      'open_app_sign_in',
-      code
-    );
-
-    if (!payload?.userId) {
+  async complete(
+    code: string,
+    issue: SessionIssueInput
+  ): Promise<NativeLoginResult> {
+    try {
+      return await this.runtime.executeAuthSessionCommandV1<NativeLoginResult>({
+        action: 'complete_open_app',
+        code,
+        issue,
+      });
+    } catch {
       throw new InvalidAuthState();
     }
-
-    return { userId: payload.userId, method: 'open_app' };
   }
 }

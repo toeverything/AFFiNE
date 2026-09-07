@@ -15,6 +15,7 @@ global:
   secret:
     secretName: 'server-private-key'
     privateKey: ''
+    licensePrivateKeyKey: 'license-private-key'
   database:
     user: 'postgres'
     host: 'pg-postgresql'

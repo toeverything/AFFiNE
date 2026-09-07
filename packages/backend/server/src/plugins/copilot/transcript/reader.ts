@@ -11,14 +11,32 @@ export class CopilotTranscriptionReader {
     userId: string,
     workspaceId: string,
     taskId?: string,
-    blobId?: string
+    blobId?: string,
+    personal?: boolean
   ) {
     const task = await this.models.copilotTranscriptTask.getWithUser(
       userId,
       workspaceId,
       taskId,
-      blobId
+      blobId,
+      personal
     );
     return taskToJob(task);
+  }
+
+  async queryTaskInScope(input: {
+    userId: string;
+    workspaceId: string;
+    taskId?: string;
+    blobId?: string;
+    personal: boolean;
+  }) {
+    return await this.queryTask(
+      input.userId,
+      input.workspaceId,
+      input.taskId,
+      input.blobId,
+      input.personal
+    );
   }
 }

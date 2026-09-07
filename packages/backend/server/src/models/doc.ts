@@ -83,7 +83,7 @@ export class DocModel extends BaseModel {
     };
   }
 
-  private docRecordToUpdate(record: Doc): Update {
+  private docRecordToUpdate(record: Doc): Prisma.UpdateCreateManyInput {
     return {
       workspaceId: record.spaceId,
       id: record.docId,
@@ -142,6 +142,11 @@ export class DocModel extends BaseModel {
     });
   }
 
+  async lockDocContent(workspaceId: string, docId: string) {
+    await this.db
+      .$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`workspace-doc-update:${workspaceId}/${docId}`}, 0))`;
+  }
+
   /**
    * Delete updates by workspaceId, docId, and createdAts.
    */
@@ -195,9 +200,6 @@ export class DocModel extends BaseModel {
       RETURNING "snapshots"."workspace_id" as "workspaceId", "snapshots"."guid" as "id", "snapshots"."updated_at" as "updatedAt"
     `;
 
-    // if the condition `snapshot.updatedAt > updatedAt` is true, by which means the snapshot has already been updated by other process,
-    // the updates has been applied to current `doc` must have been seen by the other process as well.
-    // The `updatedSnapshot` will be `undefined` in this case.
     return result.at(0);
   }
 
@@ -386,11 +388,17 @@ export class DocModel extends BaseModel {
     docId: string,
     data?: DocMetaUpsertInput
   ) {
-    const { public: isPublic, defaultRole, ...meta } = data ?? {};
-    if (data && ('public' in data || 'defaultRole' in data)) {
+    const { public: isPublic, defaultRole, publishedAt, ...meta } = data ?? {};
+    const policyPublishedAt =
+      publishedAt == null ? publishedAt : new Date(publishedAt);
+    if (
+      data &&
+      ('public' in data || 'defaultRole' in data || 'publishedAt' in data)
+    ) {
       await this.models.docAccessPolicy.upsert(workspaceId, docId, {
         public: isPublic,
         defaultRole,
+        publishedAt: policyPublishedAt,
       });
     }
 
@@ -403,9 +411,11 @@ export class DocModel extends BaseModel {
       },
       update: {
         ...meta,
+        publishedAt,
       },
       create: {
         ...meta,
+        publishedAt,
         workspaceId,
         docId,
       },

@@ -3,65 +3,22 @@ import { Prisma } from '@prisma/client';
 
 import { BaseModel } from './base';
 
-export type CreateBlobInput = Prisma.BlobUncheckedCreateInput;
-
 /**
  * Blob Model
  */
 @Injectable()
 export class BlobModel extends BaseModel {
-  async upsert(blob: CreateBlobInput) {
-    const result = await this.db.blob.upsert({
-      where: {
-        workspaceId_key: {
-          workspaceId: blob.workspaceId,
-          key: blob.key,
-        },
-      },
-      update: {
-        mime: blob.mime,
-        size: blob.size,
-        status: blob.status,
-        uploadId: blob.uploadId,
-      },
-      create: {
-        workspaceId: blob.workspaceId,
-        key: blob.key,
-        mime: blob.mime,
-        size: blob.size,
-        status: blob.status,
-        uploadId: blob.uploadId,
-      },
+  async setReservationUploadId(
+    workspaceId: string,
+    key: string,
+    reservationId: string,
+    uploadId: string | null
+  ) {
+    const result = await this.db.blob.updateMany({
+      where: { workspaceId, key, reservationId, status: 'pending' },
+      data: { uploadId },
     });
-    await this.markQuotaStateStale(blob.workspaceId);
-    return result;
-  }
-
-  async delete(workspaceId: string, key: string, permanently = false) {
-    if (permanently) {
-      await this.db.blob.deleteMany({
-        where: {
-          workspaceId,
-          key,
-        },
-      });
-      await this.markQuotaStateStale(workspaceId);
-      this.logger.log(`deleted blob ${workspaceId}/${key} permanently`);
-      return;
-    }
-
-    await this.db.blob.update({
-      where: {
-        workspaceId_key: {
-          workspaceId,
-          key,
-        },
-      },
-      data: {
-        deletedAt: new Date(),
-      },
-    });
-    await this.markQuotaStateStale(workspaceId);
+    if (result.count !== 1) throw new Error('Blob reservation changed');
   }
 
   async get(workspaceId: string, key: string) {
@@ -95,6 +52,7 @@ export class BlobModel extends BaseModel {
       where: {
         workspaceId,
         deletedAt: null,
+        status: 'completed',
       },
     });
     return count > 0;
@@ -105,6 +63,7 @@ export class BlobModel extends BaseModel {
       where: {
         workspaceId,
         deletedAt: null,
+        status: 'completed',
       },
       _sum: {
         size: true,
@@ -112,12 +71,5 @@ export class BlobModel extends BaseModel {
     });
 
     return sum._sum.size ?? 0;
-  }
-
-  private async markQuotaStateStale(workspaceId: string) {
-    await this.db.effectiveWorkspaceQuotaState.updateMany({
-      where: { workspaceId },
-      data: { stale: true },
-    });
   }
 }

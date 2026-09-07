@@ -71,7 +71,11 @@ export class CopilotCronJobs {
     for (const session of sessions) {
       await this.jobs.add(
         'copilot.session.generateTitle',
-        { sessionId: session.id },
+        {
+          sessionId: session.id,
+          userId: session.userId,
+          workspaceId: session.workspaceId,
+        },
         { priority: BACKGROUND_COPILOT_JOB_PRIORITY }
       );
     }

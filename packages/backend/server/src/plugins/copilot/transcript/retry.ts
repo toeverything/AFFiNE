@@ -29,11 +29,18 @@ export class CopilotTranscriptionRetryService {
     private readonly realtime: RealtimePublisher
   ) {}
 
-  async retryTask(userId: string, workspaceId: string, taskId: string) {
+  async retryTask(
+    userId: string,
+    workspaceId: string,
+    taskId: string,
+    personal?: boolean
+  ) {
     const task = await this.models.copilotTranscriptTask.getWithUser(
       userId,
       workspaceId,
-      taskId
+      taskId,
+      undefined,
+      personal
     );
     if (!task) {
       throw new CopilotTranscriptionJobNotFound();
@@ -67,14 +74,21 @@ export class CopilotTranscriptionRetryService {
       userId,
       workspaceId,
       retryOf,
-      generation
+      generation,
+      personal
     );
     if (!claimed) {
       throw new BadRequestException(
         'Only failed transcript tasks can be retried'
       );
     }
-    await this.enqueuePendingTask(taskId, payload, generation, retryOf);
+    await this.enqueuePendingTask(
+      taskId,
+      payload,
+      generation,
+      retryOf,
+      personal ? 'personal' : 'canonical'
+    );
     this.realtime.publish(
       'copilot.transcript.task.changed',
       { workspaceId, taskId },
@@ -93,6 +107,7 @@ export class CopilotTranscriptionRetryService {
     payload: Jobs['copilot.transcript.task.submit']['payload'],
     generation: string,
     retryOf: string | null,
+    scopeMode: 'personal' | 'canonical',
     rollbackOnError = true
   ) {
     try {
@@ -102,6 +117,7 @@ export class CopilotTranscriptionRetryService {
           taskId,
           payload,
           generation,
+          scopeMode,
           retryOf: retryOf ?? undefined,
         },
         {
@@ -146,6 +162,10 @@ export class CopilotTranscriptionRetryService {
           parsed.data,
           generation,
           task.actionRunId,
+          (task.inputSnapshot as Record<string, unknown> | null)?.scopeMode ===
+            'personal'
+            ? 'personal'
+            : 'canonical',
           false
         );
       } catch (error) {

@@ -95,14 +95,6 @@
       "type": "Object",
       "desc": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds."
     },
-    "inviteQuotaShadowMode": {
-      "type": "Boolean",
-      "desc": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions."
-    },
-    "inviteQuotaFailOpenOnRuntimeError": {
-      "type": "Boolean",
-      "desc": "Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production."
-    },
     "passwordRequirements": {
       "type": "Object",
       "desc": "The password strength requirements when set new password."

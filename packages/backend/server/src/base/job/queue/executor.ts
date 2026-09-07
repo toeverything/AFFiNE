@@ -28,6 +28,9 @@ export class JobExecutor implements OnModuleDestroy {
 
   @OnEvent('config.init')
   async onConfigInit() {
+    if (env.testing) {
+      return;
+    }
     await this.startWorkers(queuesForRole(env.role));
   }
 
@@ -170,8 +173,10 @@ export class JobExecutor implements OnModuleDestroy {
   }
 
   private async stopWorkers() {
+    const workers = Array.from(this.workers.values());
+    this.workers.clear();
     await Promise.all(
-      Array.from(this.workers.values()).map(async worker => {
+      workers.map(async worker => {
         await worker.close(true);
       })
     );

@@ -22,10 +22,6 @@ declare global {
     'workspace.members.updated': {
       workspaceId: string;
     };
-    'workspace.members.allocateSeats': {
-      workspaceId: string;
-      quantity: number;
-    };
     'workspace.invite_link.created': {
       workspaceId: string;
     };
@@ -129,11 +125,10 @@ export class WorkspaceEvents {
     await this.workspaceService.sendInvitationNotification(inviterId, inviteId);
   }
 
-  @OnEvent('workspace.members.allocateSeats')
-  async onAllocateSeats({
-    workspaceId,
-    quantity,
-  }: Events['workspace.members.allocateSeats']) {
-    await this.workspaceService.allocateSeats(workspaceId, quantity);
+  @OnEvent('user.deleted')
+  async clearUserWorkspaces(payload: Events['user.deleted']) {
+    for (const workspaceId of payload.ownedWorkspaces) {
+      await this.workspaceService.delete(workspaceId);
+    }
   }
 }

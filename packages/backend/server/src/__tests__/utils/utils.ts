@@ -1,6 +1,5 @@
 import { INestApplicationContext, LogLevel } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import whywhywhy from 'why-is-node-running';
 
 export const TEST_LOG_LEVEL: LogLevel =
   (process.env.TEST_LOG_LEVEL as LogLevel) ?? 'fatal';
@@ -58,22 +57,4 @@ export async function initTestingDB(context: INestApplicationContext) {
 
 export async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-export function debugProcessHolding(ignorePrismaStack = true) {
-  setImmediate(() => {
-    whywhywhy({
-      error: message => {
-        // ignore prisma error
-        if (
-          ignorePrismaStack &&
-          (message.includes('Prisma') || message.includes('prisma'))
-        ) {
-          return;
-        }
-
-        console.error(message);
-      },
-    });
-  });
 }

@@ -57,6 +57,12 @@ declare global {
   }
 }
 
+declare global {
+  interface Events {
+    'workspace.blobs.updated': { workspaceId: string };
+  }
+}
+
 @Injectable()
 export class StorageBlobJob {
   private readonly logger = new Logger(StorageBlobJob.name);

@@ -206,16 +206,6 @@
             "emailLimit": 5
           }
         },
-        "inviteQuotaShadowMode": {
-          "type": "boolean",
-          "description": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions.\n@default false",
-          "default": false
-        },
-        "inviteQuotaFailOpenOnRuntimeError": {
-          "type": "boolean",
-          "description": "Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production.\n@default false",
-          "default": false
-        },
         "passwordRequirements": {
           "type": "object",
           "description": "The password strength requirements when set new password.\n@default {\"min\":8,\"max\":32}",

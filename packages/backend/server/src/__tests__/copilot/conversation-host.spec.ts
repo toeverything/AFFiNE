@@ -2,10 +2,15 @@ import '../../plugins/copilot/runtime/capability-runtime';
 
 import ava from 'ava';
 
-import { CopilotMessageNotFound, type Mutex } from '../../base';
+import {
+  CopilotMessageNotFound,
+  CopilotSessionNotFound,
+  type Mutex,
+} from '../../base';
 import type { CompatSubmissionStore } from '../../plugins/copilot/compat/submission-store';
 import type { ConversationPolicy } from '../../plugins/copilot/conversation/policy';
 import type { Turn } from '../../plugins/copilot/core';
+import type { AdmittedAttachmentSource } from '../../plugins/copilot/runtime/hosts/attachment-admission';
 import { ConversationHost } from '../../plugins/copilot/runtime/hosts/conversation-host';
 import {
   ChatSession,
@@ -15,20 +20,33 @@ import {
 const test = ava;
 
 function fixture(
-  options: { failFirstAcceptedWrite?: boolean; failFirstAppend?: boolean } = {}
+  options: {
+    failFirstAcceptedWrite?: boolean;
+    failFirstAppend?: boolean;
+    mode?: 'canonical' | 'personal';
+    admittedAttachments?: AdmittedAttachmentSource[];
+    revokeDuringAdmission?: boolean;
+  } = {}
 ) {
   const sessionId = 'session-1';
   const token = 'submission-1';
   const durable = new Map<string, Turn>();
-  const accepted = new Map<string, { sessionId: string; turnId: string }>();
+  const accepted = new Map<
+    string,
+    { userId: string; sessionId: string; turnId: string }
+  >();
   const submissions = new Map([
     [
       token,
       {
         id: token,
+        userId: 'user-1',
+        workspaceId: 'workspace-1',
         sessionId,
         content: 'hello',
-        attachments: [],
+        attachments: options.admittedAttachments?.length
+          ? ['data:text/plain;base64,aGVsbG8=']
+          : [],
         params: {
           tone: 'brief',
           scopeSelectors: [{ kind: 'document', id: 'doc-2' }],
@@ -39,7 +57,9 @@ function fixture(
   ]);
   let appendCount = 0;
   let quota = true;
+  let accessAllowed = true;
   let acceptedWriteCount = 0;
+  let artifactWrites = 0;
   const chatSession = new ChatSession(
     {
       sessionId,
@@ -58,9 +78,20 @@ function fixture(
     () => []
   );
   const sessions = {
-    get: async (id: string) => (id === sessionId ? chatSession : undefined),
-    findTurnByCompatSubmissionId: async (_sessionId: string, id: string) =>
-      durable.get(id),
+    getOwnedScope: async (id: string, userId: string) =>
+      id === sessionId && userId === 'user-1'
+        ? { workspaceId: 'workspace-1', docId: 'doc-1' }
+        : undefined,
+    getInScope: async (input: { sessionId: string; userId: string }) =>
+      input.sessionId === sessionId && input.userId === 'user-1'
+        ? chatSession
+        : undefined,
+    findTurnByCompatSubmissionId: async (
+      _sessionId: string,
+      _userId: string,
+      _workspaceId: string,
+      id: string
+    ) => durable.get(id),
     appendTurn: async (input: { compatSubmissionId: string; turn: Turn }) => {
       appendCount += 1;
       if (options.failFirstAppend && appendCount === 1) {
@@ -70,27 +101,35 @@ function fixture(
       durable.set(input.compatSubmissionId, stored);
       return stored;
     },
-    getMessage: async (_sessionId: string, turnId: string) =>
-      [...durable.values()].find(turn => turn.id === turnId),
+    getMessage: async (
+      _sessionId: string,
+      _userId: string,
+      _workspaceId: string,
+      turnId: string
+    ) => [...durable.values()].find(turn => turn.id === turnId),
     revertLatestMessage: async () => {},
   } as unknown as ChatSessionService;
   const submissionStore = {
-    get: async (id: string) => submissions.get(id),
-    getAccepted: async (id: string) => {
+    get: async (id: string, userId: string) => {
+      const value = submissions.get(id);
+      return value?.userId === userId ? value : undefined;
+    },
+    getAccepted: async (id: string, userId: string) => {
       const value = accepted.get(id);
-      return value
+      return value?.userId === userId
         ? { ...value, acceptedAt: new Date('2026-01-01T00:00:00.000Z') }
         : undefined;
     },
     markAccepted: async (
       id: string,
+      userId: string,
       value: { sessionId: string; turnId: string }
     ) => {
       acceptedWriteCount += 1;
       if (options.failFirstAcceptedWrite && acceptedWriteCount === 1) {
         throw new Error('accepted cache write failed');
       }
-      accepted.set(id, value);
+      accepted.set(id, { ...value, userId });
       submissions.delete(id);
     },
   } as unknown as CompatSubmissionStore;
@@ -102,7 +141,11 @@ function fixture(
   } as unknown as ConversationPolicy;
   const runtime = {
     putWorkspaceArtifact: async () => {
-      throw new Error('unexpected attachment');
+      artifactWrites++;
+      return {
+        id: 'artifact-1',
+        canonicalMediaType: 'text/plain',
+      };
     },
     compileTurnScope: async (input: {
       selectors: unknown[];
@@ -123,7 +166,10 @@ function fixture(
     }),
   };
   const attachmentAdmission = {
-    admitPromptAttachments: async () => [],
+    admitPromptAttachments: async () => {
+      if (options.revokeDuringAdmission) accessAllowed = false;
+      return options.admittedAttachments ?? [];
+    },
   };
 
   return {
@@ -133,16 +179,27 @@ function fixture(
       mutex,
       policy,
       runtime as never,
-      attachmentAdmission as never
+      attachmentAdmission as never,
+      {
+        sessionResource: async () => {
+          if (!accessAllowed) throw new Error('permission denied');
+          return options.mode ?? 'canonical';
+        },
+      } as never
     ),
     sessionId,
     token,
     durable,
     accepted,
     submissions,
+    session: chatSession,
     appendCount: () => appendCount,
+    artifactWrites: () => artifactWrites,
     setQuota: (value: boolean) => {
       quota = value;
+    },
+    revokeAccess: () => {
+      accessAllowed = false;
     },
   };
 }
@@ -215,6 +272,8 @@ test('compat submission cannot be consumed by another session', async t => {
   const other = fixture();
   other.submissions.set(state.token, {
     id: state.token,
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
     sessionId: 'session-other',
     content: 'secret',
     attachments: [],
@@ -228,5 +287,92 @@ test('compat submission cannot be consumed by another session', async t => {
     }),
     { instanceOf: CopilotMessageNotFound }
   );
+  await t.throwsAsync(
+    state.host.prepareTurn('user-2', state.sessionId, {
+      messageId: state.token,
+    }),
+    { instanceOf: CopilotSessionNotFound }
+  );
   t.is(other.appendCount(), 0);
+});
+
+test('direct conversation rejects revoked canonical access before durable append', async t => {
+  const state = fixture();
+  state.revokeAccess();
+
+  await t.throwsAsync(
+    state.host.prepareTurn('user-1', state.sessionId, {
+      messageId: state.token,
+    }),
+    { message: 'permission denied' }
+  );
+  t.is(state.appendCount(), 0);
+  t.true(state.submissions.has(state.token));
+});
+
+test('workspace context fails closed for personal scope and revoked canonical access', async t => {
+  const personal = fixture({ mode: 'personal' });
+  const personalError = await t.throwsAsync(
+    personal.host.prepareTurn('user-1', personal.sessionId, {
+      messageId: personal.token,
+    })
+  );
+
+  const canonical = fixture({
+    admittedAttachments: [
+      {
+        id: 'attachment-1',
+        kind: 'bytes',
+        mimeType: 'text/plain',
+        size: 5,
+        fileName: 'note.txt',
+        hash: 'hash-1',
+        data: 'aGVsbG8=',
+        encoding: 'base64',
+      },
+    ],
+    revokeDuringAdmission: true,
+  });
+  const canonicalError = await t.throwsAsync(
+    canonical.host.prepareTurn('user-1', canonical.sessionId, {
+      messageId: canonical.token,
+    })
+  );
+
+  t.snapshot({
+    personal: {
+      error: personalError?.message,
+      artifactWrites: personal.artifactWrites(),
+      durableAppends: personal.appendCount(),
+    },
+    canonical: {
+      error: canonicalError?.message,
+      artifactWrites: canonical.artifactWrites(),
+      durableAppends: canonical.appendCount(),
+    },
+  });
+});
+
+test('direct conversation rechecks canonical access before assistant persistence', async t => {
+  const state = fixture();
+  state.revokeAccess();
+
+  await t.throwsAsync(
+    state.host.persistAssistantTurn(
+      state.session,
+      {
+        conversationId: state.session.config.sessionId,
+        role: 'assistant',
+        content: 'must not persist',
+        attachments: [],
+        metadata: {},
+        renderTrace: [],
+        toolEvents: [],
+        createdAt: new Date(),
+      },
+      false
+    ),
+    { message: 'permission denied' }
+  );
+  t.is(state.appendCount(), 0);
 });

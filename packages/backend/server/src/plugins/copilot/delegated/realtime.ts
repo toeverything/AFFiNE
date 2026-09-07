@@ -2,7 +2,9 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
 import { EventBus } from '../../../base';
+import { PermissionAccess } from '../../../core/permission';
 import { RealtimeRegistry, realtimeUserRoom } from '../../../core/realtime';
+import { CopilotAccessService } from '../access';
 import { ChatSessionService } from '../session';
 import { DelegatedEditorService } from './service';
 
@@ -47,7 +49,9 @@ export class DelegatedEditorRealtimeProvider implements OnModuleInit {
     private readonly registry: RealtimeRegistry,
     private readonly event: EventBus,
     private readonly sessions: ChatSessionService,
-    private readonly delegated: DelegatedEditorService
+    private readonly delegated: DelegatedEditorService,
+    private readonly access: CopilotAccessService,
+    private readonly ac: PermissionAccess
   ) {}
 
   onModuleInit() {
@@ -77,15 +81,42 @@ export class DelegatedEditorRealtimeProvider implements OnModuleInit {
       name: 'copilot.delegated.editor.upsert',
       input: leaseInput,
       handle: async (user, input, context) => {
-        const session = await this.sessions.get(input.sessionId);
+        if (!user || !context?.connectionId) {
+          throw new Error('INVALID_DELEGATED_EDITOR_SESSION');
+        }
+        const scope = await this.sessions.getOwnedScope(
+          input.sessionId,
+          user.id
+        );
         if (
-          !user ||
-          !context?.connectionId ||
-          !session ||
-          session.config.userId !== user.id ||
-          session.config.workspaceId !== input.workspaceId ||
-          session.config.docId !== input.docId
+          !scope ||
+          scope.workspaceId !== input.workspaceId ||
+          scope.docId !== input.docId
         ) {
+          throw new Error('INVALID_DELEGATED_EDITOR_SESSION');
+        }
+        const mode = await this.access.sessionResource(
+          {
+            userId: user.id,
+            workspaceId: input.workspaceId,
+            docId: input.docId,
+            action: 'Doc.Read',
+          },
+          [input.sessionId]
+        );
+        if (mode === 'canonical') {
+          await this.ac
+            .user(user.id)
+            .workspace(input.workspaceId)
+            .assert('Workspace.Copilot');
+        }
+        const session = await this.sessions.getInScope({
+          sessionId: input.sessionId,
+          userId: user.id,
+          workspaceId: input.workspaceId,
+          personal: mode === 'personal',
+        });
+        if (!session || session.config.docId !== input.docId) {
           throw new Error('INVALID_DELEGATED_EDITOR_SESSION');
         }
         const lease = this.delegated.upsert(

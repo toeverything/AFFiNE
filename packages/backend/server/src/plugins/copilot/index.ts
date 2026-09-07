@@ -4,12 +4,14 @@ import { Module } from '@nestjs/common';
 
 import { ServerConfigModule } from '../../core';
 import { DocStorageModule } from '../../core/doc';
+import { EntitlementModule } from '../../core/entitlement';
 import { FeatureModule } from '../../core/features';
 import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
 import { StorageModule } from '../../core/storage';
 import { WorkspaceModule } from '../../core/workspaces';
 import { IndexerModule } from '../indexer';
+import { CopilotAttachmentController } from './attachment-controller';
 import { CopilotController } from './controller';
 import { CopilotFeatureGuard, CopilotFeatureService } from './feature';
 import { WorkspaceMcpController } from './mcp/controller';
@@ -24,6 +26,7 @@ import {
 
 const COPILOT_SHARED_IMPORTS = [
   DocStorageModule,
+  EntitlementModule,
   FeatureModule,
   QuotaModule,
   PermissionModule,
@@ -79,6 +82,10 @@ export class CopilotApiModule {}
     CopilotApiModule,
   ],
   providers: [McpCredentialService, McpCredentialResolver],
-  controllers: [CopilotController, WorkspaceMcpController],
+  controllers: [
+    CopilotAttachmentController,
+    CopilotController,
+    WorkspaceMcpController,
+  ],
 })
 export class CopilotModule {}

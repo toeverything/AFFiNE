@@ -15,7 +15,6 @@ import {
   type FileUpload,
   JobQueue,
   readableToBuffer,
-  ReplyNotFound,
 } from '../../base';
 import {
   decodeWithJson,
@@ -26,7 +25,6 @@ import { Comment, DocMode, Models, Reply } from '../../models';
 import { CurrentUser } from '../auth/session';
 import { ServerFeature, ServerService } from '../config';
 import { DocAction, PermissionAccess } from '../permission';
-import { QuotaService } from '../quota';
 import { RealtimePublisher } from '../realtime';
 import { CommentAttachmentStorage } from '../storage';
 import { UserType } from '../user';
@@ -57,7 +55,6 @@ export class CommentResolver {
     private readonly service: CommentService,
     private readonly ac: PermissionAccess,
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
-    private readonly quota: QuotaService,
     private readonly queue: JobQueue,
     private readonly models: Models,
     private readonly server: ServerService,
@@ -72,12 +69,7 @@ export class CommentResolver {
     @CurrentUser() me: UserType,
     @Args('input') input: CommentCreateInput
   ): Promise<CommentObjectType> {
-    await this.assertPermission(me, input, 'Doc.Comments.Create');
-
-    const comment = await this.service.createComment({
-      ...input,
-      userId: me.id,
-    });
+    const comment = await this.service.createComment(me.id, input);
 
     await this.sendCommentNotification(
       me,
@@ -106,14 +98,7 @@ export class CommentResolver {
     @CurrentUser() me: UserType,
     @Args('input') input: CommentUpdateInput
   ) {
-    const comment = await this.service.getComment(input.id);
-    if (!comment) {
-      throw new CommentNotFound();
-    }
-
-    await this.assertPermission(me, comment, 'Doc.Comments.Update');
-
-    await this.service.updateComment(input);
+    const comment = await this.service.updateComment(me.id, input);
     publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
     return true;
   }
@@ -125,14 +110,7 @@ export class CommentResolver {
     @CurrentUser() me: UserType,
     @Args('input') input: CommentResolveInput
   ) {
-    const comment = await this.service.getComment(input.id);
-    if (!comment) {
-      throw new CommentNotFound();
-    }
-
-    await this.assertPermission(me, comment, 'Doc.Comments.Resolve');
-
-    await this.service.resolveComment(input);
+    const comment = await this.service.resolveComment(me.id, input);
     publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
     return true;
   }
@@ -141,14 +119,7 @@ export class CommentResolver {
     description: 'Delete a comment',
   })
   async deleteComment(@CurrentUser() me: UserType, @Args('id') id: string) {
-    const comment = await this.service.getComment(id);
-    if (!comment) {
-      throw new CommentNotFound();
-    }
-
-    await this.assertPermission(me, comment, 'Doc.Comments.Delete');
-
-    await this.service.deleteComment(id);
+    const comment = await this.service.deleteComment(me.id, id);
     publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
     return true;
   }
@@ -163,12 +134,7 @@ export class CommentResolver {
       throw new CommentNotFound();
     }
 
-    await this.assertPermission(me, comment, 'Doc.Comments.Create');
-
-    const reply = await this.service.createReply({
-      ...input,
-      userId: me.id,
-    });
+    const reply = await this.service.createReply(me.id, input);
 
     await this.sendCommentNotification(
       me,
@@ -197,14 +163,7 @@ export class CommentResolver {
     @CurrentUser() me: UserType,
     @Args('input') input: ReplyUpdateInput
   ) {
-    const reply = await this.service.getReply(input.id);
-    if (!reply) {
-      throw new ReplyNotFound();
-    }
-
-    await this.assertPermission(me, reply, 'Doc.Comments.Update');
-
-    await this.service.updateReply(input);
+    const reply = await this.service.updateReply(me.id, input);
     publishCommentChanged(this.realtime, reply.workspaceId, reply.docId);
     return true;
   }
@@ -213,14 +172,7 @@ export class CommentResolver {
     description: 'Delete a reply',
   })
   async deleteReply(@CurrentUser() me: UserType, @Args('id') id: string) {
-    const reply = await this.service.getReply(id);
-    if (!reply) {
-      throw new ReplyNotFound();
-    }
-
-    await this.assertPermission(me, reply, 'Doc.Comments.Delete');
-
-    await this.service.deleteReply(id);
+    const reply = await this.service.deleteReply(me.id, id);
     publishCommentChanged(this.realtime, reply.workspaceId, reply.docId);
     return true;
   }
@@ -359,13 +311,6 @@ export class CommentResolver {
     const buffer = await readableToBuffer(attachment.createReadStream());
     // max attachment size is 10MB
     if (buffer.length > 10 * 1024 * 1024) {
-      throw new CommentAttachmentQuotaExceeded();
-    }
-
-    const checkExceeded =
-      await this.quota.getWorkspaceQuotaCalculator(workspaceId);
-    const result = checkExceeded(buffer.length);
-    if (result?.blobQuotaExceeded || result?.storageQuotaExceeded) {
       throw new CommentAttachmentQuotaExceeded();
     }
 
