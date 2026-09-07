@@ -1,18 +1,13 @@
-use std::sync::OnceLock;
-
 use anyhow::{Context, Result as AnyResult, anyhow};
+use sqlx::postgres::PgPoolOptions;
 
 use super::{
   super::migrations::{RUNTIME_MIGRATIONS, migrate_runtime_tables},
-  runtime_state::*,
   *,
 };
 
-static PG_TEST_LOCK: OnceLock<tokio::sync::Mutex<()>> = OnceLock::new();
-const TEST_VERIFICATION_TOKEN_TYPE: i32 = 99_999;
-
-fn pg_test_lock() -> &'static tokio::sync::Mutex<()> {
-  PG_TEST_LOCK.get_or_init(|| tokio::sync::Mutex::new(()))
+pub(super) fn pg_test_lock() -> &'static tokio::sync::Mutex<()> {
+  &crate::runtime::migrations::DATABASE_TEST_LOCK
 }
 
 #[test]
@@ -29,23 +24,127 @@ fn migrations_include_runtime_tables_without_worker_heartbeats() {
   assert!(!RUNTIME_MIGRATIONS.contains("runtime_worker_heartbeats"));
 }
 
-#[test]
-fn auth_challenge_state_uses_scoped_purpose_and_token_hash() {
-  assert_eq!(auth_challenge_purpose("oauth_state"), "auth_challenge:oauth_state");
-  assert_ne!(token_hash("plain-token"), "plain-token");
-  assert_eq!(token_hash("plain-token"), token_hash("plain-token"));
-  assert_ne!(token_hash("plain-token"), token_hash("other-token"));
+#[tokio::test]
+async fn migrations_enable_embedding_service_and_health_together() -> AnyResult<()> {
+  let _guard = pg_test_lock().lock().await;
+  let Some(mut runtime) = runtime_from_database_url().await? else {
+    return Ok(());
+  };
+  runtime.role = ServerRole::Frontend;
+
+  runtime
+    .run_migrations()
+    .await
+    .map_err(|error| anyhow!(error.to_string()))?;
+
+  let health = runtime
+    .embedding_health()
+    .await
+    .map_err(|error| anyhow!(error.to_string()))?;
+  assert!(health.enabled);
+  assert!(runtime.embedding.lock().await.is_some());
+  runtime.stop().await.map_err(|error| anyhow!(error.to_string()))?;
+  Ok(())
 }
 
-#[test]
-fn verification_token_state_uses_typed_purpose_and_token_hash() {
-  assert_eq!(verification_token_purpose(0), "verification_token:0");
-  assert_ne!(token_hash("verification-token"), "verification-token");
-  assert_eq!(token_hash("verification-token"), token_hash("verification-token"));
-  assert_ne!(token_hash("verification-token"), token_hash("other-token"));
+#[tokio::test]
+async fn failed_start_rolls_back_resources_and_can_restart() -> AnyResult<()> {
+  let _guard = pg_test_lock().lock().await;
+  let Some(mut runtime) = runtime_from_database_url().await? else {
+    return Ok(());
+  };
+  if let Some(pool) = runtime.pool.lock().await.take() {
+    pool.close().await;
+  }
+  runtime.role = ServerRole::Frontend;
+  {
+    let mut config = runtime.config.write().unwrap();
+    let current = config.as_ref();
+    *config = Arc::new(BackendRuntimeConfig {
+      database_url: current.database_url.clone(),
+      auth: current.auth.clone(),
+      invite_quota: current.invite_quota.clone(),
+      private_key: Arc::clone(&current.private_key),
+      deployment: crate::runtime::Deployment::SelfHosted,
+      copilot: current.copilot.clone(),
+      search: crate::runtime::config::SearchRuntimeConfig {
+        enabled: true,
+        provider: "embedded".to_string(),
+        ..Default::default()
+      },
+      redis: current.redis.clone(),
+      payment: current.payment.clone(),
+    });
+  }
+
+  let error = runtime.start_inner().await.unwrap_err();
+  assert!(error.to_string().contains("embedded search is only available"));
+  assert!(runtime.pool.lock().await.is_none());
+  assert!(runtime.blob_access.lock().await.is_none());
+  assert!(runtime.quota_read_cache.lock().await.is_none());
+  assert!(runtime.invalidation.lock().await.is_none());
+  assert!(runtime.search.lock().await.is_none());
+  assert!(runtime.embedding.lock().await.is_none());
+  assert!(runtime.embedding_worker.lock().await.is_none());
+
+  {
+    let mut config = runtime.config.write().unwrap();
+    let current = config.as_ref();
+    *config = Arc::new(BackendRuntimeConfig {
+      database_url: current.database_url.clone(),
+      auth: current.auth.clone(),
+      invite_quota: current.invite_quota.clone(),
+      private_key: Arc::clone(&current.private_key),
+      deployment: current.deployment,
+      copilot: current.copilot.clone(),
+      search: Default::default(),
+      redis: current.redis.clone(),
+      payment: current.payment.clone(),
+    });
+  }
+  runtime.role = ServerRole::AllInOne;
+  runtime
+    .start_inner()
+    .await
+    .map_err(|error| anyhow!(error.to_string()))?;
+  assert!(
+    runtime
+      .health()
+      .await
+      .map_err(|error| anyhow!(error.to_string()))?
+      .started
+  );
+  assert!(runtime.license_health_worker.lock().await.is_some());
+  runtime.stop().await.map_err(|error| anyhow!(error.to_string()))?;
+  assert!(runtime.license_health_worker.lock().await.is_none());
+  Ok(())
 }
 
-async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
+#[tokio::test]
+async fn failed_config_reload_keeps_active_resources() -> AnyResult<()> {
+  let _guard = pg_test_lock().lock().await;
+  let Some(mut runtime) = runtime_from_database_url().await? else {
+    return Ok(());
+  };
+  runtime.role = ServerRole::Frontend;
+  let config_path = std::env::temp_dir().join(format!("affine-runtime-config-{}.json", uuid::Uuid::new_v4()));
+  std::fs::write(&config_path, r#"{"indexer":{"enabled":true,"provider":"embedded"}}"#)?;
+  runtime.config_source = ConfigSource::new(Some(vec![config_path.to_string_lossy().into_owned()]));
+  let active_config = runtime.config()?;
+  let active_storage = runtime.object_storage()?;
+
+  let result = runtime.reload_config(None, None, None).await;
+  std::fs::remove_file(config_path)?;
+
+  assert!(result.is_err());
+  assert!(Arc::ptr_eq(&active_config, &runtime.config()?));
+  assert!(Arc::ptr_eq(&active_storage, &runtime.object_storage()?));
+  assert!(runtime.search.lock().await.is_none());
+  runtime.stop().await.map_err(|error| anyhow!(error.to_string()))?;
+  Ok(())
+}
+
+pub(super) async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
   let Ok(database_url) = std::env::var("DATABASE_URL") else {
     return Ok(None);
   };
@@ -84,43 +183,68 @@ async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
     .execute(&pool)
     .await
     .context("cleanup rolling quota counters for backend runtime tests")?;
-  sqlx::query("DELETE FROM runtime_invite_abuse_actions WHERE subject_key LIKE 'rust-test:%'")
-    .execute(&pool)
-    .await
-    .context("cleanup invite abuse actions for backend runtime tests")?;
-  sqlx::query("DELETE FROM runtime_invite_abuse_evidence WHERE subject_key LIKE 'rust-test:%'")
-    .execute(&pool)
-    .await
-    .context("cleanup invite abuse evidence for backend runtime tests")?;
-  sqlx::query(
-    "DELETE FROM runtime_invite_abuse_subjects WHERE subject_key LIKE 'rust-test:%' OR user_id LIKE 'rust-test:%'",
+  let abuse_subject_keys: Vec<String> = sqlx::query_scalar(
+    "SELECT DISTINCT subject_key FROM runtime_invite_abuse_evidence WHERE user_id LIKE 'rust-test:%' OR workspace_id \
+     LIKE 'rust-test:%'",
   )
+  .fetch_all(&pool)
+  .await
+  .context("locate invite abuse subjects for backend runtime tests")?;
+  sqlx::query(
+    "DELETE FROM runtime_invite_abuse_actions WHERE subject_key LIKE 'rust-test:%' OR evidence_id IN (SELECT id FROM \
+     runtime_invite_abuse_evidence WHERE user_id LIKE 'rust-test:%' OR workspace_id LIKE 'rust-test:%')",
+  )
+  .execute(&pool)
+  .await
+  .context("cleanup invite abuse actions for backend runtime tests")?;
+  sqlx::query(
+    "DELETE FROM runtime_invite_abuse_evidence WHERE subject_key LIKE 'rust-test:%' OR user_id LIKE 'rust-test:%' OR \
+     workspace_id LIKE 'rust-test:%'",
+  )
+  .execute(&pool)
+  .await
+  .context("cleanup invite abuse evidence for backend runtime tests")?;
+  sqlx::query(
+    "DELETE FROM runtime_invite_abuse_subjects WHERE subject_key LIKE 'rust-test:%' OR user_id LIKE 'rust-test:%' OR \
+     subject_key=ANY($1)",
+  )
+  .bind(&abuse_subject_keys)
   .execute(&pool)
   .await
   .context("cleanup invite abuse subjects for backend runtime tests")?;
 
   Ok(Some(BackendRuntime {
     config_source: Default::default(),
+    inline_config: Arc::new(RwLock::new(None)),
     role: ServerRole::AllInOne,
     script_mode: false,
     config: Arc::new(RwLock::new(Arc::new(BackendRuntimeConfig {
       database_url,
+      auth: Default::default(),
       invite_quota: Default::default(),
       private_key: Arc::new(zeroize::Zeroizing::new("test-private-key".to_string())),
-      deployment: crate::llm::Deployment::Cloud,
+      deployment: crate::runtime::Deployment::Cloud,
       copilot: Default::default(),
       search: Default::default(),
+      redis: Default::default(),
+      payment: Default::default(),
     }))),
-    config_reload: Mutex::new(()),
-    pool: Mutex::new(Some(pool)),
-    embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
-    object_storage: RwLock::new(Arc::new(
+    config_reload: Arc::new(Mutex::new(())),
+    pool: Arc::new(Mutex::new(Some(pool))),
+    embedding_health: Arc::new(RwLock::new(super::EmbeddingHealth::disabled("test", None))),
+    object_storage: Arc::new(RwLock::new(Arc::new(
       crate::runtime::object_storage::ObjectStorageService::from_config_files()?,
-    )),
-    embedding: Mutex::new(None),
-    embedding_worker: Mutex::new(None),
-    search: Mutex::new(None),
+    ))),
+    embedding: Arc::new(Mutex::new(None)),
+    embedding_worker: Arc::new(Mutex::new(None)),
+    search: Arc::new(Mutex::new(None)),
     managed_token_providers: Arc::new(Default::default()),
+    permission_telemetry: Default::default(),
+    blob_access: Arc::new(Mutex::new(None)),
+    invalidation: Arc::new(Mutex::new(None)),
+    quota_read_cache: Arc::new(Mutex::new(None)),
+    payment: Arc::new(Mutex::new(None)),
+    license_health_worker: Arc::new(Mutex::new(None)),
   }))
 }
 
@@ -135,6 +259,10 @@ async fn insert_invite_quota_fixture(
   let email = format!("rust-test-quota-{suffix}@example.com");
 
   sqlx::query("DELETE FROM effective_workspace_quota_states WHERE workspace_id = $1")
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await?;
+  sqlx::query("DELETE FROM entitlements WHERE target_type='workspace' AND target_id=$1")
     .bind(&workspace_id)
     .execute(&pool)
     .await?;
@@ -160,6 +288,23 @@ async fn insert_invite_quota_fixture(
     .bind(&workspace_id)
     .execute(&pool)
     .await?;
+  sqlx::query(
+    "INSERT INTO workspace_members (id,workspace_id,user_id,role,state,created_at,updated_at) VALUES \
+     ($1,$2,$3,'owner','active',now(),now())",
+  )
+  .bind(format!("rust-test:quota:member:{suffix}"))
+  .bind(&workspace_id)
+  .bind(&user_id)
+  .execute(&pool)
+  .await?;
+  sqlx::query(
+    "INSERT INTO entitlements (id,target_type,target_id,source,plan,status,quantity) VALUES \
+     ($1,'workspace',$2,'cloud_subscription','team','active',10)",
+  )
+  .bind(uuid::Uuid::new_v4().to_string())
+  .bind(&workspace_id)
+  .execute(&pool)
+  .await?;
   sqlx::query(
     r#"
     INSERT INTO effective_workspace_quota_states (
@@ -266,17 +411,24 @@ async fn runtime_gate_sql_semantics_are_atomic_and_ttl_bound() {
   for _ in 0..16 {
     let runtime = BackendRuntime {
       config_source: Default::default(),
+      inline_config: Arc::new(RwLock::new(None)),
       role: ServerRole::AllInOne,
       script_mode: false,
       config: Arc::new(RwLock::new(runtime.config().unwrap())),
-      config_reload: Mutex::new(()),
-      pool: Mutex::new(Some(runtime.pool().await.unwrap())),
-      embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
-      object_storage: RwLock::new(runtime.object_storage().unwrap()),
-      embedding: Mutex::new(None),
-      embedding_worker: Mutex::new(None),
-      search: Mutex::new(None),
+      config_reload: Arc::new(Mutex::new(())),
+      pool: Arc::new(Mutex::new(Some(runtime.pool().await.unwrap()))),
+      embedding_health: Arc::new(RwLock::new(super::EmbeddingHealth::disabled("test", None))),
+      object_storage: Arc::new(RwLock::new(runtime.object_storage().unwrap())),
+      embedding: Arc::new(Mutex::new(None)),
+      embedding_worker: Arc::new(Mutex::new(None)),
+      search: Arc::new(Mutex::new(None)),
       managed_token_providers: Arc::new(Default::default()),
+      permission_telemetry: Default::default(),
+      blob_access: Arc::new(Mutex::new(None)),
+      invalidation: Arc::new(Mutex::new(None)),
+      quota_read_cache: Arc::new(Mutex::new(None)),
+      payment: Arc::new(Mutex::new(None)),
+      license_health_worker: Arc::new(Mutex::new(None)),
     };
     tasks.push(tokio::spawn(async move {
       runtime
@@ -315,12 +467,22 @@ async fn rolling_quota_sql_state_machine_commits_releases_and_expires() {
     .await
     .unwrap();
   let pool = runtime.pool().await.unwrap();
+  let malformed_key = format!("actor_email_sha256:v1:{}", "b".repeat(64));
+  sqlx::query("DELETE FROM runtime_invite_abuse_subjects WHERE subject_key=$1")
+    .bind(&malformed_key)
+    .execute(&pool)
+    .await
+    .unwrap();
 
   let decision = runtime
     .assert_workspace_invite_quota_v1(invite_quota_input(&user_id, &workspace_id, "rust-test:quota:commit", 2))
     .await
     .unwrap();
-  assert!(decision.allowed);
+  assert!(
+    decision.allowed,
+    "reason={:?} scope={:?} current={:?} limit={:?}",
+    decision.reason, decision.scope_key, decision.current, decision.limit
+  );
   let reservation_id = decision.reservation_id.unwrap();
   assert!(
     runtime
@@ -349,6 +511,152 @@ async fn rolling_quota_sql_state_machine_commits_releases_and_expires() {
   .await
   .unwrap();
   assert_eq!(committed, 1);
+
+  let inconsistent = runtime
+    .assert_workspace_invite_quota_v1(invite_quota_input(
+      &user_id,
+      &workspace_id,
+      "rust-test:quota:inconsistent-commit",
+      1,
+    ))
+    .await
+    .unwrap()
+    .reservation_id
+    .unwrap();
+  assert!(
+    runtime
+      .commit_workspace_invite_quota_v1(
+        inconsistent.clone(),
+        types::RuntimeWorkspaceInviteQuotaUsage {
+          target_count: 1,
+          target_domains: Vec::new(),
+        },
+      )
+      .await
+      .is_err()
+  );
+  let status: String =
+    sqlx::query_scalar("SELECT status FROM runtime_rolling_quota_reservations WHERE id=$1::uuid LIMIT 1")
+      .bind(&inconsistent)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  assert_eq!(status, "reserved");
+  assert!(runtime.release_workspace_invite_quota_v1(inconsistent).await.unwrap());
+
+  let unknown_scope = runtime
+    .assert_workspace_invite_quota_v1(invite_quota_input(
+      &user_id,
+      &workspace_id,
+      "rust-test:quota:unknown-scope-commit",
+      1,
+    ))
+    .await
+    .unwrap()
+    .reservation_id
+    .unwrap();
+  sqlx::query(
+    r#"UPDATE runtime_rolling_quota_reservations
+       SET scope_key = 'invite:future_v2:foo'
+       WHERE ctid = (
+         SELECT ctid FROM runtime_rolling_quota_reservations
+         WHERE id = $1::uuid LIMIT 1
+       )"#,
+  )
+  .bind(&unknown_scope)
+  .execute(&pool)
+  .await
+  .unwrap();
+  assert!(
+    runtime
+      .commit_workspace_invite_quota_v1(
+        unknown_scope.clone(),
+        types::RuntimeWorkspaceInviteQuotaUsage {
+          target_count: 1,
+          target_domains: vec![types::RuntimeQuotaTargetDomainInput {
+            domain: "example.com".to_string(),
+            count: 1,
+          }],
+        },
+      )
+      .await
+      .is_err()
+  );
+  let status: String =
+    sqlx::query_scalar("SELECT status FROM runtime_rolling_quota_reservations WHERE id=$1::uuid LIMIT 1")
+      .bind(&unknown_scope)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  assert_eq!(status, "reserved");
+  assert!(runtime.release_workspace_invite_quota_v1(unknown_scope).await.unwrap());
+
+  let mut forward = invite_quota_input(&user_id, &workspace_id, "rust-test:quota:ordered-locks-a", 2);
+  forward.target_domains = vec![
+    types::RuntimeQuotaTargetDomainInput {
+      domain: "a.example".to_string(),
+      count: 1,
+    },
+    types::RuntimeQuotaTargetDomainInput {
+      domain: "b.example".to_string(),
+      count: 1,
+    },
+  ];
+  let mut reverse = invite_quota_input(&user_id, &workspace_id, "rust-test:quota:ordered-locks-b", 2);
+  reverse.target_domains = vec![
+    types::RuntimeQuotaTargetDomainInput {
+      domain: "b.example".to_string(),
+      count: 1,
+    },
+    types::RuntimeQuotaTargetDomainInput {
+      domain: "a.example".to_string(),
+      count: 1,
+    },
+  ];
+  let forward_id = runtime
+    .assert_workspace_invite_quota_v1(forward)
+    .await
+    .unwrap()
+    .reservation_id
+    .unwrap();
+  let reverse_id = runtime
+    .assert_workspace_invite_quota_v1(reverse)
+    .await
+    .unwrap()
+    .reservation_id
+    .unwrap();
+  let forward_usage = types::RuntimeWorkspaceInviteQuotaUsage {
+    target_count: 2,
+    target_domains: vec![
+      types::RuntimeQuotaTargetDomainInput {
+        domain: "a.example".to_string(),
+        count: 1,
+      },
+      types::RuntimeQuotaTargetDomainInput {
+        domain: "b.example".to_string(),
+        count: 1,
+      },
+    ],
+  };
+  let reverse_usage = types::RuntimeWorkspaceInviteQuotaUsage {
+    target_count: 2,
+    target_domains: vec![
+      types::RuntimeQuotaTargetDomainInput {
+        domain: "b.example".to_string(),
+        count: 1,
+      },
+      types::RuntimeQuotaTargetDomainInput {
+        domain: "a.example".to_string(),
+        count: 1,
+      },
+    ],
+  };
+  let (forward_commit, reverse_commit) = tokio::join!(
+    runtime.commit_workspace_invite_quota_v1(forward_id, forward_usage),
+    runtime.commit_workspace_invite_quota_v1(reverse_id, reverse_usage),
+  );
+  assert!(forward_commit.unwrap());
+  assert!(reverse_commit.unwrap());
 
   let decision = runtime
     .assert_workspace_invite_quota_v1(invite_quota_input(
@@ -395,10 +703,81 @@ async fn rolling_quota_sql_state_machine_commits_releases_and_expires() {
       .await
       .unwrap();
   assert_eq!(expired, "expired");
+
+  let mut abuse_input = invite_quota_input(&user_id, &workspace_id, "rust-test:quota:abuse", 12);
+  abuse_input.target_domains = vec![types::RuntimeQuotaTargetDomainInput {
+    domain: "QQ.com.".to_string(),
+    count: 12,
+  }];
+  abuse_input.source = Some(types::RuntimeQuotaSourceInput {
+    trusted: true,
+    ip: Some("192.168.12.34".to_string()),
+    country: Some("US".to_string()),
+    asn: Some(13335),
+    ray_id: Some("rust-test-ray".to_string()),
+  });
+  let abuse = runtime.assert_workspace_invite_quota_v1(abuse_input).await.unwrap();
+  assert!(!abuse.allowed);
+  let reason = abuse.reason.unwrap();
+  let action_required = abuse.action_required.unwrap();
+
+  let subject: (String, String, Option<String>) =
+    sqlx::query_as("SELECT subject_key,status,action FROM runtime_invite_abuse_subjects WHERE subject_key=$1")
+      .bind(&action_required.subject_key)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  assert_eq!(subject.0, action_required.subject_key);
+  assert_eq!(subject.1, "quarantined");
+  assert_eq!(subject.2.as_deref(), Some(action_required.action.as_str()));
+
+  let evidence: (String, String) =
+    sqlx::query_as("SELECT decision,reason FROM runtime_invite_abuse_evidence WHERE id=$1::bigint")
+      .bind(&action_required.evidence_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  assert_eq!(evidence, (action_required.action.clone(), reason));
+  let action: (String, String) =
+    sqlx::query_as("SELECT action,status FROM runtime_invite_abuse_actions WHERE id=$1::bigint")
+      .bind(&action_required.action_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  assert_eq!(action, (action_required.action, "pending".to_string()));
+
+  sqlx::query(
+    r#"INSERT INTO runtime_invite_abuse_subjects (
+         subject_key,kind,status,user_id,actor_email_hash,email_domain,
+         action,action_reason,first_seen_at,last_seen_at
+       ) VALUES ($1,'future_kind','quarantined',$2,$1,'example.com',
+         'quarantine_actor','high_risk_domain_burst',now(),now())"#,
+  )
+  .bind(&malformed_key)
+  .bind(&user_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  let denied = runtime
+    .assert_workspace_invite_quota_v1(invite_quota_input(
+      &user_id,
+      &workspace_id,
+      "rust-test:quota:malformed-persisted-row",
+      1,
+    ))
+    .await
+    .unwrap();
+  assert!(!denied.allowed);
+  assert_eq!(denied.reason.as_deref(), Some("policy_state_invalid"));
+  sqlx::query("DELETE FROM runtime_invite_abuse_subjects WHERE subject_key=$1")
+    .bind(&malformed_key)
+    .execute(&pool)
+    .await
+    .unwrap();
 }
 
 #[tokio::test]
-async fn rolling_quota_projection_stale_fails_closed() {
+async fn rolling_quota_ignores_stale_effective_projection() {
   let _guard = pg_test_lock().lock().await;
   let Some(runtime) = runtime_from_database_url().await.unwrap() else {
     eprintln!("skipping postgres integration test: DATABASE_URL is not set");
@@ -413,9 +792,1314 @@ async fn rolling_quota_projection_stale_fails_closed() {
     .await
     .unwrap();
 
-  assert!(!decision.allowed);
-  assert_eq!(decision.reason.as_deref(), Some("quota_projection_stale"));
-  assert!(decision.reservation_id.is_none());
+  assert!(
+    decision.allowed,
+    "reason={:?} scope={:?} current={:?} limit={:?}",
+    decision.reason, decision.scope_key, decision.current, decision.limit
+  );
+  assert!(decision.reservation_id.is_some());
+}
+
+#[tokio::test]
+async fn strict_storage_reservation_serializes_last_bytes_and_recovers_ledger_rows() {
+  let _guard = pg_test_lock().lock().await;
+  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
+    return;
+  };
+  let pool = runtime.pool().await.unwrap();
+  let temp = tempfile::tempdir().unwrap();
+  runtime
+    .configure_object_storage(format!(
+      r#"{{"storages":{{"blob.storage":{{"provider":"fs","bucket":"strict-storage","config":{{"path":{}}}}}}}}}"#,
+      serde_json::to_string(temp.path()).unwrap()
+    ))
+    .unwrap();
+  let user_id = "rust-test:strict-storage:user";
+  let workspace_id = "rust-test:strict-storage:workspace";
+  sqlx::query("DELETE FROM workspaces WHERE id=$1")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DELETE FROM users WHERE id=$1")
+    .bind(user_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("INSERT INTO users (id,name,email,created_at) VALUES ($1,'Strict Storage',$2,now())")
+    .bind(user_id)
+    .bind("rust-test-strict-storage@example.com")
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("INSERT INTO workspaces (id,created_at) VALUES ($1,now())")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query(
+    "INSERT INTO workspace_members (id,workspace_id,user_id,role,state,created_at,updated_at) VALUES \
+     ($1,$2,$3,'owner','active',now(),now())",
+  )
+  .bind("rust-test:strict-storage:member")
+  .bind(workspace_id)
+  .bind(user_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  *runtime.quota_read_cache.lock().await = Some(Arc::new(super::quota_read_cache::QuotaReadCache::new(
+    pool.clone(),
+    crate::runtime::Deployment::Cloud,
+    Default::default(),
+  )));
+  let limits = runtime
+    .get_workspace_quota_state_v1(workspace_id.to_string())
+    .await
+    .unwrap();
+  let oversized = runtime
+    .reserve_storage_quota_v1(types::RuntimeStorageReservationInput {
+      workspace_id: workspace_id.to_string(),
+      user_id: user_id.to_string(),
+      key: "oversized".to_string(),
+      size: limits.blob_limit + 1,
+      mime: "application/octet-stream".to_string(),
+      kind: "blob".to_string(),
+      doc_id: None,
+      name: None,
+      upload_id: None,
+    })
+    .await
+    .unwrap();
+  assert!(!oversized.allowed);
+  assert_eq!(oversized.reason.as_deref(), Some("blob_limit"));
+  assert_eq!(oversized.limit, Some(limits.blob_limit));
+
+  for index in 0..3 {
+    sqlx::query(
+      "INSERT INTO workspace_invitations \
+       (id,workspace_id,normalized_email,inviter_user_id,status,kind,created_at,updated_at) VALUES \
+       ($1,$2,$3,$4,'pending','email',now(),now())",
+    )
+    .bind(format!("rust-test:strict-storage:readonly:{index}"))
+    .bind(workspace_id)
+    .bind(format!("strict-storage-readonly-{index}@example.com"))
+    .bind(user_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  }
+  let readonly = runtime
+    .reserve_storage_quota_v1(types::RuntimeStorageReservationInput {
+      workspace_id: workspace_id.to_string(),
+      user_id: user_id.to_string(),
+      key: "member-overflow".to_string(),
+      size: 1,
+      mime: "application/octet-stream".to_string(),
+      kind: "blob".to_string(),
+      doc_id: None,
+      name: None,
+      upload_id: None,
+    })
+    .await
+    .unwrap();
+  assert!(!readonly.allowed);
+  assert_eq!(readonly.reason.as_deref(), Some("storage_limit"));
+  assert!(
+    !sqlx::query_scalar::<_, bool>(
+      "SELECT EXISTS(SELECT 1 FROM blobs WHERE workspace_id=$1 AND key='member-overflow')",
+    )
+    .bind(workspace_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap()
+  );
+  sqlx::query("DELETE FROM workspace_invitations WHERE workspace_id=$1")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+  let pending_input = |mime: &str| types::RuntimeStorageReservationInput {
+    workspace_id: workspace_id.to_string(),
+    user_id: user_id.to_string(),
+    key: "pending-resume".to_string(),
+    size: 4,
+    mime: mime.to_string(),
+    kind: "blob".to_string(),
+    doc_id: None,
+    name: None,
+    upload_id: None,
+  };
+  let pending = runtime
+    .reserve_storage_quota_v1(pending_input("text/plain"))
+    .await
+    .unwrap();
+  let resumed = runtime
+    .reserve_storage_quota_v1(pending_input("text/plain"))
+    .await
+    .unwrap();
+  assert_eq!(resumed.reservation_id, pending.reservation_id);
+  let mismatch = match runtime
+    .reserve_storage_quota_v1(pending_input("application/octet-stream"))
+    .await
+  {
+    Ok(_) => panic!("a live reservation must reject a MIME change"),
+    Err(error) => error,
+  };
+  assert!(mismatch.to_string().contains("blob mime mismatch"));
+  assert_eq!(
+    sqlx::query_as::<_, (String, String)>(
+      "SELECT status::text,mime FROM blobs WHERE workspace_id=$1 AND key='pending-resume'",
+    )
+    .bind(workspace_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap(),
+    ("pending".to_string(), "text/plain".to_string())
+  );
+  assert!(
+    runtime
+      .abort_storage_reservation_v1(types::RuntimeStorageReservationMutation {
+        workspace_id: workspace_id.to_string(),
+        user_id: user_id.to_string(),
+        key: "pending-resume".to_string(),
+        reservation_id: pending.reservation_id.unwrap(),
+        kind: "blob".to_string(),
+        doc_id: None,
+        size: None,
+        mime: None,
+      })
+      .await
+      .unwrap()
+  );
+
+  let quota = limits.storage_quota;
+  let chunk = i32::MAX;
+  let mut remaining = quota - 1_000;
+  let mut index = 0;
+  while remaining > 0 {
+    let size = remaining.min(i64::from(chunk)) as i32;
+    sqlx::query(
+      "INSERT INTO blobs (workspace_id,key,size,mime,status) VALUES ($1,$2,$3,'application/octet-stream','completed')",
+    )
+    .bind(workspace_id)
+    .bind(format!("existing-{index}"))
+    .bind(size)
+    .execute(&pool)
+    .await
+    .unwrap();
+    remaining -= i64::from(size);
+    index += 1;
+  }
+  let input = |key: &str| types::RuntimeStorageReservationInput {
+    workspace_id: workspace_id.to_string(),
+    user_id: user_id.to_string(),
+    key: key.to_string(),
+    size: 800,
+    mime: "application/octet-stream".to_string(),
+    kind: "blob".to_string(),
+    doc_id: None,
+    name: None,
+    upload_id: None,
+  };
+  let (first, second) = tokio::join!(
+    runtime.reserve_storage_quota_v1(input("last-byte-a")),
+    runtime.reserve_storage_quota_v1(input("last-byte-b"))
+  );
+  let first = first.unwrap();
+  let second = second.unwrap();
+  assert_ne!(first.allowed, second.allowed);
+  let denied = if first.allowed { &second } else { &first };
+  assert_eq!(denied.reason.as_deref(), Some("storage_limit"));
+  assert_eq!(denied.limit, Some(quota));
+  let allowed = if first.allowed { first } else { second };
+  let reservation_id = allowed.reservation_id.unwrap();
+  assert!(
+    runtime
+      .abort_storage_reservation_v1(types::RuntimeStorageReservationMutation {
+        workspace_id: workspace_id.to_string(),
+        user_id: user_id.to_string(),
+        key: if sqlx::query_scalar::<_, bool>(
+          "SELECT EXISTS(SELECT 1 FROM blobs WHERE workspace_id=$1 AND key='last-byte-a' AND reservation_id=$2::uuid)",
+        )
+        .bind(workspace_id)
+        .bind(&reservation_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+        {
+          "last-byte-a".to_string()
+        } else {
+          "last-byte-b".to_string()
+        },
+        reservation_id,
+        kind: "blob".to_string(),
+        doc_id: None,
+        size: None,
+        mime: None,
+      })
+      .await
+      .unwrap()
+  );
+
+  sqlx::query("INSERT INTO blobs (workspace_id,key,size,mime,status) VALUES ($1,$2,100,$3,'completed')")
+    .bind(workspace_id)
+    .bind("missing-completed-object")
+    .bind("application/octet-stream")
+    .execute(&pool)
+    .await
+    .unwrap();
+  let repaired = runtime
+    .reserve_storage_quota_v1(types::RuntimeStorageReservationInput {
+      workspace_id: workspace_id.to_string(),
+      user_id: user_id.to_string(),
+      key: "missing-completed-object".to_string(),
+      size: 100,
+      mime: "application/octet-stream".to_string(),
+      kind: "blob".to_string(),
+      doc_id: None,
+      name: None,
+      upload_id: None,
+    })
+    .await
+    .unwrap();
+  assert!(repaired.allowed);
+  assert!(!repaired.already_uploaded);
+  assert!(repaired.reservation_id.is_some());
+  assert_eq!(
+    sqlx::query_scalar::<_, String>("SELECT status::text FROM blobs WHERE workspace_id=$1 AND key=$2")
+      .bind(workspace_id)
+      .bind("missing-completed-object")
+      .fetch_one(&pool)
+      .await
+      .unwrap(),
+    "pending"
+  );
+
+  let expired_reservation_id = uuid::Uuid::new_v4();
+  sqlx::query(
+    "INSERT INTO blobs (workspace_id,key,size,mime,status,reservation_id,reservation_expires_at) VALUES \
+     ($1,'expired-race',50,'application/octet-stream','pending',$2,clock_timestamp()-interval '1 minute')",
+  )
+  .bind(workspace_id)
+  .bind(expired_reservation_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  let expired_input = || types::RuntimeStorageReservationInput {
+    workspace_id: workspace_id.to_string(),
+    user_id: user_id.to_string(),
+    key: "expired-race".to_string(),
+    size: 50,
+    mime: "application/octet-stream".to_string(),
+    kind: "blob".to_string(),
+    doc_id: None,
+    name: None,
+    upload_id: None,
+  };
+  let (expired_first, expired_second) = tokio::join!(
+    runtime.reserve_storage_quota_v1(expired_input()),
+    runtime.reserve_storage_quota_v1(expired_input())
+  );
+  let expired_first = expired_first.unwrap();
+  let expired_second = expired_second.unwrap();
+  assert!(expired_first.allowed && expired_second.allowed);
+  assert_ne!(expired_first.reservation_id, Some(expired_reservation_id.to_string()));
+  assert_eq!(expired_first.reservation_id, expired_second.reservation_id);
+  assert_eq!(
+    sqlx::query_scalar::<_, i64>(
+      "SELECT count(*) FROM blobs WHERE workspace_id=$1 AND key='expired-race' AND status='pending'",
+    )
+    .bind(workspace_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap(),
+    1
+  );
+
+  sqlx::query(
+    "INSERT INTO blobs (workspace_id,key,size,mime,status) VALUES \
+     ($1,'duplicate-object',50,'application/octet-stream','completed')",
+  )
+  .bind(workspace_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  let duplicate_locator = crate::runtime::object_storage::types::ObjectLocator::new(
+    crate::runtime::object_storage::types::StorageScope::Blob,
+    crate::runtime::object_storage::types::ObjectKey::new(format!("{workspace_id}/duplicate-object")).unwrap(),
+  );
+  runtime
+    .object_storage()
+    .unwrap()
+    .put(
+      &duplicate_locator,
+      vec![0; 50],
+      crate::runtime::object_storage::types::ObjectPutMetadata {
+        content_type: Some("application/octet-stream".to_string()),
+        content_length: Some(50),
+        checksum_crc32: None,
+      },
+    )
+    .await
+    .unwrap();
+  for _ in 0..2 {
+    let duplicate = runtime
+      .reserve_storage_quota_v1(types::RuntimeStorageReservationInput {
+        workspace_id: workspace_id.to_string(),
+        user_id: user_id.to_string(),
+        key: "duplicate-object".to_string(),
+        size: 50,
+        mime: "application/octet-stream".to_string(),
+        kind: "blob".to_string(),
+        doc_id: None,
+        name: None,
+        upload_id: None,
+      })
+      .await
+      .unwrap();
+    assert!(duplicate.allowed);
+    assert!(duplicate.already_uploaded);
+    assert!(duplicate.reservation_id.is_none());
+  }
+  assert!(
+    !runtime
+      .abort_storage_reservation_v1(types::RuntimeStorageReservationMutation {
+        workspace_id: workspace_id.to_string(),
+        user_id: user_id.to_string(),
+        key: "duplicate-object".to_string(),
+        reservation_id: uuid::Uuid::new_v4().to_string(),
+        kind: "blob".to_string(),
+        doc_id: None,
+        size: None,
+        mime: None,
+      })
+      .await
+      .unwrap()
+  );
+  assert!(
+    runtime
+      .object_storage()
+      .unwrap()
+      .head(&duplicate_locator)
+      .await
+      .unwrap()
+      .is_some(),
+    "a stale abort must not delete the completed final object"
+  );
+
+  sqlx::query(
+    r#"CREATE OR REPLACE FUNCTION rust_test_strict_storage_block_expired_update()
+       RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$"#,
+  )
+  .execute(&pool)
+  .await
+  .unwrap();
+  sqlx::query(
+    r#"CREATE TRIGGER rust_test_strict_storage_rows_fence
+       BEFORE UPDATE ON blobs FOR EACH ROW
+       WHEN (OLD.workspace_id = 'rust-test:strict-storage:workspace' AND OLD.key = 'rows-fence')
+       EXECUTE FUNCTION rust_test_strict_storage_block_expired_update()"#,
+  )
+  .execute(&pool)
+  .await
+  .unwrap();
+  sqlx::query(
+    "INSERT INTO blobs (workspace_id,key,size,mime,status,reservation_id,reservation_expires_at) VALUES \
+     ($1,'rows-fence',25,'application/octet-stream','pending',$2,clock_timestamp()-interval '1 minute')",
+  )
+  .bind(workspace_id)
+  .bind(uuid::Uuid::new_v4())
+  .execute(&pool)
+  .await
+  .unwrap();
+  let fenced = match runtime
+    .reserve_storage_quota_v1(types::RuntimeStorageReservationInput {
+      workspace_id: workspace_id.to_string(),
+      user_id: user_id.to_string(),
+      key: "rows-fence".to_string(),
+      size: 25,
+      mime: "application/octet-stream".to_string(),
+      kind: "blob".to_string(),
+      doc_id: None,
+      name: None,
+      upload_id: None,
+    })
+    .await
+  {
+    Ok(_) => panic!("the rows-affected fence must reject a lost expired-row update"),
+    Err(error) => error,
+  };
+  assert!(fenced.to_string().contains("storage reservation changed"));
+  sqlx::query("DROP TRIGGER rust_test_strict_storage_rows_fence ON blobs")
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DROP FUNCTION rust_test_strict_storage_block_expired_update()")
+    .execute(&pool)
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn strict_blob_management_authorizes_inventory_and_denies_before_object_cleanup() {
+  let _guard = pg_test_lock().lock().await;
+  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
+    return;
+  };
+  let temp = tempfile::tempdir().unwrap();
+  runtime
+    .configure_object_storage(format!(
+      r#"{{"storages":{{"blob.storage":{{"provider":"fs","bucket":"blob-management","config":{{"path":{}}}}}}}}}"#,
+      serde_json::to_string(temp.path()).unwrap()
+    ))
+    .unwrap();
+  let pool = runtime.pool().await.unwrap();
+  let workspace_id = "rust-test:blob-management:workspace";
+  let owner_id = "rust-test:blob-management:owner";
+  let member_id = "rust-test:blob-management:member";
+  sqlx::query("DELETE FROM workspaces WHERE id=$1")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DELETE FROM users WHERE id=ANY($1)")
+    .bind(vec![owner_id, member_id])
+    .execute(&pool)
+    .await
+    .unwrap();
+  for (id, email) in [
+    (owner_id, "blob-owner@example.com"),
+    (member_id, "blob-member@example.com"),
+  ] {
+    sqlx::query("INSERT INTO users(id,name,email,created_at) VALUES($1,'Blob Management',$2,now())")
+      .bind(id)
+      .bind(email)
+      .execute(&pool)
+      .await
+      .unwrap();
+  }
+  sqlx::query("INSERT INTO workspaces(id,created_at) VALUES($1,now())")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  for (id, user_id, role) in [
+    ("rust-test:blob-management:owner-member", owner_id, "owner"),
+    ("rust-test:blob-management:ordinary-member", member_id, "member"),
+  ] {
+    sqlx::query(
+      "INSERT INTO workspace_members(id,workspace_id,user_id,role,state,created_at,updated_at) \
+       VALUES($1,$2,$3,$4,'active',now(),now())",
+    )
+    .bind(id)
+    .bind(workspace_id)
+    .bind(user_id)
+    .bind(role)
+    .execute(&pool)
+    .await
+    .unwrap();
+  }
+  sqlx::query(
+    "INSERT INTO blobs(workspace_id,key,size,mime,status) VALUES($1,'managed-key',7,'image/png','completed')",
+  )
+  .bind(workspace_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  let locator = |key: &str| {
+    crate::runtime::object_storage::types::ObjectLocator::new(
+      crate::runtime::object_storage::types::StorageScope::Blob,
+      crate::runtime::object_storage::types::ObjectKey::new(format!("{workspace_id}/{key}")).unwrap(),
+    )
+  };
+  runtime
+    .object_storage()
+    .unwrap()
+    .put(
+      &locator("managed-key"),
+      b"managed".to_vec(),
+      crate::runtime::object_storage::types::ObjectPutMetadata {
+        content_type: Some("image/png".to_string()),
+        content_length: Some(7),
+        checksum_crc32: None,
+      },
+    )
+    .await
+    .unwrap();
+
+  assert!(
+    runtime
+      .list_managed_workspace_blobs_v1(member_id.into(), workspace_id.into())
+      .await
+      .is_err()
+  );
+  let inventory = runtime
+    .list_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into())
+    .await
+    .unwrap();
+  assert_eq!(inventory.len(), 1);
+  assert_eq!(inventory[0].key, "managed-key");
+  sqlx::query(
+    "INSERT INTO blobs(workspace_id,key,size,mime,status) SELECT $1,'managed-cap-' || \
+     value,1,'text/plain','completed' FROM generate_series(1,1000) value",
+  )
+  .bind(workspace_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  assert!(
+    runtime
+      .list_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into())
+      .await
+      .is_err()
+  );
+  sqlx::query("DELETE FROM blobs WHERE workspace_id=$1 AND key LIKE 'managed-cap-%'")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  assert!(
+    runtime
+      .manage_workspace_blob_v1(types::RuntimeBlobManagementInput {
+        workspace_id: workspace_id.into(),
+        actor_user_id: owner_id.into(),
+        key: "managed-key".into(),
+        permanently: false,
+      })
+      .await
+      .unwrap()
+  );
+  assert!(
+    runtime
+      .list_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into())
+      .await
+      .unwrap()
+      .is_empty()
+  );
+  let deleted_at = sqlx::query_scalar::<_, Option<chrono::DateTime<chrono::Utc>>>(
+    "SELECT deleted_at FROM blobs WHERE workspace_id=$1 AND key='managed-key'",
+  )
+  .bind(workspace_id)
+  .fetch_one(&pool)
+  .await
+  .unwrap();
+  assert!(deleted_at.is_some());
+  assert!(
+    runtime
+      .object_storage()
+      .unwrap()
+      .head(&locator("managed-key"))
+      .await
+      .unwrap()
+      .is_some()
+  );
+
+  for key in ["permanent-key", "release-a", "release-b"] {
+    sqlx::query(
+      "INSERT INTO blobs(workspace_id,key,size,mime,status,deleted_at) VALUES($1,$2,1,'text/plain','completed',CASE \
+       WHEN $2='permanent-key' THEN NULL ELSE now() END)",
+    )
+    .bind(workspace_id)
+    .bind(key)
+    .execute(&pool)
+    .await
+    .unwrap();
+    runtime
+      .object_storage()
+      .unwrap()
+      .put(
+        &locator(key),
+        b"x".to_vec(),
+        crate::runtime::object_storage::types::ObjectPutMetadata {
+          content_type: Some("text/plain".to_string()),
+          content_length: Some(1),
+          checksum_crc32: None,
+        },
+      )
+      .await
+      .unwrap();
+  }
+  assert!(
+    runtime
+      .manage_workspace_blob_v1(types::RuntimeBlobManagementInput {
+        workspace_id: workspace_id.into(),
+        actor_user_id: owner_id.into(),
+        key: "permanent-key".into(),
+        permanently: true,
+      })
+      .await
+      .unwrap()
+  );
+  assert!(
+    runtime
+      .object_storage()
+      .unwrap()
+      .head(&locator("permanent-key"))
+      .await
+      .unwrap()
+      .is_none()
+  );
+  assert!(
+    !sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM blobs WHERE workspace_id=$1 AND key='permanent-key')",)
+      .bind(workspace_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap()
+  );
+  assert!(
+    runtime
+      .release_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into(), 0)
+      .await
+      .is_err()
+  );
+  assert_eq!(
+    runtime
+      .release_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into(), 1)
+      .await
+      .unwrap(),
+    1
+  );
+  assert_eq!(
+    runtime
+      .release_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into(), 10)
+      .await
+      .unwrap(),
+    2
+  );
+  assert_eq!(
+    sqlx::query_scalar::<_, i64>("SELECT count(*) FROM blobs WHERE workspace_id=$1 AND deleted_at IS NOT NULL")
+      .bind(workspace_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap(),
+    0
+  );
+
+  sqlx::query(
+    "INSERT INTO blobs(workspace_id,key,size,mime,status) VALUES($1,'failed-permanent-key',1,'text/plain','completed')",
+  )
+  .bind(workspace_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  runtime
+    .object_storage()
+    .unwrap()
+    .put(
+      &locator("failed-permanent-key"),
+      b"x".to_vec(),
+      crate::runtime::object_storage::types::ObjectPutMetadata {
+        content_type: Some("text/plain".to_string()),
+        content_length: Some(1),
+        checksum_crc32: None,
+      },
+    )
+    .await
+    .unwrap();
+  let metadata = temp
+    .path()
+    .join("blob-management")
+    .join(workspace_id)
+    .join("failed-permanent-key.metadata.json");
+  std::fs::remove_file(&metadata).unwrap();
+  std::fs::create_dir(&metadata).unwrap();
+  assert!(
+    runtime
+      .manage_workspace_blob_v1(types::RuntimeBlobManagementInput {
+        workspace_id: workspace_id.into(),
+        actor_user_id: owner_id.into(),
+        key: "failed-permanent-key".into(),
+        permanently: true,
+      })
+      .await
+      .is_err()
+  );
+  assert!(
+    sqlx::query_scalar::<_, bool>(
+      "SELECT deleted_at IS NOT NULL FROM blobs WHERE workspace_id=$1 AND key='failed-permanent-key'",
+    )
+    .bind(workspace_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap()
+  );
+}
+
+#[tokio::test]
+async fn strict_comment_reservation_rejects_hijack_and_cleans_expired_generation() {
+  let _guard = pg_test_lock().lock().await;
+  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
+    return;
+  };
+  let pool = runtime.pool().await.unwrap();
+  let owner_id = "rust-test:strict-comment:owner";
+  let member_id = "rust-test:strict-comment:member";
+  let workspace_id = "rust-test:strict-comment:workspace";
+  let doc_id = "rust-test:strict-comment:doc";
+  sqlx::query("DELETE FROM workspaces WHERE id=$1")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DELETE FROM users WHERE id=ANY($1)")
+    .bind(vec![owner_id, member_id])
+    .execute(&pool)
+    .await
+    .unwrap();
+  for (id, email) in [
+    (owner_id, "strict-comment-owner@example.com"),
+    (member_id, "strict-comment-member@example.com"),
+  ] {
+    sqlx::query("INSERT INTO users (id,name,email,created_at) VALUES ($1,'Strict Comment',$2,now())")
+      .bind(id)
+      .bind(email)
+      .execute(&pool)
+      .await
+      .unwrap();
+  }
+  sqlx::query("INSERT INTO workspaces (id,created_at) VALUES ($1,now())")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  for (id, user_id, role) in [
+    ("rust-test:strict-comment:owner-member", owner_id, "owner"),
+    ("rust-test:strict-comment:collaborator-member", member_id, "member"),
+  ] {
+    sqlx::query(
+      "INSERT INTO workspace_members (id,workspace_id,user_id,role,state,created_at,updated_at) VALUES \
+       ($1,$2,$3,$4,'active',now(),now())",
+    )
+    .bind(id)
+    .bind(workspace_id)
+    .bind(user_id)
+    .bind(role)
+    .execute(&pool)
+    .await
+    .unwrap();
+  }
+  let temp = tempfile::tempdir().unwrap();
+  runtime
+    .configure_object_storage(format!(
+      r#"{{"storages":{{"blob.storage":{{"provider":"fs","bucket":"strict-comment","config":{{"path":{}}}}}}}}}"#,
+      serde_json::to_string(temp.path()).unwrap()
+    ))
+    .unwrap();
+  while runtime.cleanup_expired_storage_reservations_v1(100).await.unwrap() > 0 {}
+  let input = |user_id: &str| types::RuntimeStorageReservationInput {
+    workspace_id: workspace_id.to_string(),
+    user_id: user_id.to_string(),
+    key: "attachment-key".to_string(),
+    size: 4,
+    mime: "text/plain".to_string(),
+    kind: "comment_attachment".to_string(),
+    doc_id: Some(doc_id.to_string()),
+    name: Some("attachment.txt".to_string()),
+    upload_id: None,
+  };
+  let reserved = runtime.reserve_storage_quota_v1(input(owner_id)).await.unwrap();
+  let reservation_id = reserved.reservation_id.unwrap();
+  assert!(runtime.reserve_storage_quota_v1(input(member_id)).await.is_err());
+  let mut mime_mismatch = input(owner_id);
+  mime_mismatch.mime = "application/octet-stream".to_string();
+  let mime_mismatch = match runtime.reserve_storage_quota_v1(mime_mismatch).await {
+    Ok(_) => panic!("a comment reservation must reject a persisted MIME mismatch"),
+    Err(error) => error,
+  };
+  assert!(mime_mismatch.to_string().contains("blob mime mismatch"));
+  assert_eq!(
+    sqlx::query_scalar::<_, String>(
+      "SELECT mime FROM comment_attachments WHERE workspace_id=$1 AND doc_id=$2 AND key='attachment-key'",
+    )
+    .bind(workspace_id)
+    .bind(doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap(),
+    "text/plain"
+  );
+
+  let reservation_uuid = uuid::Uuid::parse_str(&reservation_id).unwrap();
+  let locator = crate::runtime::object_storage::types::ObjectLocator::new(
+    crate::runtime::object_storage::types::StorageScope::Blob,
+    crate::runtime::object_storage::types::ObjectKey::new(format!(
+      "comment-attachments/{workspace_id}/{doc_id}/.reservations/{reservation_uuid}/attachment-key"
+    ))
+    .unwrap(),
+  );
+  runtime
+    .object_storage()
+    .unwrap()
+    .put(
+      &locator,
+      b"test".to_vec(),
+      crate::runtime::object_storage::types::ObjectPutMetadata {
+        content_type: Some("text/plain".to_string()),
+        content_length: Some(4),
+        checksum_crc32: None,
+      },
+    )
+    .await
+    .unwrap();
+  sqlx::query(
+    "UPDATE comment_attachments SET reservation_expires_at=clock_timestamp()-interval '1 minute' WHERE \
+     workspace_id=$1 AND doc_id=$2 AND key='attachment-key'",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  assert_eq!(runtime.cleanup_expired_storage_reservations_v1(100).await.unwrap(), 1);
+  assert!(
+    runtime
+      .object_storage()
+      .unwrap()
+      .head(&locator)
+      .await
+      .unwrap()
+      .is_none()
+  );
+  assert!(
+    !sqlx::query_scalar::<_, bool>(
+      "SELECT EXISTS(SELECT 1 FROM comment_attachments WHERE workspace_id=$1 AND doc_id=$2 AND key='attachment-key')",
+    )
+    .bind(workspace_id)
+    .bind(doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap()
+  );
+
+  let completed_input = |key: &str| types::RuntimeStorageReservationInput {
+    workspace_id: workspace_id.to_string(),
+    user_id: owner_id.to_string(),
+    key: key.to_string(),
+    size: 4,
+    mime: "text/plain".to_string(),
+    kind: "comment_attachment".to_string(),
+    doc_id: Some(doc_id.to_string()),
+    name: Some("attachment.txt".to_string()),
+    upload_id: None,
+  };
+  sqlx::query(
+    "INSERT INTO comment_attachments (workspace_id,doc_id,key,size,mime,name,status,created_by) VALUES \
+     ($1,$2,'completed-attachment',4,'text/plain','attachment.txt','completed',$3)",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(owner_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  let completed_locator = crate::runtime::object_storage::types::ObjectLocator::new(
+    crate::runtime::object_storage::types::StorageScope::Blob,
+    crate::runtime::object_storage::types::ObjectKey::new(format!(
+      "comment-attachments/{workspace_id}/{doc_id}/completed-attachment"
+    ))
+    .unwrap(),
+  );
+  runtime
+    .object_storage()
+    .unwrap()
+    .put(
+      &completed_locator,
+      b"test".to_vec(),
+      crate::runtime::object_storage::types::ObjectPutMetadata {
+        content_type: Some("text/plain".to_string()),
+        content_length: Some(4),
+        checksum_crc32: None,
+      },
+    )
+    .await
+    .unwrap();
+  for _ in 0..2 {
+    let duplicate = runtime
+      .reserve_storage_quota_v1(completed_input("completed-attachment"))
+      .await
+      .unwrap();
+    assert!(duplicate.allowed && duplicate.already_uploaded);
+    assert!(duplicate.reservation_id.is_none());
+  }
+
+  sqlx::query(
+    "INSERT INTO comment_attachments (workspace_id,doc_id,key,size,mime,name,status,created_by) VALUES \
+     ($1,$2,'missing-attachment',4,'text/plain','attachment.txt','completed',$3)",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(owner_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  let repaired = runtime
+    .reserve_storage_quota_v1(completed_input("missing-attachment"))
+    .await
+    .unwrap();
+  assert!(repaired.allowed && !repaired.already_uploaded);
+  assert!(repaired.reservation_id.is_some());
+  assert_eq!(
+    sqlx::query_scalar::<_, String>(
+      "SELECT status::text FROM comment_attachments WHERE workspace_id=$1 AND doc_id=$2 AND key='missing-attachment'",
+    )
+    .bind(workspace_id)
+    .bind(doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap(),
+    "pending"
+  );
+
+  sqlx::query(
+    "INSERT INTO comment_attachments (workspace_id,doc_id,key,size,mime,name,status,created_by) VALUES \
+     ($1,$2,'metadata-mismatch',4,'text/plain','attachment.txt','completed',$3)",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(owner_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  let mismatched_locator = crate::runtime::object_storage::types::ObjectLocator::new(
+    crate::runtime::object_storage::types::StorageScope::Blob,
+    crate::runtime::object_storage::types::ObjectKey::new(format!(
+      "comment-attachments/{workspace_id}/{doc_id}/metadata-mismatch"
+    ))
+    .unwrap(),
+  );
+  runtime
+    .object_storage()
+    .unwrap()
+    .put(
+      &mismatched_locator,
+      b"test".to_vec(),
+      crate::runtime::object_storage::types::ObjectPutMetadata {
+        content_type: Some("application/octet-stream".to_string()),
+        content_length: Some(4),
+        checksum_crc32: None,
+      },
+    )
+    .await
+    .unwrap();
+  let mismatch = match runtime
+    .reserve_storage_quota_v1(completed_input("metadata-mismatch"))
+    .await
+  {
+    Ok(_) => panic!("a completed attachment must reject mismatched object metadata"),
+    Err(error) => error,
+  };
+  assert!(mismatch.to_string().contains("storage final object metadata mismatch"));
+  assert!(
+    sqlx::query_scalar::<_, bool>(
+      "SELECT deleted_at IS NOT NULL FROM comment_attachments WHERE workspace_id=$1 AND doc_id=$2 AND \
+       key='metadata-mismatch'",
+    )
+    .bind(workspace_id)
+    .bind(doc_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap()
+  );
+  assert!(
+    runtime
+      .object_storage()
+      .unwrap()
+      .head(&mismatched_locator)
+      .await
+      .unwrap()
+      .is_none()
+  );
+}
+
+#[tokio::test]
+async fn strict_seat_reservation_serializes_last_seats() {
+  let _guard = pg_test_lock().lock().await;
+  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
+    return;
+  };
+  let pool = runtime.pool().await.unwrap();
+  let user_id = "rust-test:strict-seat:user";
+  let workspace_id = "rust-test:strict-seat:workspace";
+  sqlx::query("DELETE FROM workspaces WHERE id=$1")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DELETE FROM users WHERE id=$1")
+    .bind(user_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("INSERT INTO users (id,name,email,created_at) VALUES ($1,'Strict Seat',$2,now())")
+    .bind(user_id)
+    .bind("rust-test-strict-seat@example.com")
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("INSERT INTO workspaces (id,created_at) VALUES ($1,now())")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query(
+    "INSERT INTO workspace_members (id,workspace_id,user_id,role,state,created_at,updated_at) VALUES \
+     ($1,$2,$3,'owner','active',now(),now())",
+  )
+  .bind("rust-test:strict-seat:member")
+  .bind(workspace_id)
+  .bind(user_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  let input = |suffix: &str| types::RuntimeSeatReservationInput {
+    workspace_id: workspace_id.to_string(),
+    actor_user_id: user_id.to_string(),
+    targets: vec![
+      types::RuntimeSeatReservationTarget {
+        email: format!("rust-test-seat-{suffix}-a@example.com"),
+      },
+      types::RuntimeSeatReservationTarget {
+        email: format!("rust-test-seat-{suffix}-b@example.com"),
+      },
+    ],
+  };
+  let (first, second) = tokio::join!(
+    runtime.reserve_workspace_seats_v1(input("first")),
+    runtime.reserve_workspace_seats_v1(input("second"))
+  );
+  let first = first.unwrap();
+  let second = second.unwrap();
+  assert_ne!(first.allowed, second.allowed);
+  assert_eq!(first.reservations.len() + second.reservations.len(), 2);
+  assert_eq!(
+    sqlx::query_scalar::<_, i64>(
+      "SELECT count(*) FROM workspace_invitations WHERE workspace_id=$1 AND status='pending'",
+    )
+    .bind(workspace_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap(),
+    2
+  );
+  let mut reservations = first
+    .reservations
+    .into_iter()
+    .chain(second.reservations)
+    .collect::<Vec<_>>();
+  reservations.sort_by(|left, right| left.email.cmp(&right.email));
+  let self_invitation = &reservations[0];
+  assert!(
+    runtime
+      .activate_workspace_seat_v1(types::RuntimeSeatActivationInput {
+        workspace_id: workspace_id.to_string(),
+        actor_user_id: self_invitation.user_id.clone(),
+        target_user_id: self_invitation.user_id.clone(),
+        require_manage_permission: false,
+      })
+      .await
+      .unwrap()
+  );
+
+  let managed_invitation = &reservations[1];
+  sqlx::query("UPDATE workspace_invitations SET status='waiting_review' WHERE id=$1")
+    .bind(&managed_invitation.invitation_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  assert!(
+    runtime
+      .activate_workspace_seat_v1(types::RuntimeSeatActivationInput {
+        workspace_id: workspace_id.to_string(),
+        actor_user_id: user_id.to_string(),
+        target_user_id: managed_invitation.user_id.clone(),
+        require_manage_permission: true,
+      })
+      .await
+      .unwrap_err()
+      .to_string()
+      .contains("workspace_invitation_invalid")
+  );
+  sqlx::query("UPDATE workspace_invitations SET kind='link',requested_role='admin' WHERE id=$1")
+    .bind(&managed_invitation.invitation_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  assert!(
+    runtime
+      .activate_workspace_seat_v1(types::RuntimeSeatActivationInput {
+        workspace_id: workspace_id.to_string(),
+        actor_user_id: user_id.to_string(),
+        target_user_id: managed_invitation.user_id.clone(),
+        require_manage_permission: true,
+      })
+      .await
+      .unwrap_err()
+      .to_string()
+      .contains("workspace_invitation_invalid")
+  );
+  sqlx::query("UPDATE workspace_invitations SET requested_role='member' WHERE id=$1")
+    .bind(&managed_invitation.invitation_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DROP TRIGGER IF EXISTS test_keep_strict_seat_invitation ON workspace_invitations")
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DROP FUNCTION IF EXISTS test_keep_strict_seat_invitation()")
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query(
+    "CREATE FUNCTION test_keep_strict_seat_invitation() RETURNS trigger AS $$ BEGIN RETURN NULL; END $$ LANGUAGE \
+     plpgsql",
+  )
+  .execute(&pool)
+  .await
+  .unwrap();
+  sqlx::query(
+    "CREATE TRIGGER test_keep_strict_seat_invitation BEFORE DELETE ON workspace_invitations FOR EACH ROW EXECUTE \
+     FUNCTION test_keep_strict_seat_invitation()",
+  )
+  .execute(&pool)
+  .await
+  .unwrap();
+  assert!(
+    runtime
+      .activate_workspace_seat_v1(types::RuntimeSeatActivationInput {
+        workspace_id: workspace_id.to_string(),
+        actor_user_id: user_id.to_string(),
+        target_user_id: managed_invitation.user_id.clone(),
+        require_manage_permission: true,
+      })
+      .await
+      .unwrap_err()
+      .to_string()
+      .contains("workspace_invitation_changed")
+  );
+  assert!(
+    !sqlx::query_scalar::<_, bool>(
+      "SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=$1 AND user_id=$2 AND state='active')",
+    )
+    .bind(workspace_id)
+    .bind(&managed_invitation.user_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap()
+  );
+  sqlx::query("DROP TRIGGER test_keep_strict_seat_invitation ON workspace_invitations")
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DROP FUNCTION test_keep_strict_seat_invitation()")
+    .execute(&pool)
+    .await
+    .unwrap();
+  assert!(
+    runtime
+      .activate_workspace_seat_v1(types::RuntimeSeatActivationInput {
+        workspace_id: workspace_id.to_string(),
+        actor_user_id: user_id.to_string(),
+        target_user_id: managed_invitation.user_id.clone(),
+        require_manage_permission: true,
+      })
+      .await
+      .unwrap()
+  );
+  assert_eq!(
+    sqlx::query_scalar::<_, i64>("SELECT count(*) FROM workspace_members WHERE workspace_id=$1 AND state='active'")
+      .bind(workspace_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap(),
+    3
+  );
+  assert_eq!(
+    sqlx::query_scalar::<_, i64>("SELECT count(*) FROM workspace_invitations WHERE workspace_id=$1")
+      .bind(workspace_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap(),
+    0
+  );
+}
+
+#[tokio::test]
+async fn strict_seat_crossed_owner_target_locks_do_not_deadlock() {
+  let _guard = pg_test_lock().lock().await;
+  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
+    return;
+  };
+  let pool = runtime.pool().await.unwrap();
+  let user_a = "rust-test:strict-seat-cross:user-a";
+  let user_b = "rust-test:strict-seat-cross:user-b";
+  let workspace_a = "rust-test:strict-seat-cross:workspace-a";
+  let workspace_b = "rust-test:strict-seat-cross:workspace-b";
+  sqlx::query("DELETE FROM workspaces WHERE id=ANY($1)")
+    .bind(vec![workspace_a, workspace_b])
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DELETE FROM users WHERE id=ANY($1)")
+    .bind(vec![user_a, user_b])
+    .execute(&pool)
+    .await
+    .unwrap();
+  for (id, email) in [
+    (user_a, "strict-seat-cross-a@example.com"),
+    (user_b, "strict-seat-cross-b@example.com"),
+  ] {
+    sqlx::query("INSERT INTO users (id,name,email,created_at) VALUES ($1,'Strict Seat Cross',$2,now())")
+      .bind(id)
+      .bind(email)
+      .execute(&pool)
+      .await
+      .unwrap();
+  }
+  for (workspace_id, owner_id, member_id) in [
+    (workspace_a, user_a, "rust-test:strict-seat-cross:member-a"),
+    (workspace_b, user_b, "rust-test:strict-seat-cross:member-b"),
+  ] {
+    sqlx::query("INSERT INTO workspaces (id,created_at) VALUES ($1,now())")
+      .bind(workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO workspace_members (id,workspace_id,user_id,role,state,created_at,updated_at) VALUES \
+       ($1,$2,$3,'owner','active',now(),now())",
+    )
+    .bind(member_id)
+    .bind(workspace_id)
+    .bind(owner_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  }
+  let result = tokio::time::timeout(std::time::Duration::from_secs(2), async {
+    tokio::join!(
+      runtime.reserve_workspace_review_seat_v1(types::RuntimeSeatReviewInput {
+        workspace_id: workspace_a.to_string(),
+        target_user_id: user_b.to_string(),
+        inviter_user_id: user_a.to_string(),
+      }),
+      runtime.reserve_workspace_review_seat_v1(types::RuntimeSeatReviewInput {
+        workspace_id: workspace_b.to_string(),
+        target_user_id: user_a.to_string(),
+        inviter_user_id: user_b.to_string(),
+      })
+    )
+  })
+  .await
+  .expect("crossed owner/target locks must complete");
+  assert!(result.0.unwrap());
+  assert!(result.1.unwrap());
 }
 
 #[tokio::test]
@@ -428,7 +2112,22 @@ async fn invite_abuse_action_sql_state_machine_retries_and_fences_workers() {
   let pool = runtime.pool().await.unwrap();
   let actor_id = "rust-test:invite-abuse-action:user";
   let workspace_id = "rust-test:invite-abuse-action:workspace";
-  let subject_key = "rust-test:invite-abuse-action:subject";
+  let subject_key = format!("actor_email_sha256:v1:{}", "a".repeat(64));
+  sqlx::query("DELETE FROM runtime_invite_abuse_actions WHERE subject_key=$1")
+    .bind(&subject_key)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DELETE FROM runtime_invite_abuse_evidence WHERE subject_key=$1")
+    .bind(&subject_key)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DELETE FROM runtime_invite_abuse_subjects WHERE subject_key=$1")
+    .bind(&subject_key)
+    .execute(&pool)
+    .await
+    .unwrap();
   let action_id: i64 = sqlx::query_scalar(
     r#"
     WITH subject AS (
@@ -437,11 +2136,14 @@ async fn invite_abuse_action_sql_state_machine_retries_and_fences_workers() {
         kind,
         user_id,
         actor_email_hash,
+        email_domain,
         status,
+        action,
+        action_reason,
         first_seen_at,
         last_seen_at
       )
-      VALUES ($1, 'actor_email', $2, 'hash', 'quarantined', now(), now())
+      VALUES ($1, 'actor_email', $2, $1, 'example.com', 'quarantined', 'quarantine_actor', 'high_risk_domain_burst', now(), now())
       RETURNING subject_key
     ),
     evidence AS (
@@ -450,10 +2152,12 @@ async fn invite_abuse_action_sql_state_machine_retries_and_fences_workers() {
         workspace_id,
         user_id,
         actor_email_hash,
+        target_domains,
+        counters,
         decision,
         reason
       )
-      VALUES ($1, $3, $2, 'hash', 'quarantine_actor', 'test')
+      VALUES ($1, $3, $2, $1, '[{"domain":"qq.com","count":1}]'::jsonb, '{"requested":1}'::jsonb, 'quarantine_actor', 'high_risk_domain_burst')
       RETURNING id
     )
     INSERT INTO runtime_invite_abuse_actions (
@@ -467,12 +2171,66 @@ async fn invite_abuse_action_sql_state_machine_retries_and_fences_workers() {
     RETURNING id
     "#,
   )
-  .bind(subject_key)
+  .bind(&subject_key)
   .bind(actor_id)
   .bind(workspace_id)
   .fetch_one(&pool)
   .await
   .unwrap();
+
+  let invalid_subject_key = format!("workspace:v1:{}", "c".repeat(24));
+  sqlx::query("DELETE FROM runtime_invite_abuse_actions WHERE subject_key=$1")
+    .bind(&invalid_subject_key)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DELETE FROM runtime_invite_abuse_evidence WHERE subject_key=$1")
+    .bind(&invalid_subject_key)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DELETE FROM runtime_invite_abuse_subjects WHERE subject_key=$1")
+    .bind(&invalid_subject_key)
+    .execute(&pool)
+    .await
+    .unwrap();
+  let invalid_action_id: i64 = sqlx::query_scalar(
+    r#"
+    WITH subject AS (
+      INSERT INTO runtime_invite_abuse_subjects (
+        subject_key, kind, actor_email_hash, email_domain, status, action,
+        action_reason, first_seen_at, last_seen_at
+      ) VALUES (
+        $1, 'workspace', $2, 'example.com', 'quarantined',
+        'quarantine_workspace', 'workspace_high_risk_domain_burst', now(), now()
+      ) RETURNING subject_key
+    ), evidence AS (
+      INSERT INTO runtime_invite_abuse_evidence (
+        subject_key, workspace_id, user_id, actor_email_hash, target_domains,
+        counters, decision, reason
+      ) VALUES (
+        $1, $3, $4, $2, '[{"domain":"qq.com","count":1}]'::jsonb,
+        '{"requested":1}'::jsonb, 'quarantine_actor', 'high_risk_domain_burst'
+      ) RETURNING id
+    )
+    INSERT INTO runtime_invite_abuse_actions (subject_key, evidence_id, action, status)
+    SELECT $1, evidence.id, 'quarantine_workspace', 'pending' FROM evidence
+    RETURNING id
+    "#,
+  )
+  .bind(&invalid_subject_key)
+  .bind(&subject_key)
+  .bind(workspace_id)
+  .bind(actor_id)
+  .fetch_one(&pool)
+  .await
+  .unwrap();
+  assert!(
+    !runtime
+      .claim_invite_abuse_action(invalid_action_id.to_string(), "rust-test:invalid-worker".to_string())
+      .await
+      .unwrap()
+  );
 
   assert!(
     runtime
@@ -526,6 +2284,11 @@ async fn invite_abuse_action_sql_state_machine_retries_and_fences_workers() {
     .claim_retryable_invite_abuse_actions("rust-test:worker".to_string(), 10)
     .await
     .unwrap();
+  assert!(
+    claimed
+      .iter()
+      .all(|action| action.action_id != invalid_action_id.to_string())
+  );
   let current = claimed
     .iter()
     .find(|action| action.action_id == action_id.to_string())
@@ -574,6 +2337,23 @@ async fn invite_abuse_action_sql_state_machine_retries_and_fences_workers() {
       .await
       .unwrap()
   );
+  for key in [&subject_key, &invalid_subject_key] {
+    sqlx::query("DELETE FROM runtime_invite_abuse_actions WHERE subject_key=$1")
+      .bind(key)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("DELETE FROM runtime_invite_abuse_evidence WHERE subject_key=$1")
+      .bind(key)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("DELETE FROM runtime_invite_abuse_subjects WHERE subject_key=$1")
+      .bind(key)
+      .execute(&pool)
+      .await
+      .unwrap();
+  }
 }
 
 #[tokio::test]
@@ -607,17 +2387,24 @@ async fn coordination_lease_sql_semantics_are_fenced_and_ttl_bound() {
   for index in 0..16 {
     let runtime = BackendRuntime {
       config_source: Default::default(),
+      inline_config: Arc::new(RwLock::new(None)),
       role: ServerRole::AllInOne,
       script_mode: false,
       config: Arc::new(RwLock::new(runtime.config().unwrap())),
-      config_reload: Mutex::new(()),
-      pool: Mutex::new(Some(runtime.pool().await.unwrap())),
-      embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
-      object_storage: RwLock::new(runtime.object_storage().unwrap()),
-      embedding: Mutex::new(None),
-      embedding_worker: Mutex::new(None),
-      search: Mutex::new(None),
+      config_reload: Arc::new(Mutex::new(())),
+      pool: Arc::new(Mutex::new(Some(runtime.pool().await.unwrap()))),
+      embedding_health: Arc::new(RwLock::new(super::EmbeddingHealth::disabled("test", None))),
+      object_storage: Arc::new(RwLock::new(runtime.object_storage().unwrap())),
+      embedding: Arc::new(Mutex::new(None)),
+      embedding_worker: Arc::new(Mutex::new(None)),
+      search: Arc::new(Mutex::new(None)),
       managed_token_providers: Arc::new(Default::default()),
+      permission_telemetry: Default::default(),
+      blob_access: Arc::new(Mutex::new(None)),
+      invalidation: Arc::new(Mutex::new(None)),
+      quota_read_cache: Arc::new(Mutex::new(None)),
+      payment: Arc::new(Mutex::new(None)),
+      license_health_worker: Arc::new(Mutex::new(None)),
     };
     tasks.push(tokio::spawn(async move {
       runtime
@@ -691,182 +2478,27 @@ async fn runtime_state_cleanup_deletes_expired_and_consumed_rows() {
     return;
   };
 
-  assert!(
-    runtime
-      .create_auth_challenge(
-        "rust_test:cleanup".to_string(),
-        "expired".to_string(),
-        serde_json::json!({}),
-        1
-      )
-      .await
-      .unwrap()
-  );
-  assert!(
-    runtime
-      .create_auth_challenge(
-        "rust_test:cleanup".to_string(),
-        "consumed".to_string(),
-        serde_json::json!({}),
-        30_000,
-      )
-      .await
-      .unwrap()
-  );
-  assert!(
-    runtime
-      .consume_auth_challenge("rust_test:cleanup".to_string(), "consumed".to_string())
-      .await
-      .unwrap()
-      .is_some()
-  );
-  tokio::time::sleep(Duration::from_millis(20)).await;
-
-  assert_eq!(runtime.cleanup_expired_runtime_states(100).await.unwrap(), 2);
-  assert_eq!(runtime.cleanup_expired_runtime_states(100).await.unwrap(), 0);
-}
-
-#[tokio::test]
-async fn verification_token_sql_state_machine_handles_keep_verify_and_cleanup() {
-  let _guard = pg_test_lock().lock().await;
-  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
-    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
-    return;
-  };
-
-  let mismatch_token = runtime
-    .create_verification_token(
-      TEST_VERIFICATION_TOKEN_TYPE,
-      Some("user@affine.test".to_string()),
-      30_000,
-    )
-    .await
-    .unwrap();
-  assert!(
-    runtime
-      .verify_verification_token(
-        TEST_VERIFICATION_TOKEN_TYPE,
-        mismatch_token.clone(),
-        Some("wrong@affine.test".to_string()),
-        None,
-      )
-      .await
-      .unwrap()
-      .is_none()
-  );
-  assert!(
-    runtime
-      .verify_verification_token(
-        TEST_VERIFICATION_TOKEN_TYPE,
-        mismatch_token.clone(),
-        Some("user@affine.test".to_string()),
-        None,
-      )
-      .await
-      .unwrap()
-      .is_some()
-  );
-  assert!(
-    runtime
-      .verify_verification_token(
-        TEST_VERIFICATION_TOKEN_TYPE,
-        mismatch_token.clone(),
-        Some("user@affine.test".to_string()),
-        None,
-      )
-      .await
-      .unwrap()
-      .is_none()
-  );
-
-  let keep_token = runtime
-    .create_verification_token(
-      TEST_VERIFICATION_TOKEN_TYPE,
-      Some("keep@affine.test".to_string()),
-      30_000,
-    )
-    .await
-    .unwrap();
-  assert!(
-    runtime
-      .get_verification_token(TEST_VERIFICATION_TOKEN_TYPE, keep_token.clone(), Some(true))
-      .await
-      .unwrap()
-      .is_some()
-  );
-  assert!(
-    runtime
-      .get_verification_token(TEST_VERIFICATION_TOKEN_TYPE, keep_token.clone(), None)
-      .await
-      .unwrap()
-      .is_some()
-  );
-  assert!(
-    runtime
-      .get_verification_token(TEST_VERIFICATION_TOKEN_TYPE, keep_token.clone(), None)
-      .await
-      .unwrap()
-      .is_none()
-  );
-
-  let concurrent_token = runtime
-    .create_verification_token(
-      TEST_VERIFICATION_TOKEN_TYPE,
-      Some("concurrent@affine.test".to_string()),
-      30_000,
-    )
-    .await
-    .unwrap();
-  let mut tasks = Vec::new();
-  for _ in 0..16 {
-    let runtime = BackendRuntime {
-      config_source: Default::default(),
-      role: ServerRole::AllInOne,
-      script_mode: false,
-      config: Arc::new(RwLock::new(runtime.config().unwrap())),
-      config_reload: Mutex::new(()),
-      pool: Mutex::new(Some(runtime.pool().await.unwrap())),
-      embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
-      object_storage: RwLock::new(runtime.object_storage().unwrap()),
-      embedding: Mutex::new(None),
-      embedding_worker: Mutex::new(None),
-      search: Mutex::new(None),
-      managed_token_providers: Arc::new(Default::default()),
-    };
-    let token = concurrent_token.clone();
-    tasks.push(tokio::spawn(async move {
-      runtime
-        .verify_verification_token(
-          TEST_VERIFICATION_TOKEN_TYPE,
-          token,
-          Some("concurrent@affine.test".to_string()),
-          None,
-        )
-        .await
-        .unwrap()
-        .is_some()
-    }));
-  }
-  let mut successful = 0;
-  for task in tasks {
-    if task.await.unwrap() {
-      successful += 1;
-    }
-  }
-  assert_eq!(successful, 1);
-
-  let expired_token = runtime
-    .create_verification_token(TEST_VERIFICATION_TOKEN_TYPE, Some("expired@affine.test".to_string()), 1)
+  let pool = runtime.pool().await.unwrap();
+  sqlx::query(
+    "INSERT INTO runtime_states(purpose,token_hash,payload,expires_at) VALUES \
+     ('rust_test:cleanup','expired','{}',clock_timestamp()-INTERVAL '1 second'), \
+     ('rust_test:cleanup','consumed','{}',clock_timestamp()+INTERVAL '1 minute')",
+  )
+  .execute(&pool)
+  .await
+  .unwrap();
+  sqlx::query("UPDATE runtime_states SET consumed_at=clock_timestamp() WHERE token_hash='consumed'")
+    .execute(&pool)
     .await
     .unwrap();
   tokio::time::sleep(Duration::from_millis(20)).await;
-  assert!(
-    runtime
-      .get_verification_token(TEST_VERIFICATION_TOKEN_TYPE, expired_token.clone(), None)
-      .await
-      .unwrap()
-      .is_none()
-  );
-  assert_eq!(runtime.cleanup_expired_verification_tokens(100).await.unwrap(), 1);
-  assert_eq!(runtime.cleanup_expired_verification_tokens(100).await.unwrap(), 0);
+
+  assert!(runtime.cleanup_expired_runtime_states(100).await.unwrap() >= 2);
+  let remaining: i64 = sqlx::query_scalar(
+    "SELECT count(*) FROM runtime_states WHERE purpose='rust_test:cleanup' AND token_hash IN ('expired','consumed')",
+  )
+  .fetch_one(&pool)
+  .await
+  .unwrap();
+  assert_eq!(remaining, 0);
 }

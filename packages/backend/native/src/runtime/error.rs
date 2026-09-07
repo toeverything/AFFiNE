@@ -33,6 +33,9 @@ pub(crate) enum RuntimeError {
   #[error("search source is invalid: {0}")]
   SearchSourceInvalid(String),
 
+  #[error("search generation is invalid: {0}")]
+  SearchGenerationInvalid(String),
+
   #[error("search provider unavailable")]
   SearchProviderUnavailable,
 
@@ -108,27 +111,6 @@ impl RuntimeError {
     }
   }
 
-  pub(crate) fn is_object_missing(&self) -> bool {
-    match self {
-      Self::ObjectStorage(error) => error.is_not_found(),
-      Self::Io { source, .. } => source.kind() == std::io::ErrorKind::NotFound,
-      Self::InvalidState(message)
-      | Self::InvalidInput(message)
-      | Self::Config(message)
-      | Self::NapiBoundary(message) => {
-        message.contains("NoSuchKey") || message.contains("NotFound") || message.contains("not found")
-      }
-      Self::SearchWorkspaceDenied
-      | Self::SearchPermissionUnavailable
-      | Self::SearchIndexNotReady
-      | Self::SearchPermissionSyncing
-      | Self::SearchProviderUnavailable
-      | Self::SearchUnsupportedQuery => false,
-      Self::SearchIndexFailed(_) | Self::SearchSourceInvalid(_) => false,
-      _ => false,
-    }
-  }
-
   pub(crate) fn is_serialization_failure(&self) -> bool {
     matches!(
       self,
@@ -141,6 +123,10 @@ impl RuntimeError {
 
   pub(crate) fn is_permanent_search_source(&self) -> bool {
     matches!(self, Self::SearchSourceInvalid(_))
+  }
+
+  pub(crate) fn is_permanent_search_generation(&self) -> bool {
+    matches!(self, Self::SearchGenerationInvalid(_))
   }
 }
 

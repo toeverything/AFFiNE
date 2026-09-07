@@ -1,15 +1,11 @@
+use affine_core::auth::{
+  ACCESS_TOKEN_AUDIENCE, ACCESS_TOKEN_ISSUER, ACCESS_TOKEN_TYPE, CLOCK_TOLERANCE_SECONDS, REFRESH_TOKEN_PREFIX,
+};
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use hmac::{Hmac, KeyInit, Mac};
-use napi::{Result, bindgen_prelude::*};
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-
-const ACCESS_TOKEN_TYPE: &str = "session_access";
-const ACCESS_TOKEN_ISSUER: &str = "affine";
-const ACCESS_TOKEN_AUDIENCE: &str = "affine-client";
-const REFRESH_TOKEN_PREFIX: &str = "aff_rt_v1";
-const CLOCK_TOLERANCE_SECONDS: i64 = 30;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -49,29 +45,26 @@ struct ParsedAccessTokenClaims {
   exp: i64,
 }
 
-#[napi(object)]
-pub struct AuthSessionAccessTokenVerification {
-  pub status: String,
-  pub user_id: Option<String>,
-  pub auth_session_id: Option<String>,
+pub(crate) struct AuthSessionAccessTokenVerification {
+  pub(crate) status: &'static str,
+  pub(crate) user_id: Option<String>,
+  pub(crate) auth_session_id: Option<String>,
 }
 
-#[napi(object)]
-pub struct AuthSessionRefreshToken {
-  pub token: String,
-  pub id: String,
-  pub secret_hash: String,
+pub(crate) struct AuthSessionRefreshToken {
+  pub(crate) token: String,
+  pub(crate) id: String,
+  pub(crate) secret_hash: String,
 }
 
-#[napi(object)]
-pub struct ParsedAuthSessionRefreshToken {
-  pub id: String,
-  pub secret_hash: String,
+pub(crate) struct ParsedAuthSessionRefreshToken {
+  pub(crate) id: String,
+  pub(crate) secret_hash: String,
 }
 
 fn invalid_access_token() -> AuthSessionAccessTokenVerification {
   AuthSessionAccessTokenVerification {
-    status: "invalid".into(),
+    status: "invalid",
     user_id: None,
     auth_session_id: None,
   }
@@ -86,8 +79,7 @@ fn hash_refresh_secret(secret: &[u8]) -> String {
   hex::encode(Sha256::digest(secret))
 }
 
-#[napi]
-pub fn auth_session_access_token_key_id(token: String) -> Option<String> {
+pub(crate) fn auth_session_access_token_key_id(token: &str) -> Option<String> {
   let mut segments = token.split('.');
   let header: ParsedAccessTokenHeader = decode_segment(segments.next()?)?;
   segments.next()?;
@@ -98,51 +90,54 @@ pub fn auth_session_access_token_key_id(token: String) -> Option<String> {
   Some(header.kid)
 }
 
-#[napi]
-pub fn sign_auth_session_access_token(
-  user_id: String,
-  auth_session_id: String,
-  key_id: String,
-  secret: Buffer,
+pub(crate) fn sign_auth_session_access_token(
+  user_id: &str,
+  auth_session_id: &str,
+  key_id: &str,
+  secret: &[u8],
   issued_at: i64,
   expires_at: i64,
-) -> Result<String> {
+) -> Result<String, &'static str> {
   if user_id.is_empty() || auth_session_id.is_empty() || key_id.is_empty() {
-    return Err(Error::from_reason("Access token identifiers must not be empty"));
+    return Err("access_token_invalid_identity");
   }
   if secret.len() < 32 {
-    return Err(Error::from_reason("Access token signing key is too short"));
+    return Err("access_token_signing_key_too_short");
   }
   if expires_at <= issued_at {
-    return Err(Error::from_reason("Access token expiry must follow issuance"));
+    return Err("access_token_invalid_expiry");
   }
-  let header = URL_SAFE_NO_PAD.encode(serde_json::to_vec(&AccessTokenHeader {
-    alg: "HS256",
-    typ: "JWT",
-    kid: &key_id,
-  })?);
-  let claims = URL_SAFE_NO_PAD.encode(serde_json::to_vec(&AccessTokenClaims {
-    sub: &user_id,
-    sid: &auth_session_id,
-    typ: ACCESS_TOKEN_TYPE,
-    iss: ACCESS_TOKEN_ISSUER,
-    aud: ACCESS_TOKEN_AUDIENCE,
-    iat: issued_at,
-    exp: expires_at,
-  })?);
+  let header = URL_SAFE_NO_PAD.encode(
+    serde_json::to_vec(&AccessTokenHeader {
+      alg: "HS256",
+      typ: "JWT",
+      kid: &key_id,
+    })
+    .map_err(|_| "access_token_encode_failed")?,
+  );
+  let claims = URL_SAFE_NO_PAD.encode(
+    serde_json::to_vec(&AccessTokenClaims {
+      sub: &user_id,
+      sid: &auth_session_id,
+      typ: ACCESS_TOKEN_TYPE,
+      iss: ACCESS_TOKEN_ISSUER,
+      aud: ACCESS_TOKEN_AUDIENCE,
+      iat: issued_at,
+      exp: expires_at,
+    })
+    .map_err(|_| "access_token_encode_failed")?,
+  );
   let signing_input = format!("{header}.{claims}");
-  let mut mac =
-    HmacSha256::new_from_slice(secret.as_ref()).map_err(|_| Error::from_reason("Invalid access token signing key"))?;
+  let mut mac = HmacSha256::new_from_slice(secret).map_err(|_| "access_token_signing_key_invalid")?;
   mac.update(signing_input.as_bytes());
   let signature = URL_SAFE_NO_PAD.encode(mac.finalize().into_bytes());
   Ok(format!("{signing_input}.{signature}"))
 }
 
-#[napi]
-pub fn verify_auth_session_access_token(
-  token: String,
-  expected_key_id: String,
-  secret: Buffer,
+pub(crate) fn verify_auth_session_access_token(
+  token: &str,
+  expected_key_id: &str,
+  secret: &[u8],
   now: i64,
 ) -> AuthSessionAccessTokenVerification {
   let segments = token.split('.').collect::<Vec<_>>();
@@ -158,7 +153,7 @@ pub fn verify_auth_session_access_token(
   let Ok(signature) = URL_SAFE_NO_PAD.decode(segments[2]) else {
     return invalid_access_token();
   };
-  let Ok(mut mac) = HmacSha256::new_from_slice(secret.as_ref()) else {
+  let Ok(mut mac) = HmacSha256::new_from_slice(secret) else {
     return invalid_access_token();
   };
   mac.update(format!("{}.{}", segments[0], segments[1]).as_bytes());
@@ -177,7 +172,7 @@ pub fn verify_auth_session_access_token(
   }
   if claims.exp + CLOCK_TOLERANCE_SECONDS <= now {
     return AuthSessionAccessTokenVerification {
-      status: "expired".into(),
+      status: "expired",
       user_id: None,
       auth_session_id: None,
     };
@@ -186,14 +181,13 @@ pub fn verify_auth_session_access_token(
     return invalid_access_token();
   }
   AuthSessionAccessTokenVerification {
-    status: "valid".into(),
+    status: "valid",
     user_id: Some(claims.sub),
     auth_session_id: Some(claims.sid),
   }
 }
 
-#[napi]
-pub fn create_auth_session_refresh_token() -> AuthSessionRefreshToken {
+pub(crate) fn create_auth_session_refresh_token() -> AuthSessionRefreshToken {
   let mut id = [0_u8; 18];
   let mut secret = [0_u8; 32];
   rand::rng().fill_bytes(&mut id);
@@ -207,8 +201,7 @@ pub fn create_auth_session_refresh_token() -> AuthSessionRefreshToken {
   }
 }
 
-#[napi]
-pub fn parse_auth_session_refresh_token(token: String) -> Option<ParsedAuthSessionRefreshToken> {
+pub(crate) fn parse_auth_session_refresh_token(token: &str) -> Option<ParsedAuthSessionRefreshToken> {
   let segments = token.split('.').collect::<Vec<_>>();
   if segments.len() != 3 || segments[0] != REFRESH_TOKEN_PREFIX {
     return None;
@@ -230,30 +223,23 @@ mod tests {
 
   #[test]
   fn access_token_vector_and_policy() {
-    let secret = || Buffer::from(vec![7; 32]);
-    let token = sign_auth_session_access_token(
-      "user-1".into(),
-      "session-1".into(),
-      "key-1".into(),
-      secret(),
-      1_700_000_000,
-      1_700_000_900,
-    )
-    .unwrap();
-    assert_eq!(auth_session_access_token_key_id(token.clone()), Some("key-1".into()));
-    let valid = verify_auth_session_access_token(token.clone(), "key-1".into(), secret(), 1_700_000_100);
+    let secret = || vec![7; 32];
+    let token =
+      sign_auth_session_access_token("user-1", "session-1", "key-1", &secret(), 1_700_000_000, 1_700_000_900).unwrap();
+    assert_eq!(auth_session_access_token_key_id(&token), Some("key-1".into()));
+    let valid = verify_auth_session_access_token(&token, "key-1", &secret(), 1_700_000_100);
     assert_eq!(valid.status, "valid");
     assert_eq!(valid.user_id.as_deref(), Some("user-1"));
     assert_eq!(
-      verify_auth_session_access_token(token.clone(), "key-1".into(), secret(), 1_700_000_929).status,
+      verify_auth_session_access_token(&token, "key-1", &secret(), 1_700_000_929).status,
       "valid"
     );
     assert_eq!(
-      verify_auth_session_access_token(token.clone(), "key-1".into(), secret(), 1_700_000_930).status,
+      verify_auth_session_access_token(&token, "key-1", &secret(), 1_700_000_930).status,
       "expired"
     );
     assert_eq!(
-      verify_auth_session_access_token(token, "key-1".into(), secret(), 1_700_001_000).status,
+      verify_auth_session_access_token(&token, "key-1", &secret(), 1_700_001_000).status,
       "expired"
     );
   }
@@ -261,12 +247,12 @@ mod tests {
   #[test]
   fn refresh_token_round_trip_and_rejection() {
     let created = create_auth_session_refresh_token();
-    let parsed = parse_auth_session_refresh_token(created.token).unwrap();
+    let parsed = parse_auth_session_refresh_token(&created.token).unwrap();
     assert_eq!(parsed.id, created.id);
     assert_eq!(parsed.secret_hash, created.secret_hash);
-    assert!(parse_auth_session_refresh_token("aff_rt_v1.bad.bad".into()).is_none());
+    assert!(parse_auth_session_refresh_token("aff_rt_v1.bad.bad").is_none());
     let golden = parse_auth_session_refresh_token(
-      "aff_rt_v1.AAECAwQFBgcICQoLDA0ODxAR.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8".into(),
+      "aff_rt_v1.AAECAwQFBgcICQoLDA0ODxAR.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
     )
     .unwrap();
     assert_eq!(golden.id, "AAECAwQFBgcICQoLDA0ODxAR");

@@ -489,6 +489,35 @@ impl ObjectStorageClient {
     }))
   }
 
+  pub(crate) async fn get_range(
+    &self,
+    key: &ObjectKey,
+    offset: u64,
+    length: usize,
+  ) -> ObjectStorageResult<Option<Vec<u8>>> {
+    if length == 0 {
+      return Ok(Some(Vec::new()));
+    }
+    let action = GetObject::new(&self.bucket, Some(&self.credentials), key);
+    let end = offset.saturating_add(length as u64).saturating_sub(1);
+    let response = self
+      .http
+      .execute(StorageHttpRequest {
+        method: Method::GET,
+        url: action.sign(expires_in(self.presign_expires_in_seconds)),
+        headers: HashMap::from([("range".to_string(), format!("bytes={offset}-{end}"))]),
+        body: None,
+        max_response_body_bytes: length,
+      })
+      .await
+      .map_err(|source| operation_error(format!("ObjectStorage range get failed for {key}"), source))?;
+    if response.status == StatusCode::NOT_FOUND && is_not_found_body(&response.body) {
+      return Ok(None);
+    }
+    ensure_success_status(&response, &format!("ObjectStorage range get failed for {key}"))?;
+    Ok(Some(response.body))
+  }
+
   pub(crate) async fn list(&self, prefix: Option<ObjectPrefix>) -> ObjectStorageResult<Vec<ObjectListEntry>> {
     let mut entries = Vec::new();
     let mut token = None;

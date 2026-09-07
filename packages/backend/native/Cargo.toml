@@ -9,10 +9,12 @@ version      = "1.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
+affine_core = "0.0.2"
 aes-gcm = { workspace = true }
 affine_common = { workspace = true, features = ["hashcash", "napi"] }
 affine_doc_loader = { workspace = true }
 anyhow = { workspace = true }
+argon2 = "0.5"
 assetpack-core = "0.1.0"
 assetpack-transform-precomp2 = "0.1.0"
 base64 = { workspace = true }
@@ -20,8 +22,10 @@ chrono = { workspace = true }
 crc32fast = "1.5.0"
 doc_extractor = { workspace = true }
 file-format = { workspace = true }
+futures-util = { workspace = true }
 gcp_auth = { version = "0.12.7", features = ["webpki-roots"] }
 hex = { workspace = true }
+hickory-resolver = "0.26.1"
 hkdf = { workspace = true }
 hmac = "0.13"
 homedir = { workspace = true }
@@ -29,6 +33,7 @@ image = { workspace = true }
 infer = { workspace = true }
 instant-xml = "0.7.5"
 jsonschema = "0.47"
+jsonwebtoken = { version = "10", features = ["aws_lc_rs"] }
 libwebp-sys = "0.9.6"
 little_exif = { workspace = true }
 llm_adapter = { workspace = true, features = ["schema", "ureq-client"] }
@@ -40,7 +45,11 @@ napi = { workspace = true, features = ["async", "serde-json"] }
 napi-derive = { workspace = true }
 p256 = { workspace = true }
 rand = { workspace = true }
+redis = { workspace = true }
 reqwest = { version = "0.13.4", default-features = false, features = [
+  "form",
+  "json",
+  "query",
   "rustls",
 ] }
 rustls = { version = "0.23", default-features = false, features = [
@@ -55,6 +64,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
 sha3 = { workspace = true }
+subtle = "2"
 sqlx = { workspace = true, default-features = false, features = [
   "chrono",
   "json",
