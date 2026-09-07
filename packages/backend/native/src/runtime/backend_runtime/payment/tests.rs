@@ -856,9 +856,26 @@ async fn operation_intent_is_frozen_before_send_and_blocks_overlapping_work() {
   mark_operation_step_sent(&mut connection, &first.id, "cancel", chrono::Duration::hours(23))
     .await
     .unwrap();
+  let sent = freeze_operation(&mut connection, &intent).await.unwrap();
+  assert!(sent.steps[0].first_sent_at.is_some());
   record_operation_step_result(&mut connection, &first.id, "cancel", json!({"ok": true}))
     .await
     .unwrap();
+  let recorded = freeze_operation(&mut connection, &intent).await.unwrap();
+  assert_eq!(recorded.steps[0].result, Some(json!({"ok": true})));
+  let changed_request = OperationIntent {
+    steps: vec![
+      PaymentStepState {
+        request: PaymentStep::CancelSubscription {
+          source_id: format!("sub-{marker}-changed"),
+        },
+        ..intent.steps[0].clone()
+      },
+      intent.steps[1].clone(),
+    ],
+    ..intent.clone()
+  };
+  assert!(freeze_operation(&mut connection, &changed_request).await.is_err());
   record_operation_step_result(&mut connection, &first.id, "cancel", json!({"ok": true}))
     .await
     .unwrap();

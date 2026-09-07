@@ -78,17 +78,21 @@ pub(super) async fn freeze_operation(
   .await
   .map_err(|error| RuntimeError::database("lock payment operation intent", error))?;
   if let Some(existing) = existing {
+    let frozen_steps: Vec<PaymentStepState> = serde_json::from_value(existing.get("steps"))
+      .map_err(|error| RuntimeError::json("decode frozen payment operation steps", error))?;
     let matches = existing.get::<String, _>("operation_type") == intent.operation_type
       && existing.get::<String, _>("primary_resource_key") == resource_keys[0]
       && existing.get::<Vec<String>, _>("resource_keys") == resource_keys
       && existing.get::<Option<String>, _>("target_type") == intent.target_type
       && existing.get::<Option<String>, _>("target_id") == intent.target_id
-      && existing.get::<serde_json::Value, _>("steps") == steps;
+      && frozen_steps.len() == intent.steps.len()
+      && frozen_steps
+        .iter()
+        .zip(&intent.steps)
+        .all(|(frozen, candidate)| frozen.key == candidate.key && frozen.request == candidate.request);
     if !matches {
       return Err(RuntimeError::invalid_state("payment intent payload changed"));
     }
-    let frozen_steps = serde_json::from_value(existing.get("steps"))
-      .map_err(|error| RuntimeError::json("decode frozen payment operation steps", error))?;
     let result = FrozenOperation {
       id: existing.get("id"),
       status: existing.get("status"),
