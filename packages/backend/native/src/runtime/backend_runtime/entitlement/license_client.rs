@@ -189,8 +189,8 @@ impl BackendRuntime {
     let statuses = affine_core::access_control::InvitationStatus::CHARGEABLE
       .map(affine_core::access_control::InvitationStatus::as_str);
     let seats: i64 = sqlx::query_scalar(
-      "SELECT (SELECT count(*) FROM workspace_members WHERE workspace_id=$1 AND state='active') + \
-       (SELECT count(*) FROM workspace_invitations WHERE workspace_id=$1 AND status=ANY($2))",
+      "SELECT (SELECT count(*) FROM workspace_members WHERE workspace_id=$1 AND state='active') + (SELECT count(*) \
+       FROM workspace_invitations WHERE workspace_id=$1 AND status=ANY($2))",
     )
     .bind(&workspace_id)
     .bind(statuses.as_slice())

@@ -123,8 +123,8 @@ impl BackendRuntime {
     let deployment = self.config()?.deployment;
     let before = transition_before(&mut tx, &targets, deployment, now).await?;
     sqlx::query(
-      "UPDATE entitlements SET status='revoked',updated_at=$2 WHERE source='admin_grant' AND subject_id=$1 AND status IN \
-       ('active','grace')",
+      "UPDATE entitlements SET status='revoked',updated_at=$2 WHERE source='admin_grant' AND subject_id=$1 AND status \
+       IN ('active','grace')",
     )
     .bind(&subject)
     .bind(now)

@@ -2,14 +2,16 @@ use affine_core::auth::{LoginMethodFacts, login_methods};
 use chrono::Utc;
 use sqlx::{PgPool, Postgres, Row, Transaction};
 
-use super::super::{
-  RuntimeError, RuntimeResult, issuance,
-  login::{canonical_email, lock_email},
-  oauth_http::OAuthAccount,
-  session::{decision_time, lock_user},
-  types::{LoginResult, SessionIssueInput},
+use super::{
+  super::{
+    RuntimeError, RuntimeResult, issuance,
+    login::{canonical_email, lock_email},
+    oauth_http::OAuthAccount,
+    session::{decision_time, lock_user},
+    types::{LoginResult, SessionIssueInput},
+  },
+  OAuthState,
 };
-use super::OAuthState;
 use crate::runtime::BackendRuntimeConfig;
 
 pub(in super::super) async fn bind_and_issue(
