@@ -31,9 +31,9 @@ export class PriorityQueue<T, K> {
         leftChild = this.heap[leftChildIndex];
         rightChild = this.heap[rightChildIndex];
         if (
-          (swap === null &&
+          (swap === -1 &&
             this._compare(rightChild.priority, element.priority) < 0) ||
-          (swap !== null &&
+          (swap !== -1 &&
             this._compare(rightChild.priority, leftChild.priority) < 0)
         ) {
           swap = rightChildIndex;
