@@ -41,6 +41,7 @@ import {
 } from '../../plugins/copilot/feature';
 import type { PromptService } from '../../plugins/copilot/prompt';
 import type { ResolvedPrompt } from '../../plugins/copilot/prompt/spec';
+import { ChatMessageAttachment } from '../../plugins/copilot/providers/types';
 import { TextStreamParser } from '../../plugins/copilot/providers/utils';
 import { ArtifactRetrievalService } from '../../plugins/copilot/retrieval/artifact';
 import { DocumentRetrievalService } from '../../plugins/copilot/retrieval/document';
@@ -1632,6 +1633,16 @@ test.serial('copilot attachments require canonical session scope', async t => {
     'notes.txt',
     { rawBody: attachmentBody } as never
   );
+  for (const attachment of [
+    uploaded.url,
+    { attachment: uploaded.url, mimeType: 'text/plain' },
+    { kind: 'url', url: uploaded.url, mimeType: 'text/plain' },
+  ]) {
+    t.true(ChatMessageAttachment.safeParse(attachment).success);
+  }
+  for (const url of ['/private/file.txt', '//example.com/file.txt']) {
+    t.false(ChatMessageAttachment.safeParse(url).success);
+  }
   const admitted = await new AttachmentAdmissionHost(
     {
       fetchRemoteAttachment: async () =>
@@ -1696,6 +1707,17 @@ test.serial('copilot attachments require canonical session scope', async t => {
       workspaceId: 'workspace-1',
       sessionId: 'session-2',
     })
+  );
+  await t.throwsAsync(
+    new AttachmentAdmissionHost(
+      {} as never,
+      attachmentStorage
+    ).admitPromptAttachment(uploaded.url, {
+      userId: 'user-1',
+      workspaceId: 'workspace-2',
+      sessionId: 'session-1',
+    }),
+    { message: 'Copilot attachment scope mismatch' }
   );
 
   t.snapshot({

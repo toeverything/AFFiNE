@@ -810,6 +810,11 @@ test('space:join-batch joins rooms and initializes workspace documents', async t
       'doc-a',
       `db$${workspace.id}$docProperties`,
     ]) {
+      await app.get(PrismaClient).$executeRaw`
+        UPDATE workspace_sync_permission_generations
+        SET generation = generation + 1
+        WHERE workspace_id = ${workspace.id}
+      `;
       unwrapResponse(
         t,
         await emitWithAck(ownerSocket, 'space:join-batch', batch)

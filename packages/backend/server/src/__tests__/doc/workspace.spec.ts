@@ -3,6 +3,7 @@ import test from 'ava';
 import * as Sinon from 'sinon';
 import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
+import { EventBus } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import {
   DocStorageModule,
@@ -75,8 +76,16 @@ test('should not compact from a stale update view', async t => {
   t.not(await db.update.count(), 0);
 });
 
-test('should retry if failed to insert updates', async t => {
+test('should finish doc creation after retrying failed updates', async t => {
   const stub = Sinon.stub(runtime, 'appendWorkspaceDocUpdatesTrustedV1');
+  t.teardown(() => stub.restore());
+  let creationCompleted = false;
+  t.teardown(
+    m.get(EventBus).on('doc.created', async () => {
+      await new Promise<void>(resolve => setImmediate(resolve));
+      creationCompleted = true;
+    })
+  );
 
   stub.onCall(0).rejects(new Error());
   stub.onCall(1).resolves(Date.now());
@@ -85,8 +94,7 @@ test('should retry if failed to insert updates', async t => {
     adapter.pushDocUpdatesTrusted('1', '1', [Buffer.from([0, 0])])
   );
   t.is(stub.callCount, 2);
-
-  stub.restore();
+  t.true(creationCompleted);
 });
 
 test('should throw if meet max retry times', async t => {

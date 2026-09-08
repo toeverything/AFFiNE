@@ -167,7 +167,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       });
 
       if (isNewDoc) {
-        this.event.emitDetached('doc.created', {
+        await this.event.emitDetachedAsync('doc.created', {
           workspaceId,
           docId,
           editor: editorId,

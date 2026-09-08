@@ -146,6 +146,10 @@ const AttachmentUrlSchema = z.string().refine(value => {
     return true;
   }
 
+  if (/^\/api\/copilot\/chat\/[^/?#]+\/attachments\/[^/?#]+\?/.test(value)) {
+    return true;
+  }
+
   try {
     const url = new URL(value);
     return (
@@ -156,7 +160,7 @@ const AttachmentUrlSchema = z.string().refine(value => {
   } catch {
     return false;
   }
-}, 'attachments must use https?://, gs:// or data: urls');
+}, 'attachments must use https?://, gs://, data: urls or Copilot session attachment locators');
 
 export const PromptAttachmentSourceKindSchema = z.enum([
   'url',
