@@ -36,6 +36,7 @@ export const DeleteLeaveWorkspace = () => {
   const { jumpToPage, jumpToIndex } = useNavigateHelper();
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const workspaceList = useLiveData(workspacesService.list.workspaces$);
   const currentWorkspaceId = useLiveData(
@@ -52,6 +53,15 @@ export const DeleteLeaveWorkspace = () => {
   }, [isOwner]);
 
   const onConfirm = useAsyncCallback(async () => {
+    if (isSubmitting) {
+      return;
+    }
+    setIsSubmitting(true);
+
+    // Navigate away from the workspace before deleting/leaving it, same as the desktop
+    // flow: the settings dialog is scoped to the current workspace, so releasing that
+    // scope has to happen before the workspace is torn down. A failure below therefore
+    // leaves the user on the destination page rather than the deleted workspace.
     if (currentWorkspaceId === workspace.id) {
       const backWorkspace = workspaceList.find(
         ws => ws.id !== currentWorkspaceId
@@ -66,18 +76,23 @@ export const DeleteLeaveWorkspace = () => {
     try {
       if (isOwner) {
         await workspacesService.deleteWorkspace(workspace.meta);
+        notify.success({ title: t['Successfully deleted']() });
       } else {
         await workspacePermissionService.leaveWorkspace();
+        notify.success({
+          title: t['com.affine.deleteLeaveWorkspace.leaveSuccess'](),
+        });
       }
     } catch (error) {
       console.error(error);
       notify.error({ title: t['com.affine.error.unexpected-error.title']() });
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-    notify.success({ title: t['Successfully deleted']() });
   }, [
     currentWorkspaceId,
     isOwner,
+    isSubmitting,
     jumpToIndex,
     jumpToPage,
     t,
@@ -112,6 +127,7 @@ export const DeleteLeaveWorkspace = () => {
           onOpenChange={setShowDelete}
           onConfirm={onConfirm}
           workspaceMetadata={workspace.meta}
+          confirmButtonOptions={{ loading: isSubmitting }}
         />
       ) : (
         <ConfirmModal
@@ -124,6 +140,7 @@ export const DeleteLeaveWorkspace = () => {
           confirmText={t['Leave']()}
           confirmButtonOptions={{
             variant: 'error',
+            loading: isSubmitting,
           }}
         />
       )}

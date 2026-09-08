@@ -55,12 +55,23 @@ test('can rename the current workspace', async ({ page }) => {
   const nameRow = page
     .getByTestId('setting-row')
     .filter({ hasText: 'Workspace name' });
+  const originalName = ((await nameRow.textContent()) ?? '')
+    .replace('Workspace name', '')
+    .trim();
+  expect(originalName).toBeTruthy();
+
   await nameRow.click();
   await page.getByTestId('rename-input').fill('Renamed workspace');
   await page.getByTestId('rename-confirm').click();
 
   await expect(nameRow).toContainText('Renamed workspace');
   await expect(page.getByText('Update workspace name success')).toBeVisible();
+
+  // Restore the original name so later tests do not depend on this one's ordering.
+  await nameRow.click();
+  await page.getByTestId('rename-input').fill(originalName);
+  await page.getByTestId('rename-confirm').click();
+  await expect(nameRow).toContainText(originalName);
 });
 
 test('deleting a workspace asks for its name', async ({ page }) => {
@@ -86,6 +97,38 @@ test('deleting a workspace asks for its name', async ({ page }) => {
 
   await input.fill(name);
   await expect(confirm).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(confirm).toBeHidden();
+});
+
+test('reopening the delete dialog after cancel requires the name again', async ({
+  page,
+}) => {
+  const dialog = await openWorkspaceSettings(page);
+
+  const name = (
+    (await page
+      .getByTestId('setting-row')
+      .filter({ hasText: 'Workspace name' })
+      .textContent()) ?? ''
+  )
+    .replace('Workspace name', '')
+    .trim();
+  expect(name).toBeTruthy();
+
+  await dialog.getByText('Delete workspace', { exact: true }).click();
+  const confirm = page.getByTestId('delete-workspace-confirm-button');
+  const input = page.getByTestId('delete-workspace-input');
+
+  await input.fill(name);
+  await expect(confirm).toBeEnabled();
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(confirm).toBeHidden();
+
+  await dialog.getByText('Delete workspace', { exact: true }).click();
+  await expect(input).toHaveValue('');
+  await expect(confirm).toBeDisabled();
 
   await page.getByRole('button', { name: 'Cancel' }).click();
   await expect(confirm).toBeHidden();
