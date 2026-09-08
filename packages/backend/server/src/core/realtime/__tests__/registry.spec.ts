@@ -651,7 +651,7 @@ test('doc realtime providers register share state and grants handlers', async t 
   } as unknown as PermissionAccess;
   const models = {
     doc: {
-      getDocInfo: async () => ({
+      getMeta: async () => ({
         public: true,
         mode: PublicDocMode.Page,
         defaultRole: DocRole.Reader,
