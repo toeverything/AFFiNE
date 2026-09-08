@@ -1,6 +1,7 @@
 import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { DebugLogger } from '@affine/debug';
 import {
+  type BlobSource,
   type BlobStorage,
   type DocStorage,
   type ListedBlobRecord,
@@ -388,7 +389,11 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     };
   }
 
-  async getWorkspaceBlob(id: string, blobKey: string): Promise<Blob | null> {
+  async getWorkspaceBlob(
+    id: string,
+    blobKey: string,
+    _source?: BlobSource
+  ): Promise<Blob | null> {
     const storage = new this.BlobStorageType({
       id: id,
       flavour: this.flavour,
@@ -402,7 +407,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       : null;
   }
 
-  async listBlobs(id: string): Promise<ListedBlobRecord[]> {
+  async listManageableBlobs(id: string): Promise<ListedBlobRecord[]> {
     const storage = new this.BlobStorageType({
       id: id,
       flavour: this.flavour,
@@ -414,7 +419,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     return storage.list();
   }
 
-  async deleteBlob(
+  async deleteManagedBlob(
     id: string,
     blob: string,
     permanent: boolean

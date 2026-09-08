@@ -198,10 +198,8 @@ const SharePageInner = ({
 
   useEffect(() => {
     if (resolvedPublishMode === null) return;
-    if (editor || workspace || page) return;
 
-    // create a workspace for share page
-    const { workspace: sharedWorkspace } = workspacesService.open(
+    const { workspace: sharedWorkspace, dispose } = workspacesService.open(
       {
         metadata: {
           id: workspaceId,
@@ -220,30 +218,50 @@ const SharePageInner = ({
             },
           },
           blob: {
-            name: 'CloudBlobStorage',
+            name: BUILD_CONFIG.isElectron
+              ? 'SqliteBlobStorage'
+              : 'IndexedDBBlobStorage',
             opts: {
               id: workspaceId,
-              serverBaseUrl: serverService.server.baseUrl,
+              flavour: 'affine-cloud',
+              type: 'workspace',
             },
           },
         },
-        remotes: {},
+        remotes: {
+          cloud: {
+            blob: {
+              name: 'CloudBlobStorage',
+              opts: {
+                id: workspaceId,
+                serverBaseUrl: serverService.server.baseUrl,
+              },
+            },
+          },
+        },
       }
     );
+    let active = true;
 
     setWorkspace(sharedWorkspace);
+    setPage(null);
+    setEditor(null);
 
-    sharedWorkspace.engine.doc
-      .waitForDocLoaded(sharedWorkspace.id)
-      .then(async () => {
+    (async () => {
+      try {
+        await sharedWorkspace.engine.doc.waitForDocLoaded(sharedWorkspace.id);
+        if (!active) return;
+
         const docsService = sharedWorkspace.scope.get(DocsService);
         await waitForSharedDocRecord(docsService, docId);
+        if (!active) return;
 
         const { doc } = docsService.open(docId);
         doc.blockSuiteDoc.load();
         doc.blockSuiteDoc.readonly = true;
 
         await sharedWorkspace.engine.doc.waitForDocLoaded(docId);
+        if (!active) return;
 
         if (!doc.blockSuiteDoc.root) {
           throw new Error('Doc is empty');
@@ -259,8 +277,8 @@ const SharePageInner = ({
         }
 
         setEditor(editor);
-      })
-      .catch(err => {
+      } catch (err) {
+        if (!active) return;
         console.error(err);
         if (isSharePagePermissionError(err)) {
           setNoPermission(true);
@@ -273,15 +291,18 @@ const SharePageInner = ({
         }
 
         setLoadFailed(true);
-      });
+      }
+    })().catch(console.error);
+
+    return () => {
+      active = false;
+      dispose();
+    };
   }, [
     docId,
-    editor,
-    page,
     resolvedPublishMode,
     selector,
     workspaceId,
-    workspace,
     workspacesService,
     serverService.server.baseUrl,
   ]);

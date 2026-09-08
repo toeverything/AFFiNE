@@ -7,14 +7,12 @@ import {
   base64ToUint8Array,
   SocketConnection,
   SPACE_JOIN_BATCH_LIMIT,
-  type SyncProtocol,
   uint8ArrayToBase64,
 } from './socket';
 
 interface CloudAwarenessStorageOptions {
   isSelfHosted: boolean;
   serverBaseUrl: string;
-  syncProtocol: SyncProtocol;
   type: SpaceType;
   id: string;
 }
@@ -61,53 +59,30 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
           return;
         }
 
-        if (this.options.syncProtocol === 'batch') {
-          for (
-            let index = 0;
-            index < pendingIds.length;
-            index += SPACE_JOIN_BATCH_LIMIT
-          ) {
-            const spaces = pendingIds
-              .slice(index, index + SPACE_JOIN_BATCH_LIMIT)
-              .map(docId => ({
-                spaceType: this.options.type,
-                spaceId: this.options.id,
-                docId,
-              }));
-            const response = await this.socket.emitWithAck('space:join-batch', {
-              spaces,
-              clientVersion: BUILD_CONFIG.appVersion,
-            });
+        for (
+          let index = 0;
+          index < pendingIds.length;
+          index += SPACE_JOIN_BATCH_LIMIT
+        ) {
+          const spaces = pendingIds
+            .slice(index, index + SPACE_JOIN_BATCH_LIMIT)
+            .map(docId => ({
+              spaceType: this.options.type,
+              spaceId: this.options.id,
+              docId,
+            }));
+          const response = await this.socket.emitWithAck('space:join-batch', {
+            spaces,
+            clientVersion: BUILD_CONFIG.appVersion,
+          });
 
-            if ('error' in response) {
-              throw new Error(
-                `Awareness join failed: ${response.error.name}: ${response.error.message}`
-              );
-            }
-            if (!response.data.success) {
-              throw new Error('Awareness join was rejected');
-            }
-          }
-        } else {
-          for (const docId of pendingIds) {
-            const response = await this.socket.emitWithAck(
-              'space:join-awareness',
-              {
-                spaceType: this.options.type,
-                spaceId: this.options.id,
-                docId,
-                clientVersion: BUILD_CONFIG.appVersion,
-              }
+          if ('error' in response) {
+            throw new Error(
+              `Awareness join failed: ${response.error.name}: ${response.error.message}`
             );
-
-            if ('error' in response) {
-              throw new Error(
-                `Awareness join failed: ${response.error.name}: ${response.error.message}`
-              );
-            }
-            if (!response.data.success) {
-              throw new Error('Awareness join was rejected');
-            }
+          }
+          if (!response.data.success) {
+            throw new Error('Awareness join was rejected');
           }
         }
 
@@ -153,19 +128,11 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
         handleBroadcastAwarenessUpdate
       );
       if (this.connection.status !== 'connected') return;
-      if (this.options.syncProtocol === 'batch') {
-        this.socket.emit('space:leave-batch', {
-          spaceType: this.options.type,
-          spaceId: this.options.id,
-          docIds: [id],
-        });
-      } else {
-        this.socket.emit('space:leave-awareness', {
-          spaceType: this.options.type,
-          spaceId: this.options.id,
-          docId: id,
-        });
-      }
+      this.socket.emit('space:leave-batch', {
+        spaceType: this.options.type,
+        spaceId: this.options.id,
+        docIds: [id],
+      });
     };
 
     // join awareness, and collect awareness from others

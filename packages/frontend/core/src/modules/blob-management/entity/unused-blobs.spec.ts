@@ -20,18 +20,20 @@ describe('UnusedBlobs', () => {
         pagination: { hasMore: false },
         buckets: [{ key: 'used-2' }],
       });
+    const getWorkspaceBlob = vi.fn();
     const flavoursService = {
       flavours$: {
         value: [
           {
             flavour: 'local',
-            listBlobs: vi
+            listManageableBlobs: vi
               .fn()
               .mockResolvedValue([
                 { key: 'used-1' },
                 { key: 'used-2' },
                 { key: 'unused' },
               ]),
+            getWorkspaceBlob,
           },
         ],
       },
@@ -69,6 +71,8 @@ describe('UnusedBlobs', () => {
     const entity = framework.provider().createEntity(UnusedBlobs);
 
     await expect(entity.getUnusedBlobs()).resolves.toEqual([{ key: 'unused' }]);
+    expect(entity).not.toHaveProperty('hydrateBlob');
+    expect(getWorkspaceBlob).not.toHaveBeenCalled();
     expect(aggregate).toHaveBeenCalledTimes(2);
     expect(aggregate.mock.calls.map(call => call[3])).toEqual([
       { pagination: { limit: 1000, skip: 0 }, prefer: 'local' },

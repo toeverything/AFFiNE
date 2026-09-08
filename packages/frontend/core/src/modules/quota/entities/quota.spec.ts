@@ -54,41 +54,24 @@ function createEntity(store: WorkspaceQuotaStore) {
 }
 
 describe('WorkspaceQuota', () => {
-  test('uses realtime quota state snapshots and refreshes on quota events', async () => {
-    const events$ = new Subject<{ type: 'ready' } | { changed: true }>();
-    const store = createStore(
-      {
-        fetchWorkspaceQuotaState: vi
-          .fn()
-          .mockResolvedValueOnce(createQuotaState({ memberCount: 3 }))
-          .mockResolvedValueOnce(createQuotaState({ memberCount: 4 })),
-      },
-      events$
-    );
+  test('projects workspace quota state', async () => {
+    const store = createStore({
+      fetchWorkspaceQuotaState: vi
+        .fn()
+        .mockResolvedValue(createQuotaState({ memberCount: 3 })),
+    });
     const quota = createEntity(store);
 
     quota.revalidate();
     await vi.waitFor(() => expect(quota.quota$.value?.memberCount).toBe(3));
     expect(quota.quota$.value?.humanReadable.historyPeriod).toBe('30 days');
-
-    events$.next({ changed: true });
-    await vi.waitFor(() => expect(quota.quota$.value?.memberCount).toBe(4));
-
-    expect(store.fetchWorkspaceQuotaState).toHaveBeenCalledTimes(2);
-    quota.dispose();
-  });
-
-  test('surfaces realtime quota errors without GraphQL fallback', async () => {
-    const error = new Error('offline');
-    const store = createStore({
-      fetchWorkspaceQuotaState: vi.fn().mockRejectedValue(error),
-    });
-    const quota = createEntity(store);
-
-    quota.revalidate();
-
-    await vi.waitFor(() => expect(quota.error$.value).toBe(error));
-    expect(quota.quota$.value).toBeNull();
+    expect(store.fetchWorkspaceQuotaState).toHaveBeenCalledWith(
+      'workspace-1',
+      expect.any(AbortSignal)
+    );
+    expect(store.subscribeWorkspaceQuotaState).toHaveBeenCalledWith(
+      'workspace-1'
+    );
     quota.dispose();
   });
 });

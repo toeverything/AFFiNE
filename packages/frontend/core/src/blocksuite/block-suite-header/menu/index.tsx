@@ -212,7 +212,7 @@ const PageHeaderMenuItem = ({
           toast(t['com.affine.no-permission']());
           return;
         }
-        editorService.editor.doc.moveToTrash();
+        await editorService.editor.doc.moveToTrash();
       },
     });
   }, [editorService.editor.doc, guardService, openConfirmModal, pageId, t]);
