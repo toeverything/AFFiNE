@@ -1,6 +1,7 @@
 mod byok;
 mod license;
 mod license_client;
+mod license_offline;
 mod license_worker;
 mod mutation;
 mod subscription;
@@ -10,7 +11,10 @@ use affine_core::access_control::{
   resolve_entitlements, resolve_quota_subject,
 };
 use chrono::{DateTime, Utc};
-use license::{RuntimeInstalledLicense, RuntimeLicenseInstallInput, RuntimeLicenseRefreshInput, installed};
+use license::{
+  RuntimeInstalledLicense, RuntimeLicenseInstallInput, RuntimeLicenseRefreshInput, installed, lock_license, verify,
+};
+use license_client::RuntimeLicenseChange;
 pub(super) use license_worker::LicenseHealthWorker;
 pub(super) use mutation::{
   EntitlementWrite, RuntimeEntitlementTarget, apply_transitions, change_invalidations, lock_sources, lock_targets,
@@ -22,7 +26,7 @@ use super::{
   BackendRuntime, InvalidationHintV1, RuntimeError, RuntimeResult, entitlement_input_error, parse_quantity,
   parse_target_type,
 };
-use crate::{AFFINE_PRO_PUBLIC_KEY, runtime::Deployment};
+use crate::{AFFINE_PRO_PUBLIC_KEY, license_import::normalize_license, runtime::Deployment};
 
 pub(super) async fn load_decision_time(
   tx: &mut Transaction<'_, Postgres>,

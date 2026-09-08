@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
 import type { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 
-import { Cache, NotFound, URLHelper } from '../../base';
+import { Cache, NotFound, OnEvent, URLHelper } from '../../base';
 import {
   DEFAULT_WORKSPACE_AVATAR,
   DEFAULT_WORKSPACE_NAME,
@@ -40,8 +40,17 @@ export class WorkspaceService {
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma>
   ) {}
 
-  async delete(workspaceId: string) {
-    const storageUserIds = await this.deleteWorkspaceRows(workspaceId);
+  @OnEvent('user.preDelete')
+  async onUserPreDelete({ id }: Events['user.preDelete']) {
+    const workspaces = await this.models.user.ownedWorkspaces(id);
+    for (const workspace of workspaces) {
+      await this.delete(workspace.workspaceId, id);
+    }
+  }
+
+  async delete(workspaceId: string, ownerId?: string) {
+    const storageUserIds = await this.deleteWorkspaceRows(workspaceId, ownerId);
+    if (!storageUserIds) return;
     try {
       await this.storageRuntime.deleteWorkspaceObjects(
         workspaceId,
@@ -56,7 +65,7 @@ export class WorkspaceService {
   }
 
   @Transactional<TransactionalAdapterPrisma>({ timeout: 120_000 })
-  private async deleteWorkspaceRows(workspaceId: string) {
+  private async deleteWorkspaceRows(workspaceId: string, ownerId?: string) {
     const tx = this.txHost.tx;
     const lockKey = `storage-workspace:${workspaceId}`;
     while (true) {
@@ -66,6 +75,14 @@ export class WorkspaceService {
       if (lock?.locked) break;
       await new Promise(resolve => setTimeout(resolve, 25));
     }
+
+    if (
+      ownerId &&
+      !(await tx.workspaceMember.findFirst({
+        where: { workspaceId, userId: ownerId, role: 'owner', state: 'active' },
+      }))
+    )
+      return;
 
     const [members, sessions] = await Promise.all([
       tx.workspaceMember.findMany({

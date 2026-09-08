@@ -30,7 +30,7 @@ export class DocJobRunner {
     private readonly event: EventBus
   ) {}
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_30_SECONDS, { waitForCompletion: true })
   async run() {
     await Promise.allSettled([
       this.compactPendingDocUpdates(),

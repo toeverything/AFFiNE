@@ -356,7 +356,10 @@ e2e.serial('should proxy single upload with valid signature', async t => {
   t.is(res.status, 200);
   const calls = getRuntime().putCalls;
   t.is(calls.length, 1);
-  t.is(calls[0].key, `${workspace.id}/${key}`);
+  t.regex(
+    calls[0].key,
+    new RegExp(`^${workspace.id}/\\.reservations/[0-9a-f-]{36}/${key}$`)
+  );
   t.is(calls[0].contentType, 'text/plain');
   t.is(calls[0].contentLength, buffer.length);
   t.deepEqual(calls[0].body, buffer);
@@ -388,7 +391,10 @@ e2e.serial('should proxy multipart upload and return etag', async t => {
 
   const calls = getRuntime().partCalls;
   t.is(calls.length, 1);
-  t.is(calls[0].key, `${workspace.id}/${key}`);
+  t.regex(
+    calls[0].key,
+    new RegExp(`^${workspace.id}/\\.reservations/[0-9a-f-]{36}/${key}$`)
+  );
   t.is(calls[0].uploadId, 'upload-id');
   t.is(calls[0].partNumber, 3);
   t.is(calls[0].contentLength, payload.length);

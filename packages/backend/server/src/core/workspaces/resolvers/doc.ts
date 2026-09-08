@@ -458,7 +458,11 @@ export class WorkspaceDocResolver {
         mode,
       });
     } catch (error) {
-      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
+      if (
+        ['domain_permission_denied', 'workspace_not_found'].includes(
+          backendRuntimeErrorCode(error) ?? ''
+        )
+      ) {
         throw new DocActionDenied({
           action: 'Doc.Publish',
           docId,
@@ -505,7 +509,11 @@ export class WorkspaceDocResolver {
         docId,
       });
     } catch (error) {
-      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
+      if (
+        ['domain_permission_denied', 'workspace_not_found'].includes(
+          backendRuntimeErrorCode(error) ?? ''
+        )
+      ) {
         throw new DocActionDenied({
           action: 'Doc.Unpublish',
           docId,

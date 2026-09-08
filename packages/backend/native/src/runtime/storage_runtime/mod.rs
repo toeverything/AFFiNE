@@ -49,7 +49,7 @@ pub(super) struct DocumentCleanupCandidate {
   pub(super) last_doc_activity_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-use document_cleanup_execution::execute_document_cleanup_candidate;
+use document_cleanup_execution::{DocumentCleanupOutcome, execute_document_cleanup_candidate};
 use workspace_cleanup_checkpoint::{
   delete_orphan_storage_rows, load_integer_cursor, load_object_cursor, mark_checkpoint_failed,
   reconcile_orphan_storage_rows, save_integer_cursor, save_object_cursor,

@@ -200,7 +200,8 @@ pub(super) async fn invalidate_doc_blob_projection(
   embedding_schema_ready: bool,
 ) -> RuntimeResult<()> {
   sqlx::query(
-    "UPDATE doc_blob_ref_projections SET status='pending', indexed_at=NULL, error_code=NULL, error_summary=NULL, updated_at=clock_timestamp() WHERE workspace_id=$1 AND doc_id=$2",
+    "UPDATE doc_blob_ref_projections SET status='pending', indexed_at=NULL, error_code=NULL, error_summary=NULL, \
+     updated_at=clock_timestamp() WHERE workspace_id=$1 AND doc_id=$2",
   )
   .bind(workspace_id)
   .bind(doc_id)
@@ -209,7 +210,8 @@ pub(super) async fn invalidate_doc_blob_projection(
   .map_err(|error| RuntimeError::database("invalidate document blob projection", error))?;
   if embedding_schema_ready {
     sqlx::query(
-      "UPDATE embedding_sources SET deleted_at=clock_timestamp(),updated_at=clock_timestamp() WHERE workspace_id=$1 AND source_kind='document' AND source_key=$2",
+      "UPDATE embedding_sources SET deleted_at=clock_timestamp(),updated_at=clock_timestamp() WHERE workspace_id=$1 \
+       AND source_kind='document' AND source_key=$2",
     )
     .bind(workspace_id)
     .bind(doc_id)
@@ -311,6 +313,11 @@ mod test_support {
 
   pub(super) async fn owner_workspace() -> Option<(PgPool, String, String)> {
     let pool = PgPool::connect(&std::env::var("DATABASE_URL").ok()?).await.unwrap();
+    assert!(
+      crate::runtime::migrations::migrate_embedding_tables(&pool)
+        .await
+        .enabled
+    );
     let suffix = uuid::Uuid::new_v4().simple().to_string();
     let user_id = format!("domain-owner-{suffix}");
     let workspace_id = format!("domain-workspace-{suffix}");

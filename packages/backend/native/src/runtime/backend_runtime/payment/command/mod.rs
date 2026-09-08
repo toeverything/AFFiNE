@@ -18,6 +18,7 @@ use affine_core::{
 };
 use chrono::Duration;
 use helpers::*;
+use license::assert_license_access;
 pub(in crate::runtime::backend_runtime::payment) use recovery::recover_one_stripe_operation;
 pub(in crate::runtime::backend_runtime::payment) use revenuecat::recover_one_revenuecat_identify;
 use serde_json::{Value, json};

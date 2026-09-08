@@ -6,8 +6,8 @@ use serde_json::json;
 use sqlx::{FromRow, PgPool, Row};
 
 use super::{
-  RuntimeDocumentCleanupExecuteResult, RuntimeDocumentCleanupReconcileResult, RuntimeError, RuntimeResult,
-  StorageRuntime, execute_document_cleanup_candidate, load_workspace_live_doc_ids, napi_error,
+  DocumentCleanupOutcome, RuntimeDocumentCleanupExecuteResult, RuntimeDocumentCleanupReconcileResult, RuntimeError,
+  RuntimeResult, StorageRuntime, execute_document_cleanup_candidate, load_workspace_live_doc_ids, napi_error,
 };
 
 #[derive(FromRow)]
@@ -240,10 +240,13 @@ impl StorageRuntime {
       failed: 0,
       deleted_rows: 0,
     };
+    let mut busy_workspaces = Vec::new();
     for _ in 0..limit {
       let mut retries = 0;
       let outcome = loop {
-        match execute_document_cleanup_candidate(&pool, workspace_id.as_deref(), grace_period_days).await {
+        match execute_document_cleanup_candidate(&pool, workspace_id.as_deref(), grace_period_days, &busy_workspaces)
+          .await
+        {
           Err(err) if err.is_serialization_failure() && retries < 3 => {
             retries += 1;
             result.serialization_retries += 1;
@@ -251,13 +254,14 @@ impl StorageRuntime {
           result => break result,
         }
       }?;
-      let Some((_, outcome)) = outcome else { break };
+      let Some((candidate, outcome)) = outcome else { break };
       result.scanned_candidates += 1;
       match outcome {
-        -1 => result.recovered += 1,
-        -2 => result.reset += 1,
-        -3 => result.failed += 1,
-        rows => {
+        DocumentCleanupOutcome::Busy => busy_workspaces.push(candidate.workspace_id),
+        DocumentCleanupOutcome::Recovered => result.recovered += 1,
+        DocumentCleanupOutcome::Reset => result.reset += 1,
+        DocumentCleanupOutcome::Failed => result.failed += 1,
+        DocumentCleanupOutcome::Deleted(rows) => {
           result.executed += 1;
           result.deleted_rows += rows;
         }
@@ -436,7 +440,8 @@ mod tests {
     assert_eq!(root_projection.get::<String, _>("status"), "failed");
     assert_eq!(root_projection.get::<String, _>("error_code"), "yocto_unsupported");
     sqlx::query(
-      "INSERT INTO blobs (workspace_id, key, size, mime, status, created_at) VALUES ($1, 'unknown-ref', 1, 'application/octet-stream', 'completed', CURRENT_TIMESTAMP - INTERVAL '90 days')",
+      "INSERT INTO blobs (workspace_id, key, size, mime, status, created_at) VALUES ($1, 'unknown-ref', 1, \
+       'application/octet-stream', 'completed', CURRENT_TIMESTAMP - INTERVAL '90 days')",
     )
     .bind(&workspace_id)
     .execute(&pool)
@@ -863,11 +868,50 @@ mod tests {
     .bind(&reserved_db_doc_id)
     .execute(&pool)
     .await?;
-    let recovered_reserved = execute_document_cleanup_candidate(&pool, Some(&workspace_id), 30)
+    let busy = super::super::StorageOperation::acquire(&pool, &workspace_id, Some("in-flight-upload")).await?;
+    let (other_user, other_workspace) = insert_user_workspace(&pool, &format!("other-{suffix}")).await?;
+    let other_reserved_doc = format!("db${other_workspace}$docProperties");
+    sqlx::query(
+      "INSERT INTO document_cleanup_candidates(workspace_id,doc_id,status,missing_since,last_observed_missing_at) \
+       VALUES($1,$2,'marked',now()-interval '30 days',now())",
+    )
+    .bind(&other_workspace)
+    .bind(&other_reserved_doc)
+    .execute(&pool)
+    .await?;
+    let progress = tokio::time::timeout(
+      std::time::Duration::from_secs(2),
+      runtime.execute_document_cleanup_candidates(None, 30, 100),
+    )
+    .await??;
+    assert!(
+      progress.recovered >= 1,
+      "a busy workspace must not block another candidate"
+    );
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>(
+        "SELECT count(*) FROM document_cleanup_candidates WHERE workspace_id=$1 AND doc_id=$2"
+      )
+      .bind(&workspace_id)
+      .bind(&reserved_db_doc_id)
+      .fetch_one(&pool)
+      .await?,
+      1
+    );
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>("SELECT count(*) FROM document_cleanup_candidates WHERE workspace_id=$1")
+        .bind(&other_workspace)
+        .fetch_one(&pool)
+        .await?,
+      0
+    );
+    busy.release().await?;
+    cleanup_workspace_fixture(&pool, &other_user, &other_workspace).await?;
+    let recovered_reserved = execute_document_cleanup_candidate(&pool, Some(&workspace_id), 30, &[])
       .await?
       .unwrap();
     assert_eq!(recovered_reserved.0.doc_id, reserved_db_doc_id);
-    assert_eq!(recovered_reserved.1, -1);
+    assert_eq!(recovered_reserved.1, DocumentCleanupOutcome::Recovered);
     assert_eq!(
       sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM snapshots WHERE workspace_id = $1 AND guid = $2")
         .bind(&workspace_id)
@@ -907,7 +951,7 @@ mod tests {
       .await?,
       "pending"
     );
-    let not_due = execute_document_cleanup_candidate(&pool, Some(&workspace_id), 30).await?;
+    let not_due = execute_document_cleanup_candidate(&pool, Some(&workspace_id), 30, &[]).await?;
     assert!(not_due.is_none());
 
     let session_id = format!("session:{suffix}");

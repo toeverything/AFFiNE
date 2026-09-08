@@ -250,7 +250,7 @@ impl BackendRuntime {
   pub async fn create_license_customer_portal_v1(
     &self,
     license_key: String,
-    validate_key: String,
+    validate_key: Option<String>,
   ) -> napi::Result<String> {
     let runtime = self.payment_runtime().await?;
     let _permit = runtime
@@ -259,7 +259,7 @@ impl BackendRuntime {
       .await
       .map_err(|_| to_napi_error(RuntimeError::invalid_state("payment runtime stopped")))?;
     runtime
-      .license_customer_portal_url(&license_key, &validate_key)
+      .license_customer_portal_url(&license_key, validate_key.as_deref())
       .await
       .map_err(to_napi_error)
   }

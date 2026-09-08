@@ -70,7 +70,7 @@ test.beforeEach(t => {
   );
 });
 
-test('workspace sweep stops at the first failed workspace', async t => {
+test('workspace sweep advances past failed workspaces and wraps for retry', async t => {
   t.context.db.workspace.findMany.resolves([
     { id: 'workspace-1', sid: 1 },
     { id: 'workspace-2', sid: 2 },
@@ -81,10 +81,28 @@ test('workspace sweep stops at the first failed workspace', async t => {
 
   const result = await t.context.job.reconcileWorkspaceBatch();
 
-  t.deepEqual(result, { scanned: 1, failures: 1, completed: false });
-  t.is(t.context.runtime.reconcileWorkspaceDocuments.callCount, 1);
-  t.false(t.context.runtime.cleanupUnreferencedWorkspaceBlobs.called);
+  t.deepEqual(result, { scanned: 2, failures: 1, completed: false });
+  t.is(t.context.runtime.reconcileWorkspaceDocuments.callCount, 2);
+  t.true(t.context.runtime.cleanupUnreferencedWorkspaceBlobs.calledOnce);
   t.true(t.context.db.$executeRaw.calledOnce);
+  t.deepEqual(JSON.parse(t.context.db.$executeRaw.lastCall.args[3]), {
+    lastSid: 0,
+    failures: 0,
+  });
+
+  t.context.db.$queryRaw.resolves([
+    { status: 'running', lastSid: 25, failures: 1 },
+  ]);
+  t.context.db.workspace.findMany.resolves([]);
+  t.deepEqual(await t.context.job.reconcileWorkspaceBatch(), {
+    scanned: 0,
+    failures: 0,
+    completed: false,
+  });
+  t.deepEqual(JSON.parse(t.context.db.$executeRaw.lastCall.args[3]), {
+    lastSid: 0,
+    failures: 0,
+  });
 });
 
 test('completed sweep restarts from the beginning for anti-entropy', async t => {

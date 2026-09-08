@@ -16,7 +16,7 @@ import {
   updateWorkspace,
 } from './utils';
 
-const test = ava as TestFn<{
+const test = ava.serial as TestFn<{
   app: TestingApp;
   client: PrismaClient;
 }>;

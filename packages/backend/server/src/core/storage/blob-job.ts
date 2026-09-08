@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
@@ -28,7 +30,7 @@ export class StorageBlobJob {
     private readonly db: PrismaClient
   ) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_MINUTE, { waitForCompletion: true })
   async reconcileStorage() {
     const claimId = randomUUID();
     if (!(await this.claimReconciliationLease(claimId))) return;
@@ -142,7 +144,8 @@ export class StorageBlobJob {
     scope: SweepScope,
     run: (workspaceId: string, sid: number) => Promise<void>
   ) {
-    const lastSid = await this.loadSweepCursor(scope);
+    const { lastSid, failures: previousFailures } =
+      await this.loadSweepCursor(scope);
     const workspaces = await this.db.workspace.findMany({
       where: { sid: { gt: lastSid } },
       orderBy: { sid: 'asc' },
@@ -151,38 +154,44 @@ export class StorageBlobJob {
     });
     let failures = 0;
     let scanned = 0;
-    let lastSuccessfulSid = lastSid;
+    let lastScannedSid = lastSid;
     for (const workspace of workspaces) {
       scanned++;
+      lastScannedSid = workspace.sid;
       try {
         await run(workspace.id, workspace.sid);
-        lastSuccessfulSid = workspace.sid;
       } catch (error) {
         failures++;
         this.logger.error(
           `storage ${scope} sweep failed workspace=${workspace.id} sid=${workspace.sid}`,
           error
         );
-        break;
       }
     }
-    const completed =
-      failures === 0 && workspaces.length < WORKSPACE_BATCH_SIZE;
+    const reachedEnd = workspaces.length < WORKSPACE_BATCH_SIZE;
+    const totalFailures = previousFailures + failures;
+    const completed = totalFailures === 0 && reachedEnd;
     await this.saveSweepCursor(
       scope,
-      completed ? 0 : lastSuccessfulSid,
-      completed
+      reachedEnd ? 0 : lastScannedSid,
+      completed,
+      reachedEnd ? 0 : totalFailures
     );
     return { scanned, failures, completed };
   }
 
   private async loadSweepCursor(scope: SweepScope) {
-    const rows = await this.db.$queryRaw<{ status: string; lastSid: number }[]>`
-      SELECT status, COALESCE((cursor->>'lastSid')::integer, 0) AS "lastSid"
+    const rows = await this.db.$queryRaw<
+      { status: string; lastSid: number; failures: number }[]
+    >`
+      SELECT status, COALESCE((cursor->>'lastSid')::integer, 0) AS "lastSid",
+        COALESCE((cursor->>'failures')::integer, 0) AS failures
       FROM storage_reconciliation_checkpoints
       WHERE kind = 'workspace_storage_sweep' AND scope = ${scope}
     `;
-    return rows[0]?.status === 'completed' ? 0 : (rows[0]?.lastSid ?? 0);
+    return rows[0]?.status === 'completed'
+      ? { lastSid: 0, failures: 0 }
+      : { lastSid: rows[0]?.lastSid ?? 0, failures: rows[0]?.failures ?? 0 };
   }
 
   private async claimReconciliationLease(claimId: string) {
@@ -223,10 +232,11 @@ export class StorageBlobJob {
   private async saveSweepCursor(
     scope: SweepScope,
     lastSid: number,
-    completed: boolean
+    completed: boolean,
+    failures: number
   ) {
     const status = completed ? 'completed' : 'running';
-    const cursor = JSON.stringify({ lastSid });
+    const cursor = JSON.stringify({ lastSid, failures });
     await this.db.$executeRaw`
       INSERT INTO storage_reconciliation_checkpoints
         (kind, scope, status, cursor, completed_at)
@@ -298,4 +308,3 @@ export class StorageBlobJob {
     return false;
   }
 }
-import { randomUUID } from 'node:crypto';

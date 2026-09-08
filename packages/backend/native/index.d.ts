@@ -86,7 +86,7 @@ export declare class BackendRuntime {
   health(): Promise<BackendRuntimeHealth>
   executePaymentCommandV1(input: any): Promise<any>
   createPaymentCustomerPortalV1(actorUserId: string): Promise<string>
-  createLicenseCustomerPortalV1(licenseKey: string, validateKey: string): Promise<string>
+  createLicenseCustomerPortalV1(licenseKey: string, validateKey?: string | undefined | null): Promise<string>
   capturePaymentWebhookV1(provider: string, rawBody: Buffer, authorization: string): Promise<any>
   paymentProviderNamespacesV1(): Promise<any>
   isInviteAbuseUserQuarantinedOrBanned(userId: string): Promise<boolean>

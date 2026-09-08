@@ -921,7 +921,7 @@ e2e('should send comment mention notification is high priority', async t => {
 });
 
 e2e(
-  'should create reply and send comment notification to all repliers',
+  'should notify current repliers but exclude recipients whose access was revoked',
   async t => {
     const docId = randomUUID();
     await app.create(Mockers.DocUser, {
@@ -995,6 +995,26 @@ e2e(
     t.is(notification.userId, owner.id);
     t.is(notification.body.replyId, result.createReply.id);
     t.is(notification.type, NotificationType.Comment);
+    await app.models.docUser.delete(teamWorkspace.id, docId, other.id);
+    const revokedCount = await notificationCount(other.id);
+    const memberCount = await notificationCount(member.id);
+    await app.login(owner);
+    await app.gql({
+      query: createReplyMutation,
+      variables: {
+        input: {
+          commentId: createResult.createComment.id,
+          docMode: DocMode.page,
+          docTitle: 'private update',
+          content: {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'private update' }],
+          },
+        },
+      },
+    });
+    t.is(await notificationCount(other.id), revokedCount);
+    t.is(await notificationCount(member.id), memberCount + 1);
   }
 );
 

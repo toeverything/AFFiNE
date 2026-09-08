@@ -28,7 +28,6 @@ impl PaymentRuntime {
         return Err(RuntimeError::invalid_input("payment actor does not match user target"));
       }
       "workspace" => self.assert_workspace_payment(actor_user_id, target_id).await?,
-      "instance" => self.assert_license_validate_key(target_id, validate_key).await?,
       _ => {}
     }
     let plan = parse_plan(plan)?;
@@ -42,9 +41,12 @@ impl PaymentRuntime {
     .map_err(subscription_mutation_error)?;
     let namespace = self.stripe()?.namespace().clone();
     let namespace_key = canonical_namespace(&namespace)?;
-    let locked = self
+    let mut locked = self
       .lock_stripe_subscription(&namespace_key, target_type, target_id, plan)
       .await?;
+    if target_type == "instance" {
+      assert_license_access(locked.connection.connection(), target_id, validate_key).await?;
+    }
     let stored_recurring = locked
       .recurring
       .as_deref()
@@ -164,7 +166,6 @@ impl PaymentRuntime {
         return Err(RuntimeError::invalid_input("payment actor does not match user target"));
       }
       "workspace" => self.assert_workspace_payment(actor_user_id, target_id).await?,
-      "instance" => self.assert_license_validate_key(target_id, validate_key).await?,
       _ => {}
     }
     let plan = parse_plan(plan)?;
@@ -176,9 +177,12 @@ impl PaymentRuntime {
     .map_err(subscription_mutation_error)?;
     let namespace = self.stripe()?.namespace().clone();
     let namespace_key = canonical_namespace(&namespace)?;
-    let locked = self
+    let mut locked = self
       .lock_stripe_subscription(&namespace_key, target_type, target_id, plan)
       .await?;
+    if target_type == "instance" {
+      assert_license_access(locked.connection.connection(), target_id, validate_key).await?;
+    }
     let stored_recurring = locked
       .recurring
       .as_deref()

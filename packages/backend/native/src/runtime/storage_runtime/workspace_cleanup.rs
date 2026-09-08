@@ -458,10 +458,10 @@ impl StorageRuntime {
     user_id: &str,
     entries: Vec<ObjectListEntry>,
   ) -> napi::Result<i64> {
-    let operation = StorageOperation::acquire(pool, &format!("avatar:{user_id}"), None).await?;
+    let mut operation = StorageOperation::acquire(pool, &format!("avatar:{user_id}"), None).await?;
     let exists = sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)")
       .bind(user_id)
-      .fetch_one(pool)
+      .fetch_one(operation.connection())
       .await
       .map_err(|error| RuntimeError::database("recheck avatar owner", error))?;
     let aged = entries
@@ -479,7 +479,8 @@ impl StorageRuntime {
     let mut operation = StorageOperation::acquire(pool, &workspace_id, Some(&entry.key)).await?;
     let referenced = if let Some(reservation_id) = reservation_id {
       sqlx::query_scalar::<_, bool>(
-        "SELECT EXISTS(SELECT 1 FROM comment_attachments WHERE workspace_id = $1 AND doc_id = $2 AND key = $3 AND reservation_id::text = $4 AND status = 'pending' AND deleted_at IS NULL)",
+        "SELECT EXISTS(SELECT 1 FROM comment_attachments WHERE workspace_id = $1 AND doc_id = $2 AND key = $3 AND \
+         reservation_id::text = $4 AND status = 'pending' AND deleted_at IS NULL)",
       )
       .bind(&workspace_id)
       .bind(&doc_id)
@@ -489,7 +490,8 @@ impl StorageRuntime {
       .await
     } else {
       sqlx::query_scalar::<_, bool>(
-        "SELECT EXISTS(SELECT 1 FROM comment_attachments WHERE workspace_id = $1 AND doc_id = $2 AND key = $3 AND status = 'completed' AND deleted_at IS NULL)",
+        "SELECT EXISTS(SELECT 1 FROM comment_attachments WHERE workspace_id = $1 AND doc_id = $2 AND key = $3 AND \
+         status = 'completed' AND deleted_at IS NULL)",
       )
       .bind(&workspace_id)
       .bind(&doc_id)

@@ -1,17 +1,10 @@
-import { createSign } from 'node:crypto';
-
 import { installLicenseMutation, SubscriptionVariant } from '@affine/graphql';
-import { PrismaClient } from '@prisma/client';
 import Sinon from 'sinon';
 
 import { EventBus } from '../../../base';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
-import { Workspace, WorkspaceRole } from '../../../models';
+import { WorkspaceRole } from '../../../models';
 import { LicenseService } from '../../../plugins/license/service';
-import {
-  SubscriptionRecurring,
-  SubscriptionVariant as PaymentSubscriptionVariant,
-} from '../../../plugins/payment/types';
 import {
   app as sharedApp,
   createApp,
@@ -22,68 +15,15 @@ import {
   type TestingApp,
 } from '../test';
 
-const testWorkspaceId = 'd6f52bc7-d62a-4822-804a-335fa7dfe5a6';
-const testPrivateKey = `-----BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgsH+B50OQ7W85sBwV
-Vu1OkczX+OJICAwmwCMDMBhEXB+hRANCAAQ5vAmJOZu6LuuRZ88nsujO+7LZFyWi
-1ytvRXp2VLaKMoRKGbtm21PBCfTzHN6x2Nf8DGmhHlf3J+geRq4gG64x
------END PRIVATE KEY-----`;
-
-function getLicense(
-  workspaceId: string,
-  expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
-) {
-  const now = new Date();
-  const issuedAt = new Date(
-    Math.min(now.getTime(), expiresAt.getTime() - 60_000)
-  );
-  const claims = {
-    formatVersion: 1,
-    licenseId: `license:${workspaceId}`,
-    workspaceId,
-    audience: 'affine-selfhost',
-    plan: 'selfhost_team',
-    seatQuantity: 20,
-    issuedAt: issuedAt.toISOString(),
-    notBefore: new Date(issuedAt.getTime() - 60_000).toISOString(),
-    expiresAt: expiresAt.toISOString(),
-  };
-  const signer = createSign('SHA256');
-  signer.update(JSON.stringify(claims));
-  signer.end();
-  const envelope = JSON.stringify({
-    claims,
-    signature: signer.sign(testPrivateKey).toString('base64'),
-  });
-  return new File([envelope], 'test-license.lic', {
-    type: 'application/octet-stream',
-  });
-}
-
-const licenses = {
-  valid: getLicense(testWorkspaceId),
-  expired: getLicense(testWorkspaceId, new Date(Date.now() - 1)),
-};
-
 let app: TestingApp;
-let workspace: Workspace;
 let owner: MockedUser;
 
 e2e.before(async () => {
   await sharedApp.close();
   process.env.DEPLOYMENT_TYPE = 'selfhosted';
   refreshEnv();
-
   app = await createApp();
-  await app.get(PrismaClient).installedLicense.deleteMany({
-    where: { workspaceId: testWorkspaceId },
-  });
-  await app.models.workspace.delete(testWorkspaceId);
   owner = await app.signup();
-  workspace = await app.create(Mockers.Workspace, {
-    id: testWorkspaceId,
-    owner,
-  });
 });
 
 e2e.beforeEach(async () => {
@@ -95,185 +35,267 @@ e2e.after.always(async () => {
 });
 
 e2e(
-  'should preview without a target and install a file license for its workspace',
+  'license upload maps native output and publishes only after completion',
   async t => {
-    const preview = app
-      .get(LicenseService)
-      .previewLicense(Buffer.from(await licenses.valid.arrayBuffer()));
-    t.is(preview.workspaceId, workspace.id);
-    t.true(preview.valid);
-    const res = await app.gql({
+    const workspace = await app.create(Mockers.Workspace, { owner });
+    const bytes = Buffer.from('opaque license upload');
+    const installed = {
+      workspaceId: workspace.id,
+      key: 'license-key',
+      validateKey: 'generation',
+      quantity: 20,
+      recurring: 'lifetime',
+      variant: 'onetime',
+      installedAt: '2026-09-08T00:00:00.000Z',
+      validatedAt: '2026-09-08T00:00:00.000Z',
+      expiredAt: '2027-09-08T00:00:00.000Z',
+      license: bytes,
+    };
+    const install = Sinon.stub(
+      app.get(BackendRuntimeProvider),
+      'installTeamLicenseFileV1'
+    );
+    const emit = Sinon.stub(app.get(EventBus), 'emitAsync').resolves([]);
+    t.teardown(() => {
+      install.restore();
+      emit.restore();
+    });
+    let complete!: (value: typeof installed) => void;
+    install.returns(
+      new Promise(resolve => {
+        complete = resolve;
+      })
+    );
+    const pending = app.get(LicenseService).installLicense(workspace.id, bytes);
+    t.false(emit.called);
+    complete(installed);
+    await pending;
+    t.true(emit.calledOnce);
+    t.like(emit.firstCall.args[1], {
+      workspaceId: workspace.id,
+      quantity: 20,
+      recurring: 'lifetime',
+    });
+
+    install.resetHistory();
+    install.resolves(installed);
+    const result = await app.gql({
       query: installLicenseMutation,
       variables: {
         workspaceId: workspace.id,
-        license: licenses.valid,
+        license: new File([bytes], 'license.lic'),
       },
     });
-
-    t.is(res.installLicense.variant, SubscriptionVariant.Onetime);
-
-    const db = app.get(PrismaClient);
-    const installed = await db.installedLicense.findUniqueOrThrow({
-      where: { workspaceId: workspace.id },
-    });
-
-    const staleAt = new Date(0);
-    await db.installedLicense.update({
-      where: { key: installed.key },
-      data: {
-        quantity: installed.quantity + 10,
-        recurring:
-          installed.recurring === SubscriptionRecurring.Monthly
-            ? SubscriptionRecurring.Yearly
-            : SubscriptionRecurring.Monthly,
-        validatedAt: staleAt,
-        expiredAt: staleAt,
-      },
-    });
-    await db.entitlement.updateMany({
-      where: {
-        source: 'selfhost_license',
-        targetType: 'workspace',
-        targetId: workspace.id,
-      },
-      data: {
-        quantity: installed.quantity + 20,
-        validatedAt: staleAt,
-        expiresAt: staleAt,
-      },
-    });
-
-    await app.get(BackendRuntimeProvider).checkLicensesV1();
-
-    const revalidated = await db.installedLicense.findUniqueOrThrow({
-      where: { key: installed.key },
-    });
-    t.is(revalidated.variant, PaymentSubscriptionVariant.Onetime);
-    t.is(revalidated.quantity, installed.quantity);
-    t.is(revalidated.recurring, installed.recurring);
-    t.is(revalidated.expiredAt?.getTime(), installed.expiredAt?.getTime());
-    t.true(revalidated.validatedAt.getTime() > staleAt.getTime());
-
-    const entitlement = await db.entitlement.findFirstOrThrow({
-      where: {
-        source: 'selfhost_license',
-        targetType: 'workspace',
-        targetId: workspace.id,
-      },
-    });
-    t.is(entitlement.quantity, installed.quantity);
-    t.is(entitlement.expiresAt?.getTime(), installed.expiredAt?.getTime());
-    t.true((entitlement.validatedAt?.getTime() ?? 0) > staleAt.getTime());
+    t.deepEqual(install.lastCall.args, [workspace.id, bytes]);
+    t.is(result.installLicense.variant, SubscriptionVariant.Onetime);
+    t.is(result.installLicense.quantity, installed.quantity);
+    t.is(result.installLicense.expiredAt, installed.expiredAt);
   }
 );
 
 e2e(
-  'should commit onetime license before publishing activation event',
+  'license upload enforces payment permission before invoking native',
   async t => {
-    const target = await app.create(Mockers.Workspace, { owner });
-    const db = app.get(PrismaClient);
-    let committed = false;
-    const emitAsync = Sinon.stub(app.get(EventBus), 'emitAsync').callsFake(
-      async (name, payload) => {
-        if (
-          name === 'workspace.subscription.activated' &&
-          (payload as Events['workspace.subscription.activated'])
-            .workspaceId === target.id
-        ) {
-          committed =
-            (await db.installedLicense.count({
-              where: { workspaceId: target.id },
-            })) === 1 &&
-            (await db.entitlement.count({
-              where: { source: 'selfhost_license', targetId: target.id },
-            })) === 1;
-        }
-        return [];
-      }
+    const workspace = await app.create(Mockers.Workspace, { owner });
+    const user = await app.signup();
+    await app.create(Mockers.WorkspaceUser, {
+      workspaceId: workspace.id,
+      userId: user.id,
+      type: WorkspaceRole.Collaborator,
+    });
+    const install = Sinon.stub(
+      app.get(BackendRuntimeProvider),
+      'installTeamLicenseFileV1'
     );
-    t.teardown(() => emitAsync.restore());
-
-    await app
-      .get(LicenseService)
-      .installLicense(
-        target.id,
-        Buffer.from(await getLicense(target.id).arrayBuffer())
-      );
-    t.true(committed);
+    t.teardown(() => install.restore());
+    await t.throwsAsync(
+      app.gql({
+        query: installLicenseMutation,
+        variables: {
+          workspaceId: workspace.id,
+          license: new File(['opaque'], 'license.lic'),
+        },
+      }),
+      { message: `You do not have permission to access Space ${workspace.id}.` }
+    );
+    t.false(install.called);
   }
 );
 
 e2e(
-  'should reject occupied workspace and key before creating activation intent',
+  'license upload translates native errors without publishing activation',
   async t => {
-    const db = app.get(PrismaClient);
-    const installed = await db.installedLicense.findFirstOrThrow({
-      where: { workspaceId: workspace.id },
+    const workspace = await app.create(Mockers.Workspace, { owner });
+    const install = Sinon.stub(
+      app.get(BackendRuntimeProvider),
+      'installTeamLicenseFileV1'
+    );
+    const emit = Sinon.stub(app.get(EventBus), 'emitAsync').resolves([]);
+    t.teardown(() => {
+      install.restore();
+      emit.restore();
     });
-    await t.throwsAsync(
-      app.get(LicenseService).activateTeamLicense(workspace.id, 'unused-key')
-    );
-    const target = await app.create(Mockers.Workspace, { owner });
-    await t.throwsAsync(
-      app.get(LicenseService).activateTeamLicense(target.id, installed.key)
-    );
-  }
-);
-
-e2e('should not allow to install license if not owner', async t => {
-  const user = await app.signup();
-  await app.create(Mockers.WorkspaceUser, {
-    workspaceId: workspace.id,
-    userId: user.id,
-    type: WorkspaceRole.Collaborator,
-  });
-
-  await t.throwsAsync(
-    app.gql({
-      query: installLicenseMutation,
-      variables: {
-        workspaceId: workspace.id,
-        license: licenses.valid,
-      },
-    }),
-    {
-      message: `You do not have permission to access Space ${workspace.id}.`,
-    }
-  );
-});
-
-e2e(`should not install other workspace's license file`, async t => {
-  const owner = await app.signup();
-  const workspace = await app.create(Mockers.Workspace, {
-    owner,
-  });
-
-  await t.throwsAsync(
-    app.gql({
-      query: installLicenseMutation,
-      variables: {
-        workspaceId: workspace.id,
-        license: licenses.valid,
-      },
-    }),
-    {
-      message:
+    for (const [code, message] of [
+      [
+        'license_workspace_mismatch',
         'Invalid license to activate. Workspace mismatched with license.',
+      ],
+      ['license_expired', 'Invalid license to activate. license expired'],
+    ]) {
+      install.rejects(new Error(code));
+      await t.throwsAsync(
+        app.gql({
+          query: installLicenseMutation,
+          variables: {
+            workspaceId: workspace.id,
+            license: new File(['opaque'], 'license.lic'),
+          },
+        }),
+        { message }
+      );
     }
-  );
-});
+    t.false(emit.calledWith('workspace.subscription.activated'));
+  }
+);
 
-e2e('should not install expired license', async t => {
-  await t.throwsAsync(
-    app.gql({
-      query: installLicenseMutation,
-      variables: {
-        workspaceId: workspace.id,
-        license: licenses.expired,
-      },
-    }),
-    {
-      message: 'Invalid license to activate. license expired',
+e2e(
+  'license HTTP routes keep the published protocol separate from signed requests',
+  async t => {
+    const runtime = app.get(BackendRuntimeProvider);
+    const command = Sinon.stub(runtime, 'executePaymentCommandV1');
+    const portal = Sinon.stub(
+      runtime,
+      'createLicenseCustomerPortalV1'
+    ).resolves('https://billing.example/renew');
+    t.teardown(() => {
+      command.restore();
+      portal.restore();
+    });
+    const generation = 'ac8f50e4-6113-4a1e-b46e-0c0a3f99e1cf';
+    const legacy = {
+      plan: 'selfhostedteam',
+      recurring: 'monthly',
+      quantity: 10,
+      endAt: 2_000_000_000_000,
+    };
+    command.resolves({ validateKey: generation, license: legacy });
+    for (const endpoint of ['activate', 'health']) {
+      const request =
+        endpoint === 'activate'
+          ? app.POST('/api/team/licenses/key/activate')
+          : app
+              .GET('/api/team/licenses/key/health')
+              .set('x-validate-key', generation);
+      const response = await request.expect(200);
+      t.deepEqual(response.body, legacy);
+      t.is(response.headers['x-next-validate-key'], generation);
+      t.like(command.lastCall.args[0], {
+        action:
+          endpoint === 'activate'
+            ? 'activate_legacy_license'
+            : 'check_legacy_license_health',
+        licenseKey: 'key',
+      });
     }
-  );
-});
+    const bytes = Buffer.from('opaque signed envelope');
+    command.resolves({
+      license: bytes.toString('base64'),
+      validateKey: generation,
+      recurring: 'monthly',
+    });
+    const signed = await app
+      .POST('/api/team/v1/licenses/key/health')
+      .set('x-validate-key', generation)
+      .send({ workspaceId: 'workspace' })
+      .expect(200);
+    t.deepEqual(signed.body, bytes);
+    t.deepEqual(command.lastCall.args[0], {
+      action: 'check_license_health',
+      licenseKey: 'key',
+      validateKey: generation,
+      workspaceId: 'workspace',
+    });
+    t.is(signed.headers['x-license-recurring'], 'monthly');
+    await app
+      .POST('/api/team/v1/licenses/key/activate')
+      .send({ workspaceId: 'workspace', operationId: generation })
+      .expect(200);
+    t.deepEqual(command.lastCall.args[0], {
+      action: 'activate_license',
+      licenseKey: 'key',
+      workspaceId: 'workspace',
+      operationId: generation,
+    });
+    for (const version of ['', '/v1']) {
+      for (const endpoint of ['seats', 'recurring']) {
+        command.resolves({ status: 'pending' });
+        const request = app.POST(
+          `/api/team${version}/licenses/key/${endpoint}`
+        );
+        if (version) request.set('x-validate-key', generation);
+        await request
+          .send(endpoint === 'seats' ? { seats: 12 } : { recurring: 'yearly' })
+          .expect(201);
+        t.is(
+          command.lastCall.args[0].validateKey,
+          version ? generation : undefined
+        );
+      }
+      const request = app.POST(
+        `/api/team${version}/licenses/key/create-customer-portal`
+      );
+      if (version) request.set('x-validate-key', generation);
+      const response = await request.expect(201);
+      t.deepEqual(response.body, { url: 'https://billing.example/renew' });
+      t.is(portal.lastCall.args[1], version ? generation : undefined);
+      const deactivate = app.POST(
+        `/api/team${version}/licenses/key/deactivate`
+      );
+      if (version) deactivate.set('x-validate-key', generation);
+      await deactivate.expect(201);
+      t.like(command.lastCall.args[0], {
+        action: version ? 'deactivate_license' : 'deactivate_legacy_license',
+        licenseKey: 'key',
+      });
+      t.is(
+        command.lastCall.args[0].validateKey,
+        version ? generation : undefined
+      );
+    }
+    for (const reason of [
+      'payment_busy',
+      'license_private_key_missing',
+      'database unavailable',
+    ]) {
+      command.rejects(new Error(reason));
+      for (const version of ['', '/v1']) {
+        const request = version
+          ? app
+              .POST('/api/team/v1/licenses/key/health')
+              .send({ workspaceId: 'workspace' })
+          : app.GET('/api/team/licenses/key/health');
+        const response = await request
+          .set('x-validate-key', generation)
+          .expect(500);
+        t.is(response.body.name, 'INTERNAL_SERVER_ERROR');
+      }
+    }
+    command.rejects(new Error('license_expired'));
+    const expired = await app
+      .POST('/api/team/v1/licenses/key/health')
+      .set('x-validate-key', generation)
+      .send({ workspaceId: 'workspace' })
+      .expect(400);
+    t.is(expired.body.name, 'LICENSE_EXPIRED');
+    command.rejects(new Error('same_subscription_recurring'));
+    const unchanged = await app
+      .POST('/api/team/v1/licenses/key/recurring')
+      .set('x-validate-key', generation)
+      .send({ recurring: 'monthly' })
+      .expect(400);
+    t.is(unchanged.body.name, 'INVALID_LICENSE_UPDATE_PARAMS');
+    command.resetHistory();
+    await app.POST('/api/team/v1/licenses/key/deactivate').expect(400);
+    t.false(command.called);
+  }
+);

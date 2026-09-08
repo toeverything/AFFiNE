@@ -1,3 +1,5 @@
+mod legacy;
+
 use affine_core::access_control::{LicenseIssuance, LicenseIssuer};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use chrono::{DateTime, Utc};
@@ -7,8 +9,6 @@ use sqlx::{Postgres, Row, Transaction};
 use super::*;
 
 struct ActiveLicenseSubscription {
-  source_id: String,
-  customer_id: String,
   quantity: i32,
   recurring: String,
   period_end: Option<DateTime<Utc>>,
@@ -39,6 +39,9 @@ impl PaymentRuntime {
     let bound_workspace: Option<String> = license.get("workspace_id");
     if bound_workspace.as_deref().is_some_and(|bound| bound != workspace_id) {
       return Err(RuntimeError::invalid_state("invalid_license"));
+    }
+    if bound_workspace.is_none() && license.get::<Option<DateTime<Utc>>, _>("installed_at").is_some() {
+      return Err(RuntimeError::invalid_state("license_upgrade_required"));
     }
     let now: DateTime<Utc> = license.get("now");
     let validate_key = license
@@ -110,33 +113,52 @@ impl PaymentRuntime {
     Ok(json!({ "status": "deactivated" }))
   }
 
-  pub(super) async fn check_license_health(&self, license_key: &str, validate_key: &str) -> RuntimeResult<Value> {
+  pub(super) async fn check_license_health(
+    &self,
+    license_key: &str,
+    validate_key: &str,
+    workspace_id: &str,
+  ) -> RuntimeResult<Value> {
     validate_identity(license_key, "license")?;
+    validate_identity(workspace_id, "license workspace")?;
     validate_uuid(validate_key, "license validate key")?;
     let namespace = canonical_namespace(self.stripe()?.namespace())?;
     let mut connection = license_connection(self, license_key, &namespace).await?;
     let mut tx = connection.begin().await?;
-    let subscription = active_license_subscription(&mut tx, license_key, &namespace).await?;
-    let license =
-      sqlx::query("SELECT workspace_id,validate_key,clock_timestamp() AS now FROM licenses WHERE key=$1 FOR SHARE")
-        .bind(license_key)
-        .fetch_optional(&mut *tx)
-        .await
-        .map_err(|error| RuntimeError::database("read payment license", error))?
-        .ok_or_else(|| RuntimeError::invalid_state("license_not_found"))?;
-    let workspace_id = license
-      .get::<Option<String>, _>("workspace_id")
-      .ok_or_else(|| RuntimeError::invalid_state("license_not_found"))?;
+    let license = sqlx::query(
+      "SELECT workspace_id,validate_key,installed_at,clock_timestamp() AS now FROM licenses WHERE key=$1 FOR UPDATE",
+    )
+    .bind(license_key)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|error| RuntimeError::database("read payment license", error))?
+    .ok_or_else(|| RuntimeError::invalid_state("license_not_found"))?;
+    if license.get::<Option<DateTime<Utc>>, _>("installed_at").is_none() {
+      return Err(RuntimeError::invalid_state("license_unbound"));
+    }
     if license.get::<Option<String>, _>("validate_key").as_deref() != Some(validate_key) {
       return Err(RuntimeError::invalid_state("invalid_validate_key"));
     }
+    let bound_workspace: Option<String> = license.get("workspace_id");
+    if bound_workspace.as_deref().is_some_and(|bound| bound != workspace_id) {
+      return Err(RuntimeError::invalid_state("license_workspace_mismatch"));
+    }
+    let subscription = active_license_subscription(&mut tx, license_key, &namespace).await?;
     let envelope = issue_license(
       license_key,
-      &workspace_id,
+      workspace_id,
       subscription.quantity,
       subscription.period_end,
       license.get("now"),
     )?;
+    if bound_workspace.is_none() {
+      sqlx::query("UPDATE licenses SET workspace_id=$2 WHERE key=$1")
+        .bind(license_key)
+        .bind(workspace_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|error| RuntimeError::database("upgrade license binding", error))?;
+    }
     tx.commit()
       .await
       .map_err(|error| RuntimeError::database("commit license health check", error))?;
@@ -150,16 +172,29 @@ impl PaymentRuntime {
   pub(in crate::runtime::backend_runtime) async fn license_customer_portal_url(
     &self,
     license_key: &str,
-    validate_key: &str,
+    validate_key: Option<&str>,
   ) -> RuntimeResult<String> {
     validate_identity(license_key, "license")?;
-    self
-      .assert_license_validate_key(license_key, Some(validate_key))
-      .await?;
     let namespace = canonical_namespace(self.stripe()?.namespace())?;
-    let subscription = active_license_subscription_pool(&self.pool, license_key, &namespace).await?;
+    let mut connection = PaymentConnection::try_acquire(
+      &self.pool,
+      vec![PaymentScope::billing_target(&namespace, "instance", license_key)?],
+    )
+    .await?
+    .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
+    assert_license_access(connection.connection(), license_key, validate_key).await?;
+    let customer: String = sqlx::query_scalar(
+      "SELECT external_customer_id FROM provider_subscriptions WHERE provider_namespace=$1 AND target_type='instance' \
+       AND target_id=$2 AND plan='selfhost_team' AND external_customer_id IS NOT NULL ORDER BY updated_at DESC LIMIT 1",
+    )
+    .bind(&namespace)
+    .bind(license_key)
+    .fetch_optional(connection.connection())
+    .await
+    .map_err(|error| RuntimeError::database("load license portal customer", error))?
+    .ok_or_else(|| RuntimeError::invalid_state("license_not_found"))?;
     let mut form = StripeForm::default();
-    form.push("customer", StripeFormValue::Text(subscription.customer_id));
+    form.push("customer", StripeFormValue::Text(customer));
     let portal: StripePortalSession = self
       .stripe()?
       .post("v1/billing_portal/sessions", &form, &uuid::Uuid::new_v4().to_string())
@@ -167,28 +202,29 @@ impl PaymentRuntime {
       .map_err(provider_runtime_error)?;
     Ok(portal.url)
   }
+}
 
-  pub(super) async fn assert_license_validate_key(
-    &self,
-    license_key: &str,
-    validate_key: Option<&str>,
-  ) -> RuntimeResult<()> {
-    let validate_key = validate_key.ok_or_else(|| RuntimeError::invalid_input("license validate key is required"))?;
+pub(super) async fn assert_license_access(
+  connection: &mut sqlx::PgConnection,
+  license_key: &str,
+  validate_key: Option<&str>,
+) -> RuntimeResult<()> {
+  if let Some(validate_key) = validate_key {
     validate_uuid(validate_key, "license validate key")?;
-    let valid: bool = sqlx::query_scalar(
-      "SELECT EXISTS(SELECT 1 FROM licenses WHERE key=$1 AND validate_key=$2 AND workspace_id IS NOT NULL AND \
-       installed_at IS NOT NULL)",
-    )
-    .bind(license_key)
-    .bind(validate_key)
-    .fetch_one(&self.pool)
-    .await
-    .map_err(|error| RuntimeError::database("authorize payment license", error))?;
-    if !valid {
-      return Err(RuntimeError::invalid_state("invalid_validate_key"));
-    }
-    Ok(())
   }
+  let valid: bool = sqlx::query_scalar(
+    "SELECT EXISTS(SELECT 1 FROM licenses WHERE key=$1 AND (($2::text IS NULL AND workspace_id IS NULL) OR ($2::text \
+     IS NOT NULL AND validate_key=$2 AND installed_at IS NOT NULL)))",
+  )
+  .bind(license_key)
+  .bind(validate_key)
+  .fetch_one(connection)
+  .await
+  .map_err(|error| RuntimeError::database("authorize payment license", error))?;
+  if !valid {
+    return Err(RuntimeError::invalid_state("invalid_validate_key"));
+  }
+  Ok(())
 }
 
 async fn license_connection(
@@ -196,12 +232,31 @@ async fn license_connection(
   license_key: &str,
   namespace: &str,
 ) -> RuntimeResult<PaymentConnection> {
-  let subscription = active_license_subscription_pool(&runtime.pool, license_key, namespace).await?;
+  let subscription = sqlx::query(
+    "SELECT source_identity,external_customer_id FROM provider_subscriptions WHERE provider_namespace=$1 AND \
+     target_type='instance' AND target_id=$2 AND plan='selfhost_team' ORDER BY updated_at DESC LIMIT 1",
+  )
+  .bind(namespace)
+  .bind(license_key)
+  .fetch_optional(&runtime.pool)
+  .await
+  .map_err(|error| RuntimeError::database("load license subscription lock scopes", error))?
+  .ok_or_else(|| RuntimeError::invalid_state("license_not_found"))?;
+  let source_id = required_column(
+    &subscription,
+    "source_identity",
+    "license subscription identity missing",
+  )?;
+  let customer_id = required_column(
+    &subscription,
+    "external_customer_id",
+    "license customer identity missing",
+  )?;
   PaymentConnection::try_acquire(
     &runtime.pool,
     vec![
-      PaymentScope::source(namespace, &subscription.source_id)?,
-      PaymentScope::customer(namespace, &subscription.customer_id)?,
+      PaymentScope::source(namespace, &source_id)?,
+      PaymentScope::customer(namespace, &customer_id)?,
       PaymentScope::billing_target(namespace, "instance", license_key)?,
     ],
   )
@@ -215,10 +270,9 @@ async fn active_license_subscription(
   namespace: &str,
 ) -> RuntimeResult<ActiveLicenseSubscription> {
   let row = sqlx::query(
-    r#"SELECT source_identity,external_customer_id,quantity,recurring,period_end
+    r#"SELECT quantity,recurring,period_end,status,COALESCE(gives_access,true) AS gives_access,clock_timestamp() AS now
        FROM provider_subscriptions
        WHERE provider_namespace=$2 AND target_type='instance' AND target_id=$1 AND plan='selfhost_team'
-         AND status='active' AND COALESCE(gives_access,true) AND (period_end IS NULL OR period_end>clock_timestamp())
        ORDER BY updated_at DESC LIMIT 1 FOR SHARE"#,
   )
   .bind(license_key)
@@ -226,42 +280,26 @@ async fn active_license_subscription(
   .fetch_optional(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("read license subscription", error))?
-  .ok_or_else(|| RuntimeError::invalid_state("invalid_license"))?;
-  decode_subscription(row)
-}
-
-async fn active_license_subscription_pool(
-  pool: &sqlx::PgPool,
-  license_key: &str,
-  namespace: &str,
-) -> RuntimeResult<ActiveLicenseSubscription> {
-  let row = sqlx::query(
-    r#"SELECT source_identity,external_customer_id,quantity,recurring,period_end
-       FROM provider_subscriptions
-       WHERE provider_namespace=$2 AND target_type='instance' AND target_id=$1 AND plan='selfhost_team'
-         AND status='active' AND COALESCE(gives_access,true) AND (period_end IS NULL OR period_end>clock_timestamp())
-       ORDER BY updated_at DESC LIMIT 1"#,
-  )
-  .bind(license_key)
-  .bind(namespace)
-  .fetch_optional(pool)
-  .await
-  .map_err(|error| RuntimeError::database("read license subscription", error))?
   .ok_or_else(|| RuntimeError::invalid_state("license_not_found"))?;
   decode_subscription(row)
 }
 
 fn decode_subscription(row: sqlx::postgres::PgRow) -> RuntimeResult<ActiveLicenseSubscription> {
+  let period_end: Option<DateTime<Utc>> = row.get("period_end");
+  if row.get::<String, _>("status") != "active"
+    || !row.get::<bool, _>("gives_access")
+    || period_end.is_some_and(|end| end <= row.get::<DateTime<Utc>, _>("now"))
+  {
+    return Err(RuntimeError::invalid_state("license_expired"));
+  }
   let quantity = row
     .get::<Option<i32>, _>("quantity")
     .filter(|quantity| *quantity > 0)
     .ok_or_else(|| RuntimeError::invalid_state("invalid_license"))?;
   Ok(ActiveLicenseSubscription {
-    source_id: required_column(&row, "source_identity", "license subscription identity missing")?,
-    customer_id: required_column(&row, "external_customer_id", "license customer identity missing")?,
     quantity,
     recurring: required_column(&row, "recurring", "license recurring is missing")?,
-    period_end: row.get("period_end"),
+    period_end,
   })
 }
 

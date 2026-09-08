@@ -10,6 +10,7 @@ pub mod hashcash;
 pub mod html_sanitize;
 pub mod image;
 pub mod license;
+mod license_import;
 pub mod llm;
 pub mod permission;
 pub mod runtime;
@@ -65,13 +66,13 @@ pub fn authorize_reserved_doc_subject(user_id: String, workspace_id: String, doc
   )
 }
 
-#[cfg(debug_assertions)]
+#[cfg(any(test, debug_assertions))]
 const DEBUG_AFFINE_PRO_PUBLIC_KEY: Option<&str> = Some(
   "-----BEGIN PUBLIC \
    KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEObwJiTmbui7rkWfPJ7Lozvuy2Rcl\notcrb0V6dlS2ijKEShm7ZttTwQn08xzesdjX/\
    AxpoR5X9yfoHkauIBuuMQ==\n-----END PUBLIC KEY-----",
 );
-#[cfg(not(debug_assertions))]
+#[cfg(not(any(test, debug_assertions)))]
 const DEBUG_AFFINE_PRO_PUBLIC_KEY: Option<&str> = None;
 
 #[napi]

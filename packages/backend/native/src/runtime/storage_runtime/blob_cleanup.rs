@@ -1,5 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
-use sqlx::{FromRow, PgPool};
+use sqlx::{FromRow, PgConnection, PgPool};
 use uuid::Uuid;
 
 use super::{
@@ -18,7 +18,8 @@ struct BlobRow {
 
 async fn checkpoint_completed(pool: &PgPool, kind: &str, scope: &str) -> RuntimeResult<bool> {
   sqlx::query_scalar::<_, bool>(
-    "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind = $1 AND scope = $2 AND status = 'completed')",
+    "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind = $1 AND scope = $2 AND status = \
+     'completed')",
   )
   .bind(kind)
   .bind(scope)
@@ -27,7 +28,7 @@ async fn checkpoint_completed(pool: &PgPool, kind: &str, scope: &str) -> Runtime
   .map_err(|error| RuntimeError::database("Blob cleanup checkpoint check failed", error))
 }
 
-async fn projection_is_stale(pool: &PgPool, workspace_id: &str) -> RuntimeResult<bool> {
+async fn projection_is_stale(connection: &mut PgConnection, workspace_id: &str) -> RuntimeResult<bool> {
   let completed_at = sqlx::query_scalar::<_, Option<DateTime<Utc>>>(
     r#"
     SELECT MIN(completed_at)
@@ -39,7 +40,7 @@ async fn projection_is_stale(pool: &PgPool, workspace_id: &str) -> RuntimeResult
     "#,
   )
   .bind(workspace_id)
-  .fetch_optional(pool)
+  .fetch_optional(&mut *connection)
   .await
   .map_err(|error| RuntimeError::database("Blob cleanup retention checkpoint load failed", error))?
   .flatten();
@@ -57,19 +58,19 @@ async fn projection_is_stale(pool: &PgPool, workspace_id: &str) -> RuntimeResult
   )
   .bind(workspace_id)
   .bind(completed_at)
-  .fetch_one(pool)
+  .fetch_one(&mut *connection)
   .await
   .map_err(|error| RuntimeError::database("Blob cleanup retention activity check failed", error))?;
   if sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM updates WHERE workspace_id = $1)")
     .bind(workspace_id)
-    .fetch_one(pool)
+    .fetch_one(&mut *connection)
     .await
     .map_err(|error| RuntimeError::database("Blob cleanup pending update check failed", error))?
   {
     return Ok(true);
   }
 
-  let mut current_doc_ids = match load_workspace_canonical_doc_ids(pool, workspace_id).await {
+  let mut current_doc_ids = match load_workspace_canonical_doc_ids(&mut *connection, workspace_id).await {
     Ok(ids) => ids,
     Err(_) => return Ok(true),
   };
@@ -79,7 +80,7 @@ async fn projection_is_stale(pool: &PgPool, workspace_id: &str) -> RuntimeResult
       "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 AND status IN ('marked', 'failed')",
     )
     .bind(workspace_id)
-    .fetch_all(pool)
+    .fetch_all(&mut *connection)
     .await
     .map_err(|error| RuntimeError::database("Blob cleanup retained document load failed", error))?,
   );
@@ -120,14 +121,14 @@ async fn projection_is_stale(pool: &PgPool, workspace_id: &str) -> RuntimeResult
   .bind(workspace_id)
   .bind(&current_doc_ids)
   .bind(PARSER_VERSION)
-  .fetch_one(pool)
+  .fetch_one(&mut *connection)
   .await
   .map_err(|error| RuntimeError::database("Blob cleanup projection state check failed", error))?;
   let stale_refs = sqlx::query_scalar::<_, bool>(
     "SELECT EXISTS(SELECT 1 FROM doc_blob_refs WHERE workspace_id = $1 AND status <> 'fresh')",
   )
   .bind(workspace_id)
-  .fetch_one(pool)
+  .fetch_one(&mut *connection)
   .await
   .map_err(|error| RuntimeError::database("Blob cleanup projection freshness check failed", error))?;
   Ok(activity_after_checkpoint || projection_invalid || stale_refs)
@@ -313,7 +314,14 @@ impl StorageRuntime {
     };
     let cursor = load_cursor(&pool, &workspace_id).await?;
     if !checkpoint_completed(&pool, "blob_metadata_backfill", &workspace_id).await?
-      || projection_is_stale(&pool, &workspace_id).await?
+      || projection_is_stale(
+        &mut *pool
+          .acquire()
+          .await
+          .map_err(|error| RuntimeError::database("acquire retention projection connection", error))?,
+        &workspace_id,
+      )
+      .await?
     {
       result.protected_by_metadata = load_live(&pool, &workspace_id, cursor.as_deref(), limit).await?.len() as i64;
       return Ok(result);
@@ -359,84 +367,87 @@ impl StorageRuntime {
   ) -> RuntimeResult<()> {
     let object_key = format!("{}/{}", row.workspace_id, row.key);
     let mut operation = StorageOperation::acquire(pool, &row.workspace_id, None).await?;
-    if projection_is_stale(pool, &row.workspace_id).await? {
-      result.protected_by_metadata += 1;
-      operation.release().await?;
-      return Ok(());
-    }
-    let doc_ref = has_doc_ref(operation.connection(), &row.workspace_id, &row.key).await?;
-    let other_ref = has_other_ref(operation.connection(), &row.workspace_id, &row.key).await?;
-    let metadata = self.object_storage_head(object_key.clone()).await?;
-    if doc_ref || other_ref {
-      if row.deleted_at.is_some() && metadata.is_some() {
-        sqlx::query(
-          "UPDATE blobs SET deleted_at = NULL WHERE workspace_id = $1 AND key = $2 AND reservation_id IS NOT DISTINCT FROM $3 AND deleted_at IS NOT NULL",
+    let outcome = async {
+      if projection_is_stale(operation.connection(), &row.workspace_id).await? {
+        result.protected_by_metadata += 1;
+        return Ok(());
+      }
+      let doc_ref = has_doc_ref(operation.connection(), &row.workspace_id, &row.key).await?;
+      let other_ref = has_other_ref(operation.connection(), &row.workspace_id, &row.key).await?;
+      let metadata = self.object_storage_head(object_key.clone()).await?;
+      if doc_ref || other_ref {
+        if row.deleted_at.is_some() && metadata.is_some() {
+          sqlx::query(
+            "UPDATE blobs SET deleted_at = NULL WHERE workspace_id = $1 AND key = $2 AND reservation_id IS NOT \
+             DISTINCT FROM $3 AND deleted_at IS NOT NULL",
+          )
+          .bind(&row.workspace_id)
+          .bind(&row.key)
+          .bind(row.reservation_id)
+          .execute(operation.connection())
+          .await
+          .map_err(|error| RuntimeError::database("restore referenced blob cleanup row", error))?;
+        }
+        if doc_ref {
+          result.protected_by_doc_refs += 1;
+        }
+        if other_ref {
+          result.protected_by_other_refs += 1;
+        }
+        return Ok(());
+      }
+      if row.deleted_at.is_none() {
+        let Some(metadata) = metadata.as_ref() else {
+          result.protected_by_metadata += 1;
+          return Ok(());
+        };
+        let modified = DateTime::<Utc>::from_timestamp_millis(metadata.last_modified_ms)
+          .ok_or_else(|| RuntimeError::invalid_state("blob cleanup object last modified is invalid"))?;
+        if metadata.content_length != i64::from(row.size) || modified > minimum_modified {
+          result.protected_by_metadata += 1;
+          return Ok(());
+        }
+        let denied = sqlx::query_scalar::<_, bool>(
+          "UPDATE blobs SET deleted_at = clock_timestamp(), reservation_expires_at = NULL WHERE workspace_id = $1 AND \
+           key = $2 AND status = 'completed' AND deleted_at IS NULL AND reservation_id IS NOT DISTINCT FROM $3 \
+           RETURNING true",
         )
         .bind(&row.workspace_id)
         .bind(&row.key)
         .bind(row.reservation_id)
-        .execute(operation.connection())
+        .fetch_optional(operation.connection())
         .await
-        .map_err(|error| RuntimeError::database("restore referenced blob cleanup row", error))?;
+        .map_err(|error| RuntimeError::database("deny unreferenced blob", error))?
+        .unwrap_or(false);
+        if !denied {
+          return Ok(());
+        }
       }
-      if doc_ref {
-        result.protected_by_doc_refs += 1;
+      if metadata.is_some() {
+        let locator = super::ObjectLocator::new(super::StorageScope::Blob, super::ObjectKey::new(object_key)?);
+        self.object_storage()?.delete(&locator).await?;
+        result.deleted_objects += 1;
       }
-      if other_ref {
-        result.protected_by_other_refs += 1;
-      }
-      operation.release().await?;
-      return Ok(());
-    }
-    if row.deleted_at.is_none() {
-      let Some(metadata) = metadata.as_ref() else {
-        result.protected_by_metadata += 1;
-        operation.release().await?;
-        return Ok(());
-      };
-      let modified = DateTime::<Utc>::from_timestamp_millis(metadata.last_modified_ms)
-        .ok_or_else(|| RuntimeError::invalid_state("blob cleanup object last modified is invalid"))?;
-      if metadata.content_length != i64::from(row.size) || modified > minimum_modified {
-        result.protected_by_metadata += 1;
-        operation.release().await?;
-        return Ok(());
-      }
-      let denied = sqlx::query_scalar::<_, bool>(
-        "UPDATE blobs SET deleted_at = clock_timestamp(), reservation_expires_at = NULL WHERE workspace_id = $1 AND key = $2 AND status = 'completed' AND deleted_at IS NULL AND reservation_id IS NOT DISTINCT FROM $3 RETURNING true",
+      let deleted = sqlx::query(
+        "DELETE FROM blobs WHERE workspace_id = $1 AND key = $2 AND status = 'completed' AND deleted_at IS NOT NULL \
+         AND reservation_id IS NOT DISTINCT FROM $3",
       )
       .bind(&row.workspace_id)
       .bind(&row.key)
       .bind(row.reservation_id)
-      .fetch_optional(operation.connection())
+      .execute(operation.connection())
       .await
-      .map_err(|error| RuntimeError::database("deny unreferenced blob", error))?
-      .unwrap_or(false);
-      if !denied {
-        operation.release().await?;
-        return Ok(());
+      .map_err(|error| RuntimeError::database("delete unreferenced blob ledger", error))?
+      .rows_affected() as i64;
+      result.deleted_metadata += deleted;
+      if deleted > 0 && !result.workspace_ids.iter().any(|id| id == &row.workspace_id) {
+        result.workspace_ids.push(row.workspace_id.clone());
       }
+      Ok(())
     }
-    if metadata.is_some() {
-      let locator = super::ObjectLocator::new(super::StorageScope::Blob, super::ObjectKey::new(object_key)?);
-      self.object_storage()?.delete(&locator).await?;
-      result.deleted_objects += 1;
-    }
-    let deleted = sqlx::query(
-      "DELETE FROM blobs WHERE workspace_id = $1 AND key = $2 AND status = 'completed' AND deleted_at IS NOT NULL AND reservation_id IS NOT DISTINCT FROM $3",
-    )
-    .bind(&row.workspace_id)
-    .bind(&row.key)
-    .bind(row.reservation_id)
-    .execute(operation.connection())
-    .await
-    .map_err(|error| RuntimeError::database("delete unreferenced blob ledger", error))?
-    .rows_affected() as i64;
-    result.deleted_metadata += deleted;
-    if deleted > 0 && !result.workspace_ids.iter().any(|id| id == &row.workspace_id) {
-      result.workspace_ids.push(row.workspace_id.clone());
-    }
-    operation.release().await?;
-    Ok(())
+    .await;
+    let released = operation.release().await;
+    outcome.and(released)
   }
 }
 

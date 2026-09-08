@@ -5,7 +5,8 @@ use sqlx::{Postgres, Row, Transaction};
 
 use super::{
   AFFINE_PRO_PUBLIC_KEY, BackendRuntime, EntitlementWrite, RuntimeEntitlementTarget, RuntimeError, RuntimeResult,
-  apply_transitions, load_decision_time, lock_sources, lock_targets, publish_changes, transition_before, upsert,
+  apply_transitions, load_decision_time, lock_sources, lock_targets, normalize_license, publish_changes,
+  transition_before, upsert,
 };
 
 pub(super) struct RuntimeLicenseInstallInput {
@@ -21,10 +22,8 @@ pub(super) struct RuntimeLicenseRefreshInput {
   pub(super) workspace_id: String,
   pub(super) key: String,
   pub(super) expected_validate_key: String,
-  pub(super) validate_key: String,
   pub(super) recurring: String,
   pub(super) license: Buffer,
-  pub(super) onetime: bool,
 }
 
 #[napi_derive::napi(object)]
@@ -58,7 +57,7 @@ pub(super) fn installed(row: sqlx::postgres::PgRow) -> RuntimeInstalledLicense {
   }
 }
 
-async fn lock_license(
+pub(super) async fn lock_license(
   tx: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
   new_subject: Option<&str>,
@@ -100,14 +99,22 @@ async fn lock_license(
   Ok(owners)
 }
 
-fn verify(
+pub(super) fn verify(
   payload: &[u8],
   workspace_id: &str,
   now: DateTime<Utc>,
 ) -> Result<affine_core::access_control::VerifiedLicenseClaims> {
-  let key = AFFINE_PRO_PUBLIC_KEY.ok_or_else(|| Error::new(Status::InvalidArg, "license_public_key_missing"))?;
-  LicenseVerifier::verify(payload, key, Some(workspace_id), now)
-    .map_err(|e| Error::new(Status::InvalidArg, format!("license_{}", e.code())))
+  let key = AFFINE_PRO_PUBLIC_KEY.ok_or_else(|| Error::new(Status::GenericFailure, "license_public_key_missing"))?;
+  LicenseVerifier::verify(payload, key, Some(workspace_id), now).map_err(|e| {
+    Error::new(
+      if e == affine_core::access_control::LicenseError::InvalidPublicKey {
+        Status::GenericFailure
+      } else {
+        Status::InvalidArg
+      },
+      format!("license_{}", e.code()),
+    )
+  })
 }
 
 async fn revoke_workspace_entitlements(
@@ -142,7 +149,8 @@ impl BackendRuntime {
 
 impl BackendRuntime {
   pub(super) async fn install_license_v1(&self, input: RuntimeLicenseInstallInput) -> Result<RuntimeInstalledLicense> {
-    let identity = verify(&input.license, &input.workspace_id, Utc::now())?;
+    let normalized = normalize_license(&input.license)?;
+    let identity = verify(&normalized, &input.workspace_id, Utc::now())?;
     let pool = self.pool().await?;
     let mut tx = pool
       .begin()
@@ -150,7 +158,7 @@ impl BackendRuntime {
       .map_err(|e| RuntimeError::database("begin license install", e))?;
     let owners = lock_license(&mut tx, &input.workspace_id, Some(identity.license_id())).await?;
     let now = load_decision_time(&mut tx, "license install clock").await?;
-    let claims = verify(&input.license, &input.workspace_id, now)?;
+    let claims = verify(&normalized, &input.workspace_id, now)?;
     let target = RuntimeEntitlementTarget {
       target_type: "workspace".into(),
       target_id: input.workspace_id.clone(),
@@ -159,7 +167,15 @@ impl BackendRuntime {
     let deployment = self.config()?.deployment;
     let before = transition_before(&mut tx, &targets, deployment, now).await?;
     let key = input.key.as_deref().unwrap_or(claims.license_id());
+    if key != claims.license_id() {
+      return Err(Error::new(Status::InvalidArg, "license_identity_changed"));
+    }
     let variant = (!input.activation).then_some("onetime");
+    let recurring = if input.activation {
+      &input.recurring
+    } else {
+      claims.recurring().unwrap_or("lifetime")
+    };
     let row = sqlx::query(
       "INSERT INTO \
        installed_licenses(key,workspace_id,quantity,recurring,variant,validate_key,validated_at,expired_at,license) \
@@ -171,7 +187,7 @@ impl BackendRuntime {
     .bind(key)
     .bind(&input.workspace_id)
     .bind(claims.seat_quantity())
-    .bind(&input.recurring)
+    .bind(recurring)
     .bind(variant)
     .bind(&input.validate_key)
     .bind(now)
@@ -181,7 +197,7 @@ impl BackendRuntime {
     .await
     .map_err(|e| RuntimeError::database("install license row", e))?;
     revoke_workspace_entitlements(&mut tx, &input.workspace_id, now).await?;
-    upsert(&mut tx,EntitlementWrite{target:&target,source:"selfhost_license",subject_id:claims.license_id(),plan:"selfhost_team",status:"active",quantity:Some(claims.seat_quantity()),payload:Some(input.license.as_ref()),metadata:serde_json::json!({"recurring":input.recurring,"validateKey":input.validate_key,"variant":variant,"errorCode":null,"errorMessage":null}),starts_at:None,expires_at:Some(claims.expires_at()),grace_until:None},now).await?;
+    upsert(&mut tx,EntitlementWrite{target:&target,source:"selfhost_license",subject_id:claims.license_id(),plan:"selfhost_team",status:"active",quantity:Some(claims.seat_quantity()),payload:Some(normalized.as_ref()),metadata:serde_json::json!({"recurring":recurring,"validateKey":input.validate_key,"variant":variant,"errorCode":null,"errorMessage":null}),starts_at:None,expires_at:Some(claims.expires_at()),grace_until:None},now).await?;
     apply_transitions(&mut tx, &before, deployment, now).await?;
     tx.commit()
       .await
@@ -223,10 +239,21 @@ impl BackendRuntime {
     .fetch_all(&mut *tx)
     .await
     .map_err(|e| RuntimeError::database("verify refreshed license identity", e))?;
-    if active_subjects.len() != 1 || active_subjects[0] != claims.license_id() {
+    if claims.license_id() != input.key || active_subjects.iter().any(|subject| subject != &input.key) {
       return Err(Error::new(Status::InvalidArg, "license_identity_changed"));
     }
-    let recurring = if input.onetime { "lifetime" } else { &input.recurring };
+    let revoked: bool = sqlx::query_scalar(
+      "SELECT EXISTS(SELECT 1 FROM entitlements WHERE source='selfhost_license' AND subject_id=$1 AND \
+       status='revoked')",
+    )
+    .bind(&input.key)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|error| RuntimeError::database("check explicit license revocation", error))?;
+    if revoked {
+      return Ok(None);
+    }
+    let recurring = &input.recurring;
     let targets = vec![RuntimeEntitlementTarget {
       target_type: "workspace".into(),
       target_id: input.workspace_id.clone(),
@@ -234,16 +261,14 @@ impl BackendRuntime {
     let deployment = self.config()?.deployment;
     let before = transition_before(&mut tx, &targets, deployment, now).await?;
     let row = sqlx::query(
-      "UPDATE installed_licenses SET \
-       quantity=$4,recurring=$5,validate_key=$6,validated_at=$7,expired_at=$8,license=$9 WHERE workspace_id=$1 AND \
-       key=$2 AND validate_key=$3 RETURNING *",
+      "UPDATE installed_licenses SET quantity=$4,recurring=$5,validated_at=$6,expired_at=$7,license=$8 WHERE \
+       workspace_id=$1 AND key=$2 AND validate_key=$3 RETURNING *",
     )
     .bind(&input.workspace_id)
     .bind(&input.key)
     .bind(&input.expected_validate_key)
     .bind(claims.seat_quantity())
     .bind(recurring)
-    .bind(&input.validate_key)
     .bind(now)
     .bind(claims.expires_at())
     .bind(input.license.as_ref())
@@ -251,7 +276,7 @@ impl BackendRuntime {
     .await
     .map_err(|e| RuntimeError::database("refresh installed license", e))?;
     let Some(row) = row else { return Ok(None) };
-    upsert(&mut tx,EntitlementWrite{target:&targets[0],source:"selfhost_license",subject_id:claims.license_id(),plan:"selfhost_team",status:"active",quantity:Some(claims.seat_quantity()),payload:Some(input.license.as_ref()),metadata:serde_json::json!({"recurring":recurring,"validateKey":input.validate_key,"variant":input.onetime.then_some("onetime"),"errorCode":null,"errorMessage":null}),starts_at:None,expires_at:Some(claims.expires_at()),grace_until:None},now).await?;
+    upsert(&mut tx,EntitlementWrite{target:&targets[0],source:"selfhost_license",subject_id:claims.license_id(),plan:"selfhost_team",status:"active",quantity:Some(claims.seat_quantity()),payload:Some(input.license.as_ref()),metadata:serde_json::json!({"recurring":recurring,"validateKey":input.expected_validate_key,"variant":null,"errorCode":null,"errorMessage":null}),starts_at:None,expires_at:Some(claims.expires_at()),grace_until:None},now).await?;
     apply_transitions(&mut tx, &before, deployment, now).await?;
     tx.commit()
       .await
@@ -294,6 +319,65 @@ impl BackendRuntime {
     tx.commit()
       .await
       .map_err(|e| RuntimeError::database("commit license revoke", e))?;
+    publish_changes(self, &targets, &owners).await;
+    Ok(true)
+  }
+
+  pub(super) async fn record_license_denial(
+    &self,
+    license: &RuntimeInstalledLicense,
+    status: &str,
+    reason: &str,
+  ) -> Result<bool> {
+    let pool = self.pool().await?;
+    let mut tx = pool
+      .begin()
+      .await
+      .map_err(|error| RuntimeError::database("begin license denial", error))?;
+    let owners = lock_license(&mut tx, &license.workspace_id, Some(&license.key)).await?;
+    let current: Option<String> = sqlx::query_scalar(
+      "SELECT key FROM installed_licenses WHERE workspace_id=$1 AND key=$2 AND validate_key=$3 AND variant IS \
+       DISTINCT FROM 'onetime' FOR UPDATE",
+    )
+    .bind(&license.workspace_id)
+    .bind(&license.key)
+    .bind(&license.validate_key)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|error| RuntimeError::database("recheck license denial generation", error))?;
+    if current.is_none() {
+      return Ok(false);
+    }
+    let now = load_decision_time(&mut tx, "license denial clock").await?;
+    let targets = [RuntimeEntitlementTarget {
+      target_type: "workspace".into(),
+      target_id: license.workspace_id.clone(),
+    }];
+    let deployment = self.config()?.deployment;
+    let before = transition_before(&mut tx, &targets, deployment, now).await?;
+    sqlx::query(
+      "UPDATE entitlements SET status=$3,validated_at=$4,updated_at=$4,metadata=metadata || \
+       jsonb_build_object('errorMessage',$5::text) WHERE source='selfhost_license' AND target_type='workspace' AND \
+       target_id=$1 AND subject_id=$2 AND status<>'revoked'",
+    )
+    .bind(&license.workspace_id)
+    .bind(&license.key)
+    .bind(status)
+    .bind(now)
+    .bind(reason)
+    .execute(&mut *tx)
+    .await
+    .map_err(|error| RuntimeError::database("record license denial", error))?;
+    sqlx::query("UPDATE installed_licenses SET validated_at=$2 WHERE workspace_id=$1")
+      .bind(&license.workspace_id)
+      .bind(now)
+      .execute(&mut *tx)
+      .await
+      .map_err(|error| RuntimeError::database("record license check time", error))?;
+    apply_transitions(&mut tx, &before, deployment, now).await?;
+    tx.commit()
+      .await
+      .map_err(|error| RuntimeError::database("commit license denial", error))?;
     publish_changes(self, &targets, &owners).await;
     Ok(true)
   }

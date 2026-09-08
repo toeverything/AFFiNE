@@ -4,6 +4,15 @@ use sqlx::{PgPool, Postgres, Transaction};
 
 use super::{CurrentDoc, CurrentDocUpdate, DocumentCleanupCandidate, RuntimeError, RuntimeResult, merge_current_doc};
 
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum DocumentCleanupOutcome {
+  Deleted(i64),
+  Recovered,
+  Reset,
+  Failed,
+  Busy,
+}
+
 async fn load_current_doc_for_update(
   tx: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
@@ -121,7 +130,8 @@ async fn mark_candidate_failed(
   error: String,
 ) -> RuntimeResult<()> {
   sqlx::query(
-    "UPDATE document_cleanup_candidates SET status = 'failed', attempt_count = attempt_count + 1, error = $3, updated_at = CURRENT_TIMESTAMP WHERE workspace_id = $1 AND doc_id = $2",
+    "UPDATE document_cleanup_candidates SET status = 'failed', attempt_count = attempt_count + 1, error = $3, \
+     updated_at = CURRENT_TIMESTAMP WHERE workspace_id = $1 AND doc_id = $2",
   )
   .bind(&candidate.workspace_id)
   .bind(&candidate.doc_id)
@@ -136,7 +146,8 @@ pub(super) async fn execute_document_cleanup_candidate(
   pool: &PgPool,
   workspace_id: Option<&str>,
   grace_period_days: i64,
-) -> RuntimeResult<Option<(DocumentCleanupCandidate, i64)>> {
+  busy_workspaces: &[String],
+) -> RuntimeResult<Option<(DocumentCleanupCandidate, DocumentCleanupOutcome)>> {
   let mut tx = pool
     .begin()
     .await
@@ -153,6 +164,7 @@ pub(super) async fn execute_document_cleanup_candidate(
         OR (status = 'failed' AND updated_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes'))
       AND ($1::text IS NULL OR workspace_id = $1)
       AND missing_since <= CURRENT_TIMESTAMP - make_interval(days => $2::int)
+      AND NOT (workspace_id = ANY($3))
     ORDER BY missing_since, workspace_id, doc_id
     FOR UPDATE SKIP LOCKED
     LIMIT 1
@@ -160,6 +172,7 @@ pub(super) async fn execute_document_cleanup_candidate(
   )
   .bind(workspace_id)
   .bind(grace_period_days as i32)
+  .bind(busy_workspaces)
   .fetch_optional(&mut *tx)
   .await
   .map_err(|err| RuntimeError::database("Document cleanup candidate claim failed", err))?;
@@ -170,16 +183,16 @@ pub(super) async fn execute_document_cleanup_candidate(
     return Ok(None);
   };
   let workspace_lock_key = format!("storage-workspace:{}", candidate.workspace_id);
-  loop {
-    let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1,0))")
-      .bind(&workspace_lock_key)
-      .fetch_one(&mut *tx)
+  let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1,0))")
+    .bind(&workspace_lock_key)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|err| RuntimeError::database("Document cleanup workspace source lock failed", err))?;
+  if !locked {
+    tx.rollback()
       .await
-      .map_err(|err| RuntimeError::database("Document cleanup workspace source lock failed", err))?;
-    if locked {
-      break;
-    }
-    tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+      .map_err(|err| RuntimeError::database("Document cleanup busy claim rollback failed", err))?;
+    return Ok(Some((candidate, DocumentCleanupOutcome::Busy)));
   }
 
   if classify_reserved_document(&candidate.workspace_id, &candidate.doc_id).is_valid_reserved() {
@@ -192,7 +205,7 @@ pub(super) async fn execute_document_cleanup_candidate(
     tx.commit()
       .await
       .map_err(|err| RuntimeError::database("Document cleanup reserved candidate commit failed", err))?;
-    return Ok(Some((candidate, -1)));
+    return Ok(Some((candidate, DocumentCleanupOutcome::Recovered)));
   }
 
   let root = match load_current_doc_for_update(&mut tx, &candidate.workspace_id, &candidate.workspace_id).await {
@@ -207,14 +220,14 @@ pub(super) async fn execute_document_cleanup_candidate(
       tx.commit()
         .await
         .map_err(|err| RuntimeError::database("Document cleanup failed candidate commit failed", err))?;
-      return Ok(Some((candidate, -3)));
+      return Ok(Some((candidate, DocumentCleanupOutcome::Failed)));
     }
     Err(err) => {
       mark_candidate_failed(&mut tx, &candidate, err.to_string()).await?;
       tx.commit()
         .await
         .map_err(|err| RuntimeError::database("Document cleanup failed candidate commit failed", err))?;
-      return Ok(Some((candidate, -3)));
+      return Ok(Some((candidate, DocumentCleanupOutcome::Failed)));
     }
   };
   let contains = match root_contains(root, &candidate.doc_id) {
@@ -224,7 +237,7 @@ pub(super) async fn execute_document_cleanup_candidate(
       tx.commit()
         .await
         .map_err(|err| RuntimeError::database("Document cleanup failed candidate commit failed", err))?;
-      return Ok(Some((candidate, -3)));
+      return Ok(Some((candidate, DocumentCleanupOutcome::Failed)));
     }
   };
   if contains {
@@ -237,12 +250,14 @@ pub(super) async fn execute_document_cleanup_candidate(
     tx.commit()
       .await
       .map_err(|err| RuntimeError::database("Document cleanup recovered candidate commit failed", err))?;
-    return Ok(Some((candidate, -1)));
+    return Ok(Some((candidate, DocumentCleanupOutcome::Recovered)));
   }
   let activity = current_activity(&mut tx, &candidate.workspace_id, &candidate.doc_id).await?;
   if activity != candidate.last_doc_activity_at {
     sqlx::query(
-      "UPDATE document_cleanup_candidates SET status = 'marked', missing_since = CURRENT_TIMESTAMP, last_observed_missing_at = CURRENT_TIMESTAMP, last_doc_activity_at = $3, error = NULL, updated_at = CURRENT_TIMESTAMP WHERE workspace_id = $1 AND doc_id = $2",
+      "UPDATE document_cleanup_candidates SET status = 'marked', missing_since = CURRENT_TIMESTAMP, \
+       last_observed_missing_at = CURRENT_TIMESTAMP, last_doc_activity_at = $3, error = NULL, updated_at = \
+       CURRENT_TIMESTAMP WHERE workspace_id = $1 AND doc_id = $2",
     )
     .bind(&candidate.workspace_id)
     .bind(&candidate.doc_id)
@@ -253,11 +268,11 @@ pub(super) async fn execute_document_cleanup_candidate(
     tx.commit()
       .await
       .map_err(|err| RuntimeError::database("Document cleanup activity reset commit failed", err))?;
-    return Ok(Some((candidate, -2)));
+    return Ok(Some((candidate, DocumentCleanupOutcome::Reset)));
   }
   let deleted_rows = delete_doc_rows(&mut tx, &candidate).await?;
   tx.commit()
     .await
     .map_err(|err| RuntimeError::database("Document cleanup execute commit failed", err))?;
-  Ok(Some((candidate, deleted_rows)))
+  Ok(Some((candidate, DocumentCleanupOutcome::Deleted(deleted_rows))))
 }

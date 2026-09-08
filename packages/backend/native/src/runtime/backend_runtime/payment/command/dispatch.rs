@@ -77,6 +77,17 @@ enum PaymentCommand {
   CheckLicenseHealth {
     license_key: String,
     validate_key: String,
+    workspace_id: String,
+  },
+  ActivateLegacyLicense {
+    license_key: String,
+  },
+  DeactivateLegacyLicense {
+    license_key: String,
+  },
+  CheckLegacyLicenseHealth {
+    license_key: String,
+    validate_key: String,
   },
   PrepareUserDeletion {
     user_id: String,
@@ -222,7 +233,18 @@ impl PaymentRuntime {
       PaymentCommand::CheckLicenseHealth {
         license_key,
         validate_key,
-      } => self.check_license_health(&license_key, &validate_key).await,
+        workspace_id,
+      } => {
+        self
+          .check_license_health(&license_key, &validate_key, &workspace_id)
+          .await
+      }
+      PaymentCommand::ActivateLegacyLicense { license_key } => self.activate_legacy_license(&license_key).await,
+      PaymentCommand::DeactivateLegacyLicense { license_key } => self.deactivate_legacy_license(&license_key).await,
+      PaymentCommand::CheckLegacyLicenseHealth {
+        license_key,
+        validate_key,
+      } => self.check_legacy_license_health(&license_key, &validate_key).await,
       PaymentCommand::PrepareUserDeletion { user_id } => self.prepare_user_deletion(&user_id).await,
     }?;
     Ok(PaymentCommandOutcome { value, changes })

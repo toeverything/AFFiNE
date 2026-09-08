@@ -54,7 +54,8 @@ pub(super) async fn save_integer_cursor(
 
 pub(super) async fn load_object_cursor(pool: &PgPool, scope: &str) -> napi::Result<Option<String>> {
   let row = sqlx::query(
-    "SELECT status, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'workspace_storage_namespace' AND scope = $1",
+    "SELECT status, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'workspace_storage_namespace' AND \
+     scope = $1",
   )
   .bind(scope)
   .fetch_optional(pool)
@@ -96,7 +97,8 @@ pub(super) async fn save_object_cursor(pool: &PgPool, scope: &str, token: Option
 
 pub(super) async fn mark_checkpoint_failed(pool: &PgPool, kind: &str, scope: &str) -> napi::Result<()> {
   sqlx::query(
-    "UPDATE storage_reconciliation_checkpoints SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE kind = $1 AND scope = $2",
+    "UPDATE storage_reconciliation_checkpoints SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE kind = $1 \
+     AND scope = $2",
   )
   .bind(kind)
   .bind(scope)
@@ -176,7 +178,8 @@ pub(super) async fn delete_orphan_storage_rows(connection: &mut PgConnection, wo
     deleted = deleted.saturating_add(i64::try_from(outcome.rows_affected()).unwrap_or(i64::MAX));
   }
   let checkpoints = sqlx::query(
-    "DELETE FROM storage_reconciliation_checkpoints WHERE scope = $1 AND kind IN ('doc_blob_refs', 'document_cleanup', 'blob_cleanup', 'blob_metadata_backfill')",
+    "DELETE FROM storage_reconciliation_checkpoints WHERE scope = $1 AND kind IN ('doc_blob_refs', \
+     'document_cleanup', 'blob_cleanup', 'blob_metadata_backfill')",
   )
   .bind(workspace_id)
   .execute(&mut *connection)

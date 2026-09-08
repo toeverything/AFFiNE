@@ -1771,6 +1771,13 @@ async fn strict_comment_reservation_rejects_hijack_and_cleans_expired_generation
     .await
     .unwrap();
   independent.release().await.unwrap();
+  for object_key in [None, Some(final_key.as_str())] {
+    let error = match super::StorageOperation::acquire(&pool, workspace_id, object_key).await {
+      Err(error) => error,
+      Ok(_) => panic!("a busy lifecycle lock must time out"),
+    };
+    assert_eq!(error.to_string(), "storage_lifecycle_lock_timeout");
+  }
   sqlx::query(
     "UPDATE comment_attachments SET deleted_at=now() WHERE workspace_id=$1 AND doc_id=$2 AND key='promotion-key'",
   )
@@ -1817,6 +1824,12 @@ async fn strict_comment_reservation_rejects_hijack_and_cleans_expired_generation
   .await
   .unwrap()
   .unwrap();
+  let mut shared = pool.begin().await.unwrap();
+  let error = super::super::lock_workspace_storage_shared_transaction(&mut shared, workspace_id)
+    .await
+    .unwrap_err();
+  assert_eq!(error.to_string(), "storage_lifecycle_lock_timeout");
+  shared.rollback().await.unwrap();
   exclusive.release().await.unwrap();
 
   let completed_input = |key: &str| types::RuntimeStorageReservationInput {

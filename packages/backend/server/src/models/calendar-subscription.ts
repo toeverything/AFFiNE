@@ -104,6 +104,7 @@ export class CalendarSubscriptionModel extends BaseModel {
 
   async completeSync(
     id: string,
+    claimedUntil: Date,
     input: Required<
       Pick<
         UpdateCalendarSubscriptionSyncInput,
@@ -111,7 +112,7 @@ export class CalendarSubscriptionModel extends BaseModel {
       >
     >
   ) {
-    await this.db.$executeRaw`
+    return await this.db.$executeRaw`
       UPDATE calendar_subscriptions
       SET last_sync_at = ${input.lastSyncAt},
           next_sync_at = CASE
@@ -123,6 +124,8 @@ export class CalendarSubscriptionModel extends BaseModel {
           sync_claimed_until = NULL,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id}
+        AND sync_claimed_until = ${claimedUntil}
+        AND sync_claimed_until > ${new Date(Date.now())}
     `;
   }
 
@@ -143,7 +146,7 @@ export class CalendarSubscriptionModel extends BaseModel {
   async updateEnabled(id: string, enabled: boolean) {
     return await this.db.calendarSubscription.update({
       where: { id },
-      data: { enabled },
+      data: { enabled, ...(enabled ? {} : { syncClaimedUntil: null }) },
     });
   }
 
@@ -192,14 +195,15 @@ export class CalendarSubscriptionModel extends BaseModel {
   }
 
   @Transactional()
-  async claimDueForSync(now: Date, limit: number) {
-    return await this.db.$queryRaw<{ id: string }[]>`
+  async claimDueForSync(now: Date, limit: number, subscriptionId?: string) {
+    return await this.db.$queryRaw<{ id: string; claimedUntil: Date }[]>`
       WITH candidates AS (
         SELECT subscription.id
         FROM calendar_subscriptions subscription
         JOIN calendar_accounts account ON account.id = subscription.account_id
         WHERE subscription.enabled
-          AND subscription.next_sync_at <= ${now}
+          AND (${subscriptionId ?? null}::text IS NOT NULL OR subscription.next_sync_at <= ${now})
+          AND (${subscriptionId ?? null}::text IS NULL OR subscription.id = ${subscriptionId ?? null})
           AND (
             subscription.sync_claimed_until IS NULL
             OR subscription.sync_claimed_until <= ${now}
@@ -214,8 +218,32 @@ export class CalendarSubscriptionModel extends BaseModel {
           sync_claimed_until = ${new Date(now.getTime() + SYNC_CLAIM_MS)}
       FROM candidates
       WHERE subscription.id = candidates.id
-      RETURNING subscription.id
+      RETURNING subscription.id, subscription.sync_claimed_until AS "claimedUntil"
     `;
+  }
+
+  @Transactional()
+  async withSyncClaim<T>(
+    id: string,
+    claimedUntil: Date,
+    write: () => Promise<T>
+  ) {
+    const accounts = await this.db.$queryRaw<{ id: string }[]>`
+      SELECT account.id FROM calendar_accounts account
+      JOIN calendar_subscriptions subscription ON subscription.account_id = account.id
+      WHERE subscription.id = ${id} AND account.status = 'active'
+      FOR UPDATE OF account
+    `;
+    if (!accounts.length) return;
+    const claims = await this.db.$queryRaw<{ id: string }[]>`
+      SELECT id FROM calendar_subscriptions
+      WHERE id = ${id} AND enabled
+        AND sync_claimed_until = ${claimedUntil}
+        AND sync_claimed_until > ${new Date(Date.now())}
+      FOR UPDATE
+    `;
+    if (!claims.length) return;
+    return await write();
   }
 
   async listByAccountForSync(accountId: string) {
@@ -228,7 +256,7 @@ export class CalendarSubscriptionModel extends BaseModel {
   async clearSyncTokensByAccount(accountId: string) {
     return await this.db.calendarSubscription.updateMany({
       where: { accountId },
-      data: { syncToken: null },
+      data: { syncToken: null, syncClaimedUntil: null },
     });
   }
 
@@ -238,7 +266,10 @@ export class CalendarSubscriptionModel extends BaseModel {
   ) {
     return await this.db.calendarSubscription.updateMany({
       where: { id: { in: ids } },
-      data,
+      data: {
+        ...data,
+        ...(data.enabled === false ? { syncClaimedUntil: null } : {}),
+      },
     });
   }
 

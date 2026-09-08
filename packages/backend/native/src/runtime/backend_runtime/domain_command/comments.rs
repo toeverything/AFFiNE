@@ -93,26 +93,9 @@ pub(super) async fn create_comment_notifications(
   mentions: Vec<String>,
 ) -> RuntimeResult<Vec<String>> {
   let mention_user_ids = mentions.into_iter().collect::<BTreeSet<_>>();
-  let mut allowed_mentions = BTreeSet::new();
-  for user_id in &mention_user_ids {
-    if user_id != sender_user_id
-      && authorizer
-        .authorize_doc_action_in(
-          transaction,
-          &comment.workspace_id,
-          Some(user_id),
-          &comment.doc_id,
-          DocAction::CommentsRead,
-        )
-        .await?
-        .allowed
-    {
-      allowed_mentions.insert(user_id.clone());
-    }
-  }
-
   let mut notify_user_ids = sqlx::query_scalar::<_, String>(
-    "SELECT principal_id FROM doc_grants WHERE workspace_id=$1 AND doc_id=$2 AND principal_type='user' AND role='owner'",
+    "SELECT principal_id FROM doc_grants WHERE workspace_id=$1 AND doc_id=$2 AND principal_type='user' AND \
+     role='owner'",
   )
   .bind(&comment.workspace_id)
   .bind(&comment.doc_id)
@@ -133,14 +116,28 @@ pub(super) async fn create_comment_notifications(
     notify_user_ids.extend(repliers);
   }
 
+  notify_user_ids.extend(mention_user_ids.iter().cloned());
+  notify_user_ids.remove(sender_user_id);
   let mut created = Vec::new();
-  for (user_id, notification_type) in allowed_mentions
-    .iter()
-    .map(|user_id| (user_id, "CommentMention"))
-    .chain(notify_user_ids.iter().filter_map(|user_id| {
-      (user_id != sender_user_id && !mention_user_ids.contains(user_id)).then_some((user_id, "Comment"))
-    }))
-  {
+  for user_id in notify_user_ids {
+    if !authorizer
+      .authorize_doc_action_in(
+        transaction,
+        &comment.workspace_id,
+        Some(&user_id),
+        &comment.doc_id,
+        DocAction::CommentsRead,
+      )
+      .await?
+      .allowed
+    {
+      continue;
+    }
+    let notification_type = if mention_user_ids.contains(&user_id) {
+      "CommentMention"
+    } else {
+      "Comment"
+    };
     let body = serde_json::json!({
       "workspaceId": comment.workspace_id,
       "createdByUserId": sender_user_id,

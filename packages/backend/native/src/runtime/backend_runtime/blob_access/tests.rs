@@ -22,6 +22,11 @@ struct Fixture {
 async fn setup() -> Option<Fixture> {
   let database_url = std::env::var("DATABASE_URL").ok()?;
   let pool = PgPool::connect(&database_url).await.unwrap();
+  assert!(
+    crate::runtime::migrations::migrate_embedding_tables(&pool)
+      .await
+      .enabled
+  );
   let suffix = Uuid::new_v4().simple().to_string();
   let workspace_id = format!("blob-access-workspace-{suffix}");
   let direct_user_id = format!("blob-access-direct-{suffix}");

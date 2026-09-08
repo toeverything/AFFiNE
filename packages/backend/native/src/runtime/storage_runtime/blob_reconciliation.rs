@@ -89,8 +89,8 @@ impl BackfillCheckpoint {
 
 async fn load_checkpoint(pool: &PgPool, scope: &str) -> RuntimeResult<Option<BackfillCheckpoint>> {
   sqlx::query_as::<_, BackfillCheckpoint>(
-    "SELECT status, last_key, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'blob_metadata_backfill' AND scope \
-     = $1",
+    "SELECT status, last_key, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'blob_metadata_backfill' \
+     AND scope = $1",
   )
   .bind(scope)
   .fetch_optional(pool)

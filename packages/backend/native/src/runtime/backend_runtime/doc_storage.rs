@@ -53,13 +53,7 @@ impl BackendRuntime {
       .await
       .map_err(|err| RuntimeError::database("DocStorage begin snapshot transaction failed", err))?;
     super::domain_command::lock_workspace_storage_shared(&mut transaction, &workspace_id).await?;
-    super::domain_command::invalidate_doc_blob_projection(
-      &mut transaction,
-      &workspace_id,
-      &doc_id,
-      self.embedding_schema_ready()?,
-    )
-    .await?;
+    super::domain_command::lock_workspace_doc_update(&mut transaction, &workspace_id, &doc_id).await?;
     let row = sqlx::query(
       r#"
       INSERT INTO snapshots
@@ -87,6 +81,15 @@ impl BackendRuntime {
     .fetch_optional(&mut *transaction)
     .await
     .map_err(|err| RuntimeError::database("DocStorage upsert snapshot failed", err))?;
+    if row.is_some() {
+      super::domain_command::invalidate_doc_blob_projection(
+        &mut transaction,
+        &workspace_id,
+        &doc_id,
+        self.embedding_schema_ready()?,
+      )
+      .await?;
+    }
     transaction
       .commit()
       .await
@@ -112,6 +115,7 @@ impl BackendRuntime {
       .await
       .map_err(|err| RuntimeError::database("DocStorage begin history transaction failed", err))?;
     super::domain_command::lock_workspace_storage_shared(&mut transaction, &input.workspace_id).await?;
+    super::domain_command::lock_workspace_doc_update(&mut transaction, &input.workspace_id, &input.doc_id).await?;
     super::domain_command::invalidate_doc_blob_projection(
       &mut transaction,
       &input.workspace_id,
@@ -157,5 +161,86 @@ impl BackendRuntime {
       .map_err(|err| RuntimeError::database("DocStorage commit history transaction failed", err))?;
 
     Ok(true)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::runtime::{backend_runtime::tests::runtime_from_database_url, migrations::DATABASE_TEST_LOCK};
+
+  #[tokio::test]
+  async fn snapshot_writes_invalidate_only_committed_sources() -> anyhow::Result<()> {
+    let _guard = DATABASE_TEST_LOCK.lock().await;
+    let Some(runtime) = runtime_from_database_url().await? else {
+      return Ok(());
+    };
+    let pool = runtime.pool().await?;
+    let workspace_id = format!("snapshot-writer-{}", uuid::Uuid::new_v4());
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    let timestamp = Utc::now().timestamp_millis();
+    let blob = affine_doc_loader::add_doc_to_root_doc(vec![0, 0], "live", None)?;
+    assert!(
+      runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          workspace_id.clone(),
+          blob.clone().into(),
+          timestamp,
+          None
+        )
+        .await?
+    );
+    for delta in [-1, 0, 1] {
+      sqlx::query(
+        "INSERT INTO doc_blob_ref_projections(workspace_id,doc_id,source_revision,parser_version,status,indexed_at) \
+         VALUES($1,$1,to_timestamp($2::bigint::double precision/1000),1,'fresh',now()) ON \
+         CONFLICT(workspace_id,doc_id) DO UPDATE SET status='fresh',indexed_at=now()",
+      )
+      .bind(&workspace_id)
+      .bind(timestamp)
+      .execute(&pool)
+      .await?;
+      sqlx::query(
+        "UPDATE workspaces SET last_check_embeddings=to_timestamp($2::bigint::double precision/1000) WHERE id=$1",
+      )
+      .bind(&workspace_id)
+      .bind(timestamp)
+      .execute(&pool)
+      .await?;
+      let accepted = runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          workspace_id.clone(),
+          blob.clone().into(),
+          timestamp + delta,
+          None,
+        )
+        .await?;
+      assert_eq!(accepted, delta >= 0);
+      let status: String =
+        sqlx::query_scalar("SELECT status FROM doc_blob_ref_projections WHERE workspace_id=$1 AND doc_id=$1")
+          .bind(&workspace_id)
+          .fetch_one(&pool)
+          .await?;
+      assert_eq!(status, if accepted { "pending" } else { "fresh" });
+      let checked_at: DateTime<Utc> = sqlx::query_scalar("SELECT last_check_embeddings FROM workspaces WHERE id=$1")
+        .bind(&workspace_id)
+        .fetch_one(&pool)
+        .await?;
+      assert_eq!(checked_at.timestamp_millis(), if accepted { 0 } else { timestamp });
+    }
+    sqlx::query("DELETE FROM doc_blob_ref_projections WHERE workspace_id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    Ok(())
   }
 }

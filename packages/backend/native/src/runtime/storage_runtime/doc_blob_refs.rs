@@ -46,14 +46,18 @@ enum ProjectionOutcome {
 }
 
 async fn load_workspace_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  let mut ids = load_workspace_canonical_doc_ids(pool, workspace_id).await?;
+  let mut connection = pool
+    .acquire()
+    .await
+    .map_err(|error| RuntimeError::database("acquire retained document connection", error))?;
+  let mut ids = load_workspace_canonical_doc_ids(&mut connection, workspace_id).await?;
   ids.push(workspace_id.to_string());
   let retained = sqlx::query_scalar::<_, String>(
     "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 AND status IN ('marked', 'failed') ORDER \
      BY doc_id",
   )
   .bind(workspace_id)
-  .fetch_all(pool)
+  .fetch_all(&mut *connection)
   .await
   .map_err(|err| RuntimeError::database("Doc blob refs candidate load failed", err))?;
   ids.extend(retained);

@@ -361,6 +361,7 @@ export async function createApp(
     if (globalThis.env.isApi || globalThis.env.isFrontend) {
       await app.get(IndexerService, { strict: false }).onApplicationBootstrap();
     }
+    await app.listen(0);
   } catch (error) {
     await app.close();
     throw error;

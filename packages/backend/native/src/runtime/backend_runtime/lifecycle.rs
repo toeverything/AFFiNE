@@ -117,6 +117,9 @@ impl BackendRuntime {
         *self.invalidation.lock().await =
           Some(invalidation::InvalidationRuntime::start(&redis, self.role.owns_read_cache(), target).await);
       }
+      if !self.script_mode && deployment == crate::runtime::Deployment::SelfHosted {
+        self.admit_offline_licenses(&pool).await?;
+      }
       if payment_worker_enabled(self.role) {
         let payment = self.payment.lock().await.as_ref().cloned();
         let invalidation = self.invalidation.lock().await.as_ref().cloned();
@@ -162,6 +165,18 @@ impl BackendRuntime {
     }
 
     *guard = Some(pool);
+    drop(guard);
+    if !self.script_mode && self.config()?.deployment == crate::runtime::Deployment::SelfHosted {
+      let result = tokio::time::timeout(std::time::Duration::from_secs(30), self.check_licenses_v1()).await;
+      let (outcome, changes) = match result {
+        Ok(Ok(result)) => (
+          if result.transient_failure { "partial" } else { "success" },
+          result.changes.len(),
+        ),
+        _ => ("error", 0),
+      };
+      self.permission_telemetry.license_health(outcome, changes);
+    }
     self.sync_license_health_worker().await?;
     Ok(())
   }

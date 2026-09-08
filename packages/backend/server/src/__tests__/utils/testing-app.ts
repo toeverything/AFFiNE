@@ -66,6 +66,7 @@ export async function createTestingApp(
 
   await module.initTestingDB();
   await app.init();
+  await app.listen(0);
 
   return makeTestingApp(app);
 }

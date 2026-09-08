@@ -312,20 +312,33 @@ export class CalendarService {
       );
     }
 
-    await Promise.allSettled(
-      upserted.map(subscription =>
-        this.syncSubscription(subscription.id, { reason: 'initial' })
-      )
-    );
+    for (const subscription of upserted) {
+      await this.syncSubscription(subscription.id, { reason: 'initial' });
+    }
   }
 
   async syncSubscription(
     subscriptionId: string,
-    options?: { reason?: string; forceFull?: boolean }
+    options?: { reason?: string; forceFull?: boolean; claimedUntil?: Date }
   ) {
+    const claimedUntil =
+      options?.claimedUntil ??
+      (
+        await this.models.calendarSubscription.claimDueForSync(
+          this.now(),
+          1,
+          subscriptionId
+        )
+      )[0]?.claimedUntil;
+    if (!claimedUntil) return;
     const subscription =
       await this.models.calendarSubscription.listWithAccount(subscriptionId);
-    if (!subscription || !subscription.enabled) {
+    if (
+      !subscription ||
+      !subscription.enabled ||
+      subscription.syncClaimedUntil?.getTime() !== claimedUntil.getTime() ||
+      claimedUntil.getTime() <= this.nowMs()
+    ) {
       return;
     }
 
@@ -343,11 +356,15 @@ export class CalendarService {
 
     let accessToken: string | null = null;
     try {
-      const tokens = await this.ensureAccessToken(account);
+      const tokens = await this.ensureAccessToken(account, {
+        id: subscription.id,
+        claimedUntil,
+      });
       if (!tokens.accessToken) return;
       accessToken = tokens.accessToken;
     } catch (error) {
       await this.handleSubscriptionSyncFailure({
+        claimedUntil,
         error,
         subscription,
         account,
@@ -362,40 +379,50 @@ export class CalendarService {
     let synced = false;
 
     try {
-      await this.syncWithProvider({
-        provider,
-        subscriptionId: subscription.id,
-        calendarId: subscription.externalCalendarId,
-        accessToken,
-        account,
-        syncToken: shouldUseSyncToken
-          ? (subscription.syncToken ?? undefined)
-          : undefined,
-        timeMin: shouldUseSyncToken ? undefined : timeMin,
-        timeMax: shouldUseSyncToken ? undefined : timeMax,
-        subscriptionTimezone: subscription.timezone ?? undefined,
-      });
-
-      synced = true;
+      synced = Boolean(
+        await this.syncWithProvider({
+          claimedUntil,
+          provider,
+          subscriptionId: subscription.id,
+          calendarId: subscription.externalCalendarId,
+          accessToken,
+          account,
+          syncToken: shouldUseSyncToken
+            ? (subscription.syncToken ?? undefined)
+            : undefined,
+          timeMin: shouldUseSyncToken ? undefined : timeMin,
+          timeMax: shouldUseSyncToken ? undefined : timeMax,
+          subscriptionTimezone: subscription.timezone ?? undefined,
+        })
+      );
     } catch (error) {
       if (error instanceof CalendarSyncTokenInvalid) {
-        await this.models.calendarSubscription.updateSync(subscription.id, {
-          syncToken: null,
-        });
+        const reset = await this.models.calendarSubscription.withSyncClaim(
+          subscription.id,
+          claimedUntil,
+          () =>
+            this.models.calendarSubscription.updateSync(subscription.id, {
+              syncToken: null,
+            })
+        );
+        if (!reset) return;
         try {
-          await this.syncWithProvider({
-            provider,
-            subscriptionId: subscription.id,
-            calendarId: subscription.externalCalendarId,
-            accessToken,
-            account,
-            timeMin,
-            timeMax,
-            subscriptionTimezone: subscription.timezone ?? undefined,
-          });
-          synced = true;
+          synced = Boolean(
+            await this.syncWithProvider({
+              claimedUntil,
+              provider,
+              subscriptionId: subscription.id,
+              calendarId: subscription.externalCalendarId,
+              accessToken,
+              account,
+              timeMin,
+              timeMax,
+              subscriptionTimezone: subscription.timezone ?? undefined,
+            })
+          );
         } catch (syncTokenRetryError) {
           await this.handleSubscriptionSyncFailure({
+            claimedUntil,
             error: syncTokenRetryError,
             subscription,
             account,
@@ -407,6 +434,7 @@ export class CalendarService {
         }
       } else {
         await this.handleSubscriptionSyncFailure({
+          claimedUntil,
           error,
           subscription,
           account,
@@ -426,7 +454,12 @@ export class CalendarService {
       );
 
       try {
-        await this.ensureWebhookChannel(subscription, provider, accessToken);
+        await this.ensureWebhookChannel(
+          subscription,
+          provider,
+          accessToken,
+          claimedUntil
+        );
       } catch (error) {
         nextSyncAt = this.calculateChannelRetryAt(nextSyncAt);
         this.logger.warn(
@@ -435,11 +468,15 @@ export class CalendarService {
         );
       }
 
-      await this.models.calendarSubscription.completeSync(subscription.id, {
-        lastSyncAt: syncedAt,
-        nextSyncAt,
-        syncRetryCount: 0,
-      });
+      await this.models.calendarSubscription.completeSync(
+        subscription.id,
+        claimedUntil,
+        {
+          lastSyncAt: syncedAt,
+          nextSyncAt,
+          syncRetryCount: 0,
+        }
+      );
     }
   }
 
@@ -646,6 +683,7 @@ export class CalendarService {
   }
 
   private async syncWithProvider(params: {
+    claimedUntil: Date;
     provider: CalendarProvider;
     subscriptionId: string;
     calendarId: string;
@@ -665,45 +703,56 @@ export class CalendarService {
       timeMax: params.timeMax,
     });
 
-    const cancelledEventIds: string[] = [];
-    const failedEventIds: string[] = [];
-    for (const event of response.events) {
-      if (event.status === 'cancelled') {
-        cancelledEventIds.push(event.id);
-        continue;
-      }
+    return await this.models.calendarSubscription.withSyncClaim(
+      params.subscriptionId,
+      params.claimedUntil,
+      async () => {
+        const cancelledEventIds: string[] = [];
+        const failedEventIds: string[] = [];
+        for (const event of response.events) {
+          if (event.status === 'cancelled') {
+            cancelledEventIds.push(event.id);
+            continue;
+          }
 
-      try {
-        await this.models.calendarEvent.upsert(
-          this.mapProviderEvent(
+          let mapped;
+          try {
+            mapped = this.mapProviderEvent(
+              params.subscriptionId,
+              event,
+              params.subscriptionTimezone
+            );
+          } catch {
+            failedEventIds.push(event.id);
+            continue;
+          }
+          await this.models.calendarEvent.upsert(mapped);
+        }
+
+        if (cancelledEventIds.length > 0) {
+          await this.models.calendarEvent.deleteByExternalIds(
             params.subscriptionId,
-            event,
-            params.subscriptionTimezone
-          )
-        );
-      } catch {
-        failedEventIds.push(event.id);
+            cancelledEventIds
+          );
+        }
+        if (failedEventIds.length > 0) {
+          this.logger.warn(
+            `Failed to upsert ${failedEventIds.length} events for subscription ${params.subscriptionId}`,
+            { failedEventIds }
+          );
+        }
+
+        if (response.nextSyncToken) {
+          await this.models.calendarSubscription.updateSync(
+            params.subscriptionId,
+            {
+              syncToken: response.nextSyncToken,
+            }
+          );
+        }
+        return true;
       }
-    }
-
-    if (cancelledEventIds.length > 0) {
-      await this.models.calendarEvent.deleteByExternalIds(
-        params.subscriptionId,
-        cancelledEventIds
-      );
-    }
-    if (failedEventIds.length > 0) {
-      this.logger.warn(
-        `Failed to upsert ${failedEventIds.length} events for subscription ${params.subscriptionId}`,
-        { failedEventIds }
-      );
-    }
-
-    if (response.nextSyncToken) {
-      await this.models.calendarSubscription.updateSync(params.subscriptionId, {
-        syncToken: response.nextSyncToken,
-      });
-    }
+    );
   }
 
   private mapProviderEvent(
@@ -829,7 +878,10 @@ export class CalendarService {
     };
   }
 
-  private async ensureAccessToken(account: CalendarAccount) {
+  private async ensureAccessToken(
+    account: CalendarAccount,
+    claim?: { id: string; claimedUntil: Date }
+  ) {
     const provider = this.providerFactory.get(
       account.provider as CalendarProviderName
     );
@@ -852,14 +904,25 @@ export class CalendarService {
     }
 
     const refreshed = await provider.refreshTokens(decrypted.refreshToken);
-    await this.models.calendarAccount.updateTokens(account.id, {
-      accessToken: refreshed.accessToken,
-      refreshToken: refreshed.refreshToken ?? decrypted.refreshToken,
-      expiresAt: refreshed.expiresAt ?? null,
-      scope: refreshed.scope ?? null,
-      status: 'active',
-      lastError: null,
-    });
+    const save = () =>
+      this.models.calendarAccount.updateTokens(account.id, {
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken ?? decrypted.refreshToken,
+        expiresAt: refreshed.expiresAt ?? null,
+        scope: refreshed.scope ?? null,
+        status: 'active',
+        lastError: null,
+      });
+    if (claim) {
+      const saved = await this.models.calendarSubscription.withSyncClaim(
+        claim.id,
+        claim.claimedUntil,
+        save
+      );
+      if (!saved) return { accessToken: null };
+    } else {
+      await save();
+    }
 
     return { accessToken: refreshed.accessToken };
   }
@@ -910,7 +973,8 @@ export class CalendarService {
       channelExpiration: Date | null;
     },
     provider: CalendarProvider,
-    accessToken: string
+    accessToken: string,
+    claimedUntil: Date
   ) {
     if (!provider.watchCalendar) {
       return;
@@ -946,11 +1010,16 @@ export class CalendarService {
         }
       }
 
-      await this.models.calendarSubscription.updateChannel(subscription.id, {
-        customChannelId: null,
-        customResourceId: null,
-        channelExpiration: null,
-      });
+      await this.models.calendarSubscription.withSyncClaim(
+        subscription.id,
+        claimedUntil,
+        () =>
+          this.models.calendarSubscription.updateChannel(subscription.id, {
+            customChannelId: null,
+            customResourceId: null,
+            channelExpiration: null,
+          })
+      );
     }
 
     const channelId = randomUUID();
@@ -969,25 +1038,36 @@ export class CalendarService {
         throw error;
       }
 
-      await this.models.calendarSubscription.updateChannel(subscription.id, {
-        customChannelId: null,
-        customResourceId: null,
-        channelExpiration: UNSUPPORTED_PUSH_CHANNEL_EXPIRATION,
-      });
+      await this.models.calendarSubscription.withSyncClaim(
+        subscription.id,
+        claimedUntil,
+        () =>
+          this.models.calendarSubscription.updateChannel(subscription.id, {
+            customChannelId: null,
+            customResourceId: null,
+            channelExpiration: UNSUPPORTED_PUSH_CHANNEL_EXPIRATION,
+          })
+      );
       this.logger.log(
         `Calendar subscription ${subscription.id} (${subscription.displayName ?? subscription.externalCalendarId}) does not support push notifications; falling back to polling`
       );
       return;
     }
 
-    await this.models.calendarSubscription.updateChannel(subscription.id, {
-      customChannelId: result.channelId,
-      customResourceId: result.resourceId,
-      channelExpiration: result.expiration ?? null,
-    });
+    await this.models.calendarSubscription.withSyncClaim(
+      subscription.id,
+      claimedUntil,
+      () =>
+        this.models.calendarSubscription.updateChannel(subscription.id, {
+          customChannelId: result.channelId,
+          customResourceId: result.resourceId,
+          channelExpiration: result.expiration ?? null,
+        })
+    );
   }
 
   private async handleSubscriptionSyncFailure(params: {
+    claimedUntil: Date;
     error: unknown;
     subscription: {
       id: string;
@@ -1004,6 +1084,7 @@ export class CalendarService {
   }) {
     if (params.disableOnNotFound && this.isNotFoundError(params.error)) {
       await this.disableSubscription({
+        claimedUntil: params.claimedUntil,
         subscriptionId: params.subscription.id,
         provider: params.provider,
         accessToken: params.accessToken,
@@ -1017,9 +1098,14 @@ export class CalendarService {
     }
 
     if (this.isTokenInvalidError(params.error)) {
-      await this.models.calendarAccount.invalidateAndPurge(
-        params.account.id,
-        this.formatSyncError(params.error)
+      await this.models.calendarSubscription.withSyncClaim(
+        params.subscription.id,
+        params.claimedUntil,
+        () =>
+          this.models.calendarAccount.invalidateAndPurge(
+            params.account.id,
+            this.formatSyncError(params.error)
+          )
       );
       return;
     }
@@ -1028,6 +1114,7 @@ export class CalendarService {
     const nextRetryAt = this.calculateFailureRetryAt(attempt);
     await this.models.calendarSubscription.completeSync(
       params.subscription.id,
+      params.claimedUntil,
       {
         lastSyncAt: params.subscription.lastSyncAt,
         nextSyncAt: nextRetryAt,
@@ -1049,6 +1136,7 @@ export class CalendarService {
   }
 
   private async disableSubscription(params: {
+    claimedUntil: Date;
     subscriptionId: string;
     provider: CalendarProvider;
     accessToken?: string;
@@ -1075,8 +1163,11 @@ export class CalendarService {
       }
     }
 
-    await this.models.calendarSubscription.disableAndPurge(
-      params.subscriptionId
+    await this.models.calendarSubscription.withSyncClaim(
+      params.subscriptionId,
+      params.claimedUntil,
+      () =>
+        this.models.calendarSubscription.disableAndPurge(params.subscriptionId)
     );
   }
 

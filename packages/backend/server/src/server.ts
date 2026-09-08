@@ -24,6 +24,27 @@ import { serverTimingAndCache } from './middleware/timing';
 
 const OneMB = 1024 * 1024;
 
+export function configureBodyParsers(
+  app: NestExpressApplication,
+  serverPath: string
+) {
+  const serverPrefix = serverPath.replace(/^\/+|\/+$/g, '').toLowerCase();
+  const attachmentPrefix = `${serverPrefix ? `/${serverPrefix}` : ''}/api/copilot/chat/`;
+  app.useBodyParser('raw', {
+    limit: 20 * OneMB,
+    type: req => {
+      const requestPath = (req.url ?? '').toLowerCase();
+      return (
+        requestPath.startsWith(attachmentPrefix) &&
+        /^[^/?]+\/attachments\/[^/?]+\/?(?:\?|$)/.test(
+          requestPath.slice(attachmentPrefix.length)
+        )
+      );
+    },
+  });
+  app.useBodyParser('raw', { limit: 100 * OneMB });
+}
+
 export async function run() {
   const { AppModule } = await import('./app.module');
 
@@ -34,18 +55,11 @@ export async function run() {
     bufferLogs: true,
   });
 
-  app.useBodyParser('raw', {
-    limit: 20 * OneMB,
-    type: req =>
-      /^\/api\/copilot\/chat\/[^/]+\/attachments\/[^/?]+(?:\?|$)/.test(
-        req.url ?? ''
-      ),
-  });
-  app.useBodyParser('raw', { limit: 100 * OneMB });
+  const config = app.get(Config);
+  configureBodyParsers(app, config.server.path);
 
   const logger = app.get(AFFiNELogger);
   app.useLogger(logger);
-  const config = app.get(Config);
   const url = app.get(URLHelper);
   let telemetry: TelemetryService | null = null;
   try {

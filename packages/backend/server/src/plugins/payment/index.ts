@@ -9,7 +9,10 @@ import { UserModule } from '../../core/user';
 import { WorkspaceModule } from '../../core/workspaces';
 import { StripeWebhookController } from './controller';
 import { PaymentEventHandlers } from './event';
-import { LicenseController } from './license-controller';
+import {
+  LegacyLicenseController,
+  LicenseController,
+} from './license-controller';
 import {
   UserSubscriptionResolver,
   WorkspaceSubscriptionResolver,
@@ -36,6 +39,7 @@ import { SubscriptionService } from './service';
   controllers: [
     StripeWebhookController,
     LicenseController,
+    LegacyLicenseController,
     RevenueCatWebhookController,
   ],
 })
