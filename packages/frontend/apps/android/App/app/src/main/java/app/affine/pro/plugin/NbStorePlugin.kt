@@ -71,7 +71,6 @@ class NbStorePlugin : Plugin() {
     }
   }
 
-  /** Disconnect and permanently delete a local workspace's on-disk database. */
   @PluginMethod
   fun deleteWorkspace(call: PluginCall) {
     launch(Dispatchers.IO) {
@@ -93,6 +92,11 @@ class NbStorePlugin : Plugin() {
               .replace(Regex("_+$"), "")
           )
         val db = peerDir.resolve("$spaceId.db")
+        if (!db.canonicalFile.toPath().startsWith(peerDir.canonicalFile.toPath())) {
+          Timber.w("Failed to delete workspace, resolved path escapes the workspace directory.")
+          call.reject("Failed to delete workspace, resolved path escapes the workspace directory.")
+          return@launch
+        }
         docStoragePool.deleteWorkspace(id, db.path)
         Timber.i("NbStore workspace deleted [ id = $id ].")
         call.resolve()

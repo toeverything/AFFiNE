@@ -54,8 +54,7 @@ export interface NativeIndexSearchResult {
 export interface NativeDBApis {
   connect: (id: string) => Promise<void>;
   disconnect: (id: string) => Promise<void>;
-  // Only iOS/Android implement this; they have no separate "move to trash" step, so it
-  // permanently deletes the on-disk database.
+  // Only implemented on iOS/Android; permanently deletes the on-disk database.
   deleteWorkspace?: (id: string) => Promise<void>;
   pushUpdate: (id: string, docId: string, update: Uint8Array) => Promise<Date>;
   getDocSnapshot: (id: string, docId: string) => Promise<DocRecord | null>;
@@ -189,9 +188,6 @@ export function bindNativeDBApis(a: NativeDBApis) {
   apis = a;
 }
 
-/**
- * Permanently delete a workspace's on-disk database. No-ops where unimplemented.
- */
 export async function deleteNativeWorkspace(universalId: string): Promise<void> {
   await apis?.deleteWorkspace?.(universalId);
 }

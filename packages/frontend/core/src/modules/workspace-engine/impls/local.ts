@@ -223,8 +223,6 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     : IndexedDBIndexerSyncStorage;
 
   async deleteWorkspace(id: string): Promise<void> {
-    setLocalWorkspaceIds(ids => ids.filter(x => x !== id));
-
     // TODO(@forehalo): deleting logic for indexeddb workspaces
     if (BUILD_CONFIG.isElectron) {
       const electronApi = this.framework.get(DesktopApiService);
@@ -232,11 +230,12 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         universalId({ peer: 'local', type: 'workspace', id })
       );
     } else if (BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid) {
-      // No "move to trash" step on mobile: this permanently deletes the database.
       await deleteNativeWorkspace(
         universalId({ peer: 'local', type: 'workspace', id })
       );
     }
+
+    setLocalWorkspaceIds(ids => ids.filter(x => x !== id));
     // notify all browser tabs, so they can update their workspace list
     this.notifyChannel.postMessage(id);
   }

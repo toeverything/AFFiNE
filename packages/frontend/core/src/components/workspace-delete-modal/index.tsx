@@ -22,12 +22,11 @@ export const WorkspaceDeleteModal = ({
   const [deleteStr, setDeleteStr] = useState<string>('');
   const info = useWorkspaceInfo(workspaceMetadata);
   const workspaceName = info?.name ?? UNTITLED_WORKSPACE_NAME;
-  // Fail closed until the profile has loaded, so a still-loading or failed revalidation
-  // can't be confirmed by accident.
+  // Fail closed until the profile has loaded.
   const allowDelete = info != null && deleteStr === workspaceName;
   const t = useI18n();
 
-  // Reset on close/reopen: the modal stays mounted, only `open` toggles.
+  // The modal stays mounted, so reset on close/reopen.
   useEffect(() => {
     setDeleteStr('');
   }, [open, workspaceMetadata.id]);

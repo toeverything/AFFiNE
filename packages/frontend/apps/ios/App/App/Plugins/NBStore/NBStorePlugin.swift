@@ -91,7 +91,6 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     }
   }
 
-  /// Disconnect and permanently delete a local workspace's on-disk database.
   @objc func deleteWorkspace(_ call: CAPPluginCall) {
     Task {
       do {
@@ -111,6 +110,12 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
               .replacing(/_+/, with: "_")
               .replacing(/_+$/, with: ""))
         let db = peerDir.appending(path: spaceId + ".db")
+        let resolvedDb = db.standardizedFileURL.path()
+        let resolvedPeerDir = peerDir.standardizedFileURL.path()
+        guard resolvedDb.hasPrefix(resolvedPeerDir.hasSuffix("/") ? resolvedPeerDir : resolvedPeerDir + "/") else {
+          call.reject("Failed to delete workspace, resolved path escapes the workspace directory.")
+          return
+        }
         try await docStoragePool.deleteWorkspace(universalId: id, path: db.path())
         call.resolve()
       } catch {

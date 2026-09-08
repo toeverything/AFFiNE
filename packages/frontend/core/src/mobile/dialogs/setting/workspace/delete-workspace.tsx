@@ -58,8 +58,8 @@ export const DeleteLeaveWorkspace = () => {
     }
     setIsSubmitting(true);
 
-    // Navigate away before deleting/leaving, same as desktop: the settings dialog is
-    // scoped to this workspace, so its scope must be released before teardown.
+    // Same as desktop: the settings dialog is scoped to this workspace, so navigate
+    // away before tearing it down.
     if (currentWorkspaceId === workspace.id) {
       const backWorkspace = workspaceList.find(
         ws => ws.id !== currentWorkspaceId
