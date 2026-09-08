@@ -1,3 +1,6 @@
+mod application_icon;
+use application_icon::application_icon;
+
 pub mod audio_buffer;
 pub mod audio_stream_basic_desc;
 pub mod av_audio_file;
