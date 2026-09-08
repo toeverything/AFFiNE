@@ -531,8 +531,7 @@ public protocol DocStoragePoolProtocol: AnyObject, Sendable {
     func deleteDoc(universalId: String, docId: String) async throws
 
     /**
-     * Disconnect the workspace and permanently delete its on-disk database file, including
-     * any sidecar journal files left by SQLite.
+     * Disconnect and permanently delete the workspace's database, including SQLite sidecars.
      */
     func deleteWorkspace(universalId: String, path: String) async throws
 
@@ -763,8 +762,7 @@ open func deleteDoc(universalId: String, docId: String)async throws   {
 }
 
     /**
-     * Disconnect the workspace and permanently delete its on-disk database file, including
-     * any sidecar journal files left by SQLite.
+     * Disconnect and permanently delete the workspace's database, including SQLite sidecars.
      */
 open func deleteWorkspace(universalId: String, path: String)async throws   {
     return
@@ -3507,7 +3505,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_doc() != 4005) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_workspace() != 16313) {
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_workspace() != 7455) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_disconnect() != 20410) {

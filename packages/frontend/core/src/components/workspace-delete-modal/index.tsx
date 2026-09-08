@@ -22,17 +22,12 @@ export const WorkspaceDeleteModal = ({
   const [deleteStr, setDeleteStr] = useState<string>('');
   const info = useWorkspaceInfo(workspaceMetadata);
   const workspaceName = info?.name ?? UNTITLED_WORKSPACE_NAME;
-  // Fail closed until the real profile is loaded: an unloaded or failed revalidation must
-  // never accept the displayed fallback as confirmation before we know it is accurate.
-  // Once loaded, compare against what is actually shown (falling back to
-  // UNTITLED_WORKSPACE_NAME too), since a genuinely unnamed workspace is a normal state
-  // elsewhere in the app, not just a loading artifact.
+  // Fail closed until the profile has loaded, so a still-loading or failed revalidation
+  // can't be confirmed by accident.
   const allowDelete = info != null && deleteStr === workspaceName;
   const t = useI18n();
 
-  // The modal stays mounted while its caller only toggles `open`, so the typed confirmation
-  // must be reset explicitly, otherwise a cancel + reopen can leave Delete enabled without
-  // requiring the name again.
+  // Reset on close/reopen: the modal stays mounted, only `open` toggles.
   useEffect(() => {
     setDeleteStr('');
   }, [open, workspaceMetadata.id]);

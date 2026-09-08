@@ -58,8 +58,7 @@ impl DocStoragePool {
     Ok(self.inner.get(universal_id).await?.set_space_id(space_id).await?)
   }
 
-  /// Disconnect the workspace and permanently delete its on-disk database file, including
-  /// any sidecar journal files left by SQLite.
+  /// Disconnect and permanently delete the workspace's database, including SQLite sidecars.
   pub async fn delete_workspace(&self, universal_id: String, path: String) -> Result<()> {
     self.disconnect(universal_id).await?;
 

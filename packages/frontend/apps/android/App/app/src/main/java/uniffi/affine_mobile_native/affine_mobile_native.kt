@@ -1213,7 +1213,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_doc() != 4005.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_workspace() != 16313.toShort()) {
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_workspace() != 7455.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_disconnect() != 20410.toShort()) {
@@ -1767,8 +1767,7 @@ public interface DocStoragePoolInterface {
     suspend fun `deleteDoc`(`universalId`: kotlin.String, `docId`: kotlin.String)
 
     /**
-     * Disconnect the workspace and permanently delete its on-disk database file, including
-     * any sidecar journal files left by SQLite.
+     * Disconnect and permanently delete the workspace's database, including SQLite sidecars.
      */
     suspend fun `deleteWorkspace`(`universalId`: kotlin.String, `path`: kotlin.String)
 

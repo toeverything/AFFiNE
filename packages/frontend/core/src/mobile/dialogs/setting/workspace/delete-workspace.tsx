@@ -58,10 +58,8 @@ export const DeleteLeaveWorkspace = () => {
     }
     setIsSubmitting(true);
 
-    // Navigate away from the workspace before deleting/leaving it, same as the desktop
-    // flow: the settings dialog is scoped to the current workspace, so releasing that
-    // scope has to happen before the workspace is torn down. A failure below therefore
-    // leaves the user on the destination page rather than the deleted workspace.
+    // Navigate away before deleting/leaving, same as desktop: the settings dialog is
+    // scoped to this workspace, so its scope must be released before teardown.
     if (currentWorkspaceId === workspace.id) {
       const backWorkspace = workspaceList.find(
         ws => ws.id !== currentWorkspaceId

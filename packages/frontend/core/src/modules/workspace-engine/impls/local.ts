@@ -232,8 +232,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         universalId({ peer: 'local', type: 'workspace', id })
       );
     } else if (BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid) {
-      // Unlike Electron, there is no separate "move to trash" step on mobile: this
-      // permanently deletes the workspace's on-disk database.
+      // No "move to trash" step on mobile: this permanently deletes the database.
       await deleteNativeWorkspace(
         universalId({ peer: 'local', type: 'workspace', id })
       );
