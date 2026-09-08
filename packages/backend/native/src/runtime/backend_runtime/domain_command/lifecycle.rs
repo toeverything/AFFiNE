@@ -151,15 +151,18 @@ pub(super) async fn append_root_update(
   let merged = validate_root_update(snapshot.unwrap_or_else(|| vec![0, 0]), updates, &update)?;
   let timestamp = next_workspace_doc_update_timestamp(transaction, &workspace_id, &workspace_id).await?;
   if initialize {
-    sqlx::query("INSERT INTO snapshots (workspace_id,guid,blob,size,updated_at,created_by,updated_by) VALUES($1,$1,$2,$3,$4,$5,$5)")
-      .bind(&workspace_id)
-      .bind(&merged)
-      .bind(merged.len() as i64)
-      .bind(timestamp)
-      .bind(&actor_user_id)
-      .execute(&mut **transaction)
-      .await
-      .map_err(|error| RuntimeError::database("initialize canonical root snapshot", error))?;
+    sqlx::query(
+      "INSERT INTO snapshots (workspace_id,guid,blob,size,updated_at,created_by,updated_by) \
+       VALUES($1,$1,$2,$3,$4,$5,$5)",
+    )
+    .bind(&workspace_id)
+    .bind(&merged)
+    .bind(merged.len() as i64)
+    .bind(timestamp)
+    .bind(&actor_user_id)
+    .execute(&mut **transaction)
+    .await
+    .map_err(|error| RuntimeError::database("initialize canonical root snapshot", error))?;
   } else {
     sqlx::query("INSERT INTO updates (workspace_id,guid,blob,created_at,created_by) VALUES($1,$1,$2,$3,$4)")
       .bind(&workspace_id)
