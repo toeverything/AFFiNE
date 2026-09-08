@@ -803,6 +803,14 @@ export class DocModel extends BaseModel {
     ] as const;
   }
 
+  async listWorkspaceDocIds(workspaceId: string) {
+    const rows = await this.db.workspaceDoc.findMany({
+      where: { workspaceId },
+      select: { docId: true },
+    });
+    return rows.map(row => row.docId);
+  }
+
   async findEmptySummaryDocIds(workspaceId: string) {
     const rows = await this.db.workspaceDoc.findMany({
       where: {

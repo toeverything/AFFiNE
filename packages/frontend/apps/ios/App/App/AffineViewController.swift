@@ -71,9 +71,12 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
       NbStorePlugin(),
       PayWallPlugin(associatedController: self),
       PreviewPlugin(),
+      ShareInboxPlugin(),
     ]
     plugins.forEach { bridge?.registerPluginInstance($0) }
   }
+
+  private static let intelligentsButtonRefreshInterval: TimeInterval = 0.5
 
   private var intelligentsButtonTimer: Timer?
   private var isCheckingIntelligentEligibility = false
@@ -82,26 +85,59 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
     super.viewDidAppear(animated)
     IntelligentContext.shared.webView = webView
     navigationController?.setNavigationBarHidden(false, animated: animated)
-    let timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
+    checkEligibilityOfIntelligent()
+    let timer = Timer.scheduledTimer(withTimeInterval: Self.intelligentsButtonRefreshInterval, repeats: true) { [weak self] _ in
       self?.checkEligibilityOfIntelligent()
     }
     intelligentsButtonTimer = timer
     RunLoop.main.add(timer, forMode: .common)
+    processShareInboxIfNeeded()
+  }
+
+  func processShareInboxIfNeeded() {
+    guard let webView, !ShareInboxStore.shared.pendingItems().isEmpty else { return }
+    webView.evaluateJavaScript(
+      "window.dispatchEvent(new Event('affine:share-inbox'))"
+    )
   }
 
   private func checkEligibilityOfIntelligent() {
     guard !isCheckingIntelligentEligibility else { return }
     assert(intelligentsButton != nil)
-    guard intelligentsButton?.isHidden ?? false else { return }
+    guard let webView else {
+      if intelligentsButton?.isHidden == false {
+        dismissIntelligentsButton()
+      }
+      return
+    }
+
     isCheckingIntelligentEligibility = true
-    IntelligentContext.shared.webView = webView
-    IntelligentContext.shared.preparePresent { [self] result in
-      DispatchQueue.main.async {
-        defer { self.isCheckingIntelligentEligibility = false }
-        switch result {
-        case .failure: break
-        case .success:
-          self.presentIntelligentsButton()
+    Task { @MainActor [weak self, webView] in
+      guard let self else { return }
+
+      guard await PaywallAuthGuard.currentUserIdentifier(in: webView) != nil else {
+        if self.intelligentsButton?.isHidden == false {
+          self.dismissIntelligentsButton()
+        }
+        self.isCheckingIntelligentEligibility = false
+        return
+      }
+
+      guard self.intelligentsButton?.isHidden ?? false else {
+        self.isCheckingIntelligentEligibility = false
+        return
+      }
+
+      IntelligentContext.shared.webView = webView
+      IntelligentContext.shared.preparePresent(createSession: false) { [weak self] result in
+        DispatchQueue.main.async {
+          guard let self else { return }
+          defer { self.isCheckingIntelligentEligibility = false }
+          switch result {
+          case .failure: break
+          case .success:
+            self.presentIntelligentsButton()
+          }
         }
       }
     }

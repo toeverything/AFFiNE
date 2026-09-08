@@ -16,4 +16,10 @@ impl From<NbStoreError> for UniffiError {
   }
 }
 
+impl From<serde_json::Error> for UniffiError {
+  fn from(err: serde_json::Error) -> Self {
+    Self::Err(err.to_string())
+  }
+}
+
 pub(crate) type Result<T> = std::result::Result<T, UniffiError>;

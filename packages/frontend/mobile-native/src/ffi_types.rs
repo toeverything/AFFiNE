@@ -1,7 +1,10 @@
 use affine_nbstore::{
-  Blob as NbBlob, Data, DocClock as NbDocClock, DocRecord as NbDocRecord, DocUpdate as NbDocUpdate,
-  ListedBlob as NbListedBlob, SetBlob as NbSetBlob,
-  indexer::{NativeBlockInfo, NativeCrawlResult, NativeMatch, NativeSearchHit},
+  Blob as NbBlob, Data, DocClock as NbDocClock, DocIndexedClock as NbDocIndexedClock, DocRecord as NbDocRecord,
+  DocUpdate as NbDocUpdate, ListedBlob as NbListedBlob, SetBlob as NbSetBlob,
+  indexer::{
+    NativeBlockInfo, NativeCrawlResult, NativeIndexAggregateResult, NativeIndexBucket, NativeIndexField,
+    NativeIndexHighlight, NativeIndexHighlightValue, NativeIndexHit, NativeIndexSearchResult, NativeIndexSpan,
+  },
 };
 use chrono::{DateTime, Utc};
 
@@ -78,6 +81,37 @@ impl TryFrom<DocUpdate> for NbDocUpdate {
 pub struct DocClock {
   pub doc_id: String,
   pub timestamp: i64,
+}
+
+#[derive(uniffi::Record)]
+pub struct DocIndexedClock {
+  pub doc_id: String,
+  pub timestamp: i64,
+  pub indexer_version: i64,
+}
+
+impl From<NbDocIndexedClock> for DocIndexedClock {
+  fn from(clock: NbDocIndexedClock) -> Self {
+    Self {
+      doc_id: clock.doc_id,
+      timestamp: clock.timestamp.and_utc().timestamp_millis(),
+      indexer_version: clock.indexer_version,
+    }
+  }
+}
+
+impl TryFrom<DocIndexedClock> for NbDocIndexedClock {
+  type Error = UniffiError;
+
+  fn try_from(clock: DocIndexedClock) -> Result<Self> {
+    Ok(Self {
+      doc_id: clock.doc_id,
+      timestamp: DateTime::<Utc>::from_timestamp_millis(clock.timestamp)
+        .ok_or(UniffiError::TimestampDecodingError)?
+        .naive_utc(),
+      indexer_version: clock.indexer_version,
+    })
+  }
 }
 
 impl From<NbDocClock> for DocClock {
@@ -211,33 +245,129 @@ impl From<NativeCrawlResult> for CrawlResult {
 }
 
 #[derive(uniffi::Record)]
-pub struct SearchHit {
-  pub id: String,
-  pub score: f64,
-  pub terms: Vec<String>,
+pub struct IndexField {
+  pub field: String,
+  pub values: Vec<String>,
 }
 
-impl From<NativeSearchHit> for SearchHit {
-  fn from(value: NativeSearchHit) -> Self {
+impl From<NativeIndexField> for IndexField {
+  fn from(value: NativeIndexField) -> Self {
     Self {
-      id: value.id,
-      score: value.score,
-      terms: value.terms,
+      field: value.field,
+      values: value.values,
     }
   }
 }
 
 #[derive(uniffi::Record)]
-pub struct MatchRange {
+pub struct IndexSpan {
   pub start: u32,
   pub end: u32,
 }
 
-impl From<NativeMatch> for MatchRange {
-  fn from(value: NativeMatch) -> Self {
+impl From<NativeIndexSpan> for IndexSpan {
+  fn from(value: NativeIndexSpan) -> Self {
     Self {
       start: value.start,
       end: value.end,
+    }
+  }
+}
+
+#[derive(uniffi::Record)]
+pub struct IndexHighlightValue {
+  pub value_index: u32,
+  pub spans: Vec<IndexSpan>,
+}
+
+impl From<NativeIndexHighlightValue> for IndexHighlightValue {
+  fn from(value: NativeIndexHighlightValue) -> Self {
+    Self {
+      value_index: value.value_index,
+      spans: value.spans.into_iter().map(Into::into).collect(),
+    }
+  }
+}
+
+#[derive(uniffi::Record)]
+pub struct IndexHighlight {
+  pub field: String,
+  pub values: Vec<IndexHighlightValue>,
+}
+
+impl From<NativeIndexHighlight> for IndexHighlight {
+  fn from(value: NativeIndexHighlight) -> Self {
+    Self {
+      field: value.field,
+      values: value.values.into_iter().map(Into::into).collect(),
+    }
+  }
+}
+
+#[derive(uniffi::Record)]
+pub struct IndexHit {
+  pub id: String,
+  pub score: f64,
+  pub fields: Vec<IndexField>,
+  pub highlights: Vec<IndexHighlight>,
+}
+
+impl From<NativeIndexHit> for IndexHit {
+  fn from(value: NativeIndexHit) -> Self {
+    Self {
+      id: value.id,
+      score: value.score,
+      fields: value.fields.into_iter().map(Into::into).collect(),
+      highlights: value.highlights.into_iter().map(Into::into).collect(),
+    }
+  }
+}
+
+#[derive(uniffi::Record)]
+pub struct IndexSearchResult {
+  pub total: u32,
+  pub hits: Vec<IndexHit>,
+}
+
+impl From<NativeIndexSearchResult> for IndexSearchResult {
+  fn from(value: NativeIndexSearchResult) -> Self {
+    Self {
+      total: value.total,
+      hits: value.hits.into_iter().map(Into::into).collect(),
+    }
+  }
+}
+
+#[derive(uniffi::Record)]
+pub struct IndexBucket {
+  pub key: String,
+  pub count: u32,
+  pub score: f64,
+  pub hits: Vec<IndexHit>,
+}
+
+impl From<NativeIndexBucket> for IndexBucket {
+  fn from(value: NativeIndexBucket) -> Self {
+    Self {
+      key: value.key,
+      count: value.count,
+      score: value.score,
+      hits: value.hits.into_iter().map(Into::into).collect(),
+    }
+  }
+}
+
+#[derive(uniffi::Record)]
+pub struct IndexAggregateResult {
+  pub total: u32,
+  pub buckets: Vec<IndexBucket>,
+}
+
+impl From<NativeIndexAggregateResult> for IndexAggregateResult {
+  fn from(value: NativeIndexAggregateResult) -> Self {
+    Self {
+      total: value.total,
+      buckets: value.buckets.into_iter().map(Into::into).collect(),
     }
   }
 }

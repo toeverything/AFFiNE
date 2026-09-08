@@ -8,7 +8,6 @@ use reqwest::{
   Client as ReqwestClient, Method, StatusCode,
   header::{CONTENT_LENGTH, CONTENT_TYPE, ETAG, HeaderMap, HeaderName, HeaderValue, LAST_MODIFIED},
 };
-use rustls::RootCertStore;
 use rusty_s3::{
   Bucket, Credentials,
   actions::{
@@ -27,6 +26,7 @@ use super::{
     ObjectListPage, ObjectMetadata, ObjectPrefix, ObjectPutMetadata, PresignedObjectRequest, completed_multipart_parts,
     trim_etag,
   },
+  webpki_tls_config,
 };
 
 const DEFAULT_REQUEST_TIMEOUT_MS: u64 = 30_000;
@@ -60,26 +60,16 @@ struct ReqwestStorageHttpClient {
 impl ReqwestStorageHttpClient {
   fn new(request_timeout_ms: Option<u64>) -> ObjectStorageResult<Self> {
     let builder = ReqwestClient::builder()
-      .tls_backend_preconfigured(Self::webpki_tls_config()?)
+      .tls_backend_preconfigured(
+        webpki_tls_config()
+          .map_err(|err| ObjectStorageError::Config(format!("ObjectStorage TLS config failed: {err}")))?,
+      )
       .timeout(Duration::from_millis(
         request_timeout_ms.unwrap_or(DEFAULT_REQUEST_TIMEOUT_MS),
       ));
     Ok(Self {
       client: builder.build().map_err(ObjectStorageError::HttpClientBuild)?,
     })
-  }
-
-  fn webpki_tls_config() -> ObjectStorageResult<rustls::ClientConfig> {
-    let roots = RootCertStore {
-      roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
-    };
-    Ok(
-      rustls::ClientConfig::builder_with_provider(rustls::crypto::aws_lc_rs::default_provider().into())
-        .with_safe_default_protocol_versions()
-        .map_err(|err| ObjectStorageError::Config(format!("ObjectStorage TLS config failed: {err}")))?
-        .with_root_certificates(roots)
-        .with_no_client_auth(),
-    )
   }
 
   async fn execute(&self, request: StorageHttpRequest) -> ObjectStorageResult<StorageHttpResponse> {
@@ -497,6 +487,35 @@ impl ObjectStorageClient {
       body: response.body,
       metadata,
     }))
+  }
+
+  pub(crate) async fn get_range(
+    &self,
+    key: &ObjectKey,
+    offset: u64,
+    length: usize,
+  ) -> ObjectStorageResult<Option<Vec<u8>>> {
+    if length == 0 {
+      return Ok(Some(Vec::new()));
+    }
+    let action = GetObject::new(&self.bucket, Some(&self.credentials), key);
+    let end = offset.saturating_add(length as u64).saturating_sub(1);
+    let response = self
+      .http
+      .execute(StorageHttpRequest {
+        method: Method::GET,
+        url: action.sign(expires_in(self.presign_expires_in_seconds)),
+        headers: HashMap::from([("range".to_string(), format!("bytes={offset}-{end}"))]),
+        body: None,
+        max_response_body_bytes: length,
+      })
+      .await
+      .map_err(|source| operation_error(format!("ObjectStorage range get failed for {key}"), source))?;
+    if response.status == StatusCode::NOT_FOUND && is_not_found_body(&response.body) {
+      return Ok(None);
+    }
+    ensure_success_status(&response, &format!("ObjectStorage range get failed for {key}"))?;
+    Ok(Some(response.body))
   }
 
   pub(crate) async fn list(&self, prefix: Option<ObjectPrefix>) -> ObjectStorageResult<Vec<ObjectListEntry>> {

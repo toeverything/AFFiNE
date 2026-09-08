@@ -102,24 +102,6 @@ test('should be able to safe compare', t => {
   t.false(t.context.crypto.compare('abc', 'def'));
 });
 
-test('should sign and parse internal access token', t => {
-  const token = t.context.crypto.signInternalAccessToken({
-    method: 'GET',
-    path: '/rpc/workspaces/123/docs/456',
-    now: 1700000000000,
-    nonce: 'nonce-123',
-  });
-
-  const payload = t.context.crypto.parseInternalAccessToken(token);
-  t.deepEqual(payload, {
-    v: 1,
-    ts: 1700000000000,
-    nonce: 'nonce-123',
-    m: 'GET',
-    p: '/rpc/workspaces/123/docs/456',
-  });
-});
-
 test('should be able to hash and verify password', async t => {
   const password = 'mySecurePassword';
   const hash = await t.context.crypto.encryptPassword(password);

@@ -8,7 +8,10 @@ const testPrivateKey = privateKey
   .export({ format: 'pem', type: 'pkcs8' })
   .toString();
 
-export async function createTestRuntimeConfig(databaseUrl: string) {
+export async function createTestRuntimeConfig(
+  databaseUrl: string,
+  indexer: AppConfig['indexer']
+) {
   const directory = await mkdtemp(join(tmpdir(), 'affine-server-test-'));
   const storagePath = join(directory, 'storage');
   const storage = (bucket: string) => ({
@@ -29,6 +32,10 @@ export async function createTestRuntimeConfig(databaseUrl: string) {
       copilot: {
         enabled: true,
         storage: storage('copilot'),
+      },
+      indexer: {
+        enabled: indexer.enabled,
+        provider: indexer.provider,
       },
     })
   );

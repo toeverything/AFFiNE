@@ -113,6 +113,12 @@ class TestDocStorage implements DocStorage {
   }
 }
 
+class TimestampBlindDocStorage extends IndexedDBDocStorage {
+  override async getDocTimestamps(): Promise<DocClocks> {
+    return {};
+  }
+}
+
 class PermissionDeniedRemoteDocStorage implements DocStorage {
   readonly storageType = 'doc' as const;
   readonly connection = new DummyConnection();
@@ -306,7 +312,7 @@ test('doc', async () => {
     type: 'workspace',
   });
 
-  const peerBDoc = new IndexedDBDocStorage({
+  const peerBDoc = new TimestampBlindDocStorage({
     id: 'ws1',
     flavour: 'b',
     type: 'workspace',
@@ -340,6 +346,26 @@ test('doc', async () => {
     docId: 'doc1',
     bin: update,
   });
+  const prioritizedDocId = 'prioritized-doc';
+  const localPrioritizedDoc = new YDoc();
+  localPrioritizedDoc.getMap('test').set('local', true);
+  const localPrioritizedClock = await peerA.get('doc').pushDocUpdate({
+    docId: prioritizedDocId,
+    bin: encodeStateAsUpdate(localPrioritizedDoc),
+  });
+  await peerASync.setPeerPushedClock('b', localPrioritizedClock);
+  const remotePrioritizedDoc = new YDoc();
+  remotePrioritizedDoc.getMap('test').set('remote', true);
+  await peerB.get('doc').pushDocUpdate({
+    docId: prioritizedDocId,
+    bin: encodeStateAsUpdate(remotePrioritizedDoc),
+  });
+  const rootDoc = new YDoc();
+  rootDoc.getMap('meta').set('name', 'Self-host workspace');
+  await peerB.get('doc').pushDocUpdate({
+    docId: 'ws1',
+    bin: encodeStateAsUpdate(rootDoc),
+  });
 
   const sync = new Sync({
     local: peerA,
@@ -348,6 +374,7 @@ test('doc', async () => {
       c: peerC,
     },
   });
+  const removeRootPriority = sync.doc.addPriority('ws1', 100);
   sync.start();
 
   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -366,7 +393,32 @@ test('doc', async () => {
         hello: 'world',
       },
     });
+
+    const root = await peerA.get('doc').getDoc('ws1');
+    expectYjsEqual(root!.bin, {
+      meta: {
+        name: 'Self-host workspace',
+      },
+    });
+
+    const prioritized = await peerA.get('doc').getDoc(prioritizedDocId);
+    expectYjsEqual(prioritized!.bin, {
+      test: {
+        local: true,
+      },
+    });
   }
+
+  const removeDocPriority = sync.doc.addPriority(prioritizedDocId, 100);
+  await vi.waitFor(async () => {
+    const prioritized = await peerA.get('doc').getDoc(prioritizedDocId);
+    expectYjsEqual(prioritized!.bin, {
+      test: {
+        local: true,
+        remote: true,
+      },
+    });
+  });
 
   doc.getMap('test').set('foo', 'bar');
   const update2 = encodeStateAsUpdate(doc);
@@ -394,6 +446,13 @@ test('doc', async () => {
       },
     });
   }
+
+  removeDocPriority();
+  removeRootPriority();
+  sync.stop();
+  peerA.disconnect();
+  peerB.disconnect();
+  peerC.disconnect();
 });
 
 test('blob', async () => {
@@ -694,6 +753,7 @@ test('indexer defers indexed clock persistence until a refresh happens on delaye
     })
   );
   const indexer = new TrackingIndexerStorage(calls, 30_000);
+  const update = vi.spyOn(indexer, 'update');
   const indexerSyncStorage = new TrackingIndexerSyncStorage(calls);
   const sync = new IndexerSyncImpl(
     docStorage,
@@ -712,6 +772,15 @@ test('indexer defers indexed clock persistence until a refresh happens on delaye
     sync.start();
     await sync.waitForCompleted();
 
+    const docUpdate = update.mock.calls.find(([table]) => table === 'doc');
+    expect(docUpdate).toBeDefined();
+    expect([...(docUpdate?.[1].fields ?? [])]).toEqual(
+      expect.arrayContaining([
+        ['docId', ['doc1']],
+        ['title', ['Doc 1']],
+        ['summary', ['summary']],
+      ])
+    );
     expect(calls).not.toContain('setClock:doc1');
 
     sync.stop();

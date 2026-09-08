@@ -18,8 +18,13 @@ export interface AuthConfig {
   allowSignupForOauth: boolean;
   requireEmailDomainVerification: boolean;
   requireEmailVerification: boolean;
-  newAccountShareActionDelay: number;
+  newAccountActionDelay: number;
   trustedCloudflareHeaders: boolean;
+  signInRateLimit: ConfigItem<{
+    ttl: number;
+    ipLimit: number;
+    emailLimit: number;
+  }>;
   inviteQuotaShadowMode: boolean;
   inviteQuotaFailOpenOnRuntimeError: boolean;
   passwordRequirements: ConfigItem<{
@@ -51,8 +56,8 @@ defineModuleConfig('auth', {
     desc: 'Whether require email verification before accessing restricted resources(not implemented).',
     default: true,
   },
-  newAccountShareActionDelay: {
-    desc: 'Minimum account age in seconds before new accounts can invite members or create share links.',
+  newAccountActionDelay: {
+    desc: 'Minimum account age in seconds before new accounts can invite members, create invite links, or publish documents. Set to 0 to disable.',
     default: 24 * 60 * 60,
     shape: z.number().int().min(0),
   },
@@ -60,6 +65,21 @@ defineModuleConfig('auth', {
     desc: 'Whether request abuse source facts should trust Cloudflare headers from the origin edge.',
     default: false,
     shape: z.boolean(),
+  },
+  signInRateLimit: {
+    desc: 'Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds.',
+    default: {
+      ttl: 60_000,
+      ipLimit: 20,
+      emailLimit: 5,
+    },
+    shape: z
+      .object({
+        ttl: z.number().int().positive(),
+        ipLimit: z.number().int().positive(),
+        emailLimit: z.number().int().positive(),
+      })
+      .strict(),
   },
   inviteQuotaShadowMode: {
     desc: 'Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions.',

@@ -2786,11 +2786,15 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.journal.updated-today"](): string;
     /**
-      * `No Journal`
+      * `No journal for this day`
       */
     ["com.affine.journal.placeholder.title"](): string;
     /**
-      * `Create Daily Journal`
+      * `Create one to start writing.`
+      */
+    ["com.affine.journal.placeholder.description"](): string;
+    /**
+      * `Create journal`
       */
     ["com.affine.journal.placeholder.create"](): string;
     /**
@@ -3104,23 +3108,23 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.danger-zone.title"](): string;
     /**
-      * `Collaborate seamlessly with AFFiNE team, available in Cloud and Self-Hosted versions.`
+      * `Plans`
+      */
+    ["com.affine.mobile.setting.plans.title"](): string;
+    /**
+      * `Collaborate in Cloud or Self-Hosted.`
       */
     ["com.affine.mobile.setting.promo.description"](): string;
     /**
-      * `AFFiNE for team and more`
+      * `AFFiNE for teams`
       */
     ["com.affine.mobile.setting.promo.title"](): string;
     /**
-      * `Go Pro`
-      */
-    ["com.affine.mobile.setting.subscription.button"](): string;
-    /**
-      * `Unlimited space for your notes and boards.`
+      * `More cloud storage and advanced features.`
       */
     ["com.affine.mobile.setting.subscription.description"](): string;
     /**
-      * `Unlock Pro Features`
+      * `AFFiNE Pro`
       */
     ["com.affine.mobile.setting.subscription.title"](): string;
     /**
@@ -8426,6 +8430,42 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.m.explorer.collection.new-dialog-title"](): string;
     /**
+      * `No documents yet`
+      */
+    ["com.affine.m.explorer.empty.docs.title"](): string;
+    /**
+      * `Create your first document to start capturing ideas and organizing knowledge.`
+      */
+    ["com.affine.m.explorer.empty.docs.description"](): string;
+    /**
+      * `New Document`
+      */
+    ["com.affine.m.explorer.empty.docs.action"](): string;
+    /**
+      * `No collections yet`
+      */
+    ["com.affine.m.explorer.empty.collections.title"](): string;
+    /**
+      * `Create a collection to organize related content in one place.`
+      */
+    ["com.affine.m.explorer.empty.collections.description"](): string;
+    /**
+      * `New Collection`
+      */
+    ["com.affine.m.explorer.empty.collections.action"](): string;
+    /**
+      * `No tags yet`
+      */
+    ["com.affine.m.explorer.empty.tags.title"](): string;
+    /**
+      * `Add tags to your documents for easier organization and discovery.`
+      */
+    ["com.affine.m.explorer.empty.tags.description"](): string;
+    /**
+      * `New Tag`
+      */
+    ["com.affine.m.explorer.empty.tags.action"](): string;
+    /**
       * `Rename`
       */
     ["com.affine.m.explorer.doc.rename"](): string;
@@ -8922,6 +8962,22 @@ export function useAFFiNEI18N(): {
       * `Join Failed`
       */
     ["com.affine.fail-to-join-workspace.title"](): string;
+    /**
+      * `This invitation is for another account`
+      */
+    ["com.affine.invitation.account-mismatch.title"](): string;
+    /**
+      * `You're signed in with an account that wasn't invited. Sign in with the account that received this invitation to continue.`
+      */
+    ["com.affine.invitation.account-mismatch.description"](): string;
+    /**
+      * `Sign in with another account`
+      */
+    ["com.affine.invitation.account-mismatch.switch-account"](): string;
+    /**
+      * `Back to AFFiNE`
+      */
+    ["com.affine.invitation.account-mismatch.back-to-affine"](): string;
     /**
       * `Please contact your workspace owner to add more seats.`
       */
@@ -10135,6 +10191,10 @@ export function useAFFiNEI18N(): {
       */
     ["error.INVALID_INVITATION"](): string;
     /**
+      * `This invitation belongs to another account.`
+      */
+    ["error.INVITATION_ACCOUNT_MISMATCH"](): string;
+    /**
       * `No more seat available in the Space {{spaceId}}.`
       */
     ["error.NO_MORE_SEAT"](options: {
@@ -10466,6 +10526,24 @@ export function useAFFiNEI18N(): {
     ["error.INVALID_APP_CONFIG_INPUT"](options: {
         readonly message: string;
     }): string;
+    /**
+      * `Search index for Space {{spaceId}} is not ready yet.`
+      */
+    ["error.SEARCH_INDEX_NOT_READY"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
+      * `Search permissions are still syncing. Please try again shortly.`
+      */
+    ["error.SEARCH_PERMISSION_SYNCING"](): string;
+    /**
+      * `Search provider is temporarily unavailable.`
+      */
+    ["error.SEARCH_PROVIDER_UNAVAILABLE"](): string;
+    /**
+      * `Search index is temporarily unavailable.`
+      */
+    ["error.SEARCH_INDEX_FAILED"](): string;
     /**
       * `Search provider not found.`
       */

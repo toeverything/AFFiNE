@@ -14,6 +14,7 @@ import {
   ActionForbidden,
   getClientVersionFromRequest,
   MissingOauthQueryParameter,
+  Throttle,
   UnknownOauthProvider,
   URLHelper,
   UseNamedGuard,
@@ -24,6 +25,7 @@ import { OAuthProviderFactory } from './factory';
 import { OAuthCallbackBodySchema, OAuthPreflightBodySchema } from './input';
 import { OAuthService } from './service';
 
+@Throttle('strict')
 @Controller('/api/oauth')
 export class OAuthController {
   constructor(

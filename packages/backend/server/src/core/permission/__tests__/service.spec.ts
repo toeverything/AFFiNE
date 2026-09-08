@@ -1,11 +1,17 @@
 import test from 'ava';
 
-import { InternalServerError } from '../../../base';
+import {
+  InternalServerError,
+  SearchIndexFailed,
+  SearchIndexNotReady,
+  SearchPermissionSyncing,
+  SearchProviderUnavailable,
+  SpaceAccessDenied,
+} from '../../../base';
 import { DocRole } from '../../../models';
 import { docLegacyBoundary } from '../context';
 import { PermissionContextLoader } from '../context-loader';
 import { PermissionService } from '../service';
-import { PermissionSqlPredicateBuilder } from '../sql-predicate';
 
 function createCls() {
   const store = new Map<string, unknown>();
@@ -24,9 +30,11 @@ function createLoader() {
     docPolicies: 0,
     docGrants: 0,
   };
+  const queries: string[] = [];
   const db = {
     $queryRaw: async (strings: TemplateStringsArray) => {
       const sql = strings.join('');
+      queries.push(sql);
       if (sql.includes('FROM workspace_members')) {
         calls.members += 1;
         return [{ role: 'owner', state: 'active' }];
@@ -83,6 +91,7 @@ function createLoader() {
   };
   return {
     calls,
+    queries,
     loader: new PermissionContextLoader(db as never, createCls() as never),
   };
 }
@@ -197,7 +206,7 @@ test('PermissionService supports anonymous preview without doc read', async t =>
 });
 
 test('PermissionContextLoader reads only terminal permission tables', async t => {
-  const { loader } = createLoader();
+  const { loader, queries } = createLoader();
   const input = await loader.load({
     userId: 'u1',
     workspaceId: 'w1',
@@ -213,6 +222,9 @@ test('PermissionContextLoader reads only terminal permission tables', async t =>
   t.is(input.docs?.[0]?.explicitUserRole, 'manager');
   t.is(input.docs?.[0]?.memberDefaultRole, 'manager');
   t.is(input.docs?.[1]?.publicRole, 'external');
+  t.false(
+    queries.some(query => /workspace_permission_|search_runtime_/i.test(query))
+  );
 });
 
 test('PermissionContextLoader treats missing quota state as unknown and stale', async t => {
@@ -263,67 +275,10 @@ test('PermissionService maps native validation errors to internal errors', t => 
   t.true(error instanceof InternalServerError);
 });
 
-test('PermissionSqlPredicateBuilder rejects unsafe raw doc id columns', t => {
-  const builder = new PermissionSqlPredicateBuilder();
-
-  t.throws(
-    () =>
-      builder.docReadable({
-        workspaceId: 'w1',
-        userId: 'u1',
-        action: 'Doc.Read',
-        docIdColumn: 'docs.id; DROP TABLE docs' as never,
-      }),
-    { message: 'Unsupported doc id column: docs.id; DROP TABLE docs' }
-  );
-});
-
-test('PermissionSqlPredicateBuilder caps non-member grants below manager', t => {
-  const builder = new PermissionSqlPredicateBuilder();
-  const update = builder.docReadable({
-    workspaceId: 'w1',
-    userId: 'u1',
-    action: 'Doc.Update',
-  });
-  const transferOwner = builder.docReadable({
-    workspaceId: 'w1',
-    userId: 'u1',
-    action: 'Doc.TransferOwner',
-  });
-
-  t.true((update.params[4] as string[]).includes('editor'));
-  t.true((update.params[4] as string[]).includes('manager'));
-  t.true((update.params[4] as string[]).includes('owner'));
-  t.deepEqual(transferOwner.params[3], ['owner']);
-  t.deepEqual(transferOwner.params[4], []);
-});
-
-test('PermissionSqlPredicateBuilder uses terminal permission tables', t => {
-  const predicate = new PermissionSqlPredicateBuilder().docReadable({
-    workspaceId: 'w1',
-    userId: 'u1',
-    action: 'Doc.Read',
-    docIdColumn: 'docs.id',
-  });
-
-  t.true(predicate.sql.includes('FROM workspace_access_policies wap'));
-  t.true(predicate.sql.includes('LEFT JOIN doc_access_policies dap'));
-  t.true(predicate.sql.includes('workspace_members'));
-  t.true(predicate.sql.includes('doc_grants'));
-  t.false(predicate.sql.includes('workspace_user_permissions'));
-  t.false(predicate.sql.includes('workspace_page_user_permissions'));
-});
-
-test('PermissionService always uses the terminal SQL predicate', t => {
-  const predicate = new PermissionService(
-    createLoader().loader
-  ).docReadableSqlPredicate({
-    workspaceId: 'w1',
-    userId: 'u1',
-    action: 'Doc.Read',
-  });
-  const sql = (predicate as unknown as { sql: string }).sql;
-
-  t.true(sql.includes('workspace_access_policies'));
-  t.false(sql.includes('workspace_user_permissions'));
+test('search and permission boundaries expose stable HTTP contracts', t => {
+  t.is(new SearchIndexNotReady({ spaceId: 'w1' }).status, 503);
+  t.is(new SearchPermissionSyncing().status, 503);
+  t.is(new SearchProviderUnavailable().status, 503);
+  t.is(new SearchIndexFailed({ diagnosticId: 'w1' }).status, 503);
+  t.is(new SpaceAccessDenied({ spaceId: 'w1' }).status, 403);
 });

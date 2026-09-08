@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -16,13 +15,13 @@ import {
   ActionForbidden,
   ActionForbiddenOnNonTeamWorkspace,
   AlreadyInSpace,
-  AuthenticationRequired,
   Cache,
   CanNotRevokeYourself,
   Config,
   EventBus,
   getRequestTrackerId,
   InvalidInvitation,
+  InvitationAccountMismatch,
   isValidCacheTtl,
   mapAnyError,
   MemberNotFoundInSpace,
@@ -38,8 +37,7 @@ import {
 } from '../../../base';
 import type { GraphqlContext } from '../../../base/graphql';
 import { Models, type WorkspaceUserCompat } from '../../../models';
-import { CurrentUser, Public } from '../../auth';
-import { BackendRuntimeProvider } from '../../backend-runtime';
+import { CurrentUser } from '../../auth';
 import { containsUrlOrDomain } from '../../content-policy';
 import {
   PermissionAccess,
@@ -49,11 +47,7 @@ import {
 import { QuotaService } from '../../quota';
 import { UserType } from '../../user';
 import { validators } from '../../utils/validators';
-import {
-  canUserExecuteLimitedActions,
-  getAbuseRequestSource,
-  InviteQuotaAssertService,
-} from '../abuse';
+import { getAbuseRequestSource, InviteQuotaAssertService } from '../abuse';
 import { WorkspaceService } from '../service';
 import {
   InvitationType,
@@ -92,8 +86,6 @@ function aggregateTargetDomains(candidates: InviteCandidate[]) {
  */
 @Resolver(() => WorkspaceType)
 export class WorkspaceMemberResolver {
-  private readonly logger = new Logger(WorkspaceMemberResolver.name);
-
   constructor(
     private readonly cache: Cache,
     private readonly event: EventBus,
@@ -105,54 +97,8 @@ export class WorkspaceMemberResolver {
     private readonly workspaceService: WorkspaceService,
     private readonly quota: QuotaService,
     private readonly config: Config,
-    private readonly inviteQuota: InviteQuotaAssertService,
-    private readonly runtime: BackendRuntimeProvider
+    private readonly inviteQuota: InviteQuotaAssertService
   ) {}
-
-  private async assertCanInviteOrShare(
-    userId: string,
-    context: {
-      workspaceId: string;
-      action: 'createInviteLink';
-    }
-  ) {
-    if (await this.runtime.isInviteAbuseUserQuarantinedOrBanned(userId)) {
-      this.logger.warn('Share action blocked for quarantined actor', {
-        userId,
-        ...context,
-      });
-      throw new ActionForbidden(
-        'This feature is temporarily unavailable for you.'
-      );
-    }
-    if (
-      await this.runtime.isInviteAbuseWorkspaceQuarantined(context.workspaceId)
-    ) {
-      this.logger.warn('Share action blocked for quarantined workspace', {
-        userId,
-        ...context,
-      });
-      throw new ActionForbidden(
-        'This feature is temporarily unavailable for you.'
-      );
-    }
-    // Member invites are owned by native quota; this guard stays for invite links until share/link actions migrate.
-    const user = await this.models.user.get(userId);
-    const newAccountAgeMs = this.config.auth.newAccountShareActionDelay * 1000;
-    if (!user || !canUserExecuteLimitedActions(user, newAccountAgeMs)) {
-      this.logger.warn('Share action blocked for new account', {
-        userId,
-        email: user?.email,
-        createdAt: user?.createdAt,
-        accountAgeMs: user ? Date.now() - user.createdAt.getTime() : null,
-        minimumAccountAgeMs: newAccountAgeMs,
-        ...context,
-      });
-      throw new ActionForbidden(
-        'This feature is temporarily unavailable for you.'
-      );
-    }
-  }
 
   private async assertWorkspaceNameCanInvite(workspaceId: string) {
     const workspace = await this.workspaceService.getWorkspaceInfo(workspaceId);
@@ -286,6 +232,12 @@ export class WorkspaceMemberResolver {
     if (candidates.length === 0) {
       return results;
     }
+
+    await this.inviteQuota.assertWorkspaceActionAllowed({
+      actorUserId: me.id,
+      workspaceId,
+      action: 'inviteMember',
+    });
 
     // lock to prevent concurrent invite
     const lockFlag = `invite:${workspaceId}`;
@@ -452,7 +404,8 @@ export class WorkspaceMemberResolver {
       .user(user.id)
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
-    await this.assertCanInviteOrShare(user.id, {
+    await this.inviteQuota.assertWorkspaceActionAllowed({
+      actorUserId: user.id,
       workspaceId,
       action: 'createInviteLink',
     });
@@ -603,21 +556,24 @@ export class WorkspaceMemberResolver {
   }
 
   @Throttle('strict')
-  @Public()
   @Query(() => InvitationType, {
     description: 'get workspace invitation info',
   })
   async getInviteInfo(
-    @CurrentUser() user: UserType | undefined,
+    @CurrentUser() user: UserType,
     @Args('inviteId') inviteId: string
   ): Promise<InvitationType> {
     const { workspaceId, inviteeUserId, isLink } =
       await this.workspaceService.getInviteInfo(inviteId);
+
+    if (!isLink && user.id !== inviteeUserId) {
+      throw new InvitationAccountMismatch();
+    }
+
     const workspace = await this.workspaceService.getWorkspaceInfo(workspaceId);
     const owner = await this.models.workspaceUser.getOwner(workspaceId);
 
-    const inviteeId = inviteeUserId || user?.id;
-    if (!inviteeId) throw new UserNotFound();
+    const inviteeId = inviteeUserId || user.id;
     const invitee = await this.models.user.getWorkspaceUser(inviteeId);
     if (!invitee) throw new UserNotFound();
 
@@ -685,9 +641,8 @@ export class WorkspaceMemberResolver {
   }
 
   @Mutation(() => Boolean)
-  @Public()
   async acceptInviteById(
-    @CurrentUser() user: CurrentUser | undefined,
+    @CurrentUser() user: CurrentUser,
     @Args('inviteId') inviteId: string,
     @Args('workspaceId', { deprecationReason: 'never used', nullable: true })
     _workspaceId: string,
@@ -700,17 +655,13 @@ export class WorkspaceMemberResolver {
     const role = await this.models.workspaceUser.getById(inviteId);
     // invitation by email
     if (role) {
-      if (user && user.id !== role.userId) {
-        throw new InvalidInvitation();
+      if (user.id !== role.userId) {
+        throw new InvitationAccountMismatch();
       }
 
       await this.acceptInvitationByEmail(role);
     } else {
       // invitation by link
-      if (!user) {
-        throw new AuthenticationRequired();
-      }
-
       const invitation = await this.cache.get<{
         workspaceId: string;
         inviterUserId: string;

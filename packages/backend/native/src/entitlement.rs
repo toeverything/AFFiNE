@@ -1,32 +1,14 @@
 use std::collections::HashMap;
 
-use aes_gcm::{
-  AesGcm, KeyInit,
-  aead::{
-    Aead,
-    generic_array::{GenericArray, typenum::U12},
-  },
-  aes::Aes256,
+use affine_core::access_control::{
+  AccessGrant, Deployment, EntitlementInput, EntitlementInputError, LicenseIssuance, LicenseIssuanceError,
+  LicenseIssuer, LicenseVerifier, Limits, Plan, Rights, TargetType, ValidatedEntitlement, describe_plan,
+  validate_entitlement_input,
 };
 use chrono::{DateTime, Utc};
 use napi::{Error as NapiError, Result, Status, bindgen_prelude::Buffer};
 use napi_derive::napi;
-use p256::{
-  ecdsa::{Signature, VerifyingKey, signature::Verifier},
-  pkcs8::DecodePublicKey,
-};
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
-
-type Aes256Gcm12 = AesGcm<Aes256, U12, U12>;
-type LicenseError = (&'static str, &'static str);
-type LicenseResult<T> = std::result::Result<T, LicenseError>;
-
-const ONE_MB: i64 = 1024 * 1024;
-const ONE_GB: i64 = 1024 * ONE_MB;
-const ONE_DAY_SECONDS: i64 = 24 * 60 * 60;
-const MAX_SEAT_QUANTITY: i32 = 100_000;
 
 #[napi(object)]
 pub struct ResolveEntitlementInput {
@@ -38,8 +20,61 @@ pub struct ResolveEntitlementInput {
   pub quantity: Option<Value>,
   pub signed_payload: Option<Buffer>,
   pub public_key: Option<String>,
-  pub license_aes_key: Option<String>,
   pub now: String,
+}
+
+#[napi(object)]
+pub struct IssueLicenseInput {
+  pub license_id: String,
+  pub workspace_id: String,
+  pub seat_quantity: f64,
+  pub subscription_end: Option<String>,
+  pub private_key: String,
+  pub now: String,
+}
+
+#[napi]
+pub fn issue_license_v1(input: IssueLicenseInput) -> Result<Buffer> {
+  let now = parse_time(&input.now)?;
+  let subscription_end = input.subscription_end.as_deref().map(parse_time).transpose()?;
+  let seat_quantity = parse_license_seat_quantity(input.seat_quantity)?;
+  LicenseIssuer::issue(
+    LicenseIssuance {
+      license_id: &input.license_id,
+      workspace_id: &input.workspace_id,
+      seat_quantity,
+      subscription_end,
+      now,
+    },
+    &input.private_key,
+  )
+  .map(Buffer::from)
+  .map_err(|error| {
+    let message = match error {
+      LicenseIssuanceError::InvalidPrivateKey => "invalid license private key",
+      LicenseIssuanceError::InvalidClaims => "invalid license claims",
+      LicenseIssuanceError::InvalidTimeWindow => "invalid license time window",
+      LicenseIssuanceError::Encoding => "failed to encode license envelope",
+    };
+    NapiError::new(Status::InvalidArg, message)
+  })
+}
+
+#[napi]
+pub fn validate_license_seat_quantity_v1(seat_quantity: f64) -> Result<()> {
+  LicenseIssuer::validate_seat_quantity(parse_license_seat_quantity(seat_quantity)?)
+    .map_err(|_| NapiError::new(Status::InvalidArg, "invalid license seat quantity"))
+}
+
+fn parse_license_seat_quantity(seat_quantity: f64) -> Result<i32> {
+  if !seat_quantity.is_finite()
+    || seat_quantity.fract() != 0.0
+    || seat_quantity < i32::MIN as f64
+    || seat_quantity > i32::MAX as f64
+  {
+    return invalid_arg("invalid license seat quantity");
+  }
+  Ok(seat_quantity as i32)
 }
 
 #[derive(Debug)]
@@ -73,257 +108,125 @@ pub struct ResolvedEntitlement {
   pub error_message: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct LicenseEnvelope {
-  payload: String,
-  signature: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct LicensePayload {
-  entity: String,
-  issuer: String,
-  issued_at: String,
-  expires_at: String,
-  data: LicenseData,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct LicenseData {
-  id: String,
-  workspace_id: String,
-  plan: String,
-  recurring: String,
-  quantity: i32,
-  end_at: String,
-}
-
-struct PlanQuota {
-  name: &'static str,
-  blob_limit: i64,
-  storage_quota: i64,
-  history_period: i64,
-  member_limit: Option<i32>,
-  seat_quota: Option<i64>,
-  copilot_action_limit: Option<i32>,
-  unlimited_copilot: bool,
-}
-
 #[napi]
 pub fn resolve_entitlement_v1(input: ResolveEntitlementInput) -> Result<ResolvedEntitlement> {
-  validate_input(&input)?;
   let now = parse_time(&input.now)?;
-
-  if input.signed_payload.is_some() {
-    if input.deployment_type != "selfhosted" || input.target_type != "workspace" {
-      return invalid_arg("signedPayload is only supported for selfhosted workspace entitlements");
-    }
+  let deployment = parse_deployment(&input.deployment_type)?;
+  let target_type = parse_target_type(&input.target_type)?;
+  let quantity = parse_quantity(input.quantity.as_ref())?;
+  let plan = input
+    .plan
+    .as_deref()
+    .map(|plan| Plan::parse(plan).ok_or_else(|| NapiError::new(Status::InvalidArg, "unknown entitlement plan")))
+    .transpose()?;
+  let validated = validate_entitlement_input(EntitlementInput {
+    deployment,
+    target_type,
+    plan,
+    quantity,
+    signed: input.signed_payload.is_some(),
+  })
+  .map_err(entitlement_input_error)?;
+  if validated == ValidatedEntitlement::SignedLicense {
     return resolve_selfhost_license(input, now);
   }
-
-  let plan = input.plan.as_deref().unwrap_or_else(|| {
-    if input.deployment_type == "selfhosted" {
-      "selfhost_free"
-    } else {
-      "free"
-    }
-  });
-  if input.deployment_type == "selfhosted" && plan != "selfhost_free" {
-    return invalid_arg("selfhosted commercial entitlements require signedPayload");
-  }
-  let quantity = parse_quantity(input.quantity.as_ref())?;
-  Ok(active(plan, quantity, None))
+  let ValidatedEntitlement::Catalog(access) = validated else {
+    unreachable!();
+  };
+  let grant: AccessGrant = access.into();
+  Ok(active_with_grant(
+    grant.plan,
+    grant.quantity,
+    grant.limits,
+    grant.rights,
+    None,
+  ))
 }
 
-fn validate_input(input: &ResolveEntitlementInput) -> Result<()> {
-  if !matches!(input.deployment_type.as_str(), "cloud" | "selfhosted") {
-    return invalid_arg("deploymentType must be cloud or selfhosted");
+fn parse_deployment(value: &str) -> Result<Deployment> {
+  match value {
+    "cloud" => Ok(Deployment::Cloud),
+    "selfhosted" => Ok(Deployment::SelfHosted),
+    _ => invalid_arg("deploymentType must be cloud or selfhosted"),
   }
-  if !matches!(input.target_type.as_str(), "user" | "workspace" | "instance") {
-    return invalid_arg("targetType must be user, workspace, or instance");
-  }
-  parse_quantity(input.quantity.as_ref())?;
-  Ok(())
 }
 
-fn parse_quantity(quantity: Option<&Value>) -> Result<Option<i32>> {
+pub(crate) fn parse_target_type(value: &str) -> Result<TargetType> {
+  match value {
+    "user" => Ok(TargetType::User),
+    "workspace" => Ok(TargetType::Workspace),
+    "instance" => Ok(TargetType::Instance),
+    _ => invalid_arg("targetType must be user, workspace, or instance"),
+  }
+}
+
+pub(crate) fn parse_quantity(quantity: Option<&Value>) -> Result<Option<i32>> {
   let Some(quantity) = quantity else {
     return Ok(None);
   };
   let Some(quantity) = quantity.as_i64() else {
     return invalid_arg("quantity must be an integer");
   };
-  if quantity <= 0 || quantity > MAX_SEAT_QUANTITY as i64 {
-    return invalid_arg("quantity must be between 1 and 100000");
-  }
-  Ok(Some(quantity as i32))
+  i32::try_from(quantity)
+    .map(Some)
+    .map_err(|_| NapiError::new(Status::InvalidArg, "quantity is outside the supported integer range"))
+}
+
+pub(crate) fn entitlement_input_error(error: EntitlementInputError) -> NapiError {
+  let message = match error {
+    EntitlementInputError::InvalidQuantity => "quantity must be between 1 and 100000",
+    EntitlementInputError::SignedFieldsConflict => "signed commercial fields must come from license claims",
+    EntitlementInputError::SignedTargetMismatch => {
+      "signedPayload is only supported for selfhosted workspace entitlements"
+    }
+    EntitlementInputError::SelfHostedCommercialRequiresSignature => {
+      "selfhosted commercial entitlements require signedPayload"
+    }
+    EntitlementInputError::PlanTargetMismatch => "entitlement plan is not configurable for target type",
+  };
+  NapiError::new(Status::InvalidArg, message)
 }
 
 fn resolve_selfhost_license(input: ResolveEntitlementInput, now: DateTime<Utc>) -> Result<ResolvedEntitlement> {
-  let Some(payload) = input.signed_payload else {
-    return Ok(active("selfhost_free", None, None));
-  };
+  let payload = input
+    .signed_payload
+    .ok_or_else(|| NapiError::new(Status::InvalidArg, "signedPayload is required"))?;
   let Some(public_key) = input.public_key else {
     return invalid_arg("publicKey is required for signed payload verification");
   };
-  let Some(license_aes_key) = input.license_aes_key else {
-    return invalid_arg("licenseAesKey is required for signed payload verification");
+
+  let claims = match LicenseVerifier::verify(payload.as_ref(), &public_key, input.target_id.as_deref(), now) {
+    Ok(claims) => claims,
+    Err(error) => return Ok(invalid_license(error.code(), &error.to_string())),
   };
-
-  let payload = match decrypt_license(payload.as_ref(), &license_aes_key)
-    .and_then(|decrypted| verify_license(&decrypted, &public_key))
-  {
-    Ok(payload) => payload,
-    Err((code, message)) => return Ok(invalid_license(code, message)),
-  };
-
-  if let Err((code, message)) = validate_license_payload(&payload) {
-    return Ok(invalid_license(code, message));
-  }
-
-  if payload.data.plan != "selfhostedteam" {
-    return Ok(invalid_license("invalid_payload", "license plan is not selfhostedteam"));
-  }
-
-  if let Some(target_id) = input.target_id.as_deref()
-    && target_id != payload.data.workspace_id.as_str()
-  {
-    return Ok(invalid_license(
-      "workspace_mismatch",
-      "workspace mismatched with license",
-    ));
-  }
-
-  if payload.issued_at.is_empty() || payload.entity.is_empty() || payload.issuer.is_empty() {
-    return Ok(invalid_license("invalid_payload", "license payload is incomplete"));
-  }
-
-  let file_expires_at = match parse_time(&payload.expires_at) {
-    Ok(time) => time,
-    Err(_) => return Ok(invalid_license("invalid_payload", "invalid expiresAt")),
-  };
-  let license_expires_at = match parse_time(&payload.data.end_at) {
-    Ok(time) => time,
-    Err(_) => return Ok(invalid_license("invalid_payload", "invalid endAt")),
-  };
-
-  let expires_at = file_expires_at.min(license_expires_at);
-  if expires_at < now {
-    let mut entitlement = expired(
-      "selfhost_team",
-      Some(payload.data.quantity),
-      Some(expires_at.to_rfc3339()),
-    );
-    entitlement.error_code = Some(
-      if license_expires_at < now && license_expires_at <= file_expires_at {
-        "expired_end_at"
-      } else {
-        "expired"
-      }
-      .to_string(),
-    );
-    fill_license_metadata(&mut entitlement, &payload);
-    return Ok(entitlement);
-  }
-
-  let mut entitlement = active(
-    "selfhost_team",
-    Some(payload.data.quantity),
-    Some(expires_at.to_rfc3339()),
+  let grant: AccessGrant = describe_plan(Plan::SelfHostedTeam, Some(claims.seat_quantity()))
+    .map_err(entitlement_input_error)?
+    .into();
+  let mut entitlement = active_with_grant(
+    grant.plan,
+    grant.quantity,
+    grant.limits,
+    grant.rights,
+    Some(claims.expires_at().to_rfc3339()),
   );
-  fill_license_metadata(&mut entitlement, &payload);
+  entitlement.subject_id = Some(claims.license_id().to_string());
+  entitlement.target_id = Some(claims.workspace_id().to_string());
+  entitlement.issued_at = Some(claims.issued_at().to_rfc3339());
+  entitlement.entity = Some(claims.audience().to_string());
+  entitlement.issuer = Some("affine".to_string());
   Ok(entitlement)
 }
 
-fn fill_license_metadata(entitlement: &mut ResolvedEntitlement, payload: &LicensePayload) {
-  entitlement.subject_id = Some(payload.data.id.clone());
-  entitlement.target_id = Some(payload.data.workspace_id.clone());
-  entitlement.recurring = Some(payload.data.recurring.clone());
-  entitlement.issued_at = Some(payload.issued_at.clone());
-  entitlement.entity = Some(payload.entity.clone());
-  entitlement.issuer = Some(payload.issuer.clone());
-}
-
-fn validate_license_payload(payload: &LicensePayload) -> LicenseResult<()> {
-  if payload.data.id.is_empty()
-    || payload.data.workspace_id.is_empty()
-    || !matches!(payload.data.recurring.as_str(), "monthly" | "yearly" | "lifetime")
-    || payload.data.quantity <= 0
-    || payload.data.quantity > MAX_SEAT_QUANTITY
-  {
-    return Err(("invalid_payload", "license payload is incomplete"));
-  }
-
-  Ok(())
-}
-
-fn decrypt_license(buf: &[u8], aes_key: &str) -> LicenseResult<(Vec<u8>, Vec<u8>)> {
-  if buf.len() < 2 {
-    return Err(("invalid_file", "invalid license file"));
-  }
-
-  let iv_len = buf[0] as usize;
-  let tag_len = buf[1] as usize;
-  let payload_start = 2 + iv_len + tag_len;
-  if iv_len != 12 || tag_len != 12 || buf.len() <= payload_start {
-    return Err(("invalid_file", "invalid license file"));
-  }
-
-  let iv = &buf[2..2 + iv_len];
-  let tag = &buf[2 + iv_len..payload_start];
-  let payload = &buf[payload_start..];
-  let key = license_aes_key(aes_key)?;
-  let cipher = Aes256Gcm12::new_from_slice(&key).map_err(|_| ("invalid_key", "invalid aes key"))?;
-  let nonce = GenericArray::from_slice(iv);
-  let mut encrypted = Vec::with_capacity(payload.len() + tag.len());
-  encrypted.extend_from_slice(payload);
-  encrypted.extend_from_slice(tag);
-  let decrypted = cipher
-    .decrypt(nonce, encrypted.as_ref())
-    .map_err(|_| ("decrypt_failed", "failed to verify the license"))?;
-
-  Ok((iv.to_vec(), decrypted))
-}
-
-fn license_aes_key(aes_key: &str) -> LicenseResult<[u8; 32]> {
-  if aes_key.len() == 64
-    && let Ok(decoded) = hex::decode(aes_key)
-    && decoded.len() == 32
-  {
-    let mut key = [0; 32];
-    key.copy_from_slice(&decoded);
-    return Ok(key);
-  }
-
-  Ok(Sha256::digest(aes_key.as_bytes()).into())
-}
-
-fn verify_license(decrypted: &(Vec<u8>, Vec<u8>), public_key: &str) -> LicenseResult<LicensePayload> {
-  let (iv, decrypted) = decrypted;
-  let envelope: LicenseEnvelope =
-    serde_json::from_slice(decrypted).map_err(|_| ("invalid_file", "invalid license file"))?;
-  let signature = hex::decode(&envelope.signature).map_err(|_| ("invalid_signature", "invalid license signature"))?;
-  let signature = Signature::from_der(&signature).map_err(|_| ("invalid_signature", "invalid license signature"))?;
-  let verifying_key =
-    VerifyingKey::from_public_key_pem(public_key).map_err(|_| ("invalid_public_key", "invalid public key"))?;
-  let mut message = Vec::with_capacity(iv.len() + envelope.payload.len());
-  message.extend_from_slice(iv);
-  message.extend_from_slice(envelope.payload.as_bytes());
-  verifying_key
-    .verify(&message, &signature)
-    .map_err(|_| ("invalid_signature", "invalid license signature"))?;
-
-  serde_json::from_str::<LicensePayload>(&envelope.payload).map_err(|_| ("invalid_payload", "invalid license payload"))
-}
-
-fn active(plan: &str, quantity: Option<i32>, expires_at: Option<String>) -> ResolvedEntitlement {
-  let quantity = quantity_for_plan(plan, quantity);
-  let catalog = plan_catalog(plan, quantity);
+fn active_with_grant(
+  plan: Plan,
+  quantity: Option<i32>,
+  limits: Limits,
+  rights: Rights,
+  expires_at: Option<String>,
+) -> ResolvedEntitlement {
+  let quantity = quantity.filter(|_| matches!(plan, Plan::Team | Plan::SelfHostedTeam));
   ResolvedEntitlement {
-    plan: catalog.name.to_string(),
+    plan: plan.as_str().to_string(),
     valid: true,
     status: "active".to_string(),
     quantity,
@@ -334,39 +237,18 @@ fn active(plan: &str, quantity: Option<i32>, expires_at: Option<String>) -> Reso
     issued_at: None,
     entity: None,
     issuer: None,
-    quota: quota(&catalog),
-    flags: flags(&catalog),
+    quota: quota(limits),
+    flags: flags(rights),
     error_code: None,
     error_message: None,
   }
 }
 
-fn expired(plan: &str, quantity: Option<i32>, expires_at: Option<String>) -> ResolvedEntitlement {
-  let quantity = quantity_for_plan(plan, quantity);
-  let catalog = plan_catalog(plan, quantity);
+fn invalid_license(code: &str, message: &str) -> ResolvedEntitlement {
+  let plan = Plan::SelfHostedFree;
+  let access = describe_plan(plan, None).expect("self-hosted free plan is valid");
   ResolvedEntitlement {
-    plan: catalog.name.to_string(),
-    valid: false,
-    status: "expired".to_string(),
-    quantity,
-    expires_at,
-    subject_id: None,
-    target_id: None,
-    recurring: None,
-    issued_at: None,
-    entity: None,
-    issuer: None,
-    quota: quota(&catalog),
-    flags: flags(&catalog),
-    error_code: Some("expired".to_string()),
-    error_message: Some("license expired".to_string()),
-  }
-}
-
-fn invalid_license(code: &'static str, message: &'static str) -> ResolvedEntitlement {
-  let catalog = plan_catalog("selfhost_free", None);
-  ResolvedEntitlement {
-    plan: catalog.name.to_string(),
+    plan: plan.as_str().to_string(),
     valid: false,
     status: "needs_reupload".to_string(),
     quantity: None,
@@ -377,112 +259,33 @@ fn invalid_license(code: &'static str, message: &'static str) -> ResolvedEntitle
     issued_at: None,
     entity: None,
     issuer: None,
-    quota: quota(&catalog),
-    flags: flags(&catalog),
+    quota: quota(access.limits),
+    flags: flags(access.rights),
     error_code: Some(code.to_string()),
     error_message: Some(message.to_string()),
   }
 }
 
-fn quantity_for_plan(plan: &str, quantity: Option<i32>) -> Option<i32> {
-  if matches!(plan, "team" | "selfhost_team") {
-    quantity
-  } else {
-    None
-  }
-}
-
-fn plan_catalog(plan: &str, quantity: Option<i32>) -> PlanQuota {
-  let seats = quantity.unwrap_or(1);
-  match plan {
-    "pro" => PlanQuota {
-      name: "pro",
-      blob_limit: 100 * ONE_MB,
-      storage_quota: 100 * ONE_GB,
-      history_period: 30 * ONE_DAY_SECONDS,
-      member_limit: Some(10),
-      seat_quota: None,
-      copilot_action_limit: Some(10),
-      unlimited_copilot: false,
-    },
-    "lifetime_pro" => PlanQuota {
-      name: "lifetime_pro",
-      blob_limit: 100 * ONE_MB,
-      storage_quota: 1024 * ONE_GB,
-      history_period: 30 * ONE_DAY_SECONDS,
-      member_limit: Some(10),
-      seat_quota: None,
-      copilot_action_limit: Some(10),
-      unlimited_copilot: false,
-    },
-    "ai" => PlanQuota {
-      name: "ai",
-      blob_limit: 10 * ONE_MB,
-      storage_quota: 10 * ONE_GB,
-      history_period: 7 * ONE_DAY_SECONDS,
-      member_limit: Some(3),
-      seat_quota: None,
-      copilot_action_limit: None,
-      unlimited_copilot: true,
-    },
-    "team" | "selfhost_team" => {
-      let seat_quota = 20 * ONE_GB;
-      let storage_quota = (seats as i64)
-        .checked_mul(seat_quota)
-        .and_then(|storage| storage.checked_add(100 * ONE_GB))
-        .unwrap_or(i64::MAX);
-      PlanQuota {
-        name: if plan == "team" { "team" } else { "selfhost_team" },
-        blob_limit: 500 * ONE_MB,
-        storage_quota,
-        history_period: 30 * ONE_DAY_SECONDS,
-        member_limit: Some(seats),
-        seat_quota: Some(seat_quota),
-        copilot_action_limit: None,
-        unlimited_copilot: false,
-      }
-    }
-    "selfhost_free" => PlanQuota {
-      name: "selfhost_free",
-      blob_limit: 100 * ONE_MB,
-      storage_quota: 100 * ONE_GB,
-      history_period: 30 * ONE_DAY_SECONDS,
-      member_limit: Some(10),
-      seat_quota: None,
-      copilot_action_limit: Some(10),
-      unlimited_copilot: false,
-    },
-    _ => PlanQuota {
-      name: "free",
-      blob_limit: 10 * ONE_MB,
-      storage_quota: 10 * ONE_GB,
-      history_period: 7 * ONE_DAY_SECONDS,
-      member_limit: Some(3),
-      seat_quota: None,
-      copilot_action_limit: Some(10),
-      unlimited_copilot: false,
-    },
-  }
-}
-
-fn quota(catalog: &PlanQuota) -> ResolvedQuota {
+fn quota(limits: Limits) -> ResolvedQuota {
   ResolvedQuota {
-    blob_limit: catalog.blob_limit,
-    storage_quota: catalog.storage_quota,
-    seat_limit: catalog.member_limit,
-    seat_quota: catalog.seat_quota,
-    history_period: catalog.history_period,
-    copilot_action_limit: catalog.copilot_action_limit,
+    blob_limit: limits.blob_limit,
+    storage_quota: limits.storage_quota,
+    seat_limit: Some(limits.seat_limit),
+    seat_quota: limits.seat_quota,
+    history_period: limits.history_period,
+    copilot_action_limit: limits.copilot_action_limit,
   }
 }
 
-fn flags(catalog: &PlanQuota) -> HashMap<String, bool> {
+fn flags(rights: Rights) -> HashMap<String, bool> {
   let mut flags = HashMap::new();
-  flags.insert("unlimitedCopilot".to_string(), catalog.unlimited_copilot);
+  flags.insert("unlimitedCopilot".to_string(), rights.unlimited_copilot);
+  flags.insert("copilotByok".to_string(), rights.copilot_byok);
+  flags.insert("commercial".to_string(), rights.commercial);
   flags
 }
 
-fn parse_time(value: &str) -> Result<DateTime<Utc>> {
+pub(crate) fn parse_time(value: &str) -> Result<DateTime<Utc>> {
   DateTime::parse_from_rfc3339(value)
     .map(|value| value.with_timezone(&Utc))
     .map_err(|err| NapiError::new(Status::InvalidArg, err.to_string()))
@@ -493,16 +296,84 @@ fn invalid_arg<T>(message: &'static str) -> Result<T> {
 }
 
 #[cfg(test)]
-mod tests {
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct LicenseClaimsV1 {
+  format_version: u32,
+  license_id: String,
+  workspace_id: String,
+  audience: String,
+  plan: String,
+  seat_quantity: i32,
+  issued_at: String,
+  not_before: String,
+  expires_at: String,
+}
+
+#[cfg(test)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+struct LicenseEnvelopeV1 {
+  claims: LicenseClaimsV1,
+  signature: String,
+}
+
+#[cfg(test)]
+pub(crate) fn signed_test_license(workspace_id: &str) -> (Vec<u8>, String) {
+  signed_test_license_with_id(workspace_id, &format!("license:{workspace_id}"))
+}
+
+#[cfg(test)]
+pub(crate) fn signed_test_license_with_id(workspace_id: &str, license_id: &str) -> (Vec<u8>, String) {
+  use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
+  use chrono::Duration;
+  use p256::{
+    ecdsa::{Signature, SigningKey, signature::Signer},
+    pkcs8::{DecodePrivateKey, EncodePublicKey, LineEnding},
+  };
+
+  let signing_key = SigningKey::from_pkcs8_pem(tests::TEST_PRIVATE_KEY).unwrap();
+  let now = Utc::now();
+  let claims = LicenseClaimsV1 {
+    format_version: 1,
+    license_id: license_id.to_string(),
+    workspace_id: workspace_id.to_string(),
+    audience: "affine-selfhost".to_string(),
+    plan: "selfhost_team".to_string(),
+    seat_quantity: 10,
+    issued_at: (now - Duration::minutes(1)).to_rfc3339(),
+    not_before: (now - Duration::minutes(1)).to_rfc3339(),
+    expires_at: (now + Duration::minutes(10)).to_rfc3339(),
+  };
+  let signature: Signature = signing_key.sign(&serde_json::to_vec(&claims).unwrap());
+  let payload = serde_json::to_vec(&LicenseEnvelopeV1 {
+    claims,
+    signature: BASE64.encode(signature.to_der()),
+  })
+  .unwrap();
+  let public_key = signing_key.verifying_key().to_public_key_pem(LineEnding::LF).unwrap();
+  (payload, public_key)
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+  use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
+  use p256::ecdsa::Signature;
+
   use super::*;
 
   const TEST_WORKSPACE_ID: &str = "d6f52bc7-d62a-4822-804a-335fa7dfe5a6";
   #[rustfmt::skip]
   const TEST_PUBLIC_KEY: &str = "-----BEGIN PUBLIC KEY-----\n\
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqrxlczPknUuj4q4xx1VGr063Cgu7\n\
-Hc3w7v4FGmoA5MNzzhrkho1ckDYw2wrX6zBnehFzcivURv80HherE2GQjg==\n\
------END PUBLIC KEY-----";
-  const TEST_LICENSE_AES_KEY: &str = "TEST_LICENSE_AES_KEY";
+  MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEObwJiTmbui7rkWfPJ7Lozvuy2Rcl\n\
+  otcrb0V6dlS2ijKEShm7ZttTwQn08xzesdjX/AxpoR5X9yfoHkauIBuuMQ==\n\
+  -----END PUBLIC KEY-----";
+  #[rustfmt::skip]
+  pub(crate) const TEST_PRIVATE_KEY: &str = "-----BEGIN PRIVATE KEY-----\n\
+  MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgsH+B50OQ7W85sBwV\n\
+  Vu1OkczX+OJICAwmwCMDMBhEXB+hRANCAAQ5vAmJOZu6LuuRZ88nsujO+7LZFyWi\n\
+  1ytvRXp2VLaKMoRKGbtm21PBCfTzHN6x2Nf8DGmhHlf3J+geRq4gG64x\n\
+  -----END PRIVATE KEY-----";
 
   fn input(plan: Option<&str>, quantity: Option<i32>) -> ResolveEntitlementInput {
     ResolveEntitlementInput {
@@ -513,214 +384,133 @@ Hc3w7v4FGmoA5MNzzhrkho1ckDYw2wrX6zBnehFzcivURv80HherE2GQjg==\n\
       quantity: quantity.map(Value::from),
       signed_payload: None,
       public_key: None,
-      license_aes_key: None,
       now: "2026-05-14T00:00:00Z".to_string(),
     }
   }
 
-  fn license_input(file: &str, workspace_id: &str) -> ResolveEntitlementInput {
-    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-      .join("../server/src/__tests__/e2e/license/__fixtures__")
-      .join(file);
+  fn signed_license(claims: LicenseClaimsV1) -> Vec<u8> {
+    use p256::{
+      ecdsa::{SigningKey, signature::Signer},
+      pkcs8::DecodePrivateKey,
+    };
+
+    let signing_key = SigningKey::from_pkcs8_pem(TEST_PRIVATE_KEY).unwrap();
+    let canonical = serde_json::to_vec(&claims).unwrap();
+    let signature: Signature = signing_key.sign(&canonical);
+    serde_json::to_vec(&LicenseEnvelopeV1 {
+      claims,
+      signature: BASE64.encode(signature.to_der()),
+    })
+    .unwrap()
+  }
+
+  fn claims() -> LicenseClaimsV1 {
+    LicenseClaimsV1 {
+      format_version: 1,
+      license_id: "license-id".to_string(),
+      workspace_id: TEST_WORKSPACE_ID.to_string(),
+      audience: "affine-selfhost".to_string(),
+      plan: "selfhost_team".to_string(),
+      seat_quantity: 20,
+      issued_at: "2026-05-13T00:00:00Z".to_string(),
+      not_before: "2026-05-13T00:00:00Z".to_string(),
+      expires_at: "2026-05-15T00:00:00Z".to_string(),
+    }
+  }
+
+  fn license_input(payload: Vec<u8>, workspace_id: &str) -> ResolveEntitlementInput {
     ResolveEntitlementInput {
       deployment_type: "selfhosted".to_string(),
       target_type: "workspace".to_string(),
       target_id: Some(workspace_id.to_string()),
       plan: None,
       quantity: None,
-      signed_payload: Some(std::fs::read(fixture).unwrap().into()),
+      signed_payload: Some(payload.into()),
       public_key: Some(TEST_PUBLIC_KEY.to_string()),
-      license_aes_key: Some(TEST_LICENSE_AES_KEY.to_string()),
       now: "2026-05-14T00:00:00Z".to_string(),
     }
   }
 
-  fn decrypted_license(file: &str) -> (Vec<u8>, Vec<u8>) {
-    let input = license_input(file, TEST_WORKSPACE_ID);
-    let payload = input.signed_payload.unwrap();
-    decrypt_license(payload.as_ref(), TEST_LICENSE_AES_KEY).unwrap()
+  #[test]
+  fn maps_catalog_plan_to_napi_output() {
+    let resolved = resolve_entitlement_v1(input(Some("team"), Some(5))).unwrap();
+    assert!(resolved.valid);
+    assert_eq!(resolved.plan, "team");
+    assert_eq!(resolved.quantity, Some(5));
+    assert_eq!(resolved.quota.seat_limit, Some(5));
+    assert!(resolved.flags.get("commercial").copied().unwrap_or_default());
+    let mut ai = input(Some("ai"), None);
+    ai.target_type = "user".into();
+    let ai = resolve_entitlement_v1(ai).unwrap();
+    assert_eq!(ai.plan, "free");
+    assert_eq!(ai.quota.copilot_action_limit, None);
+    assert_eq!(ai.flags.get("copilotByok"), Some(&true));
   }
 
   #[test]
-  fn decrypts_license_with_raw_or_hashed_aes_key() {
-    let input = license_input("valid.license", TEST_WORKSPACE_ID);
-    let payload = input.signed_payload.unwrap();
-    let hashed_key = hex::encode(Sha256::digest(TEST_LICENSE_AES_KEY.as_bytes()));
-
-    let raw = decrypt_license(payload.as_ref(), TEST_LICENSE_AES_KEY).unwrap();
-    let hashed = decrypt_license(payload.as_ref(), &hashed_key).unwrap();
-
-    assert_eq!(raw.0, hashed.0);
-    assert_eq!(raw.1, hashed.1);
+  fn maps_input_and_domain_errors_to_invalid_arg() {
+    let mut invalid_deployment = input(Some("free"), None);
+    invalid_deployment.deployment_type = "local".to_string();
+    assert_eq!(
+      resolve_entitlement_v1(invalid_deployment).unwrap_err().status,
+      Status::InvalidArg
+    );
+    let mut unsigned_commercial = input(Some("team"), Some(5));
+    unsigned_commercial.deployment_type = "selfhosted".to_string();
+    assert_eq!(
+      resolve_entitlement_v1(unsigned_commercial).unwrap_err().status,
+      Status::InvalidArg
+    );
   }
 
   #[test]
-  fn derives_plan_quota() {
-    let cases = [
-      ("free", None, 3, 10 * ONE_GB, Some(10)),
-      ("pro", None, 10, 100 * ONE_GB, Some(10)),
-      ("lifetime_pro", None, 10, 1024 * ONE_GB, Some(10)),
-      ("team", Some(5), 5, 200 * ONE_GB, None),
-      ("selfhost_team", Some(20), 20, 500 * ONE_GB, None),
-      ("selfhost_free", None, 10, 100 * ONE_GB, Some(10)),
-    ];
+  fn maps_signed_license_result() {
+    let valid = resolve_entitlement_v1(license_input(signed_license(claims()), TEST_WORKSPACE_ID)).unwrap();
+    assert!(valid.valid);
+    assert_eq!(valid.plan, "selfhost_team");
+    assert_eq!(valid.quantity, Some(20));
 
-    for (plan, quantity, seat_limit, storage_quota, copilot_limit) in cases {
-      let mut input = input(Some(plan), quantity);
-      if plan == "selfhost_free" {
-        input.deployment_type = "selfhosted".to_string();
-      }
-      let resolved = resolve_entitlement_v1(input).unwrap();
-      assert!(resolved.valid, "{plan}");
-      assert_eq!(
-        resolved.quantity,
-        if matches!(plan, "team" | "selfhost_team") {
-          quantity
-        } else {
-          None
-        },
-        "{plan}"
-      );
-      assert_eq!(resolved.quota.seat_limit, Some(seat_limit), "{plan}");
-      assert_eq!(resolved.quota.storage_quota, storage_quota, "{plan}");
-      assert_eq!(resolved.quota.copilot_action_limit, copilot_limit, "{plan}");
-    }
+    let mut preview = license_input(signed_license(claims()), TEST_WORKSPACE_ID);
+    preview.target_id = None;
+    let preview = resolve_entitlement_v1(preview).unwrap();
+    assert!(preview.valid);
+    assert_eq!(preview.target_id.as_deref(), Some(TEST_WORKSPACE_ID));
+
+    let mismatch = resolve_entitlement_v1(license_input(signed_license(claims()), "other-workspace")).unwrap();
+    assert!(!mismatch.valid);
+    assert_eq!(mismatch.error_code.as_deref(), Some("workspace_mismatch"));
   }
 
   #[test]
-  fn ignores_quantity_for_fixed_catalog_plans() {
-    for plan in ["free", "pro", "lifetime_pro", "ai", "selfhost_free"] {
-      let mut input = input(Some(plan), Some(50));
-      if plan == "selfhost_free" {
-        input.deployment_type = "selfhosted".to_string();
-      }
-
-      let resolved = resolve_entitlement_v1(input).unwrap();
-
-      assert_eq!(resolved.quantity, None, "{plan}");
-      assert_ne!(resolved.quota.seat_limit, Some(50), "{plan}");
-    }
-  }
-
-  #[test]
-  fn rejects_invalid_quantity() {
-    for quantity in [0, -1, MAX_SEAT_QUANTITY + 1] {
-      let err = resolve_entitlement_v1(input(Some("team"), Some(quantity))).unwrap_err();
-      assert_eq!(err.status, Status::InvalidArg, "{quantity}");
-    }
-  }
-
-  #[test]
-  fn rejects_unsigned_selfhosted_commercial_entitlements() {
-    for plan in ["pro", "lifetime_pro", "ai", "team", "selfhost_team"] {
-      let mut input = input(Some(plan), Some(50));
-      input.deployment_type = "selfhosted".to_string();
-
-      let err = resolve_entitlement_v1(input).unwrap_err();
-
-      assert_eq!(err.status, Status::InvalidArg, "{plan}");
-    }
-  }
-
-  #[test]
-  fn rejects_schema_errors() {
-    let mut input = input(Some("free"), None);
-    input.deployment_type = "local".to_string();
-    let err = resolve_entitlement_v1(input).unwrap_err();
-    assert_eq!(err.status, Status::InvalidArg);
-  }
-
-  #[test]
-  fn rejects_signed_payload_outside_selfhost_workspace_boundary() {
-    let cases = [
-      ("cloud", "workspace"),
-      ("selfhosted", "user"),
-      ("selfhosted", "instance"),
-    ];
-
-    for (deployment_type, target_type) in cases {
-      let mut input = license_input("valid.license", TEST_WORKSPACE_ID);
-      input.deployment_type = deployment_type.to_string();
-      input.target_type = target_type.to_string();
-      let err = resolve_entitlement_v1(input).unwrap_err();
-      assert_eq!(err.status, Status::InvalidArg, "{deployment_type}/{target_type}");
-    }
-  }
-
-  #[test]
-  fn verifies_selfhost_license_files() {
-    let cases = [
-      ("valid.license", TEST_WORKSPACE_ID, true, "active", None, Some(20)),
-      (
-        "valid.license",
-        "other-workspace",
-        false,
-        "needs_reupload",
-        Some("workspace_mismatch"),
-        None,
-      ),
-      (
-        "expired.license",
-        TEST_WORKSPACE_ID,
-        false,
-        "expired",
-        Some("expired"),
-        Some(20),
-      ),
-      (
-        "expired-end-at.license",
-        TEST_WORKSPACE_ID,
-        false,
-        "expired",
-        Some("expired_end_at"),
-        Some(20),
-      ),
-    ];
-
-    for (file, workspace_id, valid, status, error_code, quantity) in cases {
-      let resolved = resolve_entitlement_v1(license_input(file, workspace_id)).unwrap();
-      assert_eq!(resolved.valid, valid, "{file}");
-      assert_eq!(resolved.status, status, "{file}");
-      assert_eq!(resolved.error_code.as_deref(), error_code, "{file}");
-      assert_eq!(resolved.quantity, quantity, "{file}");
-      if valid {
-        assert_eq!(resolved.plan, "selfhost_team", "{file}");
-        assert_eq!(resolved.quota.seat_limit, quantity, "{file}");
-        assert_eq!(resolved.quota.storage_quota, 500 * ONE_GB, "{file}");
-        assert_eq!(resolved.quota.blob_limit, 500 * ONE_MB, "{file}");
-      }
-    }
-  }
-
-  #[test]
-  fn verifies_signature_branch() {
-    let (iv, decrypted) = decrypted_license("valid.license");
-    let mut envelope: LicenseEnvelope = serde_json::from_slice(&decrypted).unwrap();
-    envelope.signature = "00".to_string();
-    let decrypted = serde_json::to_vec(&envelope).unwrap();
-    let err = verify_license(&(iv, decrypted), TEST_PUBLIC_KEY).unwrap_err();
-
-    assert_eq!(err.0, "invalid_signature");
-  }
-
-  #[test]
-  fn rejects_license_payload_schema_and_quantity_errors() {
-    let mut payload: LicensePayload = serde_json::from_str(
-      &serde_json::from_slice::<LicenseEnvelope>(&decrypted_license("valid.license").1)
-        .unwrap()
-        .payload,
-    )
+  fn maps_license_issuance_types_and_errors() {
+    let payload = issue_license_v1(IssueLicenseInput {
+      license_id: "license-id".into(),
+      workspace_id: TEST_WORKSPACE_ID.into(),
+      seat_quantity: 20.0,
+      subscription_end: Some("2026-05-16T00:00:00Z".into()),
+      private_key: TEST_PRIVATE_KEY.into(),
+      now: "2026-05-14T00:00:00Z".into(),
+    })
     .unwrap();
+    let resolved = resolve_entitlement_v1(license_input(payload.to_vec(), TEST_WORKSPACE_ID)).unwrap();
+    assert!(resolved.valid);
+    assert_eq!(resolved.quantity, Some(20));
 
-    for quantity in [0, -1] {
-      payload.data.quantity = quantity;
-      let err = validate_license_payload(&payload).unwrap_err();
-      assert_eq!(err.0, "invalid_payload");
-    }
+    let error = match issue_license_v1(IssueLicenseInput {
+      license_id: "license-id".into(),
+      workspace_id: TEST_WORKSPACE_ID.into(),
+      seat_quantity: 0.0,
+      subscription_end: None,
+      private_key: TEST_PRIVATE_KEY.into(),
+      now: "2026-05-14T00:00:00Z".into(),
+    }) {
+      Ok(_) => panic!("invalid quantity was accepted"),
+      Err(error) => error,
+    };
+    assert_eq!(error.status, Status::InvalidArg);
 
-    payload.data.quantity = 20;
-    payload.data.workspace_id.clear();
-    let err = validate_license_payload(&payload).unwrap_err();
-    assert_eq!(err.0, "invalid_payload");
+    assert!(validate_license_seat_quantity_v1(1.5).is_err());
+    assert!(validate_license_seat_quantity_v1(4_294_967_297.0).is_err());
+    assert!(validate_license_seat_quantity_v1(-4_294_967_295.0).is_err());
   }
 }

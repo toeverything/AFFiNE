@@ -27,7 +27,6 @@ export enum Queue {
   NOTIFICATION = 'notification',
   DOC = 'doc',
   COPILOT = 'copilot',
-  INDEXER = 'indexer',
   CALENDAR = 'calendar',
   BACKENDRUNTIME = 'backendRuntime',
   INVITE_ABUSE = 'inviteAbuse',

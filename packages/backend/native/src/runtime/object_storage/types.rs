@@ -172,10 +172,25 @@ fn validate_blob_key(key: &str) -> bool {
     [workspace_id, blob_id] => {
       is_id_segment(workspace_id) && validate_single_segment(blob_id, "workspace blob id").is_ok()
     }
+    [workspace_id, ".reservations", reservation_id, blob_id] => {
+      is_id_segment(workspace_id)
+        && is_id_segment(reservation_id)
+        && validate_single_segment(blob_id, "workspace blob id").is_ok()
+    }
     // comment attachment: comment-attachments/<workspaceId>/<docId>/<uuid>
     ["comment-attachments", workspace_id, doc_id, attachment_key] => {
       [workspace_id, doc_id, attachment_key].iter().all(|s| is_id_segment(s))
     }
+    [
+      "comment-attachments",
+      workspace_id,
+      doc_id,
+      ".reservations",
+      reservation_id,
+      attachment_key,
+    ] => [workspace_id, doc_id, reservation_id, attachment_key]
+      .iter()
+      .all(|s| is_id_segment(s)),
     _ => false,
   }
 }

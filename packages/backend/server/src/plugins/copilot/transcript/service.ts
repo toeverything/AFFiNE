@@ -512,7 +512,7 @@ export class CopilotTranscriptionService {
   async transcriptTask({
     taskId,
     payload,
-    generation: queuedGeneration,
+    generation,
     retryOf,
   }: Jobs['copilot.transcript.task.submit']) {
     const task = await this.models.copilotTranscriptTask.get(taskId);
@@ -520,17 +520,6 @@ export class CopilotTranscriptionService {
       throw new CopilotTranscriptionJobNotFound();
     }
     let actionRunId = retryOf ?? null;
-    const generation = queuedGeneration ?? randomUUID();
-    if (
-      !queuedGeneration &&
-      !(await this.models.copilotTranscriptTask.adoptLegacyDispatch(
-        taskId,
-        actionRunId,
-        generation
-      ))
-    ) {
-      return;
-    }
     const claimed = await this.models.copilotTranscriptTask.claimDispatch(
       taskId,
       generation,

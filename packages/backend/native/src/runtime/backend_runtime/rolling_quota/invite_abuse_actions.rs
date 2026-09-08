@@ -2,10 +2,14 @@ use napi::Result;
 use sqlx::{PgPool, Row};
 
 use super::{
-  BackendRuntime, RuntimeError, RuntimeInviteAbuseClaimedAction, RuntimeResult, napi_error, workspace_subject_key,
+  BackendRuntime, PERSISTED_ABUSE_COLUMNS, RuntimeError, RuntimeInviteAbuseClaimedAction, RuntimeResult,
+  load_active_abuse_subjects, napi_error, persisted_abuse_subject,
 };
 
-async fn invite_abuse_user_quarantined_or_banned(pool: &PgPool, user_id: &str) -> RuntimeResult<bool> {
+pub(super) async fn invite_abuse_user_quarantined_or_banned(pool: &PgPool, user_id: &str) -> RuntimeResult<bool> {
+  if !load_active_abuse_subjects(pool).await?.valid {
+    return Ok(true);
+  }
   let row: Option<i32> = sqlx::query_scalar(
     r#"
     SELECT 1
@@ -22,17 +26,22 @@ async fn invite_abuse_user_quarantined_or_banned(pool: &PgPool, user_id: &str) -
   Ok(row.is_some())
 }
 
-async fn invite_abuse_workspace_quarantined(pool: &PgPool, workspace_id: &str) -> RuntimeResult<bool> {
+pub(super) async fn invite_abuse_workspace_quarantined(pool: &PgPool, workspace_id: &str) -> RuntimeResult<bool> {
+  if !load_active_abuse_subjects(pool).await?.valid {
+    return Ok(true);
+  }
   let row: Option<i32> = sqlx::query_scalar(
     r#"
     SELECT 1
-    FROM runtime_invite_abuse_subjects
-    WHERE subject_key = $1
-      AND status = 'quarantined'
+    FROM runtime_invite_abuse_subjects subject
+    JOIN runtime_invite_abuse_evidence evidence ON evidence.subject_key = subject.subject_key
+    WHERE evidence.workspace_id = $1
+      AND subject.kind = 'workspace'
+      AND subject.status = 'quarantined'
     LIMIT 1
     "#,
   )
-  .bind(workspace_subject_key(workspace_id))
+  .bind(workspace_id)
   .fetch_optional(pool)
   .await
   .map_err(|err| RuntimeError::database("failed to load invite abuse workspace subject", err))?;
@@ -40,6 +49,33 @@ async fn invite_abuse_workspace_quarantined(pool: &PgPool, workspace_id: &str) -
 }
 
 async fn claim_invite_abuse_action(pool: &PgPool, action_id: &str, worker_id: &str) -> RuntimeResult<bool> {
+  let mut tx = pool
+    .begin()
+    .await
+    .map_err(|err| RuntimeError::database("failed to start invite abuse action claim", err))?;
+  let candidate_query = format!(
+    r#"SELECT {PERSISTED_ABUSE_COLUMNS}, action.action AS action_action
+       FROM runtime_invite_abuse_actions action
+       JOIN runtime_invite_abuse_subjects subject ON subject.subject_key = action.subject_key
+       JOIN runtime_invite_abuse_evidence evidence ON evidence.id = action.evidence_id
+       WHERE action.id = $1::bigint
+       FOR UPDATE OF action"#
+  );
+  let candidate = sqlx::query(&candidate_query)
+    .bind(action_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|err| RuntimeError::database("failed to load invite abuse action claim", err))?;
+  if candidate
+    .as_ref()
+    .and_then(|row| persisted_abuse_subject(row).ok())
+    .is_none()
+  {
+    tx.rollback()
+      .await
+      .map_err(|err| RuntimeError::database("failed to rollback invalid invite abuse action claim", err))?;
+    return Ok(false);
+  }
   let result = sqlx::query(
     r#"
     UPDATE runtime_invite_abuse_actions action
@@ -66,9 +102,12 @@ async fn claim_invite_abuse_action(pool: &PgPool, action_id: &str, worker_id: &s
   )
   .bind(action_id)
   .bind(worker_id)
-  .execute(pool)
+  .execute(&mut *tx)
   .await
   .map_err(|err| RuntimeError::database("failed to claim invite abuse action", err))?;
+  tx.commit()
+    .await
+    .map_err(|err| RuntimeError::database("failed to commit invite abuse action claim", err))?;
   Ok(result.rows_affected() > 0)
 }
 
@@ -77,14 +116,17 @@ async fn claim_retryable_invite_abuse_actions(
   worker_id: &str,
   limit: i64,
 ) -> RuntimeResult<Vec<RuntimeInviteAbuseClaimedAction>> {
-  let rows = sqlx::query(
-    r#"
-    WITH candidates AS (
-      SELECT action.id
-      FROM runtime_invite_abuse_actions action
-      JOIN runtime_invite_abuse_evidence evidence
-        ON evidence.id = action.evidence_id
-      WHERE (
+  let mut tx = pool
+    .begin()
+    .await
+    .map_err(|err| RuntimeError::database("failed to start retryable invite abuse action claim", err))?;
+  let query = format!(
+    r#"SELECT {PERSISTED_ABUSE_COLUMNS}, action.action AS action_action,
+              action.id::text AS action_id
+       FROM runtime_invite_abuse_actions action
+       JOIN runtime_invite_abuse_subjects subject ON subject.subject_key = action.subject_key
+       JOIN runtime_invite_abuse_evidence evidence ON evidence.id = action.evidence_id
+       WHERE (
           (
             action.status IN ('pending', 'retry_wait')
             AND (action.next_attempt_at IS NULL OR action.next_attempt_at <= now())
@@ -95,60 +137,47 @@ async fn claim_retryable_invite_abuse_actions(
             AND action.locked_until <= now()
           )
         )
-        AND evidence.user_id IS NOT NULL
-        AND evidence.workspace_id IS NOT NULL
-        AND action.action IN ('ban_actor', 'quarantine_actor', 'quarantine_workspace', 'quarantine_source_cohort')
       ORDER BY COALESCE(action.next_attempt_at, action.created_at), action.id
-      LIMIT $2
-      FOR UPDATE SKIP LOCKED
-    ),
-    claimed AS (
-      UPDATE runtime_invite_abuse_actions action
-      SET status = 'running',
-          attempts = attempts + 1,
-          locked_by = $1,
-          locked_until = now() + interval '5 minutes',
-          last_error = NULL,
-          updated_at = now()
-      FROM candidates
-      WHERE action.id = candidates.id
-      RETURNING
-        action.id,
-        action.subject_key,
-        action.evidence_id,
-        action.action
+      LIMIT $1
+      FOR UPDATE OF action SKIP LOCKED"#
+  );
+  let candidates = sqlx::query(&query)
+    .bind(limit.saturating_mul(4))
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|err| RuntimeError::database("failed to claim retryable invite abuse actions", err))?;
+  let mut claimed = Vec::new();
+  for row in candidates {
+    if claimed.len() >= limit as usize || persisted_abuse_subject(&row).is_err() {
+      continue;
+    }
+    let action_id = row.get::<String, _>("action_id");
+    let result = sqlx::query(
+      r#"UPDATE runtime_invite_abuse_actions
+          SET status = 'running', attempts = attempts + 1, locked_by = $2,
+              locked_until = now() + interval '5 minutes', last_error = NULL, updated_at = now()
+          WHERE id = $1::bigint"#,
     )
-    SELECT
-      claimed.action,
-      claimed.subject_key,
-      claimed.evidence_id::text AS evidence_id,
-      claimed.id::text AS action_id,
-      evidence.user_id AS actor_user_id,
-      evidence.workspace_id
-    FROM claimed
-    JOIN runtime_invite_abuse_evidence evidence
-      ON evidence.id = claimed.evidence_id
-    "#,
-  )
-  .bind(worker_id)
-  .bind(limit)
-  .fetch_all(pool)
-  .await
-  .map_err(|err| RuntimeError::database("failed to claim retryable invite abuse actions", err))?;
-
-  Ok(
-    rows
-      .into_iter()
-      .map(|row| RuntimeInviteAbuseClaimedAction {
-        action: row.get("action"),
+    .bind(&action_id)
+    .bind(worker_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|err| RuntimeError::database("failed to claim retryable invite abuse action", err))?;
+    if result.rows_affected() == 1 {
+      claimed.push(RuntimeInviteAbuseClaimedAction {
+        action: row.get("action_action"),
         subject_key: row.get("subject_key"),
-        evidence_id: row.get("evidence_id"),
-        action_id: row.get("action_id"),
-        actor_user_id: row.get("actor_user_id"),
-        workspace_id: row.get("workspace_id"),
-      })
-      .collect(),
-  )
+        evidence_id: row.get::<i64, _>("evidence_id").to_string(),
+        action_id,
+        actor_user_id: row.get("evidence_user_id"),
+        workspace_id: row.get("evidence_workspace_id"),
+      });
+    }
+  }
+  tx.commit()
+    .await
+    .map_err(|err| RuntimeError::database("failed to commit retryable invite abuse action claims", err))?;
+  Ok(claimed)
 }
 
 async fn mark_invite_abuse_action(

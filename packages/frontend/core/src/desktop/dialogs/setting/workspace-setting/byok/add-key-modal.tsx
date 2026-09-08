@@ -27,6 +27,7 @@ import {
   type ModelDeclaration,
   modelUseCases,
   probeChecks,
+  retainVerifiedCapabilities,
 } from './model-utils';
 import type { ByokDefinition, ByokKey, ByokSettings, GqlFn } from './types';
 import { ByokStorage } from './types';
@@ -138,7 +139,7 @@ export const AddKeyModal = ({
 
   const invalidateTest = () => setTestStatus(null);
   const runProbe = useCallback(async () => {
-    if (!gql) return false;
+    if (!gql) return { passed: false, definition };
     const canReuseServerCredential =
       editingKey?.storage === ByokStorage.server && !apiKey;
     const checks = probeChecks(models, includeImageProbe);
@@ -159,21 +160,19 @@ export const AddKeyModal = ({
       },
     });
     const probe = result.probeWorkspaceByokDraft;
-    const verifiedChecks = new Set(
-      probe.models.flatMap(model =>
-        model.checks
-          .filter(check => check.status.kind === 'verified')
-          .map(check => `${model.modelId}\0${check.operation}`)
-      )
+    const nextModels = retainVerifiedCapabilities(models, probe.models);
+    const nextDefinition = { ...definition, models: nextModels };
+    const hasVerifiedCheck = probe.models.some(model =>
+      model.checks.some(check => check.status.kind === 'verified')
     );
     const passed =
       checks.length > 0 &&
       probe.connection.kind === 'verified' &&
-      checks.every(check =>
-        verifiedChecks.has(`${check.modelId}\0${check.operation}`)
-      );
+      hasVerifiedCheck &&
+      nextModels.some(model => model.enabled && model.capabilities.length > 0);
+    if (passed) setModels(nextModels);
     setTestStatus(passed ? 'passed' : 'failed');
-    return passed;
+    return { passed, definition: nextDefinition };
   }, [
     apiKey,
     definition,
@@ -185,112 +184,118 @@ export const AddKeyModal = ({
     workspaceId,
   ]);
 
-  const persist = useCallback(async () => {
-    if (!gql) return;
-    if (storage === ByokStorage.local) {
-      const saved = await upsertLocalKey(workspaceId, {
-        id:
-          editingKey?.storage === ByokStorage.local
-            ? editingKey.id
-            : crypto.randomUUID(),
-        provider,
-        name,
-        description,
-        credential: apiKey,
-        definition,
-        sortOrder:
-          editingKey?.storage === ByokStorage.local
-            ? editingKey.sortOrder
-            : localKeys.length,
-        enabled: profileEnabled,
-      });
-      if (!saved) {
-        notify.error({
-          title: byokT(t, 'notify.local-save-failed.title'),
-          message: byokT(t, 'notify.local-save-failed.message'),
+  const persist = useCallback(
+    async (persistedDefinition = definition) => {
+      if (!gql) return;
+      if (storage === ByokStorage.local) {
+        const saved = await upsertLocalKey(workspaceId, {
+          id:
+            editingKey?.storage === ByokStorage.local
+              ? editingKey.id
+              : crypto.randomUUID(),
+          provider,
+          name,
+          description,
+          credential: apiKey,
+          definition: persistedDefinition,
+          sortOrder:
+            editingKey?.storage === ByokStorage.local
+              ? editingKey.sortOrder
+              : localKeys.length,
+          enabled: profileEnabled,
         });
-        return;
-      }
-      setLocalKeys(await readLocalKeys(workspaceId));
-    } else if (editingKey?.storage === ByokStorage.server) {
-      if (editingKey.revision === undefined) {
-        notify.error({
-          title: byokT(t, 'notify.reload-required.title'),
-          message: byokT(t, 'notify.reload-required.message'),
+        if (!saved) {
+          notify.error({
+            title: byokT(t, 'notify.local-save-failed.title'),
+            message: byokT(t, 'notify.local-save-failed.message'),
+          });
+          return;
+        }
+        setLocalKeys(await readLocalKeys(workspaceId));
+      } else if (editingKey?.storage === ByokStorage.server) {
+        if (editingKey.revision === undefined) {
+          notify.error({
+            title: byokT(t, 'notify.reload-required.title'),
+            message: byokT(t, 'notify.reload-required.message'),
+          });
+          return;
+        }
+        await gql({
+          query: replaceWorkspaceByokProfileMutation,
+          variables: {
+            input: {
+              workspaceId,
+              profileId: editingKey.id,
+              expectedRevision: editingKey.revision,
+              name,
+              description: description || null,
+              credential: apiKey || null,
+              definition: persistedDefinition,
+              enabled: profileEnabled,
+            },
+          },
         });
-        return;
+        await onSaved();
+      } else {
+        await gql({
+          query: createWorkspaceByokProfileMutation,
+          variables: {
+            input: {
+              workspaceId,
+              provider,
+              name,
+              description: description || null,
+              credential: apiKey,
+              definition: persistedDefinition,
+              enabled: profileEnabled,
+            },
+          },
+        });
+        await onSaved();
       }
-      await gql({
-        query: replaceWorkspaceByokProfileMutation,
-        variables: {
-          input: {
-            workspaceId,
-            profileId: editingKey.id,
-            expectedRevision: editingKey.revision,
-            name,
-            description: description || null,
-            credential: apiKey || null,
-            definition,
-            enabled: profileEnabled,
-          },
-        },
-      });
-      await onSaved();
-    } else {
-      await gql({
-        query: createWorkspaceByokProfileMutation,
-        variables: {
-          input: {
-            workspaceId,
-            provider,
-            name,
-            description: description || null,
-            credential: apiKey,
-            definition,
-            enabled: profileEnabled,
-          },
-        },
-      });
-      await onSaved();
-    }
-    onOpenChange(false);
-  }, [
-    apiKey,
-    definition,
-    description,
-    editingKey,
-    gql,
-    localKeys.length,
-    name,
-    onOpenChange,
-    onSaved,
-    provider,
-    profileEnabled,
-    setLocalKeys,
-    storage,
-    t,
-    workspaceId,
-  ]);
+      onOpenChange(false);
+    },
+    [
+      apiKey,
+      definition,
+      description,
+      editingKey,
+      gql,
+      localKeys.length,
+      name,
+      onOpenChange,
+      onSaved,
+      provider,
+      profileEnabled,
+      setLocalKeys,
+      storage,
+      t,
+      workspaceId,
+    ]
+  );
 
   const connect = useCallback(async () => {
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     try {
-      const passed = testStatus === 'passed' || (await runProbe());
-      if (!passed) {
+      const probe =
+        testStatus === 'passed'
+          ? { passed: true, definition }
+          : await runProbe();
+      if (!probe.passed) {
         notify.error({
           title: byokT(t, 'notify.test-failed.title'),
           message: byokT(t, 'notify.operation-failed.message'),
         });
         return;
       }
-      await persist();
+      await persist(probe.definition);
     } finally {
       busyRef.current = false;
       setBusy(false);
     }
-  }, [persist, runProbe, t, testStatus]);
+  }, [definition, persist, runProbe, t, testStatus]);
 
   const testConnection = useCallback(async () => {
     if (busyRef.current) return;
@@ -309,7 +314,10 @@ export const AddKeyModal = ({
     !!name.trim() &&
     hasCredential &&
     models.length > 0 &&
-    models.every(model => model.modelId.trim() && model.capabilities.length) &&
+    models.every(
+      model =>
+        model.modelId.trim() && (!model.enabled || model.capabilities.length)
+    ) &&
     new Set(models.map(model => model.modelId.trim())).size === models.length &&
     (!customEndpoint || (!!endpoint.trim() && dialect !== null));
 

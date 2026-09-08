@@ -403,6 +403,7 @@ export class CalendarService {
             account,
             provider,
             accessToken,
+            disableOnNotFound: true,
           });
           return;
         }
@@ -413,6 +414,7 @@ export class CalendarService {
           account,
           provider,
           accessToken,
+          disableOnNotFound: true,
         });
         return;
       }
@@ -933,10 +935,22 @@ export class CalendarService {
       subscription.customChannelId &&
       subscription.customResourceId
     ) {
-      await provider.stopChannel({
-        accessToken,
-        channelId: subscription.customChannelId,
-        resourceId: subscription.customResourceId,
+      try {
+        await provider.stopChannel({
+          accessToken,
+          channelId: subscription.customChannelId,
+          resourceId: subscription.customResourceId,
+        });
+      } catch (error) {
+        if (!this.isNotFoundError(error)) {
+          throw error;
+        }
+      }
+
+      await this.models.calendarSubscription.updateChannel(subscription.id, {
+        customChannelId: null,
+        customResourceId: null,
+        channelExpiration: null,
       });
     }
 
@@ -986,8 +1000,9 @@ export class CalendarService {
     account: CalendarAccount;
     provider: CalendarProvider;
     accessToken?: string;
+    disableOnNotFound?: boolean;
   }) {
-    if (this.isSubscriptionMissingError(params.error)) {
+    if (params.disableOnNotFound && this.isNotFoundError(params.error)) {
       await this.disableSubscription({
         subscriptionId: params.subscription.id,
         provider: params.provider,
@@ -1021,7 +1036,7 @@ export class CalendarService {
     );
   }
 
-  private isSubscriptionMissingError(error: unknown) {
+  private isNotFoundError(error: unknown) {
     if (!(error instanceof CalendarProviderRequestError)) {
       return false;
     }

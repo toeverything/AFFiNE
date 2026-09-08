@@ -12,6 +12,11 @@ export {
   bindNativeDBApis,
   deleteNativeWorkspace,
   type NativeDBApis,
+  type NativeIndexField,
+  type NativeIndexHit,
+  type NativeIndexQuery,
+  type NativeIndexSearchOptions,
+  type NativeIndexSearchResult,
 } from './db';
 export * from './doc';
 export * from './doc-sync';

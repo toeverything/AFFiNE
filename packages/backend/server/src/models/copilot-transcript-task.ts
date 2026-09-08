@@ -125,23 +125,6 @@ export class CopilotTranscriptTaskModel extends BaseModel {
     return count === 1;
   }
 
-  async adoptLegacyDispatch(
-    id: string,
-    actionRunId: string | null,
-    dispatchGeneration: string
-  ) {
-    const { count } = await this.db.aiTranscriptTask.updateMany({
-      where: {
-        id,
-        status: 'pending',
-        dispatchGeneration: null,
-        actionRunId,
-      },
-      data: { dispatchGeneration },
-    });
-    return count === 1;
-  }
-
   async attachActionRun(
     id: string,
     dispatchGeneration: string,

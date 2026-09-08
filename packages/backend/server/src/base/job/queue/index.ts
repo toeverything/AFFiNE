@@ -55,3 +55,4 @@ export class JobModule {
 
 export { JobQueue };
 export { JOB_SIGNAL, OnJob } from './def';
+export { queuesForRole, WORKER_QUEUES } from './owner';

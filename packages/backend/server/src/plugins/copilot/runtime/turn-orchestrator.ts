@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { BackendRuntimeEmbeddingJob } from '../../../core/backend-runtime';
+import { BackendRuntimeEmbeddingService } from '../../../core/backend-runtime';
 import { type Turn } from '../core';
 import {
   type ModelConditions,
@@ -23,7 +23,7 @@ export class TurnOrchestrator {
     private readonly runtime: CapabilityRuntime,
     private readonly imageResults: ImageResultHost,
     private readonly turnPersistence: TurnPersistence,
-    private readonly embeddings: BackendRuntimeEmbeddingJob
+    private readonly embeddings: BackendRuntimeEmbeddingService
   ) {}
 
   private buildPromptParams(latestTurn?: Turn): Record<string, unknown> {
