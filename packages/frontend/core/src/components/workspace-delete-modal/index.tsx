@@ -23,8 +23,11 @@ export const WorkspaceDeleteModal = ({
   const info = useWorkspaceInfo(workspaceMetadata);
   const workspaceName = info?.name ?? UNTITLED_WORKSPACE_NAME;
   // Fail closed until the real profile is loaded: an unloaded or failed revalidation must
-  // never accept the untitled-workspace fallback as confirmation for a differently named one.
-  const allowDelete = info?.name !== undefined && deleteStr === info.name;
+  // never accept the displayed fallback as confirmation before we know it is accurate.
+  // Once loaded, compare against what is actually shown (falling back to
+  // UNTITLED_WORKSPACE_NAME too), since a genuinely unnamed workspace is a normal state
+  // elsewhere in the app, not just a loading artifact.
+  const allowDelete = info != null && deleteStr === workspaceName;
   const t = useI18n();
 
   // The modal stays mounted while its caller only toggles `open`, so the typed confirmation

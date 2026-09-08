@@ -73,7 +73,11 @@ impl DocStoragePool {
         match std::fs::remove_file(&candidate) {
           Ok(()) => {}
           Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
-          Err(err) => return Err(UniffiError::Err(format!("Failed to delete workspace database file: {err}"))),
+          Err(err) => {
+            return Err(UniffiError::Err(format!(
+              "Failed to delete workspace database file: {err}"
+            )));
+          }
         }
       }
       Ok(())
