@@ -18,6 +18,10 @@ export interface SqliteNativeDBOptions {
 export interface NativeDBApis {
   connect: (id: string) => Promise<void>;
   disconnect: (id: string) => Promise<void>;
+  // Only implemented on platforms without their own real deletion path (iOS, Android). Those
+  // platforms have no separate "move to trash" step, so this permanently deletes the on-disk
+  // database.
+  deleteWorkspace?: (id: string) => Promise<void>;
   pushUpdate: (id: string, docId: string, update: Uint8Array) => Promise<Date>;
   getDocSnapshot: (id: string, docId: string) => Promise<DocRecord | null>;
   setDocSnapshot: (id: string, snapshot: DocRecord) => Promise<boolean>;
@@ -143,6 +147,14 @@ export function bindNativeDBApis(a: NativeDBApis) {
   apis = a;
 }
 
+/**
+ * Permanently delete a workspace's on-disk database, on platforms where this is the only way
+ * to reclaim its storage (iOS, Android). No-ops if the platform does not implement it.
+ */
+export async function deleteNativeWorkspace(universalId: string): Promise<void> {
+  await apis?.deleteWorkspace?.(universalId);
+}
+
 export class NativeDBConnection extends AutoReconnectConnection<void> {
   readonly apis: NativeDBApisWrapper;
 
@@ -175,6 +187,9 @@ export class NativeDBConnection extends AutoReconnectConnection<void> {
       {
         get: (_target, key: keyof NativeDBApisWrapper) => {
           const v = originalApis[key];
+          if (!v) {
+            throw new Error(`Native DB API "${key}" is not implemented.`);
+          }
 
           return async (...args: any[]) => {
             return v.call(

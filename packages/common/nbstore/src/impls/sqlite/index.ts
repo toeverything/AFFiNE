@@ -8,7 +8,11 @@ import { SqliteIndexerSyncStorage } from './indexer-sync';
 
 export * from './blob';
 export * from './blob-sync';
-export { bindNativeDBApis, type NativeDBApis } from './db';
+export {
+  bindNativeDBApis,
+  deleteNativeWorkspace,
+  type NativeDBApis,
+} from './db';
 export * from './doc';
 export * from './doc-sync';
 export * from './indexer';

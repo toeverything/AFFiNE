@@ -33,6 +33,10 @@ export const NbStoreNativeDBApis: NativeDBApis = {
   disconnect: function (id: string): Promise<void> {
     return NbStore.disconnect({ id });
   },
+  deleteWorkspace: async function (id: string): Promise<void> {
+    const { peer, type, id: spaceId } = parseUniversalId(id);
+    await NbStore.deleteWorkspace({ id, spaceId, spaceType: type, peer });
+  },
   pushUpdate: async function (
     id: string,
     docId: string,

@@ -19,6 +19,7 @@ import {
   IndexedDBV1DocStorage,
 } from '@affine/nbstore/idb/v1';
 import {
+  deleteNativeWorkspace,
   SqliteBlobStorage,
   SqliteBlobSyncStorage,
   SqliteDocStorage,
@@ -228,6 +229,12 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     if (BUILD_CONFIG.isElectron) {
       const electronApi = this.framework.get(DesktopApiService);
       await electronApi.handler.workspace.moveToTrash(
+        universalId({ peer: 'local', type: 'workspace', id })
+      );
+    } else if (BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid) {
+      // Unlike Electron, there is no separate "move to trash" step on mobile: this
+      // permanently deletes the workspace's on-disk database.
+      await deleteNativeWorkspace(
         universalId({ peer: 'local', type: 'workspace', id })
       );
     }

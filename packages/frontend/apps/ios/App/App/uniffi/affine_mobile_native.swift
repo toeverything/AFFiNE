@@ -526,9 +526,15 @@ public protocol DocStoragePoolProtocol: AnyObject, Sendable {
     
     func deleteBlob(universalId: String, key: String, permanently: Bool) async throws 
     
-    func deleteDoc(universalId: String, docId: String) async throws 
-    
-    func disconnect(universalId: String) async throws 
+    func deleteDoc(universalId: String, docId: String) async throws
+
+    /**
+     * Disconnect the workspace and permanently delete its on-disk database file, including
+     * any sidecar journal files left by SQLite.
+     */
+    func deleteWorkspace(universalId: String, path: String) async throws
+
+    func disconnect(universalId: String) async throws
     
     func ftsAddDocument(universalId: String, indexName: String, docId: String, text: String, index: Bool) async throws 
     
@@ -730,7 +736,28 @@ open func deleteDoc(universalId: String, docId: String)async throws   {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-    
+
+    /**
+     * Disconnect the workspace and permanently delete its on-disk database file, including
+     * any sidecar journal files left by SQLite.
+     */
+open func deleteWorkspace(universalId: String, path: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_delete_workspace(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(path)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+
 open func disconnect(universalId: String)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -2728,6 +2755,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_doc() != 4005) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_workspace() != 16313) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_disconnect() != 20410) {

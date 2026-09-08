@@ -84,3 +84,44 @@ async fn decode_blob_data_rejects_out_of_workspace_path() {
   pool.disconnect(universal_id).await.expect("disconnect should succeed");
   let _ = fs::remove_dir_all(outside_dir);
 }
+
+#[tokio::test]
+async fn delete_workspace_removes_database_and_sidecar_files() {
+  let pool = new_doc_storage_pool();
+  let universal_id = unique_id("mobile-doc-delete");
+  let dir = std::env::temp_dir().join(unique_id("mobile-doc-delete-dir"));
+  fs::create_dir_all(&dir).expect("create workspace dir");
+  let db_path = dir.join("workspace.db");
+
+  pool
+    .connect(universal_id.clone(), db_path.to_str().unwrap().to_string())
+    .await
+    .expect("connect should succeed");
+  assert!(db_path.exists());
+
+  // SQLite may leave WAL/SHM sidecar files behind; simulate one to confirm cleanup.
+  fs::write(format!("{}-wal", db_path.display()), b"wal").expect("write wal sidecar");
+
+  pool
+    .delete_workspace(universal_id, db_path.to_str().unwrap().to_string())
+    .await
+    .expect("delete_workspace should succeed");
+
+  assert!(!db_path.exists());
+  assert!(!std::path::Path::new(&format!("{}-wal", db_path.display())).exists());
+
+  let _ = fs::remove_dir_all(dir);
+}
+
+#[tokio::test]
+async fn delete_workspace_is_idempotent_when_never_connected() {
+  let pool = new_doc_storage_pool();
+  let universal_id = unique_id("mobile-doc-delete-missing");
+  let dir = std::env::temp_dir().join(unique_id("mobile-doc-delete-missing-dir"));
+  let db_path = dir.join("workspace.db");
+
+  pool
+    .delete_workspace(universal_id, db_path.to_str().unwrap().to_string())
+    .await
+    .expect("delete_workspace should succeed even if the database was never created");
+}

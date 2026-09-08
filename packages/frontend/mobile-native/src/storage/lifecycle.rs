@@ -58,6 +58,30 @@ impl DocStoragePool {
     Ok(self.inner.get(universal_id).await?.set_space_id(space_id).await?)
   }
 
+  /// Disconnect the workspace and permanently delete its on-disk database file, including
+  /// any sidecar journal files left by SQLite.
+  pub async fn delete_workspace(&self, universal_id: String, path: String) -> Result<()> {
+    self.disconnect(universal_id).await?;
+
+    if path == ":memory:" {
+      return Ok(());
+    }
+
+    tokio::task::spawn_blocking(move || {
+      for suffix in ["", "-wal", "-shm", "-journal"] {
+        let candidate = format!("{path}{suffix}");
+        match std::fs::remove_file(&candidate) {
+          Ok(()) => {}
+          Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+          Err(err) => return Err(UniffiError::Err(format!("Failed to delete workspace database file: {err}"))),
+        }
+      }
+      Ok(())
+    })
+    .await
+    .map_err(|err| UniffiError::Err(format!("Failed to delete workspace database file: {err}")))?
+  }
+
   pub async fn push_update(&self, universal_id: String, doc_id: String, update: String) -> Result<i64> {
     let decoded_update = self.decode_base64_payload(&update)?;
     Ok(

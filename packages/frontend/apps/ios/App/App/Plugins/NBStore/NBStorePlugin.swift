@@ -10,6 +10,7 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
   public let pluginMethods: [CAPPluginMethod] = [
     CAPPluginMethod(name: "connect", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "disconnect", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "deleteWorkspace", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "setSpaceId", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "pushUpdate", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getDocSnapshot", returnType: CAPPluginReturnPromise),
@@ -82,6 +83,34 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve()
       } catch {
         call.reject("Failed to disconnect, \(error)", nil, error)
+      }
+    }
+  }
+
+  /// Disconnect and permanently delete a local workspace's on-disk database.
+  @objc func deleteWorkspace(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let spaceId = try call.getStringEnsure("spaceId")
+        let spaceType = try call.getStringEnsure("spaceType")
+        let peer = try call.getStringEnsure("peer")
+        guard let documentDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+          call.reject("Failed to get document file urls")
+          return
+        }
+        let peerDir = documentDir.appending(path: "workspaces")
+          .appending(path: spaceType)
+          .appending(path:
+            peer
+              .replacing(#/[\/!@#$%^&*()+~`"':;,?<>|]/#, with: "_")
+              .replacing(/_+/, with: "_")
+              .replacing(/_+$/, with: ""))
+        let db = peerDir.appending(path: spaceId + ".db")
+        try await docStoragePool.deleteWorkspace(universalId: id, path: db.path())
+        call.resolve()
+      } catch {
+        call.reject("Failed to delete workspace, \(error)", nil, error)
       }
     }
   }

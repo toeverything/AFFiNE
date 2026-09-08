@@ -834,6 +834,8 @@ fun uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_blob(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_doc(
 ): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_workspace(
+): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_disconnect(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_add_document(
@@ -958,6 +960,8 @@ fun uniffi_affine_mobile_native_fn_method_docstoragepool_crawl_doc_data(`ptr`: P
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_delete_blob(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`permanently`: Byte,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_delete_doc(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
+): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_delete_workspace(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`path`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_disconnect(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,
 ): Long
@@ -1180,6 +1184,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_doc() != 4005.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_workspace() != 16313.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_disconnect() != 20410.toShort()) {
@@ -1720,7 +1727,13 @@ public interface DocStoragePoolInterface {
     suspend fun `deleteBlob`(`universalId`: kotlin.String, `key`: kotlin.String, `permanently`: kotlin.Boolean)
     
     suspend fun `deleteDoc`(`universalId`: kotlin.String, `docId`: kotlin.String)
-    
+
+    /**
+     * Disconnect the workspace and permanently delete its on-disk database file, including
+     * any sidecar journal files left by SQLite.
+     */
+    suspend fun `deleteWorkspace`(`universalId`: kotlin.String, `path`: kotlin.String)
+
     suspend fun `disconnect`(`universalId`: kotlin.String)
     
     suspend fun `ftsAddDocument`(`universalId`: kotlin.String, `indexName`: kotlin.String, `docId`: kotlin.String, `text`: kotlin.String, `index`: kotlin.Boolean)
@@ -1980,7 +1993,29 @@ open class DocStoragePool: Disposable, AutoCloseable, DocStoragePoolInterface
     )
     }
 
-    
+
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `deleteWorkspace`(`universalId`: kotlin.String, `path`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_delete_workspace(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`path`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+
     @Throws(UniffiException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `disconnect`(`universalId`: kotlin.String) {
