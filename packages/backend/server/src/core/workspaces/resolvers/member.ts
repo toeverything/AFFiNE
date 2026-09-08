@@ -15,13 +15,13 @@ import {
   ActionForbidden,
   ActionForbiddenOnNonTeamWorkspace,
   AlreadyInSpace,
-  AuthenticationRequired,
   Cache,
   CanNotRevokeYourself,
   Config,
   EventBus,
   getRequestTrackerId,
   InvalidInvitation,
+  InvitationAccountMismatch,
   isValidCacheTtl,
   mapAnyError,
   MemberNotFoundInSpace,
@@ -37,7 +37,7 @@ import {
 } from '../../../base';
 import type { GraphqlContext } from '../../../base/graphql';
 import { Models, type WorkspaceUserCompat } from '../../../models';
-import { CurrentUser, Public } from '../../auth';
+import { CurrentUser } from '../../auth';
 import { containsUrlOrDomain } from '../../content-policy';
 import {
   PermissionAccess,
@@ -556,21 +556,24 @@ export class WorkspaceMemberResolver {
   }
 
   @Throttle('strict')
-  @Public()
   @Query(() => InvitationType, {
     description: 'get workspace invitation info',
   })
   async getInviteInfo(
-    @CurrentUser() user: UserType | undefined,
+    @CurrentUser() user: UserType,
     @Args('inviteId') inviteId: string
   ): Promise<InvitationType> {
     const { workspaceId, inviteeUserId, isLink } =
       await this.workspaceService.getInviteInfo(inviteId);
+
+    if (!isLink && user.id !== inviteeUserId) {
+      throw new InvitationAccountMismatch();
+    }
+
     const workspace = await this.workspaceService.getWorkspaceInfo(workspaceId);
     const owner = await this.models.workspaceUser.getOwner(workspaceId);
 
-    const inviteeId = inviteeUserId || user?.id;
-    if (!inviteeId) throw new UserNotFound();
+    const inviteeId = inviteeUserId || user.id;
     const invitee = await this.models.user.getWorkspaceUser(inviteeId);
     if (!invitee) throw new UserNotFound();
 
@@ -638,9 +641,8 @@ export class WorkspaceMemberResolver {
   }
 
   @Mutation(() => Boolean)
-  @Public()
   async acceptInviteById(
-    @CurrentUser() user: CurrentUser | undefined,
+    @CurrentUser() user: CurrentUser,
     @Args('inviteId') inviteId: string,
     @Args('workspaceId', { deprecationReason: 'never used', nullable: true })
     _workspaceId: string,
@@ -653,17 +655,13 @@ export class WorkspaceMemberResolver {
     const role = await this.models.workspaceUser.getById(inviteId);
     // invitation by email
     if (role) {
-      if (user && user.id !== role.userId) {
-        throw new InvalidInvitation();
+      if (user.id !== role.userId) {
+        throw new InvitationAccountMismatch();
       }
 
       await this.acceptInvitationByEmail(role);
     } else {
       // invitation by link
-      if (!user) {
-        throw new AuthenticationRequired();
-      }
-
       const invitation = await this.cache.get<{
         workspaceId: string;
         inviterUserId: string;

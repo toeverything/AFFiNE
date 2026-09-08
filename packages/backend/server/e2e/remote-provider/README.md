@@ -7,7 +7,7 @@ provider latency without changing production code.
 ```bash
 docker compose -f packages/backend/server/e2e/remote-provider/compose.yml up -d --wait
 
-DATABASE_URL=postgresql://ds:ds@localhost:55432/affine_rfc6_remote_e2e \
+DATABASE_URL=postgresql://ds:ds@localhost:55432/affine_remote_provider_e2e \
 yarn workspace @affine/server prisma migrate deploy
 ```
 
@@ -28,7 +28,7 @@ Configure `packages/backend/server/config.json` with:
 Then run:
 
 ```bash
-DATABASE_URL=postgresql://ds:ds@localhost:55432/affine_rfc6_remote_e2e \
+DATABASE_URL=postgresql://ds:ds@localhost:55432/affine_remote_provider_e2e \
 yarn af server e2e src/__tests__/e2e/indexer/remote-provider.spec.ts
 
 docker compose -f packages/backend/server/e2e/remote-provider/compose.yml down -v

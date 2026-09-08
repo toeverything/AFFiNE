@@ -3,6 +3,7 @@ import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
 import { MobileModalConfigProvider } from '@affine/core/mobile/components/mobile-modal-config-provider';
+import { ShareImportController } from '@affine/core/mobile/components/share-import-controller';
 import { configureMobileModules } from '@affine/core/mobile/modules';
 import { MobileBackCoordinator } from '@affine/core/mobile/modules/back-coordinator';
 import { HapticProvider } from '@affine/core/mobile/modules/haptics';
@@ -89,6 +90,7 @@ import { NavigationGesture } from './plugins/navigation-gesture';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { PayWall } from './plugins/paywall';
 import { Preview } from './plugins/preview';
+import { shareInboxProvider } from './plugins/share-inbox';
 import {
   authRequestProvider,
   clearEndpointSession,
@@ -543,6 +545,7 @@ const showNativeSignIn = async () => {
 (window as any).requestSignIn = async () => {
   return await showNativeSignIn();
 };
+
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const globalContext = globalContextService.globalContext;
@@ -565,6 +568,7 @@ const showNativeSignIn = async () => {
   const docsService = workspace.scope.get(DocsService);
   const docRef = currentDocId ? docsService.open(currentDocId) : null;
   if (!docRef) {
+    disposeWorkspace();
     return;
   }
   const { doc, release: disposeDoc } = docRef;
@@ -625,7 +629,7 @@ const showNativeSignIn = async () => {
     }
 
     const workbench = workspace.scope.get(WorkbenchService).workbench;
-    await workspace.engine.doc.waitForDocReady(workspace.id); // wait for root doc ready
+    await workspace.engine.doc.waitForDocReady(workspace.id);
     const docId = await MarkdownTransformer.importMarkdownToDoc({
       collection: workspace.docCollection,
       schema: getAFFiNEWorkspaceSchema(),
@@ -633,15 +637,13 @@ const showNativeSignIn = async () => {
       extensions: getStoreManager().config.init().value.get('store'),
     });
     const docsService = workspace.scope.get(DocsService);
-    if (docId) {
-      // only support page mode for now
-      await docsService.changeDocTitle(docId, title);
-      docsService.list.setPrimaryMode(docId, 'page');
-      workbench.openDoc(docId);
-      return docId;
-    } else {
+    if (!docId) {
       throw new Error('Failed to import doc');
     }
+    await docsService.changeDocTitle(docId, title);
+    docsService.list.setPrimaryMode(docId, 'page');
+    workbench.openDoc(docId);
+    return docId;
   } finally {
     workspaceRef?.dispose();
   }
@@ -876,6 +878,7 @@ export function App() {
             <AffineContext store={getCurrentStore()}>
               <KeyboardThemeProvider />
               <IOSBackAdapter />
+              <ShareImportController provider={shareInboxProvider} />
               <BlocksuiteMenuConfigProvider>
                 <RouterProvider
                   fallbackElement={<AppFallback />}

@@ -335,10 +335,8 @@ impl BackendRuntime {
   /// Do not use this for snapshots that will be sent back to yjs clients until
   /// the y-octo/yjs round-trip compatibility issue is resolved.
   ///
-  /// The caller owns quota reconciliation and must pass a fresh
-  /// history_max_age_seconds value. The compactor intentionally does not read
-  /// effective_workspace_quota_states; if a future caller cannot provide a
-  /// fresh quota state, fail and retry after Node reconciles it.
+  /// The caller must pass the canonical history retention period resolved for
+  /// this workspace. The compactor does not make quota decisions.
   #[napi]
   #[allow(clippy::too_many_arguments)]
   pub async fn compact_pending_doc_updates(

@@ -8,9 +8,9 @@ pub use catalog::{ByokCatalogModelOutput, ByokCatalogOutput, ByokCatalogProvider
 pub use contract::{
   ByokCapabilityInput, ByokEndpointInput, ByokLocalLeaseOutput, ByokModelDeclarationInput, ByokModelProbeCheckOutput,
   ByokModelProbeOutput, ByokProbeCheckInput, ByokProbeResultOutput, ByokProbeStatusOutput, ByokProfileDefinitionInput,
-  ByokProfileOutput, ByokValidationOutput, CreateByokLocalLeaseInput, CreateByokLocalLeaseProviderInput,
-  CreateByokProfileInput, ProbeByokDraftInput, ProbeByokProfileInput, ReorderByokProfilesInput,
-  ReplaceByokProfileInput, RotateByokCredentialInput,
+  ByokProfileOrderInput, ByokProfileOutput, ByokValidationOutput, CreateByokLocalLeaseInput,
+  CreateByokLocalLeaseProviderInput, CreateByokProfileInput, ProbeByokDraftInput, ProbeByokProfileInput,
+  ReorderByokProfilesInput, ReplaceByokProfileInput, RotateByokCredentialInput,
 };
 pub(crate) use contract::{ByokEndpoint, ByokModelDeclaration, ByokProfileDefinition, validate_definition};
 pub(crate) use envelope::{CredentialEnvelopeKey, SensitiveCredential, local_aad, server_aad};

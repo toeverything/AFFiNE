@@ -1,5 +1,4 @@
 use std::{
-  collections::BTreeMap,
   env, fs,
   path::{Path, PathBuf},
   sync::Arc,
@@ -12,15 +11,110 @@ use sqlx::{PgPool, Row};
 use zeroize::Zeroizing;
 
 use super::{RuntimeError, RuntimeResult};
-use crate::llm::{Deployment, byok::ByokPolicy};
+use crate::llm::byok::ByokPolicy;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Deployment {
+  Cloud,
+  SelfHosted,
+}
 
 pub(crate) struct BackendRuntimeConfig {
   pub(crate) database_url: String,
+  pub(crate) auth: AuthRuntimeConfig,
   pub(crate) invite_quota: InviteQuotaConfig,
   pub(crate) private_key: Arc<Zeroizing<String>>,
   pub(crate) deployment: Deployment,
   pub(crate) copilot: CopilotRuntimeConfig,
   pub(crate) search: SearchRuntimeConfig,
+  pub(crate) redis: RedisRuntimeConfig,
+  pub(crate) payment: PaymentRuntimeConfig,
+}
+
+#[derive(Clone)]
+pub(crate) struct AuthRuntimeConfig {
+  pub(crate) allow_signup: bool,
+  pub(crate) allow_signup_for_oauth: bool,
+  pub(crate) require_email_domain_verification: bool,
+  pub(crate) session_ttl_seconds: i64,
+  pub(crate) session_ttr_seconds: i64,
+  pub(crate) access_token_ttl_seconds: i64,
+  pub(crate) refresh_idle_ttl_seconds: i64,
+  pub(crate) refresh_absolute_ttl_seconds: i64,
+  pub(crate) refresh_grace_seconds: i64,
+  pub(crate) refresh_retention_seconds: i64,
+  pub(crate) oauth: OAuthRuntimeConfig,
+}
+
+impl Default for AuthRuntimeConfig {
+  fn default() -> Self {
+    Self {
+      allow_signup: true,
+      allow_signup_for_oauth: true,
+      require_email_domain_verification: false,
+      session_ttl_seconds: 15 * 24 * 60 * 60,
+      session_ttr_seconds: 7 * 24 * 60 * 60,
+      access_token_ttl_seconds: 15 * 60,
+      refresh_idle_ttl_seconds: 30 * 24 * 60 * 60,
+      refresh_absolute_ttl_seconds: 180 * 24 * 60 * 60,
+      refresh_grace_seconds: 30,
+      refresh_retention_seconds: 30 * 24 * 60 * 60,
+      oauth: OAuthRuntimeConfig::default(),
+    }
+  }
+}
+
+#[derive(Clone, Default)]
+pub(crate) struct OAuthRuntimeConfig {
+  pub(crate) providers: std::collections::BTreeMap<String, OAuthProviderRuntimeConfig>,
+}
+
+#[derive(Clone)]
+pub(crate) struct OAuthProviderRuntimeConfig {
+  pub(crate) client_id: String,
+  pub(crate) client_secret: Arc<Zeroizing<String>>,
+  pub(crate) args: std::collections::BTreeMap<String, String>,
+  pub(crate) issuer: Option<String>,
+  pub(crate) allow_private_network: bool,
+  pub(crate) apple_private_key: Option<Arc<Zeroizing<String>>>,
+  pub(crate) apple_key_id: Option<String>,
+  pub(crate) apple_team_id: Option<String>,
+}
+
+#[derive(Clone, Default)]
+pub(crate) struct PaymentRuntimeConfig {
+  pub(crate) enabled: bool,
+  pub(crate) stripe: Option<StripeRuntimeConfig>,
+  pub(crate) revenuecat: Option<RevenueCatRuntimeConfig>,
+}
+
+#[derive(Clone)]
+pub(crate) struct StripeRuntimeConfig {
+  pub(crate) api_key: Arc<Zeroizing<String>>,
+  pub(crate) webhook_key: Arc<Zeroizing<String>>,
+  pub(crate) account_id: String,
+  pub(crate) live: bool,
+}
+
+#[derive(Clone)]
+pub(crate) struct RevenueCatRuntimeConfig {
+  pub(crate) api_key: Arc<Zeroizing<String>>,
+  pub(crate) webhook_auth: Arc<Zeroizing<String>>,
+  pub(crate) project_id: String,
+  pub(crate) production: bool,
+  pub(crate) product_map: std::collections::BTreeMap<String, PaymentProductConfig>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PaymentProductConfig {
+  pub(crate) plan: String,
+  pub(crate) recurring: String,
+}
+
+#[derive(Clone, Debug, Default)]
+pub(crate) struct RedisRuntimeConfig {
+  pub(crate) url: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -307,29 +401,12 @@ impl TryFrom<CopilotManagedProfileConfigFile> for CopilotManagedProfileConfig {
 #[derive(Clone, Debug)]
 pub(crate) struct InviteQuotaConfig {
   pub(crate) new_account_action_delay_seconds: i64,
-  pub(crate) high_risk_target_domains: Vec<String>,
-  pub(crate) subject_hash_salt: String,
-  pub(crate) mail_class_mapping: BTreeMap<String, String>,
 }
 
 impl Default for InviteQuotaConfig {
   fn default() -> Self {
     Self {
       new_account_action_delay_seconds: 24 * 60 * 60,
-      high_risk_target_domains: [
-        "qq.com",
-        "proton.me",
-        "protonmail.com",
-        "163.com",
-        "126.com",
-        "outlook.com",
-        "hotmail.com",
-      ]
-      .into_iter()
-      .map(str::to_string)
-      .collect(),
-      subject_hash_salt: "affine-runtime-invite-quota-v1-local".to_string(),
-      mail_class_mapping: default_mail_class_mapping(),
     }
   }
 }
@@ -339,19 +416,28 @@ impl BackendRuntimeConfig {
     ByokPolicy::from(self.deployment, &self.copilot.byok)
   }
 
-  pub(crate) fn from_config_source(private_key: Option<String>, source: &ConfigSource) -> RuntimeResult<Self> {
-    let mut app_config = app_config_from_config_source(source)?;
+  pub(crate) fn from_config_source_with_inline(
+    private_key: Option<String>,
+    source: &ConfigSource,
+    inline_config: Option<&serde_json::Value>,
+  ) -> RuntimeResult<Self> {
+    let mut app_config_value = app_config_value_from_config_source(source)?;
+    if let Some(inline_config) = inline_config {
+      merge_config_value(&mut app_config_value, inline_config.clone());
+    }
+    let mut app_config = deserialize_app_config(app_config_value)?;
     let database_url = database_url_from_env()
       .or(app_config.database_url())
       .unwrap_or_else(|| "postgresql://localhost:5432/affine".to_string());
     Self {
       database_url,
+      auth: app_config.auth_runtime_config(),
       invite_quota: app_config.invite_quota_config(),
       private_key: Arc::new(Zeroizing::new(
         private_key
           .filter(|key| !key.trim().is_empty())
-          .or_else(private_key_from_env)
           .or_else(|| app_config.crypto.as_ref().and_then(|crypto| crypto.private_key.clone()))
+          .or_else(private_key_from_env)
           .unwrap_or_default(),
       )),
       deployment: deployment_from_env(),
@@ -362,12 +448,22 @@ impl BackendRuntimeConfig {
         .transpose()?
         .unwrap_or_default(),
       search: app_config.indexer.map(Into::into).unwrap_or_default(),
+      redis: RedisRuntimeConfig::from_sources(app_config.redis.take()),
+      payment: PaymentRuntimeConfig::from_file(app_config.payment.take()),
     }
     .validated()
   }
 
-  pub(crate) async fn with_db_overrides(&self, pool: &PgPool, source: &ConfigSource) -> RuntimeResult<Self> {
-    let app_config_value = app_config_value_from_config_source(source)?;
+  pub(crate) async fn with_db_overrides(
+    &self,
+    pool: &PgPool,
+    source: &ConfigSource,
+    inline_config: Option<&serde_json::Value>,
+  ) -> RuntimeResult<Self> {
+    let mut app_config_value = app_config_value_from_config_source(source)?;
+    if let Some(inline_config) = inline_config {
+      merge_config_value(&mut app_config_value, inline_config.clone());
+    }
     let db_overrides = load_app_config_overrides_from_db(pool).await?;
     self.apply_db_overrides(app_config_value, db_overrides)
   }
@@ -388,6 +484,7 @@ impl BackendRuntimeConfig {
       // The DB override is loaded after this connection already exists, so it
       // must not rewrite the active datasource URL.
       database_url: self.database_url.clone(),
+      auth: app_config.auth_runtime_config(),
       invite_quota: app_config.invite_quota_config(),
       private_key: db_private_key
         .map(|key| Arc::new(Zeroizing::new(key)))
@@ -403,6 +500,12 @@ impl BackendRuntimeConfig {
         .indexer
         .map(Into::into)
         .unwrap_or_else(|| self.search.clone()),
+      redis: RedisRuntimeConfig::from_sources(app_config.redis.take()).or_else(|| self.redis.clone()),
+      payment: app_config
+        .payment
+        .take()
+        .map(PaymentRuntimeConfig::from_file_value)
+        .unwrap_or_else(|| self.payment.clone()),
     }
     .validated()
   }
@@ -414,6 +517,7 @@ impl BackendRuntimeConfig {
       ));
     }
     validate_copilot_config(&self.copilot)?;
+    self.payment.validate()?;
     Ok(self)
   }
 }
@@ -478,16 +582,239 @@ fn deployment_from_env() -> Deployment {
 #[derive(Default, Deserialize)]
 struct AppConfigFile {
   auth: Option<AuthConfigFile>,
+  oauth: Option<OAuthConfigFile>,
   db: Option<DbConfigFile>,
   crypto: Option<CryptoConfigFile>,
   copilot: Option<CopilotRuntimeConfigFile>,
   indexer: Option<SearchRuntimeConfigFile>,
+  redis: Option<RedisRuntimeConfigFile>,
+  payment: Option<PaymentRuntimeConfigFile>,
 }
 
 #[derive(Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
+struct PaymentRuntimeConfigFile {
+  enabled: bool,
+  stripe: StripeRuntimeConfigFile,
+  revenuecat: RevenueCatRuntimeConfigFile,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct StripeRuntimeConfigFile {
+  api_key: String,
+  webhook_key: String,
+  account_id: String,
+  environment: String,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct RevenueCatRuntimeConfigFile {
+  enabled: bool,
+  api_key: String,
+  webhook_auth: String,
+  project_id: String,
+  environment: String,
+  product_map: std::collections::BTreeMap<String, PaymentProductConfig>,
+}
+
+impl PaymentRuntimeConfig {
+  fn from_file(file: Option<PaymentRuntimeConfigFile>) -> Self {
+    file.map(Self::from_file_value).unwrap_or_default()
+  }
+
+  fn from_file_value(file: PaymentRuntimeConfigFile) -> Self {
+    let stripe = non_empty_string(file.stripe.api_key).map(|api_key| StripeRuntimeConfig {
+      api_key: Arc::new(Zeroizing::new(api_key)),
+      webhook_key: Arc::new(Zeroizing::new(file.stripe.webhook_key)),
+      account_id: file.stripe.account_id,
+      live: file.stripe.environment == "live",
+    });
+    let revenuecat = (file.revenuecat.enabled || !file.revenuecat.api_key.trim().is_empty()).then(|| {
+      let mut product_map = std::collections::BTreeMap::from([
+        (
+          "app.affine.pro.Monthly".to_string(),
+          PaymentProductConfig {
+            plan: "pro".to_string(),
+            recurring: "monthly".to_string(),
+          },
+        ),
+        (
+          "app.affine.pro.Annual".to_string(),
+          PaymentProductConfig {
+            plan: "pro".to_string(),
+            recurring: "yearly".to_string(),
+          },
+        ),
+        (
+          "app.affine.pro.ai.Annual".to_string(),
+          PaymentProductConfig {
+            plan: "ai".to_string(),
+            recurring: "yearly".to_string(),
+          },
+        ),
+      ]);
+      product_map.extend(file.revenuecat.product_map);
+      RevenueCatRuntimeConfig {
+        api_key: Arc::new(Zeroizing::new(file.revenuecat.api_key)),
+        webhook_auth: Arc::new(Zeroizing::new(file.revenuecat.webhook_auth)),
+        project_id: file.revenuecat.project_id,
+        production: file.revenuecat.environment == "production",
+        product_map,
+      }
+    });
+    Self {
+      enabled: file.enabled,
+      stripe,
+      revenuecat,
+    }
+  }
+
+  fn validate(&self) -> RuntimeResult<()> {
+    if self.enabled {
+      let stripe = self
+        .stripe
+        .as_ref()
+        .ok_or_else(|| RuntimeError::config("payment.stripe.apiKey is required when payment is enabled"))?;
+      if stripe.account_id.trim().is_empty() || stripe.account_id != stripe.account_id.trim() {
+        return Err(RuntimeError::config(
+          "payment.stripe.accountId is required when payment is enabled",
+        ));
+      }
+    }
+    if let Some(stripe) = &self.stripe {
+      let expected_prefix = if stripe.live { "sk_live_" } else { "sk_test_" };
+      if !stripe.api_key.starts_with(expected_prefix) {
+        return Err(RuntimeError::config(
+          "payment.stripe.environment does not match the API key",
+        ));
+      }
+    }
+    if let Some(revenuecat) = &self.revenuecat {
+      if revenuecat.api_key.is_empty() || revenuecat.project_id.trim().is_empty() {
+        return Err(RuntimeError::config(
+          "payment.revenuecat apiKey and projectId are required when RevenueCat is enabled",
+        ));
+      }
+      for mapping in revenuecat.product_map.values() {
+        if affine_core::access_control::Plan::parse(&mapping.plan).is_none()
+          || affine_core::payment::SubscriptionRecurring::parse(&mapping.recurring).is_none()
+        {
+          return Err(RuntimeError::config("invalid payment.revenuecat productMap"));
+        }
+      }
+    }
+    Ok(())
+  }
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct RedisRuntimeConfigFile {
+  host: String,
+  port: u16,
+  db: u8,
+  username: String,
+  password: String,
+  ioredis: RedisIoRuntimeConfigFile,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct RedisIoRuntimeConfigFile {
+  tls: Option<serde_json::Value>,
+}
+
+impl RedisRuntimeConfig {
+  fn from_sources(file: Option<RedisRuntimeConfigFile>) -> Self {
+    if let Some(url) = env::var("REDIS_SERVER_URL").ok().and_then(non_empty_string) {
+      return Self { url: Some(url) };
+    }
+    let file = file.unwrap_or_default();
+    let host = env::var("REDIS_SERVER_HOST")
+      .ok()
+      .and_then(non_empty_string)
+      .or_else(|| non_empty_string(file.host));
+    let Some(host) = host else {
+      return Self::default();
+    };
+    let port = env::var("REDIS_SERVER_PORT")
+      .ok()
+      .and_then(|value| value.parse().ok())
+      .unwrap_or(if file.port == 0 { 6379 } else { file.port });
+    let db = env::var("REDIS_SERVER_DATABASE")
+      .ok()
+      .and_then(|value| value.parse::<u8>().ok())
+      .unwrap_or(file.db);
+    let username = env::var("REDIS_SERVER_USERNAME")
+      .ok()
+      .and_then(non_empty_string)
+      .unwrap_or(file.username);
+    let password = env::var("REDIS_SERVER_PASSWORD")
+      .ok()
+      .and_then(non_empty_string)
+      .unwrap_or(file.password);
+    let scheme = if file.ioredis.tls.is_some() { "rediss" } else { "redis" };
+    let mut url = url::Url::parse(&format!("{scheme}://{host}:{port}/{db}")).expect("redis URL shape is valid");
+    if !username.is_empty() {
+      let _ = url.set_username(&username);
+    }
+    if !password.is_empty() {
+      let _ = url.set_password(Some(&password));
+    }
+    Self {
+      url: Some(url.to_string()),
+    }
+  }
+
+  fn or_else(self, fallback: impl FnOnce() -> Self) -> Self {
+    if self.url.is_some() { self } else { fallback() }
+  }
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 struct AuthConfigFile {
   new_account_action_delay: Option<i64>,
+  allow_signup: Option<bool>,
+  allow_signup_for_oauth: Option<bool>,
+  require_email_domain_verification: Option<bool>,
+  session: AuthSessionConfigFile,
+  token: AuthTokenConfigFile,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(default)]
+struct AuthSessionConfigFile {
+  ttl: Option<i64>,
+  ttr: Option<i64>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct AuthTokenConfigFile {
+  access_token_ttl: Option<i64>,
+  refresh_idle_ttl: Option<i64>,
+  refresh_absolute_ttl: Option<i64>,
+  refresh_grace_period: Option<i64>,
+  refresh_retention: Option<i64>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(default)]
+struct OAuthConfigFile {
+  providers: std::collections::BTreeMap<String, OAuthProviderConfigFile>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct OAuthProviderConfigFile {
+  client_id: String,
+  client_secret: String,
+  args: std::collections::BTreeMap<String, String>,
+  issuer: String,
+  allow_private_network: bool,
 }
 
 #[derive(Default, Deserialize)]
@@ -553,6 +880,60 @@ impl AppConfigFile {
     }
     config
   }
+
+  fn auth_runtime_config(&self) -> AuthRuntimeConfig {
+    let mut config = AuthRuntimeConfig::default();
+    if let Some(auth) = &self.auth {
+      config.allow_signup = auth.allow_signup.unwrap_or(config.allow_signup);
+      config.allow_signup_for_oauth = auth.allow_signup_for_oauth.unwrap_or(config.allow_signup_for_oauth);
+      config.require_email_domain_verification = auth
+        .require_email_domain_verification
+        .unwrap_or(config.require_email_domain_verification);
+      config.session_ttl_seconds = auth.session.ttl.unwrap_or(config.session_ttl_seconds);
+      config.session_ttr_seconds = auth.session.ttr.unwrap_or(config.session_ttr_seconds);
+      config.access_token_ttl_seconds = auth.token.access_token_ttl.unwrap_or(config.access_token_ttl_seconds);
+      config.refresh_idle_ttl_seconds = auth.token.refresh_idle_ttl.unwrap_or(config.refresh_idle_ttl_seconds);
+      config.refresh_absolute_ttl_seconds = auth
+        .token
+        .refresh_absolute_ttl
+        .unwrap_or(config.refresh_absolute_ttl_seconds);
+      config.refresh_grace_seconds = auth.token.refresh_grace_period.unwrap_or(config.refresh_grace_seconds);
+      config.refresh_retention_seconds = auth.token.refresh_retention.unwrap_or(config.refresh_retention_seconds);
+    }
+    if let Some(oauth) = &self.oauth {
+      for (name, provider) in &oauth.providers {
+        if provider.client_id.trim().is_empty() {
+          continue;
+        }
+        let mut args = provider.args.clone();
+        let apple_private_key = args.remove("privateKey").map(|value| Arc::new(Zeroizing::new(value)));
+        let apple_key_id = args.remove("keyId");
+        let apple_team_id = args.remove("teamId");
+        if provider.client_secret.trim().is_empty()
+          && (name != "apple"
+            || apple_private_key.is_none()
+            || apple_key_id.as_deref().is_none_or(str::is_empty)
+            || apple_team_id.as_deref().is_none_or(str::is_empty))
+        {
+          continue;
+        }
+        config.oauth.providers.insert(
+          name.clone(),
+          OAuthProviderRuntimeConfig {
+            client_id: provider.client_id.clone(),
+            client_secret: Arc::new(Zeroizing::new(provider.client_secret.clone())),
+            args,
+            issuer: non_empty_string(provider.issuer.clone()),
+            allow_private_network: provider.allow_private_network,
+            apple_private_key,
+            apple_key_id,
+            apple_team_id,
+          },
+        );
+      }
+    }
+    config
+  }
 }
 
 fn database_url_from_env() -> Option<String> {
@@ -567,6 +948,7 @@ fn non_empty_string(value: String) -> Option<String> {
   if value.trim().is_empty() { None } else { Some(value) }
 }
 
+#[cfg(test)]
 fn app_config_from_config_source(source: &ConfigSource) -> RuntimeResult<AppConfigFile> {
   deserialize_app_config(app_config_value_from_config_source(source)?)
 }
@@ -626,43 +1008,6 @@ fn merge_config_value(base: &mut serde_json::Value, overrides: serde_json::Value
     }
     (base, overrides) => *base = overrides,
   }
-}
-
-fn default_mail_class_mapping() -> BTreeMap<String, String> {
-  [
-    ("SignIn", "auth"),
-    ("SignUp", "auth"),
-    ("SetPassword", "auth"),
-    ("ChangePassword", "auth"),
-    ("VerifyEmail", "auth"),
-    ("ChangeEmail", "auth"),
-    ("VerifyChangeEmail", "auth"),
-    ("EmailChanged", "auth"),
-    ("MemberInvitation", "workspace_invitation"),
-    ("Mention", "collaboration_notice"),
-    ("Comment", "collaboration_notice"),
-    ("CommentMention", "collaboration_notice"),
-    ("MemberAccepted", "collaboration_notice"),
-    ("LinkInvitationReviewRequest", "collaboration_notice"),
-    ("LinkInvitationApprove", "collaboration_notice"),
-    ("LinkInvitationDecline", "collaboration_notice"),
-    ("MemberLeave", "workspace_lifecycle"),
-    ("MemberRemoved", "workspace_lifecycle"),
-    ("OwnershipTransferred", "workspace_lifecycle"),
-    ("OwnershipReceived", "workspace_lifecycle"),
-    ("TeamWorkspaceUpgraded", "workspace_lifecycle"),
-    ("TeamBecomeAdmin", "workspace_lifecycle"),
-    ("TeamBecomeCollaborator", "workspace_lifecycle"),
-    ("TeamDeleteIn24Hours", "workspace_lifecycle"),
-    ("TeamDeleteInOneMonth", "workspace_lifecycle"),
-    ("TeamWorkspaceDeleted", "workspace_lifecycle"),
-    ("TeamWorkspaceExpireSoon", "workspace_lifecycle"),
-    ("TeamWorkspaceExpired", "workspace_lifecycle"),
-    ("TeamLicense", "billing_license"),
-  ]
-  .into_iter()
-  .map(|(mail_name, class)| (mail_name.to_string(), class.to_string()))
-  .collect()
 }
 
 async fn load_app_config_overrides_from_db(pool: &PgPool) -> RuntimeResult<serde_json::Value> {
@@ -988,11 +1333,14 @@ mod tests {
   fn database_config_only_replaces_an_active_private_key_explicitly() {
     let active = BackendRuntimeConfig {
       database_url: "postgresql://active".to_string(),
+      auth: AuthRuntimeConfig::default(),
       invite_quota: InviteQuotaConfig::default(),
       private_key: Arc::new(Zeroizing::new("active-private-key".to_string())),
       deployment: Deployment::Cloud,
       copilot: CopilotRuntimeConfig::default(),
       search: SearchRuntimeConfig::default(),
+      redis: RedisRuntimeConfig::default(),
+      payment: PaymentRuntimeConfig::default(),
     };
     let empty = serde_json::Value::Object(Map::new());
 
@@ -1019,11 +1367,5 @@ mod tests {
 
     let config = app_config.invite_quota_config();
     assert_eq!(config.new_account_action_delay_seconds, 123);
-    assert!(!config.high_risk_target_domains.contains(&"example.com".to_string()));
-    assert_ne!(config.subject_hash_salt, "runtime-salt-v2");
-    assert_eq!(
-      config.mail_class_mapping.get("MemberInvitation").map(String::as_str),
-      Some("workspace_invitation")
-    );
   }
 }

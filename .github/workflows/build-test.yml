@@ -419,6 +419,7 @@ jobs:
               - '.cargo/**'
               - 'rust-toolchain*'
               - '.github/actions/build-rust/**'
+              - '.github/workflows/build-test.yml'
 
   lint-rust:
     name: Lint Rust
@@ -786,6 +787,11 @@ jobs:
     name: Build Server native
     runs-on: ubuntu-latest
     env:
+      AFFINE_PRO_PUBLIC_KEY: |
+        -----BEGIN PUBLIC KEY-----
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEObwJiTmbui7rkWfPJ7Lozvuy2Rcl
+        otcrb0V6dlS2ijKEShm7ZttTwQn08xzesdjX/AxpoR5X9yfoHkauIBuuMQ==
+        -----END PUBLIC KEY-----
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
       CARGO_PROFILE_RELEASE_LTO: 'thin'
@@ -1213,8 +1219,31 @@ jobs:
       - rust-test-filter
     env:
       CARGO_TERM_COLOR: always
+      DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      INVALIDATION_REDIS_URL: redis://localhost:6379/
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo @affine/server
+          electron-install: false
       - name: Setup Rust
         uses: ./.github/actions/build-rust
         with:
@@ -1227,8 +1256,20 @@ jobs:
         with:
           tool: nextest@0.9.98
 
-      - name: Run tests
+      - name: Initialize server-native test database
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE affine;"
+          psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
+          psql -h localhost -U postgres -c "ALTER USER affine WITH SUPERUSER;"
+          yarn affine @affine/server prisma migrate deploy
+        env:
+          PGPASSWORD: affine
+
+      - name: Run workspace Rust tests
         run: cargo nextest run --workspace --exclude affine_server_native --features use-as-lib --release --no-fail-fast
+
+      - name: Run server-native Rust tests with PostgreSQL and Redis
+        run: cargo nextest run -p affine_server_native --release --no-fail-fast --test-threads=1
 
   copilot-test-filter:
     name: Copilot test filter

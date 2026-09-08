@@ -1,5 +1,6 @@
 use std::{
   fs,
+  io::{Read, Seek, SeekFrom},
   path::{Path, PathBuf},
   time::SystemTime,
 };
@@ -129,6 +130,24 @@ pub(super) fn fs_get(config: &FsStorageConfig, key: &str) -> Result<Option<Objec
     Err(err) => return Err(RuntimeError::io("StorageRuntime fs read object failed", err)),
   };
   Ok(Some(ObjectGetResult { body, metadata }))
+}
+
+pub(super) fn fs_get_range(config: &FsStorageConfig, key: &str, offset: u64, length: usize) -> Result<Option<Vec<u8>>> {
+  let path = fs_object_path(config, key)?;
+  let mut file = match fs::File::open(&path) {
+    Ok(file) => file,
+    Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+    Err(err) => return Err(RuntimeError::io("StorageRuntime fs open object failed", err)),
+  };
+  file
+    .seek(SeekFrom::Start(offset))
+    .map_err(|err| RuntimeError::io("StorageRuntime fs seek object failed", err))?;
+  let mut body = vec![0; length];
+  let read = file
+    .read(&mut body)
+    .map_err(|err| RuntimeError::io("StorageRuntime fs read object range failed", err))?;
+  body.truncate(read);
+  Ok(Some(body))
 }
 
 pub(super) fn fs_list(config: &FsStorageConfig, prefix: Option<String>) -> Result<Vec<ObjectListEntry>> {
@@ -331,6 +350,8 @@ mod tests {
     assert_eq!(metadata.content_length, 5);
     assert_eq!(metadata.checksum_crc32.as_deref(), Some(checksum.as_str()));
     assert_eq!(fs_get(&config, "workspace/blob").unwrap().unwrap().body, body);
+    assert_eq!(fs_get_range(&config, "workspace/blob", 1, 2).unwrap().unwrap(), b"el");
+    assert_eq!(fs_get_range(&config, "workspace/blob", 4, 8).unwrap().unwrap(), b"o");
   }
 
   #[test]

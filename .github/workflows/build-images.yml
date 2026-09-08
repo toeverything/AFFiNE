@@ -143,7 +143,6 @@ jobs:
         uses: ./.github/actions/build-rust
         env:
           AFFINE_PRO_PUBLIC_KEY: ${{ secrets.AFFINE_PRO_PUBLIC_KEY }}
-          AFFINE_PRO_LICENSE_AES_KEY: ${{ secrets.AFFINE_PRO_LICENSE_AES_KEY }}
         with:
           target: ${{ matrix.targets.name }}
           package: '@affine/server-native'

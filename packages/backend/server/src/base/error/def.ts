@@ -630,6 +630,10 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: 'Invalid invitation provided.',
   },
+  invitation_account_mismatch: {
+    type: 'action_forbidden',
+    message: 'This invitation belongs to another account.',
+  },
   no_more_seat: {
     type: 'bad_request',
     args: { spaceId: 'string' },

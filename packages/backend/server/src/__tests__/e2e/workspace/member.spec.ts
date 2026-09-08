@@ -84,6 +84,48 @@ e2e('should invite a user', async t => {
     result.inviteMembers[0].inviteId!
   );
 
+  await t.throwsAsync(
+    app.gql({
+      query: getInviteInfoQuery,
+      variables: {
+        inviteId: invitationNotification.payload.inviteId,
+      },
+    }),
+    { message: 'This invitation belongs to another account.' }
+  );
+  await t.throwsAsync(
+    app.gql({
+      query: acceptInviteByInviteIdMutation,
+      variables: {
+        workspaceId: workspace.id,
+        inviteId: invitationNotification.payload.inviteId,
+      },
+    }),
+    { message: 'This invitation belongs to another account.' }
+  );
+
+  await app.logout();
+  await t.throwsAsync(
+    app.gql({
+      query: getInviteInfoQuery,
+      variables: {
+        inviteId: invitationNotification.payload.inviteId,
+      },
+    }),
+    { message: 'You must sign in first to access this resource.' }
+  );
+  await t.throwsAsync(
+    app.gql({
+      query: acceptInviteByInviteIdMutation,
+      variables: {
+        workspaceId: workspace.id,
+        inviteId: invitationNotification.payload.inviteId,
+      },
+    }),
+    { message: 'You must sign in first to access this resource.' }
+  );
+
+  await app.login(u2);
   // invitation status is pending
   const { getInviteInfo } = await app.gql({
     query: getInviteInfoQuery,
@@ -94,7 +136,6 @@ e2e('should invite a user', async t => {
   t.is(getInviteInfo.status, WorkspaceMemberStatus.Pending);
 
   // u2 accept invite
-  await app.login(u2);
   await app.gql({
     query: acceptInviteByInviteIdMutation,
     variables: {

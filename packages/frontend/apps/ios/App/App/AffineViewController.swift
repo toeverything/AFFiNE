@@ -71,6 +71,7 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
       NbStorePlugin(),
       PayWallPlugin(associatedController: self),
       PreviewPlugin(),
+      ShareInboxPlugin(),
     ]
     plugins.forEach { bridge?.registerPluginInstance($0) }
   }
@@ -90,6 +91,14 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
     }
     intelligentsButtonTimer = timer
     RunLoop.main.add(timer, forMode: .common)
+    processShareInboxIfNeeded()
+  }
+
+  func processShareInboxIfNeeded() {
+    guard let webView, !ShareInboxStore.shared.pendingItems().isEmpty else { return }
+    webView.evaluateJavaScript(
+      "window.dispatchEvent(new Event('affine:share-inbox'))"
+    )
   }
 
   private func checkEligibilityOfIntelligent() {

@@ -6,7 +6,7 @@ use tokio::task::JoinSet;
 use super::{
   StorageBackendConfig, assetpack,
   backend::{backends_from_config_files, backends_from_config_json, backends_from_config_source, backends_from_db},
-  fs::{delete_many_fs, fs_delete, fs_get, fs_head, fs_list, fs_put},
+  fs::{delete_many_fs, fs_delete, fs_get, fs_get_range, fs_head, fs_list, fs_put},
   types::{
     MultipartUploadInitResult, MultipartUploadPart, ObjectDeleteOutcome, ObjectGetResult, ObjectKey, ObjectListEntry,
     ObjectListPage, ObjectLocator, ObjectMetadata, ObjectPrefix, ObjectPutMetadata, PresignedObjectRequest,
@@ -98,6 +98,30 @@ impl ObjectStorageService {
       StorageBackendConfig::Fs(config) => fs_get(&config, &locator.key),
       StorageBackendConfig::Assetpack(config) => assetpack::get(&config, locator.scope.as_str(), &locator.key).await,
       StorageBackendConfig::S3(config) => config.build_client()?.get(&locator.key).await.map_err(Into::into),
+    }
+  }
+
+  pub(crate) async fn get_range(
+    &self,
+    locator: &ObjectLocator,
+    offset: u64,
+    length: usize,
+  ) -> RuntimeResult<Option<Vec<u8>>> {
+    match self.backend_for_scope(locator.scope)? {
+      StorageBackendConfig::Fs(config) => fs_get_range(&config, &locator.key, offset, length),
+      StorageBackendConfig::Assetpack(config) => {
+        let Some(object) = assetpack::get(&config, locator.scope.as_str(), &locator.key).await? else {
+          return Ok(None);
+        };
+        let start = usize::try_from(offset).unwrap_or(usize::MAX).min(object.body.len());
+        let end = start.saturating_add(length).min(object.body.len());
+        Ok(Some(object.body[start..end].to_vec()))
+      }
+      StorageBackendConfig::S3(config) => config
+        .build_client()?
+        .get_range(&locator.key, offset, length)
+        .await
+        .map_err(Into::into),
     }
   }
 

@@ -8963,6 +8963,22 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.fail-to-join-workspace.title"](): string;
     /**
+      * `This invitation is for another account`
+      */
+    ["com.affine.invitation.account-mismatch.title"](): string;
+    /**
+      * `You're signed in with an account that wasn't invited. Sign in with the account that received this invitation to continue.`
+      */
+    ["com.affine.invitation.account-mismatch.description"](): string;
+    /**
+      * `Sign in with another account`
+      */
+    ["com.affine.invitation.account-mismatch.switch-account"](): string;
+    /**
+      * `Back to AFFiNE`
+      */
+    ["com.affine.invitation.account-mismatch.back-to-affine"](): string;
+    /**
       * `Please contact your workspace owner to add more seats.`
       */
     ["com.affine.fail-to-join-workspace.description-2"](): string;
@@ -10174,6 +10190,10 @@ export function useAFFiNEI18N(): {
       * `Invalid invitation provided.`
       */
     ["error.INVALID_INVITATION"](): string;
+    /**
+      * `This invitation belongs to another account.`
+      */
+    ["error.INVITATION_ACCOUNT_MISMATCH"](): string;
     /**
       * `No more seat available in the Space {{spaceId}}.`
       */

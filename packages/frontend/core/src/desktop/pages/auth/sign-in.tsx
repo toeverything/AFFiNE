@@ -70,6 +70,7 @@ export const SignIn = ({
           onAuthenticated={handleAuthenticated}
           initStep={initStep}
           server={server}
+          redirectUrl={redirectUrl ?? undefined}
         />
       </div>
     </SignInPageContainer>
