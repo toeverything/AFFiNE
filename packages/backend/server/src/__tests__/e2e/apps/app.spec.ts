@@ -23,7 +23,13 @@ e2e('should handle http request', async t => {
   t.is(res.body.compatibility, env.version);
 });
 
-for (const serverPath of ['', '/affine.v1/']) {
+for (const [serverPath, prefix] of [
+  ['', ''],
+  ['///', ''],
+  ['/affine.v1/', '/affine.v1'],
+  ['///affine.v1///', '/affine.v1'],
+  ['affine//nested', '/affine//nested'],
+]) {
   e2e(
     `attachment body limit follows server prefix ${serverPath || '/'}`,
     async t => {
@@ -39,7 +45,6 @@ for (const serverPath of ['', '/affine.v1/']) {
       await http.init();
       await http.listen(0);
       try {
-        const prefix = serverPath.replace(/\/$/, '');
         const large = Buffer.alloc(21 * 1024 * 1024);
         for (const attachmentPath of [
           `${prefix}/api/copilot/chat/session/attachments/key`,

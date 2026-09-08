@@ -1122,6 +1122,7 @@ export type ErrorDataUnion =
   | SubscriptionAlreadyExistsDataType
   | SubscriptionNotExistsDataType
   | SubscriptionPlanNotFoundDataType
+  | SyncPermissionGenerationChangedDataType
   | UnknownOauthProviderDataType
   | UnsupportedClientVersionDataType
   | UnsupportedServerVersionDataType
@@ -1273,6 +1274,7 @@ export enum ErrorNames {
   SUBSCRIPTION_HAS_NOT_BEEN_CANCELED = 'SUBSCRIPTION_HAS_NOT_BEEN_CANCELED',
   SUBSCRIPTION_NOT_EXISTS = 'SUBSCRIPTION_NOT_EXISTS',
   SUBSCRIPTION_PLAN_NOT_FOUND = 'SUBSCRIPTION_PLAN_NOT_FOUND',
+  SYNC_PERMISSION_GENERATION_CHANGED = 'SYNC_PERMISSION_GENERATION_CHANGED',
   TOO_MANY_REQUEST = 'TOO_MANY_REQUEST',
   UNKNOWN_OAUTH_PROVIDER = 'UNKNOWN_OAUTH_PROVIDER',
   UNSPLASH_IS_NOT_CONFIGURED = 'UNSPLASH_IS_NOT_CONFIGURED',
@@ -3087,6 +3089,11 @@ export interface SubscriptionType {
 
 export enum SubscriptionVariant {
   Onetime = 'Onetime',
+}
+
+export interface SyncPermissionGenerationChangedDataType {
+  __typename?: 'SyncPermissionGenerationChangedDataType';
+  spaceId: Scalars['String']['output'];
 }
 
 export enum TimeBucket {

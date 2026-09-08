@@ -32,7 +32,11 @@ export function configureBodyParsers(
   app: NestExpressApplication,
   serverPath: string
 ) {
-  const serverPrefix = serverPath.replace(/^\/+|\/+$/g, '');
+  let start = 0;
+  let end = serverPath.length;
+  while (start < end && serverPath[start] === '/') start++;
+  while (end > start && serverPath[end - 1] === '/') end--;
+  const serverPrefix = serverPath.slice(start, end);
   app.use(
     `${serverPrefix ? `/${serverPrefix}` : ''}/api/copilot/chat/:sessionId/attachments/:key`,
     raw({
