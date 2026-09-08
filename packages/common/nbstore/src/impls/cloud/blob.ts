@@ -230,13 +230,16 @@ export class CloudBlobStorage extends BlobStorageBase {
   }
 
   override async get(key: string, signal?: AbortSignal, source?: BlobSource) {
+    signal?.throwIfAborted();
     let candidates = this.sourceCandidates(key, source);
     if (candidates.length === 0) {
-      await this.refreshRegisteredSources(source, signal);
+      const failed = await this.refreshRegisteredSources(source, signal);
+      signal?.throwIfAborted();
       candidates = this.sourceCandidates(key, source);
-    }
-    if (candidates.length === 0) {
-      throw new Error('Blob source context is required');
+      if (candidates.length === 0) {
+        if (failed) throw failed.reason;
+        return null;
+      }
     }
 
     const attempt = async (candidates: BlobSourceCandidate[]) => {
@@ -311,20 +314,26 @@ export class CloudBlobStorage extends BlobStorageBase {
           (registration): registration is SourceRegistration => !!registration
         )
       : [...this.sourceRegistrations.values()];
+    if (registrations.length === 0) {
+      throw new Error('Blob source context is required');
+    }
+    let failed: PromiseRejectedResult | undefined;
     for (
       let offset = 0;
       offset < registrations.length;
       offset += MAX_PENDING_SOURCE_REGISTRATIONS
     ) {
-      await Promise.allSettled(
+      const results = await Promise.allSettled(
         registrations
           .slice(offset, offset + MAX_PENDING_SOURCE_REGISTRATIONS)
           .map(
-            registration =>
+            async registration =>
               registration.promise ?? this.refreshSource(registration, signal)
           )
       );
+      failed ??= results.find(result => result.status === 'rejected');
     }
+    return failed;
   }
 
   override set(blob: BlobRecord, signal?: AbortSignal) {

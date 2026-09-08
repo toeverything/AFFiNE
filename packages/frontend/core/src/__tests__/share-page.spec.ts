@@ -161,69 +161,107 @@ describe('share workspace lifecycle', () => {
     sharePageMocks.services.clear();
   });
 
-  test('disposes the workspace and stops loading after unmount', async () => {
-    let resolveRoot!: () => void;
-    const rootReady = new Promise<void>(resolve => {
-      resolveRoot = resolve;
-    });
-    const dispose = vi.fn();
-    const scopeGet = vi.fn((token: { name: string }) => {
-      if (token.name === 'WorkbenchService') {
-        return { workbench: { updateBasename: vi.fn() } };
-      }
-      throw new Error(`Unexpected scope service: ${token.name}`);
-    });
-    const sharedWorkspace = {
-      id: 'workspace-id',
-      scope: { get: scopeGet },
-      engine: {
-        doc: {
-          waitForDocLoaded: vi.fn(() => rootReady),
+  test.each(['workspace-id', 'doc-id'])(
+    'aborts %s loading before disposing after unmount',
+    async pendingDocId => {
+      const lifecycle: string[] = [];
+      let resolvePending!: () => void;
+      let rejectPending!: (reason: unknown) => void;
+      const pending = new Promise<void>((resolve, reject) => {
+        resolvePending = resolve;
+        rejectPending = reject;
+      });
+      const settled = pending.catch(error => error);
+      const dispose = vi.fn(() => lifecycle.push('dispose'));
+      const scopeGet = vi.fn((token: { name: string }) => {
+        if (token.name === 'WorkbenchService') {
+          return { workbench: { updateBasename: vi.fn() } };
+        }
+        if (token.name === 'DocsService') {
+          return {
+            list: { doc$: () => ({ value: { id: 'doc-id' } }) },
+            open: () => ({
+              doc: { blockSuiteDoc: { load: vi.fn(), readonly: false } },
+            }),
+          };
+        }
+        throw new Error(`Unexpected scope service: ${token.name}`);
+      });
+      const sharedWorkspace = {
+        id: 'workspace-id',
+        scope: { get: scopeGet },
+        engine: {
+          doc: {
+            waitForDocLoaded: vi.fn((docId: string, signal?: AbortSignal) => {
+              if (docId !== pendingDocId) return Promise.resolve();
+              signal?.addEventListener(
+                'abort',
+                () => {
+                  lifecycle.push('abort');
+                  rejectPending(signal.reason);
+                },
+                { once: true }
+              );
+              return pending;
+            }),
+          },
         },
-      },
-    };
-    const open = vi.fn(
-      (_options: unknown, _engineOptions?: WorkerInitOptions) => ({
-        workspace: sharedWorkspace,
-        dispose,
-      })
-    );
-    sharePageMocks.services.set('ServerService', {
-      server: { baseUrl: 'https://app.affine.pro' },
-    });
-    sharePageMocks.services.set('WorkspacesService', { open });
-
-    const view = render(
-      createElement(
-        MemoryRouter,
-        { initialEntries: ['/share/workspace-id/doc-id?mode=page'] },
-        createElement(SharePage, {
-          workspaceId: 'workspace-id',
-          docId: 'doc-id',
+      };
+      const open = vi.fn(
+        (_options: unknown, _engineOptions?: WorkerInitOptions) => ({
+          workspace: sharedWorkspace,
+          dispose,
         })
-      )
-    );
-    await waitFor(() => expect(open).toHaveBeenCalledTimes(1));
-    view.unmount();
-    await act(async () => {
-      resolveRoot();
-      await rootReady;
-    });
+      );
+      sharePageMocks.services.set('ServerService', {
+        server: { baseUrl: 'https://app.affine.pro' },
+      });
+      sharePageMocks.services.set('WorkspacesService', { open });
 
-    const engineOptions = open.mock.calls[0]?.[1];
-    if (!engineOptions) {
-      throw new Error('Expected custom workspace engine options');
-    }
-    expect({
-      disposeCalls: dispose.mock.calls.length,
-      docsServiceLookups: scopeGet.mock.calls.filter(
-        ([token]) => token.name === 'DocsService'
-      ).length,
-      blob: {
-        local: engineOptions.local.blob,
-        remote: engineOptions.remotes.cloud.blob,
-      },
-    }).toMatchInlineSnapshot(`
+      const view = render(
+        createElement(
+          MemoryRouter,
+          { initialEntries: ['/share/workspace-id/doc-id?mode=page'] },
+          createElement(SharePage, {
+            workspaceId: 'workspace-id',
+            docId: 'doc-id',
+          })
+        )
+      );
+      await waitFor(() => expect(open).toHaveBeenCalledTimes(1));
+      await waitFor(() =>
+        expect(
+          sharedWorkspace.engine.doc.waitForDocLoaded
+        ).toHaveBeenCalledWith(pendingDocId, expect.any(AbortSignal))
+      );
+      view.unmount();
+      await act(async () => {
+        resolvePending();
+        await settled;
+      });
+      expect(lifecycle).toEqual(['abort', 'dispose']);
+      const signals =
+        sharedWorkspace.engine.doc.waitForDocLoaded.mock.calls.map(
+          call => call[1]
+        );
+      expect(
+        signals.every(signal => signal === signals[0] && signal?.aborted)
+      ).toBe(true);
+      expect(
+        scopeGet.mock.calls.filter(([token]) => token.name === 'DocsService')
+      ).toHaveLength(pendingDocId === 'doc-id' ? 1 : 0);
+
+      const engineOptions = open.mock.calls[0]?.[1];
+      if (!engineOptions) {
+        throw new Error('Expected custom workspace engine options');
+      }
+      expect({
+        disposeCalls: dispose.mock.calls.length,
+        blob: {
+          local: engineOptions.local.blob,
+          remote: engineOptions.remotes.cloud.blob,
+        },
+      }).toMatchInlineSnapshot(`
       {
         "blob": {
           "local": {
@@ -243,8 +281,8 @@ describe('share workspace lifecycle', () => {
           },
         },
         "disposeCalls": 1,
-        "docsServiceLookups": 0,
       }
     `);
-  });
+    }
+  );
 });

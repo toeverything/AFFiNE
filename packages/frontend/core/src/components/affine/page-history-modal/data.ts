@@ -127,7 +127,7 @@ const createShellWorkspace = (
       readonly: true,
       async get(key) {
         return (
-          sourceSession?.get(key) ??
+          (await sourceSession?.get(key)) ??
           flavourProvider?.getWorkspaceBlob(workspaceId, key, source) ??
           null
         );

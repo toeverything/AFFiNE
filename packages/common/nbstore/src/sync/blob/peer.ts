@@ -348,29 +348,40 @@ export class BlobSyncPeer {
     await this.local.connection.waitForConnected(signal);
     await this.remote.connection.waitForConnected(signal);
 
+    const localKeys = new Set(
+      (await this.local.list(signal)).map(blob => blob.key)
+    );
     if (isSourceScopedBlobStorage(this.remote)) {
       for await (const entry of this.remote.readableSources(signal)) {
-        await this.downloadMissingBlob(entry.key, signal, entry.source);
+        await this.downloadMissingBlob(
+          entry.key,
+          localKeys,
+          signal,
+          entry.source
+        );
       }
     } else {
       for (const entry of await this.remote.list(signal)) {
-        await this.downloadMissingBlob(entry.key, signal);
+        await this.downloadMissingBlob(entry.key, localKeys, signal);
       }
     }
   }
 
   private async downloadMissingBlob(
     blobKey: string,
+    localKeys: Set<string>,
     signal?: AbortSignal,
     source?: BlobSource
   ) {
-    if (await this.local.get(blobKey, signal)) return;
+    if (localKeys.has(blobKey)) return;
     this.status.markBlobToDownload(blobKey);
     this.status.blobWillDownload(blobKey);
     try {
       throwIfAborted(signal);
       try {
-        await this.downloadBlob(blobKey, signal, source);
+        if (await this.downloadBlob(blobKey, signal, source)) {
+          localKeys.add(blobKey);
+        }
       } catch (err) {
         if (err === MANUALLY_STOP) {
           throw err;

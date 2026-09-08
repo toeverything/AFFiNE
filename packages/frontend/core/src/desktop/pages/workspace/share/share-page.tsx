@@ -241,7 +241,7 @@ const SharePageInner = ({
         },
       }
     );
-    let active = true;
+    const controller = new AbortController();
 
     setWorkspace(sharedWorkspace);
     setPage(null);
@@ -249,19 +249,25 @@ const SharePageInner = ({
 
     (async () => {
       try {
-        await sharedWorkspace.engine.doc.waitForDocLoaded(sharedWorkspace.id);
-        if (!active) return;
+        await sharedWorkspace.engine.doc.waitForDocLoaded(
+          sharedWorkspace.id,
+          controller.signal
+        );
+        if (controller.signal.aborted) return;
 
         const docsService = sharedWorkspace.scope.get(DocsService);
         await waitForSharedDocRecord(docsService, docId);
-        if (!active) return;
+        if (controller.signal.aborted) return;
 
         const { doc } = docsService.open(docId);
         doc.blockSuiteDoc.load();
         doc.blockSuiteDoc.readonly = true;
 
-        await sharedWorkspace.engine.doc.waitForDocLoaded(docId);
-        if (!active) return;
+        await sharedWorkspace.engine.doc.waitForDocLoaded(
+          docId,
+          controller.signal
+        );
+        if (controller.signal.aborted) return;
 
         if (!doc.blockSuiteDoc.root) {
           throw new Error('Doc is empty');
@@ -278,7 +284,7 @@ const SharePageInner = ({
 
         setEditor(editor);
       } catch (err) {
-        if (!active) return;
+        if (controller.signal.aborted) return;
         console.error(err);
         if (isSharePagePermissionError(err)) {
           setNoPermission(true);
@@ -295,7 +301,7 @@ const SharePageInner = ({
     })().catch(console.error);
 
     return () => {
-      active = false;
+      controller.abort();
       dispose();
     };
   }, [

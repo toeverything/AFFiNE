@@ -64,7 +64,8 @@ export class CloudBlobWriter {
 
   async set(blob: BlobRecord, signal?: AbortSignal) {
     try {
-      const blobSizeLimit = await this.getBlobSizeLimit();
+      signal?.throwIfAborted();
+      const blobSizeLimit = await this.getBlobSizeLimit(signal);
       if (blob.data.byteLength > blobSizeLimit) {
         throw new OverSizeError(this.humanReadableBlobSizeLimit);
       }
@@ -84,13 +85,8 @@ export class CloudBlobWriter {
       if (upload.alreadyUploaded) {
         return;
       }
-      if (upload.method === BlobUploadMethod.GRAPHQL) {
-        await this.uploadViaGraphql(blob, signal);
-        return;
-      }
-
-      if (upload.method === BlobUploadMethod.PRESIGNED) {
-        try {
+      try {
+        if (upload.method === BlobUploadMethod.PRESIGNED) {
           if (!upload.uploadUrl) {
             throw new Error('Missing upload URL for presigned upload.');
           }
@@ -102,14 +98,9 @@ export class CloudBlobWriter {
           );
           await this.completeUpload(blob.key, undefined, undefined, signal);
           return;
-        } catch {
-          await this.uploadViaGraphql(blob, signal);
-          return;
         }
-      }
 
-      if (upload.method === BlobUploadMethod.MULTIPART) {
-        try {
+        if (upload.method === BlobUploadMethod.MULTIPART) {
           if (!upload.uploadId || !upload.partSize) {
             throw new Error(
               'Missing upload ID or part size for multipart upload.'
@@ -125,16 +116,14 @@ export class CloudBlobWriter {
           );
           await this.completeUpload(blob.key, upload.uploadId, parts, signal);
           return;
-        } catch {
-          if (upload.uploadId) {
-            await this.tryAbortMultipartUpload(
-              blob.key,
-              upload.uploadId,
-              signal
-            );
-          }
-          await this.uploadViaGraphql(blob, signal);
-          return;
+        }
+      } catch (error) {
+        if (upload.method === BlobUploadMethod.MULTIPART && upload.uploadId) {
+          await this.tryAbortMultipartUpload(blob.key, upload.uploadId);
+        }
+        signal?.throwIfAborted();
+        if (UserFriendlyError.fromAny(error).is('CONTENT_TOO_LARGE')) {
+          throw error;
         }
       }
 
@@ -202,12 +191,11 @@ export class CloudBlobWriter {
     data: Uint8Array,
     signal?: AbortSignal
   ) {
-    const res = await this.fetchWithTimeout(uploadUrl, {
+    const res = await this.fetchUpload(uploadUrl, {
       method: 'PUT',
       headers: headers ?? undefined,
       body: toStrictArrayBuffer(data),
       signal,
-      timeout: UPLOAD_REQUEST_TIMEOUT,
     });
     if (!res.ok) {
       throw new Error(`Presigned upload failed with status ${res.status}`);
@@ -247,14 +235,13 @@ export class CloudBlobWriter {
         },
         context: { signal },
       });
-      const res = await this.fetchWithTimeout(
+      const res = await this.fetchUpload(
         part.workspace.blobUploadPartUrl.uploadUrl,
         {
           method: 'PUT',
           headers: part.workspace.blobUploadPartUrl.headers ?? undefined,
           body: toStrictArrayBuffer(chunk),
           signal,
-          timeout: UPLOAD_REQUEST_TIMEOUT,
         }
       );
       if (!res.ok) {
@@ -291,75 +278,48 @@ export class CloudBlobWriter {
     });
   }
 
-  private async tryAbortMultipartUpload(
-    key: string,
-    uploadId: string,
-    signal?: AbortSignal
-  ) {
+  private async tryAbortMultipartUpload(key: string, uploadId: string) {
     try {
       await this.connection.gql({
         query: abortBlobUploadMutation,
         variables: { workspaceId: this.workspaceId, key, uploadId },
-        context: { signal },
       });
     } catch {}
   }
 
-  private async fetchWithTimeout(
-    input: string,
-    init: RequestInit & { timeout?: number }
-  ) {
-    const externalSignal = init.signal;
-    if (externalSignal?.aborted) {
-      throw externalSignal.reason;
+  private async fetchUpload(input: string, init: RequestInit) {
+    const res = await globalThis.fetch(
+      new URL(input, this.serverBaseUrl).toString(),
+      init
+    );
+    if (res.status === 413) {
+      throw new UserFriendlyError({
+        status: 413,
+        code: 'CONTENT_TOO_LARGE',
+        type: 'CONTENT_TOO_LARGE',
+        name: 'CONTENT_TOO_LARGE',
+        message: 'Content too large',
+      });
     }
-
-    const abortController = new AbortController();
-    externalSignal?.addEventListener('abort', reason => {
-      abortController.abort(reason);
-    });
-    const timeout = init.timeout ?? 15000;
-    const timeoutId =
-      timeout > 0
-        ? setTimeout(() => {
-            abortController.abort(new Error('request timeout'));
-          }, timeout)
-        : undefined;
-
-    try {
-      return await globalThis.fetch(
-        new URL(input, this.serverBaseUrl).toString(),
-        {
-          ...init,
-          signal: abortController.signal,
-        }
-      );
-    } finally {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    }
+    return res;
   }
 
-  private async getBlobSizeLimit() {
+  private async getBlobSizeLimit(signal?: AbortSignal) {
     if (
       this.blobSizeLimit !== null &&
       Date.now() - this.blobSizeLimitTime < 120 * 1000
     ) {
       return this.blobSizeLimit;
     }
-    try {
-      const res = await this.connection.gql({
-        query: workspaceBlobQuotaQuery,
-        variables: { id: this.workspaceId },
-      });
-      this.humanReadableBlobSizeLimit =
-        res.workspace.quota.humanReadable.blobLimit;
-      this.blobSizeLimit = res.workspace.quota.blobLimit;
-      this.blobSizeLimitTime = Date.now();
-      return this.blobSizeLimit;
-    } catch (err) {
-      throw UserFriendlyError.fromAny(err);
-    }
+    const res = await this.connection.gql({
+      query: workspaceBlobQuotaQuery,
+      variables: { id: this.workspaceId },
+      context: { signal },
+    });
+    this.humanReadableBlobSizeLimit =
+      res.workspace.quota.humanReadable.blobLimit;
+    this.blobSizeLimit = res.workspace.quota.blobLimit;
+    this.blobSizeLimitTime = Date.now();
+    return this.blobSizeLimit;
   }
 }
