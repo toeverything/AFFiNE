@@ -850,6 +850,7 @@ export class CopilotResolver {
     options: DeleteSessionInput
   ): Promise<string[]> {
     const { workspaceId, docId, sessionIds } = options;
+    if (!sessionIds.length) throw new NotFoundException('Session not found');
     const mode = await this.access.sessionResource(
       {
         userId: user.id,
@@ -859,7 +860,6 @@ export class CopilotResolver {
       },
       sessionIds
     );
-    if (!sessionIds.length) throw new NotFoundException('Session not found');
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) throw new TooManyRequest('Server is busy');

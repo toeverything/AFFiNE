@@ -12,7 +12,6 @@ import {
   AccessDenied,
   type Config,
   type EventBus,
-  type JobQueue,
   SearchProviderUnavailable,
 } from '../../base';
 import { ServerFeature, type ServerService } from '../../core';
@@ -1326,7 +1325,7 @@ test('history prompt preload excludes system messages and precedes durable histo
   t.true(projector.project(history, true, true)[0].createdAt! < createdAt);
 });
 
-test('title policy and cron scheduling retain background-job invariants', async t => {
+test('title policy and cron retain background-work invariants', async t => {
   const policy = new ConversationPolicy({} as Models, {} as never);
   t.true(
     policy.shouldGenerateTitle({
@@ -1343,13 +1342,23 @@ test('title policy and cron scheduling retain background-job invariants', async 
       turns: [turn('session-1', 'user', 'Question')],
     })
   );
+  t.true(policy.shouldScheduleTitle({ action: undefined }));
+  t.false(policy.shouldScheduleTitle({ action: 'edit' }));
+  t.is(
+    policy.buildTitlePromptContent([
+      turn('session-1', 'system', 'Ignored system context'),
+      turn('session-1', 'user', 'First question'),
+      turn('session-1', 'assistant', 'First answer'),
+      turn('session-1', 'user', 'Ignored follow-up'),
+      turn('session-1', 'assistant', 'Ignored follow-up answer'),
+    ]),
+    '[user]: First question\n[assistant]: First answer'
+  );
 
-  const calls: unknown[][] = [];
-  const jobs = {
-    add: async (...args: unknown[]) => calls.push(args),
-  } as unknown as JobQueue;
+  const calls: unknown[] = [];
   const models = {
     copilotSession: {
+      cleanupEmptySessions: async () => ({ removed: 0, cleaned: 0 }),
       toBeGenerateTitle: async () => [
         {
           id: 'session-1',
@@ -1364,11 +1373,23 @@ test('title policy and cron scheduling retain background-job invariants', async 
       ],
     },
   } as unknown as Models;
-  const cron = new CopilotCronJobs(models, jobs, {
-    async reconcileDispatches() {},
-  } as never);
+  const cron = new CopilotCronJobs(
+    models,
+    {
+      async generateSessionTitle(input: unknown) {
+        calls.push(input);
+      },
+    } as never,
+    {} as never,
+    {
+      async collectPendingDispatches() {
+        return [];
+      },
+    } as never
+  );
 
   await cron.dailyCleanupJob();
+  t.deepEqual(calls, []);
   await cron.generateMissingTitles();
   t.snapshot(calls);
 });

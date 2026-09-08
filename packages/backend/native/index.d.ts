@@ -33,9 +33,6 @@ export declare class BackendRuntime {
   authorizePermissionV1(input: any): Promise<any>
   executeDomainCommandV1(input: any): Promise<any>
   searchStatus(): Promise<any>
-  acquireCoordinationLease(key: string, owner: string, ttlMs: number): Promise<CoordinationLeaseGrant | null>
-  releaseCoordinationLease(key: string, owner: string, fencingToken: bigint | number): Promise<boolean>
-  renewCoordinationLease(key: string, owner: string, fencingToken: bigint | number, ttlMs: number): Promise<boolean>
   executeCopilotStream(input: CopilotExecuteInput, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): Promise<CopilotStreamHandle>
   executeCopilot(input: CopilotExecuteInput): Promise<string>
   assertCopilotRoute(input: CopilotRouteCheckInput): Promise<void>
@@ -48,7 +45,7 @@ export declare class BackendRuntime {
    * The caller must pass the canonical history retention period resolved for
    * this workspace. The compactor does not make quota decisions.
    */
-  compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number, owner: string, leaseTtlMs: number): Promise<RuntimeDocCompactionResult>
+  compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number): Promise<RuntimeDocCompactionResult>
   upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>
   createDocHistory(input: RuntimeDocHistoryInput): Promise<boolean>
   appendWorkspaceDocUpdatesV1(input: AppendWorkspaceDocUpdatesInputV1): Promise<number>
@@ -57,7 +54,6 @@ export declare class BackendRuntime {
   syncEmbeddingState(input: SyncEmbeddingStateInput): Promise<RuntimeEmbeddingWorkspaceState>
   embeddingQueueCounts(): Promise<RuntimeEmbeddingQueueCounts>
   embeddingWorkspaceProgress(workspaceId: string): Promise<RuntimeEmbeddingProgress>
-  reconcileEmbeddingWorkspaces(): Promise<number>
   putWorkspaceArtifact(input: PutWorkspaceArtifactInput, body: Buffer): Promise<RuntimeWorkspaceArtifact>
   ensureWorkspaceBlobArtifact(input: EnsureWorkspaceBlobArtifactInput): Promise<RuntimeWorkspaceArtifact>
   cleanupUnreferencedArtifacts(limit: number): Promise<number>
@@ -75,8 +71,8 @@ export declare class BackendRuntime {
   removeTeamLicenseV1(workspaceId: string): Promise<RuntimeLicenseChange | null>
   updateTeamLicenseRecurringV1(key: string, recurring: string): Promise<void>
   createTeamLicensePortalV1(workspaceId: string): Promise<string>
-  updateTeamLicenseSeatsV1(workspaceId: string): Promise<RuntimeInstalledLicense | null>
-  checkLicensesV1(): Promise<Array<RuntimeLicenseChange>>
+  updateTeamLicenseSeatsV1(workspaceId: string): Promise<RuntimeLicenseSeatUpdateResult>
+  checkLicensesV1(): Promise<RuntimeLicenseHealthResult>
   upsertAdminGrantV1(input: RuntimeAdminGrantInput): Promise<void>
   revokeAdminGrantV1(targetType: string, targetId: string): Promise<void>
   putRuntimeGateIfAbsent(key: string, ttlMs: number): Promise<boolean>
@@ -89,6 +85,8 @@ export declare class BackendRuntime {
   reloadConfig(privateKey?: string | undefined | null, objectStorageConfig?: string | undefined | null, inlineConfig?: string | undefined | null): Promise<void>
   health(): Promise<BackendRuntimeHealth>
   executePaymentCommandV1(input: any): Promise<any>
+  createPaymentCustomerPortalV1(actorUserId: string): Promise<string>
+  createLicenseCustomerPortalV1(licenseKey: string, validateKey: string): Promise<string>
   capturePaymentWebhookV1(provider: string, rawBody: Buffer, authorization: string): Promise<any>
   paymentProviderNamespacesV1(): Promise<any>
   isInviteAbuseUserQuarantinedOrBanned(userId: string): Promise<boolean>
@@ -121,7 +119,7 @@ export declare class BackendRuntime {
   activateWorkspaceSeatV1(input: RuntimeSeatActivationInput): Promise<boolean>
   reserveWorkspaceSeatsV1(input: RuntimeSeatReservationInput): Promise<RuntimeSeatReservationDecision>
   reserveStorageQuotaV1(input: RuntimeStorageReservationInput): Promise<RuntimeStorageReservationDecision>
-  constructor(privateKey?: string | undefined | null, configPaths?: Array<string> | undefined | null, permissionTelemetry?: (((err: Error | null, arg: string) => void)) | undefined | null, inlineConfig?: string | undefined | null)
+  constructor(privateKey?: string | undefined | null, configPaths?: Array<string> | undefined | null, permissionTelemetry?: (((err: Error | null, arg: string) => void)) | undefined | null, inlineConfig?: string | undefined | null, invalidationEvents?: (((err: Error | null, arg: string) => void)) | undefined | null)
 }
 
 export declare class CopilotStreamHandle {
@@ -129,14 +127,14 @@ export declare class CopilotStreamHandle {
 }
 
 export declare class StorageRuntime {
-  planUnreferencedWorkspaceBlobs(workspaceId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupPlanResult>
-  executeBlobCleanupCandidates(runId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupExecuteResult>
+  cleanupUnreferencedWorkspaceBlobs(workspaceId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupResult>
   backfillMissingBlobMetadata(workspaceId: string | undefined | null, limit: number): Promise<RuntimeBlobMetadataBackfillResult>
   rebuildDocBlobRefs(workspaceId: string, docId: string, sourceRevision: number): Promise<RuntimeDocBlobRefsResult>
   rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
   reconcileWorkspaceDocuments(workspaceId: string): Promise<RuntimeDocumentCleanupReconcileResult>
   executeDocumentCleanupCandidates(workspaceId: string | undefined | null, gracePeriodDays: number, limit: number): Promise<RuntimeDocumentCleanupExecuteResult>
-  deleteWorkspaceObjects(workspaceId: string): Promise<number>
+  deleteWorkspaceObjects(workspaceId: string, userIds?: Array<string> | undefined | null): Promise<number>
+  reconcileWorkspaceStorage(limit: number): Promise<RuntimeWorkspaceStorageReconcileResult>
   constructor()
   start(): Promise<void>
   configure(configJson: string): void
@@ -147,7 +145,6 @@ export declare class StorageRuntime {
   putObject(scope: string, key: string, body: Buffer, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimeObjectMetadata>
   headObject(scope: string, key: string): Promise<RuntimeObjectMetadata | null>
   getObject(scope: string, key: string): Promise<RuntimeObjectGetResult | null>
-  listObjects(scope: string, prefix?: string | undefined | null): Promise<Array<RuntimeObjectListEntry>>
   deleteObject(scope: string, key: string): Promise<void>
   presignPut(scope: string, key: string, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimePresignedObjectRequest | null>
   presignGet(scope: string, key: string): Promise<RuntimePresignedObjectRequest | null>
@@ -496,12 +493,6 @@ export interface ContentPolicyScanResult {
   matched: boolean
   matches: Array<ContentPolicyMatch>
   flags: Array<string>
-}
-
-export interface CoordinationLeaseGrant {
-  key: string
-  owner: string
-  fencingToken: bigint | number
 }
 
 export interface CopilotAccessProjection {
@@ -1219,23 +1210,16 @@ export interface RuntimeBlobChunkV1 {
   done: boolean
 }
 
-export interface RuntimeBlobCleanupExecuteResult {
-  scannedCandidates: number
+export interface RuntimeBlobCleanupResult {
+  scannedBlobs: number
   deletedObjects: number
   deletedMetadata: number
-  skippedStillReferenced: number
-  failed: number
-  workspaceIds: Array<string>
-}
-
-export interface RuntimeBlobCleanupPlanResult {
-  runId?: string
-  scannedBlobs: number
-  candidatesMarked: number
   protectedByDocRefs: number
   protectedByMetadata: number
   protectedByOtherRefs: number
+  failed: number
   nextCursor?: string
+  workspaceIds: Array<string>
 }
 
 export interface RuntimeBlobManagementInput {
@@ -1271,7 +1255,7 @@ export interface RuntimeDocBlobRefsResult {
 }
 
 export interface RuntimeDocCompactionResult {
-  leaseAcquired: boolean
+  lockAcquired: boolean
   merged: boolean
   workspaceId: string
   docId: string
@@ -1290,13 +1274,6 @@ export interface RuntimeDocHistoryInput {
   historyMaxAgeMs: number
 }
 
-export interface RuntimeDocumentCleanupEffect {
-  workspaceId: string
-  docId: string
-  cleanupVersion: string
-  commentObjectsDone: boolean
-}
-
 export interface RuntimeDocumentCleanupExecuteResult {
   scannedCandidates: number
   serializationRetries: number
@@ -1305,7 +1282,6 @@ export interface RuntimeDocumentCleanupExecuteResult {
   reset: number
   failed: number
   deletedRows: number
-  effects: Array<RuntimeDocumentCleanupEffect>
 }
 
 export interface RuntimeDocumentCleanupReconcileResult {
@@ -1407,6 +1383,16 @@ export interface RuntimeLicenseChange {
   canceled: boolean
 }
 
+export interface RuntimeLicenseHealthResult {
+  changes: Array<RuntimeLicenseChange>
+  transientFailure: boolean
+}
+
+export interface RuntimeLicenseSeatUpdateResult {
+  status: string
+  license?: RuntimeInstalledLicense
+}
+
 export interface RuntimeMailDeliveryQuotaDecision {
   allowed: boolean
   reservationId?: string
@@ -1460,12 +1446,6 @@ export interface RuntimeMultipartUploadPart {
 export interface RuntimeObjectGetResult {
   body: Buffer
   metadata: RuntimeObjectMetadata
-}
-
-export interface RuntimeObjectListEntry {
-  key: string
-  contentLength: number
-  lastModifiedMs: number
 }
 
 export interface RuntimeObjectMetadata {
@@ -1684,6 +1664,18 @@ export interface RuntimeWorkspaceQuotaState {
   readonly: boolean
   readonlyReasons: Array<string>
   unlimitedCopilot: boolean
+}
+
+export interface RuntimeWorkspaceStorageReconcileResult {
+  scannedWorkspaces: bigint | number
+  deletedWorkspaces: bigint | number
+  scannedObjects: bigint | number
+  deletedObjects: bigint | number
+  deletedOrphanRows: bigint | number
+  unknownPrefixes: bigint | number
+  failedShards: bigint | number
+  failedScopes: Array<string>
+  unknownPrefixSamples: Array<string>
 }
 
 export declare function safeFetch(request: SafeFetchRequest): Promise<SafeFetchResponse>

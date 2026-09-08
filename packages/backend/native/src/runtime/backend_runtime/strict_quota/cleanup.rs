@@ -1,9 +1,10 @@
 use napi::Result;
 use sqlx::Row;
+use uuid::Uuid;
 
 use super::{
   super::{BackendRuntime, RuntimeError, napi_error},
-  invalidate_storage_usage,
+  StorageOperation, invalidate_storage_usage,
   promotion::{final_storage_locator, temporary_storage_locator},
 };
 
@@ -15,56 +16,67 @@ impl BackendRuntime {
       return Err(napi_error("cleanup limit must be positive"));
     }
     let pool = self.pool().await?;
-    let mut tx = pool
-      .begin()
-      .await
-      .map_err(|error| RuntimeError::database("start storage reservation cleanup", error))?;
-    let blobs = sqlx::query(
-      r#"UPDATE blobs SET deleted_at=COALESCE(deleted_at,clock_timestamp())
-        WHERE ctid IN (SELECT ctid FROM blobs WHERE
-          (status='pending' AND reservation_expires_at <= clock_timestamp()) OR deleted_at IS NOT NULL
-          ORDER BY COALESCE(reservation_expires_at,deleted_at) LIMIT $1 FOR UPDATE SKIP LOCKED)
-        RETURNING workspace_id,key,reservation_id,status::text AS status"#,
+    let candidates = sqlx::query(
+      "SELECT 'blob' AS kind,workspace_id,NULL::varchar AS doc_id,key FROM blobs WHERE deleted_at IS NOT NULL OR \
+       (status='pending' AND reservation_expires_at<=clock_timestamp()) UNION ALL SELECT 'comment_attachment' AS \
+       kind,workspace_id,doc_id,key FROM comment_attachments WHERE deleted_at IS NOT NULL OR (status='pending' AND \
+       reservation_expires_at<=clock_timestamp()) LIMIT $1",
     )
     .bind(limit)
-    .fetch_all(&mut *tx)
+    .fetch_all(&pool)
     .await
-    .map_err(|error| RuntimeError::database("cleanup expired blob reservations", error))?;
-    let remaining = limit.saturating_sub(i64::try_from(blobs.len()).unwrap_or(limit));
-    let attachments = if remaining > 0 {
-      sqlx::query(
-        r#"UPDATE comment_attachments SET deleted_at=COALESCE(deleted_at,clock_timestamp())
-          WHERE ctid IN (SELECT ctid FROM comment_attachments WHERE
-            (status='pending' AND reservation_expires_at <= clock_timestamp()) OR deleted_at IS NOT NULL
-            ORDER BY COALESCE(reservation_expires_at,deleted_at) LIMIT $1 FOR UPDATE SKIP LOCKED)
-          RETURNING workspace_id,doc_id,key,reservation_id,status::text AS status"#,
-      )
-      .bind(remaining)
-      .fetch_all(&mut *tx)
-      .await
-      .map_err(|error| RuntimeError::database("cleanup expired attachment reservations", error))?
-    } else {
-      Vec::new()
-    };
-    tx.commit()
-      .await
-      .map_err(|error| RuntimeError::database("commit storage reservation cleanup", error))?;
-
+    .map_err(|error| RuntimeError::database("select expired storage reservations", error))?;
     let storage = self.object_storage()?;
     let mut cleaned = 0_i64;
     let mut delete_failure = None;
-    for row in &blobs {
-      let workspace_id: String = row.get("workspace_id");
-      let key: String = row.get("key");
-      let reservation_id = row.get("reservation_id");
-      let locators = if row.get::<String, _>("status") == "pending" {
-        vec![
-          temporary_storage_locator("blob", &workspace_id, None, &key, reservation_id)?,
-          final_storage_locator("blob", &workspace_id, None, &key)?,
-        ]
+    let mut workspaces = std::collections::BTreeSet::new();
+    for candidate in candidates {
+      let kind: String = candidate.get("kind");
+      let workspace_id: String = candidate.get("workspace_id");
+      let doc_id: Option<String> = candidate.get("doc_id");
+      let key: String = candidate.get("key");
+      let final_locator = final_storage_locator(&kind, &workspace_id, doc_id.as_deref(), &key)?;
+      let mut operation = StorageOperation::acquire(&pool, &workspace_id, Some(final_locator.key.as_str())).await?;
+      let row = if kind == "blob" {
+        sqlx::query(
+          "UPDATE blobs SET deleted_at=COALESCE(deleted_at,clock_timestamp()) WHERE workspace_id=$1 AND key=$2 AND \
+           (deleted_at IS NOT NULL OR (status='pending' AND reservation_expires_at<=clock_timestamp())) RETURNING \
+           reservation_id,status::text AS status",
+        )
+        .bind(&workspace_id)
+        .bind(&key)
+        .fetch_optional(operation.connection())
+        .await
       } else {
-        vec![final_storage_locator("blob", &workspace_id, None, &key)?]
+        sqlx::query(
+          "UPDATE comment_attachments SET deleted_at=COALESCE(deleted_at,clock_timestamp()) WHERE workspace_id=$1 AND \
+           doc_id=$2 AND key=$3 AND (deleted_at IS NOT NULL OR (status='pending' AND \
+           reservation_expires_at<=clock_timestamp())) RETURNING reservation_id,status::text AS status",
+        )
+        .bind(&workspace_id)
+        .bind(doc_id.as_deref())
+        .bind(&key)
+        .fetch_optional(operation.connection())
+        .await
+      }
+      .map_err(|error| RuntimeError::database("claim expired storage reservation", error))?;
+      let Some(row) = row else {
+        operation.release().await?;
+        continue;
       };
+      let reservation_id: Option<Uuid> = row.get("reservation_id");
+      let mut locators = vec![final_locator];
+      if row.get::<String, _>("status") == "pending" {
+        if let Some(id) = reservation_id {
+          locators.push(temporary_storage_locator(
+            &kind,
+            &workspace_id,
+            doc_id.as_deref(),
+            &key,
+            id,
+          )?);
+        }
+      }
       let mut objects_deleted = true;
       for locator in locators {
         if let Err(error) = storage.delete(&locator).await {
@@ -73,74 +85,43 @@ impl BackendRuntime {
         }
       }
       if objects_deleted {
-        let result = sqlx::query(
-          "DELETE FROM blobs WHERE workspace_id=$1 AND key=$2 AND reservation_id=$3 AND deleted_at IS NOT NULL",
-        )
-        .bind(&workspace_id)
-        .bind(&key)
-        .bind(reservation_id)
-        .execute(&pool)
-        .await
-        .map_err(|error| RuntimeError::database("delete cleaned blob reservation ledger", error))?;
-        cleaned = cleaned.saturating_add(i64::try_from(result.rows_affected()).unwrap_or(i64::MAX));
-      }
-    }
-    for row in &attachments {
-      let workspace_id: String = row.get("workspace_id");
-      let doc_id: String = row.get("doc_id");
-      let key: String = row.get("key");
-      let reservation_id = row.get("reservation_id");
-      let locators = if row.get::<String, _>("status") == "pending" {
-        vec![
-          temporary_storage_locator("comment_attachment", &workspace_id, Some(&doc_id), &key, reservation_id)?,
-          final_storage_locator("comment_attachment", &workspace_id, Some(&doc_id), &key)?,
-        ]
-      } else {
-        vec![final_storage_locator(
-          "comment_attachment",
-          &workspace_id,
-          Some(&doc_id),
-          &key,
-        )?]
-      };
-      let mut objects_deleted = true;
-      for locator in locators {
-        if let Err(error) = storage.delete(&locator).await {
-          objects_deleted = false;
-          delete_failure = Some(error.to_string());
+        let result = if kind == "blob" {
+          sqlx::query(
+            "DELETE FROM blobs WHERE workspace_id=$1 AND key=$2 AND reservation_id IS NOT DISTINCT FROM $3 AND \
+             deleted_at IS NOT NULL",
+          )
+          .bind(&workspace_id)
+          .bind(&key)
+          .bind(reservation_id)
+          .execute(operation.connection())
+          .await
+        } else {
+          sqlx::query(
+            "DELETE FROM comment_attachments WHERE workspace_id=$1 AND doc_id=$2 AND key=$3 AND reservation_id IS NOT \
+             DISTINCT FROM $4 AND deleted_at IS NOT NULL",
+          )
+          .bind(&workspace_id)
+          .bind(doc_id.as_deref())
+          .bind(&key)
+          .bind(reservation_id)
+          .execute(operation.connection())
+          .await
         }
+        .map_err(|error| RuntimeError::database("delete cleaned storage reservation ledger", error))?;
+        cleaned += i64::try_from(result.rows_affected()).unwrap_or(0);
       }
-      if objects_deleted {
-        let result = sqlx::query(
-          "DELETE FROM comment_attachments WHERE workspace_id=$1 AND doc_id=$2 AND key=$3 AND reservation_id=$4 AND \
-           deleted_at IS NOT NULL",
-        )
-        .bind(&workspace_id)
-        .bind(&doc_id)
-        .bind(&key)
-        .bind(reservation_id)
-        .execute(&pool)
-        .await
-        .map_err(|error| RuntimeError::database("delete cleaned attachment reservation ledger", error))?;
-        cleaned = cleaned.saturating_add(i64::try_from(result.rows_affected()).unwrap_or(i64::MAX));
-      }
+      operation.release().await?;
+      workspaces.insert(workspace_id);
     }
-    let workspaces = blobs
-      .iter()
-      .chain(&attachments)
-      .map(|row| row.get::<String, _>("workspace_id"))
-      .collect::<std::collections::BTreeSet<_>>();
-    for workspace_id in &workspaces {
-      if let Some(owner_id) = sqlx::query_scalar::<_, String>(
+    for workspace_id in workspaces {
+      let owner_id = sqlx::query_scalar::<_, String>(
         "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active' LIMIT 1",
       )
-      .bind(&*workspace_id)
+      .bind(&workspace_id)
       .fetch_optional(&pool)
       .await
-      .map_err(|error| RuntimeError::database("load cleanup quota owner", error))?
-      {
-        invalidate_storage_usage(self, workspace_id, &owner_id).await;
-      }
+      .map_err(|error| RuntimeError::database("load cleanup quota owner", error))?;
+      invalidate_storage_usage(self, &workspace_id, owner_id.as_deref()).await;
     }
     self
       .permission_telemetry

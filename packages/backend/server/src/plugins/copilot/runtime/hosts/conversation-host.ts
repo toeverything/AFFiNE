@@ -536,6 +536,18 @@ export class ConversationHost {
       turn: assistantTurn,
     });
     session.pushPersistedTurn(persisted);
+    if (
+      !wasAborted &&
+      this.policy.shouldScheduleTitle({ action: session.config.promptAction })
+    ) {
+      void this.sessions
+        .generateSessionTitle({
+          sessionId: session.config.sessionId,
+          userId: session.config.userId,
+          workspaceId: session.config.workspaceId,
+        })
+        .catch(() => {});
+    }
     return persisted.id ?? null;
   }
 }

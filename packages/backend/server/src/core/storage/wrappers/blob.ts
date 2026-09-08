@@ -183,9 +183,9 @@ export class WorkspaceBlobStorage {
   async abortMultipartUpload(
     workspaceId: string,
     key: string,
-    uploadId: string
+    uploadId: string,
+    reservationId: string
   ) {
-    const reservationId = await this.reservationId(workspaceId, key);
     return await this.rt.abortMultipartUpload(
       'blob',
       this.reservationObjectKey(workspaceId, key, reservationId),
@@ -345,7 +345,12 @@ export class WorkspaceBlobStorage {
 
   private async reservationId(workspaceId: string, key: string) {
     const record = await this.models.blob.get(workspaceId, key);
-    if (!record || record.status !== 'pending' || record.deletedAt) {
+    if (
+      !record ||
+      record.status !== 'pending' ||
+      record.deletedAt ||
+      !record.reservationId
+    ) {
       throw new BlobInvalid('Blob upload is not pending');
     }
     return record.reservationId;

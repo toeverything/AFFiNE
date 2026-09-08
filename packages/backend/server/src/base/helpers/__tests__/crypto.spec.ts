@@ -3,7 +3,6 @@ import { generateKeyPairSync } from 'node:crypto';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
-import { AFFINE_PRO_PUBLIC_KEY } from '../../../native';
 import { CryptoHelper } from '../crypto';
 
 const test = ava as TestFn<{
@@ -102,12 +101,21 @@ test('uses the native verifier public key', t => {
   const deployment = globalThis.env.DEPLOYMENT_TYPE;
   // @ts-expect-error test mutates deployment mode before the lifecycle hook
   globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
+  const loadKey = Sinon.stub(
+    t.context.crypto as unknown as {
+      loadAFFiNEProPublicKey(): Buffer | null;
+    },
+    'loadAFFiNEProPublicKey'
+  );
+  loadKey.onFirstCall().returns(null);
+  loadKey.onSecondCall().returns(Buffer.from('public-key'));
   try {
+    t.throws(() => t.context.crypto.onModuleInit(), {
+      message:
+        'AFFINE_PRO_PUBLIC_KEY must be embedded in self-hosted server-native builds.',
+    });
     t.context.crypto.onModuleInit();
-    t.is(
-      t.context.crypto.AFFiNEProPublicKey?.toString() ?? null,
-      AFFINE_PRO_PUBLIC_KEY ?? null
-    );
+    t.is(t.context.crypto.AFFiNEProPublicKey?.toString(), 'public-key');
   } finally {
     // @ts-expect-error test restores deployment mode after the lifecycle hook
     globalThis.env.DEPLOYMENT_TYPE = deployment;

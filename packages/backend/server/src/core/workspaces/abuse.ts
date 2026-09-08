@@ -9,9 +9,7 @@ import {
   Config,
   EventBus,
   getRequestClientIp,
-  JobQueue,
   metrics,
-  OnJob,
   TooManyRequest,
   type UserFriendlyError,
 } from '../../base';
@@ -32,12 +30,6 @@ export type InviteQuotaAdmission = {
   reservationId?: string;
   decision: RuntimeWorkspaceInviteQuotaDecision;
 };
-
-declare global {
-  interface Jobs {
-    'inviteAbuse.executePendingActions': {};
-  }
-}
 
 function parseAsn(value: string | undefined) {
   if (!value) {
@@ -82,7 +74,6 @@ export class InviteAbuseDispositionService {
   constructor(
     private readonly models: Models,
     private readonly runtime: BackendRuntimeProvider,
-    private readonly queue: JobQueue,
     private readonly event: EventBus
   ) {}
 
@@ -174,16 +165,6 @@ export class InviteAbuseDispositionService {
     }
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)
-  async enqueuePendingActions() {
-    await this.queue.add(
-      'inviteAbuse.executePendingActions',
-      {},
-      { jobId: 'invite-abuse-execute-pending-actions' }
-    );
-  }
-
-  @OnJob('inviteAbuse.executePendingActions')
   async executePendingActions() {
     const workerId = `node:${this.workerOwnerId}`;
     const actions = await this.runtime.claimRetryableInviteAbuseActions(
@@ -231,6 +212,16 @@ export class InviteAbuseDispositionService {
         workspaceId
       );
     await this.runtime.quotaSeatUsageTransitionV1(workspaceIds);
+  }
+}
+
+@Injectable()
+export class InviteAbuseWorker {
+  constructor(private readonly disposition: InviteAbuseDispositionService) {}
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async executePendingActions() {
+    await this.disposition.executePendingActions();
   }
 }
 

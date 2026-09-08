@@ -8,7 +8,6 @@ import {
   CopilotTranscriptionJobExists,
   CopilotTranscriptionJobNotFound,
   type FileUpload,
-  OnJob,
   sniffMime,
 } from '../../../base';
 import {
@@ -486,13 +485,6 @@ export class CopilotTranscriptionService {
       personal,
     });
 
-    await this.retry.enqueuePendingTask(
-      task.id,
-      payload,
-      generation,
-      null,
-      personal ? 'personal' : 'canonical'
-    );
     this.publishTaskChanged(workspaceId, task.id, AiJobStatus.pending);
 
     return { id: task.id, status: AiJobStatus.pending, infos };
@@ -568,14 +560,19 @@ export class CopilotTranscriptionService {
     return taskToJob(task);
   }
 
-  @OnJob('copilot.transcript.task.submit')
   async transcriptTask({
     taskId,
     payload,
     generation,
     scopeMode,
     retryOf,
-  }: Jobs['copilot.transcript.task.submit']) {
+  }: {
+    taskId: string;
+    payload: TranscriptionPayloadV2;
+    generation: string;
+    scopeMode: 'personal' | 'canonical';
+    retryOf?: string;
+  }) {
     const task = await this.models.copilotTranscriptTask.get(taskId);
     if (!task) {
       throw new CopilotTranscriptionJobNotFound();

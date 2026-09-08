@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 import Sinon from 'sinon';
 
-import { AuthModule } from '../../core/auth';
+import { AuthWorkerModule } from '../../core/auth';
 import { AuthCronJob } from '../../core/auth/job';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { Models } from '../../models';
@@ -19,7 +19,7 @@ const runtime = {
 
 test.before(async () => {
   m = await createTestingModule({
-    imports: [ScheduleModule.forRoot(), AuthModule],
+    imports: [ScheduleModule.forRoot(), AuthWorkerModule],
     tapModule: builder => {
       builder.overrideProvider(BackendRuntimeProvider).useValue(runtime);
     },

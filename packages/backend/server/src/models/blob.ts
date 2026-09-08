@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { BlobInvalid } from '../base';
 import { BaseModel } from './base';
 
 /**
@@ -18,7 +19,7 @@ export class BlobModel extends BaseModel {
       where: { workspaceId, key, reservationId, status: 'pending' },
       data: { uploadId },
     });
-    if (result.count !== 1) throw new Error('Blob reservation changed');
+    if (result.count !== 1) throw new BlobInvalid('Blob reservation changed');
   }
 
   async get(workspaceId: string, key: string) {

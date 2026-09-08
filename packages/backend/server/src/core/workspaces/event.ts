@@ -124,11 +124,4 @@ export class WorkspaceEvents {
   }: Events['workspace.members.invite']) {
     await this.workspaceService.sendInvitationNotification(inviterId, inviteId);
   }
-
-  @OnEvent('user.deleted')
-  async clearUserWorkspaces(payload: Events['user.deleted']) {
-    for (const workspaceId of payload.ownedWorkspaces) {
-      await this.workspaceService.delete(workspaceId);
-    }
-  }
 }

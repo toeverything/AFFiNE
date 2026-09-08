@@ -134,6 +134,14 @@ ava(
       intentId: 'intent-2',
     });
 
+    const portal = runtime.createPaymentCustomerPortalV1 as Sinon.SinonStub;
+    portal.resolves('https://billing.example/portal');
+    t.is(
+      await service.createCustomerPortal('user-1'),
+      'https://billing.example/portal'
+    );
+    t.deepEqual(portal.lastCall.args, ['user-1']);
+
     t.throws(() => userSubscriptionIdentity(SubscriptionPlan.Team, 'user-1'), {
       instanceOf: SubscriptionNotExists,
     });

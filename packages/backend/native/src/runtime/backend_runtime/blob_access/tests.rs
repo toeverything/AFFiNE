@@ -380,6 +380,7 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
   append_updates(
     &fixture.pool,
     Some(publisher.clone()),
+    true,
     fixture.workspace_id.clone(),
     fixture.doc_id.clone(),
     vec![redis_update.into()],
@@ -412,6 +413,7 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
   append_updates(
     &fixture.pool,
     None,
+    true,
     fixture.workspace_id.clone(),
     fixture.doc_id.clone(),
     vec![loss_update.into()],

@@ -7,24 +7,13 @@ import {
 import { PrismaClient } from '@prisma/client';
 
 import { FunctionalityModules } from '../app.module';
-import {
-  AFFiNELogger,
-  ConfigFactory,
-  EventBus,
-  JobModule,
-  JobQueue,
-} from '../base';
+import { AFFiNELogger, ConfigFactory, EventBus } from '../base';
 import {
   BACKEND_RUNTIME_CONFIG_PATHS,
   BackendRuntimeProvider,
 } from '../core/backend-runtime';
 import { StorageRuntimeProvider } from '../core/storage-runtime';
-import {
-  createFactory,
-  MockEventBus,
-  MockJobModule,
-  MockJobQueue,
-} from './mocks';
+import { createFactory, MockEventBus } from './mocks';
 import { TEST_LOG_LEVEL } from './utils';
 import { createTestRuntimeConfig } from './utils/runtime-config';
 
@@ -35,7 +24,6 @@ interface TestingModuleMetadata extends ModuleMetadata {
 export interface TestingModule extends NestjsTestingModule {
   [Symbol.asyncDispose](): Promise<void>;
   create: ReturnType<typeof createFactory>;
-  queue: MockJobQueue;
   event: MockEventBus;
 }
 
@@ -48,13 +36,7 @@ export async function createModule(
     config.indexer
   );
   const { tapModule, ...meta } = metadata;
-  const functionalityModules = [
-    ...FunctionalityModules.filter(module => {
-      const moduleType = 'module' in module ? module.module : module;
-      return moduleType !== JobModule;
-    }),
-    MockJobModule,
-  ];
+  const functionalityModules = [...FunctionalityModules];
 
   const builder = Test.createTestingModule({
     ...meta,
@@ -62,8 +44,6 @@ export async function createModule(
   });
 
   builder
-    .overrideProvider(JobQueue)
-    .useValue(new MockJobQueue())
     .overrideProvider(EventBus)
     .useValue(new MockEventBus())
     .overrideProvider(BACKEND_RUNTIME_CONFIG_PATHS)
@@ -119,7 +99,6 @@ export async function createModule(
     await module.close();
   };
   module.create = createFactory(module.get(PrismaClient));
-  module.queue = module.get(JobQueue);
   module.event = module.get(EventBus);
 
   return module;

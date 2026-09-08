@@ -15,7 +15,6 @@ import {
   WorkspaceRole,
   workspaceUserSelect,
 } from './common';
-import type { Workspace } from './workspace';
 
 type CreateUserInput = Omit<Prisma.UserCreateInput, 'name'> & { name?: string };
 type UpdateUserProfileInput = Pick<
@@ -28,11 +27,7 @@ declare global {
     'user.preDelete': { id: string };
     'user.created': User;
     'user.updated': User;
-    'user.deleted': User & {
-      // TODO(@forehalo): unlink foreign key constraint on [WorkspaceUserPermission] to delegate
-      // dealing of owned workspaces of deleted users to workspace model
-      ownedWorkspaces: Workspace['id'][];
-    };
+    'user.deleted': User;
     'user.postCreated': User;
   }
 }
@@ -203,13 +198,8 @@ export class UserModel extends BaseModel {
     await this.db.workspaceInvitation.deleteMany({
       where: { inviteeUserId: id },
     });
-
     const user = await this.db.user.delete({ where: { id } });
-
-    this.event.emit('user.deleted', {
-      ...user,
-      ownedWorkspaces: ownedWorkspaces.map(r => r.workspaceId),
-    });
+    this.event.emit('user.deleted', user);
 
     return user;
   }

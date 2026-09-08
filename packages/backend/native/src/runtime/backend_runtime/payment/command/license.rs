@@ -82,20 +82,32 @@ impl PaymentRuntime {
     .await?
     .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
     let mut tx = connection.begin().await?;
-    let updated =
-      sqlx::query("UPDATE licenses SET installed_at=NULL,validate_key=NULL WHERE key=$1 AND validate_key=$2")
-        .bind(license_key)
-        .bind(validate_key)
-        .execute(&mut *tx)
+    let license = sqlx::query("SELECT workspace_id,validate_key FROM licenses WHERE key=$1 FOR UPDATE")
+      .bind(license_key)
+      .fetch_optional(&mut *tx)
+      .await
+      .map_err(|error| RuntimeError::database("lock payment license for deactivation", error))?
+      .ok_or_else(|| RuntimeError::invalid_state("license_not_found"))?;
+    let bound_workspace: Option<String> = license.get("workspace_id");
+    let bound_validate_key: Option<String> = license.get("validate_key");
+    if bound_workspace.is_none() && bound_validate_key.is_none() {
+      tx.commit()
         .await
-        .map_err(|error| RuntimeError::database("deactivate payment license", error))?;
-    if updated.rows_affected() != 1 {
+        .map_err(|error| RuntimeError::database("commit already-unbound license deactivation", error))?;
+      return Ok(json!({ "status": "already_unbound" }));
+    }
+    if bound_validate_key.as_deref() != Some(validate_key) {
       return Err(RuntimeError::invalid_state("invalid_validate_key"));
     }
+    sqlx::query("UPDATE licenses SET workspace_id=NULL,installed_at=NULL,validate_key=NULL WHERE key=$1")
+      .bind(license_key)
+      .execute(&mut *tx)
+      .await
+      .map_err(|error| RuntimeError::database("deactivate payment license", error))?;
     tx.commit()
       .await
       .map_err(|error| RuntimeError::database("commit license deactivation", error))?;
-    Ok(json!({ "success": true }))
+    Ok(json!({ "status": "deactivated" }))
   }
 
   pub(super) async fn check_license_health(&self, license_key: &str, validate_key: &str) -> RuntimeResult<Value> {
@@ -135,53 +147,47 @@ impl PaymentRuntime {
     ))
   }
 
-  pub(super) async fn create_license_portal(
+  pub(in crate::runtime::backend_runtime) async fn license_customer_portal_url(
     &self,
-    changes: &mut super::super::PaymentApplyResult,
     license_key: &str,
-    intent_id: &str,
-  ) -> RuntimeResult<Value> {
+    validate_key: &str,
+  ) -> RuntimeResult<String> {
     validate_identity(license_key, "license")?;
-    validate_intent(intent_id)?;
+    self
+      .assert_license_validate_key(license_key, Some(validate_key))
+      .await?;
     let namespace = canonical_namespace(self.stripe()?.namespace())?;
     let subscription = active_license_subscription_pool(&self.pool, license_key, &namespace).await?;
-    let namespace = self.stripe()?.namespace().clone();
-    let namespace_key = canonical_namespace(&namespace)?;
-    let intent = stripe_operation(
-      namespace.clone(),
-      "create_license_portal",
-      intent_id,
-      vec![
-        PaymentScope::source(&namespace_key, &subscription.source_id)?,
-        PaymentScope::customer(&namespace_key, &subscription.customer_id)?,
-        PaymentScope::billing_target(&namespace_key, "instance", license_key)?,
-      ],
-      Some("instance"),
-      Some(license_key),
-      "v1/billing_portal/sessions",
-      vec![text_field("customer", &subscription.customer_id)],
-    );
-    match self.execute_stripe_operation(intent).await? {
-      OperationExecution::Completed(result) => Ok(result),
-      OperationExecution::Sent {
-        connection,
-        operation_id,
-        response,
-      } => {
-        let portal: super::super::stripe_client::StripePortalSession = serde_json::from_value(response)
-          .map_err(|error| RuntimeError::json("invalid Stripe portal response", error))?;
-        let result = json!({ "url": portal.url });
-        changes.extend(
-          self
-            .apply_with_connection(
-              connection,
-              empty_snapshot(namespace, Some(subscription.customer_id), operation_id, result.clone()),
-            )
-            .await?,
-        );
-        Ok(result)
-      }
+    let mut form = StripeForm::default();
+    form.push("customer", StripeFormValue::Text(subscription.customer_id));
+    let portal: StripePortalSession = self
+      .stripe()?
+      .post("v1/billing_portal/sessions", &form, &uuid::Uuid::new_v4().to_string())
+      .await
+      .map_err(provider_runtime_error)?;
+    Ok(portal.url)
+  }
+
+  pub(super) async fn assert_license_validate_key(
+    &self,
+    license_key: &str,
+    validate_key: Option<&str>,
+  ) -> RuntimeResult<()> {
+    let validate_key = validate_key.ok_or_else(|| RuntimeError::invalid_input("license validate key is required"))?;
+    validate_uuid(validate_key, "license validate key")?;
+    let valid: bool = sqlx::query_scalar(
+      "SELECT EXISTS(SELECT 1 FROM licenses WHERE key=$1 AND validate_key=$2 AND workspace_id IS NOT NULL AND \
+       installed_at IS NOT NULL)",
+    )
+    .bind(license_key)
+    .bind(validate_key)
+    .fetch_one(&self.pool)
+    .await
+    .map_err(|error| RuntimeError::database("authorize payment license", error))?;
+    if !valid {
+      return Err(RuntimeError::invalid_state("invalid_validate_key"));
     }
+    Ok(())
   }
 }
 

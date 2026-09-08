@@ -88,9 +88,10 @@ export class LicenseService {
 
   @OnEvent('workspace.members.updated')
   async updateTeamSeats(payload: Events['workspace.members.updated']) {
-    const installed = await this.runtime
+    const result = await this.runtime
       .updateTeamLicenseSeatsV1(payload.workspaceId)
       .catch(throwNativeLicenseError);
+    const installed = result.license;
     if (!installed) return;
     this.event.emit('workspace.subscription.activated', {
       workspaceId: installed.workspaceId,

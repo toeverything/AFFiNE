@@ -27,10 +27,6 @@ enum PaymentCommand {
     success_url: String,
     intent_id: String,
   },
-  CreatePortal {
-    actor_user_id: String,
-    intent_id: String,
-  },
   MutateSubscription {
     actor_user_id: String,
     target_type: String,
@@ -41,6 +37,7 @@ enum PaymentCommand {
   },
   UpdateRecurring {
     actor_user_id: Option<String>,
+    validate_key: Option<String>,
     target_type: String,
     target_id: String,
     plan: String,
@@ -48,6 +45,8 @@ enum PaymentCommand {
     intent_id: String,
   },
   UpdateQuantity {
+    actor_user_id: Option<String>,
+    validate_key: Option<String>,
     target_type: String,
     target_id: String,
     plan: String,
@@ -78,10 +77,6 @@ enum PaymentCommand {
   CheckLicenseHealth {
     license_key: String,
     validate_key: String,
-  },
-  CreateLicensePortal {
-    license_key: String,
-    intent_id: String,
   },
   PrepareUserDeletion {
     user_id: String,
@@ -138,10 +133,6 @@ impl PaymentRuntime {
           )
           .await
       }
-      PaymentCommand::CreatePortal {
-        actor_user_id,
-        intent_id,
-      } => self.create_portal(&mut changes, &actor_user_id, &intent_id).await,
       PaymentCommand::MutateSubscription {
         actor_user_id,
         target_type,
@@ -164,6 +155,7 @@ impl PaymentRuntime {
       }
       PaymentCommand::UpdateRecurring {
         actor_user_id,
+        validate_key,
         target_type,
         target_id,
         plan,
@@ -174,6 +166,7 @@ impl PaymentRuntime {
           .update_recurring(
             &mut changes,
             actor_user_id.as_deref(),
+            validate_key.as_deref(),
             &target_type,
             &target_id,
             &plan,
@@ -183,6 +176,8 @@ impl PaymentRuntime {
           .await
       }
       PaymentCommand::UpdateQuantity {
+        actor_user_id,
+        validate_key,
         target_type,
         target_id,
         plan,
@@ -190,7 +185,16 @@ impl PaymentRuntime {
         intent_id,
       } => {
         self
-          .update_quantity(&mut changes, &target_type, &target_id, &plan, quantity, &intent_id)
+          .update_quantity(
+            &mut changes,
+            actor_user_id.as_deref(),
+            validate_key.as_deref(),
+            &target_type,
+            &target_id,
+            &plan,
+            quantity,
+            &intent_id,
+          )
           .await
       }
       PaymentCommand::RefreshRevenuecat { user_id } => self.refresh_revenuecat(&mut changes, &user_id).await,
@@ -219,9 +223,6 @@ impl PaymentRuntime {
         license_key,
         validate_key,
       } => self.check_license_health(&license_key, &validate_key).await,
-      PaymentCommand::CreateLicensePortal { license_key, intent_id } => {
-        self.create_license_portal(&mut changes, &license_key, &intent_id).await
-      }
       PaymentCommand::PrepareUserDeletion { user_id } => self.prepare_user_deletion(&user_id).await,
     }?;
     Ok(PaymentCommandOutcome { value, changes })

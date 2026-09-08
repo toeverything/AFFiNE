@@ -124,7 +124,7 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
   }
 
   private async embeddingStatuses(workspaceId: string, artifactIds: string[]) {
-    if (artifactIds.length === 0)
+    if (!this.supportEmbedding || artifactIds.length === 0)
       return new Map<string, 'processing' | 'ready' | 'failed'>();
     const rows = await this.db.$queryRaw<
       { artifactId: string; status: 'processing' | 'ready' | 'failed' }[]

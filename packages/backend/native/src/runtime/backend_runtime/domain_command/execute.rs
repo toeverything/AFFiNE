@@ -89,6 +89,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
   pool: PgPool,
   deployment: Deployment,
   telemetry: PermissionTelemetry,
+  embedding_schema_ready: bool,
   input: DomainCommandInputV1,
 ) -> RuntimeResult<DomainCommandOutcome> {
   let mut invalidations = input.invalidations();
@@ -103,6 +104,9 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       workspace_id,
       doc_id,
       content,
+      doc_title,
+      doc_mode,
+      mentions,
     } => {
       comments::create_comment(
         &authorizer,
@@ -111,6 +115,9 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         content,
+        doc_title,
+        doc_mode,
+        mentions,
         deployment,
       )
       .await?
@@ -132,6 +139,9 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       actor_user_id,
       comment_id,
       content,
+      doc_title,
+      doc_mode,
+      mentions,
     } => {
       replies::create_reply(
         &authorizer,
@@ -139,6 +149,9 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         actor_user_id,
         comment_id,
         content,
+        doc_title,
+        doc_mode,
+        mentions,
         deployment,
       )
       .await?
@@ -200,6 +213,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         doc_id,
         lifecycle,
         deployment,
+        embedding_schema_ready,
       )
       .await?
     }
@@ -219,6 +233,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         assert_permission,
         expected_permission_generation,
         deployment,
+        embedding_schema_ready,
       )
       .await?
     }
@@ -236,6 +251,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         doc_id,
         timestamp,
         deployment,
+        embedding_schema_ready,
       )
       .await?
     }
@@ -358,11 +374,11 @@ mod tests {
   fn command_wire_and_invalidation_contract_is_complete() {
     let timestamp = "2026-08-30T00:00:00Z";
     let cases = [
-      serde_json::json!({"command":"create_comment","actorUserId":"actor","workspaceId":"workspace","docId":"doc","content":{}}),
+      serde_json::json!({"command":"create_comment","actorUserId":"actor","workspaceId":"workspace","docId":"doc","content":{},"docTitle":"title","docMode":"page"}),
       serde_json::json!({"command":"update_comment","actorUserId":"actor","id":"comment","content":{}}),
       serde_json::json!({"command":"resolve_comment","actorUserId":"actor","id":"comment","resolved":true}),
       serde_json::json!({"command":"delete_comment","actorUserId":"actor","id":"comment"}),
-      serde_json::json!({"command":"create_reply","actorUserId":"actor","commentId":"comment","content":{}}),
+      serde_json::json!({"command":"create_reply","actorUserId":"actor","commentId":"comment","content":{},"docTitle":"title","docMode":"page"}),
       serde_json::json!({"command":"update_reply","actorUserId":"actor","id":"reply","content":{}}),
       serde_json::json!({"command":"delete_reply","actorUserId":"actor","id":"reply"}),
       serde_json::json!({"command":"publish_doc","actorUserId":"actor","workspaceId":"workspace","docId":"doc","mode":0}),
@@ -508,7 +524,14 @@ mod tests {
       doc_id: doc_id.clone(),
       mode: 0,
     };
-    let failed = execute(pool.clone(), Deployment::Cloud, PermissionTelemetry::default(), input()).await;
+    let failed = execute(
+      pool.clone(),
+      Deployment::Cloud,
+      PermissionTelemetry::default(),
+      true,
+      input(),
+    )
+    .await;
     assert!(failed.is_err());
     assert!(
       !sqlx::query_scalar::<_, bool>(
@@ -529,9 +552,15 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
-    let outcome = execute(pool.clone(), Deployment::Cloud, PermissionTelemetry::default(), input())
-      .await
-      .unwrap();
+    let outcome = execute(
+      pool.clone(),
+      Deployment::Cloud,
+      PermissionTelemetry::default(),
+      true,
+      input(),
+    )
+    .await
+    .unwrap();
     assert_eq!(outcome.value["public"], true);
     assert!(outcome.invalidations.is_empty());
     assert!(

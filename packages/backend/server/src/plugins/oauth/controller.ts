@@ -73,6 +73,7 @@ export class OAuthController {
           ? '/api/oauth/callback'
           : '/oauth/callback'
       ),
+      ...this.url.redirectPolicy(),
     });
   }
 

@@ -43,7 +43,6 @@ import { AuthSigningKeyResolver } from './signing-key-resolver';
     AuthSessionService,
     AuthSigningKeyRing,
     AuthSigningKeyResolver,
-    AuthCronJob,
     AuthWebsocketOptionsProvider,
   ],
   exports: [
@@ -61,6 +60,12 @@ import { AuthSigningKeyResolver } from './signing-key-resolver';
   controllers: [AuthController],
 })
 export class AuthModule {}
+
+@Module({
+  imports: [BackendRuntimeModule],
+  providers: [AuthCronJob],
+})
+export class AuthWorkerModule {}
 
 export * from './guard';
 export * from './input';

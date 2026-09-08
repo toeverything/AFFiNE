@@ -14,24 +14,13 @@ import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import supertest from 'supertest';
 
-import {
-  AFFiNELogger,
-  ApplyType,
-  GlobalExceptionFilter,
-  JobQueue,
-} from '../../base';
+import { AFFiNELogger, ApplyType, GlobalExceptionFilter } from '../../base';
 import { SocketIoAdapter } from '../../base/websocket';
 import { AuthService, AuthSigningKeyRing } from '../../core/auth';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { Mailer } from '../../core/mail';
 import { UserModel } from '../../models';
-import {
-  createFactory,
-  MockedUser,
-  MockJobQueue,
-  MockUser,
-  MockUserInput,
-} from '../mocks';
+import { createFactory, MockedUser, MockUser, MockUserInput } from '../mocks';
 import { MockMailer } from '../mocks/mailer.mock';
 import { createTestingModule } from './testing-module';
 import { initTestingDB, TEST_LOG_LEVEL } from './utils';
@@ -103,7 +92,6 @@ export class TestingApp extends ApplyType<INestApplication>() {
 
   readonly create!: ReturnType<typeof createFactory>;
   readonly mails!: MockMailer;
-  readonly queue!: MockJobQueue;
 
   [Symbol.asyncDispose](): Promise<void> {
     return this.close();
@@ -403,9 +391,6 @@ function makeTestingApp(app: INestApplication): TestingApp {
   testingApp.create = createFactory(app.get(PrismaClient, { strict: false }));
   // @ts-expect-error allow
   testingApp.mails = app.get(Mailer, { strict: false }) as MockMailer;
-  // @ts-expect-error allow
-  testingApp.queue = app.get(JobQueue, { strict: false }) as MockJobQueue;
-
   return new Proxy(testingApp, {
     get(target, prop) {
       // @ts-expect-error override

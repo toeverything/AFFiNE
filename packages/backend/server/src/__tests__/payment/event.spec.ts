@@ -23,7 +23,10 @@ ava('payment HTTP and event adapters only forward protocol data', async t => {
     payment: { enabled: true, stripe: { apiKey: 'sk_test_protocol' } },
   } as Config;
   const models = {
-    workspaceUser: { chargedCount: Sinon.stub().resolves(3) },
+    workspaceUser: {
+      chargedCount: Sinon.stub().resolves(3),
+      getOwner: Sinon.stub().resolves({ id: 'owner-1' }),
+    },
   } as unknown as Models;
   const events = new PaymentEventHandlers(workspace, runtime, config, models);
 
@@ -35,6 +38,7 @@ ava('payment HTTP and event adapters only forward protocol data', async t => {
   await events.updateTeamSubscriptionQuantity({ workspaceId: 'workspace-1' });
   t.like(execute.lastCall.args[0], {
     action: 'update_quantity',
+    actorUserId: 'owner-1',
     targetType: 'workspace',
     targetId: 'workspace-1',
     plan: 'team',
@@ -98,4 +102,19 @@ ava('payment HTTP and event adapters only forward protocol data', async t => {
   t.true(response.header.calledWith('x-next-validate-key', 'validate-key'));
   t.true(response.header.calledWith('x-license-recurring', 'yearly'));
   t.deepEqual(response.send.lastCall.args, [Buffer.from('signed-license')]);
+
+  const licensePortal =
+    runtime.createLicenseCustomerPortalV1 as Sinon.SinonStub;
+  licensePortal.resolves('https://billing.example/license-portal');
+  t.deepEqual(
+    await licenses.createCustomerPortal(
+      'license-key',
+      'b7afc067-12ec-4018-9cc4-23bb4e57e0df'
+    ),
+    { url: 'https://billing.example/license-portal' }
+  );
+  t.deepEqual(licensePortal.lastCall.args, [
+    'license-key',
+    'b7afc067-12ec-4018-9cc4-23bb4e57e0df',
+  ]);
 });

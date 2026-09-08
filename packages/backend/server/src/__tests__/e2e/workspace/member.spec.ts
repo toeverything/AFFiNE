@@ -20,7 +20,13 @@ import {
 } from '@prisma/client';
 
 import { EntitlementService } from '../../../core/entitlement';
-import { Models, WorkspaceRole as ModelWorkspaceRole } from '../../../models';
+import {
+  type InvitationNotification,
+  type InvitationReviewDeclinedNotification,
+  Models,
+  NotificationType,
+  WorkspaceRole as ModelWorkspaceRole,
+} from '../../../models';
 import { SubscriptionPlan } from '../../../plugins/payment/types';
 import { Mockers } from '../../mocks';
 import { createRealtimeClient, realtimeRequest } from '../realtime';
@@ -65,21 +71,22 @@ e2e('should invite a user', async t => {
   });
 
   t.truthy(result, 'failed to invite user');
-  // add invitation notification job
-  const invitationNotification = await app.queue.waitFor(
-    'notification.sendInvitation'
-  );
-  t.is(invitationNotification.payload.inviterId, owner.id);
-  t.is(
-    invitationNotification.payload.inviteId,
-    result.inviteMembers[0].inviteId!
-  );
+  const [invitationNotification] =
+    await app.models.notification.findManyByUserId(u2.id, {
+      includeRead: true,
+      first: 1,
+      offset: 0,
+    });
+  const invitation = invitationNotification as InvitationNotification;
+  t.is(invitation.type, NotificationType.Invitation);
+  t.is(invitation.body.createdByUserId, owner.id);
+  t.is(invitation.body.inviteId, result.inviteMembers[0].inviteId!);
 
   await t.throwsAsync(
     app.gql({
       query: getInviteInfoQuery,
       variables: {
-        inviteId: invitationNotification.payload.inviteId,
+        inviteId: invitation.body.inviteId,
       },
     }),
     { message: 'This invitation belongs to another account.' }
@@ -89,7 +96,7 @@ e2e('should invite a user', async t => {
       query: acceptInviteByInviteIdMutation,
       variables: {
         workspaceId: workspace.id,
-        inviteId: invitationNotification.payload.inviteId,
+        inviteId: invitation.body.inviteId,
       },
     }),
     { message: 'This invitation belongs to another account.' }
@@ -100,7 +107,7 @@ e2e('should invite a user', async t => {
     app.gql({
       query: getInviteInfoQuery,
       variables: {
-        inviteId: invitationNotification.payload.inviteId,
+        inviteId: invitation.body.inviteId,
       },
     }),
     { message: 'You must sign in first to access this resource.' }
@@ -110,7 +117,7 @@ e2e('should invite a user', async t => {
       query: acceptInviteByInviteIdMutation,
       variables: {
         workspaceId: workspace.id,
-        inviteId: invitationNotification.payload.inviteId,
+        inviteId: invitation.body.inviteId,
       },
     }),
     { message: 'You must sign in first to access this resource.' }
@@ -121,7 +128,7 @@ e2e('should invite a user', async t => {
   const { getInviteInfo } = await app.gql({
     query: getInviteInfoQuery,
     variables: {
-      inviteId: invitationNotification.payload.inviteId,
+      inviteId: invitation.body.inviteId,
     },
   });
   t.is(getInviteInfo.status, WorkspaceMemberStatus.Pending);
@@ -131,7 +138,7 @@ e2e('should invite a user', async t => {
     query: acceptInviteByInviteIdMutation,
     variables: {
       workspaceId: workspace.id,
-      inviteId: invitationNotification.payload.inviteId,
+      inviteId: invitation.body.inviteId,
     },
   });
 
@@ -139,7 +146,7 @@ e2e('should invite a user', async t => {
   const { getInviteInfo: getInviteInfo2 } = await app.gql({
     query: getInviteInfoQuery,
     variables: {
-      inviteId: invitationNotification.payload.inviteId,
+      inviteId: invitation.body.inviteId,
     },
   });
   t.is(getInviteInfo2.status, WorkspaceMemberStatus.Accepted);
@@ -362,19 +369,18 @@ e2e('should revoke a user on under review', async t => {
     },
   });
   t.true(revokeMember, 'failed to revoke user');
-  const requestDeclinedNotification = app.queue.last(
-    'notification.sendInvitationReviewDeclined'
-  );
-  t.truthy(requestDeclinedNotification);
-  t.deepEqual(
-    requestDeclinedNotification.payload,
-    {
-      userId: user.id,
-      workspaceId: workspace.id,
-      reviewerId: owner.id,
-    },
-    'should send review declined notification'
-  );
+  const [requestDeclinedNotification] =
+    await app.models.notification.findManyByUserId(user.id, {
+      includeRead: true,
+      first: 1,
+      offset: 0,
+    });
+  const declined =
+    requestDeclinedNotification as InvitationReviewDeclinedNotification;
+  t.is(declined.type, NotificationType.InvitationReviewDeclined);
+  t.is(declined.userId, user.id);
+  t.is(declined.body.workspaceId, workspace.id);
+  t.is(declined.body.createdByUserId, owner.id);
 });
 
 e2e('should create user if not exist', async t => {
@@ -589,11 +595,14 @@ e2e(
       },
     });
     t.truthy(result, 'failed to accept invite');
-    const notification = app.queue.last(
-      'notification.sendInvitationReviewRequest'
+    const [notification] = await app.models.notification.findManyByUserId(
+      owner.id,
+      { includeRead: true, first: 1, offset: 0 }
     );
-    t.is(notification.payload.reviewerId, owner.id);
-    t.truthy(notification.payload.inviteId);
+    const review = notification as InvitationNotification;
+    t.is(review.type, NotificationType.InvitationReviewRequest);
+    t.is(review.userId, owner.id);
+    t.truthy(review.body.inviteId);
   }
 );
 
@@ -625,11 +634,14 @@ e2e(
       },
     });
     t.truthy(result, 'failed to accept invite');
-    const notification = app.queue.last(
-      'notification.sendInvitationReviewRequest'
+    const [notification] = await app.models.notification.findManyByUserId(
+      owner.id,
+      { includeRead: true, first: 1, offset: 0 }
     );
-    t.is(notification.payload.reviewerId, owner.id);
-    t.truthy(notification.payload.inviteId);
+    const review = notification as InvitationNotification;
+    t.is(review.type, NotificationType.InvitationReviewRequest);
+    t.is(review.userId, owner.id);
+    t.truthy(review.body.inviteId);
   }
 );
 

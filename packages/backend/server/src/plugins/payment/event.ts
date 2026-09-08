@@ -35,8 +35,10 @@ export class PaymentEventHandlers {
       return;
     }
     const quantity = await this.models.workspaceUser.chargedCount(workspaceId);
+    const owner = await this.models.workspaceUser.getOwner(workspaceId);
     await this.runtime.executePaymentCommandV1({
       action: 'update_quantity',
+      actorUserId: owner.id,
       targetType: 'workspace',
       targetId: workspaceId,
       plan: 'team',

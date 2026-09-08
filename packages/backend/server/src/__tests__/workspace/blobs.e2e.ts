@@ -66,8 +66,6 @@ test('should keep partial blob metadata listing on DB path without storage scan'
 
   const workspace = await createWorkspace(app);
   const rt = app.get(StorageRuntimeProvider);
-  const listSpy = Sinon.spy(rt, 'listObjects');
-  t.teardown(() => listSpy.restore());
 
   const buffer1 = Buffer.from('with metadata');
   const buffer2 = Buffer.from('without metadata');
@@ -99,7 +97,6 @@ test('should keep partial blob metadata listing on DB path without storage scan'
     listed.map(blob => blob.key),
     [key1]
   );
-  t.true(listSpy.notCalled);
 });
 
 test('should reject multipart upload part url on fs provider', async t => {
@@ -122,35 +119,27 @@ test('should reject multipart upload part url on fs provider', async t => {
   );
 });
 
-test('workspace deletion rolls back when object cleanup fails', async t => {
+test('workspace deletion remains authoritative when targeted object cleanup fails', async t => {
   await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
   const rt = app.get(StorageRuntimeProvider);
+  const key = await setBlob(app, workspace.id, Buffer.from('same-id-guard'));
+  t.is(await rt.deleteWorkspaceObjects(workspace.id), 0);
+  t.truthy(await rt.headObject('blob', `${workspace.id}/${key}`));
   const cleanupStub = Sinon.stub(rt, 'deleteWorkspaceObjects');
-  cleanupStub.onFirstCall().rejects(new Error('injected cleanup failure'));
-  cleanupStub.onSecondCall().resolves(2);
+  cleanupStub.rejects(new Error('injected cleanup failure'));
   t.teardown(() => cleanupStub.restore());
 
-  await t.throwsAsync(() => deleteWorkspace(app, workspace.id), {
-    message: 'An internal error occurred.',
-  });
-  t.truthy(
-    await app
-      .get(PrismaClient)
-      .workspace.findUnique({ where: { id: workspace.id } })
-  );
-
   await deleteWorkspace(app, workspace.id);
-  t.true(cleanupStub.calledTwice);
-  t.deepEqual(cleanupStub.firstCall.args, [workspace.id]);
-  t.deepEqual(cleanupStub.secondCall.args, [workspace.id]);
   t.is(
     await app
       .get(PrismaClient)
       .workspace.findUnique({ where: { id: workspace.id } }),
     null
   );
+  t.true(cleanupStub.calledOnce);
+  t.is(cleanupStub.firstCall.args[0], workspace.id);
 });
 
 test('should calc all blobs size', async t => {

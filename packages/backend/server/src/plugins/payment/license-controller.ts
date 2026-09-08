@@ -108,15 +108,20 @@ export class LicenseController {
   @Post('/:license/seats')
   async updateSeats(
     @Param('license') licenseKey: string,
+    @Headers('x-validate-key') validateKey: string,
     @Body() body: unknown
   ) {
     const input = UpdateSeatsParams.safeParse(body);
     if (!input.success) {
       throw new InvalidLicenseUpdateParams({ reason: input.error.message });
     }
+    if (!ValidateKey.safeParse(validateKey).success) {
+      throw new InvalidLicenseUpdateParams({ reason: 'Invalid validate key' });
+    }
     try {
       await this.runtime.executePaymentCommandV1({
         action: 'update_quantity',
+        validateKey,
         targetType: 'instance',
         targetId: licenseKey,
         plan: 'selfhost_team',
@@ -131,15 +136,20 @@ export class LicenseController {
   @Post('/:license/recurring')
   async updateRecurring(
     @Param('license') licenseKey: string,
+    @Headers('x-validate-key') validateKey: string,
     @Body() body: unknown
   ) {
     const input = UpdateRecurringParams.safeParse(body);
     if (!input.success) {
       throw new InvalidLicenseUpdateParams({ reason: input.error.message });
     }
+    if (!ValidateKey.safeParse(validateKey).success) {
+      throw new InvalidLicenseUpdateParams({ reason: 'Invalid validate key' });
+    }
     try {
       await this.runtime.executePaymentCommandV1({
         action: 'update_recurring',
+        validateKey,
         targetType: 'instance',
         targetId: licenseKey,
         plan: 'selfhost_team',
@@ -152,13 +162,19 @@ export class LicenseController {
   }
 
   @Post('/:license/create-customer-portal')
-  async createCustomerPortal(@Param('license') licenseKey: string) {
+  async createCustomerPortal(
+    @Param('license') licenseKey: string,
+    @Headers('x-validate-key') validateKey: string
+  ) {
+    if (!ValidateKey.safeParse(validateKey).success) {
+      throw new CustomerPortalCreateFailed();
+    }
     try {
-      return await this.runtime.executePaymentCommandV1<{ url: string }>({
-        action: 'create_license_portal',
+      const url = await this.runtime.createLicenseCustomerPortalV1(
         licenseKey,
-        intentId: randomUUID(),
-      });
+        validateKey
+      );
+      return { url };
     } catch {
       throw new CustomerPortalCreateFailed();
     }

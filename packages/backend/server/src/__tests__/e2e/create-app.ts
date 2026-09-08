@@ -20,7 +20,6 @@ import {
   ConfigFactory,
   EventBus,
   GlobalExceptionFilter,
-  JobQueue,
   OneMB,
 } from '../../base';
 import { ThrottlerStorage } from '../../base/throttler';
@@ -38,7 +37,6 @@ import { IndexerService } from '../../plugins/indexer/service';
 import {
   createFactory,
   MockedUser,
-  MockJobQueue,
   MockMailer,
   MockUser,
   MockUserInput,
@@ -68,7 +66,6 @@ export class TestingApp extends NestApplication {
 
   create = createFactory(this.get(PrismaClient, { strict: false }));
   mails = this.getOptional(Mailer) as unknown as MockMailer;
-  queue = this.get(JobQueue, { strict: false }) as MockJobQueue;
   eventBus = this.get(EventBus, { strict: false });
   models = this.get(Models, { strict: false });
 
@@ -268,7 +265,6 @@ export async function createApp(
   });
 
   builder.overrideProvider(Mailer).useValue(new MockMailer());
-  builder.overrideProvider(JobQueue).useValue(new MockJobQueue());
   builder
     .overrideProvider(BACKEND_RUNTIME_CONFIG_PATHS)
     .useValue([runtimeConfig.configPath]);

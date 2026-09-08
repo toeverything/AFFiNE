@@ -2,7 +2,7 @@ use affine_core::access_control::DomainCommand;
 use serde_json::Value;
 use sqlx::{Postgres, Transaction, types::Json};
 
-use super::{authorize_domain, load_target, lock_target, value};
+use super::{authorize_domain, comments::create_comment_notifications, load_target, lock_target, value};
 use crate::runtime::{Deployment, RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 pub(super) async fn create_reply(
@@ -11,6 +11,9 @@ pub(super) async fn create_reply(
   actor_user_id: String,
   comment_id: String,
   content: Value,
+  doc_title: String,
+  doc_mode: String,
+  mentions: Vec<String>,
   deployment: Deployment,
 ) -> RuntimeResult<Value> {
   let comment = load_target(transaction, "comments", &comment_id, false).await?;
@@ -45,7 +48,27 @@ pub(super) async fn create_reply(
   .fetch_one(&mut **transaction)
   .await
   .map_err(|error| RuntimeError::database("create reply", error))?;
-  value(row, "decode created reply")
+  let mut value = value(row, "decode created reply")?;
+  let reply_id = value
+    .get("id")
+    .and_then(Value::as_str)
+    .ok_or_else(|| RuntimeError::invalid_state("created reply is missing id"))?;
+  let notification_ids = create_comment_notifications(
+    authorizer,
+    transaction,
+    &actor_user_id,
+    &comment,
+    Some(reply_id),
+    &doc_title,
+    &doc_mode,
+    mentions,
+  )
+  .await?;
+  value
+    .as_object_mut()
+    .expect("reply result is an object")
+    .insert("notificationIds".into(), serde_json::json!(notification_ids));
+  Ok(value)
 }
 
 pub(super) async fn update_reply(

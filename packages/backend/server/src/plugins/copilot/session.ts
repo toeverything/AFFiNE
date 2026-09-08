@@ -10,7 +10,7 @@ import {
   CopilotPromptNotFound,
   CopilotSessionInvalidInput,
   CopilotSessionNotFound,
-  OnJob,
+  Mutex,
 } from '../../base';
 import {
   CleanupSessionOptions,
@@ -31,16 +31,6 @@ import {
   type ChatSessionOptions,
   type ChatSessionState,
 } from './types';
-
-declare global {
-  interface Jobs {
-    'copilot.session.generateTitle': {
-      sessionId: string;
-      userId: string;
-      workspaceId: string;
-    };
-  }
-}
 
 export class ChatSession {
   private readonly renderPromptSession: (
@@ -68,7 +58,7 @@ export class ChatSession {
       workspaceId,
       docId,
       focus,
-      prompt: { name: promptName, config: promptConfig },
+      prompt: { name: promptName, action: promptAction, config: promptConfig },
     } = this.state;
 
     return {
@@ -78,6 +68,7 @@ export class ChatSession {
       docId,
       focus,
       promptName,
+      promptAction,
       promptConfig,
     };
   }
@@ -149,7 +140,8 @@ export class ChatSessionService {
     private readonly store: ConversationStore,
     private readonly conversationPolicy: ConversationPolicy,
     private readonly prompts: PromptService,
-    private readonly promptRuntime: PromptRuntime
+    private readonly promptRuntime: PromptRuntime,
+    private readonly mutex: Mutex
   ) {}
 
   private stripNullBytes(value?: string | null): string {
@@ -524,11 +516,16 @@ export class ChatSessionService {
     return await this.models.copilotSession.getOwnedScope(sessionId, userId);
   }
 
-  @OnJob('copilot.session.generateTitle')
-  async generateSessionTitle(job: Jobs['copilot.session.generateTitle']) {
+  async generateSessionTitle(job: {
+    sessionId: string;
+    userId: string;
+    workspaceId: string;
+  }) {
     const { sessionId, userId, workspaceId } = job;
-
     try {
+      await using lock = await this.mutex.acquire(`copilot:title:${sessionId}`);
+      if (!lock) return;
+
       const stored = await this.store.getForBackground(
         sessionId,
         userId,
@@ -579,7 +576,7 @@ export class ChatSessionService {
         );
         return;
       }
-      await this.models.copilotSession.update({
+      await this.models.copilotSession.setTitleIfAbsent({
         userId: conversation.userId,
         sessionId,
         workspaceId: conversation.workspaceId,

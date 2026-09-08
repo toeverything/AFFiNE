@@ -16,6 +16,7 @@ import type { Request, Response } from 'express';
 
 import {
   applyAttachHeaders,
+  BadRequest,
   CallMetric,
   CommentAttachmentNotFound,
   DocActionDenied,
@@ -190,12 +191,11 @@ export class WorkspacesController {
         docId: identity.docId,
       };
     }
+    if (sourceType !== 'history' || !docId) {
+      throw new BadRequest('Invalid blob source');
+    }
     const timestampMs = Number(rawTimestamp);
-    if (
-      sourceType === 'history' &&
-      docId &&
-      Number.isSafeInteger(timestampMs)
-    ) {
+    if (Number.isSafeInteger(timestampMs)) {
       const identity = canonicalizeDocumentIdentity(docId, workspaceId);
       return {
         type: 'history',

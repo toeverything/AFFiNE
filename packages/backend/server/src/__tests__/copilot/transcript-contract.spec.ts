@@ -99,7 +99,6 @@ function createSuccessfulTranscriptBridge(
 function createCopilotTranscriptionService(...deps: unknown[]) {
   const retry = new CopilotTranscriptionRetryService(
     deps[0] as never,
-    deps[1] as never,
     (deps[6] ?? { assertRoute: Sinon.stub().resolves() }) as never,
     (deps[7] ?? { publish: Sinon.stub() }) as never
   );
@@ -234,8 +233,7 @@ test('retryTask rejects settled transcript tasks', async t => {
   );
 });
 
-test('retryTask reuses failed task and queues a new action attempt', async t => {
-  const queuedJobs: unknown[] = [];
+test('retryTask reuses a failed task as durable pending work', async t => {
   const assertRoute = Sinon.stub().resolves();
   const claimRetry = Sinon.stub();
   claimRetry.onFirstCall().resolves(true);
@@ -256,11 +254,7 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
         claimRetry,
       },
     } as never,
-    {
-      add: Sinon.stub().callsFake(async (name, payload, options) => {
-        queuedJobs.push({ name, payload, options });
-      }),
-    } as never,
+    {} as never,
     {} as never,
     {
       resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.7-flash'),
@@ -273,22 +267,10 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
   const result = await service.retryTask('user-1', 'workspace-1', 'task-1');
 
   t.is(result?.status, AiJobStatus.pending);
-  t.like(queuedJobs[0] as Record<string, unknown>, {
-    name: 'copilot.transcript.task.submit',
-  });
-  t.like((queuedJobs[0] as { payload: Record<string, unknown> }).payload, {
-    taskId: 'task-1',
-    retryOf: 'run-failed',
-  });
-  t.like((queuedJobs[0] as { options: Record<string, unknown> }).options, {
-    attempts: 1,
-    removeOnFail: true,
-  });
   await t.throwsAsync(
     () => service.retryTask('user-1', 'workspace-1', 'task-1'),
     { message: /Only failed transcript tasks/ }
   );
-  t.is(queuedJobs.length, 1);
   Sinon.assert.alwaysCalledWithExactly(
     assertRoute,
     'transcript.audio',
@@ -302,36 +284,6 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
   );
   t.is(assertRoute.callCount, 2);
 
-  const failPendingDispatch = Sinon.stub().resolves(true);
-  const failingRetry = new CopilotTranscriptionRetryService(
-    {
-      copilotTranscriptTask: {
-        getWithUser: Sinon.stub().resolves({
-          id: 'task-2',
-          status: 'failed',
-          actionRunId: null,
-          protectedResult: payload,
-        }),
-        claimRetry: Sinon.stub().resolves(true),
-        failPendingDispatch,
-      },
-    } as never,
-    { add: Sinon.stub().rejects(new Error('redis unavailable')) } as never,
-    { assertRoute: Sinon.stub().resolves() } as never,
-    { publish: Sinon.stub() } as never
-  );
-  await t.throwsAsync(
-    () => failingRetry.retryTask('user-1', 'workspace-1', 'task-2'),
-    { message: 'redis unavailable' }
-  );
-  Sinon.assert.calledOnceWithExactly(
-    failPendingDispatch,
-    'task-2',
-    Sinon.match.string,
-    'redis unavailable'
-  );
-
-  const recoveredJobs: unknown[] = [];
   const recovery = new CopilotTranscriptionRetryService(
     {
       copilotTranscriptTask: {
@@ -348,28 +300,21 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
         staleRunningDispatches: Sinon.stub().resolves([]),
       },
     } as never,
-    {
-      add: Sinon.stub().callsFake(async (name, jobPayload, options) => {
-        recoveredJobs.push({ name, jobPayload, options });
-      }),
-    } as never,
     {} as never,
     { publish: Sinon.stub() } as never
   );
-  await recovery.reconcileDispatches();
-  t.like(recoveredJobs[0] as Record<string, unknown>, {
-    name: 'copilot.transcript.task.submit',
-  });
-  t.like((recoveredJobs[0] as { options: Record<string, unknown> }).options, {
-    jobId: 'copilot-transcript-task/task-3/generation-recovery',
-    attempts: 1,
+  const [recovered] = await recovery.collectPendingDispatches();
+  t.like(recovered, {
+    taskId: 'task-3',
+    generation: 'generation-recovery',
+    retryOf: 'run-failed',
+    scopeMode: 'canonical',
   });
 });
 
 for (const status of ['ready', 'settled']) {
   test(`submitTask allows a new task for the same blob after ${status} task`, async t => {
     const createdTasks: unknown[] = [];
-    const queuedJobs: unknown[] = [];
     const assertRoute = Sinon.stub().resolves();
     const service = createCopilotTranscriptionService(
       {
@@ -385,11 +330,7 @@ for (const status of ['ready', 'settled']) {
           markRunning: Sinon.stub().resolves({ id: 'task-next' }),
         },
       } as never,
-      {
-        add: Sinon.stub().callsFake(async (name, payload, options) => {
-          queuedJobs.push({ name, payload, options });
-        }),
-      } as never,
+      {} as never,
       {} as never,
       {
         resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.7-flash'),
@@ -416,13 +357,6 @@ for (const status of ['ready', 'settled']) {
       typeof (createdTasks[0] as Record<string, unknown>).dispatchGeneration,
       'string'
     );
-    t.like(queuedJobs[0] as Record<string, unknown>, {
-      name: 'copilot.transcript.task.submit',
-    });
-    t.like((queuedJobs[0] as { options: Record<string, unknown> }).options, {
-      attempts: 1,
-      removeOnFail: true,
-    });
     Sinon.assert.calledOnceWithExactly(
       assertRoute,
       'transcript.audio',

@@ -19,6 +19,7 @@ import { Models } from '../../models';
 import type { WorkspaceUserCompat } from '../../models/workspace-user-compat';
 import type { CurrentUser } from '../auth';
 import { BackendRuntimeProvider } from '../backend-runtime';
+import type { RuntimeInvalidation } from '../backend-runtime/provider';
 import {
   mapPermissionsToGraphqlPermissions,
   PermissionAccess,
@@ -105,6 +106,12 @@ export class WorkspaceAccessRealtimeProvider implements OnModuleInit {
     this.publish(workspaceId, 'owner-changed');
   }
 
+  @OnEvent('backendRuntime.invalidation', { suppressError: true })
+  onRuntimeInvalidation(invalidation: RuntimeInvalidation) {
+    const workspaceId = runtimeInvalidationWorkspace(invalidation);
+    if (workspaceId) this.publish(workspaceId, 'quota-state-changed');
+  }
+
   private async getAccess(
     user: CurrentUser,
     workspaceId: string
@@ -135,6 +142,23 @@ export class WorkspaceAccessRealtimeProvider implements OnModuleInit {
       { room: realtimeWorkspaceAccessRoom(workspaceId) }
     );
   }
+}
+
+function runtimeInvalidationWorkspace(invalidation: RuntimeInvalidation) {
+  if (
+    invalidation.kind === 'quotaOwnerMapping' ||
+    invalidation.kind === 'quotaSeatUsage'
+  ) {
+    return invalidation.workspaceId;
+  }
+  if (
+    (invalidation.kind === 'quotaEntitlement' ||
+      invalidation.kind === 'quotaStorageUsage') &&
+    invalidation.subject.startsWith('workspace:')
+  ) {
+    return invalidation.subject.slice('workspace:'.length);
+  }
+  return undefined;
 }
 
 @Injectable()

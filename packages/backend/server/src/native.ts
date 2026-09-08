@@ -39,8 +39,6 @@ import serverNativeModule, {
   type ResolvedEntitlement,
   type ResolveEntitlementInput,
   type RuntimeAggregateRequest,
-  type RuntimeBlobCleanupExecuteResult,
-  type RuntimeBlobCleanupPlanResult,
   type RuntimeBlobMetadataBackfillResult,
   type RuntimeDocBlobRefsResult,
   type RuntimeDocCompactionResult,
@@ -50,7 +48,6 @@ import serverNativeModule, {
   type RuntimeMultipartUploadInit,
   type RuntimeMultipartUploadPart,
   type RuntimeObjectGetResult,
-  type RuntimeObjectListEntry,
   type RuntimeObjectMetadata,
   type RuntimeObjectStoragePutOptions,
   type RuntimePresignedObjectRequest,
@@ -130,8 +127,6 @@ export type {
   ResolvedEntitlement,
   ResolveEntitlementInput,
   RuntimeAggregateRequest,
-  RuntimeBlobCleanupExecuteResult,
-  RuntimeBlobCleanupPlanResult,
   RuntimeBlobMetadataBackfillResult,
   RuntimeDocBlobRefsResult,
   RuntimeDocCompactionResult,
@@ -141,7 +136,6 @@ export type {
   RuntimeMultipartUploadInit,
   RuntimeMultipartUploadPart,
   RuntimeObjectGetResult,
-  RuntimeObjectListEntry,
   RuntimeObjectMetadata,
   RuntimeObjectStoragePutOptions,
   RuntimePresignedObjectRequest,
@@ -392,6 +386,9 @@ export type DomainCommandInputV1 =
       workspaceId: string;
       docId: string;
       content: unknown;
+      docTitle: string;
+      docMode: string;
+      mentions: string[];
     }
   | {
       command: 'update_comment';
@@ -411,6 +408,9 @@ export type DomainCommandInputV1 =
       actorUserId: string;
       commentId: string;
       content: unknown;
+      docTitle: string;
+      docMode: string;
+      mentions: string[];
     }
   | {
       command: 'update_reply';

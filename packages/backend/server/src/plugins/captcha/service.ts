@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { Request } from 'express';
 import { z } from 'zod';
 
@@ -25,6 +25,8 @@ type Credential = z.infer<typeof validator>;
 
 @Injectable()
 export class CaptchaService {
+  private readonly logger = new Logger(CaptchaService.name);
+
   constructor(
     private readonly config: Config,
     private readonly runtime: BackendRuntimeProvider,
@@ -99,6 +101,11 @@ export class CaptchaService {
         });
         throw new NetworkError('Captcha verification temporarily unavailable');
       }
+      metrics.auth.counter('captcha_verification').add(1, {
+        provider: credential.provider,
+        result: 'runtime_error',
+      });
+      this.logger.error('Captcha verification runtime failed', error);
       verified = false;
     }
     if (!verified) {

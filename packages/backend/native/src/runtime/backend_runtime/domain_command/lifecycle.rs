@@ -5,7 +5,10 @@ use serde_json::{Value, json};
 use sqlx::{Postgres, Transaction};
 use y_octo::{Any, Doc, Value as YValue};
 
-use super::{DocLifecycle, authorize_domain, lock_workspace_doc_update, next_workspace_doc_update_timestamp};
+use super::{
+  DocLifecycle, authorize_domain, invalidate_doc_blob_projection, lock_workspace_doc_update,
+  lock_workspace_storage_shared, next_workspace_doc_update_timestamp,
+};
 use crate::runtime::{Deployment, RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 pub(super) async fn apply(
@@ -16,10 +19,12 @@ pub(super) async fn apply(
   doc_id: String,
   lifecycle: DocLifecycle,
   deployment: Deployment,
+  embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
   if workspace_id == doc_id {
     return Err(RuntimeError::invalid_input("doc_is_workspace"));
   }
+  lock_workspace_storage_shared(transaction, &workspace_id).await?;
   let mut locked_doc_ids = [&*workspace_id, &*doc_id];
   locked_doc_ids.sort_unstable();
   for locked_doc_id in locked_doc_ids {
@@ -68,6 +73,7 @@ pub(super) async fn apply(
     .execute(&mut **transaction)
     .await
     .map_err(|error| RuntimeError::database("persist workspace root lifecycle update", error))?;
+  invalidate_doc_blob_projection(transaction, &workspace_id, &workspace_id, embedding_schema_ready).await?;
 
   if matches!(lifecycle, DocLifecycle::Delete) {
     delete_doc_rows(transaction, &workspace_id, &doc_id).await?;
@@ -94,7 +100,9 @@ pub(super) async fn append_root_update(
   assert_permission: bool,
   expected_permission_generation: Option<i64>,
   deployment: Deployment,
+  embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
+  lock_workspace_storage_shared(transaction, &workspace_id).await?;
   lock_workspace_doc_update(transaction, &workspace_id, &workspace_id).await?;
   if !assert_permission {
     return Err(RuntimeError::invalid_input("permission_assertion_required"));
@@ -158,6 +166,7 @@ pub(super) async fn append_root_update(
     .execute(&mut **transaction)
     .await
     .map_err(|error| RuntimeError::database("append canonical root update", error))?;
+  invalidate_doc_blob_projection(transaction, &workspace_id, &workspace_id, embedding_schema_ready).await?;
   Ok(json!({ "timestamp": timestamp }))
 }
 
@@ -432,6 +441,7 @@ mod tests {
       false,
       None,
       Deployment::Cloud,
+      true,
     )
     .await
     .unwrap_err();
@@ -501,6 +511,7 @@ mod tests {
         racing_doc_id,
         DocLifecycle::Trash,
         Deployment::Cloud,
+        true,
       )
       .await
       .unwrap();
@@ -524,6 +535,7 @@ mod tests {
       doc_id.clone(),
       DocLifecycle::Restore,
       Deployment::Cloud,
+      true,
     )
     .await;
     assert!(restore.is_err());
@@ -538,6 +550,7 @@ mod tests {
       doc_id,
       DocLifecycle::Delete,
       Deployment::Cloud,
+      true,
     )
     .await
     .unwrap();

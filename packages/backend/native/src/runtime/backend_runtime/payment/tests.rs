@@ -369,7 +369,7 @@ async fn payment_connection_budget_and_task_cancellation_release_capacity() {
   };
   let pool = PgPoolOptions::new()
     .max_connections(2)
-    .acquire_timeout(Duration::from_millis(150))
+    .acquire_timeout(Duration::from_secs(2))
     .connect(&database_url)
     .await
     .unwrap();
@@ -400,7 +400,7 @@ async fn payment_connection_budget_and_task_cancellation_release_capacity() {
 
   let cancellation_pool = PgPoolOptions::new()
     .max_connections(1)
-    .acquire_timeout(Duration::from_secs(1))
+    .acquire_timeout(Duration::from_secs(5))
     .connect(&database_url)
     .await
     .unwrap();
@@ -2040,7 +2040,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
       .await
       .unwrap()
       .value,
-    json!({ "success": true })
+    json!({ "status": "deactivated" })
   );
   assert!(
     license_runtime

@@ -444,14 +444,6 @@ pub struct RuntimeSeatReservationDecision {
 }
 
 #[napi_derive::napi(object)]
-pub struct CoordinationLeaseGrant {
-  pub key: String,
-  pub owner: String,
-  #[napi(ts_type = "bigint | number")]
-  pub fencing_token: i64,
-}
-
-#[napi_derive::napi(object)]
 pub struct RuntimeWorkspaceInviteLinkRecord {
   pub workspace_id: String,
   pub invite_id: String,
@@ -484,13 +476,6 @@ pub struct RuntimeObjectMetadata {
   pub content_length: i64,
   pub last_modified_ms: i64,
   pub checksum_crc32: Option<String>,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeObjectListEntry {
-  pub key: String,
-  pub content_length: i64,
-  pub last_modified_ms: i64,
 }
 
 #[napi_derive::napi(object)]
@@ -530,6 +515,26 @@ pub struct RuntimeBlobMetadataBackfillResult {
   pub workspace_ids: Vec<String>,
 }
 
+#[napi_derive::napi(object)]
+pub struct RuntimeWorkspaceStorageReconcileResult {
+  #[napi(ts_type = "bigint | number")]
+  pub scanned_workspaces: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub deleted_workspaces: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub scanned_objects: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub deleted_objects: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub deleted_orphan_rows: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub unknown_prefixes: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub failed_shards: i64,
+  pub failed_scopes: Vec<String>,
+  pub unknown_prefix_samples: Vec<String>,
+}
+
 #[derive(Default)]
 #[napi_derive::napi(object)]
 pub struct RuntimeDocBlobRefsResult {
@@ -550,14 +555,6 @@ pub struct RuntimeDocumentCleanupReconcileResult {
 }
 
 #[napi_derive::napi(object)]
-pub struct RuntimeDocumentCleanupEffect {
-  pub workspace_id: String,
-  pub doc_id: String,
-  pub cleanup_version: String,
-  pub comment_objects_done: bool,
-}
-
-#[napi_derive::napi(object)]
 pub struct RuntimeDocumentCleanupExecuteResult {
   pub scanned_candidates: i64,
   pub serialization_retries: i64,
@@ -566,33 +563,24 @@ pub struct RuntimeDocumentCleanupExecuteResult {
   pub reset: i64,
   pub failed: i64,
   pub deleted_rows: i64,
-  pub effects: Vec<RuntimeDocumentCleanupEffect>,
 }
 
 #[napi_derive::napi(object)]
-pub struct RuntimeBlobCleanupPlanResult {
-  pub run_id: Option<String>,
+pub struct RuntimeBlobCleanupResult {
   pub scanned_blobs: i64,
-  pub candidates_marked: i64,
+  pub deleted_objects: i64,
+  pub deleted_metadata: i64,
   pub protected_by_doc_refs: i64,
   pub protected_by_metadata: i64,
   pub protected_by_other_refs: i64,
-  pub next_cursor: Option<String>,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeBlobCleanupExecuteResult {
-  pub scanned_candidates: i64,
-  pub deleted_objects: i64,
-  pub deleted_metadata: i64,
-  pub skipped_still_referenced: i64,
   pub failed: i64,
+  pub next_cursor: Option<String>,
   pub workspace_ids: Vec<String>,
 }
 
 #[napi_derive::napi(object)]
 pub struct RuntimeDocCompactionResult {
-  pub lease_acquired: bool,
+  pub lock_acquired: bool,
   pub merged: bool,
   pub workspace_id: String,
   pub doc_id: String,

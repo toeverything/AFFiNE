@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { JobQueue } from '../../base';
 import { Models } from '../../models';
+import { CalendarService } from './service';
 
 const CALENDAR_POLL_BATCH_SIZE = 200;
 
@@ -10,23 +10,20 @@ const CALENDAR_POLL_BATCH_SIZE = 200;
 export class CalendarCronJobs {
   constructor(
     private readonly models: Models,
-    private readonly queue: JobQueue
+    private readonly calendar: CalendarService
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
   async pollAccounts() {
-    const subscriptions = await this.models.calendarSubscription.listDueForSync(
-      new Date(),
-      CALENDAR_POLL_BATCH_SIZE
-    );
+    const subscriptions =
+      await this.models.calendarSubscription.claimDueForSync(
+        new Date(),
+        CALENDAR_POLL_BATCH_SIZE
+      );
 
     await Promise.allSettled(
       subscriptions.map(({ id }) =>
-        this.queue.add(
-          'calendar.syncSubscription',
-          { subscriptionId: id, reason: 'polling' },
-          { jobId: id }
-        )
+        this.calendar.syncSubscription(id, { reason: 'polling' })
       )
     );
   }

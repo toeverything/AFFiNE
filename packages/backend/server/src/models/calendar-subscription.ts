@@ -21,6 +21,8 @@ export interface UpdateCalendarSubscriptionSyncInput {
   syncRetryCount?: number;
 }
 
+const SYNC_CLAIM_MS = 30 * 60 * 1000;
+
 export interface UpdateCalendarSubscriptionChannelInput {
   customChannelId?: string | null;
   customResourceId?: string | null;
@@ -100,6 +102,30 @@ export class CalendarSubscriptionModel extends BaseModel {
     return await this.db.calendarSubscription.update({ where: { id }, data });
   }
 
+  async completeSync(
+    id: string,
+    input: Required<
+      Pick<
+        UpdateCalendarSubscriptionSyncInput,
+        'lastSyncAt' | 'nextSyncAt' | 'syncRetryCount'
+      >
+    >
+  ) {
+    await this.db.$executeRaw`
+      UPDATE calendar_subscriptions
+      SET last_sync_at = ${input.lastSyncAt},
+          next_sync_at = CASE
+            WHEN sync_claimed_until IS NOT NULL AND next_sync_at < sync_claimed_until
+              THEN next_sync_at
+            ELSE ${input.nextSyncAt}
+          END,
+          sync_retry_count = ${input.syncRetryCount},
+          sync_claimed_until = NULL,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+    `;
+  }
+
   async updateChannel(
     id: string,
     input: UpdateCalendarSubscriptionChannelInput
@@ -165,17 +191,31 @@ export class CalendarSubscriptionModel extends BaseModel {
     });
   }
 
-  async listDueForSync(now: Date, limit: number) {
-    return await this.db.calendarSubscription.findMany({
-      where: {
-        enabled: true,
-        nextSyncAt: { lte: now },
-        account: { status: 'active' },
-      },
-      select: { id: true },
-      orderBy: { nextSyncAt: 'asc' },
-      take: limit,
-    });
+  @Transactional()
+  async claimDueForSync(now: Date, limit: number) {
+    return await this.db.$queryRaw<{ id: string }[]>`
+      WITH candidates AS (
+        SELECT subscription.id
+        FROM calendar_subscriptions subscription
+        JOIN calendar_accounts account ON account.id = subscription.account_id
+        WHERE subscription.enabled
+          AND subscription.next_sync_at <= ${now}
+          AND (
+            subscription.sync_claimed_until IS NULL
+            OR subscription.sync_claimed_until <= ${now}
+          )
+          AND account.status = 'active'
+        ORDER BY subscription.next_sync_at
+        FOR UPDATE OF subscription SKIP LOCKED
+        LIMIT ${limit}
+      )
+      UPDATE calendar_subscriptions subscription
+      SET next_sync_at = ${new Date(now.getTime() + SYNC_CLAIM_MS)},
+          sync_claimed_until = ${new Date(now.getTime() + SYNC_CLAIM_MS)}
+      FROM candidates
+      WHERE subscription.id = candidates.id
+      RETURNING subscription.id
+    `;
   }
 
   async listByAccountForSync(accountId: string) {
@@ -213,6 +253,7 @@ export class CalendarSubscriptionModel extends BaseModel {
         customChannelId: null,
         customResourceId: null,
         channelExpiration: null,
+        syncClaimedUntil: null,
       },
     });
 

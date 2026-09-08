@@ -8,8 +8,8 @@ use sqlx::PgPool;
 use super::{
   BackendRuntime, SourceIdentity,
   domain_command::{
-    authorize_domain, lock_workspace_doc_update, next_workspace_doc_update_timestamp,
-    workspace_root_contains_active_doc,
+    authorize_domain, invalidate_doc_blob_projection, lock_workspace_doc_update, lock_workspace_storage_shared,
+    next_workspace_doc_update_timestamp, workspace_root_contains_active_doc,
   },
   invalidation::{InvalidationHintV1, InvalidationRuntime},
   napi_error,
@@ -54,6 +54,7 @@ impl BackendRuntime {
       invalidation,
       config.deployment,
       self.permission_telemetry.clone(),
+      self.embedding_schema_ready().map_err(super::to_napi_error)?,
       input,
     )
     .await
@@ -69,6 +70,7 @@ impl BackendRuntime {
     append_updates(
       &pool,
       invalidation,
+      self.embedding_schema_ready().map_err(super::to_napi_error)?,
       input.workspace_id,
       input.doc_id,
       input.updates,
@@ -83,6 +85,7 @@ async fn append_authorized_updates(
   invalidation: Option<Arc<InvalidationRuntime>>,
   deployment: crate::runtime::Deployment,
   telemetry: super::permission::PermissionTelemetry,
+  embedding_schema_ready: bool,
   input: AppendWorkspaceDocUpdatesInputV1,
 ) -> Result<i64> {
   if input.updates.is_empty() {
@@ -93,6 +96,9 @@ async fn append_authorized_updates(
     .await
     .map_err(|error| napi_error(format!("begin workspace doc update: {error}")))?;
   let permission_doc_id = input.permission_doc_id.as_deref().unwrap_or(&input.doc_id);
+  lock_workspace_storage_shared(&mut transaction, &input.workspace_id)
+    .await
+    .map_err(super::to_napi_error)?;
   let mut locked_doc_ids = [&*input.doc_id, permission_doc_id];
   locked_doc_ids.sort_unstable();
   lock_workspace_doc_update(&mut transaction, &input.workspace_id, locked_doc_ids[0])
@@ -163,6 +169,7 @@ async fn append_authorized_updates(
   append_updates_in(
     transaction,
     invalidation,
+    embedding_schema_ready,
     input.workspace_id,
     input.doc_id,
     input.updates,
@@ -174,6 +181,7 @@ async fn append_authorized_updates(
 pub(super) async fn append_updates(
   pool: &PgPool,
   invalidation: Option<Arc<InvalidationRuntime>>,
+  embedding_schema_ready: bool,
   workspace_id: String,
   doc_id: String,
   updates: Vec<Buffer>,
@@ -186,21 +194,37 @@ pub(super) async fn append_updates(
     .begin()
     .await
     .map_err(|error| napi_error(format!("begin workspace doc update: {error}")))?;
-  append_updates_in(transaction, invalidation, workspace_id, doc_id, updates, editor_id).await
+  append_updates_in(
+    transaction,
+    invalidation,
+    embedding_schema_ready,
+    workspace_id,
+    doc_id,
+    updates,
+    editor_id,
+  )
+  .await
 }
 
 async fn append_updates_in(
   mut transaction: sqlx::Transaction<'_, sqlx::Postgres>,
   invalidation: Option<Arc<InvalidationRuntime>>,
+  embedding_schema_ready: bool,
   workspace_id: String,
   doc_id: String,
   updates: Vec<Buffer>,
   editor_id: Option<String>,
 ) -> Result<i64> {
+  lock_workspace_storage_shared(&mut transaction, &workspace_id)
+    .await
+    .map_err(super::to_napi_error)?;
   lock_workspace_doc_update(&mut transaction, &workspace_id, &doc_id)
     .await
     .map_err(super::to_napi_error)?;
   let now = next_workspace_doc_update_timestamp(&mut transaction, &workspace_id, &doc_id)
+    .await
+    .map_err(super::to_napi_error)?;
+  invalidate_doc_blob_projection(&mut transaction, &workspace_id, &doc_id, embedding_schema_ready)
     .await
     .map_err(super::to_napi_error)?;
   let mut timestamp = 0;
@@ -320,6 +344,13 @@ mod tests {
       InvalidationRuntime::start(&RedisRuntimeConfig { url: redis_url.clone() }, false, target.clone()).await;
     *runtime.invalidation.lock().await = Some(invalidation.clone());
 
+    let mut no_embedding = pool.begin().await?;
+    sqlx::query("ALTER TABLE IF EXISTS embedding_sources RENAME TO embedding_sources_test_hidden")
+      .execute(&mut *no_embedding)
+      .await?;
+    invalidate_doc_blob_projection(&mut no_embedding, &workspace_id, &doc_id, false).await?;
+    no_embedding.rollback().await?;
+
     let first = runtime
       .append_workspace_doc_updates_trusted_v1(AppendWorkspaceDocUpdatesTrustedInputV1 {
         workspace_id: workspace_id.clone(),
@@ -375,6 +406,7 @@ mod tests {
         None,
         crate::runtime::Deployment::Cloud,
         Default::default(),
+        true,
         AppendWorkspaceDocUpdatesInputV1 {
           workspace_id: racing_workspace_id,
           doc_id: racing_doc_id,
@@ -491,6 +523,7 @@ mod tests {
         None,
         crate::runtime::Deployment::Cloud,
         Default::default(),
+        true,
         AppendWorkspaceDocUpdatesInputV1 {
           workspace_id: racing_workspace_id,
           doc_id: racing_doc_id,

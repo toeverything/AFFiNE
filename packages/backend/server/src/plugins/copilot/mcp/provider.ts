@@ -232,6 +232,10 @@ export class WorkspaceMcpProvider {
         },
         execute: async ({ title, content }, options) => {
           try {
+            await this.ac
+              .user(userId)
+              .workspace(workspaceId)
+              .assert('Workspace.CreateDoc');
             const abortedBeforeWrite = abortIfNeeded(options.signal);
             if (abortedBeforeWrite) return abortedBeforeWrite;
 
@@ -291,6 +295,12 @@ export class WorkspaceMcpProvider {
         execute: async ({ docId, content }, options) => {
           const notFoundError = toolError(`Doc with id ${docId} not found.`);
 
+          const canUpdate = await this.ac
+            .user(userId)
+            .workspace(workspaceId)
+            .doc(docId)
+            .can('Doc.Update');
+          if (!canUpdate) return notFoundError;
           const abortedBeforeWrite = abortIfNeeded(options.signal);
           if (abortedBeforeWrite) return abortedBeforeWrite;
 
@@ -334,6 +344,12 @@ export class WorkspaceMcpProvider {
         },
         execute: async ({ docId, title }, options) => {
           const notFoundError = toolError(`Doc with id ${docId} not found.`);
+          const canUpdate = await this.ac
+            .user(userId)
+            .workspace(workspaceId)
+            .doc(docId)
+            .can('Doc.Update');
+          if (!canUpdate) return notFoundError;
           const abortedBeforeWrite = abortIfNeeded(options.signal);
           if (abortedBeforeWrite) return abortedBeforeWrite;
 

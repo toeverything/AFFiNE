@@ -217,15 +217,6 @@ e2e(
     await t.throwsAsync(
       app.get(LicenseService).activateTeamLicense(target.id, installed.key)
     );
-
-    t.is(
-      await db.pendingLicenseDeactivation.count({
-        where: {
-          OR: [{ workspaceId: workspace.id }, { workspaceId: target.id }],
-        },
-      }),
-      0
-    );
   }
 );
 

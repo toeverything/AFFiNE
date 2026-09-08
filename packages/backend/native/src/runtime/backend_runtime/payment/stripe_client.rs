@@ -168,7 +168,6 @@ impl StripeCustomer {
 
 #[derive(Clone, Debug, Deserialize)]
 pub(super) struct StripePortalSession {
-  pub id: String,
   pub url: String,
 }
 

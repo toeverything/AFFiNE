@@ -68,43 +68,37 @@ export class CommentAttachmentStorage {
     let metadata;
     try {
       metadata = await this.rt.putObject('blob', reservationKey, blob);
-    } catch (error) {
-      try {
-        await this.runtime.abortStorageReservationV1({
-          workspaceId,
-          userId,
-          key,
-          reservationId: reservation.reservationId,
-          kind: 'comment_attachment',
-          docId,
-        });
-      } finally {
-        await this.rt.deleteObject('blob', reservationKey);
-      }
-      throw error;
-    }
-    const mime = metadata.contentType;
-    const size = metadata.contentLength;
-    let finalized: boolean;
-    try {
-      finalized = await this.runtime.finalizeStorageReservationV1({
+      const finalized = await this.runtime.finalizeStorageReservationV1({
         workspaceId,
         userId,
         docId,
         key,
         reservationId: reservation.reservationId,
         kind: 'comment_attachment',
-        mime,
-        size,
+        mime: metadata.contentType,
+        size: metadata.contentLength,
       });
+      if (!finalized) throw new Error('Comment attachment reservation changed');
     } catch (error) {
-      await this.rt.deleteObject('blob', reservationKey);
+      await this.runtime
+        .abortStorageReservationV1({
+          workspaceId,
+          userId,
+          key,
+          reservationId: reservation.reservationId,
+          kind: 'comment_attachment',
+          docId,
+        })
+        .catch(cleanupError => {
+          this.logger.warn(
+            'Failed to clean up comment attachment upload',
+            cleanupError
+          );
+        });
       throw error;
     }
-    if (!finalized) {
-      await this.rt.deleteObject('blob', reservationKey);
-      throw new Error('Comment attachment reservation changed');
-    }
+    const mime = metadata.contentType;
+    const size = metadata.contentLength;
 
     metrics.storage.histogram('comment_attachment_size').record(size, { mime });
     metrics.storage.counter('comment_attachment_total').add(1, { mime });

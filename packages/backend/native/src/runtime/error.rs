@@ -128,10 +128,34 @@ impl RuntimeError {
   pub(crate) fn is_permanent_search_generation(&self) -> bool {
     matches!(self, Self::SearchGenerationInvalid(_))
   }
+
+  fn boundary_code(&self) -> String {
+    match self {
+      Self::Config(_) => "config_error".to_string(),
+      Self::InvalidInput(message) => message_code(message).unwrap_or("invalid_input").to_string(),
+      Self::InvalidState(message) => message_code(message).unwrap_or("invalid_state").to_string(),
+      Self::SearchWorkspaceDenied => "workspace_denied".to_string(),
+      Self::SearchPermissionUnavailable => "permission_unavailable".to_string(),
+      Self::SearchIndexNotReady => "search_index_not_ready".to_string(),
+      Self::SearchPermissionSyncing => "permission_syncing".to_string(),
+      Self::SearchIndexFailed(_) => "search_index_failed".to_string(),
+      Self::SearchSourceInvalid(_) => "search_source_invalid".to_string(),
+      Self::SearchGenerationInvalid(_) => "search_generation_invalid".to_string(),
+      Self::SearchProviderUnavailable => "search_provider_unavailable".to_string(),
+      Self::SearchUnsupportedQuery => "search_unsupported_query".to_string(),
+      Self::Database { .. } => "database_error".to_string(),
+      Self::Io { .. } => "io_error".to_string(),
+      Self::Json { .. } => "json_error".to_string(),
+      Self::Time { .. } => "time_error".to_string(),
+      Self::ObjectStorage(_) => "object_storage_error".to_string(),
+      Self::NapiBoundary(_) => "runtime_error".to_string(),
+    }
+  }
 }
 
 pub(crate) fn to_napi_error(error: RuntimeError) -> Error {
-  Error::new(Status::GenericFailure, error.to_string())
+  let code = error.boundary_code();
+  Error::new(Status::GenericFailure, format!("[affine-runtime:{code}] {error}"))
 }
 
 impl From<RuntimeError> for Error {
@@ -153,5 +177,16 @@ impl From<Error> for RuntimeError {
 }
 
 pub(crate) fn napi_error(message: impl Into<String>) -> Error {
-  Error::new(Status::GenericFailure, message.into())
+  let message = message.into();
+  let code = message_code(&message).unwrap_or("runtime_error");
+  Error::new(Status::GenericFailure, format!("[affine-runtime:{code}] {message}"))
+}
+
+fn message_code(message: &str) -> Option<&str> {
+  let code = message.split_once(':').map_or(message, |(code, _)| code);
+  (!code.is_empty()
+    && code
+      .bytes()
+      .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_'))
+  .then_some(code)
 }

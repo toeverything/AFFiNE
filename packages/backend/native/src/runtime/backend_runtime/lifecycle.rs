@@ -103,18 +103,17 @@ impl BackendRuntime {
       });
       *self.quota_read_cache.lock().await = quota_read_cache.clone();
       if !self.script_mode {
-        let mut targets: Vec<Arc<dyn invalidation::InvalidationTarget>> = Vec::with_capacity(2);
+        let mut targets: Vec<Arc<dyn invalidation::InvalidationTarget>> = Vec::with_capacity(3);
         if let Some(service) = blob_access {
           targets.push(service);
         }
         if let Some(cache) = quota_read_cache {
           targets.push(cache);
         }
-        let target: Arc<dyn invalidation::InvalidationTarget> = if targets.is_empty() {
-          Arc::new(invalidation::NoopInvalidationTarget)
-        } else {
-          Arc::new(invalidation::CompositeInvalidationTarget(targets))
-        };
+        targets.push(Arc::new(invalidation::EventInvalidationTarget(
+          self.invalidation_events.clone(),
+        )));
+        let target = Arc::new(invalidation::CompositeInvalidationTarget(targets));
         *self.invalidation.lock().await =
           Some(invalidation::InvalidationRuntime::start(&redis, self.role.owns_read_cache(), target).await);
       }
@@ -126,9 +125,8 @@ impl BackendRuntime {
         }
       }
 
-      let embedding_health = if self.script_mode {
-        EmbeddingHealth::disabled("script_runtime", None)
-      } else {
+      let embedding_health = embedding_schema_health(&pool).await?;
+      if !self.script_mode {
         let config = self.config()?;
         if config.search.enabled {
           if config.search.provider == "embedded" && !self.role.allows_embedded_search() {
@@ -150,8 +148,7 @@ impl BackendRuntime {
         } else {
           *self.search.lock().await = None;
         }
-        embedding_schema_health(&pool).await?
-      };
+      }
       if self.script_mode {
         *self.search.lock().await = None;
       }
@@ -214,6 +211,7 @@ impl BackendRuntime {
       pool.close().await;
     }
     self.permission_telemetry.shutdown();
+    self.invalidation_events.shutdown();
     Ok(())
   }
 
@@ -287,23 +285,6 @@ impl BackendRuntime {
         self.permission_telemetry.clone(),
       ))
     });
-    let invalidation = if !self.script_mode {
-      let mut targets: Vec<Arc<dyn invalidation::InvalidationTarget>> = Vec::with_capacity(2);
-      if let Some(service) = blob_access.as_ref() {
-        targets.push(service.clone());
-      }
-      if let Some(cache) = quota_read_cache.as_ref() {
-        targets.push(cache.clone());
-      }
-      let target: Arc<dyn invalidation::InvalidationTarget> = if targets.is_empty() {
-        Arc::new(invalidation::NoopInvalidationTarget)
-      } else {
-        Arc::new(invalidation::CompositeInvalidationTarget(targets))
-      };
-      Some(invalidation::InvalidationRuntime::start(&config.redis, self.role.owns_read_cache(), target).await)
-    } else {
-      None
-    };
     let payment = if config.payment.enabled || config.payment.revenuecat.is_some() {
       Some(Arc::new(
         PaymentRuntime::new(
@@ -318,23 +299,25 @@ impl BackendRuntime {
     } else {
       None
     };
-    if payment_worker_enabled(self.role)
-      && let (Some(payment), Some(invalidation)) = (payment.as_ref(), invalidation.as_ref())
-    {
-      payment.start_worker(Arc::clone(invalidation)).await;
-    }
-
     *self
       .inline_config
       .write()
       .map_err(|_| napi_error("BackendRuntime inline config lock poisoned"))? = inline_config;
 
     let embedding = self.embedding.lock().await.as_ref().cloned();
-    let (previous_cache, previous_invalidation, previous_payment) = {
+    if let Some(embedding) = embedding {
+      embedding
+        .reload_object_storage(Arc::clone(&object_storage))
+        .map_err(to_napi_error)?;
+    }
+    let redis_config = config.redis.clone();
+    let invalidation_blob_access = blob_access.clone();
+    let invalidation_quota_cache = quota_read_cache.clone();
+    let active_payment = payment.clone();
+    let (previous_cache, previous_payment) = {
       let mut search_guard = self.search.lock().await;
       let mut blob_access_guard = self.blob_access.lock().await;
       let mut quota_cache_guard = self.quota_read_cache.lock().await;
-      let mut invalidation_guard = self.invalidation.lock().await;
       let mut payment_guard = self.payment.lock().await;
       let mut token_providers = self
         .managed_token_providers
@@ -348,11 +331,6 @@ impl BackendRuntime {
         .object_storage
         .write()
         .map_err(|_| napi_error("object storage service lock poisoned"))?;
-      if let Some(embedding) = embedding {
-        embedding
-          .reload_object_storage(Arc::clone(&object_storage))
-          .map_err(to_napi_error)?;
-      }
       token_providers.clear();
       *config_guard = Arc::new(config);
       *object_storage_guard = object_storage;
@@ -363,10 +341,31 @@ impl BackendRuntime {
       *blob_access_guard = blob_access;
       (
         std::mem::replace(&mut *quota_cache_guard, quota_read_cache),
-        std::mem::replace(&mut *invalidation_guard, invalidation),
         std::mem::replace(&mut *payment_guard, payment),
       )
     };
+    let active_invalidation = if !self.script_mode {
+      let mut targets: Vec<Arc<dyn invalidation::InvalidationTarget>> = Vec::with_capacity(3);
+      if let Some(service) = invalidation_blob_access {
+        targets.push(service);
+      }
+      if let Some(cache) = invalidation_quota_cache {
+        targets.push(cache);
+      }
+      targets.push(Arc::new(invalidation::EventInvalidationTarget(
+        self.invalidation_events.clone(),
+      )));
+      let target = Arc::new(invalidation::CompositeInvalidationTarget(targets));
+      Some(invalidation::InvalidationRuntime::start(&redis_config, self.role.owns_read_cache(), target).await)
+    } else {
+      None
+    };
+    let previous_invalidation = std::mem::replace(&mut *self.invalidation.lock().await, active_invalidation.clone());
+    if payment_worker_enabled(self.role)
+      && let (Some(payment), Some(invalidation)) = (active_payment, active_invalidation)
+    {
+      payment.start_worker(invalidation).await;
+    }
     if let Some(cache) = previous_cache {
       cache.flush_metrics().await;
     }

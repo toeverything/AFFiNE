@@ -176,7 +176,11 @@ export type CleanupSessionOptions = Pick<
 
 @Injectable()
 export class CopilotSessionModel extends BaseModel {
-  private async lockPersonalScope(workspaceId: string, personal?: boolean) {
+  private async lockPersonalScope(
+    workspaceId: string,
+    actorUserId: string,
+    personal?: boolean
+  ) {
     if (!personal) return;
     await this.db
       .$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`copilot-personal:${workspaceId}`}, 0))`;
@@ -184,6 +188,10 @@ export class CopilotSessionModel extends BaseModel {
       where: { id: workspaceId },
     });
     if (canonical) throw new CopilotSessionNotFound();
+    const foreign = await this.db.aiSession.count({
+      where: { workspaceId, userId: { not: actorUserId } },
+    });
+    if (foreign) throw new CopilotSessionNotFound();
   }
   private noActionPromptCondition(): Prisma.AiSessionWhereInput {
     return {
@@ -419,7 +427,11 @@ export class CopilotSessionModel extends BaseModel {
 
   @Transactional()
   async create(state: ChatSession, reuseChat = false): Promise<string> {
-    await this.lockPersonalScope(state.workspaceId, state.personal);
+    await this.lockPersonalScope(
+      state.workspaceId,
+      state.userId,
+      state.personal
+    );
     // find and return existing session if session is chat session
     if (reuseChat && !state.promptAction) {
       const sessionId = await this.find(state);
@@ -537,7 +549,7 @@ export class CopilotSessionModel extends BaseModel {
     workspaceId: string,
     personal?: boolean
   ) {
-    await this.lockPersonalScope(workspaceId, personal);
+    await this.lockPersonalScope(workspaceId, userId, personal);
     return await this.getExists(sessionId, SESSION_SELECT, {
       userId,
       workspaceId,
@@ -551,7 +563,7 @@ export class CopilotSessionModel extends BaseModel {
     workspaceId: string,
     personal?: boolean
   ) {
-    await this.lockPersonalScope(workspaceId, personal);
+    await this.lockPersonalScope(workspaceId, userId, personal);
     return await this.getExists(sessionId, SESSION_META_SELECT, {
       userId,
       workspaceId,
@@ -608,7 +620,11 @@ export class CopilotSessionModel extends BaseModel {
   @Transactional()
   async count(options: ListSessionOptions) {
     if (options.workspaceId)
-      await this.lockPersonalScope(options.workspaceId, options.personal);
+      await this.lockPersonalScope(
+        options.workspaceId,
+        options.userId,
+        options.personal
+      );
     return await this.db.aiSession.count({
       where: this.getListConditions(options),
     });
@@ -617,7 +633,11 @@ export class CopilotSessionModel extends BaseModel {
   @Transactional()
   async list(options: ListSessionOptions) {
     if (options.workspaceId)
-      await this.lockPersonalScope(options.workspaceId, options.personal);
+      await this.lockPersonalScope(
+        options.workspaceId,
+        options.userId,
+        options.personal
+      );
     return await this.db.aiSession.findMany({
       where: this.getListConditions(options),
       select: {
@@ -677,7 +697,11 @@ export class CopilotSessionModel extends BaseModel {
     const { userId, sessionId, docId, promptName, pinned, title } = options;
     const sanitizedTitle = this.sanitizeString(title);
     if (options.workspaceId)
-      await this.lockPersonalScope(options.workspaceId, options.personal);
+      await this.lockPersonalScope(
+        options.workspaceId,
+        options.userId,
+        options.personal
+      );
     const session = await this.getExists(
       sessionId,
       {
@@ -740,9 +764,34 @@ export class CopilotSessionModel extends BaseModel {
     return sessionId;
   }
 
+  async setTitleIfAbsent(options: {
+    userId: string;
+    sessionId: string;
+    workspaceId: string;
+    title: string;
+  }): Promise<boolean> {
+    const { userId, sessionId, workspaceId, title } = options;
+    const { count } = await this.db.aiSession.updateMany({
+      where: {
+        id: sessionId,
+        userId,
+        workspaceId,
+        title: null,
+        deletedAt: null,
+        ...this.noActionPromptCondition(),
+      },
+      data: { title: this.sanitizeString(title) },
+    });
+    return count > 0;
+  }
+
   @Transactional()
   async cleanup(options: CleanupSessionOptions): Promise<string[]> {
-    await this.lockPersonalScope(options.workspaceId, options.personal);
+    await this.lockPersonalScope(
+      options.workspaceId,
+      options.userId,
+      options.personal
+    );
     const sessions = await this.db.aiSession.findMany({
       where: {
         id: { in: options.sessionIds },
@@ -892,7 +941,11 @@ export class CopilotSessionModel extends BaseModel {
       metadata?: Record<string, unknown>;
     }>;
   }) {
-    await this.lockPersonalScope(state.workspaceId, state.personal);
+    await this.lockPersonalScope(
+      state.workspaceId,
+      state.userId,
+      state.personal
+    );
     const session = await this.getExists(
       state.sessionId,
       { id: true, workspaceId: true },
@@ -1040,7 +1093,7 @@ export class CopilotSessionModel extends BaseModel {
     workspaceId: string,
     personal?: boolean
   ) {
-    await this.lockPersonalScope(workspaceId, personal);
+    await this.lockPersonalScope(workspaceId, userId, personal);
     const session = await this.getExists(
       sessionId,
       { id: true },
@@ -1119,56 +1172,58 @@ export class CopilotSessionModel extends BaseModel {
     return Math.max(0, quotaBackedCost);
   }
 
-  async cleanupEmptySessions(earlyThen: Date) {
-    // delete never used sessions
-    const { count: removed } = await this.db.aiSession.deleteMany({
+  async cleanupEmptySessions(earlyThen: Date, limit = 100) {
+    const unused = await this.db.aiSession.findMany({
       where: {
         messageCost: 0,
         deletedAt: null,
-        // filter session updated more than 24 hours ago
         updatedAt: { lt: earlyThen },
       },
+      select: { id: true },
+      orderBy: { updatedAt: 'asc' },
+      take: limit,
+    });
+    const { count: removed } = await this.db.aiSession.deleteMany({
+      where: { id: { in: unused.map(session => session.id) } },
     });
 
-    // mark empty sessions as deleted
+    const remaining = Math.max(0, limit - removed);
+    const empty = remaining
+      ? await this.db.aiSession.findMany({
+          where: {
+            deletedAt: null,
+            messages: { none: {} },
+            updatedAt: { lt: earlyThen },
+          },
+          select: { id: true },
+          orderBy: { updatedAt: 'asc' },
+          take: remaining,
+        })
+      : [];
     const { count: cleaned } = await this.db.aiSession.updateMany({
-      where: {
-        deletedAt: null,
-        messages: { none: {} },
-        // filter session updated more than 24 hours ago
-        updatedAt: { lt: earlyThen },
-      },
-      data: {
-        deletedAt: new Date(),
-        pinned: false,
-      },
+      where: { id: { in: empty.map(session => session.id) } },
+      data: { deletedAt: new Date(), pinned: false },
     });
 
     return { removed, cleaned };
   }
 
-  @Transactional()
-  async toBeGenerateTitle() {
-    const sessions = await this.db.aiSession
-      .findMany({
-        where: {
-          title: null,
-          deletedAt: null,
-          messages: { some: {} },
-          // only generate titles for non-actions sessions
-          ...this.noActionPromptCondition(),
-        },
-        select: {
-          id: true,
-          userId: true,
-          workspaceId: true,
-          // count assistant messages
-          _count: { select: { messages: { where: { role: 'assistant' } } } },
-        },
-        orderBy: { updatedAt: 'desc' },
-      })
-      .then(s => s.filter(s => s._count.messages > 0));
-
-    return sessions;
+  async toBeGenerateTitle(limit = 100) {
+    return await this.db.aiSession.findMany({
+      where: {
+        title: null,
+        deletedAt: null,
+        ...this.noActionPromptCondition(),
+        messages: { some: { role: AiSessionMessageRole.assistant } },
+      },
+      select: {
+        id: true,
+        userId: true,
+        workspaceId: true,
+        _count: { select: { messages: { where: { role: 'assistant' } } } },
+      },
+      orderBy: { updatedAt: 'asc' },
+      take: limit,
+    });
   }
 }

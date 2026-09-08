@@ -89,7 +89,10 @@ export class UserSubscriptionResolver {
     name: 'invoiceCount',
     description: 'Get user invoice count',
   })
-  async invoiceCount(@CurrentUser() user: CurrentUser) {
+  async invoiceCount(@CurrentUser() me: User, @Parent() user: User) {
+    if (me.id !== user.id) {
+      throw new AccessDenied();
+    }
     return this.db.invoice.count({ where: { targetId: user.id } });
   }
 
@@ -139,6 +142,7 @@ export class UserSubscriptionResolver {
       ) {
         throw new InvalidSubscriptionParameters();
       }
+      throw error;
     }
     return this.currentUserSubscriptions(user.id);
   }

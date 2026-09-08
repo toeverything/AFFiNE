@@ -5,7 +5,7 @@ import Sinon from 'sinon';
 import { EventBus } from '../../base';
 import { Models } from '../../models';
 import { UserModel } from '../../models/user';
-import { createTestingModule, sleep, type TestingModule } from '../utils';
+import { createTestingModule, type TestingModule } from '../utils';
 
 interface Context {
   module: TestingModule;
@@ -55,7 +55,8 @@ test('should trigger user.created event', async t => {
     email: 'test@affine.pro',
   });
 
-  t.true(spy.calledOnceWithExactly(user));
+  t.true(spy.calledOnce);
+  t.is(spy.firstCall.args[0].id, user.id);
 });
 
 test('should trigger user.updated event', async t => {
@@ -198,22 +199,17 @@ test('should delete user with pending invitation missing normalized email', asyn
 
 test('should trigger user.deleted event', async t => {
   const event = t.context.module.get(EventBus);
-  const spy = Sinon.spy();
-  event.on('user.deleted', spy);
+  const notification = event.waitFor('user.deleted', 1_000);
 
   const user = await t.context.user.create({
     email: 'test@affine.pro',
   });
   const workspace = await t.context.models.workspace.create(user.id);
 
-  await t.context.user.delete(user.id);
+  const deleted = await t.context.user.delete(user.id);
 
-  t.true(
-    spy.calledOnceWithExactly({ ...user, ownedWorkspaces: [workspace.id] })
-  );
-  // await for 'user.deleted' event to be emitted and executed
-  // avoid race condition cause database dead lock
-  await sleep(100);
+  t.deepEqual(await notification, [deleted]);
+  t.is(await t.context.models.workspace.get(workspace.id), null);
 });
 
 test('should paginate users', async t => {

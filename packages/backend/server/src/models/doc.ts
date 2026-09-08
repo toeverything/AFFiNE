@@ -135,10 +135,12 @@ export class DocModel extends BaseModel {
     return await this.db.update.count();
   }
 
-  async groupedUpdatesCount() {
+  async groupedUpdatesCount(limit = 100) {
     return await this.db.update.groupBy({
       by: ['workspaceId', 'id'],
       _count: true,
+      orderBy: [{ workspaceId: 'asc' }, { id: 'asc' }],
+      take: limit,
     });
   }
 

@@ -23,7 +23,11 @@ export class CommentService {
 
   async createComment(
     actorUserId: string,
-    input: Omit<CommentCreate, 'userId'>
+    input: Omit<CommentCreate, 'userId'> & {
+      docTitle: string;
+      docMode: string;
+      mentions?: string[];
+    }
   ) {
     const comment = this.domainItem<Comment>(
       await this.runtime.executeDomainCommandV1({
@@ -32,6 +36,9 @@ export class CommentService {
         workspaceId: input.workspaceId,
         docId: input.docId,
         content: input.content,
+        docTitle: input.docTitle,
+        docMode: input.docMode,
+        mentions: input.mentions ?? [],
       })
     );
     return await this.fillUser(comment);
@@ -74,13 +81,23 @@ export class CommentService {
     );
   }
 
-  async createReply(actorUserId: string, input: Omit<ReplyCreate, 'userId'>) {
+  async createReply(
+    actorUserId: string,
+    input: Omit<ReplyCreate, 'userId'> & {
+      docTitle: string;
+      docMode: string;
+      mentions?: string[];
+    }
+  ) {
     const reply = this.domainItem<Reply>(
       await this.runtime.executeDomainCommandV1({
         command: 'create_reply',
         actorUserId,
         commentId: input.commentId,
         content: input.content,
+        docTitle: input.docTitle,
+        docMode: input.docMode,
+        mentions: input.mentions ?? [],
       })
     );
     return await this.fillUser(reply);

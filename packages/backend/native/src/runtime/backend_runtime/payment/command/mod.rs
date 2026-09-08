@@ -28,7 +28,10 @@ use super::{
   PaymentRuntime, PaymentScope, PaymentSendDecision, PaymentSnapshot, PaymentStep, PaymentStepState, SnapshotCoverage,
   TrialSnapshot, freeze_operation, mark_operation_step_sent, record_operation_error, record_operation_step_result,
   snapshot::parse_lookup_key,
-  stripe_client::{StripeCheckoutSession, StripeCustomer, StripePrice, StripePromotionCode, StripeSubscription},
+  stripe_client::{
+    StripeCheckoutSession, StripeCustomer, StripeForm, StripeFormValue, StripePortalSession, StripePrice,
+    StripePromotionCode, StripeSubscription,
+  },
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
 

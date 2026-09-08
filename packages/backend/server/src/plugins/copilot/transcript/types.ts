@@ -48,16 +48,4 @@ export type TranscriptionSubmitInput = z.infer<
 export type TranscriptionPayload = TranscriptionPayloadV2;
 export type TranscriptionItem = LegacyTranscriptionSegment;
 
-declare global {
-  interface Jobs {
-    'copilot.transcript.task.submit': {
-      taskId: string;
-      payload: TranscriptionPayloadV2;
-      generation: string;
-      scopeMode: 'personal' | 'canonical';
-      retryOf?: string;
-    };
-  }
-}
-
 export const MAX_TRANSCRIPTION_SIZE = 50 * OneMB;

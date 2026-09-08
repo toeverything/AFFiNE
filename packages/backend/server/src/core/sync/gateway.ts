@@ -32,6 +32,7 @@ import {
   NotInSpace,
   OnEvent,
   SpaceAccessDenied,
+  SyncPermissionGenerationChanged,
 } from '../../base';
 import { Models } from '../../models';
 import {
@@ -39,7 +40,10 @@ import {
   canonicalizeDocumentIdentity,
 } from '../../native';
 import { CurrentUser } from '../auth';
-import { BackendRuntimeProvider } from '../backend-runtime';
+import {
+  backendRuntimeErrorCode,
+  BackendRuntimeProvider,
+} from '../backend-runtime';
 import {
   DocReader,
   DocStorageAdapter,
@@ -969,12 +973,67 @@ export class SpaceSyncGateway
     for (const [key, sockets] of candidates) {
       const [, spaceId, docId] = key.split(':');
       for (const socket of Array.from(sockets)) {
-        this.removeActiveDocSubscription(
-          socket,
-          event.spaceType,
-          spaceId,
-          docId
-        );
+        const authorizations = this.activeSocketDocActions.get(socket.id);
+        const currentActions = authorizations?.get(key);
+        if (!authorizations || !currentActions) continue;
+        // Claim this check before awaiting so later permission events supersede it.
+        const previousActions = new Set(currentActions);
+        authorizations.set(key, previousActions);
+        const stillCurrent = () =>
+          this.activeSocketDocActions.get(socket.id)?.get(key) ===
+          previousActions;
+        const userId = this.resolvePresenceUserId(socket);
+        try {
+          if (!userId) throw new Error('socket user is unavailable');
+          if (event.spaceType === SpaceType.Userspace) {
+            if (spaceId !== userId) throw new Error('userspace access changed');
+            this.addActiveDocSubscription(
+              socket,
+              event.spaceType,
+              spaceId,
+              docId,
+              new Set(['Doc.Read', 'Doc.Update']),
+              0
+            );
+            continue;
+          }
+          const before =
+            await this.runtime.getSyncPermissionGenerationV1(spaceId);
+          const [permission] = await this.ac
+            .user(userId)
+            .workspace(spaceId)
+            .docPermissions([{ docId }], ['Doc.Read', 'Doc.Update']);
+          const after =
+            await this.runtime.getSyncPermissionGenerationV1(spaceId);
+          if (!stillCurrent()) continue;
+          if (before !== after) {
+            throw new SyncPermissionGenerationChanged({ spaceId });
+          }
+          const actions = new Set(
+            permission?.decisions
+              .filter(decision => decision.allowed)
+              .map(decision => decision.action as DocAction) ?? []
+          );
+          if (!actions.has('Doc.Read')) {
+            throw new Error('document read access changed');
+          }
+          this.addActiveDocSubscription(
+            socket,
+            event.spaceType,
+            spaceId,
+            docId,
+            actions,
+            after
+          );
+        } catch {
+          if (!stillCurrent()) continue;
+          this.removeActiveDocSubscription(
+            socket,
+            event.spaceType,
+            spaceId,
+            docId
+          );
+        }
       }
     }
   }
@@ -1146,7 +1205,9 @@ export class SpaceSyncGateway
           break;
         }
         if (docActions.size !== docSpaces.length) {
-          throw new SpaceAccessDenied({ spaceId: first.spaceId });
+          throw new SyncPermissionGenerationChanged({
+            spaceId: first.spaceId,
+          });
         }
       }
       for (const space of subscriptionsToAdd) {
@@ -1300,6 +1361,9 @@ export class SpaceSyncGateway
     @CurrentUser() user: CurrentUser,
     @MessageBody() { spaceType, spaceId, docId, lifecycle }: DocLifecycleMessage
   ): Promise<EventResponse<{ rootUpdate: string; timestamp: number }>> {
+    if (!['trash', 'restore', 'delete'].includes(lifecycle)) {
+      throw new BadRequest('Invalid document lifecycle');
+    }
     docId = canonicalDocId(docId, spaceId);
     this.assertReservedDocSubject(spaceType, user.id, spaceId, docId);
     if (spaceType !== SpaceType.Workspace) {
@@ -1343,10 +1407,7 @@ export class SpaceSyncGateway
         lifecycle,
       });
     } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes(`domain_permission_denied:${action}`)
-      ) {
+      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
         throw new DocActionDenied({ action, docId, spaceId: workspaceId });
       }
       throw error;

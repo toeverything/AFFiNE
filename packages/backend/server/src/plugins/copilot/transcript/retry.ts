@@ -1,14 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { AiJobStatus } from '@prisma/client';
 
-import {
-  CopilotTranscriptionJobNotFound,
-  JobQueue,
-  OneHour,
-  OneMinute,
-} from '../../../base';
+import { CopilotTranscriptionJobNotFound, OneHour } from '../../../base';
 import {
   RealtimePublisher,
   realtimeTranscriptTaskRoom,
@@ -17,14 +12,12 @@ import { Models } from '../../../models';
 import { CapabilityRuntime } from '../runtime/capability-runtime';
 import { TRANSCRIPT_PROMPT_REF } from './constants';
 import { TranscriptPayloadSchema } from './schema';
+import type { TranscriptionPayloadV2 } from './types';
 
 @Injectable()
 export class CopilotTranscriptionRetryService {
-  private readonly logger = new Logger(CopilotTranscriptionRetryService.name);
-
   constructor(
     private readonly models: Models,
-    private readonly job: JobQueue,
     private readonly runtime: CapabilityRuntime,
     private readonly realtime: RealtimePublisher
   ) {}
@@ -82,13 +75,6 @@ export class CopilotTranscriptionRetryService {
         'Only failed transcript tasks can be retried'
       );
     }
-    await this.enqueuePendingTask(
-      taskId,
-      payload,
-      generation,
-      retryOf,
-      personal ? 'personal' : 'canonical'
-    );
     this.realtime.publish(
       'copilot.transcript.task.changed',
       { workspaceId, taskId },
@@ -102,46 +88,17 @@ export class CopilotTranscriptionRetryService {
     };
   }
 
-  async enqueuePendingTask(
-    taskId: string,
-    payload: Jobs['copilot.transcript.task.submit']['payload'],
-    generation: string,
-    retryOf: string | null,
-    scopeMode: 'personal' | 'canonical',
-    rollbackOnError = true
-  ) {
-    try {
-      await this.job.add(
-        'copilot.transcript.task.submit',
-        {
-          taskId,
-          payload,
-          generation,
-          scopeMode,
-          retryOf: retryOf ?? undefined,
-        },
-        {
-          jobId: `copilot-transcript-task/${taskId}/${generation}`,
-          attempts: 1,
-          removeOnFail: true,
-        }
-      );
-    } catch (error) {
-      if (rollbackOnError) {
-        await this.models.copilotTranscriptTask.failPendingDispatch(
-          taskId,
-          generation,
-          error instanceof Error ? error.message : 'transcript_enqueue_failed'
-        );
-      }
-      throw error;
-    }
-  }
-
-  async reconcileDispatches() {
+  async collectPendingDispatches() {
     const pending = await this.models.copilotTranscriptTask.pendingDispatches(
-      new Date(Date.now() - OneMinute)
+      new Date()
     );
+    const dispatches: {
+      taskId: string;
+      payload: TranscriptionPayloadV2;
+      generation: string;
+      scopeMode: 'personal' | 'canonical';
+      retryOf?: string;
+    }[] = [];
     for (const task of pending) {
       const generation = task.dispatchGeneration;
       if (!generation) continue;
@@ -156,24 +113,17 @@ export class CopilotTranscriptionRetryService {
         );
         continue;
       }
-      try {
-        await this.enqueuePendingTask(
-          task.id,
-          parsed.data,
-          generation,
-          task.actionRunId,
+      dispatches.push({
+        taskId: task.id,
+        payload: parsed.data,
+        generation,
+        retryOf: task.actionRunId ?? undefined,
+        scopeMode:
           (task.inputSnapshot as Record<string, unknown> | null)?.scopeMode ===
-            'personal'
+          'personal'
             ? 'personal'
             : 'canonical',
-          false
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Failed to recover pending transcript task ${task.id}`,
-          error
-        );
-      }
+      });
     }
 
     const running =
@@ -202,5 +152,6 @@ export class CopilotTranscriptionRetryService {
         );
       }
     }
+    return dispatches;
   }
 }

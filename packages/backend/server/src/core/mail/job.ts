@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { Config, metrics, OnEvent, URLHelper } from '../../base';
+import { Config, metrics, URLHelper } from '../../base';
 import { type MailName, Renderers } from '../../mails';
 import { UserProps, WorkspaceProps } from '../../mails/components';
 import { MailDeliveryRow, Models } from '../../models';
@@ -32,14 +32,6 @@ export class MailJob {
     private readonly config: Config,
     private readonly url: URLHelper
   ) {}
-
-  @OnEvent('user.deleted')
-  async onUserDeleted(user: Events['user.deleted']) {
-    await Promise.all([
-      this.models.mailDelivery.cancelByRecipient(user.email),
-      this.models.mailDelivery.cancelMemberInvitationByActor(user.id),
-    ]);
-  }
 
   @Cron(CronExpression.EVERY_MINUTE)
   async sendPendingMails() {

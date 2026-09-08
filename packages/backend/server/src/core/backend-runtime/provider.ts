@@ -7,7 +7,7 @@ import {
   Optional,
 } from '@nestjs/common';
 
-import { Config, OnEvent } from '../../base';
+import { Config, EventBus, OnEvent } from '../../base';
 import { metrics } from '../../base/metrics';
 import { BackendRuntime, type BackendRuntimeHealth } from '../../native';
 import { BackendRuntimeOperations } from './copilot-operations';
@@ -37,6 +37,25 @@ export const BACKEND_RUNTIME_CONFIG_PATHS = Symbol(
   'BACKEND_RUNTIME_CONFIG_PATHS'
 );
 
+export type RuntimeInvalidation =
+  | {
+      version: 1;
+      kind: 'quotaEntitlement' | 'quotaStorageUsage';
+      subject: string;
+    }
+  | {
+      version: 1;
+      kind: 'quotaOwnerMapping' | 'quotaSeatUsage';
+      workspaceId: string;
+    }
+  | { version: 1; kind: 'blobSource'; source: unknown };
+
+declare global {
+  interface Events {
+    'backendRuntime.invalidation': RuntimeInvalidation;
+  }
+}
+
 function runtimeAuthConfig(config?: Config) {
   if (!config) return undefined;
   return JSON.stringify({ auth: config.auth, oauth: config.oauth });
@@ -54,14 +73,22 @@ export class BackendRuntimeProvider
     @Optional() private readonly config?: Config,
     @Optional()
     @Inject(BACKEND_RUNTIME_CONFIG_PATHS)
-    configPaths?: string[]
+    configPaths?: string[],
+    @Optional() event?: EventBus
   ) {
     const runtime = new BackendRuntime(
       config?.crypto.privateKey,
       configPaths,
       (error: Error | null, event: string) =>
         recordPermissionTelemetry(error, event),
-      runtimeAuthConfig(config)
+      runtimeAuthConfig(config),
+      (error: Error | null, value: string) => {
+        if (error || !event) return;
+        event.emit(
+          'backendRuntime.invalidation',
+          JSON.parse(value) as RuntimeInvalidation
+        );
+      }
     );
     super(runtime);
     this.configureObjectStorage();

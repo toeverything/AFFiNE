@@ -9,7 +9,6 @@ import {
   EventBus,
   FailedToSaveUpdates,
   FailedToUpsertSnapshot,
-  JobQueue,
   metrics,
   Mutex,
 } from '../../../base';
@@ -49,7 +48,6 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     private readonly mutex: Mutex,
     private readonly event: EventBus,
     protected override readonly options: DocStorageOptions,
-    private readonly queue: JobQueue,
     private readonly runtime: BackendRuntimeProvider
   ) {
     super(options);
@@ -164,19 +162,6 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
                   ...input,
                   ...contract,
                 });
-          await this.queue.add(
-            'doc.mergePendingDocUpdates',
-            {
-              workspaceId,
-              docId,
-            },
-            {
-              // keep it simple to let all update merged in one job
-              jobId: `doc:merge-pending-updates:${workspaceId}:${docId}`,
-              delay: 5 * 1000 /* 5s */,
-              priority: 100,
-            }
-          );
           done += batch.length;
         }
       });

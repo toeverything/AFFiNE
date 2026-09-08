@@ -248,6 +248,7 @@ model Entitlement {
   @@map("entitlements")
 }
 
+// TODO(gc-convergence): drop this v0.27.4 projection after old readers and predeploy retire; current quota reads use canonical facts and bounded memory cache.
 model EffectiveUserQuotaState {
   userId               String    @id @map("user_id") @db.VarChar
   plan                 String    @db.Text
@@ -273,6 +274,7 @@ model EffectiveUserQuotaState {
   @@map("effective_user_quota_states")
 }
 
+// TODO(gc-convergence): drop this v0.27.4 projection after old readers and predeploy retire; current quota reads use canonical facts and bounded memory cache.
 model EffectiveWorkspaceQuotaState {
   workspaceId             String    @id @map("workspace_id") @db.VarChar
   plan                    String    @db.Text
@@ -1203,20 +1205,6 @@ model InstalledLicense {
   @@map("installed_licenses")
 }
 
-model PendingLicenseDeactivation {
-  key          String    @id @map("key") @db.VarChar
-  workspaceId  String    @map("workspace_id") @db.VarChar
-  operationId  String    @map("operation_id") @db.VarChar
-  claimId      String?   @map("claim_id") @db.VarChar
-  claimedUntil DateTime? @map("claimed_until") @db.Timestamptz(3)
-  attempts     Int       @default(0) @db.Integer
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  @@index([workspaceId])
-  @@map("pending_license_deactivations")
-}
-
 enum BlobStatus {
   pending
   completed
@@ -1231,7 +1219,7 @@ model Blob {
   size                 Int        @db.Integer
   mime                 String     @db.VarChar
   status               BlobStatus @default(completed)
-  reservationId        String     @default(dbgenerated("gen_random_uuid()")) @map("reservation_id") @db.Uuid
+  reservationId        String?    @default(dbgenerated("gen_random_uuid()")) @map("reservation_id") @db.Uuid
   reservationExpiresAt DateTime?  @map("reservation_expires_at") @db.Timestamptz(3)
   uploadId             String?    @map("upload_id") @db.VarChar
   createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -1354,7 +1342,7 @@ model CommentAttachment {
   mime                 String     @db.VarChar
   name                 String     @db.VarChar
   status               BlobStatus @default(completed)
-  reservationId        String     @default(dbgenerated("gen_random_uuid()")) @map("reservation_id") @db.Uuid
+  reservationId        String?    @default(dbgenerated("gen_random_uuid()")) @map("reservation_id") @db.Uuid
   reservationExpiresAt DateTime?  @map("reservation_expires_at") @db.Timestamptz(3)
   createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   createdBy            String?    @map("created_by") @db.VarChar
@@ -1445,6 +1433,7 @@ model CalendarSubscription {
   lastSyncAt         DateTime? @map("last_sync_at") @db.Timestamptz(3)
   nextSyncAt         DateTime  @default(now()) @map("next_sync_at") @db.Timestamptz(3)
   syncRetryCount     Int       @default(0) @map("sync_retry_count")
+  syncClaimedUntil   DateTime? @map("sync_claimed_until") @db.Timestamptz(3)
   customChannelId    String?   @map("custom_channel_id") @db.VarChar
   customResourceId   String?   @map("custom_resource_id") @db.VarChar
   channelExpiration  DateTime? @map("channel_expiration") @db.Timestamptz(3)

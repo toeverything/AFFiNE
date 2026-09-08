@@ -41,9 +41,8 @@ export class NotificationService {
   ) {}
 
   async cleanExpiredNotifications() {
-    const userIds =
-      await this.models.notification.findExpiredNotificationUserIds();
-    const count = await this.models.notification.cleanExpiredNotifications();
+    const { count, userIds } =
+      await this.models.notification.cleanExpiredNotifications();
     if (count > 0) {
       await Promise.all(
         userIds.map(userId =>
@@ -61,6 +60,34 @@ export class NotificationService {
     await this.sendCommentEmail(input, isMention, notification.id);
     await this.publishCountChanged(input.userId, 'created');
     return notification;
+  }
+
+  async deliverComment(notificationId: string) {
+    const notification = await this.models.notification.get(notificationId);
+    if (
+      !notification ||
+      (notification.type !== NotificationType.Comment &&
+        notification.type !== NotificationType.CommentMention)
+    ) {
+      return;
+    }
+    const comment = notification as CommentNotification;
+    const isMention = notification.type === NotificationType.CommentMention;
+    await this.sendCommentEmail(
+      { userId: comment.userId, level: comment.level, body: comment.body },
+      isMention,
+      comment.id
+    );
+    await this.publishCountChanged(comment.userId, 'created');
+  }
+
+  async deliverPendingComments() {
+    const notifications =
+      await this.models.notification.findPendingCommentDeliveries();
+    const results = await Promise.allSettled(
+      notifications.map(({ id }) => this.deliverComment(id))
+    );
+    return results.filter(result => result.status === 'rejected').length;
   }
 
   private async sendCommentEmail(

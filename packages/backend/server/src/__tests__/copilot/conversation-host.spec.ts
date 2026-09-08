@@ -26,6 +26,7 @@ function fixture(
     mode?: 'canonical' | 'personal';
     admittedAttachments?: AdmittedAttachmentSource[];
     revokeDuringAdmission?: boolean;
+    promptAction?: string;
   } = {}
 ) {
   const sessionId = 'session-1';
@@ -60,6 +61,7 @@ function fixture(
   let accessAllowed = true;
   let acceptedWriteCount = 0;
   let artifactWrites = 0;
+  const titleCalls: unknown[] = [];
   const chatSession = new ChatSession(
     {
       sessionId,
@@ -69,6 +71,7 @@ function fixture(
       focus: { selectors: [] },
       prompt: {
         name: 'Chat With AFFiNE AI',
+        action: options.promptAction,
         config: {},
         paramKeys: [],
         params: {},
@@ -108,6 +111,9 @@ function fixture(
       turnId: string
     ) => [...durable.values()].find(turn => turn.id === turnId),
     revertLatestMessage: async () => {},
+    generateSessionTitle: async (input: unknown) => {
+      titleCalls.push(input);
+    },
   } as unknown as ChatSessionService;
   const submissionStore = {
     get: async (id: string, userId: string) => {
@@ -138,6 +144,7 @@ function fixture(
   } as unknown as Mutex;
   const policy = {
     hasQuota: async () => quota,
+    shouldScheduleTitle: (prompt: { action?: string }) => !prompt.action,
   } as unknown as ConversationPolicy;
   const runtime = {
     putWorkspaceArtifact: async () => {
@@ -195,6 +202,7 @@ function fixture(
     session: chatSession,
     appendCount: () => appendCount,
     artifactWrites: () => artifactWrites,
+    titleCalls,
     setQuota: (value: boolean) => {
       quota = value;
     },
@@ -353,7 +361,7 @@ test('workspace context fails closed for personal scope and revoked canonical ac
   });
 });
 
-test('direct conversation rechecks canonical access before assistant persistence', async t => {
+test('assistant persistence rechecks access and schedules eligible titles', async t => {
   const state = fixture();
   state.revokeAccess();
 
@@ -375,4 +383,42 @@ test('direct conversation rechecks canonical access before assistant persistence
     { message: 'permission denied' }
   );
   t.is(state.appendCount(), 0);
+
+  const eligible = fixture();
+  const assistantTurn = {
+    conversationId: eligible.sessionId,
+    role: 'assistant' as const,
+    content: 'answer',
+    attachments: [],
+    metadata: {},
+    renderTrace: [],
+    toolEvents: [],
+    createdAt: new Date(),
+  };
+  await eligible.host.persistAssistantTurn(
+    eligible.session,
+    assistantTurn,
+    false
+  );
+  await eligible.host.persistAssistantTurn(
+    eligible.session,
+    { ...assistantTurn, content: 'aborted' },
+    true
+  );
+
+  const action = fixture({ promptAction: 'edit' });
+  await action.host.persistAssistantTurn(
+    action.session,
+    { ...assistantTurn, conversationId: action.sessionId },
+    false
+  );
+
+  t.deepEqual(eligible.titleCalls, [
+    {
+      sessionId: 'session-1',
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+    },
+  ]);
+  t.deepEqual(action.titleCalls, []);
 });

@@ -2,7 +2,7 @@ import type { RawBodyRequest } from '@nestjs/common';
 import { Controller, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
 
-import { InternalServerError } from '../../base';
+import { BadRequest, InternalServerError } from '../../base';
 import { Public } from '../../core/auth';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 
@@ -21,9 +21,11 @@ export class StripeWebhookController {
         typeof signature === 'string' ? signature : ''
       );
     } catch (error) {
-      throw new InternalServerError(
-        error instanceof Error ? error.message : String(error)
-      );
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('invalid Stripe webhook signature')) {
+        throw new BadRequest(message);
+      }
+      throw new InternalServerError(message);
     }
   }
 }

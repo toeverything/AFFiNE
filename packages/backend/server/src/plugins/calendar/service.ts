@@ -9,7 +9,6 @@ import {
   Config,
   exponentialBackoffDelay,
   GraphqlBadRequest,
-  JobQueue,
   URLHelper,
 } from '../../base';
 import { Models } from '../../models';
@@ -43,7 +42,6 @@ export class CalendarService {
   constructor(
     private readonly models: Models,
     private readonly providerFactory: CalendarProviderFactory<CalendarProvider>,
-    private readonly queue: JobQueue,
     private readonly config: Config,
     private readonly url: URLHelper
   ) {}
@@ -437,7 +435,7 @@ export class CalendarService {
         );
       }
 
-      await this.models.calendarSubscription.updateSync(subscription.id, {
+      await this.models.calendarSubscription.completeSync(subscription.id, {
         lastSyncAt: syncedAt,
         nextSyncAt,
         syncRetryCount: 0,
@@ -908,6 +906,7 @@ export class CalendarService {
       displayName: string | null;
       customChannelId: string | null;
       customResourceId: string | null;
+      lastSyncAt: Date | null;
       channelExpiration: Date | null;
     },
     provider: CalendarProvider,
@@ -996,6 +995,7 @@ export class CalendarService {
       syncRetryCount: number;
       customChannelId: string | null;
       customResourceId: string | null;
+      lastSyncAt: Date | null;
     };
     account: CalendarAccount;
     provider: CalendarProvider;
@@ -1026,10 +1026,14 @@ export class CalendarService {
 
     const attempt = params.subscription.syncRetryCount + 1;
     const nextRetryAt = this.calculateFailureRetryAt(attempt);
-    await this.models.calendarSubscription.updateSync(params.subscription.id, {
-      nextSyncAt: nextRetryAt,
-      syncRetryCount: attempt,
-    });
+    await this.models.calendarSubscription.completeSync(
+      params.subscription.id,
+      {
+        lastSyncAt: params.subscription.lastSyncAt,
+        nextSyncAt: nextRetryAt,
+        syncRetryCount: attempt,
+      }
+    );
     this.logger.warn(
       `Calendar sync failed for subscription ${params.subscription.id}, attempt ${attempt}, next retry at ${nextRetryAt.toISOString()}`,
       this.toError(params.error)
@@ -1078,18 +1082,11 @@ export class CalendarService {
 
   async enqueueSyncSubscription(
     subscriptionId: string,
-    reason: 'polling' | 'webhook' | 'on-demand'
+    _reason: 'polling' | 'webhook' | 'on-demand'
   ) {
-    await this.queue.add(
-      'calendar.syncSubscription',
-      {
-        subscriptionId,
-        reason,
-      },
-      {
-        jobId: subscriptionId,
-      }
-    );
+    await this.models.calendarSubscription.updateSync(subscriptionId, {
+      nextSyncAt: this.now(),
+    });
   }
 
   private calculateNextSyncAt(base: Date, refreshIntervalMinutes?: number) {

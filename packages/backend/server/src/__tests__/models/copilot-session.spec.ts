@@ -84,9 +84,10 @@ test('personal session scope atomically binds workspace absence to actor resourc
   await t.throwsAsync(
     t.context.copilotSession.create({
       ...own,
+      sessionId: randomUUID(),
       personal: true,
     }),
-    { instanceOf: Error }
+    { instanceOf: CopilotSessionNotFound }
   );
   t.true(
     (await t.context.db.aiSession.findUnique({ where: { id: own.sessionId } }))
@@ -1707,7 +1708,7 @@ test('should get sessions for title generation correctly', async t => {
       await db.aiSession.update({
         where: { id },
         data: {
-          updatedAt: new Date(Date.now() - index * 1000),
+          updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000 - index * 1000),
           messages: {
             create: Array.from({ length: index + 1 }, (_, i) => ({
               role: 'assistant',
@@ -1774,6 +1775,33 @@ test('should get sessions for title generation correctly', async t => {
   );
 
   const result = await copilotSession.toBeGenerateTitle();
+  const concurrentlyVisible = await copilotSession.toBeGenerateTitle();
+
+  t.deepEqual(
+    concurrentlyVisible.map(session => session.id),
+    result.map(session => session.id)
+  );
+
+  await db.aiSession.update({
+    where: { id: result[0].id },
+    data: { title: 'Manual title' },
+  });
+  t.false(
+    await copilotSession.setTitleIfAbsent({
+      sessionId: result[0].id,
+      userId: result[0].userId,
+      workspaceId: result[0].workspaceId,
+      title: 'Generated title',
+    })
+  );
+  t.true(
+    await copilotSession.setTitleIfAbsent({
+      sessionId: result[1].id,
+      userId: result[1].userId,
+      workspaceId: result[1].workspaceId,
+      title: 'Generated title',
+    })
+  );
 
   t.snapshot(
     {

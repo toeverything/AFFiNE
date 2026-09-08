@@ -193,13 +193,17 @@ export class WorkspaceBlobResolver {
         }
       );
     } catch (error) {
-      await this.runtime.abortStorageReservationV1({
-        workspaceId,
-        userId: user.id,
-        key: blob.filename,
-        reservationId: reservation.reservationId,
-        kind: 'blob',
-      });
+      try {
+        await this.runtime.abortStorageReservationV1({
+          workspaceId,
+          userId: user.id,
+          key: blob.filename,
+          reservationId: reservation.reservationId,
+          kind: 'blob',
+        });
+      } catch (cleanupError) {
+        this.logger.warn('Failed to abort blob reservation', cleanupError);
+      }
       throw error;
     }
     const finalized = await this.finalizeReservation({
@@ -442,21 +446,28 @@ export class WorkspaceBlobResolver {
       .workspace(workspaceId)
       .assert('Workspace.Blobs.Upload');
 
+    const record = await this.models.blob.get(workspaceId, key);
+    if (
+      !record ||
+      record.status !== 'pending' ||
+      record.deletedAt ||
+      !record.reservationId
+    ) {
+      return false;
+    }
     const aborted = await this.storage.abortMultipartUpload(
       workspaceId,
       key,
-      uploadId
+      uploadId,
+      record.reservationId
     );
-    const record = await this.models.blob.get(workspaceId, key);
-    if (record?.reservationId) {
-      await this.runtime.abortStorageReservationV1({
-        workspaceId,
-        userId: user.id,
-        key,
-        reservationId: record.reservationId,
-        kind: 'blob',
-      });
-    }
+    await this.runtime.abortStorageReservationV1({
+      workspaceId,
+      userId: user.id,
+      key,
+      reservationId: record.reservationId,
+      kind: 'blob',
+    });
     return aborted;
   }
 

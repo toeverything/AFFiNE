@@ -157,7 +157,7 @@ export function subscriptionFromEntitlement(
       entitlement.createdAt,
     end: providerFact?.periodEnd ?? entitlement.expiresAt,
     trialStart: providerFact?.trialStart ?? null,
-    trialEnd: providerFact?.trialEnd ?? entitlement.graceUntil,
+    trialEnd: providerFact?.trialEnd ?? null,
     nextBillAt: providerMetadata?.nextBillAt
       ? new Date(providerMetadata.nextBillAt)
       : providerFact?.canceledAt

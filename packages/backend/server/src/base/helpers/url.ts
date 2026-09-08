@@ -157,6 +157,14 @@ export class URLHelper {
     }
   }
 
+  redirectPolicy() {
+    return {
+      redirectBaseUrl: this.requestOrigin,
+      redirectAllowedOrigins: this.allowedOrigins,
+      redirectTrustedDomains: TRUSTED_REDIRECT_DOMAINS,
+    };
+  }
+
   verify(url: string | URL) {
     try {
       if (typeof url === 'string') {

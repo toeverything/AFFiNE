@@ -96,12 +96,6 @@ export class BackendRuntimeSearchOperations extends BackendRuntimeCoreOperations
     );
   }
 
-  async reconcileEmbeddingWorkspaces() {
-    return await this.measured('reconcileEmbeddingWorkspaces', runtime =>
-      runtime.reconcileEmbeddingWorkspaces()
-    );
-  }
-
   async compileTurnScope(
     input: CompileScopeInput
   ): Promise<RuntimeTurnScopeSnapshot> {

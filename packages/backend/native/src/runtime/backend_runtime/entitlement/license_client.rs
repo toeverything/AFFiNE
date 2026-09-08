@@ -13,6 +13,18 @@ pub struct RuntimeLicenseChange {
   pub canceled: bool,
 }
 
+#[napi_derive::napi(object)]
+pub struct RuntimeLicenseHealthResult {
+  pub changes: Vec<RuntimeLicenseChange>,
+  pub transient_failure: bool,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeLicenseSeatUpdateResult {
+  pub status: String,
+  pub license: Option<RuntimeInstalledLicense>,
+}
+
 #[napi_derive::napi]
 impl BackendRuntime {
   #[napi]
@@ -39,16 +51,25 @@ impl BackendRuntime {
     workspace_id: String,
     license_key: String,
   ) -> Result<RuntimeInstalledLicense> {
-    for pending in self
-      .list_pending_license_deactivations_v1(Some(workspace_id.clone()))
-      .await?
+    if let Some(installed) = self.get_installed_license_v1(workspace_id.clone()).await?
+      && installed.key != license_key
     {
-      self.retry_pending_license_deactivation(&pending.key).await?;
+      return Err(Error::new(Status::InvalidArg, "workspace_license_already_exists"));
+    }
+    if let Some(previous) = self.installed_license_for_key(&license_key).await?
+      && previous.workspace_id != workspace_id
+    {
+      self
+        .deactivate_remote_license(&previous.key, &previous.validate_key)
+        .await?;
+      if !self
+        .revoke_installed_license_v1(previous.workspace_id, previous.key, previous.validate_key)
+        .await?
+      {
+        return Err(Error::new(Status::GenericFailure, "license_generation_changed"));
+      }
     }
     let operation_id = uuid::Uuid::new_v4().to_string();
-    self
-      .prepare_license_activation_v1(workspace_id.clone(), license_key.clone(), operation_id.clone())
-      .await?;
     let request = crate::license::LicenseKeyRequest {
       license_key: license_key.clone(),
       workspace_id: Some(workspace_id.clone()),
@@ -56,60 +77,33 @@ impl BackendRuntime {
     };
     let response = match tokio::task::spawn_blocking(move || crate::license::activate_license_request(&request)).await {
       Ok(Ok(response)) => response,
-      Ok(Err(_)) => {
-        self.compensate_license_activation(&license_key, &operation_id).await?;
-        return Err(RuntimeError::invalid_state("license request failed").into());
-      }
-      Err(_) => {
-        self.compensate_license_activation(&license_key, &operation_id).await?;
-        return Err(RuntimeError::invalid_state("license request failed").into());
-      }
+      Ok(Err(_)) | Err(_) => return Err(RuntimeError::invalid_state("license request failed").into()),
     };
     if let Some(error) = response.error {
-      let rejected = error.status < 500;
-      if rejected {
-        if !self
-          .finish_license_deactivation_v1(license_key.clone(), operation_id.clone(), true)
-          .await?
-        {
-          return Err(Error::new(
-            Status::GenericFailure,
-            "License activation recovery lease was lost.",
-          ));
-        }
-      } else {
-        self.compensate_license_activation(&license_key, &operation_id).await?;
-      }
       return Err(remote_error(error));
     }
     let Some(remote) = response.license else {
-      self.compensate_license_activation(&license_key, &operation_id).await?;
       return Err(Error::new(
         Status::GenericFailure,
         "Invalid AFFiNE Pro license response.",
       ));
     };
-    if remote.validate_key != operation_id {
-      self.compensate_license_activation(&license_key, &operation_id).await?;
+    if uuid::Uuid::parse_str(&remote.validate_key).is_err() {
       return Err(Error::new(
         Status::GenericFailure,
         "Invalid license activation generation.",
       ));
     }
-    let result = self
+    self
       .install_license_v1(RuntimeLicenseInstallInput {
         workspace_id,
         license: remote.envelope,
-        key: Some(license_key.clone()),
+        key: Some(license_key),
         validate_key: remote.validate_key,
         recurring: remote.recurring,
         activation: true,
       })
-      .await;
-    if result.is_err() {
-      self.compensate_license_activation(&license_key, &operation_id).await?;
-    }
-    result
+      .await
   }
 
   #[napi]
@@ -119,19 +113,20 @@ impl BackendRuntime {
     };
     let recurring = license.recurring.clone();
     let remote = license.variant.as_deref() != Some("onetime");
+    if remote {
+      self
+        .deactivate_remote_license(&license.key, &license.validate_key)
+        .await?;
+    }
     if !self
       .revoke_installed_license_v1(
         license.workspace_id.clone(),
         license.key.clone(),
         license.validate_key.clone(),
-        remote,
       )
       .await?
     {
       return Ok(None);
-    }
-    if remote {
-      let _ = self.retry_pending_license_deactivation(&license.key).await;
     }
     Ok(Some(RuntimeLicenseChange {
       workspace_id,
@@ -163,7 +158,7 @@ impl BackendRuntime {
     let request = crate::license::LicenseKeyRequest {
       license_key: license.key,
       workspace_id: None,
-      validate_key: None,
+      validate_key: Some(license.validate_key),
     };
     let response =
       tokio::task::spawn_blocking(move || crate::license::create_license_customer_portal_request(&request))
@@ -179,12 +174,18 @@ impl BackendRuntime {
   }
 
   #[napi]
-  pub async fn update_team_license_seats_v1(&self, workspace_id: String) -> Result<Option<RuntimeInstalledLicense>> {
+  pub async fn update_team_license_seats_v1(&self, workspace_id: String) -> Result<RuntimeLicenseSeatUpdateResult> {
     let Some(license) = self.get_installed_license_v1(workspace_id.clone()).await? else {
-      return Ok(None);
+      return Ok(RuntimeLicenseSeatUpdateResult {
+        status: "not_applicable".into(),
+        license: None,
+      });
     };
     if license.variant.as_deref() == Some("onetime") {
-      return Ok(None);
+      return Ok(RuntimeLicenseSeatUpdateResult {
+        status: "not_applicable".into(),
+        license: None,
+      });
     }
     let statuses = affine_core::access_control::InvitationStatus::CHARGEABLE
       .map(affine_core::access_control::InvitationStatus::as_str);
@@ -206,24 +207,24 @@ impl BackendRuntime {
       .map_err(|_| RuntimeError::invalid_state("license request failed"))?
       .map_err(|_| RuntimeError::invalid_state("license request failed"))?;
     remote_command(response)?;
-    for attempt in 1..=10 {
-      if let Ok(Some(refreshed)) = self.refresh_recurring_license(&license).await
-        && refreshed.quantity == seats as i32
-      {
-        return Ok(Some(refreshed));
-      }
-      if attempt < 10 {
-        tokio::time::sleep(std::time::Duration::from_millis(attempt * 2_000)).await;
-      }
-    }
-    Err(Error::new(
-      Status::GenericFailure,
-      "Timeout checking seat update result.",
-    ))
+    sqlx::query(
+      "UPDATE installed_licenses SET validated_at=LEAST(validated_at,clock_timestamp()-INTERVAL '1 hour') WHERE \
+       workspace_id=$1 AND key=$2 AND validate_key=$3",
+    )
+    .bind(&license.workspace_id)
+    .bind(&license.key)
+    .bind(&license.validate_key)
+    .execute(&self.pool().await?)
+    .await
+    .map_err(|error| RuntimeError::database("schedule pending license seat confirmation", error))?;
+    Ok(RuntimeLicenseSeatUpdateResult {
+      status: "pending".into(),
+      license: None,
+    })
   }
 
   #[napi]
-  pub async fn check_licenses_v1(&self) -> Result<Vec<RuntimeLicenseChange>> {
+  pub async fn check_licenses_v1(&self) -> Result<RuntimeLicenseHealthResult> {
     let pool = self.pool().await?;
     let mut lock = pool
       .begin()
@@ -235,7 +236,10 @@ impl BackendRuntime {
         .await
         .map_err(|error| RuntimeError::database("acquire license health scan lease", error))?;
     if !acquired {
-      return Ok(Vec::new());
+      return Ok(RuntimeLicenseHealthResult {
+        changes: Vec::new(),
+        transient_failure: false,
+      });
     }
     let result = self.check_licenses_unlocked().await;
     lock
@@ -247,13 +251,8 @@ impl BackendRuntime {
 }
 
 impl BackendRuntime {
-  async fn check_licenses_unlocked(&self) -> Result<Vec<RuntimeLicenseChange>> {
+  async fn check_licenses_unlocked(&self) -> Result<RuntimeLicenseHealthResult> {
     let mut transient_failure = false;
-    for pending in self.list_pending_license_deactivations_v1(None).await? {
-      if self.retry_pending_license_deactivation(&pending.key).await.is_err() {
-        transient_failure = true;
-      }
-    }
     let rows = sqlx::query(
       "SELECT * FROM installed_licenses WHERE validated_at<=clock_timestamp()-INTERVAL '1 hour' ORDER BY workspace_id",
     )
@@ -287,7 +286,6 @@ impl BackendRuntime {
                     license.workspace_id.clone(),
                     license.key.clone(),
                     license.validate_key.clone(),
-                    false,
                   )
                   .await?
                 {
@@ -302,7 +300,6 @@ impl BackendRuntime {
                 license.workspace_id.clone(),
                 license.key.clone(),
                 license.validate_key.clone(),
-                false,
               )
               .await?
             {
@@ -321,7 +318,6 @@ impl BackendRuntime {
                 license.workspace_id.clone(),
                 license.key.clone(),
                 license.validate_key.clone(),
-                false,
               )
               .await?
             {
@@ -331,52 +327,34 @@ impl BackendRuntime {
         }
       }
     }
-    if transient_failure {
-      return Err(Error::new(
-        Status::GenericFailure,
-        "One or more license health checks were temporarily unavailable.",
-      ));
-    }
-    Ok(changes)
+    Ok(RuntimeLicenseHealthResult {
+      changes,
+      transient_failure,
+    })
   }
 }
 
 impl BackendRuntime {
-  async fn compensate_license_activation(&self, key: &str, operation_id: &str) -> Result<()> {
-    if !self
-      .finish_license_deactivation_v1(key.to_string(), operation_id.to_string(), false)
-      .await?
-    {
-      return Err(Error::new(
-        Status::GenericFailure,
-        "License activation recovery lease was lost.",
-      ));
-    }
-    self.retry_pending_license_deactivation(key).await
+  async fn installed_license_for_key(&self, key: &str) -> Result<Option<RuntimeInstalledLicense>> {
+    let row = sqlx::query("SELECT * FROM installed_licenses WHERE key=$1")
+      .bind(key)
+      .fetch_optional(&self.pool().await?)
+      .await
+      .map_err(|error| RuntimeError::database("load installed license by key", error))?;
+    Ok(row.map(installed))
   }
 
-  async fn retry_pending_license_deactivation(&self, key: &str) -> Result<()> {
-    let claim_id = uuid::Uuid::new_v4().to_string();
-    let pending = self
-      .claim_license_deactivation_v1(key.to_string(), claim_id.clone())
-      .await?
-      .ok_or_else(|| Error::new(Status::GenericFailure, "License operation is already in progress."))?;
+  async fn deactivate_remote_license(&self, key: &str, validate_key: &str) -> Result<()> {
     let request = crate::license::LicenseKeyRequest {
       license_key: key.to_string(),
       workspace_id: None,
-      validate_key: Some(pending.operation_id),
+      validate_key: Some(validate_key.to_string()),
     };
-    let result = match tokio::task::spawn_blocking(move || crate::license::deactivate_license_request(&request)).await {
-      Ok(Ok(response)) => match response.error {
-        Some(error) if error.status >= 500 => Err(remote_error(error)),
-        _ => Ok(()),
-      },
-      Ok(Err(_)) | Err(_) => Err(RuntimeError::invalid_state("license request failed").into()),
-    };
-    self
-      .finish_license_deactivation_v1(key.to_string(), claim_id, result.is_ok())
-      .await?;
-    result
+    let response = tokio::task::spawn_blocking(move || crate::license::deactivate_license_request(&request))
+      .await
+      .map_err(|_| RuntimeError::invalid_state("license request failed"))?
+      .map_err(|_| RuntimeError::invalid_state("license request failed"))?;
+    remote_command(response)
   }
 
   async fn refresh_recurring_license(

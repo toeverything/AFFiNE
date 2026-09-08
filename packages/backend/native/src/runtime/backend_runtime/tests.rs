@@ -171,10 +171,6 @@ pub(super) async fn runtime_from_database_url() -> AnyResult<Option<BackendRunti
     .execute(&pool)
     .await
     .context("cleanup runtime_gates for backend runtime tests")?;
-  sqlx::query("DELETE FROM runtime_leases WHERE key LIKE 'rust-test:%'")
-    .execute(&pool)
-    .await
-    .context("cleanup runtime_leases for backend runtime tests")?;
   sqlx::query("DELETE FROM runtime_rolling_quota_reservations WHERE request_id LIKE 'rust-test:%'")
     .execute(&pool)
     .await
@@ -240,6 +236,7 @@ pub(super) async fn runtime_from_database_url() -> AnyResult<Option<BackendRunti
     search: Arc::new(Mutex::new(None)),
     managed_token_providers: Arc::new(Default::default()),
     permission_telemetry: Default::default(),
+    invalidation_events: Default::default(),
     blob_access: Arc::new(Mutex::new(None)),
     invalidation: Arc::new(Mutex::new(None)),
     quota_read_cache: Arc::new(Mutex::new(None)),
@@ -424,6 +421,7 @@ async fn runtime_gate_sql_semantics_are_atomic_and_ttl_bound() {
       search: Arc::new(Mutex::new(None)),
       managed_token_providers: Arc::new(Default::default()),
       permission_telemetry: Default::default(),
+      invalidation_events: Default::default(),
       blob_access: Arc::new(Mutex::new(None)),
       invalidation: Arc::new(Mutex::new(None)),
       quota_read_cache: Arc::new(Mutex::new(None)),
@@ -1675,6 +1673,152 @@ async fn strict_comment_reservation_rejects_hijack_and_cleans_expired_generation
     .unwrap()
   );
 
+  let mut promotion_input = input(owner_id);
+  promotion_input.key = "promotion-key".to_string();
+  let promotion_reservation = runtime
+    .reserve_storage_quota_v1(promotion_input)
+    .await
+    .unwrap()
+    .reservation_id
+    .unwrap();
+  let final_key = format!("comment-attachments/{workspace_id}/{doc_id}/promotion-key");
+  let promotion_temp = crate::runtime::object_storage::types::ObjectLocator::new(
+    crate::runtime::object_storage::types::StorageScope::Blob,
+    crate::runtime::object_storage::types::ObjectKey::new(format!(
+      "comment-attachments/{workspace_id}/{doc_id}/.reservations/{promotion_reservation}/promotion-key"
+    ))
+    .unwrap(),
+  );
+  runtime
+    .object_storage()
+    .unwrap()
+    .put(
+      &promotion_temp,
+      b"test".to_vec(),
+      crate::runtime::object_storage::types::ObjectPutMetadata {
+        content_type: Some("text/plain".to_string()),
+        content_length: Some(4),
+        checksum_crc32: None,
+      },
+    )
+    .await
+    .unwrap();
+  let mutation = || types::RuntimeStorageReservationMutation {
+    workspace_id: workspace_id.to_string(),
+    user_id: owner_id.to_string(),
+    doc_id: Some(doc_id.to_string()),
+    key: "promotion-key".to_string(),
+    reservation_id: promotion_reservation.clone(),
+    kind: "comment_attachment".to_string(),
+    size: Some(4),
+    mime: Some("text/plain".to_string()),
+  };
+  let hold = super::StorageOperation::acquire(&pool, workspace_id, Some(&final_key))
+    .await
+    .unwrap();
+  let finalize = runtime.finalize_storage_reservation_v1(mutation());
+  tokio::pin!(finalize);
+  assert!(
+    tokio::time::timeout(std::time::Duration::from_millis(100), &mut finalize)
+      .await
+      .is_err(),
+    "finalization must wait for the same object's lifecycle lock"
+  );
+  let mut probe = pool.begin().await.unwrap();
+  sqlx::query("SELECT id FROM users WHERE id=$1 FOR UPDATE NOWAIT")
+    .bind(owner_id)
+    .execute(&mut *probe)
+    .await
+    .unwrap();
+  sqlx::query("SELECT id FROM workspaces WHERE id=$1 FOR UPDATE NOWAIT")
+    .bind(workspace_id)
+    .execute(&mut *probe)
+    .await
+    .unwrap();
+  probe.rollback().await.unwrap();
+  hold.release().await.unwrap();
+  assert!(finalize.await.unwrap());
+  assert!(!runtime.finalize_storage_reservation_v1(mutation()).await.unwrap());
+  let final_locator = crate::runtime::object_storage::types::ObjectLocator::new(
+    crate::runtime::object_storage::types::StorageScope::Blob,
+    crate::runtime::object_storage::types::ObjectKey::new(final_key.clone()).unwrap(),
+  );
+  assert_eq!(
+    runtime
+      .object_storage()
+      .unwrap()
+      .get(&final_locator)
+      .await
+      .unwrap()
+      .unwrap()
+      .body,
+    b"test"
+  );
+
+  let hold = super::StorageOperation::acquire(&pool, workspace_id, Some(&final_key))
+    .await
+    .unwrap();
+  assert!(
+    tokio::time::timeout(
+      std::time::Duration::from_millis(100),
+      super::StorageOperation::acquire(&pool, workspace_id, None)
+    )
+    .await
+    .is_err(),
+    "workspace cleanup must wait for in-flight object operations"
+  );
+  let independent = super::StorageOperation::acquire(&pool, workspace_id, Some("another-key"))
+    .await
+    .unwrap();
+  independent.release().await.unwrap();
+  sqlx::query(
+    "UPDATE comment_attachments SET deleted_at=now() WHERE workspace_id=$1 AND doc_id=$2 AND key='promotion-key'",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  let cleanup = runtime.cleanup_expired_storage_reservations_v1(100);
+  tokio::pin!(cleanup);
+  assert!(
+    tokio::time::timeout(std::time::Duration::from_millis(100), &mut cleanup)
+      .await
+      .is_err(),
+    "reservation cleanup must share the object lifecycle lock"
+  );
+  sqlx::query(
+    "UPDATE comment_attachments SET deleted_at=NULL WHERE workspace_id=$1 AND doc_id=$2 AND key='promotion-key'",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  hold.release().await.unwrap();
+  assert_eq!(
+    cleanup.await.unwrap(),
+    0,
+    "cleanup must recheck candidates after waiting for their lock"
+  );
+  assert!(
+    runtime
+      .object_storage()
+      .unwrap()
+      .head(&final_locator)
+      .await
+      .unwrap()
+      .is_some()
+  );
+  let exclusive = tokio::time::timeout(
+    std::time::Duration::from_secs(2),
+    super::StorageOperation::acquire(&pool, workspace_id, None),
+  )
+  .await
+  .unwrap()
+  .unwrap();
+  exclusive.release().await.unwrap();
+
   let completed_input = |key: &str| types::RuntimeStorageReservationInput {
     workspace_id: workspace_id.to_string(),
     user_id: owner_id.to_string(),
@@ -2354,120 +2498,6 @@ async fn invite_abuse_action_sql_state_machine_retries_and_fences_workers() {
       .await
       .unwrap();
   }
-}
-
-#[tokio::test]
-async fn coordination_lease_sql_semantics_are_fenced_and_ttl_bound() {
-  let _guard = pg_test_lock().lock().await;
-  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
-    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
-    return;
-  };
-
-  let lease = runtime
-    .acquire_coordination_lease("rust-test:lease:basic".to_string(), "owner-1".to_string(), 30_000)
-    .await
-    .unwrap()
-    .expect("first owner should acquire lease");
-  assert_eq!(lease.fencing_token, 1);
-  assert!(
-    !runtime
-      .release_coordination_lease(lease.key.clone(), "owner-2".to_string(), lease.fencing_token)
-      .await
-      .unwrap()
-  );
-  assert!(
-    runtime
-      .release_coordination_lease(lease.key.clone(), lease.owner.clone(), lease.fencing_token)
-      .await
-      .unwrap()
-  );
-
-  let mut tasks = Vec::new();
-  for index in 0..16 {
-    let runtime = BackendRuntime {
-      config_source: Default::default(),
-      inline_config: Arc::new(RwLock::new(None)),
-      role: ServerRole::AllInOne,
-      script_mode: false,
-      config: Arc::new(RwLock::new(runtime.config().unwrap())),
-      config_reload: Arc::new(Mutex::new(())),
-      pool: Arc::new(Mutex::new(Some(runtime.pool().await.unwrap()))),
-      embedding_health: Arc::new(RwLock::new(super::EmbeddingHealth::disabled("test", None))),
-      object_storage: Arc::new(RwLock::new(runtime.object_storage().unwrap())),
-      embedding: Arc::new(Mutex::new(None)),
-      embedding_worker: Arc::new(Mutex::new(None)),
-      search: Arc::new(Mutex::new(None)),
-      managed_token_providers: Arc::new(Default::default()),
-      permission_telemetry: Default::default(),
-      blob_access: Arc::new(Mutex::new(None)),
-      invalidation: Arc::new(Mutex::new(None)),
-      quota_read_cache: Arc::new(Mutex::new(None)),
-      payment: Arc::new(Mutex::new(None)),
-      license_health_worker: Arc::new(Mutex::new(None)),
-    };
-    tasks.push(tokio::spawn(async move {
-      runtime
-        .acquire_coordination_lease(
-          "rust-test:lease:concurrent".to_string(),
-          format!("owner-{index}"),
-          30_000,
-        )
-        .await
-        .unwrap()
-        .is_some()
-    }));
-  }
-  let mut successful = 0;
-  for task in tasks {
-    if task.await.unwrap() {
-      successful += 1;
-    }
-  }
-  assert_eq!(successful, 1);
-
-  let stale = runtime
-    .acquire_coordination_lease("rust-test:lease:stale".to_string(), "owner-1".to_string(), 1)
-    .await
-    .unwrap()
-    .expect("stale lease owner should acquire");
-  tokio::time::sleep(Duration::from_millis(20)).await;
-  let takeover = runtime
-    .acquire_coordination_lease("rust-test:lease:stale".to_string(), "owner-2".to_string(), 30_000)
-    .await
-    .unwrap()
-    .expect("expired lease should be taken over");
-  assert_eq!(takeover.fencing_token, stale.fencing_token + 1);
-  assert!(
-    !runtime
-      .release_coordination_lease(stale.key.clone(), stale.owner.clone(), stale.fencing_token)
-      .await
-      .unwrap()
-  );
-
-  let renew = runtime
-    .acquire_coordination_lease("rust-test:lease:renew".to_string(), "owner-1".to_string(), 30_000)
-    .await
-    .unwrap()
-    .expect("renew lease owner should acquire");
-  assert!(
-    !runtime
-      .renew_coordination_lease(renew.key.clone(), "owner-2".to_string(), renew.fencing_token, 30_000)
-      .await
-      .unwrap()
-  );
-  assert!(
-    !runtime
-      .renew_coordination_lease(renew.key.clone(), renew.owner.clone(), renew.fencing_token + 1, 30_000)
-      .await
-      .unwrap()
-  );
-  assert!(
-    runtime
-      .renew_coordination_lease(renew.key.clone(), renew.owner.clone(), renew.fencing_token, 30_000)
-      .await
-      .unwrap()
-  );
 }
 
 #[tokio::test]

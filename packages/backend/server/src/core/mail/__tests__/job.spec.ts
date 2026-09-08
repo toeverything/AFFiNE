@@ -8,11 +8,13 @@ import { URLHelper } from '../../../base';
 import { Models } from '../../../models';
 import { BackendRuntimeProvider } from '../../backend-runtime';
 import { DocReader } from '../../doc';
+import { MailDeliveryEvents } from '../events';
 import { MailJob } from '../job';
 import { MailSender } from '../sender';
 
 let module: Awaited<ReturnType<typeof createTestingModule>>;
 let mailJob: MailJob;
+let mailEvents: MailDeliveryEvents;
 let sender: MailSender;
 let models: Models;
 let db: PrismaClient;
@@ -23,6 +25,7 @@ let url: URLHelper;
 test.before(async () => {
   module = await createTestingModule();
   mailJob = module.get(MailJob);
+  mailEvents = module.get(MailDeliveryEvents);
   sender = module.get(MailSender);
   models = module.get(Models);
   db = module.get(PrismaClient);
@@ -98,7 +101,7 @@ test('should cancel pending mail deliveries when user is deleted', async t => {
     props: { url: 'https://affine.pro/sign-in', otp: '123456' },
   });
 
-  await mailJob.onUserDeleted({ ...user, ownedWorkspaces: [] });
+  await mailEvents.onUserDeleted(user);
 
   t.is((await delivery(recipientDelivery.id)).status, 'canceled');
   t.is((await delivery(senderDelivery.id)).status, 'canceled');

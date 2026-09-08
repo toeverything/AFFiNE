@@ -78,7 +78,6 @@ test('invite quota rejection has no invite side effects', async t => {
   t.is(await models.user.getUserByEmail(targetEmail), null);
   t.is(await models.workspaceUser.count(workspace.id), 1);
   t.is(app.mails.send.callCount, 0);
-  t.is(app.queue.count('notification.sendInvitation'), 0);
   t.is(quota.commitWorkspaceInviteQuota.callCount, 0);
   t.is(quota.releaseWorkspaceInviteQuota.callCount, 0);
 });

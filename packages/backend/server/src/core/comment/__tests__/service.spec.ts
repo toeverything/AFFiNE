@@ -9,6 +9,11 @@ const content = {
 };
 const createdAt = '2026-08-30T00:00:00.000Z';
 const updatedAt = '2026-08-30T00:01:00.000Z';
+const notification = {
+  docTitle: 'Document',
+  docMode: 'page',
+  mentions: ['mentioned'],
+};
 
 test('CommentService maps mutation commands and native dates', async t => {
   const executeDomainCommandV1 = Sinon.stub().callsFake(async input => ({
@@ -41,12 +46,14 @@ test('CommentService maps mutation commands and native dates', async t => {
         workspaceId: 'workspace',
         docId: 'doc',
         content,
+        ...notification,
       },
       invoke: () =>
         service.createComment('actor', {
           workspaceId: 'workspace',
           docId: 'doc',
           content,
+          ...notification,
         }),
       fillsUser: true,
     },
@@ -90,9 +97,14 @@ test('CommentService maps mutation commands and native dates', async t => {
         actorUserId: 'actor',
         commentId: 'comment',
         content,
+        ...notification,
       },
       invoke: () =>
-        service.createReply('actor', { commentId: 'comment', content }),
+        service.createReply('actor', {
+          commentId: 'comment',
+          content,
+          ...notification,
+        }),
       fillsUser: true,
     },
     {

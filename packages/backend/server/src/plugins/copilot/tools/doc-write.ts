@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { z } from 'zod';
 
 import { DocWriter } from '../../../core/doc';
+import { PermissionAccess } from '../../../core/permission';
 import { toolError } from './error';
 import { defineTool } from './tool';
 import type { CopilotChatOptions } from './types';
@@ -13,7 +14,10 @@ const stripLeadingH1 = (content: string) =>
 
 const sanitizeTitle = (title: string) => title.replace(/[\r\n]+/g, ' ').trim();
 
-export const buildDocCreateHandler = (writer: DocWriter) => {
+export const buildDocCreateHandler = (
+  writer: DocWriter,
+  ac: PermissionAccess
+) => {
   return async (
     options: CopilotChatOptions,
     title: string,
@@ -32,6 +36,10 @@ export const buildDocCreateHandler = (writer: DocWriter) => {
     }
 
     const strippedContent = stripLeadingH1(content);
+    await ac
+      .user(options.user)
+      .workspace(options.workspace)
+      .assert('Workspace.CreateDoc');
     const result = await writer.createDoc(
       options.workspace,
       sanitizedTitle,
@@ -47,7 +55,10 @@ export const buildDocCreateHandler = (writer: DocWriter) => {
   };
 };
 
-export const buildDocUpdateHandler = (writer: DocWriter) => {
+export const buildDocUpdateHandler = (
+  writer: DocWriter,
+  ac: PermissionAccess
+) => {
   return async (
     options: CopilotChatOptions,
     docId: string,
@@ -62,6 +73,11 @@ export const buildDocUpdateHandler = (writer: DocWriter) => {
       return notFound;
     }
 
+    await ac
+      .user(options.user)
+      .workspace(options.workspace)
+      .doc(docId)
+      .assert('Doc.Update');
     try {
       await writer.updateDoc(options.workspace, docId, content, options.user);
     } catch {
@@ -76,7 +92,10 @@ export const buildDocUpdateHandler = (writer: DocWriter) => {
   };
 };
 
-export const buildDocUpdateMetaHandler = (writer: DocWriter) => {
+export const buildDocUpdateMetaHandler = (
+  writer: DocWriter,
+  ac: PermissionAccess
+) => {
   return async (options: CopilotChatOptions, docId: string, title: string) => {
     const notFound = toolError(
       'Doc Meta Update Failed',
@@ -92,6 +111,11 @@ export const buildDocUpdateMetaHandler = (writer: DocWriter) => {
       return toolError('Doc Meta Update Failed', 'Title cannot be empty');
     }
 
+    await ac
+      .user(options.user)
+      .workspace(options.workspace)
+      .doc(docId)
+      .assert('Doc.Update');
     try {
       await writer.updateDocMeta(
         options.workspace,

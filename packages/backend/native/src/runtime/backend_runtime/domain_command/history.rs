@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use serde_json::{Value, json};
 use sqlx::{FromRow, Postgres, Row, Transaction};
 
-use super::authorize_domain;
+use super::{authorize_domain, invalidate_doc_blob_projection, lock_workspace_doc_update};
 use crate::runtime::{
   Deployment, RuntimeError, RuntimeResult,
   backend_runtime::permission::PermissionAuthorizer,
@@ -24,6 +24,7 @@ pub(super) async fn recover(
   doc_id: String,
   timestamp: DateTime<Utc>,
   deployment: Deployment,
+  embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
   let command = DomainCommand::RecoverDoc { doc_id: doc_id.clone() };
   authorize_domain(
@@ -36,6 +37,9 @@ pub(super) async fn recover(
     deployment,
   )
   .await?;
+
+  lock_workspace_doc_update(transaction, &workspace_id, &doc_id).await?;
+  invalidate_doc_blob_projection(transaction, &workspace_id, &doc_id, embedding_schema_ready).await?;
 
   let snapshot = sqlx::query_as::<_, LockedSnapshot>(
     "SELECT blob, updated_at FROM snapshots WHERE workspace_id=$1 AND guid=$2 FOR UPDATE",
@@ -204,6 +208,7 @@ mod tests {
       doc_id.clone(),
       target_timestamp,
       Deployment::Cloud,
+      true,
     )
     .await
     .unwrap();

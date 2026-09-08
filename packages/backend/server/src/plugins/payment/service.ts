@@ -184,6 +184,7 @@ export class SubscriptionService {
     const target = subscriptionTarget(identity);
     await this.command({
       action: 'update_quantity',
+      actorUserId: target.actor,
       targetType: target.type,
       targetId: target.id,
       plan: identity.plan,
@@ -202,12 +203,15 @@ export class SubscriptionService {
   }
 
   async createCustomerPortal(userId: string) {
-    const result = await this.command<{ url: string }>({
-      action: 'create_portal',
-      actorUserId: userId,
-      intentId: randomUUID(),
-    });
-    return result.url;
+    try {
+      return await this.runtime.createPaymentCustomerPortalV1(userId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('payment_customer_not_found')) {
+        throw new UserNotFound();
+      }
+      throw new CustomerPortalCreateFailed();
+    }
   }
 
   private async mutate(
@@ -313,11 +317,6 @@ function mapPaymentError(error: unknown, input: Record<string, unknown>) {
   }
   if (message.includes('invalid checkout parameters'))
     return new InvalidCheckoutParameters();
-  if (input.action === 'create_portal') {
-    if (message.includes('payment_customer_not_found'))
-      return new UserNotFound();
-    return new CustomerPortalCreateFailed();
-  }
   return error;
 }
 

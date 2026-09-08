@@ -1,4 +1,6 @@
-use affine_core::access_control::DomainCommand;
+use std::collections::BTreeSet;
+
+use affine_core::access_control::{DocAction, DomainCommand};
 use serde_json::Value;
 use sqlx::{Postgres, Row, Transaction, types::Json};
 
@@ -19,6 +21,9 @@ pub(super) async fn create_comment(
   workspace_id: String,
   doc_id: String,
   content: Value,
+  doc_title: String,
+  doc_mode: String,
+  mentions: Vec<String>,
   deployment: Deployment,
 ) -> RuntimeResult<Value> {
   let command = DomainCommand::CreateComment { doc_id: doc_id.clone() };
@@ -48,7 +53,115 @@ pub(super) async fn create_comment(
   .fetch_one(&mut **transaction)
   .await
   .map_err(|error| RuntimeError::database("create comment", error))?;
-  value(row, "decode created comment")
+  let mut value = value(row, "decode created comment")?;
+  let comment_id = value
+    .get("id")
+    .and_then(Value::as_str)
+    .ok_or_else(|| RuntimeError::invalid_state("created comment is missing id"))?;
+  let target = Target {
+    id: comment_id.to_string(),
+    workspace_id,
+    doc_id,
+    user_id: actor_user_id.clone(),
+  };
+  let notification_ids = create_comment_notifications(
+    authorizer,
+    transaction,
+    &actor_user_id,
+    &target,
+    None,
+    &doc_title,
+    &doc_mode,
+    mentions,
+  )
+  .await?;
+  value
+    .as_object_mut()
+    .expect("comment result is an object")
+    .insert("notificationIds".into(), serde_json::json!(notification_ids));
+  Ok(value)
+}
+
+pub(super) async fn create_comment_notifications(
+  authorizer: &PermissionAuthorizer,
+  transaction: &mut Transaction<'_, Postgres>,
+  sender_user_id: &str,
+  comment: &Target,
+  reply_id: Option<&str>,
+  doc_title: &str,
+  doc_mode: &str,
+  mentions: Vec<String>,
+) -> RuntimeResult<Vec<String>> {
+  let mention_user_ids = mentions.into_iter().collect::<BTreeSet<_>>();
+  let mut allowed_mentions = BTreeSet::new();
+  for user_id in &mention_user_ids {
+    if user_id != sender_user_id
+      && authorizer
+        .authorize_doc_action_in(
+          transaction,
+          &comment.workspace_id,
+          Some(user_id),
+          &comment.doc_id,
+          DocAction::CommentsRead,
+        )
+        .await?
+        .allowed
+    {
+      allowed_mentions.insert(user_id.clone());
+    }
+  }
+
+  let mut notify_user_ids = sqlx::query_scalar::<_, String>(
+    "SELECT principal_id FROM doc_grants WHERE workspace_id=$1 AND doc_id=$2 AND principal_type='user' AND role='owner'",
+  )
+  .bind(&comment.workspace_id)
+  .bind(&comment.doc_id)
+  .fetch_all(&mut **transaction)
+  .await
+  .map_err(|error| RuntimeError::database("load comment notification owners", error))?
+  .into_iter()
+  .collect::<BTreeSet<_>>();
+  if reply_id.is_some() {
+    notify_user_ids.insert(comment.user_id.clone());
+    let repliers = sqlx::query_scalar::<_, String>(
+      "SELECT DISTINCT user_id FROM replies WHERE comment_id=$1 AND deleted_at IS NULL",
+    )
+    .bind(&comment.id)
+    .fetch_all(&mut **transaction)
+    .await
+    .map_err(|error| RuntimeError::database("load comment notification repliers", error))?;
+    notify_user_ids.extend(repliers);
+  }
+
+  let mut created = Vec::new();
+  for (user_id, notification_type) in allowed_mentions
+    .iter()
+    .map(|user_id| (user_id, "CommentMention"))
+    .chain(notify_user_ids.iter().filter_map(|user_id| {
+      (user_id != sender_user_id && !mention_user_ids.contains(user_id)).then_some((user_id, "Comment"))
+    }))
+  {
+    let body = serde_json::json!({
+      "workspaceId": comment.workspace_id,
+      "createdByUserId": sender_user_id,
+      "commentId": comment.id,
+      "replyId": reply_id,
+      "doc": { "id": comment.doc_id, "title": doc_title, "mode": doc_mode },
+    });
+    let id: String = sqlx::query_scalar(
+      r#"INSERT INTO notifications(id,user_id,level,type,body)
+         VALUES(gen_random_uuid()::text,$1,'Default',$2::"NotificationType",$3)
+         RETURNING id"#,
+    )
+    .bind(user_id)
+    .bind(notification_type)
+    .bind(Json(body))
+    .fetch_one(&mut **transaction)
+    .await
+    .map_err(|error| RuntimeError::database("create comment notification", error))?;
+    created.push(id);
+  }
+  Ok(created)
 }
 
 pub(super) async fn update_comment(
@@ -159,7 +272,14 @@ pub(super) async fn load_target(
     .fetch_optional(&mut **transaction)
     .await
     .map_err(|error| RuntimeError::database("load comment command target", error))?
-    .ok_or_else(|| RuntimeError::invalid_input(format!("{}_not_found", table.trim_end_matches('s'))))?;
+    .ok_or_else(|| {
+      let code = match table {
+        "comments" => "comment_not_found",
+        "replies" => "reply_not_found",
+        _ => unreachable!(),
+      };
+      RuntimeError::invalid_input(code)
+    })?;
   Ok(Target {
     id: row
       .try_get("id")
@@ -267,6 +387,9 @@ mod tests {
       workspace_id.clone(),
       doc_id.clone(),
       serde_json::json!({"text":"owner"}),
+      "Document".to_string(),
+      "page".to_string(),
+      Vec::new(),
       Deployment::Cloud,
     )
     .await
@@ -293,6 +416,9 @@ mod tests {
       workspace_id.clone(),
       doc_id.clone(),
       serde_json::json!({"text":"mine"}),
+      "Document".to_string(),
+      "page".to_string(),
+      Vec::new(),
       Deployment::Cloud,
     )
     .await
@@ -313,6 +439,9 @@ mod tests {
       member_id.clone(),
       own["id"].as_str().unwrap().to_string(),
       serde_json::json!({"text":"reply"}),
+      "Document".to_string(),
+      "page".to_string(),
+      Vec::new(),
       Deployment::Cloud,
     )
     .await
@@ -378,6 +507,9 @@ mod tests {
         workspace_id.clone(),
         doc_id.clone(),
         serde_json::json!({"text":"readonly"}),
+        "Document".to_string(),
+        "page".to_string(),
+        Vec::new(),
         Deployment::Cloud,
       )
       .await
@@ -487,6 +619,9 @@ mod tests {
         member_id,
         comment["id"].as_str().unwrap().to_string(),
         serde_json::json!({"text":"readonly"}),
+        "Document".to_string(),
+        "page".to_string(),
+        Vec::new(),
         Deployment::Cloud,
       )
       .await

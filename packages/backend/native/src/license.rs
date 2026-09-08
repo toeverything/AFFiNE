@@ -119,10 +119,11 @@ pub(crate) fn update_license_seats_request(request: &LicenseSeatsRequest) -> Any
 }
 
 pub(crate) fn create_license_customer_portal_request(request: &LicenseKeyRequest) -> AnyResult<PortalResponse> {
+  let validate_key = request.validate_key.clone().context("validateKey is required")?;
   let response = match affine_pro_request(
     &format!("/api/team/licenses/{}/create-customer-portal", request.license_key),
     safefetch::SafeFetchMethod::Post,
-    None,
+    Some(HashMap::from([("x-validate-key".to_string(), validate_key)])),
     None,
   ) {
     Ok(response) => response,

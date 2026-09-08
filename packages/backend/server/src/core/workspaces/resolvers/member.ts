@@ -36,7 +36,10 @@ import {
 import type { GraphqlContext } from '../../../base/graphql';
 import { Models, type WorkspaceUserCompat } from '../../../models';
 import { CurrentUser } from '../../auth';
-import { BackendRuntimeProvider } from '../../backend-runtime';
+import {
+  backendRuntimeErrorCode,
+  BackendRuntimeProvider,
+} from '../../backend-runtime';
 import { containsUrlOrDomain } from '../../content-policy';
 import { PermissionAccess, WorkspaceRole } from '../../permission';
 import { UserType } from '../../user';
@@ -253,9 +256,12 @@ export class WorkspaceMemberResolver {
           reservation,
         ])
       );
-      for (const candidate of candidates) {
+      const coveredCandidates = candidates.map(candidate => {
         const reservation = reservations.get(candidate.normalizedEmail);
         if (!reservation) throw new Error('Missing seat reservation');
+        return { candidate, reservation };
+      });
+      for (const { candidate, reservation } of coveredCandidates) {
         results[candidate.index] = {
           email: candidate.email,
           inviteId: reservation.invitationId,
@@ -412,7 +418,7 @@ export class WorkspaceMemberResolver {
             requireManagePermission: true,
           });
         } catch (error) {
-          if (error instanceof Error && error.message.includes('seat_limit')) {
+          if (backendRuntimeErrorCode(error) === 'seat_limit') {
             throw new NoMoreSeat({ spaceId: workspaceId });
           }
           throw error;
@@ -454,13 +460,20 @@ export class WorkspaceMemberResolver {
         role = 'owner';
         break;
     }
-    await this.runtime.executeDomainCommandV1({
-      command: 'transition_workspace_role',
-      actorUserId: user.id,
-      workspaceId,
-      targetUserId: userId,
-      newRole: role,
-    });
+    try {
+      await this.runtime.executeDomainCommandV1({
+        command: 'transition_workspace_role',
+        actorUserId: user.id,
+        workspaceId,
+        targetUserId: userId,
+        newRole: role,
+      });
+    } catch (error) {
+      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
+        throw new SpaceAccessDenied({ spaceId: workspaceId });
+      }
+      throw error;
+    }
     this.event.emit('workspace.members.updated', { workspaceId });
 
     return true;
@@ -519,16 +532,13 @@ export class WorkspaceMemberResolver {
       });
       previousState = String(result.previousState);
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message.includes('cannot_revoke_self')) {
+      switch (backendRuntimeErrorCode(error)) {
+        case 'cannot_revoke_self':
           throw new CanNotRevokeYourself();
-        }
-        if (error.message.includes('workspace_member_not_found')) {
+        case 'workspace_member_not_found':
           throw new MemberNotFoundInSpace({ spaceId: workspaceId });
-        }
-        if (error.message.includes('domain_permission_denied:')) {
+        case 'domain_permission_denied':
           throw new SpaceAccessDenied({ spaceId: workspaceId });
-        }
       }
       throw error;
     }
@@ -631,13 +641,11 @@ export class WorkspaceMemberResolver {
         workspaceId,
       });
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message.includes('workspace_member_not_found')) {
+      switch (backendRuntimeErrorCode(error)) {
+        case 'workspace_member_not_found':
           throw new MemberNotFoundInSpace({ spaceId: workspaceId });
-        }
-        if (error.message.includes('workspace_owner_cannot_leave')) {
+        case 'workspace_owner_cannot_leave':
           throw new OwnerCanNotLeaveWorkspace();
-        }
       }
       throw error;
     }
@@ -662,7 +670,7 @@ export class WorkspaceMemberResolver {
         requireManagePermission: false,
       });
     } catch (error) {
-      if (error instanceof Error && error.message.includes('seat_limit')) {
+      if (backendRuntimeErrorCode(error) === 'seat_limit') {
         throw new NoMoreSeat({ spaceId: role.workspaceId });
       }
       throw error;

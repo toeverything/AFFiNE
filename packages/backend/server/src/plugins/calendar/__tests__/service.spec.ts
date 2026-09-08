@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mock } from 'node:test';
 
+import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
@@ -19,7 +20,7 @@ import type {
 } from '../../../models';
 import { Models } from '../../../models';
 import { CalendarCronJobs } from '../cron';
-import { CalendarModule } from '../index';
+import { CalendarModule, CalendarWorkerModule } from '../index';
 import {
   CalendarProvider,
   CalendarProviderFactory,
@@ -77,6 +78,7 @@ const module = await createModule({
   imports: [
     ServerConfigModule,
     CalendarModule,
+    CalendarWorkerModule,
     ConfigModule.override({
       calendar: {
         google: {
@@ -94,6 +96,7 @@ const calendarService = module.get(CalendarService);
 const calendarCronJobs = module.get(CalendarCronJobs);
 const providerFactory = module.get(CalendarProviderFactory);
 const models = module.get(Models);
+const db = module.get(PrismaClient);
 const config = module.get(Config);
 module.get(CryptoHelper).onConfigInit();
 
@@ -176,8 +179,6 @@ const createSubscription = async (
 test.afterEach.always(() => {
   config.calendar.google.allowNewAccounts = true;
   mock.reset();
-  module.queue.add.resetHistory();
-  module.queue.remove.resetHistory();
 });
 
 test.after.always(async () => {
@@ -824,37 +825,51 @@ test('syncSubscription keeps schedule moving when webhook renewal fails', async 
 });
 
 test('pollAccounts skips when nothing is due', async t => {
-  mock.method(models.calendarSubscription, 'listDueForSync', async () => []);
+  mock.method(models.calendarSubscription, 'claimDueForSync', async () => []);
+  const sync = mock.method(calendarService, 'syncSubscription', async () => {});
 
   await calendarCronJobs.pollAccounts();
 
-  t.is(module.queue.count('calendar.syncSubscription'), 0);
+  t.is(sync.mock.callCount(), 0);
 });
 
-test('pollAccounts enqueues due subscriptions only', async t => {
-  mock.method(models.calendarSubscription, 'listDueForSync', async () => [
-    { id: 'due-subscription-a' },
-    { id: 'due-subscription-b' },
-  ]);
+test('pollAccounts syncs claimed subscriptions only', async t => {
+  await db.calendarSubscription.updateMany({ data: { enabled: false } });
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id);
+  const first = await createSubscription(account.id, {
+    nextSyncAt: new Date(Date.now() - 2 * 60 * 1000),
+  });
+  const second = await createSubscription(account.id, {
+    nextSyncAt: new Date(Date.now() - 60 * 1000),
+  });
+  const sync = mock.method(calendarService, 'syncSubscription', async () => {});
 
   await calendarCronJobs.pollAccounts();
 
-  t.is(module.queue.count('calendar.syncSubscription'), 2);
+  t.is(sync.mock.callCount(), 2);
   t.deepEqual(
-    module.queue.add
-      .getCalls()
-      .map(call => [call.args[0], call.args[1], call.args[2]]),
+    sync.mock.calls.map(call => call.arguments[0]),
+    [first.id, second.id]
+  );
+
+  await calendarCronJobs.pollAccounts();
+  t.is(sync.mock.callCount(), 2);
+
+  await calendarService.enqueueSyncSubscription(first.id, 'webhook');
+  await models.calendarSubscription.completeSync(first.id, {
+    lastSyncAt: new Date(),
+    nextSyncAt: new Date(Date.now() + 30 * 60 * 1000),
+    syncRetryCount: 0,
+  });
+  await calendarCronJobs.pollAccounts();
+
+  t.deepEqual(
+    sync.mock.calls.map(call => call.arguments),
     [
-      [
-        'calendar.syncSubscription',
-        { subscriptionId: 'due-subscription-a', reason: 'polling' },
-        { jobId: 'due-subscription-a' },
-      ],
-      [
-        'calendar.syncSubscription',
-        { subscriptionId: 'due-subscription-b', reason: 'polling' },
-        { jobId: 'due-subscription-b' },
-      ],
+      [first.id, { reason: 'polling' }],
+      [second.id, { reason: 'polling' }],
+      [first.id, { reason: 'polling' }],
     ]
   );
 });

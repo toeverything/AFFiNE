@@ -20,6 +20,7 @@ import { McpCredentialResolver } from './mcp/resolver';
 import {
   COPILOT_API_PROVIDERS,
   COPILOT_FEATURE_PROVIDERS,
+  COPILOT_JOB_PROVIDERS,
   COPILOT_KERNEL_PROVIDERS,
   COPILOT_TRANSCRIPT_REALTIME_PROVIDERS,
 } from './module-providers';
@@ -89,3 +90,9 @@ export class CopilotApiModule {}
   ],
 })
 export class CopilotModule {}
+
+@Module({
+  imports: [CopilotKernelModule, CopilotFeatureModule],
+  providers: [...COPILOT_JOB_PROVIDERS],
+})
+export class CopilotWorkerModule {}

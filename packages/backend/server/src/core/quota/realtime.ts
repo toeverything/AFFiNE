@@ -1,48 +1,23 @@
 import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
 import { z } from 'zod';
 
-import { SpaceAccessDenied } from '../../base';
+import { OnEvent, SpaceAccessDenied } from '../../base';
 import { BackendRuntimeProvider } from '../backend-runtime';
+import type { RuntimeInvalidation } from '../backend-runtime/provider';
 import { registerRealtimeLiveQuery } from '../realtime/provider';
+import { RealtimePublisher } from '../realtime/publisher';
 import { RealtimeRegistry } from '../realtime/registry';
 import {
   realtimeUserQuotaStateRoom,
   realtimeWorkspaceQuotaStateRoom,
 } from '../realtime/rooms';
 
-declare module '@affine/realtime' {
-  interface RealtimeRequestMap {
-    'user.quota-state.get': {
-      input: Record<string, never>;
-      output: {
-        state: import('@affine/realtime').UserQuotaStateSnapshot;
-      };
-    };
-    'workspace.quota-state.get': {
-      input: { workspaceId: string };
-      output: {
-        state: import('@affine/realtime').WorkspaceQuotaStateSnapshot;
-      };
-    };
-  }
-
-  interface RealtimeTopicMap {
-    'user.quota-state.changed': {
-      input: Record<string, never>;
-      event: { changed: true };
-    };
-    'workspace.quota-state.changed': {
-      input: { workspaceId: string };
-      event: { changed: true };
-    };
-  }
-}
-
 @Injectable()
 export class QuotaStateRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly runtime: BackendRuntimeProvider,
-    @Optional() private readonly registry?: RealtimeRegistry
+    @Optional() private readonly registry?: RealtimeRegistry,
+    @Optional() private readonly publisher?: RealtimePublisher
   ) {}
 
   onModuleInit() {
@@ -95,6 +70,43 @@ export class QuotaStateRealtimeProvider implements OnModuleInit {
           realtimeWorkspaceQuotaStateRoom(payload.workspaceId),
       },
     });
+  }
+
+  @OnEvent('backendRuntime.invalidation', { suppressError: true })
+  onRuntimeInvalidation(invalidation: RuntimeInvalidation) {
+    if (
+      invalidation.kind === 'quotaEntitlement' ||
+      invalidation.kind === 'quotaStorageUsage'
+    ) {
+      const [type, id] = invalidation.subject.split(':', 2);
+      if (!id) return;
+      if (type === 'user') {
+        this.publisher?.publishChanged(
+          'user.quota-state.changed',
+          {},
+          'runtime-invalidation',
+          { room: realtimeUserQuotaStateRoom(id) }
+        );
+      } else if (type === 'workspace') {
+        this.publishWorkspace(id);
+      }
+      return;
+    }
+    if (
+      invalidation.kind === 'quotaOwnerMapping' ||
+      invalidation.kind === 'quotaSeatUsage'
+    ) {
+      this.publishWorkspace(invalidation.workspaceId);
+    }
+  }
+
+  private publishWorkspace(workspaceId: string) {
+    this.publisher?.publishChanged(
+      'workspace.quota-state.changed',
+      { workspaceId },
+      'runtime-invalidation',
+      { room: realtimeWorkspaceQuotaStateRoom(workspaceId) }
+    );
   }
 
   private async assertWorkspace(userId: string, workspaceId: string) {

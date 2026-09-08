@@ -10,7 +10,6 @@ import {
 import type {
   BlobOutputType,
   GetObjectMetadata,
-  ListObjectsMetadata,
   PresignedUpload,
   PutObjectMetadata,
 } from '../../base';
@@ -18,7 +17,6 @@ import { Config, OnEvent } from '../../base';
 import { wrapCallMetric } from '../../base/metrics';
 import {
   type RuntimeObjectGetResult,
-  type RuntimeObjectListEntry,
   type RuntimeObjectMetadata,
   type RuntimePresignedObjectRequest,
   type StorageProviderCapabilities,
@@ -122,20 +120,19 @@ export class StorageRuntimeProvider
     return result ? fromRuntimeGetResult(result) : {};
   }
 
-  async listObjects(scope: string, prefix?: string) {
-    const entries = await this.measured('listObjects', rt =>
-      rt.listObjects(scope, prefix)
-    );
-    return entries.map(fromRuntimeListEntry);
-  }
-
   async deleteObject(scope: string, key: string) {
     await this.measured('deleteObject', rt => rt.deleteObject(scope, key));
   }
 
-  async deleteWorkspaceObjects(workspaceId: string) {
+  async deleteWorkspaceObjects(workspaceId: string, userIds?: string[]) {
     return await this.measured('deleteWorkspaceObjects', rt =>
-      rt.deleteWorkspaceObjects(workspaceId)
+      rt.deleteWorkspaceObjects(workspaceId, userIds)
+    );
+  }
+
+  async reconcileWorkspaceStorage(limit = 250) {
+    return await this.measured('reconcileWorkspaceStorage', rt =>
+      rt.reconcileWorkspaceStorage(limit)
     );
   }
 
@@ -266,23 +263,13 @@ export class StorageRuntimeProvider
     );
   }
 
-  async planUnreferencedWorkspaceBlobs(
+  async cleanupUnreferencedWorkspaceBlobs(
     workspaceId: string,
     gracePeriodDays: number,
     limit: number
   ) {
-    return await this.measured('planUnreferencedWorkspaceBlobs', rt =>
-      rt.planUnreferencedWorkspaceBlobs(workspaceId, gracePeriodDays, limit)
-    );
-  }
-
-  async executeBlobCleanupCandidates(
-    runId: string,
-    gracePeriodDays: number,
-    limit: number
-  ) {
-    return await this.measured('executeBlobCleanupCandidates', rt =>
-      rt.executeBlobCleanupCandidates(runId, gracePeriodDays, limit)
+    return await this.measured('cleanupUnreferencedWorkspaceBlobs', rt =>
+      rt.cleanupUnreferencedWorkspaceBlobs(workspaceId, gracePeriodDays, limit)
     );
   }
 
@@ -352,16 +339,6 @@ function fromRuntimeGetResult(result: RuntimeObjectGetResult) {
   return {
     body: Readable.from(result.body),
     metadata: fromRuntimeMetadata(result.metadata),
-  };
-}
-
-function fromRuntimeListEntry(
-  entry: RuntimeObjectListEntry
-): ListObjectsMetadata {
-  return {
-    key: entry.key,
-    contentLength: entry.contentLength,
-    lastModified: new Date(entry.lastModifiedMs),
   };
 }
 

@@ -30,7 +30,7 @@ pub(super) async fn fixture(runtime: &BackendRuntime) -> (String, String) {
 }
 
 #[tokio::test]
-async fn license_intent_installed_and_entitlement_rollback_and_stale_fences() {
+async fn license_install_revoke_rollback_and_stale_fences() {
   let _guard = DATABASE_TEST_LOCK.lock().await;
   let Some(runtime) = runtime_from_database_url().await.unwrap() else {
     eprintln!("skipping PostgreSQL test: DATABASE_URL not set");
@@ -43,23 +43,6 @@ async fn license_intent_installed_and_entitlement_rollback_and_stale_fences() {
   let (_, workspace) = fixture(&runtime).await;
   let (payload, _) = crate::entitlement::signed_test_license(&workspace);
   let key = format!("license:{workspace}");
-  runtime
-    .prepare_license_activation_v1(workspace.clone(), key.clone(), "generation".into())
-    .await
-    .unwrap();
-  sqlx::query(
-    "CREATE OR REPLACE FUNCTION rfc11_fail_intent() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$",
-  )
-  .execute(&pool)
-  .await
-  .unwrap();
-  sqlx::query(
-    "CREATE TRIGGER rfc11_fail_intent BEFORE DELETE ON pending_license_deactivations FOR EACH ROW EXECUTE FUNCTION \
-     rfc11_fail_intent()",
-  )
-  .execute(&pool)
-  .await
-  .unwrap();
   let input = || RuntimeLicenseInstallInput {
     workspace_id: workspace.clone(),
     license: payload.clone().into(),
@@ -68,31 +51,6 @@ async fn license_intent_installed_and_entitlement_rollback_and_stale_fences() {
     recurring: "monthly".into(),
     activation: true,
   };
-  let rejected = runtime.install_license_v1(input()).await;
-  sqlx::query("DROP TRIGGER rfc11_fail_intent ON pending_license_deactivations")
-    .execute(&pool)
-    .await
-    .unwrap();
-  sqlx::query("DROP FUNCTION rfc11_fail_intent()")
-    .execute(&pool)
-    .await
-    .unwrap();
-  assert!(rejected.err().unwrap().to_string().contains("lease was lost"));
-  for table in ["installed_licenses", "entitlements"] {
-    let count: i64 = sqlx::query_scalar(&format!(
-      "SELECT count(*) FROM {table} WHERE {}=$1",
-      if table == "entitlements" {
-        "target_id"
-      } else {
-        "workspace_id"
-      }
-    ))
-    .bind(&workspace)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(count, 0);
-  }
   let installed = runtime.install_license_v1(input()).await.unwrap();
   assert_eq!(installed.quantity, 10);
   let mut corrupt = payload.clone();
@@ -185,7 +143,7 @@ async fn license_intent_installed_and_entitlement_rollback_and_stale_fences() {
   .execute(&pool)
   .await
   .unwrap();
-  assert!(runtime.check_licenses_v1().await.is_err());
+  let one_time_refresh = runtime.check_licenses_v1().await;
   sqlx::query("DROP TRIGGER rfc11_fail_onetime_refresh ON installed_licenses")
     .execute(&pool)
     .await
@@ -194,6 +152,7 @@ async fn license_intent_installed_and_entitlement_rollback_and_stale_fences() {
     .execute(&pool)
     .await
     .unwrap();
+  assert!(one_time_refresh.unwrap().transient_failure);
   let one_time_retained: bool =
     sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM installed_licenses WHERE workspace_id=$1)")
       .bind(&one_time_workspace)
@@ -213,7 +172,7 @@ async fn license_intent_installed_and_entitlement_rollback_and_stale_fences() {
   assert!(runtime.refresh_license_v1(stale).await.unwrap().is_none());
   assert!(
     !runtime
-      .revoke_installed_license_v1(workspace.clone(), key.clone(), "stale".into(), true)
+      .revoke_installed_license_v1(workspace.clone(), key.clone(), "stale".into())
       .await
       .unwrap()
   );
@@ -249,7 +208,7 @@ async fn license_intent_installed_and_entitlement_rollback_and_stale_fences() {
   .await
   .unwrap();
   let rejected = runtime
-    .revoke_installed_license_v1(workspace.clone(), key.clone(), "generation".into(), true)
+    .revoke_installed_license_v1(workspace.clone(), key.clone(), "generation".into())
     .await;
   sqlx::query("DROP TRIGGER rfc11_fail_demotion ON workspace_members")
     .execute(&pool)
@@ -272,54 +231,9 @@ async fn license_intent_installed_and_entitlement_rollback_and_stale_fences() {
   assert_eq!(retained, (1, 1, "active".into()));
   assert!(
     runtime
-      .revoke_installed_license_v1(workspace.clone(), key.clone(), "generation".into(), true)
+      .revoke_installed_license_v1(workspace.clone(), key.clone(), "generation".into())
       .await
       .unwrap()
-  );
-  let pending: String = sqlx::query_scalar("SELECT operation_id FROM pending_license_deactivations WHERE key=$1")
-    .bind(&key)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-  assert_eq!(pending, "generation");
-  let claim = runtime
-    .claim_license_deactivation_v1(key.clone(), "worker-a".into())
-    .await
-    .unwrap()
-    .unwrap();
-  assert_eq!(claim.operation_id, "generation");
-  assert!(
-    runtime
-      .claim_license_deactivation_v1(key.clone(), "worker-b".into())
-      .await
-      .unwrap()
-      .is_none()
-  );
-  assert!(
-    runtime
-      .finish_license_deactivation_v1(key.clone(), "worker-a".into(), false)
-      .await
-      .unwrap()
-  );
-  assert!(
-    runtime
-      .claim_license_deactivation_v1(key.clone(), "worker-b".into())
-      .await
-      .unwrap()
-      .is_some()
-  );
-  assert!(
-    runtime
-      .finish_license_deactivation_v1(key.clone(), "worker-b".into(), true)
-      .await
-      .unwrap()
-  );
-  assert!(
-    runtime
-      .list_pending_license_deactivations_v1(Some(workspace.clone()))
-      .await
-      .unwrap()
-      .is_empty()
   );
   let status: String = sqlx::query_scalar("SELECT status FROM entitlements WHERE subject_id=$1")
     .bind(&key)

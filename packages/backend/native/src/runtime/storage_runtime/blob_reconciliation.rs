@@ -53,29 +53,43 @@ fn split_workspace_blob_key(full_key: &str) -> Option<(&str, &str)> {
   Some((workspace_id, key))
 }
 
+fn is_blob_reservation_key(full_key: &str) -> bool {
+  let segments = full_key.split('/').collect::<Vec<_>>();
+  matches!(segments.as_slice(), [workspace_id, ".reservations", reservation_id, key]
+    if !workspace_id.is_empty() && !reservation_id.is_empty() && !key.is_empty())
+}
+
 fn checkpoint_scope(workspace_id: Option<&str>) -> String {
   workspace_id.unwrap_or("__all__").to_string()
 }
 
 #[derive(FromRow)]
 struct BackfillCheckpoint {
+  status: String,
   last_key: Option<String>,
   cursor: serde_json::Value,
 }
 
 impl BackfillCheckpoint {
   fn continuation_token(&self) -> Option<String> {
+    if self.status == "completed" {
+      return None;
+    }
     self
       .cursor
       .get("continuationToken")
       .and_then(|value| value.as_str())
       .map(ToString::to_string)
   }
+
+  fn last_key(&self) -> Option<String> {
+    (self.status != "completed").then(|| self.last_key.clone()).flatten()
+  }
 }
 
 async fn load_checkpoint(pool: &PgPool, scope: &str) -> RuntimeResult<Option<BackfillCheckpoint>> {
   sqlx::query_as::<_, BackfillCheckpoint>(
-    "SELECT last_key, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'blob_metadata_backfill' AND scope \
+    "SELECT status, last_key, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'blob_metadata_backfill' AND scope \
      = $1",
   )
   .bind(scope)
@@ -146,12 +160,21 @@ mod tests {
     assert_eq!(split_workspace_blob_key("workspace/nested/blob-key"), None);
     assert_eq!(split_workspace_blob_key("workspace/"), None);
     assert_eq!(split_workspace_blob_key("blob-key"), None);
+    assert!(is_blob_reservation_key("workspace/.reservations/reservation/blob-key"));
+    assert!(!is_blob_reservation_key("workspace/nested/blob-key"));
   }
 
   #[test]
   fn blob_metadata_backfill_checkpoint_scope_is_explicit() {
     assert_eq!(checkpoint_scope(Some("workspace")), "workspace");
     assert_eq!(checkpoint_scope(None), "__all__");
+    let completed = BackfillCheckpoint {
+      status: "completed".to_string(),
+      last_key: Some("z-last".to_string()),
+      cursor: serde_json::json!({ "continuationToken": "stale-token" }),
+    };
+    assert_eq!(completed.continuation_token(), None);
+    assert_eq!(completed.last_key(), None);
   }
 
   #[tokio::test]
@@ -255,9 +278,11 @@ impl StorageRuntime {
     let checkpoint = load_checkpoint(&pool, &scope).await?;
     let page = self
       .object_storage_list_page(
+        crate::runtime::object_storage::types::StorageScope::Blob,
         prefix,
         checkpoint.as_ref().and_then(BackfillCheckpoint::continuation_token),
-        checkpoint.as_ref().and_then(|checkpoint| checkpoint.last_key.clone()),
+        checkpoint.as_ref().and_then(BackfillCheckpoint::last_key),
+        None,
         page_limit,
       )
       .await?;
@@ -278,6 +303,10 @@ impl StorageRuntime {
     for object in &page.entries {
       result.scanned_objects += 1;
       last_scanned_key = Some(object.key.clone());
+      if is_blob_reservation_key(&object.key) {
+        result.skipped_existing += 1;
+        continue;
+      }
       let Some((object_workspace_id, key)) = split_workspace_blob_key(&object.key) else {
         result.failed += 1;
         continue;
@@ -292,7 +321,7 @@ impl StorageRuntime {
       }
       result.headed_objects += 1;
       let Some(metadata) = self.object_storage_head(object.key.clone()).await? else {
-        result.failed += 1;
+        result.skipped_existing += 1;
         continue;
       };
       let affected = match reconcile_blob_metadata(&pool, object_workspace_id, key, metadata).await {
@@ -316,9 +345,11 @@ impl StorageRuntime {
     let checkpoint_last_key = if result.failed == 0 {
       last_scanned_key.as_deref()
     } else {
-      checkpoint
-        .as_ref()
-        .and_then(|checkpoint| checkpoint.last_key.as_deref())
+      checkpoint.as_ref().and_then(|checkpoint| {
+        (checkpoint.status != "completed")
+          .then_some(checkpoint.last_key.as_deref())
+          .flatten()
+      })
     };
     let previous_continuation = checkpoint.as_ref().and_then(BackfillCheckpoint::continuation_token);
     let checkpoint_token = if result.failed == 0 {
@@ -335,29 +366,6 @@ impl StorageRuntime {
       result.failed > 0,
     )
     .await?;
-
-    sqlx::query(
-      r#"
-      INSERT INTO storage_reconciliation_runs
-        (kind, mode, status, workspace_id, finished_at, scanned, changed, failed, metadata)
-      VALUES ('blob_metadata_backfill', 'execute', 'finished', $1, CURRENT_TIMESTAMP, $2, $3, $4, $5)
-      "#,
-    )
-    .bind(workspace_id)
-    .bind(result.scanned_objects as i32)
-    .bind(result.upserted_metadata as i32)
-    .bind(result.failed as i32)
-    .bind(serde_json::json!({
-      "headedObjects": result.headed_objects,
-      "skippedExisting": result.skipped_existing,
-      "skippedWorkspaceMissing": result.skipped_workspace_missing,
-      "checkpointScope": scope,
-      "nextCursor": result.next_cursor,
-      "quotaReportingReconciliationRequired": true,
-    }))
-    .execute(&pool)
-    .await
-    .map_err(|err| RuntimeError::database("Blob metadata backfill run record failed", err))?;
 
     Ok(result)
   }

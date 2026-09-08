@@ -76,9 +76,9 @@ dependencies = [
 
 [[package]]
 name = "affine_core"
-version = "0.0.2"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22ed29dce9471c2fb673e8427b41cfef51e3a2d8b01e9378b0550b832576f807"
+checksum = "b8701c8543854842f47ee820a2131b110a5873f10c5cb2ef261253a581637ba8"
 dependencies = [
  "base64 0.23.1",
  "chrono",

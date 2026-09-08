@@ -34,7 +34,10 @@ import {
 import { PageInfo } from '../../../base/graphql/pagination';
 import { Models, PublicDocMode } from '../../../models';
 import { CurrentUser } from '../../auth';
-import { BackendRuntimeProvider } from '../../backend-runtime';
+import {
+  backendRuntimeErrorCode,
+  BackendRuntimeProvider,
+} from '../../backend-runtime';
 import { Editor } from '../../doc';
 import {
   DOC_ACTIONS,
@@ -455,17 +458,14 @@ export class WorkspaceDocResolver {
         mode,
       });
     } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes('domain_permission_denied:Doc.Publish')
-      ) {
+      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
         throw new DocActionDenied({
           action: 'Doc.Publish',
           docId,
           spaceId: workspaceId,
         });
       }
-      if (error instanceof Error && error.message.includes('doc_not_found')) {
+      if (backendRuntimeErrorCode(error) === 'doc_not_found') {
         throw new DocNotFound({ spaceId: workspaceId, docId });
       }
       throw error;
@@ -505,20 +505,14 @@ export class WorkspaceDocResolver {
         docId,
       });
     } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes('domain_permission_denied:Doc.Unpublish')
-      ) {
+      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
         throw new DocActionDenied({
           action: 'Doc.Unpublish',
           docId,
           spaceId: workspaceId,
         });
       }
-      if (
-        error instanceof Error &&
-        error.message.includes('doc_is_not_public')
-      ) {
+      if (backendRuntimeErrorCode(error) === 'doc_is_not_public') {
         throw new DocIsNotPublic();
       }
       throw error;
@@ -753,14 +747,24 @@ export class DocResolver {
     if (!role || role === 'owner') {
       throw new ExpectToGrantDocUserRoles(pairs, 'Invalid grant role');
     }
-    await this.runtime.executeDomainCommandV1({
-      command: 'grant_doc_roles',
-      actorUserId: user.id,
-      workspaceId: input.workspaceId,
-      docId: input.docId,
-      targetUserIds: input.userIds,
-      newRole: role,
-    });
+    try {
+      await this.runtime.executeDomainCommandV1({
+        command: 'grant_doc_roles',
+        actorUserId: user.id,
+        workspaceId: input.workspaceId,
+        docId: input.docId,
+        targetUserIds: input.userIds,
+        newRole: role,
+      });
+    } catch (error) {
+      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
+        throw new DocActionDenied({
+          action: 'Doc.Users.Manage',
+          ...pairs,
+        });
+      }
+      throw error;
+    }
     this.event.emit('doc.grants.changed', {
       workspaceId: input.workspaceId,
       docId: input.docId,
@@ -794,13 +798,23 @@ export class DocResolver {
         'Expect doc not to be workspace'
       );
     }
-    await this.runtime.executeDomainCommandV1({
-      command: 'transition_doc_role',
-      actorUserId: user.id,
-      workspaceId: input.workspaceId,
-      docId: input.docId,
-      targetUserId: input.userId,
-    });
+    try {
+      await this.runtime.executeDomainCommandV1({
+        command: 'transition_doc_role',
+        actorUserId: user.id,
+        workspaceId: input.workspaceId,
+        docId: input.docId,
+        targetUserId: input.userId,
+      });
+    } catch (error) {
+      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
+        throw new DocActionDenied({
+          action: 'Doc.Users.Manage',
+          ...pairs,
+        });
+      }
+      throw error;
+    }
     this.event.emit('doc.grants.changed', {
       workspaceId: input.workspaceId,
       docId: input.docId,
@@ -844,14 +858,24 @@ export class DocResolver {
     if (!role) {
       throw new ExpectToUpdateDocUserRole(pairs, 'Invalid doc role');
     }
-    await this.runtime.executeDomainCommandV1({
-      command: 'transition_doc_role',
-      actorUserId: user.id,
-      workspaceId: input.workspaceId,
-      docId: input.docId,
-      targetUserId: input.userId,
-      newRole: role,
-    });
+    try {
+      await this.runtime.executeDomainCommandV1({
+        command: 'transition_doc_role',
+        actorUserId: user.id,
+        workspaceId: input.workspaceId,
+        docId: input.docId,
+        targetUserId: input.userId,
+        newRole: role,
+      });
+    } catch (error) {
+      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
+        throw new DocActionDenied({
+          action: 'Doc.Users.Manage',
+          ...pairs,
+        });
+      }
+      throw error;
+    }
     if (input.role === DocRole.Owner) {
       this.event.emit('doc.owner.changed', {
         workspaceId: input.workspaceId,
@@ -903,13 +927,23 @@ export class DocResolver {
     if (newRole === 'owner') {
       throw new DocDefaultRoleCanNotBeOwner();
     }
-    await this.runtime.executeDomainCommandV1({
-      command: 'set_doc_default_role',
-      actorUserId: user.id,
-      workspaceId: input.workspaceId,
-      docId: input.docId,
-      newRole,
-    });
+    try {
+      await this.runtime.executeDomainCommandV1({
+        command: 'set_doc_default_role',
+        actorUserId: user.id,
+        workspaceId: input.workspaceId,
+        docId: input.docId,
+        newRole,
+      });
+    } catch (error) {
+      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
+        throw new DocActionDenied({
+          action: 'Doc.Properties.Update',
+          ...pairs,
+        });
+      }
+      throw error;
+    }
     this.event.emit('doc.default_role.changed', {
       workspaceId: input.workspaceId,
       docId: input.docId,

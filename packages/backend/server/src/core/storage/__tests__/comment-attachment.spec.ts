@@ -84,7 +84,7 @@ test('comment attachment upload delegates reservation semantics to Rust', async 
   t.false(rt.deleteObject.called);
 });
 
-test('comment attachment upload removes temporary objects after fenced failures', async t => {
+test('comment attachment upload delegates fenced cleanup after failures', async t => {
   for (const { name, configure, message } of [
     {
       name: 'finalize lost reservation',
@@ -116,7 +116,8 @@ test('comment attachment upload removes temporary objects after fenced failures'
       fixture.storage.put(workspaceId, docId, key, 'test.txt', body, 'user'),
       { message }
     );
-    t.true(fixture.rt.deleteObject.calledOnce, name);
+    t.true(fixture.runtime.abortStorageReservationV1.calledOnce, name);
+    t.false(fixture.rt.deleteObject.called, name);
   }
 });
 

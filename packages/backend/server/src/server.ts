@@ -34,6 +34,13 @@ export async function run() {
     bufferLogs: true,
   });
 
+  app.useBodyParser('raw', {
+    limit: 20 * OneMB,
+    type: req =>
+      /^\/api\/copilot\/chat\/[^/]+\/attachments\/[^/?]+(?:\?|$)/.test(
+        req.url ?? ''
+      ),
+  });
   app.useBodyParser('raw', { limit: 100 * OneMB });
 
   const logger = app.get(AFFiNELogger);

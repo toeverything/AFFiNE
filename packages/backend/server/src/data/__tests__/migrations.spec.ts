@@ -35,7 +35,7 @@ test.after.always(async t => {
   await t.context.module.close();
 });
 
-test('permission backfill repairs ownerless workspaces before runtime state projection', async t => {
+test('permission backfill repairs ownerless workspaces', async t => {
   const emptyWorkspace = await t.context.db.workspace.create({
     data: { accessPolicy: { create: {} } },
   });
@@ -751,14 +751,18 @@ test('mixed-version cutover keeps legacy writes readable and rejects malformed c
       blobs: newReaderBlobs.map(row => ({
         key: normalizeKey(row.key),
         status: row.status,
-        hasReservation: /^[0-9a-f-]{36}$/.test(row.reservationId),
+        hasReservation:
+          row.reservationId !== null &&
+          /^[0-9a-f-]{36}$/.test(row.reservationId),
         expires: row.reservationExpiresAt !== null,
         deleted: row.deletedAt !== null,
       })),
       attachments: newReaderAttachments.map(row => ({
         key: normalizeKey(row.key),
         status: row.status,
-        hasReservation: /^[0-9a-f-]{36}$/.test(row.reservationId),
+        hasReservation:
+          row.reservationId !== null &&
+          /^[0-9a-f-]{36}$/.test(row.reservationId),
         expires: row.reservationExpiresAt !== null,
         deleted: row.deletedAt !== null,
       })),

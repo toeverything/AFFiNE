@@ -14,6 +14,7 @@ impl PaymentRuntime {
     &self,
     changes: &mut super::super::PaymentApplyResult,
     actor_user_id: Option<&str>,
+    validate_key: Option<&str>,
     target_type: &str,
     target_id: &str,
     plan: &str,
@@ -22,11 +23,13 @@ impl PaymentRuntime {
   ) -> RuntimeResult<Value> {
     validate_target(target_type, target_id)?;
     validate_intent(intent_id)?;
-    if target_type == "user" && actor_user_id != Some(target_id) {
-      return Err(RuntimeError::invalid_input("payment actor does not match user target"));
-    }
-    if target_type == "workspace" {
-      self.assert_workspace_payment(actor_user_id, target_id).await?;
+    match target_type {
+      "user" if actor_user_id != Some(target_id) => {
+        return Err(RuntimeError::invalid_input("payment actor does not match user target"));
+      }
+      "workspace" => self.assert_workspace_payment(actor_user_id, target_id).await?,
+      "instance" => self.assert_license_validate_key(target_id, validate_key).await?,
+      _ => {}
     }
     let plan = parse_plan(plan)?;
     let recurring = SubscriptionRecurring::parse(recurring)
@@ -146,6 +149,8 @@ impl PaymentRuntime {
   pub(super) async fn update_quantity(
     &self,
     changes: &mut super::super::PaymentApplyResult,
+    actor_user_id: Option<&str>,
+    validate_key: Option<&str>,
     target_type: &str,
     target_id: &str,
     plan: &str,
@@ -154,12 +159,18 @@ impl PaymentRuntime {
   ) -> RuntimeResult<Value> {
     validate_target(target_type, target_id)?;
     validate_intent(intent_id)?;
+    match target_type {
+      "user" if actor_user_id != Some(target_id) => {
+        return Err(RuntimeError::invalid_input("payment actor does not match user target"));
+      }
+      "workspace" => self.assert_workspace_payment(actor_user_id, target_id).await?,
+      "instance" => self.assert_license_validate_key(target_id, validate_key).await?,
+      _ => {}
+    }
     let plan = parse_plan(plan)?;
-    validate_subscription_mutation(
+    validate_subscription_mutation_target(
       plan,
       billing_target(target_type)?,
-      SubscriptionRecurring::Monthly,
-      false,
       SubscriptionMutation::ChangeQuantity(quantity),
     )
     .map_err(subscription_mutation_error)?;
@@ -168,6 +179,19 @@ impl PaymentRuntime {
     let locked = self
       .lock_stripe_subscription(&namespace_key, target_type, target_id, plan)
       .await?;
+    let stored_recurring = locked
+      .recurring
+      .as_deref()
+      .and_then(SubscriptionRecurring::parse)
+      .ok_or_else(|| RuntimeError::invalid_state("payment subscription recurring is invalid"))?;
+    validate_subscription_mutation(
+      plan,
+      billing_target(target_type)?,
+      stored_recurring,
+      locked.canceled_at.is_some(),
+      SubscriptionMutation::ChangeQuantity(quantity),
+    )
+    .map_err(subscription_mutation_error)?;
     if locked.quantity == i32::try_from(quantity).ok() {
       return Ok(json!({ "status": "unchanged", "quantity": quantity }));
     }
@@ -185,11 +209,7 @@ impl PaymentRuntime {
         ));
       }
     };
-    let recurring = locked
-      .recurring
-      .as_deref()
-      .and_then(SubscriptionRecurring::parse)
-      .ok_or_else(|| RuntimeError::invalid_state("payment recurring is missing"))?;
+    let recurring = stored_recurring;
     let phase_anchor = locked
       .period_start
       .map(|value| value.timestamp())

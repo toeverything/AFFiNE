@@ -822,6 +822,18 @@ test('new realtime providers publish changed events from domain events', t => {
     publisher
   );
   workspaceAccess.onMembersUpdated({ workspaceId: 'space' });
+  const quota = new QuotaStateRealtimeProvider(
+    {} as never,
+    undefined,
+    publisher
+  );
+  for (const invalidation of [
+    { version: 1, kind: 'quotaEntitlement', subject: 'workspace:space' },
+    { version: 1, kind: 'quotaSeatUsage', workspaceId: 'space' },
+  ] as const) {
+    workspaceAccess.onRuntimeInvalidation(invalidation);
+    quota.onRuntimeInvalidation(invalidation);
+  }
 
   const workspaceConfig = new WorkspaceConfigRealtimeProvider(
     {} as never,
@@ -866,6 +878,10 @@ test('new realtime providers publish changed events from domain events', t => {
     published.map(args => args[0]),
     [
       'workspace.access.changed',
+      'workspace.access.changed',
+      'workspace.quota-state.changed',
+      'workspace.access.changed',
+      'workspace.quota-state.changed',
       'workspace.config.changed',
       'workspace.invite-link.changed',
       'doc.share-state.changed',

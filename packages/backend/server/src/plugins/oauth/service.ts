@@ -84,6 +84,9 @@ export class OAuthService {
     clientNonce: string;
     clientVersion?: string;
     callbackUrl: string;
+    redirectBaseUrl: string;
+    redirectAllowedOrigins: string[];
+    redirectTrustedDomains: string[];
   }) {
     return await this.call<{ url: string }>({
       action: 'oauth_preflight',

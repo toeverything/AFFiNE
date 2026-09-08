@@ -168,6 +168,9 @@ async fn dispatch(
       client_nonce,
       client_version,
       callback_url,
+      redirect_base_url,
+      redirect_allowed_origins,
+      redirect_trusted_domains,
     } => oauth::preflight(
       pool,
       config,
@@ -177,6 +180,9 @@ async fn dispatch(
       &client_nonce,
       client_version.as_deref(),
       &callback_url,
+      &redirect_base_url,
+      &redirect_allowed_origins,
+      &redirect_trusted_domains,
     )
     .await
     .and_then(json_value),

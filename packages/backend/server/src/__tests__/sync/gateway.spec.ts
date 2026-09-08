@@ -6,6 +6,7 @@ import { applyUpdate, Doc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS, EventBus } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
+import { PermissionService } from '../../core/permission';
 import {
   DocRole,
   Models,
@@ -968,6 +969,8 @@ test('permission revocation removes an active document subscription', async t =>
     workspaceId: workspace.id,
     docId,
     userId: owner.id,
+    blob: Buffer.from(encodeStateAsUpdate(new Doc())),
+    state: Buffer.from(encodeStateVector(new Doc())),
   });
 
   const ownerSocket = createClient(url, ownerCookie);
@@ -1050,7 +1053,7 @@ test('permission revocation removes an active document subscription', async t =>
       throw new Error('Workspace disappeared during permission test');
     }
     await app.get(EventBus).emitAsync('workspace.updated', updatedWorkspace);
-    const policyChangeLoad = getErrorResponse(
+    const policyChangeLoad = unwrapResponse(
       t,
       await emitWithAck(collaboratorSocket, 'space:load-doc', {
         spaceType: 'workspace',
@@ -1058,20 +1061,85 @@ test('permission revocation removes an active document subscription', async t =>
         docId,
       })
     );
-    t.snapshot(stableError(policyChangeLoad, workspace.id));
+    t.truthy(policyChangeLoad);
     unwrapResponse(
       t,
       await emitWithAck(collaboratorSocket, 'space:join-batch', join)
     );
 
-    await db.docGrant.deleteMany({
-      where: {
-        workspaceId: workspace.id,
+    const permissionService = app.get(PermissionService);
+    const batchPermissions =
+      permissionService.batchDocPermissions.bind(permissionService);
+    const changed = { workspaceId: workspace.id, docId };
+    for (const olderFirst of [false, true]) {
+      await models.docUser.set(
+        workspace.id,
         docId,
-        principalType: 'user',
-        principalId: collaborator.id,
-      },
-    });
+        collaborator.id,
+        DocRole.Editor
+      );
+      unwrapResponse(
+        t,
+        await emitWithAck(collaboratorSocket, 'space:join-batch', join)
+      );
+      const captured = [
+        Promise.withResolvers<void>(),
+        Promise.withResolvers<void>(),
+      ];
+      const resume = [
+        Promise.withResolvers<void>(),
+        Promise.withResolvers<void>(),
+      ];
+      let reads = 0;
+      const permissionStub = Sinon.stub(
+        permissionService,
+        'batchDocPermissions'
+      ).callsFake(async input => {
+        const result = await batchPermissions(input);
+        if (input.userId === collaborator.id) {
+          const index = reads++;
+          captured[index].resolve();
+          await resume[index].promise;
+        }
+        return result;
+      });
+      const oldRevalidation = app
+        .get(EventBus)
+        .emitAsync('doc.grants.changed', changed);
+      await captured[0].promise;
+      await db.docGrant.deleteMany({
+        where: {
+          workspaceId: workspace.id,
+          docId,
+          principalType: 'user',
+          principalId: collaborator.id,
+        },
+      });
+      const newRevalidation = app
+        .get(EventBus)
+        .emitAsync('doc.grants.changed', changed);
+      await captured[1].promise;
+      try {
+        const first = olderFirst ? 0 : 1;
+        resume[first].resolve();
+        await (olderFirst ? oldRevalidation : newRevalidation);
+        resume[1 - first].resolve();
+        await (olderFirst ? newRevalidation : oldRevalidation);
+      } finally {
+        for (const pending of resume) pending.resolve();
+        await Promise.all([oldRevalidation, newRevalidation]);
+        permissionStub.restore();
+      }
+      const revokedLoad = getErrorResponse(
+        t,
+        await emitWithAck(collaboratorSocket, 'space:load-doc', {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          docId,
+        })
+      );
+      t.is(revokedLoad.name, 'NOT_IN_SPACE');
+    }
     const staleGenerationLoad = getErrorResponse(
       t,
       await emitWithAck(collaboratorSocket, 'space:load-doc', {

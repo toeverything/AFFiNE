@@ -21,6 +21,23 @@ import {
   type RuntimeWorkspaceInviteQuotaUsage,
 } from './contracts';
 
+const runtimeErrorPattern = /\[affine-runtime:([a-z0-9_]+)\]\s*/;
+
+export class BackendRuntimeError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+    options?: ErrorOptions
+  ) {
+    super(message, options);
+    this.name = 'BackendRuntimeError';
+  }
+}
+
+export function backendRuntimeErrorCode(error: unknown) {
+  return error instanceof BackendRuntimeError ? error.code : undefined;
+}
+
 export class BackendRuntimeCoreOperations {
   constructor(protected readonly runtime: RuntimeInstance) {}
 
@@ -28,6 +45,22 @@ export class BackendRuntimeCoreOperations {
     return this.measured('executePaymentCommandV1', runtime =>
       runtime.executePaymentCommandV1(input)
     ) as Promise<T>;
+  }
+
+  createPaymentCustomerPortalV1(
+    ...args: Parameters<RuntimeInstance['createPaymentCustomerPortalV1']>
+  ) {
+    return this.measured('createPaymentCustomerPortalV1', runtime =>
+      runtime.createPaymentCustomerPortalV1(...args)
+    );
+  }
+
+  createLicenseCustomerPortalV1(
+    ...args: Parameters<RuntimeInstance['createLicenseCustomerPortalV1']>
+  ) {
+    return this.measured('createLicenseCustomerPortalV1', runtime =>
+      runtime.createLicenseCustomerPortalV1(...args)
+    );
   }
 
   executeAuthSessionCommandV1<T = unknown>(input: Record<string, unknown>) {
@@ -306,6 +339,24 @@ export class BackendRuntimeCoreOperations {
     );
   }
 
+  async compactPendingDocUpdates(
+    workspaceId: string,
+    docId: string,
+    batchLimit: number,
+    historyMinIntervalMs: number,
+    historyMaxAgeSeconds: number
+  ) {
+    return await this.measured('compactPendingDocUpdates', rt =>
+      rt.compactPendingDocUpdates(
+        workspaceId,
+        docId,
+        batchLimit,
+        historyMinIntervalMs,
+        historyMaxAgeSeconds
+      )
+    );
+  }
+
   async assertWorkspaceInviteQuotaV1(
     input: RuntimeWorkspaceInviteQuotaInput
   ): Promise<RuntimeWorkspaceInviteQuotaDecision> {
@@ -507,12 +558,23 @@ export class BackendRuntimeCoreOperations {
     method: string,
     fn: (runtime: RuntimeInstance) => Promise<T>
   ): Promise<T> {
-    return await wrapCallMetric(
-      () => fn(this.runtime),
-      'storage',
-      'backend_runtime',
-      { method }
-    )();
+    try {
+      return await wrapCallMetric(
+        () => fn(this.runtime),
+        'storage',
+        'backend_runtime',
+        { method }
+      )();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const match = runtimeErrorPattern.exec(message);
+      if (!match) throw error;
+      throw new BackendRuntimeError(
+        match[1],
+        message.replace(runtimeErrorPattern, ''),
+        { cause: error }
+      );
+    }
   }
 
   private quotaRuntime(runtime: RuntimeInstance): RuntimeQuotaMethods {
