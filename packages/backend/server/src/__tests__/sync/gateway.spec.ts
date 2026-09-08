@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { PrismaClient } from '@prisma/client';
 import test, { type ExecutionContext } from 'ava';
 import Sinon from 'sinon';
@@ -606,27 +609,38 @@ test('space:join-batch should validate entries before joining', async t => {
   }
 });
 
-test('space:join-batch should reject clients before 0.27.5', async t => {
+test('space:join-batch rejects old clients and accepts the current web build', async t => {
   const { user, cookieHeader } = await login(app);
-  const socket = createClient(url, cookieHeader);
+  const webPackage = JSON.parse(
+    readFileSync(
+      resolve(process.cwd(), '../../frontend/apps/web/package.json'),
+      'utf8'
+    )
+  );
 
-  try {
-    await waitForConnect(socket);
-    const result = unwrapResponse(
-      t,
-      await emitWithAck<{ clientId: string; success: boolean }>(
-        socket,
-        'space:join-batch',
-        {
-          spaces: [{ spaceType: 'userspace', spaceId: user.id }],
-          clientVersion: '0.27.4',
-        }
-      )
-    );
-    t.false(result.success);
-    await waitForDisconnect(socket);
-  } finally {
-    socket.disconnect();
+  for (const [clientVersion, accepted] of [
+    ['0.27.4', false],
+    [webPackage.version, true],
+  ] as const) {
+    const socket = createClient(url, cookieHeader);
+    try {
+      await waitForConnect(socket);
+      const result = unwrapResponse(
+        t,
+        await emitWithAck<{ clientId: string; success: boolean }>(
+          socket,
+          'space:join-batch',
+          {
+            spaces: [{ spaceType: 'userspace', spaceId: user.id }],
+            clientVersion,
+          }
+        )
+      );
+      t.is(result.success, accepted, clientVersion);
+      if (!accepted) await waitForDisconnect(socket);
+    } finally {
+      socket.disconnect();
+    }
   }
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "@affine/android",
-  "version": "0.27.0",
+  "version": "0.27.5",
   "description": "AFFiNE Desktop Web application",
   "private": true,
   "scripts": {
