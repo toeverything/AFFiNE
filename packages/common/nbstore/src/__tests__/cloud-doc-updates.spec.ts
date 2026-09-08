@@ -8,6 +8,7 @@ const base64UpdateB = 'BAUG';
 
 class FakeSocket {
   connected = true;
+  readonly joinedDocs = new Set<string>();
   readonly emitted: Array<{ event: string; payload: unknown }> = [];
   readonly handlers = new Map<string, (...args: unknown[]) => void>();
 
@@ -33,8 +34,23 @@ class FakeSocket {
     return true;
   }
 
-  async emitWithAck(event: string, payload: unknown) {
+  async emitWithAck(
+    event: string,
+    payload: { docId?: string; spaces?: { docId?: string }[] }
+  ) {
     this.emitted.push({ event, payload });
+    if (event === 'space:join-batch') {
+      for (const space of payload.spaces ?? []) {
+        if (space.docId === 'denied') {
+          return { error: { name: 'DOC_ACTION_DENIED', message: 'denied' } };
+        }
+        if (space.docId) this.joinedDocs.add(space.docId);
+      }
+    }
+    if (event === 'space:load-doc' || event === 'space:push-doc-update') {
+      expect(this.joinedDocs.has(payload.docId!)).toBe(true);
+      return { data: { missing: 'AAA=', state: 'AA==', timestamp: 1_000 } };
+    }
     if (event === 'space:doc-lifecycle') {
       return { data: { rootUpdate: base64UpdateA, timestamp: 1_000 } };
     }
@@ -116,7 +132,7 @@ describe('CloudDocStorage broadcast updates', () => {
   });
 
   test('batch route joins the workspace and applies lifecycle commands', async () => {
-    vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.0' });
+    vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.5' });
     const fakeSocket = new FakeSocket();
     const disconnect = vi.fn();
     const storage = new CloudDocStorage({
@@ -134,14 +150,22 @@ describe('CloudDocStorage broadcast updates', () => {
         connect: () => ({ socket: fakeSocket, disconnect }),
       },
     });
-    vi.spyOn(connection, 'getIdConverter').mockResolvedValue({
-      oldIdToNewId: (id: string) => id,
-      newIdToOldId: (id: string) => id,
-    });
-
     const inner = await connection.doConnect();
     connection._inner = inner;
+    await storage.getDocSnapshot('doc-1');
+    await storage.getDocDiff('doc-2');
+    await storage.getDocTimestamp('doc-3');
+    await storage.pushDocUpdate({
+      docId: 'doc-4',
+      bin: new Uint8Array([0, 0]),
+    });
     const lifecycle = await storage.applyDocLifecycle('doc-1', 'trash');
+    await expect(storage.getDocSnapshot('denied')).rejects.toMatchObject({
+      name: 'DOC_ACTION_DENIED',
+    });
+    fakeSocket.joinedDocs.delete('doc-1');
+    await storage.getDocDiff('doc-1');
+    connection.doDisconnect(inner);
     expect({ emitted: fakeSocket.emitted, lifecycle }).toMatchSnapshot({
       lifecycle: {
         rootUpdate: expect.any(Uint8Array),
@@ -149,12 +173,12 @@ describe('CloudDocStorage broadcast updates', () => {
       },
     });
 
-    inner.disconnect();
+    expect(disconnect).toHaveBeenCalledOnce();
     vi.unstubAllGlobals();
   });
 
   test('awareness joins active documents through the batch route', async () => {
-    vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.0' });
+    vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.5' });
     const fakeSocket = new FakeSocket();
     const storage = new CloudAwarenessStorage({
       id: 'space-1',

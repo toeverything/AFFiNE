@@ -644,7 +644,7 @@ test('space:join-batch rejects old clients and accepts the current web build', a
   }
 });
 
-test('space:join-batch should authorize once and join all requested rooms', async t => {
+test('space:join-batch joins rooms and initializes workspace documents', async t => {
   const models = app.get(Models);
   const { user: owner, cookieHeader: ownerCookieHeader } = await login(app);
   const { cookieHeader: deniedCookieHeader } = await login(app);
@@ -666,6 +666,11 @@ test('space:join-batch should authorize once and join all requested rooms', asyn
         { spaceType: 'workspace', spaceId: workspace.id },
         { spaceType: 'workspace', spaceId: workspace.id, docId: 'doc-a' },
         { spaceType: 'workspace', spaceId: workspace.id, docId: 'doc-b' },
+        {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          docId: `db$${workspace.id}$docProperties`,
+        },
       ],
       clientVersion: '0.27.5',
     };
@@ -777,6 +782,49 @@ test('space:join-batch should authorize once and join all requested rooms', asyn
       new Set(['doc-a', 'doc-b'])
     );
     await noDeniedEvent;
+    unwrapResponse(
+      t,
+      await emitWithAck(ownerSocket, 'space:join-batch', {
+        spaces: [
+          {
+            spaceType: 'workspace',
+            spaceId: workspace.id,
+            docId: workspace.id,
+          },
+        ],
+        clientVersion: '0.27.5',
+      })
+    );
+    const root = addDocToRootDoc(Buffer.from([0, 0]), 'doc-a');
+    unwrapResponse(
+      t,
+      await emitWithAck(ownerSocket, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: workspace.id,
+        update: Buffer.from(root).toString('base64'),
+      })
+    );
+    for (const docId of [
+      'doc-a',
+      'doc-a',
+      `db$${workspace.id}$docProperties`,
+    ]) {
+      unwrapResponse(
+        t,
+        await emitWithAck(ownerSocket, 'space:join-batch', batch)
+      );
+      unwrapResponse(
+        t,
+        await emitWithAck(ownerSocket, 'space:push-doc-update', {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          docId,
+          update: createYjsUpdateBase64(),
+        })
+      );
+    }
+    t.true(await models.doc.exists(workspace.id, 'doc-a'));
   } finally {
     ownerSocket.disconnect();
     receiverSocket.disconnect();

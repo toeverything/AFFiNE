@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 
 import * as reader from '@affine/reader';
-import { NEVER } from 'rxjs';
+import { firstValueFrom, NEVER } from 'rxjs';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
@@ -376,11 +376,17 @@ test('doc', async () => {
     },
   });
   const removeRootPriority = sync.doc.addPriority('ws1', 100);
+  const removeForegroundPriority = sync.doc.addPriority('doc1', 200);
+  const remoteDiff = vi.spyOn(peerBDoc, 'getDocDiff');
+  expect(await firstValueFrom(sync.doc.docState$('doc1'))).toMatchObject({
+    synced: false,
+  });
   sync.start();
 
   await new Promise(resolve => setTimeout(resolve, 1000));
 
   {
+    expect(remoteDiff.mock.calls[0]?.[0]).toBe('ws1');
     const b = await peerB.get('doc').getDoc('doc1');
     expectYjsEqual(b!.bin, {
       test: {
@@ -449,6 +455,7 @@ test('doc', async () => {
   }
 
   removeDocPriority();
+  removeForegroundPriority();
   removeRootPriority();
   sync.stop();
   peerA.disconnect();

@@ -1210,7 +1210,7 @@ export class SpaceSyncGateway
           });
         }
       }
-      for (const space of subscriptionsToAdd) {
+      for (const space of docSpaces) {
         this.addActiveDocSubscription(
           client,
           space.spaceType,
@@ -1638,7 +1638,8 @@ abstract class SyncSocketAdapter {
     docId: string,
     updates: Buffer[],
     editorId: string,
-    expectedPermissionGeneration?: number
+    expectedPermissionGeneration?: number,
+    writeIntent: 'update_doc' | 'create_doc' = 'update_doc'
   ) {
     this.assertIn(spaceId);
     return await this.storage.pushDocUpdates(
@@ -1646,7 +1647,8 @@ abstract class SyncSocketAdapter {
       docId,
       updates,
       editorId,
-      expectedPermissionGeneration
+      expectedPermissionGeneration,
+      writeIntent
     );
   }
 
@@ -1697,7 +1699,10 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
       docId,
       updates,
       editorId,
-      expectedPermissionGeneration
+      expectedPermissionGeneration,
+      (await this.models.doc.exists(spaceId, docId))
+        ? 'update_doc'
+        : 'create_doc'
     );
   }
 
