@@ -298,7 +298,7 @@ pub(super) struct Principal {
 #[serde(tag = "status", rename_all = "snake_case")]
 pub(super) enum PrincipalResult {
   Valid {
-    principal: Principal,
+    principal: Box<Principal>,
     #[serde(rename = "refreshedExpiresAt")]
     refreshed_expires_at: Option<DateTime<Utc>>,
   },

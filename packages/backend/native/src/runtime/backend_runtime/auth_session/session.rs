@@ -150,18 +150,20 @@ pub(super) async fn exchange(
     .execute(&mut *tx)
     .await
     .map_err(|error| RuntimeError::database("consume auth session exchange", error))?;
-  let pair = token_pair(
+  let mut pair = token_pair(
     &mut tx,
     config,
     &user_id,
-    &auth_session_id,
     refresh,
     idle_expires_at,
-    absolute_expires_at,
-    Some(is_new_device),
+    TokenPairSession {
+      id: auth_session_id,
+      absolute_expires_at,
+    },
     now,
   )
   .await?;
+  pair.is_new_device = Some(is_new_device);
   tx.commit()
     .await
     .map_err(|error| RuntimeError::database("commit auth session exchange", error))?;
@@ -172,18 +174,16 @@ pub(super) async fn token_pair(
   connection: &mut PgConnection,
   config: &super::super::BackendRuntimeConfig,
   user_id: &str,
-  auth_session_id: &str,
   refresh: AuthSessionRefreshToken,
   refresh_expires_at: DateTime<Utc>,
-  absolute_expires_at: DateTime<Utc>,
-  is_new_device: Option<bool>,
+  session: TokenPairSession,
   now: DateTime<Utc>,
 ) -> RuntimeResult<TokenPair> {
   let signing_key = keyring::active(connection, config).await?;
   let expires_at = access_token_deadline(now, config.auth.access_token_ttl_seconds);
   let access_token = sign_auth_session_access_token(
     user_id,
-    auth_session_id,
+    &session.id,
     &signing_key.id,
     &signing_key.secret,
     now.timestamp(),
@@ -197,11 +197,8 @@ pub(super) async fn token_pair(
     expires_in: config.auth.access_token_ttl_seconds,
     refresh_token: refresh.token,
     refresh_expires_at,
-    session: TokenPairSession {
-      id: auth_session_id.to_string(),
-      absolute_expires_at,
-    },
-    is_new_device,
+    session,
+    is_new_device: None,
   })
 }
 

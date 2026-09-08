@@ -244,9 +244,10 @@ impl BackendRuntime {
     }
     let revoked: bool = sqlx::query_scalar(
       "SELECT EXISTS(SELECT 1 FROM entitlements WHERE source='selfhost_license' AND subject_id=$1 AND \
-       status='revoked')",
+       target_type='workspace' AND target_id=$2 AND status='revoked')",
     )
     .bind(&input.key)
+    .bind(&input.workspace_id)
     .fetch_one(&mut *tx)
     .await
     .map_err(|error| RuntimeError::database("check explicit license revocation", error))?;

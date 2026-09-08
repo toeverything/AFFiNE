@@ -1,4 +1,5 @@
 import { getCurrentUserQuery } from '@affine/graphql';
+import type { RawBodyRequest } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import type { Request, Response } from 'express';
@@ -32,8 +33,8 @@ for (const serverPath of ['', '/affine.v1/']) {
         rawBody: true,
       });
       configureBodyParsers(http, serverPath);
-      http.use((req: Request, res: Response) =>
-        res.json({ size: req.body.length })
+      http.use((req: RawBodyRequest<Request>, res: Response) =>
+        res.json({ size: req.body.length, raw: req.rawBody?.equals(req.body) })
       );
       await http.init();
       await http.listen(0);
@@ -56,6 +57,7 @@ for (const serverPath of ['', '/affine.v1/']) {
           .send(Buffer.alloc(1024));
         t.is(accepted.status, 200);
         t.is(accepted.body.size, 1024);
+        t.true(accepted.body.raw);
         const other = await request(http.getHttpServer())
           .put(`${prefix}/api/workspaces/blob`)
           .set('content-type', 'application/octet-stream')

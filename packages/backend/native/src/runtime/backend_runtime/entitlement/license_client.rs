@@ -213,6 +213,15 @@ impl BackendRuntime {
 
   #[napi]
   pub async fn check_licenses_v1(&self) -> Result<RuntimeLicenseHealthResult> {
+    self.check_licenses(false).await
+  }
+}
+
+impl BackendRuntime {
+  pub(in crate::runtime::backend_runtime) async fn check_licenses(
+    &self,
+    only_unadmitted: bool,
+  ) -> Result<RuntimeLicenseHealthResult> {
     let pool = self.pool().await?;
     let mut lock = pool
       .begin()
@@ -229,23 +238,13 @@ impl BackendRuntime {
         transient_failure: false,
       });
     }
-    let result = self.check_licenses_unlocked().await;
-    lock
-      .rollback()
-      .await
-      .map_err(|error| RuntimeError::database("release license health scan lease", error))?;
-    result
-  }
-}
-
-impl BackendRuntime {
-  async fn check_licenses_unlocked(&self) -> Result<RuntimeLicenseHealthResult> {
     let mut transient_failure = false;
     let rows = sqlx::query(
-      "SELECT * FROM installed_licenses WHERE validated_at<=clock_timestamp()-INTERVAL '1 hour' OR (variant IS \
-       DISTINCT FROM 'onetime' AND license IS NULL) ORDER BY workspace_id",
+      "SELECT * FROM installed_licenses WHERE (NOT $1 AND validated_at<=clock_timestamp()-INTERVAL '1 hour') OR \
+       (variant IS DISTINCT FROM 'onetime' AND license IS NULL) ORDER BY workspace_id",
     )
-    .fetch_all(&self.pool().await?)
+    .bind(only_unadmitted)
+    .fetch_all(&pool)
     .await
     .map_err(|error| RuntimeError::database("load licenses for health check", error))?;
     let mut changes = Vec::new();
@@ -273,6 +272,10 @@ impl BackendRuntime {
         }
       }
     }
+    lock
+      .rollback()
+      .await
+      .map_err(|error| RuntimeError::database("release license health scan lease", error))?;
     Ok(RuntimeLicenseHealthResult {
       changes,
       transient_failure,

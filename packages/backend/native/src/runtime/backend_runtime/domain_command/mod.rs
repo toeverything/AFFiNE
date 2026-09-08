@@ -17,7 +17,16 @@ use serde_json::Value;
 use sqlx::{Postgres, Transaction};
 
 use super::{InvalidationHintV1, SourceIdentity, load_command_quota_in, permission::PermissionAuthorizer};
-use crate::runtime::{Deployment, RuntimeError, RuntimeResult};
+use crate::runtime::{RuntimeError, RuntimeResult};
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct CommentNotification {
+  doc_title: String,
+  doc_mode: String,
+  #[serde(default)]
+  mentions: Vec<String>,
+}
 
 #[derive(Deserialize)]
 #[serde(tag = "command", rename_all = "snake_case", rename_all_fields = "camelCase")]
@@ -27,10 +36,8 @@ pub(super) enum DomainCommandInputV1 {
     workspace_id: String,
     doc_id: String,
     content: Value,
-    doc_title: String,
-    doc_mode: String,
-    #[serde(default)]
-    mentions: Vec<String>,
+    #[serde(flatten)]
+    notification: CommentNotification,
   },
   UpdateComment {
     actor_user_id: String,
@@ -50,10 +57,8 @@ pub(super) enum DomainCommandInputV1 {
     actor_user_id: String,
     comment_id: String,
     content: Value,
-    doc_title: String,
-    doc_mode: String,
-    #[serde(default)]
-    mentions: Vec<String>,
+    #[serde(flatten)]
+    notification: CommentNotification,
   },
   UpdateReply {
     actor_user_id: String,
@@ -146,11 +151,10 @@ pub(super) async fn authorize_domain(
   workspace_id: &str,
   doc_id: Option<&str>,
   command: &DomainCommand,
-  deployment: Deployment,
 ) -> RuntimeResult<CommandAuthorizationDecision> {
   lock_workspace(transaction, workspace_id).await?;
   let quota = if command.effect().requires_quota_guard() {
-    load_command_quota_in(transaction, deployment, workspace_id).await?
+    load_command_quota_in(transaction, authorizer.deployment, workspace_id).await?
   } else {
     None
   };
@@ -356,7 +360,7 @@ mod tests {
   use sqlx::Executor;
 
   use super::*;
-  use crate::runtime::backend_runtime::permission::PermissionAuthorizer;
+  use crate::runtime::{Deployment, backend_runtime::permission::PermissionAuthorizer};
 
   #[tokio::test]
   async fn quota_commands_wait_for_the_workspace_prefix_before_row_locks() {
@@ -380,7 +384,6 @@ mod tests {
           &workspace_id,
           None,
           &DomainCommand::CreateDoc,
-          Deployment::Cloud,
         )
         .await;
         transaction.rollback().await.unwrap();

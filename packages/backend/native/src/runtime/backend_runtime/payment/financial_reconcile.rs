@@ -242,14 +242,13 @@ async fn financial_candidate(runtime: &PaymentRuntime, namespace: &str) -> Runti
     .map_err(|error| RuntimeError::database("load payment financial candidate", error))?;
   let mut overlap_pass = cursor.overlap_pending;
   if row.is_none() && cursor.overlap_pending {
-    let query = format!(
+    row = sqlx::query(
       r#"SELECT object_kind,external_id,source_identity FROM payment_financial_facts
          WHERE provider_namespace=$1
            AND ((object_kind='invoice' AND status='open') OR (object_kind='refund' AND status='pending') OR (object_kind='dispute' AND status='open'))
            AND (object_kind || ':' || external_id) > $2
          ORDER BY object_kind,external_id LIMIT 1"#,
-    );
-    row = sqlx::query(&query)
+    )
       .bind(namespace)
       .bind(key)
       .fetch_optional(&mut *tx)

@@ -1,6 +1,10 @@
+import type { IncomingMessage } from 'node:http';
+
+import type { RawBodyRequest } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { raw } from 'express';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import {
@@ -28,20 +32,17 @@ export function configureBodyParsers(
   app: NestExpressApplication,
   serverPath: string
 ) {
-  const serverPrefix = serverPath.replace(/^\/+|\/+$/g, '').toLowerCase();
-  const attachmentPrefix = `${serverPrefix ? `/${serverPrefix}` : ''}/api/copilot/chat/`;
-  app.useBodyParser('raw', {
-    limit: 20 * OneMB,
-    type: req => {
-      const requestPath = (req.url ?? '').toLowerCase();
-      return (
-        requestPath.startsWith(attachmentPrefix) &&
-        /^[^/?]+\/attachments\/[^/?]+\/?(?:\?|$)/.test(
-          requestPath.slice(attachmentPrefix.length)
-        )
-      );
-    },
-  });
+  const serverPrefix = serverPath.replace(/^\/+|\/+$/g, '');
+  app.use(
+    `${serverPrefix ? `/${serverPrefix}` : ''}/api/copilot/chat/:sessionId/attachments/:key`,
+    raw({
+      limit: 20 * OneMB,
+      type: () => true,
+      verify: (req: RawBodyRequest<IncomingMessage>, _res, buffer) => {
+        req.rawBody = buffer;
+      },
+    })
+  );
   app.useBodyParser('raw', { limit: 100 * OneMB });
 }
 

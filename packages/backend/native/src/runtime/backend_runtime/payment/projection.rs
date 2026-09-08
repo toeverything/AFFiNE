@@ -171,9 +171,9 @@ pub(super) async fn reconcile_cloud_winners(
         ));
       let status = if selected {
         subscription.status
-      } else if source.candidate.restriction == FinancialRestriction::Revoke {
-        EntitlementStatus::Revoked
-      } else if subscription.status == EntitlementStatus::Revoked {
+      } else if source.candidate.restriction == FinancialRestriction::Revoke
+        || subscription.status == EntitlementStatus::Revoked
+      {
         EntitlementStatus::Revoked
       } else {
         EntitlementStatus::Expired

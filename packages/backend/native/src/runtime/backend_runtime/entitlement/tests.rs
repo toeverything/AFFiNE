@@ -51,7 +51,16 @@ async fn license_upgrade_recovers_installed_files_and_online_renewals_before_wor
     .await
     .unwrap();
   let mut fixtures = Vec::new();
-  for mode in ["missing", "raw", "normalized", "revoked", "invalid"] {
+  for mode in [
+    "missing",
+    "raw",
+    "normalized",
+    "revoked",
+    "invalid",
+    "identity",
+    "subject",
+    "workspace",
+  ] {
     let (owner, workspace) = fixture(&runtime).await;
     let expiry = Utc::now() + Duration::days(365);
     let original = if mode == "invalid" {
@@ -64,7 +73,11 @@ async fn license_upgrade_recovers_installed_files_and_online_renewals_before_wor
        installed_licenses(key,workspace_id,quantity,recurring,variant,validate_key,validated_at,expired_at,license) \
        VALUES($1,$2,10,'monthly','onetime','legacy-generation',clock_timestamp(),$3,$4)",
     )
-    .bind(format!("license:{workspace}"))
+    .bind(if mode == "identity" {
+      format!("wrong:{workspace}")
+    } else {
+      format!("license:{workspace}")
+    })
     .bind(&workspace)
     .bind(expiry)
     .bind(&original)
@@ -88,6 +101,26 @@ async fn license_upgrade_recovers_installed_files_and_online_renewals_before_wor
       .bind(if mode == "revoked" { "revoked" } else { "active" })
       .bind(payload)
       .bind(expiry)
+      .execute(&db)
+      .await
+      .unwrap();
+    }
+    if matches!(mode, "subject" | "workspace") {
+      sqlx::query(
+        "INSERT INTO entitlements(id,target_type,target_id,source,subject_id,plan,status,quantity) \
+         VALUES($1,'workspace',$2,'selfhost_license',$3,'selfhost_team','active',10)",
+      )
+      .bind(uuid::Uuid::new_v4().to_string())
+      .bind(if mode == "subject" {
+        format!("conflict:{workspace}")
+      } else {
+        workspace.clone()
+      })
+      .bind(if mode == "workspace" {
+        format!("conflict:{workspace}")
+      } else {
+        format!("license:{workspace}")
+      })
       .execute(&db)
       .await
       .unwrap();
@@ -157,6 +190,23 @@ async fn license_upgrade_recovers_installed_files_and_online_renewals_before_wor
     .await
     .unwrap();
   assert_eq!(status, "active");
+  runtime.stop().await.unwrap();
+  sqlx::query("UPDATE installed_licenses SET validated_at='2000-01-01' WHERE workspace_id=$1")
+    .bind(&online_workspace)
+    .execute(&db)
+    .await
+    .unwrap();
+  runtime.start().await.unwrap();
+  assert_eq!(
+    remote.requests().len(),
+    1,
+    "ordinary renewal must not block API startup"
+  );
+  sqlx::query("UPDATE installed_licenses SET validated_at=clock_timestamp() WHERE workspace_id=$1")
+    .bind(&online_workspace)
+    .execute(&db)
+    .await
+    .unwrap();
   for (mode, _, workspace, original) in &fixtures {
     let valid = matches!(*mode, "missing" | "raw" | "normalized");
     assert_eq!(
@@ -320,8 +370,9 @@ async fn license_upgrade_recovers_installed_files_and_online_renewals_before_wor
   fixtures.push(("retry", owner, workspace, original));
 
   for (_, owner, workspace, _) in fixtures {
-    sqlx::query("DELETE FROM entitlements WHERE target_id=$1")
+    sqlx::query("DELETE FROM entitlements WHERE target_id=$1 OR subject_id=$2")
       .bind(&workspace)
+      .bind(format!("license:{workspace}"))
       .execute(&db)
       .await
       .unwrap();
@@ -453,6 +504,31 @@ async fn license_install_revoke_rollback_and_stale_fences() {
   .await
   .unwrap();
   assert_eq!(identity_after_rejection, ("generation".into(), key.clone()));
+  sqlx::query("UPDATE entitlements SET status='revoked' WHERE target_id=$1 AND subject_id=$2")
+    .bind(&workspace)
+    .bind(&key)
+    .execute(&pool)
+    .await
+    .unwrap();
+  assert!(
+    runtime
+      .refresh_license_v1(RuntimeLicenseRefreshInput {
+        workspace_id: workspace.clone(),
+        key: key.clone(),
+        expected_validate_key: "generation".into(),
+        recurring: "monthly".into(),
+        license: payload.clone().into(),
+      })
+      .await
+      .unwrap()
+      .is_none()
+  );
+  sqlx::query("UPDATE entitlements SET status='active' WHERE target_id=$1 AND subject_id=$2")
+    .bind(&workspace)
+    .bind(&key)
+    .execute(&pool)
+    .await
+    .unwrap();
 
   let (_, one_time_workspace) = fixture(&runtime).await;
   let (one_time_payload, _) = crate::entitlement::signed_test_license(&one_time_workspace);
@@ -576,6 +652,48 @@ async fn license_install_revoke_rollback_and_stale_fences() {
     .await
     .unwrap();
   assert_eq!(status, "revoked");
+  let (_, reactivated_workspace) = fixture(&runtime).await;
+  let (reactivated_payload, _) = crate::entitlement::signed_test_license_with_id(&reactivated_workspace, &key);
+  let remote = crate::license::tests::LicenseServer::new(&key);
+  let generation = uuid::Uuid::new_v4().to_string();
+  remote.push(200, reactivated_payload.clone(), &generation);
+  runtime
+    .activate_team_license_v1(reactivated_workspace.clone(), key.clone())
+    .await
+    .unwrap();
+  sqlx::query(
+    "INSERT INTO entitlements(id,target_type,target_id,source,subject_id,plan,status,quantity,updated_at) \
+     VALUES($1,'workspace',$2,'selfhost_license',$3,'selfhost_team','revoked',10,'2000-01-01')",
+  )
+  .bind(uuid::Uuid::new_v4().to_string())
+  .bind(&workspace)
+  .bind(&key)
+  .execute(&pool)
+  .await
+  .unwrap();
+  remote.push(200, reactivated_payload.clone(), &generation);
+  sqlx::query("UPDATE installed_licenses SET validated_at='2000-01-01' WHERE workspace_id=$1")
+    .bind(&reactivated_workspace)
+    .execute(&pool)
+    .await
+    .unwrap();
+  let health = runtime.check_licenses_v1().await.unwrap();
+  assert!(
+    health
+      .changes
+      .iter()
+      .any(|change| change.workspace_id == reactivated_workspace && !change.canceled)
+  );
+  assert_eq!(remote.requests().len(), 2);
+  assert_eq!(
+    sqlx::query_scalar::<_, String>("SELECT status FROM entitlements WHERE target_id=$1 AND subject_id=$2")
+      .bind(&workspace)
+      .bind(&key)
+      .fetch_one(&pool)
+      .await
+      .unwrap(),
+    "revoked"
+  );
 }
 
 #[tokio::test]

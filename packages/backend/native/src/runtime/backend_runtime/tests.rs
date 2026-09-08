@@ -253,7 +253,7 @@ async fn insert_invite_quota_fixture(
   let pool = runtime.pool().await.map_err(|err| anyhow!(err.to_string()))?;
   let user_id = format!("rust-test:quota:user:{suffix}");
   let workspace_id = format!("rust-test:quota:workspace:{suffix}");
-  let email = format!("rust-test-quota-{suffix}@example.com");
+  let email = format!("rust-test-quota-{suffix}-{}@example.com", uuid::Uuid::new_v4());
 
   sqlx::query("DELETE FROM effective_workspace_quota_states WHERE workspace_id = $1")
     .bind(&workspace_id)

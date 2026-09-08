@@ -4,8 +4,8 @@ use affine_core::access_control::{DocAction, DomainCommand};
 use serde_json::Value;
 use sqlx::{Postgres, Row, Transaction, types::Json};
 
-use super::authorize_domain;
-use crate::runtime::{Deployment, RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
+use super::{CommentNotification, authorize_domain};
+use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 pub(super) struct Target {
   pub(super) id: String,
@@ -21,10 +21,7 @@ pub(super) async fn create_comment(
   workspace_id: String,
   doc_id: String,
   content: Value,
-  doc_title: String,
-  doc_mode: String,
-  mentions: Vec<String>,
-  deployment: Deployment,
+  notification: CommentNotification,
 ) -> RuntimeResult<Value> {
   let command = DomainCommand::CreateComment { doc_id: doc_id.clone() };
   authorize_domain(
@@ -34,7 +31,6 @@ pub(super) async fn create_comment(
     &workspace_id,
     Some(&doc_id),
     &command,
-    deployment,
   )
   .await?;
   let row = sqlx::query(
@@ -64,17 +60,8 @@ pub(super) async fn create_comment(
     doc_id,
     user_id: actor_user_id.clone(),
   };
-  let notification_ids = create_comment_notifications(
-    authorizer,
-    transaction,
-    &actor_user_id,
-    &target,
-    None,
-    &doc_title,
-    &doc_mode,
-    mentions,
-  )
-  .await?;
+  let notification_ids =
+    create_comment_notifications(authorizer, transaction, &actor_user_id, &target, None, notification).await?;
   value
     .as_object_mut()
     .expect("comment result is an object")
@@ -88,11 +75,9 @@ pub(super) async fn create_comment_notifications(
   sender_user_id: &str,
   comment: &Target,
   reply_id: Option<&str>,
-  doc_title: &str,
-  doc_mode: &str,
-  mentions: Vec<String>,
+  notification: CommentNotification,
 ) -> RuntimeResult<Vec<String>> {
-  let mention_user_ids = mentions.into_iter().collect::<BTreeSet<_>>();
+  let mention_user_ids = notification.mentions.into_iter().collect::<BTreeSet<_>>();
   let mut notify_user_ids = sqlx::query_scalar::<_, String>(
     "SELECT principal_id FROM doc_grants WHERE workspace_id=$1 AND doc_id=$2 AND principal_type='user' AND \
      role='owner'",
@@ -143,7 +128,7 @@ pub(super) async fn create_comment_notifications(
       "createdByUserId": sender_user_id,
       "commentId": comment.id,
       "replyId": reply_id,
-      "doc": { "id": comment.doc_id, "title": doc_title, "mode": doc_mode },
+      "doc": { "id": comment.doc_id, "title": notification.doc_title, "mode": notification.doc_mode },
     });
     let id: String = sqlx::query_scalar(
       r#"INSERT INTO notifications(id,user_id,level,type,body)
@@ -167,19 +152,8 @@ pub(super) async fn update_comment(
   actor_user_id: String,
   id: String,
   content: Value,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
-  mutate_comment(
-    authorizer,
-    transaction,
-    actor_user_id,
-    id,
-    Some(content),
-    None,
-    false,
-    deployment,
-  )
-  .await
+  mutate_comment(authorizer, transaction, actor_user_id, id, Some(content), None, false).await
 }
 
 pub(super) async fn resolve_comment(
@@ -188,19 +162,8 @@ pub(super) async fn resolve_comment(
   actor_user_id: String,
   id: String,
   resolved: bool,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
-  mutate_comment(
-    authorizer,
-    transaction,
-    actor_user_id,
-    id,
-    None,
-    Some(resolved),
-    false,
-    deployment,
-  )
-  .await
+  mutate_comment(authorizer, transaction, actor_user_id, id, None, Some(resolved), false).await
 }
 
 pub(super) async fn delete_comment(
@@ -208,9 +171,8 @@ pub(super) async fn delete_comment(
   transaction: &mut Transaction<'_, Postgres>,
   actor_user_id: String,
   id: String,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
-  mutate_comment(authorizer, transaction, actor_user_id, id, None, None, true, deployment).await
+  mutate_comment(authorizer, transaction, actor_user_id, id, None, None, true).await
 }
 
 async fn mutate_comment(
@@ -221,10 +183,9 @@ async fn mutate_comment(
   content: Option<Value>,
   resolved: Option<bool>,
   delete: bool,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
   let target = load_target(transaction, "comments", &id, false).await?;
-  assert_mutation(authorizer, transaction, &actor_user_id, &target, delete, deployment).await?;
+  assert_mutation(authorizer, transaction, &actor_user_id, &target, delete).await?;
   let target = lock_target(transaction, "comments", &target).await?;
   let row = sqlx::query(
     r#"UPDATE comments SET
@@ -312,7 +273,6 @@ pub(super) async fn assert_mutation(
   actor_user_id: &str,
   target: &Target,
   delete: bool,
-  deployment: Deployment,
 ) -> RuntimeResult<()> {
   let command = DomainCommand::MutateComment {
     doc_id: target.doc_id.clone(),
@@ -326,7 +286,6 @@ pub(super) async fn assert_mutation(
     &target.workspace_id,
     Some(&target.doc_id),
     &command,
-    deployment,
   )
   .await
   .map(|_| ())
@@ -384,10 +343,11 @@ mod tests {
       workspace_id.clone(),
       doc_id.clone(),
       serde_json::json!({"text":"owner"}),
-      "Document".to_string(),
-      "page".to_string(),
-      Vec::new(),
-      Deployment::Cloud,
+      CommentNotification {
+        doc_title: "Document".into(),
+        doc_mode: "page".into(),
+        mentions: Vec::new(),
+      },
     )
     .await
     .unwrap();
@@ -399,7 +359,6 @@ mod tests {
       member_id.clone(),
       comment["id"].as_str().unwrap().to_string(),
       serde_json::json!({"text":"denied"}),
-      Deployment::Cloud,
     )
     .await;
     assert!(denied.is_err());
@@ -413,10 +372,11 @@ mod tests {
       workspace_id.clone(),
       doc_id.clone(),
       serde_json::json!({"text":"mine"}),
-      "Document".to_string(),
-      "page".to_string(),
-      Vec::new(),
-      Deployment::Cloud,
+      CommentNotification {
+        doc_title: "Document".into(),
+        doc_mode: "page".into(),
+        mentions: Vec::new(),
+      },
     )
     .await
     .unwrap();
@@ -426,7 +386,6 @@ mod tests {
       member_id.clone(),
       own["id"].as_str().unwrap().to_string(),
       serde_json::json!({"text":"allowed"}),
-      Deployment::Cloud,
     )
     .await
     .unwrap();
@@ -436,10 +395,11 @@ mod tests {
       member_id.clone(),
       own["id"].as_str().unwrap().to_string(),
       serde_json::json!({"text":"reply"}),
-      "Document".to_string(),
-      "page".to_string(),
-      Vec::new(),
-      Deployment::Cloud,
+      CommentNotification {
+        doc_title: "Document".into(),
+        doc_mode: "page".into(),
+        mentions: Vec::new(),
+      },
     )
     .await
     .unwrap();
@@ -469,7 +429,6 @@ mod tests {
         member_id.clone(),
         own_id.to_string(),
         resolved,
-        Deployment::Cloud,
       )
       .await
       .unwrap();
@@ -504,10 +463,11 @@ mod tests {
         workspace_id.clone(),
         doc_id.clone(),
         serde_json::json!({"text":"readonly"}),
-        "Document".to_string(),
-        "page".to_string(),
-        Vec::new(),
-        Deployment::Cloud,
+        CommentNotification {
+          doc_title: "Document".into(),
+          doc_mode: "page".into(),
+          mentions: Vec::new()
+        },
       )
       .await
       .is_err()
@@ -526,7 +486,6 @@ mod tests {
           member_id.clone(),
           id.clone(),
           serde_json::json!({"text":"readonly"}),
-          Deployment::Cloud,
         )
         .await
       } else {
@@ -536,7 +495,6 @@ mod tests {
           member_id.clone(),
           id.clone(),
           serde_json::json!({"text":"readonly"}),
-          Deployment::Cloud,
         )
         .await
       };
@@ -551,7 +509,6 @@ mod tests {
           owner_id.clone(),
           id.clone(),
           serde_json::json!({"text":"moderated"}),
-          Deployment::Cloud,
         )
         .await
       } else {
@@ -561,20 +518,12 @@ mod tests {
           owner_id.clone(),
           id.clone(),
           serde_json::json!({"text":"moderated"}),
-          Deployment::Cloud,
         )
         .await;
         assert!(
-          resolve_comment(
-            &authorizer,
-            &mut transaction,
-            owner_id.clone(),
-            id.clone(),
-            true,
-            Deployment::Cloud,
-          )
-          .await
-          .is_err()
+          resolve_comment(&authorizer, &mut transaction, owner_id.clone(), id.clone(), true,)
+            .await
+            .is_err()
         );
         updated
       };
@@ -583,11 +532,11 @@ mod tests {
 
       let mut transaction = pool.begin().await.unwrap();
       if reply_item {
-        delete_reply(&authorizer, &mut transaction, owner_id.clone(), id, Deployment::Cloud)
+        delete_reply(&authorizer, &mut transaction, owner_id.clone(), id)
           .await
           .unwrap();
       } else {
-        delete_comment(&authorizer, &mut transaction, owner_id.clone(), id, Deployment::Cloud)
+        delete_comment(&authorizer, &mut transaction, owner_id.clone(), id)
           .await
           .unwrap();
       }
@@ -616,10 +565,11 @@ mod tests {
         member_id,
         comment["id"].as_str().unwrap().to_string(),
         serde_json::json!({"text":"readonly"}),
-        "Document".to_string(),
-        "page".to_string(),
-        Vec::new(),
-        Deployment::Cloud,
+        CommentNotification {
+          doc_title: "Document".into(),
+          doc_mode: "page".into(),
+          mentions: Vec::new()
+        },
       )
       .await
       .is_err()

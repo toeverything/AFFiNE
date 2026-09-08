@@ -104,9 +104,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       workspace_id,
       doc_id,
       content,
-      doc_title,
-      doc_mode,
-      mentions,
+      notification,
     } => {
       comments::create_comment(
         &authorizer,
@@ -115,10 +113,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         content,
-        doc_title,
-        doc_mode,
-        mentions,
-        deployment,
+        notification,
       )
       .await?
     }
@@ -126,22 +121,20 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       actor_user_id,
       id,
       content,
-    } => comments::update_comment(&authorizer, &mut transaction, actor_user_id, id, content, deployment).await?,
+    } => comments::update_comment(&authorizer, &mut transaction, actor_user_id, id, content).await?,
     DomainCommandInputV1::ResolveComment {
       actor_user_id,
       id,
       resolved,
-    } => comments::resolve_comment(&authorizer, &mut transaction, actor_user_id, id, resolved, deployment).await?,
+    } => comments::resolve_comment(&authorizer, &mut transaction, actor_user_id, id, resolved).await?,
     DomainCommandInputV1::DeleteComment { actor_user_id, id } => {
-      comments::delete_comment(&authorizer, &mut transaction, actor_user_id, id, deployment).await?
+      comments::delete_comment(&authorizer, &mut transaction, actor_user_id, id).await?
     }
     DomainCommandInputV1::CreateReply {
       actor_user_id,
       comment_id,
       content,
-      doc_title,
-      doc_mode,
-      mentions,
+      notification,
     } => {
       replies::create_reply(
         &authorizer,
@@ -149,10 +142,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         actor_user_id,
         comment_id,
         content,
-        doc_title,
-        doc_mode,
-        mentions,
-        deployment,
+        notification,
       )
       .await?
     }
@@ -160,9 +150,9 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       actor_user_id,
       id,
       content,
-    } => replies::update_reply(&authorizer, &mut transaction, actor_user_id, id, content, deployment).await?,
+    } => replies::update_reply(&authorizer, &mut transaction, actor_user_id, id, content).await?,
     DomainCommandInputV1::DeleteReply { actor_user_id, id } => {
-      replies::delete_reply(&authorizer, &mut transaction, actor_user_id, id, deployment).await?
+      replies::delete_reply(&authorizer, &mut transaction, actor_user_id, id).await?
     }
     DomainCommandInputV1::PublishDoc {
       actor_user_id,
@@ -178,7 +168,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         doc_id,
         mode,
         true,
-        deployment,
       )
       .await?
     }
@@ -195,7 +184,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         doc_id,
         0,
         false,
-        deployment,
       )
       .await?
     }
@@ -212,7 +200,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         lifecycle,
-        deployment,
         embedding_schema_ready,
       )
       .await?
@@ -224,15 +211,16 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       assert_permission,
       expected_permission_generation,
     } => {
+      if !assert_permission {
+        return Err(RuntimeError::invalid_input("permission_assertion_required"));
+      }
       lifecycle::append_root_update(
         &authorizer,
         &mut transaction,
         actor_user_id,
         workspace_id,
         update,
-        assert_permission,
         expected_permission_generation,
-        deployment,
         embedding_schema_ready,
       )
       .await?
@@ -250,7 +238,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         timestamp,
-        deployment,
         embedding_schema_ready,
       )
       .await?
@@ -268,7 +255,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id.clone(),
         target_user_id.clone(),
         new_role,
-        deployment,
       )
       .await?;
       if let Some(hint) = transition.hint {
@@ -296,7 +282,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         doc_id,
         target_user_id,
         new_role,
-        deployment,
       )
       .await?
     }
@@ -315,7 +300,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         doc_id,
         target_user_ids,
         new_role,
-        deployment,
       )
       .await?
     }
@@ -332,7 +316,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         new_role,
-        deployment,
       )
       .await?
     }
@@ -347,14 +330,13 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         actor_user_id,
         workspace_id,
         target_user_id,
-        deployment,
       )
       .await?
     }
     DomainCommandInputV1::LeaveWorkspace {
       actor_user_id,
       workspace_id,
-    } => members::leave_workspace(&authorizer, &mut transaction, actor_user_id, workspace_id, deployment).await?,
+    } => members::leave_workspace(&authorizer, &mut transaction, actor_user_id, workspace_id).await?,
   };
   transaction
     .commit()
@@ -486,6 +468,21 @@ mod tests {
       return;
     };
     let doc_id = format!("domain-execute-rollback-{}", uuid::Uuid::new_v4().simple());
+    let rejected = execute(
+      pool.clone(),
+      Deployment::Cloud,
+      PermissionTelemetry::default(),
+      true,
+      DomainCommandInputV1::AppendRootUpdate {
+        actor_user_id: actor_user_id.clone(),
+        workspace_id: workspace_id.clone(),
+        update: "AA==".into(),
+        assert_permission: false,
+        expected_permission_generation: None,
+      },
+    )
+    .await;
+    assert_eq!(rejected.err().unwrap().to_string(), "permission_assertion_required");
     sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,$3,now())")
       .bind(&workspace_id)
       .bind(&doc_id)

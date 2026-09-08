@@ -2,8 +2,10 @@ use affine_core::access_control::DomainCommand;
 use serde_json::Value;
 use sqlx::{Postgres, Transaction, types::Json};
 
-use super::{authorize_domain, comments::create_comment_notifications, load_target, lock_target, value};
-use crate::runtime::{Deployment, RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
+use super::{
+  CommentNotification, authorize_domain, comments::create_comment_notifications, load_target, lock_target, value,
+};
+use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 pub(super) async fn create_reply(
   authorizer: &PermissionAuthorizer,
@@ -11,10 +13,7 @@ pub(super) async fn create_reply(
   actor_user_id: String,
   comment_id: String,
   content: Value,
-  doc_title: String,
-  doc_mode: String,
-  mentions: Vec<String>,
-  deployment: Deployment,
+  notification: CommentNotification,
 ) -> RuntimeResult<Value> {
   let comment = load_target(transaction, "comments", &comment_id, false).await?;
   let command = DomainCommand::CreateReply {
@@ -27,7 +26,6 @@ pub(super) async fn create_reply(
     &comment.workspace_id,
     Some(&comment.doc_id),
     &command,
-    deployment,
   )
   .await?;
   let comment = lock_target(transaction, "comments", &comment).await?;
@@ -59,9 +57,7 @@ pub(super) async fn create_reply(
     &actor_user_id,
     &comment,
     Some(reply_id),
-    &doc_title,
-    &doc_mode,
-    mentions,
+    notification,
   )
   .await?;
   value
@@ -77,18 +73,8 @@ pub(super) async fn update_reply(
   actor_user_id: String,
   id: String,
   content: Value,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
-  mutate_reply(
-    authorizer,
-    transaction,
-    actor_user_id,
-    id,
-    Some(content),
-    false,
-    deployment,
-  )
-  .await
+  mutate_reply(authorizer, transaction, actor_user_id, id, Some(content), false).await
 }
 
 pub(super) async fn delete_reply(
@@ -96,9 +82,8 @@ pub(super) async fn delete_reply(
   transaction: &mut Transaction<'_, Postgres>,
   actor_user_id: String,
   id: String,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
-  mutate_reply(authorizer, transaction, actor_user_id, id, None, true, deployment).await
+  mutate_reply(authorizer, transaction, actor_user_id, id, None, true).await
 }
 
 async fn mutate_reply(
@@ -108,7 +93,6 @@ async fn mutate_reply(
   id: String,
   content: Option<Value>,
   delete: bool,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
   let target = load_target(transaction, "replies", &id, false).await?;
   let command = DomainCommand::MutateReply {
@@ -123,7 +107,6 @@ async fn mutate_reply(
     &target.workspace_id,
     Some(&target.doc_id),
     &command,
-    deployment,
   )
   .await?;
   let target = lock_target(transaction, "replies", &target).await?;

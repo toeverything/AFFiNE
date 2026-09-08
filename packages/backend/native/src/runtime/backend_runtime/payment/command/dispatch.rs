@@ -29,27 +29,24 @@ enum PaymentCommand {
   },
   MutateSubscription {
     actor_user_id: String,
-    target_type: String,
-    target_id: String,
-    plan: String,
+    #[serde(flatten)]
+    target: SubscriptionTarget,
     mutation: String,
     intent_id: String,
   },
   UpdateRecurring {
     actor_user_id: Option<String>,
     validate_key: Option<String>,
-    target_type: String,
-    target_id: String,
-    plan: String,
+    #[serde(flatten)]
+    target: SubscriptionTarget,
     recurring: String,
     intent_id: String,
   },
   UpdateQuantity {
     actor_user_id: Option<String>,
     validate_key: Option<String>,
-    target_type: String,
-    target_id: String,
-    plan: String,
+    #[serde(flatten)]
+    target: SubscriptionTarget,
     quantity: u32,
     intent_id: String,
   },
@@ -146,30 +143,18 @@ impl PaymentRuntime {
       }
       PaymentCommand::MutateSubscription {
         actor_user_id,
-        target_type,
-        target_id,
-        plan,
+        target,
         mutation,
         intent_id,
       } => {
         self
-          .mutate_subscription(
-            &mut changes,
-            &actor_user_id,
-            &target_type,
-            &target_id,
-            &plan,
-            &mutation,
-            &intent_id,
-          )
+          .mutate_subscription(&mut changes, &actor_user_id, &target, &mutation, &intent_id)
           .await
       }
       PaymentCommand::UpdateRecurring {
         actor_user_id,
         validate_key,
-        target_type,
-        target_id,
-        plan,
+        target,
         recurring,
         intent_id,
       } => {
@@ -178,9 +163,7 @@ impl PaymentRuntime {
             &mut changes,
             actor_user_id.as_deref(),
             validate_key.as_deref(),
-            &target_type,
-            &target_id,
-            &plan,
+            &target,
             &recurring,
             &intent_id,
           )
@@ -189,9 +172,7 @@ impl PaymentRuntime {
       PaymentCommand::UpdateQuantity {
         actor_user_id,
         validate_key,
-        target_type,
-        target_id,
-        plan,
+        target,
         quantity,
         intent_id,
       } => {
@@ -200,9 +181,7 @@ impl PaymentRuntime {
             &mut changes,
             actor_user_id.as_deref(),
             validate_key.as_deref(),
-            &target_type,
-            &target_id,
-            &plan,
+            &target,
             quantity,
             &intent_id,
           )

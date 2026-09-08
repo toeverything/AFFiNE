@@ -9,7 +9,7 @@ use super::{
   DocLifecycle, authorize_domain, invalidate_doc_blob_projection, lock_workspace_doc_update,
   lock_workspace_storage_shared, next_workspace_doc_update_timestamp,
 };
-use crate::runtime::{Deployment, RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
+use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 pub(super) async fn apply(
   authorizer: &PermissionAuthorizer,
@@ -18,7 +18,6 @@ pub(super) async fn apply(
   workspace_id: String,
   doc_id: String,
   lifecycle: DocLifecycle,
-  deployment: Deployment,
   embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
   if workspace_id == doc_id {
@@ -45,7 +44,6 @@ pub(super) async fn apply(
     &workspace_id,
     Some(&doc_id),
     &command,
-    deployment,
   )
   .await?;
 
@@ -97,16 +95,11 @@ pub(super) async fn append_root_update(
   actor_user_id: String,
   workspace_id: String,
   encoded_update: String,
-  assert_permission: bool,
   expected_permission_generation: Option<i64>,
-  deployment: Deployment,
   embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
   lock_workspace_storage_shared(transaction, &workspace_id).await?;
   lock_workspace_doc_update(transaction, &workspace_id, &workspace_id).await?;
-  if !assert_permission {
-    return Err(RuntimeError::invalid_input("permission_assertion_required"));
-  }
   let command = DomainCommand::AppendRootUpdate {
     doc_id: workspace_id.clone(),
   };
@@ -117,7 +110,6 @@ pub(super) async fn append_root_update(
     &workspace_id,
     Some(&workspace_id),
     &command,
-    deployment,
   )
   .await?;
   if let Some(expected) = expected_permission_generation {
@@ -359,7 +351,7 @@ mod tests {
   use std::collections::BTreeSet;
 
   use super::*;
-  use crate::runtime::backend_runtime::permission::PermissionAuthorizer;
+  use crate::runtime::{Deployment, backend_runtime::permission::PermissionAuthorizer};
 
   fn merge_root(snapshot: &[u8], updates: &[&[u8]]) -> Vec<u8> {
     let mut root = Doc::default();
@@ -420,42 +412,6 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn root_update_cannot_disable_permission_authorization() {
-    let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
-    let Some((pool, workspace_id, actor_user_id)) = super::super::test_support::owner_workspace().await else {
-      return;
-    };
-    let before: i64 = sqlx::query_scalar("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$1")
-      .bind(&workspace_id)
-      .fetch_one(&pool)
-      .await
-      .unwrap();
-    let authorizer = PermissionAuthorizer::new(pool.clone(), Deployment::Cloud);
-    let mut transaction = pool.begin().await.unwrap();
-    let error = append_root_update(
-      &authorizer,
-      &mut transaction,
-      actor_user_id,
-      workspace_id.clone(),
-      "AA==".to_string(),
-      false,
-      None,
-      Deployment::Cloud,
-      true,
-    )
-    .await
-    .unwrap_err();
-    assert_eq!(error.to_string(), "permission_assertion_required");
-    transaction.rollback().await.unwrap();
-    let after: i64 = sqlx::query_scalar("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$1")
-      .bind(&workspace_id)
-      .fetch_one(&pool)
-      .await
-      .unwrap();
-    assert_eq!(after, before);
-  }
-
-  #[tokio::test]
   async fn readonly_denies_restore_but_allows_trash_and_delete() {
     let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
     let Some((pool, workspace_id, actor_user_id)) = super::super::test_support::owner_workspace().await else {
@@ -510,7 +466,6 @@ mod tests {
         racing_workspace_id,
         racing_doc_id,
         DocLifecycle::Trash,
-        Deployment::Cloud,
         true,
       )
       .await
@@ -534,7 +489,6 @@ mod tests {
       workspace_id.clone(),
       doc_id.clone(),
       DocLifecycle::Restore,
-      Deployment::Cloud,
       true,
     )
     .await;
@@ -549,7 +503,6 @@ mod tests {
       workspace_id.clone(),
       doc_id,
       DocLifecycle::Delete,
-      Deployment::Cloud,
       true,
     )
     .await

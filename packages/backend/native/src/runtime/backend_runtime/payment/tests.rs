@@ -2411,7 +2411,7 @@ async fn failed_atomic_batch_rolls_back_and_incomplete_snapshot_writes_nothing()
   );
   drop(connection);
   sqlx::query("DELETE FROM entitlements WHERE source='cloud_subscription' AND subject_id=ANY($1)")
-    .bind(&[source_id.as_str(), canonical_subject.as_str()])
+    .bind([source_id.as_str(), canonical_subject.as_str()])
     .execute(&pool)
     .await
     .unwrap();

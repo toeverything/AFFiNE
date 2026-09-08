@@ -45,6 +45,14 @@ enum OperationExecution {
   },
 }
 
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SubscriptionTarget {
+  target_type: String,
+  target_id: String,
+  plan: String,
+}
+
 pub(super) struct PaymentCommandOutcome {
   pub value: Value,
   pub changes: super::PaymentApplyResult,

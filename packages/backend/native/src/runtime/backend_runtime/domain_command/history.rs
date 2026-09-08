@@ -5,7 +5,7 @@ use sqlx::{FromRow, Postgres, Row, Transaction};
 
 use super::{authorize_domain, invalidate_doc_blob_projection, lock_workspace_doc_update};
 use crate::runtime::{
-  Deployment, RuntimeError, RuntimeResult,
+  RuntimeError, RuntimeResult,
   backend_runtime::permission::PermissionAuthorizer,
   storage_runtime::{CurrentDoc, CurrentDocUpdate, merge_current_doc},
 };
@@ -23,7 +23,6 @@ pub(super) async fn recover(
   workspace_id: String,
   doc_id: String,
   timestamp: DateTime<Utc>,
-  deployment: Deployment,
   embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
   let command = DomainCommand::RecoverDoc { doc_id: doc_id.clone() };
@@ -34,7 +33,6 @@ pub(super) async fn recover(
     &workspace_id,
     Some(&doc_id),
     &command,
-    deployment,
   )
   .await?;
 
@@ -207,7 +205,6 @@ mod tests {
       workspace_id.clone(),
       doc_id.clone(),
       target_timestamp,
-      Deployment::Cloud,
       true,
     )
     .await

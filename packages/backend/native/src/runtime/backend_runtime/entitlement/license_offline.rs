@@ -70,7 +70,11 @@ impl BackendRuntime {
           Err(_) => continue,
         };
         if identity.license_id() != license.key {
-          return Err(RuntimeError::invalid_state("offline_license_identity_mismatch"));
+          eprintln!(
+            "Skipping offline license for workspace {}: identity mismatch",
+            license.workspace_id
+          );
+          continue;
         }
         let mut tx = pool
           .begin()
@@ -104,7 +108,11 @@ impl BackendRuntime {
           if existing.get::<String, _>("target_type") != "workspace"
             || existing.get::<String, _>("target_id") != license.workspace_id
           {
-            return Err(RuntimeError::invalid_state("offline_license_subject_conflict"));
+            eprintln!(
+              "Skipping offline license for workspace {}: subject conflict",
+              license.workspace_id
+            );
+            continue;
           }
           let status: String = existing.get("status");
           if status == "revoked"
@@ -124,7 +132,11 @@ impl BackendRuntime {
         .await
         .map_err(|error| RuntimeError::database("check offline entitlement conflict", error))?;
         if conflict {
-          return Err(RuntimeError::invalid_state("offline_license_workspace_conflict"));
+          eprintln!(
+            "Skipping offline license for workspace {}: workspace conflict",
+            license.workspace_id
+          );
+          continue;
         }
         let now = load_decision_time(&mut tx, "offline license admission clock").await?;
         let claims = match verify(&normalized, &license.workspace_id, now) {

@@ -167,7 +167,7 @@ impl BackendRuntime {
     *guard = Some(pool);
     drop(guard);
     if !self.script_mode && self.config()?.deployment == crate::runtime::Deployment::SelfHosted {
-      let result = tokio::time::timeout(std::time::Duration::from_secs(30), self.check_licenses_v1()).await;
+      let result = tokio::time::timeout(std::time::Duration::from_secs(30), self.check_licenses(true)).await;
       let (outcome, changes) = match result {
         Ok(Ok(result)) => (
           if result.transient_failure { "partial" } else { "success" },

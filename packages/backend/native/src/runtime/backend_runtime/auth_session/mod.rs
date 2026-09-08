@@ -17,7 +17,7 @@ mod types;
 
 use serde_json::Value;
 use session::{decision_time, lock_refresh_tokens, lock_user};
-use types::{AuthSessionCommand, PrincipalInput};
+use types::{AuthSessionCommand, PrincipalInput, TokenPairSession};
 
 use super::{BackendRuntime, RuntimeError, RuntimeResult, to_napi_error};
 

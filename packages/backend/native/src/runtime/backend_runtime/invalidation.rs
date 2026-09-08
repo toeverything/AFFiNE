@@ -28,15 +28,13 @@ pub(super) trait InvalidationTarget: Send + Sync {
   fn invalidate<'a>(&'a self, hint: &'a InvalidationHintV1) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>>;
 }
 
+type InvalidationCallback = ThreadsafeFunction<String, (), String, Status, true, true, 1024>;
+
 #[derive(Clone, Default)]
-pub(super) struct InvalidationEvents(
-  Arc<RwLock<Option<ThreadsafeFunction<String, (), String, Status, true, true, 1024>>>>,
-);
+pub(super) struct InvalidationEvents(Arc<RwLock<Option<InvalidationCallback>>>);
 
 impl InvalidationEvents {
-  pub(super) fn from_threadsafe_function(
-    callback: Option<ThreadsafeFunction<String, (), String, Status, true, true, 1024>>,
-  ) -> Self {
+  pub(super) fn from_threadsafe_function(callback: Option<InvalidationCallback>) -> Self {
     Self(Arc::new(RwLock::new(callback)))
   }
 

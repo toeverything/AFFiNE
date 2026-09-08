@@ -122,7 +122,6 @@ async fn append_authorized_updates(
         &input.workspace_id,
         Some(permission_doc_id),
         &command,
-        deployment,
       )
       .await
       .map_err(super::to_napi_error)?;
@@ -147,7 +146,6 @@ async fn append_authorized_updates(
         &input.workspace_id,
         None,
         &DomainCommand::CreateDoc,
-        deployment,
       )
       .await
       .map_err(super::to_napi_error)?;

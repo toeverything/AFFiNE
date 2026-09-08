@@ -188,8 +188,7 @@ impl PaymentRuntime {
       "create_checkout",
       intent_id,
       resources,
-      Some(target_type),
-      Some(&target_id),
+      Some((target_type, &target_id)),
       "v1/checkout/sessions",
       fields,
     );

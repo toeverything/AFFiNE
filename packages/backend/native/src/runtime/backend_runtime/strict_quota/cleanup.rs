@@ -66,16 +66,16 @@ impl BackendRuntime {
       };
       let reservation_id: Option<Uuid> = row.get("reservation_id");
       let mut locators = vec![final_locator];
-      if row.get::<String, _>("status") == "pending" {
-        if let Some(id) = reservation_id {
-          locators.push(temporary_storage_locator(
-            &kind,
-            &workspace_id,
-            doc_id.as_deref(),
-            &key,
-            id,
-          )?);
-        }
+      if row.get::<String, _>("status") == "pending"
+        && let Some(id) = reservation_id
+      {
+        locators.push(temporary_storage_locator(
+          &kind,
+          &workspace_id,
+          doc_id.as_deref(),
+          &key,
+          id,
+        )?);
       }
       let mut objects_deleted = true;
       for locator in locators {

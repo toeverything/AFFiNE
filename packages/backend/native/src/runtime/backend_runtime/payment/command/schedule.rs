@@ -9,18 +9,21 @@ use crate::runtime::backend_runtime::payment::stripe_client::{
 };
 
 impl PaymentRuntime {
-  #[allow(clippy::too_many_arguments)]
   pub(super) async fn update_recurring(
     &self,
     changes: &mut super::super::PaymentApplyResult,
     actor_user_id: Option<&str>,
     validate_key: Option<&str>,
-    target_type: &str,
-    target_id: &str,
-    plan: &str,
+    target: &SubscriptionTarget,
     recurring: &str,
     intent_id: &str,
   ) -> RuntimeResult<Value> {
+    let SubscriptionTarget {
+      target_type,
+      target_id,
+      plan,
+    } = target;
+    let (target_type, target_id) = (target_type.as_str(), target_id.as_str());
     validate_target(target_type, target_id)?;
     validate_intent(intent_id)?;
     match target_type {
@@ -153,12 +156,16 @@ impl PaymentRuntime {
     changes: &mut super::super::PaymentApplyResult,
     actor_user_id: Option<&str>,
     validate_key: Option<&str>,
-    target_type: &str,
-    target_id: &str,
-    plan: &str,
+    target: &SubscriptionTarget,
     quantity: u32,
     intent_id: &str,
   ) -> RuntimeResult<Value> {
+    let SubscriptionTarget {
+      target_type,
+      target_id,
+      plan,
+    } = target;
+    let (target_type, target_id) = (target_type.as_str(), target_id.as_str());
     validate_target(target_type, target_id)?;
     validate_intent(intent_id)?;
     match target_type {
