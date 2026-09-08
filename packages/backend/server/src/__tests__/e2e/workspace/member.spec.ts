@@ -5,8 +5,10 @@ import {
   approveWorkspaceTeamMemberMutation,
   createInviteLinkMutation,
   getInviteInfoQuery,
+  grantWorkspaceTeamMemberMutation,
   inviteByEmailsMutation,
   leaveWorkspaceMutation,
+  Permission,
   revokeMemberPermissionMutation,
   WorkspaceInviteLinkExpireTime,
   WorkspaceMemberStatus,
@@ -18,18 +20,17 @@ import {
 } from '@prisma/client';
 
 import { EntitlementService } from '../../../core/entitlement';
-import { WorkspacePolicyService } from '../../../core/permission';
-import { Models, WorkspaceRole as ModelWorkspaceRole } from '../../../models';
 import {
-  SubscriptionPlan,
-  SubscriptionRecurring,
-  SubscriptionStatus,
-} from '../../../plugins/payment/types';
+  type InvitationNotification,
+  type InvitationReviewDeclinedNotification,
+  Models,
+  NotificationType,
+  WorkspaceRole as ModelWorkspaceRole,
+} from '../../../models';
+import { SubscriptionPlan } from '../../../plugins/payment/types';
 import { Mockers } from '../../mocks';
 import { createRealtimeClient, realtimeRequest } from '../realtime';
 import { app, e2e } from '../test';
-
-const TWO_BILLION_BYTES = 2_000_000_000;
 
 async function createWorkspace() {
   const owner = await app.create(Mockers.User);
@@ -44,20 +45,16 @@ async function createWorkspace() {
 }
 
 async function grantTeamPlan(workspaceId: string, quantity: number) {
-  await app.get(EntitlementService).upsertFromCloudSubscription({
+  await app.get(EntitlementService).upsertAdminGrant({
+    targetType: 'workspace',
     targetId: workspaceId,
     plan: SubscriptionPlan.Team,
-    recurring: SubscriptionRecurring.Yearly,
-    status: SubscriptionStatus.Active,
     quantity,
   });
 }
 
 async function revokeTeamPlan(workspaceId: string) {
-  await app.get(EntitlementService).revokeCloudSubscription({
-    targetId: workspaceId,
-    plan: SubscriptionPlan.Team,
-  });
+  await app.get(EntitlementService).revokeAdminGrant('workspace', workspaceId);
 }
 
 e2e('should invite a user', async t => {
@@ -74,21 +71,22 @@ e2e('should invite a user', async t => {
   });
 
   t.truthy(result, 'failed to invite user');
-  // add invitation notification job
-  const invitationNotification = await app.queue.waitFor(
-    'notification.sendInvitation'
-  );
-  t.is(invitationNotification.payload.inviterId, owner.id);
-  t.is(
-    invitationNotification.payload.inviteId,
-    result.inviteMembers[0].inviteId!
-  );
+  const [invitationNotification] =
+    await app.models.notification.findManyByUserId(u2.id, {
+      includeRead: true,
+      first: 1,
+      offset: 0,
+    });
+  const invitation = invitationNotification as InvitationNotification;
+  t.is(invitation.type, NotificationType.Invitation);
+  t.is(invitation.body.createdByUserId, owner.id);
+  t.is(invitation.body.inviteId, result.inviteMembers[0].inviteId!);
 
   await t.throwsAsync(
     app.gql({
       query: getInviteInfoQuery,
       variables: {
-        inviteId: invitationNotification.payload.inviteId,
+        inviteId: invitation.body.inviteId,
       },
     }),
     { message: 'This invitation belongs to another account.' }
@@ -98,7 +96,7 @@ e2e('should invite a user', async t => {
       query: acceptInviteByInviteIdMutation,
       variables: {
         workspaceId: workspace.id,
-        inviteId: invitationNotification.payload.inviteId,
+        inviteId: invitation.body.inviteId,
       },
     }),
     { message: 'This invitation belongs to another account.' }
@@ -109,7 +107,7 @@ e2e('should invite a user', async t => {
     app.gql({
       query: getInviteInfoQuery,
       variables: {
-        inviteId: invitationNotification.payload.inviteId,
+        inviteId: invitation.body.inviteId,
       },
     }),
     { message: 'You must sign in first to access this resource.' }
@@ -119,7 +117,7 @@ e2e('should invite a user', async t => {
       query: acceptInviteByInviteIdMutation,
       variables: {
         workspaceId: workspace.id,
-        inviteId: invitationNotification.payload.inviteId,
+        inviteId: invitation.body.inviteId,
       },
     }),
     { message: 'You must sign in first to access this resource.' }
@@ -130,7 +128,7 @@ e2e('should invite a user', async t => {
   const { getInviteInfo } = await app.gql({
     query: getInviteInfoQuery,
     variables: {
-      inviteId: invitationNotification.payload.inviteId,
+      inviteId: invitation.body.inviteId,
     },
   });
   t.is(getInviteInfo.status, WorkspaceMemberStatus.Pending);
@@ -140,7 +138,7 @@ e2e('should invite a user', async t => {
     query: acceptInviteByInviteIdMutation,
     variables: {
       workspaceId: workspace.id,
-      inviteId: invitationNotification.payload.inviteId,
+      inviteId: invitation.body.inviteId,
     },
   });
 
@@ -148,68 +146,28 @@ e2e('should invite a user', async t => {
   const { getInviteInfo: getInviteInfo2 } = await app.gql({
     query: getInviteInfoQuery,
     variables: {
-      inviteId: invitationNotification.payload.inviteId,
+      inviteId: invitation.body.inviteId,
     },
   });
   t.is(getInviteInfo2.status, WorkspaceMemberStatus.Accepted);
 });
 
-e2e('should re-check seat when accepting an email invitation', async t => {
-  const { owner, workspace } = await createWorkspace();
-  const member = await app.create(Mockers.User);
-  await grantTeamPlan(workspace.id, 12);
-
-  await Promise.all(
-    Array.from({ length: 10 }).map(async () => {
-      await app.create(Mockers.WorkspaceUser, {
-        workspaceId: workspace.id,
-        userId: (await app.create(Mockers.User)).id,
-      });
-    })
-  );
-
-  await app.login(owner);
-  const invite = await app.gql({
-    query: inviteByEmailsMutation,
-    variables: {
-      emails: [member.email],
-      workspaceId: workspace.id,
-    },
-  });
-
-  await app.eventBus.emitAsync('workspace.members.allocateSeats', {
-    workspaceId: workspace.id,
-    quantity: 12,
-  });
-
-  await revokeTeamPlan(workspace.id);
-
-  await app.login(member);
-  await t.throwsAsync(
-    app.gql({
-      query: acceptInviteByInviteIdMutation,
-      variables: {
-        workspaceId: workspace.id,
-        inviteId: invite.inviteMembers[0].inviteId!,
-      },
-    })
-  );
-
-  const { getInviteInfo } = await app.gql({
-    query: getInviteInfoQuery,
-    variables: {
-      inviteId: invite.inviteMembers[0].inviteId!,
-    },
-  });
-
-  t.is(getInviteInfo.status, WorkspaceMemberStatus.Pending);
-});
-
-e2e.serial(
-  'should block accepting pending invitations in readonly mode and recover after blob cleanup',
+e2e(
+  'should remove charged invitations when the team entitlement is revoked',
   async t => {
     const { owner, workspace } = await createWorkspace();
     const member = await app.create(Mockers.User);
+    await grantTeamPlan(workspace.id, 12);
+
+    await Promise.all(
+      Array.from({ length: 10 }).map(async () => {
+        await app.create(Mockers.WorkspaceUser, {
+          workspaceId: workspace.id,
+          userId: (await app.create(Mockers.User)).id,
+        });
+      })
+    );
+
     await app.login(owner);
     const invite = await app.gql({
       query: inviteByEmailsMutation,
@@ -219,27 +177,7 @@ e2e.serial(
       },
     });
 
-    const overflowBlobKeys = Array.from(
-      { length: 6 },
-      (_, index) => `overflow-blob-${index}`
-    );
-    await Promise.all(
-      overflowBlobKeys.map(key =>
-        app.models.blob.upsert({
-          workspaceId: workspace.id,
-          key,
-          mime: 'application/octet-stream',
-          size: TWO_BILLION_BYTES,
-          status: 'completed',
-          uploadId: null,
-        })
-      )
-    );
-
-    t.true(
-      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
-        .isReadonly
-    );
+    await revokeTeamPlan(workspace.id);
 
     await app.login(member);
     await t.throwsAsync(
@@ -252,40 +190,15 @@ e2e.serial(
       })
     );
 
-    const { getInviteInfo: pendingInvite } = await app.gql({
-      query: getInviteInfoQuery,
-      variables: {
-        inviteId: invite.inviteMembers[0].inviteId!,
-      },
-    });
-    t.is(pendingInvite.status, WorkspaceMemberStatus.Pending);
-
-    await app.login(owner);
-    for (const key of overflowBlobKeys) {
-      await app.models.blob.delete(workspace.id, key, true);
-    }
-
-    t.false(
-      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
-        .isReadonly
+    await t.throwsAsync(
+      app.gql({
+        query: getInviteInfoQuery,
+        variables: {
+          inviteId: invite.inviteMembers[0].inviteId!,
+        },
+      }),
+      { message: 'Invitation not found' }
     );
-
-    await app.login(member);
-    await app.gql({
-      query: acceptInviteByInviteIdMutation,
-      variables: {
-        workspaceId: workspace.id,
-        inviteId: invite.inviteMembers[0].inviteId!,
-      },
-    });
-
-    const { getInviteInfo: acceptedInvite } = await app.gql({
-      query: getInviteInfoQuery,
-      variables: {
-        inviteId: invite.inviteMembers[0].inviteId!,
-      },
-    });
-    t.is(acceptedInvite.status, WorkspaceMemberStatus.Accepted);
   }
 );
 
@@ -335,6 +248,82 @@ e2e('should revoke a user', async t => {
   t.true(revokeMember, 'failed to revoke user');
 });
 
+e2e('should map every workspace role transition without fallback', async t => {
+  const roles = [
+    {
+      graphql: Permission.Owner,
+      model: ModelWorkspaceRole.Owner,
+    },
+    {
+      graphql: Permission.Admin,
+      model: ModelWorkspaceRole.Admin,
+    },
+    {
+      graphql: Permission.Collaborator,
+      model: ModelWorkspaceRole.Collaborator,
+    },
+    {
+      graphql: Permission.External,
+      model: ModelWorkspaceRole.External,
+    },
+  ];
+
+  for (const current of roles) {
+    for (const next of roles) {
+      const actor = await app.create(Mockers.User);
+      const target =
+        current.model === ModelWorkspaceRole.Owner
+          ? actor
+          : await app.create(Mockers.User);
+      const workspace = await app.create(Mockers.Workspace, {
+        owner: { id: actor.id },
+      });
+      await grantTeamPlan(workspace.id, 2);
+      if (
+        current.model !== ModelWorkspaceRole.External &&
+        current.model !== ModelWorkspaceRole.Owner
+      ) {
+        await app.create(Mockers.WorkspaceUser, {
+          workspaceId: workspace.id,
+          userId: target.id,
+          type: current.model,
+        });
+      }
+      await app.login(actor);
+
+      const mutation = app.gql({
+        query: grantWorkspaceTeamMemberMutation,
+        variables: {
+          workspaceId: workspace.id,
+          userId: target.id,
+          permission: next.graphql,
+        },
+      });
+      const allowed =
+        current.model === ModelWorkspaceRole.Admin ||
+        current.model === ModelWorkspaceRole.Collaborator ||
+        (current.model === ModelWorkspaceRole.Owner &&
+          next.model === ModelWorkspaceRole.Owner);
+
+      if (!allowed) {
+        await t.throwsAsync(mutation);
+        continue;
+      }
+
+      const { grantMember } = await mutation;
+      t.true(grantMember);
+      const member = await app
+        .get(Models)
+        .workspaceUser.get(workspace.id, target.id);
+      if (next.model === ModelWorkspaceRole.External) {
+        t.falsy(member);
+      } else {
+        t.is(member?.type, next.model);
+      }
+    }
+  }
+});
+
 e2e('should approve a user on under review', async t => {
   const { owner, workspace } = await createWorkspace();
   const user = await app.create(Mockers.User);
@@ -342,6 +331,7 @@ e2e('should approve a user on under review', async t => {
     workspaceId: workspace.id,
     userId: user.id,
     status: WorkspaceMemberStatus.UnderReview,
+    kind: 'link',
   });
 
   await app.login(owner);
@@ -379,19 +369,18 @@ e2e('should revoke a user on under review', async t => {
     },
   });
   t.true(revokeMember, 'failed to revoke user');
-  const requestDeclinedNotification = app.queue.last(
-    'notification.sendInvitationReviewDeclined'
-  );
-  t.truthy(requestDeclinedNotification);
-  t.deepEqual(
-    requestDeclinedNotification.payload,
-    {
-      userId: user.id,
-      workspaceId: workspace.id,
-      reviewerId: owner.id,
-    },
-    'should send review declined notification'
-  );
+  const [requestDeclinedNotification] =
+    await app.models.notification.findManyByUserId(user.id, {
+      includeRead: true,
+      first: 1,
+      offset: 0,
+    });
+  const declined =
+    requestDeclinedNotification as InvitationReviewDeclinedNotification;
+  t.is(declined.type, NotificationType.InvitationReviewDeclined);
+  t.is(declined.userId, user.id);
+  t.is(declined.body.workspaceId, workspace.id);
+  t.is(declined.body.createdByUserId, owner.id);
 });
 
 e2e('should create user if not exist', async t => {
@@ -606,11 +595,14 @@ e2e(
       },
     });
     t.truthy(result, 'failed to accept invite');
-    const notification = app.queue.last(
-      'notification.sendInvitationReviewRequest'
+    const [notification] = await app.models.notification.findManyByUserId(
+      owner.id,
+      { includeRead: true, first: 1, offset: 0 }
     );
-    t.is(notification.payload.reviewerId, owner.id);
-    t.truthy(notification.payload.inviteId);
+    const review = notification as InvitationNotification;
+    t.is(review.type, NotificationType.InvitationReviewRequest);
+    t.is(review.userId, owner.id);
+    t.truthy(review.body.inviteId);
   }
 );
 
@@ -642,11 +634,14 @@ e2e(
       },
     });
     t.truthy(result, 'failed to accept invite');
-    const notification = app.queue.last(
-      'notification.sendInvitationReviewRequest'
+    const [notification] = await app.models.notification.findManyByUserId(
+      owner.id,
+      { includeRead: true, first: 1, offset: 0 }
     );
-    t.is(notification.payload.reviewerId, owner.id);
-    t.truthy(notification.payload.inviteId);
+    const review = notification as InvitationNotification;
+    t.is(review.type, NotificationType.InvitationReviewRequest);
+    t.is(review.userId, owner.id);
+    t.truthy(review.body.inviteId);
   }
 );
 

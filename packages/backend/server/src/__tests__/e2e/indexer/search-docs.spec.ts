@@ -1,12 +1,16 @@
 import { indexerSearchDocsQuery } from '@affine/graphql';
 
 import { Config } from '../../../base';
-import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
-import { app, e2e } from '../test';
+import {
+  addDocumentToRoot,
+  app,
+  e2e,
+  reconcileSearchProjection,
+} from '../test';
 
-const indexerE2e = app.get(Config).indexer.enabled ? e2e : e2e.skip;
+const indexerE2e = app.get(Config).indexer.enabled ? e2e.serial : e2e.skip;
 
 indexerE2e('should search docs by keyword', async t => {
   const owner = await app.signup();
@@ -16,13 +20,14 @@ indexerE2e('should search docs by keyword', async t => {
   });
   for (const docId of ['doc-0', 'doc-1', 'doc-2']) {
     await app.create(Mockers.DocMeta, { workspaceId: workspace.id, docId });
+    await addDocumentToRoot(workspace.id, docId);
     await app.create(Mockers.DocSnapshot, {
       workspaceId: workspace.id,
       docId,
       user: owner,
       blob: createDocWithMarkdown(docId, `${docId} hello`, docId),
     });
-    await app.get(BackendRuntimeProvider).reconcileSearchProjection(1000);
+    await reconcileSearchProjection();
   }
 
   const search = app.gql({

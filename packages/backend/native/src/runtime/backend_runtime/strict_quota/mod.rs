@@ -1,13 +1,16 @@
+use super::StorageOperation;
 mod cleanup;
 mod management;
 mod mutation;
 mod promotion;
+mod reservation_finalize;
 mod reservation_mutation;
 mod seat;
 mod storage;
 
 use affine_core::{access_control::QuotaSubject, invalidation::SubjectId};
 pub(super) use mutation::load_command_quota_in;
+pub(super) use reservation_finalize::finalize_reservation;
 use sqlx::{Postgres, Transaction};
 
 use super::{
@@ -33,11 +36,12 @@ pub(super) async fn invalidate_seat_usage(runtime: &BackendRuntime, workspace_id
   .await;
 }
 
-pub(super) async fn invalidate_storage_usage(runtime: &BackendRuntime, workspace_id: &str, owner_id: &str) {
-  for subject in [
-    SubjectId::Workspace(workspace_id.to_string()),
-    SubjectId::User(owner_id.to_string()),
-  ] {
+pub(super) async fn invalidate_storage_usage(runtime: &BackendRuntime, workspace_id: &str, owner_id: Option<&str>) {
+  let mut subjects = vec![SubjectId::Workspace(workspace_id.to_string())];
+  if let Some(owner_id) = owner_id {
+    subjects.push(SubjectId::User(owner_id.to_string()));
+  }
+  for subject in subjects {
     publish_hint(runtime, InvalidationHintV1::QuotaStorageUsage { subject }).await;
   }
 }

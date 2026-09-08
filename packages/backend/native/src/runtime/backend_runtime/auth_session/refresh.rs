@@ -6,7 +6,7 @@ use sqlx::{PgPool, Row};
 use subtle::ConstantTimeEq;
 
 use super::{
-  RuntimeError, RuntimeResult,
+  RuntimeError, RuntimeResult, TokenPairSession,
   session::{decision_time, lock_refresh_tokens, lock_user, lock_user_session, token_pair},
   successor::SuccessorKey,
   types::RefreshResult,
@@ -164,11 +164,12 @@ pub(super) async fn refresh(
         &mut tx,
         config,
         &row.user_id,
-        &row.auth_session_id,
         candidate,
         refresh_expires_at,
-        row.absolute_expires_at,
-        None,
+        TokenPairSession {
+          id: row.auth_session_id.clone(),
+          absolute_expires_at: row.absolute_expires_at,
+        },
         now,
       )
       .await?;
@@ -216,15 +217,16 @@ pub(super) async fn refresh(
         &mut tx,
         config,
         &row.user_id,
-        &row.auth_session_id,
         crate::auth_session::AuthSessionRefreshToken {
           token,
           id: replacement.id,
           secret_hash: replacement.secret_hash,
         },
         replacement.expires_at,
-        row.absolute_expires_at,
-        None,
+        TokenPairSession {
+          id: row.auth_session_id.clone(),
+          absolute_expires_at: row.absolute_expires_at,
+        },
         now,
       )
       .await?;

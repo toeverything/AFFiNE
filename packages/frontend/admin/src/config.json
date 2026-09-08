@@ -12,46 +12,6 @@
       "env": "AFFINE_PRIVATE_KEY"
     }
   },
-  "job": {
-    "queue": {
-      "type": "Object",
-      "desc": "The config for job queues",
-      "link": "https://api.docs.bullmq.io/interfaces/v5.QueueOptions.html"
-    },
-    "worker": {
-      "type": "Object",
-      "desc": "The config for job workers",
-      "link": "https://api.docs.bullmq.io/interfaces/v5.WorkerOptions.html"
-    },
-    "queues.copilot": {
-      "type": "Object",
-      "desc": "The config for copilot job queue"
-    },
-    "queues.calendar": {
-      "type": "Object",
-      "desc": "The config for calendar job queue"
-    },
-    "queues.doc": {
-      "type": "Object",
-      "desc": "The config for doc job queue"
-    },
-    "queues.notification": {
-      "type": "Object",
-      "desc": "The config for notification job queue"
-    },
-    "queues.nightly": {
-      "type": "Object",
-      "desc": "The config for nightly job queue"
-    },
-    "queues.backendRuntime": {
-      "type": "Object",
-      "desc": "The config for backend runtime job queue"
-    },
-    "queues.inviteAbuse": {
-      "type": "Object",
-      "desc": "The config for invite abuse disposition job queue"
-    }
-  },
   "throttle": {
     "enabled": {
       "type": "Boolean",
@@ -94,14 +54,6 @@
     "signInRateLimit": {
       "type": "Object",
       "desc": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds."
-    },
-    "inviteQuotaShadowMode": {
-      "type": "Boolean",
-      "desc": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions."
-    },
-    "inviteQuotaFailOpenOnRuntimeError": {
-      "type": "Boolean",
-      "desc": "Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production."
     },
     "passwordRequirements": {
       "type": "Object",

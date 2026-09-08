@@ -8,7 +8,6 @@ import {
   CopilotTranscriptionJobExists,
   CopilotTranscriptionJobNotFound,
   type FileUpload,
-  OnJob,
   sniffMime,
 } from '../../../base';
 import {
@@ -16,6 +15,7 @@ import {
   realtimeTranscriptTaskRoom,
 } from '../../../core/realtime';
 import { Models } from '../../../models';
+import { CopilotAccessService, type CopilotScopeMode } from '../access';
 import { PromptService } from '../prompt';
 import type {
   CopilotStructuredOptions,
@@ -72,8 +72,30 @@ export class CopilotTranscriptionService {
     private readonly actionBridge: ActionRuntimeBridge,
     private readonly runtime: CapabilityRuntime,
     private readonly realtime: RealtimePublisher,
-    private readonly retry: CopilotTranscriptionRetryService
+    private readonly retry: CopilotTranscriptionRetryService,
+    private readonly access: CopilotAccessService
   ) {}
+
+  private async assertTaskScope(
+    task: { id: string; userId: string; workspaceId: string },
+    scopeMode: CopilotScopeMode
+  ) {
+    const mode = await this.access.transcriptResource(
+      task.userId,
+      task.workspaceId,
+      { taskId: task.id }
+    );
+    if (mode !== scopeMode) throw new CopilotTranscriptionJobNotFound();
+    if (scopeMode !== 'personal') return;
+    const scoped = await this.models.copilotTranscriptTask.getWithUser(
+      task.userId,
+      task.workspaceId,
+      task.id,
+      undefined,
+      scopeMode === 'personal'
+    );
+    if (!scoped) throw new CopilotTranscriptionJobNotFound();
+  }
 
   private buildTaskPublicMeta(payload: TranscriptionPayloadV2) {
     return {
@@ -417,13 +439,15 @@ export class CopilotTranscriptionService {
     workspaceId: string,
     blobId: string,
     blobs: FileUpload[],
-    input?: TranscriptionSubmitInput
+    input?: TranscriptionSubmitInput,
+    personal?: boolean
   ): Promise<TranscriptionJob> {
     const existingTask = await this.models.copilotTranscriptTask.getWithUser(
       userId,
       workspaceId,
       undefined,
-      blobId
+      blobId,
+      personal
     );
     if (
       existingTask &&
@@ -452,26 +476,41 @@ export class CopilotTranscriptionService {
       recipeId: TRANSCRIPT_ACTION_ID,
       recipeVersion: TRANSCRIPT_ACTION_VERSION,
       dispatchGeneration: generation,
-      inputSnapshot: payload,
+      inputSnapshot: {
+        ...payload,
+        scopeMode: personal ? 'personal' : 'canonical',
+      },
       publicMeta: this.buildTaskPublicMeta(payload),
       protectedResult: payload,
+      personal,
     });
 
-    await this.retry.enqueuePendingTask(task.id, payload, generation, null);
     this.publishTaskChanged(workspaceId, task.id, AiJobStatus.pending);
 
     return { id: task.id, status: AiJobStatus.pending, infos };
   }
 
-  async retryTask(userId: string, workspaceId: string, taskId: string) {
-    return await this.retry.retryTask(userId, workspaceId, taskId);
+  async retryTask(
+    userId: string,
+    workspaceId: string,
+    taskId: string,
+    personal?: boolean
+  ) {
+    return await this.retry.retryTask(userId, workspaceId, taskId, personal);
   }
 
-  async settleTask(userId: string, workspaceId: string, taskId: string) {
+  async settleTask(
+    userId: string,
+    workspaceId: string,
+    taskId: string,
+    personal?: boolean
+  ) {
     const task = await this.models.copilotTranscriptTask.getWithUser(
       userId,
       workspaceId,
-      taskId
+      taskId,
+      undefined,
+      personal
     );
     if (!task) {
       throw new CopilotTranscriptionJobNotFound();
@@ -489,7 +528,18 @@ export class CopilotTranscriptionService {
       return taskToJob(task);
     }
 
-    const settled = await this.models.copilotTranscriptTask.settle(task.id);
+    const settled = personal
+      ? await this.models.copilotTranscriptTask.settle(
+          task.id,
+          userId,
+          workspaceId,
+          true
+        )
+      : await this.models.copilotTranscriptTask.settle(
+          task.id,
+          userId,
+          workspaceId
+        );
     return taskToJob(settled);
   }
 
@@ -497,33 +547,45 @@ export class CopilotTranscriptionService {
     userId: string,
     workspaceId: string,
     taskId?: string,
-    blobId?: string
+    blobId?: string,
+    personal?: boolean
   ) {
     const task = await this.models.copilotTranscriptTask.getWithUser(
       userId,
       workspaceId,
       taskId,
-      blobId
+      blobId,
+      personal
     );
     return taskToJob(task);
   }
 
-  @OnJob('copilot.transcript.task.submit')
   async transcriptTask({
     taskId,
     payload,
     generation,
+    scopeMode,
     retryOf,
-  }: Jobs['copilot.transcript.task.submit']) {
+  }: {
+    taskId: string;
+    payload: TranscriptionPayloadV2;
+    generation: string;
+    scopeMode: 'personal' | 'canonical';
+    retryOf?: string;
+  }) {
     const task = await this.models.copilotTranscriptTask.get(taskId);
     if (!task) {
       throw new CopilotTranscriptionJobNotFound();
     }
+    await this.assertTaskScope(task, scopeMode);
     let actionRunId = retryOf ?? null;
     const claimed = await this.models.copilotTranscriptTask.claimDispatch(
       taskId,
+      task.userId,
+      task.workspaceId,
       generation,
-      actionRunId
+      actionRunId,
+      scopeMode === 'personal'
     );
     if (!claimed) {
       return;
@@ -547,12 +609,16 @@ export class CopilotTranscriptionService {
           retryOf: retryOf ?? null,
           inputSnapshot: runtimePayload,
           onRunCreated: async ({ runId }) => {
+            await this.assertTaskScope(task, scopeMode);
             const attached =
               await this.models.copilotTranscriptTask.attachActionRun(
                 taskId,
+                task.userId,
+                task.workspaceId,
                 generation,
                 actionRunId,
-                runId
+                runId,
+                scopeMode === 'personal'
               );
             if (!attached) {
               throw new Error('stale transcript dispatch generation');
@@ -594,9 +660,12 @@ export class CopilotTranscriptionService {
         ...TranscriptPayloadSchema.parse(finalResult),
         infos: payload.infos,
       } satisfies TranscriptionPayloadV2;
+      await this.assertTaskScope(task, scopeMode);
       const completed =
         await this.models.copilotTranscriptTask.completeDispatch(
           taskId,
+          task.userId,
+          task.workspaceId,
           generation,
           actionRunId,
           {
@@ -604,7 +673,8 @@ export class CopilotTranscriptionService {
             publicMeta: this.buildTaskPublicMeta(parsedResult),
             protectedResult: parsedResult,
             errorCode: null,
-          }
+          },
+          scopeMode === 'personal'
         );
       if (completed) {
         this.publishTaskChanged(task.workspaceId, taskId, AiJobStatus.finished);
@@ -612,8 +682,11 @@ export class CopilotTranscriptionService {
     } catch (error) {
       const errorCode =
         error instanceof Error ? error.message : 'transcript_task_failed';
+      await this.assertTaskScope(task, scopeMode);
       const failed = await this.models.copilotTranscriptTask.completeDispatch(
         taskId,
+        task.userId,
+        task.workspaceId,
         generation,
         actionRunId,
         {
@@ -621,7 +694,8 @@ export class CopilotTranscriptionService {
           publicMeta: this.buildTaskPublicMeta(payload),
           protectedResult: payload,
           errorCode,
-        }
+        },
+        scopeMode === 'personal'
       );
       if (failed) {
         this.publishTaskChanged(

@@ -1,3 +1,4 @@
+use super::StorageOperation;
 mod artifact;
 mod auth_session;
 mod blob_access;
@@ -5,7 +6,6 @@ mod byok;
 mod byok_api;
 mod constants;
 mod control_plane;
-mod coordination_lease;
 mod copilot;
 mod doc_compactor;
 mod doc_storage;
@@ -120,6 +120,7 @@ pub struct BackendRuntime {
   permission_telemetry: permission::PermissionTelemetry,
   blob_access: Arc<Mutex<Option<Arc<blob_access::BlobAccessService>>>>,
   invalidation: Arc<Mutex<Option<Arc<invalidation::InvalidationRuntime>>>>,
+  invalidation_events: invalidation::InvalidationEvents,
   quota_read_cache: Arc<Mutex<Option<Arc<quota_read_cache::QuotaReadCache>>>>,
   payment: Arc<Mutex<Option<Arc<payment::PaymentRuntime>>>>,
   license_health_worker: Arc<Mutex<Option<entitlement::LicenseHealthWorker>>>,
@@ -133,6 +134,7 @@ impl BackendRuntime {
     config_paths: Option<Vec<String>>,
     permission_telemetry: Option<ThreadsafeFunction<String, (), String, Status, true, true, 1024>>,
     inline_config: Option<String>,
+    invalidation_events: Option<ThreadsafeFunction<String, (), String, Status, true, true, 1024>>,
   ) -> Result<Self> {
     let config_source = ConfigSource::new(config_paths);
     let (role, script_mode) = ServerRole::from_environment().map_err(napi_error)?;
@@ -161,6 +163,7 @@ impl BackendRuntime {
       permission_telemetry: permission::PermissionTelemetry::from_threadsafe_function(permission_telemetry),
       blob_access: Arc::new(Mutex::new(None)),
       invalidation: Arc::new(Mutex::new(None)),
+      invalidation_events: invalidation::InvalidationEvents::from_threadsafe_function(invalidation_events),
       quota_read_cache: Arc::new(Mutex::new(None)),
       payment: Arc::new(Mutex::new(None)),
       license_health_worker: Arc::new(Mutex::new(None)),
@@ -234,6 +237,14 @@ impl BackendRuntime {
       .map_err(|_| RuntimeError::invalid_state("object storage service lock poisoned"))
   }
 
+  pub(crate) fn embedding_schema_ready(&self) -> RuntimeResult<bool> {
+    self
+      .embedding_health
+      .read()
+      .map(|health| health.schema_version.is_some())
+      .map_err(|_| RuntimeError::invalid_state("embedding health lock poisoned"))
+  }
+
   fn update_config(&self, config: BackendRuntimeConfig) -> RuntimeResult<()> {
     self
       .managed_token_providers
@@ -261,7 +272,10 @@ impl BackendRuntime {
 impl BackendRuntime {
   async fn apply_embedding_health(&self, pool: PgPool, mut health: EmbeddingHealth) -> RuntimeResult<()> {
     if self.script_mode {
-      health = EmbeddingHealth::disabled("script_runtime", None);
+      health.enabled = false;
+      health.state = "disabled".to_string();
+      health.reason = Some("script_runtime".to_string());
+      health.worker_running = false;
     } else if health.enabled {
       let mut service = self.embedding.lock().await;
       if service.is_none() {

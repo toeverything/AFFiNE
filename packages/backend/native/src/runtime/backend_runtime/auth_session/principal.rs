@@ -105,7 +105,7 @@ async fn access_token(
     user_session_expires_at: row.expires_at,
   }) {
     SessionState::Active => Ok(PrincipalResult::Valid {
-      principal: row.into_principal(Some(auth_session_id)),
+      principal: Box::new(row.into_principal(Some(auth_session_id))),
       refreshed_expires_at: None,
     }),
     SessionState::Expired => Ok(PrincipalResult::AuthSessionExpired),
@@ -184,7 +184,7 @@ async fn cookie(
     .await
     .map_err(|error| RuntimeError::database("commit cookie principal", error))?;
   Ok(PrincipalResult::Valid {
-    principal: row.into_principal(None),
+    principal: Box::new(row.into_principal(None)),
     refreshed_expires_at,
   })
 }

@@ -18,6 +18,7 @@ use affine_core::{
 };
 use chrono::Duration;
 use helpers::*;
+use license::assert_license_access;
 pub(in crate::runtime::backend_runtime::payment) use recovery::recover_one_stripe_operation;
 pub(in crate::runtime::backend_runtime::payment) use revenuecat::recover_one_revenuecat_identify;
 use serde_json::{Value, json};
@@ -28,7 +29,10 @@ use super::{
   PaymentRuntime, PaymentScope, PaymentSendDecision, PaymentSnapshot, PaymentStep, PaymentStepState, SnapshotCoverage,
   TrialSnapshot, freeze_operation, mark_operation_step_sent, record_operation_error, record_operation_step_result,
   snapshot::parse_lookup_key,
-  stripe_client::{StripeCheckoutSession, StripeCustomer, StripePrice, StripePromotionCode, StripeSubscription},
+  stripe_client::{
+    StripeCheckoutSession, StripeCustomer, StripeForm, StripeFormValue, StripePortalSession, StripePrice,
+    StripePromotionCode, StripeSubscription,
+  },
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
 
@@ -39,6 +43,14 @@ enum OperationExecution {
     operation_id: String,
     response: Value,
   },
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SubscriptionTarget {
+  target_type: String,
+  target_id: String,
+  plan: String,
 }
 
 pub(super) struct PaymentCommandOutcome {

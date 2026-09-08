@@ -1,18 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { JobQueue, OneDay, OnJob } from '../../base';
+import { OneDay } from '../../base';
 import { Models } from '../../models';
+import { ChatSessionService } from './session';
 import { CopilotTranscriptionRetryService } from './transcript/retry';
-
-const BACKGROUND_COPILOT_JOB_PRIORITY = 100;
-
-declare global {
-  interface Jobs {
-    'copilot.session.cleanupEmptySessions': {};
-    'copilot.session.generateMissingTitles': {};
-  }
-}
+import { CopilotTranscriptionService } from './transcript/service';
 
 @Injectable()
 export class CopilotCronJobs {
@@ -20,39 +13,30 @@ export class CopilotCronJobs {
 
   constructor(
     private readonly models: Models,
-    private readonly jobs: JobQueue,
+    private readonly sessions: ChatSessionService,
+    private readonly transcript: CopilotTranscriptionService,
     private readonly transcriptRetry: CopilotTranscriptionRetryService
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
   async reconcileTranscriptDispatches() {
-    await this.transcriptRetry.reconcileDispatches();
+    const dispatches = await this.transcriptRetry.collectPendingDispatches();
+    const results = await Promise.allSettled(
+      dispatches.map(dispatch => this.transcript.transcriptTask(dispatch))
+    );
+    const failed = results.filter(result => result.status === 'rejected');
+    if (failed.length) {
+      this.logger.warn(
+        `Transcript dispatch failures: ${failed.length}/${dispatches.length}`
+      );
+    }
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async dailyCleanupJob() {
-    await this.jobs.add(
-      'copilot.session.cleanupEmptySessions',
-      {},
-      { jobId: 'daily-copilot-cleanup-empty-sessions' }
-    );
-
-    await this.jobs.add(
-      'copilot.session.generateMissingTitles',
-      {},
-      { jobId: 'daily-copilot-generate-missing-titles' }
-    );
+    await this.cleanupEmptySessions();
   }
 
-  async triggerGenerateMissingTitles() {
-    await this.jobs.add(
-      'copilot.session.generateMissingTitles',
-      {},
-      { jobId: 'trigger-copilot-generate-missing-titles' }
-    );
-  }
-
-  @OnJob('copilot.session.cleanupEmptySessions')
   async cleanupEmptySessions() {
     const { removed, cleaned } =
       await this.models.copilotSession.cleanupEmptySessions(
@@ -64,19 +48,21 @@ export class CopilotCronJobs {
     );
   }
 
-  @OnJob('copilot.session.generateMissingTitles')
+  @Cron('*/10 * * * *')
   async generateMissingTitles() {
     const sessions = await this.models.copilotSession.toBeGenerateTitle();
-
-    for (const session of sessions) {
-      await this.jobs.add(
-        'copilot.session.generateTitle',
-        { sessionId: session.id },
-        { priority: BACKGROUND_COPILOT_JOB_PRIORITY }
-      );
-    }
+    const results = await Promise.allSettled(
+      sessions.map(session =>
+        this.sessions.generateSessionTitle({
+          sessionId: session.id,
+          userId: session.userId,
+          workspaceId: session.workspaceId,
+        })
+      )
+    );
+    const failed = results.filter(result => result.status === 'rejected');
     this.logger.log(
-      `Scheduled title generation for ${sessions.length} sessions`
+      `Generated titles for ${sessions.length - failed.length}/${sessions.length} sessions`
     );
   }
 }

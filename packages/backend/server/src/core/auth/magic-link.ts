@@ -1,146 +1,102 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import {
-  ActionForbidden,
   Config,
-  CryptoHelper,
+  EmailServiceNotConfigured,
   InvalidAuthState,
-  InvalidEmail,
   InvalidEmailToken,
+  NetworkError,
   SignUpForbidden,
+  TooManyRequest,
   URLHelper,
   WrongSignInCredentials,
 } from '../../base';
-import { Models, TokenType } from '../../models';
-import type { MailDeliveryMetadata } from '../mail/types';
+import {
+  BackendRuntimeProvider,
+  type RuntimeQuotaSourceInput,
+} from '../backend-runtime';
+import { MailSender } from '../mail/sender';
 import { validators } from '../utils/validators';
-import { verifyEmailDomainRecords } from './email-domain';
-import type { VerifiedIdentity } from './identity';
-import { AuthService } from './service';
+import type { NativeLoginResult, SessionIssueInput } from './session-issuer';
 
 @Injectable()
 export class MagicLinkAuthService {
-  private readonly logger = new Logger(MagicLinkAuthService.name);
-
   constructor(
     private readonly url: URLHelper,
-    private readonly auth: AuthService,
-    private readonly models: Models,
     private readonly config: Config,
-    private readonly crypto: CryptoHelper
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly sender: MailSender
   ) {}
 
   async send(
     email: string,
     callbackUrl = '/magic-link',
     clientNonce?: string,
-    metadata?: Pick<MailDeliveryMetadata, 'source'>
+    source?: RuntimeQuotaSourceInput
   ) {
     validators.assertValidEmail(email);
-
-    if (!this.url.isAllowedCallbackUrl(callbackUrl)) {
-      throw new ActionForbidden();
-    }
-
-    const callbackUrlObj = this.url.url(callbackUrl);
-    const redirectUriInCallback =
-      callbackUrlObj.searchParams.get('redirect_uri');
-    if (
-      redirectUriInCallback &&
-      !this.url.isAllowedRedirectUri(redirectUriInCallback)
-    ) {
-      throw new ActionForbidden();
-    }
-
-    const user = await this.models.user.getUserByEmail(email, {
-      withDisabled: true,
-    });
-
-    if (!user) {
-      await this.assertSignupAllowed(email);
-    } else if (user.disabled) {
-      throw new WrongSignInCredentials({ email });
-    }
-
-    const ttlInSec = 30 * 60;
-    const { token, expiresAt: tokenExpiresAt } =
-      await this.models.verificationToken.createWithExpiresAt(
-        TokenType.SignIn,
-        email,
-        ttlInSec
+    if (!this.sender.configured) throw new EmailServiceNotConfigured();
+    const callbackUrlObj = new URL(this.url.safeLink(callbackUrl));
+    const redirectUri = callbackUrlObj.searchParams.get('redirect_uri');
+    if (redirectUri) {
+      callbackUrlObj.searchParams.set(
+        'redirect_uri',
+        this.url.canonicalRedirectUri(redirectUri)
       );
-
-    const otp = this.crypto.otp();
-    const { expiresAt: otpExpiresAt } = await this.models.magicLinkOtp.upsert(
-      email,
-      otp,
-      token,
-      clientNonce
-    );
-
-    const magicLink = this.url.link(callbackUrl, { token: otp, email });
-    if (env.dev) {
-      this.logger.debug(`Magic link: ${magicLink}`);
     }
-
-    await this.auth.sendSignInEmail(email, magicLink, otp, !user, {
-      ...metadata,
-      expiresAt:
-        tokenExpiresAt.getTime() < otpExpiresAt.getTime()
-          ? tokenExpiresAt
-          : otpExpiresAt,
-    });
-
-    return { email };
+    try {
+      const canonicalEmail =
+        await this.runtime.executeAuthSessionCommandV1<string>({
+          action: 'prepare_magic_link',
+          email,
+          callbackUrl: callbackUrlObj.toString(),
+          clientNonce,
+          serverName:
+            this.config.server.name ??
+            (env.selfhosted ? 'AFFiNE Self-hosted' : 'AFFiNE Cloud'),
+          source,
+        });
+      return { email: canonicalEmail };
+    } catch (error) {
+      if (String(error).includes('wrong_sign_in_credentials')) {
+        throw new WrongSignInCredentials({ email });
+      }
+      if (String(error).includes('sign_up_forbidden')) {
+        throw new SignUpForbidden();
+      }
+      if (String(error).includes('mail_quota_denied')) {
+        throw new TooManyRequest();
+      }
+      if (String(error).includes('email_domain_verification_unavailable')) {
+        throw new NetworkError();
+      }
+      throw error;
+    }
   }
 
-  async verify(
+  async complete(
     email: string,
     otp: string,
-    clientNonce?: string
-  ): Promise<VerifiedIdentity> {
+    clientNonce: string | undefined,
+    issue: SessionIssueInput
+  ): Promise<NativeLoginResult> {
     validators.assertValidEmail(email);
-
-    const consumed = await this.models.magicLinkOtp.consume(
-      email,
-      otp,
-      clientNonce
-    );
-    if (!consumed.ok) {
-      if (consumed.reason === 'nonce_mismatch') {
+    try {
+      return await this.runtime.executeAuthSessionCommandV1<NativeLoginResult>({
+        action: 'complete_magic_link',
+        email,
+        otp,
+        clientNonce,
+        issue,
+      });
+    } catch (error) {
+      if (String(error).includes('invalid_auth_state')) {
         throw new InvalidAuthState();
       }
-      throw new InvalidEmailToken();
-    }
-
-    const tokenRecord = await this.models.verificationToken.verify(
-      TokenType.SignIn,
-      consumed.token,
-      {
-        credential: email,
+      if (String(error).includes('email_domain_verification_unavailable')) {
+        throw new NetworkError();
       }
-    );
-
-    if (!tokenRecord) {
       throw new InvalidEmailToken();
-    }
-
-    const user = await this.models.user.fulfill(email);
-
-    return { userId: user.id, method: 'magic_link' };
-  }
-
-  private async assertSignupAllowed(email: string) {
-    if (!this.config.auth.allowSignup) {
-      throw new SignUpForbidden();
-    }
-
-    if (!this.config.auth.requireEmailDomainVerification) {
-      return;
-    }
-
-    if (!(await verifyEmailDomainRecords(email))) {
-      throw new InvalidEmail({ email });
     }
   }
 }

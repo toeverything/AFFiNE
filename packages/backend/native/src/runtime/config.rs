@@ -448,7 +448,7 @@ impl BackendRuntimeConfig {
         .transpose()?
         .unwrap_or_default(),
       search: app_config.indexer.map(Into::into).unwrap_or_default(),
-      redis: RedisRuntimeConfig::from_sources(app_config.redis.take()),
+      redis: RedisRuntimeConfig::from_sources(app_config.redis.take())?,
       payment: PaymentRuntimeConfig::from_file(app_config.payment.take()),
     }
     .validated()
@@ -500,7 +500,7 @@ impl BackendRuntimeConfig {
         .indexer
         .map(Into::into)
         .unwrap_or_else(|| self.search.clone()),
-      redis: RedisRuntimeConfig::from_sources(app_config.redis.take()).or_else(|| self.redis.clone()),
+      redis: RedisRuntimeConfig::from_sources(app_config.redis.take())?.or_else(|| self.redis.clone()),
       payment: app_config
         .payment
         .take()
@@ -682,10 +682,22 @@ impl PaymentRuntimeConfig {
           "payment.stripe.accountId is required when payment is enabled",
         ));
       }
+      if stripe.webhook_key.trim().is_empty() {
+        return Err(RuntimeError::config(
+          "payment.stripe.webhookKey is required when payment is enabled",
+        ));
+      }
     }
     if let Some(stripe) = &self.stripe {
-      let expected_prefix = if stripe.live { "sk_live_" } else { "sk_test_" };
-      if !stripe.api_key.starts_with(expected_prefix) {
+      let expected_prefixes = if stripe.live {
+        ["sk_live_", "rk_live_"]
+      } else {
+        ["sk_test_", "rk_test_"]
+      };
+      if !expected_prefixes
+        .iter()
+        .any(|prefix| stripe.api_key.starts_with(prefix))
+      {
         return Err(RuntimeError::config(
           "payment.stripe.environment does not match the API key",
         ));
@@ -727,9 +739,12 @@ struct RedisIoRuntimeConfigFile {
 }
 
 impl RedisRuntimeConfig {
-  fn from_sources(file: Option<RedisRuntimeConfigFile>) -> Self {
+  fn from_sources(file: Option<RedisRuntimeConfigFile>) -> RuntimeResult<Self> {
     if let Some(url) = env::var("REDIS_SERVER_URL").ok().and_then(non_empty_string) {
-      return Self { url: Some(url) };
+      let url = url::Url::parse(&url).map_err(|_| RuntimeError::config("invalid Redis URL"))?;
+      return Ok(Self {
+        url: Some(url.to_string()),
+      });
     }
     let file = file.unwrap_or_default();
     let host = env::var("REDIS_SERVER_HOST")
@@ -737,7 +752,7 @@ impl RedisRuntimeConfig {
       .and_then(non_empty_string)
       .or_else(|| non_empty_string(file.host));
     let Some(host) = host else {
-      return Self::default();
+      return Ok(Self::default());
     };
     let port = env::var("REDIS_SERVER_PORT")
       .ok()
@@ -756,16 +771,17 @@ impl RedisRuntimeConfig {
       .and_then(non_empty_string)
       .unwrap_or(file.password);
     let scheme = if file.ioredis.tls.is_some() { "rediss" } else { "redis" };
-    let mut url = url::Url::parse(&format!("{scheme}://{host}:{port}/{db}")).expect("redis URL shape is valid");
+    let mut url = url::Url::parse(&format!("{scheme}://{host}:{port}/{db}"))
+      .map_err(|_| RuntimeError::config("invalid Redis host"))?;
     if !username.is_empty() {
       let _ = url.set_username(&username);
     }
     if !password.is_empty() {
       let _ = url.set_password(Some(&password));
     }
-    Self {
+    Ok(Self {
       url: Some(url.to_string()),
-    }
+    })
   }
 
   fn or_else(self, fallback: impl FnOnce() -> Self) -> Self {

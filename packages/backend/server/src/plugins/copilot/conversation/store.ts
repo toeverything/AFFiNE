@@ -19,7 +19,7 @@ import {
 import { type ChatMessage, ChatMessageSchema } from '../types';
 
 type SessionRecord = NonNullable<
-  Awaited<ReturnType<Models['copilotSession']['get']>>
+  Awaited<ReturnType<Models['copilotSession']['getForBackground']>>
 >;
 
 type ConversationSeed = Parameters<
@@ -87,7 +87,12 @@ export class ConversationStore {
     );
   }
 
-  async get(sessionId: string): Promise<
+  async get(
+    sessionId: string,
+    userId: string,
+    workspaceId: string,
+    personal?: boolean
+  ): Promise<
     | {
         conversation: Conversation;
         turns: Turn[];
@@ -96,7 +101,12 @@ export class ConversationStore {
       }
     | undefined
   > {
-    const session = await this.models.copilotSession.get(sessionId);
+    const session = await this.models.copilotSession.get(
+      sessionId,
+      userId,
+      workspaceId,
+      personal
+    );
     if (!session) {
       return;
     }
@@ -109,7 +119,12 @@ export class ConversationStore {
     };
   }
 
-  async getMeta(sessionId: string): Promise<
+  async getMeta(
+    sessionId: string,
+    userId: string,
+    workspaceId: string,
+    personal?: boolean
+  ): Promise<
     | {
         conversation: Conversation;
         promptName: string;
@@ -117,7 +132,12 @@ export class ConversationStore {
       }
     | undefined
   > {
-    const session = await this.models.copilotSession.getMeta(sessionId);
+    const session = await this.models.copilotSession.getMeta(
+      sessionId,
+      userId,
+      workspaceId,
+      personal
+    );
     if (!session) return;
 
     return {
@@ -132,6 +152,25 @@ export class ConversationStore {
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
       },
+      promptName: session.promptName,
+      focus: this.toFocus(session.focus),
+    };
+  }
+
+  async getForBackground(
+    sessionId: string,
+    userId: string,
+    workspaceId: string
+  ) {
+    const session = await this.models.copilotSession.getForBackground(
+      sessionId,
+      userId,
+      workspaceId
+    );
+    if (!session) return;
+    return {
+      conversation: this.toConversation(session),
+      turns: this.toTurns(session),
       promptName: session.promptName,
       focus: this.toFocus(session.focus),
     };
@@ -181,23 +220,11 @@ export class ConversationStore {
     }));
   }
 
-  async appendTurns(input: {
-    sessionId: string;
-    userId: string;
-    turns: Turn[];
-  }) {
-    return await this.models.copilotSession.updateMessages({
-      ...input,
-      messages: input.turns.map(turn => {
-        const { id: _id, ...message } = chatMessageFromTurn(turn);
-        return message;
-      }),
-    });
-  }
-
   async appendTurn(input: {
     sessionId: string;
     userId: string;
+    workspaceId: string;
+    personal?: boolean;
     turn: Turn;
     compatSubmissionId?: string;
     focus?: SessionFocus;
@@ -211,6 +238,8 @@ export class ConversationStore {
     const message = await this.models.copilotSession.appendMessage({
       sessionId: input.sessionId,
       userId: input.userId,
+      workspaceId: input.workspaceId,
+      personal: input.personal,
       focus: input.focus,
       artifacts: input.artifacts,
       message: (() => {
@@ -224,11 +253,15 @@ export class ConversationStore {
 
   async findTurnByCompatSubmissionId(
     sessionId: string,
+    userId: string,
+    workspaceId: string,
     compatSubmissionId: string
   ): Promise<Turn | undefined> {
     const message =
       await this.models.copilotSession.findMessageByCompatSubmissionId(
         sessionId,
+        userId,
+        workspaceId,
         compatSubmissionId
       );
     if (!message) return;
@@ -250,10 +283,19 @@ export class ConversationStore {
     });
   }
 
-  async revertLatestTurn(sessionId: string, removeLatestUserMessage: boolean) {
+  async revertLatestTurn(
+    sessionId: string,
+    userId: string,
+    removeLatestUserMessage: boolean,
+    workspaceId: string,
+    personal?: boolean
+  ) {
     return await this.models.copilotSession.revertLatestMessage(
       sessionId,
-      removeLatestUserMessage
+      userId,
+      removeLatestUserMessage,
+      workspaceId,
+      personal
     );
   }
 

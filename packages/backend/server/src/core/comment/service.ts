@@ -1,22 +1,46 @@
 import { Injectable } from '@nestjs/common';
 
 import {
+  Comment,
   CommentCreate,
   CommentResolve,
   CommentUpdate,
   ItemWithUserId,
   Models,
+  Reply,
   ReplyCreate,
   ReplyUpdate,
 } from '../../models';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { PublicUserType } from '../user';
 
 @Injectable()
 export class CommentService {
-  constructor(private readonly models: Models) {}
+  constructor(
+    private readonly models: Models,
+    private readonly runtime: BackendRuntimeProvider
+  ) {}
 
-  async createComment(input: CommentCreate) {
-    const comment = await this.models.comment.create(input);
+  async createComment(
+    actorUserId: string,
+    input: Omit<CommentCreate, 'userId'> & {
+      docTitle: string;
+      docMode: string;
+      mentions?: string[];
+    }
+  ) {
+    const comment = this.domainItem<Comment>(
+      await this.runtime.executeDomainCommandV1({
+        command: 'create_comment',
+        actorUserId,
+        workspaceId: input.workspaceId,
+        docId: input.docId,
+        content: input.content,
+        docTitle: input.docTitle,
+        docMode: input.docMode,
+        mentions: input.mentions ?? [],
+      })
+    );
     return await this.fillUser(comment);
   }
 
@@ -25,20 +49,57 @@ export class CommentService {
     return comment ? await this.fillUser(comment) : null;
   }
 
-  async updateComment(input: CommentUpdate) {
-    return await this.models.comment.update(input);
+  async updateComment(actorUserId: string, input: CommentUpdate) {
+    return this.domainItem<Comment>(
+      await this.runtime.executeDomainCommandV1({
+        command: 'update_comment',
+        actorUserId,
+        id: input.id,
+        content: input.content,
+      })
+    );
   }
 
-  async resolveComment(input: CommentResolve) {
-    return await this.models.comment.resolve(input);
+  async resolveComment(actorUserId: string, input: CommentResolve) {
+    return this.domainItem<Comment>(
+      await this.runtime.executeDomainCommandV1({
+        command: 'resolve_comment',
+        actorUserId,
+        id: input.id,
+        resolved: input.resolved,
+      })
+    );
   }
 
-  async deleteComment(id: string) {
-    return await this.models.comment.delete(id);
+  async deleteComment(actorUserId: string, id: string) {
+    return this.domainItem<Comment>(
+      await this.runtime.executeDomainCommandV1({
+        command: 'delete_comment',
+        actorUserId,
+        id,
+      })
+    );
   }
 
-  async createReply(input: ReplyCreate) {
-    const reply = await this.models.comment.createReply(input);
+  async createReply(
+    actorUserId: string,
+    input: Omit<ReplyCreate, 'userId'> & {
+      docTitle: string;
+      docMode: string;
+      mentions?: string[];
+    }
+  ) {
+    const reply = this.domainItem<Reply>(
+      await this.runtime.executeDomainCommandV1({
+        command: 'create_reply',
+        actorUserId,
+        commentId: input.commentId,
+        content: input.content,
+        docTitle: input.docTitle,
+        docMode: input.docMode,
+        mentions: input.mentions ?? [],
+      })
+    );
     return await this.fillUser(reply);
   }
 
@@ -47,12 +108,25 @@ export class CommentService {
     return reply ? await this.fillUser(reply) : null;
   }
 
-  async updateReply(input: ReplyUpdate) {
-    return await this.models.comment.updateReply(input);
+  async updateReply(actorUserId: string, input: ReplyUpdate) {
+    return this.domainItem<Reply>(
+      await this.runtime.executeDomainCommandV1({
+        command: 'update_reply',
+        actorUserId,
+        id: input.id,
+        content: input.content,
+      })
+    );
   }
 
-  async deleteReply(id: string) {
-    return await this.models.comment.deleteReply(id);
+  async deleteReply(actorUserId: string, id: string) {
+    return this.domainItem<Reply>(
+      await this.runtime.executeDomainCommandV1({
+        command: 'delete_reply',
+        actorUserId,
+        id,
+      })
+    );
   }
 
   async getCommentCount(workspaceId: string, docId: string) {
@@ -127,5 +201,18 @@ export class CommentService {
       ...item,
       user: user as PublicUserType,
     };
+  }
+
+  private domainItem<T extends { createdAt: Date; updatedAt: Date }>(
+    output: Record<string, unknown>
+  ): T {
+    return {
+      ...output,
+      createdAt: new Date(output.createdAt as string),
+      updatedAt: new Date(output.updatedAt as string),
+      ...(output.deletedAt
+        ? { deletedAt: new Date(output.deletedAt as string) }
+        : {}),
+    } as T;
   }
 }

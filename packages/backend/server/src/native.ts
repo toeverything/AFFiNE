@@ -9,7 +9,6 @@ import serverNativeModule, {
   type CanonicalStructuredRequestContract,
   type CapabilityAttachmentContract,
   type CapabilityModelCapability,
-  type CommandResponse,
   type CompileScopeInput,
   type ContentPolicyScanInput,
   type ContentPolicyScanResult,
@@ -18,13 +17,7 @@ import serverNativeModule, {
   type EnsureWorkspaceBlobArtifactInput,
   type ImageInspection,
   type ImageInspectionOptions,
-  type LicenseError,
-  type LicenseHealthRequest,
-  type LicenseInfo,
-  type LicenseKeyRequest,
-  type LicenseRecurringRequest,
-  type LicenseResponse,
-  type LicenseSeatsRequest,
+  type IssueLicenseInput,
   type LlmCoreMessage,
   type LlmEmbeddingRequestContract,
   type LlmImageRequestContract,
@@ -33,7 +26,7 @@ import serverNativeModule, {
   type LlmStructuredRequestContract,
   type MatchEmbeddingCandidatesInput,
   type ModelConditionsContract,
-  type PortalResponse,
+  type PermissionActionCatalogV1,
   type PromptMessageContract,
   type PromptRenderResult,
   type PromptSessionResult,
@@ -46,21 +39,15 @@ import serverNativeModule, {
   type ResolvedEntitlement,
   type ResolveEntitlementInput,
   type RuntimeAggregateRequest,
-  type RuntimeBlobCleanupExecuteResult,
-  type RuntimeBlobCleanupPlanResult,
-  type RuntimeBlobCleanupResult,
-  type RuntimeBlobCompleteResult,
   type RuntimeBlobMetadataBackfillResult,
   type RuntimeDocBlobRefsResult,
   type RuntimeDocCompactionResult,
   type RuntimeEmbeddingCandidate,
   type RuntimeEmbeddingSourceContent,
   type RuntimeEmbeddingWorkspaceState,
-  type RuntimeMagicLinkOtpConsumeResult,
   type RuntimeMultipartUploadInit,
   type RuntimeMultipartUploadPart,
   type RuntimeObjectGetResult,
-  type RuntimeObjectListEntry,
   type RuntimeObjectMetadata,
   type RuntimeObjectStoragePutOptions,
   type RuntimePresignedObjectRequest,
@@ -68,9 +55,10 @@ import serverNativeModule, {
   type RuntimeSearchQuery,
   type RuntimeSearchRequest,
   type RuntimeTurnScopeSnapshot,
-  type RuntimeVerificationTokenRecord,
+  type RuntimeUserQuotaState,
   type RuntimeWorkspaceArtifact,
   type RuntimeWorkspaceInviteLinkRecord,
+  type RuntimeWorkspaceQuotaState,
   type SafeFetchRequest,
   type SafeFetchResponse,
   type StorageProviderCapabilities,
@@ -99,6 +87,7 @@ export type {
   ByokProfileDefinitionInput,
   ByokProfileOutput,
   ByokValidationOutput,
+  CanonicalDocumentIdentity,
   CopilotAccessProjection,
   CopilotExecuteInput,
   CopilotRouteCheckInput,
@@ -118,7 +107,6 @@ export type {
   BackendRuntimeHealth,
   CapabilityAttachmentContract,
   CapabilityModelCapability,
-  CommandResponse,
   CompileScopeInput,
   ContentPolicyScanInput,
   ContentPolicyScanResult,
@@ -127,16 +115,8 @@ export type {
   EnsureWorkspaceBlobArtifactInput,
   ImageInspection,
   ImageInspectionOptions,
-  LicenseError,
-  LicenseHealthRequest,
-  LicenseInfo,
-  LicenseKeyRequest,
-  LicenseRecurringRequest,
-  LicenseResponse,
-  LicenseSeatsRequest,
   MatchEmbeddingCandidatesInput,
   ModelConditionsContract,
-  PortalResponse,
   PromptMessageContract,
   PromptStructuredResponseContract,
   PutWorkspaceArtifactInput,
@@ -147,21 +127,15 @@ export type {
   ResolvedEntitlement,
   ResolveEntitlementInput,
   RuntimeAggregateRequest,
-  RuntimeBlobCleanupExecuteResult,
-  RuntimeBlobCleanupPlanResult,
-  RuntimeBlobCleanupResult,
-  RuntimeBlobCompleteResult,
   RuntimeBlobMetadataBackfillResult,
   RuntimeDocBlobRefsResult,
   RuntimeDocCompactionResult,
   RuntimeEmbeddingCandidate,
   RuntimeEmbeddingSourceContent,
   RuntimeEmbeddingWorkspaceState,
-  RuntimeMagicLinkOtpConsumeResult,
   RuntimeMultipartUploadInit,
   RuntimeMultipartUploadPart,
   RuntimeObjectGetResult,
-  RuntimeObjectListEntry,
   RuntimeObjectMetadata,
   RuntimeObjectStoragePutOptions,
   RuntimePresignedObjectRequest,
@@ -169,9 +143,10 @@ export type {
   RuntimeSearchQuery,
   RuntimeSearchRequest,
   RuntimeTurnScopeSnapshot,
-  RuntimeVerificationTokenRecord,
+  RuntimeUserQuotaState,
   RuntimeWorkspaceArtifact,
   RuntimeWorkspaceInviteLinkRecord,
+  RuntimeWorkspaceQuotaState,
   SafeFetchRequest,
   SafeFetchResponse,
   StorageProviderCapabilities,
@@ -233,16 +208,11 @@ import type {
 export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
 export const authorizeReservedDocSubject =
   serverNativeModule.authorizeReservedDocSubject;
-export const authSessionAccessTokenKeyId =
-  serverNativeModule.authSessionAccessTokenKeyId;
-export const createAuthSessionRefreshToken =
-  serverNativeModule.createAuthSessionRefreshToken;
-export const parseAuthSessionRefreshToken =
-  serverNativeModule.parseAuthSessionRefreshToken;
-export const signAuthSessionAccessToken =
-  serverNativeModule.signAuthSessionAccessToken;
-export const verifyAuthSessionAccessToken =
-  serverNativeModule.verifyAuthSessionAccessToken;
+export const canonicalizeDocumentIdentity =
+  serverNativeModule.canonicalizeDocumentIdentity;
+export const buildSafeCallbackUrl = serverNativeModule.buildSafeCallbackUrl;
+export const evaluateRedirectUri = serverNativeModule.evaluateRedirectUri;
+export const evaluateLocalRedirect = serverNativeModule.evaluateLocalRedirect;
 
 export async function validateDocUpdate(
   update: Buffer,
@@ -337,13 +307,6 @@ export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
 export const assertSafeUrl = serverNativeModule.assertSafeUrl;
 export const scanContentPolicyV1 = serverNativeModule.scanContentPolicyV1;
 export const safeFetch = serverNativeModule.safeFetch;
-export const activateLicense = serverNativeModule.activateLicense;
-export const checkLicenseHealth = serverNativeModule.checkLicenseHealth;
-export const createCustomerPortal =
-  serverNativeModule.createLicenseCustomerPortal;
-export const deactivateLicense = serverNativeModule.deactivateLicense;
-export const updateLicenseRecurring = serverNativeModule.updateLicenseRecurring;
-export const updateLicenseSeats = serverNativeModule.updateLicenseSeats;
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;
@@ -357,8 +320,6 @@ export const parseWorkspaceDocFromBinary = serverNativeModule.parseWorkspaceDoc;
 export const readAllDocIdsFromRootDoc =
   serverNativeModule.readAllDocIdsFromRootDoc;
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
-export const AFFINE_PRO_LICENSE_AES_KEY =
-  serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;
 export const BackendRuntime = serverNativeModule.BackendRuntime;
 export const StorageRuntime = serverNativeModule.StorageRuntime;
 
@@ -372,97 +333,183 @@ export type PermissionDocRole =
   | 'manager'
   | 'owner';
 
-export type PermissionEvaluationInputV1 = {
+export type AuthorizePermissionInputV1 = {
   version: 1;
-  legacyCompatMode?: boolean;
-  subject?: {
-    userId?: string;
-    groupIds?: string[];
-    allowLocal?: boolean;
-  };
-  runtime?: {
-    known?: boolean;
-    stale?: boolean;
-    readonly?: boolean;
-    readonlyReason?: string;
-    sharingEnabled?: boolean;
-    urlPreviewEnabled?: boolean;
-  };
-  workspace?: {
-    role?: PermissionWorkspaceRole;
-    memberState?: 'active' | 'pending' | 'waiting_review' | 'waiting_seat';
-    public?: boolean;
-    sharingEnabled?: boolean;
-    urlPreviewEnabled?: boolean;
-    local?: boolean;
-  };
+  workspaceId: string;
+  actorUserId?: string;
   workspaceActions?: string[];
   docs?: Array<{
     docId: string;
     actions?: string[];
-    explicitUserRole?: PermissionDocRole;
-    groupGrants?: Array<{ groupId: string; role: PermissionDocRole }>;
-    groupGrantsEnabled?: boolean;
-    memberDefaultRole?: PermissionDocRole;
-    publicRole?: 'external';
-    visibility?: 'private' | 'public';
-    sharingEnabled?: boolean;
-    previewEnabled?: boolean;
   }>;
 };
 
 export type PermissionDecisionV1 = {
   action: string;
   allowed: boolean;
-  sources: Array<{
-    type:
-      | 'workspace-member'
-      | 'workspace-policy'
-      | 'workspace-preview-policy'
-      | 'local-workspace'
-      | 'inherited-workspace-role'
-      | 'doc-grant'
-      | 'group-grant'
-      | 'member-default-policy'
-      | 'public-policy'
-      | 'doc-preview-policy';
-    role?: string;
-  }>;
-  restrictions: Array<{
-    type: 'runtime_unknown' | 'runtime_stale' | 'readonly' | 'sharing-disabled';
-    reason?: string;
-  }>;
 };
+
+export type DocPreviewExposure =
+  | 'denied'
+  | 'metadata_no_index'
+  | 'public_indexable';
+
+export type DocPreviewBasis =
+  | 'missing'
+  | 'sharing_disabled'
+  | 'public'
+  | 'document'
+  | 'workspace'
+  | 'disabled';
 
 export type PermissionEvaluationOutputV1 = {
   version: 1;
   workspace: {
-    resourceOwnerRole?: PermissionWorkspaceRole;
     effectiveRole?: PermissionWorkspaceRole;
+    previewExposure?: DocPreviewExposure;
+    previewBasis?: DocPreviewBasis;
     decisions: PermissionDecisionV1[];
   };
   docs: Array<{
     docId: string;
-    resourceOwnerRole?: 'owner';
     effectiveRole?: PermissionDocRole;
+    previewExposure?: DocPreviewExposure;
+    previewBasis?: DocPreviewBasis;
     decisions: PermissionDecisionV1[];
   }>;
 };
 
-export const evaluatePermissionV1 = (
-  input: PermissionEvaluationInputV1
-): PermissionEvaluationOutputV1 =>
-  serverNativeModule.evaluatePermissionV1(input);
+export type DomainCommandInputV1 =
+  | {
+      command: 'create_comment';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      content: unknown;
+      docTitle: string;
+      docMode: string;
+      mentions: string[];
+    }
+  | {
+      command: 'update_comment';
+      actorUserId: string;
+      id: string;
+      content: unknown;
+    }
+  | {
+      command: 'resolve_comment';
+      actorUserId: string;
+      id: string;
+      resolved: boolean;
+    }
+  | { command: 'delete_comment'; actorUserId: string; id: string }
+  | {
+      command: 'create_reply';
+      actorUserId: string;
+      commentId: string;
+      content: unknown;
+      docTitle: string;
+      docMode: string;
+      mentions: string[];
+    }
+  | {
+      command: 'update_reply';
+      actorUserId: string;
+      id: string;
+      content: unknown;
+    }
+  | { command: 'delete_reply'; actorUserId: string; id: string }
+  | {
+      command: 'publish_doc';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      mode: number;
+    }
+  | {
+      command: 'unpublish_doc';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+    }
+  | {
+      command: 'apply_doc_lifecycle';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      lifecycle: 'trash' | 'restore' | 'delete';
+    }
+  | {
+      command: 'append_root_update';
+      actorUserId: string;
+      workspaceId: string;
+      update: string;
+      assertPermission: boolean;
+      expectedPermissionGeneration?: number;
+    }
+  | {
+      command: 'recover_doc';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      timestamp: string;
+    }
+  | {
+      command: 'transition_workspace_role';
+      actorUserId: string;
+      workspaceId: string;
+      targetUserId: string;
+      newRole: 'member' | 'admin' | 'owner';
+    }
+  | {
+      command: 'transition_doc_role';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      targetUserId: string;
+      newRole?: 'reader' | 'commenter' | 'editor' | 'manager' | 'owner';
+    }
+  | {
+      command: 'grant_doc_roles';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      targetUserIds: string[];
+      newRole: 'reader' | 'commenter' | 'editor' | 'manager';
+    }
+  | {
+      command: 'set_doc_default_role';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      newRole: 'none' | 'reader' | 'commenter' | 'editor' | 'manager';
+    }
+  | {
+      command: 'revoke_workspace_member';
+      actorUserId: string;
+      workspaceId: string;
+      targetUserId: string;
+    }
+  | {
+      command: 'leave_workspace';
+      actorUserId: string;
+      workspaceId: string;
+    };
 
-export const permissionActionRoleMatrixV1 = (): unknown =>
-  serverNativeModule.permissionActionRoleMatrixV1();
-
-export const permissionActionRoleMatrixV1Json =
-  serverNativeModule.permissionActionRoleMatrixV1Json;
+export type DomainCommandOutputV1 = Record<string, unknown>;
 
 export const resolveEntitlementV1 = (
   input: ResolveEntitlementInput
 ): ResolvedEntitlement => serverNativeModule.resolveEntitlementV1(input);
+
+export const issueLicenseV1 = (input: IssueLicenseInput): Buffer =>
+  serverNativeModule.issueLicenseV1(input);
+
+export const validateLicenseSeatQuantityV1 = (seatQuantity: number): void =>
+  serverNativeModule.validateLicenseSeatQuantityV1(seatQuantity);
+
+export const permissionActionCatalogV1 = (): PermissionActionCatalogV1 =>
+  serverNativeModule.permissionActionCatalogV1();
 
 // MCP write tools exports
 export const createDocWithMarkdown = serverNativeModule.createDocWithMarkdown;

@@ -1,8 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 
 import {
-  BackendRuntimeEmbeddingJob,
-  BackendRuntimeEmbeddingProducer,
   BackendRuntimeEmbeddingService,
   BackendRuntimeHousekeepingJob,
   BackendRuntimeSearchJob,
@@ -28,36 +26,28 @@ export class BackendRuntimeModule {}
 
 @Module({
   imports: [BackendRuntimeModule],
-  providers: [BackendRuntimeEmbeddingProducer],
-})
-export class BackendRuntimeProducerModule {}
-
-@Module({
-  imports: [BackendRuntimeModule],
-  providers: [
-    BackendRuntimeEmbeddingJob,
-    BackendRuntimeHousekeepingJob,
-    BackendRuntimeSearchJob,
-  ],
+  providers: [BackendRuntimeHousekeepingJob, BackendRuntimeSearchJob],
 })
 export class BackendRuntimeWorkerModule {}
 
-export {
-  BackendRuntimeEmbeddingJob,
-  BackendRuntimeEmbeddingProducer,
-  BackendRuntimeEmbeddingService,
-  BackendRuntimeHousekeepingJob,
-  BackendRuntimeSearchJob,
-} from './job';
+export { BackendRuntimeEmbeddingService } from './job';
+export { BackendRuntimeError, backendRuntimeErrorCode } from './operations';
 export {
   BACKEND_RUNTIME_CONFIG_PATHS,
   BackendRuntimeProvider,
+  type BlobManifestEntryV1,
+  type BlobManifestV1,
+  type BlobSourceV1,
   type RuntimeInviteAbuseAction,
   type RuntimeInviteAbuseClaimedAction,
   type RuntimeMailDeliveryQuotaDecision,
   type RuntimeMailDeliveryQuotaInput,
   type RuntimeQuotaSourceInput,
   type RuntimeQuotaTargetDomainInput,
+  type RuntimeSeatReservationDecision,
+  type RuntimeStorageReservationDecision,
+  type RuntimeStorageReservationInput,
+  type RuntimeStorageReservationMutation,
   type RuntimeWorkspaceInviteQuotaDecision,
   type RuntimeWorkspaceInviteQuotaInput,
   type RuntimeWorkspaceInviteQuotaUsage,

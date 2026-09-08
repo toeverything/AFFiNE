@@ -89,6 +89,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
   pool: PgPool,
   deployment: Deployment,
   telemetry: PermissionTelemetry,
+  embedding_schema_ready: bool,
   input: DomainCommandInputV1,
 ) -> RuntimeResult<DomainCommandOutcome> {
   let mut invalidations = input.invalidations();
@@ -103,6 +104,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       workspace_id,
       doc_id,
       content,
+      notification,
     } => {
       comments::create_comment(
         &authorizer,
@@ -111,7 +113,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         content,
-        deployment,
+        notification,
       )
       .await?
     }
@@ -119,19 +121,20 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       actor_user_id,
       id,
       content,
-    } => comments::update_comment(&authorizer, &mut transaction, actor_user_id, id, content, deployment).await?,
+    } => comments::update_comment(&authorizer, &mut transaction, actor_user_id, id, content).await?,
     DomainCommandInputV1::ResolveComment {
       actor_user_id,
       id,
       resolved,
-    } => comments::resolve_comment(&authorizer, &mut transaction, actor_user_id, id, resolved, deployment).await?,
+    } => comments::resolve_comment(&authorizer, &mut transaction, actor_user_id, id, resolved).await?,
     DomainCommandInputV1::DeleteComment { actor_user_id, id } => {
-      comments::delete_comment(&authorizer, &mut transaction, actor_user_id, id, deployment).await?
+      comments::delete_comment(&authorizer, &mut transaction, actor_user_id, id).await?
     }
     DomainCommandInputV1::CreateReply {
       actor_user_id,
       comment_id,
       content,
+      notification,
     } => {
       replies::create_reply(
         &authorizer,
@@ -139,7 +142,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         actor_user_id,
         comment_id,
         content,
-        deployment,
+        notification,
       )
       .await?
     }
@@ -147,9 +150,9 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       actor_user_id,
       id,
       content,
-    } => replies::update_reply(&authorizer, &mut transaction, actor_user_id, id, content, deployment).await?,
+    } => replies::update_reply(&authorizer, &mut transaction, actor_user_id, id, content).await?,
     DomainCommandInputV1::DeleteReply { actor_user_id, id } => {
-      replies::delete_reply(&authorizer, &mut transaction, actor_user_id, id, deployment).await?
+      replies::delete_reply(&authorizer, &mut transaction, actor_user_id, id).await?
     }
     DomainCommandInputV1::PublishDoc {
       actor_user_id,
@@ -165,7 +168,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         doc_id,
         mode,
         true,
-        deployment,
       )
       .await?
     }
@@ -182,7 +184,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         doc_id,
         0,
         false,
-        deployment,
       )
       .await?
     }
@@ -199,7 +200,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         lifecycle,
-        deployment,
+        embedding_schema_ready,
       )
       .await?
     }
@@ -210,15 +211,17 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       assert_permission,
       expected_permission_generation,
     } => {
+      if !assert_permission {
+        return Err(RuntimeError::invalid_input("permission_assertion_required"));
+      }
       lifecycle::append_root_update(
         &authorizer,
         &mut transaction,
         actor_user_id,
         workspace_id,
         update,
-        assert_permission,
         expected_permission_generation,
-        deployment,
+        embedding_schema_ready,
       )
       .await?
     }
@@ -235,7 +238,7 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         timestamp,
-        deployment,
+        embedding_schema_ready,
       )
       .await?
     }
@@ -252,7 +255,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id.clone(),
         target_user_id.clone(),
         new_role,
-        deployment,
       )
       .await?;
       if let Some(hint) = transition.hint {
@@ -280,7 +282,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         doc_id,
         target_user_id,
         new_role,
-        deployment,
       )
       .await?
     }
@@ -299,7 +300,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         doc_id,
         target_user_ids,
         new_role,
-        deployment,
       )
       .await?
     }
@@ -316,7 +316,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         new_role,
-        deployment,
       )
       .await?
     }
@@ -331,14 +330,13 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         actor_user_id,
         workspace_id,
         target_user_id,
-        deployment,
       )
       .await?
     }
     DomainCommandInputV1::LeaveWorkspace {
       actor_user_id,
       workspace_id,
-    } => members::leave_workspace(&authorizer, &mut transaction, actor_user_id, workspace_id, deployment).await?,
+    } => members::leave_workspace(&authorizer, &mut transaction, actor_user_id, workspace_id).await?,
   };
   transaction
     .commit()
@@ -358,11 +356,11 @@ mod tests {
   fn command_wire_and_invalidation_contract_is_complete() {
     let timestamp = "2026-08-30T00:00:00Z";
     let cases = [
-      serde_json::json!({"command":"create_comment","actorUserId":"actor","workspaceId":"workspace","docId":"doc","content":{}}),
+      serde_json::json!({"command":"create_comment","actorUserId":"actor","workspaceId":"workspace","docId":"doc","content":{},"docTitle":"title","docMode":"page"}),
       serde_json::json!({"command":"update_comment","actorUserId":"actor","id":"comment","content":{}}),
       serde_json::json!({"command":"resolve_comment","actorUserId":"actor","id":"comment","resolved":true}),
       serde_json::json!({"command":"delete_comment","actorUserId":"actor","id":"comment"}),
-      serde_json::json!({"command":"create_reply","actorUserId":"actor","commentId":"comment","content":{}}),
+      serde_json::json!({"command":"create_reply","actorUserId":"actor","commentId":"comment","content":{},"docTitle":"title","docMode":"page"}),
       serde_json::json!({"command":"update_reply","actorUserId":"actor","id":"reply","content":{}}),
       serde_json::json!({"command":"delete_reply","actorUserId":"actor","id":"reply"}),
       serde_json::json!({"command":"publish_doc","actorUserId":"actor","workspaceId":"workspace","docId":"doc","mode":0}),
@@ -470,6 +468,21 @@ mod tests {
       return;
     };
     let doc_id = format!("domain-execute-rollback-{}", uuid::Uuid::new_v4().simple());
+    let rejected = execute(
+      pool.clone(),
+      Deployment::Cloud,
+      PermissionTelemetry::default(),
+      true,
+      DomainCommandInputV1::AppendRootUpdate {
+        actor_user_id: actor_user_id.clone(),
+        workspace_id: workspace_id.clone(),
+        update: "AA==".into(),
+        assert_permission: false,
+        expected_permission_generation: None,
+      },
+    )
+    .await;
+    assert_eq!(rejected.err().unwrap().to_string(), "permission_assertion_required");
     sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,$3,now())")
       .bind(&workspace_id)
       .bind(&doc_id)
@@ -508,7 +521,14 @@ mod tests {
       doc_id: doc_id.clone(),
       mode: 0,
     };
-    let failed = execute(pool.clone(), Deployment::Cloud, PermissionTelemetry::default(), input()).await;
+    let failed = execute(
+      pool.clone(),
+      Deployment::Cloud,
+      PermissionTelemetry::default(),
+      true,
+      input(),
+    )
+    .await;
     assert!(failed.is_err());
     assert!(
       !sqlx::query_scalar::<_, bool>(
@@ -529,9 +549,15 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
-    let outcome = execute(pool.clone(), Deployment::Cloud, PermissionTelemetry::default(), input())
-      .await
-      .unwrap();
+    let outcome = execute(
+      pool.clone(),
+      Deployment::Cloud,
+      PermissionTelemetry::default(),
+      true,
+      input(),
+    )
+    .await
+    .unwrap();
     assert_eq!(outcome.value["public"], true);
     assert!(outcome.invalidations.is_empty());
     assert!(

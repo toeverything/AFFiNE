@@ -15,9 +15,7 @@ function createQuotaState(
   overrides: Partial<WorkspaceQuotaStateSnapshot> = {}
 ): WorkspaceQuotaStateSnapshot {
   return {
-    workspaceId: 'workspace-1',
     plan: 'Team',
-    sourceEntitlementId: 'entitlement-1',
     ownerUserId: 'user-1',
     usesOwnerQuota: false,
     seatLimit: 10,
@@ -29,13 +27,7 @@ function createQuotaState(
     historyPeriodSeconds: 30 * 24 * 60 * 60,
     readonly: false,
     readonlyReasons: [],
-    flags: {},
-    known: true,
-    stale: false,
-    lastReconciledAt: null,
-    staleAfter: null,
-    createdAt: new Date(0),
-    updatedAt: new Date(0),
+    unlimitedCopilot: false,
     ...overrides,
   };
 }

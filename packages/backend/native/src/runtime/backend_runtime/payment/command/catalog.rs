@@ -121,7 +121,6 @@ impl PaymentRuntime {
           specification.lookup_key,
         )?],
         None,
-        None,
         "v1/prices",
         fields,
       );
@@ -218,8 +217,7 @@ impl PaymentRuntime {
       "create_customer",
       &customer_intent,
       vec![PaymentScope::billing_target(&namespace_key, "user", user_id)?],
-      Some("user"),
-      Some(user_id),
+      Some(("user", user_id)),
       "v1/customers",
       vec![
         text_field("email", email),

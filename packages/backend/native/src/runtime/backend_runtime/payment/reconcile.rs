@@ -92,24 +92,48 @@ async fn source_candidate(runtime: &PaymentRuntime, namespace: &str) -> RuntimeR
       .map_err(|error| RuntimeError::database("lock payment reconcile cursor", error))?;
   let cursor: SourceCursor =
     serde_json::from_value(payload).map_err(|error| RuntimeError::json("decode payment reconcile cursor", error))?;
-  let row = if let Some(after) = cursor.after.as_deref() {
+  let (row, overlap_pass) = if let Some(after) = cursor.after.as_deref() {
     if cursor.overlap_pending {
-      sqlx::query(SOURCE_AT)
+      let overlap = sqlx::query(SOURCE_AT)
         .bind(namespace)
         .bind(after)
         .fetch_optional(&mut *tx)
         .await
+        .map_err(|error| RuntimeError::database("load payment reconcile source overlap", error))?;
+      if overlap.is_some() {
+        (overlap, true)
+      } else {
+        (
+          sqlx::query(SOURCE_AFTER)
+            .bind(namespace)
+            .bind(after)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|error| RuntimeError::database("advance payment reconcile source overlap", error))?,
+          false,
+        )
+      }
     } else {
-      sqlx::query(SOURCE_AFTER)
-        .bind(namespace)
-        .bind(after)
-        .fetch_optional(&mut *tx)
-        .await
+      (
+        sqlx::query(SOURCE_AFTER)
+          .bind(namespace)
+          .bind(after)
+          .fetch_optional(&mut *tx)
+          .await
+          .map_err(|error| RuntimeError::database("load payment reconcile source", error))?,
+        false,
+      )
     }
   } else {
-    sqlx::query(FIRST_SOURCE).bind(namespace).fetch_optional(&mut *tx).await
-  }
-  .map_err(|error| RuntimeError::database("load payment reconcile source", error))?;
+    (
+      sqlx::query(FIRST_SOURCE)
+        .bind(namespace)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|error| RuntimeError::database("load first payment reconcile source", error))?,
+      false,
+    )
+  };
   let Some(row) = row else {
     let wrapped = SourceCursor {
       after: None,
@@ -134,7 +158,7 @@ async fn source_candidate(runtime: &PaymentRuntime, namespace: &str) -> RuntimeR
   let source_id: String = row.get("source_identity");
   let next_cursor = SourceCursor {
     after: Some(source_id.clone()),
-    overlap_pending: !cursor.overlap_pending,
+    overlap_pending: !overlap_pass,
     generation: cursor.generation,
   };
   let provider = Provider::parse(row.get::<String, _>("provider").as_str())

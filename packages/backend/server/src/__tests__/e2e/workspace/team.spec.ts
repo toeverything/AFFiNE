@@ -1,14 +1,13 @@
 import {
-  getInviteInfoQuery,
   inviteByEmailsMutation,
   publishPageMutation,
   revokeMemberPermissionMutation,
   revokePublicPageMutation,
   WorkspaceMemberStatus,
 } from '@affine/graphql';
-import { PrismaClient, WorkspaceMemberSource } from '@prisma/client';
 
-import { WorkspacePolicyService } from '../../../core/permission';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
+import { EntitlementService } from '../../../core/entitlement';
 import { QuotaService } from '../../../core/quota/service';
 import { WorkspaceRole } from '../../../models';
 import {
@@ -17,6 +16,8 @@ import {
 } from '../../../plugins/payment/types';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
+
+const teamE2E = e2e.serial;
 
 const createTeamWorkspace = async (memberLimit = 3) => {
   const owner = await app.create(Mockers.User);
@@ -52,16 +53,6 @@ const createTeamWorkspace = async (memberLimit = 3) => {
     writer,
     external,
   };
-};
-
-const getInvitationInfo = async (inviteId: string) => {
-  const result = await app.gql({
-    query: getInviteInfoQuery,
-    variables: {
-      inviteId,
-    },
-  });
-  return result.getInviteInfo;
 };
 
 const publishDoc = async (workspaceId: string, docId: string) => {
@@ -101,23 +92,7 @@ const revokeMember = async (workspaceId: string, userId: string) => {
 };
 
 const cancelTeamWorkspace = async (workspaceId: string) => {
-  const db = app.get(PrismaClient);
-  await db.entitlement.updateMany({
-    where: {
-      targetType: 'workspace',
-      targetId: workspaceId,
-      plan: 'team',
-    },
-    data: { status: 'revoked' },
-  });
-  await db.providerSubscription.updateMany({
-    where: {
-      targetType: 'workspace',
-      targetId: workspaceId,
-      plan: SubscriptionPlan.Team,
-    },
-    data: { status: 'canceled' },
-  });
+  await app.get(EntitlementService).revokeAdminGrant('workspace', workspaceId);
   await app.eventBus.emitAsync('workspace.subscription.canceled', {
     workspaceId,
     plan: SubscriptionPlan.Team,
@@ -125,141 +100,25 @@ const cancelTeamWorkspace = async (workspaceId: string) => {
   });
 };
 
-e2e('should set new invited users to waiting-seat status', async t => {
+teamE2E('should reject invitations beyond the charged seat limit', async t => {
   const { owner, workspace } = await createTeamWorkspace();
   await app.login(owner);
 
   const u1 = await app.createUser();
 
-  const result = await app.gql({
-    query: inviteByEmailsMutation,
-    variables: {
-      workspaceId: workspace.id,
-      emails: [u1.email],
-    },
-  });
-
-  t.not(result.inviteMembers[0].inviteId, null);
-
-  await app.login(u1);
-  const invitationInfo = await getInvitationInfo(
-    result.inviteMembers[0].inviteId!
-  );
-  t.is(invitationInfo.status, WorkspaceMemberStatus.NeedMoreSeat);
-});
-
-e2e('should allocate existing team seats for new invited users', async t => {
-  const { owner, workspace } = await createTeamWorkspace(4);
-  await app.login(owner);
-
-  const u1 = await app.createUser();
-
-  const result = await app.gql({
-    query: inviteByEmailsMutation,
-    variables: {
-      workspaceId: workspace.id,
-      emails: [u1.email],
-    },
-  });
-
-  t.not(result.inviteMembers[0].inviteId, null);
-
-  await app.login(u1);
-  const invitationInfo = await getInvitationInfo(
-    result.inviteMembers[0].inviteId!
-  );
-  t.is(invitationInfo.status, WorkspaceMemberStatus.Pending);
-});
-
-e2e('should allocate seats', async t => {
-  const { owner, workspace } = await createTeamWorkspace();
-  await app.login(owner);
-
-  const u1 = await app.createUser();
-  await app.create(Mockers.WorkspaceUser, {
-    userId: u1.id,
-    workspaceId: workspace.id,
-    status: WorkspaceMemberStatus.AllocatingSeat,
-  });
-
-  const u2 = await app.createUser();
-  const linkInvitation = await app.create(Mockers.WorkspaceUser, {
-    userId: u2.id,
-    workspaceId: workspace.id,
-    status: WorkspaceMemberStatus.AllocatingSeat,
-    kind: 'link',
-  });
-  t.is(linkInvitation.source, WorkspaceMemberSource.Link);
-
-  const invitationCount = app.queue.count('notification.sendInvitation');
-  await app.eventBus.emitAsync('workspace.members.allocateSeats', {
-    workspaceId: workspace.id,
-    quantity: 5,
-  });
-
-  const [members] = await app.models.workspaceUser.paginate(workspace.id, {
-    first: 10,
-    offset: 0,
-  });
-
-  t.is(
-    members.find(m => m.user?.id === u1.id)?.status,
-    WorkspaceMemberStatus.Pending
-  );
-  t.is(
-    members.find(m => m.user?.id === u2.id)?.status,
-    WorkspaceMemberStatus.Accepted
-  );
-
-  t.is(app.queue.count('notification.sendInvitation') - invitationCount, 1);
-});
-
-e2e('should set all rests to NeedMoreSeat', async t => {
-  const { owner, workspace } = await createTeamWorkspace();
-  await app.login(owner);
-
-  const u1 = await app.createUser();
-  await app.create(Mockers.WorkspaceUser, {
-    userId: u1.id,
-    workspaceId: workspace.id,
-    status: WorkspaceMemberStatus.AllocatingSeat,
-  });
-
-  const u2 = await app.createUser();
-  await app.create(Mockers.WorkspaceUser, {
-    userId: u2.id,
-    workspaceId: workspace.id,
-    status: WorkspaceMemberStatus.AllocatingSeat,
-  });
-
-  const u3 = await app.createUser();
-  await app.create(Mockers.WorkspaceUser, {
-    userId: u3.id,
-    workspaceId: workspace.id,
-    status: WorkspaceMemberStatus.AllocatingSeat,
-  });
-
-  await app.eventBus.emitAsync('workspace.members.allocateSeats', {
-    workspaceId: workspace.id,
-    quantity: 4,
-  });
-
-  const [members] = await app.models.workspaceUser.paginate(workspace.id, {
-    first: 10,
-    offset: 0,
-  });
-
-  t.is(
-    members.find(m => m.user?.id === u2.id)?.status,
-    WorkspaceMemberStatus.NeedMoreSeat
-  );
-  t.is(
-    members.find(m => m.user?.id === u3.id)?.status,
-    WorkspaceMemberStatus.NeedMoreSeat
+  await t.throwsAsync(
+    app.gql({
+      query: inviteByEmailsMutation,
+      variables: {
+        workspaceId: workspace.id,
+        emails: [u1.email],
+      },
+    }),
+    { message: /No more seat available/ }
   );
 });
 
-e2e(
+teamE2E(
   'should cleanup non-accepted members when team workspace is downgraded',
   async t => {
     const { workspace } = await createTeamWorkspace();
@@ -304,7 +163,7 @@ e2e(
   }
 );
 
-e2e(
+teamE2E(
   'should demote accepted admins and keep workspace writable when downgrade stays within owner quota',
   async t => {
     const { workspace, owner, admin } = await createTeamWorkspace();
@@ -313,20 +172,28 @@ e2e(
 
     t.false(await app.models.workspace.isTeamWorkspace(workspace.id));
     t.false(
-      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
-        .isReadonly
+      (
+        await app
+          .get(BackendRuntimeProvider)
+          .getWorkspaceQuotaStateV1(workspace.id)
+      ).readonly
     );
     t.is(
       (await app.models.workspaceUser.get(workspace.id, admin.id))?.type,
       WorkspaceRole.Collaborator
     );
 
+    await app.create(Mockers.DocSnapshot, {
+      workspaceId: workspace.id,
+      docId: 'doc-1',
+      user: owner,
+    });
     await app.login(owner);
     await t.notThrowsAsync(publishDoc(workspace.id, 'doc-1'));
   }
 );
 
-e2e(
+teamE2E(
   'should enter readonly mode on over-quota team downgrade and recover through cleanup actions',
   async t => {
     const { workspace, owner, admin } = await createTeamWorkspace(20);
@@ -342,14 +209,26 @@ e2e(
     );
 
     await app.login(owner);
+    await Promise.all(
+      ['published-doc', 'blocked-doc'].map(docId =>
+        app.create(Mockers.DocSnapshot, {
+          workspaceId: workspace.id,
+          docId,
+          user: owner,
+        })
+      )
+    );
     await publishDoc(workspace.id, 'published-doc');
 
     await cancelTeamWorkspace(workspace.id);
 
     t.false(await app.models.workspace.isTeamWorkspace(workspace.id));
     t.true(
-      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
-        .isReadonly
+      (
+        await app
+          .get(BackendRuntimeProvider)
+          .getWorkspaceQuotaStateV1(workspace.id)
+      ).readonly
     );
     t.is(
       (await app.models.workspaceUser.get(workspace.id, admin.id))?.type,
@@ -357,7 +236,7 @@ e2e(
     );
 
     await t.throwsAsync(publishDoc(workspace.id, 'blocked-doc'));
-    await t.throwsAsync(revokePublicDoc(workspace.id, 'published-doc'));
+    await t.notThrowsAsync(revokePublicDoc(workspace.id, 'published-doc'));
 
     const quota = await app
       .get(QuotaService)
@@ -367,8 +246,11 @@ e2e(
     }
 
     t.false(
-      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
-        .isReadonly
+      (
+        await app
+          .get(BackendRuntimeProvider)
+          .getWorkspaceQuotaStateV1(workspace.id)
+      ).readonly
     );
   }
 );

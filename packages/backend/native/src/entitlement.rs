@@ -195,7 +195,12 @@ fn resolve_selfhost_license(input: ResolveEntitlementInput, now: DateTime<Utc>) 
     return invalid_arg("publicKey is required for signed payload verification");
   };
 
-  let claims = match LicenseVerifier::verify(payload.as_ref(), &public_key, input.target_id.as_deref(), now) {
+  let normalized = match crate::license_import::normalize_license(payload.as_ref()) {
+    Ok(payload) => payload,
+    Err(error) if error.status == Status::GenericFailure => return Err(error),
+    Err(error) => return Ok(invalid_license(&error.reason, &error.reason)),
+  };
+  let claims = match LicenseVerifier::verify(normalized.as_ref(), &public_key, input.target_id.as_deref(), now) {
     Ok(claims) => claims,
     Err(error) => return Ok(invalid_license(error.code(), &error.to_string())),
   };
@@ -212,6 +217,7 @@ fn resolve_selfhost_license(input: ResolveEntitlementInput, now: DateTime<Utc>) 
   entitlement.subject_id = Some(claims.license_id().to_string());
   entitlement.target_id = Some(claims.workspace_id().to_string());
   entitlement.issued_at = Some(claims.issued_at().to_rfc3339());
+  entitlement.recurring = claims.recurring().map(str::to_string);
   entitlement.entity = Some(claims.audience().to_string());
   entitlement.issuer = Some("affine".to_string());
   Ok(entitlement)
@@ -364,7 +370,7 @@ pub(crate) mod tests {
 
   const TEST_WORKSPACE_ID: &str = "d6f52bc7-d62a-4822-804a-335fa7dfe5a6";
   #[rustfmt::skip]
-  const TEST_PUBLIC_KEY: &str = "-----BEGIN PUBLIC KEY-----\n\
+  pub(crate) const TEST_PUBLIC_KEY: &str = "-----BEGIN PUBLIC KEY-----\n\
   MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEObwJiTmbui7rkWfPJ7Lozvuy2Rcl\n\
   otcrb0V6dlS2ijKEShm7ZttTwQn08xzesdjX/AxpoR5X9yfoHkauIBuuMQ==\n\
   -----END PUBLIC KEY-----";

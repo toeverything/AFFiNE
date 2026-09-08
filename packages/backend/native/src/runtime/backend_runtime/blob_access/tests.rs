@@ -22,6 +22,11 @@ struct Fixture {
 async fn setup() -> Option<Fixture> {
   let database_url = std::env::var("DATABASE_URL").ok()?;
   let pool = PgPool::connect(&database_url).await.unwrap();
+  assert!(
+    crate::runtime::migrations::migrate_embedding_tables(&pool)
+      .await
+      .enabled
+  );
   let suffix = Uuid::new_v4().simple().to_string();
   let workspace_id = format!("blob-access-workspace-{suffix}");
   let direct_user_id = format!("blob-access-direct-{suffix}");
@@ -380,6 +385,7 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
   append_updates(
     &fixture.pool,
     Some(publisher.clone()),
+    true,
     fixture.workspace_id.clone(),
     fixture.doc_id.clone(),
     vec![redis_update.into()],
@@ -412,6 +418,7 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
   append_updates(
     &fixture.pool,
     None,
+    true,
     fixture.workspace_id.clone(),
     fixture.doc_id.clone(),
     vec![loss_update.into()],

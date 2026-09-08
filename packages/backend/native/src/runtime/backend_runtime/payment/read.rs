@@ -323,8 +323,7 @@ pub(super) async fn load_financial_restrictions(
   .fetch_all(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("read payment financial restrictions", error))?;
-  let mut facts =
-    BTreeMap::<(String, String), (Option<String>, FinancialFact, Option<chrono::DateTime<chrono::Utc>>)>::new();
+  let mut facts = FinancialFacts::new();
   for row in rows {
     let object_kind: String = row.get("object_kind");
     let status: String = row.get("status");
@@ -359,10 +358,10 @@ pub(super) async fn load_financial_restrictions(
   )
 }
 
-fn merge_incoming_fact(
-  facts: &mut BTreeMap<(String, String), (Option<String>, FinancialFact, Option<chrono::DateTime<chrono::Utc>>)>,
-  incoming: &FinancialSnapshot,
-) -> RuntimeResult<()> {
+type FinancialFacts =
+  BTreeMap<(String, String), (Option<String>, FinancialFact, Option<chrono::DateTime<chrono::Utc>>)>;
+
+fn merge_incoming_fact(facts: &mut FinancialFacts, incoming: &FinancialSnapshot) -> RuntimeResult<()> {
   let key = (incoming.fact.kind.as_str().to_string(), incoming.external_id.clone());
   let existing = facts.get(&key);
   if existing

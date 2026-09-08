@@ -6,35 +6,30 @@ import {
   Int,
   Mutation,
   ObjectType,
-  Parent,
   Query,
   registerEnumType,
-  ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { Entitlement, User } from '@prisma/client';
-import { PrismaClient, Provider } from '@prisma/client';
 import { GraphQLJSONObject } from 'graphql-scalars';
 import { groupBy } from 'lodash-es';
-import Stripe from 'stripe';
 import { z } from 'zod';
 
 import {
-  AccessDenied,
+  ActionForbidden,
   AuthenticationRequired,
   FailedToCheckout,
-  InvalidSubscriptionParameters,
   Throttle,
   WorkspaceIdRequiredToUpdateTeamSubscription,
 } from '../../base';
 import { CurrentUser, Public } from '../../core/auth';
-import { EntitlementService } from '../../core/entitlement';
+import { FeatureService } from '../../core/features';
 import { PermissionAccess } from '../../core/permission';
-import { UserType } from '../../core/user';
-import { WorkspaceType } from '../../core/workspaces';
-import { Invoice, Subscription, visibleSubscriptionWhere } from './manager';
-import { RevenueCatWebhookHandler } from './revenuecat';
-import { CheckoutParams, SubscriptionService } from './service';
+import { Invoice, Subscription } from './model';
+import {
+  CheckoutParams,
+  SubscriptionService,
+  userSubscriptionIdentity,
+} from './service';
 import {
   InvoiceStatus,
   SubscriptionPlan,
@@ -213,7 +208,11 @@ class CreateCheckoutSessionInput implements z.infer<typeof CheckoutParams> {
 
 @Resolver(() => SubscriptionType)
 export class SubscriptionResolver {
-  constructor(private readonly service: SubscriptionService) {}
+  constructor(
+    private readonly service: SubscriptionService,
+    private readonly ac: PermissionAccess,
+    private readonly feature: FeatureService
+  ) {}
 
   @Public()
   @Query(() => [SubscriptionPrice])
@@ -285,11 +284,18 @@ export class SubscriptionResolver {
     @Args({ name: 'input', type: () => CreateCheckoutSessionInput })
     input: CreateCheckoutSessionInput
   ) {
-    let session: Stripe.Checkout.Session;
+    if (
+      env.namespaces.canary &&
+      env.prod &&
+      user &&
+      !this.feature.isStaff(user.email)
+    ) {
+      throw new ActionForbidden();
+    }
+    let session: { url: string | null };
 
     if (input.plan === SubscriptionPlan.SelfHostedTeam) {
       session = await this.service.checkout(input, {
-        plan: input.plan as any,
         quantity: input.args?.quantity ?? 10,
         user,
       });
@@ -298,8 +304,18 @@ export class SubscriptionResolver {
         throw new AuthenticationRequired();
       }
 
+      if (input.plan === SubscriptionPlan.Team) {
+        const workspaceId = input.args?.workspaceId;
+        if (!workspaceId) {
+          throw new WorkspaceIdRequiredToUpdateTeamSubscription();
+        }
+        await this.ac
+          .user(user.id)
+          .workspace(workspaceId)
+          .assert('Workspace.Payment.Manage');
+      }
+
       session = await this.service.checkout(input, {
-        plan: input.plan as any,
         user,
         workspaceId: input.args?.workspaceId,
       });
@@ -344,18 +360,19 @@ export class SubscriptionResolver {
         throw new WorkspaceIdRequiredToUpdateTeamSubscription();
       }
 
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .assert('Workspace.Payment.Manage');
+
       return this.service.cancelSubscription(
-        { workspaceId, plan },
+        { workspaceId, plan, actorUserId: user.id },
         idempotencyKey
       );
     }
 
     return this.service.cancelSubscription(
-      {
-        userId: user.id,
-        // @ts-expect-error exam inside
-        plan,
-      },
+      userSubscriptionIdentity(plan, user.id),
       idempotencyKey
     );
   }
@@ -385,18 +402,19 @@ export class SubscriptionResolver {
         throw new WorkspaceIdRequiredToUpdateTeamSubscription();
       }
 
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .assert('Workspace.Payment.Manage');
+
       return this.service.resumeSubscription(
-        { workspaceId, plan },
+        { workspaceId, plan, actorUserId: user.id },
         idempotencyKey
       );
     }
 
     return this.service.resumeSubscription(
-      {
-        userId: user.id,
-        // @ts-expect-error exam inside
-        plan,
-      },
+      userSubscriptionIdentity(plan, user.id),
       idempotencyKey
     );
   }
@@ -428,19 +446,20 @@ export class SubscriptionResolver {
         throw new WorkspaceIdRequiredToUpdateTeamSubscription();
       }
 
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .assert('Workspace.Payment.Manage');
+
       return this.service.updateSubscriptionRecurring(
-        { workspaceId, plan },
+        { workspaceId, plan, actorUserId: user.id },
         recurring,
         idempotencyKey
       );
     }
 
     return this.service.updateSubscriptionRecurring(
-      {
-        userId: user.id,
-        // @ts-expect-error exam inside
-        plan,
-      },
+      userSubscriptionIdentity(plan, user.id),
       recurring,
       idempotencyKey
     );
@@ -453,388 +472,5 @@ export class SubscriptionResolver {
     @Args('sessionId', { type: () => String }) sessionId: string
   ) {
     return this.service.generateLicenseKey(sessionId);
-  }
-}
-
-@Resolver(() => UserType)
-export class UserSubscriptionResolver {
-  constructor(
-    private readonly db: PrismaClient,
-    private readonly entitlement: EntitlementService,
-    private readonly rcHandler: RevenueCatWebhookHandler
-  ) {}
-
-  private normalizeSubscription(s: Subscription) {
-    if (s.variant && s.variant !== SubscriptionVariant.Onetime) {
-      s.variant = null;
-    }
-    return s;
-  }
-
-  private async currentUserSubscriptions(userId: string) {
-    const entitlements = (
-      await this.entitlement.getActiveEntitlements('user', userId)
-    ).filter(
-      entitlement =>
-        entitlement.source === 'cloud_subscription' &&
-        ['pro', 'lifetime_pro', 'ai'].includes(entitlement.plan)
-    );
-    const providerFacts = await this.db.providerSubscription.findMany({
-      where: {
-        targetType: 'user',
-        targetId: userId,
-        plan: {
-          in: entitlements.map(entitlement =>
-            this.subscriptionPlan(entitlement.plan)
-          ),
-        },
-        status: {
-          in: [
-            SubscriptionStatus.Active,
-            SubscriptionStatus.Trialing,
-            SubscriptionStatus.PastDue,
-          ],
-        },
-        OR: [{ periodEnd: null }, { periodEnd: { gt: new Date() } }],
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
-
-    return entitlements.map(entitlement => {
-      const plan = this.subscriptionPlan(entitlement.plan);
-      const providerFact = providerFacts.find(
-        fact => fact.targetId === userId && fact.plan === plan
-      );
-      const metadata = entitlement.metadata as {
-        provider?: string | null;
-        recurring?: string | null;
-        variant?: string | null;
-        stripeSubscriptionId?: string | null;
-      };
-      const providerMetadata = providerFact?.metadata as {
-        variant?: string | null;
-        stripeScheduleId?: string | null;
-        nextBillAt?: string | null;
-      } | null;
-
-      return this.normalizeSubscription({
-        stripeSubscriptionId:
-          providerFact?.externalSubscriptionId ??
-          metadata.stripeSubscriptionId ??
-          null,
-        stripeScheduleId: providerMetadata?.stripeScheduleId ?? null,
-        status: providerFact?.status ?? this.subscriptionStatus(entitlement),
-        plan,
-        recurring:
-          providerFact?.recurring ??
-          metadata.recurring ??
-          (entitlement.plan === 'lifetime_pro'
-            ? SubscriptionRecurring.Lifetime
-            : SubscriptionRecurring.Monthly),
-        variant:
-          providerMetadata?.variant ??
-          metadata.variant ??
-          (entitlement.plan === 'lifetime_pro'
-            ? SubscriptionVariant.Onetime
-            : null),
-        quantity: providerFact?.quantity ?? entitlement.quantity ?? 1,
-        start:
-          providerFact?.periodStart ??
-          entitlement.startsAt ??
-          entitlement.createdAt,
-        end: providerFact?.periodEnd ?? entitlement.expiresAt,
-        trialStart: providerFact?.trialStart ?? null,
-        trialEnd: providerFact?.trialEnd ?? entitlement.graceUntil,
-        nextBillAt: providerMetadata?.nextBillAt
-          ? new Date(providerMetadata.nextBillAt)
-          : providerFact?.canceledAt
-            ? null
-            : (providerFact?.periodEnd ?? entitlement.expiresAt),
-        canceledAt: providerFact?.canceledAt ?? null,
-        provider: providerFact?.provider ?? metadata.provider ?? null,
-        iapStore: providerFact?.iapStore ?? null,
-      });
-    });
-  }
-
-  private subscriptionPlan(plan: string) {
-    return plan === 'lifetime_pro' ? SubscriptionPlan.Pro : plan;
-  }
-
-  private subscriptionStatus(entitlement: Entitlement) {
-    if (entitlement.status === 'grace') {
-      return SubscriptionStatus.PastDue;
-    }
-    return SubscriptionStatus.Active;
-  }
-
-  @ResolveField(() => [SubscriptionType])
-  async subscriptions(
-    @CurrentUser() me: User,
-    @Parent() user: User
-  ): Promise<Subscription[]> {
-    if (me.id !== user.id) {
-      throw new AccessDenied();
-    }
-
-    return this.currentUserSubscriptions(user.id);
-  }
-
-  @ResolveField(() => Int, {
-    name: 'invoiceCount',
-    description: 'Get user invoice count',
-  })
-  async invoiceCount(@CurrentUser() user: CurrentUser) {
-    return this.db.invoice.count({
-      where: { targetId: user.id },
-    });
-  }
-
-  @ResolveField(() => [InvoiceType])
-  async invoices(
-    @CurrentUser() me: User,
-    @Parent() user: User,
-    @Args('take', { type: () => Int, nullable: true, defaultValue: 8 })
-    take: number,
-    @Args('skip', { type: () => Int, nullable: true }) skip?: number
-  ) {
-    if (me.id !== user.id) {
-      throw new AccessDenied();
-    }
-
-    return this.db.invoice.findMany({
-      where: {
-        targetId: user.id,
-      },
-      take,
-      skip,
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-  }
-
-  @Throttle('strict')
-  @Mutation(() => [SubscriptionType], {
-    description: 'Request to apply the subscription in advance',
-  })
-  async requestApplySubscription(
-    @CurrentUser() user: CurrentUser,
-    @Args('transactionId') transactionId: string
-  ): Promise<Subscription[]> {
-    if (!user) {
-      throw new AuthenticationRequired();
-    }
-
-    const existsSubscription = await this.db.providerSubscription.findFirst({
-      where: {
-        provider: Provider.revenuecat,
-        externalRef: transactionId,
-      },
-    });
-
-    // subscription with the transactionId already exists
-    if (existsSubscription) {
-      if (existsSubscription.targetId !== user.id) {
-        throw new InvalidSubscriptionParameters();
-      } else {
-        return this.currentUserSubscriptions(user.id);
-      }
-    }
-
-    let current: Subscription[] = [];
-
-    try {
-      await this.rcHandler.syncAppUserWithExternalRef(user.id, transactionId);
-      current = await this.currentUserSubscriptions(user.id);
-      // ignore errors
-    } catch {}
-
-    return current;
-  }
-
-  @Throttle('strict')
-  @Mutation(() => [SubscriptionType], {
-    description: 'Refresh current user subscriptions and return latest.',
-  })
-  async refreshUserSubscriptions(
-    @CurrentUser() user: CurrentUser
-  ): Promise<Subscription[]> {
-    if (!user) {
-      throw new AuthenticationRequired();
-    }
-
-    const current = await this.db.providerSubscription.findMany({
-      where: {
-        targetType: 'user',
-        targetId: user.id,
-        ...visibleSubscriptionWhere(),
-      },
-    });
-
-    const existsPlans = Object.values(SubscriptionPlan);
-    const subscriptions = current.reduce(
-      (r, s) => {
-        if (existsPlans.includes(s.plan as SubscriptionPlan)) {
-          r[s.plan as SubscriptionPlan] = s.provider;
-        }
-        return r;
-      },
-      {} as Record<SubscriptionPlan, Provider>
-    );
-
-    // has revenuecat subscription or no subscription at all
-    const shouldSync =
-      current.length === 0 ||
-      subscriptions.pro === Provider.revenuecat ||
-      subscriptions.ai === Provider.revenuecat;
-
-    if (shouldSync) {
-      try {
-        await this.rcHandler.syncAppUser(user.id);
-        // ignore errors
-      } catch {}
-    }
-
-    return this.currentUserSubscriptions(user.id);
-  }
-}
-
-@Resolver(() => WorkspaceType)
-export class WorkspaceSubscriptionResolver {
-  constructor(
-    private readonly db: PrismaClient,
-    private readonly entitlement: EntitlementService,
-    private readonly ac: PermissionAccess
-  ) {}
-
-  private async currentWorkspaceSubscription(workspaceId: string) {
-    const entitlement = await this.entitlement.getBestEntitlement(
-      'workspace',
-      workspaceId
-    );
-    if (
-      !entitlement ||
-      entitlement.source !== 'cloud_subscription' ||
-      entitlement.plan !== 'team'
-    ) {
-      return null;
-    }
-
-    const providerFact = await this.db.providerSubscription.findFirst({
-      where: {
-        targetType: 'workspace',
-        targetId: workspaceId,
-        plan: SubscriptionPlan.Team,
-        status: {
-          in: [
-            SubscriptionStatus.Active,
-            SubscriptionStatus.Trialing,
-            SubscriptionStatus.PastDue,
-          ],
-        },
-        OR: [{ periodEnd: null }, { periodEnd: { gt: new Date() } }],
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
-    const metadata = entitlement.metadata as {
-      provider?: string | null;
-      recurring?: string | null;
-      variant?: string | null;
-      stripeSubscriptionId?: string | null;
-    };
-    const providerMetadata = providerFact?.metadata as {
-      variant?: string | null;
-      stripeScheduleId?: string | null;
-      nextBillAt?: string | null;
-    } | null;
-
-    return {
-      stripeSubscriptionId:
-        providerFact?.externalSubscriptionId ??
-        metadata.stripeSubscriptionId ??
-        null,
-      stripeScheduleId: providerMetadata?.stripeScheduleId ?? null,
-      status:
-        providerFact?.status ??
-        (entitlement.status === 'grace'
-          ? SubscriptionStatus.PastDue
-          : SubscriptionStatus.Active),
-      plan: SubscriptionPlan.Team,
-      recurring:
-        providerFact?.recurring ??
-        metadata.recurring ??
-        SubscriptionRecurring.Monthly,
-      variant: providerMetadata?.variant ?? metadata.variant ?? null,
-      quantity: providerFact?.quantity ?? entitlement.quantity ?? 1,
-      start:
-        providerFact?.periodStart ??
-        entitlement.startsAt ??
-        entitlement.createdAt,
-      end: providerFact?.periodEnd ?? entitlement.expiresAt,
-      trialStart: providerFact?.trialStart ?? null,
-      trialEnd: providerFact?.trialEnd ?? entitlement.graceUntil,
-      nextBillAt: providerMetadata?.nextBillAt
-        ? new Date(providerMetadata.nextBillAt)
-        : providerFact?.canceledAt
-          ? null
-          : (providerFact?.periodEnd ?? entitlement.expiresAt),
-      canceledAt: providerFact?.canceledAt ?? null,
-      provider: providerFact?.provider ?? metadata.provider ?? null,
-      iapStore: providerFact?.iapStore ?? null,
-    };
-  }
-
-  @ResolveField(() => SubscriptionType, {
-    nullable: true,
-    description: 'The team subscription of the workspace, if exists.',
-  })
-  async subscription(@Parent() workspace: WorkspaceType) {
-    return this.currentWorkspaceSubscription(workspace.id);
-  }
-
-  @ResolveField(() => Int, {
-    name: 'invoiceCount',
-    description: 'Get user invoice count',
-  })
-  async invoiceCount(
-    @CurrentUser() me: CurrentUser,
-    @Parent() workspace: WorkspaceType
-  ) {
-    await this.ac
-      .user(me.id)
-      .workspace(workspace.id)
-      .assert('Workspace.Payment.Manage');
-
-    return this.db.invoice.count({
-      where: {
-        targetId: workspace.id,
-      },
-    });
-  }
-
-  @ResolveField(() => [InvoiceType])
-  async invoices(
-    @CurrentUser() me: CurrentUser,
-    @Parent() workspace: WorkspaceType,
-    @Args('take', { type: () => Int, nullable: true, defaultValue: 8 })
-    take: number,
-    @Args('skip', { type: () => Int, nullable: true }) skip?: number
-  ) {
-    await this.ac
-      .user(me.id)
-      .workspace(workspace.id)
-      .assert('Workspace.Payment.Manage');
-
-    return this.db.invoice.findMany({
-      where: {
-        targetId: workspace.id,
-      },
-      take,
-      skip,
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
   }
 }

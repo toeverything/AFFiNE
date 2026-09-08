@@ -9,11 +9,21 @@ import { BackendRuntimeProvider } from '../provider';
 const privateKey = generateKeyPairSync('ec', {
   namedCurve: 'P-256',
 }).privateKey.export({ format: 'pem', type: 'pkcs8' }) as string;
-const config = { crypto: { privateKey } } as Config;
+const storage = {
+  provider: 'assetpack',
+  bucket: 'test',
+  config: { path: '/tmp/affine-backend-runtime-test' },
+};
+const config = {
+  crypto: { privateKey },
+  storages: { blob: { storage }, avatar: { storage } },
+  copilot: { storage },
+} as Config;
 
 test('backend-runtime provider starts without migrations and exposes explicit migration', async t => {
-  const provider = new BackendRuntimeProvider(config);
+  const provider = new BackendRuntimeProvider(config, []);
   const runtime = {
+    configureObjectStorage: Sinon.stub(),
     start: Sinon.stub().resolves(),
     stop: Sinon.stub().resolves(),
     runMigrations: Sinon.stub().resolves(),
@@ -21,6 +31,14 @@ test('backend-runtime provider starts without migrations and exposes explicit mi
     health: Sinon.stub().resolves({
       started: true,
       databaseConnected: true,
+      invalidation: {
+        state: 'disabled',
+        reconnects: 0,
+        decodeFailures: 0,
+        received: 0,
+        published: 0,
+        publishFailures: 0,
+      },
     }),
   };
   (provider as unknown as { runtime: typeof runtime }).runtime = runtime;
@@ -37,13 +55,25 @@ test('backend-runtime provider starts without migrations and exposes explicit mi
   t.is(runtime.start.callCount, 2);
   t.is(runtime.runMigrations.callCount, 1);
   t.is(runtime.reloadConfig.callCount, 2);
-  t.true(runtime.reloadConfig.alwaysCalledWithExactly(privateKey));
+  t.true(
+    runtime.reloadConfig.alwaysCalledWithExactly(
+      privateKey,
+      JSON.stringify({
+        storages: {
+          'blob.storage': storage,
+          'avatar.storage': storage,
+        },
+        copilot: { storage },
+      }),
+      '{}'
+    )
+  );
   t.true(health.databaseConnected);
   t.is(runtime.stop.callCount, 1);
 });
 
 test('backend-runtime provider measures explicit typed methods', async t => {
-  const provider = new BackendRuntimeProvider(config);
+  const provider = new BackendRuntimeProvider(config, []);
   const runtime = {
     cleanupExpiredRuntimeStates: Sinon.stub().resolves(3),
     assertCopilotRoute: Sinon.stub().resolves(),
@@ -68,7 +98,7 @@ test('backend-runtime provider measures explicit typed methods', async t => {
 });
 
 test('backend-runtime provider encodes recursive search contracts at the native boundary', async t => {
-  const provider = new BackendRuntimeProvider(config);
+  const provider = new BackendRuntimeProvider(config, []);
   const runtime = {
     searchAuthorized: Sinon.stub().resolves({
       ok: true,
@@ -168,7 +198,7 @@ test('backend-runtime provider encodes recursive search contracts at the native 
 });
 
 test('backend-runtime provider aborts a stream handle that resolves after iterator cancellation', async t => {
-  const provider = new BackendRuntimeProvider(config);
+  const provider = new BackendRuntimeProvider(config, []);
   const abort = Sinon.stub();
   let resolveHandle!: (handle: { abort: () => void }) => void;
   const runtime = {

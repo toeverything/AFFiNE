@@ -17,7 +17,16 @@ use serde_json::Value;
 use sqlx::{Postgres, Transaction};
 
 use super::{InvalidationHintV1, SourceIdentity, load_command_quota_in, permission::PermissionAuthorizer};
-use crate::runtime::{Deployment, RuntimeError, RuntimeResult};
+use crate::runtime::{RuntimeError, RuntimeResult};
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct CommentNotification {
+  doc_title: String,
+  doc_mode: String,
+  #[serde(default)]
+  mentions: Vec<String>,
+}
 
 #[derive(Deserialize)]
 #[serde(tag = "command", rename_all = "snake_case", rename_all_fields = "camelCase")]
@@ -27,6 +36,8 @@ pub(super) enum DomainCommandInputV1 {
     workspace_id: String,
     doc_id: String,
     content: Value,
+    #[serde(flatten)]
+    notification: CommentNotification,
   },
   UpdateComment {
     actor_user_id: String,
@@ -46,6 +57,8 @@ pub(super) enum DomainCommandInputV1 {
     actor_user_id: String,
     comment_id: String,
     content: Value,
+    #[serde(flatten)]
+    notification: CommentNotification,
   },
   UpdateReply {
     actor_user_id: String,
@@ -138,11 +151,10 @@ pub(super) async fn authorize_domain(
   workspace_id: &str,
   doc_id: Option<&str>,
   command: &DomainCommand,
-  deployment: Deployment,
 ) -> RuntimeResult<CommandAuthorizationDecision> {
   lock_workspace(transaction, workspace_id).await?;
   let quota = if command.effect().requires_quota_guard() {
-    load_command_quota_in(transaction, deployment, workspace_id).await?
+    load_command_quota_in(transaction, authorizer.deployment, workspace_id).await?
   } else {
     None
   };
@@ -163,11 +175,61 @@ pub(super) async fn lock_workspace(
   transaction: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
 ) -> RuntimeResult<()> {
-  sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
-    .bind(format!("domain:workspace:{workspace_id}"))
+  lock_workspace_storage_shared(transaction, workspace_id).await?;
+  let key = format!("domain:workspace:{workspace_id}");
+  loop {
+    let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))")
+      .bind(&key)
+      .fetch_one(&mut **transaction)
+      .await
+      .map_err(|error| RuntimeError::database("lock domain workspace", error))?;
+    if locked {
+      return Ok(());
+    }
+    tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+  }
+}
+
+pub(super) async fn lock_workspace_storage_shared(
+  transaction: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+) -> RuntimeResult<()> {
+  super::super::lock_workspace_storage_shared_transaction(transaction, workspace_id).await
+}
+
+pub(super) async fn invalidate_doc_blob_projection(
+  transaction: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+  embedding_schema_ready: bool,
+) -> RuntimeResult<()> {
+  sqlx::query(
+    "UPDATE doc_blob_ref_projections SET status='pending', indexed_at=NULL, error_code=NULL, error_summary=NULL, \
+     updated_at=clock_timestamp() WHERE workspace_id=$1 AND doc_id=$2",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .execute(&mut **transaction)
+  .await
+  .map_err(|error| RuntimeError::database("invalidate document blob projection", error))?;
+  if embedding_schema_ready {
+    sqlx::query(
+      "UPDATE embedding_sources SET deleted_at=clock_timestamp(),updated_at=clock_timestamp() WHERE workspace_id=$1 \
+       AND source_kind='document' AND source_key=$2",
+    )
+    .bind(workspace_id)
+    .bind(doc_id)
     .execute(&mut **transaction)
     .await
-    .map_err(|error| RuntimeError::database("lock domain workspace", error))?;
+    .map_err(|error| RuntimeError::database("invalidate document embedding source", error))?;
+  }
+  if workspace_id == doc_id {
+    sqlx::query("UPDATE workspaces SET last_check_embeddings='1970-01-01T00:00:00Z' WHERE id=$1")
+      .bind(workspace_id)
+      .execute(&mut **transaction)
+      .await
+      .map_err(|error| RuntimeError::database("invalidate workspace embedding reconciliation", error))?;
+  }
   Ok(())
 }
 
@@ -176,12 +238,18 @@ pub(super) async fn lock_workspace_doc_update(
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<()> {
-  sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
-    .bind(format!("workspace-doc-update:{workspace_id}/{doc_id}"))
-    .execute(&mut **transaction)
-    .await
-    .map_err(|error| RuntimeError::database("lock workspace document update", error))?;
-  Ok(())
+  let key = format!("workspace-doc-update:{workspace_id}/{doc_id}");
+  loop {
+    let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))")
+      .bind(&key)
+      .fetch_one(&mut **transaction)
+      .await
+      .map_err(|error| RuntimeError::database("lock workspace document update", error))?;
+    if locked {
+      return Ok(());
+    }
+    tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+  }
 }
 
 pub(super) async fn next_workspace_doc_update_timestamp(
@@ -249,6 +317,11 @@ mod test_support {
 
   pub(super) async fn owner_workspace() -> Option<(PgPool, String, String)> {
     let pool = PgPool::connect(&std::env::var("DATABASE_URL").ok()?).await.unwrap();
+    assert!(
+      crate::runtime::migrations::migrate_embedding_tables(&pool)
+        .await
+        .enabled
+    );
     let suffix = uuid::Uuid::new_v4().simple().to_string();
     let user_id = format!("domain-owner-{suffix}");
     let workspace_id = format!("domain-workspace-{suffix}");
@@ -287,7 +360,7 @@ mod tests {
   use sqlx::Executor;
 
   use super::*;
-  use crate::runtime::backend_runtime::permission::PermissionAuthorizer;
+  use crate::runtime::{Deployment, backend_runtime::permission::PermissionAuthorizer};
 
   #[tokio::test]
   async fn quota_commands_wait_for_the_workspace_prefix_before_row_locks() {
@@ -311,7 +384,6 @@ mod tests {
           &workspace_id,
           None,
           &DomainCommand::CreateDoc,
-          Deployment::Cloud,
         )
         .await;
         transaction.rollback().await.unwrap();

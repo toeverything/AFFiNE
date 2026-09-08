@@ -23,6 +23,7 @@ import {
   BadRequest,
   CallMetric,
   checkCanaryDateClientVersion,
+  DocActionDenied,
   DocNotFound,
   DocUpdateBlocked,
   EventBus,
@@ -31,10 +32,18 @@ import {
   NotInSpace,
   OnEvent,
   SpaceAccessDenied,
+  SyncPermissionGenerationChanged,
 } from '../../base';
 import { Models } from '../../models';
-import { authorizeReservedDocSubject } from '../../native';
+import {
+  authorizeReservedDocSubject,
+  canonicalizeDocumentIdentity,
+} from '../../native';
 import { CurrentUser } from '../auth';
+import {
+  backendRuntimeErrorCode,
+  BackendRuntimeProvider,
+} from '../backend-runtime';
 import {
   DocReader,
   DocStorageAdapter,
@@ -47,7 +56,6 @@ import {
   PermissionAccess,
   WorkspaceAction,
 } from '../permission';
-import { DocID } from '../utils/doc';
 
 const SubscribeMessage = (event: string) =>
   applyDecorators(
@@ -64,10 +72,7 @@ type EventResponse<Data = any> = Data extends never
       data: Data;
     };
 
-// sync: shared room for space membership checks and non-protocol broadcasts.
-// sync-026: legacy doc sync protocol (space:broadcast-doc-updates).
-// sync-027: batch doc sync protocol (invalidation + active subscriptions).
-type RoomType = 'sync' | 'sync-026' | 'sync-027' | `${string}:awareness`;
+type RoomType = 'sync' | 'sync-027';
 
 function Room(
   spaceId: string,
@@ -76,9 +81,6 @@ function Room(
   return `${spaceId}:${type}`;
 }
 
-const MIN_WS_CLIENT_VERSION = new semver.Range('>=0.26.0', {
-  includePrerelease: true,
-});
 const MIN_BATCH_WS_CLIENT_VERSION = new semver.Range('>=0.27.5-0', {
   includePrerelease: true,
 });
@@ -99,17 +101,6 @@ function normalizeWsClientVersion(clientVersion: string): string | null {
   return canaryCheck.allowed ? canaryCheck.normalized : null;
 }
 
-function isSupportedWsClientVersion(clientVersion: string): boolean {
-  const normalized = normalizeWsClientVersion(clientVersion);
-  if (!normalized) {
-    return false;
-  }
-
-  return Boolean(
-    semver.valid(normalized) && MIN_WS_CLIENT_VERSION.test(normalized)
-  );
-}
-
 function isBatchWsClientVersion(clientVersion: string): boolean {
   const normalized = normalizeWsClientVersion(clientVersion);
   return Boolean(normalized && MIN_BATCH_WS_CLIENT_VERSION.test(normalized));
@@ -118,19 +109,6 @@ function isBatchWsClientVersion(clientVersion: string): boolean {
 enum SpaceType {
   Workspace = 'workspace',
   Userspace = 'userspace',
-}
-
-interface JoinSpaceMessage {
-  spaceType: SpaceType;
-  spaceId: string;
-  clientVersion: string;
-}
-
-interface JoinSpaceAwarenessMessage {
-  spaceType: SpaceType;
-  spaceId: string;
-  docId: string;
-  clientVersion: string;
 }
 
 interface JoinSpaceBatchEntry {
@@ -151,12 +129,6 @@ interface LeaveSpaceMessage {
 
 interface LeaveSpaceBatchMessage extends LeaveSpaceMessage {
   docIds: string[];
-}
-
-interface LeaveSpaceAwarenessMessage {
-  spaceType: SpaceType;
-  spaceId: string;
-  docId: string;
 }
 
 interface PushDocUpdateMessage {
@@ -187,6 +159,10 @@ interface DeleteDocMessage {
   spaceType: SpaceType;
   spaceId: string;
   docId: string;
+}
+
+interface DocLifecycleMessage extends DeleteDocMessage {
+  lifecycle: 'trash' | 'restore' | 'delete';
 }
 
 interface LoadDocTimestampsMessage {
@@ -249,6 +225,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+function canonicalDocId(rawId: string, workspaceId: string) {
+  try {
+    return canonicalizeDocumentIdentity(rawId, workspaceId).docId;
+  } catch {
+    throw new BadRequest('Invalid document identifier.');
+  }
+}
+
 function parseJoinSpaceBatchMessage(message: unknown): JoinSpaceBatchMessage {
   if (!isRecord(message)) {
     throw new BadRequest('Invalid space join batch payload.');
@@ -287,7 +271,7 @@ function parseJoinSpaceBatchMessage(message: unknown): JoinSpaceBatchMessage {
     return {
       spaceType,
       spaceId,
-      ...(docId === undefined ? {} : { docId }),
+      ...(docId === undefined ? {} : { docId: canonicalDocId(docId, spaceId) }),
     } satisfies JoinSpaceBatchEntry;
   }) as [JoinSpaceBatchEntry, ...JoinSpaceBatchEntry[]];
 
@@ -333,7 +317,11 @@ function parseLeaveSpaceBatchMessage(message: unknown): LeaveSpaceBatchMessage {
     throw new BadRequest('Invalid space leave batch payload.');
   }
 
-  return { spaceType, spaceId, docIds };
+  return {
+    spaceType,
+    spaceId,
+    docIds: docIds.map(docId => canonicalDocId(docId, spaceId)),
+  };
 }
 
 @WebSocketGateway()
@@ -360,6 +348,14 @@ export class SpaceSyncGateway
   private activeUsersFlushQueued = false;
   private readonly activeDocSockets = new Map<string, Set<Socket>>();
   private readonly activeSocketDocs = new Map<string, Set<string>>();
+  private readonly activeSocketDocActions = new Map<
+    string,
+    Map<string, Set<DocAction>>
+  >();
+  private readonly activeSocketDocGenerations = new Map<
+    string,
+    Map<string, number>
+  >();
 
   constructor(
     private readonly ac: PermissionAccess,
@@ -367,7 +363,8 @@ export class SpaceSyncGateway
     private readonly userspace: PgUserspaceDocStorageAdapter,
     private readonly docReader: DocReader,
     private readonly models: Models,
-    private readonly event: EventBus
+    private readonly event: EventBus,
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   onModuleInit() {
@@ -491,7 +488,9 @@ export class SpaceSyncGateway
     client: Socket,
     spaceType: SpaceType,
     spaceId: string,
-    docId: string
+    docId: string,
+    actions: Set<DocAction>,
+    permissionGeneration: number
   ) {
     const key = this.activeDocKey(spaceType, spaceId, docId);
     let sockets = this.activeDocSockets.get(key);
@@ -507,6 +506,18 @@ export class SpaceSyncGateway
       this.activeSocketDocs.set(client.id, docs);
     }
     docs.add(key);
+    let authorized = this.activeSocketDocActions.get(client.id);
+    if (!authorized) {
+      authorized = new Map();
+      this.activeSocketDocActions.set(client.id, authorized);
+    }
+    authorized.set(key, actions);
+    let generations = this.activeSocketDocGenerations.get(client.id);
+    if (!generations) {
+      generations = new Map();
+      this.activeSocketDocGenerations.set(client.id, generations);
+    }
+    generations.set(key, permissionGeneration);
   }
 
   private removeActiveDocSubscription(
@@ -527,6 +538,16 @@ export class SpaceSyncGateway
     if (docs && docs.size === 0) {
       this.activeSocketDocs.delete(client.id);
     }
+    const authorized = this.activeSocketDocActions.get(client.id);
+    authorized?.delete(key);
+    if (authorized?.size === 0) {
+      this.activeSocketDocActions.delete(client.id);
+    }
+    const generations = this.activeSocketDocGenerations.get(client.id);
+    generations?.delete(key);
+    if (generations?.size === 0) {
+      this.activeSocketDocGenerations.delete(client.id);
+    }
   }
 
   private removeAllActiveDocSubscriptions(client: Socket) {
@@ -543,6 +564,8 @@ export class SpaceSyncGateway
       }
     }
     this.activeSocketDocs.delete(client.id);
+    this.activeSocketDocActions.delete(client.id);
+    this.activeSocketDocGenerations.delete(client.id);
   }
 
   private removeActiveDocSubscriptionsInSpace(
@@ -571,6 +594,32 @@ export class SpaceSyncGateway
         .get(client.id)
         ?.has(this.activeDocKey(spaceType, spaceId, docId))
     );
+  }
+
+  private hasActiveDocAction(
+    client: Socket,
+    spaceType: SpaceType,
+    spaceId: string,
+    docId: string,
+    action: DocAction
+  ) {
+    return Boolean(
+      this.activeSocketDocActions
+        .get(client.id)
+        ?.get(this.activeDocKey(spaceType, spaceId, docId))
+        ?.has(action)
+    );
+  }
+
+  private activeDocGeneration(
+    client: Socket,
+    spaceType: SpaceType,
+    spaceId: string,
+    docId: string
+  ) {
+    return this.activeSocketDocGenerations
+      .get(client.id)
+      ?.get(this.activeDocKey(spaceType, spaceId, docId));
   }
 
   private emitActiveDocUpdate(
@@ -890,6 +939,14 @@ export class SpaceSyncGateway
     });
   }
 
+  @OnEvent('workspace.updated')
+  async onWorkspacePolicyChanged(workspace: Events['workspace.updated']) {
+    await this.publishPermissionChange({
+      spaceType: SpaceType.Workspace,
+      spaceId: workspace.id,
+    });
+  }
+
   @OnEvent('sync.permissions.changed')
   async onClusterPermissionsChanged(event: Events['sync.permissions.changed']) {
     await this.revalidateActiveDocSubscriptions(event);
@@ -916,32 +973,60 @@ export class SpaceSyncGateway
     for (const [key, sockets] of candidates) {
       const [, spaceId, docId] = key.split(':');
       for (const socket of Array.from(sockets)) {
+        const authorizations = this.activeSocketDocActions.get(socket.id);
+        const currentActions = authorizations?.get(key);
+        if (!authorizations || !currentActions) continue;
+        // Claim this check before awaiting so later permission events supersede it.
+        const previousActions = new Set(currentActions);
+        authorizations.set(key, previousActions);
+        const stillCurrent = () =>
+          this.activeSocketDocActions.get(socket.id)?.get(key) ===
+          previousActions;
         const userId = this.resolvePresenceUserId(socket);
-        if (!userId) {
-          this.removeActiveDocSubscription(
+        try {
+          if (!userId) throw new Error('socket user is unavailable');
+          if (event.spaceType === SpaceType.Userspace) {
+            if (spaceId !== userId) throw new Error('userspace access changed');
+            this.addActiveDocSubscription(
+              socket,
+              event.spaceType,
+              spaceId,
+              docId,
+              new Set(['Doc.Read', 'Doc.Update']),
+              0
+            );
+            continue;
+          }
+          const before =
+            await this.runtime.getSyncPermissionGenerationV1(spaceId);
+          const [permission] = await this.ac
+            .user(userId)
+            .workspace(spaceId)
+            .docPermissions([{ docId }], ['Doc.Read', 'Doc.Update']);
+          const after =
+            await this.runtime.getSyncPermissionGenerationV1(spaceId);
+          if (!stillCurrent()) continue;
+          if (before !== after) {
+            throw new SyncPermissionGenerationChanged({ spaceId });
+          }
+          const actions = new Set(
+            permission?.decisions
+              .filter(decision => decision.allowed)
+              .map(decision => decision.action as DocAction) ?? []
+          );
+          if (!actions.has('Doc.Read')) {
+            throw new Error('document read access changed');
+          }
+          this.addActiveDocSubscription(
             socket,
             event.spaceType,
             spaceId,
-            docId
-          );
-          continue;
-        }
-
-        try {
-          this.assertReservedDocSubject(
-            event.spaceType,
-            userId,
-            spaceId,
-            docId
-          );
-          await this.assertDocActionAllowed(
-            event.spaceType,
-            userId,
-            spaceId,
             docId,
-            'Doc.Read'
+            actions,
+            after
           );
         } catch {
+          if (!stillCurrent()) continue;
           this.removeActiveDocSubscription(
             socket,
             event.spaceType,
@@ -961,10 +1046,6 @@ export class SpaceSyncGateway
       return;
     }
 
-    const legacyRoom = `${payload.spaceType}:${Room(
-      payload.spaceId,
-      'sync-026'
-    )}`;
     const broadcastPayload = this.buildBroadcastPayload(
       payload.spaceType,
       payload.spaceId,
@@ -973,16 +1054,6 @@ export class SpaceSyncGateway
       payload.timestamp,
       payload.editor
     );
-    if (sourceSocket) {
-      sourceSocket
-        .to(legacyRoom)
-        .emit('space:broadcast-doc-updates', broadcastPayload);
-    } else {
-      this.server
-        .to(legacyRoom)
-        .emit('space:broadcast-doc-updates', broadcastPayload);
-    }
-
     const batchRoom = `${payload.spaceType}:${Room(
       payload.spaceId,
       'sync-027'
@@ -1035,44 +1106,6 @@ export class SpaceSyncGateway
     return adapters[spaceType];
   }
 
-  // v3
-  @SubscribeMessage('space:join')
-  async onJoinSpace(
-    @CurrentUser() user: CurrentUser,
-    @ConnectedSocket() client: Socket,
-    @MessageBody()
-    { spaceType, spaceId, clientVersion }: JoinSpaceMessage
-  ): Promise<EventResponse<{ clientId: string; success: boolean }>> {
-    if (![SpaceType.Userspace, SpaceType.Workspace].includes(spaceType)) {
-      this.rejectJoin(client);
-      return { data: { clientId: client.id, success: false } };
-    }
-
-    if (!isSupportedWsClientVersion(clientVersion)) {
-      this.rejectJoin(client);
-      return { data: { clientId: client.id, success: false } };
-    }
-    if (isBatchWsClientVersion(clientVersion)) {
-      this.rejectJoin(client);
-      return { data: { clientId: client.id, success: false } };
-    }
-
-    const adapter = this.selectAdapter(client, spaceType);
-    await adapter.join(user.id, spaceId);
-    this.removeActiveDocSubscriptionsInSpace(client, spaceType, spaceId);
-
-    const legacyRoom = adapter.room(spaceId, 'sync-026');
-    const batchRoom = adapter.room(spaceId, 'sync-027');
-    if (client.rooms.has(batchRoom)) {
-      await client.leave(batchRoom);
-    }
-    if (!client.rooms.has(legacyRoom)) {
-      await client.join(legacyRoom);
-    }
-
-    return { data: { clientId: client.id, success: true } };
-  }
-
   @SubscribeMessage('space:join-batch')
   async onJoinSpaceBatch(
     @CurrentUser() user: CurrentUser,
@@ -1080,10 +1113,7 @@ export class SpaceSyncGateway
     @MessageBody() message: unknown
   ): Promise<EventResponse<{ clientId: string; success: boolean }>> {
     const { spaces, clientVersion } = parseJoinSpaceBatchMessage(message);
-    if (
-      !isSupportedWsClientVersion(clientVersion) ||
-      !isBatchWsClientVersion(clientVersion)
-    ) {
+    if (!isBatchWsClientVersion(clientVersion)) {
       this.rejectJoin(client);
       return { data: { clientId: client.id, success: false } };
     }
@@ -1091,35 +1121,25 @@ export class SpaceSyncGateway
     const [first] = spaces;
     const adapter = this.selectAdapter(client, first.spaceType);
 
-    // Authorize the whole batch before mutating any Socket.IO room. This is
-    // intentionally separate from SyncSocketAdapter.join(), which is also
-    // used by the legacy single-room handlers.
     await adapter.assertAccessible(first.spaceId, user.id, 'Workspace.Sync');
 
-    for (const space of spaces) {
-      if (space.docId === undefined) {
-        continue;
-      }
+    const docSpaces = spaces.filter(
+      (space): space is JoinSpaceBatchEntry & { docId: string } =>
+        space.docId !== undefined
+    );
+    for (const space of docSpaces) {
       this.assertReservedDocSubject(
         space.spaceType,
         user.id,
         space.spaceId,
         space.docId
       );
-      await this.assertDocActionAllowed(
-        space.spaceType,
-        user.id,
-        space.spaceId,
-        space.docId,
-        'Doc.Read'
-      );
     }
-
+    const docActions = new Map<string, Set<DocAction>>();
+    let permissionGeneration = 0;
     const rooms = new Set<string>();
     rooms.add(adapter.room(first.spaceId));
     rooms.add(adapter.room(first.spaceId, 'sync-027'));
-    const legacyRoom = adapter.room(first.spaceId, 'sync-026');
-
     const roomsToJoin = [...rooms].filter(room => !client.rooms.has(room));
     const subscriptionsToAdd = spaces.filter(
       (space): space is JoinSpaceBatchEntry & { docId: string } =>
@@ -1135,16 +1155,70 @@ export class SpaceSyncGateway
       if (roomsToJoin.length > 0) {
         await client.join(roomsToJoin);
       }
+      if (first.spaceType === SpaceType.Userspace) {
+        if (first.spaceId !== user.id) {
+          throw new SpaceAccessDenied({ spaceId: first.spaceId });
+        }
+        for (const space of docSpaces) {
+          docActions.set(space.docId, new Set(['Doc.Read', 'Doc.Update']));
+        }
+      } else {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const before = await this.runtime.getSyncPermissionGenerationV1(
+            first.spaceId
+          );
+          const decisions = await this.ac
+            .user(user.id)
+            .workspace(first.spaceId)
+            .docPermissions(docSpaces, ['Doc.Read', 'Doc.Update']);
+          const after = await this.runtime.getSyncPermissionGenerationV1(
+            first.spaceId
+          );
+          if (before !== after) continue;
+          const authorized = new Map<string, Set<DocAction>>();
+          for (const doc of decisions) {
+            const allowed = new Set(
+              doc.decisions
+                .filter(decision => decision.allowed)
+                .map(decision => decision.action as DocAction)
+            );
+            if (!allowed.has('Doc.Read')) {
+              throw new DocActionDenied({
+                action: 'Doc.Read',
+                docId: doc.docId,
+                spaceId: first.spaceId,
+              });
+            }
+            authorized.set(doc.docId, allowed);
+          }
+          if (authorized.size !== docSpaces.length) {
+            continue;
+          }
+          const installedAt = await this.runtime.getSyncPermissionGenerationV1(
+            first.spaceId
+          );
+          if (installedAt !== after) continue;
+          permissionGeneration = installedAt;
+          for (const [docId, actions] of authorized) {
+            docActions.set(docId, actions);
+          }
+          break;
+        }
+        if (docActions.size !== docSpaces.length) {
+          throw new SyncPermissionGenerationChanged({
+            spaceId: first.spaceId,
+          });
+        }
+      }
       for (const space of subscriptionsToAdd) {
         this.addActiveDocSubscription(
           client,
           space.spaceType,
           space.spaceId,
-          space.docId
+          space.docId,
+          docActions.get(space.docId) ?? new Set(['Doc.Read']),
+          permissionGeneration
         );
-      }
-      if (client.rooms.has(legacyRoom)) {
-        await client.leave(legacyRoom);
       }
     } catch (error) {
       for (const space of subscriptionsToAdd) {
@@ -1199,7 +1273,6 @@ export class SpaceSyncGateway
     const adapter = this.selectAdapter(client, spaceType);
     this.removeActiveDocSubscriptionsInSpace(client, spaceType, spaceId);
     await adapter.leave(spaceId);
-    await adapter.leave(spaceId, 'sync-026');
     await adapter.leave(spaceId, 'sync-027');
 
     return { data: { clientId: client.id, success: true } };
@@ -1214,21 +1287,34 @@ export class SpaceSyncGateway
   ): Promise<
     EventResponse<{ missing: string; state: string; timestamp: number }>
   > {
-    const id = new DocID(docId, spaceId);
+    const canonicalId = canonicalDocId(docId, spaceId);
     const adapter = this.selectAdapter(client, spaceType);
     adapter.assertIn(spaceId);
-    this.assertReservedDocSubject(spaceType, user.id, spaceId, id.guid);
-    await this.assertDocActionAllowed(
+    this.assertReservedDocSubject(spaceType, user.id, spaceId, canonicalId);
+    if (
+      !this.hasActiveDocSubscription(client, spaceType, spaceId, canonicalId)
+    ) {
+      throw new NotInSpace({ spaceId });
+    }
+    const permissionGeneration = this.activeDocGeneration(
+      client,
       spaceType,
-      user.id,
       spaceId,
-      id.guid,
-      'Doc.Read'
+      canonicalId
     );
+    if (
+      permissionGeneration === undefined ||
+      (spaceType === SpaceType.Workspace &&
+        permissionGeneration !==
+          (await this.runtime.getSyncPermissionGenerationV1(spaceId)))
+    ) {
+      this.removeActiveDocSubscription(client, spaceType, spaceId, canonicalId);
+      throw new NotInSpace({ spaceId });
+    }
 
     const doc = await adapter.diff(
       spaceId,
-      id.guid,
+      canonicalId,
       stateVector ? Buffer.from(stateVector, 'base64') : undefined
     );
 
@@ -1251,17 +1337,95 @@ export class SpaceSyncGateway
     @CurrentUser() user: CurrentUser,
     @MessageBody() { spaceType, spaceId, docId }: DeleteDocMessage
   ): Promise<EventResponse<{ success: true }>> {
-    const adapter = this.selectAdapter(client, spaceType);
+    docId = canonicalDocId(docId, spaceId);
     this.assertReservedDocSubject(spaceType, user.id, spaceId, docId);
-    await this.assertDocActionAllowed(
-      spaceType,
-      user.id,
-      spaceId,
-      docId,
-      'Doc.Delete'
-    );
-    await adapter.delete(spaceId, docId);
+    if (spaceType === SpaceType.Workspace) {
+      await this.applyDocLifecycle(client, user.id, spaceId, docId, 'delete');
+    } else {
+      const adapter = this.selectAdapter(client, spaceType);
+      await this.assertDocActionAllowed(
+        spaceType,
+        user.id,
+        spaceId,
+        docId,
+        'Doc.Delete'
+      );
+      await adapter.delete(spaceId, docId);
+    }
     return { data: { success: true } };
+  }
+
+  @SubscribeMessage('space:doc-lifecycle')
+  async onDocLifecycle(
+    @ConnectedSocket() client: Socket,
+    @CurrentUser() user: CurrentUser,
+    @MessageBody() { spaceType, spaceId, docId, lifecycle }: DocLifecycleMessage
+  ): Promise<EventResponse<{ rootUpdate: string; timestamp: number }>> {
+    if (!['trash', 'restore', 'delete'].includes(lifecycle)) {
+      throw new BadRequest('Invalid document lifecycle');
+    }
+    docId = canonicalDocId(docId, spaceId);
+    this.assertReservedDocSubject(spaceType, user.id, spaceId, docId);
+    if (spaceType !== SpaceType.Workspace) {
+      throw new DocActionDenied({
+        action: lifecycle === 'delete' ? 'Doc.Delete' : 'Doc.Update',
+        docId,
+        spaceId,
+      });
+    }
+    return {
+      data: await this.applyDocLifecycle(
+        client,
+        user.id,
+        spaceId,
+        docId,
+        lifecycle
+      ),
+    };
+  }
+
+  private async applyDocLifecycle(
+    client: Socket,
+    actorUserId: string,
+    workspaceId: string,
+    docId: string,
+    lifecycle: 'trash' | 'restore' | 'delete'
+  ) {
+    const action =
+      lifecycle === 'trash'
+        ? 'Doc.Trash'
+        : lifecycle === 'restore'
+          ? 'Doc.Restore'
+          : 'Doc.Delete';
+    let output: Record<string, unknown>;
+    try {
+      output = await this.runtime.executeDomainCommandV1({
+        command: 'apply_doc_lifecycle',
+        actorUserId,
+        workspaceId,
+        docId,
+        lifecycle,
+      });
+    } catch (error) {
+      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
+        throw new DocActionDenied({ action, docId, spaceId: workspaceId });
+      }
+      throw error;
+    }
+    const rootUpdate = output.rootUpdate as string;
+    const timestamp = new Date(output.timestamp as string).getTime();
+    this.publishDocUpdate(
+      {
+        spaceType: SpaceType.Workspace,
+        spaceId: workspaceId,
+        docId: workspaceId,
+        updates: [Buffer.from(rootUpdate, 'base64')],
+        timestamp,
+        editor: actorUserId,
+      },
+      client
+    );
+    return { rootUpdate, timestamp };
   }
 
   /**
@@ -1274,24 +1438,72 @@ export class SpaceSyncGateway
     @MessageBody()
     message: PushDocUpdateMessage
   ): Promise<EventResponse<{ accepted: true; timestamp?: number }>> {
-    const { spaceType, spaceId, docId, update } = message;
+    const { spaceType, spaceId, update } = message;
+    const docId = canonicalDocId(message.docId, spaceId);
     const adapter = this.selectAdapter(client, spaceType);
 
     // Quota recovery mode is intentionally not applied to sync.
     this.assertReservedDocSubject(spaceType, user.id, spaceId, docId);
-    await this.assertDocActionAllowed(
+    const active = this.hasActiveDocSubscription(
+      client,
       spaceType,
-      user.id,
       spaceId,
-      docId,
-      'Doc.Update'
+      docId
     );
-    const timestamp = await adapter.push(
+    if (!active) {
+      throw new NotInSpace({ spaceId });
+    }
+    if (
+      !this.hasActiveDocAction(client, spaceType, spaceId, docId, 'Doc.Update')
+    ) {
+      throw new DocActionDenied({ action: 'Doc.Update', docId, spaceId });
+    }
+    const permissionGeneration = this.activeDocGeneration(
+      client,
+      spaceType,
       spaceId,
-      docId,
-      [Buffer.from(update, 'base64')],
-      user.id
+      docId
     );
+    if (permissionGeneration === undefined) {
+      throw new NotInSpace({ spaceId });
+    }
+    const canonicalRoot =
+      spaceType === SpaceType.Workspace && docId === spaceId;
+    let timestamp: number;
+    if (canonicalRoot) {
+      let output: Record<string, unknown>;
+      try {
+        output = await this.runtime.executeDomainCommandV1({
+          command: 'append_root_update',
+          actorUserId: user.id,
+          workspaceId: spaceId,
+          update,
+          assertPermission: true,
+          expectedPermissionGeneration: permissionGeneration,
+        });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.includes('doc_lifecycle_requires_command')
+        ) {
+          throw new DocActionDenied({
+            action: 'Doc.Update',
+            docId,
+            spaceId,
+          });
+        }
+        throw error;
+      }
+      timestamp = new Date(output.timestamp as string).getTime();
+    } else {
+      timestamp = await adapter.push(
+        spaceId,
+        docId,
+        [Buffer.from(update, 'base64')],
+        user.id,
+        permissionGeneration
+      );
+    }
 
     this.publishDocUpdate(
       {
@@ -1345,70 +1557,23 @@ export class SpaceSyncGateway
     };
   }
 
-  @SubscribeMessage('space:join-awareness')
-  async onJoinAwareness(
-    @ConnectedSocket() client: Socket,
-    @CurrentUser() user: CurrentUser,
-    @MessageBody()
-    { spaceType, spaceId, docId, clientVersion }: JoinSpaceAwarenessMessage
-  ) {
-    if (![SpaceType.Userspace, SpaceType.Workspace].includes(spaceType)) {
-      this.rejectJoin(client);
-      return { data: { clientId: client.id, success: false } };
-    }
-
-    if (!isSupportedWsClientVersion(clientVersion)) {
-      this.rejectJoin(client);
-      return { data: { clientId: client.id, success: false } };
-    }
-    if (isBatchWsClientVersion(clientVersion)) {
-      this.rejectJoin(client);
-      return { data: { clientId: client.id, success: false } };
-    }
-
-    await this.selectAdapter(client, spaceType).join(
-      user.id,
-      spaceId,
-      `${docId}:awareness`
-    );
-
-    return { data: { clientId: client.id, success: true } };
-  }
-
-  @SubscribeMessage('space:leave-awareness')
-  async onLeaveAwareness(
-    @ConnectedSocket() client: Socket,
-    @MessageBody()
-    { spaceType, spaceId, docId }: LeaveSpaceAwarenessMessage
-  ) {
-    await this.selectAdapter(client, spaceType).leave(
-      spaceId,
-      `${docId}:awareness`
-    );
-
-    return { data: { clientId: client.id, success: true } };
-  }
-
   @SubscribeMessage('space:load-awarenesses')
   async onLoadAwareness(
     @ConnectedSocket() client: Socket,
     @MessageBody()
-    { spaceType, spaceId, docId }: LoadSpaceAwarenessesMessage
+    message: LoadSpaceAwarenessesMessage
   ) {
+    const { spaceType, spaceId } = message;
+    const docId = canonicalDocId(message.docId, spaceId);
     const adapter = this.selectAdapter(client, spaceType);
 
-    if (this.hasActiveDocSubscription(client, spaceType, spaceId, docId)) {
-      adapter.assertIn(spaceId);
-      const event = { spaceType, spaceId, docId, sourceSocketId: client.id };
-      this.emitActiveAwarenessCollect(event);
-      this.event.broadcast('sync.awareness.collect', event);
-    } else {
-      const roomType = `${docId}:awareness` as const;
-      adapter.assertIn(spaceId, roomType);
-      client
-        .to(adapter.room(spaceId, roomType))
-        .emit('space:collect-awareness', { spaceType, spaceId, docId });
+    if (!this.hasActiveDocSubscription(client, spaceType, spaceId, docId)) {
+      throw new NotInSpace({ spaceId });
     }
+    adapter.assertIn(spaceId);
+    const event = { spaceType, spaceId, docId, sourceSocketId: client.id };
+    this.emitActiveAwarenessCollect(event);
+    this.event.broadcast('sync.awareness.collect', event);
 
     return { data: { clientId: client.id } };
   }
@@ -1418,21 +1583,17 @@ export class SpaceSyncGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() message: UpdateAwarenessMessage
   ) {
-    const { spaceType, spaceId, docId } = message;
+    const { spaceType, spaceId } = message;
+    const docId = canonicalDocId(message.docId, spaceId);
     const adapter = this.selectAdapter(client, spaceType);
 
-    if (this.hasActiveDocSubscription(client, spaceType, spaceId, docId)) {
-      adapter.assertIn(spaceId);
-      const event = { ...message, sourceSocketId: client.id };
-      this.emitActiveAwarenessUpdate(event);
-      this.event.broadcast('sync.awareness.updated', event);
-    } else {
-      const roomType = `${docId}:awareness` as const;
-      adapter.assertIn(spaceId, roomType);
-      client
-        .to(adapter.room(spaceId, roomType))
-        .emit('space:broadcast-awareness-update', message);
+    if (!this.hasActiveDocSubscription(client, spaceType, spaceId, docId)) {
+      throw new NotInSpace({ spaceId });
     }
+    adapter.assertIn(spaceId);
+    const event = { ...message, docId, sourceSocketId: client.id };
+    this.emitActiveAwarenessUpdate(event);
+    this.event.broadcast('sync.awareness.updated', event);
 
     return {};
   }
@@ -1447,14 +1608,6 @@ abstract class SyncSocketAdapter {
 
   room(spaceId: string, roomType: RoomType = 'sync') {
     return `${this.spaceType}:${Room(spaceId, roomType)}`;
-  }
-
-  async join(userId: string, spaceId: string, roomType: RoomType = 'sync') {
-    if (this.in(spaceId, roomType)) {
-      return;
-    }
-    await this.assertAccessible(spaceId, userId, 'Workspace.Sync');
-    return this.client.join(this.room(spaceId, roomType));
   }
 
   async leave(spaceId: string, roomType: RoomType = 'sync') {
@@ -1484,10 +1637,17 @@ abstract class SyncSocketAdapter {
     spaceId: string,
     docId: string,
     updates: Buffer[],
-    editorId: string
+    editorId: string,
+    expectedPermissionGeneration?: number
   ) {
     this.assertIn(spaceId);
-    return await this.storage.pushDocUpdates(spaceId, docId, updates, editorId);
+    return await this.storage.pushDocUpdates(
+      spaceId,
+      docId,
+      updates,
+      editorId,
+      expectedPermissionGeneration
+    );
   }
 
   diff(spaceId: string, docId: string, stateVector?: Uint8Array) {
@@ -1521,7 +1681,8 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
     spaceId: string,
     docId: string,
     updates: Buffer[],
-    editorId: string
+    editorId: string,
+    expectedPermissionGeneration?: number
   ) {
     const docMeta = await this.models.doc.getMeta(spaceId, docId, {
       select: {
@@ -1531,7 +1692,13 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
     if (docMeta?.blocked) {
       throw new DocUpdateBlocked({ spaceId, docId });
     }
-    return await super.push(spaceId, docId, updates, editorId);
+    return await super.push(
+      spaceId,
+      docId,
+      updates,
+      editorId,
+      expectedPermissionGeneration
+    );
   }
 
   override async diff(

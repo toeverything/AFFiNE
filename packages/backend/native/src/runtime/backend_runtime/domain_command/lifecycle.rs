@@ -5,8 +5,11 @@ use serde_json::{Value, json};
 use sqlx::{Postgres, Transaction};
 use y_octo::{Any, Doc, Value as YValue};
 
-use super::{DocLifecycle, authorize_domain, lock_workspace_doc_update, next_workspace_doc_update_timestamp};
-use crate::runtime::{Deployment, RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
+use super::{
+  DocLifecycle, authorize_domain, invalidate_doc_blob_projection, lock_workspace_doc_update,
+  lock_workspace_storage_shared, next_workspace_doc_update_timestamp,
+};
+use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 pub(super) async fn apply(
   authorizer: &PermissionAuthorizer,
@@ -15,11 +18,12 @@ pub(super) async fn apply(
   workspace_id: String,
   doc_id: String,
   lifecycle: DocLifecycle,
-  deployment: Deployment,
+  embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
   if workspace_id == doc_id {
     return Err(RuntimeError::invalid_input("doc_is_workspace"));
   }
+  lock_workspace_storage_shared(transaction, &workspace_id).await?;
   let mut locked_doc_ids = [&*workspace_id, &*doc_id];
   locked_doc_ids.sort_unstable();
   for locked_doc_id in locked_doc_ids {
@@ -40,7 +44,6 @@ pub(super) async fn apply(
     &workspace_id,
     Some(&doc_id),
     &command,
-    deployment,
   )
   .await?;
 
@@ -68,6 +71,7 @@ pub(super) async fn apply(
     .execute(&mut **transaction)
     .await
     .map_err(|error| RuntimeError::database("persist workspace root lifecycle update", error))?;
+  invalidate_doc_blob_projection(transaction, &workspace_id, &workspace_id, embedding_schema_ready).await?;
 
   if matches!(lifecycle, DocLifecycle::Delete) {
     delete_doc_rows(transaction, &workspace_id, &doc_id).await?;
@@ -91,14 +95,11 @@ pub(super) async fn append_root_update(
   actor_user_id: String,
   workspace_id: String,
   encoded_update: String,
-  assert_permission: bool,
   expected_permission_generation: Option<i64>,
-  deployment: Deployment,
+  embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
+  lock_workspace_storage_shared(transaction, &workspace_id).await?;
   lock_workspace_doc_update(transaction, &workspace_id, &workspace_id).await?;
-  if !assert_permission {
-    return Err(RuntimeError::invalid_input("permission_assertion_required"));
-  }
   let command = DomainCommand::AppendRootUpdate {
     doc_id: workspace_id.clone(),
   };
@@ -109,7 +110,6 @@ pub(super) async fn append_root_update(
     &workspace_id,
     Some(&workspace_id),
     &command,
-    deployment,
   )
   .await?;
   if let Some(expected) = expected_permission_generation {
@@ -158,6 +158,7 @@ pub(super) async fn append_root_update(
     .execute(&mut **transaction)
     .await
     .map_err(|error| RuntimeError::database("append canonical root update", error))?;
+  invalidate_doc_blob_projection(transaction, &workspace_id, &workspace_id, embedding_schema_ready).await?;
   Ok(json!({ "timestamp": timestamp }))
 }
 
@@ -350,7 +351,7 @@ mod tests {
   use std::collections::BTreeSet;
 
   use super::*;
-  use crate::runtime::backend_runtime::permission::PermissionAuthorizer;
+  use crate::runtime::{Deployment, backend_runtime::permission::PermissionAuthorizer};
 
   fn merge_root(snapshot: &[u8], updates: &[&[u8]]) -> Vec<u8> {
     let mut root = Doc::default();
@@ -411,41 +412,6 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn root_update_cannot_disable_permission_authorization() {
-    let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
-    let Some((pool, workspace_id, actor_user_id)) = super::super::test_support::owner_workspace().await else {
-      return;
-    };
-    let before: i64 = sqlx::query_scalar("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$1")
-      .bind(&workspace_id)
-      .fetch_one(&pool)
-      .await
-      .unwrap();
-    let authorizer = PermissionAuthorizer::new(pool.clone(), Deployment::Cloud);
-    let mut transaction = pool.begin().await.unwrap();
-    let error = append_root_update(
-      &authorizer,
-      &mut transaction,
-      actor_user_id,
-      workspace_id.clone(),
-      "AA==".to_string(),
-      false,
-      None,
-      Deployment::Cloud,
-    )
-    .await
-    .unwrap_err();
-    assert_eq!(error.to_string(), "permission_assertion_required");
-    transaction.rollback().await.unwrap();
-    let after: i64 = sqlx::query_scalar("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$1")
-      .bind(&workspace_id)
-      .fetch_one(&pool)
-      .await
-      .unwrap();
-    assert_eq!(after, before);
-  }
-
-  #[tokio::test]
   async fn readonly_denies_restore_but_allows_trash_and_delete() {
     let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
     let Some((pool, workspace_id, actor_user_id)) = super::super::test_support::owner_workspace().await else {
@@ -500,7 +466,7 @@ mod tests {
         racing_workspace_id,
         racing_doc_id,
         DocLifecycle::Trash,
-        Deployment::Cloud,
+        true,
       )
       .await
       .unwrap();
@@ -523,7 +489,7 @@ mod tests {
       workspace_id.clone(),
       doc_id.clone(),
       DocLifecycle::Restore,
-      Deployment::Cloud,
+      true,
     )
     .await;
     assert!(restore.is_err());
@@ -537,7 +503,7 @@ mod tests {
       workspace_id.clone(),
       doc_id,
       DocLifecycle::Delete,
-      Deployment::Cloud,
+      true,
     )
     .await
     .unwrap();

@@ -227,7 +227,8 @@ impl ApplicationInfo {
           },
         };
 
-        // Draw the original icon into draw_rect (using NSCompositingOperationCopy = 2)
+        // Draw the original icon into draw_rect (using
+        // NSCompositingOperationCopy = 2)
         let _: () = msg_send![icon, drawInRect: draw_rect, fromRect: from_rect, operation: 2u64, fraction: 1.0];
         let _: () = msg_send![resized_image, unlockFocus];
 

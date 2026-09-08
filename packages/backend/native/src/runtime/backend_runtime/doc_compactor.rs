@@ -20,11 +20,15 @@ struct UpdateRow {
 
 struct DocCompactorStore {
   pool: PgPool,
+  embedding_schema_ready: bool,
 }
 
 impl DocCompactorStore {
-  fn new(pool: PgPool) -> Self {
-    Self { pool }
+  fn new(pool: PgPool, embedding_schema_ready: bool) -> Self {
+    Self {
+      pool,
+      embedding_schema_ready,
+    }
   }
 
   async fn compact_doc(
@@ -34,7 +38,7 @@ impl DocCompactorStore {
     batch_limit: i64,
     history_min_interval_ms: i64,
     history_max_age_seconds: i64,
-  ) -> RuntimeResult<(i64, bool)> {
+  ) -> RuntimeResult<Option<(i64, bool)>> {
     compact_doc(
       self.pool.clone(),
       workspace_id,
@@ -42,6 +46,7 @@ impl DocCompactorStore {
       batch_limit,
       history_min_interval_ms,
       history_max_age_seconds,
+      self.embedding_schema_ready,
     )
     .await
   }
@@ -123,8 +128,9 @@ async fn upsert_snapshot(
   blob: &[u8],
   timestamp: DateTime<Utc>,
   editor: Option<&str>,
+  allow_empty: bool,
 ) -> RuntimeResult<bool> {
-  if is_empty_doc(blob) {
+  if !allow_empty && is_empty_doc(blob) {
     return Ok(false);
   }
 
@@ -272,11 +278,26 @@ async fn compact_doc(
   batch_limit: i64,
   history_min_interval_ms: i64,
   history_max_age_seconds: i64,
-) -> RuntimeResult<(i64, bool)> {
+  embedding_schema_ready: bool,
+) -> RuntimeResult<Option<(i64, bool)>> {
   let mut tx = pool
     .begin()
     .await
     .map_err(|err| RuntimeError::database("DocCompactor begin transaction failed", err))?;
+
+  super::domain_command::lock_workspace_storage_shared(&mut tx, workspace_id).await?;
+
+  let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))")
+    .bind(format!("workspace-doc-update:{workspace_id}/{doc_id}"))
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|err| RuntimeError::database("DocCompactor acquire document transaction lock failed", err))?;
+  if !locked {
+    tx.rollback()
+      .await
+      .map_err(|err| RuntimeError::database("DocCompactor rollback unlocked transaction failed", err))?;
+    return Ok(None);
+  }
 
   let snapshot = load_snapshot(&mut tx, workspace_id, doc_id).await?;
   let updates = load_updates(&mut tx, workspace_id, doc_id, batch_limit).await?;
@@ -284,8 +305,10 @@ async fn compact_doc(
     tx.commit()
       .await
       .map_err(|err| RuntimeError::database("DocCompactor commit transaction failed", err))?;
-    return Ok((0, false));
+    return Ok(Some((0, false)));
   }
+
+  super::domain_command::invalidate_doc_blob_projection(&mut tx, workspace_id, doc_id, embedding_schema_ready).await?;
 
   let last = updates.last().expect("updates is not empty");
   let mut merge_inputs = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
@@ -307,6 +330,7 @@ async fn compact_doc(
     &final_blob,
     last.created_at,
     last.created_by.as_deref(),
+    snapshot.is_none(),
   )
   .await?;
 
@@ -325,7 +349,7 @@ async fn compact_doc(
     .await
     .map_err(|err| RuntimeError::database("DocCompactor commit transaction failed", err))?;
 
-  Ok((deleted, history_created))
+  Ok(Some((deleted, history_created)))
 }
 
 #[napi_derive::napi]
@@ -338,7 +362,6 @@ impl BackendRuntime {
   /// The caller must pass the canonical history retention period resolved for
   /// this workspace. The compactor does not make quota decisions.
   #[napi]
-  #[allow(clippy::too_many_arguments)]
   pub async fn compact_pending_doc_updates(
     &self,
     workspace_id: String,
@@ -346,8 +369,6 @@ impl BackendRuntime {
     batch_limit: i64,
     history_min_interval_ms: i64,
     history_max_age_seconds: i64,
-    owner: String,
-    lease_ttl_ms: i64,
   ) -> napi::Result<RuntimeDocCompactionResult> {
     if batch_limit <= 0 {
       return Err(napi_error("doc compactor batch limit must be positive"));
@@ -366,10 +387,19 @@ impl BackendRuntime {
         .ok_or_else(|| RuntimeError::invalid_input("DocCompactor history max age is out of range"))?;
     }
 
-    let lease_key = format!("doc:update:{workspace_id}:{doc_id}");
-    let Some(lease) = self.acquire_coordination_lease(lease_key, owner, lease_ttl_ms).await? else {
+    let Some((updates_merged, history_created)) =
+      DocCompactorStore::new(self.pool().await?, self.embedding_schema_ready()?)
+        .compact_doc(
+          &workspace_id,
+          &doc_id,
+          batch_limit,
+          history_min_interval_ms,
+          history_max_age_seconds,
+        )
+        .await?
+    else {
       return Ok(RuntimeDocCompactionResult {
-        lease_acquired: false,
+        lock_acquired: false,
         merged: false,
         workspace_id,
         doc_id,
@@ -377,32 +407,94 @@ impl BackendRuntime {
         history_created: false,
       });
     };
-
-    let result = DocCompactorStore::new(self.pool().await?)
-      .compact_doc(
-        &workspace_id,
-        &doc_id,
-        batch_limit,
-        history_min_interval_ms,
-        history_max_age_seconds,
-      )
-      .await;
-
-    let released = self
-      .release_coordination_lease(lease.key, lease.owner, lease.fencing_token)
-      .await?;
-    if !released {
-      return Err(RuntimeError::invalid_state("DocCompactor failed to release coordination lease").into());
-    }
-
-    let (updates_merged, history_created) = result?;
     Ok(RuntimeDocCompactionResult {
-      lease_acquired: true,
+      lock_acquired: true,
       merged: updates_merged > 0,
       workspace_id,
       doc_id,
       updates_merged,
       history_created,
     })
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::runtime::backend_runtime::tests::{pg_test_lock, runtime_from_database_url};
+
+  async fn insert_workspace(pool: &PgPool, workspace_id: &str) {
+    sqlx::query("INSERT INTO workspaces(id,created_at) VALUES($1,clock_timestamp())")
+      .bind(workspace_id)
+      .execute(pool)
+      .await
+      .unwrap();
+  }
+
+  #[tokio::test]
+  async fn transaction_lock_serializes_compaction_and_missing_snapshot_is_supported() {
+    let _guard = pg_test_lock().lock().await;
+    let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+      return;
+    };
+    let pool = runtime.pool().await.unwrap();
+    let workspace_id = format!("rust-test:compactor:{}", uuid::Uuid::new_v4());
+    let doc_id = "doc";
+    insert_workspace(&pool, &workspace_id).await;
+
+    let update = Doc::default().encode_update_v1().unwrap();
+    sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at) VALUES($1,$2,$3,clock_timestamp())")
+      .bind(&workspace_id)
+      .bind(doc_id)
+      .bind(update)
+      .execute(&pool)
+      .await
+      .unwrap();
+
+    let mut blocker = pool.begin().await.unwrap();
+    let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1,0))")
+      .bind(format!("workspace-doc-update:{workspace_id}/{doc_id}"))
+      .fetch_one(&mut *blocker)
+      .await
+      .unwrap();
+    assert!(locked);
+
+    let skipped = runtime
+      .compact_pending_doc_updates(workspace_id.clone(), doc_id.to_string(), 100, 0, 3600)
+      .await
+      .unwrap();
+    assert!(!skipped.lock_acquired);
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM updates WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(doc_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap(),
+      1
+    );
+
+    blocker.rollback().await.unwrap();
+    let compacted = runtime
+      .compact_pending_doc_updates(workspace_id.clone(), doc_id.to_string(), 100, 0, 3600)
+      .await
+      .unwrap();
+    assert!(compacted.lock_acquired);
+    assert!(compacted.merged);
+    assert_eq!(compacted.updates_merged, 1);
+    assert!(
+      sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM snapshots WHERE workspace_id=$1 AND guid=$2)")
+        .bind(&workspace_id)
+        .bind(doc_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
   }
 }

@@ -57,20 +57,6 @@ export async function listBlobs(
   return res.workspace.blobs;
 }
 
-export async function getWorkspaceBlobsSize(
-  app: TestingApp,
-  workspaceId: string
-): Promise<number> {
-  const res = await app.gql(`
-    query {
-      workspace(id: "${workspaceId}") {
-        blobsSize
-      }
-    }
-  `);
-  return res.workspace.blobsSize;
-}
-
 export async function collectAllBlobSizes(app: TestingApp): Promise<number> {
   const res = await app.gql(`
     query {

@@ -51,7 +51,6 @@ export class CopilotEmbeddingRealtimeProvider implements OnModuleInit {
     await this.ac
       .user(userId)
       .workspace(workspaceId)
-      .allowLocal()
       .assert('Workspace.Copilot');
   }
 }

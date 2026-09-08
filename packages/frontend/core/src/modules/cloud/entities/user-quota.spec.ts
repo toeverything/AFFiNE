@@ -19,21 +19,14 @@ function createQuotaState(
   overrides: Partial<UserQuotaStateSnapshot> = {}
 ): UserQuotaStateSnapshot {
   return {
-    userId: 'user-1',
     plan: 'pro',
-    sourceEntitlementId: 'entitlement-1',
+    seatLimit: 10,
     blobLimit: 1024,
     storageQuota: 2048,
     usedStorageQuota: 512,
     historyPeriodSeconds: 30 * 24 * 60 * 60,
-    copilotActionLimit: null,
-    flags: {},
-    known: true,
-    stale: false,
-    lastReconciledAt: null,
-    staleAfter: null,
-    createdAt: new Date(0),
-    updatedAt: new Date(0),
+    copilotActionLimit: undefined,
+    unlimitedCopilot: false,
     ...overrides,
   };
 }

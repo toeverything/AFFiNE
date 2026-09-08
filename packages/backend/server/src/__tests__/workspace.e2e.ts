@@ -16,7 +16,7 @@ import {
   updateWorkspace,
 } from './utils';
 
-const test = ava as TestFn<{
+const test = ava.serial as TestFn<{
   app: TestingApp;
   client: PrismaClient;
 }>;
@@ -68,6 +68,14 @@ test('should visit public page', async t => {
     where: { workspaceId_id: { workspaceId: workspace.id, id: workspace.id } },
     data: { blob: rootDoc },
   });
+  await client.snapshot.create({
+    data: {
+      workspaceId: workspace.id,
+      id: 'doc1',
+      blob: Buffer.from([0, 0]),
+      updatedAt: new Date(),
+    },
+  });
   const share = await publishDoc(app, workspace.id, 'doc1');
 
   t.is(share.id, 'doc1', 'failed to share doc');
@@ -102,11 +110,9 @@ test('should visit public page', async t => {
   t.deepEqual(readAllDocIdsFromRootDoc(respPublicRoot.body, false), ['doc1']);
 
   const resp3 = await app.GET(`/api/workspaces/${workspace.id}/docs/doc1`);
-  // 404 because we don't put the page doc to server
-  t.is(resp3.statusCode, 404, 'failed to get shared doc without snapshot');
+  t.is(resp3.statusCode, 200, 'failed to get shared doc');
   const resp4 = await app.GET(`/api/workspaces/${workspace.id}/docs/doc1`);
-  // 404 because we don't put the page doc to server
-  t.is(resp4.statusCode, 404, 'should not get shared doc without token');
+  t.is(resp4.statusCode, 200, 'should get shared doc without token');
 
   await app.login(user);
 
@@ -134,7 +140,7 @@ test('should not be able to public not permitted doc', async t => {
 
   await t.throwsAsync(revokePublicDoc(app, 'not_exists_ws', 'doc2'), {
     message:
-      'You do not have permission to perform Doc.Publish action on doc doc2.',
+      'You do not have permission to perform Doc.Unpublish action on doc doc2.',
   });
 });
 

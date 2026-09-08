@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { ServerConfigModule } from '../config';
+import { NotificationModule } from '../notification';
 import { PermissionModule } from '../permission';
 import { QuotaServiceModule } from '../quota';
 import { StorageModule } from '../storage';
@@ -13,6 +14,7 @@ import { CommentResolver } from './resolver';
     QuotaServiceModule,
     StorageModule,
     ServerConfigModule,
+    NotificationModule,
     CommentRealtimeModule,
   ],
   providers: [CommentResolver],

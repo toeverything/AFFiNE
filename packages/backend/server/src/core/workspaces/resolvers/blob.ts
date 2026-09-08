@@ -25,8 +25,8 @@ import {
 } from '../../../base';
 import { Models } from '../../../models';
 import { CurrentUser } from '../../auth';
+import { BackendRuntimeProvider } from '../../backend-runtime';
 import { PermissionAccess } from '../../permission';
-import { QuotaService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
 import {
   MULTIPART_PART_SIZE,
@@ -126,7 +126,7 @@ export class WorkspaceBlobResolver {
   logger = new Logger(WorkspaceBlobResolver.name);
   constructor(
     private readonly ac: PermissionAccess,
-    private readonly quota: QuotaService,
+    private readonly runtime: BackendRuntimeProvider,
     private readonly storage: WorkspaceBlobStorage,
     private readonly models: Models
   ) {}
@@ -139,20 +139,7 @@ export class WorkspaceBlobResolver {
     @CurrentUser() user: CurrentUser,
     @Parent() workspace: WorkspaceType
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspace.id)
-      .assert('Workspace.Blobs.List');
-
-    return this.storage.list(workspace.id);
-  }
-
-  @ResolveField(() => Int, {
-    description: 'Blobs size of workspace',
-    complexity: 2,
-  })
-  async blobsSize(@Parent() workspace: WorkspaceType) {
-    return this.storage.totalSize(workspace.id);
+    return this.runtime.listManagedWorkspaceBlobsV1(user.id, workspace.id);
   }
 
   @ResolveField(() => BlobUploadPart, {
@@ -178,21 +165,57 @@ export class WorkspaceBlobResolver {
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+      .assert('Workspace.Blobs.Upload');
 
-    const checkExceeded =
-      await this.quota.getWorkspaceQuotaCalculator(workspaceId);
-
-    let result = checkExceeded(0);
-    if (result?.blobQuotaExceeded) {
-      throw new BlobQuotaExceeded();
-    } else if (result?.storageQuotaExceeded) {
-      throw new StorageQuotaExceeded();
+    const buffer = await readBuffer(blob.createReadStream(), () => undefined);
+    const reservation = await this.runtime.reserveStorageQuotaV1({
+      workspaceId,
+      userId: user.id,
+      key: blob.filename,
+      size: buffer.byteLength,
+      mime: blob.mimetype || 'application/octet-stream',
+      kind: 'blob',
+    });
+    this.assertStorageReservation(reservation);
+    if (reservation.alreadyUploaded) return blob.filename;
+    if (!reservation.reservationId)
+      throw new BlobInvalid('Missing blob reservation');
+    let metadata;
+    try {
+      metadata = await this.storage.putReservation(
+        workspaceId,
+        blob.filename,
+        reservation.reservationId,
+        buffer,
+        {
+          contentType: blob.mimetype || 'application/octet-stream',
+          contentLength: buffer.byteLength,
+        }
+      );
+    } catch (error) {
+      try {
+        await this.runtime.abortStorageReservationV1({
+          workspaceId,
+          userId: user.id,
+          key: blob.filename,
+          reservationId: reservation.reservationId,
+          kind: 'blob',
+        });
+      } catch (cleanupError) {
+        this.logger.warn('Failed to abort blob reservation', cleanupError);
+      }
+      throw error;
     }
-
-    const buffer = await readBuffer(blob.createReadStream(), checkExceeded);
-
-    await this.storage.put(workspaceId, blob.filename, buffer);
+    const finalized = await this.finalizeReservation({
+      workspaceId,
+      userId: user.id,
+      key: blob.filename,
+      reservationId: reservation.reservationId,
+      kind: 'blob',
+      size: metadata.contentLength,
+      mime: metadata.contentType,
+    });
+    if (!finalized) throw new BlobInvalid('Blob reservation changed');
     return blob.filename;
   }
 
@@ -207,7 +230,26 @@ export class WorkspaceBlobResolver {
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+      .assert('Workspace.Blobs.Upload');
+
+    const reservation = await this.runtime.reserveStorageQuotaV1({
+      workspaceId,
+      userId: user.id,
+      key,
+      size,
+      mime: mime || 'application/octet-stream',
+      kind: 'blob',
+    });
+    this.assertStorageReservation(reservation);
+    if (reservation.alreadyUploaded) {
+      return {
+        method: BlobUploadMethod.GRAPHQL,
+        blobKey: key,
+        alreadyUploaded: true,
+      };
+    }
+    if (!reservation.reservationId)
+      throw new BlobInvalid('Missing blob reservation');
 
     let record = await this.models.blob.get(workspaceId, key);
     mime = mime || 'application/octet-stream';
@@ -233,15 +275,6 @@ export class WorkspaceBlobResolver {
       } else {
         mime = record.mime;
       }
-    }
-
-    const checkExceeded =
-      await this.quota.getWorkspaceQuotaCalculator(workspaceId);
-    const result = checkExceeded(record ? 0 : size);
-    if (result?.blobQuotaExceeded) {
-      throw new BlobQuotaExceeded();
-    } else if (result?.storageQuotaExceeded) {
-      throw new StorageQuotaExceeded();
     }
 
     const metadata = { contentType: mime, contentLength: size };
@@ -274,6 +307,7 @@ export class WorkspaceBlobResolver {
         const multipart = await this.storage.createMultipartUpload(
           workspaceId,
           key,
+          reservation.reservationId,
           metadata
         );
         if (multipart) {
@@ -293,6 +327,7 @@ export class WorkspaceBlobResolver {
         const presigned = await this.storage.presignPut(
           workspaceId,
           key,
+          reservation.reservationId,
           metadata
         );
         if (presigned) {
@@ -318,14 +353,12 @@ export class WorkspaceBlobResolver {
       };
     }
 
-    await this.models.blob.upsert({
+    await this.models.blob.setReservationUploadId(
       workspaceId,
       key,
-      mime,
-      size,
-      status: 'pending',
-      uploadId: uploadIdForRecord,
-    });
+      reservation.reservationId,
+      uploadIdForRecord
+    );
 
     return init;
   }
@@ -346,7 +379,7 @@ export class WorkspaceBlobResolver {
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+      .assert('Workspace.Blobs.Upload');
 
     const record = await this.models.blob.get(workspaceId, key);
     if (!record) {
@@ -385,28 +418,18 @@ export class WorkspaceBlobResolver {
       throw new BlobInvalid('Multipart upload is not initialized');
     }
 
-    const result = await this.storage.complete(workspaceId, key, {
+    if (!record.reservationId)
+      throw new BlobInvalid('Missing blob reservation');
+    const finalized = await this.finalizeReservation({
+      workspaceId,
+      userId: user.id,
+      key,
+      reservationId: record.reservationId,
+      kind: 'blob',
       size: record.size,
       mime: record.mime,
     });
-    if (!result.ok) {
-      if (result.reason === 'not_found') {
-        throw new BlobNotFound({
-          spaceId: workspaceId,
-          blobId: key,
-        });
-      }
-      if (result.reason === 'size_mismatch') {
-        throw new BlobInvalid('Blob size mismatch');
-      }
-      if (result.reason === 'mime_mismatch') {
-        throw new BlobInvalid('Blob mime mismatch');
-      }
-      if (result.reason === 'size_too_large') {
-        throw new BlobInvalid('Blob size too large');
-      }
-      throw new BlobInvalid('Blob key mismatch');
-    }
+    if (!finalized) throw new BlobInvalid('Blob reservation changed');
 
     return key;
   }
@@ -421,9 +444,61 @@ export class WorkspaceBlobResolver {
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+      .assert('Workspace.Blobs.Upload');
 
-    return this.storage.abortMultipartUpload(workspaceId, key, uploadId);
+    const record = await this.models.blob.get(workspaceId, key);
+    if (
+      !record ||
+      record.status !== 'pending' ||
+      record.deletedAt ||
+      !record.reservationId
+    ) {
+      return false;
+    }
+    const aborted = await this.storage.abortMultipartUpload(
+      workspaceId,
+      key,
+      uploadId,
+      record.reservationId
+    );
+    await this.runtime.abortStorageReservationV1({
+      workspaceId,
+      userId: user.id,
+      key,
+      reservationId: record.reservationId,
+      kind: 'blob',
+    });
+    return aborted;
+  }
+
+  private assertStorageReservation(reservation: {
+    allowed: boolean;
+    reason?: string;
+  }) {
+    if (reservation.allowed) return;
+    if (reservation.reason === 'blob_limit') throw new BlobQuotaExceeded();
+    throw new StorageQuotaExceeded();
+  }
+
+  private async finalizeReservation(
+    input: Parameters<BackendRuntimeProvider['finalizeStorageReservationV1']>[0]
+  ) {
+    try {
+      return await this.runtime.finalizeStorageReservationV1(input);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('checksum'))
+        throw new BlobInvalid('Blob key mismatch');
+      if (message.includes('metadata'))
+        throw new BlobInvalid('Blob metadata mismatch');
+      if (message.includes('not found')) {
+        throw new BlobNotFound({
+          spaceId: input.workspaceId,
+          blobId: input.key,
+        });
+      }
+      throw error;
+    }
   }
 
   private async getUploadPart(
@@ -436,7 +511,7 @@ export class WorkspaceBlobResolver {
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+      .assert('Workspace.Blobs.Upload');
 
     const part = await this.storage.presignUploadPart(
       workspaceId,
@@ -474,14 +549,12 @@ export class WorkspaceBlobResolver {
       return false;
     }
 
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
-
-    await this.storage.delete(workspaceId, key, permanently);
-
-    return true;
+    return this.runtime.manageWorkspaceBlobV1({
+      workspaceId,
+      actorUserId: user.id,
+      key,
+      permanently,
+    });
   }
 
   @Mutation(() => Boolean)
@@ -489,13 +562,14 @@ export class WorkspaceBlobResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
-
-    await this.storage.release(workspaceId);
-
+    for (;;) {
+      const released = await this.runtime.releaseManagedWorkspaceBlobsV1(
+        user.id,
+        workspaceId,
+        1000
+      );
+      if (released < 1000) break;
+    }
     return true;
   }
 }

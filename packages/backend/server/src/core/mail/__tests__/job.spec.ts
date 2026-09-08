@@ -4,22 +4,34 @@ import Sinon from 'sinon';
 
 import { Mockers } from '../../../__tests__/mocks';
 import { createTestingModule } from '../../../__tests__/utils';
+import { URLHelper } from '../../../base';
 import { Models } from '../../../models';
+import { BackendRuntimeProvider } from '../../backend-runtime';
+import { DocReader } from '../../doc';
+import { MailDeliveryEvents } from '../events';
 import { MailJob } from '../job';
 import { MailSender } from '../sender';
 
 let module: Awaited<ReturnType<typeof createTestingModule>>;
 let mailJob: MailJob;
+let mailEvents: MailDeliveryEvents;
 let sender: MailSender;
 let models: Models;
 let db: PrismaClient;
+let runtime: BackendRuntimeProvider;
+let doc: DocReader;
+let url: URLHelper;
 
 test.before(async () => {
   module = await createTestingModule();
   mailJob = module.get(MailJob);
+  mailEvents = module.get(MailDeliveryEvents);
   sender = module.get(MailSender);
   models = module.get(Models);
   db = module.get(PrismaClient);
+  runtime = module.get(BackendRuntimeProvider);
+  doc = module.get(DocReader);
+  url = module.get(URLHelper);
 });
 
 test.after.always(async () => {
@@ -33,14 +45,22 @@ test.afterEach.always(async () => {
 
 async function createDelivery(
   input: {
-    name: 'SignIn' | 'VerifyEmail' | 'MemberInvitation';
+    name:
+      | 'SignIn'
+      | 'VerifyEmail'
+      | 'MemberInvitation'
+      | 'TeamWorkspaceUpgraded';
     to: string;
     props: Record<string, unknown>;
   },
   overrides: Partial<Parameters<Models['mailDelivery']['create']>[0]> = {}
 ) {
   const mailClass =
-    input.name === 'MemberInvitation' ? 'workspace_invitation' : 'auth';
+    input.name === 'MemberInvitation'
+      ? 'workspace_invitation'
+      : input.name === 'TeamWorkspaceUpgraded'
+        ? 'workspace_lifecycle'
+        : 'auth';
   return await models.mailDelivery.create({
     mailName: input.name,
     mailClass,
@@ -81,7 +101,7 @@ test('should cancel pending mail deliveries when user is deleted', async t => {
     props: { url: 'https://affine.pro/sign-in', otp: '123456' },
   });
 
-  await mailJob.onUserDeleted({ ...user, ownedWorkspaces: [] });
+  await mailEvents.onUserDeleted(user);
 
   t.is((await delivery(recipientDelivery.id)).status, 'canceled');
   t.is((await delivery(senderDelivery.id)).status, 'canceled');
@@ -192,6 +212,47 @@ test('should retry retryable send failures without mutating stored dynamic props
       workspace: { $$workspaceId: workspace.id },
     },
   });
+});
+
+test('should read workspace mail avatar through the owner root source', async t => {
+  const owner = await module.create(Mockers.User);
+  const member = await module.create(Mockers.User);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+    name: 'Safe Workspace',
+  });
+  Sinon.stub(doc, 'getWorkspaceContent').resolves({
+    id: workspace.id,
+    name: 'Safe Workspace',
+    avatarKey: 'avatar-key',
+    avatarUrl: '',
+  });
+  const readBlob = Sinon.stub(runtime, 'readWorkspaceAvatarV1').resolves(
+    Buffer.from('avatar')
+  );
+  const link = Sinon.stub(url, 'link').returns('https://affine.pro/workspace');
+  const send = Sinon.stub(sender, 'send').resolves({
+    status: 'accepted',
+    retryable: false,
+  });
+  await createDelivery(
+    {
+      name: 'TeamWorkspaceUpgraded',
+      to: member.email,
+      props: {
+        workspace: { $$workspaceId: workspace.id },
+        isOwner: false,
+        url: { $$workspaceUrl: workspace.id },
+      },
+    },
+    { actorUserId: owner.id, workspaceId: workspace.id }
+  );
+
+  await mailJob.processReadyDeliveries();
+
+  t.true(readBlob.calledOnceWithExactly(owner.id, workspace.id, 'avatar-key'));
+  t.true(link.calledOnceWithExactly(`/workspace/${workspace.id}`));
+  t.true(send.calledOnce);
 });
 
 test('should skip member invitation mail when rendered workspace name contains domain', async t => {

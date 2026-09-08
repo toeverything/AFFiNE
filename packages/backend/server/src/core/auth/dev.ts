@@ -1,8 +1,4 @@
 import { Models } from '../../models';
-import {
-  SubscriptionRecurring,
-  SubscriptionStatus,
-} from '../../plugins/payment/types';
 import { EntitlementService } from '../entitlement';
 
 export async function createDevUsers(
@@ -52,17 +48,16 @@ export async function createDevUsers(
         });
       }
       await models.userFeature.add(devUser.id, 'administrator', name);
-      for (const plan of plans) {
-        await entitlement.upsertFromCloudSubscription({
-          targetId: devUser.id,
-          plan,
-          recurring: SubscriptionRecurring.Monthly,
-          status: SubscriptionStatus.Active,
-          provider: 'dev',
-          subscriptionId: `dev:${devUser.id}:${plan}`,
-        });
+      if (!env.selfhosted) {
+        for (const plan of plans) {
+          await entitlement.upsertAdminGrant({
+            targetType: 'user',
+            targetId: devUser.id,
+            plan,
+          });
+        }
       }
-      if (teamWorkspace) {
+      if (teamWorkspace && !env.selfhosted) {
         const workspaceIds = (
           await models.workspaceUser.getUserActiveRoles(devUser.id)
         ).map(row => row.workspaceId);
@@ -70,10 +65,10 @@ export async function createDevUsers(
         const hasTeamWorkspace = (
           await Promise.all(
             workspaces.map(workspace =>
-              entitlement.resolveWorkspaceEntitlement(workspace.id)
+              entitlement.hasCommercialWorkspace(workspace.id)
             )
           )
-        ).some(resolved => resolved.plan === 'team');
+        ).some(Boolean);
         if (!hasTeamWorkspace) {
           const workspace = await models.workspace.create(devUser.id);
           await models.doc.upsert({
@@ -83,14 +78,11 @@ export async function createDevUsers(
             timestamp: Date.now(),
             editorId: devUser.id,
           });
-          await entitlement.upsertFromCloudSubscription({
+          await entitlement.upsertAdminGrant({
+            targetType: 'workspace',
             targetId: workspace.id,
             plan: 'team',
-            recurring: SubscriptionRecurring.Monthly,
-            status: SubscriptionStatus.Active,
             quantity: 10,
-            provider: 'dev',
-            subscriptionId: `dev:${workspace.id}:team`,
           });
         }
       }

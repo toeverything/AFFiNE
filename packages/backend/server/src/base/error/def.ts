@@ -509,6 +509,12 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ spaceId }) =>
       `You do not have permission to access Space ${spaceId}.`,
   },
+  sync_permission_generation_changed: {
+    type: 'service_unavailable',
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) =>
+      `Permissions for Space ${spaceId} changed during synchronization.`,
+  },
   space_owner_not_found: {
     type: 'internal_server_error',
     args: { spaceId: 'string' },

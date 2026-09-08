@@ -48,14 +48,14 @@ export class DocWriter {
    * @param workspaceId - The workspace ID
    * @param title - The document title
    * @param markdown - The markdown content (body only)
-   * @param editorId - Optional editor ID for tracking
+   * @param editorId - Actor user ID
    * @returns The created document ID
    */
   async createDoc(
     workspaceId: string,
     title: string,
     markdown: string,
-    editorId?: string
+    editorId: string
   ): Promise<CreateDocResult> {
     // Fetch workspace root doc first - reject if not found
     // The root doc (docId = workspaceId) contains meta.pages array
@@ -91,7 +91,9 @@ export class DocWriter {
       workspaceId,
       workspaceId,
       [rootDocUpdate],
-      editorId
+      editorId,
+      undefined,
+      'create_doc'
     );
     this.emitDocUpdatesPushed({
       spaceId: workspaceId,
@@ -105,7 +107,9 @@ export class DocWriter {
       workspaceId,
       docId,
       [binary],
-      editorId
+      editorId,
+      undefined,
+      'create_doc'
     );
     this.emitDocUpdatesPushed({
       spaceId: workspaceId,
@@ -144,13 +148,13 @@ export class DocWriter {
    * @param workspaceId - The workspace ID
    * @param docId - The document ID to update
    * @param markdown - The new markdown content
-   * @param editorId - Optional editor ID for tracking
+   * @param editorId - Actor user ID
    */
   async updateDoc(
     workspaceId: string,
     docId: string,
     markdown: string,
-    editorId?: string
+    editorId: string
   ): Promise<UpdateDocResult> {
     this.logger.debug(
       `Updating doc ${docId} in workspace ${workspaceId} from markdown`
@@ -204,13 +208,13 @@ export class DocWriter {
    * @param workspaceId - The workspace ID
    * @param docId - The document ID to update
    * @param meta - Metadata updates
-   * @param editorId - Optional editor ID for tracking
+   * @param editorId - Actor user ID
    */
   async updateDocMeta(
     workspaceId: string,
     docId: string,
     meta: { title?: string },
-    editorId?: string
+    editorId: string
   ): Promise<UpdateDocResult> {
     if (meta.title === undefined) {
       throw new Error('No metadata provided');
@@ -256,7 +260,10 @@ export class DocWriter {
       workspaceId,
       workspaceId,
       [rootMetaUpdate],
-      editorId
+      editorId,
+      undefined,
+      'update_doc',
+      docId
     );
     this.emitDocUpdatesPushed({
       spaceId: workspaceId,
@@ -311,11 +318,8 @@ export class DocWriter {
     workspaceId: string,
     docId: string,
     props: { createdBy?: string; updatedBy?: string },
-    editorId?: string
+    editorId: string
   ) {
-    if (!editorId) {
-      return;
-    }
     if (
       workspaceId === docId ||
       docId.startsWith('db$') ||
@@ -354,7 +358,10 @@ export class DocWriter {
       workspaceId,
       propertiesDocId,
       [update],
-      editorId
+      editorId,
+      undefined,
+      'update_doc',
+      docId
     );
     this.emitDocUpdatesPushed({
       spaceId: workspaceId,

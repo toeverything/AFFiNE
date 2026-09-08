@@ -137,11 +137,15 @@ impl PaymentRuntime {
     mut connection: PaymentConnection,
     mut snapshot: PaymentSnapshot,
   ) -> RuntimeResult<PaymentApplyResult> {
-    loop {
+    const MAX_LOCK_EXPANSIONS: usize = 4;
+    for attempt in 0..=MAX_LOCK_EXPANSIONS {
       match apply_payment_snapshot(&mut connection, snapshot.clone(), self.deployment, &self.mail_hash_key).await {
         Ok(result) => return Ok(result),
         Err(PaymentApplyError::Runtime(error)) => return Err(error),
         Err(PaymentApplyError::LockSetExpanded(expansion)) => {
+          if attempt == MAX_LOCK_EXPANSIONS {
+            return Err(RuntimeError::invalid_state("payment_busy"));
+          }
           connection = connection
             .reacquire_with(&self.pool, expansion)
             .await?
@@ -152,6 +156,7 @@ impl PaymentRuntime {
         }
       }
     }
+    unreachable!()
   }
 
   async fn refresh_complete_snapshot(&self, stale: &PaymentSnapshot) -> RuntimeResult<PaymentSnapshot> {
@@ -228,6 +233,35 @@ impl BackendRuntime {
       .map_err(to_napi_error)?;
     super::super::entitlement::publish_changes(self, &outcome.changes.targets, &outcome.changes.owner_ids).await;
     Ok(outcome.value)
+  }
+
+  #[napi]
+  pub async fn create_payment_customer_portal_v1(&self, actor_user_id: String) -> napi::Result<String> {
+    let runtime = self.payment_runtime().await?;
+    let _permit = runtime
+      .permits
+      .acquire()
+      .await
+      .map_err(|_| to_napi_error(RuntimeError::invalid_state("payment runtime stopped")))?;
+    runtime.customer_portal_url(&actor_user_id).await.map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub async fn create_license_customer_portal_v1(
+    &self,
+    license_key: String,
+    validate_key: Option<String>,
+  ) -> napi::Result<String> {
+    let runtime = self.payment_runtime().await?;
+    let _permit = runtime
+      .permits
+      .acquire()
+      .await
+      .map_err(|_| to_napi_error(RuntimeError::invalid_state("payment runtime stopped")))?;
+    runtime
+      .license_customer_portal_url(&license_key, validate_key.as_deref())
+      .await
+      .map_err(to_napi_error)
   }
 
   #[napi]

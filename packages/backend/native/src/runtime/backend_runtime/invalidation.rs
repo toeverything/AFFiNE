@@ -2,7 +2,7 @@ use std::{
   future::Future,
   pin::Pin,
   sync::{
-    Arc,
+    Arc, RwLock,
     atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
   },
   time::Duration,
@@ -10,6 +10,10 @@ use std::{
 
 use affine_core::invalidation::{INVALIDATION_CHANNEL_V1, decode_invalidation_v1, encode_invalidation_v1};
 use futures_util::StreamExt;
+use napi::{
+  Status,
+  threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
+};
 use redis::aio::MultiplexedConnection;
 use tokio::{sync::Mutex, task::JoinHandle};
 
@@ -24,8 +28,49 @@ pub(super) trait InvalidationTarget: Send + Sync {
   fn invalidate<'a>(&'a self, hint: &'a InvalidationHintV1) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>>;
 }
 
+type InvalidationCallback = ThreadsafeFunction<String, (), String, Status, true, true, 1024>;
+
+#[derive(Clone, Default)]
+pub(super) struct InvalidationEvents(Arc<RwLock<Option<InvalidationCallback>>>);
+
+impl InvalidationEvents {
+  pub(super) fn from_threadsafe_function(callback: Option<InvalidationCallback>) -> Self {
+    Self(Arc::new(RwLock::new(callback)))
+  }
+
+  pub(super) fn shutdown(&self) {
+    if let Ok(mut callback) = self.0.write() {
+      callback.take();
+    }
+  }
+
+  fn emit(&self, hint: &InvalidationHintV1) {
+    let Ok(payload) = encode_invalidation_v1(hint) else {
+      return;
+    };
+    let Ok(payload) = String::from_utf8(payload) else {
+      return;
+    };
+    if let Ok(callback) = self.0.read()
+      && let Some(callback) = callback.as_ref()
+    {
+      let _ = callback.call(Ok(payload), ThreadsafeFunctionCallMode::NonBlocking);
+    }
+  }
+}
+
+pub(super) struct EventInvalidationTarget(pub(super) InvalidationEvents);
+
+impl InvalidationTarget for EventInvalidationTarget {
+  fn invalidate<'a>(&'a self, hint: &'a InvalidationHintV1) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+    Box::pin(async move { self.0.emit(hint) })
+  }
+}
+
+#[cfg(test)]
 pub(super) struct NoopInvalidationTarget;
 
+#[cfg(test)]
 impl InvalidationTarget for NoopInvalidationTarget {
   fn invalidate<'a>(&'a self, _hint: &'a InvalidationHintV1) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
     Box::pin(async {})

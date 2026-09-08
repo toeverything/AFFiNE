@@ -27,30 +27,26 @@ enum PaymentCommand {
     success_url: String,
     intent_id: String,
   },
-  CreatePortal {
-    actor_user_id: String,
-    intent_id: String,
-  },
   MutateSubscription {
     actor_user_id: String,
-    target_type: String,
-    target_id: String,
-    plan: String,
+    #[serde(flatten)]
+    target: SubscriptionTarget,
     mutation: String,
     intent_id: String,
   },
   UpdateRecurring {
     actor_user_id: Option<String>,
-    target_type: String,
-    target_id: String,
-    plan: String,
+    validate_key: Option<String>,
+    #[serde(flatten)]
+    target: SubscriptionTarget,
     recurring: String,
     intent_id: String,
   },
   UpdateQuantity {
-    target_type: String,
-    target_id: String,
-    plan: String,
+    actor_user_id: Option<String>,
+    validate_key: Option<String>,
+    #[serde(flatten)]
+    target: SubscriptionTarget,
     quantity: u32,
     intent_id: String,
   },
@@ -78,10 +74,17 @@ enum PaymentCommand {
   CheckLicenseHealth {
     license_key: String,
     validate_key: String,
+    workspace_id: String,
   },
-  CreateLicensePortal {
+  ActivateLegacyLicense {
     license_key: String,
-    intent_id: String,
+  },
+  DeactivateLegacyLicense {
+    license_key: String,
+  },
+  CheckLegacyLicenseHealth {
+    license_key: String,
+    validate_key: String,
   },
   PrepareUserDeletion {
     user_id: String,
@@ -138,35 +141,20 @@ impl PaymentRuntime {
           )
           .await
       }
-      PaymentCommand::CreatePortal {
-        actor_user_id,
-        intent_id,
-      } => self.create_portal(&mut changes, &actor_user_id, &intent_id).await,
       PaymentCommand::MutateSubscription {
         actor_user_id,
-        target_type,
-        target_id,
-        plan,
+        target,
         mutation,
         intent_id,
       } => {
         self
-          .mutate_subscription(
-            &mut changes,
-            &actor_user_id,
-            &target_type,
-            &target_id,
-            &plan,
-            &mutation,
-            &intent_id,
-          )
+          .mutate_subscription(&mut changes, &actor_user_id, &target, &mutation, &intent_id)
           .await
       }
       PaymentCommand::UpdateRecurring {
         actor_user_id,
-        target_type,
-        target_id,
-        plan,
+        validate_key,
+        target,
         recurring,
         intent_id,
       } => {
@@ -174,23 +162,29 @@ impl PaymentRuntime {
           .update_recurring(
             &mut changes,
             actor_user_id.as_deref(),
-            &target_type,
-            &target_id,
-            &plan,
+            validate_key.as_deref(),
+            &target,
             &recurring,
             &intent_id,
           )
           .await
       }
       PaymentCommand::UpdateQuantity {
-        target_type,
-        target_id,
-        plan,
+        actor_user_id,
+        validate_key,
+        target,
         quantity,
         intent_id,
       } => {
         self
-          .update_quantity(&mut changes, &target_type, &target_id, &plan, quantity, &intent_id)
+          .update_quantity(
+            &mut changes,
+            actor_user_id.as_deref(),
+            validate_key.as_deref(),
+            &target,
+            quantity,
+            &intent_id,
+          )
           .await
       }
       PaymentCommand::RefreshRevenuecat { user_id } => self.refresh_revenuecat(&mut changes, &user_id).await,
@@ -218,10 +212,18 @@ impl PaymentRuntime {
       PaymentCommand::CheckLicenseHealth {
         license_key,
         validate_key,
-      } => self.check_license_health(&license_key, &validate_key).await,
-      PaymentCommand::CreateLicensePortal { license_key, intent_id } => {
-        self.create_license_portal(&mut changes, &license_key, &intent_id).await
+        workspace_id,
+      } => {
+        self
+          .check_license_health(&license_key, &validate_key, &workspace_id)
+          .await
       }
+      PaymentCommand::ActivateLegacyLicense { license_key } => self.activate_legacy_license(&license_key).await,
+      PaymentCommand::DeactivateLegacyLicense { license_key } => self.deactivate_legacy_license(&license_key).await,
+      PaymentCommand::CheckLegacyLicenseHealth {
+        license_key,
+        validate_key,
+      } => self.check_legacy_license_health(&license_key, &validate_key).await,
       PaymentCommand::PrepareUserDeletion { user_id } => self.prepare_user_deletion(&user_id).await,
     }?;
     Ok(PaymentCommandOutcome { value, changes })

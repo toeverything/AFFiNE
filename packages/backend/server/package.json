@@ -19,7 +19,7 @@
     "seed": "r ./src/seed/index.ts",
     "genconfig": "r ./scripts/genconfig.ts",
     "cli": "cross-env SERVER_FLAVOR=script node ./dist/main.js",
-    "predeploy": "yarn cli admit-legacy-context-blobs && yarn prisma migrate deploy && yarn cli run",
+    "predeploy": "yarn cli admit-legacy-context-blobs && yarn prisma migrate deploy && yarn cli run && yarn cli validate-cutover",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -33,7 +33,6 @@
     "@nestjs-cls/transactional": "^3.2.0",
     "@nestjs-cls/transactional-adapter-prisma": "^1.3.4",
     "@nestjs/apollo": "^13.2.4",
-    "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.18",
     "@nestjs/core": "^11.1.18",
     "@nestjs/graphql": "^13.2.5",
@@ -63,7 +62,6 @@
     "@opentelemetry/semantic-conventions": "^1.41.1",
     "@prisma/client": "^6.6.0",
     "@prisma/instrumentation": "^6.7.0",
-    "@queuedash/api": "^3.16.0",
     "@react-email/body": "0.3.0",
     "@react-email/button": "0.2.1",
     "@react-email/container": "0.0.16",
@@ -75,7 +73,6 @@
     "@react-email/section": "0.0.17",
     "@react-email/text": "0.1.6",
     "@socket.io/redis-adapter": "^8.3.0",
-    "bullmq": "^5.79.0",
     "commander": "^13.1.0",
     "cookie-parser": "^1.4.7",
     "cross-env": "^10.1.0",
@@ -110,7 +107,6 @@
     "rxjs": "^7.8.2",
     "semver": "^7.7.4",
     "socket.io": "^4.8.3",
-    "stripe": "^17.7.0",
     "tldts": "^7.0.19",
     "winston": "^3.17.0",
     "yjs": "^13.6.27",
@@ -148,8 +144,7 @@
     "sinon": "^21.0.1",
     "socket.io-client": "^4.8.3",
     "supertest": "^7.1.4",
-    "typescript": "npm:@typescript/typescript6@6.0.2",
-    "why-is-node-running": "^3.2.2"
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "nodemonConfig": {
     "exec": "node",
