@@ -41,6 +41,14 @@ class FakeSocket {
   }
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>(innerResolve => {
+    resolve = innerResolve;
+  });
+  return { promise, resolve };
+}
+
 const { resetSharedConnection, waitForConnected } = vi.hoisted(() => ({
   resetSharedConnection: vi.fn(),
   waitForConnected: vi.fn(async () => {}),
@@ -430,6 +438,52 @@ test('reconnect resubscription is single-flight when ready re-enters realtime', 
   expect(
     socket.emitted.filter(item => item.event === 'realtime:subscribe')
   ).toHaveLength(4);
+
+  first.unsubscribe();
+  second.unsubscribe();
+});
+
+test('reconnect during resubscription repeats the snapshot after the active pass', async () => {
+  const manager = new RealtimeManager();
+  manager.setContext({
+    endpoint: 'http://server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+  const first = manager
+    .subscribe('notification.count.changed', {})
+    .subscribe();
+  const second = manager.subscribe('user.profile.changed', {}).subscribe();
+  await vi.waitFor(() => expect(manager.getStatus().subscriptions).toBe(2));
+
+  const secondAck = deferred<{ data: { subscriptionId: string } }>();
+  socket.subscribeAcks = [
+    { data: { subscriptionId: 'reconnected-first' } },
+    secondAck.promise,
+  ];
+  manager.setContext({
+    endpoint: 'http://other-server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+  const reconnectRequest = manager.request('notification.count.get', {});
+
+  await vi.waitFor(() =>
+    expect(
+      socket.emitted.filter(item => item.event === 'realtime:subscribe')
+    ).toHaveLength(4)
+  );
+  socket.connected = false;
+  socket.connected = true;
+  socket.emit('connect');
+  secondAck.resolve({ data: { subscriptionId: 'reconnected-second' } });
+
+  await reconnectRequest;
+  await vi.waitFor(() =>
+    expect(
+      socket.emitted.filter(item => item.event === 'realtime:subscribe')
+    ).toHaveLength(6)
+  );
 
   first.unsubscribe();
   second.unsubscribe();

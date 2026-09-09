@@ -277,6 +277,10 @@ export class RealtimeManager {
   };
 
   private readonly handleReconnect = () => {
+    if (this.subscriptions.size === 0) {
+      return;
+    }
+    this.subscriptionsNeedResubscribe = true;
     this.resubscribeAll().catch(error => {
       this.lastError = normalizeError(error);
     });
@@ -292,35 +296,41 @@ export class RealtimeManager {
       return Promise.resolve();
     }
 
-    // A subscription's ready handler may re-enter connect() synchronously.
-    // Clear this before notifying handlers and share the in-flight pass so it
-    // cannot start a nested resubscription loop over a changing map.
-    this.subscriptionsNeedResubscribe = false;
-    const subscriptions = Array.from(this.subscriptions.entries());
     this.resubscribePromise = (async () => {
-      for (const [subscriptionId, subscription] of subscriptions) {
-        try {
-          const ack = await socket.emitWithAck('realtime:subscribe', {
-            topic: subscription.topic,
-            input: subscription.input,
-            clientVersion: BUILD_CONFIG.appVersion,
-          });
-          if ('error' in ack) {
-            throw rejectAck(ack.error);
-          }
+      do {
+        // A subscription's ready handler may re-enter connect() synchronously.
+        // Clear this before notifying handlers and share the in-flight pass so it
+        // cannot start a nested resubscription loop over a changing map.
+        this.subscriptionsNeedResubscribe = false;
+        const subscriptions = Array.from(this.subscriptions.entries());
+        for (const [subscriptionId, subscription] of subscriptions) {
+          try {
+            const ack = await socket.emitWithAck('realtime:subscribe', {
+              topic: subscription.topic,
+              input: subscription.input,
+              clientVersion: BUILD_CONFIG.appVersion,
+            });
+            if ('error' in ack) {
+              throw rejectAck(ack.error);
+            }
 
-          this.subscriptions.delete(subscriptionId);
-          this.subscriptions.set(ack.data.subscriptionId, subscription);
-          subscription.onResubscribed(ack.data.subscriptionId);
-          subscription.subject$.next({
-            type: 'ready',
-          });
-        } catch (error) {
-          this.lastError = normalizeError(error);
-          this.subscriptions.delete(subscriptionId);
-          subscription.subject$.error(error);
+            this.subscriptions.delete(subscriptionId);
+            this.subscriptions.set(ack.data.subscriptionId, subscription);
+            subscription.onResubscribed(ack.data.subscriptionId);
+            subscription.subject$.next({
+              type: 'ready',
+            });
+          } catch (error) {
+            this.lastError = normalizeError(error);
+            this.subscriptions.delete(subscriptionId);
+            subscription.subject$.error(error);
+          }
         }
-      }
+      } while (
+        this.subscriptionsNeedResubscribe &&
+        socket.connected &&
+        this.subscriptions.size > 0
+      );
     })().finally(() => {
       this.resubscribePromise = undefined;
     });
