@@ -136,6 +136,13 @@ export class DocFrontend {
     readonly options: DocFrontendOptions = {}
   ) {}
 
+  applyDocLifecycle(docId: string, lifecycle: 'trash' | 'restore' | 'delete') {
+    if (!this.storage.applyDocLifecycle) {
+      throw new Error('Document lifecycle is unavailable');
+    }
+    return this.storage.applyDocLifecycle(docId, lifecycle);
+  }
+
   private _docState$(docId: string): Observable<DocFrontendDocState> {
     const frontendState$ = new Observable<{
       ready: boolean;

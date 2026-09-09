@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 
 import * as reader from '@affine/reader';
-import { NEVER } from 'rxjs';
+import { firstValueFrom, NEVER } from 'rxjs';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
@@ -33,6 +33,7 @@ import {
   SpaceStorage,
 } from '../storage';
 import { Sync } from '../sync';
+import { BlobSyncPeer } from '../sync/blob/peer';
 import { DocSyncPeer } from '../sync/doc/peer';
 import { IndexerSyncImpl } from '../sync/indexer';
 import { expectYjsEqual } from './utils';
@@ -375,11 +376,17 @@ test('doc', async () => {
     },
   });
   const removeRootPriority = sync.doc.addPriority('ws1', 100);
+  const removeForegroundPriority = sync.doc.addPriority('doc1', 200);
+  const remoteDiff = vi.spyOn(peerBDoc, 'getDocDiff');
+  expect(await firstValueFrom(sync.doc.docState$('doc1'))).toMatchObject({
+    synced: false,
+  });
   sync.start();
 
   await new Promise(resolve => setTimeout(resolve, 1000));
 
   {
+    expect(remoteDiff.mock.calls[0]?.[0]).toBe('ws1');
     const b = await peerB.get('doc').getDoc('doc1');
     expectYjsEqual(b!.bin, {
       test: {
@@ -448,6 +455,7 @@ test('doc', async () => {
   }
 
   removeDocPriority();
+  removeForegroundPriority();
   removeRootPriority();
   sync.stop();
   peerA.disconnect();
@@ -541,6 +549,58 @@ test('blob', async () => {
     expect(c).not.toBeNull();
     expect(c?.data).toEqual(new Uint8Array([4, 3, 2, 1]));
   }
+  sync.stop();
+
+  const localReads = vi.spyOn(a, 'get');
+  const localLists = vi.spyOn(a, 'list');
+  const remoteReads = vi.spyOn(c, 'get');
+  await new BlobSyncPeer('c', a, c, blobSync).fullDownload();
+  expect(localReads).not.toHaveBeenCalled();
+  expect(localLists).toHaveBeenCalledTimes(1);
+  expect(remoteReads.mock.calls.map(([key]) => key)).toEqual(['test2']);
+  remoteReads.mockRestore();
+  localLists.mockClear();
+
+  for (const key of ['fresh', 'retry']) {
+    await c.set({ key, data: new Uint8Array([1, 2, 3]), mime: 'text/plain' });
+  }
+  const entries = await c.list();
+  const scoped = Object.assign(c, {
+    registerSource: vi.fn(),
+    unregisterSource: vi.fn(),
+    async *readableSources() {
+      for (const entry of entries) {
+        for (const docId of ['first', 'second']) {
+          yield {
+            ...entry,
+            source: { type: 'currentDoc' as const, workspaceId: 'ws1', docId },
+          };
+        }
+      }
+    },
+  });
+  const get = c.get.bind(c);
+  let retryAttempts = 0;
+  const reads = vi.spyOn(c, 'get').mockImplementation(async key => {
+    if (key === 'retry' && retryAttempts++ === 0)
+      throw new Error('source denied');
+    return get(key);
+  });
+  const inventory = vi
+    .spyOn(c, 'list')
+    .mockRejectedValue(new Error('cloud inventory forbidden'));
+  await new BlobSyncPeer('scoped', a, scoped, blobSync).fullDownload();
+  expect(localReads).not.toHaveBeenCalled();
+  expect(localLists).toHaveBeenCalledTimes(1);
+  expect(inventory).not.toHaveBeenCalled();
+  expect(reads.mock.calls.map(([key]) => key)).toEqual([
+    'fresh',
+    'retry',
+    'retry',
+  ]);
+  localReads.mockRestore();
+  expect((await a.get('fresh'))?.data).toEqual(new Uint8Array([1, 2, 3]));
+  expect((await a.get('retry'))?.data).toEqual(new Uint8Array([1, 2, 3]));
 });
 
 test('doc sync peer stops retrying a doc when remote denies permission', async () => {

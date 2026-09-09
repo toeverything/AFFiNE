@@ -1,0 +1,224 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CloudDocStorage broadcast updates > awareness joins active documents through the batch route 1`] = `
+[
+  {
+    "event": "space:join-batch",
+    "payload": {
+      "clientVersion": "0.27.5",
+      "spaces": [
+        {
+          "docId": "doc-a",
+          "spaceId": "space-1",
+          "spaceType": "workspace",
+        },
+        {
+          "docId": "doc-b",
+          "spaceId": "space-1",
+          "spaceType": "workspace",
+        },
+      ],
+    },
+  },
+  {
+    "event": "space:load-awarenesses",
+    "payload": {
+      "docId": "doc-a",
+      "spaceId": "space-1",
+      "spaceType": "workspace",
+    },
+  },
+  {
+    "event": "space:load-awarenesses",
+    "payload": {
+      "docId": "doc-b",
+      "spaceId": "space-1",
+      "spaceType": "workspace",
+    },
+  },
+]
+`;
+
+exports[`CloudDocStorage broadcast updates > batch route joins the workspace and applies lifecycle commands 1`] = `
+{
+  "emitted": [
+    {
+      "event": "space:join-batch",
+      "payload": {
+        "clientVersion": "0.27.5",
+        "spaces": [
+          {
+            "docId": "space-1",
+            "spaceId": "space-1",
+            "spaceType": "workspace",
+          },
+        ],
+      },
+    },
+    {
+      "event": "space:load-doc",
+      "payload": {
+        "docId": "space-1",
+        "spaceId": "space-1",
+        "spaceType": "workspace",
+      },
+    },
+    {
+      "event": "space:join-batch",
+      "payload": {
+        "clientVersion": "0.27.5",
+        "spaces": [
+          {
+            "docId": "doc-1",
+            "spaceId": "space-1",
+            "spaceType": "workspace",
+          },
+        ],
+      },
+    },
+    {
+      "event": "space:load-doc",
+      "payload": {
+        "docId": "doc-1",
+        "spaceId": "space-1",
+        "spaceType": "workspace",
+      },
+    },
+    {
+      "event": "space:join-batch",
+      "payload": {
+        "clientVersion": "0.27.5",
+        "spaces": [
+          {
+            "docId": "doc-2",
+            "spaceId": "space-1",
+            "spaceType": "workspace",
+          },
+        ],
+      },
+    },
+    {
+      "event": "space:load-doc",
+      "payload": {
+        "docId": "doc-2",
+        "spaceId": "space-1",
+        "spaceType": "workspace",
+        "stateVector": undefined,
+      },
+    },
+    {
+      "event": "space:join-batch",
+      "payload": {
+        "clientVersion": "0.27.5",
+        "spaces": [
+          {
+            "docId": "doc-3",
+            "spaceId": "space-1",
+            "spaceType": "workspace",
+          },
+        ],
+      },
+    },
+    {
+      "event": "space:load-doc",
+      "payload": {
+        "docId": "doc-3",
+        "spaceId": "space-1",
+        "spaceType": "workspace",
+      },
+    },
+    {
+      "event": "space:join-batch",
+      "payload": {
+        "clientVersion": "0.27.5",
+        "spaces": [
+          {
+            "docId": "doc-4",
+            "spaceId": "space-1",
+            "spaceType": "workspace",
+          },
+        ],
+      },
+    },
+    {
+      "event": "space:push-doc-update",
+      "payload": {
+        "docId": "doc-4",
+        "spaceId": "space-1",
+        "spaceType": "workspace",
+        "update": "AAA=",
+      },
+    },
+    {
+      "event": "space:doc-lifecycle",
+      "payload": {
+        "docId": "doc-1",
+        "lifecycle": "trash",
+        "spaceId": "space-1",
+        "spaceType": "workspace",
+      },
+    },
+    {
+      "event": "space:join-batch",
+      "payload": {
+        "clientVersion": "0.27.5",
+        "spaces": [
+          {
+            "docId": "denied",
+            "spaceId": "space-1",
+            "spaceType": "workspace",
+          },
+        ],
+      },
+    },
+    {
+      "event": "space:join-batch",
+      "payload": {
+        "clientVersion": "0.27.5",
+        "spaces": [
+          {
+            "docId": "doc-1",
+            "spaceId": "space-1",
+            "spaceType": "workspace",
+          },
+        ],
+      },
+    },
+    {
+      "event": "space:load-doc",
+      "payload": {
+        "docId": "doc-1",
+        "spaceId": "space-1",
+        "spaceType": "workspace",
+        "stateVector": undefined,
+      },
+    },
+    {
+      "event": "space:leave-batch",
+      "payload": {
+        "docIds": [
+          "space-1",
+          "doc-1",
+          "doc-2",
+          "doc-3",
+          "doc-4",
+        ],
+        "spaceId": "space-1",
+        "spaceType": "workspace",
+      },
+    },
+    {
+      "event": "space:leave-batch",
+      "payload": {
+        "docIds": [],
+        "spaceId": "space-1",
+        "spaceType": "workspace",
+      },
+    },
+  ],
+  "lifecycle": {
+    "rootUpdate": Any<Uint8Array>,
+    "timestamp": Any<Date>,
+  },
+}
+`;

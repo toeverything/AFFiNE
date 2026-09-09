@@ -41,6 +41,7 @@ import {
 } from '../../plugins/copilot/feature';
 import type { PromptService } from '../../plugins/copilot/prompt';
 import type { ResolvedPrompt } from '../../plugins/copilot/prompt/spec';
+import { ChatMessageAttachment } from '../../plugins/copilot/providers/types';
 import { TextStreamParser } from '../../plugins/copilot/providers/utils';
 import { ArtifactRetrievalService } from '../../plugins/copilot/retrieval/artifact';
 import { DocumentRetrievalService } from '../../plugins/copilot/retrieval/document';
@@ -586,11 +587,26 @@ test('document tools enforce the user-selected hard scope', async t => {
       }>
     ) => candidates,
   };
+  const readDocIds: string[] = [];
+  const docReader = {
+    getDocMarkdown: async (_workspaceId: string, docId: string) => {
+      readDocIds.push(docId);
+      if (docId === 'missing-doc') return null;
+      return {
+        title: docId,
+        markdown: docId.startsWith('long-doc')
+          ? 'a'.repeat(25_000)
+          : `${docId} content`,
+        revision: '1',
+      };
+    },
+  } as unknown as DocReader;
   const hybrid = new DocumentRetrievalService(
     readableAc,
     lexicalIndexer,
     vectorSearch,
-    documentModels
+    documentModels,
+    docReader
   );
   const hybridResult = await hybrid.search(options, 'query', undefined, 10);
   t.is(hybridResult.retrievalMode, 'hybrid');
@@ -599,12 +615,21 @@ test('document tools enforce the user-selected hard scope', async t => {
     ['shared-doc']
   );
   t.true(hybridResult.hits[0].score > 1 / 61);
+  const healthyScoped = await hybrid.search(
+    options,
+    'query',
+    ['shared-doc'],
+    10
+  );
+  t.is(healthyScoped.retrievalMode, 'hybrid');
+  t.deepEqual(readDocIds, []);
 
   const lexicalOnly = new DocumentRetrievalService(
     readableAc,
     lexicalIndexer,
     { ...vectorSearch, canEmbedding: false },
-    documentModels
+    documentModels,
+    docReader
   );
   const lexicalResult = await lexicalOnly.search(
     options,
@@ -623,7 +648,8 @@ test('document tools enforce the user-selected hard scope', async t => {
       },
     } as unknown as IndexerService,
     vectorSearch,
-    documentModels
+    documentModels,
+    docReader
   );
   const vectorResult = await vectorOnly.search(options, 'query', undefined, 10);
   t.is(vectorResult.retrievalMode, 'vector');
@@ -631,6 +657,65 @@ test('document tools enforce the user-selected hard scope', async t => {
   t.deepEqual(
     vectorResult.hits.map(result => result.docId),
     ['shared-doc']
+  );
+  t.deepEqual(readDocIds, []);
+  const unavailable = new DocumentRetrievalService(
+    readableAc,
+    {
+      searchDocsByKeyword: async () => {
+        throw new SearchProviderUnavailable();
+      },
+    } as unknown as IndexerService,
+    {
+      ...vectorSearch,
+      matchWorkspaceDocCandidates: async () => {
+        throw new Error('embedding_unavailable');
+      },
+    },
+    documentModels,
+    docReader
+  );
+  await t.throwsAsync(unavailable.search(options, 'query', undefined, 10), {
+    message: 'SEARCH_UNAVAILABLE',
+  });
+  const scoped = await unavailable.search(
+    options,
+    'query',
+    ['cat-doc', 'hidden-doc', 'dog-doc', 'cat-doc'],
+    10
+  );
+  t.like(scoped, {
+    retrievalMode: 'scoped',
+    degradedReason: 'SEARCH_UNAVAILABLE',
+  });
+  t.deepEqual(readDocIds, ['cat-doc', 'dog-doc']);
+  t.deepEqual(
+    scoped.hits.map(hit => [hit.docId, hit.excerpt]),
+    [
+      ['cat-doc', 'cat-doc content'],
+      ['dog-doc', 'dog-doc content'],
+    ]
+  );
+  readDocIds.length = 0;
+  await unavailable.search(options, 'query', ['cat-doc', 'dog-doc'], 1);
+  t.deepEqual(readDocIds, ['cat-doc']);
+  const bounded = await unavailable.search(options, 'query', ['long-doc'], 1);
+  t.is(bounded.hits[0].excerpt.length, 20_000);
+  const boundedMultiple = await unavailable.search(
+    options,
+    'query',
+    ['long-doc-1', 'long-doc-2'],
+    2
+  );
+  t.deepEqual(
+    boundedMultiple.hits.map(hit => hit.excerpt.length),
+    [10_000, 10_000]
+  );
+  await t.throwsAsync(
+    unavailable.search(options, 'query', ['missing-doc'], 1),
+    {
+      message: 'SEARCH_UNAVAILABLE',
+    }
   );
 
   // model omits doc_ids: pinned scope applies
@@ -1632,6 +1717,16 @@ test.serial('copilot attachments require canonical session scope', async t => {
     'notes.txt',
     { rawBody: attachmentBody } as never
   );
+  for (const attachment of [
+    uploaded.url,
+    { attachment: uploaded.url, mimeType: 'text/plain' },
+    { kind: 'url', url: uploaded.url, mimeType: 'text/plain' },
+  ]) {
+    t.true(ChatMessageAttachment.safeParse(attachment).success);
+  }
+  for (const url of ['/private/file.txt', '//example.com/file.txt']) {
+    t.false(ChatMessageAttachment.safeParse(url).success);
+  }
   const admitted = await new AttachmentAdmissionHost(
     {
       fetchRemoteAttachment: async () =>
@@ -1696,6 +1791,17 @@ test.serial('copilot attachments require canonical session scope', async t => {
       workspaceId: 'workspace-1',
       sessionId: 'session-2',
     })
+  );
+  await t.throwsAsync(
+    new AttachmentAdmissionHost(
+      {} as never,
+      attachmentStorage
+    ).admitPromptAttachment(uploaded.url, {
+      userId: 'user-1',
+      workspaceId: 'workspace-2',
+      sessionId: 'session-1',
+    }),
+    { message: 'Copilot attachment scope mismatch' }
   );
 
   t.snapshot({

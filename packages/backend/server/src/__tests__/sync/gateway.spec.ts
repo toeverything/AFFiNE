@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { PrismaClient } from '@prisma/client';
 import test, { type ExecutionContext } from 'ava';
 import Sinon from 'sinon';
@@ -606,31 +609,42 @@ test('space:join-batch should validate entries before joining', async t => {
   }
 });
 
-test('space:join-batch should reject clients before 0.27.5', async t => {
+test('space:join-batch rejects old clients and accepts the current web build', async t => {
   const { user, cookieHeader } = await login(app);
-  const socket = createClient(url, cookieHeader);
+  const webPackage = JSON.parse(
+    readFileSync(
+      resolve(process.cwd(), '../../frontend/apps/web/package.json'),
+      'utf8'
+    )
+  );
 
-  try {
-    await waitForConnect(socket);
-    const result = unwrapResponse(
-      t,
-      await emitWithAck<{ clientId: string; success: boolean }>(
-        socket,
-        'space:join-batch',
-        {
-          spaces: [{ spaceType: 'userspace', spaceId: user.id }],
-          clientVersion: '0.27.4',
-        }
-      )
-    );
-    t.false(result.success);
-    await waitForDisconnect(socket);
-  } finally {
-    socket.disconnect();
+  for (const [clientVersion, accepted] of [
+    ['0.27.4', false],
+    [webPackage.version, true],
+  ] as const) {
+    const socket = createClient(url, cookieHeader);
+    try {
+      await waitForConnect(socket);
+      const result = unwrapResponse(
+        t,
+        await emitWithAck<{ clientId: string; success: boolean }>(
+          socket,
+          'space:join-batch',
+          {
+            spaces: [{ spaceType: 'userspace', spaceId: user.id }],
+            clientVersion,
+          }
+        )
+      );
+      t.is(result.success, accepted, clientVersion);
+      if (!accepted) await waitForDisconnect(socket);
+    } finally {
+      socket.disconnect();
+    }
   }
 });
 
-test('space:join-batch should authorize once and join all requested rooms', async t => {
+test('space:join-batch joins rooms and initializes workspace documents', async t => {
   const models = app.get(Models);
   const { user: owner, cookieHeader: ownerCookieHeader } = await login(app);
   const { cookieHeader: deniedCookieHeader } = await login(app);
@@ -652,6 +666,11 @@ test('space:join-batch should authorize once and join all requested rooms', asyn
         { spaceType: 'workspace', spaceId: workspace.id },
         { spaceType: 'workspace', spaceId: workspace.id, docId: 'doc-a' },
         { spaceType: 'workspace', spaceId: workspace.id, docId: 'doc-b' },
+        {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          docId: `db$${workspace.id}$docProperties`,
+        },
       ],
       clientVersion: '0.27.5',
     };
@@ -763,6 +782,54 @@ test('space:join-batch should authorize once and join all requested rooms', asyn
       new Set(['doc-a', 'doc-b'])
     );
     await noDeniedEvent;
+    unwrapResponse(
+      t,
+      await emitWithAck(ownerSocket, 'space:join-batch', {
+        spaces: [
+          {
+            spaceType: 'workspace',
+            spaceId: workspace.id,
+            docId: workspace.id,
+          },
+        ],
+        clientVersion: '0.27.5',
+      })
+    );
+    const root = addDocToRootDoc(Buffer.from([0, 0]), 'doc-a');
+    unwrapResponse(
+      t,
+      await emitWithAck(ownerSocket, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: workspace.id,
+        update: Buffer.from(root).toString('base64'),
+      })
+    );
+    for (const docId of [
+      'doc-a',
+      'doc-a',
+      `db$${workspace.id}$docProperties`,
+    ]) {
+      await app.get(PrismaClient).$executeRaw`
+        UPDATE workspace_sync_permission_generations
+        SET generation = generation + 1
+        WHERE workspace_id = ${workspace.id}
+      `;
+      unwrapResponse(
+        t,
+        await emitWithAck(ownerSocket, 'space:join-batch', batch)
+      );
+      unwrapResponse(
+        t,
+        await emitWithAck(ownerSocket, 'space:push-doc-update', {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          docId,
+          update: createYjsUpdateBase64(),
+        })
+      );
+    }
+    t.true(await models.doc.exists(workspace.id, 'doc-a'));
   } finally {
     ownerSocket.disconnect();
     receiverSocket.disconnect();

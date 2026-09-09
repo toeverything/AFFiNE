@@ -60,8 +60,13 @@ export class ShareInfo extends Entity {
   }
 
   async enableShare(mode: PublicDocMode) {
+    const { workspace } = this.workspaceService;
+    await Promise.all([
+      workspace.engine.doc.waitForSynced(workspace.id),
+      workspace.engine.doc.waitForSynced(this.docService.doc.id),
+    ]);
     await this.store.enableSharePage(
-      this.workspaceService.workspace.id,
+      workspace.id,
       this.docService.doc.id,
       mode
     );

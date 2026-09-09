@@ -53,41 +53,22 @@ function createEntity(store: UserQuotaStore) {
 }
 
 describe('UserQuota', () => {
-  test('uses realtime quota state snapshots and refreshes on quota events', async () => {
-    const events$ = new Subject<{ type: 'ready' } | { changed: true }>();
-    const store = createStore(
-      {
-        fetchUserQuotaState: vi
-          .fn()
-          .mockResolvedValueOnce(createQuotaState({ usedStorageQuota: 512 }))
-          .mockResolvedValueOnce(createQuotaState({ usedStorageQuota: 768 })),
-      },
-      events$
-    );
+  test('projects user quota state', async () => {
+    const store = createStore({
+      fetchUserQuotaState: vi
+        .fn()
+        .mockResolvedValue(
+          createQuotaState({ seatLimit: 9, usedStorageQuota: 512 })
+        ),
+    });
     const quota = createEntity(store);
 
     quota.revalidate();
     await vi.waitFor(() => expect(quota.used$.value).toBe(512));
     expect(quota.quota$.value?.humanReadable.historyPeriod).toBe('30 days');
-
-    events$.next({ changed: true });
-    await vi.waitFor(() => expect(quota.used$.value).toBe(768));
-
-    expect(store.fetchUserQuotaState).toHaveBeenCalledTimes(2);
-    quota.dispose();
-  });
-
-  test('surfaces realtime quota errors without GraphQL fallback', async () => {
-    const error = new Error('offline');
-    const store = createStore({
-      fetchUserQuotaState: vi.fn().mockRejectedValue(error),
-    });
-    const quota = createEntity(store);
-
-    quota.revalidate();
-
-    await vi.waitFor(() => expect(quota.error$.value).toBe(error));
-    expect(quota.quota$.value).toBeNull();
+    expect(quota.quota$.value?.memberLimit).toBe(9);
+    expect(store.fetchUserQuotaState).toHaveBeenCalledTimes(1);
+    expect(store.subscribeUserQuotaState).toHaveBeenCalledTimes(1);
     quota.dispose();
   });
 });

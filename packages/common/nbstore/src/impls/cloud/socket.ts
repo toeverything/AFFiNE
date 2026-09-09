@@ -59,13 +59,7 @@ interface ServerEvents {
   'realtime:event': RealtimeEvent;
 }
 
-export type SyncProtocol = 'legacy' | 'batch';
-
 interface ClientEvents {
-  'space:join': [
-    { spaceType: string; spaceId: string; clientVersion: string },
-    { clientId: string; success: boolean },
-  ];
   'space:join-batch': [
     {
       spaces: Array<{
@@ -82,22 +76,6 @@ interface ClientEvents {
     spaceId: string;
     docIds: string[];
   };
-  'space:leave': { spaceType: string; spaceId: string };
-  'space:join-awareness': [
-    {
-      spaceType: string;
-      spaceId: string;
-      docId: string;
-      clientVersion: string;
-    },
-    { clientId: string; success: boolean },
-  ];
-  'space:leave-awareness': {
-    spaceType: string;
-    spaceId: string;
-    docId: string;
-  };
-
   'space:update-awareness': {
     spaceType: string;
     spaceId: string;
@@ -139,6 +117,15 @@ interface ClientEvents {
   'space:delete-doc': [
     { spaceType: string; spaceId: string; docId: string },
     { success?: true },
+  ];
+  'space:doc-lifecycle': [
+    {
+      spaceType: string;
+      spaceId: string;
+      docId: string;
+      lifecycle: 'trash' | 'restore' | 'delete';
+    },
+    { rootUpdate: string; timestamp: number },
   ];
 
   'telemetry:batch': [TelemetryBatch, TelemetryAck];

@@ -3,9 +3,11 @@ import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 
 import { OneMB, readBuffer } from '../../../../base';
+import { applyPromptAttachmentMimeTypeHintForNative } from '../../providers/attachments';
 import type {
   PromptAttachment,
   PromptAttachmentSourceKind,
+  PromptMessage,
 } from '../../providers/types';
 import { promptAttachmentMimeType } from '../../providers/utils';
 import { CopilotStorage } from '../../storage';
@@ -161,6 +163,41 @@ export class AttachmentAdmissionHost {
     private readonly materializer: AttachmentMaterializer,
     private readonly storage: CopilotStorage
   ) {}
+
+  async preparePromptMessages(
+    messages: PromptMessage[],
+    context: AttachmentAdmissionContext
+  ): Promise<PromptMessage[]> {
+    context.signal?.throwIfAborted();
+    return await Promise.all(
+      messages.map(async message => ({
+        ...message,
+        attachments: message.attachments
+          ? await Promise.all(
+              message.attachments.map(async attachment => {
+                const source = parsePromptAttachment(attachment);
+                if (
+                  source.kind === 'file_handle' ||
+                  source.kind === 'data' ||
+                  source.kind === 'bytes' ||
+                  source.url?.startsWith('data:')
+                )
+                  return attachment;
+                return admittedAttachmentToPromptAttachment(
+                  await this.admitPromptAttachment(
+                    applyPromptAttachmentMimeTypeHintForNative(
+                      attachment,
+                      message
+                    ),
+                    context
+                  )
+                );
+              })
+            )
+          : message.attachments,
+      }))
+    );
+  }
 
   async admitPromptAttachment(
     attachment: PromptAttachment,

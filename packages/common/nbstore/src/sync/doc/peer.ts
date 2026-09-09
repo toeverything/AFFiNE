@@ -247,7 +247,10 @@ export class DocSyncPeer {
             !docErrorMessage &&
             (!this.status.connectedDocs.has(docId) ||
               this.status.jobMap.has(docId)),
-          synced: !docErrorMessage && !this.status.jobMap.has(docId),
+          synced:
+            !docErrorMessage &&
+            this.status.connectedDocs.has(docId) &&
+            !this.status.jobMap.has(docId),
           retrying: this.status.retrying,
           errorMessage: docErrorMessage ?? this.status.errorMessage,
         });
@@ -886,7 +889,7 @@ export class DocSyncPeer {
       return;
     }
 
-    const priority = this.prioritySettings.get(job.docId) ?? 0;
+    const priority = this.getJobPriority(job.docId);
     this.status.jobDocQueue.push(job.docId, priority);
 
     const existingJobs = this.status.jobMap.get(job.docId) ?? [];
@@ -895,11 +898,18 @@ export class DocSyncPeer {
     this.statusUpdatedSubject$.next(job.docId);
   }
 
+  private getJobPriority(docId: string) {
+    // New document uploads require their root membership to be synced first.
+    return docId === this.local.spaceId
+      ? Infinity
+      : (this.prioritySettings.get(docId) ?? 0);
+  }
+
   addPriority(id: string, priority: number) {
     const oldPriority = this.prioritySettings.get(id) ?? 0;
     const newPriority = oldPriority + priority;
     this.prioritySettings.set(id, newPriority);
-    this.status.jobDocQueue.setPriority(id, newPriority);
+    this.status.jobDocQueue.setPriority(id, this.getJobPriority(id));
     if (oldPriority <= 0 && newPriority > 0 && this.status.syncing) {
       if (!this.status.docs.has(id)) {
         this.actions.addDoc(id);
@@ -912,7 +922,7 @@ export class DocSyncPeer {
       const currentPriority = this.prioritySettings.get(id) ?? 0;
       const restoredPriority = currentPriority - priority;
       this.prioritySettings.set(id, restoredPriority);
-      this.status.jobDocQueue.setPriority(id, restoredPriority);
+      this.status.jobDocQueue.setPriority(id, this.getJobPriority(id));
     };
   }
 
