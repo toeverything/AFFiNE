@@ -1,6 +1,6 @@
 # `@blocksuite/inline`
 
-This package is a minimal rich text component for inline editing. It uses an external [`Y.Text`](https://docs.yjs.dev/api/shared-types/y.text) as it source of truth. Every `inlineEditor` instance attaches to an independant `Y.Text`, so rich text content in different block nodes can be splitted into different inline editors, making complex content conveniently composable. This significantly reduces the complexity required to implement traditional rich text editing features.
+This package is a minimal rich text component for inline editing. It uses an external [`Y.Text`](https://docs.yjs.dev/api/shared-types/y.text) as it source of truth. Every `inlineEditor` instance attaches to an independent `Y.Text`, so rich text content in different block nodes can be splitted into different inline editors, making complex content conveniently composable. This significantly reduces the complexity required to implement traditional rich text editing features.
 
 ![flat-inlines](../images/flat-inlines.png)
 
