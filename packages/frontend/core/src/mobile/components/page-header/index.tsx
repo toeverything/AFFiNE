@@ -84,6 +84,7 @@ export const PageHeader = forwardRef<HTMLDivElement, PageHeaderProps>(
           top
           ref={ref}
           className={clsx(styles.root, className)}
+          data-affine-edgeless-ui-chrome="true"
           data-testid="mobile-page-header"
           {...attrs}
         >

@@ -516,6 +516,64 @@ describe('edgeless canvas budget', () => {
     viewport.dispose();
   });
 
+  test('skips viewportUpdated on the first pan frame when SKIP_REFRESH_DURING_GESTURE is on', () => {
+    const viewport = new Viewport();
+    viewport.SKIP_REFRESH_DURING_GESTURE = true;
+
+    const viewportUpdated = vi.fn();
+    viewport.viewportUpdated.subscribe(viewportUpdated);
+
+    // applyDeltaCenter marks panning before setCenter so frame 1 is skipped.
+    viewport.applyDeltaCenter(10, 0);
+    viewport.applyDeltaCenter(10, 0);
+
+    expect(viewportUpdated).not.toHaveBeenCalled();
+    expect(viewport.panning$.value).toBe(true);
+
+    viewport.dispose();
+  });
+
+  test('still emits viewportUpdated for programmatic setCenter under SKIP_REFRESH', () => {
+    const viewport = new Viewport();
+    viewport.SKIP_REFRESH_DURING_GESTURE = true;
+
+    const viewportUpdated = vi.fn();
+    viewport.viewportUpdated.subscribe(viewportUpdated);
+
+    // Doc/page load paths call setCenter directly; silencing them freezes iOS.
+    viewport.setCenter(100, 200);
+
+    expect(viewportUpdated).toHaveBeenCalledTimes(1);
+    expect(viewportUpdated).toHaveBeenCalledWith({
+      zoom: 1,
+      center: [100, 200],
+    });
+    // Must not leave panning$ true — that would silence the next setCenter
+    // for the 200ms debounce window and freeze doc open on iOS.
+    expect(viewport.panning$.value).toBe(false);
+
+    viewport.dispose();
+  });
+
+  test('emits for consecutive programmatic setCenter under SKIP_REFRESH', () => {
+    const viewport = new Viewport();
+    viewport.SKIP_REFRESH_DURING_GESTURE = true;
+
+    const viewportUpdated = vi.fn();
+    viewport.viewportUpdated.subscribe(viewportUpdated);
+
+    // Doc open often issues multiple setCenters in the same turn / within the
+    // former 200ms panning debounce. All must emit.
+    viewport.setCenter(100, 200);
+    viewport.setCenter(150, 250);
+    viewport.setCenter(180, 260);
+
+    expect(viewportUpdated).toHaveBeenCalledTimes(3);
+    expect(viewport.panning$.value).toBe(false);
+
+    viewport.dispose();
+  });
+
   test('enables low-zoom block survival only while the gesture is still active', () => {
     expect('shouldUseLowZoomBlockSurvivalMode' in viewportElementModule).toBe(
       true
