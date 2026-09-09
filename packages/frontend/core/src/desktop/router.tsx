@@ -160,6 +160,11 @@ export const topLevelRoutes = [
           import(/* webpackChunkName: "auth" */ './pages/auth/oauth-login'),
       },
       {
+        path: '/oauth/launch',
+        lazy: () =>
+          import(/* webpackChunkName: "auth" */ './pages/auth/oauth-launch'),
+      },
+      {
         path: '/oauth/callback',
         lazy: () =>
           import(/* webpackChunkName: "auth" */ './pages/auth/oauth-callback'),
