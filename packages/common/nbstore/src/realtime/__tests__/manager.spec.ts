@@ -41,6 +41,7 @@ class FakeSocket {
   }
 }
 
+/** Creates a promise whose resolution can be controlled by a test. */
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>(innerResolve => {
