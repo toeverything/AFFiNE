@@ -3,6 +3,7 @@ import type { DividerBlockModel } from '@blocksuite/affine-model';
 import { BLOCK_CHILDREN_CONTAINER_PADDING_LEFT } from '@blocksuite/affine-shared/consts';
 import { BlockSelection } from '@blocksuite/std';
 import { html } from 'lit';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import { dividerBlockStyles } from './styles.js';
 
@@ -31,9 +32,26 @@ export class DividerBlockComponent extends CaptionedBlockComponent<DividerBlockM
       ${this.renderChildren(this.model)}
     </div>`;
 
+    const type = this.model.props.type$.value || 'solid';
+    const color = 'var(--affine-divider-color, #e3e3e3)';
+    const borderTopStyleMap: Record<string, string> = {
+      solid: `1px solid ${color}`,
+      dotted: `2px dotted ${color}`,
+      dashed: `1px dashed ${color}`,
+      'loosely-dashed': `2px dashed ${color}`,
+      lines: `3px double ${color}`,
+    };
+
+    const hrStyle = styleMap({
+      border: 'none',
+      borderTop: borderTopStyleMap[type] || borderTopStyleMap.solid,
+      width: '100%',
+      margin: '0',
+    });
+
     return html`
-      <div class="affine-divider-block-container">
-        <hr />
+      <div class="affine-divider-block-container ${type}" data-type="${type}">
+        <hr style=${hrStyle} />
 
         ${children}
       </div>
