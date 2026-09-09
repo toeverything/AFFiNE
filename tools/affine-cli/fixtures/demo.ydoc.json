@@ -1,0 +1,567 @@
+{
+  "blocks": [
+    {
+      "block_id": "F_zl1z0ex6dSxM25ZBUWk",
+      "flavour": "affine:page",
+      "content": [
+        "Write, Draw, Plan all at Once."
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": null,
+      "parent_block_id": null,
+      "additional": "{\"displayMode\":\"edgeless\"}"
+    },
+    {
+      "block_id": "U8g2Edcy8rSmu_XUpYSTz",
+      "flavour": "affine:paragraph",
+      "content": [
+        "AFFiNE is an open source all in one workspace, an operating system for all the building blocks of your team wiki, knowledge management and digital assets and a better alternative to Notion and Miro. "
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "omG6fe87r60dPxCtv_Odb",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"omG6fe87r60dPxCtv_Odb\"}"
+    },
+    {
+      "block_id": "NxvF6M1Zo-TrUoJyFbMy4",
+      "flavour": "affine:paragraph",
+      "content": [
+        ""
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "omG6fe87r60dPxCtv_Odb",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"omG6fe87r60dPxCtv_Odb\"}"
+    },
+    {
+      "block_id": "VHVvola5BtXnC7FMaGzE7",
+      "flavour": "affine:paragraph",
+      "content": [
+        "You own your data, with no compromises"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "omG6fe87r60dPxCtv_Odb",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"omG6fe87r60dPxCtv_Odb\"}"
+    },
+    {
+      "block_id": "Hvbw1lSZ7Bl-LMiOc_xFb",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Local-first & Real-time collaborative"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "omG6fe87r60dPxCtv_Odb",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"omG6fe87r60dPxCtv_Odb\"}"
+    },
+    {
+      "block_id": "2N8pJ32byPEc7dlJv-0cC",
+      "flavour": "affine:paragraph",
+      "content": [
+        "We love the idea proposed by Ink & Switch in the famous article about you owning your data, despite the cloud. Furthermore, AFFiNE is the first all-in-one workspace that keeps your data ownership with no compromises on real-time collaboration and editing experience."
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "omG6fe87r60dPxCtv_Odb",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"omG6fe87r60dPxCtv_Odb\"}"
+    },
+    {
+      "block_id": "rysuvULJQgFPRmNB_iTk3",
+      "flavour": "affine:paragraph",
+      "content": [
+        "AFFiNE is a local-first application upon CRDTs with real-time collaboration support. Your data is always stored locally while multiple nodes remain synced in real-time."
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "omG6fe87r60dPxCtv_Odb",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"omG6fe87r60dPxCtv_Odb\"}"
+    },
+    {
+      "block_id": "zbvmiGhuxn0_tfJ_e4N2V",
+      "flavour": "affine:paragraph",
+      "content": [
+        ""
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "omG6fe87r60dPxCtv_Odb",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"omG6fe87r60dPxCtv_Odb\"}"
+    },
+    {
+      "block_id": "CQeQaaREQwGDXg9oAng4q",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Blocks that assemble your next docs, tasks kanban or whiteboard"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "QqLfbOIINoAxapnB23E5t",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"QqLfbOIINoAxapnB23E5t\"}"
+    },
+    {
+      "block_id": "RTtZAHZG4xoAXKKnEsRhB",
+      "flavour": "affine:paragraph",
+      "content": [
+        "There is a large overlap of their atomic \"building blocks\" between these apps. They are neither open source nor have a plugin system like VS Code for contributors to customize. We want to have something that contains all the features we love and goes one step further. "
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "Fpxp7rZCad7-W51xCWta1",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"Fpxp7rZCad7-W51xCWta1\"}"
+    },
+    {
+      "block_id": "c_KFpzTBHdioeoIsnLIjd",
+      "flavour": "affine:paragraph",
+      "content": [
+        "We are building AFFiNE to be a fundamental open source platform that contains all the building blocks for docs, task management and visual collaboration, hoping you can shape your next workflow with us that can make your life better and also connect others, too."
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "Fpxp7rZCad7-W51xCWta1",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"Fpxp7rZCad7-W51xCWta1\"}"
+    },
+    {
+      "block_id": "O6D7PxXwCbfCLp1_peft1",
+      "flavour": "affine:paragraph",
+      "content": [
+        "If you want to learn more about the product design of AFFiNE, here goes the concepts:"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "Fpxp7rZCad7-W51xCWta1",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"Fpxp7rZCad7-W51xCWta1\"}"
+    },
+    {
+      "block_id": "os84XIVFN6z6aN9tq16S5",
+      "flavour": "affine:paragraph",
+      "content": [
+        "To Shape, not to adapt. AFFiNE is built for individuals & teams who care about their data, who refuse vendor lock-in, and who want to have control over their essential tools."
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "Fpxp7rZCad7-W51xCWta1",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"Fpxp7rZCad7-W51xCWta1\"}"
+    },
+    {
+      "block_id": "8jk1eREgtKdhwtee0nym-",
+      "flavour": "affine:paragraph",
+      "content": [
+        "A true canvas for blocks in any form"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "sfycWDfMpgKsE7s5qucWr",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"sfycWDfMpgKsE7s5qucWr\"}"
+    },
+    {
+      "block_id": "kDyc-RntYCDWSSYFl4SSn",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Many editor apps claimed to be a canvas for productivity. Since the Mother of All Demos, Douglas Engelbart, a creative and programable digital workspace has been a pursuit and an ultimate mission for generations of tool makers. "
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "sfycWDfMpgKsE7s5qucWr",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"sfycWDfMpgKsE7s5qucWr\"}"
+    },
+    {
+      "block_id": "k0e4IqfQ2PRmsXjzDQ-3T",
+      "flavour": "affine:paragraph",
+      "content": [
+        ""
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "sfycWDfMpgKsE7s5qucWr",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"sfycWDfMpgKsE7s5qucWr\"}"
+    },
+    {
+      "block_id": "QR-4T-qYH3gTbbo_VKjU-",
+      "flavour": "affine:paragraph",
+      "content": [
+        "\"We shape our tools and thereafter our tools shape us”. A lot of pioneers have inspired us a long the way, e.g.:"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "sfycWDfMpgKsE7s5qucWr",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"sfycWDfMpgKsE7s5qucWr\"}"
+    },
+    {
+      "block_id": "nyEEsW01cCQVIr7yG9ywg",
+      "flavour": "affine:list",
+      "content": [
+        "Quip & Notion with their great concept of \"everything is a block\""
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "sfycWDfMpgKsE7s5qucWr",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"sfycWDfMpgKsE7s5qucWr\"}"
+    },
+    {
+      "block_id": "ZmeTH3oq8ON10pqV1pQ-n",
+      "flavour": "affine:list",
+      "content": [
+        "Trello with their Kanban"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "sfycWDfMpgKsE7s5qucWr",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"sfycWDfMpgKsE7s5qucWr\"}"
+    },
+    {
+      "block_id": "SbbdUF95MVoBTlxILHyUL",
+      "flavour": "affine:list",
+      "content": [
+        "Airtable & Miro with their no-code programable datasheets"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "sfycWDfMpgKsE7s5qucWr",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"sfycWDfMpgKsE7s5qucWr\"}"
+    },
+    {
+      "block_id": "fIQp-yM2v8Iar7kXAooXh",
+      "flavour": "affine:list",
+      "content": [
+        "Miro & Whimiscal with their edgeless visual whiteboard"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "sfycWDfMpgKsE7s5qucWr",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"sfycWDfMpgKsE7s5qucWr\"}"
+    },
+    {
+      "block_id": "2S9xQwALMBxbas1N6Eyf4",
+      "flavour": "affine:list",
+      "content": [
+        "Remnote & Capacities with their object-based tag system"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "sfycWDfMpgKsE7s5qucWr",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"sfycWDfMpgKsE7s5qucWr\"}"
+    },
+    {
+      "block_id": "C5xu77eIYukdKCu7h0Cjp",
+      "flavour": "affine:paragraph",
+      "content": [
+        "For more details, please refer to our RoadMap"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "tPAicJ4WMxtBhys0Exlxq",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"tPAicJ4WMxtBhys0Exlxq\"}"
+    },
+    {
+      "block_id": "2goqe7zWXhtKX-pLcYN-h",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Self Host"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "tPAicJ4WMxtBhys0Exlxq",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"tPAicJ4WMxtBhys0Exlxq\"}"
+    },
+    {
+      "block_id": "cBud4or0twRvF36twhwqZ",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Self host AFFiNE"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "tPAicJ4WMxtBhys0Exlxq",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"tPAicJ4WMxtBhys0Exlxq\"}"
+    },
+    {
+      "block_id": "FB07QqbHZhRqj43IEOzJP",
+      "flavour": "affine:database",
+      "content": [
+        "Learning From",
+        "Title",
+        "Tag",
+        "Reference",
+        "Developers",
+        "AFFiNE"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "j9pzdPaGIVH627CPh_mik",
+      "additional": "{\"databaseName\":\"Learning From\",\"displayMode\":\"page\",\"noteBlockId\":\"j9pzdPaGIVH627CPh_mik\"}"
+    },
+    {
+      "block_id": "YJ13TsE8mv5mxy2DIpMOD",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Affine Development"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:database",
+      "parent_block_id": "FB07QqbHZhRqj43IEOzJP",
+      "additional": "{\"databaseName\":\"Learning From\",\"displayMode\":\"page\",\"noteBlockId\":\"j9pzdPaGIVH627CPh_mik\"}"
+    },
+    {
+      "block_id": "T_BOz9f-9uD5QjKABiciE",
+      "flavour": "affine:paragraph",
+      "content": [
+        "For developers or installations guides, please go to AFFiNE Doc"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:database",
+      "parent_block_id": "FB07QqbHZhRqj43IEOzJP",
+      "additional": "{\"databaseName\":\"Learning From\",\"displayMode\":\"page\",\"noteBlockId\":\"j9pzdPaGIVH627CPh_mik\"}"
+    },
+    {
+      "block_id": "yiMJW4ASGVUC7mly7ulce",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Quip & Notion with their great concept of \"everything is a block\""
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:database",
+      "parent_block_id": "FB07QqbHZhRqj43IEOzJP",
+      "additional": "{\"databaseName\":\"Learning From\",\"displayMode\":\"page\",\"noteBlockId\":\"j9pzdPaGIVH627CPh_mik\"}"
+    },
+    {
+      "block_id": "qug1UtELLsBg2XwU1IJYK",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Trello with their Kanban"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:database",
+      "parent_block_id": "FB07QqbHZhRqj43IEOzJP",
+      "additional": "{\"databaseName\":\"Learning From\",\"displayMode\":\"page\",\"noteBlockId\":\"j9pzdPaGIVH627CPh_mik\"}"
+    },
+    {
+      "block_id": "p86Sceg7KYFe1OgUUswCM",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Airtable & Miro with their no-code programable datasheets"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:database",
+      "parent_block_id": "FB07QqbHZhRqj43IEOzJP",
+      "additional": "{\"databaseName\":\"Learning From\",\"displayMode\":\"page\",\"noteBlockId\":\"j9pzdPaGIVH627CPh_mik\"}"
+    },
+    {
+      "block_id": "ahyiL8RAajMoIoDekk2Je",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Miro & Whimiscal with their edgeless visual whiteboard"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:database",
+      "parent_block_id": "FB07QqbHZhRqj43IEOzJP",
+      "additional": "{\"databaseName\":\"Learning From\",\"displayMode\":\"page\",\"noteBlockId\":\"j9pzdPaGIVH627CPh_mik\"}"
+    },
+    {
+      "block_id": "pKh_LNdwWD-yLDh-TVYAz",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Remnote & Capacities with their object-based tag system"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:database",
+      "parent_block_id": "FB07QqbHZhRqj43IEOzJP",
+      "additional": "{\"databaseName\":\"Learning From\",\"displayMode\":\"page\",\"noteBlockId\":\"j9pzdPaGIVH627CPh_mik\"}"
+    },
+    {
+      "block_id": "b0ftuFAo7qDYRiI18TN6b",
+      "flavour": "affine:paragraph",
+      "content": [
+        "Affine Development"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "wyVFKrydUAthKQEML84vE",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"wyVFKrydUAthKQEML84vE\"}"
+    },
+    {
+      "block_id": "64rS_MtVI-f_MpE6qCbls",
+      "flavour": "affine:paragraph",
+      "content": [
+        "For developer or installation guides, please go to AFFiNE Development"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "wyVFKrydUAthKQEML84vE",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"wyVFKrydUAthKQEML84vE\"}"
+    },
+    {
+      "block_id": "7dotDICZwPWNvFXZSh-oF",
+      "flavour": "affine:paragraph",
+      "content": [
+        ""
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:note",
+      "parent_block_id": "wyVFKrydUAthKQEML84vE",
+      "additional": "{\"displayMode\":\"page\",\"noteBlockId\":\"wyVFKrydUAthKQEML84vE\"}"
+    },
+    {
+      "block_id": "Jn4N8YdsFnqjBn-ae5zeR",
+      "flavour": "affine:surface",
+      "content": [
+        "",
+        " ",
+        "AFFiNE ",
+        "Database Reference",
+        "Development",
+        "Related Articles",
+        "Self-host",
+        "What is AFFiNE",
+        "You can check these URLs to learn about AFFiNE"
+      ],
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:page",
+      "parent_block_id": "F_zl1z0ex6dSxM25ZBUWk",
+      "additional": "{\"displayMode\":\"edgeless\"}"
+    },
+    {
+      "block_id": "YkZXI2iWRvQARfQPqspP_",
+      "flavour": "affine:bookmark",
+      "content": null,
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:surface",
+      "parent_block_id": "Jn4N8YdsFnqjBn-ae5zeR",
+      "additional": "{\"displayMode\":\"edgeless\"}"
+    },
+    {
+      "block_id": "6xwR75KDkxvygEFWZfmhZ",
+      "flavour": "affine:bookmark",
+      "content": null,
+      "blob": null,
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:surface",
+      "parent_block_id": "Jn4N8YdsFnqjBn-ae5zeR",
+      "additional": "{\"displayMode\":\"edgeless\"}"
+    },
+    {
+      "block_id": "AjY4OYuyp2536pBZlf-vD",
+      "flavour": "affine:image",
+      "content": [
+        ""
+      ],
+      "blob": [
+        "BFZk3c2ERp-sliRvA7MQ_p3NdkdCLt2Ze0DQ9i21dpA="
+      ],
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:surface",
+      "parent_block_id": "Jn4N8YdsFnqjBn-ae5zeR",
+      "additional": "{\"displayMode\":\"edgeless\"}"
+    },
+    {
+      "block_id": "ErTXTP8VqP5fabuB5FZHH",
+      "flavour": "affine:image",
+      "content": [
+        ""
+      ],
+      "blob": [
+        "HWvCItS78DzPGbwcuaGcfkpVDUvL98IvH5SIK8-AcL8="
+      ],
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:surface",
+      "parent_block_id": "Jn4N8YdsFnqjBn-ae5zeR",
+      "additional": "{\"displayMode\":\"edgeless\"}"
+    },
+    {
+      "block_id": "hMg8RXNlkD7XJS9b27fGA",
+      "flavour": "affine:image",
+      "content": [
+        ""
+      ],
+      "blob": [
+        "ZRKpsBoC88qEMmeiXKXqywfA1rLvWoLa5rpEh9x9Oj0="
+      ],
+      "ref_doc_id": null,
+      "ref_info": null,
+      "parent_flavour": "affine:surface",
+      "parent_block_id": "Jn4N8YdsFnqjBn-ae5zeR",
+      "additional": "{\"displayMode\":\"edgeless\"}"
+    }
+  ],
+  "title": "Write, Draw, Plan all at Once.",
+  "summary": "AFFiNE is an open source all in one workspace, an operating system for all the building blocks of your team wiki, knowledge management and digital assets and a better alternative to Notion and Miro. You own your data, with no compromisesLocal-first & Real-time collaborativeWe love the idea proposed by Ink & Switch in the famous article about you owning your data, despite the cloud. Furthermore, AFFiNE is the first all-in-one workspace that keeps your data ownership with no compromises on real-time collaboration and editing experience.AFFiNE is a local-first application upon CRDTs with real-time collaboration support. Your data is always stored locally while multiple nodes remain synced in real-time.Blocks that assemble your next docs, tasks kanban or whiteboardThere is a large overlap of their atomic \"building blocks\" between these apps. They are neither open source nor have a plugin system like VS Code for contributors to customize. We want to have something that contains all the features we love and goes one step further. "
+}
