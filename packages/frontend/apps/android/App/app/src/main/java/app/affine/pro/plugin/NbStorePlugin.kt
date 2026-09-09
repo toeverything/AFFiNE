@@ -72,6 +72,42 @@ class NbStorePlugin : Plugin() {
   }
 
   @PluginMethod
+  fun deleteWorkspace(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val spaceId = call.getStringEnsure("spaceId")
+        val spaceType = call.getStringEnsure("spaceType")
+        val peer = call.getStringEnsure("peer")
+        val appStoragePath = activity?.filesDir ?: run {
+          Timber.w("Failed to delete workspace, cannot access device file system.")
+          call.reject("Failed to delete workspace, cannot access device file system.")
+          return@launch
+        }
+        val peerDir = appStoragePath.resolve("workspaces")
+          .resolve(spaceType)
+          .resolve(
+            peer.replace(Regex("[/!@#$%^&*()+~`\"':;,?<>|]"), "_")
+              .replace(Regex("_+"), "_")
+              .replace(Regex("_+$"), "")
+          )
+        val db = peerDir.resolve("$spaceId.db")
+        if (!db.canonicalFile.toPath().startsWith(peerDir.canonicalFile.toPath())) {
+          Timber.w("Failed to delete workspace, resolved path escapes the workspace directory.")
+          call.reject("Failed to delete workspace, resolved path escapes the workspace directory.")
+          return@launch
+        }
+        docStoragePool.deleteWorkspace(id, db.path)
+        Timber.i("NbStore workspace deleted [ id = $id ].")
+        call.resolve()
+      } catch (e: Exception) {
+        Timber.e(e, "Failed to delete NbStore workspace.")
+        call.reject("Failed to delete NbStore workspace.", e)
+      }
+    }
+  }
+
+  @PluginMethod
   fun setSpaceId(call: PluginCall) {
     launch(Dispatchers.IO) {
       try {

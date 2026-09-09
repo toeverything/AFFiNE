@@ -54,6 +54,12 @@ export interface NbStorePlugin {
     peer: string;
   }) => Promise<void>;
   disconnect: (options: { id: string }) => Promise<void>;
+  deleteWorkspace: (options: {
+    id: string;
+    spaceId: string;
+    spaceType: string;
+    peer: string;
+  }) => Promise<void>;
 
   setSpaceId: (options: { id: string; spaceId: string }) => Promise<void>;
   pushUpdate: (options: {

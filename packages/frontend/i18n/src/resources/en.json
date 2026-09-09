@@ -498,6 +498,7 @@
   "com.affine.deleteLeaveWorkspace.description": "Delete workspace from this device and optionally delete all data.",
   "com.affine.deleteLeaveWorkspace.leave": "Leave workspace",
   "com.affine.deleteLeaveWorkspace.leaveDescription": "After you leave, you will not be able to access content within this workspace.",
+  "com.affine.deleteLeaveWorkspace.leaveSuccess": "Successfully left workspace",
   "com.affine.docs.header": "Docs",
   "com.affine.draw_with_a_blank_whiteboard": "Draw with a blank whiteboard",
   "com.affine.earlier": "Earlier",
