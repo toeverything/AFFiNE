@@ -2,6 +2,7 @@ import { type ServiceIdentifier } from '@blocksuite/global/di';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { Bound, clamp, Point } from '@blocksuite/global/gfx';
 import { signal } from '@preact/signals-core';
+import { SnapOverlay } from '@blocksuite/affine-gfx-pointer';
 import last from 'lodash-es/last.js';
 
 import type { PointerEventState } from '../../event/state/pointer.js';
@@ -75,21 +76,29 @@ export class InteractivityManager extends GfxExtension {
 
   private readonly _disposable = new DisposableGroup();
 
-  private canvasEventHandler = new GfxViewEventManager(this.gfx);
+  private canvasEventHandler?: GfxViewEventManager;
+  private snapOverlay?: SnapOverlay;
 
-  override mounted(): void {
-    this.canvasEventHandler = new GfxViewEventManager(this.gfx);
-    this.interactExtensions.forEach(ext => {
-      ext.mounted();
-    });
+  constructor(...args: ConstructorParameters<typeof GfxExtension>) {
+    super(...args);
   }
 
+  mounted() {
+    this.snapOverlay = new SnapOverlay(this.gfx);
+    this.canvasEventHandler = new GfxViewEventManager(this.gfx);
+  }
+  
+  
   activeInteraction$ = signal<null | {
     type: 'move' | 'resize' | 'rotate';
     elements: GfxModel[];
   } | null>(null);
 
   override unmounted(): void {
+    this.snapOverlay?.clear();
+    this.snapOverlay = undefined;
+    this.canvasEventHandler?.destroy();
+    this.canvasEventHandler = undefined;
     this._disposable.dispose();
     this.interactExtensions.forEach(ext => {
       ext.unmounted();
@@ -131,8 +140,7 @@ export class InteractivityManager extends GfxExtension {
     });
 
     const handledByView =
-      this.canvasEventHandler.dispatch(eventName, evt) ?? false;
-
+      this.canvasEventHandler?.dispatch(eventName, evt) ?? false;
     return {
       preventDefaultState,
       handledByView,
@@ -411,33 +419,20 @@ export class InteractivityManager extends GfxExtension {
       dragLastPos = Point.from(
         this.gfx.viewport.toModelCoordFromClientCoord([event.x, event.y])
       );
-
+      const snappedPoint = this.snapOverlay?.snapDragAngle(
+        internal.dragStartPos,
+        dragLastPos,
+        this.keyboard.shiftKey$.peek()
+      ) ?? dragLastPos;
+      const dx = snappedPoint.x - internal.dragStartPos.x;
+      const dy = snappedPoint.y - internal.dragStartPos.y;
       const moveContext: ExtensionDragMoveContext = {
         ...internal,
         event,
         dragLastPos,
-        dx: dragLastPos.x - internal.dragStartPos.x,
-        dy: dragLastPos.y - internal.dragStartPos.y,
+        dx,
+        dy,
       };
-
-      // If shift key is pressed, restrict the movement to one direction
-      if (this.keyboard.shiftKey$.peek()) {
-        const angle = Math.abs(Math.atan2(moveContext.dy, moveContext.dx));
-        const direction =
-          angle < Math.PI / 4 || angle > 3 * (Math.PI / 4) ? 'dy' : 'dx';
-
-        moveContext[direction] = 0;
-      }
-
-      if (
-        lastMoveDelta &&
-        lastMoveDelta[0] === moveContext.dx &&
-        lastMoveDelta[1] === moveContext.dy
-      ) {
-        return;
-      }
-
-      lastMoveDelta = [moveContext.dx, moveContext.dy];
 
       this._safeExecute(() => {
         activeExtensionHandlers.forEach(handler =>
@@ -492,13 +487,21 @@ export class InteractivityManager extends GfxExtension {
       dragLastPos = Point.from(
         this.gfx.viewport.toModelCoordFromClientCoord([event.x, event.y])
       );
+      const snappedPoint = this.snapOverlay?.snapDragAngle(
+        internal.dragStartPos,
+        dragLastPos,
+        this.keyboard.shiftKey$.peek()
+       ) ?? dragLastPos;
+
+      const finalPoint = snappedPoint ?? dragLastPos;
+      
       const endContext: ExtensionDragEndContext = {
         ...internal,
         event,
-        dragLastPos,
-        dx: dragLastPos.x - internal.dragStartPos.x,
-        dy: dragLastPos.y - internal.dragStartPos.y,
-      };
+        dragLastPos: finalPoint,
+        dx: finalPoint.x - internal.dragStartPos.x,
+        dy: finalPoint.y - internal.dragStartPos.y,
+       };
 
       this._safeExecute(() => {
         activeExtensionHandlers.forEach(handler =>
@@ -559,115 +562,102 @@ export class InteractivityManager extends GfxExtension {
     dragStart();
   }
 
-  handleElementRotate(
-    options: Omit<
-      RotateOption,
-      'onRotateStart' | 'onRotateEnd' | 'onRotateUpdate'
-    > & {
-      onRotateUpdate?: (payload: {
-        currentAngle: number;
-        delta: number;
-      }) => void;
-      onRotateStart?: () => void;
-      onRotateEnd?: () => void;
-    }
-  ) {
-    const { rotatable, viewConfigMap, initialRotate } =
-      this._getViewRotateConfig(options.elements);
+ handleElementRotate(
+  options: Omit<
+    RotateOption,
+    'onRotateStart' | 'onRotateEnd' | 'onRotateUpdate'
+  > & {
+    onRotateUpdate?: (payload: { currentAngle: number; delta: number }) => void;
+    onRotateStart?: () => void;
+    onRotateEnd?: () => void;
+  }
+) {
+  const { rotatable, viewConfigMap, initialRotate } =
+    this._getViewRotateConfig(options.elements);
 
-    if (!rotatable) {
-      return;
-    }
+  if (!rotatable) {
+    return;
+  }
 
-    const handler = new ResizeController({ gfx: this.gfx });
-    const elements = Array.from(viewConfigMap.values()).map(
-      config => config.view.model
-    ) as GfxModel[];
+  const handler = new ResizeController({ gfx: this.gfx });
+  const elements = Array.from(viewConfigMap.values()).map(
+    config => config.view.model
+  ) as GfxModel[];
 
-    handler.startRotate({
-      ...options,
-      elements,
-      onRotateStart: payload => {
-        this.activeInteraction$.value = {
-          type: 'rotate',
-          elements,
-        };
-        options.onRotateStart?.();
-        payload.data.forEach(({ model }) => {
-          if (!viewConfigMap.has(model.id)) {
-            return;
-          }
+  handler.startRotate({
+    ...options,
+    elements,
+    onRotateStart: payload => {
+      this.activeInteraction$.value = { type: 'rotate', elements };
+      options.onRotateStart?.();
+
+      payload.data.forEach(({ model }) => {
+        if (!viewConfigMap.has(model.id)) return;
+        const { handlers, defaultHandlers, view, constraint } =
+          viewConfigMap.get(model.id)!;
+        handlers.onRotateStart({
+          default: defaultHandlers.onRotateStart as () => void,
+          constraint,
+          model,
+          view,
+        });
+      });
+    },
+    onRotateUpdate: payload => {
+      // Apply snapping if Shift is held
+      const baseAngle = initialRotate + payload.delta;
+      const snappedAngle = this.keyboard.shiftKey$.peek()
+        ? this.snapOverlay?.snapRotateAngle(baseAngle) ?? baseAngle
+        : baseAngle;
+      const snappedDelta = snappedAngle - initialRotate;
+      options.onRotateUpdate?.({
+        currentAngle: snappedAngle,
+        delta: snappedDelta,
+      });
+
+      payload.data.forEach(
+        ({ model, newBound, originalBound, newRotate, originalRotate, matrix }) => {
+          if (!viewConfigMap.has(model.id)) return;
 
           const { handlers, defaultHandlers, view, constraint } =
             viewConfigMap.get(model.id)!;
 
-          handlers.onRotateStart({
-            default: defaultHandlers.onRotateStart as () => void,
-            constraint,
-            model,
-            view,
-          });
-        });
-      },
-      onRotateUpdate: payload => {
-        options.onRotateUpdate?.({
-          currentAngle: initialRotate + payload.delta,
-          delta: payload.delta,
-        });
-        payload.data.forEach(
-          ({
+          // Override newRotate with snapped value
+          handlers.onRotateMove({
             model,
             newBound,
             originalBound,
-            newRotate,
+            newRotate: snappedAngle,
             originalRotate,
+            default: defaultHandlers.onRotateMove as () => void,
+            constraint,
+            view,
             matrix,
-          }) => {
-            if (!viewConfigMap.has(model.id)) {
-              return;
-            }
+          });
+        }
+      );
+    },
+    onRotateEnd: payload => {
+      this.activeInteraction$.value = null;
+      options.onRotateEnd?.();
 
-            const { handlers, defaultHandlers, view, constraint } =
-              viewConfigMap.get(model.id)!;
+      this.std.store.transact(() => {
+        payload.data.forEach(({ model }) => {
+          if (!viewConfigMap.has(model.id)) return;
+          const { handlers, defaultHandlers, view, constraint } =
+            viewConfigMap.get(model.id)!;
 
-            handlers.onRotateMove({
-              model,
-              newBound,
-              originalBound,
-              newRotate,
-              originalRotate,
-              default: defaultHandlers.onRotateMove as () => void,
-              constraint,
-              view,
-              matrix,
-            });
-          }
-        );
-      },
-      onRotateEnd: payload => {
-        this.activeInteraction$.value = null;
-        options.onRotateEnd?.();
-        this.std.store.transact(() => {
-          payload.data.forEach(({ model }) => {
-            if (!viewConfigMap.has(model.id)) {
-              return;
-            }
-
-            const { handlers, defaultHandlers, view, constraint } =
-              viewConfigMap.get(model.id)!;
-
-            handlers.onRotateEnd({
-              default: defaultHandlers.onRotateEnd as () => void,
-              view,
-              model,
-              constraint,
-            });
+          handlers.onRotateEnd({
+            default: defaultHandlers.onRotateEnd as () => void,
+            view,
+            model,
+            constraint,
           });
         });
-      },
-    });
-  }
-
+      });
+    },
+  });
+}
   private _getViewRotateConfig(elements: GfxModel[]) {
     const deleted = new Set<GfxModel>();
     const added = new Set<GfxModel>();
@@ -939,217 +929,202 @@ export class InteractivityManager extends GfxExtension {
   }
 
   handleElementResize(
-    options: Omit<
-      OptionResize,
-      | 'lockRatio'
-      | 'onResizeStart'
-      | 'onResizeEnd'
-      | 'onResizeUpdate'
-      | 'onResizeMove'
-    > & {
-      onResizeStart?: () => void;
-      onResizeEnd?: () => void;
-      onResizeUpdate?: (payload: {
-        lockRatio: boolean;
-        scaleX: number;
-        scaleY: number;
-        exceed: {
-          w: boolean;
-          h: boolean;
-        };
-      }) => void;
-    }
-  ) {
-    const { viewConfigMap, allowedHandlers } = this._getViewResizeConfig(
-      options.elements
-    );
+  options: Omit<
+    OptionResize,
+    | 'lockRatio'
+    | 'onResizeStart'
+    | 'onResizeEnd'
+    | 'onResizeUpdate'
+    | 'onResizeMove'
+  > & {
+    onResizeStart?: () => void;
+    onResizeEnd?: () => void;
+    onResizeUpdate?: (payload: {
+      lockRatio: boolean;
+      scaleX: number;
+      scaleY: number;
+      exceed: { w: boolean; h: boolean };
+    }) => void;
+  }
+) {
+  const { viewConfigMap, allowedHandlers } = this._getViewResizeConfig(
+    options.elements
+  );
 
-    if (!allowedHandlers.includes(options.handle)) {
-      return;
-    }
+  if (!allowedHandlers.includes(options.handle)) return;
 
-    const { handle } = options;
-    const controller = new ResizeController({ gfx: this.gfx });
-    const elements = Array.from(viewConfigMap.values()).map(
-      config => config.view.model
-    ) as GfxModel[];
-    const extensionHandlers = this.interactExtensions.values().reduce(
-      (handlers, ext) => {
-        const extHandlers = (ext.action as InteractivityActionAPI).emit(
-          'elementResize',
-          {
-            elements,
-          }
-        );
+  const { handle } = options;
+  const controller = new ResizeController({ gfx: this.gfx });
+  const elements = Array.from(viewConfigMap.values()).map(
+    config => config.view.model
+  ) as GfxModel[];
+  const extensionHandlers = this.interactExtensions.values().reduce(
+    (handlers, ext) => {
+      const extHandlers = (ext.action as InteractivityActionAPI).emit(
+        'elementResize',
+        { elements }
+      );
+      if (extHandlers) handlers.push(extHandlers);
+      return handlers;
+    },
+    [] as ActionContextMap['elementResize']['returnType'][]
+  );
 
-        if (extHandlers) {
-          handlers.push(extHandlers);
-        }
+  let lockRatio = false;
+  viewConfigMap.forEach(config => {
+    const { lockRatio: lockRatioConfig } = config.constraint;
+    lockRatio =
+      lockRatio ||
+      lockRatioConfig === true ||
+      (Array.isArray(lockRatioConfig) && lockRatioConfig.includes(handle));
+  });
 
-        return handlers;
-      },
-      [] as ActionContextMap['elementResize']['returnType'][]
-    );
-    let lockRatio = false;
-
-    viewConfigMap.forEach(config => {
-      const { lockRatio: lockRatioConfig } = config.constraint;
-
-      lockRatio =
-        lockRatio ||
-        lockRatioConfig === true ||
-        (Array.isArray(lockRatioConfig) && lockRatioConfig.includes(handle));
-    });
-
-    controller.startResize({
-      ...options,
+  controller.startResize({
+    ...options,
+    lockRatio,
+    elements,
+    onResizeMove: ({
+      scaleX,
+      scaleY,
+      originalBound,
+      handleSign,
+      handlePos,
+      currentHandlePos,
       lockRatio,
-      elements,
-      onResizeMove: ({
-        scaleX,
-        scaleY,
-        originalBound,
-        handleSign,
-        handlePos,
-        currentHandlePos,
-        lockRatio,
-      }) => {
-        const suggested: {
-          scaleX: number;
-          scaleY: number;
-          priority?: number;
-        }[] = [];
-        const suggest = (distance: { scaleX: number; scaleY: number }) => {
-          suggested.push(distance);
-        };
+      matrix,
+    }) => {
+      let snappedPos = currentHandlePos;
+      if (this.keyboard.shiftKey$.peek()) {
+        // Snap resize handle if Shift is held
+        // Compute fixed-corner anchor (same logic as getCoordsTransform)
+        const anchorWorld = new Point(
+          handleSign.x > 0 ? originalBound.left : originalBound.right,
+          handleSign.y > 0 ? originalBound.top : originalBound.bottom
+        );
+        
+        // Snap in world space using the correct anchor
+        snappedPos =
+          this.snapOverlay?.snapDragAngle(anchorWorld, currentHandlePos, true) ??
+          currentHandlePos;
+        
+        // Convert snapped position to local space
+       // Convert world-space points into local space using the resize transform
+        
+        if (!matrix) {
+          return { scaleX, scaleY };
+        }
+        
+        const snappedLocal = Point.from(
+          invMatrix.apply([snappedPos.x, snappedPos.y])
+        );
+        
+        const anchorLocal = Point.from(
+          invMatrix.apply([anchorWorld.x, anchorWorld.y])
+        );
+        
+        const deltaLocal = snappedLocal.sub(anchorLocal);
+        // Compute scale using local delta (same as getScaleFromDelta)
+        scaleX = handleSign.x
+          ? (deltaLocal.x / originalBound.w) * handleSign.x
+          : 1;
+        
+        scaleY = handleSign.y
+          ? (deltaLocal.y / originalBound.h) * handleSign.y
+          : 1;
 
-        extensionHandlers.forEach(ext => {
-          ext.onResizeMove?.({
-            scaleX,
-            scaleY,
-            elements,
-            handle,
-            handleSign,
-            handlePos,
-            originalBound,
-            currentHandlePos,
-            lockRatio,
-            suggest,
-          });
-        });
+      }
 
-        suggested.sort((a, b) => {
-          return (a.priority ?? 0) - (b.priority ?? 0);
-        });
+      const suggested: { scaleX: number; scaleY: number; priority?: number }[] = [];
+      const suggest = (distance: { scaleX: number; scaleY: number }) => {
+        suggested.push(distance);
+      };
 
-        return last(suggested) ?? { scaleX, scaleY };
-      },
-      onResizeStart: ({ handleSign, handlePos, data }) => {
-        this.activeInteraction$.value = {
-          type: 'resize',
+      extensionHandlers.forEach(ext => {
+        ext.onResizeMove?.({
+          scaleX,
+          scaleY,
           elements,
-        };
-        extensionHandlers.forEach(ext => {
-          ext.onResizeStart?.({
-            elements,
-            handle,
-            handlePos,
-            handleSign,
-          });
+          handle,
+          handleSign,
+          handlePos,
+          originalBound,
+          currentHandlePos: snappedPos,
+          lockRatio,
+          suggest,
+        });
+      });
+
+      suggested.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
+      return last(suggested) ?? { scaleX, scaleY };
+    },
+    onResizeStart: ({ handleSign, handlePos, data }) => {
+      this.activeInteraction$.value = { type: 'resize', elements };
+      extensionHandlers.forEach(ext => {
+        ext.onResizeStart?.({ elements, handle, handlePos, handleSign });
+      });
+      options.onResizeStart?.();
+      data.forEach(({ model }) => {
+        if (!viewConfigMap.has(model.id)) return;
+        const { handlers, defaultHandlers, view, constraint } =
+          viewConfigMap.get(model.id)!;
+        handlers.onResizeStart({
+          handle,
+          default: defaultHandlers.onResizeStart as () => void,
+          constraint,
+          model,
+          view,
+        });
+      });
+    },
+    onResizeUpdate: ({ data, scaleX, scaleY, lockRatio }) => {
+      const exceed = { w: false, h: false };
+      data.forEach(({ model, newBound, originalBound, lockRatio, matrix }) => {
+        if (!viewConfigMap.has(model.id)) return;
+        const { handlers, defaultHandlers, view, constraint } =
+          viewConfigMap.get(model.id)!;
+
+        handlers.onResizeMove({
+          model,
+          newBound,
+          originalBound,
+          handle,
+          default: defaultHandlers.onResizeMove as () => void,
+          constraint,
+          view,
+          lockRatio,
+          matrix,
         });
 
-        options.onResizeStart?.();
+        exceed.w =
+          exceed.w || model.w === constraint.minWidth || model.w === constraint.maxWidth;
+        exceed.h =
+          exceed.h || model.h === constraint.minHeight || model.h === constraint.maxHeight;
+      });
+      options.onResizeUpdate?.({ scaleX, scaleY, lockRatio, exceed });
+    },
+    onResizeEnd: ({ handleSign, handlePos, data }) => {
+      this.activeInteraction$.value = null;
+      extensionHandlers.forEach(ext => {
+       ext.onResizeEnd?.({ elements, handle, handlePos, handleSign });
+     });
+      options.onResizeEnd?.();
+      this.std.store.transact(() => {
         data.forEach(({ model }) => {
-          if (!viewConfigMap.has(model.id)) {
-            return;
-          }
-
+          if (!viewConfigMap.has(model.id)) return;
           const { handlers, defaultHandlers, view, constraint } =
             viewConfigMap.get(model.id)!;
-
-          handlers.onResizeStart({
-            handle,
-            default: defaultHandlers.onResizeStart as () => void,
-            constraint,
-            model,
+          handlers.onResizeEnd({
+            default: defaultHandlers.onResizeEnd as () => void,
             view,
-          });
-        });
-      },
-      onResizeUpdate: ({ data, scaleX, scaleY, lockRatio }) => {
-        const exceed = {
-          w: false,
-          h: false,
-        };
-
-        data.forEach(
-          ({ model, newBound, originalBound, lockRatio, matrix }) => {
-            if (!viewConfigMap.has(model.id)) {
-              return;
-            }
-
-            const { handlers, defaultHandlers, view, constraint } =
-              viewConfigMap.get(model.id)!;
-
-            handlers.onResizeMove({
-              model,
-              newBound,
-              originalBound,
-              handle,
-              default: defaultHandlers.onResizeMove as () => void,
-              constraint,
-              view,
-              lockRatio,
-              matrix,
-            });
-
-            exceed.w =
-              exceed.w ||
-              model.w === constraint.minWidth ||
-              model.w === constraint.maxWidth;
-            exceed.h =
-              exceed.h ||
-              model.h === constraint.minHeight ||
-              model.h === constraint.maxHeight;
-          }
-        );
-
-        options.onResizeUpdate?.({ scaleX, scaleY, lockRatio, exceed });
-      },
-      onResizeEnd: ({ handleSign, handlePos, data }) => {
-        this.activeInteraction$.value = null;
-
-        extensionHandlers.forEach(ext => {
-          ext.onResizeEnd?.({
-            elements,
+            model,
+            constraint,
             handle,
-            handlePos,
-            handleSign,
           });
         });
-        options.onResizeEnd?.();
-        this.std.store.transact(() => {
-          data.forEach(({ model }) => {
-            if (!viewConfigMap.has(model.id)) {
-              return;
-            }
-
-            const { handlers, defaultHandlers, view, constraint } =
-              viewConfigMap.get(model.id)!;
-
-            handlers.onResizeEnd({
-              default: defaultHandlers.onResizeEnd as () => void,
-              view,
-              model,
-              constraint,
-              handle,
-            });
-          });
-        });
-      },
-    });
-  }
-
+      });
+    },
+  });
+}
   requestElementClone(options: RequestElementsCloneContext) {
     const extensions = this.interactExtensions;
 
