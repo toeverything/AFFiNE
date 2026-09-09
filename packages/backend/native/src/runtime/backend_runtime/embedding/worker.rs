@@ -16,7 +16,7 @@ const MAX_INPUT_BYTES: usize = 50 * 1024 * 1024;
 const MAX_TEXT_BYTES: usize = 64 * 1024 * 1024;
 const MAX_TOKENS: usize = 1_000_000;
 const MAX_CHUNKS: usize = 2048;
-const PROVIDER_BATCH: usize = 128;
+const PROVIDER_BATCH: usize = 64;
 
 pub(super) struct WorkerHandle {
   stop: watch::Sender<bool>,
