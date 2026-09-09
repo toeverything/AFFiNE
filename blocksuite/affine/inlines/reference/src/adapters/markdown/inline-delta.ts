@@ -20,6 +20,12 @@ export const referenceDeltaToMarkdownAdapterMatcher =
 
       const { configs } = context;
       const title = configs.get(`title:${reference.pageId}`);
+      if (!title) {
+        return {
+          type: 'html',
+          value: '[]',
+        } as PhrasingContent;
+      }
       const params = reference.params ?? {};
       const url = AdapterTextUtils.generateDocUrl(
         configs.get('docLinkBaseUrl') ?? '',
