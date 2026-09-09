@@ -191,6 +191,75 @@ class NoteKeymap {
     );
   };
 
+  private readonly _changeHeadingLevel = (direction: 'up' | 'down') => {
+    const selection = this._std.selection;
+    // Gather all selected blocks (multi-selection aware)
+    const blockSelections = selection.filter(BlockSelection);
+    let blockIds: string[] = [];
+    if (blockSelections.length > 0) {
+      blockIds = blockSelections.map(sel => sel.blockId);
+    } else {
+      const textSelection = selection.find(TextSelection);
+      if (textSelection) {
+        blockIds = [textSelection.from.blockId];
+      }
+    }
+
+    if (blockIds.length === 0) return false;
+
+    // Only adjust heading level for paragraph/heading blocks
+    const store = this._std.store;
+    // Get BlockComponent and model together
+    const eligibleBlocks = blockIds
+      .map(id => {
+        const blockComponent = this._std.view.getBlock(id);
+        const model = store.getBlock(id)?.model;
+        return blockComponent &&
+          model &&
+          model.flavour === 'affine:paragraph' &&
+          ['text', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(
+            (model as any).props?.type || (model as any).type || 'text'
+          )
+          ? { blockComponent, model }
+          : null;
+      })
+      .filter(Boolean) as { blockComponent: BlockComponent; model: any }[];
+
+    if (eligibleBlocks.length === 0) return false;
+
+    const levels = ['text', 'h6', 'h5', 'h4', 'h3', 'h2', 'h1'];
+
+    // Compute new type for each block
+    const updates = eligibleBlocks.map(({ blockComponent, model }) => {
+      const currentType =
+        (model as any).props?.type || (model as any).type || 'text';
+      const currentIndex = levels.indexOf(currentType);
+      let nextType = 'text';
+      if (currentIndex === -1) {
+        nextType = direction === 'up' ? 'h6' : 'text';
+      } else {
+        const nextIndex =
+          direction === 'up'
+            ? Math.min(currentIndex + 1, levels.length - 1)
+            : Math.max(currentIndex - 1, 0);
+        nextType = levels[nextIndex];
+      }
+      return { blockComponent, nextType };
+    });
+
+    // Update all eligible blocks in one command
+    const [result] = this._std.command
+      .chain()
+      .pipe(updateBlockType, {
+        flavour: 'affine:paragraph',
+        props: updates[0] ? { type: updates[0].nextType } : {},
+        selectedBlocks: updates.map(u => u.blockComponent),
+      })
+      .run();
+
+    return result;
+  };
+
   private _focusBlock: BlockComponent | null = null;
 
   private readonly _getClosestNoteByBlockId = (blockId: string) => {
@@ -603,6 +672,14 @@ class NoteKeymap {
       ...this._bindQuickActionHotKey(),
       ...this._bindTextConversionHotKey(),
       ...this._bindTextAlignHotKey(),
+      'Mod-Alt-[': ctx => {
+        ctx.get('defaultState').event.preventDefault();
+        return this._changeHeadingLevel('up');
+      },
+      'Mod-Alt-]': ctx => {
+        ctx.get('defaultState').event.preventDefault();
+        return this._changeHeadingLevel('down');
+      },
       Tab: ctx => {
         const [success] = this.std.command.exec(indentBlocks);
 
