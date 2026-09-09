@@ -3109,7 +3109,7 @@ dependencies = [
  "libc",
  "log",
  "rustversion",
- "windows-link 0.2.1",
+ "windows-link 0.1.3",
  "windows-result 0.4.1",
 ]
 
@@ -4933,9 +4933,9 @@ dependencies = [
 
 [[package]]
 name = "llm_adapter"
-version = "0.2.23"
+version = "0.2.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd18d17c60b800981d83224309ff9ce6b4093ae12929f2baad77dd5208383bdc"
+checksum = "2ffd1c4caf6e911d0d756c195854b8e2665a574c7bd30edddebcabea6a0542b8"
 dependencies = [
  "base64 0.22.1",
  "jsonschema",
@@ -10627,7 +10627,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
