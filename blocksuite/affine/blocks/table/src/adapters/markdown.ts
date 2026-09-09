@@ -58,9 +58,11 @@ export const tableBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
       table.rows.forEach(v => {
         result.push({
           type: 'tableRow',
-          children: v.cells.map(v => ({
+          children: v.cells.map(c => ({
             type: 'tableCell',
-            children: deltaConverter.deltaToAST(v.value.delta),
+            // GFM column alignment: null | 'left' | 'center' | 'right'
+            align: (c.textAlign as 'left' | 'center' | 'right' | null) ?? null,
+            children: deltaConverter.deltaToAST(c.value.delta),
           })),
         });
       });
