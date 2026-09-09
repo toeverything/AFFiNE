@@ -22,9 +22,11 @@ if ('onconnect' in globalThis) {
 
   (globalThis as any).onconnect = (event: MessageEvent) => {
     const port = event.ports[0];
+    port.postMessage('connected');
     consumer.bindConsumer(new OpConsumer<WorkerManagerOps>(port));
   };
 } else {
+  globalThis.postMessage('connected');
   // if in worker
   consumer.bindConsumer(
     new OpConsumer<WorkerManagerOps>(globalThis as MessageCommunicapable)
