@@ -383,6 +383,58 @@ test('subscribe registers server room again after reconnect', async () => {
   subscription.unsubscribe();
 });
 
+test('reconnect resubscription is single-flight when ready re-enters realtime', async () => {
+  const manager = new RealtimeManager();
+  manager.setContext({
+    endpoint: 'http://server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+  let readyCount = 0;
+  const revalidations: Array<Promise<unknown>> = [];
+  const handleReady = (event: unknown) => {
+    if (
+      !event ||
+      typeof event !== 'object' ||
+      !('type' in event) ||
+      event.type !== 'ready'
+    ) {
+      return;
+    }
+    readyCount += 1;
+    if (readyCount > 2) {
+      revalidations.push(manager.request('notification.count.get', {}));
+    }
+  };
+  const first = manager
+    .subscribe('notification.count.changed', {})
+    .subscribe(handleReady);
+  const second = manager.subscribe('user.profile.changed', {}).subscribe(handleReady);
+  await vi.waitFor(() => expect(manager.getStatus().subscriptions).toBe(2));
+
+  manager.setContext({
+    endpoint: 'http://other-server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+  const reconnectRequest = manager.request('notification.count.get', {});
+
+  await vi.waitFor(() => expect(revalidations).toHaveLength(2));
+  await Promise.all([reconnectRequest, ...revalidations]);
+  await vi.waitFor(() =>
+    expect(
+      socket.emitted.filter(item => item.event === 'realtime:subscribe')
+    ).toHaveLength(4)
+  );
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(
+    socket.emitted.filter(item => item.event === 'realtime:subscribe')
+  ).toHaveLength(4);
+
+  first.unsubscribe();
+  second.unsubscribe();
+});
+
 test('failed reconnect only errors the affected subscription', async () => {
   const manager = new RealtimeManager();
   manager.setContext({

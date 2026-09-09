@@ -38,6 +38,7 @@ export class RealtimeManager {
   private socketKey?: string;
   private lastError?: { name: string; message: string };
   private subscriptionsNeedResubscribe = false;
+  private resubscribePromise?: Promise<void>;
   private readonly subscriptions = new Map<
     string,
     {
@@ -281,37 +282,49 @@ export class RealtimeManager {
     });
   };
 
-  private async resubscribeAll() {
+  private resubscribeAll(): Promise<void> {
+    if (this.resubscribePromise) {
+      return this.resubscribePromise;
+    }
+
     const socket = this.socketConnection?.inner.socket;
     if (!socket?.connected || this.subscriptions.size === 0) {
-      return;
+      return Promise.resolve();
     }
 
-    const subscriptions = Array.from(this.subscriptions.entries());
-    for (const [subscriptionId, subscription] of subscriptions) {
-      try {
-        const ack = await socket.emitWithAck('realtime:subscribe', {
-          topic: subscription.topic,
-          input: subscription.input,
-          clientVersion: BUILD_CONFIG.appVersion,
-        });
-        if ('error' in ack) {
-          throw rejectAck(ack.error);
-        }
-
-        this.subscriptions.delete(subscriptionId);
-        this.subscriptions.set(ack.data.subscriptionId, subscription);
-        subscription.onResubscribed(ack.data.subscriptionId);
-        subscription.subject$.next({
-          type: 'ready',
-        });
-      } catch (error) {
-        this.lastError = normalizeError(error);
-        this.subscriptions.delete(subscriptionId);
-        subscription.subject$.error(error);
-      }
-    }
+    // A subscription's ready handler may re-enter connect() synchronously.
+    // Clear this before notifying handlers and share the in-flight pass so it
+    // cannot start a nested resubscription loop over a changing map.
     this.subscriptionsNeedResubscribe = false;
+    const subscriptions = Array.from(this.subscriptions.entries());
+    this.resubscribePromise = (async () => {
+      for (const [subscriptionId, subscription] of subscriptions) {
+        try {
+          const ack = await socket.emitWithAck('realtime:subscribe', {
+            topic: subscription.topic,
+            input: subscription.input,
+            clientVersion: BUILD_CONFIG.appVersion,
+          });
+          if ('error' in ack) {
+            throw rejectAck(ack.error);
+          }
+
+          this.subscriptions.delete(subscriptionId);
+          this.subscriptions.set(ack.data.subscriptionId, subscription);
+          subscription.onResubscribed(ack.data.subscriptionId);
+          subscription.subject$.next({
+            type: 'ready',
+          });
+        } catch (error) {
+          this.lastError = normalizeError(error);
+          this.subscriptions.delete(subscriptionId);
+          subscription.subject$.error(error);
+        }
+      }
+    })().finally(() => {
+      this.resubscribePromise = undefined;
+    });
+    return this.resubscribePromise;
   }
 
   private resetConnection() {
