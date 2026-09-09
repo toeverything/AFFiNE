@@ -5,6 +5,7 @@ export interface BlobState {
   downloading: boolean;
   errorMessage?: string | null;
   overSize: boolean;
+  proxyLimit: boolean;
   needUpload: boolean;
   needDownload: boolean;
 }
