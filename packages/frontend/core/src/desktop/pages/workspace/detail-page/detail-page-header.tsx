@@ -1,6 +1,7 @@
 import {
   Divider,
   DragHandle,
+  IconButton,
   type InlineEditHandle,
   observeResize,
   useDraggable,
@@ -27,6 +28,7 @@ import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { Store } from '@blocksuite/affine/store';
+import { EditIcon, ViewIcon as ViewIconBlocksuite } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import {
@@ -80,8 +82,15 @@ const TemplateMark = memo(function TemplateMark({
 interface PageHeaderProps {
   page: Store;
   workspace: Workspace;
+  isReadOnlyMode?: boolean;
+  onToggleReadOnly?: () => void;
 }
-export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
+export function JournalPageHeader({
+  page,
+  workspace,
+  isReadOnlyMode,
+  onToggleReadOnly,
+}: PageHeaderProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -92,6 +101,8 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
       setContainerWidth(entry.contentRect.width);
     });
   }, []);
+
+  const t = useI18n();
 
   const { hideShare, hideToday } =
     useDetailPageHeaderResponsive(containerWidth);
@@ -110,11 +121,25 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
       <TemplateMark className={styles.journalTemplateMark} />
       {hideToday ? null : <JournalTodayButton />}
       <HeaderDivider />
-      <PageHeaderMenuButton
-        isJournal
-        page={page}
-        containerWidth={containerWidth}
-      />
+      <div className={styles.iconButtonContainer}>
+        {onToggleReadOnly && (
+          <IconButton
+            data-testid="readonly-toggle-button"
+            onClick={onToggleReadOnly}
+            icon={isReadOnlyMode ? <ViewIconBlocksuite /> : <EditIcon />}
+            tooltip={
+              isReadOnlyMode
+                ? t['com.affine.header.readonly-toggle.read-only']()
+                : t['com.affine.header.readonly-toggle.editing']()
+            }
+          />
+        )}
+        <PageHeaderMenuButton
+          isJournal
+          page={page}
+          containerWidth={containerWidth}
+        />
+      </div>
       {page && !hideShare ? (
         <SharePageButton workspace={workspace} page={page} />
       ) : null}
@@ -122,7 +147,12 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
   );
 }
 
-export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
+export function NormalPageHeader({
+  page,
+  workspace,
+  isReadOnlyMode,
+  onToggleReadOnly,
+}: PageHeaderProps) {
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -134,6 +164,8 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
       setContainerWidth(entry.contentRect.width);
     });
   }, []);
+
+  const t = useI18n();
 
   const { hideCollect, hideShare, hidePresent, showDivider } =
     useDetailPageHeaderResponsive(containerWidth);
@@ -159,6 +191,18 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
       <BlocksuiteHeaderTitle inputHandleRef={titleInputHandleRef} />
       <TemplateMark />
       <div className={styles.iconButtonContainer}>
+        {onToggleReadOnly && (
+          <IconButton
+            data-testid="readonly-toggle-button"
+            onClick={onToggleReadOnly}
+            icon={isReadOnlyMode ? <ViewIconBlocksuite /> : <EditIcon />}
+            tooltip={
+              isReadOnlyMode
+                ? t['com.affine.header.readonly-toggle.read-only']()
+                : t['com.affine.header.readonly-toggle.editing']()
+            }
+          />
+        )}
         {hideCollect ? null : (
           <>
             <FavoriteButton pageId={page?.id} />
