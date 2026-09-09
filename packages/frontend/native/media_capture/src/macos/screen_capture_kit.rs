@@ -26,7 +26,7 @@ use napi::{
 };
 use napi_derive::napi;
 use objc2::{
-  Encode, Encoding, msg_send,
+  msg_send,
   runtime::{AnyClass, AnyObject},
 };
 use objc2_foundation::NSString;
@@ -39,36 +39,6 @@ use crate::{
   pid::{audio_process_list, get_process_property},
   tap_audio::{AggregateDeviceManager, AudioCaptureSession},
 };
-
-#[repr(C)]
-struct CGSize {
-  width: f64,
-  height: f64,
-}
-
-#[repr(C)]
-struct CGPoint {
-  x: f64,
-  y: f64,
-}
-
-#[repr(C)]
-struct CGRect {
-  origin: CGPoint,
-  size: CGSize,
-}
-
-unsafe impl Encode for CGSize {
-  const ENCODING: Encoding = Encoding::Struct("CGSize", &[f64::ENCODING, f64::ENCODING]);
-}
-
-unsafe impl Encode for CGPoint {
-  const ENCODING: Encoding = Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
-}
-
-unsafe impl Encode for CGRect {
-  const ENCODING: Encoding = Encoding::Struct("CGRect", &[<CGPoint>::ENCODING, <CGSize>::ENCODING]);
-}
 
 static RUNNING_APPLICATIONS: LazyLock<RwLock<std::result::Result<Vec<AudioObjectID>, CoreAudioError>>> =
   LazyLock::new(|| RwLock::new(audio_process_list()));
@@ -163,143 +133,7 @@ impl ApplicationInfo {
 
   #[napi(getter)]
   pub fn icon(&self) -> Result<Buffer> {
-    // Use catch_unwind to prevent any panics
-    let icon_result = std::panic::catch_unwind(|| {
-      // Get NSRunningApplication class with error handling
-      let running_app_class = match NSRUNNING_APPLICATION_CLASS.as_ref() {
-        Some(class) => class,
-        None => {
-          return Ok(Buffer::from(Vec::<u8>::new()));
-        }
-      };
-
-      // Get running application with PID
-      let running_app: *mut AnyObject = unsafe {
-        msg_send![
-          *running_app_class,
-          runningApplicationWithProcessIdentifier: self.process_id
-        ]
-      };
-      if running_app.is_null() {
-        return Ok(Buffer::from(Vec::<u8>::new()));
-      }
-
-      unsafe {
-        // Get original icon
-        let icon: *mut AnyObject = msg_send![running_app, icon];
-        if icon.is_null() {
-          return Ok(Buffer::from(Vec::<u8>::new()));
-        }
-
-        // Create a new NSImage with 64x64 size
-        let nsimage_class = match AnyClass::get(c"NSImage") {
-          Some(class) => class,
-          None => return Ok(Buffer::from(Vec::<u8>::new())),
-        };
-
-        let resized_image: *mut AnyObject = msg_send![nsimage_class, alloc];
-        if resized_image.is_null() {
-          return Ok(Buffer::from(Vec::<u8>::new()));
-        }
-
-        let resized_image: *mut AnyObject =
-          msg_send![resized_image, initWithSize: CGSize { width: 64.0, height: 64.0 }];
-        if resized_image.is_null() {
-          return Ok(Buffer::from(Vec::<u8>::new()));
-        }
-
-        let _: () = msg_send![resized_image, lockFocus];
-
-        // Define drawing rectangle for 64x64 image
-        let draw_rect = CGRect {
-          origin: CGPoint { x: 0.0, y: 0.0 },
-          size: CGSize {
-            width: 64.0,
-            height: 64.0,
-          },
-        };
-
-        let from_rect = CGRect {
-          origin: CGPoint { x: 0.0, y: 0.0 },
-          size: CGSize {
-            width: 0.0,
-            height: 0.0,
-          },
-        };
-
-        // Draw the original icon into draw_rect (using
-        // NSCompositingOperationCopy = 2)
-        let _: () = msg_send![icon, drawInRect: draw_rect, fromRect: from_rect, operation: 2u64, fraction: 1.0];
-        let _: () = msg_send![resized_image, unlockFocus];
-
-        // Get TIFF representation from the downsized image
-        let tiff_data: *mut AnyObject = msg_send![resized_image, TIFFRepresentation];
-        if tiff_data.is_null() {
-          return Ok(Buffer::from(Vec::<u8>::new()));
-        }
-
-        // Create bitmap image rep from TIFF
-        let bitmap_class = match AnyClass::get(c"NSBitmapImageRep") {
-          Some(class) => class,
-          None => return Ok(Buffer::from(Vec::<u8>::new())),
-        };
-
-        let bitmap: *mut AnyObject = msg_send![bitmap_class, imageRepWithData: tiff_data];
-        if bitmap.is_null() {
-          return Ok(Buffer::from(Vec::<u8>::new()));
-        }
-
-        // Create properties dictionary with compression factor
-        let dict_class = match AnyClass::get(c"NSMutableDictionary") {
-          Some(class) => class,
-          None => return Ok(Buffer::from(Vec::<u8>::new())),
-        };
-
-        let properties: *mut AnyObject = msg_send![dict_class, dictionary];
-        if properties.is_null() {
-          return Ok(Buffer::from(Vec::<u8>::new()));
-        }
-
-        // Add compression properties
-        let compression_key = NSString::from_str("NSImageCompressionFactor");
-        let number_class = match AnyClass::get(c"NSNumber") {
-          Some(class) => class,
-          None => return Ok(Buffer::from(Vec::<u8>::new())),
-        };
-
-        let compression_value: *mut AnyObject = msg_send![number_class, numberWithDouble: 0.8];
-        if compression_value.is_null() {
-          return Ok(Buffer::from(Vec::<u8>::new()));
-        }
-
-        let _: () = msg_send![properties, setObject: compression_value, forKey: &*compression_key];
-
-        // Get PNG data with properties
-        let png_data: *mut AnyObject = msg_send![bitmap, representationUsingType: 4u64, properties: properties]; // 4 = PNG
-
-        if png_data.is_null() {
-          return Ok(Buffer::from(Vec::<u8>::new()));
-        }
-
-        // Get bytes from NSData
-        let bytes: *const libc::c_void = msg_send![png_data, bytes];
-        let length: usize = msg_send![png_data, length];
-
-        if bytes.is_null() {
-          return Ok(Buffer::from(Vec::<u8>::new()));
-        }
-
-        // Copy bytes into a Vec<u8> instead of using the original memory
-        let data = std::slice::from_raw_parts(bytes as *const u8, length).to_vec();
-        Ok(Buffer::from(data))
-      }
-    });
-
-    // Handle any panics that might have occurred
-    match icon_result {
-      Ok(result) => result,
-      Err(_) => Ok(Buffer::from(Vec::<u8>::new())),
-    }
+    super::application_icon(self.process_id)
   }
 }
 
