@@ -25,6 +25,23 @@ function escapeMhchem(text: string) {
   return text.replaceAll('$\\ce{', '$\\\\ce{').replaceAll('$\\pu{', '$\\\\pu{');
 }
 
+function normalizeSingleLineBlockLatex(text: string) {
+  return text.replaceAll(
+    /^([ \t]*)\$\$[ \t]*(\S(?:.*?\S)?)[ \t]*\$\$[ \t]*\r?$/gm,
+    (_, indent: string, latex: string) => `${indent}$$\n${latex}\n${indent}$$`
+  );
+}
+
+function protectInlineDollarLatex(text: string, latexExpressions: string[]) {
+  return text.replace(
+    /(^|[^\\$])\$(?!\$|\s)((?:\\.|[^\n\\$])*?[^\s\\$])\$(?!\$)/g,
+    (_, prefix: string, latex: string) => {
+      latexExpressions.push(`$${latex}$`);
+      return `${prefix}<<LATEX_${latexExpressions.length - 1}>>`;
+    }
+  );
+}
+
 /**
  * Preprocess the content to protect code blocks and LaTeX expressions
  * reference issue: https://github.com/remarkjs/react-markdown/issues/785
@@ -44,6 +61,8 @@ function preprocessLatex(content: string) {
     }
   );
 
+  preprocessedContent = normalizeSingleLineBlockLatex(preprocessedContent);
+
   // Protect existing LaTeX expressions
   const latexExpressions: string[] = [];
   preprocessedContent = preprocessedContent.replace(
@@ -52,6 +71,10 @@ function preprocessLatex(content: string) {
       latexExpressions.push(match);
       return `<<LATEX_${latexExpressions.length - 1}>>`;
     }
+  );
+  preprocessedContent = protectInlineDollarLatex(
+    preprocessedContent,
+    latexExpressions
   );
 
   // Escape dollar signs that are likely currency indicators
