@@ -180,6 +180,8 @@ Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiN
 
 [![Run on Sealos](https://sealos.io/Deploy-on-Sealos.svg)](https://sealos.io/products/app-store/affine)
 
+You can also deploy AFFiNE with one click using the [official Easypanel template](https://easypanel.io/templates/affinepro), which provisions the required PostgreSQL and Redis services automatically.
+
 ## Feature Request
 
 For feature requests, please see [discussions](https://github.com/toeverything/AFFiNE/discussions/categories/ideas).
