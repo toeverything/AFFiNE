@@ -182,6 +182,8 @@ Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiN
 
 You can also deploy AFFiNE with one click using the [official Easypanel template](https://easypanel.io/templates/affinepro), which provisions the required PostgreSQL and Redis services automatically.
 
+![AFFiNE deployed on Easypanel](docs/images/easypanel_deployed.png)
+
 ## Feature Request
 
 For feature requests, please see [discussions](https://github.com/toeverything/AFFiNE/discussions/categories/ideas).
