@@ -6791,6 +6791,54 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-edgeless-text.description"](): string;
     /**
+      * `Whiteboard Hello widget`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-hello.name"](): string;
+    /**
+      * `Enables the wb:hello stub widget on the edgeless board.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-hello.description"](): string;
+    /**
+      * `Whiteboard chart widget`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-chart.name"](): string;
+    /**
+      * `Enables the ECharts chart widget on the edgeless board.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-chart.description"](): string;
+    /**
+      * `Whiteboard sketch widget`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-sketch.name"](): string;
+    /**
+      * `Enables the Excalidraw sketch widget on the edgeless board.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-sketch.description"](): string;
+    /**
+      * `Whiteboard board widget`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-board-widget.name"](): string;
+    /**
+      * `Enables the kanban board widget on the edgeless surface.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-board-widget.description"](): string;
+    /**
+      * `Hello widget`
+      */
+    ["com.affine.whiteboard.hello.slash-name"](): string;
+    /**
+      * `Add a whiteboard stub widget to the board.`
+      */
+    ["com.affine.whiteboard.hello.slash-description"](): string;
+    /**
+      * `Hello`
+      */
+    ["com.affine.whiteboard.hello.title"](): string;
+    /**
+      * `Snapshot`
+      */
+    ["com.affine.whiteboard.hello.preview-label"](): string;
+    /**
       * `Color Picker`
       */
     ["com.affine.settings.workspace.experimental-features.enable-color-picker.name"](): string;

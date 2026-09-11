@@ -1,0 +1,88 @@
+name: mosaic
+
+services:
+  mosaic:
+    build:
+      context: .
+      dockerfile: Dockerfile.from-source
+    image: mosaic:local
+    container_name: mosaic_server
+    ports:
+      - '${PORT:-3010}:3010'
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mosaic_migration:
+        condition: service_completed_successfully
+    volumes:
+      - ./data/storage:/root/.affine/storage
+      - ./config:/root/.affine/config
+    environment:
+      REDIS_SERVER_HOST: redis
+      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:-affine}@postgres:5432/${DB_DATABASE:-affine}
+      DEPLOYMENT_TYPE: selfhosted
+      AFFINE_INDEXER_ENABLED: '${AFFINE_INDEXER_ENABLED:-false}'
+      AFFINE_SERVER_EXTERNAL_URL: '${AFFINE_SERVER_EXTERNAL_URL:-http://localhost:3010}'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3010/info').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    restart: unless-stopped
+
+  mosaic_migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mosaic:local
+    container_name: mosaic_migration
+    volumes:
+      - ./data/storage:/root/.affine/storage
+      - ./config:/root/.affine/config
+    command: ['node', './scripts/self-host-predeploy.js']
+    environment:
+      REDIS_SERVER_HOST: redis
+      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:-affine}@postgres:5432/${DB_DATABASE:-affine}
+      DEPLOYMENT_TYPE: selfhosted
+      AFFINE_INDEXER_ENABLED: '${AFFINE_INDEXER_ENABLED:-false}'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: mosaic_redis
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: mosaic_postgres
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-affine}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-affine}
+      POSTGRES_DB: ${DB_DATABASE:-affine}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped

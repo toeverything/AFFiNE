@@ -21,6 +21,10 @@ export interface BlockSuiteFlags {
   enable_turbo_renderer: boolean;
   enable_dom_renderer: boolean;
   enable_pdfmake_export: boolean;
+  enable_whiteboard_hello: boolean;
+  enable_whiteboard_chart: boolean;
+  enable_whiteboard_sketch: boolean;
+  enable_board_widget: boolean;
 }
 
 export class FeatureFlagService extends StoreExtension {
@@ -46,6 +50,10 @@ export class FeatureFlagService extends StoreExtension {
     enable_turbo_renderer: false,
     enable_dom_renderer: false,
     enable_pdfmake_export: false,
+    enable_whiteboard_hello: true,
+    enable_whiteboard_chart: false,
+    enable_whiteboard_sketch: false,
+    enable_board_widget: false,
   });
 
   setFlag(key: keyof BlockSuiteFlags, value: boolean) {

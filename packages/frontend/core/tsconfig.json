@@ -17,6 +17,7 @@
     { "path": "../../common/nbstore" },
     { "path": "../../common/reader" },
     { "path": "../track" },
+    { "path": "../whiteboard" },
     { "path": "../../../blocksuite/affine/all" },
     { "path": "../../../blocksuite/affine/blocks/root" },
     { "path": "../../../blocksuite/affine/components" },

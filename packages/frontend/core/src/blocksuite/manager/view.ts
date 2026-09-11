@@ -25,6 +25,10 @@ import { TurboRendererViewExtension } from '@affine/core/blocksuite/view-extensi
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { DebugLogger } from '@affine/debug';
 import { tracker } from '@affine/track';
+import {
+  WhiteboardViewExtension,
+  type WhiteboardViewOptions,
+} from '@affine/whiteboard';
 import { DatabaseViewExtension } from '@blocksuite/affine/blocks/database/view';
 import { ParagraphViewExtension } from '@blocksuite/affine/blocks/paragraph/view';
 import type {
@@ -66,6 +70,7 @@ type Configure = {
     enableComment?: boolean,
     framework?: FrameworkProvider
   ) => Configure;
+  whiteboard: (options?: WhiteboardViewOptions) => Configure;
 
   value: ViewExtensionManager;
 };
@@ -102,6 +107,7 @@ class ViewProvider {
       AffineLinkPreviewExtension,
       AffineDatabaseViewExtension,
       CommentViewExtension,
+      WhiteboardViewExtension,
     ]);
   }
 
@@ -130,6 +136,7 @@ class ViewProvider {
       codeBlockPreview: this._configureCodeBlockHtmlPreview,
       iconPicker: this._configureIconPicker,
       comment: this._configureComment,
+      whiteboard: this._configureWhiteboard,
       value: this._manager,
     };
   }
@@ -153,7 +160,8 @@ class ViewProvider {
       .linkPreview()
       .codeBlockPreview()
       .iconPicker()
-      .comment();
+      .comment()
+      .whiteboard();
 
     return this.config;
   };
@@ -359,6 +367,13 @@ class ViewProvider {
       enabled: enableComment,
     });
 
+    return this.config;
+  };
+
+  private readonly _configureWhiteboard = (
+    options?: WhiteboardViewOptions
+  ) => {
+    this._manager.configure(WhiteboardViewExtension, options);
     return this.config;
   };
 }

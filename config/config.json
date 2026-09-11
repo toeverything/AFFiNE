@@ -1,0 +1,10 @@
+{
+  "$schema": "https://github.com/toeverything/affine/releases/latest/download/config.schema.json",
+  "server": {
+    "name": "Mosaic",
+    "externalUrl": "http://localhost:3010"
+  },
+  "indexer": {
+    "enabled": false
+  }
+}

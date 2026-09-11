@@ -1,6 +1,19 @@
 .git
-.github/**/*.md
+.github
 .gitignore
+Dockerfile
+Dockerfile.from-source
+docker-compose.yml
+.env
+.env.example
+.cursor
+.vscode
+.idea
+docs
+!docs/reference
+plans
+data
+config/private.key
 
 # Local dependency/build artifacts
 /node_modules

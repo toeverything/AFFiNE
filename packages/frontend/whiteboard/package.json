@@ -1,0 +1,18 @@
+{
+  "name": "@affine/whiteboard",
+  "type": "module",
+  "private": true,
+  "version": "0.27.5",
+  "exports": {
+    ".": "./src/index.ts",
+    "./store": "./src/store.ts",
+    "./view": "./src/view.ts"
+  },
+  "dependencies": {
+    "@affine/i18n": "workspace:*",
+    "@blocksuite/affine": "workspace:*",
+    "@blocksuite/icons": "^2.2.17",
+    "lit": "^3.2.1",
+    "zod": "^3.25.76"
+  }
+}

@@ -1,0 +1,114 @@
+# syntax=docker/dockerfile:1.7
+# Full from-source Mosaic/AFFiNE image.
+# Usage: docker compose build --no-cache
+#   or:  docker build -f Dockerfile.from-source -t mosaic:local .
+
+FROM node:22.23.2-bookworm AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    clang \
+    cmake \
+    curl \
+    git \
+    libclang-dev \
+    libssl-dev \
+    llvm \
+    nasm \
+    pkg-config \
+    protobuf-compiler \
+    python3 \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH \
+    CC="clang -D_BSD_SOURCE" \
+    CARGO_INCREMENTAL=0 \
+    HUSKY=0 \
+    ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+    NODE_OPTIONS=--max-old-space-size=8192 \
+    BUILD_TYPE=stable \
+    DEPLOYMENT_TYPE=selfhosted
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --default-toolchain 1.97.1 --profile minimal
+
+WORKDIR /app
+
+COPY . .
+
+RUN corepack enable \
+  && node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.scripts.postinstall='yarn affine init'; fs.writeFileSync('package.json', JSON.stringify(p,null,2));"
+
+RUN --mount=type=cache,target=/root/.yarn/berry/cache \
+    yarn install
+
+# Release native builds do not embed the debug license key. Use the same
+# test public key as packages/backend/native/src/lib.rs so self-host can boot.
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    printf '%s\n' \
+      '-----BEGIN PUBLIC KEY-----' \
+      'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEObwJiTmbui7rkWfPJ7Lozvuy2Rcl' \
+      'otcrb0V6dlS2ijKEShm7ZttTwQn08xzesdjX/AxpoR5X9yfoHkauIBuuMQ==' \
+      '-----END PUBLIC KEY-----' > /tmp/affine-pro.pub \
+    && AFFINE_PRO_PUBLIC_KEY="$(cat /tmp/affine-pro.pub)" \
+       AFFINE_PRO_LICENSE_AES_KEY=TEST_LICENSE_AES_KEY \
+       yarn workspace @affine/server-native build
+
+RUN cp packages/backend/native/server-native.node packages/backend/native/server-native.x64.node \
+    && cp packages/backend/native/server-native.node packages/backend/native/server-native.arm64.node \
+    && cp packages/backend/native/server-native.node packages/backend/native/server-native.armv7.node
+
+ENV GITHUB_SHA=mosaic-local
+
+RUN yarn affine @affine/web build \
+    && test -f packages/frontend/apps/web/dist/index.html
+RUN yarn affine @affine/admin build \
+    && test -f packages/frontend/admin/dist/index.html
+RUN yarn affine @affine/mobile build \
+    && test -f packages/frontend/apps/mobile/dist/index.html
+RUN yarn workspace @affine/server build \
+    && test -f packages/backend/server/dist/main.js
+
+RUN yarn workspaces focus @affine/server --production \
+  && yarn workspace @affine/server prisma generate \
+  && rm -rf ./packages/backend/server/node_modules \
+  && mv ./node_modules ./packages/backend/server
+
+FROM node:22.23.2-bookworm-slim AS assets
+WORKDIR /app
+
+COPY --from=builder /app/packages/backend/server /app
+COPY --from=builder /app/packages/frontend/apps/web/dist /app/static
+COPY --from=builder /app/packages/frontend/admin/dist /app/static/admin
+COPY --from=builder /app/packages/frontend/apps/mobile/dist /app/static/mobile
+
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends openssl ca-certificates && \
+  rm -rf /var/lib/apt/lists/*
+
+RUN AFFINE_DOCKER_CLEAN=1 TARGETARCH="${TARGETARCH}" TARGETVARIANT="${TARGETVARIANT}" node ./scripts/docker-clean.mjs
+
+FROM node:22.23.2-bookworm-slim
+WORKDIR /app
+
+COPY --from=assets /app /app
+
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends openssl libjemalloc2 && \
+  rm -rf /var/lib/apt/lists/* && \
+  corepack enable
+
+ENV LD_PRELOAD=libjemalloc.so.2 \
+    DEPLOYMENT_TYPE=selfhosted
+
+EXPOSE 3010
+
+CMD ["node", "./dist/main.js"]

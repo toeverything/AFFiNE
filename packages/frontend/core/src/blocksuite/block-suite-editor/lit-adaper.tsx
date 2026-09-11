@@ -79,6 +79,19 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
     featureFlagService.flags.enable_turbo_renderer.$
   );
 
+  const enableWhiteboardHello = useLiveData(
+    featureFlagService.flags.enable_whiteboard_hello.$
+  );
+  const enableWhiteboardChart = useLiveData(
+    featureFlagService.flags.enable_whiteboard_chart.$
+  );
+  const enableWhiteboardSketch = useLiveData(
+    featureFlagService.flags.enable_whiteboard_sketch.$
+  );
+  const enableBoardWidget = useLiveData(
+    featureFlagService.flags.enable_board_widget.$
+  );
+
   const enablePDFEmbedPreview = useLiveData(
     featureFlagService.flags.enable_pdf_embed_preview.$
   );
@@ -118,7 +131,13 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
       .linkPreview(framework)
       .codeBlockPreview(framework)
       .iconPicker(framework)
-      .comment(enableComment, framework).value;
+      .comment(enableComment, framework)
+      .whiteboard({
+        enableHello: enableWhiteboardHello,
+        enableChart: enableWhiteboardChart,
+        enableSketch: enableWhiteboardSketch,
+        enableBoard: enableBoardWidget,
+      }).value;
 
     if (BUILD_CONFIG.isMobileEdition) {
       if (mode === 'page') {
@@ -135,6 +154,10 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
     enablePDFEmbedPreview,
     enableTurboRenderer,
     enableComment,
+    enableWhiteboardHello,
+    enableWhiteboardChart,
+    enableWhiteboardSketch,
+    enableBoardWidget,
     framework,
     isInPeekView,
     isCloud,

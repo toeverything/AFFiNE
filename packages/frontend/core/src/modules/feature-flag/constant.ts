@@ -313,6 +313,46 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: false,
   },
+  enable_whiteboard_hello: {
+    category: 'blocksuite',
+    bsFlag: 'enable_whiteboard_hello',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-hello.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-hello.description',
+    configurable: true,
+    defaultState: true,
+  },
+  enable_whiteboard_chart: {
+    category: 'blocksuite',
+    bsFlag: 'enable_whiteboard_chart',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-chart.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-chart.description',
+    configurable: true,
+    defaultState: false,
+  },
+  enable_whiteboard_sketch: {
+    category: 'blocksuite',
+    bsFlag: 'enable_whiteboard_sketch',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-sketch.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-sketch.description',
+    configurable: true,
+    defaultState: false,
+  },
+  enable_board_widget: {
+    category: 'blocksuite',
+    bsFlag: 'enable_board_widget',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-board-widget.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-board-widget.description',
+    configurable: true,
+    defaultState: false,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 // oxlint-disable-next-line no-redeclare

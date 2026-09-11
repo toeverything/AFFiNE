@@ -97,6 +97,11 @@ af.cmd
 storageState.json
 /.understand-anything
 
+# Docker local data
+/data/
+/.env
+/config/private.key
+
 # local test/browser artifacts
 /.playwright-browsers/
 **/.vitest-attachments/
