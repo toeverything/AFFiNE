@@ -32,4 +32,6 @@ export const chartWidget = registerGfxWidget({
 6. Feature flag: `enable_whiteboard_*` в `AFFINE_FLAGS` + `BlockSuiteFlags`, затем прокиньте его в `getViewManager().config.whiteboard(...)`.
 7. Slash-menu: `insertGfxWidget(std, flavour)` — на доске ставит блок в центр вьюпорта, в page-mode — после текущей строки.
 
-Эталон — `src/blocks/hello` (`wb:hello`).
+Эталон — `src/blocks/hello` (`wb:hello`). График — `src/blocks/chart` (`wb:chart`): ECharts, источники `database` / `inline` / `csv-blob` / `http`, правая React-панель, snapshot и бюджет `maxLiveCharts = 3`.
+
+Флаг `enable_whiteboard_chart` по умолчанию выключен. Preview-scope рисует только `snapshotBlobId`, без ECharts.

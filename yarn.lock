@@ -384,6 +384,7 @@ __metadata:
     "@affine/reader": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/track": "workspace:*"
+    "@affine/whiteboard": "workspace:*"
     "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/affine-block-root": "workspace:*"
@@ -1080,6 +1081,21 @@ __metadata:
     react-dom: "npm:^19.2.1"
     react-router-dom: "npm:^6.30.4"
     typescript: "npm:@typescript/typescript6@6.0.2"
+  languageName: unknown
+  linkType: soft
+
+"@affine/whiteboard@workspace:*, @affine/whiteboard@workspace:packages/frontend/whiteboard":
+  version: 0.0.0-use.local
+  resolution: "@affine/whiteboard@workspace:packages/frontend/whiteboard"
+  dependencies:
+    "@affine/i18n": "workspace:*"
+    "@blocksuite/affine": "workspace:*"
+    "@blocksuite/icons": "npm:^2.2.17"
+    echarts: "npm:^5.6.0"
+    lit: "npm:^3.2.1"
+    react: "npm:^19.2.1"
+    react-dom: "npm:^19.2.1"
+    zod: "npm:^3.25.76"
   languageName: unknown
   linkType: soft
 
@@ -20320,6 +20336,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"echarts@npm:^5.6.0":
+  version: 5.6.0
+  resolution: "echarts@npm:5.6.0"
+  dependencies:
+    tslib: "npm:2.3.0"
+    zrender: "npm:5.6.1"
+  checksum: 10/e73344abb777fd8401c0b89a5d83b65c7a81a11540e2047d51f4aae9419baf4dc2524a5d9561f9ca0fe8d6b432c58b7a1d518f2a4338041046506db8257a1332
+  languageName: node
+  linkType: hard
+
 "ee-first@npm:1.1.1":
   version: 1.1.1
   resolution: "ee-first@npm:1.1.1"
@@ -32190,6 +32216,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tslib@npm:2.3.0":
+  version: 2.3.0
+  resolution: "tslib@npm:2.3.0"
+  checksum: 10/9c55c9abd5ecd94e5fd37573db27e26933fb6c33506431403fb4627dcb8aa9a45b772afa6d05dd2c25dc1de22a213193251e6303742f3bcdc179e523a9295bfd
+  languageName: node
+  linkType: hard
+
 "tslib@npm:2.8.1, tslib@npm:^2.0.0, tslib@npm:^2.0.1, tslib@npm:^2.0.3, tslib@npm:^2.1.0, tslib@npm:^2.4.0, tslib@npm:^2.5.0, tslib@npm:^2.6.2, tslib@npm:^2.6.3, tslib@npm:^2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
@@ -34065,6 +34098,15 @@ __metadata:
   version: 4.3.6
   resolution: "zod@npm:4.3.6"
   checksum: 10/25fc0f62e01b557b4644bf0b393bbaf47542ab30877c37837ea8caf314a8713d220c7d7fe51f68ffa72f0e1018ddfa34d96f1973d23033f5a2a5a9b6b9d9da01
+  languageName: node
+  linkType: hard
+
+"zrender@npm:5.6.1":
+  version: 5.6.1
+  resolution: "zrender@npm:5.6.1"
+  dependencies:
+    tslib: "npm:2.3.0"
+  checksum: 10/25dfd476be243f051614f131675855d184eb05e8b9a39dc41146a3a553a17aad5ceba77e166d525be9c4adc2bb237c56dfdfb3456667940bbeddb05eef3deac7
   languageName: node
   linkType: hard
 

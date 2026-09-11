@@ -6839,6 +6839,79 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.whiteboard.hello.preview-label"](): string;
     /**
+      * `Chart`
+      */
+    ["com.affine.whiteboard.chart.slash-name"](): string;
+    /**
+      * `Add an ECharts widget bound to a table or inline data.`
+      */
+    ["com.affine.whiteboard.chart.slash-description"](): string;
+    /**
+      * `Chart from table`
+      */
+    ["com.affine.whiteboard.chart.from-table"](): string;
+    /**
+      * `Create a chart from the nearest database in this document.`
+      */
+    ["com.affine.whiteboard.chart.from-table-description"](): string;
+    /**
+      * `Chart`
+      */
+    ["com.affine.whiteboard.chart.title"](): string;
+    /**
+      * `Chart snapshot`
+      */
+    ["com.affine.whiteboard.chart.preview-label"](): string;
+    /**
+      * `No data to plot`
+      */
+    ["com.affine.whiteboard.chart.empty"](): string;
+    /**
+      * `Snapshot`
+      */
+    ["com.affine.whiteboard.chart.snapshot-fallback"](): string;
+    /**
+      * `Offline. Showing the last snapshot.`
+      */
+    ["com.affine.whiteboard.chart.offline"](): string;
+    /**
+      * `Could not load chart data.`
+      */
+    ["com.affine.whiteboard.chart.error"](): string;
+    ["com.affine.whiteboard.chart.type.bar"](): string;
+    ["com.affine.whiteboard.chart.type.line"](): string;
+    ["com.affine.whiteboard.chart.type.area"](): string;
+    ["com.affine.whiteboard.chart.type.pie"](): string;
+    ["com.affine.whiteboard.chart.type.scatter"](): string;
+    ["com.affine.whiteboard.chart.type.funnel"](): string;
+    ["com.affine.whiteboard.chart.type.radar"](): string;
+    ["com.affine.whiteboard.chart.type.heatmap"](): string;
+    ["com.affine.whiteboard.chart.source.database"](): string;
+    ["com.affine.whiteboard.chart.source.inline"](): string;
+    ["com.affine.whiteboard.chart.source.csv-blob"](): string;
+    ["com.affine.whiteboard.chart.source.http"](): string;
+    ["com.affine.whiteboard.chart.formatter.number"](): string;
+    ["com.affine.whiteboard.chart.formatter.percent"](): string;
+    ["com.affine.whiteboard.chart.formatter.compact"](): string;
+    ["com.affine.whiteboard.chart.formatter.date"](): string;
+    ["com.affine.whiteboard.chart.panel.title"](): string;
+    ["com.affine.whiteboard.chart.panel.chart-title"](): string;
+    ["com.affine.whiteboard.chart.panel.type"](): string;
+    ["com.affine.whiteboard.chart.panel.source"](): string;
+    ["com.affine.whiteboard.chart.panel.database"](): string;
+    ["com.affine.whiteboard.chart.panel.database-empty"](): string;
+    ["com.affine.whiteboard.chart.panel.url"](): string;
+    ["com.affine.whiteboard.chart.panel.allowlist"](): string;
+    ["com.affine.whiteboard.chart.panel.refresh"](): string;
+    ["com.affine.whiteboard.chart.panel.blob-id"](): string;
+    ["com.affine.whiteboard.chart.panel.inline"](): string;
+    ["com.affine.whiteboard.chart.panel.x-axis"](): string;
+    ["com.affine.whiteboard.chart.panel.y-axis"](): string;
+    ["com.affine.whiteboard.chart.panel.colors"](): string;
+    ["com.affine.whiteboard.chart.panel.formatter"](): string;
+    ["com.affine.whiteboard.chart.panel.legend"](): string;
+    ["com.affine.whiteboard.chart.panel.labels"](): string;
+    /**
       * `Color Picker`
       */
     ["com.affine.settings.workspace.experimental-features.enable-color-picker.name"](): string;

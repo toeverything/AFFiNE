@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { WHITEBOARD_FLAVOURS, WHITEBOARD_SURFACE_CHILDREN } from '../const';
+import { ChartBlockSchema } from '../blocks/chart/model';
 import { HelloBlockSchema } from '../blocks/hello/model';
 import {
   collectStoreExtensions,
@@ -26,5 +27,11 @@ describe('whiteboard scaffold', () => {
 
     expect(collectStoreExtensions([widget])).toHaveLength(1);
     expect(widget.flavour).toBe('wb:hello');
+  });
+
+  it('registers wb:chart as a gfx surface widget', () => {
+    expect(ChartBlockSchema.model.flavour).toBe(WHITEBOARD_FLAVOURS.chart);
+    expect(ChartBlockSchema.model.parent).toContain('affine:surface');
+    expect(ChartBlockSchema.model.parent).toContain('affine:note');
   });
 });

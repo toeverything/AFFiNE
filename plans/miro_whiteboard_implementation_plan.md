@@ -458,6 +458,19 @@ Renderer: live | svg-snapshot | turbo-bitmap
 
 **Цель.** Виджет графика на доске, связанный с таблицей документа, с панелью настроек уровня Miro, а не «JSON в пропах».
 
+**Статус.** Выполнено.
+
+**Работы.**
+
+1. [x] Схема `wb:chart` (`title: Text`, `chartType`, `Boxed` spec/dataSource, `snapshotBlobId`, `liveBudgetExempt`), parent `affine:surface` / `affine:note`.
+2. [x] Санитизация ECharts option: allowlist ключей, запрет `Function` / js formatter / HTML в tooltip; preset-форматтеры `number` | `percent` | `compact` | `date`; тема из `ThemeProvider`.
+3. [x] UI на доске: рамка, title, live chart / snapshot, resize как у frame; при выделении правая React-панель (тип, оси, series, цвета, легенда, labels, dataSource picker).
+4. [x] Slash-menu: «Chart», «Chart from table»; коннекторы — стандартный Bound блока.
+5. [x] Данные: `database` (подписка, debounce 150ms, агрегаты только на клиенте), `inline` (лимит 200 ячеек), `csv-blob`, `http` (allowlist + CORS, кэш в blob, офлайн-снимок + баннер).
+6. [x] Производительность: LOD `z0=0.35` / `z1=0.7`, `maxLiveCharts=3`, IntersectionObserver overscan, dispose вне L2, snapshot `getDataURL` debounce 1s, animation только в L2 при < 2k точек.
+7. [x] Экспорт PNG/SVG, clipboard, HTML adapter `<figure>`.
+8. [x] Unit-тесты: sanitize option, mapping database/inline/csv → dataset, live budget.
+
 **Схема.**
 
 ```ts
@@ -514,9 +527,9 @@ parent: ['affine:surface', 'affine:note']
 
 **Тесты.**
 
-- Unit: sanitize option, mapping database → dataset.
-- Playwright: два клиента, один меняет тип, второй видит; отключение сети, правка, reconnect.
-- Perf: 20 графиков на доске, 3 в вьюпорте — не больше 3 `echarts.init`.
+- [x] Unit: sanitize option, mapping database → dataset, live budget (`maxLiveCharts = 3`).
+- [ ] Playwright: два клиента, один меняет тип, второй видит; отключение сети, правка, reconnect — в общем E2E фазы 1.
+- [x] Perf-контракт: бюджет живых инстансов не больше 3 (unit + runtime `LiveChartBudget`).
 
 **Оценка.** 4–5 недель до MVP (bar/line/pie + database source + snapshot). Ещё 2 недели — scatter/funnel/radar + http + advanced JSON.
 
@@ -727,14 +740,14 @@ SES/compartments — исследование фазы 4, не блокер. Web
 ### Фаза 0 — выравнивание (1 неделя)
 
 - [x] Каркас `@affine/whiteboard`, feature flags, виджет-заглушка на surface.
-- Зафиксировать LOD-пороги и бюджеты.
+- [x] LOD-пороги и бюджеты: `z0 = 0.35`, `z1 = 0.7`, `maxLiveCharts = 3` (`WHITEBOARD_LOD`).
 - [x] Список апстрим-патчей (surface children whitelist) — `wb:*` / `wb:hello` / `wb:chart` / `wb:sketch` / `wb:board` в `SurfaceBlockSchema`.
 
 ### Фаза 1 — MVP (8–10 недель) ≈ «доска, на которой уже работают»
 
 Параллельно две команды (виджеты / board), плюс один человек на perf-политику.
 
-1. **Chart P0:** bar/line/pie, database dataSource, settings panel, snapshot, culling.
+1. [x] **Chart P0:** bar/line/pie (+ scatter/funnel/radar/heatmap), database/inline/csv/http dataSource, settings panel, snapshot, culling.
 2. **Board P0:** `wb:board` обёртка, kanban view, peek карточки, шаблон.
 3. **Sketch P0:** live только selected, SVG для остальных, import `.excalidraw`.
 4. **LOD policy** для всех трёх.

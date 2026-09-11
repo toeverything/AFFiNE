@@ -17,3 +17,14 @@ export {
   HelloBlockSchemaExtension,
   helloWidget,
 } from './blocks/hello';
+export {
+  ChartBlockSchema,
+  ChartBlockSchemaExtension,
+  chartWidget,
+} from './blocks/chart';
+export { WHITEBOARD_LOD, CHART_WIDGET_SIZE } from './const';
+export {
+  WhiteboardReactToLitIdentifier,
+  WhiteboardReactToLitExtension,
+  type WhiteboardReactToLit,
+} from './react-to-lit';

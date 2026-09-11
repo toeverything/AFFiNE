@@ -3,10 +3,11 @@ import {
   StoreExtensionProvider,
 } from '@blocksuite/affine/ext-loader';
 
+import { chartWidget } from './blocks/chart';
 import { helloWidget } from './blocks/hello';
 import { collectStoreExtensions } from './register-gfx-widget';
 
-const whiteboardWidgets = [helloWidget];
+const whiteboardWidgets = [helloWidget, chartWidget];
 
 export class WhiteboardStoreExtension extends StoreExtensionProvider {
   override name = 'affine-whiteboard-store';

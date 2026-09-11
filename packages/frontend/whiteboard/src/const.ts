@@ -20,3 +20,15 @@ export const HELLO_WIDGET_SIZE = {
   width: 280,
   height: 160,
 } as const;
+
+export const CHART_WIDGET_SIZE = {
+  width: 480,
+  height: 320,
+} as const;
+
+/** LOD and live-instance budgets from the whiteboard plan §5.4. */
+export const WHITEBOARD_LOD = {
+  z0: 0.35,
+  z1: 0.7,
+  maxLiveCharts: 3,
+} as const;

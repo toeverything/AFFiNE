@@ -137,6 +137,7 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
         enableChart: enableWhiteboardChart,
         enableSketch: enableWhiteboardSketch,
         enableBoard: enableBoardWidget,
+        reactToLit,
       }).value;
 
     if (BUILD_CONFIG.isMobileEdition) {

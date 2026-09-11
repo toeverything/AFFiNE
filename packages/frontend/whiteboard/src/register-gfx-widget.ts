@@ -25,6 +25,7 @@ export interface GfxWidgetRegistration {
   toolbar?: ExtensionType | ExtensionType[];
   clipboard?: ExtensionType;
   interaction?: ExtensionType;
+  adapter?: ExtensionType | ExtensionType[];
   snapshotPainter?: SnapshotPainter;
 }
 
@@ -42,7 +43,10 @@ export function registerGfxWidget(
 export function collectStoreExtensions(
   widgets: readonly GfxWidgetRegistration[]
 ): ExtensionType[] {
-  return widgets.map(widget => widget.schema);
+  return widgets.flatMap(widget => [
+    widget.schema,
+    ...asList(widget.adapter),
+  ]);
 }
 
 export function collectViewExtensions(

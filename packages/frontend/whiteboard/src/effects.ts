@@ -1,3 +1,6 @@
+import { ChartBlockComponent } from './blocks/chart/chart-block';
+import { ChartEdgelessBlockComponent } from './blocks/chart/chart-edgeless-block';
+import { ChartPreviewBlockComponent } from './blocks/chart/chart-preview-block';
 import { HelloBlockComponent } from './blocks/hello/hello-block';
 import { HelloEdgelessBlockComponent } from './blocks/hello/hello-edgeless-block';
 import { HelloPreviewBlockComponent } from './blocks/hello/hello-preview-block';
@@ -6,4 +9,8 @@ export function effects() {
   customElements.define('wb-hello', HelloBlockComponent);
   customElements.define('wb-hello-edgeless', HelloEdgelessBlockComponent);
   customElements.define('wb-hello-preview', HelloPreviewBlockComponent);
+
+  customElements.define('wb-chart', ChartBlockComponent);
+  customElements.define('wb-chart-edgeless', ChartEdgelessBlockComponent);
+  customElements.define('wb-chart-preview', ChartPreviewBlockComponent);
 }
