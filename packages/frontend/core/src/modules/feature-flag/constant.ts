@@ -373,6 +373,16 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: false,
   },
+  enable_whiteboard_collab: {
+    category: 'blocksuite',
+    bsFlag: 'enable_whiteboard_collab',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-collab.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-collab.description',
+    configurable: true,
+    defaultState: false,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 // oxlint-disable-next-line no-redeclare

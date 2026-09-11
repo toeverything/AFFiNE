@@ -23,6 +23,10 @@ import {
   type SketchRemoteCursor,
 } from './cursors';
 import {
+  publishWidgetEditing,
+  remoteOwnsLiveEditor,
+} from '../../collab/awareness';
+import {
   tryLive,
   whiteboardPerfPolicy,
   xywhCenterDistance,
@@ -88,6 +92,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
 
   private canUseLive() {
     if (!this.intersecting) return false;
+    if (remoteOwnsLiveEditor(this.std.store, this.model.id)) return false;
     return this.lod === 'l2';
   }
 
@@ -156,6 +161,11 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
       pointer: on ? pointer : undefined,
       color: colorForClient(clientId),
     } satisfies SketchAwarenessPayload);
+    publishWidgetEditing(
+      this.std.store,
+      this.model.flavour,
+      on ? this.model.id : null
+    );
   }
 
   private readEditors() {
@@ -224,6 +234,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   private enterEdit() {
     this.selectSelf();
     if (!this.intersecting) return;
+    if (remoteOwnsLiveEditor(this.std.store, this.model.id)) return;
     const viewport = this.gfx()?.viewport;
     if (
       !tryLive(liveSketchBudget, {

@@ -2,6 +2,8 @@ export type BoardSnapshotRow = {
   id: string;
   title: string;
   tasks?: Array<{ text: string; done: boolean }>;
+  commentId?: string;
+  commentIds?: string[];
 };
 
 export type BoardSnapshotOption = {
@@ -180,9 +182,18 @@ type SnapshotBlock = {
     text?: { toString?: () => string };
     type?: string;
     checked?: boolean;
+    comments?: Record<string, boolean>;
   };
   children?: SnapshotBlock[];
 };
+
+function commentIdsFromRow(row: SnapshotBlock) {
+  const comments = row.props.comments;
+  if (!comments) return [];
+  return Object.entries(comments)
+    .filter(([, on]) => on)
+    .map(([id]) => id);
+}
 
 function tasksFromRow(row: SnapshotBlock) {
   return (row.children ?? [])
@@ -209,10 +220,15 @@ export function databaseToSnapshot(database: {
     columns: database.props.columns ?? [],
     cells: database.props.cells ?? {},
     views: database.props.views ?? [],
-    rows: database.children.map(child => ({
-      id: child.id,
-      title: child.props.text?.toString?.() ?? '',
-      tasks: tasksFromRow(child),
-    })),
+    rows: database.children.map(child => {
+      const commentIds = commentIdsFromRow(child);
+      return {
+        id: child.id,
+        title: child.props.text?.toString?.() ?? '',
+        tasks: tasksFromRow(child),
+        commentIds,
+        commentId: commentIds[0],
+      };
+    }),
   };
 }

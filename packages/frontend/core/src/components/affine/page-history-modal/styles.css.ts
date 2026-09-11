@@ -274,6 +274,29 @@ export const historyFooter = style({
 export const spacer = style({
   flexGrow: 1,
 });
+export const historyItemLabel = style({
+  color: cssVarV2('text/emphasis'),
+  fontSize: cssVar('fontXs'),
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+});
+export const namedVersionField = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  marginRight: 12,
+});
+export const namedVersionInput = style({
+  width: 180,
+  height: 32,
+  borderRadius: 6,
+  border: `1px solid ${cssVar('borderColor')}`,
+  padding: '0 8px',
+  background: cssVar('backgroundPrimaryColor'),
+  color: cssVarV2('text/primary'),
+  fontSize: cssVar('fontXs'),
+});
 export const emptyHistoryPrompt = style({
   display: 'flex',
   flexDirection: 'column',

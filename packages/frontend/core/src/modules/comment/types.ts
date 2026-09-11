@@ -37,6 +37,7 @@ export type PendingComment = {
   selections?: BaseSelection[];
   commentId?: CommentId; // only for replies, points to the parent comment
   attachments: CommentAttachment[];
+  anchor?: CommentAnchor;
 };
 
 export interface DocCommentReply extends BaseComment {
@@ -44,11 +45,19 @@ export interface DocCommentReply extends BaseComment {
   mentions: string[];
 }
 
+export type CommentAnchor = {
+  blockId: string;
+  point?: [number, number];
+  rowId?: string;
+};
+
 export type DocCommentContent = {
   snapshot: DocSnapshot; // blocksuite snapshot
   attachments?: CommentAttachment[];
   mode?: DocMode;
   preview?: string; // text preview of the target
+  /** Gfx / kanban card pin (plan §6.6). Stored inside opaque GraphQL content. */
+  anchor?: CommentAnchor;
 };
 
 export interface DocCommentListResult {

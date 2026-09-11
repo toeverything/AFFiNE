@@ -235,6 +235,13 @@ function renderCard(card: BoardCardPreview, handlers?: BoardLodHandlers) {
               ${card.attachmentCount}</span
             >`
           : nothing}
+        ${card.commentIds?.length
+          ? html`<span
+              >${I18n['com.affine.whiteboard.board.comment-count']({
+                count: String(card.commentIds.length),
+              })}</span
+            >`
+          : nothing}
         ${handlers?.interactive
           ? html`
               <button

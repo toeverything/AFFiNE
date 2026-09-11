@@ -2566,6 +2566,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.history.restore-current-version"](): string;
     /**
+      * `Version name`
+      */
+    ["com.affine.history.named-version.label"](): string;
+    /**
+      * `Name this snapshot`
+      */
+    ["com.affine.history.named-version.placeholder"](): string;
+    /**
+      * `Save name`
+      */
+    ["com.affine.history.named-version.save"](): string;
+    /**
       * `Version history`
       */
     ["com.affine.history.version-history"](): string;
@@ -6839,6 +6851,40 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-whiteboard-l0-layer.description"](): string;
     /**
+      * `Whiteboard collaboration`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-collab.name"](): string;
+    /**
+      * `Presence avatars, follow user, look-here pulse, and comment pins on the board. Off by default.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-collab.description"](): string;
+    /**
+      * `Follow {{name}}`
+      */
+    ["com.affine.whiteboard.collab.follow"](options: {
+        readonly name: string;
+    }): string;
+    /**
+      * `Following {{name}}`
+      */
+    ["com.affine.whiteboard.collab.following"](options: {
+        readonly name: string;
+    }): string;
+    /**
+      * `Look here`
+      */
+    ["com.affine.whiteboard.collab.look-here"](): string;
+    /**
+      * `{{name}} is editing`
+      */
+    ["com.affine.whiteboard.collab.editing"](options: {
+        readonly name: string;
+    }): string;
+    /**
+      * `Comment pin`
+      */
+    ["com.affine.whiteboard.collab.comment-pin"](): string;
+    /**
       * `Hello widget`
       */
     ["com.affine.whiteboard.hello.slash-name"](): string;
@@ -7106,6 +7152,12 @@ export function useAFFiNEI18N(): {
     ["com.affine.whiteboard.board.time-spent"](): string;
     ["com.affine.whiteboard.board.attachments"](): string;
     ["com.affine.whiteboard.board.comment"](): string;
+    /**
+      * `{{count}} comments`
+      */
+    ["com.affine.whiteboard.board.comment-count"](options: {
+        readonly count: string;
+    }): string;
     ["com.affine.whiteboard.board.log-time"](): string;
     /**
       * `Color Picker`

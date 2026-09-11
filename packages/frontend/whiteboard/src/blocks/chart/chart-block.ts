@@ -10,6 +10,10 @@ import type { Root } from 'react-dom/client';
 import type { ChartSettingsPanelProps } from './chart-settings-panel';
 import { listDatabases } from './databases';
 import { resolveChartData, subscribeChartData } from './data-source';
+import {
+  publishWidgetEditing,
+  remoteOwnsLiveEditor,
+} from '../../collab/awareness';
 import { tryLive, whiteboardPerfPolicy, xywhCenterDistance } from '../../perf/policy';
 import { whiteboardTelemetry } from '../../perf/telemetry';
 import { getChartLodLevel, liveChartBudget } from './live-budget';
@@ -88,6 +92,7 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
 
   private canUseLive() {
     if (this.preview || !this.intersecting) return false;
+    if (remoteOwnsLiveEditor(this.std.store, this.model.id)) return false;
     return getChartLodLevel(this.zoom, this.selected, this.hovered) === 'l2';
   }
 
@@ -156,6 +161,7 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
         this._live.resize();
       }
       host.dataset.wbChartLive = 'true';
+      publishWidgetEditing(this.std.store, this.model.flavour, this.model.id);
       this.scheduleSnapshot();
     } catch {
       this.disposeLive();
@@ -168,6 +174,7 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
       this._live = null;
     }
     liveChartBudget.release(this.model.id);
+    publishWidgetEditing(this.std.store, this.model.flavour, null);
     const host = this.renderRoot.querySelector<HTMLElement>('.wb-chart__host');
     if (host) delete host.dataset.wbChartLive;
   }

@@ -23,6 +23,7 @@ import { type DocDisplayMetaService } from '../../doc-display-meta';
 import { GlobalContextService } from '../../global-context';
 import type { SnapshotHelper } from '../services/snapshot-helper';
 import type {
+  CommentAnchor,
   CommentAttachment,
   CommentId,
   DocComment,
@@ -101,7 +102,8 @@ export class DocCommentEntity extends Entity<{
 
   async addComment(
     selections?: BaseSelection[],
-    preview?: string
+    preview?: string,
+    anchor?: CommentAnchor
   ): Promise<string> {
     // check if there is a pending comment, reuse it
     let pendingComment = this.pendingComment$.value;
@@ -117,6 +119,7 @@ export class DocCommentEntity extends Entity<{
       preview,
       selections,
       attachments: [],
+      anchor,
     };
 
     // Replace any existing pending comment (only one at a time)
@@ -227,7 +230,7 @@ export class DocCommentEntity extends Entity<{
       console.warn('Pending comment not found:', id);
       return;
     }
-    const { doc, preview, attachments } = pendingComment;
+    const { doc, preview, attachments, anchor } = pendingComment;
     const snapshot = this.snapshotHelper.getSnapshot(doc);
     if (!snapshot) {
       throw new Error('Failed to get snapshot');
@@ -239,6 +242,7 @@ export class DocCommentEntity extends Entity<{
         preview,
         mode: this.docMode$.value ?? 'page',
         attachments,
+        anchor,
       },
       mentions,
     });

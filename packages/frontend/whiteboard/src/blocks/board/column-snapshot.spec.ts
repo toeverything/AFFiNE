@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { readBoardColumns } from './column-snapshot';
+import { databaseToSnapshot, readBoardColumns } from './column-snapshot';
 
 describe('board column snapshot', () => {
   it('groups cards by select options and preserves manual order', () => {
@@ -76,5 +76,22 @@ describe('board column snapshot', () => {
     });
 
     expect(columns.map(column => column.id)).toEqual(['todo']);
+  });
+
+  it('copies commentId from the row block comments map', () => {
+    const snapshot = databaseToSnapshot({
+      children: [
+        {
+          id: 'r1',
+          props: {
+            text: { toString: () => 'Task' },
+            comments: { 'cmt-1': true, stale: false },
+          },
+        },
+      ],
+      props: { columns: [], cells: {}, views: [] },
+    });
+    expect(snapshot.rows[0]?.commentId).toBe('cmt-1');
+    expect(snapshot.rows[0]?.commentIds).toEqual(['cmt-1']);
   });
 });

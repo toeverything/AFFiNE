@@ -68,6 +68,41 @@ function getPreviewFromSelections(
   return previews.length > 0 ? previews.join(' ') : 'New comment';
 }
 
+function extractCommentAnchor(
+  std: BlockStdScope,
+  selections: BaseSelection[]
+) {
+  for (const selection of selections) {
+    if (selection instanceof SurfaceSelection && selection.elements[0]) {
+      return { blockId: selection.elements[0] };
+    }
+    if (selection instanceof BlockSelection) {
+      const block = std.store.getBlock(selection.blockId);
+      const parent = block ? std.store.getParent(block.model) : null;
+      const rowId =
+        parent?.flavour === 'affine:database' ? selection.blockId : undefined;
+      return { blockId: selection.blockId, rowId };
+    }
+    if (selection instanceof ImageSelection) {
+      return { blockId: selection.blockId };
+    }
+  }
+  try {
+    const gfx = std.get(GfxControllerIdentifier);
+    const cursor = gfx.selection.cursorSelection;
+    const first = gfx.selection.selectedIds[0];
+    if (cursor && first) {
+      return {
+        blockId: first,
+        point: [cursor.x, cursor.y] as [number, number],
+      };
+    }
+  } catch {
+    return;
+  }
+  return;
+}
+
 function extractTextFromSelection(
   std: BlockStdScope,
   selection: TextSelection
@@ -146,7 +181,10 @@ class AffineCommentService implements CommentProvider {
     workbench.setSidebarOpen(true);
     workbench.activeView$.value.activeSidebarTab('comment');
     const preview = getPreviewFromSelections(this.std, selections);
-    this.commentEntity.addComment(selections, preview).catch(console.error);
+    const anchor = extractCommentAnchor(this.std, selections);
+    this.commentEntity
+      .addComment(selections, preview, anchor)
+      .catch(console.error);
   }
 
   resolveComment(id: string): void {

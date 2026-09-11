@@ -9,6 +9,12 @@ import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
+import {
+  labelForVersion,
+  loadNamedVersions,
+  saveNamedVersionLabel,
+  type NamedVersionMap,
+} from '@affine/whiteboard';
 import { track } from '@affine/track';
 import type { DocMode } from '@blocksuite/affine/model';
 import type { Store, Workspace } from '@blocksuite/affine/store';
@@ -274,12 +280,14 @@ const PageHistoryList = ({
   loadingMore,
   activeVersion,
   onVersionChange,
+  namedVersions,
 }: {
   activeVersion?: string;
   onVersionChange: (version: string) => void;
   historyList: HistoryList;
   onLoadMore: (() => void) | false;
   loadingMore: boolean;
+  namedVersions: NamedVersionMap;
 }) => {
   const t = useI18n();
   const historyListByDay = useMemo(() => {
@@ -366,6 +374,17 @@ const PageHistoryList = ({
                             <span className={styles.historyItemName}>
                               {history.editor?.name ?? t['unnamed']()}
                             </span>
+                            {labelForVersion(
+                              namedVersions,
+                              history.timestamp
+                            ) ? (
+                              <span className={styles.historyItemLabel}>
+                                {labelForVersion(
+                                  namedVersions,
+                                  history.timestamp
+                                )}
+                              </span>
+                            ) : null}
                           </div>
                         </div>
                         {isLastGroup && isLastItem && onLoadMore ? (
@@ -481,6 +500,29 @@ const PageHistoryManager = ({
     workspaceId,
     pageDocId
   );
+  const [namedVersions, setNamedVersions] = useState<NamedVersionMap>(() =>
+    typeof localStorage === 'undefined'
+      ? {}
+      : loadNamedVersions(localStorage, workspaceId, pageDocId)
+  );
+  const [versionLabel, setVersionLabel] = useState('');
+
+  useEffect(() => {
+    setVersionLabel(labelForVersion(namedVersions, activeVersion) ?? '');
+  }, [activeVersion, namedVersions]);
+
+  const onSaveVersionLabel = useCallback(() => {
+    if (!activeVersion || typeof localStorage === 'undefined') return;
+    setNamedVersions(
+      saveNamedVersionLabel(
+        localStorage,
+        workspaceId,
+        pageDocId,
+        activeVersion,
+        versionLabel
+      )
+    );
+  }, [activeVersion, pageDocId, versionLabel, workspaceId]);
 
   return (
     <div className={styles.root}>
@@ -500,6 +542,7 @@ const PageHistoryManager = ({
           loadingMore={loadingMore}
           activeVersion={activeVersion}
           onVersionChange={setActiveVersion}
+          namedVersions={namedVersions}
         />
       </div>
 
@@ -514,6 +557,22 @@ const PageHistoryManager = ({
           {t['com.affine.history.back-to-page']()}
         </Button>
         <div className={styles.spacer} />
+        <div className={styles.namedVersionField}>
+          <input
+            className={styles.namedVersionInput}
+            value={versionLabel}
+            placeholder={t['com.affine.history.named-version.placeholder']()}
+            aria-label={t['com.affine.history.named-version.label']()}
+            onChange={event => setVersionLabel(event.target.value)}
+          />
+          <Button
+            variant="plain"
+            onClick={onSaveVersionLabel}
+            disabled={!activeVersion}
+          >
+            {t['com.affine.history.named-version.save']()}
+          </Button>
+        </div>
         <Button
           variant="primary"
           onClick={onConfirmRestore}

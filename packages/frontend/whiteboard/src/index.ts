@@ -54,3 +54,17 @@ export {
   WhiteboardReactToLitExtension,
   type WhiteboardReactToLit,
 } from './react-to-lit';
+export {
+  ATTENTION_TTL_MS,
+  POINTER_THROTTLE_MS,
+  WHITEBOARD_AWARENESS_KEY,
+  isRemoteEditing,
+  loadNamedVersions,
+  parseCommentAnchor,
+  parseCommentIds,
+  publishWidgetEditing,
+  remoteOwnsLiveEditor,
+  saveNamedVersionLabel,
+  type NamedVersionMap,
+  type WhiteboardCommentAnchor,
+} from './collab';

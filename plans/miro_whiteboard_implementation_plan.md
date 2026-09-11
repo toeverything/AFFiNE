@@ -676,6 +676,8 @@ props: {
 
 ### 6.6 Коллаборация: presence, follow, комментарии, версии
 
+**Статус.** Выполнено (поверх существующего awareness / comments / history; без форка gfx и без shared undo).
+
 Уже есть: awareness, remote selection, comments, doc history. Дыры относительно Miro:
 
 | Фича | Сейчас | План |
@@ -688,6 +690,16 @@ props: {
 | Undo per-user | Y.UndoManager в редакторе | Не делать shared undo; оставить per-client. Для sketch subdoc — свой UndoManager |
 | Named versions | histories | UI «Version restore» + snapshot label; не branch/merge как git |
 | Presence в виджете | нет | L2-виджет пишет `editingFlavour+blockId` в awareness, чтобы не открывать второй live-editor |
+
+- [x] Pointer xy + имя/цвет в awareness `wbCollab` (throttle 40ms). Курсоры selectionV2 остаются как были.
+- [x] Follow: `followClientId` + viewport peer; клик по аватару в `wb-presence-bar`.
+- [x] Attention / «посмотри сюда»: pulse Bound, TTL 5s.
+- [x] Якорь комментария `{ blockId, point?, rowId? }` в `DocCommentContent`; пины на gfx-блоках.
+- [x] Card comments: `commentId` / `commentIds` с row block `comments` map; кнопка на карточке уже зовёт `CommentProvider`.
+- [x] Undo per-client (без shared undo). Sketch subdoc — свой `Y.UndoManager` (§6.4 фаза 2).
+- [x] Named versions: подпись снимка + существующий Restore в history modal. Не git branch/merge.
+- [x] L2 presence: `editing { flavour, blockId }`; второй клиент не открывает live-editor того же блока.
+- [x] Флаг `enable_whiteboard_collab` (default false) + i18n EN/RU.
 
 **Оценка.** Presence+follow: 2 недели. Comments pins: 2 недели. Named versions UI: 1 неделя.
 
@@ -791,9 +803,9 @@ SES/compartments — исследование фазы 4, не блокер. Web
 
 ### Фаза 2 — Коллаборация как у Miro (4–6 недель)
 
-- Pointer presence, follow, «посмотри сюда».
-- Comment pins на gfx-блоках и карточках.
-- Named versions.
+- [x] Pointer presence, follow, «посмотри сюда».
+- [x] Comment pins на gfx-блоках и карточках.
+- [x] Named versions.
 - [x] Sketch phase 2: Yjs subdoc, два художника в одном блоке.
 - Kanban: чеклисты, WIP, фильтры в духе Trello.
 - Chart: scatter/funnel, http source, Vega-Lite mapping как «простой режим».

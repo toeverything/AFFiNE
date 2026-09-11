@@ -8,6 +8,10 @@ import { html, nothing } from 'lit';
 import { state } from 'lit/decorators.js';
 import type { Root } from 'react-dom/client';
 
+import {
+  publishWidgetEditing,
+  remoteOwnsLiveEditor,
+} from '../../collab/awareness';
 import { WHITEBOARD_LOD } from '../../const';
 import type { BoardSettingsPanelProps } from './board-settings-panel';
 import { databaseToSnapshot } from './column-snapshot';
@@ -87,6 +91,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
 
   private canUseLive(preview = false) {
     if (preview || !this.intersecting) return false;
+    if (remoteOwnsLiveEditor(this.std.store, this.model.id)) return false;
     return this.lod === 'l2';
   }
 
@@ -114,6 +119,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
     this._kanban = undefined;
     this._databaseId = undefined;
     liveKanbanBudget.release(this.model.id);
+    publishWidgetEditing(this.std.store, this.model.flavour, null);
   }
 
   private syncLive(preview = false) {
@@ -135,6 +141,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
         exempt: !!this.model.props.liveBudgetExempt,
       })
     ) {
+      publishWidgetEditing(this.std.store, this.model.flavour, this.model.id);
       if (!had) this.requestUpdate();
       return;
     }

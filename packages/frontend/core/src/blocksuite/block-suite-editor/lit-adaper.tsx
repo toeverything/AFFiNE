@@ -97,6 +97,9 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
   const enableWhiteboardL0Layer = useLiveData(
     featureFlagService.flags.enable_whiteboard_l0_layer.$
   );
+  const enableWhiteboardCollab = useLiveData(
+    featureFlagService.flags.enable_whiteboard_collab.$
+  );
 
   const enablePDFEmbedPreview = useLiveData(
     featureFlagService.flags.enable_pdf_embed_preview.$
@@ -145,6 +148,7 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
         enableBoard: enableBoardWidget,
         enablePerfHud: enableWhiteboardPerfHud,
         enableL0Layer: enableWhiteboardL0Layer,
+        enableCollab: enableWhiteboardCollab,
         reactToLit,
       }).value;
 
@@ -169,6 +173,7 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
     enableBoardWidget,
     enableWhiteboardPerfHud,
     enableWhiteboardL0Layer,
+    enableWhiteboardCollab,
     framework,
     isInPeekView,
     isCloud,

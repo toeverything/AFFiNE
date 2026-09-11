@@ -9,6 +9,7 @@ import { chartWidget } from './blocks/chart';
 import { helloWidget } from './blocks/hello';
 import { sketchWidget } from './blocks/sketch';
 import { effects } from './effects';
+import { WhiteboardCollabLayerExtension } from './collab/collab-layer';
 import { WhiteboardL0LayerExtension } from './perf/l0-layer';
 import { WhiteboardLayoutHandlerExtensions } from './perf/layout-handler';
 import {
@@ -27,6 +28,7 @@ const optionsSchema = z.object({
   enableBoard: z.boolean().optional(),
   enablePerfHud: z.boolean().optional(),
   enableL0Layer: z.boolean().optional(),
+  enableCollab: z.boolean().optional(),
   reactToLit: z
     .custom<WhiteboardReactToLit>()
     .optional(),
@@ -80,6 +82,9 @@ export class WhiteboardViewExtension extends ViewExtensionProvider<WhiteboardVie
       context.register(WhiteboardLayoutHandlerExtensions);
       if (options?.enableL0Layer) {
         context.register(WhiteboardL0LayerExtension);
+      }
+      if (options?.enableCollab) {
+        context.register(WhiteboardCollabLayerExtension);
       }
       if (options?.enablePerfHud && typeof document !== 'undefined') {
         queueMicrotask(() => {
