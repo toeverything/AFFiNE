@@ -1,6 +1,7 @@
 export type BoardSnapshotRow = {
   id: string;
   title: string;
+  tasks?: Array<{ text: string; done: boolean }>;
 };
 
 export type BoardSnapshotOption = {
@@ -22,9 +23,17 @@ export type BoardSnapshotView = {
   id: string;
   mode: string;
   groupBy?: {
+    type?: string;
     columnId?: string;
+    name?: string;
     hideEmpty?: boolean;
+    x?: string;
+    y?: string;
   };
+  groupByY?: { columnId?: string };
+  groupByAxes?: { x?: string; y?: string };
+  wipLimits?: Record<string, number>;
+  laneFilter?: string;
   groupProperties?: Array<{
     key: string;
     hide?: boolean;
@@ -164,11 +173,32 @@ export function readBoardColumns(
   return columns;
 }
 
+type SnapshotBlock = {
+  id: string;
+  flavour?: string;
+  props: {
+    text?: { toString?: () => string };
+    type?: string;
+    checked?: boolean;
+  };
+  children?: SnapshotBlock[];
+};
+
+function tasksFromRow(row: SnapshotBlock) {
+  return (row.children ?? [])
+    .filter(
+      child =>
+        child.flavour === 'affine:list' &&
+        (child.props.type === 'todo' || child.props.checked != null)
+    )
+    .map(child => ({
+      text: child.props.text?.toString?.() ?? '',
+      done: !!child.props.checked,
+    }));
+}
+
 export function databaseToSnapshot(database: {
-  children: Array<{
-    id: string;
-    props: { text?: { toString?: () => string } };
-  }>;
+  children: SnapshotBlock[];
   props: {
     columns: BoardSnapshotColumn[];
     cells: BoardSnapshotInput['cells'];
@@ -182,6 +212,7 @@ export function databaseToSnapshot(database: {
     rows: database.children.map(child => ({
       id: child.id,
       title: child.props.text?.toString?.() ?? '',
+      tasks: tasksFromRow(child),
     })),
   };
 }

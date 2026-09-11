@@ -39,6 +39,12 @@ function localizeColumnName(name: string): string {
       return I18n['com.affine.whiteboard.board.column.labels']();
     case 'Cover':
       return I18n['com.affine.whiteboard.board.column.cover']();
+    case 'Time spent':
+      return I18n['com.affine.whiteboard.board.column.time-spent']();
+    case 'Started':
+      return I18n['com.affine.whiteboard.board.column.started']();
+    case 'Files':
+      return I18n['com.affine.whiteboard.board.column.files']();
     default:
       return name;
   }
@@ -130,10 +136,23 @@ function selectOptions(
   return data.options ?? [];
 }
 
+function seedChecklist(store: Store, rowId: string) {
+  store.addBlock(
+    'affine:list',
+    {
+      type: 'todo',
+      text: new Text(I18n['com.affine.whiteboard.board.seed.checklist']()),
+      checked: false,
+    },
+    rowId
+  );
+}
+
 function seedCards(
   store: Store,
   datasource: DatabaseBlockDataSource,
-  titles: string[]
+  titles: string[],
+  withChecklist: boolean
 ) {
   const statusId = firstPropertyOfType(datasource, 'select');
   const options = statusId ? selectOptions(datasource, statusId) : [];
@@ -149,7 +168,39 @@ function seedCards(
     if (statusId && option) {
       datasource.cellValueChange(rowId, statusId, option.id);
     }
+    if (withChecklist) {
+      seedChecklist(store, rowId);
+    }
   });
+}
+
+function applyBoardSemantics(
+  datasource: DatabaseBlockDataSource,
+  viewId: string | undefined,
+  template: BoardTemplate
+) {
+  if (!viewId) return;
+  const statusId = firstPropertyOfType(datasource, 'select');
+  const memberId = firstPropertyOfType(datasource, 'member');
+  const inProgress = statusId
+    ? selectOptions(datasource, statusId).find(option => {
+        const value = option.value.toLowerCase();
+        return (
+          value === 'in progress' ||
+          value === I18n['com.affine.whiteboard.board.status.in-progress']().toLowerCase()
+        );
+      })
+    : undefined;
+  const enableLanes = template !== 'todo' && !!memberId;
+
+  datasource.viewDataUpdate(viewId, () => ({
+    groupByY: enableLanes && memberId ? { columnId: memberId } : undefined,
+    groupByAxes: {
+      x: statusId,
+      y: enableLanes ? memberId : undefined,
+    },
+    wipLimits: inProgress ? { [inProgress.id]: 3 } : {},
+  }));
 }
 
 function applyCoverColumn(
@@ -248,9 +299,82 @@ export function createBoardDatabase(
     viewId = undefined;
   }
   applyCoverColumn(datasource, viewId);
-  seedCards(store, datasource, seedTitles(options.template));
+  applyBoardSemantics(datasource, viewId, options.template);
+  seedCards(
+    store,
+    datasource,
+    seedTitles(options.template),
+    options.template !== 'todo'
+  );
 
   return { noteId, databaseId, viewId };
+}
+
+export function applyCardMove(
+  store: Store,
+  databaseId: string,
+  rowId: string,
+  patch: {
+    xPropertyId: string;
+    xValue: string;
+    yPropertyId?: string;
+    yValue?: string;
+    yIsMember?: boolean;
+  }
+) {
+  const database = asDatabase(store.getBlock(databaseId)?.model);
+  if (!database) return;
+  store.captureSync();
+  const datasource = new DatabaseBlockDataSource(database);
+  datasource.cellValueChange(rowId, patch.xPropertyId, patch.xValue || null);
+  if (patch.yPropertyId) {
+    datasource.cellValueChange(
+      rowId,
+      patch.yPropertyId,
+      patch.yIsMember ? (patch.yValue ? [patch.yValue] : []) : patch.yValue || null
+    );
+  }
+}
+
+export function applyViewMeta(
+  store: Store,
+  databaseId: string,
+  patch: {
+    groupByAxes?: { x?: string; y?: string };
+    wipLimits?: Record<string, number>;
+    laneFilter?: string;
+  }
+) {
+  const database = asDatabase(store.getBlock(databaseId)?.model);
+  if (!database) return;
+  const datasource = new DatabaseBlockDataSource(database);
+  const viewId = findKanbanViewId(datasource);
+  if (!viewId) return;
+  datasource.viewDataUpdate(viewId, old => ({
+    ...patch,
+    groupByY: patch.groupByAxes
+      ? patch.groupByAxes.y
+        ? { columnId: patch.groupByAxes.y }
+        : undefined
+      : (old as { groupByY?: { columnId?: string } }).groupByY,
+  }));
+}
+
+export function applyTimeLog(
+  store: Store,
+  databaseId: string,
+  rowId: string,
+  minutes: number
+) {
+  const database = asDatabase(store.getBlock(databaseId)?.model);
+  if (!database) return;
+  const datasource = new DatabaseBlockDataSource(database);
+  const timeId = firstPropertyOfType(datasource, 'number');
+  if (!timeId) return;
+  store.captureSync();
+  const current = Number(datasource.cellValueGet(rowId, timeId));
+  const next = (Number.isFinite(current) ? current : 0) + minutes;
+  datasource.cellValueChange(rowId, timeId, next);
 }
 
 export function findNearbyDatabaseId(

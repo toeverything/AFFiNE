@@ -36,4 +36,4 @@ export const chartWidget = registerGfxWidget({
 
 Флаг `enable_whiteboard_chart` по умолчанию выключен. Preview-scope рисует только `snapshotBlobId`, без ECharts.
 
-Канбан — `src/blocks/board` (`wb:board`): тонкая gfx-обёртка над `affine:database`. Данные живут в DocOnly note-hub того же документа. LOD: L0 — цветные колонки и счётчики, L1 — первые N карточек + «+N», L2 — полный kanban data-view (Atlaskit, peek-view). Живых досок не больше `maxLiveKanban = 2`. Флаг `enable_board_widget` по умолчанию выключен.
+Канбан — `src/blocks/board` (`wb:board`): тонкая gfx-обёртка над `affine:database`. Данные живут в DocOnly note-hub того же документа. LOD: L0 — цветные колонки и счётчики, L1 — первые N карточек + «+N», L2 — полный kanban data-view (Atlaskit, peek-view) или сетка дорожек (колонка × исполнитель) без dnd-kit. WIP, чеклисты, вложения и затраченное время — в cells/view meta. Живых досок не больше `maxLiveKanban = 2`. Флаг `enable_board_widget` по умолчанию выключен.

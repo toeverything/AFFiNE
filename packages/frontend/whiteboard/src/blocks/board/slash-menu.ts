@@ -68,6 +68,16 @@ const boardSlashMenuConfig: SlashMenuConfig = {
         action: () => insert('project'),
       },
       {
+        name: I18n['com.affine.whiteboard.board.template-swimlanes'](),
+        description:
+          I18n['com.affine.whiteboard.board.template-swimlanes-description'](),
+        icon: DatabaseKanbanViewIcon(),
+        searchAlias: ['swimlanes', 'дорожки', 'planka'],
+        group: '4_Content & Media@16.5',
+        when: () => enabled,
+        action: () => insert('swimlane'),
+      },
+      {
         name: I18n['com.affine.whiteboard.board.from-table'](),
         description:
           I18n['com.affine.whiteboard.board.from-table-description'](),

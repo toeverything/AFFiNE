@@ -1,16 +1,30 @@
 import { I18n } from '@affine/i18n';
+import { PeekViewProvider } from '@blocksuite/affine/components/peek';
 import type { DatabaseBlockModel } from '@blocksuite/affine/model';
+import { CommentProviderIdentifier } from '@blocksuite/affine/shared/services';
 import { BlockComponent, BlockSelection } from '@blocksuite/affine/std';
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
-import { html } from 'lit';
+import { html, nothing } from 'lit';
 import { state } from 'lit/decorators.js';
+import type { Root } from 'react-dom/client';
 
 import { WHITEBOARD_LOD } from '../../const';
-import { databaseToSnapshot, readBoardColumns } from './column-snapshot';
-import { resolveBoardDatabase } from './hub';
+import type { BoardSettingsPanelProps } from './board-settings-panel';
+import { databaseToSnapshot } from './column-snapshot';
+import { readBoardGrid } from './grid';
+import {
+  applyCardMove,
+  applyTimeLog,
+  applyViewMeta,
+  resolveBoardDatabase,
+} from './hub';
 import { createBoardKanbanLogic } from './kanban-host';
 import { getBoardLodLevel, liveKanbanBudget } from './live-budget';
-import { boardLodKicker, renderBoardLod } from './lod-view';
+import {
+  boardLodKicker,
+  renderBoardGrid,
+  renderBoardLod,
+} from './lod-view';
 import type { BoardBlockModel } from './model';
 import { boardBlockStyles } from './styles';
 import { windowRange } from './virtualize';
@@ -33,6 +47,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
   private _kanban?: ReturnType<typeof createBoardKanbanLogic>;
   private _databaseId?: string;
   private _columnViewport = 720;
+  private _panelRoot: Root | null = null;
 
   protected get databaseModel() {
     const model = resolveBoardDatabase(
@@ -60,9 +75,19 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
     return getBoardLodLevel(this.zoom, this.selected, this.hovered);
   }
 
+  private get showSettings() {
+    return this.selected;
+  }
+
   private canUseLive(preview = false) {
     if (preview || !this.intersecting) return false;
     return this.lod === 'l2';
+  }
+
+  private boardGrid() {
+    const database = this.databaseModel;
+    if (!database) return;
+    return readBoardGrid(databaseToSnapshot(database));
   }
 
   private kanban() {
@@ -112,20 +137,119 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
     return lod === 'l2' ? ('l1' as const) : lod;
   }
 
-  private columnPreviews() {
+  private handlers() {
     const database = this.databaseModel;
-    if (!database) return [];
-    return readBoardColumns(databaseToSnapshot(database));
+    const grid = this.boardGrid();
+    if (!database || !grid) return;
+    return {
+      interactive: true,
+      onMove: (rowId: string, x: string, y: string) => {
+        if (!grid.axes.x) return;
+        const yColumn = database.props.columns.find(
+          column => column.id === grid.axes.y
+        );
+        applyCardMove(this.model.store, database.id, rowId, {
+          xPropertyId: grid.axes.x,
+          xValue: x,
+          yPropertyId: grid.axes.y,
+          yValue: y,
+          yIsMember: yColumn?.type === 'member',
+        });
+        this.requestUpdate();
+      },
+      onOpen: (rowId: string) => {
+        void this.std.getOptional(PeekViewProvider)?.peek({
+          docId: database.store.id,
+          databaseId: database.id,
+          databaseDocId: database.store.id,
+          databaseRowId: rowId,
+          target: this,
+        });
+      },
+      onComment: (rowId: string) => {
+        this.std.getOptional(CommentProviderIdentifier)?.addComment([
+          new BlockSelection({ blockId: rowId }),
+        ]);
+      },
+      onLogTime: (rowId: string) => {
+        applyTimeLog(this.model.store, database.id, rowId, 15);
+        this.requestUpdate();
+      },
+    };
+  }
+
+  private settingsProps(): BoardSettingsPanelProps | undefined {
+    const database = this.databaseModel;
+    const grid = this.boardGrid();
+    if (!database || !grid) return;
+    const laneProperties = database.props.columns
+      .filter(
+        column =>
+          column.id !== grid.axes.x &&
+          (column.type === 'member' || column.type === 'select')
+      )
+      .map(column => ({ id: column.id, name: column.name }));
+    return {
+      axes: grid.axes,
+      laneProperties,
+      columns: grid.columns,
+      lanes: grid.lanes,
+      wipLimits: grid.wipLimits,
+      laneFilter: (
+        database.props.views.find(view => view.mode === 'kanban') as
+          | { laneFilter?: string }
+          | undefined
+      )?.laneFilter,
+      onAxesChange: axes => {
+        applyViewMeta(this.model.store, database.id, { groupByAxes: axes });
+        this.requestUpdate();
+      },
+      onWipChange: wipLimits => {
+        applyViewMeta(this.model.store, database.id, { wipLimits });
+        this.requestUpdate();
+      },
+      onLaneFilterChange: laneFilter => {
+        applyViewMeta(this.model.store, database.id, { laneFilter });
+        this.requestUpdate();
+      },
+    };
+  }
+
+  private async syncSettingsPanel() {
+    const host = this.renderRoot.querySelector('.wb-board-settings-host');
+    const props = this.settingsProps();
+    if (!this.showSettings || !host || !props) {
+      this._panelRoot?.unmount();
+      this._panelRoot = null;
+      return;
+    }
+    const [{ createElement }, { BoardSettingsPanel }, { createRoot }] =
+      await Promise.all([
+        import('react'),
+        import('./board-settings-panel'),
+        import('react-dom/client'),
+      ]);
+    if (!this._panelRoot) {
+      this._panelRoot = createRoot(host);
+    }
+    this._panelRoot.render(createElement(BoardSettingsPanel, props));
+  }
+
+  protected renderSettings() {
+    if (!this.showSettings) return nothing;
+    return html`<div class="wb-board-settings-host"></div>`;
   }
 
   protected renderFrame(preview = false) {
     const snapshot = this.model.props.snapshotBlobId$.value;
     const level = this.displayLevel(preview);
     const live = level === 'l2';
-    const kanban = live ? this.kanban() : undefined;
-    const columns = this.columnPreviews();
+    const grid = this.boardGrid();
+    const useSwimlanes = !!grid?.axes.y;
+    const kanban = live && !useSwimlanes ? this.kanban() : undefined;
+    const columns = grid?.columns ?? [];
     const columnWindow =
-      columns.length > 6
+      !useSwimlanes && columns.length > 6
         ? windowRange(
             columns.length,
             this.columnScroll,
@@ -133,6 +257,10 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
             WHITEBOARD_LOD.kanbanColumnEstimatePx
           )
         : undefined;
+    const handlers = live ? this.handlers() : undefined;
+    const kanbanView = this.databaseModel?.props.views.find(
+      view => view.mode === 'kanban'
+    );
 
     return html`
       <div
@@ -162,21 +290,31 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
         >
           ${live && kanban
             ? kanban.render()
-            : columns.length
-              ? renderBoardLod({
-                  columns,
-                  level: level === 'l2' ? 'l1' : level,
-                  columnWindow,
+            : grid && (useSwimlanes || live)
+              ? renderBoardGrid({
+                  grid,
+                  level,
+                  laneFilter: (
+                    kanbanView as { laneFilter?: string } | undefined
+                  )?.laneFilter,
+                  handlers,
                 })
-              : snapshot
-                ? html`<img
-                    class="wb-board__snapshot"
-                    src=${snapshot}
-                    alt=${this.titleText}
-                  />`
-                : html`<div class="wb-board__placeholder">
-                    ${I18n['com.affine.whiteboard.board.empty']()}
-                  </div>`}
+              : columns.length
+                ? renderBoardLod({
+                    columns,
+                    level: level === 'l2' ? 'l1' : level,
+                    columnWindow,
+                    wipLimits: grid?.wipLimits,
+                  })
+                : snapshot
+                  ? html`<img
+                      class="wb-board__snapshot"
+                      src=${snapshot}
+                      alt=${this.titleText}
+                    />`
+                  : html`<div class="wb-board__placeholder">
+                      ${I18n['com.affine.whiteboard.board.empty']()}
+                    </div>`}
         </div>
       </div>
     `;
@@ -200,6 +338,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
         gfx.selection.slots.updated.subscribe(() => {
           this.selected = gfx.selection.has(this.model.id);
           this.syncLive();
+          void this.syncSettingsPanel();
         })
       );
       this.disposables.add(
@@ -215,6 +354,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
             .filter(BlockSelection)
             .some(selection => selection.blockId === this.model.id);
           this.syncLive();
+          void this.syncSettingsPanel();
         })
       );
     }
@@ -235,15 +375,18 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
 
   override updated() {
     this.syncLive();
+    void this.syncSettingsPanel();
   }
 
   override disconnectedCallback() {
     this.disposeLive();
+    this._panelRoot?.unmount();
+    this._panelRoot = null;
     super.disconnectedCallback();
   }
 
   override renderBlock() {
-    return this.renderFrame(false);
+    return html`${this.renderFrame(false)}${this.renderSettings()}`;
   }
 }
 

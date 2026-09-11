@@ -6946,6 +6946,25 @@ export function useAFFiNEI18N(): {
     }): string;
     ["com.affine.whiteboard.board.lod-l0"](): string;
     ["com.affine.whiteboard.board.lod-l1"](): string;
+    ["com.affine.whiteboard.board.column.time-spent"](): string;
+    ["com.affine.whiteboard.board.column.started"](): string;
+    ["com.affine.whiteboard.board.column.files"](): string;
+    ["com.affine.whiteboard.board.seed.checklist"](): string;
+    ["com.affine.whiteboard.board.template-swimlanes"](): string;
+    ["com.affine.whiteboard.board.template-swimlanes-description"](): string;
+    ["com.affine.whiteboard.board.settings"](): string;
+    ["com.affine.whiteboard.board.swimlanes"](): string;
+    ["com.affine.whiteboard.board.swimlane-none"](): string;
+    ["com.affine.whiteboard.board.unassigned"](): string;
+    ["com.affine.whiteboard.board.filter-lane"](): string;
+    ["com.affine.whiteboard.board.filter-all"](): string;
+    ["com.affine.whiteboard.board.settings-filters"](): string;
+    ["com.affine.whiteboard.board.wip-limit"](): string;
+    ["com.affine.whiteboard.board.checklist"](): string;
+    ["com.affine.whiteboard.board.time-spent"](): string;
+    ["com.affine.whiteboard.board.attachments"](): string;
+    ["com.affine.whiteboard.board.comment"](): string;
+    ["com.affine.whiteboard.board.log-time"](): string;
     /**
       * `Color Picker`
       */

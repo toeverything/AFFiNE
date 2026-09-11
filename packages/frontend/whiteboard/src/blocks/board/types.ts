@@ -1,4 +1,4 @@
-export const BOARD_TEMPLATES = ['todo', 'project'] as const;
+export const BOARD_TEMPLATES = ['todo', 'project', 'swimlane'] as const;
 
 export type BoardTemplate = (typeof BOARD_TEMPLATES)[number];
 
@@ -44,12 +44,17 @@ export const PROJECT_COLUMNS: BoardColumnSeed[] = [
     ],
   },
   { type: 'image', name: 'Cover' },
+  { type: 'number', name: 'Time spent' },
+  { type: 'date', name: 'Started' },
+  { type: 'attachment', name: 'Files' },
 ];
 
 export function columnsForTemplate(template: BoardTemplate): BoardColumnSeed[] {
-  return template === 'project' ? PROJECT_COLUMNS : TODO_COLUMNS;
+  return template === 'todo' ? TODO_COLUMNS : PROJECT_COLUMNS;
 }
 
 export function isBoardTemplate(value: unknown): value is BoardTemplate {
-  return value === 'todo' || value === 'project';
+  return (
+    value === 'todo' || value === 'project' || value === 'swimlane'
+  );
 }

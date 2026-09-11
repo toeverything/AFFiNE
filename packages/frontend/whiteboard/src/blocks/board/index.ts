@@ -28,3 +28,9 @@ export { columnsForTemplate } from './types';
 export { getBoardLodLevel, liveKanbanBudget } from './live-budget';
 export { readBoardColumns } from './column-snapshot';
 export { sliceCards, windowRange } from './virtualize';
+export { readBoardGrid } from './grid';
+export {
+  moveCardCells,
+  readGroupByAxes,
+  isWipExceeded,
+} from './semantics';

@@ -573,19 +573,23 @@ parent: ['affine:surface', 'affine:note']
 
 #### 6.3.3 Planka-семантика и swimlanes
 
+**Статус.** Выполнено.
+
 Добавить в data-view / board-widget, не отдельным сервером:
 
 | Фича | Реализация |
 |---|---|
-| Чеклист | дочерние paragraph/list в карточке **или** колонка `tasks: {text, done}[]` в cells |
-| WIP limit на колонку | поле в view meta, подсветка превышения |
-| Swimlanes | второй group-by (ось Y). Модель: `groupBy: { x: status, y: assignee }`. DnD = смена двух свойств |
-| Stopwatch / time spent | number/date columns + UI |
-| Card comments | существующий comment-модуль, якорь = blockId строки |
-| Attachments | file property |
-| Filters / members | уже есть в data-view, довести UX до Trello |
+| [x] Чеклист | дочерние `affine:list` (todo) в карточке **и** `tasks: {text, done}[]` в cells |
+| [x] WIP limit на колонку | `wipLimits` в view meta, подсветка превышения |
+| [x] Swimlanes | второй group-by (ось Y). Модель: `groupByAxes: { x: status, y: assignee }`. DnD клетки = смена двух свойств (HTML5, не dnd-kit) |
+| [x] Stopwatch / time spent | number/date columns + «+15м» |
+| [x] Card comments | существующий comment-модуль, якорь = blockId строки |
+| [x] Attachments | property `attachment` |
+| [x] Filters / members | data-view toolbar + фильтр дорожки / ось member |
 
 **Критерий swimlanes.** Карточка принадлежит клетке (колонка × дорожка); два пользователя могут одновременно тащить разные карточки; конфликт одной карточки = LWW порядка + CRDT свойств.
+
+- [x] Unit-тесты сетки, WIP, чеклиста и move двух свойств.
 
 **Оценка.** 3–4 недели после MVP.
 

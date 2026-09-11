@@ -26,7 +26,7 @@ export class BoardEdgelessBlockComponent extends toGfxBlockComponent(
           transform: `scale(${scale})`,
         })}
       >
-        ${this.renderFrame(false)}
+        ${this.renderFrame(false)} ${this.renderSettings()}
       </div>
     `;
   }
