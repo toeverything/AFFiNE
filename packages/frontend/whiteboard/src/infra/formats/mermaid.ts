@@ -25,7 +25,9 @@ export function parseMermaidPie(source: string): ChartInlineTable | undefined {
   return { columns: ['label', 'value'], rows };
 }
 
-export function parseMermaidXyChart(source: string): ChartInlineTable | undefined {
+export function parseMermaidXyChart(
+  source: string
+): ChartInlineTable | undefined {
   const xMatch = source.match(/x-axis[^\n[]*\[([^\]]+)\]/i);
   const barMatch = source.match(/\b(?:bar|line)\s+\[([^\]]+)\]/i);
   if (!xMatch || !barMatch) return;
@@ -38,9 +40,12 @@ export function parseMermaidXyChart(source: string): ChartInlineTable | undefine
   };
 }
 
-export function parseMermaidNodes(source: string): ChartInlineTable | undefined {
+export function parseMermaidNodes(
+  source: string
+): ChartInlineTable | undefined {
   const counts = new Map<string, number>();
-  const re = /(?:^|\s)(?:[A-Za-z][\w]*)(?:\[["']([^"'\]]+)["']\]|\(([^)]+)\)|\[([^\]]+)\])/g;
+  const re =
+    /(?:^|\s)(?:[A-Za-z][\w]*)(?:\[["']([^"'\]]+)["']\]|\(([^)]+)\)|\[([^\]]+)\])/g;
   for (const match of source.matchAll(re)) {
     const label = unquote(match[1] || match[2] || match[3] || '');
     if (!label) continue;
@@ -53,7 +58,9 @@ export function parseMermaidNodes(source: string): ChartInlineTable | undefined 
   };
 }
 
-export function mermaidToInlineTable(source: string): ChartInlineTable | undefined {
+export function mermaidToInlineTable(
+  source: string
+): ChartInlineTable | undefined {
   const text = source.trim();
   if (!text) return;
   if (/^\s*pie\b/im.test(text)) return parseMermaidPie(text);

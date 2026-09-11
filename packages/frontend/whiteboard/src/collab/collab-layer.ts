@@ -1,4 +1,5 @@
 import { I18n } from '@affine/i18n';
+import { disposeMember } from '@blocksuite/affine/global/disposable';
 import {
   CommentProviderIdentifier,
   FeatureFlagService,
@@ -7,22 +8,24 @@ import { GfxExtension } from '@blocksuite/affine/std/gfx';
 
 import { parseXywhRect } from '../perf/l0-scene';
 import { whiteboardTelemetry } from '../perf/telemetry';
+import { WhiteboardCommentAnchorsIdentifier } from './anchor-provider';
 import {
   getDocAwareness,
   patchCollabAwareness,
   readLocalPayload,
 } from './awareness';
-import { pinsForBlock, type CommentPin } from './comment-anchor';
+import { type CommentPin, pinsForBlock } from './comment-anchor';
 import { WhiteboardPresenceBar } from './presence-bar';
 import {
   ATTENTION_TTL_MS,
-  POINTER_THROTTLE_MS,
-  VIEWPORT_THROTTLE_MS,
+  canFollow,
   followViewport,
   isAttentionActive,
   makeAttention,
+  POINTER_THROTTLE_MS,
   readPeers,
   shouldPublish,
+  VIEWPORT_THROTTLE_MS,
   type WhiteboardPeer,
 } from './protocol';
 
@@ -75,6 +78,17 @@ export class WhiteboardCollabLayerExtension extends GfxExtension {
       this.publishViewport();
       this.draw();
     });
+    const comments = this.std.getOptional(CommentProviderIdentifier);
+    const redraw = () => this.draw();
+    const commentSubs = comments
+      ? [
+          comments.onCommentAdded(redraw),
+          comments.onCommentResolved(redraw),
+          comments.onCommentDeleted(redraw),
+        ]
+      : [];
+    const anchors = this.std.getOptional(WhiteboardCommentAnchorsIdentifier);
+    const stopAnchors = anchors?.subscribe(redraw);
     const awareness = this.awareness();
     const onChange = () => this.onAwareness();
     awareness?.on?.('change', onChange);
@@ -83,14 +97,17 @@ export class WhiteboardCollabLayerExtension extends GfxExtension {
       off?: (event: string, fn: (update: Uint8Array) => void) => void;
     };
     const onDocUpdate = (update: Uint8Array) => {
-      if (update?.byteLength) whiteboardTelemetry.noteWsPayload(update.byteLength);
+      if (update?.byteLength)
+        whiteboardTelemetry.noteWsPayload(update.byteLength);
     };
     doc.on?.('update', onDocUpdate);
     this.unsubs.push(
       () => viewport.unsubscribe(),
       () => awareness?.off?.('change', onChange),
       () => element.removeEventListener('pointermove', this.onPointerMove),
-      () => doc.off?.('update', onDocUpdate)
+      () => doc.off?.('update', onDocUpdate),
+      () => commentSubs.forEach(disposeMember),
+      () => stopAnchors?.()
     );
     this.publishViewport();
     this.onAwareness();
@@ -102,10 +119,13 @@ export class WhiteboardCollabLayerExtension extends GfxExtension {
     this.bar?.remove();
     this.bar = null;
     this.overlay.remove();
+    this.following = null;
     patchCollabAwareness(this.awareness(), {
       pointer: undefined,
       followClientId: null,
       attention: undefined,
+      viewport: undefined,
+      editing: undefined,
     });
   }
 
@@ -120,18 +140,31 @@ export class WhiteboardCollabLayerExtension extends GfxExtension {
         this.std.store.get(FeatureFlagService);
       return !!service.getFlag('enable_whiteboard_collab');
     } catch {
-      return true;
+      // Flag service unavailable: stay off, matching the flag's default.
+      return false;
     }
   }
 
   private setFollow(clientId: number | null) {
+    const awareness = this.awareness();
+    const states = awareness?.getStates?.();
+    if (
+      clientId != null &&
+      states &&
+      !canFollow(states as never, clientId, awareness?.clientID)
+    ) {
+      return;
+    }
     this.following = clientId;
-    patchCollabAwareness(this.awareness(), { followClientId: clientId });
+    patchCollabAwareness(awareness, { followClientId: clientId });
     this.applyFollow();
     this.syncBar();
   }
 
   private publishViewport() {
+    // A follower's camera mirrors the leader; publishing it would feed the
+    // leader's own position back to them.
+    if (this.following != null) return;
     const now = Date.now();
     if (!shouldPublish(this.lastViewport, now, VIEWPORT_THROTTLE_MS)) return;
     this.lastViewport = now;
@@ -172,10 +205,7 @@ export class WhiteboardCollabLayerExtension extends GfxExtension {
   private applyFollow() {
     const states = this.awareness()?.getStates?.();
     if (!states || this.following == null) return;
-    const viewport = followViewport(
-      states as never,
-      this.following
-    );
+    const viewport = followViewport(states as never, this.following);
     if (!viewport) return;
     this.gfx.viewport.setViewport(viewport.zoom, [viewport.x, viewport.y]);
   }
@@ -203,15 +233,22 @@ export class WhiteboardCollabLayerExtension extends GfxExtension {
   }
 
   private commentPins(): CommentPin[] {
+    const anchors = this.std.getOptional(WhiteboardCommentAnchorsIdentifier);
+    const resolve = anchors ? (id: string) => anchors.get(id) : undefined;
     const pins: CommentPin[] = [];
     for (const model of this.gfx.layer.blocks) {
       const rect = parseXywhRect(model.xywh);
       if (!rect) continue;
-      const comments = (
-        model as { comments?: Record<string, boolean>; props?: { comments?: Record<string, boolean> } }
-      ).comments ?? (model as { props?: { comments?: Record<string, boolean> } }).props
-        ?.comments;
-      pins.push(...pinsForBlock(model.id, rect, comments));
+      const comments =
+        (
+          model as {
+            comments?: Record<string, boolean>;
+            props?: { comments?: Record<string, boolean> };
+          }
+        ).comments ??
+        (model as { props?: { comments?: Record<string, boolean> } }).props
+          ?.comments;
+      pins.push(...pinsForBlock(model.id, rect, comments, resolve));
     }
     return pins;
   }
@@ -236,6 +273,22 @@ export class WhiteboardCollabLayerExtension extends GfxExtension {
 
     const pins = this.commentPins();
     this.overlay.replaceChildren();
+    for (const peer of peers) {
+      if (!peer.pointer) continue;
+      const tip = toView(peer.pointer.x, peer.pointer.y);
+      const cursor = document.createElement('div');
+      cursor.className = 'wb-collab-cursor';
+      cursor.style.cssText = `position:absolute;left:${tip.x}px;top:${tip.y}px;pointer-events:none;transform:translate(-2px,-2px);`;
+      const dot = document.createElement('span');
+      dot.style.cssText = `display:block;width:10px;height:10px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${peer.color};box-shadow:0 1px 3px rgba(0,0,0,.35);`;
+      const name = document.createElement('span');
+      name.className = 'wb-collab-cursor-name';
+      // textContent, never innerHTML: peer names are remote input.
+      name.textContent = peer.name;
+      name.style.cssText = `position:absolute;left:12px;top:10px;padding:1px 6px;border-radius:6px;font-size:11px;line-height:16px;white-space:nowrap;color:#fff;background:${peer.color};`;
+      cursor.append(dot, name);
+      this.overlay.append(cursor);
+    }
     for (const pulse of pulses) {
       if (!pulse) continue;
       const topLeft = toView(pulse.x, pulse.y);

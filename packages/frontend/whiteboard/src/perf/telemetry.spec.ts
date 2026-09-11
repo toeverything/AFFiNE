@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { WhiteboardTelemetry } from './telemetry';
+import {
+  startRttProbe,
+  WhiteboardTelemetry,
+  whiteboardTelemetry,
+} from './telemetry';
 
 describe('whiteboard telemetry', () => {
   it('computes live_widget_count and cull_ratio', () => {
@@ -37,6 +41,18 @@ describe('whiteboard telemetry', () => {
     expect(snap.wsPayloadBytes).toBe(2048);
     telemetry.noteSnapshotWritten(Date.now() - 2000);
     expect(telemetry.snapshot().snapshotAgeS).toBeGreaterThanOrEqual(1);
+  });
+
+  it('reports ws_rtt from the probe sampler and stops with it', () => {
+    whiteboardTelemetry.reset();
+    let sample = 24;
+    const stop = startRttProbe(() => sample, 10_000);
+    expect(whiteboardTelemetry.snapshot().wsRtt).toBe(24);
+    stop();
+    sample = 90;
+    expect(whiteboardTelemetry.snapshot().wsRtt).toBe(24);
+    whiteboardTelemetry.reset();
+    expect(whiteboardTelemetry.snapshot().wsRtt).toBe(0);
   });
 
   it('records L0 sprite count and backend while the layer is active', () => {

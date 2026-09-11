@@ -1,11 +1,11 @@
 import { I18n } from '@affine/i18n';
 import { FeatureFlagService } from '@blocksuite/affine/shared/services';
+import { Boxed } from '@blocksuite/affine/store';
 import {
   type SlashMenuConfig,
   SlashMenuConfigExtension,
 } from '@blocksuite/affine/widgets/slash-menu';
 import { PresentationIcon } from '@blocksuite/icons/lit';
-import { Boxed } from '@blocksuite/affine/store';
 
 import { CHART_WIDGET_SIZE, WHITEBOARD_FLAVOURS } from '../../const';
 import { insertGfxWidget } from '../../insert-widget';

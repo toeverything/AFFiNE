@@ -1,6 +1,23 @@
+import type { DataViewDataType } from '@blocksuite/affine/data-view';
+
 export const BOARD_TEMPLATES = ['todo', 'project', 'swimlane'] as const;
 
 export type BoardTemplate = (typeof BOARD_TEMPLATES)[number];
+
+/**
+ * Whiteboard-owned additions to the kanban view data. `viewDataUpdate` is
+ * generic over the view shape, so these can be written without casting.
+ */
+export type BoardViewData = DataViewDataType & {
+  /** Second group-by axis (swimlanes); absent means a plain single-axis board. */
+  groupByY?: { columnId: string };
+  groupByAxes?: { x?: string; y?: string };
+  /** Column option id -> max cards before the WIP limit is highlighted. */
+  wipLimits?: Record<string, number>;
+  /** Restricts the board to a single swimlane. */
+  laneFilter?: string;
+  header?: Record<string, unknown> & { coverColumn?: string };
+};
 
 export type BoardStatusOption = {
   value: string;
@@ -54,7 +71,5 @@ export function columnsForTemplate(template: BoardTemplate): BoardColumnSeed[] {
 }
 
 export function isBoardTemplate(value: unknown): value is BoardTemplate {
-  return (
-    value === 'todo' || value === 'project' || value === 'swimlane'
-  );
+  return value === 'todo' || value === 'project' || value === 'swimlane';
 }

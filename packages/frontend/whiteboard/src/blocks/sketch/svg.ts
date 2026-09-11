@@ -53,7 +53,10 @@ function elementToSvg(element: SketchElement): string {
   }
 }
 
-export function sceneToSvg(scene: SketchScene, size = { width: 560, height: 360 }) {
+export function sceneToSvg(
+  scene: SketchScene,
+  size = { width: 560, height: 360 }
+) {
   const background = scene.appState.viewBackgroundColor || '#ffffff';
   const body = scene.elements.map(elementToSvg).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="0 0 ${size.width} ${size.height}"><defs><marker id="wb-sketch-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1e1e1e"/></marker></defs><rect width="100%" height="100%" fill="${background}"/>${body}</svg>`;

@@ -8,6 +8,7 @@ import {
 } from './column-snapshot';
 import {
   attachmentCount,
+  BOARD_CHECKLIST_COLUMN,
   type BoardGroupByAxes,
   type BoardTask,
   type BoardWipLimits,
@@ -108,7 +109,8 @@ function enrichCard(
         cellValue(
           input.cells,
           row.id,
-          input.columns.find(column => column.name === 'Checklist')?.id ?? ''
+          input.columns.find(column => column.name === BOARD_CHECKLIST_COLUMN)
+            ?.id ?? ''
         )
       );
   const spent = timeColumn
@@ -138,9 +140,7 @@ export function readBoardGrid(input: BoardSnapshotInput): BoardGrid {
       const cards = column.cards
         .filter(card => {
           if (!axes.y) return lane.id === UNGROUPED;
-          return (
-            laneValue(cellValue(input.cells, card.id, axes.y)) === lane.id
-          );
+          return laneValue(cellValue(input.cells, card.id, axes.y)) === lane.id;
         })
         .map(card => enrichCard(card, input));
       cells.push({ x: column.id, y: lane.id, cards });

@@ -52,7 +52,7 @@ export function publishWidgetEditing(
 export function remoteOwnsLiveEditor(store: unknown, blockId: string) {
   const awareness = getDocAwareness(store);
   const states = awareness?.getStates?.();
-  if (!states) return false;
+  if (!awareness || !states) return false;
   for (const [clientId, state] of states) {
     if (clientId === awareness.clientID) continue;
     const payload = (

@@ -8,9 +8,8 @@ export function generateKeyBetween(a?: string, b?: string): string {
   if (a != null && b != null && a >= b) {
     throw new Error('generateKeyBetween: a >= b');
   }
-  if (a == null && b == null) return 'a0';
+  if (a == null) return b == null ? 'a0' : midpoint('', b);
   if (b == null) return incrementKey(a);
-  if (a == null) return midpoint('', b);
   return midpoint(a, b);
 }
 

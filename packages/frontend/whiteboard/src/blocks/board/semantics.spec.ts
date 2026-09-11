@@ -5,9 +5,11 @@ import {
   attachmentCount,
   checklistProgress,
   formatMinutes,
+  isChecklistItem,
   isWipExceeded,
   laneValue,
   moveCardCells,
+  nextChecklistCell,
   parseTasks,
   readGroupByAxes,
   toggleTask,
@@ -23,6 +25,36 @@ describe('board planka semantics', () => {
     );
     expect(checklistProgress(tasks)).toEqual({ done: 1, total: 2 });
     expect(toggleTask(tasks, 0)[0]?.done).toBe(true);
+  });
+
+  it('serializes the checklist cell back after a toggle', () => {
+    const cell = JSON.stringify([
+      { text: 'A', done: false },
+      { text: 'B', done: true },
+    ]);
+    expect(parseTasks(nextChecklistCell(cell, 1))).toEqual([
+      { text: 'A', done: false },
+      { text: 'B', done: false },
+    ]);
+    expect(nextChecklistCell(cell, 5)).toBeUndefined();
+    expect(nextChecklistCell(undefined, 0)).toBeUndefined();
+  });
+
+  it('treats affine:list todo children as checklist items', () => {
+    expect(isChecklistItem({ flavour: 'affine:list', type: 'todo' })).toBe(
+      true
+    );
+    expect(
+      isChecklistItem({
+        flavour: 'affine:list',
+        type: 'bulleted',
+        checked: false,
+      })
+    ).toBe(true);
+    expect(isChecklistItem({ flavour: 'affine:list', type: 'numbered' })).toBe(
+      false
+    );
+    expect(isChecklistItem({ flavour: 'affine:paragraph' })).toBe(false);
   });
 
   it('flags WIP overflow only when a positive limit is exceeded', () => {
@@ -55,8 +87,12 @@ describe('board planka semantics', () => {
         yIsMember: true,
       }
     );
-    expect((next.r1?.status as { value?: unknown }).value).toBe('done');
-    expect((next.r1?.member as { value?: unknown }).value).toEqual(['u2']);
+    expect((next.r1?.status as { value?: unknown } | undefined)?.value).toBe(
+      'done'
+    );
+    expect((next.r1?.member as { value?: unknown } | undefined)?.value).toEqual(
+      ['u2']
+    );
   });
 
   it('formats time spent and accumulates a running stopwatch', () => {

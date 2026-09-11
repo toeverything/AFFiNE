@@ -84,11 +84,17 @@ export type DatabaseColumnMeta = {
   type?: string;
 };
 
+export type DatabaseViewMeta = {
+  id: string;
+  name: string;
+};
+
 export type ChartDatabaseOption = {
   id: string;
   title: string;
   docId: string;
   columns: DatabaseColumnMeta[];
+  views: DatabaseViewMeta[];
 };
 
 export type DatabaseRowSnapshot = {

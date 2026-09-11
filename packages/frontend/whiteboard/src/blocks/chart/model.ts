@@ -5,7 +5,7 @@ import {
 import {
   BlockModel,
   BlockSchemaExtension,
-  Boxed,
+  type Boxed,
   defineBlockSchema,
   type Text,
 } from '@blocksuite/affine/store';

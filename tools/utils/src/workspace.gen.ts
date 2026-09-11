@@ -1306,6 +1306,7 @@ export const PackageList = [
       'packages/common/reader',
       'packages/frontend/templates',
       'packages/frontend/track',
+      'packages/frontend/whiteboard',
       'blocksuite/affine/all',
       'blocksuite/affine/blocks/root',
       'blocksuite/affine/components',
@@ -1350,6 +1351,11 @@ export const PackageList = [
     location: 'packages/frontend/track',
     name: '@affine/track',
     workspaceDependencies: ['packages/common/debug'],
+  },
+  {
+    location: 'packages/frontend/whiteboard',
+    name: '@affine/whiteboard',
+    workspaceDependencies: ['packages/frontend/i18n', 'blocksuite/affine/all'],
   },
   {
     location: 'tests/affine-cloud',
@@ -1560,6 +1566,7 @@ export type PackageName =
   | '@affine/routes'
   | '@affine/templates'
   | '@affine/track'
+  | '@affine/whiteboard'
   | '@affine-test/affine-cloud'
   | '@affine-test/affine-cloud-copilot'
   | '@affine-test/affine-desktop'

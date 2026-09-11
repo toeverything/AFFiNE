@@ -14,6 +14,8 @@ export class SnapshotCache {
   readonly maxBytes: number;
 
   private readonly entries = new Map<string, CacheEntry>();
+  /** Deduplicates concurrent `resolve` calls so one blob yields one object URL. */
+  private readonly inFlight = new Map<string, Promise<string | undefined>>();
   private bytes = 0;
 
   constructor(maxBytes = DEFAULT_MAX_BYTES) {
@@ -63,7 +65,8 @@ export class SnapshotCache {
   }
 
   clear() {
-    for (const id of [...this.entries.keys()]) this.delete(id);
+    // Deleting the current key mid-iteration is well-defined for Map.
+    for (const id of this.entries.keys()) this.delete(id);
   }
 
   async resolve(
@@ -72,11 +75,25 @@ export class SnapshotCache {
   ): Promise<string | undefined> {
     const hit = this.peek(id);
     if (hit) return hit;
-    const blob = await load();
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    this.set(id, url, blob.size);
-    return this.peek(id) ?? url;
+
+    const pending = this.inFlight.get(id);
+    if (pending) return pending;
+
+    const request = (async () => {
+      const blob = await load();
+      if (!blob) return undefined;
+      // A parallel caller may have populated the entry while we awaited.
+      const raced = this.peek(id);
+      if (raced) return raced;
+      const url = URL.createObjectURL(blob);
+      this.set(id, url, blob.size);
+      return this.peek(id) ?? url;
+    })().finally(() => {
+      this.inFlight.delete(id);
+    });
+
+    this.inFlight.set(id, request);
+    return request;
   }
 
   private evict() {

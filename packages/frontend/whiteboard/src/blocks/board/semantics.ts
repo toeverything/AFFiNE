@@ -10,6 +10,9 @@ export type BoardGroupByAxes = {
 
 export type BoardWipLimits = Record<string, number>;
 
+/** Cell fallback for cards that have no child `affine:list` checklist. */
+export const BOARD_CHECKLIST_COLUMN = 'Checklist';
+
 export type BoardViewMeta = {
   groupBy?: { columnId?: string; x?: string; y?: string };
   groupByY?: { columnId?: string };
@@ -26,7 +29,8 @@ export function parseTasks(value: unknown): BoardTask[] {
           !!item && typeof item === 'object'
       )
       .map(item => ({
-        text: typeof item.text === 'string' ? item.text : String(item.text ?? ''),
+        text:
+          typeof item.text === 'string' ? item.text : String(item.text ?? ''),
         done: !!item.done,
       }));
   }
@@ -48,6 +52,27 @@ export function toggleTask(tasks: BoardTask[], index: number): BoardTask[] {
   );
 }
 
+export function isChecklistItem(item: {
+  flavour?: string;
+  type?: string;
+  checked?: unknown;
+}): boolean {
+  return (
+    item.flavour === 'affine:list' &&
+    (item.type === 'todo' || item.checked != null)
+  );
+}
+
+/** Serialized checklist cell after toggling `index`, or undefined if absent. */
+export function nextChecklistCell(
+  value: unknown,
+  index: number
+): string | undefined {
+  const tasks = parseTasks(value);
+  if (!tasks[index]) return;
+  return serializeTasks(toggleTask(tasks, index));
+}
+
 export function checklistProgress(tasks: BoardTask[]) {
   const total = tasks.length;
   const done = tasks.filter(task => task.done).length;
@@ -60,10 +85,7 @@ export function isWipExceeded(count: number, limit?: number): boolean {
 
 export function readGroupByAxes(view?: BoardViewMeta): BoardGroupByAxes {
   if (!view) return {};
-  const x =
-    view.groupByAxes?.x ??
-    view.groupBy?.x ??
-    view.groupBy?.columnId;
+  const x = view.groupByAxes?.x ?? view.groupBy?.x ?? view.groupBy?.columnId;
   const y = view.groupByAxes?.y ?? view.groupBy?.y ?? view.groupByY?.columnId;
   return { x, y };
 }
@@ -124,7 +146,7 @@ export function moveCardCells(
     yIsMember?: boolean;
   }
 ): BoardCells {
-  const row = { ...(cells[rowId] ?? {}) };
+  const row = { ...cells[rowId] };
   row[patch.xPropertyId] = {
     columnId: patch.xPropertyId,
     value: patch.xValue || null,

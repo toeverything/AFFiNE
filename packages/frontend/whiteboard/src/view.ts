@@ -8,18 +8,19 @@ import { boardWidget } from './blocks/board';
 import { chartWidget } from './blocks/chart';
 import { helloWidget } from './blocks/hello';
 import { sketchWidget } from './blocks/sketch';
-import { effects } from './effects';
 import { WhiteboardCollabLayerExtension } from './collab/collab-layer';
+import { effects } from './effects';
 import { WhiteboardL0LayerExtension } from './perf/l0-layer';
 import { WhiteboardLayoutHandlerExtensions } from './perf/layout-handler';
-import {
-  collectViewExtensions,
-  type GfxWidgetRegistration,
-} from './register-gfx-widget';
+import { WhiteboardPerfPolicyExtension } from './perf/policy-extension';
 import {
   type WhiteboardReactToLit,
   WhiteboardReactToLitExtension,
 } from './react-to-lit';
+import {
+  collectViewExtensions,
+  type GfxWidgetRegistration,
+} from './register-gfx-widget';
 
 const optionsSchema = z.object({
   enableHello: z.boolean().optional(),
@@ -29,9 +30,7 @@ const optionsSchema = z.object({
   enablePerfHud: z.boolean().optional(),
   enableL0Layer: z.boolean().optional(),
   enableCollab: z.boolean().optional(),
-  reactToLit: z
-    .custom<WhiteboardReactToLit>()
-    .optional(),
+  reactToLit: z.custom<WhiteboardReactToLit>().optional(),
 });
 
 export type WhiteboardViewOptions = z.infer<typeof optionsSchema>;
@@ -54,7 +53,9 @@ export class WhiteboardViewExtension extends ViewExtensionProvider<WhiteboardVie
 
     if (options?.reactToLit) {
       context.register(
-        WhiteboardReactToLitExtension(options.reactToLit as WhiteboardReactToLit)
+        WhiteboardReactToLitExtension(
+          options.reactToLit as WhiteboardReactToLit
+        )
       );
     }
 
@@ -74,12 +75,12 @@ export class WhiteboardViewExtension extends ViewExtensionProvider<WhiteboardVie
 
     const extensions = collectViewExtensions(
       widgets,
-      context.scope,
       this.isPreview(context.scope),
       this.isEdgeless(context.scope)
     );
     if (this.isEdgeless(context.scope) && !this.isPreview(context.scope)) {
       context.register(WhiteboardLayoutHandlerExtensions);
+      context.register(WhiteboardPerfPolicyExtension);
       if (options?.enableL0Layer) {
         context.register(WhiteboardL0LayerExtension);
       }

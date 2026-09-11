@@ -1,21 +1,26 @@
 import type { Store } from '@blocksuite/affine/store';
 
+import { replacedSnapshotId } from '../../infra/blob-gc';
+import {
+  asDatabaseModel,
+  databaseColumns,
+  snapshotDatabaseView,
+} from './databases';
 import { mapDatabaseToDataset, mapInlineTable, parseCsv } from './mapping';
-import { readDataSource } from './props';
 import type { ChartBlockModel } from './model';
+import { readDataSource } from './props';
 import type {
-  ChartDataSource,
   ChartDataset,
+  ChartDataSource,
   DatabaseTableSnapshot,
 } from './types';
+import { filterRowsByView, isColumnVisibleInView } from './view-filter';
 
 export type ChartDataResult = {
   dataset: ChartDataset;
   offline: boolean;
   error?: string;
 };
-
-const HTTP_CACHE_PREFIX = 'wb-chart-http:';
 
 function isHttpAllowed(url: string, allowlist: string[] = []): boolean {
   let parsed: URL;
@@ -37,23 +42,16 @@ function isHttpAllowed(url: string, allowlist: string[] = []): boolean {
   });
 }
 
-function snapshotDatabase(store: Store, blockId: string): DatabaseTableSnapshot | null {
-  const model = store.getBlock(blockId)?.model;
-  if (!model || model.flavour !== 'affine:database') return null;
+function snapshotDatabase(
+  store: Store,
+  blockId: string,
+  viewId?: string
+): DatabaseTableSnapshot | null {
+  const model = asDatabaseModel(store, blockId);
+  if (!model) return null;
 
-  const columns = (
-    (model.props.columns as Array<{ id: string; name: string; type?: string }>) ??
-    []
-  ).map(column => ({
-    id: column.id,
-    name: column.name,
-    type: column.type,
-  }));
-
-  const cells = (model.props.cells ?? {}) as Record<
-    string,
-    Record<string, { value?: unknown }>
-  >;
+  const view = snapshotDatabaseView(model, viewId);
+  const cells = model.props.cells ?? {};
 
   const rows = model.children.map(child => {
     const titleProp = (child.props as { text?: { toString?: () => string } })
@@ -70,7 +68,12 @@ function snapshotDatabase(store: Store, blockId: string): DatabaseTableSnapshot 
     };
   });
 
-  return { columns, rows };
+  return {
+    columns: databaseColumns(model).filter(column =>
+      isColumnVisibleInView(column.id, view)
+    ),
+    rows: filterRowsByView(rows, view),
+  };
 }
 
 function resolveStore(model: ChartBlockModel, docId?: string): Store {
@@ -79,7 +82,10 @@ function resolveStore(model: ChartBlockModel, docId?: string): Store {
   return doc?.getStore({ id: docId }) ?? model.store;
 }
 
-async function readBlobText(store: Store, blobId: string): Promise<string | null> {
+async function readBlobText(
+  store: Store,
+  blobId: string
+): Promise<string | null> {
   const blob = await store.blobSync.get(blobId);
   if (!blob) return null;
   return blob.text();
@@ -87,29 +93,40 @@ async function readBlobText(store: Store, blobId: string): Promise<string | null
 
 async function cacheHttpPayload(
   store: Store,
-  url: string,
   payload: string
 ): Promise<string | undefined> {
   try {
-    const blobId = await store.blobSync.set(
+    return await store.blobSync.set(
       new Blob([payload], { type: 'text/plain' })
     );
-    return blobId;
   } catch {
-    return `${HTTP_CACHE_PREFIX}${url}`;
+    // No offline cache this round; the live payload is still returned.
+    return undefined;
   }
 }
 
-function datasetFromUnknown(payload: string, source: ChartDataSource): ChartDataset {
+function datasetFromUnknown(
+  payload: string,
+  source: ChartDataSource
+): ChartDataset {
   const trimmed = payload.trim();
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-    const json = JSON.parse(trimmed) as
+    let json:
       | { columns?: string[]; rows?: Array<Array<string | number | null>> }
       | Array<Array<string | number | null>>;
+    try {
+      json = JSON.parse(trimmed) as typeof json;
+    } catch {
+      // Not JSON after all; fall through to the CSV reader below.
+      return mapInlineTable(parseCsv(payload), source.mapping);
+    }
     if (Array.isArray(json)) {
       const columns = source.inline?.columns ?? source.mapping.y;
       return mapInlineTable(
-        { columns: columns.length ? columns : ['x', ...source.mapping.y], rows: json },
+        {
+          columns: columns.length ? columns : ['x', ...source.mapping.y],
+          rows: json,
+        },
         source.mapping
       );
     }
@@ -128,7 +145,8 @@ export async function resolveChartData(
   model: ChartBlockModel
 ): Promise<ChartDataResult> {
   const source = readDataSource(model.props.dataSource);
-  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  const offline =
+    typeof navigator !== 'undefined' && navigator.onLine === false;
 
   try {
     if (source.type === 'inline') {
@@ -147,7 +165,7 @@ export async function resolveChartData(
         };
       }
       const store = resolveStore(model, source.docId);
-      const table = snapshotDatabase(store, source.blockId);
+      const table = snapshotDatabase(store, source.blockId, source.viewId);
       if (!table) {
         return {
           dataset: { dimensions: [], source: [] },
@@ -221,10 +239,11 @@ export async function resolveChartData(
         throw new Error(`http-${response.status}`);
       }
       const payload = await response.text();
-      const blobId = await cacheHttpPayload(model.store, source.url, payload);
+      const blobId = await cacheHttpPayload(model.store, payload);
       if (blobId && blobId !== source.blobId) {
-        const next = { ...source, blobId };
-        model.props.dataSource.setValue(next);
+        const previous = source.blobId;
+        model.props.dataSource.setValue({ ...source, blobId });
+        replacedSnapshotId(previous, blobId);
       }
       return {
         dataset: datasetFromUnknown(payload, source),
@@ -260,7 +279,7 @@ export function subscribeChartData(
     }, debounceMs);
   };
 
-  const disposables = [
+  const subscriptions = [
     model.propsUpdated.subscribe(schedule),
     model.store.slots.blockUpdated.subscribe(payload => {
       const source = readDataSource(model.props.dataSource);
@@ -271,6 +290,9 @@ export function subscribeChartData(
       }
     }),
   ];
+  const disposables: Array<() => void> = subscriptions.map(
+    subscription => () => subscription.unsubscribe()
+  );
 
   const source = readDataSource(model.props.dataSource);
   if (source.type === 'http' && source.refreshMs && source.refreshMs > 0) {
@@ -280,9 +302,6 @@ export function subscribeChartData(
 
   return () => {
     if (timer) window.clearTimeout(timer);
-    disposables.forEach(dispose => {
-      if (typeof dispose === 'function') dispose();
-      else dispose.unsubscribe();
-    });
+    disposables.forEach(dispose => dispose());
   };
 }

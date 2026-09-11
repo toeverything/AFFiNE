@@ -28,7 +28,8 @@ function cellToScalar(value: unknown): string | number | null {
     return value.map(item => String(item)).join(', ');
   }
   if (typeof value === 'object') {
-    if ('value' in value) return cellToScalar((value as { value: unknown }).value);
+    if ('value' in value)
+      return cellToScalar((value as { value: unknown }).value);
     if ('text' in value) return cellToScalar((value as { text: unknown }).text);
     return JSON.stringify(value);
   }
@@ -50,21 +51,17 @@ export function inferMapping(
     return { x: '', y: [] };
   }
 
-  const numericTypes = new Set([
-    'number',
-    'progress',
-    'checkbox',
-    'num',
-  ]);
+  const numericTypes = new Set(['number', 'progress', 'checkbox', 'num']);
 
   const numeric = columns.filter(column => {
     if (column.type && numericTypes.has(column.type)) return true;
     if (!sampleRow) return false;
-    return asFiniteNumber(sampleRow[column.id] ?? sampleRow[column.name]) != null;
+    return (
+      asFiniteNumber(sampleRow[column.id] ?? sampleRow[column.name]) != null
+    );
   });
 
-  const x =
-    columns.find(column => !numeric.includes(column)) ?? columns[0];
+  const x = columns.find(column => !numeric.includes(column)) ?? columns[0];
   const y = (numeric.length ? numeric : columns.filter(column => column !== x))
     .map(column => column.id)
     .filter(id => id !== x.id);
@@ -90,7 +87,8 @@ export function mapInlineTable(
   ];
 
   const source = limitedRows.map(row => {
-    const xValue = xIndex >= 0 ? cellToScalar(row[xIndex]) : cellToScalar(row[0]);
+    const xValue =
+      xIndex >= 0 ? cellToScalar(row[xIndex]) : cellToScalar(row[0]);
     const yValues = yIndexes.map(index => cellToScalar(row[index]));
     return [xValue, ...yValues];
   });

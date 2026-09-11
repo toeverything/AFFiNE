@@ -24,7 +24,15 @@ type WidgetSample = {
   kind?: string;
 };
 
-function readWsRttHint() {
+/**
+ * Latest network round trip to the sync endpoint, in ms.
+ *
+ * WebSocket frames never reach Resource Timing, so the only sample available
+ * from this package is the socket.io HTTP transport: the handshake, plus the
+ * long-poll requests used while the server has no websocket upgrade. Returns 0
+ * when nothing is measurable, which the HUD renders as "no value".
+ */
+export function readSocketRttSample() {
   if (typeof performance === 'undefined') return 0;
   const entries = performance.getEntriesByType(
     'resource'
@@ -78,11 +86,7 @@ export class WhiteboardTelemetry {
     if (Number.isFinite(ms) && ms >= 0) this.wsRtt = ms;
   }
 
-  noteL0(sample: {
-    active: boolean;
-    count: number;
-    backend: L0BackendKind;
-  }) {
+  noteL0(sample: { active: boolean; count: number; backend: L0BackendKind }) {
     this.l0SpriteCount = sample.active ? sample.count : 0;
     this.l0Backend = sample.active ? sample.backend : 'off';
   }
@@ -137,7 +141,6 @@ export class WhiteboardTelemetry {
   }
 
   snapshot(): WhiteboardPerfSnapshot {
-    if (!this.wsRtt) this.wsRtt = readWsRttHint();
     if (this.snapshotAt) {
       this.snapshotAgeS = Math.max(0, (Date.now() - this.snapshotAt) / 1000);
     }
@@ -197,3 +200,21 @@ export class WhiteboardTelemetry {
 }
 
 export const whiteboardTelemetry = new WhiteboardTelemetry();
+
+/**
+ * Polls a caller-supplied round-trip sampler into `noteWsRtt`. The socket lives
+ * outside this package, so the HUD passes whatever it can reach.
+ */
+export function startRttProbe(
+  getRtt: () => number = readSocketRttSample,
+  intervalMs = 2000
+): () => void {
+  const sample = () => {
+    const rtt = getRtt();
+    if (rtt > 0) whiteboardTelemetry.noteWsRtt(rtt);
+  };
+  sample();
+  if (typeof setInterval === 'undefined') return () => {};
+  const timer = setInterval(sample, intervalMs);
+  return () => clearInterval(timer);
+}

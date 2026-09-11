@@ -5,8 +5,8 @@ import {
 } from '@blocksuite/affine/blocks/surface';
 import { Bound, Vec } from '@blocksuite/affine/global/gfx';
 import {
-  type BlockStdScope,
   BlockSelection,
+  type BlockStdScope,
   SurfaceSelection,
   TextSelection,
 } from '@blocksuite/affine/std';

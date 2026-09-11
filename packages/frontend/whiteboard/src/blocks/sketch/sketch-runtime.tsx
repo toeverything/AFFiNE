@@ -1,6 +1,14 @@
-import { createElement, useEffect, useRef, useState } from 'react';
+import type * as Excalidraw from '@excalidraw/excalidraw';
+import {
+  type ComponentProps,
+  createElement,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
-import type { SketchRemoteCursor } from './cursors';
+import { detach } from '../../detach';
+import type { SketchPointerButton, SketchRemoteCursor } from './cursors';
 import { SketchFallback } from './sketch-fallback';
 import type { SketchScene } from './types';
 
@@ -9,11 +17,32 @@ export type SketchRuntimeProps = {
   editing: boolean;
   sceneEpoch?: number;
   collaborators?: SketchRemoteCursor[];
-  onPointerUpdate?: (pointer: { x: number; y: number }) => void;
+  onPointerUpdate?: (pointer: {
+    x: number;
+    y: number;
+    button?: SketchPointerButton;
+  }) => void;
   onChange: (scene: SketchScene) => void;
 };
 
-type ExcalidrawModule = typeof import('@excalidraw/excalidraw');
+type ExcalidrawModule = typeof Excalidraw;
+type ExcalidrawProps = ComponentProps<ExcalidrawModule['Excalidraw']>;
+
+/**
+ * Scenes round-trip through Yjs, so `SketchScene` types only the fields the
+ * whiteboard itself reads; Excalidraw owns the full element schema and carries
+ * the remaining fields through untouched.
+ */
+function toInitialData(
+  scene: SketchScene,
+  editing: boolean
+): ExcalidrawProps['initialData'] {
+  return {
+    elements: scene.elements,
+    appState: { ...scene.appState, viewModeEnabled: !editing },
+    files: scene.files,
+  } as unknown as ExcalidrawProps['initialData'];
+}
 
 export async function loadExcalidraw(): Promise<ExcalidrawModule | null> {
   try {
@@ -24,10 +53,12 @@ export async function loadExcalidraw(): Promise<ExcalidrawModule | null> {
 }
 
 export function SketchRuntime(props: SketchRuntimeProps) {
-  const [excalidraw, setExcalidraw] = useState<ExcalidrawModule | null | undefined>();
+  const [excalidraw, setExcalidraw] = useState<
+    ExcalidrawModule | null | undefined
+  >();
 
   useEffect(() => {
-    void loadExcalidraw().then(setExcalidraw);
+    detach(loadExcalidraw().then(setExcalidraw));
   }, []);
 
   if (excalidraw === undefined) {
@@ -59,14 +90,7 @@ function ExcalidrawBridge(
   }, [props.sceneEpoch, props.scene, props.collaborators]);
 
   return createElement(props.Excalidraw, {
-    initialData: {
-      elements: props.scene.elements,
-      appState: {
-        ...props.scene.appState,
-        viewModeEnabled: !props.editing,
-      },
-      files: props.scene.files,
-    },
+    initialData: toInitialData(props.scene, props.editing),
     viewModeEnabled: !props.editing,
     zenModeEnabled: false,
     gridModeEnabled: false,
@@ -76,14 +100,21 @@ function ExcalidrawBridge(
         saveToActiveFile: false,
       },
     },
-    collaborators: toCollaborators(props.collaborators),
     excalidrawAPI: (next: unknown) => {
       api.current = next as typeof api.current;
     },
-    onPointerUpdate: (payload: { pointer?: { x: number; y: number } }) => {
-      if (payload.pointer) props.onPointerUpdate?.(payload.pointer);
+    onPointerUpdate: (payload: {
+      pointer?: { x: number; y: number };
+      button?: SketchPointerButton;
+    }) => {
+      if (payload.pointer) {
+        props.onPointerUpdate?.({ ...payload.pointer, button: payload.button });
+      }
     },
-    onChange: (elements: unknown, appState: { viewBackgroundColor?: string }) => {
+    onChange: (
+      elements: unknown,
+      appState: { viewBackgroundColor?: string }
+    ) => {
       props.onChange({
         ...props.scene,
         elements: (elements as SketchScene['elements']) ?? props.scene.elements,
@@ -97,13 +128,17 @@ function ExcalidrawBridge(
   });
 }
 
+/**
+ * Peer cursors reach Excalidraw through `updateScene`, not a prop; the map is
+ * keyed by its branded `SocketId` and `color` is a background/stroke pair.
+ */
 function toCollaborators(cursors: SketchRemoteCursor[] = []) {
-  return new Map(
+  return new Map<string, unknown>(
     cursors.map(cursor => [
       String(cursor.clientId),
       {
         username: cursor.name,
-        color: cursor.color,
+        color: { background: cursor.color, stroke: cursor.color },
         button: cursor.button ?? 'up',
         pointer: { x: cursor.x, y: cursor.y, tool: 'pointer' },
       },

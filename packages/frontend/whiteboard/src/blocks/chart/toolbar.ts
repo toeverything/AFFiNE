@@ -3,10 +3,11 @@ import {
   type ToolbarModuleConfig,
   ToolbarModuleExtension,
 } from '@blocksuite/affine/shared/services';
-import { DownloadIcon, SettingsIcon } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
+import { DownloadIcon, SettingsIcon } from '@blocksuite/icons/lit';
 
+import { detach } from '../../detach';
 import { ChartBlockComponent } from './chart-block';
 import { ChartEdgelessBlockComponent } from './chart-edgeless-block';
 import { ChartBlockModel } from './model';
@@ -33,7 +34,7 @@ const surfaceToolbarConfig = {
         const block =
           ctx.getCurrentBlockByType(ChartEdgelessBlockComponent) ??
           ctx.getCurrentBlockByType(ChartBlockComponent);
-        void block?.exportChart('png');
+        detach(block?.exportChart('png'));
       },
     },
     {
@@ -44,7 +45,7 @@ const surfaceToolbarConfig = {
         const block =
           ctx.getCurrentBlockByType(ChartEdgelessBlockComponent) ??
           ctx.getCurrentBlockByType(ChartBlockComponent);
-        void block?.exportChart('svg');
+        detach(block?.exportChart('svg'));
       },
     },
   ],

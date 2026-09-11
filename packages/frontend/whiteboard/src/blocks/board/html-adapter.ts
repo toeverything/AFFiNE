@@ -1,3 +1,4 @@
+import { I18n } from '@affine/i18n';
 import {
   BlockHtmlAdapterExtension,
   type BlockHtmlAdapterMatcher,
@@ -15,8 +16,9 @@ export const boardBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
       const title =
         typeof o.node.props.title === 'string'
           ? o.node.props.title
-          : ((o.node.props.title as { toString?: () => string } | undefined)
-              ?.toString?.() ?? 'Board');
+          : ((
+              o.node.props.title as { toString?: () => string } | undefined
+            )?.toString?.() ?? I18n['com.affine.whiteboard.board.title']());
 
       context.walkerContext
         .openNode(

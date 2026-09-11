@@ -12,26 +12,29 @@ import {
   publishWidgetEditing,
   remoteOwnsLiveEditor,
 } from '../../collab/awareness';
-import { canEditBoardWidgets } from '../../infra/permissions';
 import { WHITEBOARD_LOD } from '../../const';
-import type { BoardSettingsPanelProps } from './board-settings-panel';
-import { databaseToSnapshot } from './column-snapshot';
-import { readBoardGrid } from './grid';
-import {
-  applyCardMove,
-  applyTimeLog,
-  applyViewMeta,
-  resolveBoardDatabase,
-} from './hub';
-import { createBoardKanbanLogic } from './kanban-host';
+import { detach } from '../../detach';
+import { canEditBoardWidgets } from '../../infra/permissions';
 import {
   tryLive,
   whiteboardPerfPolicy,
   xywhCenterDistance,
 } from '../../perf/policy';
 import { whiteboardTelemetry } from '../../perf/telemetry';
+import type { BoardSettingsPanelProps } from './board-settings-panel';
+import { databaseToSnapshot } from './column-snapshot';
+import { readBoardGrid } from './grid';
+import {
+  applyCardMove,
+  applyChecklistToggle,
+  applyTimeLog,
+  applyViewMeta,
+  resolveBoardDatabase,
+} from './hub';
+import { createBoardKanbanLogic } from './kanban-host';
 import { getBoardLodLevel, liveKanbanBudget } from './live-budget';
 import {
+  type BoardCardScroll,
   boardLodKicker,
   renderBoardGrid,
   renderBoardLod,
@@ -55,9 +58,13 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
   @state()
   accessor columnScroll = 0;
 
+  @state()
+  accessor cardScroll: Record<string, number> = {};
+
   private _kanban?: ReturnType<typeof createBoardKanbanLogic>;
   private _databaseId?: string;
   private _columnViewport = 720;
+  private _cardViewport = 240;
   private _panelRoot: Root | null = null;
 
   protected get databaseModel() {
@@ -105,11 +112,13 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
   private kanban() {
     const database = this.databaseModel;
     if (!database) {
+      this._kanban?.dispose();
       this._kanban = undefined;
       this._databaseId = undefined;
       return;
     }
     if (!this._kanban || this._databaseId !== database.id) {
+      this._kanban?.dispose();
       this._databaseId = database.id;
       this._kanban = createBoardKanbanLogic(this.std, database);
     }
@@ -117,6 +126,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
   }
 
   private disposeLive() {
+    this._kanban?.dispose();
     this._kanban = undefined;
     this._databaseId = undefined;
     liveKanbanBudget.release(this.model.id);
@@ -183,23 +193,42 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
         this.requestUpdate();
       },
       onOpen: (rowId: string) => {
-        void this.std.getOptional(PeekViewProvider)?.peek({
-          docId: database.store.id,
-          databaseId: database.id,
-          databaseDocId: database.store.id,
-          databaseRowId: rowId,
-          target: this,
-        });
+        detach(
+          this.std.getOptional(PeekViewProvider)?.peek({
+            docId: database.store.id,
+            databaseId: database.id,
+            databaseDocId: database.store.id,
+            databaseRowId: rowId,
+            target: this,
+          })
+        );
       },
       onComment: (rowId: string) => {
-        this.std.getOptional(CommentProviderIdentifier)?.addComment([
-          new BlockSelection({ blockId: rowId }),
-        ]);
+        this.std
+          .getOptional(CommentProviderIdentifier)
+          ?.addComment([new BlockSelection({ blockId: rowId })]);
       },
       onLogTime: (rowId: string) => {
         if (!canEditBoardWidgets(this.std.store, this.model)) return;
         applyTimeLog(this.model.store, database.id, rowId, 15);
         this.requestUpdate();
+      },
+      onToggleTask: (rowId: string, index: number) => {
+        if (!canEditBoardWidgets(this.std.store, this.model)) return;
+        applyChecklistToggle(this.model.store, database.id, rowId, index);
+        this.requestUpdate();
+      },
+    };
+  }
+
+  private cardScrollConfig(): BoardCardScroll {
+    return {
+      offsets: this.cardScroll,
+      viewport: this._cardViewport,
+      onScroll: (key, offset, viewport) => {
+        this._cardViewport = viewport || this._cardViewport;
+        if (this.cardScroll[key] === offset) return;
+        this.cardScroll = { ...this.cardScroll, [key]: offset };
       },
     };
   }
@@ -314,33 +343,36 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
             this._columnViewport = target.clientWidth || this._columnViewport;
           }}
         >
-          ${live && kanban
-            ? kanban.render()
-            : grid && (useSwimlanes || live)
-              ? renderBoardGrid({
-                  grid,
-                  level,
-                  laneFilter: (
-                    kanbanView as { laneFilter?: string } | undefined
-                  )?.laneFilter,
-                  handlers,
-                })
-              : columns.length
-                ? renderBoardLod({
-                    columns,
-                    level: level === 'l2' ? 'l1' : level,
-                    columnWindow,
-                    wipLimits: grid?.wipLimits,
+          ${
+            live && kanban
+              ? kanban.render()
+              : grid && (useSwimlanes || live)
+                ? renderBoardGrid({
+                    grid,
+                    level,
+                    laneFilter: (
+                      kanbanView as { laneFilter?: string } | undefined
+                    )?.laneFilter,
+                    handlers,
+                    cardScroll: live ? this.cardScrollConfig() : undefined,
                   })
-                : snapshot
-                  ? html`<img
-                      class="wb-board__snapshot"
-                      src=${snapshot}
-                      alt=${this.titleText}
-                    />`
-                  : html`<div class="wb-board__placeholder">
-                      ${I18n['com.affine.whiteboard.board.empty']()}
-                    </div>`}
+                : columns.length
+                  ? renderBoardLod({
+                      columns,
+                      level: level === 'l2' ? 'l1' : level,
+                      columnWindow,
+                      wipLimits: grid?.wipLimits,
+                    })
+                  : snapshot
+                    ? html`<img
+                        class="wb-board__snapshot"
+                        src=${snapshot}
+                        alt=${this.titleText}
+                      />`
+                    : html`<div class="wb-board__placeholder">
+                        ${I18n['com.affine.whiteboard.board.empty']()}
+                      </div>`
+          }
         </div>
       </div>
     `;
@@ -364,7 +396,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
         gfx.selection.slots.updated.subscribe(() => {
           this.selected = gfx.selection.has(this.model.id);
           this.syncLive();
-          void this.syncSettingsPanel();
+          detach(this.syncSettingsPanel());
         })
       );
       this.disposables.add(
@@ -380,7 +412,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
             .filter(BlockSelection)
             .some(selection => selection.blockId === this.model.id);
           this.syncLive();
-          void this.syncSettingsPanel();
+          detach(this.syncSettingsPanel());
         })
       );
     }
@@ -401,7 +433,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
 
   override updated() {
     this.syncLive();
-    void this.syncSettingsPanel();
+    detach(this.syncSettingsPanel());
   }
 
   override disconnectedCallback() {

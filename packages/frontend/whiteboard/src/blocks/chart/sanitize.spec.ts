@@ -35,9 +35,9 @@ describe('sanitizeEChartsOption', () => {
       series: [{ type: 'line', label: { formatter: 'compact' } }],
     });
 
-    expect((sanitized.tooltip as { valueFormatter: string }).valueFormatter).toBe(
-      'percent'
-    );
+    expect(
+      (sanitized.tooltip as { valueFormatter: string }).valueFormatter
+    ).toBe('percent');
     expect(
       (sanitized.series as Array<{ label: { formatter?: string } }>)[0].label
         .formatter

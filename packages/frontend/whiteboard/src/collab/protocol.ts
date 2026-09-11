@@ -58,7 +58,9 @@ export function isAttentionActive(
   attention: WbAttention | undefined,
   now = Date.now()
 ) {
-  return !!attention && attention.until > now && attention.w > 0 && attention.h > 0;
+  return (
+    !!attention && attention.until > now && attention.w > 0 && attention.h > 0
+  );
 }
 
 export function makeAttention(
@@ -69,26 +71,42 @@ export function makeAttention(
   return { ...bound, until: now + ttl };
 }
 
-export function shouldPublish(
-  lastMs: number,
-  now: number,
-  minMs: number
-) {
+export function shouldPublish(lastMs: number, now: number, minMs: number) {
   return now - lastMs >= minMs;
 }
 
+/**
+ * An explicit `undefined` (or `null` for `followClientId`) clears the field so
+ * it is dropped from the awareness payload rather than published as empty.
+ */
 export function mergePayload(
   current: WhiteboardAwarenessPayload | undefined,
   patch: Partial<WhiteboardAwarenessPayload>
 ): WhiteboardAwarenessPayload {
   const next: WhiteboardAwarenessPayload = { ...current, ...patch };
-  if (patch.followClientId === null) delete next.followClientId;
-  if (patch.editing === undefined && 'editing' in patch) delete next.editing;
-  if (patch.attention === undefined && 'attention' in patch) {
-    delete next.attention;
+  for (const key of Object.keys(patch) as Array<
+    keyof WhiteboardAwarenessPayload
+  >) {
+    const value = patch[key];
+    if (value === undefined || (key === 'followClientId' && value === null)) {
+      delete next[key];
+    }
   }
-  if (patch.pointer === undefined && 'pointer' in patch) delete next.pointer;
   return next;
+}
+
+/**
+ * Following someone who already follows us would make both viewports chase
+ * each other, so the request is refused.
+ */
+export function canFollow(
+  states: Map<number, AwarenessLikeState>,
+  targetClientId: number,
+  localClientId?: number
+) {
+  if (targetClientId === localClientId) return false;
+  const target = states.get(targetClientId)?.[WHITEBOARD_AWARENESS_KEY];
+  return target?.followClientId !== localClientId;
 }
 
 export function readPeers(

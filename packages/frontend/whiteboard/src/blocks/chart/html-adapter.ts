@@ -1,5 +1,5 @@
-import { BlockHtmlAdapterExtension } from '@blocksuite/affine/shared/adapters';
 import type { BlockHtmlAdapterMatcher } from '@blocksuite/affine/shared/adapters';
+import { BlockHtmlAdapterExtension } from '@blocksuite/affine/shared/adapters';
 
 import { ChartBlockSchema } from './model';
 
@@ -17,8 +17,9 @@ export const chartBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
       const title =
         typeof o.node.props.title === 'string'
           ? o.node.props.title
-          : ((o.node.props.title as { toString?: () => string } | undefined)
-              ?.toString?.() ?? 'Chart');
+          : ((
+              o.node.props.title as { toString?: () => string } | undefined
+            )?.toString?.() ?? 'Chart');
       const chartType =
         typeof o.node.props.chartType === 'string'
           ? o.node.props.chartType

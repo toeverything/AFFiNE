@@ -7,9 +7,15 @@ import {
 import { nanoid, type Store, Text } from '@blocksuite/affine/store';
 
 import {
+  BOARD_CHECKLIST_COLUMN,
+  isChecklistItem,
+  nextChecklistCell,
+} from './semantics';
+import {
   type BoardColumnSeed,
   type BoardStatusOption,
   type BoardTemplate,
+  type BoardViewData,
   columnsForTemplate,
 } from './types';
 
@@ -187,13 +193,19 @@ function applyBoardSemantics(
         const value = option.value.toLowerCase();
         return (
           value === 'in progress' ||
-          value === I18n['com.affine.whiteboard.board.status.in-progress']().toLowerCase()
+          value ===
+            I18n[
+              'com.affine.whiteboard.board.status.in-progress'
+            ]().toLowerCase()
         );
       })
     : undefined;
-  const enableLanes = template !== 'todo' && !!memberId;
+  // Only the dedicated swimlane template opts into the second axis; `project`
+  // keeps a single axis so it renders through the data-view kanban (Atlaskit
+  // DnD) rather than the custom two-axis grid.
+  const enableLanes = template === 'swimlane' && !!memberId;
 
-  datasource.viewDataUpdate(viewId, () => ({
+  datasource.viewDataUpdate<BoardViewData>(viewId, () => ({
     groupByY: enableLanes && memberId ? { columnId: memberId } : undefined,
     groupByAxes: {
       x: statusId,
@@ -209,18 +221,9 @@ function applyCoverColumn(
 ) {
   const coverId = firstPropertyOfType(datasource, 'image');
   if (!coverId || !viewId) return;
-  datasource.viewDataUpdate(viewId, old => {
-    const header =
-      old && typeof old === 'object' && 'header' in old
-        ? ((old as { header?: Record<string, unknown> }).header ?? {})
-        : {};
-    return {
-      header: {
-        ...header,
-        coverColumn: coverId,
-      },
-    };
-  });
+  datasource.viewDataUpdate<BoardViewData>(viewId, old => ({
+    header: { ...old.header, coverColumn: coverId },
+  }));
 }
 
 function asDatabase(
@@ -331,7 +334,11 @@ export function applyCardMove(
     datasource.cellValueChange(
       rowId,
       patch.yPropertyId,
-      patch.yIsMember ? (patch.yValue ? [patch.yValue] : []) : patch.yValue || null
+      patch.yIsMember
+        ? patch.yValue
+          ? [patch.yValue]
+          : []
+        : patch.yValue || null
     );
   }
 }
@@ -350,13 +357,14 @@ export function applyViewMeta(
   const datasource = new DatabaseBlockDataSource(database);
   const viewId = findKanbanViewId(datasource);
   if (!viewId) return;
-  datasource.viewDataUpdate(viewId, old => ({
+  store.captureSync();
+  datasource.viewDataUpdate<BoardViewData>(viewId, old => ({
     ...patch,
     groupByY: patch.groupByAxes
       ? patch.groupByAxes.y
         ? { columnId: patch.groupByAxes.y }
         : undefined
-      : (old as { groupByY?: { columnId?: string } }).groupByY,
+      : old.groupByY,
   }));
 }
 
@@ -375,6 +383,52 @@ export function applyTimeLog(
   const current = Number(datasource.cellValueGet(rowId, timeId));
   const next = (Number.isFinite(current) ? current : 0) + minutes;
   datasource.cellValueChange(rowId, timeId, next);
+}
+
+function checklistItems(store: Store, rowId: string) {
+  return (store.getBlock(rowId)?.model.children ?? []).filter(child => {
+    const props = child.props as { type?: string; checked?: boolean };
+    return isChecklistItem({
+      flavour: child.flavour,
+      type: props.type,
+      checked: props.checked,
+    });
+  });
+}
+
+/**
+ * Child `affine:list` blocks stay the source of truth where a card has them;
+ * cards seeded with a `Checklist` cell fall back to the serialized value.
+ */
+export function applyChecklistToggle(
+  store: Store,
+  databaseId: string,
+  rowId: string,
+  index: number
+) {
+  const database = asDatabase(store.getBlock(databaseId)?.model);
+  if (!database) return;
+
+  const item = checklistItems(store, rowId)[index];
+  if (item) {
+    const checked = (item.props as { checked?: boolean }).checked;
+    store.captureSync();
+    store.updateBlock(item, { checked: !checked });
+    return;
+  }
+
+  const columnId = database.props.columns.find(
+    column => column.name === BOARD_CHECKLIST_COLUMN
+  )?.id;
+  if (!columnId) return;
+  const datasource = new DatabaseBlockDataSource(database);
+  const next = nextChecklistCell(
+    datasource.cellValueGet(rowId, columnId),
+    index
+  );
+  if (next == null) return;
+  store.captureSync();
+  datasource.cellValueChange(rowId, columnId, next);
 }
 
 export function findNearbyDatabaseId(

@@ -15,6 +15,9 @@ export type SketchElement = {
   y: number;
   width: number;
   height: number;
+  /** Excalidraw reconciliation keys: see `isNewerElement` in `y-binding.ts`. */
+  version?: number;
+  versionNonce?: number;
   angle?: number;
   strokeColor?: string;
   backgroundColor?: string;

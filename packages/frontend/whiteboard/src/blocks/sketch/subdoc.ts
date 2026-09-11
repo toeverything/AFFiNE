@@ -50,12 +50,15 @@ export function ensureSketchSubdocGuid(model: SketchModelLike) {
   return guid;
 }
 
+/**
+ * Registers the subdoc with nbstore so its updates are synced by guid.
+ *
+ * nbstore keeps one `Y.Doc` per guid and throws on a second `connectDoc` for
+ * the same guid, so the doc must be destroyed on release (see
+ * `releaseSketchSubdoc`) or the next mount would silently sync nothing.
+ */
 export function connectSketchSubdoc(store: SketchStoreLike, doc: Y.Doc) {
-  try {
-    store.doc?.workspace?.onLoadDoc?.(doc);
-  } catch {
-    // nbstore throws if the guid is already connected in this tab
-  }
+  store.doc?.workspace?.onLoadDoc?.(doc);
 }
 
 export function openSketchSubdoc(store: SketchStoreLike, guid: string) {
@@ -65,8 +68,15 @@ export function openSketchSubdoc(store: SketchStoreLike, guid: string) {
     return cached.doc;
   }
   const doc = new Y.Doc({ guid });
-  connectSketchSubdoc(store, doc);
   docs.set(guid, { doc, refs: 1 });
+  try {
+    connectSketchSubdoc(store, doc);
+  } catch (error) {
+    // Leaving the entry cached would hand later mounts an unsynced doc.
+    docs.delete(guid);
+    doc.destroy();
+    throw error;
+  }
   return doc;
 }
 
@@ -74,9 +84,12 @@ export function releaseSketchSubdoc(guid: string) {
   const cached = docs.get(guid);
   if (!cached) return;
   cached.refs -= 1;
-  if (cached.refs <= 0) {
-    docs.delete(guid);
-  }
+  if (cached.refs > 0) return;
+  docs.delete(guid);
+  // nbstore disconnects on the doc's 'destroy' event (and documents `destroy`
+  // as the supported way to do it), which is what lets a later mount connect a
+  // fresh doc under the same guid.
+  cached.doc.destroy();
 }
 
 export type SketchCollab = {

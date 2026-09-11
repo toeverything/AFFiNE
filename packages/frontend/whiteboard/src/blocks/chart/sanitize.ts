@@ -160,7 +160,10 @@ function sanitizeNode(
       return sanitizeFormatter(value);
     }
     if (looksLikeScript(value)) return undefined;
-    if ((key === 'formatter' || key === 'extraCssText') && /<[^>]+>/.test(value)) {
+    if (
+      (key === 'formatter' || key === 'extraCssText') &&
+      /<[^>]+>/.test(value)
+    ) {
       return undefined;
     }
     return value;
@@ -193,9 +196,7 @@ function sanitizeNode(
  * Drop functions, JS formatters and arbitrary HTML from an ECharts option.
  * Named formatter presets (`number` | `percent` | `compact` | `date`) are kept.
  */
-export function sanitizeEChartsOption(
-  input: unknown
-): SanitizedEChartsOption {
+export function sanitizeEChartsOption(input: unknown): SanitizedEChartsOption {
   let raw = input;
   try {
     raw = JSON.parse(JSON.stringify(input ?? {}));

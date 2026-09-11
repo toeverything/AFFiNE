@@ -23,7 +23,9 @@ export function primaryCommentId(comments?: Record<string, boolean> | null) {
   return parseCommentIds(comments)[0];
 }
 
-export function parseCommentAnchor(value: unknown): WhiteboardCommentAnchor | undefined {
+export function parseCommentAnchor(
+  value: unknown
+): WhiteboardCommentAnchor | undefined {
   if (!value || typeof value !== 'object') return undefined;
   const raw = value as Partial<WhiteboardCommentAnchor>;
   if (typeof raw.blockId !== 'string' || !raw.blockId) return undefined;
@@ -51,21 +53,21 @@ export function pinPosition(
   return { x: xywh.x + xywh.w, y: xywh.y };
 }
 
+/**
+ * `resolveAnchor` lets each comment sit at its own recorded point; comments
+ * without an anchor fall back to the block's top-right corner.
+ */
 export function pinsForBlock(
   blockId: string,
   xywh: { x: number; y: number; w: number; h: number },
   comments?: Record<string, boolean> | null,
-  point?: [number, number],
-  rowId?: string
+  resolveAnchor?: (commentId: string) => WhiteboardCommentAnchor | undefined
 ): CommentPin[] {
-  const { x, y } = pinPosition(xywh, point);
-  return parseCommentIds(comments).map(commentId => ({
-    commentId,
-    blockId,
-    x,
-    y,
-    rowId,
-  }));
+  return parseCommentIds(comments).map(commentId => {
+    const anchor = resolveAnchor?.(commentId);
+    const { x, y } = pinPosition(xywh, anchor?.point);
+    return { commentId, blockId, x, y, rowId: anchor?.rowId };
+  });
 }
 
 export function anchorFromSelection(input: {

@@ -68,8 +68,40 @@ export function sceneFromY(doc: Y.Doc): SketchScene {
   });
 }
 
-function sameElement(a: unknown, b: unknown) {
-  return JSON.stringify(a) === JSON.stringify(b);
+/**
+ * Excalidraw reconciliation: the higher `version` wins, and on a tie the lower
+ * `versionNonce` wins, so every peer keeps the same element without a server.
+ */
+export function isNewerElement(
+  candidate: SketchElement,
+  current?: SketchElement
+) {
+  if (!current) return true;
+  const version = candidate.version ?? 0;
+  const currentVersion = current.version ?? 0;
+  if (version !== currentVersion) return version > currentVersion;
+  return (candidate.versionNonce ?? 0) < (current.versionNonce ?? 0);
+}
+
+function nextVersionNonce() {
+  return Math.floor(Math.random() * 0x7fffffff);
+}
+
+/** Editors other than Excalidraw (fallback tools, importers) carry no version. */
+function versioned(element: SketchElement, current?: SketchElement) {
+  if (typeof element.version === 'number') return element;
+  return {
+    ...element,
+    version: (current?.version ?? 0) + 1,
+    versionNonce: nextVersionNonce(),
+  };
+}
+
+function sameContent(a: SketchElement, b: SketchElement) {
+  return (
+    JSON.stringify({ ...a, version: 0, versionNonce: 0 }) ===
+    JSON.stringify({ ...b, version: 0, versionNonce: 0 })
+  );
 }
 
 export function applySceneToY(doc: Y.Doc, scene: SketchScene) {
@@ -83,7 +115,7 @@ export function applySceneToY(doc: Y.Doc, scene: SketchScene) {
     for (const element of normalized.elements) {
       const pos = generateKeyBetween(prev);
       const item = new Y.Map();
-      item.set('el', element);
+      item.set('el', versioned(element));
       item.set('pos', pos);
       yElements.push([item]);
       prev = pos;
@@ -98,7 +130,9 @@ export function applySceneToY(doc: Y.Doc, scene: SketchScene) {
 
 /**
  * Element-level LWW upsert from Excalidraw `onChange`.
- * Missing local ids are deleted; remote-only ids stay if `preserveUnknown` is set.
+ * Deletions arrive as `isDeleted` elements and are stored as tombstones, so an
+ * id missing from the list is a stale list, not a delete, and stays: the local
+ * editor has not necessarily seen the elements a remote peer just added.
  */
 export function applyElementsToY(
   doc: Y.Doc,
@@ -109,12 +143,11 @@ export function applyElementsToY(
   const yElements = getSketchYElements(doc);
   const yAssets = getSketchYAssets(doc);
   const yMeta = getSketchYMeta(doc);
-  const alive = elements.filter(element => !element.isDeleted);
 
   doc.transact(() => {
-    const items = yElements.toArray();
     const byId = new Map<string, SketchYItem>();
-    const sorted = items
+    const sorted = yElements
+      .toArray()
       .map(item => ({ item, pos: readPos(item), id: readElement(item)?.id }))
       .sort((a, b) => (a.pos === b.pos ? 0 : a.pos < b.pos ? -1 : 1));
 
@@ -123,29 +156,22 @@ export function applyElementsToY(
     }
 
     let prevPos: string | undefined;
-    for (const element of alive) {
+    for (const element of elements) {
       const existing = byId.get(element.id);
-      if (existing) {
-        if (!sameElement(existing.get('el'), element)) {
-          existing.set('el', element);
-        }
-        prevPos = readPos(existing);
+      if (!existing) {
+        const pos = generateKeyBetween(prevPos);
+        const item = new Y.Map();
+        item.set('el', versioned(element));
+        item.set('pos', pos);
+        yElements.push([item]);
+        prevPos = pos;
         continue;
       }
-      const pos = generateKeyBetween(prevPos);
-      const item = new Y.Map();
-      item.set('el', element);
-      item.set('pos', pos);
-      yElements.push([item]);
-      prevPos = pos;
-    }
-
-    const keep = new Set(alive.map(element => element.id));
-    for (let i = yElements.length - 1; i >= 0; i--) {
-      const id = readElement(yElements.get(i))?.id;
-      if (id && !keep.has(id)) {
-        yElements.delete(i, 1);
-      }
+      prevPos = readPos(existing);
+      const stored = readElement(existing);
+      if (stored && sameContent(stored, element)) continue;
+      const next = versioned(element, stored);
+      if (isNewerElement(next, stored)) existing.set('el', next);
     }
 
     if (appState?.viewBackgroundColor) {
@@ -158,6 +184,32 @@ export function applyElementsToY(
       }
     }
   }, SKETCH_Y_ORIGIN);
+}
+
+/**
+ * Yjs settles two concurrent writes of one element by client id, so the
+ * Excalidraw winner has to be restored after a remote update. Every peer runs
+ * the same comparison against its own elements and converges on one element.
+ */
+export function reconcileSketchY(doc: Y.Doc, local: SketchElement[]) {
+  const yElements = getSketchYElements(doc);
+  const byId = new Map<string, SketchYItem>();
+  for (const item of yElements.toArray()) {
+    const id = readElement(item)?.id;
+    if (id) byId.set(id, item);
+  }
+  const repaired: string[] = [];
+  doc.transact(() => {
+    for (const element of local) {
+      const item = byId.get(element.id);
+      if (!item) continue;
+      const stored = readElement(item);
+      if (!stored || !isNewerElement(element, stored)) continue;
+      item.set('el', element);
+      repaired.push(element.id);
+    }
+  }, SKETCH_Y_ORIGIN);
+  return repaired;
 }
 
 export function observeSketchY(doc: Y.Doc, onChange: () => void) {

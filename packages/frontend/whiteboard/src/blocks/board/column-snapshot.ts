@@ -1,3 +1,5 @@
+import { isChecklistItem } from './semantics';
+
 export type BoardSnapshotRow = {
   id: string;
   title: string;
@@ -132,7 +134,9 @@ export function readBoardColumns(
   }
 
   const hidden = new Set(
-    groupProperties.filter(property => property.hide).map(property => property.key)
+    groupProperties
+      .filter(property => property.hide)
+      .map(property => property.key)
   );
   const propOrder = groupProperties.map(property => property.key);
   const optionIds = options.map(option => option.id);
@@ -197,10 +201,12 @@ function commentIdsFromRow(row: SnapshotBlock) {
 
 function tasksFromRow(row: SnapshotBlock) {
   return (row.children ?? [])
-    .filter(
-      child =>
-        child.flavour === 'affine:list' &&
-        (child.props.type === 'todo' || child.props.checked != null)
+    .filter(child =>
+      isChecklistItem({
+        flavour: child.flavour,
+        type: child.props.type,
+        checked: child.props.checked,
+      })
     )
     .map(child => ({
       text: child.props.text?.toString?.() ?? '',

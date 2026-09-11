@@ -20,17 +20,18 @@ export const boardWidget = registerGfxWidget({
   snapshotPainter: props => props.snapshotBlobId as string | undefined,
 });
 
-export { BoardBlockSchema, BoardBlockSchemaExtension } from './model';
 export { BoardBlockComponent } from './board-block';
 export { BoardEdgelessBlockComponent } from './board-edgeless-block';
 export { BoardPreviewBlockComponent } from './board-preview-block';
-export { columnsForTemplate } from './types';
-export { getBoardLodLevel, liveKanbanBudget } from './live-budget';
 export { readBoardColumns } from './column-snapshot';
-export { sliceCards, windowRange } from './virtualize';
 export { readBoardGrid } from './grid';
+export { getBoardLodLevel, liveKanbanBudget } from './live-budget';
+export { BoardBlockSchema, BoardBlockSchemaExtension } from './model';
 export {
-  moveCardCells,
-  readGroupByAxes,
   isWipExceeded,
+  moveCardCells,
+  nextChecklistCell,
+  readGroupByAxes,
 } from './semantics';
+export { columnsForTemplate } from './types';
+export { sliceCards, windowCards, windowRange } from './virtualize';

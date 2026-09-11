@@ -131,4 +131,30 @@ export const chartBlockStyles = css`
     margin-bottom: 10px;
     font-size: 12px;
   }
+
+  .wb-chart-settings__series {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--affine-text-secondary-color);
+  }
+
+  .wb-chart-settings__series span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .wb-chart-settings__series input[type='color'] {
+    padding: 2px;
+    height: 28px;
+  }
+
+  .wb-chart-settings__hint {
+    font-size: 11px;
+    color: var(--affine-text-secondary-color);
+  }
 `;

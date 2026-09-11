@@ -12,6 +12,8 @@ import {
 } from '@blocksuite/affine/blocks/database';
 import { PeekViewProvider } from '@blocksuite/affine/components/peek';
 import { toast } from '@blocksuite/affine/components/toast';
+import type { DataViewSelection } from '@blocksuite/affine/data-view';
+import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import type { DatabaseBlockModel } from '@blocksuite/affine/model';
 import {
   NotificationProvider,
@@ -19,15 +21,19 @@ import {
   TelemetryProvider,
 } from '@blocksuite/affine/shared/services';
 import type { BlockStdScope } from '@blocksuite/affine/std';
-import type { DataViewSelection } from '@blocksuite/affine/data-view';
 import { computed, signal } from '@preact/signals-core';
 import type { TemplateResult } from 'lit';
+
+import { detach } from '../../detach';
 
 export function createBoardKanbanLogic(
   std: BlockStdScope,
   database: DatabaseBlockModel
 ) {
   const virtualPadding$ = signal(0);
+  // `DataViewRootUILogic` has no teardown of its own: the hotkey and event
+  // handlers it asks for are owned by whoever creates them.
+  const disposables = new DisposableGroup();
   const dataSource = lazy(() => {
     const source = new DatabaseBlockDataSource(database, next => {
       next.serviceSet(EditorHostKey, std.host);
@@ -71,16 +77,24 @@ export function createBoardKanbanLogic(
     () =>
       new DataViewRootUILogic({
         virtualPadding$,
-        bindHotkey: hotkeys => ({
-          dispose: std.host.event.bindHotkey(hotkeys, {
-            blockId: database.id,
-          }),
-        }),
-        handleEvent: (name, handler) => ({
-          dispose: std.host.event.add(name, handler, {
-            blockId: database.id,
-          }),
-        }),
+        bindHotkey: hotkeys => {
+          const disposable = {
+            dispose: std.host.event.bindHotkey(hotkeys, {
+              blockId: database.id,
+            }),
+          };
+          disposables.add(disposable);
+          return disposable;
+        },
+        handleEvent: (name, handler) => {
+          const disposable = {
+            dispose: std.host.event.add(name, handler, {
+              blockId: database.id,
+            }),
+          };
+          disposables.add(disposable);
+          return disposable;
+        },
         selection$: viewSelection$,
         setSelection,
         dataSource: dataSource.value,
@@ -112,13 +126,15 @@ export function createBoardKanbanLogic(
               template: createRecordDetail({
                 ...data,
                 openDoc: docId => {
-                  void peekViewService.peek({
-                    docId,
-                    databaseId: database.id,
-                    databaseDocId: database.store.id,
-                    databaseRowId: data.rowId,
-                    target: std.host,
-                  });
+                  detach(
+                    peekViewService.peek({
+                      docId,
+                      databaseId: database.id,
+                      databaseDocId: database.store.id,
+                      databaseRowId: data.rowId,
+                      target: std.host,
+                    })
+                  );
                 },
                 detail: {
                   header: uniMap(
@@ -147,6 +163,9 @@ export function createBoardKanbanLogic(
   return {
     render(): TemplateResult {
       return logic.value.render();
+    },
+    dispose() {
+      disposables.dispose();
     },
   };
 }

@@ -3,10 +3,11 @@ import { BlockComponent } from '@blocksuite/affine/std';
 import { html } from 'lit';
 import { state } from 'lit/decorators.js';
 
+import { detach } from '../../detach';
+import type { ChartBlockModel } from './model';
 import { readTitle } from './props';
 import { resolveSnapshotSrc, revokeObjectUrl } from './snapshot';
 import { chartBlockStyles } from './styles';
-import type { ChartBlockModel } from './model';
 
 /**
  * Preview / L0 snapshot view. Must not import ECharts or React.
@@ -21,11 +22,11 @@ export class ChartPreviewBlockComponent extends BlockComponent<ChartBlockModel> 
 
   override connectedCallback() {
     super.connectedCallback();
-    void this.refreshSnapshot();
+    detach(this.refreshSnapshot());
     this.disposables.add(
       this.model.propsUpdated.subscribe(({ key }) => {
         if (key === 'snapshotBlobId' || key === 'title') {
-          void this.refreshSnapshot();
+          detach(this.refreshSnapshot());
         }
       })
     );
@@ -58,15 +59,17 @@ export class ChartPreviewBlockComponent extends BlockComponent<ChartBlockModel> 
           <div class="wb-chart__title">${title}</div>
         </div>
         <div class="wb-chart__body">
-          ${this.snapshotUrl
-            ? html`<img
-                class="wb-chart__snapshot"
-                src=${this.snapshotUrl}
-                alt=${title}
-              />`
-            : html`<div class="wb-chart__placeholder">
-                ${I18n['com.affine.whiteboard.chart.preview-label']()}
-              </div>`}
+          ${
+            this.snapshotUrl
+              ? html`<img
+                  class="wb-chart__snapshot"
+                  src=${this.snapshotUrl}
+                  alt=${title}
+                />`
+              : html`<div class="wb-chart__placeholder">
+                  ${I18n['com.affine.whiteboard.chart.preview-label']()}
+                </div>`
+          }
         </div>
       </div>
     `;

@@ -1,4 +1,3 @@
-import type { ViewScope } from '@blocksuite/affine/ext-loader';
 import { BlockViewExtension, FlavourExtension } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import { literal, unsafeStatic } from 'lit/static-html.js';
@@ -7,9 +6,9 @@ import { literal, unsafeStatic } from 'lit/static-html.js';
  * Optional painter used by preview / L0 snapshot scopes.
  * Return a blob id or data URL; `undefined` falls back to the placeholder view.
  */
-export type SnapshotPainter = (props: Record<string, unknown>) =>
-  | string
-  | undefined;
+export type SnapshotPainter = (
+  props: Record<string, unknown>
+) => string | undefined;
 
 export interface GfxWidgetViewTags {
   page: string;
@@ -43,15 +42,11 @@ export function registerGfxWidget(
 export function collectStoreExtensions(
   widgets: readonly GfxWidgetRegistration[]
 ): ExtensionType[] {
-  return widgets.flatMap(widget => [
-    widget.schema,
-    ...asList(widget.adapter),
-  ]);
+  return widgets.flatMap(widget => [widget.schema, ...asList(widget.adapter)]);
 }
 
 export function collectViewExtensions(
   widgets: readonly GfxWidgetRegistration[],
-  scope: ViewScope,
   isPreview: boolean,
   isEdgeless: boolean
 ): ExtensionType[] {

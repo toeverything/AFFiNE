@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  SNAPSHOT_BLOB_TTL_MS,
   collectReferencedSnapshotIds,
   replacedSnapshotId,
+  SNAPSHOT_BLOB_TTL_MS,
   snapshotAgeSeconds,
   staleSnapshotIds,
 } from './blob-gc';

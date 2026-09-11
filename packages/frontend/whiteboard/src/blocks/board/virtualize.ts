@@ -1,5 +1,4 @@
 import { WHITEBOARD_LOD } from '../../const';
-
 import type { BoardLodLevel } from './live-budget';
 
 export type VirtualWindow = {
@@ -52,4 +51,44 @@ export function sliceCards<T>(
     return { visible, overflow: Math.max(0, cards.length - visible.length) };
   }
   return { visible: cards, overflow: 0 };
+}
+
+export type CardScrollState = {
+  offset: number;
+  viewport: number;
+};
+
+export type CardWindow<T> = {
+  visible: T[];
+  overflow: number;
+  offset: number;
+  tail: number;
+};
+
+/**
+ * L0/L1 keep the static slice; L2 windows the column body by its own scroll
+ * offset so a column with hundreds of cards mounts only the visible run.
+ */
+export function windowCards<T>(
+  cards: T[],
+  level: BoardLodLevel,
+  scroll?: CardScrollState,
+  limit = WHITEBOARD_LOD.l1KanbanCards
+): CardWindow<T> {
+  if (level !== 'l2' || !scroll) {
+    const slice = sliceCards(cards, level, limit);
+    return { ...slice, offset: 0, tail: 0 };
+  }
+  const range = windowRange(
+    cards.length,
+    scroll.offset,
+    scroll.viewport,
+    WHITEBOARD_LOD.kanbanCardEstimatePx
+  );
+  return {
+    visible: sliceWindow(cards, range),
+    overflow: 0,
+    offset: range.offset,
+    tail: range.tail,
+  };
 }

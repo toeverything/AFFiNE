@@ -32,8 +32,10 @@ const boardSlashMenuConfig: SlashMenuConfig = {
       if (blockId) {
         ensureKanbanView(std.store, blockId);
       } else {
-        created = createBoardDatabase(std.store, { title, template })
-          ?.databaseId;
+        created = createBoardDatabase(std.store, {
+          title,
+          template,
+        })?.databaseId;
       }
       insertGfxWidget(
         std,

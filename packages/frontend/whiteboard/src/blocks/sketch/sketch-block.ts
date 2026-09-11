@@ -6,6 +6,26 @@ import { state } from 'lit/decorators.js';
 import type { Root } from 'react-dom/client';
 
 import {
+  publishWidgetEditing,
+  remoteOwnsLiveEditor,
+} from '../../collab/awareness';
+import { detach } from '../../detach';
+import { replacedSnapshotId } from '../../infra/blob-gc';
+import { importWhiteboardFile } from '../../infra/import';
+import { canEditBoardWidgets } from '../../infra/permissions';
+import {
+  tryLive,
+  whiteboardPerfPolicy,
+  xywhCenterDistance,
+} from '../../perf/policy';
+import { whiteboardTelemetry } from '../../perf/telemetry';
+import {
+  collectSceneAssets,
+  readSketchAssets,
+  sameSketchAssets,
+  writeSketchAssets,
+} from './assets';
+import {
   downloadBlob,
   loadScene,
   resolveBlobSrc,
@@ -18,30 +38,22 @@ import {
   colorForClient,
   readSketchCursors,
   SKETCH_AWARENESS_KEY,
-  throttle,
   type SketchAwarenessPayload,
+  type SketchPointerButton,
   type SketchRemoteCursor,
+  throttle,
 } from './cursors';
-import {
-  publishWidgetEditing,
-  remoteOwnsLiveEditor,
-} from '../../collab/awareness';
-import { canEditBoardWidgets } from '../../infra/permissions';
-import { replacedSnapshotId } from '../../infra/blob-gc';
-import {
-  tryLive,
-  whiteboardPerfPolicy,
-  xywhCenterDistance,
-} from '../../perf/policy';
-import { whiteboardTelemetry } from '../../perf/telemetry';
+import { sceneToExportedSvg } from './export';
+import { sketchSceneFromImport } from './import';
 import { getSketchLodLevel, liveSketchBudget } from './live-budget';
 import type { SketchBlockModel } from './model';
-import { createEmptyScene, parseExcalidrawJson, serializeScene } from './scene';
+import { createEmptyScene, serializeScene } from './scene';
 import { sketchBlockStyles } from './styles';
 import type { SketchCollab } from './subdoc';
 import { openSketchCollab } from './subdoc';
-import { sceneToSvg, svgToDataUrl } from './svg';
+import { svgToDataUrl } from './svg';
 import type { SketchScene } from './types';
+import { reconcileSketchY } from './y-binding';
 
 export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   static override styles = sketchBlockStyles;
@@ -77,6 +89,8 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   private _viewportWasLocked = false;
   private _collab?: SketchCollab;
   private _snapshotTimer?: number;
+  private _persistedScene?: string;
+  private _snapshotGeneration?: string;
 
   protected get titleText() {
     const title = this.model.props.title;
@@ -85,7 +99,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   }
 
   private get zoom() {
-    return this.std.getOptional(GfxControllerIdentifier)?.viewport.zoom ?? 1;
+    return this.gfxController()?.viewport.zoom ?? 1;
   }
 
   private get lod() {
@@ -98,7 +112,11 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
     return this.lod === 'l2';
   }
 
-  private gfx() {
+  /**
+   * Not named `gfx`: the `toGfxBlockComponent` mixin defines a `gfx` getter on a
+   * more derived prototype, which would shadow this method at runtime.
+   */
+  private gfxController() {
     return this.std.getOptional(GfxControllerIdentifier);
   }
 
@@ -125,7 +143,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   }
 
   private selectSelf() {
-    const gfx = this.gfx();
+    const gfx = this.gfxController();
     if (gfx) {
       gfx.selection.set({
         elements: [this.model.id],
@@ -142,7 +160,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   }
 
   private setViewportLocked(locked: boolean) {
-    const viewport = this.gfx()?.viewport;
+    const viewport = this.gfxController()?.viewport;
     if (!viewport) return;
     if (locked) {
       this._viewportWasLocked = viewport.locked;
@@ -173,7 +191,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   private readEditors() {
     const awareness = this.awareness();
     const states = awareness?.getStates?.();
-    if (!states) {
+    if (!awareness || !states) {
       this.editors = [];
       this.cursors = [];
       return;
@@ -187,23 +205,32 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
     this.cursors = cursors;
   }
 
-  private readonly reportPointer = throttle((event: PointerEvent) => {
+  /** One throttle for both pointer sources: DOM moves and Excalidraw (§6.6). */
+  private readonly publishPointer = throttle(
+    (x: number, y: number, button: SketchPointerButton) => {
+      if (!this.editing) return;
+      this.setEditingPresence(true, { x, y, button });
+    },
+    40
+  );
+
+  private reportPointer(event: PointerEvent) {
     if (!this.editing) return;
     const target = event.currentTarget as HTMLElement | null;
     if (!target) return;
     const rect = target.getBoundingClientRect();
-    this.setEditingPresence(true, {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-      button: event.buttons ? 'down' : 'up',
-    });
-  }, 40);
+    this.publishPointer(
+      event.clientX - rect.left,
+      event.clientY - rect.top,
+      event.buttons ? 'down' : 'up'
+    );
+  }
 
   private scheduleSnapshot() {
     if (this._snapshotTimer) window.clearTimeout(this._snapshotTimer);
     this._snapshotTimer = window.setTimeout(() => {
       this._snapshotTimer = undefined;
-      void this.persist(this._scene, false);
+      detach(this.persist(this._scene, false));
     }, 1000);
   }
 
@@ -213,22 +240,49 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
       this._collab.applyScene(scene);
     }
     this._scene = this._collab ? this._collab.toScene() : scene;
+    const serialized = serializeScene(this._scene);
+    if (serialized === this._persistedScene && this.model.props.sceneBlobId) {
+      await this.refreshSnapshot();
+      return;
+    }
     const previousScene = this.model.props.sceneBlobId;
     const previousSvg = this.model.props.snapshotSvgBlobId;
+    const previousAssets = readSketchAssets(this.model.props.assets);
+    const assets = await collectSceneAssets(
+      this.model.store,
+      this._scene,
+      previousAssets
+    );
     const sceneId = await saveScene(this.model.store, this._scene);
-    const svg = sceneToSvg(this._scene);
-    const svgId = await saveSvg(this.model.store, svg);
+    const svgId = await saveSvg(
+      this.model.store,
+      await sceneToExportedSvg(this._scene)
+    );
     this.model.store.captureSync();
-    void replacedSnapshotId(previousScene, sceneId);
-    void replacedSnapshotId(previousSvg, svgId);
+    replacedSnapshotId(previousScene, sceneId);
+    replacedSnapshotId(previousSvg, svgId);
     this.model.props.sceneBlobId = sceneId;
     this.model.props.snapshotSvgBlobId = svgId;
+    if (!sameSketchAssets(previousAssets, assets)) {
+      this.model.props.assets = writeSketchAssets(
+        this.model.props.assets,
+        assets
+      );
+    }
     this.model.props.revision = (this.model.props.revision ?? 0) + 1;
+    this._persistedScene = serialized;
     whiteboardTelemetry.noteSnapshotWritten();
     await this.refreshSnapshot();
   }
 
+  /**
+   * `revision` plus the scene epoch identify the current snapshot, so repeated
+   * persists and prop updates do not rebuild the same SVG (§6.4).
+   */
   private async refreshSnapshot() {
+    const generation = `${this.model.props.revision ?? 0}:${this.sceneEpoch}`;
+    if (this.snapshotUrl && this._snapshotGeneration === generation) return;
+    this._snapshotGeneration = generation;
     revokeObjectUrl(this._objectUrl);
     this._objectUrl = undefined;
     const src = await resolveBlobSrc(
@@ -236,7 +290,8 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
       this.model.props.snapshotSvgBlobId
     );
     this._objectUrl = src?.startsWith('blob:') ? src : undefined;
-    this.snapshotUrl = src ?? svgToDataUrl(sceneToSvg(this._scene));
+    this.snapshotUrl =
+      src ?? svgToDataUrl(await sceneToExportedSvg(this._scene));
   }
 
   private enterEdit() {
@@ -244,7 +299,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
     if (!canEditBoardWidgets(this.std.store, this.model)) return;
     if (!this.intersecting) return;
     if (remoteOwnsLiveEditor(this.std.store, this.model.id)) return;
-    const viewport = this.gfx()?.viewport;
+    const viewport = this.gfxController()?.viewport;
     if (
       !tryLive(liveSketchBudget, {
         id: this.model.id,
@@ -282,7 +337,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   private syncLive() {
     const want = this.canUseLive();
     const had = liveSketchBudget.has(this.model.id);
-    const viewport = this.gfx()?.viewport;
+    const viewport = this.gfxController()?.viewport;
     if (
       want &&
       tryLive(liveSketchBudget, {
@@ -308,7 +363,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
         this.editing = false;
         this.setViewportLocked(false);
         this.setEditingPresence(false);
-        void this.persist(this._scene, false);
+        detach(this.persist(this._scene, false));
       }
       this._live = false;
       liveSketchBudget.release(this.model.id);
@@ -341,8 +396,12 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
         editing: this.editing,
         sceneEpoch: this.sceneEpoch,
         collaborators: this.cursors,
-        onPointerUpdate: (pointer: { x: number; y: number }) => {
-          this.setEditingPresence(true, { ...pointer, button: 'up' });
+        onPointerUpdate: (pointer: {
+          x: number;
+          y: number;
+          button?: SketchPointerButton;
+        }) => {
+          this.publishPointer(pointer.x, pointer.y, pointer.button ?? 'up');
         },
         onChange: scene => {
           if (this._collab?.applyingRemote) return;
@@ -359,27 +418,31 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   }
 
   async exportSketch(kind: 'png' | 'svg' | 'excalidraw') {
-    const svg = sceneToSvg(this._scene);
+    if (kind === 'excalidraw') {
+      downloadBlob(
+        new Blob([serializeScene(this._scene)], {
+          type: 'application/vnd.excalidraw+json',
+        }),
+        'sketch.excalidraw'
+      );
+      return;
+    }
+    const svg = await sceneToExportedSvg(this._scene);
     if (kind === 'svg') {
       downloadBlob(new Blob([svg], { type: 'image/svg+xml' }), 'sketch.svg');
       return;
     }
-    if (kind === 'png') {
-      const png = await svgToPngBlob(svg);
-      if (png) downloadBlob(png, 'sketch.png');
-      return;
-    }
-    downloadBlob(
-      new Blob([serializeScene(this._scene)], {
-        type: 'application/vnd.excalidraw+json',
-      }),
-      'sketch.excalidraw'
-    );
+    const png = await svgToPngBlob(svg);
+    if (png) downloadBlob(png, 'sketch.png');
   }
 
-  async importExcalidraw(file: File) {
+  /** `.excalidraw`, draw.io XML and Miro CSV all land here (§6.8). */
+  async importFile(file: File) {
     if (!canEditBoardWidgets(this.std.store, this.model)) return;
-    const scene = parseExcalidrawJson(await file.text());
+    const payload = await importWhiteboardFile(this.model.store, file);
+    if (!payload) return;
+    const scene = sketchSceneFromImport(payload, this._scene);
+    if (!scene) return;
     await this.persist(scene);
     this.requestUpdate();
   }
@@ -387,7 +450,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   async copyScene() {
     const text = serializeScene(this._scene);
     try {
-      const png = await svgToPngBlob(sceneToSvg(this._scene));
+      const png = await svgToPngBlob(await sceneToExportedSvg(this._scene));
       if (png && navigator.clipboard?.write) {
         await navigator.clipboard.write([
           new ClipboardItem({
@@ -400,7 +463,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
     } catch {
       // text/plain is enough for Phase 1 clipboard export
     }
-    void navigator.clipboard?.writeText(text);
+    detach(navigator.clipboard?.writeText(text));
   }
 
   protected renderFrame() {
@@ -445,17 +508,19 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
             if (this.editing) event.stopPropagation();
           }}
         >
-          ${live
-            ? html`<div class="wb-sketch__host"></div>`
-            : this.snapshotUrl
-              ? html`<img
-                  class="wb-sketch__snapshot"
-                  src=${this.snapshotUrl}
-                  alt=${this.titleText}
-                />`
-              : html`<div class="wb-sketch__placeholder">
-                  ${I18n['com.affine.whiteboard.sketch.empty']()}
-                </div>`}
+          ${
+            live
+              ? html`<div class="wb-sketch__host"></div>`
+              : this.snapshotUrl
+                ? html`<img
+                    class="wb-sketch__snapshot"
+                    src=${this.snapshotUrl}
+                    alt=${this.titleText}
+                  />`
+                : html`<div class="wb-sketch__placeholder">
+                    ${I18n['com.affine.whiteboard.sketch.empty']()}
+                  </div>`
+          }
           ${this.cursors.map(
             cursor => html`<div
               class="wb-sketch__cursor"
@@ -466,13 +531,15 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
               <span class="wb-sketch__cursor-name">${cursor.name}</span>
             </div>`
           )}
-          ${this.editors.length
-            ? html`<div class="wb-sketch__banner">
-                ${I18n['com.affine.whiteboard.sketch.drawing']({
-                  name: this.editors.join(', '),
-                })}
-              </div>`
-            : nothing}
+          ${
+            this.editors.length
+              ? html`<div class="wb-sketch__banner">
+                  ${I18n['com.affine.whiteboard.sketch.drawing']({
+                    name: this.editors.join(', '),
+                  })}
+                </div>`
+              : nothing
+          }
         </div>
       </div>
     `;
@@ -482,17 +549,17 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
     super.connectedCallback();
     this.disposables.add(
       this.model.propsUpdated.subscribe(() => {
-        void this.refreshScene();
+        detach(this.refreshScene());
         this.requestUpdate();
       })
     );
 
-    const gfx = this.gfx();
+    const gfx = this.gfxController();
     if (gfx) {
       this.disposables.add(
         gfx.selection.slots.updated.subscribe(() => {
           this.selected = gfx.selection.has(this.model.id);
-          if (!this.selected && this.editing) void this.exitEdit();
+          if (!this.selected && this.editing) detach(this.exitEdit());
           this.syncLive();
         })
       );
@@ -506,7 +573,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
           this.selected = this.std.selection
             .filter(BlockSelection)
             .some(selection => selection.blockId === this.model.id);
-          if (!this.selected && this.editing) void this.exitEdit();
+          if (!this.selected && this.editing) detach(this.exitEdit());
           this.syncLive();
         })
       );
@@ -516,7 +583,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
       if (!this.editing) return;
       if (event.key === 'Escape') {
         event.stopPropagation();
-        void this.exitEdit();
+        detach(this.exitEdit());
         return;
       }
       const key = event.key.toLowerCase();
@@ -539,21 +606,34 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
       this.disposables.add(() => awareness.off?.('change', onChange));
     }
     this.readEditors();
-    void this.attachCollab();
+    detach(this.attachCollab());
   }
 
   private async attachCollab() {
-    this._collab = await openSketchCollab(this.model);
+    let collab: SketchCollab;
+    try {
+      collab = await openSketchCollab(this.model);
+    } catch {
+      // Subdoc unavailable (e.g. no workspace sync): stay on the blob scene.
+      await this.refreshScene();
+      return;
+    }
+    if (!this.isConnected) {
+      collab.dispose();
+      return;
+    }
+    this._collab = collab;
     this._scene = this._collab.toScene();
     const stop = this._collab.observe(() => {
       if (!this._collab) return;
       const started = performance.now();
       this._collab.applyingRemote = true;
+      reconcileSketchY(this._collab.doc, this._scene.elements);
       this._scene = this._collab.toScene();
       this.sceneEpoch++;
       this._collab.applyingRemote = false;
       whiteboardTelemetry.noteYjsApply(performance.now() - started);
-      if (!this.editing) void this.refreshSnapshot();
+      if (!this.editing) detach(this.refreshSnapshot());
       this.requestUpdate();
     });
     this.disposables.add(() => {
@@ -594,17 +674,17 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
 
   override updated() {
     this.syncLive();
-    if (this._live) void this.mountHost();
+    if (this._live) detach(this.mountHost());
     else this.teardownHost();
   }
 
   override disconnectedCallback() {
     if (this._snapshotTimer) window.clearTimeout(this._snapshotTimer);
-    this.reportPointer.cancel();
+    this.publishPointer.cancel();
     if (this.editing) {
       this.setViewportLocked(false);
       this.setEditingPresence(false);
-      void this.persist(this._scene, false);
+      detach(this.persist(this._scene, false));
     }
     this.teardownHost();
     liveSketchBudget.release(this.model.id);

@@ -52,8 +52,8 @@ describe('board swimlane grid', () => {
     expect(aliceTodo?.cards.map(card => card.id)).toEqual(['r1']);
     expect(aliceTodo?.cards[0]?.checklist).toEqual({ done: 1, total: 1 });
     expect(cardsInColumn(grid, 'todo')).toBe(2);
-    expect(isWipExceeded(cardsInColumn(grid, 'todo'), grid.wipLimits.todo)).toBe(
-      true
-    );
+    expect(
+      isWipExceeded(cardsInColumn(grid, 'todo'), grid.wipLimits.todo)
+    ).toBe(true);
   });
 });

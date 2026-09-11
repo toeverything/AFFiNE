@@ -25,9 +25,11 @@ export class HelloBlockComponent extends BlockComponent<HelloBlockModel> {
     return html`
       <div class="wb-hello">
         <div class="wb-hello__kicker">
-          ${preview
-            ? I18n['com.affine.whiteboard.hello.preview-label']()
-            : 'wb:hello'}
+          ${
+            preview
+              ? I18n['com.affine.whiteboard.hello.preview-label']()
+              : 'wb:hello'
+          }
         </div>
         <div class="wb-hello__title">${title}</div>
       </div>

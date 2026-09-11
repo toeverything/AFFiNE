@@ -6807,7 +6807,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-whiteboard-hello.name"](): string;
     /**
-      * `Enables the wb:hello stub widget on the edgeless board.`
+      * `Enables the wb:hello stub widget on the edgeless board. Used to verify slash menu, copy and sync for whiteboard extensions.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-whiteboard-hello.description"](): string;
     /**
@@ -6959,6 +6959,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.whiteboard.sketch.import"](): string;
     /**
+      * `Import sketch file`
+      */
+    ["com.affine.whiteboard.sketch.import-file"](): string;
+    /**
       * `Copy sketch`
       */
     ["com.affine.whiteboard.sketch.copy"](): string;
@@ -7094,38 +7098,137 @@ export function useAFFiNEI18N(): {
       * `Could not load chart data.`
       */
     ["com.affine.whiteboard.chart.error"](): string;
+    /**
+      * `Bar`
+      */
     ["com.affine.whiteboard.chart.type.bar"](): string;
+    /**
+      * `Line`
+      */
     ["com.affine.whiteboard.chart.type.line"](): string;
+    /**
+      * `Area`
+      */
     ["com.affine.whiteboard.chart.type.area"](): string;
+    /**
+      * `Pie`
+      */
     ["com.affine.whiteboard.chart.type.pie"](): string;
+    /**
+      * `Scatter`
+      */
     ["com.affine.whiteboard.chart.type.scatter"](): string;
+    /**
+      * `Funnel`
+      */
     ["com.affine.whiteboard.chart.type.funnel"](): string;
+    /**
+      * `Radar`
+      */
     ["com.affine.whiteboard.chart.type.radar"](): string;
+    /**
+      * `Heatmap`
+      */
     ["com.affine.whiteboard.chart.type.heatmap"](): string;
+    /**
+      * `Database`
+      */
     ["com.affine.whiteboard.chart.source.database"](): string;
+    /**
+      * `Inline table`
+      */
     ["com.affine.whiteboard.chart.source.inline"](): string;
+    /**
+      * `CSV blob`
+      */
     ["com.affine.whiteboard.chart.source.csv-blob"](): string;
+    /**
+      * `HTTP`
+      */
     ["com.affine.whiteboard.chart.source.http"](): string;
+    /**
+      * `Number`
+      */
     ["com.affine.whiteboard.chart.formatter.number"](): string;
+    /**
+      * `Percent`
+      */
     ["com.affine.whiteboard.chart.formatter.percent"](): string;
+    /**
+      * `Compact`
+      */
     ["com.affine.whiteboard.chart.formatter.compact"](): string;
+    /**
+      * `Date`
+      */
     ["com.affine.whiteboard.chart.formatter.date"](): string;
+    /**
+      * `Chart settings`
+      */
     ["com.affine.whiteboard.chart.panel.title"](): string;
+    /**
+      * `Title`
+      */
     ["com.affine.whiteboard.chart.panel.chart-title"](): string;
+    /**
+      * `Chart type`
+      */
     ["com.affine.whiteboard.chart.panel.type"](): string;
+    /**
+      * `Data source`
+      */
     ["com.affine.whiteboard.chart.panel.source"](): string;
+    /**
+      * `Database`
+      */
     ["com.affine.whiteboard.chart.panel.database"](): string;
+    /**
+      * `Select a table`
+      */
     ["com.affine.whiteboard.chart.panel.database-empty"](): string;
+    /**
+      * `URL`
+      */
     ["com.affine.whiteboard.chart.panel.url"](): string;
+    /**
+      * `Allowed hosts`
+      */
     ["com.affine.whiteboard.chart.panel.allowlist"](): string;
+    /**
+      * `Refresh interval (ms)`
+      */
     ["com.affine.whiteboard.chart.panel.refresh"](): string;
+    /**
+      * `CSV blob id`
+      */
     ["com.affine.whiteboard.chart.panel.blob-id"](): string;
+    /**
+      * `Inline rows (CSV)`
+      */
     ["com.affine.whiteboard.chart.panel.inline"](): string;
+    /**
+      * `X axis`
+      */
     ["com.affine.whiteboard.chart.panel.x-axis"](): string;
+    /**
+      * `Y series`
+      */
     ["com.affine.whiteboard.chart.panel.y-axis"](): string;
+    /**
+      * `Colors`
+      */
     ["com.affine.whiteboard.chart.panel.colors"](): string;
+    /**
+      * `Labels format`
+      */
     ["com.affine.whiteboard.chart.panel.formatter"](): string;
+    /**
+      * `Legend`
+      */
     ["com.affine.whiteboard.chart.panel.legend"](): string;
+    /**
+      * `Data labels`
+      */
     ["com.affine.whiteboard.chart.panel.labels"](): string;
     /**
       * `Import CSV`
@@ -7136,9 +7239,41 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.whiteboard.chart.panel.import-mermaid"](): string;
     /**
-      * `pie title ...`
+      * `pie title Pets
+    "Dogs" : 386
+    "Cats" : 85`
       */
     ["com.affine.whiteboard.chart.panel.mermaid-placeholder"](): string;
+    /**
+      * `X axis name`
+      */
+    ["com.affine.whiteboard.chart.panel.x-axis-name"](): string;
+    /**
+      * `Y axis name`
+      */
+    ["com.affine.whiteboard.chart.panel.y-axis-name"](): string;
+    /**
+      * `Database view`
+      */
+    ["com.affine.whiteboard.chart.panel.view"](): string;
+    /**
+      * `All rows`
+      */
+    ["com.affine.whiteboard.chart.panel.view-all"](): string;
+    /**
+      * `Series`
+      */
+    ["com.affine.whiteboard.chart.panel.series"](): string;
+    /**
+      * `Series color`
+      */
+    ["com.affine.whiteboard.chart.panel.series-color"](): string;
+    /**
+      * `Up to {{count}} cells`
+      */
+    ["com.affine.whiteboard.chart.panel.inline-limit"](options: {
+        readonly count: string;
+    }): string;
     /**
       * `Chart settings`
       */
@@ -7151,58 +7286,211 @@ export function useAFFiNEI18N(): {
       * `Export SVG`
       */
     ["com.affine.whiteboard.chart.toolbar.export-svg"](): string;
+    /**
+      * `Kanban board`
+      */
     ["com.affine.whiteboard.board.slash-name"](): string;
+    /**
+      * `Add a kanban board linked to a document table.`
+      */
     ["com.affine.whiteboard.board.slash-description"](): string;
+    /**
+      * `Project tracking board`
+      */
     ["com.affine.whiteboard.board.template-project"](): string;
+    /**
+      * `Kanban with status, assignee, due date and labels.`
+      */
     ["com.affine.whiteboard.board.template-project-description"](): string;
+    /**
+      * `Board from table`
+      */
     ["com.affine.whiteboard.board.from-table"](): string;
+    /**
+      * `Place the nearest database on the board as a kanban.`
+      */
     ["com.affine.whiteboard.board.from-table-description"](): string;
+    /**
+      * `Board`
+      */
     ["com.affine.whiteboard.board.title"](): string;
+    /**
+      * `Kanban`
+      */
     ["com.affine.whiteboard.board.kicker"](): string;
+    /**
+      * `Board snapshot`
+      */
     ["com.affine.whiteboard.board.preview-label"](): string;
+    /**
+      * `Link a database or create a board from the slash menu.`
+      */
     ["com.affine.whiteboard.board.empty"](): string;
+    /**
+      * `Status`
+      */
     ["com.affine.whiteboard.board.column.status"](): string;
+    /**
+      * `Assignee`
+      */
     ["com.affine.whiteboard.board.column.assignee"](): string;
+    /**
+      * `Due`
+      */
     ["com.affine.whiteboard.board.column.due"](): string;
+    /**
+      * `Labels`
+      */
     ["com.affine.whiteboard.board.column.labels"](): string;
+    /**
+      * `Cover`
+      */
     ["com.affine.whiteboard.board.column.cover"](): string;
+    /**
+      * `To do`
+      */
     ["com.affine.whiteboard.board.status.todo"](): string;
+    /**
+      * `In progress`
+      */
     ["com.affine.whiteboard.board.status.in-progress"](): string;
+    /**
+      * `Done`
+      */
     ["com.affine.whiteboard.board.status.done"](): string;
+    /**
+      * `Backlog`
+      */
     ["com.affine.whiteboard.board.status.backlog"](): string;
+    /**
+      * `Review`
+      */
     ["com.affine.whiteboard.board.status.review"](): string;
+    /**
+      * `Bug`
+      */
     ["com.affine.whiteboard.board.label.bug"](): string;
+    /**
+      * `Feature`
+      */
     ["com.affine.whiteboard.board.label.feature"](): string;
+    /**
+      * `Docs`
+      */
     ["com.affine.whiteboard.board.label.docs"](): string;
+    /**
+      * `Task 1`
+      */
     ["com.affine.whiteboard.board.seed.task-1"](): string;
+    /**
+      * `Task 2`
+      */
     ["com.affine.whiteboard.board.seed.task-2"](): string;
+    /**
+      * `Task 3`
+      */
     ["com.affine.whiteboard.board.seed.task-3"](): string;
+    /**
+      * `Discovery`
+      */
     ["com.affine.whiteboard.board.seed.discovery"](): string;
+    /**
+      * `Build`
+      */
     ["com.affine.whiteboard.board.seed.build"](): string;
+    /**
+      * `Review`
+      */
     ["com.affine.whiteboard.board.seed.review"](): string;
+    /**
+      * `No status`
+      */
     ["com.affine.whiteboard.board.ungrouped"](): string;
+    /**
+      * `+{{count}}`
+      */
     ["com.affine.whiteboard.board.more-cards"](options: {
         readonly count: string;
     }): string;
+    /**
+      * `Columns`
+      */
     ["com.affine.whiteboard.board.lod-l0"](): string;
+    /**
+      * `Overview`
+      */
     ["com.affine.whiteboard.board.lod-l1"](): string;
+    /**
+      * `Time spent`
+      */
     ["com.affine.whiteboard.board.column.time-spent"](): string;
+    /**
+      * `Started`
+      */
     ["com.affine.whiteboard.board.column.started"](): string;
+    /**
+      * `Files`
+      */
     ["com.affine.whiteboard.board.column.files"](): string;
+    /**
+      * `First step`
+      */
     ["com.affine.whiteboard.board.seed.checklist"](): string;
+    /**
+      * `Swimlane board`
+      */
     ["com.affine.whiteboard.board.template-swimlanes"](): string;
+    /**
+      * `Kanban with assignee lanes, WIP limits and checklists.`
+      */
     ["com.affine.whiteboard.board.template-swimlanes-description"](): string;
+    /**
+      * `Board settings`
+      */
     ["com.affine.whiteboard.board.settings"](): string;
+    /**
+      * `Swimlanes`
+      */
     ["com.affine.whiteboard.board.swimlanes"](): string;
+    /**
+      * `No swimlanes`
+      */
     ["com.affine.whiteboard.board.swimlane-none"](): string;
+    /**
+      * `Unassigned`
+      */
     ["com.affine.whiteboard.board.unassigned"](): string;
+    /**
+      * `Filter lane`
+      */
     ["com.affine.whiteboard.board.filter-lane"](): string;
+    /**
+      * `All lanes`
+      */
     ["com.affine.whiteboard.board.filter-all"](): string;
+    /**
+      * `Table filters and members stay in the kanban toolbar. Swimlanes group cards by a second field.`
+      */
     ["com.affine.whiteboard.board.settings-filters"](): string;
+    /**
+      * `WIP limit`
+      */
     ["com.affine.whiteboard.board.wip-limit"](): string;
+    /**
+      * `Checklist`
+      */
     ["com.affine.whiteboard.board.checklist"](): string;
+    /**
+      * `Time`
+      */
     ["com.affine.whiteboard.board.time-spent"](): string;
+    /**
+      * `Files`
+      */
     ["com.affine.whiteboard.board.attachments"](): string;
+    /**
+      * `Comment`
+      */
     ["com.affine.whiteboard.board.comment"](): string;
     /**
       * `{{count}} comments`
@@ -7210,6 +7498,9 @@ export function useAFFiNEI18N(): {
     ["com.affine.whiteboard.board.comment-count"](options: {
         readonly count: string;
     }): string;
+    /**
+      * `+15m`
+      */
     ["com.affine.whiteboard.board.log-time"](): string;
     /**
       * `Color Picker`

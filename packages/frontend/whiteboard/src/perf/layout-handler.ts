@@ -10,6 +10,7 @@ import type { Container } from '@blocksuite/global/di';
 
 import { WHITEBOARD_FLAVOURS } from '../const';
 import type { WhiteboardWidgetLayout } from './painter.worker';
+import { snapshotBitmap } from './snapshot-bitmap';
 
 const FILLS: Record<string, string> = {
   [WHITEBOARD_FLAVOURS.hello]: '#f3f4f6',
@@ -26,10 +27,13 @@ function readXywh(model: BlockModel) {
 }
 
 function readTitle(model: BlockModel) {
-  const title = (model.props as { title?: { toString?: () => string } | string })
-    .title;
+  const title = (
+    model.props as { title?: { toString?: () => string } | string }
+  ).title;
   if (!title) return model.flavour;
-  return typeof title === 'string' ? title : (title.toString?.() ?? model.flavour);
+  return typeof title === 'string'
+    ? title
+    : (title.toString?.() ?? model.flavour);
 }
 
 function parseRect(xywh?: string): Rect | null {
@@ -57,12 +61,12 @@ function createHandler(flavour: string) {
 
     override queryLayout(
       model: BlockModel,
-      _host: EditorHost,
+      host: EditorHost,
       _viewportRecord: ViewportRecord
     ): WhiteboardWidgetLayout | null {
       const rect = parseRect(readXywh(model));
       if (!rect) return null;
-      const snapshot =
+      const snapshotId =
         (model.props as { snapshotBlobId?: string; snapshotSvgBlobId?: string })
           .snapshotSvgBlobId ??
         (model.props as { snapshotBlobId?: string }).snapshotBlobId;
@@ -72,7 +76,8 @@ function createHandler(flavour: string) {
         rect,
         title: readTitle(model),
         fill: FILLS[flavour] ?? '#f3f4f6',
-        snapshotId: snapshot,
+        snapshotId,
+        snapshot: snapshotId ? snapshotBitmap(host, snapshotId) : undefined,
       };
     }
 

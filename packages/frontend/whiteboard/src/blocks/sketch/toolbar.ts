@@ -1,23 +1,20 @@
 import { I18n } from '@affine/i18n';
 import {
+  type ToolbarContext,
   type ToolbarModuleConfig,
   ToolbarModuleExtension,
 } from '@blocksuite/affine/shared/services';
-import { CopyIcon, DownloadIcon } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
+import { CopyIcon, DownloadIcon } from '@blocksuite/icons/lit';
 
+import { detach } from '../../detach';
+import { WHITEBOARD_IMPORT_ACCEPT } from '../../infra/import';
 import { SketchBlockModel } from './model';
 import { SketchBlockComponent } from './sketch-block';
 import { SketchEdgelessBlockComponent } from './sketch-edgeless-block';
 
-function currentSketch(ctx: {
-  getCurrentBlockByType: (
-    type:
-      | typeof SketchEdgelessBlockComponent
-      | typeof SketchBlockComponent
-  ) => SketchBlockComponent | null;
-}) {
+function currentSketch(ctx: ToolbarContext) {
   return (
     ctx.getCurrentBlockByType(SketchEdgelessBlockComponent) ??
     ctx.getCurrentBlockByType(SketchBlockComponent)
@@ -31,7 +28,7 @@ const surfaceToolbarConfig = {
       tooltip: I18n['com.affine.whiteboard.sketch.export-excalidraw'](),
       icon: DownloadIcon(),
       run(ctx) {
-        void currentSketch(ctx)?.exportSketch('excalidraw');
+        detach(currentSketch(ctx)?.exportSketch('excalidraw'));
       },
     },
     {
@@ -39,7 +36,7 @@ const surfaceToolbarConfig = {
       tooltip: I18n['com.affine.whiteboard.sketch.export-png'](),
       icon: DownloadIcon(),
       run(ctx) {
-        void currentSketch(ctx)?.exportSketch('png');
+        detach(currentSketch(ctx)?.exportSketch('png'));
       },
     },
     {
@@ -47,7 +44,7 @@ const surfaceToolbarConfig = {
       tooltip: I18n['com.affine.whiteboard.sketch.export-svg'](),
       icon: DownloadIcon(),
       run(ctx) {
-        void currentSketch(ctx)?.exportSketch('svg');
+        detach(currentSketch(ctx)?.exportSketch('svg'));
       },
     },
     {
@@ -55,7 +52,7 @@ const surfaceToolbarConfig = {
       tooltip: I18n['com.affine.whiteboard.sketch.copy'](),
       icon: CopyIcon(),
       run(ctx) {
-        void currentSketch(ctx)?.copyScene();
+        detach(currentSketch(ctx)?.copyScene());
       },
     },
     {
@@ -68,10 +65,10 @@ const surfaceToolbarConfig = {
         if (!block) return;
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.excalidraw,application/json';
+        input.accept = WHITEBOARD_IMPORT_ACCEPT;
         input.onchange = () => {
           const file = input.files?.[0];
-          if (file) void block.importExcalidraw(file);
+          if (file) detach(block.importFile(file));
         };
         input.click();
       },

@@ -166,6 +166,32 @@ export const boardBlockStyles = css`
     color: var(--affine-text-secondary-color);
   }
 
+  .wb-board__card-checklist {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .wb-board__card-task {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 1px solid var(--affine-border-color);
+    border-radius: 4px;
+    padding: 0 4px;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .wb-board__card-task[aria-pressed='true'] {
+    text-decoration: line-through;
+    color: var(--affine-text-disable-color, var(--affine-text-secondary-color));
+  }
+
   .wb-board__card-btn {
     border: 0;
     padding: 0;
@@ -207,6 +233,16 @@ export const boardBlockStyles = css`
     display: flex;
     flex-direction: column;
     gap: 4px;
+  }
+
+  /* The window in lod-view only pays off if the column body scrolls itself. */
+  .wb-board--l2 .wb-board__cell {
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .wb-board__card-spacer {
+    flex: 0 0 auto;
   }
 
   .wb-board-settings {

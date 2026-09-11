@@ -1,77 +1,87 @@
-export { WHITEBOARD_FLAVOURS, WHITEBOARD_SURFACE_CHILDREN } from './const';
-export { insertGfxWidget } from './insert-widget';
-export {
-  collectStoreExtensions,
-  collectViewExtensions,
-  registerGfxWidget,
-  type GfxWidgetRegistration,
-  type SnapshotPainter,
-} from './register-gfx-widget';
-export { WhiteboardStoreExtension } from './store';
-export {
-  WhiteboardViewExtension,
-  type WhiteboardViewOptions,
-} from './view';
-export {
-  HelloBlockSchema,
-  HelloBlockSchemaExtension,
-  helloWidget,
-} from './blocks/hello';
-export {
-  ChartBlockSchema,
-  ChartBlockSchemaExtension,
-  chartWidget,
-} from './blocks/chart';
-export {
-  SketchBlockSchema,
-  SketchBlockSchemaExtension,
-  sketchWidget,
-} from './blocks/sketch';
 export {
   BoardBlockSchema,
   BoardBlockSchemaExtension,
   boardWidget,
 } from './blocks/board';
 export {
-  WHITEBOARD_LOD,
-  CHART_WIDGET_SIZE,
-  BOARD_WIDGET_SIZE,
-  SKETCH_WIDGET_SIZE,
-} from './const';
+  ChartBlockSchema,
+  ChartBlockSchemaExtension,
+  chartWidget,
+} from './blocks/chart';
 export {
-  getWidgetLodLevel,
-  livePriorityScore,
-  pickLiveIds,
-  snapshotCache,
-  whiteboardPerfPolicy,
-  whiteboardTelemetry,
-  shouldActivateL0Layer,
-  buildStressPlan,
-  WHITEBOARD_STRESS_FIXTURE,
-} from './perf';
+  HelloBlockSchema,
+  HelloBlockSchemaExtension,
+  helloWidget,
+} from './blocks/hello';
 export {
-  WhiteboardReactToLitIdentifier,
-  WhiteboardReactToLitExtension,
-  type WhiteboardReactToLit,
-} from './react-to-lit';
-export {
-  canEditBoardWidgets,
-  isBoardReadonly,
-  mermaidToInlineTable,
-  collectReferencedSnapshotIds,
-  replacedSnapshotId,
-} from './infra';
+  SketchBlockSchema,
+  SketchBlockSchemaExtension,
+  sketchWidget,
+} from './blocks/sketch';
 export {
   ATTENTION_TTL_MS,
-  POINTER_THROTTLE_MS,
-  WHITEBOARD_AWARENESS_KEY,
+  canFollow,
   isRemoteEditing,
+  labelForVersion,
   loadNamedVersions,
+  type NamedVersionMap,
+  namedVersionStorageKey,
   parseCommentAnchor,
   parseCommentIds,
+  POINTER_THROTTLE_MS,
   publishWidgetEditing,
   remoteOwnsLiveEditor,
   saveNamedVersionLabel,
-  type NamedVersionMap,
+  WHITEBOARD_AWARENESS_KEY,
   type WhiteboardCommentAnchor,
+  type WhiteboardCommentAnchors,
+  WhiteboardCommentAnchorsExtension,
+  WhiteboardCommentAnchorsIdentifier,
 } from './collab';
+export { WHITEBOARD_FLAVOURS, WHITEBOARD_SURFACE_CHILDREN } from './const';
+export {
+  BOARD_WIDGET_SIZE,
+  CHART_WIDGET_SIZE,
+  SKETCH_WIDGET_SIZE,
+  WHITEBOARD_LOD,
+} from './const';
+export {
+  canEditBoardWidgets,
+  collectReferencedSnapshotIds,
+  importWhiteboardFile,
+  isBoardReadonly,
+  mermaidToInlineTable,
+  replacedSnapshotId,
+  sniffWhiteboardFormat,
+  staleSnapshotIds,
+  WHITEBOARD_IMPORT_ACCEPT,
+  type WhiteboardImport,
+  type WhiteboardImportFormat,
+} from './infra';
+export { insertGfxWidget } from './insert-widget';
+export {
+  applyStressFixture,
+  buildStressPlan,
+  getWidgetLodLevel,
+  livePriorityScore,
+  pickLiveIds,
+  shouldActivateL0Layer,
+  snapshotCache,
+  WHITEBOARD_STRESS_FIXTURE,
+  whiteboardPerfPolicy,
+  whiteboardTelemetry,
+} from './perf';
+export {
+  type WhiteboardReactToLit,
+  WhiteboardReactToLitExtension,
+  WhiteboardReactToLitIdentifier,
+} from './react-to-lit';
+export {
+  collectStoreExtensions,
+  collectViewExtensions,
+  type GfxWidgetRegistration,
+  registerGfxWidget,
+  type SnapshotPainter,
+} from './register-gfx-widget';
+export { WhiteboardStoreExtension } from './store';
+export { WhiteboardViewExtension, type WhiteboardViewOptions } from './view';

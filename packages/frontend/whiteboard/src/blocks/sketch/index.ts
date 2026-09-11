@@ -24,16 +24,29 @@ export const sketchWidget = registerGfxWidget({
     (props.sceneBlobId as string | undefined),
 });
 
+export { sceneToExportedSvg } from './export';
+export { sketchSceneFromImport } from './import';
+export { getSketchLodLevel, liveSketchBudget } from './live-budget';
 export { SketchBlockSchema, SketchBlockSchemaExtension } from './model';
+export {
+  isExcalidrawScene,
+  parseExcalidrawJson,
+  serializeScene,
+} from './scene';
 export { SketchBlockComponent } from './sketch-block';
 export { SketchEdgelessBlockComponent } from './sketch-edgeless-block';
 export { SketchPreviewBlockComponent } from './sketch-preview-block';
-export { getSketchLodLevel, liveSketchBudget } from './live-budget';
-export { isExcalidrawScene, parseExcalidrawJson, serializeScene } from './scene';
+export { openSketchCollab } from './subdoc';
+export {
+  migrateSketchProps,
+  SKETCH_SCHEMA_VERSION,
+  SketchBlockTransformer,
+} from './transformer';
 export {
   applyElementsToY,
   applySceneToY,
+  isNewerElement,
+  reconcileSketchY,
   sceneFromY,
   yjsToExcalidraw,
 } from './y-binding';
-export { openSketchCollab } from './subdoc';

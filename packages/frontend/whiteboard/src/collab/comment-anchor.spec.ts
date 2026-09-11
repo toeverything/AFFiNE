@@ -41,10 +41,34 @@ describe('whiteboard comment anchors', () => {
     expect(parseCommentIds(comments)).toEqual(['a', 'c']);
     expect(primaryCommentId(comments)).toBe('a');
     expect(
-      pinsForBlock('row-1', { x: 0, y: 0, w: 20, h: 10 }, comments, undefined, 'row-1')
+      pinsForBlock('row-1', { x: 0, y: 0, w: 20, h: 10 }, comments, () => ({
+        blockId: 'row-1',
+        rowId: 'row-1',
+      }))
     ).toEqual([
       { commentId: 'a', blockId: 'row-1', x: 20, y: 0, rowId: 'row-1' },
       { commentId: 'c', blockId: 'row-1', x: 20, y: 0, rowId: 'row-1' },
+    ]);
+  });
+
+  it('places each pin at its own anchor point', () => {
+    const anchors: Record<
+      string,
+      { blockId: string; point: [number, number] }
+    > = {
+      a: { blockId: 'chart-1', point: [4, 6] },
+    };
+    expect(
+      pinsForBlock(
+        'chart-1',
+        { x: 100, y: 200, w: 50, h: 40 },
+        { a: true, b: true },
+        id => anchors[id]
+      )
+    ).toEqual([
+      { commentId: 'a', blockId: 'chart-1', x: 104, y: 206, rowId: undefined },
+      // No anchor recorded: falls back to the block corner.
+      { commentId: 'b', blockId: 'chart-1', x: 150, y: 200, rowId: undefined },
     ]);
   });
 });

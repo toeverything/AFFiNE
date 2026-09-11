@@ -90,11 +90,16 @@ export function toL0Sprites(sources: readonly L0Source[]): L0Sprite[] {
 }
 
 export function intersects(a: L0Rect, b: L0Rect) {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  return (
+    a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
+  );
 }
 
 /** Keep sprites that overlap the viewport (model space). */
-export function cullSprites(sprites: readonly L0Sprite[], viewport: L0Viewport) {
+export function cullSprites(
+  sprites: readonly L0Sprite[],
+  viewport: L0Viewport
+) {
   return sprites.filter(sprite => intersects(sprite, viewport));
 }
 

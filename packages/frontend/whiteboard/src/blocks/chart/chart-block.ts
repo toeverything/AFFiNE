@@ -7,23 +7,35 @@ import { html, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import type { Root } from 'react-dom/client';
 
-import type { ChartSettingsPanelProps } from './chart-settings-panel';
-import { listDatabases } from './databases';
-import { resolveChartData, subscribeChartData } from './data-source';
 import {
   publishWidgetEditing,
   remoteOwnsLiveEditor,
 } from '../../collab/awareness';
-import { canEditBoardWidgets } from '../../infra/permissions';
+import { detach } from '../../detach';
 import { replacedSnapshotId } from '../../infra/blob-gc';
 import { mermaidToInlineTable } from '../../infra/formats/mermaid';
-import { tryLive, whiteboardPerfPolicy, xywhCenterDistance } from '../../perf/policy';
+import { canEditBoardWidgets } from '../../infra/permissions';
+import {
+  tryLive,
+  whiteboardPerfPolicy,
+  xywhCenterDistance,
+} from '../../perf/policy';
 import { whiteboardTelemetry } from '../../perf/telemetry';
+import type { ChartSettingsPanelProps } from './chart-settings-panel';
+import { resolveChartData, subscribeChartData } from './data-source';
+import { listDatabases } from './databases';
+import type * as EChartsRuntimeModule from './echarts-runtime';
 import { getChartLodLevel, liveChartBudget } from './live-budget';
 import { parseCsv } from './mapping';
 import type { ChartBlockModel } from './model';
 import { buildChartOption } from './option';
-import { readDataSource, readSpec, readTitle, writeBoxed, writeTitle } from './props';
+import {
+  readDataSource,
+  readSpec,
+  readTitle,
+  writeBoxed,
+  writeTitle,
+} from './props';
 import {
   dataUrlToBlobId,
   resolveSnapshotSrc,
@@ -58,7 +70,7 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
 
   private _dataset: ChartDataset = { dimensions: [], source: [] };
   private _live: Awaited<
-    ReturnType<(typeof import('./echarts-runtime'))['initLiveChart']>
+    ReturnType<typeof EChartsRuntimeModule.initLiveChart>
   > | null = null;
   private _panelRoot: Root | null = null;
   private _objectUrl: string | undefined;
@@ -80,7 +92,9 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
 
   private panelProps(): ChartSettingsPanelProps {
     return {
-      title: readTitle(this.model.props.title) || I18n['com.affine.whiteboard.chart.title'](),
+      title:
+        readTitle(this.model.props.title) ||
+        I18n['com.affine.whiteboard.chart.title'](),
       chartType: this.model.props.chartType$.value,
       spec: readSpec(this.model.props.spec),
       dataSource: readDataSource(this.model.props.dataSource),
@@ -93,10 +107,13 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
         this.model.props.spec = writeBoxed(this.model.props.spec, spec);
       },
       onDataSourceChange: source => {
-        this.model.props.dataSource = writeBoxed(this.model.props.dataSource, source);
+        this.model.props.dataSource = writeBoxed(
+          this.model.props.dataSource,
+          source
+        );
       },
       onImportCsvFile: file => {
-        void this.importCsvFile(file);
+        detach(this.importCsvFile(file));
       },
       onImportMermaid: text => {
         this.importMermaid(text);
@@ -233,7 +250,7 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
     if (this.preview || !this._live) return;
     if (this._snapshotTimer) window.clearTimeout(this._snapshotTimer);
     this._snapshotTimer = window.setTimeout(() => {
-      void this.persistSnapshot();
+      detach(this.persistSnapshot());
     }, 1000);
   }
 
@@ -243,7 +260,7 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
       const dataUrl = this._live.getDataURL({ type: 'png', pixelRatio: 2 });
       const blobId = await dataUrlToBlobId(this.model.store, dataUrl);
       if (blobId && blobId !== this.model.props.snapshotBlobId) {
-        void replacedSnapshotId(this.model.props.snapshotBlobId, blobId);
+        replacedSnapshotId(this.model.props.snapshotBlobId, blobId);
         this.model.props.snapshotBlobId = blobId;
         whiteboardTelemetry.noteSnapshotWritten();
       }
@@ -290,7 +307,9 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
     if (!this._panelRoot) {
       this._panelRoot = createRoot(host);
     }
-    this._panelRoot.render(createElement(ChartSettingsPanel, this.panelProps()));
+    this._panelRoot.render(
+      createElement(ChartSettingsPanel, this.panelProps())
+    );
   }
 
   protected renderFrame() {
@@ -305,41 +324,49 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
         class="wb-chart"
         @pointerenter=${() => {
           this.hovered = true;
-          void this.syncLive();
+          detach(this.syncLive());
         }}
         @pointerleave=${() => {
           this.hovered = false;
-          void this.syncLive();
+          detach(this.syncLive());
         }}
       >
         <div class="wb-chart__header">
           <div class="wb-chart__title">${title}</div>
         </div>
         <div class="wb-chart__body">
-          ${live
-            ? html`<div class="wb-chart__host"></div>`
-            : this.snapshotUrl
-              ? html`<img
-                  class="wb-chart__snapshot"
-                  src=${this.snapshotUrl}
-                  alt=${title}
-                />`
-              : html`<div class="wb-chart__placeholder">
-                  ${this.preview
-                    ? I18n['com.affine.whiteboard.chart.preview-label']()
-                    : empty
-                      ? I18n['com.affine.whiteboard.chart.empty']()
-                      : I18n['com.affine.whiteboard.chart.snapshot-fallback']()}
-                </div>`}
-          ${this.offline
-            ? html`<div class="wb-chart__banner">
-                ${I18n['com.affine.whiteboard.chart.offline']()}
-              </div>`
-            : this.error
+          ${
+            live
+              ? html`<div class="wb-chart__host"></div>`
+              : this.snapshotUrl
+                ? html`<img
+                    class="wb-chart__snapshot"
+                    src=${this.snapshotUrl}
+                    alt=${title}
+                  />`
+                : html`<div class="wb-chart__placeholder">
+                    ${
+                      this.preview
+                        ? I18n['com.affine.whiteboard.chart.preview-label']()
+                        : empty
+                          ? I18n['com.affine.whiteboard.chart.empty']()
+                          : I18n[
+                              'com.affine.whiteboard.chart.snapshot-fallback'
+                            ]()
+                    }
+                  </div>`
+          }
+          ${
+            this.offline
               ? html`<div class="wb-chart__banner">
-                  ${I18n['com.affine.whiteboard.chart.error']()}
+                  ${I18n['com.affine.whiteboard.chart.offline']()}
                 </div>`
-              : nothing}
+              : this.error
+                ? html`<div class="wb-chart__banner">
+                    ${I18n['com.affine.whiteboard.chart.error']()}
+                  </div>`
+                : nothing
+          }
         </div>
       </div>
     `;
@@ -354,13 +381,13 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
     super.connectedCallback();
     this.offline = typeof navigator !== 'undefined' && !navigator.onLine;
     this._unsubData = subscribeChartData(this.model, () => {
-      void this.refreshData();
+      detach(this.refreshData());
     });
     this.disposables.add(
       this.model.propsUpdated.subscribe(({ key }) => {
-        if (key === 'snapshotBlobId') void this.refreshSnapshotUrl();
+        if (key === 'snapshotBlobId') detach(this.refreshSnapshotUrl());
         if (key === 'chartType' || key === 'spec' || key === 'title') {
-          void this.syncLive();
+          detach(this.syncLive());
         }
       })
     );
@@ -370,13 +397,13 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
       this.disposables.add(
         gfx.selection.slots.updated.subscribe(() => {
           this.selected = gfx.selection.has(this.model.id);
-          void this.syncLive();
-          void this.syncSettingsPanel();
+          detach(this.syncLive());
+          detach(this.syncSettingsPanel());
         })
       );
       this.disposables.add(
         gfx.viewport.viewportUpdated.subscribe(() => {
-          void this.syncLive();
+          detach(this.syncLive());
         })
       );
       this.selected = gfx.selection.has(this.model.id);
@@ -386,14 +413,14 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
           this.selected = this.std.selection
             .filter(BlockSelection)
             .some(selection => selection.blockId === this.model.id);
-          void this.syncSettingsPanel();
+          detach(this.syncSettingsPanel());
         })
       );
     }
 
     const onOnline = () => {
       this.offline = !navigator.onLine;
-      void this.refreshData();
+      detach(this.refreshData());
     };
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOnline);
@@ -402,15 +429,15 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
       window.removeEventListener('offline', onOnline);
     });
 
-    void this.refreshSnapshotUrl();
-    void this.refreshData();
+    detach(this.refreshSnapshotUrl());
+    detach(this.refreshData());
   }
 
   override firstUpdated() {
     const observer = new IntersectionObserver(
       entries => {
         this.intersecting = entries.some(entry => entry.isIntersecting);
-        void this.syncLive();
+        detach(this.syncLive());
       },
       { rootMargin: '200px' }
     );
@@ -423,8 +450,8 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
   }
 
   override updated() {
-    void this.syncLive();
-    void this.syncSettingsPanel();
+    detach(this.syncLive());
+    detach(this.syncSettingsPanel());
   }
 
   override disconnectedCallback() {

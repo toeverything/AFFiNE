@@ -17,7 +17,7 @@ export const helloWidget = registerGfxWidget({
   interaction: HelloBlockInteraction,
 });
 
-export { HelloBlockSchema, HelloBlockSchemaExtension } from './model';
 export { HelloBlockComponent } from './hello-block';
 export { HelloEdgelessBlockComponent } from './hello-edgeless-block';
 export { HelloPreviewBlockComponent } from './hello-preview-block';
+export { HelloBlockSchema, HelloBlockSchemaExtension } from './model';

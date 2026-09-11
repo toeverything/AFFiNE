@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ATTENTION_TTL_MS,
-  WHITEBOARD_AWARENESS_KEY,
+  canFollow,
   followViewport,
   isAttentionActive,
   isRemoteEditing,
@@ -11,6 +11,7 @@ import {
   readPeers,
   remoteEditors,
   shouldPublish,
+  WHITEBOARD_AWARENESS_KEY,
 } from './protocol';
 
 describe('whiteboard collab protocol', () => {
@@ -72,5 +73,25 @@ describe('whiteboard collab protocol', () => {
     expect(merged.followClientId).toBeUndefined();
     expect(merged.editing).toBeUndefined();
     expect(merged.pointer).toBeUndefined();
+  });
+
+  it('clears the viewport so a leaving peer stops being followable', () => {
+    const merged = mergePayload(
+      { viewport: { x: 1, y: 2, zoom: 1 }, attention: undefined },
+      { viewport: undefined }
+    );
+    expect(merged.viewport).toBeUndefined();
+    expect('viewport' in merged).toBe(false);
+  });
+
+  it('refuses a follow that would close a loop', () => {
+    const states = new Map([
+      [1, { [WHITEBOARD_AWARENESS_KEY]: { followClientId: 2 } }],
+      [3, { [WHITEBOARD_AWARENESS_KEY]: {} }],
+    ]);
+    // 1 already follows us, so following 1 back would ping-pong the viewports.
+    expect(canFollow(states, 1, 2)).toBe(false);
+    expect(canFollow(states, 3, 2)).toBe(true);
+    expect(canFollow(states, 2, 2)).toBe(false);
   });
 });

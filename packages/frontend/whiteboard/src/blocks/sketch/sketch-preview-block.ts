@@ -2,6 +2,7 @@ import { I18n } from '@affine/i18n';
 import { BlockComponent } from '@blocksuite/affine/std';
 import { html } from 'lit';
 
+import { detach } from '../../detach';
 import { resolveBlobSrc, revokeObjectUrl } from './blob';
 import type { SketchBlockModel } from './model';
 import { sketchBlockStyles } from './styles';
@@ -13,9 +14,9 @@ export class SketchPreviewBlockComponent extends BlockComponent<SketchBlockModel
 
   override connectedCallback() {
     super.connectedCallback();
-    void this.refresh();
+    detach(this.refresh());
     this.disposables.add(
-      this.model.propsUpdated.subscribe(() => void this.refresh())
+      this.model.propsUpdated.subscribe(() => detach(this.refresh()))
     );
   }
 
@@ -51,15 +52,17 @@ export class SketchPreviewBlockComponent extends BlockComponent<SketchBlockModel
           </div>
         </div>
         <div class="wb-sketch__body">
-          ${this._previewSrc
-            ? html`<img
-                class="wb-sketch__snapshot"
-                src=${this._previewSrc}
-                alt=${title}
-              />`
-            : html`<div class="wb-sketch__placeholder">
-                ${I18n['com.affine.whiteboard.sketch.preview-label']()}
-              </div>`}
+          ${
+            this._previewSrc
+              ? html`<img
+                  class="wb-sketch__snapshot"
+                  src=${this._previewSrc}
+                  alt=${title}
+                />`
+              : html`<div class="wb-sketch__placeholder">
+                  ${I18n['com.affine.whiteboard.sketch.preview-label']()}
+                </div>`
+          }
         </div>
       </div>
     `;

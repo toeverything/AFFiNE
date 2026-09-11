@@ -150,6 +150,7 @@
     { "path": "./packages/frontend/native" },
     { "path": "./packages/frontend/routes" },
     { "path": "./packages/frontend/track" },
+    { "path": "./packages/frontend/whiteboard" },
     { "path": "./tests/affine-cloud" },
     { "path": "./tests/affine-cloud-copilot" },
     { "path": "./tests/affine-desktop" },

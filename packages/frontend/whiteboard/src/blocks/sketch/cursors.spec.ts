@@ -37,7 +37,10 @@ describe('sketch in-widget cursors', () => {
           [SKETCH_AWARENESS_KEY]: { blockId: 'sk-2', pointer: { x: 1, y: 1 } },
         },
       ],
-      [3, { user: { name: 'Me' }, [SKETCH_AWARENESS_KEY]: { blockId: 'sk-1' } }],
+      [
+        3,
+        { user: { name: 'Me' }, [SKETCH_AWARENESS_KEY]: { blockId: 'sk-1' } },
+      ],
     ]);
 
     const { editors, cursors } = readSketchCursors(states, 'sk-1', 3);

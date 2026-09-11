@@ -37,7 +37,26 @@ export const SKETCH_WIDGET_SIZE = {
   height: 360,
 } as const;
 
-export const WHITEBOARD_LOD = {
+/**
+ * Tuning knobs, not discriminants: typed as `number` so the defaults do not
+ * leak literal types into the signatures of the helpers that consume them.
+ */
+export interface WhiteboardLodConfig {
+  /** Below this zoom a widget renders as L0 (bitmap / placeholder). */
+  z0: number;
+  /** Above this zoom a hovered widget may be promoted to L2 (live). */
+  z1: number;
+  maxLiveCharts: number;
+  maxLiveKanban: number;
+  maxLiveSketches: number;
+  /** Cards rendered per column at L1 before the "+N" overflow chip. */
+  l1KanbanCards: number;
+  kanbanCardEstimatePx: number;
+  kanbanColumnEstimatePx: number;
+  virtualOverscan: number;
+}
+
+export const WHITEBOARD_LOD: WhiteboardLodConfig = {
   z0: 0.35,
   z1: 0.7,
   maxLiveCharts: 3,
@@ -47,4 +66,4 @@ export const WHITEBOARD_LOD = {
   kanbanCardEstimatePx: 44,
   kanbanColumnEstimatePx: 160,
   virtualOverscan: 1,
-} as const;
+};

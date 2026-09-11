@@ -5,12 +5,13 @@ import {
 import {
   BlockModel,
   BlockSchemaExtension,
-  Boxed,
+  type Boxed,
   defineBlockSchema,
   type Text,
 } from '@blocksuite/affine/store';
 
 import { WHITEBOARD_FLAVOURS } from '../../const';
+import { SKETCH_SCHEMA_VERSION, SketchBlockTransformer } from './transformer';
 import type { SketchAssets } from './types';
 
 export type SketchBlockProps = {
@@ -41,11 +42,13 @@ export const SketchBlockSchema = defineBlockSchema({
     liveBudgetExempt: false,
   }),
   metadata: {
-    version: 1,
+    version: SKETCH_SCHEMA_VERSION,
     role: 'content',
     parent: ['affine:surface', 'affine:note'],
     children: [],
   },
+  transformer: transformerConfigs =>
+    new SketchBlockTransformer(transformerConfigs),
   toModel: () => new SketchBlockModel(),
 });
 

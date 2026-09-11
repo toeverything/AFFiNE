@@ -2,7 +2,7 @@ import { I18n } from '@affine/i18n';
 import { css, html, LitElement } from 'lit';
 import { state } from 'lit/decorators.js';
 
-import { whiteboardTelemetry } from './telemetry';
+import { startRttProbe, whiteboardTelemetry } from './telemetry';
 
 export class WhiteboardPerfHud extends LitElement {
   static override styles = css`
@@ -83,15 +83,20 @@ export class WhiteboardPerfHud extends LitElement {
 
   private _timer = 0;
 
+  private _stopRttProbe: (() => void) | null = null;
+
   override connectedCallback() {
     super.connectedCallback();
     whiteboardTelemetry.start();
+    this._stopRttProbe = startRttProbe();
     this.tick();
     this._timer = window.setInterval(() => this.tick(), 500);
   }
 
   override disconnectedCallback() {
     window.clearInterval(this._timer);
+    this._stopRttProbe?.();
+    this._stopRttProbe = null;
     whiteboardTelemetry.stop();
     super.disconnectedCallback();
   }

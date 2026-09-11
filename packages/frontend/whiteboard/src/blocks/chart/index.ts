@@ -22,9 +22,9 @@ export const chartWidget = registerGfxWidget({
   snapshotPainter: props => props.snapshotBlobId as string | undefined,
 });
 
-export { ChartBlockSchema, ChartBlockSchemaExtension } from './model';
 export { ChartBlockComponent } from './chart-block';
 export { ChartEdgelessBlockComponent } from './chart-edgeless-block';
 export { ChartPreviewBlockComponent } from './chart-preview-block';
-export { sanitizeEChartsOption } from './sanitize';
 export { mapDatabaseToDataset, mapInlineTable } from './mapping';
+export { ChartBlockSchema, ChartBlockSchemaExtension } from './model';
+export { sanitizeEChartsOption } from './sanitize';

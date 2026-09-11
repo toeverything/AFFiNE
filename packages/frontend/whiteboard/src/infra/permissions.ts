@@ -4,7 +4,9 @@
  * Block-level ACL is not promised in v1; `lockedBySelf` is a soft lock only.
  */
 
-export function isBoardReadonly(store: { readonly?: boolean } | null | undefined) {
+export function isBoardReadonly(
+  store: { readonly?: boolean } | null | undefined
+) {
   return !!store?.readonly;
 }
 

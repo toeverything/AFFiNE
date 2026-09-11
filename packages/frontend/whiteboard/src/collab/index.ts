@@ -1,18 +1,8 @@
 export {
-  ATTENTION_TTL_MS,
-  POINTER_THROTTLE_MS,
-  WHITEBOARD_AWARENESS_KEY,
-  colorForPeer,
-  followViewport,
-  isAttentionActive,
-  isRemoteEditing,
-  makeAttention,
-  readPeers,
-  remoteEditors,
-  shouldPublish,
-  type WhiteboardAwarenessPayload,
-  type WhiteboardPeer,
-} from './protocol';
+  type WhiteboardCommentAnchors,
+  WhiteboardCommentAnchorsExtension,
+  WhiteboardCommentAnchorsIdentifier,
+} from './anchor-provider';
 export {
   getDocAwareness,
   patchCollabAwareness,
@@ -30,7 +20,23 @@ export {
 export {
   labelForVersion,
   loadNamedVersions,
+  type NamedVersionMap,
   namedVersionStorageKey,
   saveNamedVersionLabel,
-  type NamedVersionMap,
 } from './named-versions';
+export {
+  ATTENTION_TTL_MS,
+  canFollow,
+  colorForPeer,
+  followViewport,
+  isAttentionActive,
+  isRemoteEditing,
+  makeAttention,
+  POINTER_THROTTLE_MS,
+  readPeers,
+  remoteEditors,
+  shouldPublish,
+  WHITEBOARD_AWARENESS_KEY,
+  type WhiteboardAwarenessPayload,
+  type WhiteboardPeer,
+} from './protocol';

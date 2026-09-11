@@ -9,7 +9,9 @@ export function namedVersionStorageKey(workspaceId: string, docId: string) {
   return `affine-named-version:${workspaceId}:${docId}`;
 }
 
-export function parseNamedVersions(raw: string | null | undefined): NamedVersionMap {
+export function parseNamedVersions(
+  raw: string | null | undefined
+): NamedVersionMap {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw) as unknown;

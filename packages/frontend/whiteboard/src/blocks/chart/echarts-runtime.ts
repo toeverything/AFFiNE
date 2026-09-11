@@ -1,9 +1,10 @@
+import type * as EChartsCore from 'echarts/core';
 import type { EChartsType } from 'echarts/core';
 
 import { whiteboardTelemetry } from '../../perf/telemetry';
 import type { SanitizedEChartsOption } from './types';
 
-type EChartsModule = typeof import('echarts/core');
+type EChartsModule = typeof EChartsCore;
 
 let echartsPromise: Promise<EChartsModule> | null = null;
 

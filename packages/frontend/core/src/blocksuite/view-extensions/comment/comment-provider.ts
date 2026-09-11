@@ -68,10 +68,7 @@ function getPreviewFromSelections(
   return previews.length > 0 ? previews.join(' ') : 'New comment';
 }
 
-function extractCommentAnchor(
-  std: BlockStdScope,
-  selections: BaseSelection[]
-) {
+function extractCommentAnchor(std: BlockStdScope, selections: BaseSelection[]) {
   for (const selection of selections) {
     if (selection instanceof SurfaceSelection && selection.elements[0]) {
       return { blockId: selection.elements[0] };

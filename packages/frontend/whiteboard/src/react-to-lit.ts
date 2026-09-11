@@ -1,9 +1,13 @@
 import { createIdentifier } from '@blocksuite/affine/global/di';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { TemplateResult } from 'lit';
+import type { ReactNode } from 'react';
+
+/** Structurally identical to `ElementOrFactory` in `@affine/component`. */
+export type WhiteboardElementOrFactory = ReactNode | (() => ReactNode);
 
 export type WhiteboardReactToLit = (
-  element: unknown,
+  element: WhiteboardElementOrFactory,
   rerendering?: boolean
 ) => TemplateResult;
 

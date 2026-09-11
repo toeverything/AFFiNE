@@ -6,6 +6,7 @@ import { FrameworkProvider } from '@toeverything/infra';
 import z from 'zod';
 
 import { AffineCommentProvider } from './comment-provider';
+import { AffineWhiteboardCommentAnchors } from './whiteboard-anchors';
 
 const optionsSchema = z.object({
   enableComment: z.boolean().optional(),
@@ -26,6 +27,9 @@ export class CommentViewExtension extends ViewExtensionProvider<CommentViewOptio
     const framework = options.framework;
     if (!framework) return;
 
-    context.register([AffineCommentProvider(framework)]);
+    context.register([
+      AffineCommentProvider(framework),
+      AffineWhiteboardCommentAnchors(framework),
+    ]);
   }
 }

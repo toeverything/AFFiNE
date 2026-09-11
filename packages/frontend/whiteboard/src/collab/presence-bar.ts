@@ -87,13 +87,15 @@ export class WhiteboardPresenceBar extends LitElement {
               class="wb-presence__peer"
               style="background:${peer.color}"
               data-following=${peer.clientId === this.following}
-              title=${peer.editing
-                ? I18n['com.affine.whiteboard.collab.editing']({
-                    name: peer.name,
-                  })
-                : I18n['com.affine.whiteboard.collab.follow']({
-                    name: peer.name,
-                  })}
+              title=${
+                peer.editing
+                  ? I18n['com.affine.whiteboard.collab.editing']({
+                      name: peer.name,
+                    })
+                  : I18n['com.affine.whiteboard.collab.follow']({
+                      name: peer.name,
+                    })
+              }
               @click=${() =>
                 this.onFollow?.(
                   this.following === peer.clientId ? null : peer.clientId
@@ -103,13 +105,15 @@ export class WhiteboardPresenceBar extends LitElement {
             </button>
           `
         )}
-        ${followed
-          ? html`<span class="wb-presence__label">
-              ${I18n['com.affine.whiteboard.collab.following']({
-                name: followed.name,
-              })}
-            </span>`
-          : nothing}
+        ${
+          followed
+            ? html`<span class="wb-presence__label">
+                ${I18n['com.affine.whiteboard.collab.following']({
+                  name: followed.name,
+                })}
+              </span>`
+            : nothing
+        }
         <button
           type="button"
           class="wb-presence__btn"

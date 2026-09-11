@@ -1,11 +1,16 @@
 import { I18n } from '@affine/i18n';
-import { useCallback, useRef, useState, type PointerEvent } from 'react';
+import { type PointerEvent, useCallback, useRef, useState } from 'react';
 
 import { createElement } from './scene';
 import { sceneToSvg } from './svg';
 import type { SketchElement, SketchScene } from './types';
 
-export type SketchTool = 'rectangle' | 'ellipse' | 'arrow' | 'text' | 'freedraw';
+export type SketchTool =
+  | 'rectangle'
+  | 'ellipse'
+  | 'arrow'
+  | 'text'
+  | 'freedraw';
 
 export type SketchFallbackProps = {
   scene: SketchScene;
@@ -41,7 +46,11 @@ export function SketchFallback({
       const rect = event.currentTarget.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
-      drag.current = { x, y, points: tool === 'freedraw' ? [[0, 0]] : undefined };
+      drag.current = {
+        x,
+        y,
+        points: tool === 'freedraw' ? [[0, 0]] : undefined,
+      };
     },
     [editing, tool]
   );
@@ -72,9 +81,18 @@ export function SketchFallback({
       };
       const extra: Partial<SketchElement> =
         tool === 'text'
-          ? { text: 'Text', fontSize: 18, width: Math.max(box.width, 80), height: 24 }
+          ? {
+              text: 'Text',
+              fontSize: 18,
+              width: Math.max(box.width, 80),
+              height: 24,
+            }
           : tool === 'freedraw'
-            ? { points: drag.current.points, width: box.width, height: box.height }
+            ? {
+                points: drag.current.points,
+                width: box.width,
+                height: box.height,
+              }
             : {};
       const next = createElement(tool, box, extra);
       drag.current = null;

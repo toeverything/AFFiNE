@@ -10,8 +10,8 @@ describe('board widget RBAC', () => {
     expect(
       canEditBoardWidgets({ readonly: false }, { lockedBySelf: true })
     ).toBe(false);
-    expect(canEditBoardWidgets({ readonly: false }, { lockedBySelf: false })).toBe(
-      true
-    );
+    expect(
+      canEditBoardWidgets({ readonly: false }, { lockedBySelf: false })
+    ).toBe(true);
   });
 });

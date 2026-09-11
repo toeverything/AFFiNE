@@ -1,31 +1,41 @@
+export { WhiteboardPerfHud } from './hud';
+export { drawSprites2d } from './l0-renderer';
+export {
+  cullSprites,
+  hitTestSprites,
+  isL0HostFlavour,
+  shouldActivateL0Layer,
+  toL0Sprites,
+} from './l0-scene';
+export { WhiteboardLayoutHandlerExtensions } from './layout-handler';
 export {
   getWidgetLodLevel,
+  type LiveCandidate,
   livePriorityScore,
+  type LiveWidgetKind,
   pickLiveIds,
   tryLive,
   whiteboardPerfPolicy,
   xywhCenterDistance,
-  type LiveCandidate,
-  type LiveWidgetKind,
 } from './policy';
-export { snapshotCache, SnapshotCache, isInlineSnapshotSrc } from './snapshot-cache';
+export { WhiteboardPerfPolicyExtension } from './policy-extension';
 export {
-  whiteboardTelemetry,
-  type WhiteboardPerfSnapshot,
-  type L0BackendKind,
-} from './telemetry';
+  isInlineSnapshotSrc,
+  SnapshotCache,
+  snapshotCache,
+} from './snapshot-cache';
 export {
-  shouldActivateL0Layer,
-  toL0Sprites,
-  cullSprites,
-  hitTestSprites,
-  isL0HostFlavour,
-} from './l0-scene';
-export { drawSprites2d } from './l0-renderer';
-export {
+  applyStressFixture,
   applyStressPlan,
   buildStressPlan,
+  createStoreStressApplier,
+  type StressStore,
   WHITEBOARD_STRESS_FIXTURE,
 } from './stress';
-export { WhiteboardLayoutHandlerExtensions } from './layout-handler';
-export { WhiteboardPerfHud } from './hud';
+export {
+  type L0BackendKind,
+  readSocketRttSample,
+  startRttProbe,
+  type WhiteboardPerfSnapshot,
+  whiteboardTelemetry,
+} from './telemetry';

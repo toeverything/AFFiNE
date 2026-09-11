@@ -1,15 +1,18 @@
 import { I18n } from '@affine/i18n';
-import { useCallback, useState, type ChangeEvent } from 'react';
+import { type ChangeEvent, useCallback, useState } from 'react';
 
+import { INLINE_CELL_LIMIT, limitCells, parseCsv } from './mapping';
 import {
   CHART_DATA_SOURCE_TYPES,
   CHART_FORMATTERS,
   CHART_TYPES,
+  type ChartDatabaseOption,
   type ChartDataSource,
   type ChartDataSourceType,
   type ChartFormatterPreset,
+  type ChartInlineTable,
+  type ChartSeriesSpec,
   type ChartType,
-  type ChartDatabaseOption,
   type ChartVisualSpec,
 } from './types';
 
@@ -52,12 +55,45 @@ const FORMATTER_LABEL: Record<ChartFormatterPreset, () => string> = {
   date: () => I18n['com.affine.whiteboard.chart.formatter.date'](),
 };
 
+/** `<input type="color">` rejects an empty value; the real palette is in `option.ts`. */
+const FALLBACK_SERIES_COLOR = '#1E96EB';
+
 function typeLabel(type: ChartType) {
   return TYPE_LABEL[type]();
 }
 
 function sourceLabel(type: ChartDataSourceType) {
   return SOURCE_LABEL[type]();
+}
+
+function csvCell(value: string | number | null) {
+  if (value == null) return '';
+  const text = String(value);
+  return /["\n,]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+export function inlineRowsToText(table: ChartInlineTable | undefined) {
+  return (table?.rows ?? []).map(row => row.map(csvCell).join(',')).join('\n');
+}
+
+/**
+ * The textarea holds data rows only, so the stored header is prepended before
+ * `parseCsv` runs; an inline table without columns takes them from the text.
+ */
+export function parseInlineRows(
+  columns: string[],
+  text: string
+): ChartInlineTable {
+  const header = columns.map(csvCell).join(',');
+  const parsed = parseCsv(header ? `${header}\n${text}` : text);
+  return {
+    columns: parsed.columns,
+    rows: limitCells(parsed.columns, parsed.rows),
+  };
+}
+
+function countInlineCells(table: ChartInlineTable | undefined) {
+  return (table?.columns.length ?? 0) * (table?.rows.length ?? 0);
 }
 
 export function ChartSettingsPanel({
@@ -93,6 +129,22 @@ export function ChartSettingsPanel({
     });
   };
 
+  const columnLabel = (key: string) =>
+    columns.find(column => column.id === key)?.name ?? key;
+
+  const updateSeries = (index: number, patch: Partial<ChartSeriesSpec>) => {
+    onSpecChange({
+      ...spec,
+      // `option.ts` encodes a series by dataset dimension, which is the column
+      // display name rather than the mapping key.
+      series: dataSource.mapping.y.map((column, position) => ({
+        ...spec.series?.[position],
+        y: columnLabel(column),
+        ...(position === index ? patch : {}),
+      })),
+    });
+  };
+
   return (
     <div className="wb-chart-settings">
       <h3>{I18n['com.affine.whiteboard.chart.panel.title']()}</h3>
@@ -109,7 +161,9 @@ export function ChartSettingsPanel({
         {I18n['com.affine.whiteboard.chart.panel.type']()}
         <select
           value={chartType}
-          onChange={event => onTypeChange(event.currentTarget.value as ChartType)}
+          onChange={event =>
+            onTypeChange(event.currentTarget.value as ChartType)
+          }
         >
           {CHART_TYPES.map(type => (
             <option value={type} key={type}>
@@ -138,34 +192,58 @@ export function ChartSettingsPanel({
       </label>
 
       {dataSource.type === 'database' ? (
-        <label>
-          {I18n['com.affine.whiteboard.chart.panel.database']()}
-          <select
-            value={dataSource.blockId ?? ''}
-            onChange={event => {
-              const next = databases.find(
-                item => item.id === event.currentTarget.value
-              );
-              updateSource({
-                blockId: next?.id,
-                docId: next?.docId,
-                mapping: {
-                  x: next?.columns[0]?.id ?? dataSource.mapping.x,
-                  y: next?.columns.slice(1).map(column => column.id) ?? [],
-                },
-              });
-            }}
-          >
-            <option value="">
-              {I18n['com.affine.whiteboard.chart.panel.database-empty']()}
-            </option>
-            {databases.map(item => (
-              <option value={item.id} key={item.id}>
-                {item.title}
+        <>
+          <label>
+            {I18n['com.affine.whiteboard.chart.panel.database']()}
+            <select
+              value={dataSource.blockId ?? ''}
+              onChange={event => {
+                const next = databases.find(
+                  item => item.id === event.currentTarget.value
+                );
+                updateSource({
+                  blockId: next?.id,
+                  docId: next?.docId,
+                  viewId: undefined,
+                  mapping: {
+                    x: next?.columns[0]?.id ?? dataSource.mapping.x,
+                    y: next?.columns.slice(1).map(column => column.id) ?? [],
+                  },
+                });
+              }}
+            >
+              <option value="">
+                {I18n['com.affine.whiteboard.chart.panel.database-empty']()}
               </option>
-            ))}
-          </select>
-        </label>
+              {databases.map(item => (
+                <option value={item.id} key={item.id}>
+                  {item.title}
+                </option>
+              ))}
+              {dataSource.blockId && !selectedDb ? (
+                <option value={dataSource.blockId}>{dataSource.blockId}</option>
+              ) : null}
+            </select>
+          </label>
+          <label>
+            {I18n['com.affine.ai-scroll-tip.view']()}
+            <select
+              value={dataSource.viewId ?? ''}
+              onChange={event =>
+                updateSource({ viewId: event.currentTarget.value || undefined })
+              }
+            >
+              <option value="">
+                {I18n['com.affine.settings.workspace.properties.all']()}
+              </option>
+              {(selectedDb?.views ?? []).map(view => (
+                <option value={view.id} key={view.id}>
+                  {view.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </>
       ) : null}
 
       {dataSource.type === 'http' ? (
@@ -240,27 +318,19 @@ export function ChartSettingsPanel({
         <label>
           {I18n['com.affine.whiteboard.chart.panel.inline']()}
           <textarea
-            value={(dataSource.inline?.rows ?? [])
-              .map(row => row.join(','))
-              .join('\n')}
-            onChange={event => {
-              const rows = event.currentTarget.value.split('\n').map(line =>
-                line.split(',').map(cell => {
-                  const trimmed = cell.trim();
-                  const numeric = Number(trimmed);
-                  return trimmed !== '' && Number.isFinite(numeric)
-                    ? numeric
-                    : trimmed;
-                })
-              );
+            value={inlineRowsToText(dataSource.inline)}
+            onChange={event =>
               updateSource({
-                inline: {
-                  columns: dataSource.inline?.columns ?? [],
-                  rows,
-                },
-              });
-            }}
+                inline: parseInlineRows(
+                  dataSource.inline?.columns ?? [],
+                  event.currentTarget.value
+                ),
+              })
+            }
           />
+          <span className="wb-chart-settings__hint">
+            {`${countInlineCells(dataSource.inline)}/${INLINE_CELL_LIMIT}`}
+          </span>
         </label>
       ) : null}
 
@@ -307,11 +377,7 @@ export function ChartSettingsPanel({
 
       <label>
         {I18n['com.affine.whiteboard.chart.panel.y-axis']()}
-        <select
-          multiple
-          value={dataSource.mapping.y}
-          onChange={onYChange}
-        >
+        <select multiple value={dataSource.mapping.y} onChange={onYChange}>
           {(dataSource.type === 'database' ? columns : []).map(column => (
             <option value={column.id} key={column.id}>
               {column.name}
@@ -325,6 +391,54 @@ export function ChartSettingsPanel({
               ))
             : null}
         </select>
+      </label>
+
+      {dataSource.mapping.y.map((column, index) => (
+        <div className="wb-chart-settings__series" key={`${column}-${index}`}>
+          <span>{columnLabel(column)}</span>
+          <input
+            value={spec.series?.[index]?.name ?? ''}
+            placeholder={columnLabel(column)}
+            onChange={event =>
+              updateSeries(index, {
+                name: event.currentTarget.value || undefined,
+              })
+            }
+          />
+          <input
+            type="color"
+            value={spec.series?.[index]?.color ?? FALLBACK_SERIES_COLOR}
+            onChange={event =>
+              updateSeries(index, { color: event.currentTarget.value })
+            }
+          />
+        </div>
+      ))}
+
+      <label>
+        {I18n['com.affine.whiteboard.chart.panel.x-axis']()}
+        <input
+          value={spec.xAxis?.name ?? ''}
+          onChange={event =>
+            onSpecChange({
+              ...spec,
+              xAxis: { name: event.currentTarget.value || undefined },
+            })
+          }
+        />
+      </label>
+
+      <label>
+        {I18n['com.affine.whiteboard.chart.panel.y-axis']()}
+        <input
+          value={spec.yAxis?.name ?? ''}
+          onChange={event =>
+            onSpecChange({
+              ...spec,
+              yAxis: { name: event.currentTarget.value || undefined },
+            })
+          }
+        />
       </label>
 
       <label>

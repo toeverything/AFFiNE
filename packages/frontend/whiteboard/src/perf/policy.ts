@@ -63,7 +63,10 @@ export function pickLiveIds(
       (a, b) =>
         livePriorityScore(b) - livePriorityScore(a) || a.id.localeCompare(b.id)
     );
-  return new Set([...exempt, ...ranked.slice(0, Math.max(0, maxLive)).map(item => item.id)]);
+  return new Set([
+    ...exempt,
+    ...ranked.slice(0, Math.max(0, maxLive)).map(item => item.id),
+  ]);
 }
 
 export function parseXywhCenter(xywh?: string) {
@@ -127,7 +130,71 @@ export class WhiteboardPerfPolicy {
   }
 }
 
-export const whiteboardPerfPolicy = new WhiteboardPerfPolicy();
+/** One editor's policy plus the predicate saying which widgets are its own. */
+export type ScopedPerfPolicy = {
+  policy: WhiteboardPerfPolicy;
+  owns: (id: string) => boolean;
+};
+
+const scopedPolicies = new Set<ScopedPerfPolicy>();
+const unscopedPolicy = new WhiteboardPerfPolicy();
+
+export function registerScopedPerfPolicy(scope: ScopedPerfPolicy): () => void {
+  scopedPolicies.add(scope);
+  return () => {
+    scopedPolicies.delete(scope);
+  };
+}
+
+/**
+ * Routes every widget to the policy of the editor that owns it, so two boards
+ * open in one process do not spend each other's live slots. Widgets with no
+ * mounted editor (unit tests, page mode, preview) fall back to one shared
+ * policy.
+ */
+class RoutedPerfPolicy extends WhiteboardPerfPolicy {
+  override touch(candidate: LiveCandidate) {
+    this.policyFor(candidate.id).touch(candidate);
+  }
+
+  override forget(id: string) {
+    for (const scope of scopedPolicies) scope.policy.forget(id);
+    unscopedPolicy.forget(id);
+  }
+
+  override list(kind?: LiveWidgetKind) {
+    const all = [...scopedPolicies].flatMap(scope => scope.policy.list(kind));
+    return [...all, ...unscopedPolicy.list(kind)];
+  }
+
+  override pickedIds(kind: LiveWidgetKind) {
+    const picked = new Set<string>();
+    for (const scope of scopedPolicies) {
+      for (const id of scope.policy.pickedIds(kind)) picked.add(id);
+    }
+    for (const id of unscopedPolicy.pickedIds(kind)) picked.add(id);
+    return picked;
+  }
+
+  override isPicked(id: string, kind: LiveWidgetKind) {
+    return this.policyFor(id).isPicked(id, kind);
+  }
+
+  override reset() {
+    for (const scope of scopedPolicies) scope.policy.reset();
+    unscopedPolicy.reset();
+  }
+
+  private policyFor(id: string) {
+    for (const scope of scopedPolicies) {
+      if (scope.owns(id)) return scope.policy;
+    }
+    return unscopedPolicy;
+  }
+}
+
+export const whiteboardPerfPolicy: WhiteboardPerfPolicy =
+  new RoutedPerfPolicy();
 
 export function tryLive(budget: RankedBudget, candidate: LiveCandidate) {
   whiteboardPerfPolicy.touch(candidate);

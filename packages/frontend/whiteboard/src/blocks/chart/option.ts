@@ -98,7 +98,8 @@ export function buildChartOption(input: {
       large: dataset.source.length > 1000,
       progressive: 2000,
       progressiveThreshold: 2000,
-      sampling: chartType === 'line' || chartType === 'area' ? 'lttb' : undefined,
+      sampling:
+        chartType === 'line' || chartType === 'area' ? 'lttb' : undefined,
     };
     if (chartType === 'area') {
       item.areaStyle = { opacity: 0.18 };
@@ -145,7 +146,13 @@ export function buildChartOption(input: {
     chartType !== 'radar' &&
     chartType !== 'heatmap'
   ) {
-    built.grid = { left: 48, right: 16, top: 36, bottom: 32, containLabel: true };
+    built.grid = {
+      left: 48,
+      right: 16,
+      top: 36,
+      bottom: 32,
+      containLabel: true,
+    };
     built.xAxis = {
       type: chartType === 'scatter' ? 'value' : 'category',
       name: spec.xAxis?.name,
@@ -205,6 +212,12 @@ export function buildChartOption(input: {
   return applyFormatterPresets(sanitizeEChartsOption(merged), spec.formatter);
 }
 
+/**
+ * Expands the stored preset names into ECharts callbacks.
+ *
+ * The persisted spec stays function-free (plan §3.5): presets live in Yjs as
+ * plain strings and are only materialised here, on the way into `setOption`.
+ */
 export function applyFormatterPresets(
   option: SanitizedEChartsOption,
   fallback?: ChartFormatterPreset
@@ -213,7 +226,9 @@ export function applyFormatterPresets(
     if (Array.isArray(value)) return value.map(walk);
     if (!value || typeof value !== 'object') return value;
     const next: Record<string, unknown> = {};
-    for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    for (const [key, child] of Object.entries(
+      value as Record<string, unknown>
+    )) {
       if (
         (key === 'formatter' || key === 'valueFormatter') &&
         typeof child === 'string'
@@ -236,9 +251,9 @@ export function applyFormatterPresets(
   const result = walk(option) as SanitizedEChartsOption;
   if (fallback && result.tooltip && typeof result.tooltip === 'object') {
     const tooltip = result.tooltip as Record<string, unknown>;
-    if (tooltip.valueFormatter === fallback) {
-      tooltip.valueFormatter = (value: unknown) => formatValue(value, fallback);
-    }
+    // `walk` only rewrites explicit formatter strings; apply the spec-level
+    // preset to tooltips that declared none.
+    tooltip.valueFormatter ??= (value: unknown) => formatValue(value, fallback);
   }
   return result;
 }

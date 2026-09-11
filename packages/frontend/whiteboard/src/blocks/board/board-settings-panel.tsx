@@ -1,5 +1,5 @@
 import { I18n } from '@affine/i18n';
-import { useCallback, type ChangeEvent } from 'react';
+import { type ChangeEvent, useCallback } from 'react';
 
 import type { BoardColumnPreview } from './column-snapshot';
 import type { BoardLanePreview } from './grid';
@@ -87,7 +87,11 @@ export function BoardSettingsPanel({
             onChange={event => {
               const next = { ...wipLimits };
               const value = Number(event.target.value);
-              if (!event.target.value || !Number.isFinite(value) || value <= 0) {
+              if (
+                !event.target.value ||
+                !Number.isFinite(value) ||
+                value <= 0
+              ) {
                 delete next[column.id];
               } else {
                 next[column.id] = value;

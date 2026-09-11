@@ -23,15 +23,17 @@ export class BoardPreviewBlockComponent extends BlockComponent<BoardBlockModel> 
           </div>
         </div>
         <div class="wb-board__body">
-          ${snapshot
-            ? html`<img
-                class="wb-board__snapshot"
-                src=${snapshot}
-                alt=${title}
-              />`
-            : html`<div class="wb-board__placeholder">
-                ${I18n['com.affine.whiteboard.board.preview-label']()}
-              </div>`}
+          ${
+            snapshot
+              ? html`<img
+                  class="wb-board__snapshot"
+                  src=${snapshot}
+                  alt=${title}
+                />`
+              : html`<div class="wb-board__placeholder">
+                  ${I18n['com.affine.whiteboard.board.preview-label']()}
+                </div>`
+          }
         </div>
       </div>
     `;

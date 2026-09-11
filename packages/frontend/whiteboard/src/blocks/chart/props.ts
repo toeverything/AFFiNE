@@ -1,10 +1,10 @@
 import { Boxed, type Text } from '@blocksuite/affine/store';
 
 import {
-  createDefaultDataSource,
-  createDefaultSpec,
   type ChartDataSource,
   type ChartVisualSpec,
+  createDefaultDataSource,
+  createDefaultSpec,
 } from './types';
 
 export function isBoxed<T>(value: unknown): value is Boxed<T> {
@@ -19,7 +19,10 @@ export function readBoxed<T>(value: Boxed<T> | T | undefined, fallback: T): T {
   return value;
 }
 
-export function writeBoxed<T>(target: Boxed<T> | T | undefined, next: T): Boxed<T> {
+export function writeBoxed<T>(
+  target: Boxed<T> | T | undefined,
+  next: T
+): Boxed<T> {
   if (isBoxed<T>(target)) {
     target.setValue(next);
     return target;
@@ -66,7 +69,9 @@ export function readDataSource(value: unknown): ChartDataSource {
     mapping: {
       ...fallback.mapping,
       ...source.mapping,
-      y: source.mapping?.y?.length ? [...source.mapping.y] : [...fallback.mapping.y],
+      y: source.mapping?.y?.length
+        ? [...source.mapping.y]
+        : [...fallback.mapping.y],
     },
     inline: source.inline ?? fallback.inline,
   };

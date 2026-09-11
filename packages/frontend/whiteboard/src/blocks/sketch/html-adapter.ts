@@ -16,8 +16,9 @@ export const sketchBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
       const title =
         typeof o.node.props.title === 'string'
           ? o.node.props.title
-          : ((o.node.props.title as { toString?: () => string } | undefined)
-              ?.toString?.() ?? I18n['com.affine.whiteboard.sketch.title']());
+          : ((
+              o.node.props.title as { toString?: () => string } | undefined
+            )?.toString?.() ?? I18n['com.affine.whiteboard.sketch.title']());
       context.walkerContext
         .openNode(
           {

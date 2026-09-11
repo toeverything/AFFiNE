@@ -5,12 +5,12 @@ import { GfxExtension } from '@blocksuite/affine/std/gfx';
 import { WHITEBOARD_LOD } from '../const';
 import { createL0Backend, type L0Backend } from './l0-renderer';
 import {
-  type L0Camera,
-  type L0Source,
-  type L0Sprite,
   cullSprites,
   hitTestSprites,
   isL0HostFlavour,
+  type L0Camera,
+  type L0Source,
+  type L0Sprite,
   shouldActivateL0Layer,
   toL0Sprites,
 } from './l0-scene';
@@ -181,7 +181,8 @@ export class WhiteboardL0LayerExtension extends GfxExtension {
         this.std.store.get(FeatureFlagService);
       return !!service.getFlag('enable_whiteboard_l0_layer');
     } catch {
-      return true;
+      // Flag service unavailable: stay off, matching the flag's default.
+      return false;
     }
   }
 
@@ -219,7 +220,9 @@ export class WhiteboardL0LayerExtension extends GfxExtension {
     this.markDom();
     const camera = this.camera();
     const dpr =
-      typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+      typeof window !== 'undefined'
+        ? Math.min(window.devicePixelRatio || 1, 2)
+        : 1;
     this.backend.resize(camera.width, camera.height, dpr);
     this.backend.draw(this.sprites, camera);
     whiteboardTelemetry.noteL0({
@@ -237,11 +240,9 @@ export class WhiteboardL0LayerExtension extends GfxExtension {
   }
 
   private clearDomMarks() {
-    this.mount
-      ?.querySelectorAll('.wb-l0-live, .wb-l0-culled')
-      .forEach(node => {
-        node.classList.remove('wb-l0-live', 'wb-l0-culled');
-      });
+    this.mount?.querySelectorAll('.wb-l0-live, .wb-l0-culled').forEach(node => {
+      node.classList.remove('wb-l0-live', 'wb-l0-culled');
+    });
   }
 
   private markDom() {

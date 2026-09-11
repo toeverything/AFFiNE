@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { WHITEBOARD_FLAVOURS, WHITEBOARD_SURFACE_CHILDREN } from '../const';
 import { BoardBlockSchema } from '../blocks/board/model';
 import { ChartBlockSchema } from '../blocks/chart/model';
-import { SketchBlockSchema } from '../blocks/sketch/model';
 import { HelloBlockSchema } from '../blocks/hello/model';
+import { SketchBlockSchema } from '../blocks/sketch/model';
+import { WHITEBOARD_FLAVOURS, WHITEBOARD_SURFACE_CHILDREN } from '../const';
 import {
   collectStoreExtensions,
   registerGfxWidget,
