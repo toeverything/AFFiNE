@@ -199,4 +199,38 @@ describe('BlobManagementPanel', () => {
     expect(screen.getByRole('checkbox')).toHaveProperty('checked', true);
     expect(notifyError).toHaveBeenCalledOnce();
   });
+
+  test('disables select all while deletion is in progress', async () => {
+    let finishDeletion: (() => void) | undefined;
+    deleteBlob.mockImplementation(
+      () =>
+        new Promise<undefined>(resolve => {
+          finishDeletion = () => resolve(undefined);
+        })
+    );
+    render(<BlobManagementPanel />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId('blob-preview-card')).toHaveLength(9);
+    });
+
+    fireEvent.click(screen.getAllByTestId('blob-preview-card')[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    let deletion: Promise<void> | undefined;
+    await act(async () => {
+      deletion = openConfirmModal.mock.calls[0][0].onConfirm();
+      await Promise.resolve();
+    });
+
+    const selectAll = screen.getByRole('button', { name: 'Select all (10)' });
+    expect(selectAll).toHaveProperty('disabled', true);
+    fireEvent.click(selectAll);
+    expect(screen.getByText('1 Selected')).toBeTruthy();
+
+    await act(async () => {
+      finishDeletion?.();
+      await deletion;
+    });
+  });
 });

@@ -184,9 +184,12 @@ export const BlobManagementPanel = () => {
   const handleSelectAll = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
+      if (deleting) {
+        return;
+      }
       setSelectedBlobKeys(new Set(unusedBlobs.map(blob => blob.key)));
     },
-    [unusedBlobs]
+    [deleting, unusedBlobs]
   );
 
   const showSelectAll = selectedBlobKeys.size < unusedBlobs.length;
@@ -305,7 +308,11 @@ export const BlobManagementPanel = () => {
           </div>
           <div className={styles.spacer} />
           {showSelectAll && (
-            <Button onClick={handleSelectAll} variant="primary">
+            <Button
+              onClick={handleSelectAll}
+              variant="primary"
+              disabled={deleting}
+            >
               {`${t['com.affine.keyboardShortcuts.selectAll']()} (${unusedBlobs.length})`}
             </Button>
           )}
