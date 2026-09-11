@@ -2233,6 +2233,7 @@
   "com.affine.settings.workspace.storage.unused-blobs.selected": "Selected",
   "com.affine.settings.workspace.storage.unused-blobs.delete.title": "Delete blob files",
   "com.affine.settings.workspace.storage.unused-blobs.delete.warning": "Are you sure you want to delete these blob files? This action cannot be undone. Make sure you no longer need them before proceeding.",
+  "com.affine.settings.workspace.storage.unused-blobs.delete.failed": "Some blob files could not be deleted. Failed items remain selected.",
   "com.affine.fail-to-join-workspace.title": "Join Failed",
   "com.affine.invitation.account-mismatch.title": "This invitation is for another account",
   "com.affine.invitation.account-mismatch.description": "You're signed in with an account that wasn't invited. Sign in with the account that received this invitation to continue.",
