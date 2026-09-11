@@ -25,3 +25,6 @@ export { BoardBlockComponent } from './board-block';
 export { BoardEdgelessBlockComponent } from './board-edgeless-block';
 export { BoardPreviewBlockComponent } from './board-preview-block';
 export { columnsForTemplate } from './types';
+export { getBoardLodLevel, liveKanbanBudget } from './live-budget';
+export { readBoardColumns } from './column-snapshot';
+export { sliceCards, windowRange } from './virtualize';

@@ -17,6 +17,7 @@ export class EdgelessClipboardBoardConfig extends EdgelessClipboardConfig {
       blockId,
       template,
       snapshotBlobId,
+      liveBudgetExempt,
     } = block.props;
     return this.crud.addBlock(
       BoardBlockSchema.model.flavour,
@@ -29,6 +30,7 @@ export class EdgelessClipboardBoardConfig extends EdgelessClipboardConfig {
         blockId,
         template,
         snapshotBlobId,
+        liveBudgetExempt,
       },
       this.surface.model.id
     );

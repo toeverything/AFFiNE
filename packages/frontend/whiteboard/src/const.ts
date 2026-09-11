@@ -37,4 +37,8 @@ export const WHITEBOARD_LOD = {
   z1: 0.7,
   maxLiveCharts: 3,
   maxLiveKanban: 2,
+  l1KanbanCards: 4,
+  kanbanCardEstimatePx: 44,
+  kanbanColumnEstimatePx: 160,
+  virtualOverscan: 1,
 } as const;

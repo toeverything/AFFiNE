@@ -68,4 +68,93 @@ export const boardBlockStyles = css`
     font-size: 13px;
     text-align: center;
   }
+
+  .wb-board__lod {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    min-height: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+
+  .wb-board__lod-spacer {
+    flex: 0 0 auto;
+  }
+
+  .wb-board__column {
+    flex: 0 0 160px;
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+    border-radius: 6px;
+    background: color-mix(
+      in srgb,
+      var(--wb-board-column-color, var(--affine-tag-gray)) 18%,
+      var(--affine-background-primary-color)
+    );
+    border: 1px solid var(--affine-border-color);
+    overflow: hidden;
+  }
+
+  .wb-board__column-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .wb-board__column-swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--wb-board-column-color, var(--affine-tag-gray));
+    flex: 0 0 auto;
+  }
+
+  .wb-board__column-name {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .wb-board__column-count {
+    color: var(--affine-text-secondary-color);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wb-board__column-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 6px 6px;
+  }
+
+  .wb-board__card {
+    height: 36px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: var(--affine-background-primary-color);
+    border: 1px solid var(--affine-border-color);
+    font-size: 12px;
+    line-height: 18px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .wb-board__more {
+    font-size: 11px;
+    color: var(--affine-text-secondary-color);
+    padding: 2px 8px;
+  }
+
+  .wb-board--l0 .wb-board__column {
+    min-height: 72px;
+  }
 `;

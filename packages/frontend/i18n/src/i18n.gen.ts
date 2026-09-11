@@ -6940,6 +6940,12 @@ export function useAFFiNEI18N(): {
     ["com.affine.whiteboard.board.seed.discovery"](): string;
     ["com.affine.whiteboard.board.seed.build"](): string;
     ["com.affine.whiteboard.board.seed.review"](): string;
+    ["com.affine.whiteboard.board.ungrouped"](): string;
+    ["com.affine.whiteboard.board.more-cards"](options: {
+        readonly count: string;
+    }): string;
+    ["com.affine.whiteboard.board.lod-l0"](): string;
+    ["com.affine.whiteboard.board.lod-l1"](): string;
     /**
       * `Color Picker`
       */

@@ -35,7 +35,7 @@
 | Awareness для курсоров и presence | Уже есть (`AwarenessStore.selectionV2`, Socket.IO awareness). |
 | Чарт хранит spec + dataSource, не «голый JSON» в UI | Верно. Форма настроек обязательна. |
 | Ленивая загрузка данных при входе во вьюпорт | Верно и критично. |
-| Viewport-culling, виртуализация, SVG-фоллбек для тяжёлых виджетов | Верно по смыслу; culling уже есть, виртуализация канбана — нет. |
+| Viewport-culling, виртуализация, SVG-фоллбек для тяжёлых виджетов | Верно по смыслу; culling есть, виртуализация канбана — §6.3.2. |
 | Plugin SDK с первого дня как контракт, marketplace позже | Верно как принцип API; runtime-песочница — не MVP. |
 | Права нельзя закрыть только клиентом: CRDT уходит всем, кто в комнате | Верно. ACL должен быть на уровне документа / фильтре updates, не «спрятать блок в UI». |
 | E2E коллаборации — отдельная дисциплина (Playwright, 2+ сессии) | Верно. |
@@ -558,13 +558,16 @@ parent: ['affine:surface', 'affine:note']
 
 #### 6.3.2 Виртуализация и LOD канбана
 
+**Статус.** Выполнено.
+
 Скопировать идеи `data-view/.../table/pc-virtual/` на колонки и карточки.
 
-- Виртуализировать карточки внутри колонки (TanStack Virtual допустим, либо тот же кастом, что у table).
-- L0: цветные столбцы + счётчики.
-- L1: первые N карточек + «+42».
-- L2: полный DnD. Atlaskit оставить.
-- Не больше `maxLiveKanban` полных досок.
+- [x] Виртуализировать карточки внутри колонки (окно + overscan как у table; L1 — первые N + overflow).
+- [x] L0: цветные столбцы + счётчики.
+- [x] L1: первые N карточек + «+42».
+- [x] L2: полный DnD. Atlaskit оставить.
+- [x] Не больше `maxLiveKanban` полных досок (`LiveKanbanBudget`, default 2).
+- [x] Unit-тесты LOD state machine, бюджета и window/slice.
 
 **Оценка.** 2 недели.
 
@@ -632,7 +635,7 @@ props: {
 1. `WhiteboardPerfPolicy` extension: бюджеты live-инстансов, z-пороги, приоритет selected > hover > center-of-viewport.
 2. Общий `SnapshotCache` (blob id → object URL, LRU по памяти).
 3. Подключить snapshot painter к `ViewportTurboRendererExtension` (в коде уже есть комментарии про layout handler + painter worker).
-4. Виртуализация канбана (§6.3.2).
+4. [x] Виртуализация канбана (§6.3.2).
 5. Телеметрия: `frame_time`, `live_widget_count`, `cull_ratio`, `ws_rtt`.
 6. Stress-фикстуры: 1k notes, 50 charts-as-snapshots, 5 live charts, 1 sketch.
 

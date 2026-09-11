@@ -18,6 +18,7 @@ export type BoardBlockProps = {
   blockId?: string;
   template?: BoardTemplate;
   snapshotBlobId?: string;
+  liveBudgetExempt?: boolean;
 } & GfxCommonBlockProps;
 
 export const BoardBlockSchema = defineBlockSchema({
@@ -33,6 +34,7 @@ export const BoardBlockSchema = defineBlockSchema({
     blockId: undefined,
     template: 'todo',
     snapshotBlobId: undefined,
+    liveBudgetExempt: false,
   }),
   metadata: {
     version: 1,
