@@ -23,11 +23,21 @@ export {
   chartWidget,
 } from './blocks/chart';
 export {
+  SketchBlockSchema,
+  SketchBlockSchemaExtension,
+  sketchWidget,
+} from './blocks/sketch';
+export {
   BoardBlockSchema,
   BoardBlockSchemaExtension,
   boardWidget,
 } from './blocks/board';
-export { WHITEBOARD_LOD, CHART_WIDGET_SIZE, BOARD_WIDGET_SIZE } from './const';
+export {
+  WHITEBOARD_LOD,
+  CHART_WIDGET_SIZE,
+  BOARD_WIDGET_SIZE,
+  SKETCH_WIDGET_SIZE,
+} from './const';
 export {
   WhiteboardReactToLitIdentifier,
   WhiteboardReactToLitExtension,

@@ -6839,6 +6839,100 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.whiteboard.hello.preview-label"](): string;
     /**
+      * `Sketch`
+      */
+    ["com.affine.whiteboard.sketch.slash-name"](): string;
+    /**
+      * `Add an offline Excalidraw frame to the board.`
+      */
+    ["com.affine.whiteboard.sketch.slash-description"](): string;
+    /**
+      * `Sketch`
+      */
+    ["com.affine.whiteboard.sketch.title"](): string;
+    /**
+      * `Sketch`
+      */
+    ["com.affine.whiteboard.sketch.kicker"](): string;
+    /**
+      * `Sketch snapshot`
+      */
+    ["com.affine.whiteboard.sketch.preview-label"](): string;
+    /**
+      * `Double-click to draw. Import a .excalidraw file from the toolbar.`
+      */
+    ["com.affine.whiteboard.sketch.empty"](): string;
+    /**
+      * `Editing`
+      */
+    ["com.affine.whiteboard.sketch.editing"](): string;
+    /**
+      * `Snapshot`
+      */
+    ["com.affine.whiteboard.sketch.lod-l0"](): string;
+    /**
+      * `Preview`
+      */
+    ["com.affine.whiteboard.sketch.lod-l1"](): string;
+    /**
+      * `{{name}} is drawing`
+      */
+    ["com.affine.whiteboard.sketch.drawing"](options: {
+        readonly name: string;
+    }): string;
+    /**
+      * `Export .excalidraw`
+      */
+    ["com.affine.whiteboard.sketch.export-excalidraw"](): string;
+    /**
+      * `Export PNG`
+      */
+    ["com.affine.whiteboard.sketch.export-png"](): string;
+    /**
+      * `Export SVG`
+      */
+    ["com.affine.whiteboard.sketch.export-svg"](): string;
+    /**
+      * `Import .excalidraw`
+      */
+    ["com.affine.whiteboard.sketch.import"](): string;
+    /**
+      * `Copy sketch`
+      */
+    ["com.affine.whiteboard.sketch.copy"](): string;
+    /**
+      * `Rectangle`
+      */
+    ["com.affine.whiteboard.sketch.tool.rectangle"](): string;
+    /**
+      * `Ellipse`
+      */
+    ["com.affine.whiteboard.sketch.tool.ellipse"](): string;
+    /**
+      * `Arrow`
+      */
+    ["com.affine.whiteboard.sketch.tool.arrow"](): string;
+    /**
+      * `Text`
+      */
+    ["com.affine.whiteboard.sketch.tool.text"](): string;
+    /**
+      * `Draw`
+      */
+    ["com.affine.whiteboard.sketch.tool.freedraw"](): string;
+    /**
+      * `Collaborative`
+      */
+    ["com.affine.whiteboard.sketch.collab"](): string;
+    /**
+      * `Undo`
+      */
+    ["com.affine.whiteboard.sketch.undo"](): string;
+    /**
+      * `Redo`
+      */
+    ["com.affine.whiteboard.sketch.redo"](): string;
+    /**
       * `Chart`
       */
     ["com.affine.whiteboard.chart.slash-name"](): string;

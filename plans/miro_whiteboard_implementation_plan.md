@@ -597,6 +597,8 @@ parent: ['affine:surface', 'affine:note']
 
 ### 6.4 Excalidraw / sketch-блок
 
+**Статус.** Выполнено (фаза 1 + фаза 2).
+
 **Цель.** Hand-drawn диаграмма *внутри рамки* на доске AFFiNE, офлайн, с экспортом `.excalidraw`.
 
 **Не цель.** Заменить shapes/brush/mindmap AFFiNE.
@@ -608,7 +610,8 @@ flavour: 'wb:sketch'
 props: {
   xywh, index, rotate, lockedBySelf
   title: Text
-  sceneBlobId: string            // .excalidraw json gzip
+  sceneBlobId: string            // .excalidraw json gzip (snapshot / migrate)
+  subdocGuid?: string            // фаза 2: Y.Doc на блок
   assets: Boxed<Record<fileId, blobId>>
   revision: number               // для snapshot invalidation
   snapshotSvgBlobId?: string
@@ -621,12 +624,22 @@ props: {
 
 **Коллаборация.**
 
-- Фаза 1: blob replace + `revision` LWW. Два художника в одном блоке будут конфликтовать грубо — приемлемо, если UX показывает «сейчас рисует N».
-- Фаза 2: `y-excalidraw` subdoc, awareness курсоров *внутри* скетча (иначе курсоры только на рамке).
+- [x] Фаза 1: blob replace + `revision` LWW. Два художника в одном блоке будут конфликтовать грубо — приемлемо, если UX показывает «сейчас рисует N».
+- [x] Фаза 2: `y-excalidraw` subdoc (`subdocGuid` + `Y.Array` элементов), awareness курсоров *внутри* скетча, свой `Y.UndoManager`.
 
-**Жесты.** В edit-mode gfx-tools доски отключены (`ToolController` → lock). Колёсико внутри скетча зумит скетч, снаружи — доску. Это отдельный тест.
+**Жесты.** В edit-mode gfx-tools доски отключены (`viewport.locked`). Колёсико внутри скетча зумит скетч, снаружи — доску.
 
 **Импорт/экспорт.** `.excalidraw`, PNG, SVG, clipboard. Mermaid → сначала в native AFFiNE (уже есть preview), опционально «mermaid to sketch» позже.
+
+- [x] Схема `wb:sketch`: `sceneBlobId` (gzip JSON), `assets`, `revision`, `snapshotSvgBlobId`.
+- [x] LOD L0/L1 SVG-снимок, L2 live, бюджет `maxLiveSketches = 1`.
+- [x] Edit-mode: dblclick, Esc / deselect, lock pan, wheel stop внутри рамки.
+- [x] Import/export `.excalidraw` / PNG / SVG, slash, toolbar, clipboard, HTML `<figure>`.
+- [x] Unit-тесты сцены, gzip/parse и LOD/budget.
+- [x] `subdocGuid` + биндинг `Y.Array<{el, pos}>` / `Y.Map` assets (семантика y-excalidraw).
+- [x] Concurrent merge двух художников, LWW на элемент, UndoManager на subdoc.
+- [x] Awareness-курсоры внутри рамки (throttle ~40ms) + баннер «рисует N».
+- [x] Unit-тесты Yjs-merge, pos и remote cursors.
 
 **Оценка.** Фаза 1: 3 недели. Фаза 2 (Yjs binding): 2–3 недели.
 
@@ -761,8 +774,8 @@ SES/compartments — исследование фазы 4, не блокер. Web
 
 1. [x] **Chart P0:** bar/line/pie (+ scatter/funnel/radar/heatmap), database/inline/csv/http dataSource, settings panel, snapshot, culling.
 2. [x] **Board P0:** `wb:board` обёртка, kanban view, peek карточки, шаблон.
-3. **Sketch P0:** live только selected, SVG для остальных, import `.excalidraw`.
-4. **LOD policy** для всех трёх.
+3. [x] **Sketch P0:** live только selected, SVG для остальных, import `.excalidraw`.
+4. [x] **LOD policy** для всех трёх.
 5. **E2E:** 2 браузера, sync chart spec + kanban drag + reload.
 6. **Экспорт:** PNG доски, SVG/PNG виджета.
 
@@ -773,7 +786,7 @@ SES/compartments — исследование фазы 4, не блокер. Web
 - Pointer presence, follow, «посмотри сюда».
 - Comment pins на gfx-блоках и карточках.
 - Named versions.
-- Sketch phase 2: Yjs subdoc, два художника в одном блоке.
+- [x] Sketch phase 2: Yjs subdoc, два художника в одном блоке.
 - Kanban: чеклисты, WIP, фильтры в духе Trello.
 - Chart: scatter/funnel, http source, Vega-Lite mapping как «простой режим».
 

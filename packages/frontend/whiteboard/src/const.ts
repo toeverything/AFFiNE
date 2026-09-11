@@ -32,11 +32,17 @@ export const BOARD_WIDGET_SIZE = {
   height: 420,
 } as const;
 
+export const SKETCH_WIDGET_SIZE = {
+  width: 560,
+  height: 360,
+} as const;
+
 export const WHITEBOARD_LOD = {
   z0: 0.35,
   z1: 0.7,
   maxLiveCharts: 3,
   maxLiveKanban: 2,
+  maxLiveSketches: 1,
   l1KanbanCards: 4,
   kanbanCardEstimatePx: 44,
   kanbanColumnEstimatePx: 160,

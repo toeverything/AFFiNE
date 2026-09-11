@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { boardWidget } from './blocks/board';
 import { chartWidget } from './blocks/chart';
 import { helloWidget } from './blocks/hello';
+import { sketchWidget } from './blocks/sketch';
 import { effects } from './effects';
 import {
   collectViewExtensions,
@@ -57,6 +58,9 @@ export class WhiteboardViewExtension extends ViewExtensionProvider<WhiteboardVie
     }
     if (options?.enableChart) {
       widgets.push(chartWidget);
+    }
+    if (options?.enableSketch) {
+      widgets.push(sketchWidget);
     }
     if (options?.enableBoard) {
       widgets.push(boardWidget);

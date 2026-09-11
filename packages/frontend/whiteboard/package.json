@@ -12,11 +12,13 @@
     "@affine/i18n": "workspace:*",
     "@blocksuite/affine": "workspace:*",
     "@blocksuite/icons": "^2.2.17",
+    "@excalidraw/excalidraw": "^0.18.0",
     "echarts": "^5.6.0",
     "@preact/signals-core": "^1.8.0",
     "lit": "^3.2.1",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "yjs": "^13.6.27",
     "zod": "^3.25.76"
   }
 }
