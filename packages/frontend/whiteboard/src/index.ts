@@ -22,7 +22,12 @@ export {
   ChartBlockSchemaExtension,
   chartWidget,
 } from './blocks/chart';
-export { WHITEBOARD_LOD, CHART_WIDGET_SIZE } from './const';
+export {
+  BoardBlockSchema,
+  BoardBlockSchemaExtension,
+  boardWidget,
+} from './blocks/board';
+export { WHITEBOARD_LOD, CHART_WIDGET_SIZE, BOARD_WIDGET_SIZE } from './const';
 export {
   WhiteboardReactToLitIdentifier,
   WhiteboardReactToLitExtension,

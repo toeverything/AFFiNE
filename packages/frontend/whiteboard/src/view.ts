@@ -4,6 +4,7 @@ import {
 } from '@blocksuite/affine/ext-loader';
 import { z } from 'zod';
 
+import { boardWidget } from './blocks/board';
 import { chartWidget } from './blocks/chart';
 import { helloWidget } from './blocks/hello';
 import { effects } from './effects';
@@ -56,6 +57,9 @@ export class WhiteboardViewExtension extends ViewExtensionProvider<WhiteboardVie
     }
     if (options?.enableChart) {
       widgets.push(chartWidget);
+    }
+    if (options?.enableBoard) {
+      widgets.push(boardWidget);
     }
 
     const extensions = collectViewExtensions(

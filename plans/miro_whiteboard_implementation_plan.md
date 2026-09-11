@@ -537,15 +537,20 @@ parent: ['affine:surface', 'affine:note']
 
 Делается **в три подэтапа**. Не начинать с «нового Planka на dnd-kit».
 
-#### 6.3.1 MVP — database kanban на доске
+#### 6.3.1 database kanban на доске
 
 **Цель.** Канбан как объект доски за недели, не месяцы.
 
-- Позволить `affine:database` быть gfx-совместимым **или** сделать тонкую обёртку `wb:board`, внутри которой живёт существующий database model (предпочтительно обёртка: не ломаем page-mode).
-- Обёртка: `xywh`, title, `linkedDocId` + `blockId` (database может жить в том же doc в скрытом note-hub — паттерн «data layer»).
-- Дефолтный view = kanban. Шаблоны: «To do / In progress / Done», «Project tracking» (в репо уже есть `templates/edgeless/Project Tracking Kanban.json`).
-- Карточка: title, status, assignee, due, labels, cover — то, что уже умеет data-view.
-- Открытие карточки — peek-view AFFiNE (уже есть `PeekViewService`), не модалка Planka.
+**Статус.** Выполнено.
+
+**Работы.**
+
+1. [x] Тонкая обёртка `wb:board` (не gfx-`affine:database`): `xywh`, title, `linkedDocId` + `blockId`.
+2. [x] Data layer: `affine:database` в скрытом note-hub (`NoteDisplayMode.DocOnly`) того же документа.
+3. [x] Дефолтный view = kanban. Шаблоны: «To do / In progress / Done» и «Project tracking» (status, assignee, due, labels, cover).
+4. [x] Карточка использует существующий data-view; открытие — `PeekViewProvider` / peek-view AFFiNE.
+5. [x] Slash: «Kanban board», «Project tracking board», «Board from table»; DnD колонок — Atlaskit data-view, pointerdown на теле доски не двигает холст.
+6. [x] Unit-тесты шаблонов и схемы `wb:board`.
 
 **Критерий.** С доски: создать board, добавить карточку, перетащить между колонками, второй пользователь видит порядок без моргания всей доски.
 
@@ -748,7 +753,7 @@ SES/compartments — исследование фазы 4, не блокер. Web
 Параллельно две команды (виджеты / board), плюс один человек на perf-политику.
 
 1. [x] **Chart P0:** bar/line/pie (+ scatter/funnel/radar/heatmap), database/inline/csv/http dataSource, settings panel, snapshot, culling.
-2. **Board P0:** `wb:board` обёртка, kanban view, peek карточки, шаблон.
+2. [x] **Board P0:** `wb:board` обёртка, kanban view, peek карточки, шаблон.
 3. **Sketch P0:** live только selected, SVG для остальных, import `.excalidraw`.
 4. **LOD policy** для всех трёх.
 5. **E2E:** 2 браузера, sync chart spec + kanban drag + reload.

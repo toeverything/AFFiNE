@@ -35,3 +35,5 @@ export const chartWidget = registerGfxWidget({
 Эталон — `src/blocks/hello` (`wb:hello`). График — `src/blocks/chart` (`wb:chart`): ECharts, источники `database` / `inline` / `csv-blob` / `http`, правая React-панель, snapshot и бюджет `maxLiveCharts = 3`.
 
 Флаг `enable_whiteboard_chart` по умолчанию выключен. Preview-scope рисует только `snapshotBlobId`, без ECharts.
+
+Канбан — `src/blocks/board` (`wb:board`): тонкая gfx-обёртка над `affine:database`. Данные живут в DocOnly note-hub того же документа; на доске рендерится существующий kanban data-view (Atlaskit), карточка открывается через peek-view. Флаг `enable_board_widget` по умолчанию выключен.

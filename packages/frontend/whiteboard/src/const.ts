@@ -27,8 +27,14 @@ export const CHART_WIDGET_SIZE = {
 } as const;
 
 /** LOD and live-instance budgets from the whiteboard plan §5.4. */
+export const BOARD_WIDGET_SIZE = {
+  width: 720,
+  height: 420,
+} as const;
+
 export const WHITEBOARD_LOD = {
   z0: 0.35,
   z1: 0.7,
   maxLiveCharts: 3,
+  maxLiveKanban: 2,
 } as const;

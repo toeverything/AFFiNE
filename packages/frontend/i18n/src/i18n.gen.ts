@@ -6911,6 +6911,35 @@ export function useAFFiNEI18N(): {
     ["com.affine.whiteboard.chart.panel.formatter"](): string;
     ["com.affine.whiteboard.chart.panel.legend"](): string;
     ["com.affine.whiteboard.chart.panel.labels"](): string;
+    ["com.affine.whiteboard.board.slash-name"](): string;
+    ["com.affine.whiteboard.board.slash-description"](): string;
+    ["com.affine.whiteboard.board.template-project"](): string;
+    ["com.affine.whiteboard.board.template-project-description"](): string;
+    ["com.affine.whiteboard.board.from-table"](): string;
+    ["com.affine.whiteboard.board.from-table-description"](): string;
+    ["com.affine.whiteboard.board.title"](): string;
+    ["com.affine.whiteboard.board.kicker"](): string;
+    ["com.affine.whiteboard.board.preview-label"](): string;
+    ["com.affine.whiteboard.board.empty"](): string;
+    ["com.affine.whiteboard.board.column.status"](): string;
+    ["com.affine.whiteboard.board.column.assignee"](): string;
+    ["com.affine.whiteboard.board.column.due"](): string;
+    ["com.affine.whiteboard.board.column.labels"](): string;
+    ["com.affine.whiteboard.board.column.cover"](): string;
+    ["com.affine.whiteboard.board.status.todo"](): string;
+    ["com.affine.whiteboard.board.status.in-progress"](): string;
+    ["com.affine.whiteboard.board.status.done"](): string;
+    ["com.affine.whiteboard.board.status.backlog"](): string;
+    ["com.affine.whiteboard.board.status.review"](): string;
+    ["com.affine.whiteboard.board.label.bug"](): string;
+    ["com.affine.whiteboard.board.label.feature"](): string;
+    ["com.affine.whiteboard.board.label.docs"](): string;
+    ["com.affine.whiteboard.board.seed.task-1"](): string;
+    ["com.affine.whiteboard.board.seed.task-2"](): string;
+    ["com.affine.whiteboard.board.seed.task-3"](): string;
+    ["com.affine.whiteboard.board.seed.discovery"](): string;
+    ["com.affine.whiteboard.board.seed.build"](): string;
+    ["com.affine.whiteboard.board.seed.review"](): string;
     /**
       * `Color Picker`
       */

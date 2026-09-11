@@ -1,3 +1,6 @@
+import { BoardBlockComponent } from './blocks/board/board-block';
+import { BoardEdgelessBlockComponent } from './blocks/board/board-edgeless-block';
+import { BoardPreviewBlockComponent } from './blocks/board/board-preview-block';
 import { ChartBlockComponent } from './blocks/chart/chart-block';
 import { ChartEdgelessBlockComponent } from './blocks/chart/chart-edgeless-block';
 import { ChartPreviewBlockComponent } from './blocks/chart/chart-preview-block';
@@ -13,4 +16,8 @@ export function effects() {
   customElements.define('wb-chart', ChartBlockComponent);
   customElements.define('wb-chart-edgeless', ChartEdgelessBlockComponent);
   customElements.define('wb-chart-preview', ChartPreviewBlockComponent);
+
+  customElements.define('wb-board', BoardBlockComponent);
+  customElements.define('wb-board-edgeless', BoardEdgelessBlockComponent);
+  customElements.define('wb-board-preview', BoardPreviewBlockComponent);
 }

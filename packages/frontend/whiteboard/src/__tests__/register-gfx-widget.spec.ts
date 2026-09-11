@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { WHITEBOARD_FLAVOURS, WHITEBOARD_SURFACE_CHILDREN } from '../const';
+import { BoardBlockSchema } from '../blocks/board/model';
 import { ChartBlockSchema } from '../blocks/chart/model';
 import { HelloBlockSchema } from '../blocks/hello/model';
 import {
@@ -33,5 +34,11 @@ describe('whiteboard scaffold', () => {
     expect(ChartBlockSchema.model.flavour).toBe(WHITEBOARD_FLAVOURS.chart);
     expect(ChartBlockSchema.model.parent).toContain('affine:surface');
     expect(ChartBlockSchema.model.parent).toContain('affine:note');
+  });
+
+  it('registers wb:board as a gfx wrapper around affine:database', () => {
+    expect(BoardBlockSchema.model.flavour).toBe(WHITEBOARD_FLAVOURS.board);
+    expect(BoardBlockSchema.model.parent).toContain('affine:surface');
+    expect(BoardBlockSchema.model.parent).toContain('affine:note');
   });
 });
