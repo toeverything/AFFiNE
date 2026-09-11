@@ -12,6 +12,7 @@ import {
   publishWidgetEditing,
   remoteOwnsLiveEditor,
 } from '../../collab/awareness';
+import { canEditBoardWidgets } from '../../infra/permissions';
 import { WHITEBOARD_LOD } from '../../const';
 import type { BoardSettingsPanelProps } from './board-settings-panel';
 import { databaseToSnapshot } from './column-snapshot';
@@ -86,7 +87,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
   }
 
   private get showSettings() {
-    return this.selected;
+    return this.selected && canEditBoardWidgets(this.std.store, this.model);
   }
 
   private canUseLive(preview = false) {
@@ -165,8 +166,9 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
     const grid = this.boardGrid();
     if (!database || !grid) return;
     return {
-      interactive: true,
+      interactive: canEditBoardWidgets(this.std.store, this.model),
       onMove: (rowId: string, x: string, y: string) => {
+        if (!canEditBoardWidgets(this.std.store, this.model)) return;
         if (!grid.axes.x) return;
         const yColumn = database.props.columns.find(
           column => column.id === grid.axes.y
@@ -195,6 +197,7 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
         ]);
       },
       onLogTime: (rowId: string) => {
+        if (!canEditBoardWidgets(this.std.store, this.model)) return;
         applyTimeLog(this.model.store, database.id, rowId, 15);
         this.requestUpdate();
       },

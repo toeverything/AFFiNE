@@ -13,6 +13,7 @@ import {
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 
 import { HELLO_WIDGET_SIZE } from './const';
+import { isBoardReadonly } from './infra/permissions';
 
 export function insertGfxWidget(
   std: BlockStdScope,
@@ -20,6 +21,7 @@ export function insertGfxWidget(
   props: Record<string, unknown> = {},
   size: { width: number; height: number } = HELLO_WIDGET_SIZE
 ): string | undefined {
+  if (isBoardReadonly(std.store)) return;
   const gfx = std.getOptional(GfxControllerIdentifier);
   const crud = std.getOptional(EdgelessCRUDIdentifier);
   const surfaceBlock = gfx?.surfaceComponent;

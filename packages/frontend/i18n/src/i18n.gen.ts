@@ -7027,6 +7027,34 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.whiteboard.perf.l0-label"](): string;
     /**
+      * `ECharts init`
+      */
+    ["com.affine.whiteboard.perf.echarts-init"](): string;
+    /**
+      * `Snapshot age`
+      */
+    ["com.affine.whiteboard.perf.snapshot-age"](): string;
+    /**
+      * `Dropped frames`
+      */
+    ["com.affine.whiteboard.perf.dropped-frames"](): string;
+    /**
+      * `Board objects`
+      */
+    ["com.affine.whiteboard.perf.board-objects"](): string;
+    /**
+      * `Live collaborators`
+      */
+    ["com.affine.whiteboard.perf.collaborators"](): string;
+    /**
+      * `Yjs apply`
+      */
+    ["com.affine.whiteboard.perf.yjs-apply"](): string;
+    /**
+      * `WS payload`
+      */
+    ["com.affine.whiteboard.perf.ws-payload"](): string;
+    /**
       * `Chart`
       */
     ["com.affine.whiteboard.chart.slash-name"](): string;
@@ -7099,6 +7127,30 @@ export function useAFFiNEI18N(): {
     ["com.affine.whiteboard.chart.panel.formatter"](): string;
     ["com.affine.whiteboard.chart.panel.legend"](): string;
     ["com.affine.whiteboard.chart.panel.labels"](): string;
+    /**
+      * `Import CSV`
+      */
+    ["com.affine.whiteboard.chart.panel.import-csv"](): string;
+    /**
+      * `Import Mermaid`
+      */
+    ["com.affine.whiteboard.chart.panel.import-mermaid"](): string;
+    /**
+      * `pie title ...`
+      */
+    ["com.affine.whiteboard.chart.panel.mermaid-placeholder"](): string;
+    /**
+      * `Chart settings`
+      */
+    ["com.affine.whiteboard.chart.toolbar.settings"](): string;
+    /**
+      * `Export PNG`
+      */
+    ["com.affine.whiteboard.chart.toolbar.export-png"](): string;
+    /**
+      * `Export SVG`
+      */
+    ["com.affine.whiteboard.chart.toolbar.export-svg"](): string;
     ["com.affine.whiteboard.board.slash-name"](): string;
     ["com.affine.whiteboard.board.slash-description"](): string;
     ["com.affine.whiteboard.board.template-project"](): string;

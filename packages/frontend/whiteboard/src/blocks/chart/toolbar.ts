@@ -1,3 +1,4 @@
+import { I18n } from '@affine/i18n';
 import {
   type ToolbarModuleConfig,
   ToolbarModuleExtension,
@@ -14,9 +15,10 @@ const surfaceToolbarConfig = {
   actions: [
     {
       id: 'a.settings',
-      tooltip: 'Chart settings',
+      tooltip: I18n['com.affine.whiteboard.chart.toolbar.settings'](),
       icon: SettingsIcon(),
       run(ctx) {
+        if (ctx.readonly) return;
         const block = ctx.getCurrentBlockByType(ChartEdgelessBlockComponent);
         if (!block) return;
         block.selected = true;
@@ -25,7 +27,7 @@ const surfaceToolbarConfig = {
     },
     {
       id: 'b.export-png',
-      tooltip: 'Export PNG',
+      tooltip: I18n['com.affine.whiteboard.chart.toolbar.export-png'](),
       icon: DownloadIcon(),
       run(ctx) {
         const block =
@@ -36,7 +38,7 @@ const surfaceToolbarConfig = {
     },
     {
       id: 'c.export-svg',
-      tooltip: 'Export SVG',
+      tooltip: I18n['com.affine.whiteboard.chart.toolbar.export-svg'](),
       icon: DownloadIcon(),
       run(ctx) {
         const block =

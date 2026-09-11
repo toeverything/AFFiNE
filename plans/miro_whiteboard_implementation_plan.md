@@ -745,36 +745,42 @@ SES/compartments — исследование фазы 4, не блокер. Web
 
 ### 6.8 Инфраструктура продукта
 
+**Статус.** Выполнено на клиенте поверх существующего `@affine/server`. Не дублировали tenancy/Prisma и не внедряли Postgres RLS.
+
 Большая часть уже в `@affine/server`. Не дублировать.
 
 **Мультитенантность.** Оставить workspace = tenant. Не schema-per-tenant. При необходимости compliance: Postgres RLS по `workspace_id` + отдельные object-storage prefixes.
 
+- [x] Решение: workspace = tenant; schema-per-tenant и RLS не делаем в v1 (только если потребует compliance).
+
 **RBAC.** Уже есть `WorkspaceRole` (external/member/admin/owner) и `DocRole`. План:
 
-1. Продуктово прикрутить DocRole к «can edit board widgets».
-2. Share link: read / comment / edit — как сейчас.
-3. Блок-level: не обещать в v1. Исключения — `lockedBySelf` (уже в gfx) как soft-lock, не security.
-4. Сервер: по-прежнему не интерпретирует flavour; кто в комнате документа, тот получает updates. Секретные куски — отдельный doc или E2EE (фаза later, референс CryptPad).
+1. [x] Продуктово прикрутить DocRole к «can edit board widgets» (`store.readonly` / `Doc_Update` + `canEditBoardWidgets`).
+2. [x] Share link: read / comment / edit — как сейчас (без отдельного Commenter UI).
+3. [x] Блок-level: не обещать в v1. Исключения — `lockedBySelf` (уже в gfx) как soft-lock, не security.
+4. [x] Сервер: по-прежнему не интерпретирует flavour; кто в комнате документа, тот получает updates. Секретные куски — отдельный doc или E2EE (фаза later, референс CryptPad).
 
 **Blobs.** Snapshots графиков и сцены Excalidraw — через существующий blob engine. TTL GC для устаревших snapshotBlobId.
 
+- [x] Клиент сбрасывает старый `snapshotBlobId` / `snapshotSvgBlobId` / `sceneBlobId` при записи нового (серверный `cleanupUnreferencedWorkspaceBlobs`, 30д). `BlobEngine.delete()` не вызываем.
+
 **Наблюдаемость.** OpenTelemetry в server уже стоит рассматривать как стандарт NestJS. Добавить:
 
-- WS: rtt, payload size, apply-time yjs на клиенте
-- Widget: `echarts_init_ms`, `snapshot_age_s`, dropped frames
-- Бизнес: `board_object_count`, `live_collaborators`
+- [x] WS: rtt, payload size, apply-time yjs на клиенте (`WhiteboardTelemetry` + HUD)
+- [x] Widget: `echarts_init_ms`, `snapshot_age_s`, dropped frames
+- [x] Бизнес: `board_object_count`, `live_collaborators`
 
 **Совместимость форматов.**
 
-| Формат | Направление | Приоритет |
-|---|---|---|
-| PNG / SVG | export виджета и всей доски (уже частично есть) | P0 |
-| `.excalidraw` | import/export sketch | P0 |
-| CSV | import в database / chart | P0 |
-| Mermaid | import → chart или native preview | P1 |
-| draw.io XML | import shapes | P2 |
-| Miro CSV / export | исследование, часто неполный | P2 |
-| `.affine` snapshot | уже есть transformers | P0 |
+| Формат | Направление | Приоритет | Статус |
+|---|---|---|---|
+| PNG / SVG | export виджета и всей доски (уже частично есть) | P0 | [x] chart/sketch + `ExportManager.exportPng` |
+| `.excalidraw` | import/export sketch | P0 | [x] |
+| CSV | import в database / chart | P0 | [x] загрузка файла в chart `csv-blob` |
+| Mermaid | import → chart или native preview | P1 | [x] pie / xychart-beta → inline table |
+| draw.io XML | import shapes | P2 | [x] парсер AABB, без полного импортёра UI |
+| Miro CSV / export | исследование, часто неполный | P2 | [x] парсер title/type/xywh, без полного импортёра |
+| `.affine` snapshot | уже есть transformers | P0 | [x] `.bs.zip` |
 
 ---
 
@@ -797,7 +803,7 @@ SES/compartments — исследование фазы 4, не блокер. Web
 3. [x] **Sketch P0:** live только selected, SVG для остальных, import `.excalidraw`.
 4. [x] **LOD policy** для всех трёх.
 5. **E2E:** 2 браузера, sync chart spec + kanban drag + reload.
-6. **Экспорт:** PNG доски, SVG/PNG виджета.
+6. [x] **Экспорт:** PNG доски, SVG/PNG виджета.
 
 Демо-сценарий приёмки: воркшоп на одной доске — фрейм «Discovery», стикеры, канбан спринта, график burndown из той же таблицы, скетч архитектуры, двое онлайн.
 

@@ -22,7 +22,8 @@ const helloSlashMenuConfig: SlashMenuConfig = {
       group: '4_Content & Media@12',
       when: ({ std }) =>
         std.store.schema.flavourSchemaMap.has(flavour) &&
-        std.get(FeatureFlagService).getFlag('enable_whiteboard_hello'),
+        std.get(FeatureFlagService).getFlag('enable_whiteboard_hello') &&
+        !std.store.readonly,
       action: ({ std }) => {
         insertGfxWidget(std, flavour, {}, HELLO_WIDGET_SIZE);
       },

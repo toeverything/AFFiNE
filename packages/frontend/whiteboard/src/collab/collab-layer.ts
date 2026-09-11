@@ -6,6 +6,7 @@ import {
 import { GfxExtension } from '@blocksuite/affine/std/gfx';
 
 import { parseXywhRect } from '../perf/l0-scene';
+import { whiteboardTelemetry } from '../perf/telemetry';
 import {
   getDocAwareness,
   patchCollabAwareness,
@@ -77,10 +78,19 @@ export class WhiteboardCollabLayerExtension extends GfxExtension {
     const awareness = this.awareness();
     const onChange = () => this.onAwareness();
     awareness?.on?.('change', onChange);
+    const doc = this.std.store.doc as {
+      on?: (event: string, fn: (update: Uint8Array) => void) => void;
+      off?: (event: string, fn: (update: Uint8Array) => void) => void;
+    };
+    const onDocUpdate = (update: Uint8Array) => {
+      if (update?.byteLength) whiteboardTelemetry.noteWsPayload(update.byteLength);
+    };
+    doc.on?.('update', onDocUpdate);
     this.unsubs.push(
       () => viewport.unsubscribe(),
       () => awareness?.off?.('change', onChange),
-      () => element.removeEventListener('pointermove', this.onPointerMove)
+      () => element.removeEventListener('pointermove', this.onPointerMove),
+      () => doc.off?.('update', onDocUpdate)
     );
     this.publishViewport();
     this.onAwareness();
@@ -179,6 +189,16 @@ export class WhiteboardCollabLayerExtension extends GfxExtension {
       : [];
     this.bar.following =
       this.following ?? readLocalPayload(awareness)?.followClientId ?? null;
+    whiteboardTelemetry.noteCollaborators(this.bar.peers.length);
+    if (states) {
+      try {
+        whiteboardTelemetry.noteWsPayload(
+          JSON.stringify([...states.values()]).length
+        );
+      } catch {
+        // awareness payload size is best-effort
+      }
+    }
     this.bar.requestUpdate();
   }
 
@@ -203,6 +223,7 @@ export class WhiteboardCollabLayerExtension extends GfxExtension {
       x: (x - camera.viewportX) * scale,
       y: (y - camera.viewportY) * scale,
     });
+    whiteboardTelemetry.noteBoardObjects(this.gfx.layer.blocks.length);
     const awareness = this.awareness();
     const peers: WhiteboardPeer[] = awareness?.getStates?.()
       ? readPeers(awareness.getStates() as never, awareness.clientID)

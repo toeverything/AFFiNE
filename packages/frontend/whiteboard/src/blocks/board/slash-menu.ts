@@ -23,7 +23,8 @@ const boardSlashMenuConfig: SlashMenuConfig = {
   items: ({ std, model }) => {
     const enabled =
       std.store.schema.flavourSchemaMap.has(flavour) &&
-      std.get(FeatureFlagService).getFlag('enable_board_widget');
+      std.get(FeatureFlagService).getFlag('enable_board_widget') &&
+      !std.store.readonly;
 
     const insert = (template: BoardTemplate, blockId?: string) => {
       const title = I18n['com.affine.whiteboard.board.title']();

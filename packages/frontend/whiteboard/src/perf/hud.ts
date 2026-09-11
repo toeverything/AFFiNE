@@ -60,6 +60,27 @@ export class WhiteboardPerfHud extends LitElement {
   @state()
   accessor l0Backend = 'off';
 
+  @state()
+  accessor echartsInitMs = 0;
+
+  @state()
+  accessor snapshotAgeS = 0;
+
+  @state()
+  accessor droppedFrames = 0;
+
+  @state()
+  accessor boardObjectCount = 0;
+
+  @state()
+  accessor liveCollaborators = 0;
+
+  @state()
+  accessor yjsApplyMs = 0;
+
+  @state()
+  accessor wsPayloadBytes = 0;
+
   private _timer = 0;
 
   override connectedCallback() {
@@ -83,6 +104,13 @@ export class WhiteboardPerfHud extends LitElement {
     this.wsRtt = snap.wsRtt;
     this.l0SpriteCount = snap.l0SpriteCount;
     this.l0Backend = snap.l0Backend;
+    this.echartsInitMs = snap.echartsInitMs;
+    this.snapshotAgeS = snap.snapshotAgeS;
+    this.droppedFrames = snap.droppedFrames;
+    this.boardObjectCount = snap.boardObjectCount;
+    this.liveCollaborators = snap.liveCollaborators;
+    this.yjsApplyMs = snap.yjsApplyMs;
+    this.wsPayloadBytes = snap.wsPayloadBytes;
   }
 
   override render() {
@@ -104,6 +132,20 @@ export class WhiteboardPerfHud extends LitElement {
           <dd>${this.l0SpriteCount}</dd>
           <dt>${I18n['com.affine.whiteboard.perf.l0-backend']()}</dt>
           <dd>${this.l0Backend}</dd>
+          <dt>${I18n['com.affine.whiteboard.perf.echarts-init']()}</dt>
+          <dd>${this.echartsInitMs.toFixed(0)} ms</dd>
+          <dt>${I18n['com.affine.whiteboard.perf.snapshot-age']()}</dt>
+          <dd>${this.snapshotAgeS.toFixed(0)} s</dd>
+          <dt>${I18n['com.affine.whiteboard.perf.dropped-frames']()}</dt>
+          <dd>${this.droppedFrames}</dd>
+          <dt>${I18n['com.affine.whiteboard.perf.board-objects']()}</dt>
+          <dd>${this.boardObjectCount}</dd>
+          <dt>${I18n['com.affine.whiteboard.perf.collaborators']()}</dt>
+          <dd>${this.liveCollaborators}</dd>
+          <dt>${I18n['com.affine.whiteboard.perf.yjs-apply']()}</dt>
+          <dd>${this.yjsApplyMs.toFixed(1)} ms</dd>
+          <dt>${I18n['com.affine.whiteboard.perf.ws-payload']()}</dt>
+          <dd>${this.wsPayloadBytes} B</dd>
         </dl>
       </div>
     `;

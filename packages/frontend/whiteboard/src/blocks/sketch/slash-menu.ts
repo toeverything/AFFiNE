@@ -30,7 +30,8 @@ const sketchSlashMenuConfig: SlashMenuConfig = {
         group: '4_Content & Media@18',
         when: ({ std }) =>
           std.store.schema.flavourSchemaMap.has(flavour) &&
-          std.get(FeatureFlagService).getFlag('enable_whiteboard_sketch'),
+          std.get(FeatureFlagService).getFlag('enable_whiteboard_sketch') &&
+          !std.store.readonly,
         action: ({ std }) => {
           insertGfxWidget(std, flavour, {}, SKETCH_WIDGET_SIZE);
         },

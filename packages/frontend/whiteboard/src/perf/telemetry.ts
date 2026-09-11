@@ -9,6 +9,13 @@ export type WhiteboardPerfSnapshot = {
   wsRtt: number;
   l0SpriteCount: number;
   l0Backend: L0BackendKind;
+  echartsInitMs: number;
+  snapshotAgeS: number;
+  droppedFrames: number;
+  boardObjectCount: number;
+  liveCollaborators: number;
+  yjsApplyMs: number;
+  wsPayloadBytes: number;
 };
 
 type WidgetSample = {
@@ -45,6 +52,14 @@ export class WhiteboardTelemetry {
   wsRtt = 0;
   l0SpriteCount = 0;
   l0Backend: L0BackendKind = 'off';
+  echartsInitMs = 0;
+  snapshotAgeS = 0;
+  droppedFrames = 0;
+  boardObjectCount = 0;
+  liveCollaborators = 0;
+  yjsApplyMs = 0;
+  wsPayloadBytes = 0;
+  private snapshotAt = 0;
 
   private readonly widgets = new Map<string, WidgetSample>();
   private raf = 0;
@@ -72,6 +87,37 @@ export class WhiteboardTelemetry {
     this.l0Backend = sample.active ? sample.backend : 'off';
   }
 
+  noteEchartsInit(ms: number) {
+    if (Number.isFinite(ms) && ms >= 0) this.echartsInitMs = ms;
+  }
+
+  noteSnapshotAge(seconds: number) {
+    if (Number.isFinite(seconds) && seconds >= 0) this.snapshotAgeS = seconds;
+  }
+
+  noteSnapshotWritten(at = Date.now()) {
+    this.snapshotAt = at;
+    this.snapshotAgeS = 0;
+  }
+
+  noteBoardObjects(count: number) {
+    if (Number.isFinite(count) && count >= 0) this.boardObjectCount = count;
+  }
+
+  noteCollaborators(count: number) {
+    if (Number.isFinite(count) && count >= 0) this.liveCollaborators = count;
+  }
+
+  noteYjsApply(ms: number) {
+    if (Number.isFinite(ms) && ms >= 0) {
+      this.yjsApplyMs = this.yjsApplyMs * 0.7 + ms * 0.3;
+    }
+  }
+
+  noteWsPayload(bytes: number) {
+    if (Number.isFinite(bytes) && bytes >= 0) this.wsPayloadBytes = bytes;
+  }
+
   get liveWidgetCount() {
     let count = 0;
     for (const sample of this.widgets.values()) {
@@ -92,6 +138,9 @@ export class WhiteboardTelemetry {
 
   snapshot(): WhiteboardPerfSnapshot {
     if (!this.wsRtt) this.wsRtt = readWsRttHint();
+    if (this.snapshotAt) {
+      this.snapshotAgeS = Math.max(0, (Date.now() - this.snapshotAt) / 1000);
+    }
     return {
       frameTime: this.frameTime,
       liveWidgetCount: this.liveWidgetCount,
@@ -99,6 +148,13 @@ export class WhiteboardTelemetry {
       wsRtt: this.wsRtt,
       l0SpriteCount: this.l0SpriteCount,
       l0Backend: this.l0Backend,
+      echartsInitMs: this.echartsInitMs,
+      snapshotAgeS: this.snapshotAgeS,
+      droppedFrames: this.droppedFrames,
+      boardObjectCount: this.boardObjectCount,
+      liveCollaborators: this.liveCollaborators,
+      yjsApplyMs: this.yjsApplyMs,
+      wsPayloadBytes: this.wsPayloadBytes,
     };
   }
 
@@ -110,6 +166,7 @@ export class WhiteboardTelemetry {
       const dt = now - this.lastFrame;
       this.lastFrame = now;
       this.frameTime = this.frameTime * 0.85 + dt * 0.15;
+      if (dt > 33) this.droppedFrames += 1;
       this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
@@ -128,6 +185,14 @@ export class WhiteboardTelemetry {
     this.wsRtt = 0;
     this.l0SpriteCount = 0;
     this.l0Backend = 'off';
+    this.echartsInitMs = 0;
+    this.snapshotAgeS = 0;
+    this.droppedFrames = 0;
+    this.boardObjectCount = 0;
+    this.liveCollaborators = 0;
+    this.yjsApplyMs = 0;
+    this.wsPayloadBytes = 0;
+    this.snapshotAt = 0;
   }
 }
 

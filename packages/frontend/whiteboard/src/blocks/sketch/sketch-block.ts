@@ -26,6 +26,8 @@ import {
   publishWidgetEditing,
   remoteOwnsLiveEditor,
 } from '../../collab/awareness';
+import { canEditBoardWidgets } from '../../infra/permissions';
+import { replacedSnapshotId } from '../../infra/blob-gc';
 import {
   tryLive,
   whiteboardPerfPolicy,
@@ -206,17 +208,23 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   }
 
   private async persist(scene = this._scene, writeY = true) {
+    if (!canEditBoardWidgets(this.std.store, this.model)) return;
     if (writeY && this._collab && !this._collab.applyingRemote) {
       this._collab.applyScene(scene);
     }
     this._scene = this._collab ? this._collab.toScene() : scene;
+    const previousScene = this.model.props.sceneBlobId;
+    const previousSvg = this.model.props.snapshotSvgBlobId;
     const sceneId = await saveScene(this.model.store, this._scene);
     const svg = sceneToSvg(this._scene);
     const svgId = await saveSvg(this.model.store, svg);
     this.model.store.captureSync();
+    void replacedSnapshotId(previousScene, sceneId);
+    void replacedSnapshotId(previousSvg, svgId);
     this.model.props.sceneBlobId = sceneId;
     this.model.props.snapshotSvgBlobId = svgId;
     this.model.props.revision = (this.model.props.revision ?? 0) + 1;
+    whiteboardTelemetry.noteSnapshotWritten();
     await this.refreshSnapshot();
   }
 
@@ -233,6 +241,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
 
   private enterEdit() {
     this.selectSelf();
+    if (!canEditBoardWidgets(this.std.store, this.model)) return;
     if (!this.intersecting) return;
     if (remoteOwnsLiveEditor(this.std.store, this.model.id)) return;
     const viewport = this.gfx()?.viewport;
@@ -369,6 +378,7 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   }
 
   async importExcalidraw(file: File) {
+    if (!canEditBoardWidgets(this.std.store, this.model)) return;
     const scene = parseExcalidrawJson(await file.text());
     await this.persist(scene);
     this.requestUpdate();
@@ -537,10 +547,12 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
     this._scene = this._collab.toScene();
     const stop = this._collab.observe(() => {
       if (!this._collab) return;
+      const started = performance.now();
       this._collab.applyingRemote = true;
       this._scene = this._collab.toScene();
       this.sceneEpoch++;
       this._collab.applyingRemote = false;
+      whiteboardTelemetry.noteYjsApply(performance.now() - started);
       if (!this.editing) void this.refreshSnapshot();
       this.requestUpdate();
     });

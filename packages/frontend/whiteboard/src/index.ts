@@ -55,6 +55,13 @@ export {
   type WhiteboardReactToLit,
 } from './react-to-lit';
 export {
+  canEditBoardWidgets,
+  isBoardReadonly,
+  mermaidToInlineTable,
+  collectReferencedSnapshotIds,
+  replacedSnapshotId,
+} from './infra';
+export {
   ATTENTION_TTL_MS,
   POINTER_THROTTLE_MS,
   WHITEBOARD_AWARENESS_KEY,

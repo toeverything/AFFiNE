@@ -18,7 +18,8 @@ const chartSlashMenuConfig: SlashMenuConfig = {
   items: ({ std, model }) => {
     const enabled =
       std.store.schema.flavourSchemaMap.has(flavour) &&
-      std.get(FeatureFlagService).getFlag('enable_whiteboard_chart');
+      std.get(FeatureFlagService).getFlag('enable_whiteboard_chart') &&
+      !std.store.readonly;
 
     return [
       {

@@ -193,6 +193,7 @@ export class WhiteboardL0LayerExtension extends GfxExtension {
       WHITEBOARD_LOD.z0
     );
     this.setActive(active);
+    whiteboardTelemetry.noteBoardObjects(this.gfx.layer.blocks.length);
     if (!active || !this.backend) {
       whiteboardTelemetry.noteL0({
         active: false,

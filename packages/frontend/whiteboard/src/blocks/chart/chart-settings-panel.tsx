@@ -1,5 +1,5 @@
 import { I18n } from '@affine/i18n';
-import { useCallback, type ChangeEvent } from 'react';
+import { useCallback, useState, type ChangeEvent } from 'react';
 
 import {
   CHART_DATA_SOURCE_TYPES,
@@ -23,6 +23,8 @@ export type ChartSettingsPanelProps = {
   onTypeChange: (type: ChartType) => void;
   onSpecChange: (spec: ChartVisualSpec) => void;
   onDataSourceChange: (source: ChartDataSource) => void;
+  onImportCsvFile?: (file: File) => void;
+  onImportMermaid?: (text: string) => void;
 };
 
 const TYPE_LABEL: Record<ChartType, () => string> = {
@@ -68,9 +70,12 @@ export function ChartSettingsPanel({
   onTypeChange,
   onSpecChange,
   onDataSourceChange,
+  onImportCsvFile,
+  onImportMermaid,
 }: ChartSettingsPanelProps) {
   const selectedDb = databases.find(item => item.id === dataSource.blockId);
   const columns = selectedDb?.columns ?? [];
+  const [mermaidText, setMermaidText] = useState('');
 
   const updateSource = useCallback(
     (patch: Partial<ChartDataSource>) => {
@@ -204,6 +209,21 @@ export function ChartSettingsPanel({
         </>
       ) : null}
 
+      {onImportCsvFile ? (
+        <label>
+          {I18n['com.affine.whiteboard.chart.panel.import-csv']()}
+          <input
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            onChange={event => {
+              const file = event.currentTarget.files?.[0];
+              if (file) onImportCsvFile(file);
+              event.currentTarget.value = '';
+            }}
+          />
+        </label>
+      ) : null}
+
       {dataSource.type === 'csv-blob' ? (
         <label>
           {I18n['com.affine.whiteboard.chart.panel.blob-id']()}
@@ -239,6 +259,22 @@ export function ChartSettingsPanel({
                   rows,
                 },
               });
+            }}
+          />
+        </label>
+      ) : null}
+
+      {onImportMermaid ? (
+        <label>
+          {I18n['com.affine.whiteboard.chart.panel.import-mermaid']()}
+          <textarea
+            value={mermaidText}
+            placeholder={I18n[
+              'com.affine.whiteboard.chart.panel.mermaid-placeholder'
+            ]()}
+            onChange={event => setMermaidText(event.currentTarget.value)}
+            onBlur={() => {
+              if (mermaidText.trim()) onImportMermaid(mermaidText);
             }}
           />
         </label>

@@ -1,5 +1,6 @@
 import type { EChartsType } from 'echarts/core';
 
+import { whiteboardTelemetry } from '../../perf/telemetry';
 import type { SanitizedEChartsOption } from './types';
 
 type EChartsModule = typeof import('echarts/core');
@@ -53,8 +54,12 @@ export async function initLiveChart(
   renderer: 'canvas' | 'svg' = 'canvas'
 ): Promise<LiveChartHandle> {
   const echarts = await loadEcharts();
+  const started = performance.now();
   const existing = echarts.getInstanceByDom(el);
   const chart = existing ?? echarts.init(el, undefined, { renderer });
+  if (!existing) {
+    whiteboardTelemetry.noteEchartsInit(performance.now() - started);
+  }
   chart.setOption(option, { notMerge: true });
 
   return {

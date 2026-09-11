@@ -14,9 +14,13 @@ import {
   publishWidgetEditing,
   remoteOwnsLiveEditor,
 } from '../../collab/awareness';
+import { canEditBoardWidgets } from '../../infra/permissions';
+import { replacedSnapshotId } from '../../infra/blob-gc';
+import { mermaidToInlineTable } from '../../infra/formats/mermaid';
 import { tryLive, whiteboardPerfPolicy, xywhCenterDistance } from '../../perf/policy';
 import { whiteboardTelemetry } from '../../perf/telemetry';
 import { getChartLodLevel, liveChartBudget } from './live-budget';
+import { parseCsv } from './mapping';
 import type { ChartBlockModel } from './model';
 import { buildChartOption } from './option';
 import { readDataSource, readSpec, readTitle, writeBoxed, writeTitle } from './props';
@@ -63,7 +67,11 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
   private _resizeObserver: ResizeObserver | null = null;
 
   protected get showSettings() {
-    return this.selected && !this.preview;
+    return (
+      this.selected &&
+      !this.preview &&
+      canEditBoardWidgets(this.std.store, this.model)
+    );
   }
 
   private get zoom() {
@@ -87,7 +95,49 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
       onDataSourceChange: source => {
         this.model.props.dataSource = writeBoxed(this.model.props.dataSource, source);
       },
+      onImportCsvFile: file => {
+        void this.importCsvFile(file);
+      },
+      onImportMermaid: text => {
+        this.importMermaid(text);
+      },
     };
+  }
+
+  private async importCsvFile(file: File) {
+    if (!canEditBoardWidgets(this.std.store, this.model)) return;
+    const text = await file.text();
+    const blobId = await this.model.store.blobSync.set(
+      new Blob([text], { type: 'text/csv' })
+    );
+    const table = parseCsv(text);
+    const previous = readDataSource(this.model.props.dataSource);
+    this.model.props.dataSource = writeBoxed(this.model.props.dataSource, {
+      ...previous,
+      type: 'csv-blob',
+      blobId,
+      inline: table,
+      mapping: {
+        x: table.columns[0] ?? previous.mapping.x,
+        y: table.columns.slice(1),
+      },
+    });
+  }
+
+  private importMermaid(text: string) {
+    if (!canEditBoardWidgets(this.std.store, this.model)) return;
+    const table = mermaidToInlineTable(text);
+    if (!table) return;
+    const previous = readDataSource(this.model.props.dataSource);
+    this.model.props.dataSource = writeBoxed(this.model.props.dataSource, {
+      ...previous,
+      type: 'inline',
+      inline: table,
+      mapping: {
+        x: table.columns[0] ?? previous.mapping.x,
+        y: table.columns.slice(1),
+      },
+    });
   }
 
   private canUseLive() {
@@ -188,12 +238,14 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
   }
 
   private async persistSnapshot() {
-    if (!this._live) return;
+    if (!this._live || !canEditBoardWidgets(this.std.store, this.model)) return;
     try {
       const dataUrl = this._live.getDataURL({ type: 'png', pixelRatio: 2 });
       const blobId = await dataUrlToBlobId(this.model.store, dataUrl);
       if (blobId && blobId !== this.model.props.snapshotBlobId) {
+        void replacedSnapshotId(this.model.props.snapshotBlobId, blobId);
         this.model.props.snapshotBlobId = blobId;
+        whiteboardTelemetry.noteSnapshotWritten();
       }
     } catch {
       // snapshot is best-effort

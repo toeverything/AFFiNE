@@ -63,6 +63,7 @@ const surfaceToolbarConfig = {
       tooltip: I18n['com.affine.whiteboard.sketch.import'](),
       icon: DownloadIcon(),
       run(ctx) {
+        if (ctx.readonly) return;
         const block = currentSketch(ctx);
         if (!block) return;
         const input = document.createElement('input');
