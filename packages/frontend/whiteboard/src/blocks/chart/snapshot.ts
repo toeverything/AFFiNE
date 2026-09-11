@@ -1,5 +1,7 @@
 import type { Store } from '@blocksuite/affine/store';
 
+import { isInlineSnapshotSrc, snapshotCache } from '../../perf/snapshot-cache';
+
 export async function dataUrlToBlobId(
   store: Store,
   dataUrl: string
@@ -14,22 +16,14 @@ export async function resolveSnapshotSrc(
   snapshotBlobId?: string
 ): Promise<string | undefined> {
   if (!snapshotBlobId) return undefined;
-  if (
-    snapshotBlobId.startsWith('data:') ||
-    snapshotBlobId.startsWith('blob:') ||
-    snapshotBlobId.startsWith('http:') ||
-    snapshotBlobId.startsWith('https:')
-  ) {
-    return snapshotBlobId;
-  }
-
-  const blob = await store.blobSync.get(snapshotBlobId);
-  if (!blob) return undefined;
-  return URL.createObjectURL(blob);
+  if (isInlineSnapshotSrc(snapshotBlobId)) return snapshotBlobId;
+  return snapshotCache.resolve(snapshotBlobId, () =>
+    store.blobSync.get(snapshotBlobId)
+  );
 }
 
 export function revokeObjectUrl(url?: string) {
-  if (url?.startsWith('blob:')) {
+  if (url?.startsWith('blob:') && !snapshotCache.hasUrl(url)) {
     URL.revokeObjectURL(url);
   }
 }

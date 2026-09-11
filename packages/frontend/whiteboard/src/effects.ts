@@ -10,6 +10,7 @@ import { HelloPreviewBlockComponent } from './blocks/hello/hello-preview-block';
 import { SketchBlockComponent } from './blocks/sketch/sketch-block';
 import { SketchEdgelessBlockComponent } from './blocks/sketch/sketch-edgeless-block';
 import { SketchPreviewBlockComponent } from './blocks/sketch/sketch-preview-block';
+import { WhiteboardPerfHud } from './perf/hud';
 
 export function effects() {
   customElements.define('wb-hello', HelloBlockComponent);
@@ -27,4 +28,7 @@ export function effects() {
   customElements.define('wb-board', BoardBlockComponent);
   customElements.define('wb-board-edgeless', BoardEdgelessBlockComponent);
   customElements.define('wb-board-preview', BoardPreviewBlockComponent);
+  if (!customElements.get('wb-perf-hud')) {
+    customElements.define('wb-perf-hud', WhiteboardPerfHud);
+  }
 }

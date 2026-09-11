@@ -1,4 +1,5 @@
 import { WHITEBOARD_LOD } from '../../const';
+import { getWidgetLodLevel } from '../../perf/policy';
 
 export type SketchLodLevel = 'l0' | 'l1' | 'l2';
 
@@ -7,13 +8,7 @@ export function getSketchLodLevel(
   selected: boolean,
   hovered: boolean
 ): SketchLodLevel {
-  if (selected || (hovered && zoom > WHITEBOARD_LOD.z1)) {
-    return 'l2';
-  }
-  if (zoom < WHITEBOARD_LOD.z0) {
-    return 'l0';
-  }
-  return 'l1';
+  return getWidgetLodLevel(zoom, selected, hovered);
 }
 
 export class LiveSketchBudget {
@@ -34,7 +29,12 @@ export class LiveSketchBudget {
     return this.live.has(id);
   }
 
-  acquire(id: string, liveBudgetExempt = false, steal = false): boolean {
+  acquire(
+    id: string,
+    liveBudgetExempt = false,
+    opts: boolean | { steal?: boolean; score?: number } = false
+  ): boolean {
+    const steal = typeof opts === 'boolean' ? opts : !!opts.steal;
     if (this.live.has(id)) return true;
     if (liveBudgetExempt) {
       this.exempt.add(id);

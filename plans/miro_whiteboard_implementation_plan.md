@@ -645,18 +645,26 @@ props: {
 
 ### 6.5 Производительность канваса
 
+**Статус.** Выполнено (фаза 1 политик + фаза D / L0 WebGL).
+
 Не новый движок. Политика поверх существующего gfx.
 
 **Работы.**
 
-1. `WhiteboardPerfPolicy` extension: бюджеты live-инстансов, z-пороги, приоритет selected > hover > center-of-viewport.
-2. Общий `SnapshotCache` (blob id → object URL, LRU по памяти).
-3. Подключить snapshot painter к `ViewportTurboRendererExtension` (в коде уже есть комментарии про layout handler + painter worker).
+1. [x] `WhiteboardPerfPolicy` extension: бюджеты live-инстансов, z-пороги, приоритет selected > hover > center-of-viewport.
+2. [x] Общий `SnapshotCache` (blob id → object URL, LRU по памяти).
+3. [x] Подключить snapshot painter к `ViewportTurboRendererExtension` (в коде уже есть комментарии про layout handler + painter worker).
 4. [x] Виртуализация канбана (§6.3.2).
-5. Телеметрия: `frame_time`, `live_widget_count`, `cull_ratio`, `ws_rtt`.
-6. Stress-фикстуры: 1k notes, 50 charts-as-snapshots, 5 live charts, 1 sketch.
+5. [x] Телеметрия: `frame_time`, `live_widget_count`, `cull_ratio`, `ws_rtt`.
+6. [x] Stress-фикстуры: 1k notes, 50 charts-as-snapshots, 5 live charts, 1 sketch.
 
-**Фаза D (только если KPI не бьётся):** Pixi/WebGL layer для L0 всей доски. Отдельный RFC, не смешивать с MVP.
+**Фаза D (вариант D, presentation zoom-out).** Реализована как отдельный слой, не как замена gfx и не как зависимость PixiJS.
+
+- [x] RFC: store остаётся Yjs/BlockSuite; при zoom < `WHITEBOARD_LOD.z0` (0.35) gfx DOM виджетов скрывается; AABB (+ цвет flavour) рисует тонкий WebGL-батч спрайтов, Canvas2D — fallback. Полный PixiJS в `package.json` не подключаем (см. §1.3 п.3, §10 п.8): обоснование только *presentation zoom-out*.
+- [x] Флаг `enable_whiteboard_l0_layer`, default `false`. Регистрация `WhiteboardL0LayerExtension` только на edgeless, не в preview.
+- [x] Hit-test по модельным AABB, top-most; selected/editing остаются в DOM (`.wb-l0-live`). Surface canvas не прячем — шейпы уже на своём холсте.
+- [x] A11y: canvas `role="img"` + `aria-label`. Телеметрия/HUD: `l0SpriteCount`, `l0Backend`.
+- [x] Unit-тесты сцены (activate/cull/hit) и Canvas2D-отрисовки. KPI 55 fps / 100 ms tooltip / 3 s load — приёмка на железе, не unit-тесты.
 
 **Критерии.**
 
@@ -796,7 +804,7 @@ SES/compartments — исследование фазы 4, не блокер. Web
 - Turbo-renderer painters для всех виджетов.
 - Shared database nodes: один `affine:database` как dataSource многих chart/board на разных страницах (уже почти можно через linked doc — довести UX).
 - Stress suite + телеметрия дашборд.
-- RFC по Pixi L0, реализация **только если** метрики не сходятся.
+- [x] RFC по Pixi/WebGL L0 (фаза D): тот же store, WebGL-спрайты вместо DOM при zoom < z0, флаг выключен по умолчанию.
 
 ### Фаза 4 — Экосистема (ongoing)
 
@@ -915,7 +923,7 @@ SES/compartments — исследование фазы 4, не блокер. Web
 | Yjs snapshot + updates | Уже nbstore; для толстых виджетов — blob/subdoc |
 | Канбан как Planka + dnd-kit | Семантика Planka, реализация data-view + Atlaskit; swimlanes фаза 3 |
 | ECharts headless + форма | §6.2 |
-| Viewport-culling, virtual, SVG fallback, Pixi | Culling есть; SVG/snapshot — MVP; Pixi — условная фаза 3/D |
+| Viewport-culling, virtual, SVG fallback, Pixi | Culling есть; SVG/snapshot — MVP; L0 WebGL (фаза D) за флагом, без PixiJS |
 | Plugin SDK iframe/SES | Слои 0–3 в §6.7 |
 | schema-per-tenant | Отклонено, workspace isolation |
 | RBAC workspace→doc→block | workspace+doc сейчас; block — не v1 |

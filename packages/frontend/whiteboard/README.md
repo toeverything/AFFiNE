@@ -36,6 +36,8 @@ export const chartWidget = registerGfxWidget({
 
 Флаг `enable_whiteboard_chart` по умолчанию выключен. Preview-scope рисует только `snapshotBlobId`, без ECharts.
 
+Производительность канваса (§6.5) — `src/perf`: `WhiteboardPerfPolicy` (LOD + приоритет selected > hover > центр вьюпорта), общий `SnapshotCache` (LRU по памяти), snapshot-painter для `ViewportTurboRendererExtension`, телеметрия `frame_time` / `live_widget_count` / `cull_ratio` / `ws_rtt` и stress-план 1k notes + 50 chart snapshots + 5 live charts + 1 sketch. HUD — флаг `enable_whiteboard_perf_hud`. L0 presentation layer (фаза D) — флаг `enable_whiteboard_l0_layer` (по умолчанию выключен): при zoom < `WHITEBOARD_LOD.z0` DOM/ECharts скрываются, AABB рисует тонкий WebGL-батч (Canvas2D fallback). Полный PixiJS в зависимости не добавляется.
+
 Набросок — `src/blocks/sketch` (`wb:sketch`): сцена в Yjs-subdoc (`subdocGuid`, `Y.Array` элементов в стиле y-excalidraw) + SVG-снимок для L0/L1. Два человека рисуют в одном блоке; курсоры внутри рамки через awareness. Live `@excalidraw/excalidraw` (или fallback-холст) только в L2; двойной клик входит в edit и блокирует pan доски. Импорт/экспорт `.excalidraw`, PNG, SVG. Свой `Y.UndoManager` на subdoc. Бюджет `maxLiveSketches = 1`. Флаг `enable_whiteboard_sketch` по умолчанию выключен.
 
 Канбан — `src/blocks/board` (`wb:board`): тонкая gfx-обёртка над `affine:database`. Данные живут в DocOnly note-hub того же документа. LOD: L0 — цветные колонки и счётчики, L1 — первые N карточек + «+N», L2 — полный kanban data-view (Atlaskit, peek-view) или сетка дорожек (колонка × исполнитель) без dnd-kit. WIP, чеклисты, вложения и затраченное время — в cells/view meta. Живых досок не больше `maxLiveKanban = 2`. Флаг `enable_board_widget` по умолчанию выключен.

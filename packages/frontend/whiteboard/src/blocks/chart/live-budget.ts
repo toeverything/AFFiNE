@@ -1,4 +1,5 @@
 import { WHITEBOARD_LOD } from '../../const';
+import { getWidgetLodLevel } from '../../perf/policy';
 
 export type ChartLodLevel = 'l0' | 'l1' | 'l2';
 
@@ -7,13 +8,7 @@ export function getChartLodLevel(
   selected: boolean,
   hovered: boolean
 ): ChartLodLevel {
-  if (selected || (hovered && zoom > WHITEBOARD_LOD.z1)) {
-    return 'l2';
-  }
-  if (zoom < WHITEBOARD_LOD.z0) {
-    return 'l0';
-  }
-  return 'l1';
+  return getWidgetLodLevel(zoom, selected, hovered);
 }
 
 /**
@@ -38,7 +33,12 @@ export class LiveChartBudget {
     return this.live.has(id);
   }
 
-  acquire(id: string, liveBudgetExempt = false): boolean {
+  acquire(
+    id: string,
+    liveBudgetExempt = false,
+    opts: boolean | { steal?: boolean; score?: number } = false
+  ): boolean {
+    const steal = typeof opts === 'boolean' ? opts : !!opts.steal;
     if (this.live.has(id)) return true;
     if (liveBudgetExempt) {
       this.exempt.add(id);
@@ -46,7 +46,11 @@ export class LiveChartBudget {
       return true;
     }
     const nonExempt = [...this.live].filter(item => !this.exempt.has(item));
-    if (nonExempt.length >= this.maxLive) return false;
+    if (nonExempt.length >= this.maxLive) {
+      if (!steal) return false;
+      const victim = nonExempt[0];
+      if (victim) this.release(victim);
+    }
     this.live.add(id);
     return true;
   }

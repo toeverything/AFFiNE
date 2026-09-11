@@ -353,6 +353,26 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: false,
   },
+  enable_whiteboard_perf_hud: {
+    category: 'blocksuite',
+    bsFlag: 'enable_whiteboard_perf_hud',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-perf-hud.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-perf-hud.description',
+    configurable: true,
+    defaultState: false,
+  },
+  enable_whiteboard_l0_layer: {
+    category: 'blocksuite',
+    bsFlag: 'enable_whiteboard_l0_layer',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-l0-layer.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-whiteboard-l0-layer.description',
+    configurable: true,
+    defaultState: false,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 // oxlint-disable-next-line no-redeclare

@@ -39,6 +39,17 @@ export {
   SKETCH_WIDGET_SIZE,
 } from './const';
 export {
+  getWidgetLodLevel,
+  livePriorityScore,
+  pickLiveIds,
+  snapshotCache,
+  whiteboardPerfPolicy,
+  whiteboardTelemetry,
+  shouldActivateL0Layer,
+  buildStressPlan,
+  WHITEBOARD_STRESS_FIXTURE,
+} from './perf';
+export {
   WhiteboardReactToLitIdentifier,
   WhiteboardReactToLitExtension,
   type WhiteboardReactToLit,

@@ -1,5 +1,6 @@
 import type { Store } from '@blocksuite/affine/store';
 
+import { isInlineSnapshotSrc, snapshotCache } from '../../perf/snapshot-cache';
 import { decodeSceneBlob, encodeSceneBlob } from './scene';
 import type { SketchScene } from './types';
 
@@ -23,21 +24,14 @@ export async function saveSvg(store: Store, svg: string) {
 
 export async function resolveBlobSrc(store: Store, blobId?: string) {
   if (!blobId) return;
-  if (
-    blobId.startsWith('data:') ||
-    blobId.startsWith('blob:') ||
-    blobId.startsWith('http:') ||
-    blobId.startsWith('https:')
-  ) {
-    return blobId;
-  }
-  const blob = await store.blobSync.get(blobId);
-  if (!blob) return;
-  return URL.createObjectURL(blob);
+  if (isInlineSnapshotSrc(blobId)) return blobId;
+  return snapshotCache.resolve(blobId, () => store.blobSync.get(blobId));
 }
 
 export function revokeObjectUrl(url?: string) {
-  if (url?.startsWith('blob:')) URL.revokeObjectURL(url);
+  if (url?.startsWith('blob:') && !snapshotCache.hasUrl(url)) {
+    URL.revokeObjectURL(url);
+  }
 }
 
 export function downloadBlob(blob: Blob, filename: string) {

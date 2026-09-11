@@ -25,6 +25,8 @@ export interface BlockSuiteFlags {
   enable_whiteboard_chart: boolean;
   enable_whiteboard_sketch: boolean;
   enable_board_widget: boolean;
+  enable_whiteboard_perf_hud: boolean;
+  enable_whiteboard_l0_layer: boolean;
 }
 
 export class FeatureFlagService extends StoreExtension {
@@ -54,6 +56,8 @@ export class FeatureFlagService extends StoreExtension {
     enable_whiteboard_chart: false,
     enable_whiteboard_sketch: false,
     enable_board_widget: false,
+    enable_whiteboard_perf_hud: false,
+    enable_whiteboard_l0_layer: false,
   });
 
   setFlag(key: keyof BlockSuiteFlags, value: boolean) {

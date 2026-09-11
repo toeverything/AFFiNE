@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./store": "./src/store.ts",
-    "./view": "./src/view.ts"
+    "./view": "./src/view.ts",
+    "./turbo-painter": "./src/perf/painter.worker.ts"
   },
   "dependencies": {
     "@affine/i18n": "workspace:*",

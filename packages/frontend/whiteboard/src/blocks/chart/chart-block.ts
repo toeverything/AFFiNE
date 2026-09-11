@@ -10,6 +10,8 @@ import type { Root } from 'react-dom/client';
 import type { ChartSettingsPanelProps } from './chart-settings-panel';
 import { listDatabases } from './databases';
 import { resolveChartData, subscribeChartData } from './data-source';
+import { tryLive, whiteboardPerfPolicy, xywhCenterDistance } from '../../perf/policy';
+import { whiteboardTelemetry } from '../../perf/telemetry';
 import { getChartLodLevel, liveChartBudget } from './live-budget';
 import type { ChartBlockModel } from './model';
 import { buildChartOption } from './option';
@@ -90,11 +92,25 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
   }
 
   private acquireLive() {
-    if (!this.canUseLive()) return false;
-    return liveChartBudget.acquire(
-      this.model.id,
-      !!this.model.props.liveBudgetExempt
-    );
+    if (!this.canUseLive()) {
+      whiteboardPerfPolicy.forget(this.model.id);
+      whiteboardTelemetry.forgetWidget(this.model.id);
+      return false;
+    }
+    const viewport = this.std.getOptional(GfxControllerIdentifier)?.viewport;
+    return tryLive(liveChartBudget, {
+      id: this.model.id,
+      kind: 'chart',
+      selected: this.selected,
+      hovered: this.hovered,
+      intersecting: this.intersecting,
+      distanceToCenter: xywhCenterDistance(
+        this.model.xywh,
+        viewport?.center.x ?? 0,
+        viewport?.center.y ?? 0
+      ),
+      exempt: !!this.model.props.liveBudgetExempt,
+    });
   }
 
   private async refreshData() {
@@ -356,6 +372,8 @@ export class ChartBlockComponent extends BlockComponent<ChartBlockModel> {
     if (this._snapshotTimer) window.clearTimeout(this._snapshotTimer);
     this._unsubData?.();
     this.disposeLive();
+    whiteboardPerfPolicy.forget(this.model.id);
+    whiteboardTelemetry.forgetWidget(this.model.id);
     this._panelRoot?.unmount();
     this._panelRoot = null;
     revokeObjectUrl(this._objectUrl);

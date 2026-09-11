@@ -6823,6 +6823,22 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-board-widget.description"](): string;
     /**
+      * `Whiteboard performance HUD`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-perf-hud.name"](): string;
+    /**
+      * `Shows live canvas metrics: frame time, live widget count, cull ratio, and websocket RTT.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-perf-hud.description"](): string;
+    /**
+      * `Whiteboard L0 layer (WebGL)`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-l0-layer.name"](): string;
+    /**
+      * `When zoomed far out, draws AABB previews instead of DOM/ECharts. Off by default.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-whiteboard-l0-layer.description"](): string;
+    /**
       * `Hello widget`
       */
     ["com.affine.whiteboard.hello.slash-name"](): string;
@@ -6932,6 +6948,38 @@ export function useAFFiNEI18N(): {
       * `Redo`
       */
     ["com.affine.whiteboard.sketch.redo"](): string;
+    /**
+      * `Board performance`
+      */
+    ["com.affine.whiteboard.perf.hud-title"](): string;
+    /**
+      * `Frame time`
+      */
+    ["com.affine.whiteboard.perf.frame-time"](): string;
+    /**
+      * `Live widgets`
+      */
+    ["com.affine.whiteboard.perf.live-widgets"](): string;
+    /**
+      * `Cull ratio`
+      */
+    ["com.affine.whiteboard.perf.cull-ratio"](): string;
+    /**
+      * `WS RTT`
+      */
+    ["com.affine.whiteboard.perf.ws-rtt"](): string;
+    /**
+      * `L0 sprites`
+      */
+    ["com.affine.whiteboard.perf.l0-sprites"](): string;
+    /**
+      * `L0 backend`
+      */
+    ["com.affine.whiteboard.perf.l0-backend"](): string;
+    /**
+      * `Board overview at low zoom`
+      */
+    ["com.affine.whiteboard.perf.l0-label"](): string;
     /**
       * `Chart`
       */

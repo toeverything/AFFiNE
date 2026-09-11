@@ -22,6 +22,12 @@ import {
   type SketchAwarenessPayload,
   type SketchRemoteCursor,
 } from './cursors';
+import {
+  tryLive,
+  whiteboardPerfPolicy,
+  xywhCenterDistance,
+} from '../../perf/policy';
+import { whiteboardTelemetry } from '../../perf/telemetry';
 import { getSketchLodLevel, liveSketchBudget } from './live-budget';
 import type { SketchBlockModel } from './model';
 import { createEmptyScene, parseExcalidrawJson, serializeScene } from './scene';
@@ -218,12 +224,21 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   private enterEdit() {
     this.selectSelf();
     if (!this.intersecting) return;
+    const viewport = this.gfx()?.viewport;
     if (
-      !liveSketchBudget.acquire(
-        this.model.id,
-        !!this.model.props.liveBudgetExempt,
-        true
-      )
+      !tryLive(liveSketchBudget, {
+        id: this.model.id,
+        kind: 'sketch',
+        selected: true,
+        hovered: this.hovered,
+        intersecting: this.intersecting,
+        distanceToCenter: xywhCenterDistance(
+          this.model.xywh,
+          viewport?.center.x ?? 0,
+          viewport?.center.y ?? 0
+        ),
+        exempt: !!this.model.props.liveBudgetExempt,
+      })
     ) {
       return;
     }
@@ -247,12 +262,22 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
   private syncLive() {
     const want = this.canUseLive();
     const had = liveSketchBudget.has(this.model.id);
+    const viewport = this.gfx()?.viewport;
     if (
       want &&
-      liveSketchBudget.acquire(
-        this.model.id,
-        !!this.model.props.liveBudgetExempt
-      )
+      tryLive(liveSketchBudget, {
+        id: this.model.id,
+        kind: 'sketch',
+        selected: this.selected,
+        hovered: this.hovered,
+        intersecting: this.intersecting,
+        distanceToCenter: xywhCenterDistance(
+          this.model.xywh,
+          viewport?.center.x ?? 0,
+          viewport?.center.y ?? 0
+        ),
+        exempt: !!this.model.props.liveBudgetExempt,
+      })
     ) {
       this._live = true;
       if (!had) this.requestUpdate();
@@ -560,6 +585,8 @@ export class SketchBlockComponent extends BlockComponent<SketchBlockModel> {
     }
     this.teardownHost();
     liveSketchBudget.release(this.model.id);
+    whiteboardPerfPolicy.forget(this.model.id);
+    whiteboardTelemetry.forgetWidget(this.model.id);
     revokeObjectUrl(this._objectUrl);
     super.disconnectedCallback();
   }

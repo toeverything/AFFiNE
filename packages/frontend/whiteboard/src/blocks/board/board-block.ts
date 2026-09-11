@@ -19,6 +19,12 @@ import {
   resolveBoardDatabase,
 } from './hub';
 import { createBoardKanbanLogic } from './kanban-host';
+import {
+  tryLive,
+  whiteboardPerfPolicy,
+  xywhCenterDistance,
+} from '../../perf/policy';
+import { whiteboardTelemetry } from '../../perf/telemetry';
 import { getBoardLodLevel, liveKanbanBudget } from './live-budget';
 import {
   boardLodKicker,
@@ -112,12 +118,22 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
 
   private syncLive(preview = false) {
     const had = liveKanbanBudget.has(this.model.id);
+    const viewport = this.std.getOptional(GfxControllerIdentifier)?.viewport;
     if (
       this.canUseLive(preview) &&
-      liveKanbanBudget.acquire(
-        this.model.id,
-        !!this.model.props.liveBudgetExempt
-      )
+      tryLive(liveKanbanBudget, {
+        id: this.model.id,
+        kind: 'kanban',
+        selected: this.selected,
+        hovered: this.hovered,
+        intersecting: this.intersecting,
+        distanceToCenter: xywhCenterDistance(
+          this.model.xywh,
+          viewport?.center.x ?? 0,
+          viewport?.center.y ?? 0
+        ),
+        exempt: !!this.model.props.liveBudgetExempt,
+      })
     ) {
       if (!had) this.requestUpdate();
       return;
@@ -380,6 +396,8 @@ export class BoardBlockComponent extends BlockComponent<BoardBlockModel> {
 
   override disconnectedCallback() {
     this.disposeLive();
+    whiteboardPerfPolicy.forget(this.model.id);
+    whiteboardTelemetry.forgetWidget(this.model.id);
     this._panelRoot?.unmount();
     this._panelRoot = null;
     super.disconnectedCallback();

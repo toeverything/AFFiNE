@@ -9,6 +9,8 @@ import { chartWidget } from './blocks/chart';
 import { helloWidget } from './blocks/hello';
 import { sketchWidget } from './blocks/sketch';
 import { effects } from './effects';
+import { WhiteboardL0LayerExtension } from './perf/l0-layer';
+import { WhiteboardLayoutHandlerExtensions } from './perf/layout-handler';
 import {
   collectViewExtensions,
   type GfxWidgetRegistration,
@@ -23,6 +25,8 @@ const optionsSchema = z.object({
   enableChart: z.boolean().optional(),
   enableSketch: z.boolean().optional(),
   enableBoard: z.boolean().optional(),
+  enablePerfHud: z.boolean().optional(),
+  enableL0Layer: z.boolean().optional(),
   reactToLit: z
     .custom<WhiteboardReactToLit>()
     .optional(),
@@ -72,6 +76,20 @@ export class WhiteboardViewExtension extends ViewExtensionProvider<WhiteboardVie
       this.isPreview(context.scope),
       this.isEdgeless(context.scope)
     );
+    if (this.isEdgeless(context.scope) && !this.isPreview(context.scope)) {
+      context.register(WhiteboardLayoutHandlerExtensions);
+      if (options?.enableL0Layer) {
+        context.register(WhiteboardL0LayerExtension);
+      }
+      if (options?.enablePerfHud && typeof document !== 'undefined') {
+        queueMicrotask(() => {
+          if (!document.querySelector('wb-perf-hud')) {
+            document.body.append(document.createElement('wb-perf-hud'));
+          }
+        });
+      }
+    }
+
     if (extensions.length) {
       context.register(extensions);
     }
