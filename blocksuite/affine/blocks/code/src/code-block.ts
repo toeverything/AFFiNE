@@ -151,6 +151,8 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
         highlighter
           .loadLanguage(langImport)
           .then(() => {
+            // The language can change while its grammar is loading.
+            if (this.model.props.language$.value !== lang) return;
             this.highlightTokens$.value = highlighter.codeToTokensBase(code, {
               lang,
               theme,

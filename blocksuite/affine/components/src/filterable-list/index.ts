@@ -43,14 +43,14 @@ export class FilterableListComponent<Props = unknown> extends WithDisposable(
   }
 
   private _filterItems() {
-    const searchFilter = !this._filterText
+    const query = this._filterText.toLowerCase();
+    const searchFilter = !query
       ? this.options.items
       : this.options.items.filter(
           item =>
-            item.name.startsWith(this._filterText.toLowerCase()) ||
-            item.aliases?.some(alias =>
-              alias.startsWith(this._filterText.toLowerCase())
-            )
+            item.name.toLowerCase().startsWith(query) ||
+            item.label?.toLowerCase().startsWith(query) ||
+            item.aliases?.some(alias => alias.toLowerCase().startsWith(query))
         );
     return searchFilter.sort((a, b) => {
       const isActiveA = this.options.active?.(a);
