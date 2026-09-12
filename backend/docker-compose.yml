@@ -1,0 +1,78 @@
+name: mosaic-server
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mosaic_pg
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-mosaic}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mosaic}
+      POSTGRES_DB: ${DB_DATABASE:-mosaic}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - mosaic-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: mosaic_redis_cr
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mosaic:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mosaic-server:local
+    container_name: mosaic_server_cr
+    ports:
+      - '${PORT:-3010}:3010'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - mosaic-blobs:/data/blobs
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3010
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MOSAIC_PUBLIC_URL: ${MOSAIC_PUBLIC_URL:-http://localhost:3010}
+      MOSAIC_SERVER_NAME: Mosaic
+      MOSAIC_COMPAT_VERSION: '0.27.5'
+      MOSAIC_FEATURES: ${MOSAIC_FEATURES:-}
+      MOSAIC_SERVER: ${MOSAIC_SERVER:-1}
+      MOSAIC_PERSISTENCE: postgres
+      DATABASE_URL: postgresql://${DB_USERNAME:-mosaic}:${DB_PASSWORD:-mosaic}@postgres:5432/${DB_DATABASE:-mosaic}
+      REDIS_URL: redis://redis:6379
+      BLOB_DRIVER: fs
+      BLOB_DIR: /data/blobs
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3010/info').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  mosaic-pg:
+  mosaic-blobs:

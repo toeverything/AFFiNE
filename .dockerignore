@@ -18,6 +18,8 @@ config/private.key
 # Local dependency/build artifacts
 /node_modules
 /target
+backend/node_modules
+backend/coverage
 
 # Yarn v4 artifacts (not needed for image packaging)
 /.yarn/cache
@@ -34,6 +36,6 @@ config/private.key
 # OS noise
 .DS_Store
 
-# Sourcemaps (keep server sourcemap for backend stacktraces)
+# Sourcemaps. Mosaic runtime does not ship EE server maps.
 **/*.map
-!packages/backend/server/dist/main.js.map
+

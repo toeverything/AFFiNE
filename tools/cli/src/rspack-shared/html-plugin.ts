@@ -36,10 +36,22 @@ function createRawSource(compiler: CompilerLike, source: string) {
   return new RawSource(source);
 }
 
+function envMeta(publicPath: string, BUILD_CONFIG: BUILD_CONFIG_TYPE) {
+  return {
+    'env:publicPath': publicPath,
+    ...(BUILD_CONFIG.isMosaicServer ? { 'env:isSelfHosted': 'true' } : {}),
+  };
+}
+
 export const getPublicPath = (BUILD_CONFIG: BUILD_CONFIG_TYPE) => {
   const { BUILD_TYPE } = process.env;
   if (typeof process.env.PUBLIC_PATH === 'string') {
     return process.env.PUBLIC_PATH;
+  }
+
+  // Mosaic self-host images must load assets from the same origin, not the AFFiNE CDN.
+  if (BUILD_CONFIG.isMosaicServer) {
+    return '/';
   }
 
   if (
@@ -224,9 +236,7 @@ export function createHTMLPlugins(
       chunks: ['index'],
       filename: config.filename,
       publicPath,
-      meta: {
-        'env:publicPath': publicPath,
-      },
+      meta: envMeta(publicPath, BUILD_CONFIG),
     })
   );
 
@@ -237,27 +247,21 @@ export function createHTMLPlugins(
         chunks: ['shell'],
         filename: 'shell.html',
         publicPath,
-        meta: {
-          'env:publicPath': publicPath,
-        },
+        meta: envMeta(publicPath, BUILD_CONFIG),
       }),
       new HtmlRspackPlugin({
         ...htmlPluginOptions,
         filename: 'popup.html',
         chunks: ['popup'],
         publicPath,
-        meta: {
-          'env:publicPath': publicPath,
-        },
+        meta: envMeta(publicPath, BUILD_CONFIG),
       }),
       new HtmlRspackPlugin({
         ...htmlPluginOptions,
         filename: 'background-worker.html',
         chunks: ['backgroundWorker'],
         publicPath,
-        meta: {
-          'env:publicPath': publicPath,
-        },
+        meta: envMeta(publicPath, BUILD_CONFIG),
       })
     );
   }

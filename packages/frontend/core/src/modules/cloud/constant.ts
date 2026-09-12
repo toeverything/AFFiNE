@@ -8,7 +8,7 @@ import { DEFAULT_SELF_HOSTED_SERVER_NAME } from './server-name';
 import type { ServerConfig, ServerMetadata } from './types';
 
 export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
-  environment.isSelfHosted
+  environment.isSelfHosted || BUILD_CONFIG.isMosaicServer
     ? [
         {
           id: 'affine-cloud',
@@ -17,7 +17,9 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
           // this is ok for web app, but not for desktop app
           // since we never build desktop app in selfhosted mode, so it's fine
           config: {
-            serverName: DEFAULT_SELF_HOSTED_SERVER_NAME,
+            serverName: BUILD_CONFIG.isMosaicServer
+              ? 'Mosaic'
+              : DEFAULT_SELF_HOSTED_SERVER_NAME,
             features: [],
             oauthProviders: [],
             type: ServerDeploymentType.Selfhosted,
@@ -207,6 +209,9 @@ const OFFICIAL_TELEMETRY_ENDPOINTS: Record<TelemetryChannel, string> = {
 export function getOfficialTelemetryEndpoint(
   channel = BUILD_CONFIG.appBuildType
 ): string {
+  if (BUILD_CONFIG.isMosaicServer) {
+    return typeof location !== 'undefined' ? location.origin : '';
+  }
   if (BUILD_CONFIG.debug) {
     return BUILD_CONFIG.isNative
       ? OFFICIAL_TELEMETRY_ENDPOINTS.local

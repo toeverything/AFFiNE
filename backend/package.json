@@ -1,0 +1,49 @@
+{
+  "name": "@mosaic/server",
+  "version": "0.1.0",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSE",
+  "description": "Clean-room Mosaic Server (Mosaic EE License, see LICENSE). Wire-compat with the MIT Mosaic/AFFiNE frontend.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "main": "./dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:contract": "vitest run test/contract"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/cors": "^11.3.0",
+    "@fastify/rate-limit": "^11.2.0",
+    "@xmldom/xmldom": "^0.9.12",
+    "argon2": "^0.45.1",
+    "fastify": "^5.6.1",
+    "fastify-plugin": "^6.0.0",
+    "graphql": "^17.0.2",
+    "graphql-yoga": "^5.23.0",
+    "jose": "^5.10.0",
+    "pino": "^9.12.0",
+    "postgres": "^3.4.9",
+    "prom-client": "^15.1.3",
+    "socket.io": "^4.8.3",
+    "xml-crypto": "^6.1.2",
+    "xpath": "^0.0.34",
+    "yjs": "^13.6.32",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.6",
+    "pino-pretty": "^13.1.1",
+    "socket.io-client": "^4.8.3",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

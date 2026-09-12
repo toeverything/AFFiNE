@@ -37,6 +37,7 @@
   },
   "ignorePatterns": [
     "**/node_modules",
+    "backend",
     ".yarn",
     ".github/helm",
     ".git",

@@ -1,10 +1,10 @@
-Copyright (c) 2022-present TOEVERYTHING PTE. LTD. and its affiliates.
+Copyright (c) 2026 Mosaic contributors
 
 Portions of this software are licensed as follows:
 
-- All content that resides under the "packages/backend" and "packages/common/native" directory of this repository, if that directory exists, is licensed under the license defined in "packages/backend/server/LICENSE".
-- All third party components incorporated into the AFFiNE Software are licensed under the original license provided by the owner of the applicable component.
-- Content outside of the above mentioned directories or restrictions above is available under the "MIT" license as defined in "LICENSE-MIT".
+- All content that resides under the "backend" directory of this repository, if that directory exists, is licensed under the license defined in "backend/LICENSE".
+- All third party components incorporated into the Mosaic Software are licensed under the original license provided by the owner of the applicable component.
+- Content outside of the above mentioned directory or restrictions above is available under the "MIT" license as defined in "LICENSE-MIT".
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

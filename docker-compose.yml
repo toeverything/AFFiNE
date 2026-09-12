@@ -1,3 +1,11 @@
+# Mosaic production stack (Phase 5 cutover).
+# Runtime image is Mosaic Server + MIT frontend. It does not contain packages/backend (EE).
+#
+#   docker compose up --build
+#
+# Dual-run with the legacy EE image: docker compose -f docker-compose.ee.yml up
+# API-only (no frontend static): docker compose -f docker-compose.mosaic.yml up --build
+
 name: mosaic
 
 services:
@@ -14,17 +22,25 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-      mosaic_migration:
-        condition: service_completed_successfully
     volumes:
-      - ./data/storage:/root/.affine/storage
-      - ./config:/root/.affine/config
+      - ${BLOB_VOLUME:-./data/blobs}:/data/blobs
     environment:
-      REDIS_SERVER_HOST: redis
-      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:-affine}@postgres:5432/${DB_DATABASE:-affine}
-      DEPLOYMENT_TYPE: selfhosted
-      AFFINE_INDEXER_ENABLED: '${AFFINE_INDEXER_ENABLED:-false}'
-      AFFINE_SERVER_EXTERNAL_URL: '${AFFINE_SERVER_EXTERNAL_URL:-http://localhost:3010}'
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3010
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MOSAIC_PUBLIC_URL: ${MOSAIC_PUBLIC_URL:-http://localhost:3010}
+      MOSAIC_SERVER_NAME: Mosaic
+      MOSAIC_COMPAT_VERSION: '0.27.5'
+      MOSAIC_FEATURES: ${MOSAIC_FEATURES:-}
+      MOSAIC_SERVER: '1'
+      MOSAIC_STATIC_DIR: /app/static
+      MOSAIC_PERSISTENCE: postgres
+      DATABASE_URL: postgresql://${DB_USERNAME:-mosaic}:${DB_PASSWORD:-mosaic}@postgres:5432/${DB_DATABASE:-mosaic}
+      REDIS_URL: redis://redis:6379
+      BLOB_DRIVER: fs
+      BLOB_DIR: /data/blobs
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     healthcheck:
       test:
         [
@@ -39,27 +55,6 @@ services:
       start_period: 40s
     restart: unless-stopped
 
-  mosaic_migration:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mosaic:local
-    container_name: mosaic_migration
-    volumes:
-      - ./data/storage:/root/.affine/storage
-      - ./config:/root/.affine/config
-    command: ['node', './scripts/self-host-predeploy.js']
-    environment:
-      REDIS_SERVER_HOST: redis
-      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:-affine}@postgres:5432/${DB_DATABASE:-affine}
-      DEPLOYMENT_TYPE: selfhosted
-      AFFINE_INDEXER_ENABLED: '${AFFINE_INDEXER_ENABLED:-false}'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
   redis:
     image: redis:7-alpine
     container_name: mosaic_redis
@@ -71,14 +66,14 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: pgvector/pgvector:pg16
+    image: postgres:16-alpine
     container_name: mosaic_postgres
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - ${POSTGRES_VOLUME:-./data/postgres}:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: ${DB_USERNAME:-affine}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-affine}
-      POSTGRES_DB: ${DB_DATABASE:-affine}
+      POSTGRES_USER: ${DB_USERNAME:-mosaic}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mosaic}
+      POSTGRES_DB: ${DB_DATABASE:-mosaic}
       POSTGRES_INITDB_ARGS: '--data-checksums'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']

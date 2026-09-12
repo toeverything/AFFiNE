@@ -20,6 +20,11 @@ declare interface BUILD_CONFIG_TYPE {
   isIOS: boolean;
   isAndroid: boolean;
   isAdmin: boolean;
+  /**
+   * Mosaic cutover. Set when the web image is built with `MOSAIC_SERVER=1`.
+   * Same-origin self-hosted server list; no AFFiNE Cloud / Payment / Copilot.
+   */
+  isMosaicServer: boolean;
 
   appVersion: string;
   editorVersion: string;

@@ -38,6 +38,7 @@ export function getBuildConfig(
           distribution === 'ios' ||
           distribution === 'android',
         isAdmin: distribution === 'admin',
+        isMosaicServer: process.env.MOSAIC_SERVER === '1',
 
         appBuildType: 'stable' as const,
         appVersion: pkg.version,

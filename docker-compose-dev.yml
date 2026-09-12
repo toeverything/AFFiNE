@@ -1,0 +1,78 @@
+# From-source Mosaic stack for local image builds.
+# Same cutover image as docker-compose.yml (no packages/backend in the runtime).
+
+name: mosaic
+
+services:
+  mosaic:
+    build:
+      context: .
+      dockerfile: Dockerfile.from-source
+    image: mosaic:local
+    container_name: mosaic_server
+    ports:
+      - '${PORT:-3010}:3010'
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ${BLOB_VOLUME:-./data/blobs}:/data/blobs
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3010
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MOSAIC_PUBLIC_URL: ${MOSAIC_PUBLIC_URL:-http://localhost:3010}
+      MOSAIC_SERVER_NAME: Mosaic
+      MOSAIC_COMPAT_VERSION: '0.27.5'
+      MOSAIC_FEATURES: ${MOSAIC_FEATURES:-}
+      MOSAIC_SERVER: '1'
+      MOSAIC_STATIC_DIR: /app/static
+      MOSAIC_PERSISTENCE: postgres
+      DATABASE_URL: postgresql://${DB_USERNAME:-mosaic}:${DB_PASSWORD:-mosaic}@postgres:5432/${DB_DATABASE:-mosaic}
+      REDIS_URL: redis://redis:6379
+      BLOB_DRIVER: fs
+      BLOB_DIR: /data/blobs
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3010/info').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: mosaic_redis
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: mosaic_postgres
+    volumes:
+      - ${POSTGRES_VOLUME:-./data/postgres}:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-mosaic}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mosaic}
+      POSTGRES_DB: ${DB_DATABASE:-mosaic}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped

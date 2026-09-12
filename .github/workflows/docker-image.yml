@@ -2,17 +2,15 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "dev" ]
+    branches: ['dev']
   pull_request:
-    branches: [ "dev" ]
+    branches: ['dev']
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag mosaic:$(date +%s)
+      - uses: actions/checkout@v4
+      - name: Build Mosaic Server image (no packages/backend)
+        run: docker build . --file Dockerfile --tag mosaic:$(date +%s)

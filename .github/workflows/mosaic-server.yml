@@ -1,0 +1,47 @@
+name: Mosaic Server
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - 'Dockerfile'
+      - 'Dockerfile.from-source'
+      - 'docker-compose.yml'
+      - 'docker-compose-dev.yml'
+      - '.github/deployment/node/Dockerfile'
+      - '.github/workflows/mosaic-server.yml'
+      - '.github/workflows/build-images.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'Dockerfile'
+      - 'Dockerfile.from-source'
+      - 'docker-compose.yml'
+      - 'docker-compose-dev.yml'
+      - '.github/deployment/node/Dockerfile'
+      - '.github/workflows/mosaic-server.yml'
+      - '.github/workflows/build-images.yml'
+
+concurrency:
+  group: mosaic-server-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: backend/.nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

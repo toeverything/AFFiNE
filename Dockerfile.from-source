@@ -1,43 +1,31 @@
 # syntax=docker/dockerfile:1.7
-# Full from-source Mosaic/AFFiNE image.
-# Usage: docker compose build --no-cache
-#   or:  docker build -f Dockerfile.from-source -t mosaic:local .
+# Mosaic all-in-one production image: MIT frontend + clean-room Mosaic Server.
+# The runtime filesystem MUST NOT contain packages/backend (AFFiNE EE).
+#
+#   docker compose build
+#   docker build -f Dockerfile.from-source -t mosaic:local .
 
-FROM node:22.23.2-bookworm AS builder
+# --- MIT frontend. The yarn workspace still lists packages/backend; that is
+# builder-only and is never copied into the runtime stage. ---
+FROM node:22.23.2-bookworm AS frontend
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
-    clang \
-    cmake \
-    curl \
     git \
-    libclang-dev \
-    libssl-dev \
-    llvm \
-    nasm \
-    pkg-config \
-    protobuf-compiler \
     python3 \
   && rm -rf /var/lib/apt/lists/*
 
-ENV RUSTUP_HOME=/usr/local/rustup \
-    CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:$PATH \
-    CC="clang -D_BSD_SOURCE" \
-    CARGO_INCREMENTAL=0 \
-    HUSKY=0 \
+ENV HUSKY=0 \
     ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
     NODE_OPTIONS=--max-old-space-size=8192 \
     BUILD_TYPE=stable \
-    DEPLOYMENT_TYPE=selfhosted
-
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-    | sh -s -- -y --default-toolchain 1.97.1 --profile minimal
+    DEPLOYMENT_TYPE=selfhosted \
+    MOSAIC_SERVER=1 \
+    PUBLIC_PATH=/
 
 WORKDIR /app
-
 COPY . .
 
 RUN corepack enable \
@@ -45,23 +33,6 @@ RUN corepack enable \
 
 RUN --mount=type=cache,target=/root/.yarn/berry/cache \
     yarn install
-
-# Release native builds do not embed the debug license key. Use the same
-# test public key as packages/backend/native/src/lib.rs so self-host can boot.
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    printf '%s\n' \
-      '-----BEGIN PUBLIC KEY-----' \
-      'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEObwJiTmbui7rkWfPJ7Lozvuy2Rcl' \
-      'otcrb0V6dlS2ijKEShm7ZttTwQn08xzesdjX/AxpoR5X9yfoHkauIBuuMQ==' \
-      '-----END PUBLIC KEY-----' > /tmp/affine-pro.pub \
-    && AFFINE_PRO_PUBLIC_KEY="$(cat /tmp/affine-pro.pub)" \
-       AFFINE_PRO_LICENSE_AES_KEY=TEST_LICENSE_AES_KEY \
-       yarn workspace @affine/server-native build
-
-RUN cp packages/backend/native/server-native.node packages/backend/native/server-native.x64.node \
-    && cp packages/backend/native/server-native.node packages/backend/native/server-native.arm64.node \
-    && cp packages/backend/native/server-native.node packages/backend/native/server-native.armv7.node
 
 ENV GITHUB_SHA=mosaic-local
 
@@ -71,44 +42,53 @@ RUN yarn affine @affine/admin build \
     && test -f packages/frontend/admin/dist/index.html
 RUN yarn affine @affine/mobile build \
     && test -f packages/frontend/apps/mobile/dist/index.html
-RUN yarn workspace @affine/server build \
-    && test -f packages/backend/server/dist/main.js
 
-RUN yarn workspaces focus @affine/server --production \
-  && yarn workspace @affine/server prisma generate \
-  && rm -rf ./packages/backend/server/node_modules \
-  && mv ./node_modules ./packages/backend/server
-
-FROM node:22.23.2-bookworm-slim AS assets
+# --- Mosaic Server. Context is backend/ only; never packages/backend. ---
+FROM node:22.23.2-bookworm AS backend
 WORKDIR /app
+COPY backend/package.json backend/package-lock.json ./
+RUN npm ci
+COPY backend/tsconfig.json ./
+COPY backend/src ./src
+RUN npm run build
+RUN npm ci --omit=dev && npm cache clean --force
 
-COPY --from=builder /app/packages/backend/server /app
-COPY --from=builder /app/packages/frontend/apps/web/dist /app/static
-COPY --from=builder /app/packages/frontend/admin/dist /app/static/admin
-COPY --from=builder /app/packages/frontend/apps/mobile/dist /app/static/mobile
-
-ARG TARGETARCH
-ARG TARGETVARIANT
-
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends openssl ca-certificates && \
-  rm -rf /var/lib/apt/lists/*
-
-RUN AFFINE_DOCKER_CLEAN=1 TARGETARCH="${TARGETARCH}" TARGETVARIANT="${TARGETVARIANT}" node ./scripts/docker-clean.mjs
-
+# --- Runtime: Mosaic dist + MIT static. No EE, no Prisma, no native .node. ---
 FROM node:22.23.2-bookworm-slim
 WORKDIR /app
 
-COPY --from=assets /app /app
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && addgroup --system mosaic \
+  && adduser --system --ingroup mosaic mosaic \
+  && mkdir -p /data/blobs /app/static \
+  && chown -R mosaic:mosaic /data/blobs /app
 
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends openssl libjemalloc2 && \
-  rm -rf /var/lib/apt/lists/* && \
-  corepack enable
+COPY --from=backend --chown=mosaic:mosaic /app/node_modules ./node_modules
+COPY --from=backend --chown=mosaic:mosaic /app/package.json ./package.json
+COPY --from=backend --chown=mosaic:mosaic /app/dist ./dist
+COPY --from=frontend --chown=mosaic:mosaic /app/packages/frontend/apps/web/dist ./static
+COPY --from=frontend --chown=mosaic:mosaic /app/packages/frontend/admin/dist ./static/admin
+COPY --from=frontend --chown=mosaic:mosaic /app/packages/frontend/apps/mobile/dist ./static/mobile
 
-ENV LD_PRELOAD=libjemalloc.so.2 \
-    DEPLOYMENT_TYPE=selfhosted
+RUN test ! -d /app/packages/backend \
+  && test ! -d /app/packages \
+  && test ! -e /app/scripts/self-host-predeploy.js \
+  && test ! -d /app/prisma \
+  && test -f /app/dist/main.js \
+  && (test -f /app/static/index.html || test -f /app/static/selfhost.html)
 
+ENV NODE_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=3010 \
+    MOSAIC_SERVER=1 \
+    MOSAIC_STATIC_DIR=/app/static \
+    BLOB_DRIVER=fs \
+    BLOB_DIR=/data/blobs
+
+USER mosaic
 EXPOSE 3010
-
-CMD ["node", "./dist/main.js"]
+HEALTHCHECK --interval=15s --timeout=5s --retries=20 --start-period=40s \
+  CMD node -e "fetch('http://127.0.0.1:3010/info').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "dist/main.js"]

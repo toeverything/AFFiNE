@@ -1,0 +1,113 @@
+surface,kind,name,client_source,mvp,status,phase,notes
+REST,GET,/info,compose healthcheck + ops,yes,done,0,JSON documented in compat.md
+REST,GET,/health/live,k8s/compose,yes,done,0,process liveness
+REST,GET,/health/ready,k8s/compose,yes,done,0,memory=skipped postgres; ping when MOSAIC_PERSISTENCE=postgres
+REST,GET,/metrics,ops,yes,done,0,Prometheus; sync_* placeholders
+GraphQL,query,serverConfig,packages/common/graphql/src/graphql/server-config.gql,yes,done,1,version is MOSAIC_COMPAT_VERSION (>= 0.27.0)
+GraphQL,query,oauthProviders,packages/common/graphql/src/graphql/get-oauth-providers.gql,yes,done,6,serverConfig.oauthProviders=OAuthProviderType[]; OAuth feature when OIDC configured
+GraphQL,query,appConfig,packages/common/graphql/src/graphql/admin/config.gql,yes,stub,1,admin; safe {}
+GraphQL,query,getCurrentUser,packages/common/graphql/src/graphql/get-current-user.gql,yes,done,1,null when logged out
+GraphQL,query,getWorkspaces,packages/common/graphql/src/graphql/get-workspaces.gql,yes,done,1,empty list when logged out
+GraphQL,mutation,createWorkspace,packages/common/graphql/src/graphql/create-workspace.gql,yes,done,1,auth required; owner membership
+GraphQL,query,getWorkspace,packages/common/graphql/src/graphql/get-workspace.gql,yes,done,1,ACL: member only
+GraphQL,query,getInviteInfo,packages/common/graphql/src/graphql/get-invite-info.gql,yes,done,4,email invite or invite-link token; INVALID_INVITATION / INVITATION_ACCOUNT_MISMATCH
+GraphQL,mutation,acceptInviteByInviteId,packages/common/graphql/src/graphql/workspace-invite-accept-by-invite-id.gql,yes,done,4,acceptInviteById; no SMTP
+GraphQL,mutation,inviteByEmails,packages/common/graphql/src/graphql/workspace-intive-by-emails.gql,yes,done,4,inviteMembers; admin/owner; no seat lock
+GraphQL,mutation,revokeMemberPermission,packages/common/graphql/src/graphql/revoke-member-permission.gql,yes,done,4,revokeMember
+GraphQL,mutation,createInviteLink,packages/common/graphql/src/graphql/workspace-invite-link.gql,optional,done,4,{baseUrl}/invite/{token}
+GraphQL,mutation,revokeInviteLink,packages/common/graphql/src/graphql/workspace-invite-revoke-link.gql,optional,done,4,
+GraphQL,mutation,grantMember,packages/common/graphql/src/graphql/workspace-team-grant.gql,optional,done,4,Admin/Collaborator; owner transfer denied
+GraphQL,mutation,approveMember,packages/common/graphql/src/graphql/workspace-team-approve.gql,optional,done,4,no seat review in Mosaic
+GraphQL,mutation,publishPage,packages/common/graphql/src/graphql/public-page.gql,optional,done,4,publishDoc
+GraphQL,mutation,revokePublicPage,packages/common/graphql/src/graphql/revoke-public-page.gql,optional,done,4,revokePublicDoc
+GraphQL,mutation,leaveWorkspace,packages/common/graphql/src/graphql/leave-workspace.gql,yes,done,4,owner cannot leave
+GraphQL,mutation,deleteWorkspace,packages/common/graphql/src/graphql/delete-workspace.gql,yes,done,1,owner only
+GraphQL,mutation,createBlobUpload,packages/common/graphql/src/graphql/blob-upload-create.gql,yes,done,3,PRESIGNED or MULTIPART; alreadyUploaded short-circuit
+GraphQL,mutation,completeBlobUpload,packages/common/graphql/src/graphql/blob-upload-complete.gql,yes,done,3,returns blob key
+GraphQL,mutation,abortBlobUpload,packages/common/graphql/src/graphql/blob-upload-abort.gql,yes,done,3,
+GraphQL,query,getBlobUploadPartUrl,packages/common/graphql/src/graphql/blob-upload-part-url.gql,yes,done,3,self-issued PUT URL + ETag
+GraphQL,mutation,setBlob,packages/common/graphql/src/graphql/blob-set.gql,yes,done,3,GraphQL multipart fallback
+GraphQL,query,listBlobs,packages/common/graphql/src/graphql/blob-list.gql,yes,done,3,
+GraphQL,mutation,deleteBlob,packages/common/graphql/src/graphql/blob-delete.gql,yes,done,3,soft-delete unless permanently
+GraphQL,mutation,releaseDeletedBlobs,packages/common/graphql/src/graphql/blob-release-deleted.gql,yes,done,3,GC soft-deleted blobs
+GraphQL,query,workspaceBlobQuota,packages/common/graphql/src/graphql/workspace-blob-quota.gql,yes,done,3,WorkspaceType.quota
+GraphQL,query,quota,packages/common/graphql/src/graphql/quota.gql,yes,stub,1,unlimited Mosaic policy not AFFiNE seats; on UserType
+GraphQL,query,listHistory,packages/common/graphql/src/graphql/histories.gql,optional,done,3,snapshots on compact
+GraphQL,mutation,recoverDoc,packages/common/graphql/src/graphql/recover-doc.gql,optional,done,3,restore compact snapshot
+GraphQL,query,indexerSearch,packages/common/graphql/src/graphql/indexer-search.gql,no,done,6,query-time Yjs+comments; ServerFeature.Indexer
+GraphQL,query,indexerSearchDocs,packages/common/graphql/src/graphql/indexer-search-docs.gql,no,done,6,SearchDocsInput.keyword
+GraphQL,query,copilotQuota,packages/common/graphql/src/graphql/copilot-quota.gql,no,done,6,limit null when MOSAIC_AI_API_KEY; 0 otherwise
+GraphQL,mutation,createCopilotSession,packages/common/graphql/src/graphql/copilot-session-create.gql,no,done,6,BYOK; copilotDisabled without key
+GraphQL,query,subscription,packages/common/graphql/src/graphql/subscription.gql,no,stub,6,no Stripe
+GraphQL,mutation,createCheckoutSession,packages/common/graphql/src/graphql/create-checkout-link.gql,no,stub,6,no payment
+GraphQL,query,getLicense,packages/common/graphql/src/graphql/license/get-license.gql,no,stub,6,no AFFiNE license keys
+GraphQL,query,calendarEvents,packages/common/graphql/src/graphql/calendar/calendar-events.gql,no,stub,6,
+GraphQL,query,listComments,packages/common/graphql/src/graphql/comment-list.gql,optional,done,4,ServerFeature.Comment advertised; CRUD + replies
+GraphQL,mutation,createComment,packages/common/graphql/src/graphql/comment-create.gql,optional,done,4,
+GraphQL,query,listNotifications,packages/common/graphql/src/graphql/list-notifications.gql,optional,stub,6,empty
+REST,GET,/api/auth/session,packages/frontend/core/src/modules/cloud/stores/auth.ts,yes,done,1,{ user: null } logged out
+REST,GET,/api/auth/methods,packages/frontend/core/src/modules/cloud/stores/auth.ts,yes,done,1,
+REST,POST,/api/auth/preflight,packages/frontend/core/src/modules/cloud/stores/auth.ts,yes,done,1,zod schema in client
+REST,POST,/api/auth/sign-in,packages/frontend/core/src/modules/cloud/impl/auth.ts,yes,done,1,password JSON; open signup when MOSAIC_ALLOW_SIGNUP
+REST,POST,/api/auth/sign-out,packages/frontend/core/src/modules/cloud/impl/auth.ts,yes,done,1,CSRF header
+REST,POST,/api/auth/magic-link,packages/frontend/core/src/modules/cloud/impl/auth.ts,optional,stub,1,EMAIL_SERVICE_NOT_CONFIGURED
+REST,POST,/api/auth/open-app/sign-in,packages/frontend/core/src/modules/cloud/impl/auth.ts,yes,stub,1,EMAIL_SERVICE_NOT_CONFIGURED
+REST,POST,/api/auth/open-app/sign-in-code,packages/frontend/core/src/modules/cloud/services/auth.ts,yes,stub,1,EMAIL_SERVICE_NOT_CONFIGURED
+REST,GET,/api/auth/sessions,packages/frontend/core/src/modules/cloud/services/auth.ts,yes,done,1,
+REST,DELETE,/api/auth/sessions/:id,packages/frontend/core/src/modules/cloud/services/auth.ts,yes,done,1,
+REST,POST,/api/auth/sessions/revoke-all,packages/frontend/core/src/modules/cloud/services/auth.ts,yes,done,1,
+REST,GET,/api/auth/captcha,packages/frontend/core/src/modules/cloud/services/captcha.ts,optional,stub,1,Captcha feature off
+REST,POST,/api/auth/session/refresh,packages/frontend/apps/electron/src/main/auth/auth-session.ts,yes,done,1,
+REST,POST,/api/auth/session/revoke,packages/frontend/apps/electron/src/main/auth/auth-session.ts,yes,done,1,
+REST,POST,/api/auth/session/exchange,packages/frontend/apps/electron/src/main/auth/handlers.ts,yes,done,1,native
+REST,POST,/api/oauth/callback,packages/frontend/core/src/modules/cloud/impl/auth.ts,optional,done,6,"{ code, state, client_nonce } + cookies; UNKNOWN_OAUTH_PROVIDER when OIDC off"
+REST,POST,/api/oauth/preflight,packages/frontend/apps/mobile-shared/src/auth/request.ts,optional,done,6,"{ url } authorization endpoint"
+REST,POST,/api/setup/create-admin-user,packages/frontend/core selfhost setup,yes,done,1,first user Admin when uninitialized
+REST,GET,/api/workspaces/:id/blobs/v1/:key,packages/common/nbstore/src/impls/cloud/blob.ts,yes,done,3,ACL member; MIME sniffed; last-modified
+REST,GET,/api/workspaces/:id/blob-manifest/v1,packages/common/nbstore/src/impls/cloud/blob.ts,yes,done,3,{version:1,entries}
+REST,GET,/api/workspaces/:id/readable-blob-manifest/v1,packages/common/nbstore/src/impls/cloud/blob.ts,yes,done,3,cursor pagination
+REST,PUT,/api/blob-uploads/:token,nbstore CloudBlobWriter fetchUpload,yes,done,3,self-authorizing; ETag on response
+REST,GET,/api/workspaces/:id/docs/:docId/histories/:ts,packages/frontend/core/src/components/affine/page-history-modal/data.ts,optional,done,3,octet-stream history snapshot
+REST,GET,/api/workspaces/:id/public-docs/:docId,packages/frontend/core/src/desktop/pages/workspace/share/share-page.utils.ts,optional,done,4,GET+HEAD; publish-mode header; unauthenticated when published
+REST,GET,/api/workspaces/:id/mcp,packages/frontend/core/.../mcp-server/setting-panel.tsx,no,stub,6,
+REST,GET,/api/workspaces/:id/docs/:docId,MVP wire / static snapshot,yes,done,2,octet-stream of materialized Yjs snapshot; ACL = workspace member
+WS,handshake,/socket.io,packages/common/nbstore/src/impls/cloud/socket.ts,yes,done,2,polling+websocket selfhost; cookie or handshake.auth.token
+WS,client,space:join-batch,nbstore socket.ts ClientEvents,yes,done,2,batch limit 100; ACL membership
+WS,client,space:leave-batch,nbstore socket.ts ClientEvents,yes,done,2,
+WS,client,space:load-doc,nbstore socket.ts ClientEvents,yes,done,2,DOC_NOT_FOUND until first push; missing+state base64 Yjs
+WS,client,space:push-doc-update,nbstore socket.ts ClientEvents,yes,done,2,idempotent SHA-256; ACL write; compact inline
+WS,client,space:load-doc-timestamps,nbstore socket.ts ClientEvents,yes,done,2,
+WS,client,space:delete-doc,nbstore socket.ts ClientEvents,yes,done,2,
+WS,client,space:doc-lifecycle,nbstore socket.ts ClientEvents,yes,done,2,trash|restore|delete
+WS,client,space:update-awareness,nbstore socket.ts ClientEvents,yes,done,2,ephemeral in-process rooms; Redis later
+WS,client,space:load-awarenesses,nbstore socket.ts ClientEvents,yes,done,2,
+WS,client,telemetry:batch,nbstore socket.ts ClientEvents,optional,stub,2,{ok true accepted dropped 0}
+WS,client,realtime:request,nbstore socket.ts ClientEvents,optional,done,4,members/access/config/share/comments/quota; unknown ops ACTION_FORBIDDEN
+WS,client,realtime:subscribe,nbstore socket.ts ClientEvents,optional,done,4,Phase 4 topics join rt: rooms; unknown ACTION_FORBIDDEN
+WS,client,realtime:unsubscribe,nbstore socket.ts ClientEvents,optional,done,4,leaves the tracked realtime: room by subscriptionId; {ok true}
+WS,server,space:broadcast-doc-updates,nbstore socket.ts ServerEvents,yes,done,2,others in doc room; skipped on duplicate
+WS,server,space:broadcast-doc-invalidation,nbstore socket.ts ServerEvents,yes,done,2,on delete/lifecycle
+WS,server,space:collect-awareness,nbstore socket.ts ServerEvents,yes,done,2,
+WS,server,space:broadcast-awareness-update,nbstore socket.ts ServerEvents,yes,done,2,
+WS,server,realtime:event,nbstore socket.ts ServerEvents,optional,done,4,emitted for Phase 4 topics
+Cookie,name,affine_session,electron auth handlers,yes,done,1,HttpOnly SameSite=Lax
+Cookie,name,affine_user_id,electron auth handlers,yes,done,1,
+Cookie,name,affine_csrf_token,core auth.ts csrfHeader,yes,done,1,header x-affine-csrf-token; sign-out/revoke only
+Header,name,x-affine-version,server-config.ts gql fetch,yes,done,1,
+Header,name,x-operation-name,packages/common/graphql/src/fetcher.ts,yes,done,1,
+Header,name,x-affine-client-kind,electron handlers,yes,done,1,native
+Header,name,Authorization,mobile-shared auth fetch,yes,done,1,Bearer; skip socket.io + auth paths
+Flag,env,MOSAIC_SERVER,client BUILD_CONFIG.isMosaicServer + GET /info mosaic,yes,done,5,baked into frontend image; server adds mosaic to /info
+REST,GET,/,MOSAIC_STATIC_DIR SPA (selfhost.html),yes,done,5,API routes keep precedence; unset in tests
+Image,runtime,packages/backend,delivery tree / Dockerfiles,yes,done,5,not copied into runtime; EE source remains in git
+Compose,file,docker-compose.yml,selfhost,yes,done,5,Mosaic Dockerfile.from-source; EE dual-run is docker-compose.ee.yml
+GraphQL,mutation,createCopilotSessionWithHistory,packages/common/graphql/src/graphql/copilot-session-create-with-history.gql,no,done,6,returns CopilotHistories
+GraphQL,mutation,createCopilotMessage,packages/common/graphql/src/graphql/copilot-message-create.gql,no,done,6,BYOK chat/completions
+REST,GET,/api/auth/saml/metadata,SAML SP metadata,optional,done,6,not in OAuthProviderType
+REST,GET,/api/auth/saml/login,SAML redirect,optional,done,6,deflate+base64 AuthnRequest
+REST,POST,/api/auth/saml/acs,SAML HTTP-POST ACS,optional,done,6,NameID+email attributes; Signature required when cert set
+REST,GET,/api/admin/audit-logs,admin SIEM export,optional,done,6,JSON or format=csv; instance Admin
+REST,CRUD,/api/workspaces/:id/webhooks,workspace integrations,optional,done,6,HMAC X-Mosaic-Signature sha256=
+REST,POST,/api/workspaces/:id/ai/kanban,kanban AI parity,optional,done,6,max 50 rows; BYOK
+REST,CRUD,/api/workspaces/:id/jira/*,Jira REST v3,optional,done,6,501 when MOSAIC_JIRA_* unset
+REST,POST,/api/webhooks/jira,inbound Jira,optional,done,6,X-Mosaic-Jira-Secret

@@ -1,0 +1,9 @@
+# API-only Mosaic Server stack (no MIT frontend static).
+# Production all-in-one: docker compose up --build (root docker-compose.yml).
+#
+#   docker compose -f docker-compose.mosaic.yml up --build
+#
+# Docker is optional for local runs: `cd backend && npm run dev`.
+
+include:
+  - path: backend/docker-compose.yml
