@@ -25,6 +25,7 @@ final class ShareViewModel: ObservableObject {
       && draft?.content != nil
   }
 
+  private var previewRoute: SharePreviewRoute = .deferred
   private var draft: SharePayloadDraft?
   private var userEditedTitle: String?
   private var loadGeneration = 0
@@ -62,7 +63,9 @@ final class ShareViewModel: ObservableObject {
     return preview
   }
 
-  var sharedURL: String? { draft?.content?.url }
+  var sharedURL: String? {
+    draft?.content?.url
+  }
 
   var selectedText: String? {
     guard draft?.content?.kind == .url else { return nil }
@@ -102,7 +105,8 @@ final class ShareViewModel: ObservableObject {
       previewImage = nil
     }
     isLoading = false
-    guard let url = built.content?.url, ShareInboxSafety.isOfficialPreviewURL(url) else {
+    previewRoute = built.content?.url.map { ShareInboxSafety.previewRoute(url: $0, mode: store.workspaceMode()) } ?? .deferred
+    guard built.content?.kind == .url, let url = built.content?.url, previewRoute == .official else {
       return
     }
     linkPreviewState = .loading
@@ -174,6 +178,7 @@ final class ShareViewModel: ObservableObject {
       id: itemId,
       title: trimmedTitle,
       content: content,
+      previewRoute: previewRoute,
       previewText: draft.previewText,
       attachments: attachments
     )
@@ -189,5 +194,4 @@ final class ShareViewModel: ObservableObject {
       return false
     }
   }
-
 }

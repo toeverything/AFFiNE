@@ -1,109 +1,67 @@
-import { z } from 'zod';
+import {
+  type LinkPreviewResponseData,
+  parseLinkPreviewResponse,
+  readLinkPreviewResponse,
+} from '@blocksuite/affine/shared/services';
 
-import type { ShareLinkPreview } from './types';
+const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 
-const maxResponseBytes = 512 * 1024;
-const encoder = new TextEncoder();
-const text = (bytes: number) =>
-  z
-    .string()
-    .trim()
-    .min(1)
-    .refine(value => encoder.encode(value).byteLength <= bytes);
-const webURL = text(8192)
-  .pipe(z.string().url())
-  .refine(value => {
-    try {
-      const url = new URL(value);
-      return (
-        /^https?:\/\//.test(value) &&
-        (url.protocol === 'http:' || url.protocol === 'https:') &&
-        !url.username &&
-        !url.password
-      );
-    } catch {
-      return false;
-    }
-  });
-const time = z
-  .number()
-  .min(0)
-  .max(7 * 24 * 60 * 60);
-const previewSchema = z.object({
-  url: webURL,
-  title: text(4096).optional(),
-  siteName: text(512).optional(),
-  description: text(32768).optional(),
-  images: z.array(webURL).max(8).optional(),
-  favicons: z.array(webURL).max(8).optional(),
-  mediaType: text(256).optional(),
-  provider: text(256).optional(),
-  author: z
-    .object({
-      name: text(512),
-      handle: text(512).optional(),
-      avatar: webURL.optional(),
-    })
-    .optional(),
-  publishedAt: text(128).optional(),
-  durationSeconds: time.optional(),
-  transcript: z
-    .object({
-      language: text(128).optional(),
-      segments: z
-        .array(
-          z.object({
-            text: text(16384),
-            startSeconds: time.optional(),
-            durationSeconds: time.optional(),
-            speaker: text(512).optional(),
-          })
-        )
-        .max(500),
-      chapters: z
-        .array(
-          z.object({
-            title: text(4096),
-            startSeconds: time,
-          })
-        )
-        .max(100)
-        .optional(),
-      truncated: z.boolean().optional(),
-    })
-    .optional(),
-}) satisfies z.ZodType<ShareLinkPreview>;
+function excerpt(value: string | undefined, limit: number) {
+  if (!value) return undefined;
+  let result = '';
+  let count = 0;
+  for (const { segment } of segmenter.segment(value)) {
+    if (count++ === limit) return result + '…';
+    result += segment;
+  }
+  return result;
+}
 
-export function parseShareLinkPreview(
-  value: unknown
-): ShareLinkPreview | undefined {
-  const result = previewSchema.safeParse(value);
-  return result.success ? result.data : undefined;
+export function transcriptPreviewText(
+  transcript: LinkPreviewResponseData['transcript']
+) {
+  let text = '';
+  for (const segment of transcript?.segments ?? []) {
+    // Bound each segment before normalizing whitespace or joining it.
+    text +=
+      (text ? ' ' : '') +
+      (excerpt(segment.text, 241) ?? '').replace(/\s+/g, ' ').trim();
+    const preview = excerpt(text, 240);
+    if (preview !== text) return preview;
+  }
+  return text || undefined;
+}
+
+function forDisplay(value: LinkPreviewResponseData): LinkPreviewResponseData {
+  const transcript = transcriptPreviewText(value.transcript);
+  return {
+    ...value,
+    title: excerpt(value.title, 120),
+    siteName: excerpt(value.siteName, 80),
+    description: excerpt(value.description, 500),
+    images: value.images?.slice(0, 1),
+    favicons: value.favicons?.slice(0, 1),
+    videos: undefined,
+    author: value.author
+      ? {
+          ...value.author,
+          name: excerpt(value.author.name, 80) ?? value.author.name,
+        }
+      : undefined,
+    transcript: transcript
+      ? {
+          language: value.transcript?.language,
+          segments: [{ text: transcript }],
+        }
+      : undefined,
+  };
+}
+
+export function parseShareLinkPreview(value: unknown) {
+  const parsed = parseLinkPreviewResponse(value);
+  return parsed ? forDisplay(parsed) : undefined;
 }
 
 export async function readShareLinkPreview(response: Response) {
-  if (!response.ok || !response.body)
-    throw new Error('Link preview unavailable');
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let bytes = 0;
-  let json = '';
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      bytes += value.byteLength;
-      if (bytes > maxResponseBytes) {
-        await reader.cancel();
-        throw new Error('Link preview response too large');
-      }
-      json += decoder.decode(value, { stream: true });
-    }
-    json += decoder.decode();
-  } finally {
-    reader.releaseLock();
-  }
-  const preview = parseShareLinkPreview(JSON.parse(json));
-  if (!preview) throw new Error('Invalid link preview response');
-  return preview;
+  return forDisplay(await readLinkPreviewResponse(response, 1024 * 1024));
 }

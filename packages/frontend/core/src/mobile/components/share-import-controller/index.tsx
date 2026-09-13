@@ -101,7 +101,6 @@ export const ShareImportController = ({
     workspaces,
     workspacesService,
     updateSelection,
-    updateLinkPreview,
     save,
   } = useShareImport(provider);
   if (!entry) return null;
@@ -182,7 +181,6 @@ export const ShareImportController = ({
           selectedIds={selectedWorkspaceKey ? [selectedWorkspaceKey] : []}
           onBack={() => setPage('main')}
           onSelect={id => {
-            if (id !== selectedWorkspaceKey) updateLinkPreview(undefined);
             updateSelection(current =>
               current.workspaceKey === id
                 ? current
@@ -301,7 +299,6 @@ export const ShareImportController = ({
                   owner={previewOwner}
                   workspace={selectedWorkspace}
                   servers={servers}
-                  onPreview={updateLinkPreview}
                 />
               ) : (
                 <section className={styles.source}>

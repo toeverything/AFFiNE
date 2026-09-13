@@ -39,6 +39,14 @@ enum ShareInboxSafety {
     return url.absoluteString
   }
 
+  static func previewRoute(url: String, mode: ShareWorkspaceMode) -> SharePreviewRoute {
+    guard normalizedWebURL(url) != nil else { return .deferred }
+    if isOfficialPreviewURL(url) || mode == .cloudOnly || mode == .signedOut {
+      return .official
+    }
+    return .deferred
+  }
+
   static func isOfficialPreviewURL(_ value: String) -> Bool {
     guard let normalized = normalizedWebURL(value), let url = URL(string: normalized) else {
       return false
@@ -57,6 +65,10 @@ enum ShareInboxSafety {
         && ["shorts", "live", "embed"].contains(components[0])
         && !components[1].isEmpty
     }
+    if ["x.com", "www.x.com", "twitter.com", "www.twitter.com"].contains(host) {
+      return components.count == 3 && components[1] == "status"
+        && !components[2].isEmpty && components[2].allSatisfy { $0.isASCII && $0.isNumber }
+    }
     return false
   }
 
@@ -72,13 +84,13 @@ enum ShareInboxSafety {
       return "image/gif"
     }
     if bytes.count >= 12,
-       Array(bytes[0..<4]) == Array("RIFF".utf8),
-       Array(bytes[8..<12]) == Array("WEBP".utf8)
+       Array(bytes[0 ..< 4]) == Array("RIFF".utf8),
+       Array(bytes[8 ..< 12]) == Array("WEBP".utf8)
     {
       return "image/webp"
     }
-    if bytes.count >= 12, Array(bytes[4..<8]) == Array("ftyp".utf8) {
-      let brand = String(decoding: bytes[8..<12], as: UTF8.self).lowercased()
+    if bytes.count >= 12, Array(bytes[4 ..< 8]) == Array("ftyp".utf8) {
+      let brand = String(decoding: bytes[8 ..< 12], as: UTF8.self).lowercased()
       if ["heic", "heix", "hevc", "hevx", "mif1", "msf1"].contains(brand) {
         return "image/heic"
       }

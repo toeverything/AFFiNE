@@ -40,6 +40,24 @@ struct ShareInboxResult: Codable, Equatable {
   var committedAt: Date
 }
 
+enum SharePreviewRoute: String, Codable {
+  case official
+  case deferred
+}
+
+enum ShareWorkspaceMode: String, Codable {
+  case selfHostedPresent
+  case cloudOnly
+  case signedOut
+  case unknown
+}
+
+struct ShareWorkspaceModeSnapshot: Codable {
+  var version = 1
+  var mode: ShareWorkspaceMode
+  var updatedAt = Date()
+}
+
 struct ShareInboxItem: Codable, Equatable, Identifiable {
   static let currentSchemaVersion = 2
 
@@ -52,6 +70,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     case title
     case content
     case target
+    case previewRoute
     case previewText
     case attachments
     case result
@@ -66,6 +85,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
   var title: String
   var content: ShareInboxContent
   var target: ShareInboxTarget?
+  var previewRoute: SharePreviewRoute
   var previewText: String?
   var attachments: [ShareInboxAttachment]
   var result: ShareInboxResult?
@@ -79,12 +99,13 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     title: String,
     content: ShareInboxContent,
     target: ShareInboxTarget? = nil,
+    previewRoute: SharePreviewRoute = .deferred,
     previewText: String? = nil,
     attachments: [ShareInboxAttachment] = [],
     result: ShareInboxResult? = nil,
     lastError: String? = nil
   ) {
-    self.schemaVersion = Self.currentSchemaVersion
+    schemaVersion = Self.currentSchemaVersion
     self.importAttemptId = importAttemptId
     self.id = id
     self.documentId = documentId
@@ -92,6 +113,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     self.title = title
     self.content = content
     self.target = target
+    self.previewRoute = previewRoute
     self.previewText = previewText
     self.attachments = attachments
     self.result = result
@@ -103,7 +125,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     let schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
     self.schemaVersion = schemaVersion
     if schemaVersion == 1 {
-      self.importAttemptId = UUID().uuidString
+      importAttemptId = UUID().uuidString
     } else {
       let importAttemptId = try container.decode(String.self, forKey: .importAttemptId)
       guard !importAttemptId.isEmpty else {
@@ -115,17 +137,18 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
       }
       self.importAttemptId = importAttemptId
     }
-    self.id = try container.decode(String.self, forKey: .id)
-    self.documentId = try container.decode(String.self, forKey: .documentId)
-    self.createdAt = try container.decode(Date.self, forKey: .createdAt)
-    self.title = try container.decode(String.self, forKey: .title)
-    self.content = try container.decode(ShareInboxContent.self, forKey: .content)
-    self.target = try container.decodeIfPresent(ShareInboxTarget.self, forKey: .target)
-    self.previewText = try container.decodeIfPresent(String.self, forKey: .previewText)
-    self.attachments =
+    id = try container.decode(String.self, forKey: .id)
+    documentId = try container.decode(String.self, forKey: .documentId)
+    createdAt = try container.decode(Date.self, forKey: .createdAt)
+    title = try container.decode(String.self, forKey: .title)
+    content = try container.decode(ShareInboxContent.self, forKey: .content)
+    target = try container.decodeIfPresent(ShareInboxTarget.self, forKey: .target)
+    previewRoute = (try? container.decode(SharePreviewRoute.self, forKey: .previewRoute)) ?? .deferred
+    previewText = try container.decodeIfPresent(String.self, forKey: .previewText)
+    attachments =
       try container.decodeIfPresent([ShareInboxAttachment].self, forKey: .attachments) ?? []
-    self.result = try container.decodeIfPresent(ShareInboxResult.self, forKey: .result)
-    self.lastError = try container.decodeIfPresent(String.self, forKey: .lastError)
+    result = try container.decodeIfPresent(ShareInboxResult.self, forKey: .result)
+    lastError = try container.decodeIfPresent(String.self, forKey: .lastError)
   }
 
   func encode(to encoder: Encoder) throws {
@@ -138,6 +161,7 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
     try container.encode(title, forKey: .title)
     try container.encode(content, forKey: .content)
     try container.encodeIfPresent(target, forKey: .target)
+    try container.encode(previewRoute, forKey: .previewRoute)
     try container.encodeIfPresent(previewText, forKey: .previewText)
     try container.encode(attachments, forKey: .attachments)
     try container.encodeIfPresent(result, forKey: .result)
@@ -151,7 +175,7 @@ enum ShareInboxPendingEntry: Equatable {
 
   var createdAt: Date {
     switch self {
-    case .ready(let item):
+    case let .ready(item):
       item.createdAt
     case .unsupportedVersion:
       .distantFuture

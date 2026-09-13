@@ -3,10 +3,7 @@ import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
 import { LinkIcon, WaveRectangleIcon } from '@blocksuite/icons/rc';
 import { useEffect, useRef, useState } from 'react';
 
-import type {
-  SharePreviewRouteOwner,
-  SharePreviewState,
-} from './preview-route-owner';
+import type { SharePreviewRouteOwner } from './preview-route-owner';
 import * as styles from './style.css';
 import type { PendingShareItem, ShareLinkPreview as Preview } from './types';
 
@@ -24,37 +21,18 @@ export function resolveShareTitle(
     : originalTitle || fallback;
 }
 
-const graphemeSegmenter = new Intl.Segmenter(undefined, {
-  granularity: 'grapheme',
-});
-
-export function transcriptPreviewText(
-  transcript: Preview['transcript']
-): string | undefined {
-  const text = transcript?.segments
-    .map(segment => segment.text.trim().replace(/\s+/g, ' '))
-    .filter(Boolean)
-    .join(' ');
-  if (!text) return undefined;
-  const graphemes = Array.from(
-    graphemeSegmenter.segment(text),
-    segment => segment.segment
-  );
-  return graphemes.length > 240 ? `${graphemes.slice(0, 240).join('')}…` : text;
-}
+import { transcriptPreviewText } from './preview';
 
 export const LinkPreview = ({
   item,
   owner,
   workspace,
   servers,
-  onPreview,
 }: {
   item: PendingShareItem;
   owner: SharePreviewRouteOwner;
   workspace: WorkspaceMetadata | undefined;
   servers: Server[];
-  onPreview(preview: SharePreviewState | undefined): void;
 }) => {
   const [state, setState] = useState<PreviewState>({ status: 'idle' });
   const activeRequest = useRef<Promise<Preview> | undefined>(undefined);
@@ -62,21 +40,11 @@ export const LinkPreview = ({
   useEffect(() => {
     let active = true;
     owner.selectWorkspace(workspace, servers);
-    const workspaceKey = owner.workspaceKey;
-    const generation = owner.generation;
-    const publish = (preview: Preview | undefined) => {
-      onPreview(
-        preview && workspaceKey
-          ? { itemId: item.id, workspaceKey, generation, value: preview }
-          : undefined
-      );
-    };
     const controller = new AbortController();
     const request = owner.load(controller.signal);
     if (!request) {
       activeRequest.current = undefined;
       setState({ status: 'idle' });
-      publish(undefined);
       return () => {
         active = false;
         controller.abort();
@@ -89,17 +57,14 @@ export const LinkPreview = ({
       preview => {
         if (!isCurrent()) return;
         setState({ status: 'loaded', preview });
-        publish(preview);
       },
       error => {
         if (!isCurrent()) return;
         if (error instanceof DOMException && error.name === 'AbortError') {
           setState({ status: 'idle' });
-          publish(undefined);
           return;
         }
         setState({ status: 'failed' });
-        publish(undefined);
       }
     );
     return () => {
@@ -107,7 +72,7 @@ export const LinkPreview = ({
       if (activeRequest.current === request) activeRequest.current = undefined;
       controller.abort();
     };
-  }, [item.id, onPreview, owner, servers, workspace]);
+  }, [item.id, owner, servers, workspace]);
 
   let hostname = 'Link';
   if (item.content.url) {

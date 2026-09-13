@@ -368,9 +368,7 @@ export class ImportClipperService extends Service {
           })
         )
       );
-      for (const id of syncIds) {
-        await workspace.engine.doc.waitForUpdated(id);
-      }
+      await workspace.engine.doc.waitForUpdated('db$docProperties');
       return {
         status: 'imported',
         docId: input.documentId,

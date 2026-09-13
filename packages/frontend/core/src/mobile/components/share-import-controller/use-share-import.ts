@@ -8,20 +8,17 @@ import {
   type WorkspaceMetadata,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
+import { ServerDeploymentType } from '@affine/graphql';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { resolveShareTitle } from './link-preview';
-import {
-  previewForImport,
-  SharePreviewRouteOwner,
-  type SharePreviewState,
-} from './preview-route-owner';
+import { SharePreviewRouteOwner } from './preview-route-owner';
 import type {
   PendingShareItem,
   ShareImportTarget,
   ShareInboxEntry,
   ShareInboxProvider,
+  ShareWorkspaceMode,
 } from './types';
 
 type Page = 'main' | 'workspace' | 'tags' | 'collection' | 'offline';
@@ -60,6 +57,28 @@ export function useShareImport(provider: ShareInboxProvider) {
   const importer = useService(ImportClipperService);
   const workspaces = useLiveData(workspacesService.list.workspaces$);
   const servers = useLiveData(serversService.servers$);
+  const accounts = useLiveData(serversService.serversWithAccount$);
+  useEffect(() => {
+    const update = () => {
+      const types = servers.map(server => server.config$.value?.type);
+      const mode: ShareWorkspaceMode = types.includes(
+        ServerDeploymentType.Selfhosted
+      )
+        ? 'selfHostedPresent'
+        : types.some(type => !type)
+          ? 'unknown'
+          : accounts.some(({ account }) => !!account)
+            ? 'cloudOnly'
+            : 'signedOut';
+      void provider.updateWorkspaceMode(mode).catch(console.error);
+    };
+    update();
+    const subscriptions = servers.map(server =>
+      server.config$.subscribe(update)
+    );
+    return () =>
+      subscriptions.forEach(subscription => subscription.unsubscribe());
+  }, [accounts, provider, servers]);
   const [entry, setEntry] = useState<ShareInboxEntry>();
   const item = entry?.status === 'ready' ? entry.item : undefined;
   const [page, setPage] = useState<Page>('main');
@@ -72,8 +91,6 @@ export function useShareImport(provider: ShareInboxProvider) {
     undefined
   );
   const attachmentGeneration = useRef(0);
-  const [linkPreview, setLinkPreview] = useState<SharePreviewState>();
-  const linkPreviewRef = useRef<SharePreviewState | undefined>(undefined);
   const refreshing = useRef(false);
   const refreshRequested = useRef(false);
   const refreshRef = useRef<() => Promise<void>>(async () => {});
@@ -118,19 +135,6 @@ export function useShareImport(provider: ShareInboxProvider) {
     ? workspacesService.getProfile(selectedWorkspace).name$.value ||
       selectedWorkspace.id
     : undefined;
-  const updateLinkPreview = useCallback(
-    (next: SharePreviewState | undefined) => {
-      if (
-        next &&
-        (next.itemId !== itemId || next.workspaceKey !== selectedWorkspaceKey)
-      ) {
-        return;
-      }
-      linkPreviewRef.current = next;
-      setLinkPreview(next);
-    },
-    [itemId, selectedWorkspaceKey]
-  );
   const setManualItem = useCallback((next: PendingShareItem) => {
     const isCurrentItem = activeItemIdRef.current === next.id;
     activeItemIdRef.current = next.id;
@@ -179,26 +183,12 @@ export function useShareImport(provider: ShareInboxProvider) {
         await provider.setError(pending.id, 'attachment-missing');
         return 'pending' as const;
       }
-      const preview = await previewForImport(
-        pending,
-        workspace,
-        pending.id === item?.id
-          ? (linkPreviewRef.current ?? linkPreview)
-          : undefined,
-        pending.id === item?.id ? previewOwner : undefined,
-        servers
-      );
-
       const result = await importer.importShareToWorkspace(
         workspace,
         {
           documentId: pending.documentId,
           importAttemptId: pending.importAttemptId,
-          title: resolveShareTitle(
-            pending.title,
-            preview?.title,
-            pending.title
-          ),
+          title: pending.title,
           content: pending.content,
           attachment,
           tagIds: target.tagIds,
@@ -229,15 +219,7 @@ export function useShareImport(provider: ShareInboxProvider) {
       }
       return 'completed' as const;
     },
-    [
-      importer,
-      item?.id,
-      linkPreview,
-      previewOwner,
-      provider,
-      servers,
-      workspacesService,
-    ]
+    [importer, provider, workspacesService]
   );
 
   const importItem = useCallback(
@@ -378,10 +360,6 @@ export function useShareImport(provider: ShareInboxProvider) {
   }, [item?.content.kind, item?.id, provider]);
 
   useEffect(() => {
-    updateLinkPreview(undefined);
-  }, [item?.id, updateLinkPreview]);
-
-  useEffect(() => {
     if (!selectedWorkspaceKey) {
       setDestinations(undefined);
       setIsLoadingDestinations(false);
@@ -518,7 +496,6 @@ export function useShareImport(provider: ShareInboxProvider) {
     workspaces,
     workspacesService,
     updateSelection,
-    updateLinkPreview,
     save,
   };
 }

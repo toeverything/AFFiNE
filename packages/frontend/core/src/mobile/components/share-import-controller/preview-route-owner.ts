@@ -7,12 +7,7 @@ import { readShareLinkPreview } from './preview';
 import type { PendingShareItem, ShareLinkPreview } from './types';
 
 const LINK_PREVIEW_PATH = '/api/worker/link-preview';
-export type SharePreviewState = {
-  itemId: string;
-  workspaceKey: string;
-  generation: number;
-  value: ShareLinkPreview;
-};
+const OFFICIAL_ENDPOINT = `https://app.affine.pro${LINK_PREVIEW_PATH}`;
 export class SharePreviewRouteOwner {
   private endpoint: string | undefined;
   private server: Server | undefined;
@@ -43,6 +38,10 @@ export class SharePreviewRouteOwner {
   }
 
   selectWorkspace(workspace: WorkspaceMetadata | undefined, servers: Server[]) {
+    if (this.item.previewRoute === 'official') {
+      this.setRoute(undefined, OFFICIAL_ENDPOINT, 'official');
+      return;
+    }
     if (!workspace || workspace.flavour === 'local') {
       this.setRoute(
         undefined,
@@ -54,21 +53,22 @@ export class SharePreviewRouteOwner {
     const workspaceKey = `${workspace.flavour}:${workspace.id}`;
     const server = servers.find(server => server.id === workspace.flavour);
     const type = server?.config$.value?.type;
-    const canPreview =
-      type === ServerDeploymentType.Selfhosted ||
-      type === ServerDeploymentType.Affine;
-    this.setRoute(
-      canPreview ? server : undefined,
-      canPreview && server
-        ? new URL(LINK_PREVIEW_PATH, server.baseUrl).toString()
-        : undefined,
-      workspaceKey
-    );
+    if (type === ServerDeploymentType.Affine) {
+      this.setRoute(undefined, OFFICIAL_ENDPOINT, workspaceKey);
+    } else if (server && type === ServerDeploymentType.Selfhosted) {
+      this.setRoute(
+        server,
+        new URL(LINK_PREVIEW_PATH, server.baseUrl).toString(),
+        workspaceKey
+      );
+    } else {
+      this.setRoute(undefined, undefined, workspaceKey);
+    }
   }
 
   load(signal?: AbortSignal): Promise<ShareLinkPreview> | undefined {
     const url = this.item.content.url;
-    if (!url || !this.endpoint || !this.server || !this.selectedWorkspaceKey) {
+    if (!url || !this.endpoint || !this.selectedWorkspaceKey) {
       return undefined;
     }
     if (
@@ -78,6 +78,7 @@ export class SharePreviewRouteOwner {
       return this.previewRequest.request;
     }
     const server = this.server;
+    const endpoint = this.endpoint;
     const workspaceKey = this.selectedWorkspaceKey;
     const generation = this.requestGeneration;
     const controller = new AbortController();
@@ -87,42 +88,44 @@ export class SharePreviewRouteOwner {
     } else {
       signal?.addEventListener('abort', abort, { once: true });
     }
-    const request = server
-      .fetch(LINK_PREVIEW_PATH, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url, include: ['transcript'] }),
-        credentials: 'omit',
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(5000)]),
-      })
-      .then(async response => {
-        if (!response.ok) throw new Error('Link preview unavailable');
-        const preview = await readShareLinkPreview(response);
-        const proxyMedia = (value: string) => {
-          const source = new URL(value);
-          const proxy = new URL('/api/worker/image-proxy', server.baseUrl);
-          proxy.searchParams.set(
-            'url',
-            isImageProxyURL(value)
-              ? (source.searchParams.get('url') ?? value)
-              : value
-          );
-          return proxy.toString();
-        };
-        preview.images = preview.images?.map(proxyMedia);
-        preview.favicons = preview.favicons?.map(proxyMedia);
-        if (preview.author?.avatar)
-          preview.author.avatar = proxyMedia(preview.author.avatar);
-        if (
-          this.selectedWorkspaceKey !== workspaceKey ||
-          this.requestGeneration !== generation
-        ) {
-          throw new DOMException('Stale link preview response', 'AbortError');
-        }
-        return preview;
-      });
+    const fetcher = server ? server.fetch : globalThis.fetch;
+    const request = fetcher(server ? LINK_PREVIEW_PATH : endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-affine-version': BUILD_CONFIG.appVersion,
+      },
+      body: JSON.stringify({ url, include: ['transcript'] }),
+      credentials: 'omit',
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(5000)]),
+    }).then(async response => {
+      if (!response.ok) throw new Error('Link preview unavailable');
+      const preview = await readShareLinkPreview(response);
+      const proxyMedia = (value: string) => {
+        const source = new URL(value);
+        const proxy = new URL('/api/worker/image-proxy', endpoint);
+        if (isImageProxyURL(value) && source.origin === proxy.origin)
+          return value;
+        proxy.searchParams.set(
+          'url',
+          isImageProxyURL(value)
+            ? (source.searchParams.get('url') ?? value)
+            : value
+        );
+        return proxy.toString();
+      };
+      preview.images = preview.images?.map(proxyMedia);
+      preview.favicons = preview.favicons?.map(proxyMedia);
+      if (preview.author?.avatar)
+        preview.author.avatar = proxyMedia(preview.author.avatar);
+      if (
+        this.selectedWorkspaceKey !== workspaceKey ||
+        this.requestGeneration !== generation
+      ) {
+        throw new DOMException('Stale link preview response', 'AbortError');
+      }
+      return preview;
+    });
     this.previewRequest = { generation, controller, request };
     void request.then(
       () => {
@@ -152,47 +155,5 @@ export class SharePreviewRouteOwner {
     this.server = server;
     this.endpoint = endpoint;
     this.selectedWorkspaceKey = workspaceKey;
-  }
-}
-
-export async function previewForImport(
-  item: PendingShareItem,
-  workspace: WorkspaceMetadata,
-  current: SharePreviewState | undefined,
-  currentOwner: SharePreviewRouteOwner | undefined,
-  servers: Server[]
-) {
-  if (item.content.kind !== 'url') return undefined;
-  const owner = currentOwner ?? new SharePreviewRouteOwner(item);
-  owner.selectWorkspace(workspace, servers);
-  const selectedWorkspaceKey = `${workspace.flavour}:${workspace.id}`;
-  const generation = owner.generation;
-  if (
-    current?.itemId === item.id &&
-    current.workspaceKey === selectedWorkspaceKey &&
-    current.generation === generation
-  ) {
-    return current.value;
-  }
-  const controller = new AbortController();
-  const request = owner.load(controller.signal);
-  if (!request) return undefined;
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  try {
-    const preview = await Promise.race([
-      request.catch(() => undefined),
-      new Promise<undefined>(resolve => {
-        timeout = setTimeout(() => {
-          controller.abort();
-          resolve(undefined);
-        }, 1200);
-      }),
-    ]);
-    return owner.workspaceKey === selectedWorkspaceKey &&
-      owner.generation === generation
-      ? preview
-      : undefined;
-  } finally {
-    if (timeout) clearTimeout(timeout);
   }
 }

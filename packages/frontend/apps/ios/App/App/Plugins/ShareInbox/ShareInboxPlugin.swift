@@ -6,6 +6,7 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
   public let identifier = "ShareInboxPlugin"
   public let jsName = "ShareInbox"
   public let pluginMethods: [CAPPluginMethod] = [
+    CAPPluginMethod(name: "updateWorkspaceMode", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "listPending", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "updateTarget", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "resolveAttachment", returnType: CAPPluginReturnPromise),
@@ -19,6 +20,18 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
     encoder.dateEncodingStrategy = .iso8601
     return encoder
   }()
+
+  @objc func updateWorkspaceMode(_ call: CAPPluginCall) {
+    do {
+      guard let rawMode = call.getString("mode"), let mode = ShareWorkspaceMode(rawValue: rawMode) else {
+        throw ShareInboxError.invalidPayload
+      }
+      try store.updateWorkspaceMode(mode)
+      call.resolve()
+    } catch {
+      call.reject("Failed to update share preview mode.", nil, error)
+    }
+  }
 
   @objc func listPending(_ call: CAPPluginCall) {
     do {

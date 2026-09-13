@@ -23,6 +23,7 @@ final class ShareInboxStore {
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     return encoder
   }()
+
   private let decoder: JSONDecoder = {
     let decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
@@ -37,7 +38,7 @@ final class ShareInboxStore {
     removeItem: ItemRemover? = nil
   ) {
     self.fileManager = fileManager
-    self.configuredContainerURL = containerURL
+    configuredContainerURL = containerURL
     self.writeData = writeData ?? Self.writeAtomically
     self.copyFile = copyFile ?? ShareInboxFileCopy.copyCoordinatedFile
     self.removeItem = removeItem ?? { try fileManager.removeItem(at: $0) }
@@ -101,7 +102,7 @@ final class ShareInboxStore {
     let temporaryAttachmentDirectory = attachmentsDirectoryURL?
       .appendingPathComponent(".\(item.id).tmp", isDirectory: true)
     if !attachmentFiles.isEmpty,
-       (attachmentDirectory == nil || temporaryAttachmentDirectory == nil)
+       attachmentDirectory == nil || temporaryAttachmentDirectory == nil
     {
       throw ShareInboxError.containerUnavailable
     }
@@ -164,6 +165,21 @@ final class ShareInboxStore {
     }
     try ensureManifestCanMutate(at: fileURL)
     try writeData(encoder.encode(item), fileURL, .atomic)
+  }
+
+  func updateWorkspaceMode(_ mode: ShareWorkspaceMode) throws {
+    guard let containerURL else { throw ShareInboxError.containerUnavailable }
+    try writeData(encoder.encode(ShareWorkspaceModeSnapshot(mode: mode)),
+                  containerURL.appendingPathComponent(ShareInboxConstants.workspaceModeFileName), .atomic)
+  }
+
+  func workspaceMode() -> ShareWorkspaceMode {
+    guard let containerURL,
+          let data = try? Data(contentsOf: containerURL.appendingPathComponent(ShareInboxConstants.workspaceModeFileName)),
+          let snapshot = try? decoder.decode(ShareWorkspaceModeSnapshot.self, from: data),
+          snapshot.version == 1
+    else { return .unknown }
+    return snapshot.mode
   }
 
   func pendingItems() -> [ShareInboxPendingEntry] {
@@ -440,16 +456,6 @@ enum ShareInboxFileCopy {
     }
     if let coordinationError { throw coordinationError }
     if let readError { throw readError }
-  }
-
-  static func write(_ data: Data, to destinationURL: URL) throws {
-    guard FileManager.default.createFile(atPath: destinationURL.path, contents: nil) else {
-      throw ShareInboxError.invalidPayload
-    }
-    let handle = try FileHandle(forWritingTo: destinationURL)
-    defer { try? handle.close() }
-    try handle.write(contentsOf: data)
-    try handle.synchronize()
   }
 
   static func readPrefix(from url: URL, count: Int = 12) throws -> Data {

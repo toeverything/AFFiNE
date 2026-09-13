@@ -1191,7 +1191,7 @@ final class ShareInboxSafetyTests: XCTestCase {
     )
     XCTAssertEqual(rewritten["schemaVersion"] as? Int, 2)
     XCTAssertEqual(rewritten["importAttemptId"] as? String, migrated.importAttemptId)
-    XCTAssertNil(rewritten["previewRoute"])
+    XCTAssertEqual(rewritten["previewRoute"] as? String, "official")
 
     guard case let .ready(reloaded) = try XCTUnwrap(store.pendingItems().first) else {
       return XCTFail("Expected the rewritten v2 manifest to remain ready")
@@ -1429,6 +1429,61 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertNil(ShareInboxSafety.normalizedManifestID("nested/item"))
   }
 
+  func testPreviewRouteUsesWorkspaceModeAndPublicProviderAllowlist() throws {
+    let (store, _) = try makeStore()
+    XCTAssertEqual(store.workspaceMode(), .unknown)
+    for mode in [ShareWorkspaceMode.unknown, .signedOut, .cloudOnly, .selfHostedPresent] {
+      try store.updateWorkspaceMode(mode)
+      XCTAssertEqual(store.workspaceMode(), mode)
+      XCTAssertEqual(ShareInboxSafety.previewRoute(url: "https://example.com/private", mode: mode),
+                     mode == .cloudOnly || mode == .signedOut ? .official : .deferred)
+      for url in ["https://youtu.be/video", "https://youtube.com/watch?v=video", "https://x.com/person/status/123"] {
+        XCTAssertEqual(ShareInboxSafety.previewRoute(url: url, mode: mode), .official)
+      }
+      XCTAssertEqual(ShareInboxSafety.previewRoute(url: "file:///private/file", mode: mode), .deferred)
+    }
+    for url in ["https://x.com/person", "https://x.com/person/status/not-a-number", "https://youtube.com.example/watch?v=video"] {
+      XCTAssertEqual(ShareInboxSafety.previewRoute(url: url, mode: .selfHostedPresent), .deferred)
+    }
+  }
+
+  func testPreviewTransportRejectsOversizedResponsesAndUnapprovedImageURLs() async throws {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [OversizedPreviewURLProtocol.self]
+    let session = URLSession(configuration: configuration)
+    defer { session.invalidateAndCancel() }
+    let client = ShareLinkPreviewClient(session: session, appVersion: "test")
+    do {
+      _ = try await client.fetch(url: "https://example.com/article")
+      XCTFail("Expected the response limit to reject the download")
+    } catch let error as URLError {
+      XCTAssertEqual(error.code, .dataLengthExceedsMaximum)
+    }
+    do {
+      _ = try await client.fetchImage(url: "https://example.com/image.png")
+      XCTFail("Expected an unapproved image URL to be rejected")
+    } catch let error as URLError {
+      XCTAssertEqual(error.code, .badURL)
+    }
+  }
+
+  func testPreviewClipsLargeTranscriptsWithoutDroppingBaseMetadata() throws {
+    for segments in [Array(repeating: ["text": "Caption"], count: 501), [["text": String(repeating: "中", count: 200_000)]]] {
+      let data = try JSONSerialization.data(withJSONObject: [
+        "url": "https://example.com/article", "title": String(repeating: "A", count: 1000),
+        "description": "Summary", "author": ["name": NSNull()], "durationSeconds": -1,
+        "transcript": ["segments": segments],
+      ])
+      let preview = try JSONDecoder().decode(ShareLinkPreview.self, from: data)
+      XCTAssertEqual(preview.title, String(repeating: "A", count: 120))
+      XCTAssertEqual(preview.description, "Summary")
+      XCTAssertNil(preview.author)
+      XCTAssertNil(preview.durationSeconds)
+      XCTAssertEqual(preview.transcript?.segments.count, 1)
+      XCTAssertEqual(preview.transcript?.previewText?.count, 241)
+    }
+  }
+
   func testWebURLsRejectCredentialsAndUnsupportedSchemes() {
     XCTAssertEqual(
       ShareInboxSafety.normalizedWebURL("https://example.com/page"),
@@ -1562,4 +1617,18 @@ private actor DraftBuildGate {
       waiters.remove(at: index).1.resume()
     }
   }
+}
+
+
+private final class OversizedPreviewURLProtocol: URLProtocol {
+  override class func canInit(with request: URLRequest) -> Bool { true }
+  override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+  override func startLoading() {
+    let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
+                                   headerFields: ["Content-Length": "1048577"])!
+    client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+    client?.urlProtocol(self, didLoad: Data([0]))
+    client?.urlProtocolDidFinishLoading(self)
+  }
+  override func stopLoading() {}
 }

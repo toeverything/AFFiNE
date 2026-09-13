@@ -1,32 +1,12 @@
-export interface ShareLinkPreview {
-  url: string;
-  title?: string;
-  siteName?: string;
-  description?: string;
-  images?: string[];
-  favicons?: string[];
-  mediaType?: string;
-  provider?: string;
-  author?: { name: string; handle?: string; avatar?: string };
-  publishedAt?: string;
-  durationSeconds?: number;
-  transcript?: {
-    language?: string;
-    segments: {
-      text: string;
-      startSeconds?: number;
-      durationSeconds?: number;
-      speaker?: string;
-    }[];
-    chapters?: { title: string; startSeconds: number }[];
-    truncated?: boolean;
-  };
-}
+import type { LinkPreviewResponseData } from '@blocksuite/affine/shared/services';
+
+export type ShareLinkPreview = LinkPreviewResponseData;
 
 export interface PendingShareItem {
   id: string;
   documentId: string;
   schemaVersion: 2;
+  previewRoute?: 'official' | 'deferred';
   importAttemptId: string;
   title: string;
   content: {
@@ -50,7 +30,14 @@ export interface ShareImportTarget {
   collectionId?: string;
 }
 
+export type ShareWorkspaceMode =
+  | 'selfHostedPresent'
+  | 'cloudOnly'
+  | 'signedOut'
+  | 'unknown';
+
 export interface ShareInboxProvider {
+  updateWorkspaceMode(mode: ShareWorkspaceMode): Promise<void>;
   listPending(): Promise<ShareInboxEntry[]>;
   updateTarget(itemId: string, target: ShareImportTarget): Promise<void>;
   resolveAttachment(itemId: string): Promise<File | undefined>;
