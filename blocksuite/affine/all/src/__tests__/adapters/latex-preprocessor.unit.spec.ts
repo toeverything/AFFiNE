@@ -42,6 +42,10 @@ describe('latex markdown preprocessor', () => {
       expect(preprocessLatex('\\$5 and x$')).toBe('\\\\$5 and x$');
     });
 
+    test('an even backslash run is a literal backslash, not an escape', () => {
+      expect(preprocessLatex('\\\\$4\\vee 6=12$')).toBe('\\\\$4\\vee 6=12$');
+    });
+
     test('a literal dollar inside math is kept', () => {
       expect(preprocessLatex('$a\\$b$')).toBe('$a\\$b$');
     });
