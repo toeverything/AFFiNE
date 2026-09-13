@@ -368,19 +368,33 @@ test('unsubscribe uses resubscribed server subscription id', async () => {
   });
 });
 
-test('subscribe registers server room again after reconnect', async () => {
+test('subscribe resynchronizes only after a connected reconnect', async () => {
   const manager = new RealtimeManager();
   manager.setContext({
     endpoint: 'http://server',
     isSelfHosted: false,
     authenticated: true,
   });
+  await manager.request('notification.count.get', {});
+  socket.emit('connect');
+  expect(
+    socket.emitted.filter(item => item.event === 'realtime:subscribe')
+  ).toHaveLength(0);
+
   const received: unknown[] = [];
   const subscription = manager
     .subscribe('notification.count.changed', {})
     .subscribe(event => received.push(event));
   await vi.waitFor(() => expect(received).toEqual([{ type: 'ready' }]));
 
+  socket.connected = false;
+  socket.emit('connect');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(
+    socket.emitted.filter(item => item.event === 'realtime:subscribe')
+  ).toHaveLength(1);
+
+  socket.connected = true;
   socket.emit('connect');
 
   await vi.waitFor(() =>
@@ -418,7 +432,9 @@ test('reconnect resubscription is single-flight when ready re-enters realtime', 
   const first = manager
     .subscribe('notification.count.changed', {})
     .subscribe(handleReady);
-  const second = manager.subscribe('user.profile.changed', {}).subscribe(handleReady);
+  const second = manager
+    .subscribe('user.profile.changed', {})
+    .subscribe(handleReady);
   await vi.waitFor(() => expect(manager.getStatus().subscriptions).toBe(2));
 
   manager.setContext({
@@ -451,9 +467,7 @@ test('reconnect during resubscription repeats the snapshot after the active pass
     isSelfHosted: false,
     authenticated: true,
   });
-  const first = manager
-    .subscribe('notification.count.changed', {})
-    .subscribe();
+  const first = manager.subscribe('notification.count.changed', {}).subscribe();
   const second = manager.subscribe('user.profile.changed', {}).subscribe();
   await vi.waitFor(() => expect(manager.getStatus().subscriptions).toBe(2));
 
