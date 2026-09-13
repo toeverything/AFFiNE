@@ -1,9 +1,6 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
-import type { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
-import {
-  parseSharePreviewBlob,
-  type SharePreviewRecord,
-} from '@blocksuite/affine/model';
+import { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
+import { EmbedOptionProvider } from '@blocksuite/affine/shared/services';
 import { Text } from '@blocksuite/affine/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
@@ -14,180 +11,39 @@ import { GuardService } from '../../permissions';
 import { TagService } from '../../tag';
 import {
   getAFFiNEWorkspaceSchema,
+  type Workspace,
   type WorkspaceMetadata,
   type WorkspacesService,
 } from '../../workspace';
+import { shareImportBlockIds } from './share-block-plan';
 import {
-  createShareBlockPlan,
-  mergeShareDestinationMetadata,
-  reconcileShareTitles,
-  type ShareBlockPlanNode,
-  shareImportBlockIds,
-  shareUrlTitle,
-  validatesStableBlock,
-} from './share-block-plan';
+  addShareBlocks,
+  hasValidSharePlan,
+  reconcileShareTitle,
+  shareLeaves,
+} from './share-blocks';
 import {
   createShareImportReceipt,
   decideShareImportRecovery,
   serializeShareImportReceipt,
   shareImportReceiptPropertyId,
-  shouldSynchronizeShareImport,
 } from './share-import-receipt';
-
-export interface ShareLinkPreview {
-  url: string;
-  title?: string;
-  siteName?: string;
-  description?: string;
-  images?: string[];
-  favicons?: string[];
-  mediaType?: string;
-  provider?: string;
-  author?: { name: string; handle?: string; avatar?: string };
-  publishedAt?: string;
-  durationSeconds?: number;
-  transcript?: {
-    language?: string;
-    segments: {
-      text: string;
-      startSeconds?: number;
-      durationSeconds?: number;
-      speaker?: string;
-    }[];
-    chapters?: { title: string; startSeconds: number }[];
-    truncated?: boolean;
-  };
-  authorizeDetailsWrite?: (signal: AbortSignal) => Promise<boolean>;
-}
-
-export interface ClipperInput {
-  title: string;
-  contentMarkdown: string;
-  contentHtml: string;
-  attachments: Record<string, Blob>;
-  workspace?: 'select-by-user' | 'last-open-workspace';
-}
-
-export interface ShareImportInput {
-  documentId: string;
-  importAttemptId: string;
-  title: string;
-  content: {
-    kind: 'url' | 'text' | 'image' | 'pdf';
-    url?: string;
-    text?: string;
-  };
-  preview?: ShareLinkPreview;
-  attachment?: File;
-  tagIds: string[];
-  collectionId?: string;
-}
-
-export type ShareImportResult =
-  | { status: 'imported'; docId: string }
-  | { status: 'committed-replay'; docId: string }
-  | { status: 'import-conflict' }
-  | {
-      status:
-        | 'workspace-not-found'
-        | 'permission-denied'
-        | 'destination-not-found'
-        | 'offline-confirmation-required'
-        | 'attachment-missing'
-        | 'attachment-too-large'
-        | 'attachment-write-failed';
-      missingTagIds?: string[];
-    };
-
-export interface ShareDestinationOptions {
-  verification: 'confirmed' | 'unavailable';
-  tags: { id: string; name: string; color: string }[];
-  collections: { id: string; name: string }[];
-}
+import type {
+  ClipperInput,
+  ShareDestinationOptions,
+  ShareImportInput,
+  ShareImportResult,
+} from './share-import-types';
+export type {
+  ClipperInput,
+  ShareDestinationOptions,
+  ShareImportInput,
+  ShareImportResult,
+} from './share-import-types';
 
 type WorkspaceVerification = 'confirmed' | 'missing' | 'unavailable';
 
 export const maxShareAttachmentBytes = 64 * 1024 * 1024;
-const SHARE_PREVIEW_AUTHORIZATION_TIMEOUT_MS = 1200;
-
-export function createShareMarkdown(input: ShareImportInput) {
-  const parts: string[] = [];
-  if (input.content.kind === 'image') {
-    if (input.content.text) {
-      parts.push(escapeMarkdown(input.content.text));
-    }
-    if (input.content.url) {
-      parts.push(`[Source](<${input.content.url}>)`);
-    }
-  } else if (input.content.kind === 'text' && input.content.text) {
-    parts.push(escapeMarkdown(input.content.text));
-  }
-  return parts.join('\n\n');
-}
-
-export function createCompatibilityShareBlockPlan(input: ShareImportInput) {
-  return createShareBlockPlan(input, null);
-}
-
-async function createSharePreviewDetailsBlob(
-  input: ShareImportInput
-): Promise<Blob | undefined> {
-  if (
-    input.content.kind !== 'url' ||
-    !input.content.url ||
-    !input.preview?.authorizeDetailsWrite
-  ) {
-    return undefined;
-  }
-  const preview = input.preview;
-  const record: SharePreviewRecord = {
-    version: 1,
-    sourceUrl: input.content.url,
-    title: preview.title,
-    description: preview.description,
-    image: preview.images?.[0],
-    provider: preview.provider,
-    durationSeconds: preview.durationSeconds,
-    transcript: preview.transcript,
-  };
-  const blob = new Blob([JSON.stringify(record)], {
-    type: 'application/json',
-  });
-  try {
-    await parseSharePreviewBlob(blob);
-    return blob;
-  } catch {
-    return undefined;
-  }
-}
-
-async function authorizeSharePreviewDetails(
-  authorize: NonNullable<ShareLinkPreview['authorizeDetailsWrite']>
-) {
-  const controller = new AbortController();
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  const authorization = Promise.resolve()
-    .then(() => authorize(controller.signal))
-    .then(
-      authorized => authorized && !controller.signal.aborted,
-      () => false
-    );
-  const expiration = new Promise<false>(resolve => {
-    timeout = setTimeout(() => {
-      controller.abort();
-      resolve(false);
-    }, SHARE_PREVIEW_AUTHORIZATION_TIMEOUT_MS);
-  });
-  try {
-    return await Promise.race([authorization, expiration]);
-  } finally {
-    if (timeout) clearTimeout(timeout);
-  }
-}
-
-function escapeMarkdown(value: string) {
-  return value.replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');
-}
 
 export class ImportClipperService extends Service {
   private readonly shareImportTails = new Map<string, Promise<void>>();
@@ -267,26 +123,27 @@ export class ImportClipperService extends Service {
 
     try {
       const { workspace } = workspaceRef;
-      await workspace.engine.doc.waitForDocReady(workspace.id);
-      const rootSynced =
-        allowOffline ||
-        workspace.meta.flavour === 'local' ||
-        (verification === 'confirmed' &&
-          (await this.waitForRootSync(workspace)));
-      if (!rootSynced && !options.allowOffline) {
-        return { status: 'offline-confirmation-required' };
-      }
-
       const docsService = workspace.scope.get(DocsService);
-      const shouldSync = shouldSynchronizeShareImport({
-        isLocal: workspace.meta.flavour === 'local',
-        verification,
-        allowOffline,
-      });
-      workspace.engine.doc.addPriority('db$docProperties', 100);
-      await workspace.engine.doc.waitForDocLoaded('db$docProperties');
-      if (shouldSync) {
-        await workspace.engine.doc.waitForSynced('db$docProperties');
+      const releaseReceiptPriority = workspace.engine.doc.addPriority(
+        'db$docProperties',
+        100
+      );
+      try {
+        await workspace.engine.doc.waitForDocLoaded(workspace.id);
+        await workspace.engine.doc.waitForDocLoaded('db$docProperties');
+        if (
+          !allowOffline &&
+          workspace.meta.flavour !== 'local' &&
+          (verification !== 'confirmed' ||
+            !(await this.waitForInitialSync(workspace, [
+              workspace.id,
+              'db$docProperties',
+            ])))
+        ) {
+          return { status: 'offline-confirmation-required' };
+        }
+      } finally {
+        releaseReceiptPriority();
       }
 
       const persistedReceiptValue = docsService.getCustomPropertyById(
@@ -328,7 +185,12 @@ export class ImportClipperService extends Service {
           : undefined;
       };
       const initialDestinationError = validateDestination();
-      if (initialDestinationError) return initialDestinationError;
+      if (
+        initialDestinationError &&
+        recovery === 'write-preparing-and-create'
+      ) {
+        return initialDestinationError;
+      }
 
       const isAttachment =
         input.content.kind === 'image' || input.content.kind === 'pdf';
@@ -338,7 +200,7 @@ export class ImportClipperService extends Service {
       if (
         isAttachment &&
         input.attachment &&
-        input.attachment.size > this.getShareImportAttachmentLimit()
+        input.attachment.size > maxShareAttachmentBytes
       ) {
         return { status: 'attachment-too-large' };
       }
@@ -364,9 +226,6 @@ export class ImportClipperService extends Service {
           )
         );
         await workspace.engine.doc.waitForUpdated('db$docProperties');
-        if (shouldSync) {
-          await workspace.engine.doc.waitForSynced('db$docProperties');
-        }
       }
 
       const record =
@@ -379,19 +238,24 @@ export class ImportClipperService extends Service {
       const { doc, release } = docsService.open(record.id);
       try {
         await doc.waitForSyncReady();
-        if (shouldSync) {
-          workspace.engine.doc.addPriority(input.documentId, 100);
-          await workspace.engine.doc.waitForSynced(input.documentId);
+        if (
+          existingRecord &&
+          !allowOffline &&
+          workspace.meta.flavour !== 'local' &&
+          !(await this.waitForInitialSync(workspace, [input.documentId]))
+        ) {
+          return { status: 'offline-confirmation-required' };
         }
         const ids = shareImportBlockIds(input.importAttemptId);
-        const leaves = this.shareLeaves(input);
+        const embedOptions =
+          input.content.kind === 'url' && input.content.url
+            ? createBlockStdScope(doc.blockSuiteDoc)
+                .get(EmbedOptionProvider)
+                .getEmbedBlockOptions(input.content.url)
+            : null;
+        const leaves = shareLeaves(input, embedOptions);
         if (
-          !this.hasValidSharePlan(
-            doc.blockSuiteDoc,
-            ids,
-            leaves,
-            input.content.kind
-          )
+          !hasValidSharePlan(doc.blockSuiteDoc, ids, leaves, input.content.kind)
         ) {
           return { status: 'import-conflict' };
         }
@@ -414,176 +278,56 @@ export class ImportClipperService extends Service {
         await workspace.engine.doc.waitForUpdated(input.documentId);
 
         if (
-          !this.hasValidSharePlan(
-            doc.blockSuiteDoc,
-            ids,
-            leaves,
-            input.content.kind
-          )
+          !hasValidSharePlan(doc.blockSuiteDoc, ids, leaves, input.content.kind)
         ) {
           return { status: 'import-conflict' };
         }
-        const imageId = ids.image;
+        const attachmentId =
+          input.content.kind === 'image' ? ids.image : ids.attachment;
+        let sourceId = admittedAttachmentSourceId;
         if (
-          input.content.kind === 'image' &&
-          !this.ensureBlock(
-            doc.blockSuiteDoc,
-            imageId,
-            'affine:image',
-            ids.note
-          )
-        ) {
-          return { status: 'import-conflict' };
-        }
-        const attachmentId = ids.attachment;
-        if (
-          input.content.kind === 'pdf' &&
-          !this.ensureBlock(
-            doc.blockSuiteDoc,
-            attachmentId,
-            'affine:attachment',
-            ids.note
-          )
-        ) {
-          return { status: 'import-conflict' };
-        }
-
-        let sharePreviewSourceId: string | undefined;
-        if (!doc.blockSuiteDoc.getBlock(ids.bookmark)) {
-          const detailsBlob = await createSharePreviewDetailsBlob(input);
-          if (
-            !this.hasValidSharePlan(
-              doc.blockSuiteDoc,
-              ids,
-              leaves,
-              input.content.kind
-            )
-          ) {
-            return { status: 'import-conflict' };
-          }
-          if (
-            detailsBlob &&
-            input.preview?.authorizeDetailsWrite &&
-            !doc.blockSuiteDoc.getBlock(ids.bookmark)
-          ) {
-            const authorized = await authorizeSharePreviewDetails(
-              input.preview.authorizeDetailsWrite
-            );
-            if (
-              !this.hasValidSharePlan(
-                doc.blockSuiteDoc,
-                ids,
-                leaves,
-                input.content.kind
-              )
-            ) {
-              return { status: 'import-conflict' };
-            }
-            if (authorized && !doc.blockSuiteDoc.getBlock(ids.bookmark)) {
-              let storedSourceId: string | undefined;
-              try {
-                storedSourceId =
-                  await workspace.docCollection.blobSync.set(detailsBlob);
-              } catch {
-                // Blob write failures preserve the ordinary bookmark fallback.
-              }
-              if (
-                !this.hasValidSharePlan(
-                  doc.blockSuiteDoc,
-                  ids,
-                  leaves,
-                  input.content.kind
-                )
-              ) {
-                return { status: 'import-conflict' };
-              }
-              if (!doc.blockSuiteDoc.getBlock(ids.bookmark)) {
-                sharePreviewSourceId = storedSourceId;
-              }
-            }
-          }
-        }
-
-        let imageSourceId: string | undefined;
-        if (
-          input.content.kind === 'image' &&
+          isAttachment &&
           input.attachment &&
-          !doc.blockSuiteDoc.getBlock(imageId)
+          !doc.blockSuiteDoc.getBlock(attachmentId) &&
+          !sourceId
         ) {
-          imageSourceId = admittedAttachmentSourceId;
-          if (!imageSourceId) {
-            try {
-              imageSourceId = await workspace.docCollection.blobSync.set(
-                input.attachment
-              );
-            } catch {
-              return { status: 'attachment-write-failed' };
-            }
+          try {
+            sourceId = await workspace.docCollection.blobSync.set(
+              input.attachment
+            );
+          } catch {
+            return { status: 'attachment-write-failed' };
           }
         }
-        let attachmentSourceId: string | undefined;
         if (
-          input.content.kind === 'pdf' &&
+          !hasValidSharePlan(doc.blockSuiteDoc, ids, leaves, input.content.kind)
+        ) {
+          return { status: 'import-conflict' };
+        }
+        addShareBlocks(doc.blockSuiteDoc, ids.note, leaves);
+        if (
+          sourceId &&
           input.attachment &&
           !doc.blockSuiteDoc.getBlock(attachmentId)
         ) {
-          attachmentSourceId = admittedAttachmentSourceId;
-          if (!attachmentSourceId) {
-            try {
-              attachmentSourceId = await workspace.docCollection.blobSync.set(
-                input.attachment
-              );
-            } catch {
-              return { status: 'attachment-write-failed' };
-            }
-          }
-        }
-        if (
-          !this.hasValidSharePlan(
-            doc.blockSuiteDoc,
-            ids,
-            leaves,
-            input.content.kind
-          )
-        ) {
-          return { status: 'import-conflict' };
-        }
-        if (sharePreviewSourceId && !doc.blockSuiteDoc.getBlock(ids.bookmark)) {
-          const bookmark = leaves.find(node => node.id === ids.bookmark);
-          if (bookmark) {
-            bookmark.props.sharePreviewSourceId = sharePreviewSourceId;
-            bookmark.props.sharePreviewVersion = 1;
-          }
-        }
-        this.addShareBlocks(doc.blockSuiteDoc, ids.note, leaves);
-        if (imageSourceId && !doc.blockSuiteDoc.getBlock(imageId)) {
           doc.blockSuiteDoc.addBlock(
-            'affine:image',
-            {
-              id: imageId,
-              sourceId: imageSourceId,
-              name: input.attachment?.name ?? 'Shared image',
-              type: input.attachment?.type ?? '',
-              size: input.attachment?.size ?? 0,
-            },
-            ids.note
-          );
-        }
-        if (attachmentSourceId && !doc.blockSuiteDoc.getBlock(attachmentId)) {
-          doc.blockSuiteDoc.addBlock(
-            'affine:attachment',
+            input.content.kind === 'image'
+              ? 'affine:image'
+              : 'affine:attachment',
             {
               id: attachmentId,
-              sourceId: attachmentSourceId,
-              name: input.attachment?.name ?? 'Shared PDF',
-              type: input.attachment?.type ?? 'application/pdf',
-              size: input.attachment?.size ?? 0,
-              embed: false,
+              sourceId,
+              name: input.attachment.name,
+              type: input.attachment.type,
+              size: input.attachment.size,
+              ...(input.content.kind === 'pdf'
+                ? { embed: true, style: 'pdf' }
+                : {}),
             },
             ids.note
           );
         }
-        this.reconcileShareTitle(
+        reconcileShareTitle(
           record,
           doc.blockSuiteDoc.getBlock(ids.page)?.model,
           input.title
@@ -592,22 +336,17 @@ export class ImportClipperService extends Service {
         release();
       }
       const currentDestinationError = validateDestination();
-      if (currentDestinationError) return currentDestinationError;
       const existingTagIds = new Set(record.meta$.value.tags ?? []);
-      const metadata = mergeShareDestinationMetadata({
-        existingTagIds,
-        requestedTagIds: input.tagIds,
-        existingCollectionIds: [],
-        requestedCollectionId: input.collectionId,
-      });
-      for (const tagId of metadata.tagIds) {
+      for (const tagId of new Set(input.tagIds)) {
         if (!existingTagIds.has(tagId)) {
           tagService.tagList.tagByTagId$(tagId).value?.tag(input.documentId);
         }
       }
       if (
         input.collectionId &&
-        metadata.collectionIds.has(input.collectionId)
+        collectionService.collectionMetas$.value.some(
+          collection => collection.id === input.collectionId
+        )
       ) {
         collectionService.addDocToCollection(
           input.collectionId,
@@ -617,13 +356,7 @@ export class ImportClipperService extends Service {
 
       const syncIds = ['db$docProperties', workspace.id, input.documentId];
       for (const id of syncIds) {
-        workspace.engine.doc.addPriority(id, 100);
         await workspace.engine.doc.waitForUpdated(id);
-      }
-      if (shouldSync) {
-        await Promise.all(
-          syncIds.map(id => workspace.engine.doc.waitForSynced(id))
-        );
       }
       docsService.setCustomPropertyById(
         input.documentId,
@@ -638,12 +371,13 @@ export class ImportClipperService extends Service {
       for (const id of syncIds) {
         await workspace.engine.doc.waitForUpdated(id);
       }
-      if (shouldSync) {
-        await Promise.all(
-          syncIds.map(id => workspace.engine.doc.waitForSynced(id))
-        );
-      }
-      return { status: 'imported', docId: input.documentId };
+      return {
+        status: 'imported',
+        docId: input.documentId,
+        ...(currentDestinationError
+          ? { warning: 'destination-not-found' as const }
+          : {}),
+      };
     } finally {
       workspaceRef.dispose();
     }
@@ -671,7 +405,7 @@ export class ImportClipperService extends Service {
       const rootConfirmed =
         workspace.meta.flavour === 'local' ||
         (verification === 'confirmed' &&
-          (await this.waitForRootSync(workspace)));
+          (await this.waitForInitialSync(workspace)));
       return {
         verification: rootConfirmed ? 'confirmed' : 'unavailable',
         tags: workspace.scope
@@ -690,168 +424,6 @@ export class ImportClipperService extends Service {
       };
     } finally {
       workspaceRef.dispose();
-    }
-  }
-
-  protected getShareImportAttachmentLimit() {
-    return maxShareAttachmentBytes;
-  }
-
-  private addShareBlocks(
-    store: Parameters<typeof createBlockStdScope>[0],
-    parentId: string,
-    nodes: ShareBlockPlanNode[]
-  ) {
-    const parent = store.getBlock(parentId)?.model;
-    const siblingIndex = (id: string) =>
-      parent?.children.findIndex(child => child.id === id) ?? -1;
-    const insertionIndex = (nodeIndex: number) => {
-      for (let index = nodeIndex + 1; index < nodes.length; index++) {
-        const existingIndex = siblingIndex(nodes[index].id);
-        if (existingIndex >= 0) return existingIndex;
-      }
-      for (let index = nodeIndex - 1; index >= 0; index--) {
-        const existingIndex = siblingIndex(nodes[index].id);
-        if (existingIndex >= 0) return existingIndex + 1;
-      }
-      return undefined;
-    };
-
-    for (const [nodeIndex, node] of nodes.entries()) {
-      const props = Object.fromEntries(
-        Object.entries(node.props)
-          .filter(([, value]) => value !== undefined)
-          .map(([key, value]) => [
-            key,
-            key === 'text' ? new Text(value as string) : value,
-          ])
-      );
-      const blockId = store.getBlock(node.id)
-        ? node.id
-        : store.addBlock(
-            node.flavour,
-            { id: node.id, ...props },
-            parentId,
-            insertionIndex(nodeIndex)
-          );
-      if (node.children) {
-        this.addShareBlocks(store, blockId, node.children);
-      }
-    }
-  }
-
-  private shareLeaves(input: ShareImportInput): ShareBlockPlanNode[] {
-    if (input.content.kind === 'url') {
-      return createCompatibilityShareBlockPlan(input);
-    }
-    const nodes: ShareBlockPlanNode[] = [];
-    const selectedText = input.content.text?.trim();
-    if (selectedText) {
-      nodes.push({
-        id: shareImportBlockIds(input.importAttemptId).selectedText,
-        flavour: 'affine:paragraph',
-        props: { type: 'quote', text: selectedText },
-      });
-    }
-    if (input.content.url) {
-      nodes.push({
-        id: shareImportBlockIds(input.importAttemptId).sourceLink,
-        flavour: 'affine:bookmark',
-        props: {
-          url: input.content.url,
-          title: input.title.trim() || shareUrlTitle(input.content.url),
-          style: 'horizontal',
-        },
-      });
-    }
-    return nodes;
-  }
-
-  private hasValidSharePlan(
-    store: Parameters<typeof createBlockStdScope>[0],
-    ids: ReturnType<typeof shareImportBlockIds>,
-    leaves: ShareBlockPlanNode[],
-    contentKind: ShareImportInput['content']['kind']
-  ): boolean {
-    return (
-      this.hasOnlyMatchingSkeleton(store, ids) &&
-      this.ensureBlock(store, ids.page, 'affine:page') &&
-      this.ensureBlock(store, ids.surface, 'affine:surface', ids.page) &&
-      this.ensureBlock(store, ids.note, 'affine:note', ids.page) &&
-      this.ensurePlan(store, leaves, ids.note) &&
-      (contentKind !== 'image' ||
-        this.ensureBlock(store, ids.image, 'affine:image', ids.note)) &&
-      (contentKind !== 'pdf' ||
-        this.ensureBlock(store, ids.attachment, 'affine:attachment', ids.note))
-    );
-  }
-
-  private ensurePlan(
-    store: Parameters<typeof createBlockStdScope>[0],
-    nodes: ShareBlockPlanNode[],
-    parentId: string
-  ): boolean {
-    return nodes.every(node => {
-      if (!this.ensureBlock(store, node.id, node.flavour, parentId)) {
-        return false;
-      }
-      return node.children
-        ? this.ensurePlan(store, node.children, node.id)
-        : true;
-    });
-  }
-
-  private ensureBlock(
-    store: Parameters<typeof createBlockStdScope>[0],
-    id: string,
-    flavour: string,
-    parentId?: string
-  ) {
-    const existing = store.getBlock(id)?.model;
-    return validatesStableBlock(
-      existing && {
-        flavour: existing.flavour,
-        parentId: existing.parent?.id,
-      },
-      { flavour, parentId }
-    );
-  }
-
-  private hasOnlyMatchingSkeleton(
-    store: Parameters<typeof createBlockStdScope>[0],
-    ids: ReturnType<typeof shareImportBlockIds>
-  ) {
-    return (
-      this.hasOnlyBlock(store, 'affine:page', ids.page) &&
-      this.hasOnlyBlock(store, 'affine:surface', ids.surface) &&
-      this.hasOnlyBlock(store, 'affine:note', ids.note)
-    );
-  }
-
-  private hasOnlyBlock(
-    store: Parameters<typeof createBlockStdScope>[0],
-    flavour: string,
-    id: string
-  ) {
-    return store.getBlocksByFlavour(flavour).every(block => block.id === id);
-  }
-
-  private reconcileShareTitle(
-    record: {
-      meta$: { value: { title?: string } };
-      setMeta(meta: { title: string }): void;
-    },
-    page: { props: { title?: Text } } | undefined,
-    importTitle: string
-  ) {
-    if (!page?.props.title) return;
-    const rootTitle = record.meta$.value.title ?? '';
-    const pageTitle = page.props.title.toString();
-    const next = reconcileShareTitles({ rootTitle, pageTitle, importTitle });
-    if (next.rootTitle !== rootTitle) record.setMeta({ title: next.rootTitle });
-    if (next.pageTitle !== pageTitle) {
-      page.props.title.delete(0, page.props.title.length);
-      page.props.title.insert(next.pageTitle, 0);
     }
   }
 
@@ -890,23 +462,23 @@ export class ImportClipperService extends Service {
     );
   }
 
-  private async waitForRootSync(workspace: {
-    id: string;
-    engine: { doc: { waitForSynced(id: string): Promise<unknown> } };
-  }) {
-    let timeout: ReturnType<typeof setTimeout> | undefined;
+  private async waitForInitialSync(
+    workspace: Workspace,
+    docIds = [workspace.id]
+  ) {
+    const signal = AbortSignal.timeout(5000);
+    const releasePriorities = docIds.map(id =>
+      workspace.engine.doc.addPriority(id, 100)
+    );
     try {
-      await Promise.race([
-        workspace.engine.doc.waitForSynced(workspace.id),
-        new Promise<never>((_, reject) => {
-          timeout = setTimeout(() => reject(new Error('Sync timed out')), 5000);
-        }),
-      ]);
+      await Promise.all(
+        docIds.map(id => workspace.engine.doc.waitForSynced(id, signal))
+      );
       return true;
     } catch {
       return false;
     } finally {
-      if (timeout) clearTimeout(timeout);
+      for (const release of releasePriorities) release();
     }
   }
 

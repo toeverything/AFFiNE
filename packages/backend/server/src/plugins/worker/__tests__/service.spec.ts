@@ -1,5 +1,6 @@
 import ava from 'ava';
 
+import { Config } from '../../../base';
 import { URLHelper } from '../../../base/helpers';
 import { WorkerService } from '../service';
 import { isOriginAllowed } from '../utils';
@@ -7,7 +8,7 @@ import { isOriginAllowed } from '../utils';
 const test = ava;
 
 test('allows global mobile origins and normalized configured origins only', t => {
-  const url = new URLHelper({
+  const config = Object.assign(new Config(), {
     server: {
       externalUrl: '',
       host: 'app.affine.local',
@@ -16,15 +17,12 @@ test('allows global mobile origins and normalized configured origins only', t =>
       https: true,
       path: '',
     },
-  } as any);
-  const service = new WorkerService(
-    {
-      worker: {
-        allowedOrigin: ['http://preview.affine.local/path'],
-      },
-    } as any,
-    url
-  );
+    worker: {
+      allowedOrigin: ['http://preview.affine.local/path'],
+    },
+  });
+  const url = new URLHelper(config);
+  const service = new WorkerService(config, url);
 
   service.onConfigInit();
 

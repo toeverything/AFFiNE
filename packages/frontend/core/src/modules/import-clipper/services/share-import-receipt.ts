@@ -34,7 +34,7 @@ export function parseShareImportReceipt(
     ) {
       return undefined;
     }
-    return receipt as unknown as ShareImportReceipt;
+    return { version: 1, attemptId: receipt.attemptId, state: receipt.state };
   } catch {
     return undefined;
   }
@@ -73,16 +73,4 @@ export function decideShareImportRecovery({
   }
   if (!receipt) return 'write-preparing-and-create';
   return documentExists ? 'resume-preparing' : 'create-from-preparing';
-}
-
-export function shouldSynchronizeShareImport({
-  isLocal,
-  verification,
-  allowOffline,
-}: {
-  isLocal: boolean;
-  verification: 'confirmed' | 'missing' | 'unavailable';
-  allowOffline: boolean;
-}) {
-  return !isLocal && verification === 'confirmed' && !allowOffline;
 }

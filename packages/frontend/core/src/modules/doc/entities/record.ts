@@ -43,7 +43,7 @@ export class DocRecord extends Entity<{ id: string }> {
   }
 
   setCustomProperty(propertyId: string, value: string) {
-    return this.docPropertiesStore.updateDocProperties(this.id, {
+    this.docPropertiesStore.updateDocProperties(this.id, {
       ['custom:' + propertyId]: value,
     });
   }

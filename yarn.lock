@@ -136,6 +136,7 @@ __metadata:
     tsx: "npm:^4.21.0"
     typanion: "npm:^3.14.0"
     typescript: "npm:@typescript/typescript6@6.0.2"
+    vitest: "npm:^4.1.8"
   bin:
     affine: ./bin/cli.js
     r: ./bin/runner.js
@@ -650,7 +651,6 @@ __metadata:
     react: "npm:^19.2.1"
     react-i18next: "npm:^15.2.0"
     typescript: "npm:@typescript/typescript6@6.0.2"
-    vitest: "npm:^4.1.8"
   languageName: unknown
   linkType: soft
 

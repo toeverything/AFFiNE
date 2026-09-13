@@ -14,8 +14,13 @@ import {
   decideShareImportRecovery,
   parseShareImportReceipt,
   serializeShareImportReceipt,
-  shouldSynchronizeShareImport,
 } from './share-import-receipt';
+
+vi.mock('@affine/core/blocksuite/manager/view', () => ({
+  createBlockStdScope: () => ({
+    get: () => ({ getEmbedBlockOptions: () => null }),
+  }),
+}));
 
 describe('share import receipt', () => {
   test('serializes the canonical preparing fixture', () => {
@@ -146,30 +151,6 @@ describe('share import receipt', () => {
       ).toBe('import-conflict');
     }
   );
-
-  test('confirmed offline imports never select remote synchronization', () => {
-    expect(
-      shouldSynchronizeShareImport({
-        isLocal: false,
-        verification: 'confirmed',
-        allowOffline: true,
-      })
-    ).toBe(false);
-    expect(
-      shouldSynchronizeShareImport({
-        isLocal: false,
-        verification: 'confirmed',
-        allowOffline: false,
-      })
-    ).toBe(true);
-    expect(
-      shouldSynchronizeShareImport({
-        isLocal: true,
-        verification: 'confirmed',
-        allowOffline: false,
-      })
-    ).toBe(false);
-  });
 });
 
 function input(importAttemptId = 'attempt-id'): ShareImportInput {
@@ -179,27 +160,6 @@ function input(importAttemptId = 'attempt-id'): ShareImportInput {
     title: 'Shared',
     content: { kind: 'url', url: 'https://example.com' },
     tagIds: [],
-  };
-}
-
-function richInput(importAttemptId = 'attempt-id'): ShareImportInput {
-  return {
-    ...input(importAttemptId),
-    content: {
-      kind: 'url',
-      url: 'https://youtube.com/watch?v=video-id',
-      text: 'Selected quote',
-    },
-    preview: {
-      url: 'https://youtube.com/watch?v=video-id',
-      provider: 'youtube',
-      author: { name: 'Author' },
-      durationSeconds: 214,
-      transcript: {
-        chapters: [{ title: 'Opening', startSeconds: 0 }],
-        segments: [{ text: 'Welcome', startSeconds: 1, speaker: 'Host' }],
-      },
-    },
   };
 }
 
@@ -227,14 +187,12 @@ function makeImportHarness({
   receipt,
   recordExists = false,
   blocks = [],
-  maxFileSize = 2 * 1024 * 1024 * 1024,
   failAfterBlockId,
   workspaceId = 'workspace-id',
 }: {
   receipt?: string;
   recordExists?: boolean;
   blocks?: { id: string; flavour: string; parentId?: string }[];
-  maxFileSize?: number;
   failAfterBlockId?: string;
   workspaceId?: string;
 } = {}) {
@@ -244,7 +202,7 @@ function makeImportHarness({
     flavour: string;
     parent?: HarnessModel;
     children: HarnessModel[];
-    props: any;
+    props: Record<string, unknown>;
   };
   const models = new Map<string, HarnessModel>();
   for (const block of blocks) {
@@ -271,12 +229,12 @@ function makeImportHarness({
         .map(model => ({ id: model.id, model })),
     addBlock: (
       flavour: string,
-      props: any,
+      props: { id: string } & Record<string, unknown>,
       parentId?: string,
       parentIndex?: number
     ) => {
       events.push(`add:${flavour}:${props.id}`);
-      const id = props.id as string;
+      const id = props.id;
       const storedProps =
         flavour === 'affine:page'
           ? {
@@ -350,10 +308,15 @@ function makeImportHarness({
     })),
   };
   const engine = {
-    addPriority: vi.fn((id: string) => events.push(`priority:${id}`)),
+    addPriority: vi.fn((id: string) => {
+      events.push(`priority:${id}`);
+      return vi.fn();
+    }),
     waitForDocReady: vi.fn(async (id: string) => events.push(`ready:${id}`)),
     waitForDocLoaded: vi.fn(async (id: string) => events.push(`loaded:${id}`)),
-    waitForUpdated: vi.fn(async (id: string) => events.push(`updated:${id}`)),
+    waitForUpdated: vi.fn(async (id: string) => {
+      events.push(`updated:${id}`);
+    }),
     waitForSynced: vi.fn(async (id: string) => events.push(`synced:${id}`)),
   };
   const guard = { can: vi.fn(async () => true) };
@@ -419,7 +382,6 @@ function makeImportHarness({
     service: Object.assign(Object.create(ImportClipperService.prototype), {
       workspacesService: workspaces,
       shareImportTails: new Map(),
-      getShareImportAttachmentLimit: () => maxFileSize,
     }) as ImportClipperService,
     metadata,
   };
@@ -488,7 +450,6 @@ describe('share import orchestration', () => {
     await Promise.all([a, b, c, d]);
 
     expect(maxActive).toBe(1);
-    expect((service as any).shareImportTails.size).toBe(0);
   });
 
   test('allows different workspace or document keys to complete while one key is blocked', async () => {
@@ -533,7 +494,6 @@ describe('share import orchestration', () => {
     );
     firstGate.resolve();
     await a;
-    expect((service as any).shareImportTails.size).toBe(0);
   });
 
   test('does not conflate queue keys whose identifiers contain separators', async () => {
@@ -564,7 +524,6 @@ describe('share import orchestration', () => {
     expect(started).toEqual(['A', 'B']);
     firstGate.resolve();
     await a;
-    expect((service as any).shareImportTails.size).toBe(0);
   });
 
   test('confirmed offline import uses only loaded local state and local update waits', async () => {
@@ -600,7 +559,7 @@ describe('share import orchestration', () => {
     );
   });
 
-  test('synchronizes the document before recording the committed receipt', async () => {
+  test('persists local content before committing without waiting for its upload', async () => {
     const harness = makeImportHarness();
 
     await expect(
@@ -611,9 +570,89 @@ describe('share import orchestration', () => {
     expect(harness.events.indexOf('updated:document-id')).toBeLessThan(
       committedReceipt
     );
-    expect(harness.events.indexOf('synced:document-id')).toBeLessThan(
-      committedReceipt
+    expect(harness.events).not.toContain('synced:document-id');
+  });
+
+  test('finishes the committed receipt locally before resolving save', async () => {
+    const harness = makeImportHarness();
+    const persisted = deferred();
+    harness.engine.waitForUpdated.mockImplementation(async id => {
+      if (
+        id === 'db$docProperties' &&
+        harness.events.includes('receipt:committed')
+      ) {
+        await persisted.promise;
+      }
+    });
+    let finished = false;
+    const saving = harness.service
+      .importShareToWorkspace(harness.metadata, input(), { allowOffline: true })
+      .then(result => {
+        finished = true;
+        return result;
+      });
+    await vi.waitFor(() =>
+      expect(harness.events).toContain('receipt:committed')
     );
+    expect(finished).toBe(false);
+    persisted.resolve();
+    await expect(saving).resolves.toEqual({
+      status: 'imported',
+      docId: 'document-id',
+    });
+  });
+
+  test.each(['collection', 'tag'] as const)(
+    'commits content when its selected %s disappears during the write',
+    async kind => {
+      const harness = makeImportHarness();
+      Object.assign(harness.collectionService.collectionMetas$, {
+        value: [{ id: 'collection' }],
+      });
+      Object.assign(harness.tagService.tagList.tags$, {
+        value: [{ id: 'tag' }],
+      });
+      harness.engine.waitForUpdated.mockImplementation(async id => {
+        if (id === 'document-id') {
+          harness.collectionService.collectionMetas$.value = [];
+          harness.tagService.tagList.tags$.value = [];
+        }
+      });
+      const result = await harness.service.importShareToWorkspace(
+        harness.metadata,
+        {
+          ...input(),
+          tagIds: kind === 'tag' ? ['tag'] : [],
+          collectionId: kind === 'collection' ? 'collection' : undefined,
+        },
+        { allowOffline: true }
+      );
+      expect(result).toEqual({
+        status: 'imported',
+        docId: 'document-id',
+        warning: 'destination-not-found',
+      });
+      expect(harness.events).toContain('receipt:committed');
+      expect(
+        harness.collectionService.addDocToCollection
+      ).not.toHaveBeenCalled();
+    }
+  );
+
+  test('requires explicit offline confirmation when initial sync is unavailable, before writing', async () => {
+    const harness = makeImportHarness();
+    harness.engine.waitForSynced.mockRejectedValue(
+      new DOMException('Offline', 'AbortError')
+    );
+    await expect(
+      harness.service.importShareToWorkspace(harness.metadata, input())
+    ).resolves.toEqual({ status: 'offline-confirmation-required' });
+    expect(harness.engine.waitForSynced).toHaveBeenCalledWith(
+      'db$docProperties',
+      expect.any(AbortSignal)
+    );
+    expect(harness.docs.createDoc).not.toHaveBeenCalled();
+    expect(harness.events).not.toContain('receipt:preparing');
   });
 
   test('synchronizes existing content before recovering stable blocks', async () => {
@@ -688,204 +727,6 @@ describe('share import orchestration', () => {
     );
   });
 
-  test.each([
-    [
-      'callout',
-      (ids: ReturnType<typeof shareImportBlockIds>) => ids.transcript,
-    ],
-    [
-      'heading',
-      (ids: ReturnType<typeof shareImportBlockIds>) => ids.transcriptHeading,
-    ],
-    [
-      'chapter',
-      (ids: ReturnType<typeof shareImportBlockIds>) => ids.transcriptChapter(0),
-    ],
-    [
-      'segment',
-      (ids: ReturnType<typeof shareImportBlockIds>) => ids.transcriptSegment(0),
-    ],
-  ])(
-    'repairs a rich transcript after failure immediately following the %s write',
-    async (_name, failedId) => {
-      const ids = shareImportBlockIds('attempt-id');
-      const targetId = failedId(ids);
-      const harness = makeImportHarness({ failAfterBlockId: targetId });
-
-      await expect(
-        harness.service.importShareToWorkspace(harness.metadata, richInput(), {
-          allowOffline: true,
-        })
-      ).rejects.toThrow(`Injected failure after ${targetId}`);
-      const existing = harness.blocks.get(targetId);
-      expect(existing).toBeTruthy();
-      existing!.props.userEditedMarker = 'preserve-me';
-
-      await expect(
-        harness.service.importShareToWorkspace(harness.metadata, richInput(), {
-          allowOffline: true,
-        })
-      ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
-
-      expect(harness.blocks.get(targetId)?.props.userEditedMarker).toBe(
-        'preserve-me'
-      );
-      expect(harness.blocks.get(ids.transcript)).toMatchObject({
-        flavour: 'affine:callout',
-        parent: { id: ids.note },
-      });
-      expect(harness.blocks.get(ids.transcriptHeading)?.parent?.id).toBe(
-        ids.transcript
-      );
-      expect(harness.blocks.get(ids.transcriptChapter(0))?.parent?.id).toBe(
-        ids.transcript
-      );
-      expect(harness.blocks.get(ids.transcriptSegment(0))?.parent?.id).toBe(
-        ids.transcript
-      );
-      expect(
-        harness.events.filter(event => event.endsWith(`:${targetId}`))
-      ).toHaveLength(1);
-    }
-  );
-
-  test('preserves unrelated siblings while repairing deterministic share order', async () => {
-    const ids = shareImportBlockIds('attempt-id');
-    const harness = makeImportHarness({
-      failAfterBlockId: ids.transcriptSegment(0),
-    });
-
-    await expect(
-      harness.service.importShareToWorkspace(harness.metadata, richInput(), {
-        allowOffline: true,
-      })
-    ).rejects.toThrow(`Injected failure after ${ids.transcriptSegment(0)}`);
-    harness.addBlock(
-      'affine:paragraph',
-      { id: 'user-block', userEditedMarker: 'preserve-me' },
-      ids.note,
-      2
-    );
-    harness.removeBlock(ids.metadata);
-
-    await expect(
-      harness.service.importShareToWorkspace(harness.metadata, richInput(), {
-        allowOffline: true,
-      })
-    ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
-
-    const childIds =
-      harness.blocks.get(ids.note)?.children.map(child => child.id) ?? [];
-    expect(childIds.filter(id => id.startsWith('share-attempt-id-'))).toEqual([
-      ids.bookmark,
-      ids.metadata,
-      ids.selectedText,
-      ids.transcript,
-    ]);
-    expect(childIds).toContain('user-block');
-    expect(harness.blocks.get('user-block')?.props.userEditedMarker).toBe(
-      'preserve-me'
-    );
-  });
-
-  test.each([
-    [
-      'root metadata',
-      (ids: ReturnType<typeof shareImportBlockIds>) => ids.metadata,
-    ],
-    [
-      'transcript heading',
-      (ids: ReturnType<typeof shareImportBlockIds>) => ids.transcriptHeading,
-    ],
-    [
-      'transcript chapter',
-      (ids: ReturnType<typeof shareImportBlockIds>) => ids.transcriptChapter(0),
-    ],
-  ])(
-    'repairs a missing %s at its deterministic sibling position',
-    async (_name, missingId) => {
-      const ids = shareImportBlockIds('attempt-id');
-      const harness = makeImportHarness({
-        failAfterBlockId: ids.transcriptSegment(0),
-      });
-
-      await expect(
-        harness.service.importShareToWorkspace(harness.metadata, richInput(), {
-          allowOffline: true,
-        })
-      ).rejects.toThrow(`Injected failure after ${ids.transcriptSegment(0)}`);
-      harness.removeBlock(missingId(ids));
-
-      await expect(
-        harness.service.importShareToWorkspace(harness.metadata, richInput(), {
-          allowOffline: true,
-        })
-      ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
-
-      expect(
-        harness.blocks.get(ids.note)?.children.map(child => child.id)
-      ).toEqual([ids.bookmark, ids.metadata, ids.selectedText, ids.transcript]);
-      expect(
-        harness.blocks.get(ids.transcript)?.children.map(child => child.id)
-      ).toEqual([
-        ids.transcriptHeading,
-        ids.transcriptChapter(0),
-        ids.transcriptSegment(0),
-      ]);
-    }
-  );
-
-  test.each([
-    ['wrong callout flavour', 'affine:paragraph', 'note'],
-    ['wrong callout parent', 'affine:callout', 'page'],
-    ['wrong heading flavour', 'affine:list', 'transcript'],
-    ['wrong heading parent', 'affine:paragraph', 'note'],
-  ])(
-    'rejects a rich stable-id collision with %s before adding missing leaves',
-    async (_name, flavour, parentKind) => {
-      const ids = shareImportBlockIds('attempt-id');
-      const isHeading = _name.includes('heading');
-      const id = isHeading ? ids.transcriptHeading : ids.transcript;
-      const parentId =
-        parentKind === 'page'
-          ? ids.page
-          : parentKind === 'transcript'
-            ? ids.transcript
-            : ids.note;
-      const harness = makeImportHarness({
-        recordExists: true,
-        receipt: serializeShareImportReceipt(
-          createShareImportReceipt({ attemptId: 'attempt-id' })
-        ),
-        blocks: [
-          { id: ids.page, flavour: 'affine:page' },
-          { id: ids.surface, flavour: 'affine:surface', parentId: ids.page },
-          { id: ids.note, flavour: 'affine:note', parentId: ids.page },
-          ...(isHeading
-            ? [
-                {
-                  id: ids.transcript,
-                  flavour: 'affine:callout',
-                  parentId: ids.note,
-                },
-              ]
-            : []),
-          { id, flavour, parentId },
-        ],
-      });
-
-      await expect(
-        harness.service.importShareToWorkspace(harness.metadata, richInput(), {
-          allowOffline: true,
-        })
-      ).resolves.toEqual({ status: 'import-conflict' });
-      expect(harness.events.filter(event => event.startsWith('add:'))).toEqual(
-        []
-      );
-      expect(harness.events).not.toContain('receipt:committed');
-    }
-  );
-
   test('rejects nonmatching skeletons before block or blob writes', async () => {
     const harness = makeImportHarness({
       recordExists: true,
@@ -953,7 +794,8 @@ describe('share import orchestration', () => {
         name: 'report.pdf',
         type: 'application/pdf',
         size: file.size,
-        embed: false,
+        embed: true,
+        style: 'pdf',
       },
     });
     expect(
@@ -996,10 +838,11 @@ describe('share import orchestration', () => {
   );
 
   test('rejects an attachment before creating a receipt or document', async () => {
-    const harness = makeImportHarness({ maxFileSize: 4 });
+    const harness = makeImportHarness();
     const file = new File(['%PDF-1.7\ncontent'], 'report.pdf', {
       type: 'application/pdf',
     });
+    Object.defineProperty(file, 'size', { value: 64 * 1024 * 1024 + 1 });
 
     await expect(
       harness.service.importShareToWorkspace(

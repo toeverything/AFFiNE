@@ -1272,7 +1272,7 @@ jobs:
         run: cargo nextest run -p affine_server_native --release --no-fail-fast --test-threads=1
 
       - name: Run native storage cleanup integration tests
-        run: cargo test -p affine_server_native --release share_preview_blob_cleanup_ -- --ignored --nocapture
+        run: cargo test -p affine_server_native --release blob_cleanup_projection_ -- --ignored --nocapture
 
   copilot-test-filter:
     name: Copilot test filter

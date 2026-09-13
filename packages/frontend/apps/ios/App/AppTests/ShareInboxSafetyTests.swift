@@ -2,45 +2,6 @@ import XCTest
 import UIKit
 import UniformTypeIdentifiers
 
-private final class SharePreviewURLProtocol: URLProtocol {
-  static var onStart: ((SharePreviewURLProtocol, URLRequest) -> Void)?
-  static var onStop: (() -> Void)?
-
-  override class func canInit(with request: URLRequest) -> Bool { true }
-  override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-  override func startLoading() { Self.onStart?(self, request) }
-  override func stopLoading() { Self.onStop?() }
-}
-
-private func sharePreviewRequestBody(_ request: URLRequest) -> Data? {
-  if let body = request.httpBody { return body }
-  guard let stream = request.httpBodyStream else { return nil }
-  stream.open()
-  defer { stream.close() }
-  var data = Data()
-  var buffer = [UInt8](repeating: 0, count: 4_096)
-  while stream.hasBytesAvailable {
-    let count = stream.read(&buffer, maxLength: buffer.count)
-    guard count >= 0 else { return nil }
-    if count == 0 { break }
-    data.append(buffer, count: count)
-  }
-  return data
-}
-
-private func sharePreviewPNGData(width: Int = 1, height: Int = 1) -> Data {
-  let format = UIGraphicsImageRendererFormat.default()
-  format.scale = 1
-  let renderer = UIGraphicsImageRenderer(
-    size: CGSize(width: width, height: height),
-    format: format
-  )
-  return renderer.pngData { context in
-    UIColor.red.setFill()
-    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-  }
-}
-
 final class ShareInboxSafetyTests: XCTestCase {
   private func makeStore() throws -> (store: ShareInboxStore, containerURL: URL) {
     let containerURL = FileManager.default.temporaryDirectory
@@ -68,50 +29,39 @@ final class ShareInboxSafetyTests: XCTestCase {
     )
   }
 
-  private func v2Manifest(
-    id: String,
-    documentId: String,
-    importAttemptId: String
-  ) -> Data {
-    Data(
-      """
-      {
-        "schemaVersion":2,
-        "importAttemptId":"\(importAttemptId)",
-        "id":"\(id)",
-        "documentId":"\(documentId)",
-        "createdAt":"2026-08-27T00:00:00Z",
-        "title":"Original",
-        "content":{"kind":"url","url":"https://example.com/original"},
-        "target":{
-          "workspaceId":"workspace-id",
-          "workspaceFlavour":"local",
-          "tagIds":["tag-a","tag-b"],
-          "collectionId":"collection-id"
-        },
-        "previewText":"Original preview",
-        "attachments":[],
-        "lastError":"retry-me"
-      }
-      """.utf8
-    )
-  }
-
-  private func makeImageData(size: Int = 256 * 1024) -> Data {
-    var data = Data([0xFF, 0xD8, 0xFF, 0xE0])
-    data.append(Data(repeating: 0x42, count: size - data.count))
+  private func makeImageData(size: Int? = nil) -> Data {
+    let image = UIGraphicsImageRenderer(size: CGSize(width: 2, height: 2)).image { context in
+      UIColor.red.setFill()
+      context.cgContext.fill(CGRect(x: 0, y: 0, width: 2, height: 2))
+    }
+    var data = image.jpegData(compressionQuality: 1)!
+    if let size {
+      data.append(Data(repeating: 0, count: max(0, size - data.count)))
+    }
     return data
   }
 
-  private func makePNGData(size: Int = 64 * 1024) -> Data {
-    var data = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
-    data.append(Data(repeating: 0x50, count: size - data.count))
+  private func makePNGData(size: Int? = nil) -> Data {
+    let image = UIGraphicsImageRenderer(size: CGSize(width: 2, height: 2)).image { context in
+      UIColor.red.setFill()
+      context.cgContext.fill(CGRect(x: 0, y: 0, width: 2, height: 2))
+    }
+    var data = image.pngData()!
+    if let size {
+      data.append(Data(repeating: 0, count: max(0, size - data.count)))
+    }
     return data
   }
 
   private func makePDFData(size: Int = 64 * 1024) -> Data {
-    var data = Data("%PDF-1.7\n".utf8)
-    data.append(Data(repeating: 0x20, count: size - data.count))
+    let renderer = UIGraphicsPDFRenderer(
+      bounds: CGRect(x: 0, y: 0, width: 320, height: 480)
+    )
+    var data = renderer.pdfData { context in
+      context.beginPage()
+      "AFFiNE PDF share preview".draw(at: CGPoint(x: 24, y: 24), withAttributes: nil)
+    }
+    data.append(Data(repeating: 0x20, count: max(0, size - data.count)))
     return data
   }
 
@@ -160,458 +110,6 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertLessThanOrEqual(file.thumbnailData.count, ShareInboxConstants.maxThumbnailBytes)
   }
 
-  func testRichPreviewDecodesProviderMetadataAndFormatsTranscript() throws {
-    let data = Data(
-      #"""
-      {
-        "url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "images":["https://app.affine.pro/api/worker/image-proxy?url=thumbnail"],
-        "favicons":["https://app.affine.pro/api/worker/image-proxy?url=favicon"],
-        "provider":"youtube",
-        "siteName":"YouTube",
-        "title":"Rick Astley - Never Gonna Give You Up",
-        "description":"The official video",
-        "author":{"name":"Rick Astley"},
-        "durationSeconds":214,
-        "transcript":{"language":"en","segments":[
-          {"text":"  We're no strangers\n to love  ","startSeconds":18.64},
-          {"text":"You know the rules and so do I","startSeconds":22.64}
-        ]}
-      }
-      """#.utf8
-    )
-
-    let preview = try JSONDecoder().decode(ShareLinkPreview.self, from: data)
-
-    XCTAssertEqual(preview.provider, "youtube")
-    XCTAssertEqual(preview.author?.name, "Rick Astley")
-    XCTAssertEqual(preview.formattedDuration, "3:34")
-    XCTAssertEqual(
-      preview.transcript?.previewText,
-      "We're no strangers to love You know the rules and so do I"
-    )
-    XCTAssertNotNil(preview.persistable())
-  }
-
-  func testPersistablePreviewTruncatesTranscriptToTheEncodedLimit() throws {
-    let preview = ShareLinkPreview(
-      url: "https://www.youtube.com/watch?v=video-id",
-      title: "Video",
-      siteName: "YouTube",
-      description: "Description",
-      images: ["https://app.affine.pro/api/worker/image-proxy?url=thumbnail"],
-      favicons: ["https://app.affine.pro/api/worker/image-proxy?url=favicon"],
-      mediaType: "video.movie",
-      provider: "youtube",
-      author: .init(name: "Author", handle: nil, avatar: nil),
-      publishedAt: nil,
-      durationSeconds: 214,
-      transcript: .init(
-        language: "zh-CN",
-        segments: (0..<100).map { index in
-          .init(
-            text: "\(index) " + String(repeating: "中", count: 4_000),
-            startSeconds: Double(index),
-            durationSeconds: 1,
-            speaker: nil
-          )
-        },
-        chapters: nil,
-        truncated: nil
-      )
-    )
-
-    let persisted = try XCTUnwrap(preview.persistable())
-    let encoder = JSONEncoder()
-    encoder.outputFormatting = [.sortedKeys]
-    let encoded = try encoder.encode(persisted)
-
-    XCTAssertLessThanOrEqual(encoded.count, ShareLinkPreview.maxPersistedBytes)
-    XCTAssertLessThan(persisted.transcript?.segments.count ?? 0, 100)
-    XCTAssertEqual(persisted.transcript?.truncated, true)
-  }
-
-  func testPersistablePreviewRejectsInvalidSourceAndFiltersNonProxyMedia() throws {
-    let invalidSource = ShareLinkPreview(
-      url: "https://user@example.com/private",
-      title: "Private"
-    )
-    XCTAssertNil(invalidSource.persistable())
-
-    let preview = ShareLinkPreview(
-      url: "https://example.com/article",
-      title: String(repeating: "👨‍👩‍👧", count: 600),
-      images: [
-        "https://example.com/direct.png",
-        "https://app.affine.pro/not-image-proxy",
-        "https://app.affine.pro/api/worker/image-proxy?url=allowed",
-      ],
-      favicons: ["file:///private/favicon.png"]
-    )
-    let persisted = try XCTUnwrap(preview.persistable())
-
-    XCTAssertLessThanOrEqual(persisted.title?.utf8.count ?? 0, 4_096)
-    XCTAssertEqual(
-      persisted.images,
-      ["https://app.affine.pro/api/worker/image-proxy?url=allowed"]
-    )
-    XCTAssertEqual(persisted.favicons, [])
-  }
-
-  func testPersistablePreviewTruncatesUnicodeAtAnExactUTF8Boundary() throws {
-    let preview = ShareLinkPreview(
-      url: "https://example.com/article",
-      title: String(repeating: "中", count: 1_364) + "abcdz"
-    )
-
-    let persisted = try XCTUnwrap(preview.persistable())
-
-    XCTAssertEqual(persisted.title?.utf8.count, 4_096)
-    XCTAssertEqual(persisted.title?.suffix(4), "abcd")
-  }
-
-  func testPreviewClientSendsOfficialRequestAndDecodesBoundedResponse() async throws {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
-    let requested = expectation(description: "preview requested")
-    SharePreviewURLProtocol.onStart = { protocolInstance, request in
-      XCTAssertEqual(request.url, ShareInboxConstants.officialLinkPreviewURL)
-      XCTAssertEqual(request.httpMethod, "POST")
-      XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
-      XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent"), "AFFiNE/0.27.0")
-      XCTAssertEqual(request.value(forHTTPHeaderField: "x-affine-version"), "0.27.0")
-      let bodyData = try? XCTUnwrap(sharePreviewRequestBody(request))
-      let body = bodyData.flatMap {
-        try? JSONSerialization.jsonObject(with: $0) as? [String: Any]
-      }
-      XCTAssertEqual(body?["url"] as? String, "https://www.youtube.com/watch?v=video-id")
-      XCTAssertEqual(body?["include"] as? [String], ["transcript"])
-
-      let response = HTTPURLResponse(
-        url: request.url!,
-        statusCode: 200,
-        httpVersion: nil,
-        headerFields: ["Content-Type": "application/json"]
-      )!
-      let data = Data(
-        #"{"url":"https://www.youtube.com/watch?v=video-id","provider":"youtube","title":"Video"}"#.utf8
-      )
-      protocolInstance.client?.urlProtocol(
-        protocolInstance,
-        didReceive: response,
-        cacheStoragePolicy: .notAllowed
-      )
-      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: data)
-      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
-      requested.fulfill()
-    }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    let preview = try await client.fetch(url: "https://www.youtube.com/watch?v=video-id")
-
-    XCTAssertEqual(preview.provider, "youtube")
-    XCTAssertEqual(preview.title, "Video")
-    await fulfillment(of: [requested], timeout: 1)
-  }
-
-  func testPreviewClientCancelsFalseSmallContentLengthAtTheByteLimit() async throws {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
-    let stopped = expectation(description: "oversized request stopped")
-    SharePreviewURLProtocol.onStart = { protocolInstance, request in
-      let response = HTTPURLResponse(
-        url: request.url!,
-        statusCode: 200,
-        httpVersion: nil,
-        headerFields: [
-          "Content-Type": "application/json",
-          "Content-Length": "1",
-        ]
-      )!
-      protocolInstance.client?.urlProtocol(
-        protocolInstance,
-        didReceive: response,
-        cacheStoragePolicy: .notAllowed
-      )
-      protocolInstance.client?.urlProtocol(
-        protocolInstance,
-        didLoad: Data(repeating: 0x20, count: ShareLinkPreview.maxResponseBytes + 1)
-      )
-    }
-    SharePreviewURLProtocol.onStop = { stopped.fulfill() }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    do {
-      _ = try await client.fetch(url: "https://example.com/large")
-      XCTFail("Oversized response unexpectedly decoded")
-    } catch {
-      XCTAssertEqual((error as? URLError)?.code, .dataLengthExceedsMaximum)
-    }
-    await fulfillment(of: [stopped], timeout: 1)
-  }
-
-  func testPreviewClientRejectsJSONLikeButInvalidMIMEType() async {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
-    SharePreviewURLProtocol.onStart = { protocolInstance, request in
-      let response = HTTPURLResponse(
-        url: request.url!,
-        statusCode: 200,
-        httpVersion: nil,
-        headerFields: ["Content-Type": "application/jsonp"]
-      )!
-      let data = Data(#"{"url":"https://example.com/article"}"#.utf8)
-      protocolInstance.client?.urlProtocol(
-        protocolInstance,
-        didReceive: response,
-        cacheStoragePolicy: .notAllowed
-      )
-      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: data)
-      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
-    }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    do {
-      _ = try await client.fetch(url: "https://example.com/article")
-      XCTFail("Invalid JSON MIME unexpectedly accepted")
-    } catch {
-      XCTAssertEqual((error as? URLError)?.code, .badServerResponse)
-    }
-  }
-
-  func testPreviewClientPropagatesTaskCancellation() async throws {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
-    let started = expectation(description: "preview started")
-    let stopped = expectation(description: "preview stopped")
-    SharePreviewURLProtocol.onStart = { _, _ in started.fulfill() }
-    SharePreviewURLProtocol.onStop = { stopped.fulfill() }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    let task = Task {
-      try await client.fetch(url: "https://example.com/cancel")
-    }
-    await fulfillment(of: [started], timeout: 1)
-    task.cancel()
-    do {
-      _ = try await task.value
-      XCTFail("Cancelled request unexpectedly completed")
-    } catch {
-      let code = (error as? URLError)?.code
-      XCTAssertTrue(error is CancellationError || code == .cancelled)
-    }
-    await fulfillment(of: [stopped], timeout: 1)
-  }
-
-  func testPreviewClientDoesNotStartAnAlreadyCancelledRequest() async {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
-    SharePreviewURLProtocol.onStart = { _, _ in
-      XCTFail("An already cancelled request should not start loading")
-    }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    let task = Task {
-      while !Task.isCancelled {
-        await Task.yield()
-      }
-      return try await client.fetch(url: "https://example.com/cancelled-before-fetch")
-    }
-    task.cancel()
-
-    do {
-      _ = try await task.value
-      XCTFail("Already cancelled request unexpectedly completed")
-    } catch {
-      let code = (error as? URLError)?.code
-      XCTAssertTrue(error is CancellationError || code == .cancelled)
-    }
-  }
-
-  func testPreviewClientLoadsBoundedImageFromOfficialProxy() async throws {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
-    let imageURL = "https://app.affine.pro/api/worker/image-proxy?url=thumbnail"
-    SharePreviewURLProtocol.onStart = { protocolInstance, request in
-      XCTAssertEqual(request.url?.absoluteString, imageURL)
-      let data = sharePreviewPNGData(width: 2, height: 3)
-      let response = HTTPURLResponse(
-        url: request.url!,
-        statusCode: 200,
-        httpVersion: nil,
-        headerFields: [
-          "Content-Type": "image/png",
-          "Content-Length": String(data.count),
-        ]
-      )!
-      protocolInstance.client?.urlProtocol(
-        protocolInstance,
-        didReceive: response,
-        cacheStoragePolicy: .notAllowed
-      )
-      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: data)
-      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
-    }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    let image = try await client.fetchImage(url: imageURL)
-
-    XCTAssertEqual(image.size.width, 2)
-    XCTAssertEqual(image.size.height, 3)
-  }
-
-  func testPreviewClientRejectsImageOutsideOfficialProxyWithoutRequestingIt() async {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
-    SharePreviewURLProtocol.onStart = { _, _ in
-      XCTFail("Non-proxy image URL should not reach the network")
-    }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    do {
-      _ = try await client.fetchImage(url: "https://example.com/thumbnail.png")
-      XCTFail("Non-proxy image URL unexpectedly loaded")
-    } catch {
-      XCTAssertEqual((error as? URLError)?.code, .badURL)
-    }
-  }
-
-  func testPreviewClientRejectsNonImageMediaResponse() async {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
-    let imageURL = "https://app.affine.pro/api/worker/image-proxy?url=thumbnail"
-    SharePreviewURLProtocol.onStart = { protocolInstance, request in
-      let response = HTTPURLResponse(
-        url: request.url!,
-        statusCode: 200,
-        httpVersion: nil,
-        headerFields: ["Content-Type": "text/html"]
-      )!
-      protocolInstance.client?.urlProtocol(
-        protocolInstance,
-        didReceive: response,
-        cacheStoragePolicy: .notAllowed
-      )
-      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: Data("not an image".utf8))
-      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
-    }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    do {
-      _ = try await client.fetchImage(url: imageURL)
-      XCTFail("Non-image response unexpectedly decoded")
-    } catch {
-      XCTAssertEqual((error as? URLError)?.code, .cannotDecodeContentData)
-    }
-  }
-
-  func testPreviewClientCancelsFalseSmallMediaResponseAtTheByteLimit() async {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
-    let imageURL = "https://app.affine.pro/api/worker/image-proxy?url=thumbnail"
-    let stopped = expectation(description: "oversized media request stopped")
-    SharePreviewURLProtocol.onStart = { protocolInstance, request in
-      let response = HTTPURLResponse(
-        url: request.url!,
-        statusCode: 200,
-        httpVersion: nil,
-        headerFields: [
-          "Content-Type": "image/png",
-          "Content-Length": "1",
-        ]
-      )!
-      protocolInstance.client?.urlProtocol(
-        protocolInstance,
-        didReceive: response,
-        cacheStoragePolicy: .notAllowed
-      )
-      protocolInstance.client?.urlProtocol(
-        protocolInstance,
-        didLoad: Data(repeating: 0x20, count: ShareLinkPreview.maxMediaBytes + 1)
-      )
-    }
-    SharePreviewURLProtocol.onStop = { stopped.fulfill() }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    do {
-      _ = try await client.fetchImage(url: imageURL)
-      XCTFail("Oversized media response unexpectedly decoded")
-    } catch {
-      XCTAssertEqual((error as? URLError)?.code, .dataLengthExceedsMaximum)
-    }
-    await fulfillment(of: [stopped], timeout: 1)
-  }
-
-  func testPreviewClientRejectsImageDimensionAboveLimit() async {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [SharePreviewURLProtocol.self]
-    let client = ShareLinkPreviewClient(configuration: configuration, appVersion: "0.27.0")
-    let imageURL = "https://app.affine.pro/api/worker/image-proxy?url=thumbnail"
-    SharePreviewURLProtocol.onStart = { protocolInstance, request in
-      let data = sharePreviewPNGData(width: ShareLinkPreview.maxMediaDimension + 1)
-      let response = HTTPURLResponse(
-        url: request.url!,
-        statusCode: 200,
-        httpVersion: nil,
-        headerFields: ["Content-Type": "image/png"]
-      )!
-      protocolInstance.client?.urlProtocol(
-        protocolInstance,
-        didReceive: response,
-        cacheStoragePolicy: .notAllowed
-      )
-      protocolInstance.client?.urlProtocol(protocolInstance, didLoad: data)
-      protocolInstance.client?.urlProtocolDidFinishLoading(protocolInstance)
-    }
-    defer {
-      SharePreviewURLProtocol.onStart = nil
-      SharePreviewURLProtocol.onStop = nil
-    }
-
-    do {
-      _ = try await client.fetchImage(url: imageURL)
-      XCTFail("Oversized image dimensions unexpectedly decoded")
-    } catch {
-      XCTAssertEqual((error as? URLError)?.code, .cannotDecodeContentData)
-    }
-  }
-
   func testBuilderStagesAValidPDFBeforeTheProviderDisappears() throws {
     let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
     let expected = try Data(contentsOf: source)
@@ -626,6 +124,7 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertEqual(file.mimeType, "application/pdf")
     XCTAssertEqual(file.size, expected.count)
     XCTAssertEqual(try Data(contentsOf: file.ownedStagingURL), expected)
+    XCTAssertFalse(file.thumbnailData.isEmpty)
     XCTAssertLessThanOrEqual(file.thumbnailData.count, ShareInboxConstants.maxThumbnailBytes)
   }
 
@@ -922,6 +421,7 @@ final class ShareInboxSafetyTests: XCTestCase {
 
   func testBuilderDoesNotLoadBinaryRepresentationsForARemotePDFURL() async throws {
     let pdf = try makeProviderFile(data: makePDFData(), name: "report.pdf")
+    let png = makePNGData()
     let provider = NSItemProvider(object: URL(string: "https://example.com/report.pdf")! as NSURL)
     var didLoadImage = false
     var didLoadPDF = false
@@ -930,7 +430,7 @@ final class ShareInboxSafetyTests: XCTestCase {
       visibility: .all
     ) { completion in
       didLoadImage = true
-      completion(self.makePNGData(), nil)
+      completion(png, nil)
       return nil
     }
     provider.registerFileRepresentation(
@@ -1479,6 +979,26 @@ final class ShareInboxSafetyTests: XCTestCase {
   }
 
   @MainActor
+  func testViewModelSavesOriginalURLAndEditedTitle() async throws {
+    let (store, _) = try makeStore()
+    let url = "https://example.com/article?source=share"
+    let viewModel = ShareViewModel(store: store, buildPayload: { _ in
+      SharePayloadDraft(title: "Original", content: ShareInboxContent(kind: .url, url: url, text: "Selected text"), previewText: url, file: nil, errorMessage: nil)
+    })
+    await viewModel.load(from: nil)
+    viewModel.updateTitle("My title")
+    let saved = await viewModel.save()
+    XCTAssertTrue(saved)
+    let item = try XCTUnwrap(store.pendingItems().compactMap { entry -> ShareInboxItem? in
+      guard case let .ready(item) = entry else { return nil }
+      return item
+    }.first)
+    XCTAssertEqual(item.title, "My title")
+    XCTAssertEqual(item.content.url, url)
+    XCTAssertEqual(item.content.text, "Selected text")
+  }
+
+  @MainActor
   func testViewModelKeepsOwnedFileUntilDelayedSaveThenCleansItUp() async throws {
     let (store, _) = try makeStore()
     let source = try makeProviderFile()
@@ -1633,296 +1153,7 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertFalse(FileManager.default.fileExists(atPath: staged.ownedStagingURL.path))
   }
 
-  @MainActor
-  func testViewModelLoadsRichPreviewButKeepsOriginalTitleWhenSaving() async throws {
-    let (store, _) = try makeStore()
-    let requested = expectation(description: "rich preview requested")
-    let preview = ShareLinkPreview(
-      url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      title: "Remote rich title",
-      siteName: "YouTube",
-      description: "Remote description",
-      provider: "youtube",
-      author: .init(name: "Rick Astley"),
-      durationSeconds: 214
-    )
-    let viewModel = ShareViewModel(
-      store: store,
-      buildPayload: { _ in
-        SharePayloadDraft(
-          title: "Original shared title",
-          content: ShareInboxContent(
-            kind: .url,
-            url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            text: nil
-          ),
-          previewText: "Original preview",
-          file: nil,
-          errorMessage: nil
-        )
-      },
-      fetchLinkPreview: { _ in
-        requested.fulfill()
-        return preview
-      },
-      fetchRemoteImage: { _ in nil }
-    )
-
-    await viewModel.load(from: nil)
-    await fulfillment(of: [requested], timeout: 1)
-    await waitForMainActorCondition {
-      viewModel.linkPreviewState == .loaded(preview)
-    }
-
-    XCTAssertEqual(viewModel.displayTitle, "Remote rich title")
-    XCTAssertNil(viewModel.remoteMediaImage)
-    let didSave = await viewModel.save()
-    XCTAssertTrue(didSave)
-    guard case let .ready(saved) = try XCTUnwrap(store.pendingItems().first) else {
-      return XCTFail("Expected saved rich share")
-    }
-    XCTAssertEqual(saved.title, "Original shared title")
-    XCTAssertEqual(saved.preview, preview)
-  }
-
-  @MainActor
-  func testViewModelPreviewFailureFallsBackAndStillSaves() async throws {
-    let (store, _) = try makeStore()
-    let viewModel = ShareViewModel(
-      store: store,
-      buildPayload: { _ in
-        SharePayloadDraft(
-          title: "Fallback title",
-          content: ShareInboxContent(kind: .url, url: "https://example.com/article", text: nil),
-          previewText: "Fallback preview",
-          file: nil,
-          errorMessage: nil
-        )
-      },
-      fetchLinkPreview: { _ in throw TestPreviewError.failed },
-      fetchRemoteImage: { _ in nil }
-    )
-
-    await viewModel.load(from: nil)
-    await waitForMainActorCondition { viewModel.linkPreviewState == .failed }
-
-    XCTAssertTrue(viewModel.canSave)
-    let didSave = await viewModel.save()
-    XCTAssertTrue(didSave)
-    guard case let .ready(saved) = try XCTUnwrap(store.pendingItems().first) else {
-      return XCTFail("Expected fallback share")
-    }
-    XCTAssertNil(saved.preview)
-  }
-
-  @MainActor
-  func testViewModelSaveCancelsLoadingPreviewAndFreezesNilSnapshot() async throws {
-    let (store, _) = try makeStore()
-    let started = expectation(description: "preview started")
-    let cancelled = expectation(description: "preview cancelled")
-    let viewModel = ShareViewModel(
-      store: store,
-      buildPayload: { _ in
-        SharePayloadDraft(
-          title: "Save now",
-          content: ShareInboxContent(kind: .url, url: "https://example.com/article", text: nil),
-          previewText: "Fallback",
-          file: nil,
-          errorMessage: nil
-        )
-      },
-      fetchLinkPreview: { _ in
-        started.fulfill()
-        return try await withTaskCancellationHandler {
-          try await Task.sleep(nanoseconds: 60_000_000_000)
-          return ShareLinkPreview(url: "https://example.com/article", title: "Late")
-        } onCancel: {
-          cancelled.fulfill()
-        }
-      },
-      fetchRemoteImage: { _ in nil }
-    )
-
-    await viewModel.load(from: nil)
-    await fulfillment(of: [started], timeout: 1)
-    XCTAssertEqual(viewModel.linkPreviewState, .loading)
-
-    let didSave = await viewModel.save()
-    XCTAssertTrue(didSave)
-    await fulfillment(of: [cancelled], timeout: 1)
-    guard case let .ready(saved) = try XCTUnwrap(store.pendingItems().first) else {
-      return XCTFail("Expected saved fallback snapshot")
-    }
-    XCTAssertNil(saved.preview)
-  }
-
-  @MainActor
-  func testViewModelSaveFailureLeavesCancelledPreviewInFallbackState() async throws {
-    let (_, containerURL) = try makeStore()
-    let store = ShareInboxStore(
-      fileManager: .default,
-      containerURL: containerURL,
-      writeData: { _, _, _ in throw TestWriteError.writeFailed }
-    )
-    let started = expectation(description: "preview started")
-    let cancelled = expectation(description: "preview cancelled")
-    let viewModel = ShareViewModel(
-      store: store,
-      buildPayload: { _ in
-        SharePayloadDraft(
-          title: "Retry",
-          content: ShareInboxContent(kind: .url, url: "https://example.com/article", text: nil),
-          previewText: "Fallback",
-          file: nil,
-          errorMessage: nil
-        )
-      },
-      fetchLinkPreview: { _ in
-        started.fulfill()
-        return try await withTaskCancellationHandler {
-          try await Task.sleep(nanoseconds: 60_000_000_000)
-          return ShareLinkPreview(url: "https://example.com/article")
-        } onCancel: {
-          cancelled.fulfill()
-        }
-      },
-      fetchRemoteImage: { _ in nil }
-    )
-
-    await viewModel.load(from: nil)
-    await fulfillment(of: [started], timeout: 1)
-    XCTAssertEqual(viewModel.linkPreviewState, .loading)
-
-    let didSave = await viewModel.save()
-
-    XCTAssertFalse(didSave)
-    await fulfillment(of: [cancelled], timeout: 1)
-    XCTAssertEqual(viewModel.linkPreviewState, .failed)
-    XCTAssertTrue(viewModel.canSave)
-  }
-
-  @MainActor
-  func testViewModelIgnoresLatePreviewFromReplacedDraft() async throws {
-    let (store, _) = try makeStore()
-    let gate = PreviewFetchGate()
-    var buildCount = 0
-    let viewModel = ShareViewModel(
-      store: store,
-      buildPayload: { _ in
-        buildCount += 1
-        let suffix = buildCount == 1 ? "first" : "second"
-        return SharePayloadDraft(
-          title: suffix,
-          content: ShareInboxContent(
-            kind: .url,
-            url: "https://example.com/\(suffix)",
-            text: nil
-          ),
-          previewText: suffix,
-          file: nil,
-          errorMessage: nil
-        )
-      },
-      fetchLinkPreview: { url in try await gate.next(url: url) },
-      fetchRemoteImage: { _ in nil }
-    )
-
-    await viewModel.load(from: nil)
-    await gate.waitForPending(count: 1)
-    await viewModel.load(from: nil)
-    await gate.waitForPending(count: 2)
-    let second = ShareLinkPreview(url: "https://example.com/second", title: "Second rich")
-    await gate.resume(at: 1, with: .success(second))
-    await waitForMainActorCondition { viewModel.linkPreviewState == .loaded(second) }
-    let first = ShareLinkPreview(url: "https://example.com/first", title: "First rich")
-    await gate.resume(at: 0, with: .success(first))
-    await Task.yield()
-
-    XCTAssertEqual(viewModel.linkPreviewState, .loaded(second))
-    XCTAssertEqual(viewModel.displayTitle, "Second rich")
-  }
-
-  @MainActor
-  func testViewModelDeinitCancelsRichPreviewRequest() async throws {
-    let (store, _) = try makeStore()
-    let started = expectation(description: "preview started")
-    let cancelled = expectation(description: "preview cancelled")
-    var viewModel: ShareViewModel? = ShareViewModel(
-      store: store,
-      buildPayload: { _ in
-        SharePayloadDraft(
-          title: "Shared",
-          content: ShareInboxContent(kind: .url, url: "https://example.com/article", text: nil),
-          previewText: "Shared",
-          file: nil,
-          errorMessage: nil
-        )
-      },
-      fetchLinkPreview: { _ in
-        started.fulfill()
-        return try await withTaskCancellationHandler {
-          try await Task.sleep(nanoseconds: 60_000_000_000)
-          return ShareLinkPreview(url: "https://example.com/article")
-        } onCancel: {
-          cancelled.fulfill()
-        }
-      },
-      fetchRemoteImage: { _ in nil }
-    )
-    weak var weakViewModel = viewModel
-
-    await viewModel?.load(from: nil)
-    await fulfillment(of: [started], timeout: 1)
-    viewModel = nil
-
-    await fulfillment(of: [cancelled], timeout: 1)
-    XCTAssertNil(weakViewModel)
-  }
-
-  @MainActor
-  func testViewModelDeinitCancelsRemoteMediaRequestAfterPreviewLoads() async throws {
-    let (store, _) = try makeStore()
-    let mediaStarted = expectation(description: "media started")
-    let mediaCancelled = expectation(description: "media cancelled")
-    let preview = ShareLinkPreview(
-      url: "https://example.com/article",
-      title: "Rich",
-      images: ["https://app.affine.pro/api/worker/image-proxy?url=thumbnail"]
-    )
-    var viewModel: ShareViewModel? = ShareViewModel(
-      store: store,
-      buildPayload: { _ in
-        SharePayloadDraft(
-          title: "Shared",
-          content: ShareInboxContent(kind: .url, url: "https://example.com/article", text: nil),
-          previewText: "Shared",
-          file: nil,
-          errorMessage: nil
-        )
-      },
-      fetchLinkPreview: { _ in preview },
-      fetchRemoteImage: { url in
-        guard url != nil else { return nil }
-        mediaStarted.fulfill()
-        return await withTaskCancellationHandler {
-          try? await Task.sleep(nanoseconds: 60_000_000_000)
-          return nil
-        } onCancel: {
-          mediaCancelled.fulfill()
-        }
-      }
-    )
-    weak var weakViewModel = viewModel
-
-    await viewModel?.load(from: nil)
-    await fulfillment(of: [mediaStarted], timeout: 1)
-    viewModel = nil
-
-    await fulfillment(of: [mediaCancelled], timeout: 1)
-    XCTAssertNil(weakViewModel)
-  }
-
-  func testNewManifestEncodesVersionThreeAndImportAttemptIDWithoutPreviewRoute() throws {
+  func testNewManifestEncodesFinalVersionAndImportAttemptID() throws {
     let item = ShareInboxItem(
       title: "Shared",
       content: ShareInboxContent(kind: .url, url: "https://example.com", text: nil)
@@ -1933,12 +1164,11 @@ final class ShareInboxSafetyTests: XCTestCase {
       JSONSerialization.jsonObject(with: encoder.encode(item)) as? [String: Any]
     )
 
-    XCTAssertEqual(manifest["schemaVersion"] as? Int, 3)
+    XCTAssertEqual(manifest["schemaVersion"] as? Int, 2)
     XCTAssertFalse((manifest["importAttemptId"] as? String ?? "").isEmpty)
-    XCTAssertNil(manifest["previewRoute"])
   }
 
-  func testStoreMigratesV1ManifestOnceAndAtomicallyPersistsV3BeforeReturningReady() throws {
+  func testStoreMigratesV1ManifestOnceAndAtomicallyPersistsV2BeforeReturningReady() throws {
     let (store, containerURL) = try makeStore()
     XCTAssertTrue(store.ensureDirectories())
     let id = UUID().uuidString
@@ -1952,71 +1182,39 @@ final class ShareInboxSafetyTests: XCTestCase {
     guard case let .ready(migrated) = entries[0] else {
       return XCTFail("Expected the v1 manifest to migrate to a ready entry")
     }
-    XCTAssertEqual(migrated.schemaVersion, 3)
+    XCTAssertEqual(migrated.schemaVersion, 2)
     XCTAssertFalse(migrated.importAttemptId.isEmpty)
-    XCTAssertEqual(migrated.previewRoute, .official)
+    XCTAssertEqual(migrated.content.url, "https://example.com/original?token=value")
 
     let rewritten = try XCTUnwrap(
       JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any]
     )
-    XCTAssertEqual(rewritten["schemaVersion"] as? Int, 3)
+    XCTAssertEqual(rewritten["schemaVersion"] as? Int, 2)
     XCTAssertEqual(rewritten["importAttemptId"] as? String, migrated.importAttemptId)
     XCTAssertNil(rewritten["previewRoute"])
 
     guard case let .ready(reloaded) = try XCTUnwrap(store.pendingItems().first) else {
-      return XCTFail("Expected the rewritten v3 manifest to remain ready")
+      return XCTFail("Expected the rewritten v2 manifest to remain ready")
     }
     XCTAssertEqual(reloaded.importAttemptId, migrated.importAttemptId)
   }
 
-  func testStoreMigratesV2ToV3WithoutChangingAttemptOrDestinationState() throws {
-    let (store, containerURL) = try makeStore()
-    XCTAssertTrue(store.ensureDirectories())
-    let id = UUID().uuidString
-    let documentId = UUID().uuidString
-    let importAttemptId = "attempt-preserved-byte-for-byte"
-    let manifestURL = containerURL
-      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
-      .appendingPathComponent("\(id).json")
-    try v2Manifest(
-      id: id,
-      documentId: documentId,
-      importAttemptId: importAttemptId
-    ).write(to: manifestURL)
-
-    guard case let .ready(migrated) = try XCTUnwrap(store.pendingItems().first) else {
-      return XCTFail("Expected the v2 manifest to migrate")
-    }
-
-    XCTAssertEqual(migrated.schemaVersion, 3)
-    XCTAssertEqual(migrated.importAttemptId, importAttemptId)
-    XCTAssertEqual(migrated.documentId, documentId)
-    XCTAssertEqual(migrated.target?.workspaceId, "workspace-id")
-    XCTAssertEqual(migrated.target?.tagIds, ["tag-a", "tag-b"])
-    XCTAssertEqual(migrated.target?.collectionId, "collection-id")
-    XCTAssertEqual(migrated.lastError, "retry-me")
-    XCTAssertNil(migrated.preview)
-
-    let rewritten = try XCTUnwrap(
-      JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any]
-    )
-    XCTAssertEqual(rewritten["schemaVersion"] as? Int, 3)
-    XCTAssertEqual(rewritten["importAttemptId"] as? String, importAttemptId)
-  }
-
-  func testV2CommittedReceiptIdentitySurvivesV3Reencoding() throws {
+  func testCommittedReceiptIdentitySurvivesV2Reencoding() throws {
     let id = UUID().uuidString
     let documentId = UUID().uuidString
     let importAttemptId = "committed-attempt-id"
     let committedAt = "2026-08-27T01:02:03Z"
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let item = ShareInboxItem(
+      id: id,
+      documentId: documentId,
+      importAttemptId: importAttemptId,
+      title: "Original",
+      content: ShareInboxContent(kind: .url, url: "https://example.com/original", text: nil)
+    )
     var manifest = try XCTUnwrap(
-      JSONSerialization.jsonObject(
-        with: v2Manifest(
-          id: id,
-          documentId: documentId,
-          importAttemptId: importAttemptId
-        )
-      ) as? [String: Any]
+      JSONSerialization.jsonObject(with: encoder.encode(item)) as? [String: Any]
     )
     manifest["result"] = [
       "docId": documentId,
@@ -2024,8 +1222,6 @@ final class ShareInboxSafetyTests: XCTestCase {
     ]
     let decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
-    let encoder = JSONEncoder()
-    encoder.dateEncodingStrategy = .iso8601
 
     let decoded = try decoder.decode(
       ShareInboxItem.self,
@@ -2038,84 +1234,10 @@ final class ShareInboxSafetyTests: XCTestCase {
 
     XCTAssertEqual(decoded.importAttemptId, importAttemptId)
     XCTAssertEqual(decoded.result?.docId, documentId)
-    XCTAssertEqual(reencoded["schemaVersion"] as? Int, 3)
+    XCTAssertEqual(reencoded["schemaVersion"] as? Int, 2)
     XCTAssertEqual(reencoded["importAttemptId"] as? String, importAttemptId)
     XCTAssertEqual(result["docId"] as? String, documentId)
     XCTAssertEqual(result["committedAt"] as? String, committedAt)
-  }
-
-  func testVersionThreeManifestRoundTripsRichPreview() throws {
-    let expectedPreview = ShareLinkPreview(
-      url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      title: "Rick Astley - Never Gonna Give You Up",
-      siteName: "YouTube",
-      description: "The official video",
-      images: ["https://app.affine.pro/api/worker/image-proxy?url=thumbnail"],
-      provider: "youtube",
-      author: .init(name: "Rick Astley"),
-      durationSeconds: 214,
-      transcript: .init(
-        language: "en",
-        segments: [.init(text: "We're no strangers to love", startSeconds: 18.64)]
-      )
-    )
-    let item = ShareInboxItem(
-      title: "Shared",
-      content: ShareInboxContent(
-        kind: .url,
-        url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        text: nil
-      ),
-      preview: expectedPreview
-    )
-    let encoder = JSONEncoder()
-    encoder.dateEncodingStrategy = .iso8601
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .iso8601
-
-    let decoded = try decoder.decode(ShareInboxItem.self, from: encoder.encode(item))
-
-    XCTAssertEqual(decoded.schemaVersion, 3)
-    XCTAssertEqual(decoded.preview, expectedPreview)
-  }
-
-  func testMalformedOrOversizedV3PreviewIsDiscardedWithoutDiscardingItem() throws {
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .iso8601
-    let base: [String: Any] = [
-      "schemaVersion": 3,
-      "importAttemptId": "attempt-id",
-      "id": UUID().uuidString,
-      "documentId": UUID().uuidString,
-      "createdAt": "2026-08-27T00:00:00Z",
-      "title": "Shared",
-      "content": ["kind": "url", "url": "https://example.com/article"],
-      "attachments": [],
-    ]
-    var malformed = base
-    malformed["preview"] = [
-      "url": "https://example.com/article",
-      "title": 42,
-    ]
-    var oversized = base
-    oversized["preview"] = [
-      "url": "https://example.com/article",
-      "description": String(repeating: "x", count: 32_769),
-    ]
-
-    let malformedItem = try decoder.decode(
-      ShareInboxItem.self,
-      from: JSONSerialization.data(withJSONObject: malformed)
-    )
-    let oversizedItem = try decoder.decode(
-      ShareInboxItem.self,
-      from: JSONSerialization.data(withJSONObject: oversized)
-    )
-
-    XCTAssertEqual(malformedItem.title, "Shared")
-    XCTAssertNil(malformedItem.preview)
-    XCTAssertEqual(oversizedItem.title, "Shared")
-    XCTAssertNil(oversizedItem.preview)
   }
 
   func testStorePreservesUnknownFutureVersionAndReturnsUnsupportedEntry() throws {
@@ -2324,60 +1446,7 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertNil(ShareInboxSafety.detectRasterImageMimeType(Data("<svg/>".utf8)))
   }
 
-  func testPreviewRouteMatrixAndAllowlistBypasses() {
-    let publicURLs = [
-      "https://x.com/affine/status/123",
-      "https://www.twitter.com/affine/status/123",
-      "https://youtu.be/video-id",
-      "https://www.youtube.com/watch?v=video-id",
-      "https://m.youtube.com/shorts/video-id",
-    ]
-    for mode in [ShareWorkspaceMode.selfHostedPresent, .cloudOnly, .signedOut, .unknown] {
-      for url in publicURLs {
-        XCTAssertEqual(ShareInboxSafety.previewRoute(mode: mode, url: url), .official)
-      }
-    }
-
-    let genericURL = "https://example.com/private"
-    XCTAssertEqual(ShareInboxSafety.previewRoute(mode: .selfHostedPresent, url: genericURL), .deferred)
-    XCTAssertEqual(ShareInboxSafety.previewRoute(mode: .unknown, url: genericURL), .deferred)
-    XCTAssertEqual(ShareInboxSafety.previewRoute(mode: .cloudOnly, url: genericURL), .official)
-    XCTAssertEqual(ShareInboxSafety.previewRoute(mode: .signedOut, url: genericURL), .official)
-
-    for bypass in [
-      "https://evil.x.com/affine/status/123",
-      "https://x.com/affine/status/not-a-number",
-      "https://x.com/affine/status/123/extra",
-      "https://youtube.com.evil.example/watch?v=video-id",
-      "https://www.youtube.com/channel/video-id",
-      "https://youtu.be/video-id/extra",
-    ] {
-      XCTAssertFalse(ShareInboxSafety.isOfficialPreviewURL(bypass), bypass)
-    }
-  }
-
-  func testWorkspaceModeSnapshotFailsClosed() throws {
-    XCTAssertEqual(ShareInboxSafety.workspaceMode(from: nil), .unknown)
-    XCTAssertEqual(ShareInboxSafety.workspaceMode(from: Data("invalid".utf8)), .unknown)
-    let incompatible = Data(
-      "{\"mode\":\"cloudOnly\",\"schemaVersion\":2,\"updatedAt\":\"2026-08-27T00:00:00Z\"}".utf8
-    )
-    XCTAssertEqual(ShareInboxSafety.workspaceMode(from: incompatible), .unknown)
-
-    let encoder = JSONEncoder()
-    encoder.dateEncodingStrategy = .iso8601
-    let now = Date(timeIntervalSince1970: 1_800_000_000)
-    let current = try encoder.encode(
-      ShareWorkspaceModeSnapshot(mode: .selfHostedPresent, updatedAt: now)
-    )
-    XCTAssertEqual(ShareInboxSafety.workspaceMode(from: current, now: now), .selfHostedPresent)
-    XCTAssertEqual(
-      ShareInboxSafety.workspaceMode(from: current, now: now.addingTimeInterval(24 * 60 * 60 + 1)),
-      .unknown
-    )
-  }
-
-  func testOldManifestDefaultsToConservativeRouteAndOriginalURLSurvives() throws {
+  func testOldManifestPreservesOriginalURL() throws {
     let id = UUID().uuidString
     let oldManifest = """
       {
@@ -2392,8 +1461,6 @@ final class ShareInboxSafetyTests: XCTestCase {
     let decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
     let item = try decoder.decode(ShareInboxItem.self, from: Data(oldManifest.utf8))
-    XCTAssertNil(item.previewRoute)
-    XCTAssertEqual(item.previewRoute ?? .deferred, .deferred)
     XCTAssertEqual(item.content.url, "https://example.com/original?token=value")
 
     let encoder = JSONEncoder()
@@ -2465,51 +1532,6 @@ private enum TestCopyError: Error {
 
 private enum TestThumbnailError: Error {
   case failed
-}
-
-private enum TestPreviewError: Error {
-  case failed
-}
-
-@MainActor
-private func waitForMainActorCondition(
-  attempts: Int = 200,
-  _ condition: () -> Bool
-) async {
-  for _ in 0..<attempts {
-    if condition() { return }
-    try? await Task.sleep(nanoseconds: 5_000_000)
-  }
-}
-
-private actor PreviewFetchGate {
-  private var continuations: [CheckedContinuation<ShareLinkPreview, Error>] = []
-  private var waiters: [(Int, CheckedContinuation<Void, Never>)] = []
-
-  func next(url: String) async throws -> ShareLinkPreview {
-    try await withCheckedThrowingContinuation { continuation in
-      continuations.append(continuation)
-      resumeWaiters()
-    }
-  }
-
-  func waitForPending(count: Int) async {
-    guard continuations.count < count else { return }
-    await withCheckedContinuation { continuation in
-      waiters.append((count, continuation))
-    }
-  }
-
-  func resume(at index: Int, with result: Result<ShareLinkPreview, Error>) {
-    continuations.remove(at: index).resume(with: result)
-  }
-
-  private func resumeWaiters() {
-    let ready = waiters.enumerated().filter { continuations.count >= $0.element.0 }
-    for (index, _) in ready.reversed() {
-      waiters.remove(at: index).1.resume()
-    }
-  }
 }
 
 private actor DraftBuildGate {

@@ -69,10 +69,6 @@ export class Server extends Entity<{
     return config ? config.credentialsRequirement : null;
   });
 
-  fetchFreshConfig(signal: AbortSignal) {
-    return this.serverConfigStore.fetchServerConfig(this.baseUrl, signal);
-  }
-
   readonly revalidateConfig = effect(
     exhaustMap(() => {
       return fromPromise(signal =>

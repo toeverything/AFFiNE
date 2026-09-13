@@ -1,14 +1,13 @@
 use affine_doc_loader as doc_loader;
 use chrono::{DateTime, Utc};
 use sqlx::{Executor, FromRow, PgPool, Postgres};
-use y_octo::ReadDoc;
 
 use super::{
   CurrentDoc, RuntimeDocBlobRefsResult, RuntimeError, RuntimeResult, StorageRuntime, load_canonical_doc,
   load_workspace_canonical_doc_ids, napi_error,
 };
 
-pub(super) const PARSER_VERSION: i32 = 2;
+pub(super) const PARSER_VERSION: i32 = 1;
 const ERROR_SUMMARY_LIMIT: usize = 512;
 
 type ExtractedRef = doc_loader::BlobRef;
@@ -301,44 +300,7 @@ async fn purge_removed_doc_projections(
 }
 
 fn extract_refs(blob: Vec<u8>) -> std::result::Result<Vec<ExtractedRef>, super::BlobRefProjectionError> {
-  super::extract_blob_refs(blob.clone())?;
-  let doc = ReadDoc::from_full_update_v1(blob).map_err(|_| super::BlobRefProjectionError::Unsupported)?;
-  let mut refs = extract_refs_from_doc(&doc);
-  refs.sort_by(|left, right| {
-    (&left.blob_key, &left.block_id, &left.flavour).cmp(&(&right.blob_key, &right.block_id, &right.flavour))
-  });
-  refs.dedup_by(|left, right| {
-    left.blob_key == right.blob_key && left.block_id == right.block_id && left.flavour == right.flavour
-  });
-  Ok(refs)
-}
-
-fn extract_refs_from_doc(doc: &ReadDoc) -> Vec<ExtractedRef> {
-  let Some(blocks) = doc.map("blocks") else {
-    return Vec::new();
-  };
-  blocks
-    .values()
-    .filter_map(|value| {
-      let block = value.as_map()?;
-      let flavour = block.get("sys:flavour")?.as_any()?.as_str()?;
-      let source_key = match flavour {
-        "affine:attachment" | "affine:image" => "prop:sourceId",
-        "affine:bookmark" => "prop:sharePreviewSourceId",
-        _ => return None,
-      };
-      let block_id = block.get("sys:id")?.as_any()?.as_str()?;
-      let blob_key = block.get(source_key)?.as_any()?.as_str()?;
-      if block_id.is_empty() || blob_key.is_empty() {
-        return None;
-      }
-      Some(ExtractedRef {
-        blob_key: blob_key.to_string(),
-        block_id: block_id.to_string(),
-        flavour: flavour.to_string(),
-      })
-    })
-    .collect()
+  super::extract_blob_refs(blob).map(|extraction| extraction.refs)
 }
 
 async fn replace_doc_refs_if_current(
@@ -621,210 +583,7 @@ async fn rebuild_doc_blob_refs_inner(
 
 #[cfg(test)]
 mod tests {
-  use chrono::Utc;
-  use y_octo::{Any, Doc, Value};
-
   use super::*;
-
-  #[derive(Clone, Copy)]
-  enum FixtureSource<'a> {
-    Text(&'a str),
-    Integer(i32),
-  }
-
-  fn blob_ref_fixture(blocks: &[(&str, &str, &str, FixtureSource<'_>)]) -> Vec<u8> {
-    let doc = Doc::default();
-    let mut block_pool = doc.get_or_create_map("blocks").expect("blocks root should build");
-    for (map_key, block_id, flavour, source) in blocks {
-      let mut block = doc.create_map().expect("block should build");
-      block
-        .insert("sys:id".to_string(), *block_id)
-        .expect("block id should insert");
-      block
-        .insert("sys:flavour".to_string(), *flavour)
-        .expect("block flavour should insert");
-      let source_key = if *flavour == "affine:bookmark" {
-        "prop:sharePreviewSourceId"
-      } else {
-        "prop:sourceId"
-      };
-      match source {
-        FixtureSource::Text(value) => block
-          .insert(source_key.to_string(), *value)
-          .expect("text source should insert"),
-        FixtureSource::Integer(value) => block
-          .insert(source_key.to_string(), Value::Any(Any::Integer(*value)))
-          .expect("integer source should insert"),
-      };
-      block_pool
-        .insert((*map_key).to_string(), block)
-        .expect("block should insert");
-    }
-    doc.encode_update_v1().expect("fixture should encode")
-  }
-
-  #[test]
-  fn doc_blob_refs_projection_semantics() {
-    let doc_id = "doc-blob-ref-test".to_string();
-    let blob =
-      doc_loader::build_full_doc("Doc", "![Alt](blob://image-blob-key)", &doc_id).expect("doc fixture should build");
-    let snapshot = CurrentDoc {
-      blob,
-      updated_at: Utc::now(),
-    };
-    let refs = extract_refs(snapshot.blob).expect("refs should parse");
-    assert!(
-      refs
-        .iter()
-        .any(|reference| { reference.blob_key == "image-blob-key" && reference.flavour == "affine:image" })
-    );
-
-    let root = Doc::default();
-    let mut meta = root.get_or_create_map("meta").expect("root meta should build");
-    let mut pages = root.create_array().expect("root pages should build");
-    let mut active = root.create_map().expect("active doc meta should build");
-    active
-      .insert("id".to_string(), "active-doc")
-      .expect("active doc id should insert");
-    pages.push(active).expect("active doc should insert");
-    let mut trashed = root.create_map().expect("trashed doc meta should build");
-    trashed
-      .insert("id".to_string(), "trashed-doc")
-      .expect("trashed doc id should insert");
-    trashed
-      .insert("trash".to_string(), true)
-      .expect("trash flag should insert");
-    pages.push(trashed).expect("trashed doc should insert");
-    meta
-      .insert("pages".to_string(), pages)
-      .expect("root pages should insert");
-    let root = root.encode_update_v1().expect("root doc should encode");
-    let ids = doc_loader::get_doc_ids_from_binary(root, true).expect("root doc ids should parse");
-    assert_eq!(ids, vec!["active-doc", "trashed-doc"]);
-  }
-
-  #[test]
-  fn doc_blob_refs_v2_merges_deduplicates_bookmarks_with_legacy_refs() {
-    assert_eq!(PARSER_VERSION, 2);
-    let blob = blob_ref_fixture(&[
-      (
-        "image-map-key",
-        "image-block",
-        "affine:image",
-        FixtureSource::Text("image-blob"),
-      ),
-      (
-        "attachment-map-key",
-        "attachment-block",
-        "affine:attachment",
-        FixtureSource::Text("attachment-blob"),
-      ),
-      (
-        "bookmark-map-key-a",
-        "bookmark-block",
-        "affine:bookmark",
-        FixtureSource::Text("details-blob"),
-      ),
-      (
-        "bookmark-map-key-b",
-        "bookmark-block",
-        "affine:bookmark",
-        FixtureSource::Text("details-blob"),
-      ),
-      (
-        "malformed-bookmark",
-        "malformed-bookmark",
-        "affine:bookmark",
-        FixtureSource::Integer(42),
-      ),
-    ]);
-
-    let mut refs = extract_refs(blob).expect("refs should parse");
-    refs.sort_by(|left, right| {
-      (&left.blob_key, &left.block_id, &left.flavour).cmp(&(&right.blob_key, &right.block_id, &right.flavour))
-    });
-
-    assert_eq!(
-      refs,
-      vec![
-        ExtractedRef {
-          blob_key: "attachment-blob".to_string(),
-          block_id: "attachment-block".to_string(),
-          flavour: "affine:attachment".to_string(),
-        },
-        ExtractedRef {
-          blob_key: "details-blob".to_string(),
-          block_id: "bookmark-block".to_string(),
-          flavour: "affine:bookmark".to_string(),
-        },
-        ExtractedRef {
-          blob_key: "image-blob".to_string(),
-          block_id: "image-block".to_string(),
-          flavour: "affine:image".to_string(),
-        },
-      ]
-    );
-  }
-
-  #[test]
-  fn doc_blob_refs_v2_projects_from_an_already_decoded_snapshot() {
-    let blob = blob_ref_fixture(&[
-      (
-        "image-map-key",
-        "image-block",
-        "affine:image",
-        FixtureSource::Text("image-blob"),
-      ),
-      (
-        "bookmark-map-key",
-        "bookmark-block",
-        "affine:bookmark",
-        FixtureSource::Text("details-blob"),
-      ),
-    ]);
-    let doc = ReadDoc::from_full_update_v1(blob).expect("snapshot should decode once");
-
-    let refs = extract_refs_from_doc(&doc);
-
-    assert_eq!(refs.len(), 2);
-    assert!(refs.iter().any(|reference| reference.blob_key == "image-blob"));
-    assert!(refs.iter().any(|reference| reference.blob_key == "details-blob"));
-  }
-
-  #[test]
-  fn doc_blob_refs_v2_preserves_large_snapshot_references() {
-    let doc = Doc::default();
-    let mut blocks = doc.get_or_create_map("blocks").expect("blocks root should build");
-    for index in 0..512 {
-      let block_id = format!("image-{index}");
-      let blob_key = format!("blob-{index}");
-      let mut block = doc.create_map().expect("image block should build");
-      block
-        .insert("sys:id".to_string(), block_id.clone())
-        .expect("image id should insert");
-      block
-        .insert("sys:flavour".to_string(), "affine:image")
-        .expect("image flavour should insert");
-      block
-        .insert("prop:sourceId".to_string(), blob_key)
-        .expect("image source should insert");
-      blocks.insert(block_id, block).expect("image block should insert");
-    }
-    let encoded = doc.encode_update_v1().expect("large snapshot should encode");
-
-    let refs = extract_refs(encoded).expect("large snapshot should project");
-
-    assert_eq!(refs.len(), 512);
-  }
-
-  #[test]
-  fn doc_blob_refs_rejects_corrupt_docs_without_a_failure_ref() {
-    let snapshot = CurrentDoc {
-      blob: vec![0xff],
-      updated_at: Utc::now(),
-    };
-    assert!(extract_refs(snapshot.blob).is_err());
-  }
 
   #[test]
   fn error_summary_is_bounded() {

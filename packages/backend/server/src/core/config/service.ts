@@ -163,10 +163,5 @@ export class ServerService implements OnApplicationBootstrap {
     } else {
       this.disableFeature(ServerFeature.LocalWorkspace);
     }
-    if (flags.sharePreviewBlobRefs) {
-      this.enableFeature(ServerFeature.SharePreviewBlobRefs);
-    } else {
-      this.disableFeature(ServerFeature.SharePreviewBlobRefs);
-    }
   }
 }

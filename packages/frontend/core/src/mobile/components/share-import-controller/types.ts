@@ -1,11 +1,32 @@
-import type { ShareLinkPreview } from '../../../modules/import-clipper';
-
-export type { ShareLinkPreview };
+export interface ShareLinkPreview {
+  url: string;
+  title?: string;
+  siteName?: string;
+  description?: string;
+  images?: string[];
+  favicons?: string[];
+  mediaType?: string;
+  provider?: string;
+  author?: { name: string; handle?: string; avatar?: string };
+  publishedAt?: string;
+  durationSeconds?: number;
+  transcript?: {
+    language?: string;
+    segments: {
+      text: string;
+      startSeconds?: number;
+      durationSeconds?: number;
+      speaker?: string;
+    }[];
+    chapters?: { title: string; startSeconds: number }[];
+    truncated?: boolean;
+  };
+}
 
 export interface PendingShareItem {
   id: string;
   documentId: string;
-  schemaVersion: 3;
+  schemaVersion: 2;
   importAttemptId: string;
   title: string;
   content: {
@@ -13,7 +34,6 @@ export interface PendingShareItem {
     url?: string;
     text?: string;
   };
-  preview?: ShareLinkPreview;
   target?: ShareImportTarget;
   attachments?: { fileName: string; mimeType: string }[];
   lastError?: string;
@@ -31,9 +51,6 @@ export interface ShareImportTarget {
 }
 
 export interface ShareInboxProvider {
-  updateWorkspaceMode(
-    mode: 'selfHostedPresent' | 'cloudOnly' | 'signedOut' | 'unknown'
-  ): Promise<void>;
   listPending(): Promise<ShareInboxEntry[]>;
   updateTarget(itemId: string, target: ShareImportTarget): Promise<void>;
   resolveAttachment(itemId: string): Promise<File | undefined>;

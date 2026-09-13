@@ -1,13 +1,6 @@
 import Foundation
 import UIKit
 
-enum ShareLinkPreviewState: Equatable {
-  case idle
-  case loading
-  case loaded(ShareLinkPreview)
-  case failed
-}
-
 @MainActor
 final class ShareViewModel: ObservableObject {
   @Published var title = ""
@@ -18,8 +11,8 @@ final class ShareViewModel: ObservableObject {
   @Published var hasSaved = false
   @Published var errorMessage: String?
   @Published var linkPreviewState: ShareLinkPreviewState = .idle
-  @Published var remoteMediaImage: UIImage?
-  @Published var remoteFaviconImage: UIImage?
+  @Published var linkPreviewMediaImage: UIImage?
+  @Published var linkPreviewFaviconImage: UIImage?
 
   var actionTitle: String {
     "Open AFFiNE"
@@ -35,45 +28,37 @@ final class ShareViewModel: ObservableObject {
   private var draft: SharePayloadDraft?
   private var userEditedTitle: String?
   private var loadGeneration = 0
-  private var enrichmentGeneration = 0
-  private var enrichmentTask: Task<Void, Never>?
+  private var previewTask: Task<Void, Never>?
   private let store: ShareInboxStore
+  private let previewClient: ShareLinkPreviewClient
   private let buildPayload: ([NSExtensionItem]) async -> SharePayloadDraft
-  private let fetchLinkPreview: (String) async throws -> ShareLinkPreview
-  private let fetchRemoteImage: (String?) async -> UIImage?
 
   init(
     store: ShareInboxStore = .shared,
+    previewClient: ShareLinkPreviewClient = ShareLinkPreviewClient(),
     buildPayload: @escaping ([NSExtensionItem]) async -> SharePayloadDraft = { items in
       await SharePayloadBuilder.build(from: items)
-    },
-    fetchLinkPreview: ((String) async throws -> ShareLinkPreview)? = nil,
-    fetchRemoteImage: ((String?) async -> UIImage?)? = nil
+    }
   ) {
     self.store = store
+    self.previewClient = previewClient
     self.buildPayload = buildPayload
-    let previewClient = ShareLinkPreviewClient()
-    self.fetchLinkPreview =
-      fetchLinkPreview ?? { url in
-        try await previewClient.fetch(url: url)
-      }
-    self.fetchRemoteImage =
-      fetchRemoteImage ?? { url in
-        await previewClient.fetchImageIfPresent(url: url)
-      }
   }
 
   deinit {
-    enrichmentTask?.cancel()
     draft?.discardStagingFiles()
   }
 
   var displayTitle: String {
-    userEditedTitle ?? linkPreview?.title ?? title
+    ShareInboxSafety.previewTitle(
+      original: title,
+      userEdited: userEditedTitle,
+      serverTitle: linkPreview?.title
+    )
   }
 
   var linkPreview: ShareLinkPreview? {
-    guard case .loaded(let preview) = linkPreviewState else { return nil }
+    guard case let .loaded(preview) = linkPreviewState else { return nil }
     return preview
   }
 
@@ -90,9 +75,9 @@ final class ShareViewModel: ObservableObject {
   }
 
   func load(from extensionContext: NSExtensionContext?) async {
-    cancelEnrichment(resetState: true)
     loadGeneration &+= 1
     let generation = loadGeneration
+    previewTask?.cancel()
     isLoading = true
 
     let items = extensionContext?.inputItems.compactMap { $0 as? NSExtensionItem } ?? []
@@ -107,6 +92,9 @@ final class ShareViewModel: ObservableObject {
     title = built.title
     previewText = built.previewText
     errorMessage = built.errorMessage
+    linkPreviewState = .idle
+    linkPreviewMediaImage = nil
+    linkPreviewFaviconImage = nil
     if let file = built.file {
       previewImage = UIImage(data: file.thumbnailData)?
         .preparingThumbnail(of: CGSize(width: 480, height: 480))
@@ -114,29 +102,46 @@ final class ShareViewModel: ObservableObject {
       previewImage = nil
     }
     isLoading = false
-    if let url = built.content?.url, built.content?.kind == .url {
-      startEnrichment(for: url)
+    guard let url = built.content?.url, ShareInboxSafety.isOfficialPreviewURL(url) else {
+      return
+    }
+    linkPreviewState = .loading
+    previewTask = Task { [weak self] in
+      guard let self else { return }
+      do {
+        let preview = try await previewClient.fetch(url: url)
+        guard !Task.isCancelled, generation == loadGeneration else { return }
+        linkPreviewState = .loaded(preview)
+        async let media = previewClient.fetchImageIfPresent(url: preview.images?.first)
+        async let favicon = previewClient.fetchImageIfPresent(url: preview.favicons?.first)
+        let images = await (media, favicon)
+        guard !Task.isCancelled, generation == loadGeneration else { return }
+        linkPreviewMediaImage = images.0
+        linkPreviewFaviconImage = images.1
+      } catch is CancellationError {
+        return
+      } catch {
+        guard !Task.isCancelled, generation == loadGeneration else { return }
+        linkPreviewState = .failed
+      }
     }
   }
 
   func discard() {
-    cancelEnrichment(resetState: true)
     loadGeneration &+= 1
+    previewTask?.cancel()
     draft?.discardStagingFiles()
     draft = nil
     previewImage = nil
+    linkPreviewState = .idle
+    linkPreviewMediaImage = nil
+    linkPreviewFaviconImage = nil
     isLoading = false
   }
 
   func save() async -> Bool {
     guard !isSaving, !hasSaved else { return false }
     isSaving = true
-    let wasLoadingPreview = linkPreviewState == .loading
-    let previewSnapshot = linkPreview
-    cancelEnrichment(resetState: false)
-    if wasLoadingPreview {
-      linkPreviewState = .failed
-    }
     defer { isSaving = false }
 
     let trimmedTitle = ShareInboxSafety.manifestTitle(
@@ -170,13 +175,13 @@ final class ShareViewModel: ObservableObject {
       title: trimmedTitle,
       content: content,
       previewText: draft.previewText,
-      preview: previewSnapshot,
       attachments: attachments
     )
 
     do {
       try store.enqueue(item, attachmentFiles: attachmentFiles)
       hasSaved = true
+      previewTask?.cancel()
       draft.discardStagingFiles()
       return true
     } catch {
@@ -185,50 +190,4 @@ final class ShareViewModel: ObservableObject {
     }
   }
 
-  private func startEnrichment(for url: String) {
-    enrichmentGeneration &+= 1
-    let generation = enrichmentGeneration
-    let fetchLinkPreview = fetchLinkPreview
-    let fetchRemoteImage = fetchRemoteImage
-    linkPreviewState = .loading
-    remoteMediaImage = nil
-    remoteFaviconImage = nil
-
-    enrichmentTask = Task { [weak self] in
-      let preview: ShareLinkPreview
-      do {
-        preview = try await fetchLinkPreview(url)
-      } catch {
-        guard !Task.isCancelled, generation == self?.enrichmentGeneration else {
-          return
-        }
-        self?.linkPreviewState = .failed
-        return
-      }
-      guard !Task.isCancelled, generation == self?.enrichmentGeneration else {
-        return
-      }
-      self?.linkPreviewState = .loaded(preview)
-
-      let mediaURL = preview.images?.first
-      let faviconURL = preview.favicons?.first
-      async let mediaImage = fetchRemoteImage(mediaURL)
-      async let faviconImage = fetchRemoteImage(faviconURL)
-      let images = await (mediaImage, faviconImage)
-      guard !Task.isCancelled, generation == self?.enrichmentGeneration else { return }
-      self?.remoteMediaImage = images.0
-      self?.remoteFaviconImage = images.1
-    }
-  }
-
-  private func cancelEnrichment(resetState: Bool) {
-    enrichmentGeneration &+= 1
-    enrichmentTask?.cancel()
-    enrichmentTask = nil
-    if resetState {
-      linkPreviewState = .idle
-      remoteMediaImage = nil
-      remoteFaviconImage = nil
-    }
-  }
 }

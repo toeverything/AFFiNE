@@ -7,7 +7,6 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
   public let jsName = "ShareInbox"
   public let pluginMethods: [CAPPluginMethod] = [
     CAPPluginMethod(name: "listPending", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "updateWorkspaceMode", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "updateTarget", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "resolveAttachment", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "complete", returnType: CAPPluginReturnPromise),
@@ -46,18 +45,6 @@ public final class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
       call.resolve(["items": items])
     } catch {
       call.reject("Failed to read shared content.", nil, error)
-    }
-  }
-
-  @objc func updateWorkspaceMode(_ call: CAPPluginCall) {
-    do {
-      guard let value = call.getString("mode"), let mode = ShareWorkspaceMode(rawValue: value) else {
-        throw ShareInboxError.invalidPayload
-      }
-      try store.updateWorkspaceMode(mode)
-      call.resolve()
-    } catch {
-      call.reject("Failed to update share privacy mode.", nil, error)
     }
   }
 
