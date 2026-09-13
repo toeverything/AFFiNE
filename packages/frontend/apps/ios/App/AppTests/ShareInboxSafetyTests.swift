@@ -1,6 +1,6 @@
-import XCTest
 import UIKit
 import UniformTypeIdentifiers
+import XCTest
 
 final class ShareInboxSafetyTests: XCTestCase {
   private func makeStore() throws -> (store: ShareInboxStore, containerURL: URL) {
@@ -128,40 +128,18 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertLessThanOrEqual(file.thumbnailData.count, ShareInboxConstants.maxThumbnailBytes)
   }
 
-  func testBuilderRejectsPDFWithSpoofedDeclaredType() throws {
-    let source = try makeProviderFile(data: makePDFData(), name: "spoofed.pdf")
-
-    XCTAssertThrowsError(
-      try SharePayloadBuilder.stagePDF(
-        from: source,
-        suggestedName: source.lastPathComponent,
-        declaredTypeIdentifier: UTType.jpeg.identifier
-      )
-    )
-  }
-
-  func testBuilderRejectsPDFWithoutPDFMagic() throws {
-    let source = try makeProviderFile(data: Data("not a PDF".utf8), name: "report.pdf")
-
-    XCTAssertThrowsError(
-      try SharePayloadBuilder.stagePDF(
-        from: source,
-        suggestedName: source.lastPathComponent,
-        declaredTypeIdentifier: UTType.pdf.identifier
-      )
-    )
-  }
-
-  func testBuilderRejectsEmptyPDF() throws {
-    let source = try makeProviderFile(data: Data(), name: "empty.pdf")
-
-    XCTAssertThrowsError(
-      try SharePayloadBuilder.stagePDF(
-        from: source,
-        suggestedName: source.lastPathComponent,
-        declaredTypeIdentifier: UTType.pdf.identifier
-      )
-    )
+  func testBuilderRejectsInvalidPDFRepresentations() throws {
+    let cases: [(String, Data, String)] = [
+      ("spoofed declared type", makePDFData(), UTType.jpeg.identifier),
+      ("missing PDF magic", Data("not a PDF".utf8), UTType.pdf.identifier),
+      ("empty file", Data(), UTType.pdf.identifier),
+    ]
+    for (name, data, declaredType) in cases {
+      let source = try makeProviderFile(data: data, name: "report.pdf")
+      XCTAssertThrowsError(try SharePayloadBuilder.stagePDF(
+        from: source, suggestedName: source.lastPathComponent, declaredTypeIdentifier: declaredType
+      ), name)
+    }
   }
 
   func testBuilderRejectsPDFLargerThanShareAttachmentLimit() throws {
@@ -384,45 +362,10 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertFalse(didLoadPDF)
   }
 
-  func testBuilderTreatsRemotePDFURLAsAURLShare() async {
-    let provider = NSItemProvider(object: URL(string: "https://example.com/report.pdf")! as NSURL)
-    let extensionItem = NSExtensionItem()
-    extensionItem.attachments = [provider]
-
-    let draft = await SharePayloadBuilder.build(from: [extensionItem])
-
-    XCTAssertEqual(draft.content?.kind, .url)
-    XCTAssertEqual(draft.content?.url, "https://example.com/report.pdf")
-    XCTAssertNil(draft.file)
-  }
-
-  func testBuilderDoesNotLoadPDFRepresentationForARemotePDFURL() async throws {
-    let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
-    let provider = NSItemProvider(object: URL(string: "https://example.com/report.pdf")! as NSURL)
-    var didLoadPDF = false
-    provider.registerFileRepresentation(
-      forTypeIdentifier: UTType.pdf.identifier,
-      fileOptions: [],
-      visibility: .all
-    ) { completion in
-      didLoadPDF = true
-      completion(source, true, nil)
-      return nil
-    }
-    let extensionItem = NSExtensionItem()
-    extensionItem.attachments = [provider]
-
-    let draft = await SharePayloadBuilder.build(from: [extensionItem])
-
-    XCTAssertEqual(draft.content?.kind, .url)
-    XCTAssertNil(draft.file)
-    XCTAssertFalse(didLoadPDF)
-  }
-
   func testBuilderDoesNotLoadBinaryRepresentationsForARemotePDFURL() async throws {
     let pdf = try makeProviderFile(data: makePDFData(), name: "report.pdf")
     let png = makePNGData()
-    let provider = NSItemProvider(object: URL(string: "https://example.com/report.pdf")! as NSURL)
+    let provider = try NSItemProvider(object: XCTUnwrap(URL(string: "https://example.com/report.pdf")) as NSURL)
     var didLoadImage = false
     var didLoadPDF = false
     provider.registerDataRepresentation(
@@ -508,8 +451,8 @@ final class ShareInboxSafetyTests: XCTestCase {
 
   func testBuilderTreatsProviderWithURLAndPDFAsURLAfterAnotherURL() async throws {
     let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
-    let first = NSItemProvider(object: URL(string: "https://example.com/first")! as NSURL)
-    let second = NSItemProvider(object: URL(string: "https://example.com/report.pdf")! as NSURL)
+    let first = try NSItemProvider(object: XCTUnwrap(URL(string: "https://example.com/first")) as NSURL)
+    let second = try NSItemProvider(object: XCTUnwrap(URL(string: "https://example.com/report.pdf")) as NSURL)
     var didLoadPDF = false
     second.registerFileRepresentation(
       forTypeIdentifier: UTType.pdf.identifier,
@@ -533,8 +476,8 @@ final class ShareInboxSafetyTests: XCTestCase {
 
   func testBuilderDoesNotLoadSeparatePDFProviderWhenShareContainsRemoteURL() async throws {
     let source = try makeProviderFile(data: makePDFData(), name: "report.pdf")
-    let remoteURL = NSItemProvider(
-      object: URL(string: "https://example.com/report.pdf")! as NSURL
+    let remoteURL = try NSItemProvider(
+      object: XCTUnwrap(URL(string: "https://example.com/report.pdf")) as NSURL
     )
     let pdf = NSItemProvider()
     var didLoadPDF = false
@@ -558,8 +501,8 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertFalse(didLoadPDF)
   }
 
-  func testBuilderRejectsTwoLocalPDFsEvenWhenShareContainsAURL() async {
-    let remoteURL = NSItemProvider(object: URL(string: "https://example.com")! as NSURL)
+  func testBuilderRejectsTwoLocalPDFsEvenWhenShareContainsAURL() async throws {
+    let remoteURL = try NSItemProvider(object: XCTUnwrap(URL(string: "https://example.com")) as NSURL)
     let first = NSItemProvider()
     let second = NSItemProvider()
     var didLoadFirst = false
@@ -684,7 +627,7 @@ final class ShareInboxSafetyTests: XCTestCase {
           fileName: "image.jpg",
           mimeType: "image/jpeg",
           relativePath: "../image.jpg"
-        )
+        ),
       ]
     )
 
@@ -728,7 +671,7 @@ final class ShareInboxSafetyTests: XCTestCase {
 
     XCTAssertFalse(manifestWasVisibleDuringCopy)
     XCTAssertTrue(FileManager.default.fileExists(atPath: manifestURL.path))
-    XCTAssertEqual(try Data(contentsOf: try XCTUnwrap(store.attachmentURL(for: attachment))), Data([0xFF, 0xD8, 0xFF]))
+    XCTAssertEqual(try Data(contentsOf: XCTUnwrap(store.attachmentURL(for: attachment))), Data([0xFF, 0xD8, 0xFF]))
   }
 
   func testStoreRemovesStaleTemporaryAndManifestlessAttachmentDirectories() throws {
@@ -943,10 +886,10 @@ final class ShareInboxSafetyTests: XCTestCase {
       )
     )
 
-    let manifestURL = containerURL
+    let manifestURL = try containerURL
       .appendingPathComponent(ShareInboxConstants.inboxDirectoryName)
       .appendingPathComponent(
-        "\(try XCTUnwrap(ShareInboxSafety.normalizedManifestID(item.id))).json"
+        "\(XCTUnwrap(ShareInboxSafety.normalizedManifestID(item.id))).json"
       )
     let decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
@@ -1020,7 +963,7 @@ final class ShareInboxSafetyTests: XCTestCase {
       return item
     }.first)
     let attachment = try XCTUnwrap(item.attachments.first)
-    XCTAssertEqual(try Data(contentsOf: try XCTUnwrap(store.attachmentURL(for: attachment))), expected)
+    XCTAssertEqual(try Data(contentsOf: XCTUnwrap(store.attachmentURL(for: attachment))), expected)
   }
 
   @MainActor
@@ -1197,6 +1140,7 @@ final class ShareInboxSafetyTests: XCTestCase {
       return XCTFail("Expected the rewritten v2 manifest to remain ready")
     }
     XCTAssertEqual(reloaded.importAttemptId, migrated.importAttemptId)
+    XCTAssertEqual(reloaded.content.url, migrated.content.url)
   }
 
   func testCommittedReceiptIdentitySurvivesV2Reencoding() throws {
@@ -1240,27 +1184,37 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertEqual(result["committedAt"] as? String, committedAt)
   }
 
-  func testStorePreservesUnknownFutureVersionAndReturnsUnsupportedEntry() throws {
-    let (store, containerURL) = try makeStore()
-    XCTAssertTrue(store.ensureDirectories())
-    let id = UUID().uuidString
-    let manifestURL = containerURL
-      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
-      .appendingPathComponent("\(id).json")
-    let futureManifest = Data("{\"schemaVersion\":99,\"id\":\"\(id)\"}".utf8)
-    try futureManifest.write(to: manifestURL)
+  func testStorePreservesFutureManifestsDuringEnumerationAndUpdate() throws {
+    for id in [UUID().uuidString, "future-item"] {
+      let (store, containerURL) = try makeStore()
+      XCTAssertTrue(store.ensureDirectories())
+      let manifestURL = containerURL
+        .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
+        .appendingPathComponent("\(id).json")
+      let futureManifest = Data("{\"schemaVersion\":99,\"id\":\"\(id)\"}".utf8)
+      try futureManifest.write(to: manifestURL)
 
-    let entries = store.pendingItems()
-    XCTAssertEqual(entries, [.unsupportedVersion(itemId: id, schemaVersion: 99)])
-    XCTAssertEqual(try Data(contentsOf: manifestURL), futureManifest)
-    XCTAssertFalse(
-      FileManager.default.fileExists(
-        atPath: containerURL
-          .appendingPathComponent(ShareInboxConstants.inboxDirectoryName)
-          .appendingPathComponent(ShareInboxConstants.invalidDirectoryName)
-          .appendingPathComponent("\(id).json").path
+      let entries = store.pendingItems()
+      XCTAssertEqual(entries, [.unsupportedVersion(itemId: id, schemaVersion: 99)])
+      XCTAssertThrowsError(
+        try store.update(
+          ShareInboxItem(
+            id: id,
+            title: "Replacement",
+            content: ShareInboxContent(kind: .text, url: nil, text: "replacement")
+          )
+        )
       )
-    )
+      XCTAssertEqual(try Data(contentsOf: manifestURL), futureManifest)
+      XCTAssertFalse(
+        FileManager.default.fileExists(
+          atPath: containerURL
+            .appendingPathComponent(ShareInboxConstants.inboxDirectoryName)
+            .appendingPathComponent(ShareInboxConstants.invalidDirectoryName)
+            .appendingPathComponent("\(id).json").path
+        )
+      )
+    }
   }
 
   func testStoreReturnsSupportedItemsBeforeFutureVersionEntries() throws {
@@ -1290,45 +1244,6 @@ final class ShareInboxSafetyTests: XCTestCase {
     )
   }
 
-  func testStorePreservesFutureManifestWithNonUUIDBasename() throws {
-    let (store, containerURL) = try makeStore()
-    XCTAssertTrue(store.ensureDirectories())
-    let manifestURL = containerURL
-      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
-      .appendingPathComponent("future-item.json")
-    let futureManifest = Data("{\"schemaVersion\":99,\"id\":\"future-item\"}".utf8)
-    try futureManifest.write(to: manifestURL)
-
-    XCTAssertEqual(
-      store.pendingItems(),
-      [.unsupportedVersion(itemId: "future-item", schemaVersion: 99)]
-    )
-    XCTAssertEqual(try Data(contentsOf: manifestURL), futureManifest)
-    XCTAssertTrue(FileManager.default.fileExists(atPath: manifestURL.path))
-  }
-
-  func testStoreDoesNotMutateFutureManifest() throws {
-    let (store, containerURL) = try makeStore()
-    XCTAssertTrue(store.ensureDirectories())
-    let id = UUID().uuidString
-    let manifestURL = containerURL
-      .appendingPathComponent(ShareInboxConstants.inboxDirectoryName, isDirectory: true)
-      .appendingPathComponent("\(id).json")
-    let futureManifest = Data("{\"schemaVersion\":99,\"id\":\"\(id)\"}".utf8)
-    try futureManifest.write(to: manifestURL)
-
-    XCTAssertThrowsError(
-      try store.update(
-        ShareInboxItem(
-          id: id,
-          title: "Replacement",
-          content: ShareInboxContent(kind: .text, url: nil, text: "replacement")
-        )
-      )
-    )
-    XCTAssertEqual(try Data(contentsOf: manifestURL), futureManifest)
-  }
-
   func testStoreDoesNotReturnReadyWhenV1MigrationWriteFails() throws {
     let (_, containerURL) = try makeStore()
     let store = ShareInboxStore(
@@ -1348,29 +1263,10 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertEqual(try Data(contentsOf: manifestURL), originalManifest)
   }
 
-  func testManifestTitleIgnoresPreviewAndOnlyAcceptsExplicitEdits() {
-    let originalTitle = "Original Safari title"
-    let serverPreviewTitle = "Untrusted server preview title"
-
-    XCTAssertEqual(
-      ShareInboxSafety.manifestTitle(original: originalTitle, userEdited: nil),
-      originalTitle
-    )
-    XCTAssertNotEqual(
-      ShareInboxSafety.manifestTitle(original: originalTitle, userEdited: nil),
-      serverPreviewTitle
-    )
-    XCTAssertEqual(
-      ShareInboxSafety.manifestTitle(
-        original: originalTitle,
-        userEdited: "  My explicit title  "
-      ),
-      "My explicit title"
-    )
-    XCTAssertEqual(
-      ShareInboxSafety.manifestTitle(original: originalTitle, userEdited: nil),
-      originalTitle
-    )
+  func testManifestTitleOnlyAcceptsExplicitEdits() {
+    for (edited, expected) in [(nil, "Original Safari title"), ("  My explicit title  ", "My explicit title")] as [(String?, String)] {
+      XCTAssertEqual(ShareInboxSafety.manifestTitle(original: "Original Safari title", userEdited: edited), expected)
+    }
   }
 
   func testShareExtensionActivationAcceptsSupportedRepresentationsAmongExtraAttachments() throws {
@@ -1400,22 +1296,22 @@ final class ShareInboxSafetyTests: XCTestCase {
         "attachments": [
           ["registeredTypeIdentifiers": ["public.url", "public.data"]],
           ["registeredTypeIdentifiers": ["com.google.youtube.extra"]],
-        ]
-      ]]
+        ],
+      ]],
     ]
     let supportedPDFPayload: [String: Any] = [
       "extensionItems": [[
         "attachments": [[
-          "registeredTypeIdentifiers": ["com.adobe.pdf", "public.movie"]
-        ]]
-      ]]
+          "registeredTypeIdentifiers": ["com.adobe.pdf", "public.movie"],
+        ]],
+      ]],
     ]
     let unsupportedPayload: [String: Any] = [
       "extensionItems": [[
         "attachments": [[
-          "registeredTypeIdentifiers": ["public.movie", "public.audio"]
-        ]]
-      ]]
+          "registeredTypeIdentifiers": ["public.movie", "public.audio"],
+        ]],
+      ]],
     ]
     XCTAssertTrue(predicate.evaluate(with: youtubePayload))
     XCTAssertTrue(predicate.evaluate(with: supportedPDFPayload))
@@ -1501,29 +1397,6 @@ final class ShareInboxSafetyTests: XCTestCase {
     XCTAssertNil(ShareInboxSafety.detectRasterImageMimeType(Data("<svg/>".utf8)))
   }
 
-  func testOldManifestPreservesOriginalURL() throws {
-    let id = UUID().uuidString
-    let oldManifest = """
-      {
-        "id":"\(id)",
-        "documentId":"\(UUID().uuidString)",
-        "createdAt":"2026-08-27T00:00:00Z",
-        "title":"Original",
-        "content":{"kind":"url","url":"https://example.com/original?token=value"},
-        "attachments":[]
-      }
-      """
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .iso8601
-    let item = try decoder.decode(ShareInboxItem.self, from: Data(oldManifest.utf8))
-    XCTAssertEqual(item.content.url, "https://example.com/original?token=value")
-
-    let encoder = JSONEncoder()
-    encoder.dateEncodingStrategy = .iso8601
-    let encoded = try encoder.encode(item)
-    XCTAssertEqual(try decoder.decode(ShareInboxItem.self, from: encoded).content.url, item.content.url)
-  }
-
   func testResolvedAttachmentRequiresTheManifestIdentityAndValidatedFileMetadata() throws {
     let (store, containerURL) = try makeStore()
     let source = try makeProviderFile(data: makePNGData(), name: "shared.png")
@@ -1574,7 +1447,6 @@ final class ShareInboxSafetyTests: XCTestCase {
     try FileManager.default.removeItem(at: resolved.url)
     XCTAssertNil(store.resolveAttachment(for: persisted))
   }
-
 }
 
 private enum TestWriteError: Error {
@@ -1619,10 +1491,15 @@ private actor DraftBuildGate {
   }
 }
 
-
 private final class OversizedPreviewURLProtocol: URLProtocol {
-  override class func canInit(with request: URLRequest) -> Bool { true }
-  override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+  override class func canInit(with _: URLRequest) -> Bool {
+    true
+  }
+
+  override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    request
+  }
+
   override func startLoading() {
     let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
                                    headerFields: ["Content-Length": "1048577"])!
@@ -1630,5 +1507,6 @@ private final class OversizedPreviewURLProtocol: URLProtocol {
     client?.urlProtocol(self, didLoad: Data([0]))
     client?.urlProtocolDidFinishLoading(self)
   }
+
   override func stopLoading() {}
 }

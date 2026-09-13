@@ -23,15 +23,25 @@ vi.mock('@affine/core/blocksuite/manager/view', () => ({
 }));
 
 describe('share import receipt', () => {
-  test('serializes the canonical preparing fixture', () => {
-    expect(
-      serializeShareImportReceipt(
-        createShareImportReceipt({
-          attemptId: 'attempt-id',
-        })
-      )
-    ).toBe('{"version":1,"attemptId":"attempt-id","state":"preparing"}');
-  });
+  test.each(['preparing', 'committed'] as const)(
+    'round-trips the canonical %s fixture',
+    state => {
+      const receipt = createShareImportReceipt({
+        attemptId: 'attempt-id',
+        state,
+      });
+      const serialized = serializeShareImportReceipt(receipt);
+      expect(serialized).toBe(
+        `{"version":1,"attemptId":"attempt-id","state":"${state}"}`
+      );
+      expect(parseShareImportReceipt(serialized)).toEqual(receipt);
+      expect(
+        parseShareImportReceipt(
+          JSON.stringify({ ...receipt, unexpected: true })
+        )
+      ).toBeUndefined();
+    }
+  );
 
   test.each([
     undefined,
@@ -43,33 +53,16 @@ describe('share import receipt', () => {
       version: 1,
       documentId: 'document-id',
       importAttemptId: 'attempt-id',
+      status: 'committed',
+    }),
+    JSON.stringify({
+      version: 1,
+      documentId: 'document-id',
+      importAttemptId: 'attempt-id',
       status: 'unknown',
     }),
   ])('rejects malformed or unsupported persisted values %#', value => {
     expect(parseShareImportReceipt(value)).toBeUndefined();
-  });
-
-  test('round-trips the canonical committed fixture without accepting extra or old schema', () => {
-    const receipt = {
-      version: 1 as const,
-      attemptId: 'attempt-id',
-      state: 'committed' as const,
-    };
-
-    expect(parseShareImportReceipt(JSON.stringify(receipt))).toEqual(receipt);
-    expect(
-      parseShareImportReceipt(JSON.stringify({ ...receipt, unexpected: true }))
-    ).toBeUndefined();
-    expect(
-      parseShareImportReceipt(
-        JSON.stringify({
-          version: 1,
-          documentId: 'document-id',
-          importAttemptId: 'attempt-id',
-          status: 'committed',
-        })
-      )
-    ).toBeUndefined();
   });
 
   test.each([
@@ -91,13 +84,6 @@ describe('share import receipt', () => {
       true,
       'resume-preparing',
     ],
-    [
-      'crash after skeleton before leaves',
-      'preparing',
-      true,
-      'resume-preparing',
-    ],
-    ['same attempt retry', 'preparing', true, 'resume-preparing'],
     ['committed retry', 'committed', true, 'committed-replay'],
     [
       'committed receipt without a document',
@@ -452,79 +438,42 @@ describe('share import orchestration', () => {
     expect(maxActive).toBe(1);
   });
 
-  test('allows different workspace or document keys to complete while one key is blocked', async () => {
-    const firstGate = deferred();
-    const started: string[] = [];
-    const service = makeQueuedImportService(async (metadata, currentInput) => {
-      const label = `${metadata.id}:${currentInput.documentId}`;
-      started.push(label);
-      if (label === 'workspace-id:document-id') {
-        await firstGate.promise;
-      }
-      return { status: 'imported', docId: currentInput.documentId };
-    });
-    const metadata = {
-      id: 'workspace-id',
-      flavour: 'server',
-    } as WorkspaceMetadata;
-    const otherWorkspace = {
-      id: 'other-workspace-id',
-      flavour: 'server',
-    } as WorkspaceMetadata;
-
-    const a = service.importShareToWorkspace(metadata, input('A'));
-    await vi.waitFor(() =>
-      expect(started).toEqual(['workspace-id:document-id'])
-    );
-    const b = service.importShareToWorkspace(metadata, {
-      ...input('B'),
-      documentId: 'other-document-id',
-    });
-    const c = service.importShareToWorkspace(otherWorkspace, input('C'));
-
-    await expect(Promise.all([b, c])).resolves.toEqual([
-      { status: 'imported', docId: 'other-document-id' },
-      { status: 'imported', docId: 'document-id' },
-    ]);
-    expect(started).toEqual(
-      expect.arrayContaining([
-        'workspace-id:other-document-id',
-        'other-workspace-id:document-id',
-      ])
-    );
-    firstGate.resolve();
-    await a;
-  });
-
-  test('does not conflate queue keys whose identifiers contain separators', async () => {
-    const firstGate = deferred();
-    const started: string[] = [];
-    const service = makeQueuedImportService(async (_metadata, currentInput) => {
-      started.push(currentInput.importAttemptId);
-      if (currentInput.importAttemptId === 'A') {
-        await firstGate.promise;
-      }
-      return { status: 'imported', docId: currentInput.documentId };
-    });
-
-    const a = service.importShareToWorkspace(
-      { id: 'workspace:document', flavour: 'server' } as WorkspaceMetadata,
-      { ...input('A'), documentId: 'id' }
-    );
-    await vi.waitFor(() => expect(started).toEqual(['A']));
-    const b = service.importShareToWorkspace(
-      { id: 'workspace', flavour: 'server' } as WorkspaceMetadata,
-      { ...input('B'), documentId: 'document:id' }
-    );
-
-    await expect(b).resolves.toEqual({
-      status: 'imported',
-      docId: 'document:id',
-    });
-    expect(started).toEqual(['A', 'B']);
-    firstGate.resolve();
-    await a;
-  });
+  test.each([
+    ['workspace-id', 'document-id', 'other-workspace-id', 'document-id'],
+    ['workspace-id', 'document-id', 'workspace-id', 'other-document-id'],
+    ['workspace:document', 'id', 'workspace', 'document:id'],
+  ])(
+    'runs distinct keys independently: %s / %s and %s / %s',
+    async (firstWorkspace, firstDoc, secondWorkspace, secondDoc) => {
+      const firstGate = deferred();
+      const started: string[] = [];
+      const service = makeQueuedImportService(
+        async (_metadata, currentInput) => {
+          started.push(currentInput.importAttemptId);
+          if (currentInput.importAttemptId === 'A') {
+            await firstGate.promise;
+          }
+          return { status: 'imported', docId: currentInput.documentId };
+        }
+      );
+      const a = service.importShareToWorkspace(
+        { id: firstWorkspace, flavour: 'server' } as WorkspaceMetadata,
+        { ...input('A'), documentId: firstDoc }
+      );
+      await vi.waitFor(() => expect(started).toEqual(['A']));
+      const b = service.importShareToWorkspace(
+        { id: secondWorkspace, flavour: 'server' } as WorkspaceMetadata,
+        { ...input('B'), documentId: secondDoc }
+      );
+      await expect(b).resolves.toEqual({
+        status: 'imported',
+        docId: secondDoc,
+      });
+      expect(started).toEqual(['A', 'B']);
+      firstGate.resolve();
+      await a;
+    }
+  );
 
   test('confirmed offline import uses only loaded local state and local update waits', async () => {
     const harness = makeImportHarness();
@@ -544,34 +493,27 @@ describe('share import orchestration', () => {
     expect(harness.engine.waitForUpdated).toHaveBeenCalled();
   });
 
-  test('writes and locally persists preparing receipt before creating the document', async () => {
-    const harness = makeImportHarness();
-
-    await harness.service.importShareToWorkspace(harness.metadata, input(), {
-      allowOffline: true,
-    });
-
-    expect(harness.events.indexOf('receipt:set')).toBeLessThan(
-      harness.events.indexOf('updated:db$docProperties')
-    );
-    expect(harness.events.indexOf('updated:db$docProperties')).toBeLessThan(
-      harness.events.indexOf('create:document-id:true')
-    );
-  });
-
-  test('persists local content before committing without waiting for its upload', async () => {
-    const harness = makeImportHarness();
-
-    await expect(
-      harness.service.importShareToWorkspace(harness.metadata, input())
-    ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
-
-    const committedReceipt = harness.events.indexOf('receipt:committed');
-    expect(harness.events.indexOf('updated:document-id')).toBeLessThan(
-      committedReceipt
-    );
-    expect(harness.events).not.toContain('synced:document-id');
-  });
+  test.each([false, true])(
+    'persists preparing, content and commit in order (offline: %s)',
+    async allowOffline => {
+      const harness = makeImportHarness();
+      await expect(
+        harness.service.importShareToWorkspace(harness.metadata, input(), {
+          allowOffline,
+        })
+      ).resolves.toEqual({ status: 'imported', docId: 'document-id' });
+      expect(harness.events.indexOf('receipt:set')).toBeLessThan(
+        harness.events.indexOf('updated:db$docProperties')
+      );
+      expect(harness.events.indexOf('updated:db$docProperties')).toBeLessThan(
+        harness.events.indexOf('create:document-id:true')
+      );
+      expect(harness.events.indexOf('updated:document-id')).toBeLessThan(
+        harness.events.indexOf('receipt:committed')
+      );
+      expect(harness.events).not.toContain('synced:document-id');
+    }
+  );
 
   test('finishes the committed receipt locally before resolving save', async () => {
     const harness = makeImportHarness();
@@ -754,21 +696,6 @@ describe('share import orchestration', () => {
     expect(harness.blocks.has('other-page')).toBe(true);
   });
 
-  test('rejects a PDF without its File before creating a document', async () => {
-    const harness = makeImportHarness();
-
-    await expect(
-      harness.service.importShareToWorkspace(
-        harness.metadata,
-        { ...input(), content: { kind: 'pdf' } },
-        { allowOffline: true }
-      )
-    ).resolves.toEqual({ status: 'attachment-missing' });
-
-    expect(harness.docs.createDoc).not.toHaveBeenCalled();
-    expect(harness.blobSet).not.toHaveBeenCalled();
-  });
-
   test('stores one stable attachment block for a valid PDF', async () => {
     const harness = makeImportHarness();
     const file = new File(['%PDF-1.7\ncontent'], 'report.pdf', {
@@ -837,28 +764,35 @@ describe('share import orchestration', () => {
     }
   );
 
-  test('rejects an attachment before creating a receipt or document', async () => {
-    const harness = makeImportHarness();
-    const file = new File(['%PDF-1.7\ncontent'], 'report.pdf', {
-      type: 'application/pdf',
-    });
-    Object.defineProperty(file, 'size', { value: 64 * 1024 * 1024 + 1 });
+  test.each(['attachment-missing', 'attachment-too-large'] as const)(
+    'rejects %s before creating a receipt or document',
+    async status => {
+      const harness = makeImportHarness();
+      const file = new File(['%PDF-1.7\ncontent'], 'report.pdf', {
+        type: 'application/pdf',
+      });
+      Object.defineProperty(file, 'size', { value: 64 * 1024 * 1024 + 1 });
 
-    await expect(
-      harness.service.importShareToWorkspace(
-        harness.metadata,
-        { ...input(), content: { kind: 'pdf' }, attachment: file },
-        { allowOffline: true }
-      )
-    ).resolves.toEqual({ status: 'attachment-too-large' });
+      await expect(
+        harness.service.importShareToWorkspace(
+          harness.metadata,
+          {
+            ...input(),
+            content: { kind: 'pdf' },
+            attachment: status === 'attachment-missing' ? undefined : file,
+          },
+          { allowOffline: true }
+        )
+      ).resolves.toEqual({ status });
 
-    expect(harness.docs.createDoc).not.toHaveBeenCalled();
-    expect(harness.events).not.toContain('receipt:preparing');
-    expect(harness.blobSet).not.toHaveBeenCalled();
-    expect(harness.events.filter(event => event.startsWith('add:'))).toEqual(
-      []
-    );
-  });
+      expect(harness.docs.createDoc).not.toHaveBeenCalled();
+      expect(harness.events).not.toContain('receipt:preparing');
+      expect(harness.blobSet).not.toHaveBeenCalled();
+      expect(harness.events.filter(event => event.startsWith('add:'))).toEqual(
+        []
+      );
+    }
+  );
 
   test('does not strand workspace A when its blob write fails and workspace B succeeds', async () => {
     const workspaceA = makeImportHarness({ workspaceId: 'workspace-a' });

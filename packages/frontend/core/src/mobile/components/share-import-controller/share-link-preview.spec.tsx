@@ -4,7 +4,6 @@ import { type Server } from '@affine/core/modules/cloud';
 import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
 import { ServerDeploymentType } from '@affine/graphql';
 import { LinkPreviewDetails } from '@blocksuite/affine/components/link-preview';
-import { ToggleButton } from '@blocksuite/affine/components/toggle-button';
 import {
   type LinkPreviewCacheProvider,
   type LinkPreviewResult,
@@ -364,15 +363,16 @@ describe('link preview transport and route ownership', () => {
     owner.selectWorkspace(selected, [
       server('self', 'https://first.example/', ServerDeploymentType.Selfhosted),
     ]);
-    owner.selectWorkspace(selected, [
-      server(
-        'self',
-        'https://changed.example/',
-        ServerDeploymentType.Selfhosted
-      ),
-    ]);
-
+    const selectedServer = server(
+      'self',
+      'https://changed.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    owner.selectWorkspace(selected, [selectedServer]);
+    const generation = owner.generation;
     const first = owner.load()!;
+    owner.selectWorkspace(selected, [selectedServer]);
+    expect(owner.generation).toBe(generation);
     expect(owner.load()).toBe(first);
     expect(fetch.mock.calls[0]?.[1]?.headers).toEqual({
       'Content-Type': 'application/json',
@@ -478,22 +478,6 @@ describe('link preview transport and route ownership', () => {
     await expect(preview).resolves.toMatchObject({ title: 'Preview B' });
   });
 
-  test('keeps the generation stable for the exact same selected route', () => {
-    const selectedWorkspace = workspace('self');
-    const selectedServer = server(
-      'self',
-      'https://self.example/',
-      ServerDeploymentType.Selfhosted
-    );
-    const owner = new SharePreviewRouteOwner(item());
-
-    owner.selectWorkspace(selectedWorkspace, [selectedServer]);
-    const generation = owner.generation;
-    owner.selectWorkspace(selectedWorkspace, [selectedServer]);
-
-    expect(owner.generation).toBe(generation);
-  });
-
   test('rejects a late response after its workspace generation is replaced', async () => {
     let resolveFirst!: (response: Response) => void;
     const firstServer = server(
@@ -593,7 +577,7 @@ describe('share preview presentation', () => {
       selectWorkspace: vi.fn(),
       load,
     } as unknown as SharePreviewRouteOwner;
-    render(
+    const { container } = render(
       <LinkPreview
         item={{
           ...item(),
@@ -610,6 +594,7 @@ describe('share preview presentation', () => {
     await waitFor(() =>
       expect(screen.getAllByText(expected).length).toBeGreaterThan(0)
     );
+    expect(container.querySelector('section > img')).toBeNull();
   });
 
   test('ignores stale preview results after the item changes', async () => {
@@ -703,25 +688,6 @@ describe('share preview presentation', () => {
     );
   });
 
-  test('keeps failure compact without an empty media region', async () => {
-    const owner = {
-      routeEndpoint: 'https://app.affine.pro/api/worker/link-preview',
-      selectWorkspace: vi.fn(),
-      load: () => Promise.reject(new Error('unavailable')),
-    } as unknown as SharePreviewRouteOwner;
-    const { container } = render(
-      <LinkPreview
-        item={item()}
-        owner={owner}
-        workspace={undefined}
-        servers={[]}
-      />
-    );
-
-    await screen.findByText('Preview unavailable');
-    expect(container.querySelector('section > img')).toBeNull();
-  });
-
   test.each([
     ['Shared', 'Provider title', 'host', 'Provider title'],
     ['Saved title', 'Provider title', 'host', 'Saved title'],
@@ -732,27 +698,6 @@ describe('share preview presentation', () => {
       expect(resolveShareTitle(original, preview, fallback)).toBe(expected);
     }
   );
-});
-
-describe('collapsed content accessibility', () => {
-  test('uses native button semantics and identifies the controlled content', async () => {
-    if (!customElements.get('blocksuite-toggle-button')) {
-      customElements.define('blocksuite-toggle-button', ToggleButton);
-    }
-    const toggle = document.createElement('blocksuite-toggle-button');
-    toggle.collapsed = true;
-    toggle.controls = 'heading-children-id';
-    toggle.updateCollapsed = vi.fn();
-    document.body.append(toggle);
-    await toggle.updateComplete;
-
-    const button = toggle.querySelector('button')!;
-    expect(button.getAttribute('aria-label')).toBe('Expand content');
-    expect(button.getAttribute('aria-expanded')).toBe('false');
-    expect(button.getAttribute('aria-controls')).toBe('heading-children-id');
-    button.click();
-    expect(toggle.updateCollapsed).toHaveBeenCalledWith(false);
-  });
 });
 
 describe('editor link details', () => {

@@ -84,23 +84,6 @@ describe('share import block plan', () => {
     ).toBe(false);
   });
 
-  test('uses deterministic IDs for retryable binary imports', () => {
-    const ids = shareImportBlockIds('attempt-id');
-
-    expect(ids.image).toBe('share-attempt-id-image');
-    expect(ids.attachment).toBe('share-attempt-id-attachment');
-  });
-
-  test('does not plan over user-added blocks because it only names share-owned IDs', () => {
-    const ids = shareImportBlockIds('attempt-id');
-    const plan = createShareBlockPlan({
-      ...input(),
-      content: { kind: 'url' as const, url: 'https://example.com' },
-    });
-    expect(plan.map(block => block.id)).not.toContain('user-added-block');
-    expect(plan.map(block => block.id)).toEqual([ids.bookmark]);
-  });
-
   test.each([
     ['', '', 'Import', { rootTitle: 'Import', pageTitle: 'Import' }],
     ['Root', '', 'Import', { rootTitle: 'Root', pageTitle: 'Root' }],

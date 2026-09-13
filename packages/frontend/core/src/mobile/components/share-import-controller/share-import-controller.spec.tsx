@@ -716,51 +716,7 @@ describe('share destination selection lifecycle', () => {
     expect(revokeObjectURL).not.toHaveBeenCalled();
   });
 
-  test('previews the original image File and revokes its object URL on unmount', async () => {
-    const createObjectURL = vi.fn(() => 'blob:shared-image');
-    const revokeObjectURL = vi.fn();
-    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
-    const image = new File(['image'], 'shared.png', { type: 'image/png' });
-    const shared = {
-      ...item(),
-      content: { kind: 'image' as const },
-      attachments: [{ fileName: 'shared.png', mimeType: 'image/png' }],
-    } satisfies PendingShareItem;
-    controllerServiceMocks.services.set(WorkspacesService.name, {
-      list: { workspaces$: { value: [] } },
-      getProfile: () => ({ name$: { value: '' } }),
-    });
-    controllerServiceMocks.services.set(ServersService.name, {
-      serversWithAccount$: { value: [] },
-      servers$: { value: [] },
-    });
-    controllerServiceMocks.services.set(ImportClipperService.name, {});
-    const provider = {
-      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
-      listPending: vi
-        .fn()
-        .mockResolvedValue([{ status: 'ready' as const, item: shared }]),
-      updateTarget: vi.fn(),
-      resolveAttachment: vi.fn().mockResolvedValue(image),
-      complete: vi.fn(),
-      setError: vi.fn(),
-    };
-
-    const view = render(<ShareImportController provider={provider} />);
-
-    await screen.findByText('Shared');
-    await waitFor(() => expect(createObjectURL).toHaveBeenCalledWith(image));
-    await waitFor(() =>
-      expect(document.querySelector('img')?.getAttribute('src')).toBe(
-        'blob:shared-image'
-      )
-    );
-    view.unmount();
-    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
-    expect(revokeObjectURL).toHaveBeenCalledWith('blob:shared-image');
-  });
-
-  test('keeps the resolved image attachment while switching workspaces', async () => {
+  test('retains the original image preview across workspace switches and revokes it on unmount', async () => {
     const createObjectURL = vi.fn(() => 'blob:shared-image');
     const revokeObjectURL = vi.fn();
     vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
@@ -808,7 +764,7 @@ describe('share destination selection lifecycle', () => {
       setError: vi.fn(),
     };
 
-    render(<ShareImportController provider={provider} />);
+    const view = render(<ShareImportController provider={provider} />);
 
     await waitFor(() =>
       expect(provider.resolveAttachment).toHaveBeenCalledTimes(1)
@@ -826,7 +782,12 @@ describe('share destination selection lifecycle', () => {
     expect(document.querySelector('img')?.getAttribute('src')).toBe(
       'blob:shared-image'
     );
+    expect(createObjectURL).toHaveBeenCalledExactlyOnceWith(image);
     expect(revokeObjectURL).not.toHaveBeenCalled();
+    view.unmount();
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+      'blob:shared-image'
+    );
   });
 
   test('keeps a PDF inbox item when its File is missing', async () => {
