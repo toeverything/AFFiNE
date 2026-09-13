@@ -19,7 +19,7 @@ use crate::{
 
 pub(in crate::runtime::backend_runtime) struct PermissionAuthorizer {
   store: PermissionStore,
-  deployment: Deployment,
+  pub(in crate::runtime::backend_runtime) deployment: Deployment,
   telemetry: PermissionTelemetry,
 }
 

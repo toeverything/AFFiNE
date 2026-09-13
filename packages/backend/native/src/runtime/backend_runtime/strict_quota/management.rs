@@ -1,10 +1,10 @@
 use affine_core::access_control::WorkspaceAction;
 use napi::Result;
-use sqlx::Row;
+use sqlx::{Connection, Row};
 
 use super::{
   super::{BackendRuntime, RuntimeError, napi_error, permission::PermissionAuthorizer},
-  invalidate_storage_usage,
+  StorageOperation, invalidate_storage_usage,
 };
 use crate::runtime::{
   object_storage::types::{ObjectKey, ObjectLocator, StorageScope},
@@ -62,7 +62,13 @@ impl BackendRuntime {
     let pool = self.pool().await?;
     let deployment = self.config()?.deployment;
     let authorizer = PermissionAuthorizer::with_telemetry(pool.clone(), deployment, self.permission_telemetry.clone());
-    let mut tx = pool
+    let locator = ObjectLocator::new(
+      StorageScope::Blob,
+      ObjectKey::new(format!("{}/{}", input.workspace_id, input.key))?,
+    );
+    let mut operation = StorageOperation::acquire(&pool, &input.workspace_id, Some(locator.key.as_str())).await?;
+    let mut tx = operation
+      .connection()
       .begin()
       .await
       .map_err(|error| RuntimeError::database("start managed blob delete", error))?;
@@ -80,22 +86,19 @@ impl BackendRuntime {
       .await
       .map_err(|error| RuntimeError::database("commit managed blob delete", error))?;
     if result.rows_affected() == 1 {
-      let owner_id = workspace_owner(&pool, &input.workspace_id).await?;
-      invalidate_storage_usage(self, &input.workspace_id, &owner_id).await;
+      let owner_id = workspace_owner(operation.connection(), &input.workspace_id).await?;
+      invalidate_storage_usage(self, &input.workspace_id, owner_id.as_deref()).await;
     }
     if result.rows_affected() == 1 && input.permanently {
-      let locator = ObjectLocator::new(
-        StorageScope::Blob,
-        ObjectKey::new(format!("{}/{}", input.workspace_id, input.key))?,
-      );
       self.object_storage()?.delete(&locator).await?;
       sqlx::query("DELETE FROM blobs WHERE workspace_id=$1 AND key=$2 AND deleted_at IS NOT NULL")
         .bind(&input.workspace_id)
         .bind(&input.key)
-        .execute(&pool)
+        .execute(operation.connection())
         .await
         .map_err(|error| RuntimeError::database("release permanently deleted managed blob", error))?;
     }
+    operation.release().await?;
     Ok(result.rows_affected() == 1)
   }
 
@@ -135,29 +138,46 @@ impl BackendRuntime {
     for row in rows {
       let key: String = row.get("key");
       let locator = ObjectLocator::new(StorageScope::Blob, ObjectKey::new(format!("{workspace_id}/{key}"))?);
+      let mut operation = StorageOperation::acquire(&pool, &workspace_id, Some(locator.key.as_str())).await?;
+      let deleted = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM blobs WHERE workspace_id=$1 AND key=$2 AND deleted_at IS NOT NULL)",
+      )
+      .bind(&workspace_id)
+      .bind(&key)
+      .fetch_one(operation.connection())
+      .await
+      .map_err(|error| RuntimeError::database("recheck managed blob release", error))?;
+      if !deleted {
+        operation.release().await?;
+        continue;
+      }
       storage.delete(&locator).await?;
       let deleted = sqlx::query("DELETE FROM blobs WHERE workspace_id=$1 AND key=$2 AND deleted_at IS NOT NULL")
         .bind(&workspace_id)
         .bind(&key)
-        .execute(&pool)
+        .execute(operation.connection())
         .await
         .map_err(|error| RuntimeError::database("release managed blob ledger", error))?;
+      operation.release().await?;
       released += i64::try_from(deleted.rows_affected()).unwrap_or(i64::MAX);
     }
     if released > 0 {
       let owner_id = workspace_owner(&pool, &workspace_id).await?;
-      invalidate_storage_usage(self, &workspace_id, &owner_id).await;
+      invalidate_storage_usage(self, &workspace_id, owner_id.as_deref()).await;
     }
     Ok(released)
   }
 }
 
-async fn workspace_owner(pool: &sqlx::PgPool, workspace_id: &str) -> Result<String> {
+async fn workspace_owner<'a>(
+  executor: impl sqlx::Executor<'a, Database = sqlx::Postgres>,
+  workspace_id: &str,
+) -> Result<Option<String>> {
   sqlx::query_scalar(
     "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active' LIMIT 1",
   )
   .bind(workspace_id)
-  .fetch_one(pool)
+  .fetch_optional(executor)
   .await
   .map_err(|error| RuntimeError::database("load managed blob owner", error).into())
 }

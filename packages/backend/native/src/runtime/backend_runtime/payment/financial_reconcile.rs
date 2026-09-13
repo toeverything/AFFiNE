@@ -234,12 +234,28 @@ async fn financial_candidate(runtime: &PaymentRuntime, namespace: &str) -> Runti
          AND (object_kind || ':' || external_id) {comparison} $2
        ORDER BY object_kind,external_id LIMIT 1"#,
   );
-  let row = sqlx::query(&query)
+  let mut row = sqlx::query(&query)
     .bind(namespace)
     .bind(key)
     .fetch_optional(&mut *tx)
     .await
     .map_err(|error| RuntimeError::database("load payment financial candidate", error))?;
+  let mut overlap_pass = cursor.overlap_pending;
+  if row.is_none() && cursor.overlap_pending {
+    row = sqlx::query(
+      r#"SELECT object_kind,external_id,source_identity FROM payment_financial_facts
+         WHERE provider_namespace=$1
+           AND ((object_kind='invoice' AND status='open') OR (object_kind='refund' AND status='pending') OR (object_kind='dispute' AND status='open'))
+           AND (object_kind || ':' || external_id) > $2
+         ORDER BY object_kind,external_id LIMIT 1"#,
+    )
+      .bind(namespace)
+      .bind(key)
+      .fetch_optional(&mut *tx)
+      .await
+      .map_err(|error| RuntimeError::database("advance payment financial candidate overlap", error))?;
+    overlap_pass = false;
+  }
   let Some(row) = row else {
     let wrapped = FinancialCursor {
       after: None,
@@ -256,7 +272,7 @@ async fn financial_candidate(runtime: &PaymentRuntime, namespace: &str) -> Runti
   let external_id: String = row.get("external_id");
   let next_cursor = FinancialCursor {
     after: Some(format!("{object_kind}:{external_id}")),
-    overlap_pending: !cursor.overlap_pending,
+    overlap_pending: !overlap_pass,
     generation: cursor.generation,
   };
   tx.commit()

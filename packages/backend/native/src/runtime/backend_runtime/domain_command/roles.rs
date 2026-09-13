@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use sqlx::{Postgres, Row, Transaction};
 
 use super::authorize_domain;
-use crate::runtime::{Deployment, RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
+use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum WorkspaceRoleTarget {
@@ -30,7 +30,6 @@ pub(super) async fn transition_workspace(
   workspace_id: String,
   target_user_id: String,
   new_role: String,
-  deployment: Deployment,
 ) -> RuntimeResult<WorkspaceRoleTransition> {
   let new_role = WorkspaceRole::parse(&new_role)
     .filter(|role| !matches!(role, WorkspaceRole::External))
@@ -44,16 +43,7 @@ pub(super) async fn transition_workspace(
     new_role,
     target_active_member: matches!(located, Some(WorkspaceRoleTarget::Member(_))),
   };
-  let decision = authorize_domain(
-    authorizer,
-    transaction,
-    &actor_user_id,
-    &workspace_id,
-    None,
-    &command,
-    deployment,
-  )
-  .await?;
+  let decision = authorize_domain(authorizer, transaction, &actor_user_id, &workspace_id, None, &command).await?;
   let target = load_workspace_target(transaction, &workspace_id, &target_user_id, true).await?;
   if target != located {
     return Err(RuntimeError::invalid_input("workspace_role_target_changed"));
@@ -127,7 +117,6 @@ pub(super) async fn transition_doc(
   doc_id: String,
   target_user_id: String,
   new_role: Option<String>,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
   super::lock_workspace(transaction, &workspace_id).await?;
   let new_role = match new_role.as_deref() {
@@ -175,7 +164,6 @@ pub(super) async fn transition_doc(
     &workspace_id,
     Some(&doc_id),
     &command,
-    deployment,
   )
   .await?;
   let locked_role = sqlx::query_scalar::<_, String>(
@@ -249,7 +237,6 @@ pub(super) async fn grant_docs(
   doc_id: String,
   target_user_ids: Vec<String>,
   new_role: String,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
   let new_role = DocRole::parse(&new_role)
     .filter(|role| {
@@ -278,7 +265,6 @@ pub(super) async fn grant_docs(
     &workspace_id,
     Some(&doc_id),
     &command,
-    deployment,
   )
   .await?;
   let locked = load_doc_roles(transaction, &workspace_id, &doc_id, &target_user_ids, true).await?;
@@ -316,7 +302,6 @@ pub(super) async fn set_doc_default_role(
   workspace_id: String,
   doc_id: String,
   new_role: String,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
   let new_role = DocRole::parse(&new_role)
     .filter(|role| !matches!(role, DocRole::External | DocRole::Owner))
@@ -334,7 +319,6 @@ pub(super) async fn set_doc_default_role(
     &workspace_id,
     Some(&doc_id),
     &command,
-    deployment,
   )
   .await?;
   if load_doc_default_role(transaction, &workspace_id, &doc_id).await? != current_role {
@@ -556,7 +540,6 @@ mod tests {
           doc_id,
           target_user_id,
           Some("owner".to_string()),
-          Deployment::Cloud,
         )
         .await;
         transaction.rollback().await.unwrap();
@@ -626,7 +609,6 @@ mod tests {
           workspace_id.clone(),
           users[1].clone(),
           role.to_string(),
-          Deployment::Cloud,
         )
         .await
         .is_err()
@@ -642,7 +624,6 @@ mod tests {
       workspace_id.clone(),
       users[0].clone(),
       "member".to_string(),
-      Deployment::Cloud,
     )
     .await
     .unwrap();
@@ -657,7 +638,6 @@ mod tests {
         workspace_id.clone(),
         users[1].clone(),
         "owner".to_string(),
-        Deployment::Cloud,
       )
       .await
       .is_err()
@@ -673,7 +653,6 @@ mod tests {
         workspace_id.clone(),
         actor_user_id.clone(),
         "owner".to_string(),
-        Deployment::Cloud,
       )
       .await
       .is_err()
@@ -710,7 +689,6 @@ mod tests {
       workspace_id.clone(),
       doc_id.clone(),
       "reader".to_string(),
-      Deployment::Cloud,
     )
     .await
     .unwrap();
@@ -725,7 +703,6 @@ mod tests {
           workspace_id.clone(),
           doc_id.clone(),
           role.to_string(),
-          Deployment::Cloud,
         )
         .await
         .is_err()
@@ -742,7 +719,6 @@ mod tests {
         doc_id.clone(),
         actor_user_id.clone(),
         Some("owner".to_string()),
-        Deployment::Cloud,
       )
       .await
       .is_err()
@@ -757,7 +733,6 @@ mod tests {
       doc_id.clone(),
       users[1].clone(),
       Some("reader".to_string()),
-      Deployment::Cloud,
     )
     .await
     .unwrap();
@@ -773,7 +748,6 @@ mod tests {
         doc_id,
         vec![users[2].clone()],
         "reader".to_string(),
-        Deployment::Cloud,
       )
       .await
       .is_err()

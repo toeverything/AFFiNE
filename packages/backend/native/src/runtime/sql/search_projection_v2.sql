@@ -47,7 +47,7 @@ BEGIN
         generation_id, workspace_id, doc_id, target_source_version,
         target_source_exists, target_permission_version
       )
-      SELECT candidate.id, target_workspace, target_doc, target_version, false,
+      SELECT candidate.id, target_workspace, target_doc, target_version, TG_OP <> 'DELETE',
              state.required_permission_version
       FROM search_projection.workspace_states state
       WHERE state.generation_id = candidate.id AND state.workspace_id = target_workspace
@@ -134,7 +134,7 @@ BEGIN
         UPDATE search_projection.document_states
         SET target_permission_version = GREATEST(target_permission_version, version),
             claim_fence = NULL, lease_owner = NULL, lease_expires_at = NULL,
-            available_at = CASE WHEN last_error IS NULL THEN now() ELSE available_at END,
+            last_error = NULL, available_at = now(),
             updated_at = now()
         WHERE generation_id = candidate.id
           AND workspace_id = target.workspace_id

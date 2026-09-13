@@ -5,7 +5,6 @@ import type { TestFn } from 'ava';
 import ava from 'ava';
 import supertest from 'supertest';
 
-import { AuthService, AuthSessionService } from '../../core/auth';
 import {
   changeEmail,
   changePassword,
@@ -17,9 +16,20 @@ import {
   TestingApp,
 } from '../utils';
 
-const test = ava as TestFn<{
+const test = ava.serial as TestFn<{
   app: TestingApp;
 }>;
+
+async function lastAuthMail(app: TestingApp, name: string) {
+  const delivery = await app.get(PrismaClient).mailDelivery.findFirstOrThrow({
+    where: { mailName: name },
+    orderBy: { createdAt: 'desc' },
+  });
+  return delivery.payload as {
+    to: string;
+    props: Record<string, string>;
+  };
+}
 
 test.beforeEach(async t => {
   const app = await createTestingApp();
@@ -42,7 +52,7 @@ test('change email', async t => {
 
   await sendChangeEmail(app, '/email-change');
 
-  const changeMail = app.mails.last('ChangeEmail');
+  const changeMail = await lastAuthMail(app, 'ChangeEmail');
 
   t.is(changeMail.to, u1Email);
 
@@ -63,7 +73,7 @@ test('change email', async t => {
     '/email-change-verify'
   );
 
-  const verifyMail = app.mails.last('VerifyChangeEmail');
+  const verifyMail = await lastAuthMail(app, 'VerifyChangeEmail');
 
   t.is(verifyMail.to, u2Email);
 
@@ -79,7 +89,7 @@ test('change email', async t => {
 
   await changeEmail(app, verifyEmailToken as string, u2Email);
 
-  const changedMail = app.mails.last('EmailChanged');
+  const changedMail = await lastAuthMail(app, 'EmailChanged');
 
   t.is(changedMail.to, u2Email);
   t.is(changedMail.props.to, u2Email);
@@ -110,15 +120,13 @@ test('set and change password', async t => {
   const u1Email = 'u1@affine.pro';
 
   const u1 = await app.signupV1(u1Email);
-  const parent = await app.get(AuthService).createUserSession(u1.id);
-  const authSession = await app.get(AuthSessionService).create({
-    userSessionId: parent.id,
+  const authSession = await app.createNativeAuthSession(u1.id, {
     installationId: 'password-change-device',
     platform: 'ios',
   });
   await sendSetPasswordEmail(app, u1Email, '/password-change');
 
-  const setPasswordMail = app.mails.last('SetPassword');
+  const setPasswordMail = await lastAuthMail(app, 'SetPassword');
   const link = new URL(setPasswordMail.props.url);
   const setPasswordToken = link.searchParams.get('token');
 

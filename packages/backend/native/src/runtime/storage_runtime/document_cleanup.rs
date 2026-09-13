@@ -1,35 +1,19 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use affine_core::access_control::classify_reserved_document;
 use chrono::{DateTime, Utc};
-use serde_json::{Value, json};
-use sqlx::{FromRow, PgPool, Postgres, Row, Transaction};
-use uuid::Uuid;
+use serde_json::json;
+use sqlx::{FromRow, PgPool, Row};
 
 use super::{
-  CurrentDoc, CurrentDocUpdate, RuntimeDocumentCleanupEffect, RuntimeDocumentCleanupExecuteResult,
-  RuntimeDocumentCleanupReconcileResult, RuntimeError, RuntimeResult, StorageRuntime, load_workspace_live_doc_ids,
-  merge_current_doc, napi_error,
+  DocumentCleanupOutcome, RuntimeDocumentCleanupExecuteResult, RuntimeDocumentCleanupReconcileResult, RuntimeError,
+  RuntimeResult, StorageRuntime, execute_document_cleanup_candidate, load_workspace_live_doc_ids, napi_error,
 };
 
 #[derive(FromRow)]
 struct StoredDocActivity {
   doc_id: String,
   last_activity_at: DateTime<Utc>,
-}
-
-#[derive(FromRow)]
-struct Candidate {
-  workspace_id: String,
-  doc_id: String,
-  last_doc_activity_at: Option<DateTime<Utc>>,
-}
-
-#[derive(FromRow)]
-struct PendingEffect {
-  workspace_id: String,
-  doc_id: String,
-  cleanup_payload: Value,
 }
 
 async fn load_stored_doc_activity(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<StoredDocActivity>> {
@@ -86,24 +70,6 @@ async fn record_reconcile_failure(
   .execute(&mut *tx)
   .await
   .map_err(|err| RuntimeError::database("Document cleanup failure checkpoint write failed", err))?;
-  sqlx::query(
-    r#"
-    INSERT INTO storage_reconciliation_runs
-      (kind, mode, status, workspace_id, finished_at, failed, metadata)
-    VALUES ('document_cleanup', 'mark_only', 'failed', $1, CURRENT_TIMESTAMP, 1, $2)
-    "#,
-  )
-  .bind(workspace_id)
-  .bind(json!({
-    "checkpointCompleted": false,
-    "failureKind": failure_kind,
-    "rootFailed": root_failed,
-    "docFailed": doc_failed,
-    "error": error,
-  }))
-  .execute(&mut *tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup failure run write failed", err))?;
   tx.commit()
     .await
     .map_err(|err| RuntimeError::database("Document cleanup failure commit failed", err))?;
@@ -168,20 +134,15 @@ async fn reconcile_workspace(
         (workspace_id, doc_id, status, missing_since, last_observed_missing_at, last_doc_activity_at)
       VALUES ($1, $2, 'marked', $3, $3, $4)
       ON CONFLICT (workspace_id, doc_id) DO UPDATE
-        SET status = CASE
-              WHEN document_cleanup_candidates.status = 'effects_pending' THEN 'effects_pending'
-              ELSE 'marked'
-            END,
+        SET status = 'marked',
             missing_since = CASE
-              WHEN document_cleanup_candidates.status = 'effects_pending' THEN document_cleanup_candidates.missing_since
               WHEN document_cleanup_candidates.last_doc_activity_at IS DISTINCT FROM EXCLUDED.last_doc_activity_at
                 THEN EXCLUDED.missing_since
               ELSE document_cleanup_candidates.missing_since
             END,
             last_observed_missing_at = EXCLUDED.last_observed_missing_at,
             last_doc_activity_at = EXCLUDED.last_doc_activity_at,
-            error = CASE WHEN document_cleanup_candidates.status = 'effects_pending'
-              THEN document_cleanup_candidates.error ELSE NULL END,
+            error = NULL,
             updated_at = CURRENT_TIMESTAMP
       "#,
     )
@@ -194,10 +155,7 @@ async fn reconcile_workspace(
     .map_err(|err| RuntimeError::database("Document cleanup candidate upsert failed", err))?;
     match existing {
       None => result.marked += 1,
-      Some(row)
-        if row.get::<String, _>("status") != "effects_pending"
-          && row.get::<Option<DateTime<Utc>>, _>("last_doc_activity_at") != Some(doc.last_activity_at) =>
-      {
+      Some(row) if row.get::<Option<DateTime<Utc>>, _>("last_doc_activity_at") != Some(doc.last_activity_at) => {
         result.reset += 1;
       }
       Some(_) => {}
@@ -242,494 +200,11 @@ async fn reconcile_workspace(
   .execute(&mut *tx)
   .await
   .map_err(|err| RuntimeError::database("Document cleanup checkpoint write failed", err))?;
-  sqlx::query(
-    r#"
-    INSERT INTO storage_reconciliation_runs
-      (kind, mode, status, workspace_id, finished_at, scanned, changed, metadata)
-    VALUES ('document_cleanup', 'mark_only', 'finished', $1, CURRENT_TIMESTAMP, $2, $3, $4)
-    "#,
-  )
-  .bind(workspace_id)
-  .bind(result.scanned_docs as i32)
-  .bind((result.marked + result.reset + result.recovered) as i32)
-  .bind(json!({
-    "reset": result.reset,
-    "recovered": result.recovered,
-    "rootFailed": 0,
-    "docFailed": 0,
-    "checkpointCompleted": true,
-  }))
-  .execute(&mut *tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup run write failed", err))?;
   tx.commit()
     .await
     .map_err(|err| RuntimeError::database("Document cleanup reconcile commit failed", err))?;
 
   Ok(result)
-}
-
-async fn load_current_doc_for_update(
-  tx: &mut Transaction<'_, Postgres>,
-  workspace_id: &str,
-  doc_id: &str,
-) -> RuntimeResult<Option<CurrentDoc>> {
-  let snapshot =
-    sqlx::query_as::<_, CurrentDoc>("SELECT blob, updated_at FROM snapshots WHERE workspace_id = $1 AND guid = $2")
-      .bind(workspace_id)
-      .bind(doc_id)
-      .fetch_optional(&mut **tx)
-      .await
-      .map_err(|err| RuntimeError::database("Document cleanup current snapshot load failed", err))?;
-  let updates = sqlx::query_as::<_, CurrentDocUpdate>(
-    "SELECT blob, created_at FROM updates WHERE workspace_id = $1 AND guid = $2 ORDER BY created_at ASC",
-  )
-  .bind(workspace_id)
-  .bind(doc_id)
-  .fetch_all(&mut **tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup current updates load failed", err))?;
-  merge_current_doc(snapshot, updates)
-}
-
-async fn current_activity(
-  tx: &mut Transaction<'_, Postgres>,
-  workspace_id: &str,
-  doc_id: &str,
-) -> RuntimeResult<Option<DateTime<Utc>>> {
-  sqlx::query_scalar::<_, Option<DateTime<Utc>>>(
-    r#"
-    SELECT MAX(activity_at)
-    FROM (
-      SELECT updated_at AS activity_at FROM snapshots WHERE workspace_id = $1 AND guid = $2
-      UNION ALL SELECT created_at FROM updates WHERE workspace_id = $1 AND guid = $2
-      UNION ALL SELECT timestamp FROM snapshot_histories WHERE workspace_id = $1 AND guid = $2
-    ) activity
-    "#,
-  )
-  .bind(workspace_id)
-  .bind(doc_id)
-  .fetch_one(&mut **tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup activity load failed", err))
-}
-
-fn root_contains(root: CurrentDoc, doc_id: &str) -> RuntimeResult<bool> {
-  let projection = affine_doc_loader::project_workspace_root(root.blob, true)
-    .map_err(|err| RuntimeError::invalid_state(format!("Document cleanup root parse failed: {err}")))?;
-  if !projection.complete {
-    return Err(RuntimeError::invalid_state("Document cleanup root doc is incomplete"));
-  }
-  Ok(projection.doc_ids.iter().any(|id| id == doc_id))
-}
-
-async fn delete_doc_rows(tx: &mut Transaction<'_, Postgres>, candidate: &Candidate) -> RuntimeResult<i64> {
-  let attachment_keys = sqlx::query_scalar::<_, String>(
-    "SELECT key FROM comment_attachments WHERE workspace_id = $1 AND doc_id = $2 ORDER BY key",
-  )
-  .bind(&candidate.workspace_id)
-  .bind(&candidate.doc_id)
-  .fetch_all(&mut **tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup attachment key load failed", err))?;
-  let cleanup_version = Uuid::new_v4().to_string();
-  let storage_bytes = sqlx::query(
-    r#"
-    SELECT
-      COALESCE((SELECT SUM(octet_length(blob)) FROM snapshots WHERE workspace_id = $1 AND guid = $2), 0)::bigint AS snapshot_bytes,
-      COALESCE((SELECT SUM(octet_length(blob)) FROM updates WHERE workspace_id = $1 AND guid = $2), 0)::bigint AS update_bytes,
-      COALESCE((SELECT SUM(octet_length(blob)) FROM snapshot_histories WHERE workspace_id = $1 AND guid = $2), 0)::bigint AS history_bytes
-    "#,
-  )
-  .bind(&candidate.workspace_id)
-  .bind(&candidate.doc_id)
-  .fetch_one(&mut **tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup storage bytes load failed", err))?;
-  let mut row_counts = HashMap::<String, i64>::new();
-  row_counts.insert(
-    "replies".to_string(),
-    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM replies WHERE workspace_id = $1 AND doc_id = $2")
-      .bind(&candidate.workspace_id)
-      .bind(&candidate.doc_id)
-      .fetch_one(&mut **tx)
-      .await
-      .map_err(|err| RuntimeError::database("Document cleanup reply cascade count failed", err))?,
-  );
-  let mut deleted_rows = 0;
-  for (table, doc_column) in [
-    ("workspace_pages", "page_id"),
-    ("doc_access_policies", "doc_id"),
-    ("doc_grants", "doc_id"),
-    ("doc_blob_refs", "doc_id"),
-    ("doc_blob_ref_projections", "doc_id"),
-    ("ai_workspace_ignored_docs", "doc_id"),
-    ("comments", "doc_id"),
-    ("comment_attachments", "doc_id"),
-    ("workspace_doc_view_daily", "doc_id"),
-  ] {
-    let query = format!("DELETE FROM {table} WHERE workspace_id = $1 AND {doc_column} = $2");
-    let affected = sqlx::query(&query)
-      .bind(&candidate.workspace_id)
-      .bind(&candidate.doc_id)
-      .execute(&mut **tx)
-      .await
-      .map_err(|err| RuntimeError::database(format!("Document cleanup {table} delete failed"), err))?
-      .rows_affected() as i64;
-    deleted_rows += affected;
-    row_counts.insert(table.to_string(), affected);
-  }
-  for (table, doc_column) in [
-    ("workspace_member_last_access", "last_doc_id"),
-    ("ai_sessions_metadata", "doc_id"),
-    ("ai_action_runs", "doc_id"),
-  ] {
-    let query = format!("UPDATE {table} SET {doc_column} = NULL WHERE workspace_id = $1 AND {doc_column} = $2");
-    let affected = sqlx::query(&query)
-      .bind(&candidate.workspace_id)
-      .bind(&candidate.doc_id)
-      .execute(&mut **tx)
-      .await
-      .map_err(|err| RuntimeError::database(format!("Document cleanup {table} unlink failed"), err))?
-      .rows_affected() as i64;
-    deleted_rows += affected;
-    row_counts.insert(format!("{table}.set_null"), affected);
-  }
-  for table in ["updates", "snapshot_histories", "snapshots"] {
-    let affected = sqlx::query(&format!("DELETE FROM {table} WHERE workspace_id = $1 AND guid = $2"))
-      .bind(&candidate.workspace_id)
-      .bind(&candidate.doc_id)
-      .execute(&mut **tx)
-      .await
-      .map_err(|err| RuntimeError::database(format!("Document cleanup {table} delete failed"), err))?
-      .rows_affected() as i64;
-    deleted_rows += affected;
-    row_counts.insert(table.to_string(), affected);
-  }
-
-  sqlx::query(
-    r#"
-    UPDATE document_cleanup_candidates
-    SET status = 'effects_pending', cleanup_payload = $3, error = NULL,
-        attempt_count = 0, updated_at = CURRENT_TIMESTAMP
-    WHERE workspace_id = $1 AND doc_id = $2
-    "#,
-  )
-  .bind(&candidate.workspace_id)
-  .bind(&candidate.doc_id)
-  .bind(json!({
-    "cleanupVersion": cleanup_version,
-    "commentAttachmentKeys": attachment_keys,
-    "commentObjectsDone": false,
-  }))
-  .execute(&mut **tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup candidate effect transition failed", err))?;
-  sqlx::query(
-    r#"
-    INSERT INTO storage_reconciliation_runs
-      (kind, mode, status, workspace_id, finished_at, scanned, changed, metadata)
-    VALUES ('document_cleanup_execute', 'execute', 'finished', $1, CURRENT_TIMESTAMP, 1, $2, $3)
-    "#,
-  )
-  .bind(&candidate.workspace_id)
-  .bind(deleted_rows as i32)
-  .bind(json!({
-    "docId": candidate.doc_id,
-    "cleanupVersion": cleanup_version,
-    "rowCounts": row_counts,
-    "snapshotBytes": storage_bytes.get::<i64, _>("snapshot_bytes"),
-    "updateBytes": storage_bytes.get::<i64, _>("update_bytes"),
-    "historyBytes": storage_bytes.get::<i64, _>("history_bytes"),
-  }))
-  .execute(&mut **tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup execute audit write failed", err))?;
-  Ok(deleted_rows)
-}
-
-async fn mark_candidate_failed(
-  tx: &mut Transaction<'_, Postgres>,
-  candidate: &Candidate,
-  error: String,
-) -> RuntimeResult<()> {
-  sqlx::query(
-    r#"
-    UPDATE document_cleanup_candidates
-    SET status = 'failed', attempt_count = attempt_count + 1,
-        error = $3, updated_at = CURRENT_TIMESTAMP
-    WHERE workspace_id = $1 AND doc_id = $2
-    "#,
-  )
-  .bind(&candidate.workspace_id)
-  .bind(&candidate.doc_id)
-  .bind(&error)
-  .execute(&mut **tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup candidate failure write failed", err))?;
-  sqlx::query(
-    r#"
-    INSERT INTO storage_reconciliation_runs
-      (kind, mode, status, workspace_id, finished_at, scanned, failed, metadata)
-    VALUES ('document_cleanup_execute', 'execute', 'failed', $1, CURRENT_TIMESTAMP, 1, 1, $2)
-    "#,
-  )
-  .bind(&candidate.workspace_id)
-  .bind(json!({
-    "docId": candidate.doc_id,
-    "error": error,
-  }))
-  .execute(&mut **tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup execute failure audit write failed", err))?;
-  Ok(())
-}
-
-async fn execute_one(
-  pool: &PgPool,
-  workspace_id: Option<&str>,
-  grace_period_days: i64,
-) -> RuntimeResult<Option<(Candidate, i64)>> {
-  let mut tx = pool
-    .begin()
-    .await
-    .map_err(|err| RuntimeError::database("Document cleanup execute transaction failed", err))?;
-  sqlx::query("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-    .execute(&mut *tx)
-    .await
-    .map_err(|err| RuntimeError::database("Document cleanup isolation setup failed", err))?;
-  let candidate = sqlx::query_as::<_, Candidate>(
-    r#"
-    SELECT workspace_id, doc_id, last_doc_activity_at
-    FROM document_cleanup_candidates
-    WHERE (status = 'marked'
-        OR (status = 'failed' AND updated_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes'))
-      AND ($1::text IS NULL OR workspace_id = $1)
-      AND missing_since <= CURRENT_TIMESTAMP - make_interval(days => $2::int)
-    ORDER BY missing_since, workspace_id, doc_id
-    FOR UPDATE SKIP LOCKED
-    LIMIT 1
-    "#,
-  )
-  .bind(workspace_id)
-  .bind(grace_period_days as i32)
-  .fetch_optional(&mut *tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup candidate claim failed", err))?;
-  let Some(candidate) = candidate else {
-    tx.rollback()
-      .await
-      .map_err(|err| RuntimeError::database("Document cleanup empty claim rollback failed", err))?;
-    return Ok(None);
-  };
-
-  if classify_reserved_document(&candidate.workspace_id, &candidate.doc_id).is_valid_reserved() {
-    sqlx::query("DELETE FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2")
-      .bind(&candidate.workspace_id)
-      .bind(&candidate.doc_id)
-      .execute(&mut *tx)
-      .await
-      .map_err(|err| RuntimeError::database("Document cleanup reserved candidate delete failed", err))?;
-    tx.commit()
-      .await
-      .map_err(|err| RuntimeError::database("Document cleanup reserved candidate commit failed", err))?;
-    return Ok(Some((candidate, -1)));
-  }
-
-  let root = match load_current_doc_for_update(&mut tx, &candidate.workspace_id, &candidate.workspace_id).await {
-    Ok(Some(root)) => root,
-    Ok(None) => {
-      mark_candidate_failed(
-        &mut tx,
-        &candidate,
-        "Workspace root doc is missing during document cleanup execute".to_string(),
-      )
-      .await?;
-      tx.commit()
-        .await
-        .map_err(|err| RuntimeError::database("Document cleanup failed candidate commit failed", err))?;
-      return Ok(Some((candidate, -3)));
-    }
-    Err(err) => {
-      mark_candidate_failed(&mut tx, &candidate, err.to_string()).await?;
-      tx.commit()
-        .await
-        .map_err(|err| RuntimeError::database("Document cleanup failed candidate commit failed", err))?;
-      return Ok(Some((candidate, -3)));
-    }
-  };
-  let contains = match root_contains(root, &candidate.doc_id) {
-    Ok(contains) => contains,
-    Err(err) => {
-      mark_candidate_failed(&mut tx, &candidate, err.to_string()).await?;
-      tx.commit()
-        .await
-        .map_err(|err| RuntimeError::database("Document cleanup failed candidate commit failed", err))?;
-      return Ok(Some((candidate, -3)));
-    }
-  };
-  if contains {
-    sqlx::query("DELETE FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2")
-      .bind(&candidate.workspace_id)
-      .bind(&candidate.doc_id)
-      .execute(&mut *tx)
-      .await
-      .map_err(|err| RuntimeError::database("Document cleanup recovered candidate delete failed", err))?;
-    tx.commit()
-      .await
-      .map_err(|err| RuntimeError::database("Document cleanup recovered candidate commit failed", err))?;
-    return Ok(Some((candidate, -1)));
-  }
-  let activity = current_activity(&mut tx, &candidate.workspace_id, &candidate.doc_id).await?;
-  if activity != candidate.last_doc_activity_at {
-    sqlx::query(
-      r#"
-      UPDATE document_cleanup_candidates
-      SET status = 'marked', missing_since = CURRENT_TIMESTAMP,
-          last_observed_missing_at = CURRENT_TIMESTAMP, last_doc_activity_at = $3,
-          error = NULL, updated_at = CURRENT_TIMESTAMP
-      WHERE workspace_id = $1 AND doc_id = $2
-      "#,
-    )
-    .bind(&candidate.workspace_id)
-    .bind(&candidate.doc_id)
-    .bind(activity)
-    .execute(&mut *tx)
-    .await
-    .map_err(|err| RuntimeError::database("Document cleanup activity reset failed", err))?;
-    tx.commit()
-      .await
-      .map_err(|err| RuntimeError::database("Document cleanup activity reset commit failed", err))?;
-    return Ok(Some((candidate, -2)));
-  }
-  let deleted_rows = delete_doc_rows(&mut tx, &candidate).await?;
-  tx.commit()
-    .await
-    .map_err(|err| RuntimeError::database("Document cleanup execute commit failed", err))?;
-  Ok(Some((candidate, deleted_rows)))
-}
-
-fn payload_effect(effect: &PendingEffect) -> RuntimeResult<RuntimeDocumentCleanupEffect> {
-  let cleanup_version = effect
-    .cleanup_payload
-    .get("cleanupVersion")
-    .and_then(Value::as_str)
-    .ok_or_else(|| RuntimeError::invalid_state("Document cleanup effect payload has no cleanupVersion"))?;
-  Ok(RuntimeDocumentCleanupEffect {
-    workspace_id: effect.workspace_id.clone(),
-    doc_id: effect.doc_id.clone(),
-    cleanup_version: cleanup_version.to_string(),
-    comment_objects_done: effect
-      .cleanup_payload
-      .get("commentObjectsDone")
-      .and_then(Value::as_bool)
-      .unwrap_or(false),
-  })
-}
-
-async fn complete_comment_objects(
-  tx: &mut Transaction<'_, Postgres>,
-  workspace_id: &str,
-  doc_id: &str,
-  cleanup_version: &str,
-) -> RuntimeResult<bool> {
-  let completed = sqlx::query_scalar::<_, bool>(
-    r#"
-    UPDATE document_cleanup_candidates
-    SET cleanup_payload = jsonb_set(cleanup_payload, '{commentObjectsDone}', 'true'),
-        error = NULL, updated_at = CURRENT_TIMESTAMP
-    WHERE workspace_id = $1 AND doc_id = $2 AND status = 'effects_pending'
-      AND cleanup_payload->>'cleanupVersion' = $3
-    RETURNING COALESCE((cleanup_payload->>'commentObjectsDone')::boolean, false)
-    "#,
-  )
-  .bind(workspace_id)
-  .bind(doc_id)
-  .bind(cleanup_version)
-  .fetch_optional(&mut **tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup effect completion failed", err))?;
-  let Some(completed) = completed else {
-    return Ok(true);
-  };
-  if completed {
-    sqlx::query(
-      "DELETE FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2 AND \
-       cleanup_payload->>'cleanupVersion' = $3",
-    )
-    .bind(workspace_id)
-    .bind(doc_id)
-    .bind(cleanup_version)
-    .execute(&mut **tx)
-    .await
-    .map_err(|err| RuntimeError::database("Document cleanup completed candidate delete failed", err))?;
-  }
-  Ok(completed)
-}
-
-async fn process_comment_objects(runtime: &StorageRuntime, effect: &PendingEffect) -> RuntimeResult<bool> {
-  let cleanup_version = effect
-    .cleanup_payload
-    .get("cleanupVersion")
-    .and_then(Value::as_str)
-    .ok_or_else(|| RuntimeError::invalid_state("Document cleanup effect is missing cleanupVersion"))?;
-  let comment_objects_done = effect
-    .cleanup_payload
-    .get("commentObjectsDone")
-    .and_then(Value::as_bool)
-    .unwrap_or(false);
-  if !comment_objects_done {
-    let keys = effect
-      .cleanup_payload
-      .get("commentAttachmentKeys")
-      .and_then(Value::as_array)
-      .into_iter()
-      .flatten()
-      .filter_map(Value::as_str)
-      .map(|key| format!("comment-attachments/{}/{}/{key}", effect.workspace_id, effect.doc_id))
-      .collect::<Vec<_>>();
-    if !keys.is_empty() {
-      let outcomes = runtime.object_storage_delete_many(keys).await?;
-      if let Some(failed) = outcomes.iter().find(|outcome| outcome.error.is_some()) {
-        return Err(RuntimeError::invalid_state(format!(
-          "Comment attachment object delete failed for {}: {}",
-          failed.key,
-          failed.error.as_deref().unwrap_or("unknown")
-        )));
-      }
-    }
-  }
-  let pool = runtime.pool().await?;
-  let mut tx = pool
-    .begin()
-    .await
-    .map_err(|err| RuntimeError::database("Document cleanup object effect transaction failed", err))?;
-  let completed = complete_comment_objects(&mut tx, &effect.workspace_id, &effect.doc_id, cleanup_version).await?;
-  tx.commit()
-    .await
-    .map_err(|err| RuntimeError::database("Document cleanup object effect commit failed", err))?;
-  Ok(completed)
-}
-
-async fn load_pending_effects(
-  pool: &PgPool,
-  workspace_id: Option<&str>,
-  limit: i64,
-) -> RuntimeResult<Vec<PendingEffect>> {
-  sqlx::query_as::<_, PendingEffect>(
-    r#"
-    SELECT workspace_id, doc_id, cleanup_payload
-    FROM document_cleanup_candidates
-    WHERE status = 'effects_pending' AND ($1::text IS NULL OR workspace_id = $1)
-    ORDER BY updated_at, workspace_id, doc_id
-    LIMIT $2
-    "#,
-  )
-  .bind(workspace_id)
-  .bind(limit)
-  .fetch_all(pool)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup pending effects load failed", err))
 }
 
 #[napi_derive::napi]
@@ -764,12 +239,14 @@ impl StorageRuntime {
       reset: 0,
       failed: 0,
       deleted_rows: 0,
-      effects: Vec::new(),
     };
+    let mut busy_workspaces = Vec::new();
     for _ in 0..limit {
       let mut retries = 0;
       let outcome = loop {
-        match execute_one(&pool, workspace_id.as_deref(), grace_period_days).await {
+        match execute_document_cleanup_candidate(&pool, workspace_id.as_deref(), grace_period_days, &busy_workspaces)
+          .await
+        {
           Err(err) if err.is_serialization_failure() && retries < 3 => {
             retries += 1;
             result.serialization_retries += 1;
@@ -777,42 +254,16 @@ impl StorageRuntime {
           result => break result,
         }
       }?;
-      let Some((_, outcome)) = outcome else { break };
+      let Some((candidate, outcome)) = outcome else { break };
       result.scanned_candidates += 1;
       match outcome {
-        -1 => result.recovered += 1,
-        -2 => result.reset += 1,
-        -3 => result.failed += 1,
-        rows => {
+        DocumentCleanupOutcome::Busy => busy_workspaces.push(candidate.workspace_id),
+        DocumentCleanupOutcome::Recovered => result.recovered += 1,
+        DocumentCleanupOutcome::Reset => result.reset += 1,
+        DocumentCleanupOutcome::Failed => result.failed += 1,
+        DocumentCleanupOutcome::Deleted(rows) => {
           result.executed += 1;
           result.deleted_rows += rows;
-        }
-      }
-    }
-    let effects = load_pending_effects(&pool, workspace_id.as_deref(), limit).await?;
-    for effect in effects {
-      let mut result_effect = payload_effect(&effect)?;
-      match process_comment_objects(self, &effect).await {
-        Ok(comment_objects_done) => {
-          result_effect.comment_objects_done = comment_objects_done;
-          result.effects.push(result_effect);
-        }
-        Err(err) => {
-          result.failed += 1;
-          result.effects.push(result_effect);
-          sqlx::query(
-            r#"
-            UPDATE document_cleanup_candidates
-            SET attempt_count = attempt_count + 1, error = $3, updated_at = CURRENT_TIMESTAMP
-            WHERE workspace_id = $1 AND doc_id = $2
-            "#,
-          )
-          .bind(&effect.workspace_id)
-          .bind(&effect.doc_id)
-          .bind(err.to_string())
-          .execute(&pool)
-          .await
-          .map_err(|db_err| RuntimeError::database("Document cleanup effect failure write failed", db_err))?;
         }
       }
     }
@@ -822,12 +273,14 @@ impl StorageRuntime {
 
 #[cfg(test)]
 mod tests {
-  use std::sync::RwLock;
+  use std::{collections::HashMap, sync::RwLock};
 
   use anyhow::{Context, Result as AnyResult};
   use napi::bindgen_prelude::Buffer;
+  use serde_json::Value;
   use sqlx::postgres::PgPoolOptions;
   use tokio::sync::Mutex;
+  use uuid::Uuid;
 
   use super::*;
   use crate::runtime::{
@@ -889,16 +342,11 @@ mod tests {
   }
 
   async fn cleanup_workspace_fixture(pool: &PgPool, user_id: &str, workspace_id: &str) -> AnyResult<()> {
-    sqlx::query("DELETE FROM storage_reconciliation_runs WHERE workspace_id = $1")
-      .bind(workspace_id)
-      .execute(pool)
-      .await?;
     sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE scope = $1")
       .bind(workspace_id)
       .execute(pool)
       .await?;
     for table in [
-      "blob_cleanup_candidates",
       "document_cleanup_candidates",
       "doc_blob_refs",
       "doc_blob_ref_projections",
@@ -934,6 +382,10 @@ mod tests {
     let root = affine_doc_loader::add_doc_to_root_doc(Vec::new(), "live-doc", None)?;
     let live_doc = affine_doc_loader::build_full_doc("Live", "", "live-doc")?;
     let doc = affine_doc_loader::build_full_doc("Missing", "![Asset](blob://candidate-blob)", doc_id)?;
+    sqlx::query("INSERT INTO workspaces (id, created_at) VALUES ($1, CURRENT_TIMESTAMP)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
     sqlx::query(
       r#"
     INSERT INTO snapshots (workspace_id, guid, blob, updated_at)
@@ -987,37 +439,26 @@ mod tests {
         .await?;
     assert_eq!(root_projection.get::<String, _>("status"), "failed");
     assert_eq!(root_projection.get::<String, _>("error_code"), "yocto_unsupported");
-    let cleanup = runtime
-      .plan_unreferenced_workspace_blobs(workspace_id.clone(), 30, 100)
-      .await
-      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert_eq!(cleanup.candidates_marked, 0);
-    let cleanup_metadata =
-      sqlx::query_scalar::<_, Value>("SELECT metadata FROM storage_reconciliation_runs WHERE id = $1::uuid")
-        .bind(&cleanup.run_id)
-        .fetch_one(&pool)
-        .await?;
-    assert_eq!(
-      cleanup_metadata["staleOrFailedProjectionWorkspaces"],
-      serde_json::json!([workspace_id])
-    );
     sqlx::query(
-      "INSERT INTO blob_cleanup_candidates (workspace_id, blob_key, reason, status, object_size, \
-       object_last_modified, run_id, evidence) VALUES ($1, 'unknown-ref', 'unreferenced_completed_blob', 'marked', 1, \
-       CURRENT_TIMESTAMP - INTERVAL '90 days', $2::uuid, '{}')",
+      "INSERT INTO blobs (workspace_id, key, size, mime, status, created_at) VALUES ($1, 'unknown-ref', 1, \
+       'application/octet-stream', 'completed', CURRENT_TIMESTAMP - INTERVAL '90 days')",
     )
     .bind(&workspace_id)
-    .bind(&cleanup.run_id)
     .execute(&pool)
     .await?;
-    let executed = runtime
-      .execute_blob_cleanup_candidates(cleanup.run_id.unwrap(), 30, 100)
+    let cleanup = runtime
+      .cleanup_unreferenced_workspace_blobs(workspace_id.clone(), 30, 100)
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert_eq!(executed.skipped_still_referenced, 1);
     assert_eq!(
-      (executed.deleted_objects, executed.deleted_metadata, executed.failed),
-      (0, 0, 0)
+      (
+        cleanup.scanned_blobs,
+        cleanup.protected_by_metadata,
+        cleanup.deleted_objects,
+        cleanup.deleted_metadata,
+        cleanup.failed
+      ),
+      (0, 1, 0, 0, 0)
     );
     assert_eq!(
       sqlx::query_scalar::<_, String>(
@@ -1278,14 +719,6 @@ mod tests {
         .is_err()
     );
 
-    sqlx::query("DELETE FROM blob_cleanup_candidates WHERE workspace_id = $1")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await?;
-    sqlx::query("DELETE FROM storage_reconciliation_runs WHERE workspace_id = $1")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await?;
     sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE scope = $1")
       .bind(&workspace_id)
       .execute(&pool)
@@ -1303,6 +736,14 @@ mod tests {
       .execute(&pool)
       .await?;
     sqlx::query("DELETE FROM snapshots WHERE workspace_id = $1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("DELETE FROM blobs WHERE workspace_id = $1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("DELETE FROM workspaces WHERE id = $1")
       .bind(&workspace_id)
       .execute(&pool)
       .await?;
@@ -1427,9 +868,50 @@ mod tests {
     .bind(&reserved_db_doc_id)
     .execute(&pool)
     .await?;
-    let recovered_reserved = execute_one(&pool, Some(&workspace_id), 30).await?.unwrap();
+    let busy = super::super::StorageOperation::acquire(&pool, &workspace_id, Some("in-flight-upload")).await?;
+    let (other_user, other_workspace) = insert_user_workspace(&pool, &format!("other-{suffix}")).await?;
+    let other_reserved_doc = format!("db${other_workspace}$docProperties");
+    sqlx::query(
+      "INSERT INTO document_cleanup_candidates(workspace_id,doc_id,status,missing_since,last_observed_missing_at) \
+       VALUES($1,$2,'marked',now()-interval '30 days',now())",
+    )
+    .bind(&other_workspace)
+    .bind(&other_reserved_doc)
+    .execute(&pool)
+    .await?;
+    let progress = tokio::time::timeout(
+      std::time::Duration::from_secs(2),
+      runtime.execute_document_cleanup_candidates(None, 30, 100),
+    )
+    .await??;
+    assert!(
+      progress.recovered >= 1,
+      "a busy workspace must not block another candidate"
+    );
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>(
+        "SELECT count(*) FROM document_cleanup_candidates WHERE workspace_id=$1 AND doc_id=$2"
+      )
+      .bind(&workspace_id)
+      .bind(&reserved_db_doc_id)
+      .fetch_one(&pool)
+      .await?,
+      1
+    );
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>("SELECT count(*) FROM document_cleanup_candidates WHERE workspace_id=$1")
+        .bind(&other_workspace)
+        .fetch_one(&pool)
+        .await?,
+      0
+    );
+    busy.release().await?;
+    cleanup_workspace_fixture(&pool, &other_user, &other_workspace).await?;
+    let recovered_reserved = execute_document_cleanup_candidate(&pool, Some(&workspace_id), 30, &[])
+      .await?
+      .unwrap();
     assert_eq!(recovered_reserved.0.doc_id, reserved_db_doc_id);
-    assert_eq!(recovered_reserved.1, -1);
+    assert_eq!(recovered_reserved.1, DocumentCleanupOutcome::Recovered);
     assert_eq!(
       sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM snapshots WHERE workspace_id = $1 AND guid = $2")
         .bind(&workspace_id)
@@ -1469,7 +951,7 @@ mod tests {
       .await?,
       "pending"
     );
-    let not_due = execute_one(&pool, Some(&workspace_id), 30).await?;
+    let not_due = execute_document_cleanup_candidate(&pool, Some(&workspace_id), 30, &[]).await?;
     assert!(not_due.is_none());
 
     let session_id = format!("session:{suffix}");
@@ -1614,8 +1096,6 @@ mod tests {
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
     assert_eq!(executed.executed, 1);
     assert_eq!(executed.failed, 0);
-    assert_eq!(executed.effects.len(), 1);
-    assert!(executed.effects[0].comment_objects_done);
     let search_delete_tasks = sqlx::query_scalar::<_, i64>(
       "SELECT COUNT(*) FROM search_projection.document_states WHERE generation_id = $1 AND workspace_id = $2 AND \
        doc_id = $3",
@@ -1626,6 +1106,25 @@ mod tests {
     .fetch_one(&pool)
     .await?;
     assert_eq!(search_delete_tasks, 1);
+    assert!(
+      runtime
+        .head_object("blob".to_string(), attachment_object_key.clone())
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?
+        .is_some()
+    );
+    let metadata_path = object_root
+      .path()
+      .join("document-cleanup-test")
+      .join(format!("{attachment_object_key}.metadata.json"));
+    let mut metadata: Value = serde_json::from_slice(&std::fs::read(&metadata_path)?)?;
+    metadata["lastModified"] = serde_json::json!((Utc::now() - chrono::Duration::hours(25)).timestamp_millis());
+    std::fs::write(&metadata_path, serde_json::to_vec(&metadata)?)?;
+    let reconciled = runtime
+      .reconcile_workspace_storage(1000)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(reconciled.deleted_objects, 1);
     assert!(
       runtime
         .head_object("blob".to_string(), attachment_object_key)
@@ -1712,40 +1211,12 @@ mod tests {
     .execute(&pool)
     .await?;
 
-    let failed_object_delete = runtime
+    let cleaned_invalid_attachment = runtime
       .execute_document_cleanup_candidates(Some(workspace_id.clone()), 30, 10)
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert_eq!(failed_object_delete.executed, 1);
-    assert_eq!(failed_object_delete.failed, 1);
-    assert!(!failed_object_delete.effects[0].comment_objects_done);
-    let retained = sqlx::query(
-      "SELECT status, attempt_count, error FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2",
-    )
-    .bind(&workspace_id)
-    .bind(retry_doc_id)
-    .fetch_one(&pool)
-    .await?;
-    assert_eq!(retained.get::<String, _>("status"), "effects_pending");
-    assert_eq!(retained.get::<i32, _>("attempt_count"), 1);
-    assert!(retained.get::<Option<String>, _>("error").is_some());
-
-    sqlx::query(
-      "UPDATE document_cleanup_candidates SET cleanup_payload = jsonb_set(cleanup_payload, '{commentAttachmentKeys}', \
-       '[\"already-missing\"]') WHERE workspace_id = $1 AND doc_id = $2",
-    )
-    .bind(&workspace_id)
-    .bind(retry_doc_id)
-    .execute(&pool)
-    .await?;
-    let retried = runtime
-      .execute_document_cleanup_candidates(Some(workspace_id.clone()), 30, 10)
-      .await
-      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    assert_eq!(retried.executed, 0);
-    assert_eq!(retried.failed, 0);
-    assert_eq!(retried.effects.len(), 1);
-    assert!(retried.effects[0].comment_objects_done);
+    assert_eq!(cleaned_invalid_attachment.executed, 1);
+    assert_eq!(cleaned_invalid_attachment.failed, 0);
     let retry_candidate_count = sqlx::query_scalar::<_, i64>(
       "SELECT COUNT(*) FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2",
     )

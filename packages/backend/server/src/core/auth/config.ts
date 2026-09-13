@@ -25,8 +25,6 @@ export interface AuthConfig {
     ipLimit: number;
     emailLimit: number;
   }>;
-  inviteQuotaShadowMode: boolean;
-  inviteQuotaFailOpenOnRuntimeError: boolean;
   passwordRequirements: ConfigItem<{
     min: number;
     max: number;
@@ -80,16 +78,6 @@ defineModuleConfig('auth', {
         emailLimit: z.number().int().positive(),
       })
       .strict(),
-  },
-  inviteQuotaShadowMode: {
-    desc: 'Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions.',
-    default: false,
-    shape: z.boolean(),
-  },
-  inviteQuotaFailOpenOnRuntimeError: {
-    desc: 'Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production.',
-    default: false,
-    shape: z.boolean(),
   },
   passwordRequirements: {
     desc: 'The password strength requirements when set new password.',

@@ -6,7 +6,6 @@ import request from 'supertest';
 
 import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS, ConfigFactory } from '../../base';
 import {
-  AccessTokenService,
   AuthModule,
   AuthSessionService,
   CurrentUser,
@@ -40,18 +39,18 @@ function makeCanaryDateVersion(date: Date, build = '015') {
   return `${date.getUTCFullYear()}.${date.getUTCMonth() + 1}.${date.getUTCDate()}-canary.${build}`;
 }
 
-const test = ava as TestFn<{
+const test = ava.serial as TestFn<{
   app: TestingApp;
   server: any;
   auth: AuthService;
-  accessTokens: AccessTokenService;
   authSessions: AuthSessionService;
   models: Models;
   db: PrismaClient;
   config: ConfigFactory;
-  u1: CurrentUser;
+  u1: Pick<CurrentUser, 'id'>;
   sessionId: string;
   authSessionId: string;
+  accessToken: string;
 }>;
 
 test.before(async t => {
@@ -63,7 +62,6 @@ test.before(async t => {
   t.context.app = app;
   t.context.server = app.getHttpServer();
   t.context.auth = app.get(AuthService);
-  t.context.accessTokens = app.get(AccessTokenService);
   t.context.authSessions = app.get(AuthSessionService);
   t.context.models = app.get(Models);
   t.context.db = app.get(PrismaClient);
@@ -82,20 +80,19 @@ test.beforeEach(async t => {
     },
   });
 
-  t.context.u1 = await t.context.auth.signUp('u1@affine.pro', '1');
-  const session = await t.context.models.session.createSession();
-  t.context.sessionId = session.id;
-  const userSession = await t.context.auth.createUserSession(
-    t.context.u1.id,
-    t.context.sessionId
-  );
-  t.context.authSessionId = (
-    await t.context.authSessions.create({
-      userSessionId: userSession.id,
-      installationId: 'installation-1',
-      platform: 'ios',
+  t.context.u1 = await t.context.app.createUser('u1@affine.pro');
+  const issued = await t.context.app.createNativeAuthSession(t.context.u1.id, {
+    installationId: 'installation-1',
+    platform: 'ios',
+  });
+  t.context.authSessionId = issued.session.id;
+  t.context.accessToken = issued.accessToken;
+  t.context.sessionId = (
+    await t.context.db.authSession.findUniqueOrThrow({
+      where: { id: issued.session.id },
+      include: { userSession: true },
     })
-  ).session.id;
+  ).userSession.sessionId;
 });
 
 test.after.always(async t => {
@@ -154,52 +151,36 @@ test('should reject a legacy bearer session id', async t => {
 });
 
 test('should be able to visit private api with auth-session access jwt', async t => {
-  const jwt = await t.context.accessTokens.sign(
-    t.context.u1.id,
-    t.context.authSessionId
-  );
-
   const res = await request(t.context.server)
     .get('/private')
-    .set('Authorization', `Bearer ${jwt.token}`)
+    .set('Authorization', `Bearer ${t.context.accessToken}`)
     .expect(HttpStatus.OK);
 
   t.is(res.body.user.id, t.context.u1.id);
 });
 
 test('should prefer bearer jwt over cookie session', async t => {
-  const u2 = await t.context.auth.signUp('u2@affine.pro', '1');
-  const u2Session = await t.context.auth.createUserSession(u2.id);
-  const u2AuthSessionPrincipal = await t.context.authSessions.create({
-    userSessionId: u2Session.id,
+  const u2 = await t.context.app.createUser('u2@affine.pro');
+  const u2Session = await t.context.app.createNativeAuthSession(u2.id, {
     installationId: 'installation-2',
     platform: 'android',
   });
-  const jwt = await t.context.accessTokens.sign(
-    u2.id,
-    u2AuthSessionPrincipal.session.id
-  );
 
   const res = await request(t.context.server)
     .get('/private')
     .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
-    .set('Authorization', `Bearer ${jwt.token}`)
+    .set('Authorization', `Bearer ${u2Session.accessToken}`)
     .expect(HttpStatus.OK);
 
   t.is(res.body.user.id, u2.id);
 });
 
 test('should reject jwt after its user session is deleted', async t => {
-  const jwt = await t.context.accessTokens.sign(
-    t.context.u1.id,
-    t.context.authSessionId
-  );
-
   await t.context.auth.signOut(t.context.sessionId, t.context.u1.id);
 
   await request(t.context.server)
     .get('/private')
-    .set('Authorization', `Bearer ${jwt.token}`)
+    .set('Authorization', `Bearer ${t.context.accessToken}`)
     .expect(HttpStatus.UNAUTHORIZED);
 
   t.pass();
@@ -215,15 +196,14 @@ test('should enforce client version for auth-session access jwt auth', async t =
     },
   });
 
-  const session = await t.context.auth.createUserSession(t.context.u1.id);
-  const authSession = await t.context.authSessions.create({
-    userSessionId: session.id,
-    installationId: 'version-installation',
-    platform: 'electron',
-  });
-  const token = (
-    await t.context.accessTokens.sign(t.context.u1.id, authSession.session.id)
-  ).token;
+  const authSession = await t.context.app.createNativeAuthSession(
+    t.context.u1.id,
+    {
+      installationId: 'version-installation',
+      platform: 'electron',
+    }
+  );
+  const token = authSession.accessToken;
   const res = await request(t.context.server)
     .get('/private')
     .set('Authorization', `Bearer ${token}`)
@@ -287,9 +267,7 @@ test('should expose auth-session version rejection on a public api', async t => 
       },
     },
   });
-  const token = (
-    await t.context.accessTokens.sign(t.context.u1.id, t.context.authSessionId)
-  ).token;
+  const token = t.context.accessToken;
   const res = await request(t.context.server)
     .get('/public')
     .set('Authorization', `Bearer ${token}`)

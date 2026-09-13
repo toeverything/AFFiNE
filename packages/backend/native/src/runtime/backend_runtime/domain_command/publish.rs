@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use sqlx::{Postgres, Row, Transaction};
 
 use super::authorize_domain;
-use crate::runtime::{Deployment, RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
+use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 pub(super) async fn set_published(
   authorizer: &PermissionAuthorizer,
@@ -13,7 +13,6 @@ pub(super) async fn set_published(
   doc_id: String,
   mode: i16,
   publish: bool,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
   if workspace_id == doc_id {
     return Err(RuntimeError::invalid_input("doc_is_workspace"));
@@ -30,7 +29,6 @@ pub(super) async fn set_published(
     &workspace_id,
     Some(&doc_id),
     &command,
-    deployment,
   )
   .await?;
 
@@ -135,7 +133,6 @@ mod tests {
         missing_doc_id.clone(),
         0,
         true,
-        Deployment::Cloud,
       )
       .await
       .is_err()
@@ -186,7 +183,6 @@ mod tests {
       doc_id.clone(),
       0,
       true,
-      Deployment::Cloud,
     )
     .await;
     assert!(denied.is_err());
@@ -207,7 +203,6 @@ mod tests {
       doc_id.clone(),
       0,
       true,
-      Deployment::Cloud,
     )
     .await
     .unwrap();
@@ -228,7 +223,6 @@ mod tests {
       doc_id,
       0,
       false,
-      Deployment::Cloud,
     )
     .await
     .unwrap();

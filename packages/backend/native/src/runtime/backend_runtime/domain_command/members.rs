@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use sqlx::{Postgres, Row, Transaction};
 
 use super::authorize_domain;
-use crate::runtime::{Deployment, RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
+use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct RemovalTarget {
@@ -17,7 +17,6 @@ pub(super) async fn revoke_workspace_member(
   actor_user_id: String,
   workspace_id: String,
   target_user_id: String,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
   let located = load_removal_target(transaction, &workspace_id, &target_user_id, false)
     .await?
@@ -26,16 +25,7 @@ pub(super) async fn revoke_workspace_member(
     target_role: located.role,
     actor_is_target: actor_user_id == target_user_id,
   };
-  authorize_domain(
-    authorizer,
-    transaction,
-    &actor_user_id,
-    &workspace_id,
-    None,
-    &command,
-    deployment,
-  )
-  .await?;
+  authorize_domain(authorizer, transaction, &actor_user_id, &workspace_id, None, &command).await?;
   let locked = load_removal_target(transaction, &workspace_id, &target_user_id, true)
     .await?
     .ok_or_else(|| RuntimeError::invalid_input("workspace_member_not_found"))?;
@@ -56,7 +46,6 @@ pub(super) async fn leave_workspace(
   transaction: &mut Transaction<'_, Postgres>,
   actor_user_id: String,
   workspace_id: String,
-  deployment: Deployment,
 ) -> RuntimeResult<Value> {
   authorize_domain(
     authorizer,
@@ -65,7 +54,6 @@ pub(super) async fn leave_workspace(
     &workspace_id,
     None,
     &DomainCommand::LeaveWorkspace,
-    deployment,
   )
   .await?;
   let target = load_removal_target(transaction, &workspace_id, &actor_user_id, true)
@@ -223,7 +211,6 @@ mod tests {
       owner_id.clone(),
       workspace_id.clone(),
       owner_id.clone(),
-      Deployment::Cloud,
     )
     .await
     .unwrap_err();
@@ -237,7 +224,6 @@ mod tests {
       member_id.clone(),
       workspace_id.clone(),
       owner_id.clone(),
-      Deployment::Cloud,
     )
     .await
     .unwrap_err();
@@ -245,15 +231,9 @@ mod tests {
     transaction.rollback().await.unwrap();
 
     let mut transaction = pool.begin().await.unwrap();
-    let error = leave_workspace(
-      &authorizer,
-      &mut transaction,
-      owner_id.clone(),
-      workspace_id.clone(),
-      Deployment::Cloud,
-    )
-    .await
-    .unwrap_err();
+    let error = leave_workspace(&authorizer, &mut transaction, owner_id.clone(), workspace_id.clone())
+      .await
+      .unwrap_err();
     assert_eq!(error.to_string(), "workspace_owner_cannot_leave");
     transaction.rollback().await.unwrap();
 
@@ -265,7 +245,6 @@ mod tests {
         owner_id.clone(),
         workspace_id.clone(),
         target_user_id.clone(),
-        Deployment::Cloud,
       )
       .await
       .unwrap();
@@ -274,15 +253,9 @@ mod tests {
     }
 
     let mut transaction = pool.begin().await.unwrap();
-    let value = leave_workspace(
-      &authorizer,
-      &mut transaction,
-      leaving_id.clone(),
-      workspace_id.clone(),
-      Deployment::Cloud,
-    )
-    .await
-    .unwrap();
+    let value = leave_workspace(&authorizer, &mut transaction, leaving_id.clone(), workspace_id.clone())
+      .await
+      .unwrap();
     assert_eq!(value["previousState"], "active");
     transaction.commit().await.unwrap();
 
@@ -321,15 +294,7 @@ mod tests {
       tokio::spawn(async move {
         let authorizer = PermissionAuthorizer::new(pool.clone(), Deployment::Cloud);
         let mut transaction = pool.begin().await.unwrap();
-        let result = revoke_workspace_member(
-          &authorizer,
-          &mut transaction,
-          owner_id,
-          workspace_id,
-          target_id,
-          Deployment::Cloud,
-        )
-        .await;
+        let result = revoke_workspace_member(&authorizer, &mut transaction, owner_id, workspace_id, target_id).await;
         transaction.rollback().await.unwrap();
         result
       })

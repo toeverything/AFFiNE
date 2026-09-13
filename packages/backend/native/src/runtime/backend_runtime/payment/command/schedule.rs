@@ -9,24 +9,29 @@ use crate::runtime::backend_runtime::payment::stripe_client::{
 };
 
 impl PaymentRuntime {
-  #[allow(clippy::too_many_arguments)]
   pub(super) async fn update_recurring(
     &self,
     changes: &mut super::super::PaymentApplyResult,
     actor_user_id: Option<&str>,
-    target_type: &str,
-    target_id: &str,
-    plan: &str,
+    validate_key: Option<&str>,
+    target: &SubscriptionTarget,
     recurring: &str,
     intent_id: &str,
   ) -> RuntimeResult<Value> {
+    let SubscriptionTarget {
+      target_type,
+      target_id,
+      plan,
+    } = target;
+    let (target_type, target_id) = (target_type.as_str(), target_id.as_str());
     validate_target(target_type, target_id)?;
     validate_intent(intent_id)?;
-    if target_type == "user" && actor_user_id != Some(target_id) {
-      return Err(RuntimeError::invalid_input("payment actor does not match user target"));
-    }
-    if target_type == "workspace" {
-      self.assert_workspace_payment(actor_user_id, target_id).await?;
+    match target_type {
+      "user" if actor_user_id != Some(target_id) => {
+        return Err(RuntimeError::invalid_input("payment actor does not match user target"));
+      }
+      "workspace" => self.assert_workspace_payment(actor_user_id, target_id).await?,
+      _ => {}
     }
     let plan = parse_plan(plan)?;
     let recurring = SubscriptionRecurring::parse(recurring)
@@ -39,9 +44,12 @@ impl PaymentRuntime {
     .map_err(subscription_mutation_error)?;
     let namespace = self.stripe()?.namespace().clone();
     let namespace_key = canonical_namespace(&namespace)?;
-    let locked = self
+    let mut locked = self
       .lock_stripe_subscription(&namespace_key, target_type, target_id, plan)
       .await?;
+    if target_type == "instance" {
+      assert_license_access(locked.connection.connection(), target_id, validate_key).await?;
+    }
     let stored_recurring = locked
       .recurring
       .as_deref()
@@ -146,28 +154,55 @@ impl PaymentRuntime {
   pub(super) async fn update_quantity(
     &self,
     changes: &mut super::super::PaymentApplyResult,
-    target_type: &str,
-    target_id: &str,
-    plan: &str,
+    actor_user_id: Option<&str>,
+    validate_key: Option<&str>,
+    target: &SubscriptionTarget,
     quantity: u32,
     intent_id: &str,
   ) -> RuntimeResult<Value> {
+    let SubscriptionTarget {
+      target_type,
+      target_id,
+      plan,
+    } = target;
+    let (target_type, target_id) = (target_type.as_str(), target_id.as_str());
     validate_target(target_type, target_id)?;
     validate_intent(intent_id)?;
+    match target_type {
+      "user" if actor_user_id != Some(target_id) => {
+        return Err(RuntimeError::invalid_input("payment actor does not match user target"));
+      }
+      "workspace" => self.assert_workspace_payment(actor_user_id, target_id).await?,
+      _ => {}
+    }
     let plan = parse_plan(plan)?;
-    validate_subscription_mutation(
+    validate_subscription_mutation_target(
       plan,
       billing_target(target_type)?,
-      SubscriptionRecurring::Monthly,
-      false,
       SubscriptionMutation::ChangeQuantity(quantity),
     )
     .map_err(subscription_mutation_error)?;
     let namespace = self.stripe()?.namespace().clone();
     let namespace_key = canonical_namespace(&namespace)?;
-    let locked = self
+    let mut locked = self
       .lock_stripe_subscription(&namespace_key, target_type, target_id, plan)
       .await?;
+    if target_type == "instance" {
+      assert_license_access(locked.connection.connection(), target_id, validate_key).await?;
+    }
+    let stored_recurring = locked
+      .recurring
+      .as_deref()
+      .and_then(SubscriptionRecurring::parse)
+      .ok_or_else(|| RuntimeError::invalid_state("payment subscription recurring is invalid"))?;
+    validate_subscription_mutation(
+      plan,
+      billing_target(target_type)?,
+      stored_recurring,
+      locked.canceled_at.is_some(),
+      SubscriptionMutation::ChangeQuantity(quantity),
+    )
+    .map_err(subscription_mutation_error)?;
     if locked.quantity == i32::try_from(quantity).ok() {
       return Ok(json!({ "status": "unchanged", "quantity": quantity }));
     }
@@ -185,11 +220,7 @@ impl PaymentRuntime {
         ));
       }
     };
-    let recurring = locked
-      .recurring
-      .as_deref()
-      .and_then(SubscriptionRecurring::parse)
-      .ok_or_else(|| RuntimeError::invalid_state("payment recurring is missing"))?;
+    let recurring = stored_recurring;
     let phase_anchor = locked
       .period_start
       .map(|value| value.timestamp())

@@ -8,7 +8,12 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
-import { ActionForbidden, AuthenticationRequired, Config } from '../../base';
+import {
+  ActionForbidden,
+  AuthenticationRequired,
+  Config,
+  URLHelper,
+} from '../../base';
 import { CurrentUser } from '../../core/auth';
 import { ServerConfigType } from '../../core/config/types';
 import { PermissionAccess } from '../../core/permission';
@@ -162,7 +167,8 @@ export class CalendarMutationResolver {
     private readonly calendar: CalendarService,
     private readonly oauth: CalendarOAuthService,
     private readonly models: Models,
-    private readonly access: PermissionAccess
+    private readonly access: PermissionAccess,
+    private readonly url: URLHelper
   ) {}
 
   @Mutation(() => String)
@@ -179,7 +185,9 @@ export class CalendarMutationResolver {
     const state = await this.oauth.saveOAuthState({
       provider: input.provider,
       userId: user.id,
-      redirectUri: input.redirectUri ?? undefined,
+      redirectUri: input.redirectUri
+        ? this.url.canonicalRedirectUri(input.redirectUri)
+        : undefined,
     });
 
     const callbackUrl = this.calendar.getCallbackUrl();

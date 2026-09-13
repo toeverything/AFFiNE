@@ -409,14 +409,21 @@ async fn resolve_revenuecat_product(
 }
 
 pub(super) fn parse_lookup_key(value: &str) -> RuntimeResult<(Plan, SubscriptionRecurring, Option<String>)> {
-  let mut parts = value.split('_');
-  let plan = match parts.next() {
-    Some("pro") => Plan::Pro,
-    Some("ai") => Plan::Ai,
-    Some("team") => Plan::Team,
-    Some("selfhostedteam") | Some("selfhost_team") => Plan::SelfHostedTeam,
+  let (plan_key, suffix) = if let Some(suffix) = value.strip_prefix("selfhost_team_") {
+    ("selfhost_team", suffix)
+  } else {
+    value
+      .split_once('_')
+      .ok_or_else(|| RuntimeError::invalid_input("invalid Stripe lookup key"))?
+  };
+  let plan = match plan_key {
+    "pro" => Plan::Pro,
+    "ai" => Plan::Ai,
+    "team" => Plan::Team,
+    "selfhostedteam" | "selfhost_team" => Plan::SelfHostedTeam,
     _ => return Err(RuntimeError::invalid_input("unknown Stripe price plan")),
   };
+  let mut parts = suffix.split('_');
   let recurring = parts
     .next()
     .and_then(SubscriptionRecurring::parse)

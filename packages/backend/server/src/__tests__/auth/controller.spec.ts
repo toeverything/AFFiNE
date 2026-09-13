@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { IncomingMessage } from 'node:http';
 
 import { HttpStatus } from '@nestjs/common';
@@ -14,9 +14,9 @@ import {
   getRequestHeader,
   parseCookies as safeParseCookies,
 } from '../../base/utils/request';
-import { AuthSessionService } from '../../core/auth/auth-session';
 import { MagicLinkAuthService } from '../../core/auth/magic-link';
 import { AuthService } from '../../core/auth/service';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { mintChallengeResponse } from '../../native';
 import {
   createTestingApp,
@@ -25,21 +25,30 @@ import {
   TestingApp,
 } from '../utils';
 
-const test = ava as TestFn<{
+const test = ava.serial as TestFn<{
   auth: AuthService;
   magicLink: MagicLinkAuthService;
-  authSessions: AuthSessionService;
+  runtime: BackendRuntimeProvider;
   db: PrismaClient;
   config: ConfigFactory;
   app: TestingApp;
 }>;
 
+async function lastAuthMail(app: TestingApp, name: string) {
+  const delivery = await app.get(PrismaClient).mailDelivery.findFirstOrThrow({
+    where: { mailName: name },
+    orderBy: { createdAt: 'desc' },
+  });
+  return delivery.payload as { to: string; props: Record<string, string> };
+}
+
 test.before(async t => {
   const app = await createTestingApp();
+  app.url();
 
   t.context.auth = app.get(AuthService);
   t.context.magicLink = app.get(MagicLinkAuthService);
-  t.context.authSessions = app.get(AuthSessionService);
+  t.context.runtime = app.get(BackendRuntimeProvider);
   t.context.db = app.get(PrismaClient);
   t.context.config = app.get(ConfigFactory);
   t.context.app = app;
@@ -60,6 +69,11 @@ test.beforeEach(async t => {
         },
         challenge: { bits: 20 },
       },
+    },
+  });
+  await t.context.runtime.onConfigChanged({
+    updates: {
+      auth: { allowSignup: true, requireEmailDomainVerification: false },
     },
   });
 });
@@ -123,7 +137,7 @@ test('should accept one Hashcash proof and reject its replay', async t => {
 });
 
 test('should validate Turnstile action and reject query credentials', async t => {
-  const { app, config } = t.context;
+  const { app, config, runtime } = t.context;
   const user = await app.createUser('turnstile-login@affine.pro');
   config.override({
     captcha: {
@@ -144,16 +158,7 @@ test('should validate Turnstile action and reject query credentials', async t =>
     siteKey: 'site-key',
     action: 'auth-sign-in',
   });
-  const verify = Sinon.stub(globalThis, 'fetch').resolves(
-    new Response(
-      JSON.stringify({
-        success: true,
-        hostname: config.config.server.host,
-        action: 'auth-sign-in',
-      }),
-      { status: 200, headers: { 'content-type': 'application/json' } }
-    )
-  );
+  const verify = Sinon.stub(runtime, 'verifyAuthCaptchaV1').resolves(true);
   await app
     .POST('/api/auth/sign-in')
     .set('x-captcha-provider', 'turnstile')
@@ -170,7 +175,7 @@ test('should validate Turnstile action and reject query credentials', async t =>
 });
 
 test('should reject a Turnstile response for another action', async t => {
-  const { app, config } = t.context;
+  const { app, config, runtime } = t.context;
   const user = await app.createUser('turnstile-action@affine.pro');
   config.override({
     captcha: {
@@ -185,16 +190,7 @@ test('should reject a Turnstile response for another action', async t => {
       },
     },
   });
-  const verify = Sinon.stub(globalThis, 'fetch').resolves(
-    new Response(
-      JSON.stringify({
-        success: true,
-        hostname: config.config.server.host,
-        action: 'another-action',
-      }),
-      { status: 200, headers: { 'content-type': 'application/json' } }
-    )
-  );
+  const verify = Sinon.stub(runtime, 'verifyAuthCaptchaV1').resolves(false);
 
   const response = await app
     .POST('/api/auth/sign-in')
@@ -207,7 +203,7 @@ test('should reject a Turnstile response for another action', async t => {
 });
 
 test('should expose a retryable error when Turnstile is unavailable', async t => {
-  const { app, config } = t.context;
+  const { app, config, runtime } = t.context;
   const user = await app.createUser('turnstile-unavailable@affine.pro');
   config.override({
     captcha: {
@@ -222,8 +218,8 @@ test('should expose a retryable error when Turnstile is unavailable', async t =>
       },
     },
   });
-  const verify = Sinon.stub(globalThis, 'fetch').rejects(
-    new Error('siteverify unavailable')
+  const verify = Sinon.stub(runtime, 'verifyAuthCaptchaV1').rejects(
+    new Error('captcha_provider_unavailable')
   );
 
   const response = await app
@@ -305,6 +301,8 @@ test('should issue exchange code only for native credential sign in', async t =>
   t.is(exchangeRes.headers.pragma, 'no-cache');
   t.falsy(exchangeRes.body.token);
   t.falsy(exchangeRes.body.expiresAt);
+  t.false('userId' in exchangeRes.body);
+  t.false('isNewDevice' in exchangeRes.body);
 
   const decoded = jwt.decode(exchangeRes.body.accessToken, { complete: true });
   t.truthy(decoded);
@@ -336,6 +334,10 @@ test('should rotate token pairs and manage auth sessions', async t => {
   t.is(refreshed.headers.pragma, 'no-cache');
   t.not(refreshed.body.refreshToken, issued.body.refreshToken);
   t.is(refreshed.body.session.id, issued.body.session.id);
+  t.false('userId' in refreshed.body);
+  t.false('authSessionId' in refreshed.body);
+  t.false('platform' in refreshed.body);
+  t.false('grace' in refreshed.body);
 
   const sessions = await app
     .GET('/api/auth/sessions')
@@ -428,9 +430,7 @@ test('should require csrf and revoke cookie plus auth sessions', async t => {
     .expect(200);
   const cookies = signedIn.get('Set-Cookie') ?? [];
   const parsed = parseCookies(signedIn);
-  const parent = await app.get(AuthService).createUserSession(user.id);
-  await app.get(AuthSessionService).create({
-    userSessionId: parent.id,
+  await app.createNativeAuthSession(user.id, {
     installationId: 'cookie-managed-device',
     platform: 'electron',
   });
@@ -509,9 +509,10 @@ test('should roll back user-session issuance when auth-session issuance fails', 
   t.is(await t.context.db.userSession.count({ where: { userId: user.id } }), 0);
   const sessionCount = await t.context.db.session.count();
 
-  const createStub = Sinon.stub(t.context.authSessions, 'create').rejects(
-    new Error('issuance failure')
-  );
+  const createStub = Sinon.stub(
+    t.context.runtime,
+    'executeAuthSessionCommandV1'
+  ).rejects(new Error('issuance failure'));
   await supertest(app.getHttpServer())
     .post('/api/auth/session/exchange')
     .set('x-affine-client-kind', 'native')
@@ -713,7 +714,15 @@ test('should not fall back to a cookie on auth-session refresh', async t => {
 });
 
 test('should rate limit refresh attempts by token selector', async t => {
-  const refreshToken = `aff_rt_v1.${randomUUID()}.invalid`;
+  const user = await t.context.app.createUser('refresh-rate-limit@affine.pro');
+  const signIn = await t.context.app
+    .POST('/api/auth/sign-in')
+    .set('x-affine-client-kind', 'native')
+    .send({ email: user.email, password: user.password })
+    .expect(200);
+  const issued = await exchangeSession(t.context.app, signIn.body.exchangeCode);
+  const [prefix, selector] = issued.body.refreshToken.split('.');
+  const refreshToken = `${prefix}.${selector}.${randomBytes(32).toString('base64url')}`;
   for (let attempt = 0; attempt < 30; attempt++) {
     await t.context.app
       .POST('/api/auth/session/refresh')
@@ -837,6 +846,9 @@ test('should return magic link unavailable for unknown users when signup is disa
       allowSignup: false,
     },
   });
+  await t.context.runtime.onConfigChanged({
+    updates: { auth: { allowSignup: false } },
+  });
 
   const res = await app
     .POST('/api/auth/preflight')
@@ -854,6 +866,9 @@ test('should return magic link unavailable when domain verification rejects sign
     auth: {
       requireEmailDomainVerification: true,
     },
+  });
+  await t.context.runtime.onConfigChanged({
+    updates: { auth: { requireEmailDomainVerification: true } },
   });
 
   const res = await app
@@ -888,7 +903,7 @@ test('should be able to sign in with email', async t => {
     .expect(200);
 
   t.is(res.body.email, u1.email);
-  const signInMail = app.mails.last('SignIn');
+  const signInMail = await lastAuthMail(app, 'SignIn');
 
   t.is(signInMail.to, u1.email);
 
@@ -923,7 +938,7 @@ test('should be able to sign up with email', async t => {
     .expect(200);
 
   t.is(res.body.email, 'u2@affine.pro');
-  const signUpMail = app.mails.last('SignUp');
+  const signUpMail = await lastAuthMail(app, 'SignUp');
 
   t.is(signUpMail.to, 'u2@affine.pro');
 
@@ -1408,7 +1423,7 @@ test('should be able to sign in with email and client nonce', async t => {
     .expect(200);
 
   t.is(res.body.email, u1.email);
-  const signInMail = app.mails.last('SignIn');
+  const signInMail = await lastAuthMail(app, 'SignIn');
 
   t.is(signInMail.to, u1.email);
 
@@ -1437,7 +1452,7 @@ test('should not be able to sign in with email and client nonce if invalid', asy
     .expect(200);
 
   t.is(res.body.email, u1.email);
-  const signInMail = app.mails.last('SignIn');
+  const signInMail = await lastAuthMail(app, 'SignIn');
 
   t.is(signInMail.to, u1.email);
 
@@ -1493,7 +1508,7 @@ test('should not allow magic link OTP replay', async t => {
   const u1 = await app.createUser('u1@affine.pro');
 
   await app.POST('/api/auth/sign-in').send({ email: u1.email }).expect(200);
-  const signInMail = app.mails.last('SignIn');
+  const signInMail = await lastAuthMail(app, 'SignIn');
   const url = new URL(signInMail.props.url);
   const email = url.searchParams.get('email');
   const token = url.searchParams.get('token');
@@ -1520,7 +1535,7 @@ test('should lock magic link OTP after too many attempts', async t => {
   const u1 = await app.createUser('u1@affine.pro');
 
   await app.POST('/api/auth/sign-in').send({ email: u1.email }).expect(200);
-  const signInMail = app.mails.last('SignIn');
+  const signInMail = await lastAuthMail(app, 'SignIn');
   const url = new URL(signInMail.props.url);
   const email = url.searchParams.get('email');
   const token = url.searchParams.get('token') as string;

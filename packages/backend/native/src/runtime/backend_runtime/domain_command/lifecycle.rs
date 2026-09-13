@@ -5,8 +5,11 @@ use serde_json::{Value, json};
 use sqlx::{Postgres, Transaction};
 use y_octo::{Any, Doc, Value as YValue};
 
-use super::{DocLifecycle, authorize_domain, lock_workspace_doc_update, next_workspace_doc_update_timestamp};
-use crate::runtime::{Deployment, RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
+use super::{
+  DocLifecycle, authorize_domain, invalidate_doc_blob_projection, lock_workspace_doc_update,
+  lock_workspace_storage_shared, next_workspace_doc_update_timestamp,
+};
+use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 pub(super) async fn apply(
   authorizer: &PermissionAuthorizer,
@@ -15,11 +18,12 @@ pub(super) async fn apply(
   workspace_id: String,
   doc_id: String,
   lifecycle: DocLifecycle,
-  deployment: Deployment,
+  embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
   if workspace_id == doc_id {
     return Err(RuntimeError::invalid_input("doc_is_workspace"));
   }
+  lock_workspace_storage_shared(transaction, &workspace_id).await?;
   let mut locked_doc_ids = [&*workspace_id, &*doc_id];
   locked_doc_ids.sort_unstable();
   for locked_doc_id in locked_doc_ids {
@@ -40,7 +44,6 @@ pub(super) async fn apply(
     &workspace_id,
     Some(&doc_id),
     &command,
-    deployment,
   )
   .await?;
 
@@ -68,6 +71,7 @@ pub(super) async fn apply(
     .execute(&mut **transaction)
     .await
     .map_err(|error| RuntimeError::database("persist workspace root lifecycle update", error))?;
+  invalidate_doc_blob_projection(transaction, &workspace_id, &workspace_id, embedding_schema_ready).await?;
 
   if matches!(lifecycle, DocLifecycle::Delete) {
     delete_doc_rows(transaction, &workspace_id, &doc_id).await?;
@@ -91,14 +95,11 @@ pub(super) async fn append_root_update(
   actor_user_id: String,
   workspace_id: String,
   encoded_update: String,
-  assert_permission: bool,
   expected_permission_generation: Option<i64>,
-  deployment: Deployment,
+  embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
+  lock_workspace_storage_shared(transaction, &workspace_id).await?;
   lock_workspace_doc_update(transaction, &workspace_id, &workspace_id).await?;
-  if !assert_permission {
-    return Err(RuntimeError::invalid_input("permission_assertion_required"));
-  }
   let command = DomainCommand::AppendRootUpdate {
     doc_id: workspace_id.clone(),
   };
@@ -109,7 +110,6 @@ pub(super) async fn append_root_update(
     &workspace_id,
     Some(&workspace_id),
     &command,
-    deployment,
   )
   .await?;
   if let Some(expected) = expected_permission_generation {
@@ -136,8 +136,7 @@ pub(super) async fn append_root_update(
       .bind(&workspace_id)
       .fetch_optional(&mut **transaction)
       .await
-      .map_err(|error| RuntimeError::database("load root snapshot for append", error))?
-      .ok_or_else(|| RuntimeError::invalid_input("workspace_root_not_found"))?;
+      .map_err(|error| RuntimeError::database("load root snapshot for append", error))?;
   let updates = sqlx::query_scalar::<_, Vec<u8>>(
     "SELECT blob FROM updates WHERE workspace_id=$1 AND guid=$1 ORDER BY created_at FOR SHARE",
   )
@@ -148,16 +147,33 @@ pub(super) async fn append_root_update(
   let update = BASE64
     .decode(encoded_update)
     .map_err(|error| RuntimeError::invalid_input(format!("invalid root update: {error}")))?;
-  assert_no_lifecycle_change(snapshot, updates, &update)?;
+  let initialize = snapshot.is_none();
+  let merged = validate_root_update(snapshot.unwrap_or_else(|| vec![0, 0]), updates, &update)?;
   let timestamp = next_workspace_doc_update_timestamp(transaction, &workspace_id, &workspace_id).await?;
-  sqlx::query("INSERT INTO updates (workspace_id,guid,blob,created_at,created_by) VALUES($1,$1,$2,$3,$4)")
+  if initialize {
+    sqlx::query(
+      "INSERT INTO snapshots (workspace_id,guid,blob,size,updated_at,created_by,updated_by) \
+       VALUES($1,$1,$2,$3,$4,$5,$5)",
+    )
     .bind(&workspace_id)
-    .bind(&update)
+    .bind(&merged)
+    .bind(merged.len() as i64)
     .bind(timestamp)
     .bind(&actor_user_id)
     .execute(&mut **transaction)
     .await
-    .map_err(|error| RuntimeError::database("append canonical root update", error))?;
+    .map_err(|error| RuntimeError::database("initialize canonical root snapshot", error))?;
+  } else {
+    sqlx::query("INSERT INTO updates (workspace_id,guid,blob,created_at,created_by) VALUES($1,$1,$2,$3,$4)")
+      .bind(&workspace_id)
+      .bind(&update)
+      .bind(timestamp)
+      .bind(&actor_user_id)
+      .execute(&mut **transaction)
+      .await
+      .map_err(|error| RuntimeError::database("append canonical root update", error))?;
+  }
+  invalidate_doc_blob_projection(transaction, &workspace_id, &workspace_id, embedding_schema_ready).await?;
   Ok(json!({ "timestamp": timestamp }))
 }
 
@@ -197,7 +213,7 @@ pub(in crate::runtime::backend_runtime) async fn workspace_root_contains_active_
   Ok(project_complete_root(binary, false, "before document creation")?.contains(doc_id))
 }
 
-fn assert_no_lifecycle_change(snapshot: Vec<u8>, updates: Vec<Vec<u8>>, incoming: &[u8]) -> RuntimeResult<()> {
+fn validate_root_update(snapshot: Vec<u8>, updates: Vec<Vec<u8>>, incoming: &[u8]) -> RuntimeResult<Vec<u8>> {
   let mut root = Doc::default();
   root
     .apply_update_from_binary_v1(&snapshot)
@@ -219,7 +235,7 @@ fn assert_no_lifecycle_change(snapshot: Vec<u8>, updates: Vec<Vec<u8>>, incoming
     .encode_update_v1()
     .map_err(|error| RuntimeError::invalid_state(format!("encode root after append failed: {error}")))?;
   let new_all = project_complete_root(after.clone(), true, "after append")?;
-  let new_active = project_complete_root(after, false, "after append")?;
+  let new_active = project_complete_root(after.clone(), false, "after append")?;
   let deletes = old_all.iter().any(|id| !new_all.contains(id));
   let trashes = old_active.iter().any(|id| !new_active.contains(id));
   let restores = new_active
@@ -228,7 +244,7 @@ fn assert_no_lifecycle_change(snapshot: Vec<u8>, updates: Vec<Vec<u8>>, incoming
   if deletes || trashes || restores {
     return Err(RuntimeError::invalid_input("doc_lifecycle_requires_command"));
   }
-  Ok(())
+  Ok(after)
 }
 
 fn project_complete_root(
@@ -236,6 +252,9 @@ fn project_complete_root(
   include_trash: bool,
   operation: &str,
 ) -> RuntimeResult<std::collections::BTreeSet<String>> {
+  if binary == [0, 0] {
+    return Ok(Default::default());
+  }
   let projection = affine_doc_loader::project_workspace_root(binary, include_trash)
     .map_err(|error| RuntimeError::invalid_state(format!("project root {operation} failed: {error}")))?;
   if !projection.complete {
@@ -350,7 +369,7 @@ mod tests {
   use std::collections::BTreeSet;
 
   use super::*;
-  use crate::runtime::backend_runtime::permission::PermissionAuthorizer;
+  use crate::runtime::{Deployment, backend_runtime::permission::PermissionAuthorizer};
 
   fn merge_root(snapshot: &[u8], updates: &[&[u8]]) -> Vec<u8> {
     let mut root = Doc::default();
@@ -388,61 +407,27 @@ mod tests {
   fn ordinary_root_updates_cannot_encode_lifecycle_effects() {
     let snapshot = affine_doc_loader::add_doc_to_root_doc(vec![0, 0], "a", None).unwrap();
     let trash = mutate_root(snapshot.clone(), Vec::new(), "a", DocLifecycle::Trash).unwrap();
-    assert!(assert_no_lifecycle_change(snapshot.clone(), Vec::new(), &trash).is_err());
+    assert!(validate_root_update(snapshot.clone(), Vec::new(), &trash).is_err());
 
     let restore = mutate_root(snapshot.clone(), vec![trash.clone()], "a", DocLifecycle::Restore).unwrap();
-    assert!(assert_no_lifecycle_change(snapshot.clone(), vec![trash], &restore).is_err());
+    assert!(validate_root_update(snapshot.clone(), vec![trash], &restore).is_err());
 
     let delete = mutate_root(snapshot.clone(), Vec::new(), "a", DocLifecycle::Delete).unwrap();
-    assert!(assert_no_lifecycle_change(snapshot.clone(), Vec::new(), &delete).is_err());
+    assert!(validate_root_update(snapshot.clone(), Vec::new(), &delete).is_err());
 
     let add = affine_doc_loader::add_doc_to_root_doc(snapshot.clone(), "b", None).unwrap();
-    assert!(assert_no_lifecycle_change(snapshot, Vec::new(), &add).is_ok());
+    assert!(validate_root_update(snapshot, Vec::new(), &add).is_ok());
   }
 
   #[test]
   fn partial_workspace_root_is_rejected_before_semantic_comparison() {
     let snapshot = affine_doc_loader::add_doc_to_root_doc(vec![0, 0], "a", None).unwrap();
     let dependent_delta = mutate_root(snapshot.clone(), Vec::new(), "a", DocLifecycle::Trash).unwrap();
+    assert!(validate_root_update(vec![0, 0], Vec::new(), &dependent_delta).is_err());
     assert!(
-      assert_no_lifecycle_change(dependent_delta, Vec::new(), &snapshot).is_err(),
+      validate_root_update(dependent_delta, Vec::new(), &snapshot).is_err(),
       "a root update with missing client-clock predecessors must fail closed"
     );
-  }
-
-  #[tokio::test]
-  async fn root_update_cannot_disable_permission_authorization() {
-    let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
-    let Some((pool, workspace_id, actor_user_id)) = super::super::test_support::owner_workspace().await else {
-      return;
-    };
-    let before: i64 = sqlx::query_scalar("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$1")
-      .bind(&workspace_id)
-      .fetch_one(&pool)
-      .await
-      .unwrap();
-    let authorizer = PermissionAuthorizer::new(pool.clone(), Deployment::Cloud);
-    let mut transaction = pool.begin().await.unwrap();
-    let error = append_root_update(
-      &authorizer,
-      &mut transaction,
-      actor_user_id,
-      workspace_id.clone(),
-      "AA==".to_string(),
-      false,
-      None,
-      Deployment::Cloud,
-    )
-    .await
-    .unwrap_err();
-    assert_eq!(error.to_string(), "permission_assertion_required");
-    transaction.rollback().await.unwrap();
-    let after: i64 = sqlx::query_scalar("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$1")
-      .bind(&workspace_id)
-      .fetch_one(&pool)
-      .await
-      .unwrap();
-    assert_eq!(after, before);
   }
 
   #[tokio::test]
@@ -454,15 +439,20 @@ mod tests {
     let suffix = uuid::Uuid::new_v4().simple().to_string();
     let doc_id = format!("domain-lifecycle-{suffix}");
     let root = affine_doc_loader::add_doc_to_root_doc(vec![0, 0], &doc_id, None).unwrap();
-    sqlx::query(
-      "INSERT INTO snapshots(workspace_id,guid,blob,updated_at,created_by,updated_by) VALUES($1,$1,$2,now(),$3,$3)",
+    let authorizer = PermissionAuthorizer::new(pool.clone(), Deployment::Cloud);
+    let mut transaction = pool.begin().await.unwrap();
+    append_root_update(
+      &authorizer,
+      &mut transaction,
+      actor_user_id.clone(),
+      workspace_id.clone(),
+      BASE64.encode(root),
+      None,
+      true,
     )
-    .bind(&workspace_id)
-    .bind(root)
-    .bind(&actor_user_id)
-    .execute(&pool)
     .await
     .unwrap();
+    transaction.commit().await.unwrap();
 
     for index in 0..3 {
       let user_id = format!("domain-lifecycle-overflow-{index}-{suffix}");
@@ -500,7 +490,7 @@ mod tests {
         racing_workspace_id,
         racing_doc_id,
         DocLifecycle::Trash,
-        Deployment::Cloud,
+        true,
       )
       .await
       .unwrap();
@@ -523,7 +513,7 @@ mod tests {
       workspace_id.clone(),
       doc_id.clone(),
       DocLifecycle::Restore,
-      Deployment::Cloud,
+      true,
     )
     .await;
     assert!(restore.is_err());
@@ -537,7 +527,7 @@ mod tests {
       workspace_id.clone(),
       doc_id,
       DocLifecycle::Delete,
-      Deployment::Cloud,
+      true,
     )
     .await
     .unwrap();

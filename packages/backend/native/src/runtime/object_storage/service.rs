@@ -6,11 +6,10 @@ use tokio::task::JoinSet;
 use super::{
   StorageBackendConfig, assetpack,
   backend::{backends_from_config_files, backends_from_config_json, backends_from_config_source, backends_from_db},
-  fs::{delete_many_fs, fs_delete, fs_get, fs_get_range, fs_head, fs_list, fs_put},
+  fs::{delete_many_fs, fs_delete, fs_get, fs_get_range, fs_head, fs_list_page, fs_put},
   types::{
-    MultipartUploadInitResult, MultipartUploadPart, ObjectDeleteOutcome, ObjectGetResult, ObjectKey, ObjectListEntry,
-    ObjectListPage, ObjectLocator, ObjectMetadata, ObjectPrefix, ObjectPutMetadata, PresignedObjectRequest,
-    StorageScope,
+    MultipartUploadInitResult, MultipartUploadPart, ObjectDeleteOutcome, ObjectGetResult, ObjectKey, ObjectListPage,
+    ObjectLocator, ObjectMetadata, ObjectPrefix, ObjectPutMetadata, PresignedObjectRequest, StorageScope,
   },
 };
 use crate::runtime::{ConfigSource, RuntimeError, RuntimeResult};
@@ -159,20 +158,6 @@ impl ObjectStorageService {
         .get_limited(&locator.key, max_body_bytes)
         .await
         .map_err(Into::into),
-    }
-  }
-
-  pub(crate) async fn list(
-    &self,
-    scope: StorageScope,
-    prefix: Option<ObjectPrefix>,
-  ) -> RuntimeResult<Vec<ObjectListEntry>> {
-    match self.backend_for_scope(scope)? {
-      StorageBackendConfig::Fs(config) => fs_list(&config, prefix.map(ObjectPrefix::into_string)),
-      StorageBackendConfig::Assetpack(config) => {
-        assetpack::list(&config, scope.as_str(), prefix.map(ObjectPrefix::into_string)).await
-      }
-      StorageBackendConfig::S3(config) => config.build_client()?.list(prefix).await.map_err(Into::into),
     }
   }
 
@@ -399,48 +384,38 @@ impl ObjectStorageService {
     prefix: Option<ObjectPrefix>,
     continuation_token: Option<String>,
     start_after: Option<ObjectKey>,
+    delimiter: Option<String>,
     max_keys: i32,
   ) -> RuntimeResult<ObjectListPage> {
+    if max_keys <= 0 {
+      return Err(RuntimeError::invalid_input(
+        "Object storage list maxKeys must be positive",
+      ));
+    }
     match self.backend_for_scope(scope)? {
-      StorageBackendConfig::Fs(config) => {
-        let mut entries = fs_list(&config, prefix.map(ObjectPrefix::into_string))?;
-        if let Some(start_after) = start_after {
-          entries.retain(|entry| entry.key.as_str() > start_after.as_str());
-        }
-        if continuation_token.is_some() {
-          return Err(RuntimeError::invalid_input(
-            "FS list continuation token is not supported",
-          ));
-        }
-        let max_keys = usize::try_from(max_keys)
-          .map_err(|_| RuntimeError::invalid_input("Object storage list maxKeys must be positive"))?;
-        entries.truncate(max_keys);
-        Ok(ObjectListPage {
-          entries,
-          next_continuation_token: None,
-        })
-      }
+      StorageBackendConfig::Fs(config) => fs_list_page(
+        &config,
+        prefix.map(ObjectPrefix::into_string),
+        continuation_token,
+        start_after.map(ObjectKey::into_string),
+        delimiter,
+        max_keys,
+      ),
       StorageBackendConfig::Assetpack(config) => {
-        let mut entries = assetpack::list(&config, scope.as_str(), prefix.map(ObjectPrefix::into_string)).await?;
-        if let Some(start_after) = start_after {
-          entries.retain(|entry| entry.key.as_str() > start_after.as_str());
-        }
-        if continuation_token.is_some() {
-          return Err(RuntimeError::invalid_input(
-            "Assetpack list continuation token is not supported",
-          ));
-        }
-        let max_keys = usize::try_from(max_keys)
-          .map_err(|_| RuntimeError::invalid_input("Object storage list maxKeys must be positive"))?;
-        entries.truncate(max_keys);
-        Ok(ObjectListPage {
-          entries,
-          next_continuation_token: None,
-        })
+        assetpack::list_page(
+          &config,
+          scope.as_str(),
+          prefix.map(ObjectPrefix::into_string),
+          continuation_token,
+          start_after.map(ObjectKey::into_string),
+          delimiter,
+          max_keys,
+        )
+        .await
       }
       StorageBackendConfig::S3(config) => config
         .build_client()?
-        .list_page(prefix, continuation_token, start_after, max_keys)
+        .list_page(prefix, continuation_token, start_after, delimiter, max_keys)
         .await
         .map_err(Into::into),
     }

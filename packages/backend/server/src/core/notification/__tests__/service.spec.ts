@@ -33,7 +33,6 @@ const module = await createModule({
     MailModule,
     NotificationModule,
   ],
-  providers: [NotificationService],
   tapModule: builder => {
     builder.overrideProvider(Mailer).useValue(new MockMailer());
   },

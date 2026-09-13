@@ -164,13 +164,13 @@ pub(super) async fn ensure(
         return Err(error);
       }
     };
-    if let Some(remote) = remote {
-      if let Err(error) = remote.provision(physical_table, table).await {
-        if !matches!(error, RuntimeError::SearchProviderUnavailable) {
-          fail(pool, &generation, &error.to_string()).await?;
-        }
-        return Err(error);
+    if let Some(remote) = remote
+      && let Err(error) = remote.provision(physical_table, table).await
+    {
+      if !matches!(error, RuntimeError::SearchProviderUnavailable) {
+        fail(pool, &generation, &error.to_string()).await?;
       }
+      return Err(error);
     }
   }
   Ok(generation)

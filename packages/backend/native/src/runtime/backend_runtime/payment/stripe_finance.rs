@@ -101,10 +101,7 @@ impl StripeClient {
     self
       .get(
         &format!("v1/invoices/{}", encode_segment(id)),
-        &[
-          ("expand[]", "lines.data.price"),
-          ("expand[]", "parent.subscription_details.subscription"),
-        ],
+        &[("expand[]", "lines.data.price"), ("expand[]", "subscription")],
       )
       .await
   }

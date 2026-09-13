@@ -369,7 +369,7 @@ async fn payment_connection_budget_and_task_cancellation_release_capacity() {
   };
   let pool = PgPoolOptions::new()
     .max_connections(2)
-    .acquire_timeout(Duration::from_millis(150))
+    .acquire_timeout(Duration::from_secs(2))
     .connect(&database_url)
     .await
     .unwrap();
@@ -400,7 +400,7 @@ async fn payment_connection_budget_and_task_cancellation_release_capacity() {
 
   let cancellation_pool = PgPoolOptions::new()
     .max_connections(1)
-    .acquire_timeout(Duration::from_secs(1))
+    .acquire_timeout(Duration::from_secs(5))
     .connect(&database_url)
     .await
     .unwrap();
@@ -1937,39 +1937,26 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     account: license_marker.clone(),
   };
   let license_namespace_key = license_namespace.canonical_key().unwrap();
-  let license_key = format!("rfc12-{license_marker}-key");
-  let license_source = format!("sub-{license_marker}");
-  let license_customer = format!("cus-{license_marker}");
-  sqlx::query("INSERT INTO licenses(key) VALUES($1)")
-    .bind(&license_key)
-    .execute(&pool)
-    .await
-    .unwrap();
-  sqlx::query(
-    r#"INSERT INTO provider_subscriptions(
-         id,provider,provider_namespace,source_identity,target_type,target_id,plan,recurring,status,
-         quantity,external_customer_id,external_subscription_id,period_end,metadata)
-       VALUES($1,'stripe',$2,$3,'instance',$4,'selfhost_team','yearly','active',5,$5,$3,
-              clock_timestamp()+INTERVAL '30 days','{}')"#,
-  )
-  .bind(uuid::Uuid::new_v4().to_string())
-  .bind(&license_namespace_key)
-  .bind(&license_source)
-  .bind(&license_key)
-  .bind(&license_customer)
-  .execute(&pool)
-  .await
-  .unwrap();
   let license_config = StripeRuntimeConfig {
     api_key: Arc::new(Zeroizing::new("stripe-secret".to_string())),
     webhook_key: Arc::new(Zeroizing::new("webhook-secret".to_string())),
     account_id: license_marker.clone(),
     live: false,
   };
+  let (portal_endpoint, mut portal_requests) = mock_http(
+    (0..3)
+      .map(|_| MockResponse {
+        status: 200,
+        body: r#"{"id":"bps_license","url":"https://billing.example/renew"}"#.into(),
+        delay: Duration::ZERO,
+      })
+      .collect(),
+  )
+  .await;
   let license_runtime = PaymentRuntime {
     pool: pool.clone(),
     stripe: Some(Arc::new(
-      StripeClient::with_endpoint(&license_config, "http://127.0.0.1:1/").unwrap(),
+      StripeClient::with_endpoint(&license_config, &portal_endpoint).unwrap(),
     )),
     revenuecat: None,
     permits: Arc::new(tokio::sync::Semaphore::new(1)),
@@ -1985,73 +1972,207 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
       crate::entitlement::tests::TEST_PRIVATE_KEY,
     );
   }
-  let operation_id = uuid::Uuid::new_v4().to_string();
-  let activated = license_runtime
-    .execute(json!({
-      "action": "activate_license",
-      "licenseKey": license_key,
-      "workspaceId": "remote-workspace",
-      "operationId": operation_id,
-    }))
-    .await
-    .unwrap()
-    .value;
-  assert_eq!(activated["validateKey"], operation_id);
-  assert_eq!(activated["recurring"], "yearly");
-  assert!(activated["license"].as_str().is_some_and(|value| !value.is_empty()));
-  let health = license_runtime
-    .execute(json!({
-      "action": "check_license_health",
-      "licenseKey": license_key,
-      "validateKey": operation_id,
-    }))
-    .await
-    .unwrap()
-    .value;
-  assert_eq!(health["validateKey"], operation_id);
-  assert!(
-    license_runtime
-      .execute(json!({
-        "action": "activate_license",
-        "licenseKey": license_key,
-        "workspaceId": "other-workspace",
-        "operationId": uuid::Uuid::new_v4().to_string(),
-      }))
+  for legacy in [true, false] {
+    let license_key = format!("rfc12-{license_marker}-{legacy}");
+    let license_source = format!("sub-{license_marker}-{legacy}");
+    let license_customer = format!("cus-{license_marker}-{legacy}");
+    sqlx::query("INSERT INTO licenses(key) VALUES($1)")
+      .bind(&license_key)
+      .execute(&pool)
       .await
-      .is_err()
-  );
-  assert!(
-    license_runtime
-      .execute(json!({
-        "action": "deactivate_license",
-        "licenseKey": license_key,
-        "validateKey": uuid::Uuid::new_v4().to_string(),
-      }))
-      .await
-      .is_err()
-  );
-  assert_eq!(
-    license_runtime
-      .execute(json!({
-        "action": "deactivate_license",
-        "licenseKey": license_key,
-        "validateKey": operation_id,
-      }))
+      .unwrap();
+    sqlx::query(
+      r#"INSERT INTO provider_subscriptions(
+           id,provider,provider_namespace,source_identity,target_type,target_id,plan,recurring,status,
+           quantity,external_customer_id,external_subscription_id,period_end,metadata)
+         VALUES($1,'stripe',$2,$3,'instance',$4,'selfhost_team','yearly','active',5,$5,$3,
+                clock_timestamp()+INTERVAL '30 days','{}')"#,
+    )
+    .bind(uuid::Uuid::new_v4().to_string())
+    .bind(&license_namespace_key)
+    .bind(&license_source)
+    .bind(&license_key)
+    .bind(&license_customer)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let operation_id = uuid::Uuid::new_v4().to_string();
+    let activated = license_runtime.execute(if legacy {
+      json!({"action":"activate_legacy_license","licenseKey":license_key})
+    } else {
+      json!({"action":"activate_license","licenseKey":license_key,"workspaceId":"remote-workspace","operationId":operation_id})
+    }).await.unwrap().value;
+    let generation = activated["validateKey"].as_str().unwrap().to_string();
+    if legacy {
+      assert_eq!(activated["license"]["plan"], "selfhostedteam");
+      assert_eq!(activated["license"]["quantity"], 5);
+      assert!(activated["license"]["endAt"].as_i64().unwrap() > Utc::now().timestamp_millis());
+      for _ in 0..2 {
+        let health = license_runtime
+          .execute(json!({
+            "action":"check_legacy_license_health","licenseKey":license_key,"validateKey":generation,
+          }))
+          .await
+          .unwrap()
+          .value;
+        assert_eq!(health["validateKey"], generation);
+      }
+      assert_eq!(
+        license_runtime
+          .license_customer_portal_url(&license_key, None)
+          .await
+          .unwrap(),
+        "https://billing.example/renew"
+      );
+      assert!(portal_requests.recv().await.unwrap().contains(&license_customer));
+      assert!(license_runtime.execute(json!({
+        "action":"activate_license","licenseKey":license_key,"workspaceId":"remote-workspace","operationId":operation_id,
+      })).await.is_err());
+      assert!(license_runtime.execute(json!({
+        "action":"check_license_health","licenseKey":license_key,"validateKey":operation_id,"workspaceId":"remote-workspace",
+      })).await.is_err());
+      let unbound: Option<String> = sqlx::query_scalar("SELECT workspace_id FROM licenses WHERE key=$1")
+        .bind(&license_key)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+      assert!(unbound.is_none());
+      let upgrade_lock = PaymentConnection::try_acquire(
+        &pool,
+        vec![PaymentScope::billing_target(&license_namespace_key, "instance", &license_key).unwrap()],
+      )
       .await
       .unwrap()
-      .value,
-    json!({ "success": true })
-  );
-  assert!(
+      .unwrap();
+      for command in [
+        json!({"action":"check_license_health","licenseKey":license_key,"validateKey":generation,"workspaceId":"remote-workspace"}),
+        json!({"action":"update_quantity","targetType":"instance","targetId":license_key,"plan":"selfhost_team","quantity":5,"intentId":uuid::Uuid::new_v4().to_string()}),
+      ] {
+        assert_eq!(
+          license_runtime.execute(command).await.err().unwrap().to_string(),
+          "payment_busy"
+        );
+      }
+      drop(upgrade_lock);
+      let constraint = format!("license_upgrade_{}", uuid::Uuid::new_v4().simple());
+      sqlx::query(&format!(
+        "ALTER TABLE licenses ADD CONSTRAINT {constraint} CHECK (key <> '{license_key}' OR workspace_id IS NULL) NOT \
+         VALID"
+      ))
+      .execute(&pool)
+      .await
+      .unwrap();
+      let failed = license_runtime.execute(json!({
+        "action":"check_license_health","licenseKey":license_key,"validateKey":generation,"workspaceId":"remote-workspace",
+      })).await;
+      sqlx::query(&format!("ALTER TABLE licenses DROP CONSTRAINT {constraint}"))
+        .execute(&pool)
+        .await
+        .unwrap();
+      assert!(failed.is_err());
+      let binding: (Option<String>, Option<String>) =
+        sqlx::query_as("SELECT workspace_id,validate_key FROM licenses WHERE key=$1")
+          .bind(&license_key)
+          .fetch_one(&pool)
+          .await
+          .unwrap();
+      assert_eq!(binding, (None, Some(generation.clone())));
+    } else {
+      assert_eq!(generation, operation_id);
+    }
+    for _ in 0..2 {
+      let health = license_runtime.execute(json!({
+        "action":"check_license_health","licenseKey":license_key,"validateKey":generation,"workspaceId":"remote-workspace",
+      })).await.unwrap().value;
+      assert_eq!(health["validateKey"], generation);
+      assert!(health["license"].as_str().is_some_and(|value| !value.is_empty()));
+    }
+    let binding: (Option<String>, Option<String>) =
+      sqlx::query_as("SELECT workspace_id,validate_key FROM licenses WHERE key=$1")
+        .bind(&license_key)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(binding, (Some("remote-workspace".into()), Some(generation.clone())));
+    for command in [
+      json!({"action":"deactivate_legacy_license","licenseKey":license_key}),
+      json!({"action":"check_legacy_license_health","licenseKey":license_key,"validateKey":generation}),
+      json!({"action":"check_license_health","licenseKey":license_key,"validateKey":generation,"workspaceId":"other-workspace"}),
+      json!({"action":"update_quantity","targetType":"instance","targetId":license_key,"plan":"selfhost_team","quantity":5,"intentId":uuid::Uuid::new_v4().to_string()}),
+      json!({"action":"update_recurring","targetType":"instance","targetId":license_key,"plan":"selfhost_team","recurring":"monthly","intentId":uuid::Uuid::new_v4().to_string()}),
+      json!({"action":"deactivate_license","licenseKey":license_key,"validateKey":uuid::Uuid::new_v4().to_string()}),
+    ] {
+      assert!(license_runtime.execute(command).await.is_err());
+    }
+    assert!(
+      license_runtime
+        .license_customer_portal_url(&license_key, None)
+        .await
+        .is_err()
+    );
+    sqlx::query(
+      "UPDATE provider_subscriptions SET period_end=clock_timestamp()-INTERVAL '1 day' WHERE source_identity=$1",
+    )
+    .bind(&license_source)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let expired = license_runtime.execute(json!({
+      "action":"check_license_health","licenseKey":license_key,"validateKey":generation,"workspaceId":"remote-workspace",
+    })).await.err().unwrap();
+    assert_eq!(expired.to_string(), "license_expired");
+    assert_eq!(
+      license_runtime
+        .license_customer_portal_url(&license_key, Some(&generation))
+        .await
+        .unwrap(),
+      "https://billing.example/renew"
+    );
+    assert!(portal_requests.recv().await.unwrap().contains(&license_customer));
+    sqlx::query(
+      "UPDATE provider_subscriptions SET period_end=clock_timestamp()+INTERVAL '30 days' WHERE source_identity=$1",
+    )
+    .bind(&license_source)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let renewed = license_runtime.execute(json!({
+      "action":"check_license_health","licenseKey":license_key,"validateKey":generation,"workspaceId":"remote-workspace",
+    })).await.unwrap().value;
+    assert_eq!(renewed["validateKey"], generation);
+    assert_eq!(
+      license_runtime
+        .execute(json!({
+          "action":"deactivate_license","licenseKey":license_key,"validateKey":generation,
+        }))
+        .await
+        .unwrap()
+        .value,
+      json!({"status":"deactivated"})
+    );
+    let new_generation = uuid::Uuid::new_v4().to_string();
     license_runtime
       .execute(json!({
-        "action": "check_license_health",
-        "licenseKey": license_key,
-        "validateKey": operation_id,
+        "action":"activate_license","licenseKey":license_key,"workspaceId":"new-workspace","operationId":new_generation,
       }))
       .await
-      .is_err()
-  );
+      .unwrap();
+    assert!(
+      license_runtime
+        .execute(json!({
+          "action":"deactivate_license","licenseKey":license_key,"validateKey":generation,
+        }))
+        .await
+        .is_err()
+    );
+    let binding: (Option<String>, Option<String>) =
+      sqlx::query_as("SELECT workspace_id,validate_key FROM licenses WHERE key=$1")
+        .bind(&license_key)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(binding, (Some("new-workspace".into()), Some(new_generation)));
+  }
   unsafe {
     if let Some(previous_private_key) = previous_private_key {
       std::env::set_var("AFFINE_PRO_LICENSE_PRIVATE_KEY", previous_private_key);
@@ -2290,7 +2411,7 @@ async fn failed_atomic_batch_rolls_back_and_incomplete_snapshot_writes_nothing()
   );
   drop(connection);
   sqlx::query("DELETE FROM entitlements WHERE source='cloud_subscription' AND subject_id=ANY($1)")
-    .bind(&[source_id.as_str(), canonical_subject.as_str()])
+    .bind([source_id.as_str(), canonical_subject.as_str()])
     .execute(&pool)
     .await
     .unwrap();

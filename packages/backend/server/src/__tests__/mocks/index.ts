@@ -10,7 +10,6 @@ import { MockDocSnapshot } from './doc-snapshot.mock';
 import { MockDocUser } from './doc-user.mock';
 import { MockEventBus } from './eventbus.mock';
 import { MockMailer } from './mailer.mock';
-import { MockJobModule, MockJobQueue } from './queue.mock';
 import { MockTeamWorkspace } from './team-workspace.mock';
 import { MockUser } from './user.mock';
 import { MockUserSettings } from './user-settings.mock';
@@ -28,10 +27,4 @@ export const Mockers = {
   DocUser: MockDocUser,
 };
 
-export {
-  installMockCopilotRuntime,
-  MockEventBus,
-  MockJobModule,
-  MockJobQueue,
-  MockMailer,
-};
+export { installMockCopilotRuntime, MockEventBus, MockMailer };

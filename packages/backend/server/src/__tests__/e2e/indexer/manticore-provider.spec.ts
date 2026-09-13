@@ -6,16 +6,20 @@ import {
 } from '@affine/graphql';
 
 import { Config } from '../../../base';
-import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { DocRole } from '../../../models';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
-import { app, e2e } from '../test';
+import {
+  addDocumentToRoot,
+  app,
+  e2e,
+  reconcileSearchProjection,
+} from '../test';
 
 const manticoreSearchEnabled =
   app.get(Config).indexer.enabled &&
   app.get(Config).indexer.provider.type === 'manticoresearch';
-const manticoreSearchE2e = manticoreSearchEnabled ? e2e : e2e.skip;
+const manticoreSearchE2e = manticoreSearchEnabled ? e2e.serial : e2e.skip;
 
 async function indexDocument(
   workspaceId: string,
@@ -25,22 +29,14 @@ async function indexDocument(
   defaultRole = DocRole.Manager
 ) {
   await app.create(Mockers.DocMeta, { workspaceId, docId, defaultRole });
+  await addDocumentToRoot(workspaceId, docId);
   await app.create(Mockers.DocSnapshot, {
     workspaceId,
     docId,
     user,
     blob: createDocWithMarkdown(docId, markdown, docId),
   });
-  await reconcileSearch();
-}
-
-async function reconcileSearch() {
-  const runtime = app.get(BackendRuntimeProvider);
-  for (let attempt = 0; attempt < 50; attempt++) {
-    await runtime.reconcileSearchProjection(1000);
-    if ((await runtime.searchStatus()).ready) return;
-  }
-  throw new Error('search projection did not become ready');
+  await reconcileSearchProjection();
 }
 
 async function searchPage(
@@ -164,7 +160,7 @@ manticoreSearchE2e(
       workspaceId: workspace.id,
       userId: member.id,
     });
-    await reconcileSearch();
+    await reconcileSearchProjection();
     t.is(await searchCount(workspace.id, marker), 0);
     t.is(await searchDocsCount(workspace.id, marker), 0);
 
@@ -174,12 +170,12 @@ manticoreSearchE2e(
       userId: member.id,
       type: DocRole.Reader,
     });
-    await reconcileSearch();
+    await reconcileSearchProjection();
     t.true((await searchCount(workspace.id, marker)) > 0);
     t.true((await searchDocsCount(workspace.id, marker)) > 0);
 
     await app.models.docUser.delete(workspace.id, `${marker}-doc`, member.id);
-    await reconcileSearch();
+    await reconcileSearchProjection();
     t.is(await searchCount(workspace.id, marker), 0);
     t.is(await searchDocsCount(workspace.id, marker), 0);
   }

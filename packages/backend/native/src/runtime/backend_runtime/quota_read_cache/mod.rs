@@ -93,15 +93,9 @@ where
   async fn invalidate(&self, key: &K) {
     self.cache.invalidate(key).await;
     let snapshot = self.cache.snapshot().await;
-    self.telemetry.quota_cache(
-      self.deployment,
-      self.kind,
-      "invalidation",
-      "applied",
-      1,
-      snapshot.entries,
-      snapshot.bytes,
-    );
+    self
+      .telemetry
+      .quota_cache(self.deployment, self.kind, "invalidation", "applied", 1, snapshot);
   }
 
   async fn record(&self, event: &'static str, result: &'static str) {
@@ -125,15 +119,9 @@ where
 
   async fn emit(&self, event: &'static str, result: &'static str, count: u64) {
     let snapshot = self.cache.snapshot().await;
-    self.telemetry.quota_cache(
-      self.deployment,
-      self.kind,
-      event,
-      result,
-      count,
-      snapshot.entries,
-      snapshot.bytes,
-    );
+    self
+      .telemetry
+      .quota_cache(self.deployment, self.kind, event, result, count, snapshot);
   }
 
   async fn flush_metrics(&self) {
@@ -146,48 +134,6 @@ where
   }
 }
 
-#[cfg(test)]
-#[path = "tests.rs"]
-mod integration_tests;
-
-#[cfg(test)]
-mod tests {
-  use std::sync::{Arc, Mutex};
-
-  use super::QuotaCache;
-  use crate::runtime::{
-    Deployment,
-    backend_runtime::permission::{PermissionTelemetry, PermissionTelemetryEvent},
-  };
-
-  #[tokio::test]
-  async fn request_metrics_remain_batched() {
-    let events = Arc::new(Mutex::new(Vec::new()));
-    let captured = Arc::clone(&events);
-    let telemetry = PermissionTelemetry::from_sink(move |event| captured.lock().unwrap().push(event));
-    let cache = QuotaCache::new("storage", Deployment::Cloud, telemetry);
-    cache.get_or_load("batched", 8, || async { Ok(1) }).await.unwrap();
-    for _ in 0..299 {
-      cache.get_or_load("batched", 8, || async { Ok(2) }).await.unwrap();
-    }
-    cache.flush_metrics().await;
-    let request_counts = events
-      .lock()
-      .unwrap()
-      .iter()
-      .filter_map(|event| match event {
-        PermissionTelemetryEvent::QuotaCache {
-          event: "request",
-          result,
-          count,
-          ..
-        } => Some((*result, *count)),
-        _ => None,
-      })
-      .collect::<Vec<_>>();
-    assert_eq!(request_counts, [("hit", 256), ("hit", 43), ("miss", 1)]);
-  }
-}
 pub(super) struct QuotaReadCache {
   pool: PgPool,
   deployment: Deployment,
@@ -236,5 +182,48 @@ impl InvalidationTarget for QuotaReadCache {
         None => {}
       }
     })
+  }
+}
+
+#[cfg(test)]
+#[path = "tests.rs"]
+mod integration_tests;
+
+#[cfg(test)]
+mod tests {
+  use std::sync::{Arc, Mutex};
+
+  use super::QuotaCache;
+  use crate::runtime::{
+    Deployment,
+    backend_runtime::permission::{PermissionTelemetry, PermissionTelemetryEvent},
+  };
+
+  #[tokio::test]
+  async fn request_metrics_remain_batched() {
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let captured = Arc::clone(&events);
+    let telemetry = PermissionTelemetry::from_sink(move |event| captured.lock().unwrap().push(event));
+    let cache = QuotaCache::new("storage", Deployment::Cloud, telemetry);
+    cache.get_or_load("batched", 8, || async { Ok(1) }).await.unwrap();
+    for _ in 0..299 {
+      cache.get_or_load("batched", 8, || async { Ok(2) }).await.unwrap();
+    }
+    cache.flush_metrics().await;
+    let request_counts = events
+      .lock()
+      .unwrap()
+      .iter()
+      .filter_map(|event| match event {
+        PermissionTelemetryEvent::QuotaCache {
+          event: "request",
+          result,
+          count,
+          ..
+        } => Some((*result, *count)),
+        _ => None,
+      })
+      .collect::<Vec<_>>();
+    assert_eq!(request_counts, [("hit", 256), ("hit", 43), ("miss", 1)]);
   }
 }

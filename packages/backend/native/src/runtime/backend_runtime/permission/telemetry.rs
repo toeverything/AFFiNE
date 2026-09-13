@@ -149,8 +149,7 @@ impl PermissionTelemetry {
     event: &'static str,
     result: &'static str,
     count: u64,
-    entries: usize,
-    bytes: usize,
+    snapshot: affine_core::cache::CacheSnapshot,
   ) {
     self.emit(PermissionTelemetryEvent::QuotaCache {
       deployment: deployment_name(deployment),
@@ -158,8 +157,8 @@ impl PermissionTelemetry {
       event,
       result,
       count,
-      entries: entries as u64,
-      bytes: bytes as u64,
+      entries: snapshot.entries as u64,
+      bytes: snapshot.bytes as u64,
     });
   }
 
@@ -297,7 +296,18 @@ mod tests {
     let events = Arc::new(Mutex::new(Vec::new()));
     let captured = Arc::clone(&events);
     let telemetry = PermissionTelemetry::from_sink(move |event| captured.lock().unwrap().push(event));
-    telemetry.quota_cache(Deployment::Cloud, "storage", "db_load", "success", 1, 3, 96);
+    telemetry.quota_cache(
+      Deployment::Cloud,
+      "storage",
+      "db_load",
+      "success",
+      1,
+      affine_core::cache::CacheSnapshot {
+        entries: 3,
+        bytes: 96,
+        flights: 0,
+      },
+    );
     assert_eq!(
       *events.lock().unwrap(),
       vec![PermissionTelemetryEvent::QuotaCache {

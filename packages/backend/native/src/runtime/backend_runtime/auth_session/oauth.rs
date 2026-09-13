@@ -74,6 +74,9 @@ pub(super) async fn preflight(
   client_nonce: &str,
   client_version: Option<&str>,
   callback_url: &str,
+  redirect_base_url: &str,
+  redirect_allowed_origins: &[String],
+  redirect_trusted_domains: &[String],
 ) -> RuntimeResult<OAuthPreflightResult> {
   let (provider, provider_label) = provider_name(provider_input)?;
   let provider_config = runtime
@@ -83,6 +86,17 @@ pub(super) async fn preflight(
     .get(provider)
     .ok_or_else(|| RuntimeError::invalid_state("unknown_oauth_provider"))?;
   validate_preflight(client, client_nonce, redirect_uri, callback_url)?;
+  let redirect_uri = redirect_uri
+    .map(|value| {
+      crate::url_policy::evaluate_redirect_uri_internal(
+        value,
+        redirect_base_url,
+        redirect_allowed_origins,
+        redirect_trusted_domains,
+      )
+      .ok_or_else(|| RuntimeError::invalid_input("invalid_oauth_preflight"))
+    })
+    .transpose()?;
   let oidc = if provider == "oidc" {
     Some(oauth_http::discover_oidc(provider_config).await?)
   } else {
@@ -105,7 +119,7 @@ pub(super) async fn preflight(
   let state = OAuthState {
     provider: provider.to_string(),
     provider_label: provider_label.to_string(),
-    redirect_uri: redirect_uri.map(str::to_string),
+    redirect_uri,
     client: client.to_string(),
     client_nonce: client_nonce.to_string(),
     client_version: client_version.map(str::to_string),

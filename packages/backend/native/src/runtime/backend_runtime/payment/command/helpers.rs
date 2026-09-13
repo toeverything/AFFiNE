@@ -20,8 +20,7 @@ pub(super) fn stripe_operation(
   operation_type: &str,
   intent_id: &str,
   resources: Vec<PaymentScope>,
-  target_type: Option<&str>,
-  target_id: Option<&str>,
+  target: Option<(&str, &str)>,
   path: &str,
   form: Vec<PaymentFormField>,
 ) -> OperationIntent {
@@ -30,8 +29,8 @@ pub(super) fn stripe_operation(
     operation_type: operation_type.to_string(),
     intent_id: intent_id.to_string(),
     resources,
-    target_type: target_type.map(str::to_string),
-    target_id: target_id.map(str::to_string),
+    target_type: target.map(|(kind, _)| kind.to_string()),
+    target_id: target.map(|(_, id)| id.to_string()),
     steps: vec![PaymentStepState {
       key: format!("payment:{intent_id}:send"),
       request: PaymentStep::StripePost {

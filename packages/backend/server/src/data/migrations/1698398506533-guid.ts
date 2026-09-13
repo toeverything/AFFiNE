@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
-import { DocID } from '../../core/utils/doc';
+import { canonicalizeDocumentIdentity } from '../../native';
 
 export class Guid1698398506533 {
   // do the migration
@@ -23,19 +23,19 @@ export class Guid1698398506533 {
 
       lastTurnCount = docs.length;
       for (const doc of docs) {
-        const docId = new DocID(doc.id, doc.workspaceId);
+        const docId = canonicalizeDocumentIdentity(doc.id, doc.workspaceId);
 
         // NOTE:
         // `doc.id` could be 'space:xxx' or 'xxx'
-        // `docId.guid` is always 'xxx'
+        // `docId.docId` is always 'xxx'
         // what we want achieve is:
         //   if both 'space:xxx' and 'xxx' exist, merge 'space:xxx' to 'xxx' and delete it
         //   else just modify 'space:xxx' to 'xxx'
 
-        if (docId && !docId.isWorkspace && docId.guid !== doc.id) {
+        if (!docId.isWorkspace && docId.docId !== doc.id) {
           const existingUpdate = await db.snapshot.findFirst({
             where: {
-              id: docId.guid,
+              id: docId.docId,
               workspaceId: doc.workspaceId,
             },
             select: {
@@ -79,7 +79,7 @@ export class Guid1698398506533 {
               db.snapshot.update({
                 where: {
                   workspaceId_id: {
-                    id: docId.guid,
+                    id: docId.docId,
                     workspaceId: doc.workspaceId,
                   },
                 },
@@ -99,7 +99,7 @@ export class Guid1698398506533 {
                 },
               },
               data: {
-                id: docId.guid,
+                id: docId.docId,
               },
             });
           }

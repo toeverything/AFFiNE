@@ -239,11 +239,8 @@ impl EmbeddingService {
 pub(in crate::runtime::backend_runtime) async fn register_artifact_source(
   pool: &PgPool,
   artifact: &crate::runtime::types::RuntimeWorkspaceArtifact,
+  schema_ready: bool,
 ) -> RuntimeResult<()> {
-  let schema_ready: bool = sqlx::query_scalar("SELECT to_regclass('embedding_sources') IS NOT NULL")
-    .fetch_one(pool)
-    .await
-    .map_err(|error| RuntimeError::database("Embedding source schema health check failed", error))?;
   if !schema_ready {
     return Ok(());
   }

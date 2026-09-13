@@ -30,9 +30,6 @@ export const Dashboard = lazy(
 export const Workspaces = lazy(
   () => import(/* webpackChunkName: "workspaces" */ './modules/workspaces')
 );
-export const Queue = lazy(
-  () => import(/* webpackChunkName: "queue" */ './modules/queue')
-);
 export const About = lazy(
   () => import(/* webpackChunkName: "about" */ './modules/about')
 );
@@ -127,7 +124,6 @@ export const App = () => {
                       )
                     }
                   />
-                  <Route path={`${ROUTES.admin.queue}/*`} element={<Queue />} />
                   <Route
                     path={ROUTES.admin.ai}
                     element={

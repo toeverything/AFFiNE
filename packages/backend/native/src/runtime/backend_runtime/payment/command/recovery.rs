@@ -66,7 +66,6 @@ pub(in crate::runtime::backend_runtime::payment) async fn recover_one_stripe_ope
       operation_id,
       response,
     )?,
-    "create_portal" | "create_license_portal" => recover_portal(stripe.namespace().clone(), operation_id, response)?,
     "create_checkout" => recover_checkout(
       stripe.namespace().clone(),
       target_type,
@@ -146,17 +145,6 @@ fn recover_customer(
     external_customer_id: customer.id,
   });
   Ok(snapshot)
-}
-
-fn recover_portal(
-  namespace: ProviderNamespace,
-  operation_id: String,
-  response: Value,
-) -> RuntimeResult<PaymentSnapshot> {
-  let portal: super::super::stripe_client::StripePortalSession =
-    serde_json::from_value(response).map_err(|error| RuntimeError::json("invalid Stripe portal response", error))?;
-  let result = json!({ "url": portal.url, "sessionId": portal.id });
-  Ok(empty_snapshot(namespace, None, operation_id, result))
 }
 
 fn recover_checkout(

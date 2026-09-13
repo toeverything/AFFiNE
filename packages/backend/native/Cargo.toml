@@ -9,7 +9,7 @@ version      = "1.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-affine_core = "0.0.2"
+affine_core = "0.0.4"
 aes-gcm = { workspace = true }
 affine_common = { workspace = true, features = ["hashcash", "napi"] }
 affine_doc_loader = { workspace = true }

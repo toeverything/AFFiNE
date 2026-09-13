@@ -1,5 +1,6 @@
+use std::collections::HashMap;
+#[cfg(not(test))]
 use std::{
-  collections::HashMap,
   sync::{Mutex, OnceLock},
   time::Duration,
 };
@@ -12,8 +13,10 @@ const AFFINE_PRO_ENDPOINT: &str = "https://app.affine.pro";
 const AFFINE_PRO_HOST: &str = "app.affine.pro";
 const AFFINE_PRO_REQUEST_TIMEOUT_MS: u32 = 10_000;
 const AFFINE_PRO_MAX_BYTES: u32 = 1024 * 1024;
+#[cfg(not(test))]
 const ECH_DNS_QUERY_TIMEOUT_MS: u32 = 5_000;
 
+#[cfg(not(test))]
 static AFFINE_PRO_ECH_CONFIG: OnceLock<Mutex<Option<Vec<u8>>>> = OnceLock::new();
 
 pub(crate) struct LicenseKeyRequest {
@@ -25,15 +28,18 @@ pub(crate) struct LicenseKeyRequest {
 pub(crate) struct LicenseHealthRequest {
   pub license_key: String,
   pub validate_key: String,
+  pub workspace_id: String,
 }
 
 pub(crate) struct LicenseRecurringRequest {
   pub license_key: String,
+  pub validate_key: String,
   pub recurring: String,
 }
 
 pub(crate) struct LicenseSeatsRequest {
   pub license_key: String,
+  pub validate_key: String,
   pub seats: u32,
 }
 
@@ -69,7 +75,7 @@ pub(crate) fn activate_license_request(request: &LicenseKeyRequest) -> AnyResult
     "operationId": request.validate_key.as_deref().context("validateKey is required")?,
   }))?;
   license_info(
-    &format!("/api/team/licenses/{}/activate", request.license_key),
+    &format!("/api/team/v1/licenses/{}/activate", request.license_key),
     safefetch::SafeFetchMethod::Post,
     None,
     Some(body),
@@ -79,7 +85,7 @@ pub(crate) fn activate_license_request(request: &LicenseKeyRequest) -> AnyResult
 pub(crate) fn deactivate_license_request(request: &LicenseKeyRequest) -> AnyResult<CommandResponse> {
   let validate_key = request.validate_key.clone().context("validateKey is required")?;
   command(
-    &format!("/api/team/licenses/{}/deactivate", request.license_key),
+    &format!("/api/team/v1/licenses/{}/deactivate", request.license_key),
     safefetch::SafeFetchMethod::Post,
     Some(HashMap::from([("x-validate-key".to_string(), validate_key)])),
     None,
@@ -88,22 +94,27 @@ pub(crate) fn deactivate_license_request(request: &LicenseKeyRequest) -> AnyResu
 
 pub(crate) fn check_license_health_request(request: &LicenseHealthRequest) -> AnyResult<LicenseResponse> {
   license_info(
-    &format!("/api/team/licenses/{}/health", request.license_key),
-    safefetch::SafeFetchMethod::Get,
+    &format!("/api/team/v1/licenses/{}/health", request.license_key),
+    safefetch::SafeFetchMethod::Post,
     Some(HashMap::from([(
       "x-validate-key".to_string(),
       request.validate_key.clone(),
     )])),
-    None,
+    Some(serde_json::to_vec(
+      &serde_json::json!({ "workspaceId": request.workspace_id }),
+    )?),
   )
 }
 
 pub(crate) fn update_license_recurring_request(request: &LicenseRecurringRequest) -> AnyResult<CommandResponse> {
   let body = serde_json::to_vec(&serde_json::json!({ "recurring": request.recurring }))?;
   command(
-    &format!("/api/team/licenses/{}/recurring", request.license_key),
+    &format!("/api/team/v1/licenses/{}/recurring", request.license_key),
     safefetch::SafeFetchMethod::Post,
-    None,
+    Some(HashMap::from([(
+      "x-validate-key".to_string(),
+      request.validate_key.clone(),
+    )])),
     Some(body),
   )
 }
@@ -111,18 +122,22 @@ pub(crate) fn update_license_recurring_request(request: &LicenseRecurringRequest
 pub(crate) fn update_license_seats_request(request: &LicenseSeatsRequest) -> AnyResult<CommandResponse> {
   let body = serde_json::to_vec(&serde_json::json!({ "seats": request.seats }))?;
   command(
-    &format!("/api/team/licenses/{}/seats", request.license_key),
+    &format!("/api/team/v1/licenses/{}/seats", request.license_key),
     safefetch::SafeFetchMethod::Post,
-    None,
+    Some(HashMap::from([(
+      "x-validate-key".to_string(),
+      request.validate_key.clone(),
+    )])),
     Some(body),
   )
 }
 
 pub(crate) fn create_license_customer_portal_request(request: &LicenseKeyRequest) -> AnyResult<PortalResponse> {
+  let validate_key = request.validate_key.clone().context("validateKey is required")?;
   let response = match affine_pro_request(
-    &format!("/api/team/licenses/{}/create-customer-portal", request.license_key),
+    &format!("/api/team/v1/licenses/{}/create-customer-portal", request.license_key),
     safefetch::SafeFetchMethod::Post,
-    None,
+    Some(HashMap::from([("x-validate-key".to_string(), validate_key)])),
     None,
   ) {
     Ok(response) => response,
@@ -183,12 +198,6 @@ fn license_info(
   }
   let license = match parse_license_info(&response) {
     Ok(license) => license,
-    Err(error) if error.to_string() == "license_expired" => {
-      return Ok(LicenseResponse {
-        license: None,
-        error: Some(license_expired_error()),
-      });
-    }
     Err(_) => {
       return Ok(LicenseResponse {
         license: None,
@@ -234,7 +243,7 @@ fn affine_pro_request(
   let mut headers = headers.unwrap_or_default();
   headers.insert("Content-Type".to_string(), "application/json".to_string());
 
-  safefetch::safe_fetch(&safefetch::SafeFetchRequest {
+  let request = safefetch::SafeFetchRequest {
     url: url.to_string(),
     method: Some(method),
     headers: Some(headers),
@@ -250,8 +259,18 @@ fn affine_pro_request(
     allowed_hosts: Some(vec![AFFINE_PRO_HOST.to_string()]),
     allow_http: Some(false),
     allow_private_target_origin: None,
-    ech_config_list: Some(affine_pro_ech_config()?),
-  })
+    ech_config_list: None,
+  };
+  #[cfg(test)]
+  {
+    tests::respond(request)
+  }
+  #[cfg(not(test))]
+  {
+    let mut request = request;
+    request.ech_config_list = Some(affine_pro_ech_config()?);
+    safefetch::safe_fetch(&request)
+  }
 }
 
 fn parse_license_info(response: &safefetch::SafeFetchResponse) -> AnyResult<LicenseInfo> {
@@ -260,8 +279,18 @@ fn parse_license_info(response: &safefetch::SafeFetchResponse) -> AnyResult<Lice
     bail!("invalid license envelope");
   }
   Ok(LicenseInfo {
-    recurring: response.headers.get("x-license-recurring").cloned().unwrap_or_default(),
-    validate_key: response.headers.get("x-next-validate-key").cloned().unwrap_or_default(),
+    recurring: response
+      .headers
+      .get("x-license-recurring")
+      .filter(|value| matches!(value.as_str(), "monthly" | "yearly" | "lifetime"))
+      .cloned()
+      .context("invalid license recurring")?,
+    validate_key: response
+      .headers
+      .get("x-next-validate-key")
+      .filter(|value| uuid::Uuid::parse_str(value).is_ok())
+      .cloned()
+      .context("invalid license generation")?,
     envelope: response.body.clone().into(),
   })
 }
@@ -294,24 +323,11 @@ fn internal_affine_pro_error() -> LicenseError {
   }
 }
 
-fn license_expired_error() -> LicenseError {
-  LicenseError {
-    status: 400,
-    body: serde_json::json!({
-      "status": 400,
-      "type": "bad_request",
-      "name": "license_expired",
-      "message": "License has expired.",
-      "data": null,
-    })
-    .to_string(),
-  }
-}
-
 fn parse_body<T: DeserializeOwned>(response: &safefetch::SafeFetchResponse) -> AnyResult<T> {
   serde_json::from_slice(&response.body).context("invalid affine pro response")
 }
 
+#[cfg(not(test))]
 fn affine_pro_ech_config() -> AnyResult<Vec<u8>> {
   let cache = AFFINE_PRO_ECH_CONFIG.get_or_init(|| Mutex::new(None));
   {
@@ -340,3 +356,7 @@ struct LicenseEnvelope {
 struct PortalPayload {
   url: String,
 }
+
+#[cfg(test)]
+#[path = "license_tests.rs"]
+pub(crate) mod tests;

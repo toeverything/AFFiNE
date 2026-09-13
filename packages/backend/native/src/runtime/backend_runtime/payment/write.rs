@@ -151,7 +151,7 @@ pub(super) async fn adopt_legacy_entitlement(
     "SELECT id,subject_id,target_type,target_id,metadata FROM entitlements WHERE source='cloud_subscription' AND \
      subject_id=ANY($1) ORDER BY id FOR UPDATE",
   )
-  .bind(&[legacy_subject, canonical_subject])
+  .bind([legacy_subject, canonical_subject])
   .fetch_all(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("lock legacy payment entitlement", error))?;

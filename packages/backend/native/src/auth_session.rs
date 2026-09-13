@@ -111,14 +111,14 @@ pub(crate) fn sign_auth_session_access_token(
     serde_json::to_vec(&AccessTokenHeader {
       alg: "HS256",
       typ: "JWT",
-      kid: &key_id,
+      kid: key_id,
     })
     .map_err(|_| "access_token_encode_failed")?,
   );
   let claims = URL_SAFE_NO_PAD.encode(
     serde_json::to_vec(&AccessTokenClaims {
-      sub: &user_id,
-      sid: &auth_session_id,
+      sub: user_id,
+      sid: auth_session_id,
       typ: ACCESS_TOKEN_TYPE,
       iss: ACCESS_TOKEN_ISSUER,
       aud: ACCESS_TOKEN_AUDIENCE,

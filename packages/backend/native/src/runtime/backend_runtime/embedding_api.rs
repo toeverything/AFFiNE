@@ -16,6 +16,16 @@ impl BackendRuntime {
     &self,
     input: types::SyncEmbeddingStateInput,
   ) -> Result<types::RuntimeEmbeddingWorkspaceState> {
+    let priority = input.priority.unwrap_or(100);
+    if !(0..=1000).contains(&priority) {
+      return Err(napi_error("embedding_priority_invalid"));
+    }
+    if input
+      .wait_for_ready_ms
+      .is_some_and(|wait_ms| wait_ms == 0 || wait_ms > 120_000)
+    {
+      return Err(napi_error("embedding_wait_timeout_invalid"));
+    }
     let embedding = self
       .embedding
       .lock()
@@ -54,10 +64,6 @@ impl BackendRuntime {
       .await
       .map_err(to_napi_error)?;
     let reconcile_documents = input.reconcile_documents.unwrap_or(false);
-    let priority = input.priority.unwrap_or(100);
-    if !(0..=1000).contains(&priority) {
-      return Err(napi_error("embedding_priority_invalid"));
-    }
     if let Some(documents) = input.documents {
       if input.wait_for_ready_ms.is_some() && state.active_index_id.is_none() {
         return Err(napi_error("embedding_selected_sources_unavailable"));
@@ -67,9 +73,6 @@ impl BackendRuntime {
         .await
         .map_err(to_napi_error)?;
       if let Some(wait_ms) = input.wait_for_ready_ms {
-        if wait_ms == 0 || wait_ms > 120_000 {
-          return Err(napi_error("embedding_wait_timeout_invalid"));
-        }
         embedding
           .wait_for_documents(
             &input.workspace_id,
@@ -151,28 +154,19 @@ impl BackendRuntime {
   }
 
   #[napi]
-  pub async fn reconcile_embedding_workspaces(&self) -> Result<i64> {
-    self.require_background()?;
-    let workspace_ids = sqlx::query_scalar::<_, String>("SELECT id FROM workspaces")
-      .fetch_all(&self.pool().await?)
-      .await
-      .map_err(|error| to_napi_error(RuntimeError::database("load embedding workspaces failed", error)))?;
-    for workspace_id in &workspace_ids {
-      self.reconcile_embedding_workspace(workspace_id).await?;
-    }
-    Ok(workspace_ids.len() as i64)
-  }
-
-  #[napi]
   pub async fn put_workspace_artifact(
     &self,
     input: types::PutWorkspaceArtifactInput,
     body: Buffer,
   ) -> Result<types::RuntimeWorkspaceArtifact> {
-    artifact::ArtifactService::new(self.pool().await?, self.object_storage()?)
-      .put(input, body.to_vec())
-      .await
-      .map_err(to_napi_error)
+    artifact::ArtifactService::new(
+      self.pool().await?,
+      self.object_storage()?,
+      self.embedding_schema_ready()?,
+    )
+    .put(input, body.to_vec())
+    .await
+    .map_err(to_napi_error)
   }
 
   #[napi]
@@ -180,10 +174,14 @@ impl BackendRuntime {
     &self,
     input: types::EnsureWorkspaceBlobArtifactInput,
   ) -> Result<types::RuntimeWorkspaceArtifact> {
-    artifact::ArtifactService::new(self.pool().await?, self.object_storage()?)
-      .alias_blob(input)
-      .await
-      .map_err(to_napi_error)
+    artifact::ArtifactService::new(
+      self.pool().await?,
+      self.object_storage()?,
+      self.embedding_schema_ready()?,
+    )
+    .alias_blob(input)
+    .await
+    .map_err(to_napi_error)
   }
 
   #[napi]
@@ -192,10 +190,14 @@ impl BackendRuntime {
     if limit <= 0 {
       return Err(napi_error("artifact cleanup limit must be positive"));
     }
-    artifact::ArtifactService::new(self.pool().await?, self.object_storage()?)
-      .cleanup(limit)
-      .await
-      .map_err(to_napi_error)
+    artifact::ArtifactService::new(
+      self.pool().await?,
+      self.object_storage()?,
+      self.embedding_schema_ready()?,
+    )
+    .cleanup(limit)
+    .await
+    .map_err(to_napi_error)
   }
 
   #[napi]
@@ -206,10 +208,14 @@ impl BackendRuntime {
     library_owned: bool,
     display_name: Option<String>,
   ) -> Result<types::RuntimeWorkspaceArtifact> {
-    artifact::ArtifactService::new(self.pool().await?, self.object_storage()?)
-      .set_library_owned(&workspace_id, &artifact_id, library_owned, display_name)
-      .await
-      .map_err(to_napi_error)
+    artifact::ArtifactService::new(
+      self.pool().await?,
+      self.object_storage()?,
+      self.embedding_schema_ready()?,
+    )
+    .set_library_owned(&workspace_id, &artifact_id, library_owned, display_name)
+    .await
+    .map_err(to_napi_error)
   }
 
   #[napi]

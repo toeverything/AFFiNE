@@ -123,6 +123,7 @@ impl BackendRuntime {
       self.pool().await?,
       self.config()?.deployment,
       self.permission_telemetry.clone(),
+      self.embedding_schema_ready().map_err(to_napi_error)?,
       input,
     )
     .await

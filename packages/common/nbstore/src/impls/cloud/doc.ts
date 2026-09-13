@@ -13,14 +13,13 @@ import {
   base64ToUint8Array,
   type ServerEventsMap,
   SocketConnection,
-  type SyncProtocol,
+  SPACE_JOIN_BATCH_LIMIT,
   uint8ArrayToBase64,
 } from './socket';
 
 interface CloudDocStorageOptions extends DocStorageOptions {
   serverBaseUrl: string;
   isSelfHosted: boolean;
-  syncProtocol: SyncProtocol;
   type: SpaceType;
 }
 
@@ -67,7 +66,6 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
   onServerInvalidation: ServerEventsMap['space:broadcast-doc-invalidation'] =
     message => {
       if (
-        this.options.syncProtocol !== 'batch' ||
         this.spaceType !== message.spaceType ||
         this.spaceId !== message.spaceId
       ) {
@@ -134,7 +132,9 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
     const response = await this.socket.emitWithAck('space:load-doc', {
       spaceType: this.spaceType,
       spaceId: this.spaceId,
-      docId: this.idConverter.newIdToOldId(docId),
+      docId: await this.connection.joinDoc(
+        this.idConverter.newIdToOldId(docId)
+      ),
     });
 
     if ('error' in response) {
@@ -156,7 +156,9 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
     const response = await this.socket.emitWithAck('space:load-doc', {
       spaceType: this.spaceType,
       spaceId: this.spaceId,
-      docId: this.idConverter.newIdToOldId(docId),
+      docId: await this.connection.joinDoc(
+        this.idConverter.newIdToOldId(docId)
+      ),
       stateVector: state ? await uint8ArrayToBase64(state) : void 0,
     });
 
@@ -180,7 +182,9 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
     const response = await this.socket.emitWithAck('space:push-doc-update', {
       spaceType: this.spaceType,
       spaceId: this.spaceId,
-      docId: this.idConverter.newIdToOldId(update.docId),
+      docId: await this.connection.joinDoc(
+        this.idConverter.newIdToOldId(update.docId)
+      ),
       update: await uint8ArrayToBase64(update.bin),
     });
 
@@ -202,7 +206,9 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
     const response = await this.socket.emitWithAck('space:load-doc', {
       spaceType: this.spaceType,
       spaceId: this.spaceId,
-      docId: this.idConverter.newIdToOldId(docId),
+      docId: await this.connection.joinDoc(
+        this.idConverter.newIdToOldId(docId)
+      ),
     });
 
     if ('error' in response) {
@@ -250,6 +256,25 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
     }
   }
 
+  async applyDocLifecycle(
+    docId: string,
+    lifecycle: 'trash' | 'restore' | 'delete'
+  ) {
+    const response = await this.socket.emitWithAck('space:doc-lifecycle', {
+      spaceType: this.spaceType,
+      spaceId: this.spaceId,
+      docId: this.idConverter.newIdToOldId(docId),
+      lifecycle,
+    });
+    if ('error' in response) {
+      throw createWebsocketError(response.error);
+    }
+    return {
+      rootUpdate: base64ToUint8Array(response.data.rootUpdate),
+      timestamp: new Date(response.data.timestamp),
+    };
+  }
+
   protected async setDocSnapshot() {
     return false;
   }
@@ -271,34 +296,26 @@ class CloudDocStorageConnection extends SocketConnection {
   }
 
   idConverter: IdConverter | null = null;
+  private readonly joinedDocIds = new Set<string>();
+
+  async joinDoc(docId: string, socket: Socket = this.inner.socket) {
+    const res = await socket.emitWithAck('space:join-batch', {
+      spaces: [
+        { spaceType: this.options.type, spaceId: this.options.id, docId },
+      ],
+      clientVersion: BUILD_CONFIG.appVersion,
+    });
+    if ('error' in res) throw createWebsocketError(res.error);
+    if (!res.data.success) throw new Error('Space join was rejected');
+    this.joinedDocIds.add(docId);
+    return docId;
+  }
 
   override async doConnect(signal?: AbortSignal) {
     const { socket, disconnect } = await super.doConnect(signal);
 
     try {
-      const res =
-        this.options.syncProtocol === 'batch'
-          ? await socket.emitWithAck('space:join-batch', {
-              spaces: [
-                {
-                  spaceType: this.options.type,
-                  spaceId: this.options.id,
-                },
-              ],
-              clientVersion: BUILD_CONFIG.appVersion,
-            })
-          : await socket.emitWithAck('space:join', {
-              spaceType: this.options.type,
-              spaceId: this.options.id,
-              clientVersion: BUILD_CONFIG.appVersion,
-            });
-
-      if ('error' in res) {
-        throw createWebsocketError(res.error);
-      }
-      if (!res.data.success) {
-        throw new Error('Space join was rejected');
-      }
+      await this.joinDoc(this.options.id, socket);
 
       if (!this.idConverter) {
         this.idConverter = await this.getIdConverter(socket);
@@ -309,7 +326,7 @@ class CloudDocStorageConnection extends SocketConnection {
 
       return { socket, disconnect };
     } catch (e) {
-      disconnect();
+      this.doDisconnect({ socket, disconnect });
       throw e;
     }
   }
@@ -321,18 +338,24 @@ class CloudDocStorageConnection extends SocketConnection {
     socket: Socket;
     disconnect: () => void;
   }) {
-    if (this.options.syncProtocol === 'batch') {
+    const docIds = [...this.joinedDocIds];
+    this.joinedDocIds.clear();
+    for (
+      let offset = 0;
+      offset < docIds.length;
+      offset += SPACE_JOIN_BATCH_LIMIT
+    ) {
       socket.emit('space:leave-batch', {
         spaceType: this.options.type,
         spaceId: this.options.id,
-        docIds: [],
-      });
-    } else {
-      socket.emit('space:leave', {
-        spaceType: this.options.type,
-        spaceId: this.options.id,
+        docIds: docIds.slice(offset, offset + SPACE_JOIN_BATCH_LIMIT),
       });
     }
+    socket.emit('space:leave-batch', {
+      spaceType: this.options.type,
+      spaceId: this.options.id,
+      docIds: [],
+    });
     socket.off('space:broadcast-doc-updates', this.onServerUpdates);
     socket.off('space:broadcast-doc-invalidation', this.onServerInvalidation);
     super.doDisconnect({ socket, disconnect });

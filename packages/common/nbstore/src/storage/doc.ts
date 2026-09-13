@@ -47,6 +47,13 @@ export interface DocUpdate {
   editor?: string;
 }
 
+export type DocLifecycle = 'trash' | 'restore' | 'delete';
+
+export interface DocLifecycleResult {
+  rootUpdate: Uint8Array;
+  timestamp: Date;
+}
+
 export interface Editor {
   name: string;
   avatarUrl: string | null;
@@ -95,6 +102,11 @@ export interface DocStorage extends Storage {
    * Delete a specific doc data with all snapshots and updates
    */
   deleteDoc(docId: string): Promise<void>;
+
+  applyDocLifecycle?(
+    docId: string,
+    lifecycle: DocLifecycle
+  ): Promise<DocLifecycleResult>;
 
   /**
    * Subscribe on doc updates emitted from storage itself.

@@ -184,7 +184,27 @@ mod tests {
     let server = tokio::spawn(async move {
       let (mut stream, _) = listener.accept().await.unwrap();
       let mut request = vec![0; 16 * 1024];
-      let read = stream.read(&mut request).await.unwrap();
+      let mut read = 0;
+      loop {
+        let count = stream.read(&mut request[read..]).await.unwrap();
+        if count == 0 {
+          break;
+        }
+        read += count;
+        let received = &request[..read];
+        if let Some(header_end) = received.windows(4).position(|window| window == b"\r\n\r\n") {
+          let header_end = header_end + 4;
+          let headers = String::from_utf8_lossy(&received[..header_end]);
+          let content_length = headers
+            .lines()
+            .find_map(|line| line.strip_prefix("content-length: "))
+            .and_then(|value| value.trim().parse::<usize>().ok())
+            .unwrap_or(0);
+          if read >= header_end + content_length {
+            break;
+          }
+        }
+      }
       let request = String::from_utf8_lossy(&request[..read]).into_owned();
       let body = r#"{"success":true,"hostname":"app.affine.pro","action":"auth-sign-in"}"#;
       let response = format!(

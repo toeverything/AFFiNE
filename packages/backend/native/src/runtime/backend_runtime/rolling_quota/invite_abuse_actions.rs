@@ -148,10 +148,24 @@ async fn claim_retryable_invite_abuse_actions(
     .map_err(|err| RuntimeError::database("failed to claim retryable invite abuse actions", err))?;
   let mut claimed = Vec::new();
   for row in candidates {
-    if claimed.len() >= limit as usize || persisted_abuse_subject(&row).is_err() {
-      continue;
+    if claimed.len() >= limit as usize {
+      break;
     }
     let action_id = row.get::<String, _>("action_id");
+    if let Err(error) = persisted_abuse_subject(&row) {
+      sqlx::query(
+        r#"UPDATE runtime_invite_abuse_actions
+            SET status = 'failed', last_error = $2, locked_by = NULL,
+                locked_until = NULL, next_attempt_at = NULL, updated_at = now()
+            WHERE id = $1::bigint"#,
+      )
+      .bind(&action_id)
+      .bind(error.to_string())
+      .execute(&mut *tx)
+      .await
+      .map_err(|err| RuntimeError::database("failed to reject invalid invite abuse action", err))?;
+      continue;
+    }
     let result = sqlx::query(
       r#"UPDATE runtime_invite_abuse_actions
           SET status = 'running', attempts = attempts + 1, locked_by = $2,

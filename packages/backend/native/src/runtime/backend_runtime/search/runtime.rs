@@ -292,7 +292,7 @@ impl SearchRuntime {
     let row = sqlx::query(
       r#"SELECT COALESCE(scan_high_water_sid, (SELECT COALESCE(MAX(sid),0) FROM workspaces)) AS high_water,
                 COALESCE(scan_cursor_sid,0) AS cursor
-         FROM search_projection.generations WHERE id=$1 FOR UPDATE"#,
+         FROM search_projection.generations WHERE id=$1 FOR NO KEY UPDATE"#,
     )
     .bind(generation_id)
     .fetch_one(&mut *transaction)

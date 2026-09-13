@@ -7,6 +7,8 @@ pub(crate) mod error;
 mod http;
 pub(crate) mod migrations;
 pub(crate) mod object_storage;
+mod storage_lifecycle;
+use storage_lifecycle::{StorageOperation, lock_workspace_storage_shared_transaction};
 pub(crate) mod types;
 
 pub(super) use affine_doc_loader::blob_refs::{BlobRefProjectionError, extract_blob_refs};

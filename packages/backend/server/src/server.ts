@@ -1,6 +1,10 @@
+import type { IncomingMessage } from 'node:http';
+
+import type { RawBodyRequest } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { raw } from 'express';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import {
@@ -24,6 +28,28 @@ import { serverTimingAndCache } from './middleware/timing';
 
 const OneMB = 1024 * 1024;
 
+export function configureBodyParsers(
+  app: NestExpressApplication,
+  serverPath: string
+) {
+  let start = 0;
+  let end = serverPath.length;
+  while (start < end && serverPath[start] === '/') start++;
+  while (end > start && serverPath[end - 1] === '/') end--;
+  const serverPrefix = serverPath.slice(start, end);
+  app.use(
+    `${serverPrefix ? `/${serverPrefix}` : ''}/api/copilot/chat/:sessionId/attachments/:key`,
+    raw({
+      limit: 20 * OneMB,
+      type: () => true,
+      verify: (req: RawBodyRequest<IncomingMessage>, _res, buffer) => {
+        req.rawBody = buffer;
+      },
+    })
+  );
+  app.useBodyParser('raw', { limit: 100 * OneMB });
+}
+
 export async function run() {
   const { AppModule } = await import('./app.module');
 
@@ -34,11 +60,11 @@ export async function run() {
     bufferLogs: true,
   });
 
-  app.useBodyParser('raw', { limit: 100 * OneMB });
+  const config = app.get(Config);
+  configureBodyParsers(app, config.server.path);
 
   const logger = app.get(AFFiNELogger);
   app.useLogger(logger);
-  const config = app.get(Config);
   const url = app.get(URLHelper);
   let telemetry: TelemetryService | null = null;
   try {

@@ -10,12 +10,10 @@ import { QuotaModule } from '../quota';
 import { UserModule } from '../user';
 import { AccessTokenService } from './access-token';
 import { AuthSessionService } from './auth-session';
-import { AuthChallengeStore } from './challenge-store';
 import { AuthController } from './controller';
 import { AuthGuard, AuthWebsocketOptionsProvider } from './guard';
 import { AuthCronJob } from './job';
 import { MagicLinkAuthService } from './magic-link';
-import { AuthMethodsService } from './methods';
 import { OpenAppAuthService } from './open-app';
 import { AuthResolver } from './resolver';
 import { AuthService } from './service';
@@ -39,15 +37,12 @@ import { AuthSigningKeyResolver } from './signing-key-resolver';
     AuthGuard,
     AccessTokenService,
     SessionIssuer,
-    AuthChallengeStore,
     MagicLinkAuthService,
     OpenAppAuthService,
-    AuthMethodsService,
     SessionExchangeService,
     AuthSessionService,
     AuthSigningKeyRing,
     AuthSigningKeyResolver,
-    AuthCronJob,
     AuthWebsocketOptionsProvider,
   ],
   exports: [
@@ -55,10 +50,8 @@ import { AuthSigningKeyResolver } from './signing-key-resolver';
     AuthGuard,
     AccessTokenService,
     SessionIssuer,
-    AuthChallengeStore,
     MagicLinkAuthService,
     OpenAppAuthService,
-    AuthMethodsService,
     SessionExchangeService,
     AuthSessionService,
     AuthSigningKeyRing,
@@ -68,16 +61,20 @@ import { AuthSigningKeyResolver } from './signing-key-resolver';
 })
 export class AuthModule {}
 
-export { AuthChallengeStore } from './challenge-store';
+@Module({
+  imports: [BackendRuntimeModule],
+  providers: [AuthCronJob],
+})
+export class AuthWorkerModule {}
+
 export * from './guard';
-export * from './identity';
 export * from './input';
 export { MagicLinkAuthService } from './magic-link';
-export * from './methods';
 export { SessionExchangeService };
+export * from './access-token';
 export { AuthSessionService } from './auth-session';
 export { OpenAppAuthService } from './open-app';
 export { ClientTokenType } from './resolver';
-export { AccessTokenService, AuthService, SessionIssuer };
+export { AuthService, SessionIssuer };
 export * from './session';
 export { AuthSigningKeyRing } from './signing-key';

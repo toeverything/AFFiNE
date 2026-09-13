@@ -13,14 +13,25 @@ pub(in crate::runtime::backend_runtime) struct LicenseHealthWorker {
 impl LicenseHealthWorker {
   pub(in crate::runtime::backend_runtime) fn start(runtime: BackendRuntime) -> Self {
     let task = tokio::spawn(async move {
-      let mut interval = tokio::time::interval(LICENSE_HEALTH_INTERVAL);
-      interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-      interval.tick().await;
+      let mut delay = LICENSE_HEALTH_INTERVAL;
       loop {
-        interval.tick().await;
+        tokio::time::sleep(delay).await;
         match runtime.check_licenses_v1().await {
-          Ok(changes) => runtime.permission_telemetry.license_health("success", changes.len()),
-          Err(_) => runtime.permission_telemetry.license_health("error", 0),
+          Ok(result) => {
+            runtime.permission_telemetry.license_health(
+              if result.transient_failure { "partial" } else { "success" },
+              result.changes.len(),
+            );
+            delay = if result.transient_failure {
+              Duration::from_secs(30)
+            } else {
+              LICENSE_HEALTH_INTERVAL
+            };
+          }
+          Err(_) => {
+            runtime.permission_telemetry.license_health("error", 0);
+            delay = Duration::from_secs(30);
+          }
         }
       }
     });

@@ -132,7 +132,7 @@ mod tests {
   #[tokio::test]
   async fn promotes_valid_blob_and_rejects_late_overwrite() {
     let temp = tempfile::tempdir().unwrap();
-    let runtime = BackendRuntime::new(None, None, None, None).unwrap();
+    let runtime = BackendRuntime::new(None, None, None, None, None).unwrap();
     runtime
       .configure_object_storage(format!(
         r#"{{"storages":{{"blob.storage":{{"provider":"fs","bucket":"promotion","config":{{"path":{}}}}}}}}}"#,

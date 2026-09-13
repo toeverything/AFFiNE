@@ -131,6 +131,15 @@ fn evaluate_redirect_uri_canonical(
   Ok(url.into())
 }
 
+pub(crate) fn evaluate_redirect_uri_internal(
+  input: &str,
+  base_url: &str,
+  allowed_origins: &[String],
+  trusted_domains: &[String],
+) -> Option<String> {
+  evaluate_redirect_uri_canonical(input, base_url, allowed_origins, trusted_domains, &[]).ok()
+}
+
 #[napi]
 pub fn evaluate_local_redirect(input: String, base_url: String, allowed_bases: Vec<String>) -> napi::Result<String> {
   evaluate_local_redirect_canonical(&input, &base_url, &allowed_bases).map_err(napi_error)

@@ -135,6 +135,12 @@ pub(super) enum AuthSessionCommand {
     client_version: Option<String>,
     #[serde(rename = "callbackUrl")]
     callback_url: String,
+    #[serde(rename = "redirectBaseUrl")]
+    redirect_base_url: String,
+    #[serde(rename = "redirectAllowedOrigins")]
+    redirect_allowed_origins: Vec<String>,
+    #[serde(rename = "redirectTrustedDomains")]
+    redirect_trusted_domains: Vec<String>,
   },
   #[serde(rename = "oauth_callback")]
   OAuthCallback {
@@ -292,7 +298,7 @@ pub(super) struct Principal {
 #[serde(tag = "status", rename_all = "snake_case")]
 pub(super) enum PrincipalResult {
   Valid {
-    principal: Principal,
+    principal: Box<Principal>,
     #[serde(rename = "refreshedExpiresAt")]
     refreshed_expires_at: Option<DateTime<Utc>>,
   },

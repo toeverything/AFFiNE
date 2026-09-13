@@ -58,7 +58,8 @@ pub(super) async fn upsert_document(
     sqlx::query(
       r#"INSERT INTO search_projection.document_states
          (generation_id,workspace_id,doc_id,target_source_version,target_source_exists,target_permission_version)
-         SELECT $1,$2,$3,nextval('search_projection.source_mutation_version'),false,
+         SELECT $1,$2,$3,nextval('search_projection.source_mutation_version'),
+                EXISTS(SELECT 1 FROM snapshots WHERE workspace_id=$2 AND guid=$3),
                 required_permission_version
          FROM search_projection.workspace_states
          WHERE generation_id=$1 AND workspace_id=$2"#,

@@ -10,8 +10,8 @@ use super::error::{ObjectStorageError, ObjectStorageResult};
 use crate::runtime::{
   RuntimeError, RuntimeResult,
   types::{
-    RuntimeMultipartUploadInit, RuntimeMultipartUploadPart, RuntimeObjectGetResult, RuntimeObjectListEntry,
-    RuntimeObjectMetadata, RuntimeObjectStoragePutOptions, RuntimePresignedObjectRequest,
+    RuntimeMultipartUploadInit, RuntimeMultipartUploadPart, RuntimeObjectGetResult, RuntimeObjectMetadata,
+    RuntimeObjectStoragePutOptions, RuntimePresignedObjectRequest,
   },
 };
 
@@ -108,6 +108,35 @@ impl ObjectLocator {
 
     Ok(Self { scope, key })
   }
+
+  pub(crate) fn lifecycle_owner(&self) -> ObjectStorageResult<String> {
+    let segments = self.key.split('/').collect::<Vec<_>>();
+    let owner = match (self.scope, segments.as_slice()) {
+      (StorageScope::Blob, ["comment-attachments", workspace_id, ..]) => *workspace_id,
+      (StorageScope::Blob, [workspace_id, ..]) => *workspace_id,
+      (StorageScope::Copilot, ["workspace-files" | "context-files" | "artifacts", workspace_id, ..]) => *workspace_id,
+      (StorageScope::Copilot, [_, workspace_id, ..]) => *workspace_id,
+      (StorageScope::Avatar, [key]) => key
+        .rsplit_once("-avatar-")
+        .map(|(user_id, _)| user_id)
+        .ok_or_else(|| ObjectStorageError::InvalidInput("invalid avatar object key".to_string()))?,
+      _ => {
+        return Err(ObjectStorageError::InvalidInput(format!(
+          "invalid {} object key",
+          self.scope.as_str()
+        )));
+      }
+    };
+    if !is_id_segment(owner) {
+      return Err(ObjectStorageError::InvalidInput(
+        "invalid storage lifecycle owner".to_string(),
+      ));
+    }
+    Ok(match self.scope {
+      StorageScope::Avatar => format!("avatar:{owner}"),
+      StorageScope::Blob | StorageScope::Copilot => owner.to_string(),
+    })
+  }
 }
 
 impl StorageScope {
@@ -198,6 +227,7 @@ fn validate_blob_key(key: &str) -> bool {
 fn validate_copilot_key(key: &str) -> bool {
   let segments: Vec<&str> = key.split('/').collect();
   match segments.as_slice() {
+    ["artifacts", workspace_id, hash] => is_id_segment(workspace_id) && is_sha256_base64url(hash),
     // chat attachments, generated images, transcript slices:
     // <userId>/<workspaceId>/<sha256b64>[-<index>]
     [user_id, workspace_id, hash] => is_id_segment(user_id) && is_id_segment(workspace_id) && is_hash_or_slice(hash),
@@ -274,7 +304,7 @@ pub(super) fn is_sha256_base64url(value: &str) -> bool {
 }
 
 /// uuid, nanoid and similar server/client generated identifiers.
-fn is_id_segment(value: &str) -> bool {
+pub(crate) fn is_id_segment(value: &str) -> bool {
   !value.is_empty()
     && value.len() <= MAX_ID_SEGMENT_LEN
     && value
@@ -334,6 +364,7 @@ pub(crate) struct ObjectListEntry {
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct ObjectListPage {
   pub(crate) entries: Vec<ObjectListEntry>,
+  pub(crate) common_prefixes: Vec<String>,
   pub(crate) next_continuation_token: Option<String>,
 }
 
@@ -428,16 +459,6 @@ impl From<ObjectMetadata> for RuntimeObjectMetadata {
       content_length: metadata.content_length,
       last_modified_ms: metadata.last_modified_ms,
       checksum_crc32: metadata.checksum_crc32,
-    }
-  }
-}
-
-impl From<ObjectListEntry> for RuntimeObjectListEntry {
-  fn from(entry: ObjectListEntry) -> Self {
-    Self {
-      key: entry.key,
-      content_length: entry.content_length,
-      last_modified_ms: entry.last_modified_ms,
     }
   }
 }

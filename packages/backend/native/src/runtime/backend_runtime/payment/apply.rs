@@ -196,7 +196,7 @@ pub(super) async fn apply_payment_snapshot(
       tx.rollback()
         .await
         .map_err(|rollback| RuntimeError::database("rollback payment snapshot", rollback))?;
-      Err(error.into())
+      Err(error)
     }
   }
 }

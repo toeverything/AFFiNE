@@ -9,12 +9,16 @@ impl PaymentRuntime {
     &self,
     changes: &mut super::super::PaymentApplyResult,
     actor_user_id: &str,
-    target_type: &str,
-    target_id: &str,
-    plan: &str,
+    target: &SubscriptionTarget,
     mutation: &str,
     intent_id: &str,
   ) -> RuntimeResult<Value> {
+    let SubscriptionTarget {
+      target_type,
+      target_id,
+      plan,
+    } = target;
+    let (target_type, target_id) = (target_type.as_str(), target_id.as_str());
     validate_target(target_type, target_id)?;
     validate_intent(intent_id)?;
     if target_type == "user" && actor_user_id != target_id {
@@ -95,8 +99,7 @@ impl PaymentRuntime {
       mutation.as_str(),
       intent_id,
       locked.resources.clone(),
-      Some(target_type),
-      Some(target_id),
+      Some((target_type, target_id)),
       &path,
       form,
     );

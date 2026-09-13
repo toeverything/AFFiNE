@@ -927,6 +927,23 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
   .unwrap();
   assert_eq!(live_sessions, 0);
 
+  assert!(
+    oauth::preflight(
+      &pool,
+      &config,
+      "Google",
+      Some("https://evil.example/steal"),
+      "web",
+      "rejected-oauth-nonce",
+      Some("0.27.5"),
+      "https://app.affine.pro/oauth/callback",
+      "https://app.affine.pro",
+      &["https://app.affine.pro".to_string()],
+      &[],
+    )
+    .await
+    .is_err()
+  );
   let oauth_preflight = oauth::preflight(
     &pool,
     &config,
@@ -936,6 +953,9 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
     "oauth-nonce",
     Some("0.27.5"),
     "https://app.affine.pro/oauth/callback",
+    "https://app.affine.pro",
+    &["https://app.affine.pro".to_string()],
+    &[],
   )
   .await
   .unwrap();
@@ -972,6 +992,9 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
     "apple-nonce",
     None,
     "https://app.affine.pro/api/oauth/callback",
+    "https://app.affine.pro",
+    &["https://app.affine.pro".to_string()],
+    &[],
   )
   .await
   .unwrap();
@@ -1015,6 +1038,9 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
     "oidc-client-nonce",
     Some("0.27.5"),
     "https://app.affine.pro/oauth/callback",
+    "https://app.affine.pro",
+    &["https://app.affine.pro".to_string()],
+    &[],
   )
   .await
   .unwrap();
