@@ -14,6 +14,10 @@ path = "src/main.rs"
 # The doc parser (Y.Doc ↔ blocks ↔ markdown) is vendored in src/doc_parser - it was
 # affine_common::doc_parser until PR #15197 removed it from packages/common/native.
 affine_nbstore = { workspace = true, features = ["use-as-lib"] }
+# Only for the error type `affine_nbstore::error::Error::Parse` carries, so a crawl failure can be
+# classified by variant instead of by message. Already in the build graph through nbstore; the
+# CLI's own markdown parser stays the vendored `doc_parser`.
+affine_doc_loader = { workspace = true }
 y-octo         = { workspace = true }
 
 # `search` is index-free: it builds a throwaway in-memory index per invocation instead of

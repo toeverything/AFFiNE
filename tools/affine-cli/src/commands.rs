@@ -444,6 +444,34 @@ pub async fn doc_delete(global: &GlobalArgs, args: &DocDeleteArgs) -> Result<Val
 // Phase 1 - full-text search
 // ----------------------------------------------------------------------------
 
+/// How `search` treats a `crawl_doc_data` failure for one page of `meta.pages`.
+#[derive(Debug, PartialEq, Eq)]
+enum CrawlFailure {
+    /// `meta.pages` names a doc whose rows are gone. Normal for a stale entry; skip it.
+    StalePage,
+    /// The doc rows exist but could not be decoded or parsed. Skip it with a warning.
+    Unreadable,
+    /// A storage or connection failure that is not specific to this doc. Fail the command.
+    Fatal,
+}
+
+fn classify_crawl_failure(err: &CliError) -> CrawlFailure {
+    use affine_doc_loader::ParseError as LoaderParseError;
+    use affine_nbstore::error::Error as StoreError;
+
+    match err {
+        CliError::Store(StoreError::Parse(LoaderParseError::DocNotFound)) => CrawlFailure::StalePage,
+        CliError::Store(StoreError::Parse(
+            LoaderParseError::InvalidBinary | LoaderParseError::ParserError(_) | LoaderParseError::Unknown(_),
+        )) => CrawlFailure::Unreadable,
+        // Sqlx, migration, connection, serialization and indexer failures all mean the store
+        // itself is unusable, not that this one doc is bad.
+        CliError::Store(_) => CrawlFailure::Fatal,
+        CliError::Parse(_) | CliError::Crdt(_) => CrawlFailure::Unreadable,
+        _ => CrawlFailure::Fatal,
+    }
+}
+
 /// Build the searchable plaintext for a doc: title + every block's content joined by spaces.
 fn doc_plaintext(cr: &affine_nbstore::indexer::NativeCrawlResult) -> String {
     let mut parts: Vec<String> = Vec::new();
@@ -507,9 +535,24 @@ pub async fn search(global: &GlobalArgs, args: &SearchArgs) -> Result<Value, Cli
     for page in &pages {
         // Prefer the crawled title (the doc's own), falling back to root meta.pages.
         let meta_title = page.title.clone().unwrap_or_default();
-        // A stale meta.pages entry with no doc rows - skip rather than fail the search.
-        let Ok(cr) = backend.crawl_doc_data(&page.id).await else {
-            continue;
+        let cr = match backend.crawl_doc_data(&page.id).await {
+            Ok(cr) => cr,
+            Err(e) => match classify_crawl_failure(&e) {
+                // A stale meta.pages entry whose doc rows are gone: expected, skip it silently.
+                CrawlFailure::StalePage => continue,
+                // One unreadable doc must not hide the rest of the workspace, but a ranking that
+                // silently omits it is worse than one that says what it skipped.
+                CrawlFailure::Unreadable => {
+                    crate::output::warn(format!(
+                        "doc {} could not be read and is missing from these search results: {e}",
+                        page.id
+                    ));
+                    continue;
+                }
+                // Not doc-specific (storage or connection failure): every remaining doc would
+                // fail the same way, so report it instead of returning a truncated ranking.
+                CrawlFailure::Fatal => return Err(e),
+            },
         };
         let title = if cr.title.is_empty() {
             meta_title
@@ -1192,4 +1235,55 @@ pub async fn doc_add_latex(global: &GlobalArgs, args: &DocAddLatexArgs) -> Resul
         "flavour": "affine:latex",
         "latex": args.latex,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use affine_doc_loader::ParseError as LoaderParseError;
+    use affine_nbstore::error::Error as StoreError;
+
+    use super::*;
+
+    #[test]
+    fn crawl_failure_classification() {
+        let cases = [
+            (
+                CliError::Store(StoreError::Parse(LoaderParseError::DocNotFound)),
+                CrawlFailure::StalePage,
+            ),
+            (
+                CliError::Store(StoreError::Parse(LoaderParseError::InvalidBinary)),
+                CrawlFailure::Unreadable,
+            ),
+            (
+                CliError::Store(StoreError::Parse(LoaderParseError::ParserError("bad block".into()))),
+                CrawlFailure::Unreadable,
+            ),
+            (
+                CliError::Store(StoreError::Serialization("nope".into())),
+                CrawlFailure::Fatal,
+            ),
+            (CliError::Store(StoreError::InvalidOperation), CrawlFailure::Fatal),
+            (CliError::Crdt("damaged".into()), CrawlFailure::Unreadable),
+            (CliError::other("anything else"), CrawlFailure::Fatal),
+        ];
+        for (err, want) in cases {
+            assert_eq!(classify_crawl_failure(&err), want, "{err}");
+        }
+    }
+
+    /// A doc-specific failure must not be silently dropped: it has to reach the caller as a
+    /// warning so the JSON envelope says the ranking is incomplete.
+    #[test]
+    fn unreadable_doc_is_reported_as_a_warning() {
+        let _ = crate::output::take_warnings();
+        let err = CliError::Store(StoreError::Parse(LoaderParseError::InvalidBinary));
+        assert_eq!(classify_crawl_failure(&err), CrawlFailure::Unreadable);
+        crate::output::warn(format!(
+            "doc d1 could not be read and is missing from these search results: {err}"
+        ));
+        let warnings = crate::output::take_warnings();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("d1"), "{warnings:?}");
+    }
 }

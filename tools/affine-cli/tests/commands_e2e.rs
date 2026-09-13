@@ -1010,7 +1010,7 @@ fn doc_read_on_current_schema_succeeds_without_warnings() {
 }
 
 #[test]
-fn doc_read_refuses_db_behind_schema_unless_allow_migrate() {
+fn behind_schema_db_migrates_only_from_a_write_command_with_allow_migrate() {
     let base = TempBase::new("schema-behind");
     let ws = create_ws(base.path(), "Schema");
     let doc = create_doc(base.path(), &ws, "Doc", "# hi");
@@ -1054,10 +1054,37 @@ fn doc_read_refuses_db_behind_schema_unless_allow_migrate() {
         .expect("listed");
     assert!(entry["error"].as_str().is_some_and(|e| e.contains("behind")), "{entry}");
 
-    // Opt in: the CLI migrates, says so in `warnings`, and the DB is current afterwards.
-    let v = run_ok(
+    // --allow-migrate does NOT turn a read command into a migrating one: migrating is a write,
+    // and a read open holds neither the write lease nor the open-app pre-flight.
+    let v = run_err(
         base.path(),
         &["doc", "read", "--workspace", &ws, "--doc", &doc, "--allow-migrate"],
+    );
+    assert_eq!(v["error"], "migration_required", "{v}");
+    assert!(
+        v["message"].as_str().is_some_and(|m| m.contains("read-only commands")),
+        "{v}"
+    );
+    assert_eq!(
+        applied_migrations(&db),
+        before,
+        "a read command must never migrate, even with --allow-migrate"
+    );
+
+    // Opt in from a write command: the CLI migrates, says so in `warnings`, and the DB is current.
+    let v = run_ok(
+        base.path(),
+        &[
+            "doc",
+            "update",
+            "--workspace",
+            &ws,
+            "--doc",
+            &doc,
+            "--content",
+            "migrated",
+            "--allow-migrate",
+        ],
     );
     assert_eq!(v["ok"], json_true());
     let warnings = v["warnings"].as_array().expect("warnings array present");

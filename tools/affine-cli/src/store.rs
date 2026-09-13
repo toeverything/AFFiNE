@@ -55,6 +55,17 @@ pub struct LocalBackend {
     lease: Option<WriteLease>,
 }
 
+/// Whether an open is allowed to let nbstore apply pending migrations on `connect()`.
+#[derive(Debug, Clone, Copy)]
+enum MigratePolicy {
+    /// Read-only open: never migrate. `requested` records whether `--allow-migrate` was passed,
+    /// so the refusal can explain why the flag does not apply here.
+    NeverReadOnly { requested: bool },
+    /// Write open: the write lease is held and the open-app pre-flight has run, so migrating is
+    /// safe when `--allow-migrate` asked for it.
+    IfRequested(bool),
+}
+
 impl LocalBackend {
     /// Open (creating + migrating if needed) the local SQLite store for `workspace_id`, holding
     /// the workspace write lease.
@@ -108,14 +119,18 @@ impl LocalBackend {
     /// id from silently creating an empty workspace that `workspace list` then reports.
     ///
     /// Before handing the file to nbstore (whose `connect()` migrates unconditionally) the
-    /// schema is checked read-only; see `check_schema`. `allow_migrate` (the `--allow-migrate`
-    /// flag) lets a behind-schema database be migrated; a database newer than this CLI is
-    /// always refused.
+    /// schema is checked read-only; see `check_schema`.
+    ///
+    /// This is the READ-ONLY entry point, so a behind-schema database is always refused here,
+    /// even under `--allow-migrate`: nbstore's migration is a write, and the write lease plus the
+    /// open-app pre-flight that make a write safe are only taken by mutating commands. Migrating
+    /// from a read command could therefore upgrade the file while the app or another CLI process
+    /// is using it. `migrate_requested` carries `--allow-migrate` only to tailor the refusal.
     pub async fn open_existing(
         base: &Path,
         peer: &str,
         workspace_id: &str,
-        allow_migrate: bool,
+        migrate_requested: bool,
     ) -> Result<Self, CliError> {
         let db_path = paths::workspace_db_path(base, peer, workspace_id)?;
         if !db_path.is_file() {
@@ -124,15 +139,33 @@ impl LocalBackend {
                 db_path.display()
             )));
         }
-        Self::check_schema_for_open(&db_path, workspace_id, allow_migrate).await?;
+        Self::check_schema_for_open(
+            &db_path,
+            workspace_id,
+            MigratePolicy::NeverReadOnly {
+                requested: migrate_requested,
+            },
+        )
+        .await?;
         Self::connect(base, peer, workspace_id, None).await
     }
 
     /// Classify the database schema and turn `Behind`/`Newer` into the user-facing errors (or the
     /// `--allow-migrate` warning) shared by both `open_existing` variants.
-    async fn check_schema_for_open(db_path: &Path, workspace_id: &str, allow_migrate: bool) -> Result<(), CliError> {
+    async fn check_schema_for_open(db_path: &Path, workspace_id: &str, policy: MigratePolicy) -> Result<(), CliError> {
+        let allow_migrate = matches!(policy, MigratePolicy::IfRequested(true));
         match check_schema(db_path).await? {
             SchemaState::Current => {}
+            SchemaState::Behind { pending } if matches!(policy, MigratePolicy::NeverReadOnly { requested: true }) => {
+                return Err(CliError::MigrationRequired(format!(
+                    "workspace {workspace_id} database schema is behind this CLI ({} pending migration(s): {}); \
+                     --allow-migrate is ignored by read-only commands because migrating is itself a write \
+                     (it needs the workspace write lease and the open-app check). Open the workspace in the \
+                     AFFiNE app, or run a write command with --allow-migrate first",
+                    pending.len(),
+                    pending.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ")
+                )));
+            }
             SchemaState::Behind { pending } if allow_migrate => {
                 crate::output::warn(format!(
                     "applied {} pending schema migration(s) to workspace {workspace_id} (--allow-migrate)",
@@ -178,7 +211,9 @@ impl LocalBackend {
             )));
         }
         let lease = WriteLease::acquire(&paths::client_id_path(base, peer, workspace_id)?)?;
-        Self::check_schema_for_open(&db_path, workspace_id, allow_migrate).await?;
+        // Safe to migrate from here: the lease is held and the caller already ran the open-app
+        // pre-flight (`guard_workspace_writable`), so no other writer is in the file.
+        Self::check_schema_for_open(&db_path, workspace_id, MigratePolicy::IfRequested(allow_migrate)).await?;
         Self::connect(base, peer, workspace_id, Some(lease)).await
     }
 

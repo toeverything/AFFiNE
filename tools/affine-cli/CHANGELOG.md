@@ -11,6 +11,17 @@ Where the documented contract was stronger than the mechanism, the mechanism is 
 
 ### Fixed
 
+- **`--allow-migrate` no longer migrates from a read command.**
+  `open_existing` passed the flag through, so `doc read`, `search`, and `workspace list` could let
+  nbstore upgrade `_sqlx_migrations` while holding neither the write lease nor the open-app
+  pre-flight, upgrading the file underneath the running app or another CLI writer.
+  Read-only opens now always refuse a behind-schema database and say that a write command with
+  `--allow-migrate` (or opening the app) is what migrates it.
+- **`search` no longer reports a silently incomplete ranking.**
+  It suppressed every `crawl_doc_data` error as a stale `meta.pages` entry, so a decode or storage
+  failure produced a successful but short result set.
+  Only a confirmed missing doc is skipped silently; an unreadable doc is skipped with a `warnings`
+  entry naming it, and a storage-level failure fails the command.
 - **`--peer` and workspace ids are validated as single path segments.**
   `workspace_db_path`, `client_id_path`, and `workspaces_dir` joined the raw values, so an absolute
   component or `..` could point the SQLite connection outside `<base>/workspaces`.

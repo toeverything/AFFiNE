@@ -64,6 +64,7 @@ dependencies = [
 name = "affine-cli"
 version = "0.0.0"
 dependencies = [
+ "affine_doc_loader",
  "affine_nbstore",
  "affine_schema",
  "anyhow",

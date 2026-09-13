@@ -13,7 +13,7 @@ A single static binary over the AFFiNE local-first store. JSON in / JSON out. Bu
 | `--product <name>` | `AFFiNE` | Product dir under the data dir (`AFFiNE-canary`, `AFFiNE-beta`, …). |
 | `--pretty` | off | Pretty-print JSON (default is one compact line). |
 | `--force` | off | Skip the pre-flight open-app check (see below). |
-| `--allow-migrate` | off | Let the CLI apply pending schema migrations to an existing workspace DB (see below). |
+| `--allow-migrate` | off | Let a **write** command apply pending schema migrations to an existing workspace DB (see below). Read commands never migrate. |
 
 **Output contract:** success → a JSON object/array with `"ok":true` (objects) or a bare array (lists);
 failure → `{"ok":false,"error":"<code>","message":"<text>"}` and a non-zero exit code. Never panics.
@@ -42,6 +42,9 @@ the app (which migrates it), or pass `--allow-migrate` when the app is at least 
 know, it refuses with `"error":"db_newer"`; rebuild the CLI from a matching source tree. Only
 `workspace create` (a fresh database) migrates without the flag. Nothing is written before the
 check passes.
+Only mutating commands can migrate: migrating is a write, so it needs the workspace write lease and
+the open-app pre-flight that read commands never take.
+A read command on a behind-schema database is refused even with `--allow-migrate`, and says so.
 
 **Write lease (one CLI writer per workspace):** each workspace directory holds an
 `affine-cli.client` file next to `storage.db`.

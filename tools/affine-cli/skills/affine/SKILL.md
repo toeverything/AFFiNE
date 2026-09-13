@@ -56,7 +56,7 @@ affine-cli doc update --workspace="$WS" --doc="$DOC" --content $'# Ideas\n\nrevi
    there to see CLI-written changes.
 2. **The CLI never migrates an existing workspace DB on its own.** `"error":"migration_required"`
    means the DB schema is older than this CLI build expects; open the workspace in the AFFiNE app
-   (which migrates it) or pass `--allow-migrate` if the installed app is at least as new as the
+   (which migrates it) or pass `--allow-migrate` **on a write command** if the installed app is at least as new as the
    CLI. `"error":"db_newer"` means the DB was written by a newer app than the CLI; rebuild the CLI.
 3. **Only one CLI write per workspace at a time** - `{"ok":false,"error":"busy"}` means another
    `affine-cli` process holds the workspace write lease (an advisory lock on the `affine-cli.client`
