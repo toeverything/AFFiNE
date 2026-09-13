@@ -33,6 +33,20 @@ describe('latex markdown preprocessor', () => {
     });
   });
 
+  describe('escaped dollars are not delimiters', () => {
+    test('an escaped dollar does not close inline math', () => {
+      expect(preprocessLatex('$5\\$ and $10')).toBe('\\$5\\$ and \\$10');
+    });
+
+    test('an escaped dollar does not open inline math', () => {
+      expect(preprocessLatex('\\$5 and x$')).toBe('\\\\$5 and x$');
+    });
+
+    test('a literal dollar inside math is kept', () => {
+      expect(preprocessLatex('$a\\$b$')).toBe('$a\\$b$');
+    });
+  });
+
   describe('existing behaviour is unchanged', () => {
     test('display math is left alone', () => {
       expect(preprocessLatex('$$x=1$$')).toBe('$$x=1$$');

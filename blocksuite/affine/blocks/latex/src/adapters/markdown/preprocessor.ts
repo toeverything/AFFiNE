@@ -52,10 +52,11 @@ export function preprocessLatex(content: string) {
   // telling math from prices: the opening `$` is not followed by whitespace,
   // the closing `$` is not preceded by whitespace, and the closing `$` is not
   // followed by a digit. That keeps `costs $5 and $10` and `$100$200` as
-  // currency while `$4\vee 6=12$` is recognised as math.
+  // currency while `$4\vee 6=12$` is recognised as math. Backslash escapes are
+  // consumed as a unit so an escaped `\$` neither opens nor closes math.
   const latexExpressions: string[] = [];
   preprocessedContent = preprocessedContent.replace(
-    /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\)|\$(?!\s)[^\n$]*?(?<!\s)\$(?!\d))/g,
+    /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\)|(?<!\\)\$(?!\s)(?:[^\n$\\]|\\.)*?(?<!\s)\$(?!\d))/g,
     match => {
       latexExpressions.push(match);
       return `<<LATEX_${latexExpressions.length - 1}>>`;
