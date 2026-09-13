@@ -52,6 +52,22 @@ function load(name) {
   return doc;
 }
 
+// A fixture assumption that a later line dereferences. When it fails, report it as a labeled
+// check and abandon the enclosing section instead of letting Node throw an opaque TypeError.
+class SectionAbort extends Error {}
+function expect(label, value, detail) {
+  check(label, value !== undefined && value !== null, detail);
+  if (value === undefined || value === null) throw new SectionAbort(label);
+  return value;
+}
+function section(fn) {
+  try {
+    fn();
+  } catch (e) {
+    if (!(e instanceof SectionAbort)) throw e;
+  }
+}
+
 const BOXED = '$blocksuite:internal:native$';
 
 function surfaceElements(doc) {
@@ -65,7 +81,7 @@ function surfaceElements(doc) {
   check('prop:elements is the Boxed wrapper', boxed instanceof Y.Map && boxed.get('type') === BOXED);
   const value = boxed?.get('value');
   check('boxed value is a Y.Map', value instanceof Y.Map);
-  return value;
+  return expect('boxed value usable', value instanceof Y.Map ? value : undefined);
 }
 
 // Generic sweep over one element. The forEach is only a presence smoke-test (every top-level
@@ -85,7 +101,7 @@ function sweepElement(label, el, arrayFields) {
 }
 
 // ---------------- page doc ----------------
-{
+section(() => {
   const doc = load('page_doc.bin');
   const value = surfaceElements(doc);
 
@@ -173,10 +189,10 @@ function sweepElement(label, el, arrayFields) {
   });
   check('inline $…$ math decodes as a latex delta attribute', sawInline);
   check('block $$…$$ math decodes as an affine:latex block', sawBlockMath);
-}
+});
 
 // ---------------- diagram doc (single-delta create_diagram path) ----------------
-{
+section(() => {
   const doc = load('diagram_doc.bin');
   const value = surfaceElements(doc);
   for (const id of manifest.diagramShapeIds) {
@@ -190,10 +206,10 @@ function sweepElement(label, el, arrayFields) {
       Array.isArray(lx) && lx.length === 4 && lx.every(n => typeof n === 'number'), lx);
   }
   check('diagram element count', value.size === manifest.diagramShapeIds.length + manifest.diagramConnectorIds.length, value.size);
-}
+});
 
 // ---------------- root doc ----------------
-{
+section(() => {
   const doc = load('root_doc.bin');
   const meta = doc.getMap('meta');
   check('root meta.name', meta.get('name') === manifest.workspaceName, meta.get('name'));
@@ -202,15 +218,15 @@ function sweepElement(label, el, arrayFields) {
   const page = pages?.get(0);
   check('root page entry id', page instanceof Y.Map && page.get('id') === manifest.docId, page?.get?.('id'));
   check('root page entry title', page?.get('title') === manifest.docTitle, page?.get?.('title'));
-}
+});
 
 // ---------------- db$docProperties doc ----------------
-{
+section(() => {
   const doc = load('props_doc.bin');
   const row = doc.getMap(manifest.docId);
   check('props row id', row.get('id') === manifest.docId, row.get('id'));
   check('props row primaryMode', row.get('primaryMode') === 'edgeless', row.get('primaryMode'));
-}
+});
 
 // ============================================================================
 // Per-row delta sequences.
@@ -288,6 +304,11 @@ function applyRow(doc, name) {
 
 function noPending(doc) {
   return doc.store.pendingStructs === null && doc.store.pendingDs === null;
+}
+
+function firstBlock(doc, flavour) {
+  const found = blocksByFlavour(doc, flavour)[0];
+  return expect(`fixture has an ${flavour} block`, found, flavour)[1];
 }
 
 function blocksByFlavour(doc, flavour) {
@@ -381,7 +402,7 @@ for (const seq of sequences) {
 
 // Doc state right before row `rowIndex` of a sequence.
 function docBefore(seqName, rowIndex) {
-  const { seq } = bySeq.get(seqName);
+  const { seq } = expect(`manifest lists sequence ${seqName}`, bySeq.get(seqName), seqName);
   const doc = new Y.Doc();
   for (let i = 0; i < rowIndex; i++) applyRow(doc, seq.rows[i]);
   return { doc, seq };
@@ -391,7 +412,7 @@ function docBefore(seqName, rowIndex) {
 // then its id appended to the note's `sys:children`.
 function appInsertParagraph(doc, id, text) {
   const blocks = doc.getMap('blocks');
-  const [, note] = blocksByFlavour(doc, 'affine:note')[0];
+  const note = firstBlock(doc, 'affine:note');
   doc.transact(() => {
     const m = new Y.Map();
     blocks.set(id, m);
@@ -408,7 +429,7 @@ function appInsertParagraph(doc, id, text) {
 }
 
 function noteChildren(doc) {
-  const [, note] = blocksByFlavour(doc, 'affine:note')[0];
+  const note = firstBlock(doc, 'affine:note');
   return note.get('sys:children').toArray();
 }
 
@@ -417,7 +438,7 @@ function paragraphTexts(doc) {
 }
 
 // A. App appends a paragraph; CLI edits the text of another paragraph (update_text row 1).
-{
+section(() => {
   const label = 'interleave A (app paragraph + CLI text edit)';
   const { doc, seq } = docBefore('update_text', 1);
   appInsertParagraph(doc, 'app-para-a', 'app paragraph');
@@ -433,10 +454,10 @@ function paragraphTexts(doc) {
   check(`${label}: CLI text edit survived`, texts.includes('Hello brave new world'), texts);
   check(`${label}: app paragraph block survived`, texts.includes('app paragraph'), texts);
   check(`${label}: app paragraph still in note children`, noteChildren(doc).includes('app-para-a'), noteChildren(doc));
-}
+});
 
 // B. App appends a paragraph; CLI structural diff removes/reorders blocks (update_structural row 1).
-{
+section(() => {
   const label = 'interleave B (app paragraph + CLI structural diff)';
   const { doc, seq } = docBefore('update_structural', 1);
   appInsertParagraph(doc, 'app-para-b', 'app paragraph');
@@ -459,13 +480,14 @@ function paragraphTexts(doc) {
   );
   check(`${label}: app paragraph block survived`, paragraphTexts(doc).includes('app paragraph'), paragraphTexts(doc));
   check(`${label}: app paragraph still in note children`, children.includes('app-para-b'), children);
-}
+});
 
 // C. App types inside the SAME paragraph the CLI edits (update_text row 1).
-{
+section(() => {
   const label = 'interleave C (app typing + CLI edit in the same paragraph)';
   const { doc, seq } = docBefore('update_text', 1);
-  const [, para] = blocksByFlavour(doc, 'affine:paragraph').find(([, m]) => m.get('prop:text')?.toString() === 'Hello world');
+  const found = blocksByFlavour(doc, 'affine:paragraph').find(([, m]) => m.get('prop:text')?.toString() === 'Hello world');
+  const [, para] = expect(`${label}: base paragraph fixture present`, found, paragraphTexts(doc));
   doc.transact(() => {
     const t = para.get('prop:text');
     t.insert(t.length, ' (app)');
@@ -481,12 +503,12 @@ function paragraphTexts(doc) {
   const text = para.get('prop:text')?.toString();
   check(`${label}: CLI edit survived`, typeof text === 'string' && text.includes('brave new'), text);
   check(`${label}: app typing survived`, typeof text === 'string' && text.includes('(app)'), text);
-}
+});
 
 // D. App registers a page in meta.pages; CLI removes a different page (root_remove last row).
-{
+section(() => {
   const label = 'interleave D (app meta.pages push + CLI remove_doc_from_root)';
-  const { seq } = bySeq.get('root_remove');
+  const { seq } = expect('manifest lists sequence root_remove', bySeq.get('root_remove'));
   const last = seq.rows.length - 1;
   const { doc } = docBefore('root_remove', last);
   doc.transact(() => {
@@ -509,15 +531,15 @@ function paragraphTexts(doc) {
   check(`${label}: CLI removal survived (doc-a gone)`, !ids.includes('doc-a'), ids);
   check(`${label}: app page survived`, ids.includes('app-doc'), ids);
   check(`${label}: untouched page survived`, ids.includes('doc-b'), ids);
-}
+});
 
 // E. App adds a surface element; CLI `diagram create --replace` (diagram_replace last row).
-{
+section(() => {
   const label = 'interleave E (app surface element + CLI diagram --replace)';
-  const { seq } = bySeq.get('diagram_replace');
+  const { seq } = expect('manifest lists sequence diagram_replace', bySeq.get('diagram_replace'));
   const last = seq.rows.length - 1;
   const { doc } = docBefore('diagram_replace', last);
-  const [, surface] = blocksByFlavour(doc, 'affine:surface')[0];
+  const surface = firstBlock(doc, 'affine:surface');
   const value = surface.get('prop:elements').get('value');
   const before = [...value.keys()];
   doc.transact(() => {
@@ -542,11 +564,11 @@ function paragraphTexts(doc) {
   const after = [...value.keys()];
   check(`${label}: CLI clear removed the prior elements`, before.every(k => !after.includes(k)), { before, after });
   check(`${label}: app element survived`, after.includes('app-el'), after);
-  const { lastExpected } = bySeq.get('diagram_replace');
+  const { lastExpected } = expect('manifest lists sequence diagram_replace', bySeq.get('diagram_replace'));
   const expectedSurface = Object.values(lastExpected.roots.blocks).find(b => b['sys:flavour'] === 'affine:surface');
   const expectedIds = Object.keys(expectedSurface['prop:elements'].value);
   check(`${label}: CLI new elements present`, expectedIds.every(k => after.includes(k)), { expectedIds, after });
-}
+});
 
 if (knownGaps > 0) {
   console.log(`\n${knownGaps} known merge-semantics gap(s) reported as xfail (see KNOWN_GAPS).`);

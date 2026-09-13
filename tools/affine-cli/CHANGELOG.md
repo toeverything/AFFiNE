@@ -11,6 +11,26 @@ Where the documented contract was stronger than the mechanism, the mechanism is 
 
 ### Fixed
 
+- **`--peer` and workspace ids are validated as single path segments.**
+  `workspace_db_path`, `client_id_path`, and `workspaces_dir` joined the raw values, so an absolute
+  component or `..` could point the SQLite connection outside `<base>/workspaces`.
+  `paths::path_component` now rejects separators, `.`, `..`, prefixes, and control characters with
+  `"error":"config"` before any path is built.
+- **The write lease locks on Windows too.**
+  The lock moved from `libc::flock` to `std::fs::File::try_lock`, which is `flock` on unix and
+  `LockFileEx` on Windows, so two concurrent CLI writers are excluded on every platform instead of
+  sharing the persisted client id unlocked.
+- **`doc update` bounds the stored tree while walking it.**
+  A block that lists the same child id twice is not a cycle, so the path-scoped visited set let a
+  corrupt doc expand up to 2^depth nodes before `check_limits` ran.
+  The walk now charges every node against `MAX_BLOCKS` and fails with `block_count_too_large`.
+- **Fenced code blocks no longer grow a newline per round trip.**
+  The parser keeps the block body's trailing newline and the writer appended another, so each
+  render/re-ingest pass added a blank line.
+  The writer now adds the separator only when the body lacks one, and a two-pass test pins it.
+- The schema-drift scan bounds each `flavour:`/`version:` lookup to its own `defineBlockSchema(`
+  call, and `yjs-compat/check.mjs` reports a missing fixture assumption as a labeled check and
+  skips that section instead of dying with a `TypeError`.
 - **The CLI reuses one y-octo client id per workspace instead of minting a new one per invocation.**
   Every `DocOptions::new()` took y-octo's default random client id, and every peer that writes to a
   doc stays in its state vector forever, so an agent editing a doc N times left N dead clients
@@ -18,12 +38,12 @@ Where the documented contract was stronger than the mechanism, the mechanism is 
   The id is now generated once and persisted in `affine-cli.client` next to `storage.db`, and
   `lease::doc_options()` is the factory every write path builds its `Doc` from.
   Because reusing an id is only safe for a single writer, that file doubles as the write lock:
-  mutating commands hold an exclusive advisory `flock` on it for their whole run, and a second CLI
+  mutating commands hold an exclusive advisory lock on it for their whole run (`flock` on unix,
+  `LockFileEx` on Windows, via `std::fs::File::try_lock`), and a second CLI
   process retries for about two seconds and then fails with the new `"error":"busy"` rather than
   minting colliding `(client, clock)` item ids.
   Read-only commands never take the lease.
-  On Windows the lock is not implemented and the output carries a `warnings` entry instead; a
-  missing or malformed id file is regenerated with a warning.
+  A missing or malformed id file is regenerated with a warning.
 
 - **`doc update` edits `sys:children` and `prop:text` in place, so concurrent app edits survive.**
   The writer replaced a container's `sys:children` with a NEW `Y.Array` and a changed paragraph's `prop:text` with a NEW `Y.Text`, which makes the CLI's update authoritative for the whole container: a paragraph the app appended, or characters the app typed, between the CLI's read and its write were still in the doc but no longer reachable, because the map key pointed at a different type (harness interleaving cases B and C).

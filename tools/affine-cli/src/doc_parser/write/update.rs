@@ -114,7 +114,8 @@ fn build_stored_tree(block_id: &str, block: &Map, pool: &HashMap<String, Map>) -
     // A corrupt doc can make sys:children cyclic; fail instead of recursing until the stack
     // overflows. `visited` holds the ids on the current root-to-node path.
     let mut visited: HashSet<String> = HashSet::new();
-    build_stored_tree_inner(block_id, block, pool, &mut visited)
+    let mut budget = MAX_BLOCKS;
+    build_stored_tree_inner(block_id, block, pool, &mut visited, &mut budget)
 }
 
 fn build_stored_tree_inner(
@@ -122,7 +123,14 @@ fn build_stored_tree_inner(
     block: &Map,
     pool: &HashMap<String, Map>,
     visited: &mut HashSet<String>,
+    budget: &mut usize,
 ) -> Result<StoredNode, ParseError> {
+    // A repeated child id is not a cycle (`visited` is path-scoped), but it duplicates the subtree
+    // at every level, so a corrupt doc could materialise 2^depth nodes before `check_limits` ever
+    // sees the tree. Charge every node against `MAX_BLOCKS` during the walk instead.
+    *budget = budget
+        .checked_sub(1)
+        .ok_or_else(|| ParseError::ParserError("block_count_too_large".into()))?;
     if !visited.insert(block_id.to_string()) {
         return Err(ParseError::ParserError(format!(
             "cyclic sys:children at block: {block_id}"
@@ -141,7 +149,7 @@ fn build_stored_tree_inner(
         let child_block = pool
             .get(&child_id)
             .ok_or_else(|| ParseError::ParserError("child block not found".into()))?;
-        children.push(build_stored_tree_inner(&child_id, child_block, pool, visited)?);
+        children.push(build_stored_tree_inner(&child_id, child_block, pool, visited, budget)?);
     }
     visited.remove(block_id);
 
@@ -684,6 +692,54 @@ mod tests {
             update_doc(&corrupt_bin, "- a\n  - b\n  - c", doc_id).expect_err("cyclic sys:children must be rejected");
         assert!(
             err.to_string().contains("cyclic sys:children"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_update_ydoc_duplicated_children_hit_block_budget() {
+        // A list that names the same child twice is not a cycle, so the path-scoped visited set
+        // lets it through; the tree walk must charge each node against MAX_BLOCKS instead of
+        // materialising 2^depth nodes before `check_limits` ever runs.
+        let doc_id = "dup-children-test";
+        let initial_bin = build_full_doc("Title", "- a\n  - b\n    - c", doc_id).expect("initial doc");
+
+        let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+        doc.apply_update_from_binary_v1(&initial_bin).expect("apply initial");
+        let blocks = doc.get_map("blocks").expect("blocks map");
+        let list_ids: Vec<String> = blocks
+            .iter()
+            .filter_map(|(id, value)| {
+                let block = value.to_map()?;
+                (get_string(&block, "sys:flavour").as_deref() == Some("affine:list")).then(|| id.to_string())
+            })
+            .collect();
+        assert_eq!(list_ids.len(), 3, "expected three nested list blocks");
+
+        // Every list block repeats each of its children MAX_BLOCKS times; the budget must trip on
+        // the first level, long before any exponential blow-up.
+        for id in &list_ids {
+            let mut block = blocks.get(id).and_then(|v| v.to_map()).expect("list block");
+            let child_ids = collect_child_ids(&block);
+            if child_ids.is_empty() {
+                continue;
+            }
+            let mut children = doc.create_array().expect("array");
+            for _ in 0..MAX_BLOCKS {
+                for child in &child_ids {
+                    children.push(child.as_str()).expect("push");
+                }
+            }
+            block
+                .insert("sys:children".into(), Value::Array(children))
+                .expect("insert children");
+        }
+        let corrupt_bin = doc.encode_update_v1().expect("encode");
+
+        let err = update_doc(&corrupt_bin, "- a\n  - b\n    - c\n- d", doc_id)
+            .expect_err("duplicated children must trip the block budget");
+        assert!(
+            err.to_string().contains("block_count_too_large"),
             "unexpected error: {err}"
         );
     }

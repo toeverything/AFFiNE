@@ -65,17 +65,17 @@ impl LocalBackend {
     /// lease is taken (and the client-id file minted) before the database exists so the root
     /// doc is written with the workspace's permanent client id.
     pub async fn open(base: &Path, peer: &str, workspace_id: &str) -> Result<Self, CliError> {
-        let db_path = paths::workspace_db_path(base, peer, workspace_id);
+        let db_path = paths::workspace_db_path(base, peer, workspace_id)?;
         if let Some(parent) = db_path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        let lease = WriteLease::acquire(&paths::client_id_path(base, peer, workspace_id))?;
+        let lease = WriteLease::acquire(&paths::client_id_path(base, peer, workspace_id)?)?;
         Self::connect(base, peer, workspace_id, Some(lease)).await
     }
 
     /// `pool.connect` on the workspace database; `lease` is carried into the backend as-is.
     async fn connect(base: &Path, peer: &str, workspace_id: &str, lease: Option<WriteLease>) -> Result<Self, CliError> {
-        let db_path = paths::workspace_db_path(base, peer, workspace_id);
+        let db_path = paths::workspace_db_path(base, peer, workspace_id)?;
         let db_path_str = db_path
             .to_str()
             .ok_or_else(|| CliError::config("db path is not valid UTF-8"))?
@@ -117,7 +117,7 @@ impl LocalBackend {
         workspace_id: &str,
         allow_migrate: bool,
     ) -> Result<Self, CliError> {
-        let db_path = paths::workspace_db_path(base, peer, workspace_id);
+        let db_path = paths::workspace_db_path(base, peer, workspace_id)?;
         if !db_path.is_file() {
             return Err(CliError::config(format!(
                 "workspace not found: {workspace_id} (no database at {})",
@@ -170,19 +170,19 @@ impl LocalBackend {
         workspace_id: &str,
         allow_migrate: bool,
     ) -> Result<Self, CliError> {
-        let db_path = paths::workspace_db_path(base, peer, workspace_id);
+        let db_path = paths::workspace_db_path(base, peer, workspace_id)?;
         if !db_path.is_file() {
             return Err(CliError::config(format!(
                 "workspace not found: {workspace_id} (no database at {})",
                 db_path.display()
             )));
         }
-        let lease = WriteLease::acquire(&paths::client_id_path(base, peer, workspace_id))?;
+        let lease = WriteLease::acquire(&paths::client_id_path(base, peer, workspace_id)?)?;
         Self::check_schema_for_open(&db_path, workspace_id, allow_migrate).await?;
         Self::connect(base, peer, workspace_id, Some(lease)).await
     }
 
-    pub fn db_path(base: &Path, peer: &str, workspace_id: &str) -> std::path::PathBuf {
+    pub fn db_path(base: &Path, peer: &str, workspace_id: &str) -> Result<std::path::PathBuf, CliError> {
         paths::workspace_db_path(base, peer, workspace_id)
     }
 }

@@ -26,8 +26,34 @@ fn test_roundtrip_list_items() {
 #[test]
 fn test_roundtrip_code_block() {
     let markdown = "```rust\nfn main() {}\n```";
-    let expected = "```rust\nfn main() {}\n\n```\n\n";
+    let expected = "```rust\nfn main() {}\n```\n\n";
     assert_markdown_roundtrip(markdown, expected);
+}
+
+/// Rendering, re-ingesting, and rendering again must be a fixed point: the parser keeps the block
+/// body's trailing newline and the writer must not add a second one on every pass.
+#[test]
+fn test_code_block_roundtrip_is_stable_across_passes() {
+    for (name, markdown) in [
+        ("plain", "```rust\nfn main() {}\n```"),
+        ("embedded backticks", "````md\n```js\nlet x = 1;\n```\n````"),
+    ] {
+        let doc_id = "roundtrip-code-stable";
+        let first = build_full_doc("t", markdown, doc_id).expect("create doc");
+        let pass1 = parse_doc_to_markdown(first, doc_id.to_string(), false, None)
+            .expect("parse doc")
+            .markdown;
+        let second = build_full_doc("t", &pass1, doc_id).expect("create doc from pass1");
+        let pass2 = parse_doc_to_markdown(second, doc_id.to_string(), false, None)
+            .expect("parse doc")
+            .markdown;
+        assert_eq!(pass1, pass2, "{name}: code block round trip must be stable");
+        assert_eq!(
+            pass1.matches("\n\n").count(),
+            1,
+            "{name}: exactly the trailing block separator, no blank line inside the fence: {pass1:?}"
+        );
+    }
 }
 
 #[test]
@@ -346,6 +372,6 @@ fn test_roundtrip_table_cell_with_pipe() {
 fn test_roundtrip_code_block_containing_fence() {
     // The emitted fence must be longer than any backtick run inside the block.
     let markdown = "````md\n```\ninner\n```\n````";
-    let expected = "````md\n```\ninner\n```\n\n````\n\n";
+    let expected = "````md\n```\ninner\n```\n````\n\n";
     assert_markdown_roundtrip(markdown, expected);
 }

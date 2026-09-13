@@ -261,9 +261,9 @@ Async (tokio). Pool keyed by `universal_id`; per-workspace SQLite file.
   safe because every CLI write loads the merged binary first, and y-octo continues the clock from
   the loaded state for that client.
   Reusing an id demands a single writer, so that file is also the write lock: mutating commands
-  hold an exclusive advisory `flock` on it for their whole run and a second process retries briefly
-  and then fails with `error:busy` (not implemented on Windows, where writes proceed with a
-  `warnings` entry). See `tools/affine-cli/src/lease.rs`.
+  hold an exclusive advisory lock on it for their whole run (`flock` on unix, `LockFileEx` on
+  Windows) and a second process retries briefly and then fails with `error:busy`.
+  See `tools/affine-cli/src/lease.rs`.
 - **nbstore migrates on `connect()`.** The CLI therefore checks `_sqlx_migrations` read-only first
   and refuses behind-schema databases (`error:migration_required`, `--allow-migrate` to opt in) and
   newer-than-CLI databases (`error:db_newer`); only `workspace create` migrates a fresh file.

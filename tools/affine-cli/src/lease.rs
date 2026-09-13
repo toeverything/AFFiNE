@@ -13,7 +13,8 @@
 //!
 //! Reusing an id is only safe for one writer at a time: two processes that load the same base
 //! and both create items as client `C` would mint colliding `(C, clock)` ids. So the id file
-//! doubles as the lock: a mutating command holds an exclusive advisory `flock` on it for its
+//! doubles as the lock: a mutating command holds an exclusive advisory lock on it (`flock` on
+//! unix, `LockFileEx` on Windows, through `std::fs::File::try_lock`) for its
 //! whole lifetime, and a second CLI process retries briefly and then fails with `"error":"busy"`
 //! instead of blocking forever or corrupting the doc. Read-only commands never take the lease.
 //!
@@ -149,7 +150,6 @@ fn truncate_for_log(s: &str) -> String {
 
 /// Take the exclusive advisory lock, retrying a bounded number of times, then fail with
 /// `CliError::Busy`.
-#[cfg(unix)]
 fn lock_with_retry(file: &File, path: &Path) -> Result<(), CliError> {
     for attempt in 0..LOCK_RETRY_ATTEMPTS {
         if try_lock_exclusive(file)? {
@@ -167,34 +167,15 @@ fn lock_with_retry(file: &File, path: &Path) -> Result<(), CliError> {
     )))
 }
 
-/// `flock(LOCK_EX | LOCK_NB)`: `Ok(true)` when acquired, `Ok(false)` when another open file
-/// description holds it. BSD `flock` locks are per open file description, so a second `open` of
-/// the same path conflicts even inside one process, which is what lets the tests exercise it.
-#[cfg(unix)]
+/// One non-blocking exclusive lock attempt through `std::fs::File::try_lock`, which is `flock`
+/// on unix and `LockFileEx` on Windows, so every platform gets real mutual exclusion. The lock is
+/// released when the `File` is dropped (see `WriteLease::drop`).
 fn try_lock_exclusive(file: &File) -> Result<bool, CliError> {
-    use std::os::fd::AsRawFd;
-    let rc = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
-    if rc == 0 {
-        return Ok(true);
+    match file.try_lock() {
+        Ok(()) => Ok(true),
+        Err(std::fs::TryLockError::WouldBlock) => Ok(false),
+        Err(std::fs::TryLockError::Error(err)) => Err(CliError::Io(err)),
     }
-    let err = std::io::Error::last_os_error();
-    match err.raw_os_error() {
-        Some(code) if code == libc::EWOULDBLOCK || code == libc::EAGAIN => Ok(false),
-        Some(libc::EINTR) => Ok(false),
-        _ => Err(CliError::Io(err)),
-    }
-}
-
-/// Non-unix (Windows) fallback: no advisory lock is taken, so two concurrent CLI writers could
-/// mint colliding item ids. Mirrors `store::InUseProbe::Unsupported`: the write proceeds and the
-/// JSON output carries a warning; `error:busy` never fires on this platform.
-#[cfg(not(unix))]
-fn lock_with_retry(_file: &File, _path: &Path) -> Result<(), CliError> {
-    output::warn(
-        "the workspace write lock is not implemented on this platform; do not run two affine-cli \
-         writes against the same workspace at once",
-    );
-    Ok(())
 }
 
 #[cfg(test)]
@@ -238,7 +219,6 @@ mod tests {
         );
     }
 
-    #[cfg(unix)]
     #[test]
     fn held_lock_makes_second_acquire_busy() {
         let path = temp_file("busy");

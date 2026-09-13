@@ -62,8 +62,8 @@ affine-cli doc update --workspace="$WS" --doc="$DOC" --content $'# Ideas\n\nrevi
    `affine-cli` process holds the workspace write lease (an advisory lock on the `affine-cli.client`
    file beside `storage.db`, which also stores the single CRDT client id every CLI write reuses).
    The second process already waited about two seconds and wrote nothing, so just retry. Read
-   commands are never blocked, and on Windows the lock is not implemented (the output warns
-   instead).
+   commands are never blocked. The lock is `flock` on unix and `LockFileEx` on Windows, so it
+   holds on every platform.
 4. **Ids can start with `-`.** Always pass them in `=` form - `--workspace=$WS`, `--doc=$DOC` - so the
    CLI doesn't parse the id as a flag.
 5. **Default is local-first** (`--peer local`). Cloud workspaces use `--peer <serverId>` and must

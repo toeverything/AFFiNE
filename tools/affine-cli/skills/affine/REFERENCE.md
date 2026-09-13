@@ -48,12 +48,11 @@ check passes.
 It stores the single y-octo client id the CLI writes every doc with, so repeated edits stay one
 entry in a doc's state vector instead of adding a dead peer per invocation.
 Reusing an id is only safe for one writer at a time, so every mutating command holds an exclusive
-advisory `flock` on that file for its whole run.
+advisory lock on that file for its whole run (`flock` on unix, `LockFileEx` on Windows, through
+`std::fs::File::try_lock`).
 A second CLI process retries for about two seconds and then fails with `"error":"busy"`; that is
 always safe to retry, and nothing has been written when it fires.
 Read commands never take the lease and run fine while it is held.
-On Windows the lock is not implemented: writes proceed and the output carries a `warnings` entry,
-so do not run two `affine-cli` writes against one workspace at once there.
 If the file is missing or unreadable it is regenerated and the command warns; docs written with
 the previous id keep it in their state vector.
 Delete it only with the workspace.

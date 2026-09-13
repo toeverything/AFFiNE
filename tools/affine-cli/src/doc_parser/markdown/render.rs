@@ -53,7 +53,11 @@ impl<'a> MarkdownWriter<'a> {
         self.output.push_str(lang);
         self.output.push('\n');
         self.output.push_str(text);
-        self.output.push('\n');
+        // pulldown-cmark hands over the block body with its trailing newline intact, so only add
+        // the separator when it is missing; otherwise every render/re-ingest pass grows the block.
+        if !text.ends_with('\n') {
+            self.output.push('\n');
+        }
         self.output.push_str(&fence);
         self.output.push_str("\n\n");
     }

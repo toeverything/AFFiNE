@@ -46,7 +46,7 @@ fn guard_workspace_writable(global: &GlobalArgs, base: &std::path::Path, workspa
     if global.force {
         return Ok(());
     }
-    let db = paths::workspace_db_path(base, &global.peer, workspace_id);
+    let db = paths::workspace_db_path(base, &global.peer, workspace_id)?;
     match crate::store::db_in_use_elsewhere(&db) {
         InUseProbe::InUse => Err(CliError::Locked(format!(
             "workspace {workspace_id} is open in another process (probably the AFFiNE app); \
@@ -136,7 +136,7 @@ pub async fn workspace_create(global: &GlobalArgs, args: &WorkspaceCreateArgs) -
     let root_bin = engine::build_root_doc(&id, &args.name)?;
     backend.push_update(&id, &root_bin).await?;
 
-    let db_path = LocalBackend::db_path(&base, &global.peer, &id);
+    let db_path = LocalBackend::db_path(&base, &global.peer, &id)?;
     Ok(json!({
         "ok": true,
         "id": id,
@@ -231,7 +231,7 @@ pub async fn doc_read(global: &GlobalArgs, args: &DocReadArgs) -> Result<Value, 
 /// `listLocalWorkspaceIds`.
 pub async fn workspace_list(global: &GlobalArgs) -> Result<Value, CliError> {
     let base = base(global)?;
-    let dir = paths::workspaces_dir(&base, &global.peer);
+    let dir = paths::workspaces_dir(&base, &global.peer)?;
 
     // `<base>/deleted-workspaces` is a SIBLING of `workspaces` (not under <peer>).
     let deleted: HashSet<String> = match std::fs::read_dir(base.join("deleted-workspaces")) {
@@ -262,7 +262,15 @@ pub async fn workspace_list(global: &GlobalArgs) -> Result<Value, CliError> {
             continue;
         }
 
-        let db_path = LocalBackend::db_path(&base, &global.peer, &id);
+        // A directory name that is not a clean path segment cannot be addressed by the CLI at all;
+        // report it like any other unreadable entry instead of aborting the listing.
+        let db_path = match LocalBackend::db_path(&base, &global.peer, &id) {
+            Ok(p) => p,
+            Err(e) => {
+                out.push(json!({ "id": id, "error": e.to_string() }));
+                continue;
+            }
+        };
         // One unreadable workspace (corrupt DB, schema from a newer app, …) must not brick the
         // whole listing - report it as an entry with an `error` field and keep going.
         match read_workspace_entry(&base, global, &id).await {

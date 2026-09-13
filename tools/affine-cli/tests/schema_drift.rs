@@ -78,8 +78,8 @@ fn walk_ts(dir: &Path, out: &mut Vec<PathBuf>) {
 
 /// Value of `<key>:` after `from` in `src`: a quoted string literal, or an identifier resolved
 /// through a `const <ident> = '<literal>'` declaration in the same file.
-fn field_after(src: &str, from: usize, key: &str) -> Option<String> {
-    let hay = &src[from..];
+fn field_after(src: &str, from: usize, until: usize, key: &str) -> Option<String> {
+    let hay = &src[from..until];
     let mut search = 0;
     while let Some(rel) = hay[search..].find(key) {
         let at = search + rel;
@@ -119,8 +119,8 @@ fn resolve_const(src: &str, ident: &str) -> Option<String> {
     body.find(q).map(|end| body[..end].to_string())
 }
 
-fn version_after(src: &str, from: usize) -> Option<i32> {
-    let hay = &src[from..];
+fn version_after(src: &str, from: usize, until: usize) -> Option<i32> {
+    let hay = &src[from..until];
     let at = hay.find("version:")?;
     let digits: String = hay[at + "version:".len()..]
         .trim_start()
@@ -138,10 +138,19 @@ fn scan_upstream(root: &Path) -> BTreeMap<String, i32> {
     let mut out = BTreeMap::new();
     for file in files {
         let Ok(src) = fs::read_to_string(&file) else { continue };
+        // Bound every field scan to its own schema call, so a call that omits `flavour:` or
+        // `version:` fails loudly instead of silently borrowing the next call's value.
+        let mut starts: Vec<usize> = src
+            .match_indices("defineBlockSchema(")
+            .chain(src.match_indices("createEmbedBlockSchema("))
+            .map(|(i, _)| i)
+            .collect();
+        starts.sort_unstable();
+        let until = |i: usize| starts.iter().find(|&&s| s > i).copied().unwrap_or(src.len());
         for (i, _) in src.match_indices("defineBlockSchema(") {
-            let flavour = field_after(&src, i, "flavour")
+            let flavour = field_after(&src, i, until(i), "flavour")
                 .unwrap_or_else(|| panic!("{}: defineBlockSchema without a resolvable flavour", file.display()));
-            let version = version_after(&src, i)
+            let version = version_after(&src, i, until(i))
                 .unwrap_or_else(|| panic!("{}: defineBlockSchema without a version", file.display()));
             out.insert(flavour, version);
         }
@@ -150,9 +159,9 @@ fn scan_upstream(root: &Path) -> BTreeMap<String, i32> {
             if src[..i].ends_with("function ") {
                 continue;
             }
-            let name = field_after(&src, i, "name")
+            let name = field_after(&src, i, until(i), "name")
                 .unwrap_or_else(|| panic!("{}: createEmbedBlockSchema without a name", file.display()));
-            let version = version_after(&src, i)
+            let version = version_after(&src, i, until(i))
                 .unwrap_or_else(|| panic!("{}: createEmbedBlockSchema without a version", file.display()));
             out.insert(format!("affine:embed-{name}"), version);
         }

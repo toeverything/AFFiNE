@@ -119,9 +119,17 @@ Endpoint `position` (nested in an object) was already correct and is left as-is.
 ## 7. Verification (against the real Yjs, twice)
 
 1. **Offline encoding probe** - `examples/probe_array_encoding.rs` emits candidate encodings;
-   a standalone `yjs@13.6.31` decoder confirms:
+   a standalone `yjs@13.6.31` decoder confirmed the diagnosis at the time:
    - bare `Any::Array` → `40` (last element), spread throws - reproduces the bug;
    - wrapped `Any::Array([Any::Array([..])])` → plain `[10,20,30,40]`, spreads fine - the fix.
+
+   The check that stays in force is `tools/affine-cli/yjs-compat/check.mjs`, which pins
+   `yjs@13.6.21` (the version the app patches and ships), asserts that every connector's
+   `labelXYWH` decodes as a 4-number array, and runs in CI on every change to the crate.
+   The 13.6.31 probe was a one-off diagnostic.
+   It is equivalent for this bug because the decoder it exercised, `ContentAny` (which reads a
+   multi-element `Any` item), is byte-identical between yjs 13.6.21 and 13.6.31, and both
+   resolve the same `lib0` 0.2.x line for `readAny`.
 2. **Live app over CDP** - a freshly generated diagram and the repaired existing doc both show:
    `labelXYWH` is a real array, **zero** surface exceptions on load, a hit-test at a shape's centre
    returns that shape (selection works), and every connector view initialises with a computed path.
