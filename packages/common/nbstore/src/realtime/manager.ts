@@ -38,6 +38,7 @@ export class RealtimeManager {
   private socketKey?: string;
   private lastError?: { name: string; message: string };
   private subscriptionsNeedResubscribe = false;
+  private resubscribePromise?: Promise<void>;
   private readonly subscriptions = new Map<
     string,
     {
@@ -285,10 +286,14 @@ export class RealtimeManager {
     });
   };
 
-  private async resubscribeAll() {
+  private resubscribeAll(): Promise<void> {
+    if (this.resubscribePromise) {
+      return this.resubscribePromise;
+    }
+
     const socket = this.socketConnection?.inner.socket;
     if (!socket?.connected || this.subscriptions.size === 0) {
-      return;
+      return Promise.resolve();
     }
 
     this.resubscribePromise = (async () => {
