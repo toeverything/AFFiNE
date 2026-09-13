@@ -47,14 +47,18 @@ enum ProjectionOutcome {
 }
 
 async fn load_workspace_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  let mut ids = load_workspace_canonical_doc_ids(pool, workspace_id).await?;
+  let mut connection = pool
+    .acquire()
+    .await
+    .map_err(|error| RuntimeError::database("acquire retained document connection", error))?;
+  let mut ids = load_workspace_canonical_doc_ids(&mut connection, workspace_id).await?;
   ids.push(workspace_id.to_string());
   let retained = sqlx::query_scalar::<_, String>(
     "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 AND status IN ('marked', 'failed') ORDER \
      BY doc_id",
   )
   .bind(workspace_id)
-  .fetch_all(pool)
+  .fetch_all(&mut *connection)
   .await
   .map_err(|err| RuntimeError::database("Doc blob refs candidate load failed", err))?;
   ids.extend(retained);
@@ -183,8 +187,6 @@ async fn upsert_projection_checkpoint(
 ) -> RuntimeResult<()> {
   let status = if result.next_cursor.is_some() {
     "running"
-  } else if result.failed_docs > 0 {
-    "failed"
   } else {
     "completed"
   };
@@ -298,9 +300,9 @@ async fn purge_removed_doc_projections(
   Ok(refs)
 }
 
-fn extract_refs(blob: Vec<u8>) -> RuntimeResult<Vec<ExtractedRef>> {
-  let doc = ReadDoc::from_full_update_v1(blob)
-    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))?;
+fn extract_refs(blob: Vec<u8>) -> std::result::Result<Vec<ExtractedRef>, super::BlobRefProjectionError> {
+  super::extract_blob_refs(blob.clone())?;
+  let doc = ReadDoc::from_full_update_v1(blob).map_err(|_| super::BlobRefProjectionError::Unsupported)?;
   let mut refs = extract_refs_from_doc(&doc);
   refs.sort_by(|left, right| {
     (&left.blob_key, &left.block_id, &left.flavour).cmp(&(&right.blob_key, &right.block_id, &right.flavour))
@@ -585,15 +587,16 @@ async fn rebuild_doc_blob_refs_inner(
   let CurrentDoc { blob, updated_at, .. } = snapshot;
   let refs = match extract_refs(blob) {
     Ok(refs) => refs,
-    Err(_) => {
+    Err(error) => {
+      let error_code = super::blob_ref_projection_error_code(error);
       upsert_projection_state(
         &pool,
         workspace_id,
         doc_id,
         Some(updated_at),
         "failed",
-        Some("parse_failed"),
-        Some("canonical snapshot parser rejected the document"),
+        Some(error_code),
+        Some(error_code),
       )
       .await?;
       stats.result.failed_docs = 1;
@@ -789,7 +792,7 @@ mod tests {
   }
 
   #[test]
-  fn doc_blob_refs_v2_projects_a_large_snapshot_in_one_pass() {
+  fn doc_blob_refs_v2_preserves_large_snapshot_references() {
     let doc = Doc::default();
     let mut blocks = doc.get_or_create_map("blocks").expect("blocks root should build");
     for index in 0..512 {

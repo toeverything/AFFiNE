@@ -36,9 +36,6 @@ export class HistoryModel extends BaseModel {
     const timestamp = new Date(snapshot.timestamp);
     const expiredAt = new Date(Date.now() + maxAge);
 
-    // This method may be called concurrently by multiple processes for the same
-    // (workspaceId, docId, timestamp). Using upsert avoids duplicate key errors
-    // that would otherwise abort the surrounding transaction.
     const row = await this.db.snapshotHistory.upsert({
       where: {
         workspaceId_id_timestamp: {

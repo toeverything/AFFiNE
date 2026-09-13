@@ -3,7 +3,6 @@ import { Prisma } from '@prisma/client';
 
 import { OnEvent } from '../../base';
 import { Models } from '../../models';
-import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 import { DocReader } from './reader';
 
 const IGNORED_PRISMA_CODES = new Set(['P2003', 'P2025', 'P2028']);
@@ -26,8 +25,7 @@ export class DocEventsListener {
 
   constructor(
     private readonly docReader: DocReader,
-    private readonly models: Models,
-    private readonly workspace: PgWorkspaceDocStorageAdapter
+    private readonly models: Models
   ) {}
 
   @OnEvent('doc.snapshot.updated')
@@ -70,14 +68,6 @@ export class DocEventsListener {
         return;
       }
       throw error;
-    }
-  }
-
-  @OnEvent('user.deleted')
-  async clearUserWorkspaces(payload: Events['user.deleted']) {
-    for (const workspace of payload.ownedWorkspaces) {
-      await this.models.workspace.delete(workspace);
-      await this.workspace.deleteSpace(workspace);
     }
   }
 }

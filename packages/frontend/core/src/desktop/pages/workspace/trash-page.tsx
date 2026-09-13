@@ -111,23 +111,26 @@ export const TrashPage = () => {
 
   const handleMultiRestore = useCallback(
     (ids: string[]) => {
-      ids.forEach(id => {
-        restoreFromTrash(id);
-      });
-      toast(
-        t['com.affine.toastMessage.restored']({
-          title: ids.length > 1 ? 'docs' : 'doc',
+      Promise.all(ids.map(id => restoreFromTrash(id)))
+        .then(() => {
+          toast(
+            t['com.affine.toastMessage.restored']({
+              title: ids.length > 1 ? 'docs' : 'doc',
+            })
+          );
         })
-      );
+        .catch(error => console.error(error));
     },
     [restoreFromTrash, t]
   );
 
   const handleMultiDelete = useCallback(
-    (ids: string[]) => {
-      ids.forEach(pageId => {
-        permanentlyDeletePage(pageId);
-      });
+    async (ids: string[]) => {
+      await Promise.all(
+        ids.map(async pageId => {
+          await permanentlyDeletePage(pageId);
+        })
+      );
       toast(t['com.affine.toastMessage.permanentlyDeleted']());
     },
     [permanentlyDeletePage, t]
@@ -152,8 +155,8 @@ export const TrashPage = () => {
         confirmButtonOptions: {
           variant: 'error',
         },
-        onConfirm: () => {
-          handleMultiDelete(ids);
+        onConfirm: async () => {
+          await handleMultiDelete(ids);
           callbacks?.onFinished?.();
         },
         onCancel: () => {

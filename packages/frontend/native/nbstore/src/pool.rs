@@ -110,7 +110,8 @@ impl SqliteDocStoragePool {
         None => return Ok(()),
         Some(StorageState::Connecting(_)) => return Err(Error::ConnectionInProgress),
         Some(StorageState::Connected(storage)) => {
-          // Prevent shutting down the shared storage while requests still hold refs.
+          // Prevent shutting down the shared storage while requests still hold
+          // refs.
           if Arc::strong_count(storage) > 1 {
             return Err(Error::InvalidOperation);
           }

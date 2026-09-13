@@ -4,8 +4,10 @@ import { type INestApplicationContext, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Command, CommanderError } from 'commander';
 
+import { BackendRuntimeProvider } from './core/backend-runtime';
 import { CliAppModule } from './data/app';
 import { CreateCommand } from './data/commands/create';
+import { CutoverCommand } from './data/commands/cutover';
 import { ImportConfigCommand } from './data/commands/import';
 import { RevertCommand, RunCommand } from './data/commands/run';
 
@@ -67,11 +69,32 @@ function buildProgram(logger: Logger) {
     });
 
   program
+    .command('validate-cutover')
+    .description('Validate canonical authority data before server startup')
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        await app.get(CutoverCommand).execute();
+      });
+    });
+
+  program
     .command('revert [name]')
     .description('Revert one data migration with given name')
     .action(async name => {
       await withCliApp(logger, async app => {
         await app.get(RevertCommand).execute(name);
+      });
+    });
+
+  program
+    .command('provision-stripe-catalog')
+    .description('explicitly provision the development Stripe price catalog')
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        const result = await app
+          .get(BackendRuntimeProvider)
+          .executePaymentCommandV1({ action: 'provision_stripe_catalog' });
+        logger.log(JSON.stringify(result));
       });
     });
 

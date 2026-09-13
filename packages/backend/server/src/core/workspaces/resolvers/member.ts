@@ -8,12 +8,11 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { WorkspaceMemberSource, WorkspaceMemberStatus } from '@prisma/client';
+import { WorkspaceMemberStatus } from '@prisma/client';
 import { nanoid } from 'nanoid';
 
 import {
   ActionForbidden,
-  ActionForbiddenOnNonTeamWorkspace,
   AlreadyInSpace,
   Cache,
   CanNotRevokeYourself,
@@ -28,7 +27,6 @@ import {
   NoMoreSeat,
   OwnerCanNotLeaveWorkspace,
   QueryTooLong,
-  RequestMutex,
   SpaceAccessDenied,
   Throttle,
   TooManyRequest,
@@ -38,13 +36,12 @@ import {
 import type { GraphqlContext } from '../../../base/graphql';
 import { Models, type WorkspaceUserCompat } from '../../../models';
 import { CurrentUser } from '../../auth';
-import { containsUrlOrDomain } from '../../content-policy';
 import {
-  PermissionAccess,
-  WorkspacePolicyService,
-  WorkspaceRole,
-} from '../../permission';
-import { QuotaService } from '../../quota';
+  backendRuntimeErrorCode,
+  BackendRuntimeProvider,
+} from '../../backend-runtime';
+import { containsUrlOrDomain } from '../../content-policy';
+import { PermissionAccess, WorkspaceRole } from '../../permission';
 import { UserType } from '../../user';
 import { validators } from '../../utils/validators';
 import { getAbuseRequestSource, InviteQuotaAssertService } from '../abuse';
@@ -92,12 +89,10 @@ export class WorkspaceMemberResolver {
     private readonly url: URLHelper,
     private readonly ac: PermissionAccess,
     private readonly models: Models,
-    private readonly mutex: RequestMutex,
-    private readonly policy: WorkspacePolicyService,
     private readonly workspaceService: WorkspaceService,
-    private readonly quota: QuotaService,
     private readonly config: Config,
-    private readonly inviteQuota: InviteQuotaAssertService
+    private readonly inviteQuota: InviteQuotaAssertService,
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   private async assertWorkspaceNameCanInvite(workspaceId: string) {
@@ -233,19 +228,6 @@ export class WorkspaceMemberResolver {
       return results;
     }
 
-    await this.inviteQuota.assertWorkspaceActionAllowed({
-      actorUserId: me.id,
-      workspaceId,
-      action: 'inviteMember',
-    });
-
-    // lock to prevent concurrent invite
-    const lockFlag = `invite:${workspaceId}`;
-    await using lock = await this.mutex.acquire(lockFlag);
-    if (!lock) {
-      throw new TooManyRequest();
-    }
-
     const admission = await this.inviteQuota.assertWorkspaceInviteQuota({
       actorUserId: me.id,
       workspaceId,
@@ -254,86 +236,42 @@ export class WorkspaceMemberResolver {
       targetDomains: aggregateTargetDomains(candidates),
       source: getAbuseRequestSource(context.req, this.config),
     });
-    const quota = await this.quota.getWorkspaceSeatQuota(workspaceId);
-    const isTeam = await this.workspaceService.isTeamWorkspace(workspaceId);
     const successfulCandidates: InviteCandidate[] = [];
     let reservationSettled = false;
 
     try {
-      for (const candidate of candidates) {
-        try {
-          let target = candidate.target;
-          if (!target) {
-            target = await this.models.user.create({
-              email: candidate.normalizedEmail,
-              registered: false,
-            });
-          }
-
-          const existingMember = await this.models.workspaceUser.get(
-            workspaceId,
-            target.id
-          );
-          if (existingMember) {
-            throw new AlreadyInSpace({ spaceId: workspaceId });
-          }
-
-          if (!isTeam) {
-            const needMoreSeat =
-              quota.memberCount + successfulCandidates.length + 1 >
-              quota.memberLimit;
-            if (needMoreSeat) {
-              throw new NoMoreSeat({ spaceId: workspaceId });
-            }
-          }
-
-          // no need to check quota, directly go allocating seat path
-          if (isTeam) {
-            const role = await this.models.workspaceUser.set(
-              workspaceId,
-              target.id,
-              WorkspaceRole.Collaborator,
-              {
-                status: WorkspaceMemberStatus.AllocatingSeat,
-                source: WorkspaceMemberSource.Email,
-                inviterId: me.id,
-              }
-            );
-            await this.allocateAvailableTeamSeats(
-              workspaceId,
-              quota.memberLimit
-            );
-            results[candidate.index] = {
-              email: candidate.email,
-              inviteId: role.id,
-            };
-            successfulCandidates.push(candidate);
-          } else {
-            const role = await this.models.workspaceUser.set(
-              workspaceId,
-              target.id,
-              WorkspaceRole.Collaborator,
-              {
-                status: WorkspaceMemberStatus.Pending,
-                source: WorkspaceMemberSource.Email,
-                inviterId: me.id,
-              }
-            );
-            this.event.emit('workspace.members.invite', {
-              inviteId: role.id,
-              inviterId: me.id,
-            });
-            results[candidate.index] = {
-              email: candidate.email,
-              inviteId: role.id,
-            };
-            successfulCandidates.push(candidate);
-          }
-        } catch (error) {
-          results[candidate.index] = {
-            email: candidate.email,
-            error: mapAnyError(error),
-          };
+      const seatDecision = await this.runtime.reserveWorkspaceSeatsV1({
+        workspaceId,
+        actorUserId: me.id,
+        targets: candidates.map(candidate => ({
+          email: candidate.normalizedEmail,
+        })),
+      });
+      if (!seatDecision.allowed) {
+        throw new NoMoreSeat({ spaceId: workspaceId });
+      }
+      const reservations = new Map(
+        seatDecision.reservations.map(reservation => [
+          reservation.email,
+          reservation,
+        ])
+      );
+      const coveredCandidates = candidates.map(candidate => {
+        const reservation = reservations.get(candidate.normalizedEmail);
+        if (!reservation) throw new Error('Missing seat reservation');
+        return { candidate, reservation };
+      });
+      for (const { candidate, reservation } of coveredCandidates) {
+        results[candidate.index] = {
+          email: candidate.email,
+          inviteId: reservation.invitationId,
+        };
+        successfulCandidates.push(candidate);
+        if (reservation.status === 'pending') {
+          this.event.emit('workspace.members.invite', {
+            inviteId: reservation.invitationId,
+            inviterId: me.id,
+          });
         }
       }
 
@@ -404,10 +342,9 @@ export class WorkspaceMemberResolver {
       .user(user.id)
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
-    await this.inviteQuota.assertWorkspaceActionAllowed({
+    await this.inviteQuota.assertWorkspaceInviteLinkAllowed({
       actorUserId: user.id,
       workspaceId,
-      action: 'createInviteLink',
     });
     await this.assertWorkspaceNameCanInvite(workspaceId);
 
@@ -469,32 +406,22 @@ export class WorkspaceMemberResolver {
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
 
-    const quota = await this.quota.getWorkspaceSeatQuota(workspaceId);
-    const isTeam = await this.workspaceService.isTeamWorkspace(workspaceId);
     const role = await this.models.workspaceUser.get(workspaceId, userId);
 
     if (role) {
       if (role.status === WorkspaceMemberStatus.UnderReview) {
-        if (isTeam) {
-          await this.models.workspaceUser.setStatus(
+        try {
+          await this.runtime.activateWorkspaceSeatV1({
             workspaceId,
-            userId,
-            WorkspaceMemberStatus.AllocatingSeat,
-            {
-              inviterId: me.id,
-            }
-          );
-          await this.allocateAvailableTeamSeats(workspaceId, quota.memberLimit);
-        } else {
-          if (quota.memberCount >= quota.memberLimit) {
+            actorUserId: me.id,
+            targetUserId: userId,
+            requireManagePermission: true,
+          });
+        } catch (error) {
+          if (backendRuntimeErrorCode(error) === 'seat_limit') {
             throw new NoMoreSeat({ spaceId: workspaceId });
-          } else {
-            await this.models.workspaceUser.setStatus(
-              workspaceId,
-              userId,
-              WorkspaceMemberStatus.Accepted
-            );
           }
+          throw error;
         }
 
         this.event.emit('workspace.members.updated', {
@@ -505,7 +432,6 @@ export class WorkspaceMemberResolver {
           role.id,
           me.id
         );
-        await this.policy.reconcileWorkspaceQuotaState(workspaceId);
       }
       return true;
     } else {
@@ -520,37 +446,35 @@ export class WorkspaceMemberResolver {
     @Args('userId') userId: string,
     @Args('permission', { type: () => WorkspaceRole }) newRole: WorkspaceRole
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert(
-        newRole === WorkspaceRole.Owner
-          ? 'Workspace.TransferOwner'
-          : 'Workspace.Users.Manage'
-      );
-
-    const role = await this.models.workspaceUser.get(workspaceId, userId);
-
-    if (!role) {
-      throw new MemberNotFoundInSpace({ spaceId: workspaceId });
+    let role: 'member' | 'admin' | 'owner';
+    switch (newRole) {
+      case WorkspaceRole.External:
+        return this.revokeMember(user, workspaceId, userId);
+      case WorkspaceRole.Collaborator:
+        role = 'member';
+        break;
+      case WorkspaceRole.Admin:
+        role = 'admin';
+        break;
+      case WorkspaceRole.Owner:
+        role = 'owner';
+        break;
     }
-
-    if (newRole === WorkspaceRole.Owner) {
-      await this.models.workspaceUser.setOwner(workspaceId, userId);
-    } else {
-      // non-team workspace can only transfer ownership, but no detailed permission control
-      const isTeam = await this.workspaceService.isTeamWorkspace(workspaceId);
-      if (!isTeam) {
-        throw new ActionForbiddenOnNonTeamWorkspace();
+    try {
+      await this.runtime.executeDomainCommandV1({
+        command: 'transition_workspace_role',
+        actorUserId: user.id,
+        workspaceId,
+        targetUserId: userId,
+        newRole: role,
+      });
+    } catch (error) {
+      if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
+        throw new SpaceAccessDenied({ spaceId: workspaceId });
       }
-
-      await this.models.workspaceUser.set(workspaceId, userId, newRole);
-      if (role.status !== WorkspaceMemberStatus.Accepted) {
-        this.event.emit('workspace.members.updated', {
-          workspaceId,
-        });
-      }
+      throw error;
     }
+    this.event.emit('workspace.members.updated', { workspaceId });
 
     return true;
   }
@@ -598,34 +522,34 @@ export class WorkspaceMemberResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string
   ) {
-    if (userId === me.id) {
-      throw new CanNotRevokeYourself();
+    let previousState: string;
+    try {
+      const result = await this.runtime.executeDomainCommandV1({
+        command: 'revoke_workspace_member',
+        actorUserId: me.id,
+        workspaceId,
+        targetUserId: userId,
+      });
+      previousState = String(result.previousState);
+    } catch (error) {
+      switch (backendRuntimeErrorCode(error)) {
+        case 'cannot_revoke_self':
+          throw new CanNotRevokeYourself();
+        case 'workspace_member_not_found':
+          throw new MemberNotFoundInSpace({ spaceId: workspaceId });
+        case 'domain_permission_denied':
+          throw new SpaceAccessDenied({ spaceId: workspaceId });
+      }
+      throw error;
     }
 
-    const role = await this.models.workspaceUser.get(workspaceId, userId);
-
-    if (!role) {
-      throw new MemberNotFoundInSpace({ spaceId: workspaceId });
-    }
-
-    await this.ac
-      .user(me.id)
-      .workspace(workspaceId)
-      .assert(
-        role.type === WorkspaceRole.Admin
-          ? 'Workspace.Administrators.Manage'
-          : 'Workspace.Users.Manage'
-      );
-
-    await this.models.workspaceUser.delete(workspaceId, userId);
-
-    if (role.status === WorkspaceMemberStatus.UnderReview) {
+    if (previousState === 'waiting_review') {
       await this.workspaceService.sendReviewDeclinedNotification(
         userId,
         workspaceId,
         me.id
       );
-    } else if (role.status === WorkspaceMemberStatus.Accepted) {
+    } else if (previousState === 'active') {
       this.event.emit('workspace.members.removed', {
         userId,
         workspaceId,
@@ -635,7 +559,6 @@ export class WorkspaceMemberResolver {
     this.event.emit('workspace.members.updated', {
       workspaceId,
     });
-    await this.policy.reconcileWorkspaceQuotaState(workspaceId);
 
     return true;
   }
@@ -680,6 +603,7 @@ export class WorkspaceMemberResolver {
         // if status is pending, should accept the invitation directly
         if (role.status === WorkspaceMemberStatus.Pending) {
           await this.acceptInvitationByEmail(role);
+          return true;
         } else {
           throw new AlreadyInSpace({ spaceId: invitation.workspaceId });
         }
@@ -710,18 +634,21 @@ export class WorkspaceMemberResolver {
     })
     _workspaceName?: string
   ) {
-    const role = await this.models.workspaceUser.getActive(
-      workspaceId,
-      user.id
-    );
-    if (!role) {
-      throw new MemberNotFoundInSpace({ spaceId: workspaceId });
+    try {
+      await this.runtime.executeDomainCommandV1({
+        command: 'leave_workspace',
+        actorUserId: user.id,
+        workspaceId,
+      });
+    } catch (error) {
+      switch (backendRuntimeErrorCode(error)) {
+        case 'workspace_member_not_found':
+          throw new MemberNotFoundInSpace({ spaceId: workspaceId });
+        case 'workspace_owner_cannot_leave':
+          throw new OwnerCanNotLeaveWorkspace();
+      }
+      throw error;
     }
-    if (role.type === WorkspaceRole.Owner) {
-      throw new OwnerCanNotLeaveWorkspace();
-    }
-
-    await this.models.workspaceUser.delete(workspaceId, user.id);
     this.event.emit('workspace.members.leave', {
       workspaceId,
       userId: user.id,
@@ -730,25 +657,24 @@ export class WorkspaceMemberResolver {
     this.event.emit('workspace.members.updated', {
       workspaceId,
     });
-    await this.policy.reconcileWorkspaceQuotaState(workspaceId);
 
     return true;
   }
 
   private async acceptInvitationByEmail(role: WorkspaceUserCompat) {
-    await this.assertWorkspaceAcceptsMemberChange(role.workspaceId);
-
-    const hasSeat = await this.quota.tryCheckSeat(role.workspaceId, true);
-
-    if (!hasSeat) {
-      throw new NoMoreSeat({ spaceId: role.workspaceId });
+    try {
+      await this.runtime.activateWorkspaceSeatV1({
+        workspaceId: role.workspaceId,
+        actorUserId: role.userId,
+        targetUserId: role.userId,
+        requireManagePermission: false,
+      });
+    } catch (error) {
+      if (backendRuntimeErrorCode(error) === 'seat_limit') {
+        throw new NoMoreSeat({ spaceId: role.workspaceId });
+      }
+      throw error;
     }
-
-    await this.models.workspaceUser.setStatus(
-      role.workspaceId,
-      role.userId,
-      WorkspaceMemberStatus.Accepted
-    );
 
     this.event.emit('workspace.members.updated', {
       workspaceId: role.workspaceId,
@@ -759,7 +685,6 @@ export class WorkspaceMemberResolver {
         (await this.models.workspaceUser.getOwner(role.workspaceId)).id,
       role.id
     );
-    await this.policy.reconcileWorkspaceQuotaState(role.workspaceId);
   }
 
   private async acceptInvitationByLink(
@@ -767,38 +692,24 @@ export class WorkspaceMemberResolver {
     workspaceId: string,
     inviterId: string
   ) {
-    await this.assertWorkspaceAcceptsMemberChange(workspaceId);
-
     let inviter = await this.models.user.getPublicUser(inviterId);
     if (!inviter) {
       inviter = await this.models.workspaceUser.getOwner(workspaceId);
     }
 
-    const role = await this.models.workspaceUser.set(
+    const reserved = await this.runtime.reserveWorkspaceReviewSeatV1({
       workspaceId,
-      user.id,
-      WorkspaceRole.Collaborator,
-      {
-        status: WorkspaceMemberStatus.UnderReview,
-        source: WorkspaceMemberSource.Link,
-        inviterId: inviter.id,
-      }
-    );
+      targetUserId: user.id,
+      inviterUserId: inviter.id,
+    });
+    if (!reserved) throw new NoMoreSeat({ spaceId: workspaceId });
+    const role = await this.models.workspaceUser.get(workspaceId, user.id);
+    if (!role) {
+      throw new MemberNotFoundInSpace({ spaceId: workspaceId });
+    }
 
     await this.workspaceService.sendReviewRequestNotification(role.id);
     this.event.emit('workspace.members.updated', { workspaceId });
     return;
-  }
-
-  private async assertWorkspaceAcceptsMemberChange(workspaceId: string) {
-    const state = await this.policy.getWorkspaceState(workspaceId);
-    if (state.isReadonly) {
-      throw new SpaceAccessDenied({ spaceId: workspaceId });
-    }
-  }
-
-  private async allocateAvailableTeamSeats(workspaceId: string, limit: number) {
-    if (limit <= 0) return;
-    await this.workspaceService.allocateSeats(workspaceId, limit);
   }
 }

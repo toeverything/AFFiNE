@@ -8,6 +8,7 @@ const base64UpdateB = 'BAUG';
 
 class FakeSocket {
   connected = true;
+  readonly joinedDocs = new Set<string>();
   readonly emitted: Array<{ event: string; payload: unknown }> = [];
   readonly handlers = new Map<string, (...args: unknown[]) => void>();
 
@@ -33,8 +34,26 @@ class FakeSocket {
     return true;
   }
 
-  async emitWithAck(event: string, payload: unknown) {
+  async emitWithAck(
+    event: string,
+    payload: { docId?: string; spaces?: { docId?: string }[] }
+  ) {
     this.emitted.push({ event, payload });
+    if (event === 'space:join-batch') {
+      for (const space of payload.spaces ?? []) {
+        if (space.docId === 'denied') {
+          return { error: { name: 'DOC_ACTION_DENIED', message: 'denied' } };
+        }
+        if (space.docId) this.joinedDocs.add(space.docId);
+      }
+    }
+    if (event === 'space:load-doc' || event === 'space:push-doc-update') {
+      expect(this.joinedDocs.has(payload.docId!)).toBe(true);
+      return { data: { missing: 'AAA=', state: 'AA==', timestamp: 1_000 } };
+    }
+    if (event === 'space:doc-lifecycle') {
+      return { data: { rootUpdate: base64UpdateA, timestamp: 1_000 } };
+    }
     return { data: { clientId: 'client-1', success: true } };
   }
 }
@@ -45,7 +64,6 @@ describe('CloudDocStorage broadcast updates', () => {
       id: 'space-1',
       serverBaseUrl: 'http://localhost',
       isSelfHosted: true,
-      syncProtocol: 'legacy',
       type: 'workspace',
       readonlyMode: true,
     });
@@ -79,7 +97,6 @@ describe('CloudDocStorage broadcast updates', () => {
       id: 'space-1',
       serverBaseUrl: 'http://localhost',
       isSelfHosted: true,
-      syncProtocol: 'batch',
       type: 'workspace',
       readonlyMode: true,
     });
@@ -114,123 +131,94 @@ describe('CloudDocStorage broadcast updates', () => {
     expect(received[0]?.bin).toEqual(new Uint8Array());
   });
 
-  test.each([
-    ['legacy', 'space:join'],
-    ['batch', 'space:join-batch'],
-  ] as const)(
-    '%s route sends its own join event',
-    async (syncProtocol, event) => {
-      vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.5' });
-      const fakeSocket = new FakeSocket();
-      const disconnect = vi.fn();
-      const storage = new CloudDocStorage({
-        id: 'space-1',
-        serverBaseUrl: 'http://localhost',
-        isSelfHosted: true,
-        syncProtocol,
-        type: 'workspace',
-        readonlyMode: true,
-      });
-      const connection = storage.connection as any;
+  test('batch route joins the workspace and applies lifecycle commands', async () => {
+    vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.5' });
+    const fakeSocket = new FakeSocket();
+    const disconnect = vi.fn();
+    const storage = new CloudDocStorage({
+      id: 'space-1',
+      serverBaseUrl: 'http://localhost',
+      isSelfHosted: true,
+      type: 'workspace',
+      readonlyMode: true,
+    });
+    const connection = storage.connection as any;
 
-      Object.defineProperty(connection, 'manager', {
-        configurable: true,
-        value: {
-          connect: () => ({ socket: fakeSocket, disconnect }),
-        },
-      });
-      vi.spyOn(connection, 'getIdConverter').mockResolvedValue({
-        oldIdToNewId: (id: string) => id,
-        newIdToOldId: (id: string) => id,
-      });
+    Object.defineProperty(connection, 'manager', {
+      configurable: true,
+      value: {
+        connect: () => ({ socket: fakeSocket, disconnect }),
+      },
+    });
+    const inner = await connection.doConnect();
+    connection._inner = inner;
+    await storage.getDocSnapshot('doc-1');
+    await storage.getDocDiff('doc-2');
+    await storage.getDocTimestamp('doc-3');
+    await storage.pushDocUpdate({
+      docId: 'doc-4',
+      bin: new Uint8Array([0, 0]),
+    });
+    const lifecycle = await storage.applyDocLifecycle('doc-1', 'trash');
+    await expect(storage.getDocSnapshot('denied')).rejects.toMatchObject({
+      name: 'DOC_ACTION_DENIED',
+    });
+    fakeSocket.joinedDocs.delete('doc-1');
+    await storage.getDocDiff('doc-1');
+    connection.doDisconnect(inner);
+    expect({ emitted: fakeSocket.emitted, lifecycle }).toMatchSnapshot({
+      lifecycle: {
+        rootUpdate: expect.any(Uint8Array),
+        timestamp: expect.any(Date),
+      },
+    });
 
-      const inner = await connection.doConnect();
-      expect(fakeSocket.emitted[0]?.event).toBe(event);
+    expect(disconnect).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
+  });
 
-      inner.disconnect();
-      vi.unstubAllGlobals();
-    }
-  );
+  test('awareness joins active documents through the batch route', async () => {
+    vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.5' });
+    const fakeSocket = new FakeSocket();
+    const storage = new CloudAwarenessStorage({
+      id: 'space-1',
+      serverBaseUrl: 'http://localhost',
+      isSelfHosted: true,
+      type: 'workspace',
+    });
 
-  test.each([
-    ['legacy', 'space:join-awareness'],
-    ['batch', 'space:join-batch'],
-  ] as const)(
-    '%s awareness joins for active documents',
-    async (syncProtocol, event) => {
-      vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.5' });
-      const fakeSocket = new FakeSocket();
-      const storage = new CloudAwarenessStorage({
-        id: 'space-1',
-        serverBaseUrl: 'http://localhost',
-        isSelfHosted: true,
-        syncProtocol,
-        type: 'workspace',
-      });
+    Object.defineProperty(storage, 'connection', {
+      configurable: true,
+      value: {
+        status: 'connected',
+        inner: { socket: fakeSocket },
+        onStatusChanged: () => () => {},
+      },
+    });
 
-      Object.defineProperty(storage, 'connection', {
-        configurable: true,
-        value: {
-          status: 'connected',
-          inner: { socket: fakeSocket },
-          onStatusChanged: () => () => {},
-        },
-      });
+    const unsubscribeA = storage.subscribeUpdate(
+      'doc-a',
+      () => {},
+      async () => null
+    );
+    const unsubscribeB = storage.subscribeUpdate(
+      'doc-b',
+      () => {},
+      async () => null
+    );
 
-      const unsubscribeA = storage.subscribeUpdate(
-        'doc-a',
-        () => {},
-        async () => null
-      );
-      const unsubscribeB = storage.subscribeUpdate(
-        'doc-b',
-        () => {},
-        async () => null
-      );
+    await vi.waitFor(() => {
+      expect(
+        fakeSocket.emitted.filter(
+          ({ event: emittedEvent }) => emittedEvent === 'space:join-batch'
+        )
+      ).toHaveLength(1);
+    });
 
-      await vi.waitFor(() => {
-        expect(
-          fakeSocket.emitted.filter(
-            ({ event: emittedEvent }) => emittedEvent === event
-          )
-        ).toHaveLength(syncProtocol === 'batch' ? 1 : 2);
-      });
+    expect(fakeSocket.emitted).toMatchSnapshot();
 
-      if (syncProtocol === 'batch') {
-        expect(fakeSocket.emitted).toContainEqual({
-          event,
-          payload: {
-            spaces: [
-              { spaceType: 'workspace', spaceId: 'space-1', docId: 'doc-a' },
-              { spaceType: 'workspace', spaceId: 'space-1', docId: 'doc-b' },
-            ],
-            clientVersion: '0.27.5',
-          },
-        });
-      } else {
-        expect(fakeSocket.emitted).toContainEqual({
-          event,
-          payload: {
-            spaceType: 'workspace',
-            spaceId: 'space-1',
-            docId: 'doc-a',
-            clientVersion: '0.27.5',
-          },
-        });
-        expect(fakeSocket.emitted).toContainEqual({
-          event,
-          payload: {
-            spaceType: 'workspace',
-            spaceId: 'space-1',
-            docId: 'doc-b',
-            clientVersion: '0.27.5',
-          },
-        });
-      }
-
-      unsubscribeA();
-      unsubscribeB();
-      vi.unstubAllGlobals();
-    }
-  );
+    unsubscribeA();
+    unsubscribeB();
+    vi.unstubAllGlobals();
+  });
 });

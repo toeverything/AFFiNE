@@ -17,19 +17,17 @@ import type { Request, Response } from 'express';
 
 import {
   ActionForbidden,
-  Config,
   EmailTokenNotFound,
   getClientVersionFromRequest,
   getRequestCookie,
   InvalidAuthState,
   InvalidEmail,
+  NetworkError,
   Throttle,
   UseNamedGuard,
-  WrongSignInCredentials,
 } from '../../base';
-import { Models } from '../../models';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { validators } from '../utils/validators';
-import { getAbuseRequestSource } from '../workspaces/abuse';
 import { AuthSessionService } from './auth-session';
 import { Public } from './guard';
 import {
@@ -43,9 +41,8 @@ import {
   SignInBodySchema,
 } from './input';
 import { MagicLinkAuthService } from './magic-link';
-import { AuthMethodsService } from './methods';
 import { OpenAppAuthService } from './open-app';
-import { AuthService, sessionUser } from './service';
+import { AuthService } from './service';
 import { AuthSessionPrincipal, CurrentUser, Session } from './session';
 import { SessionExchangeService } from './session-exchange';
 import { SessionIssuer } from './session-issuer';
@@ -72,11 +69,9 @@ export class AuthController {
     private readonly sessionIssuer: SessionIssuer,
     private readonly magicLink: MagicLinkAuthService,
     private readonly openApp: OpenAppAuthService,
-    private readonly authMethods: AuthMethodsService,
+    private readonly runtime: BackendRuntimeProvider,
     private readonly sessionExchange: SessionExchangeService,
-    private readonly authSessions: AuthSessionService,
-    private readonly models: Models,
-    private readonly config: Config
+    private readonly authSessions: AuthSessionService
   ) {
     if (env.dev) {
       // set DNS servers in dev mode
@@ -98,13 +93,26 @@ export class AuthController {
     }
     validators.assertValidEmail(input.data.email);
 
-    return this.authMethods.loginPreflight(input.data.email);
+    try {
+      return await this.runtime.executeAuthSessionCommandV1<PreflightResponse>({
+        action: 'login_preflight',
+        email: input.data.email,
+      });
+    } catch (error) {
+      if (String(error).includes('email_domain_verification_unavailable')) {
+        throw new NetworkError();
+      }
+      throw error;
+    }
   }
 
   @UseNamedGuard('version')
   @Get('/methods')
   async boundMethods(@CurrentUser() user: CurrentUser) {
-    return this.authMethods.boundMethods(user.id);
+    return this.runtime.executeAuthSessionCommandV1({
+      action: 'bound_methods',
+      userId: user.id,
+    });
   }
 
   @Public()
@@ -147,16 +155,15 @@ export class AuthController {
     email: string,
     password: string
   ) {
-    const identity = await this.auth.verifyPassword(email, password);
-
-    const { exchangeCode } = await this.sessionIssuer.issue(req, res, identity);
-    const user = await this.models.user.get(identity.userId);
-    if (!user) {
-      throw new WrongSignInCredentials({ email });
-    }
+    const result = await this.auth.passwordLogin(
+      email,
+      password,
+      this.sessionIssuer.target(req)
+    );
+    this.sessionIssuer.apply(res, result);
     res.status(HttpStatus.OK).send({
-      ...sessionUser(user),
-      exchangeCode,
+      ...result.user,
+      exchangeCode: result.exchangeCode,
     } satisfies SignInResponse);
   }
 
@@ -167,9 +174,12 @@ export class AuthController {
     callbackUrl = '/magic-link',
     clientNonce?: string
   ) {
-    const payload = await this.magicLink.send(email, callbackUrl, clientNonce, {
-      source: getAbuseRequestSource(req, this.config),
-    });
+    const payload = await this.magicLink.send(
+      email,
+      callbackUrl,
+      clientNonce,
+      this.auth.requestSource(req)
+    );
     res.status(HttpStatus.OK).send(payload);
   }
 
@@ -230,9 +240,12 @@ export class AuthController {
   ) {
     const credential = OpenAppSignInBodySchema.safeParse(body);
     if (!credential.success) throw new InvalidAuthState();
-    const identity = await this.openApp.verifySignInCode(credential.data.code);
-    const { exchangeCode } = await this.sessionIssuer.issue(req, res, identity);
-    res.send({ id: identity.userId, exchangeCode });
+    const result = await this.openApp.complete(
+      credential.data.code,
+      this.sessionIssuer.target(req)
+    );
+    this.sessionIssuer.apply(res, result);
+    res.send({ id: result.user.id, exchangeCode: result.exchangeCode });
   }
 
   @Public()
@@ -340,9 +353,14 @@ export class AuthController {
     const { email, token: otp, client_nonce: clientNonce } = credential.data;
     if (!email) throw new EmailTokenNotFound();
     validators.assertValidEmail(email);
-    const identity = await this.magicLink.verify(email, otp, clientNonce);
-    const { exchangeCode } = await this.sessionIssuer.issue(req, res, identity);
-    res.send({ id: identity.userId, exchangeCode });
+    const result = await this.magicLink.complete(
+      email,
+      otp,
+      clientNonce,
+      this.sessionIssuer.target(req)
+    );
+    this.sessionIssuer.apply(res, result);
+    res.send({ id: result.user.id, exchangeCode: result.exchangeCode });
   }
 
   @UseNamedGuard('version')

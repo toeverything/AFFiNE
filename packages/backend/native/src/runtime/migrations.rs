@@ -6,10 +6,13 @@ use super::{RuntimeError, RuntimeResult, types::EmbeddingHealth};
 pub(crate) const RUNTIME_MIGRATIONS: &str = include_str!("sql/runtime_migrations.sql");
 const EMBEDDING_MIGRATION: &str = include_str!("sql/embedding.sql");
 const SEARCH_PROJECTION_MIGRATION: &str = include_str!("sql/search_projection.sql");
+const SEARCH_PROJECTION_V2_MIGRATION: &str = include_str!("sql/search_projection_v2.sql");
 const EMBEDDING_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0046;
 const SEARCH_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0053;
 #[cfg(test)]
-pub(crate) static EMBEDDING_TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+pub(crate) static DATABASE_TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+#[cfg(test)]
+pub(crate) static EMBEDDING_TEST_LOCK: &tokio::sync::Mutex<()> = &DATABASE_TEST_LOCK;
 
 pub(crate) async fn migrate_runtime_tables(pool: &PgPool) -> RuntimeResult<()> {
   sqlx::raw_sql(RUNTIME_MIGRATIONS)
@@ -71,7 +74,10 @@ pub(crate) async fn migrate_search_tables(pool: &PgPool) -> RuntimeResult<()> {
     pool,
     "search_projection",
     SEARCH_ADVISORY_LOCK,
-    &[(1, &[SEARCH_PROJECTION_MIGRATION])],
+    &[
+      (1, &[SEARCH_PROJECTION_MIGRATION]),
+      (2, &[SEARCH_PROJECTION_V2_MIGRATION]),
+    ],
   )
   .await?;
   Ok(())
@@ -269,6 +275,10 @@ mod tests {
 
   #[test]
   fn search_schema_uses_terminal_control_plane() {
+    assert_eq!(
+      migration_checksum(&[SEARCH_PROJECTION_MIGRATION]),
+      "bcf1f30d375bfb66e4cb955f0eed770239450303b31bfe8196ece5772df2fba5"
+    );
     assert!(SEARCH_PROJECTION_MIGRATION.contains("DROP SCHEMA IF EXISTS search_projection CASCADE"));
     assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE SCHEMA search_projection"));
     assert!(SEARCH_PROJECTION_MIGRATION.contains("CREATE TABLE search_projection.generations"));
@@ -294,6 +304,10 @@ mod tests {
     assert!(!SEARCH_PROJECTION_MIGRATION.contains("CREATE TABLE search_runtime_projections"));
     assert!(!SEARCH_PROJECTION_MIGRATION.contains("payload JSONB NOT NULL"));
     assert!(SEARCH_PROJECTION_MIGRATION.contains("search_workspace_reconcile_failed"));
+    assert!(SEARCH_PROJECTION_V2_MIGRATION.contains("search_document_projection_failed"));
+    assert!(
+      SEARCH_PROJECTION_V2_MIGRATION.contains("CREATE OR REPLACE FUNCTION search_projection.capture_snapshot_mutation")
+    );
   }
 
   #[tokio::test]
@@ -311,7 +325,7 @@ mod tests {
     .fetch_all(&pool)
     .await
     .unwrap();
-    assert_eq!(versions, vec![1]);
+    assert_eq!(versions, vec![1, 2]);
   }
 
   #[tokio::test]

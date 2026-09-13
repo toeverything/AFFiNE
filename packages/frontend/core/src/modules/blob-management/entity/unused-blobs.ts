@@ -7,18 +7,11 @@ import {
   onComplete,
   onStart,
 } from '@toeverything/infra';
-import { fileTypeFromBuffer } from 'file-type';
 import { switchMap, tap } from 'rxjs';
 
 import type { DocsSearchService } from '../../docs-search';
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceFlavoursService } from '../../workspace/services/flavours';
-
-interface HydratedBlobRecord extends ListedBlobRecord, Disposable {
-  url: string;
-  extension?: string;
-  type?: string;
-}
 
 export class UnusedBlobs extends Entity {
   constructor(
@@ -52,23 +45,15 @@ export class UnusedBlobs extends Entity {
     );
   }
 
-  async listBlobs() {
-    const blobs = await this.flavourProvider?.listBlobs(
+  async listManageableBlobs() {
+    const blobs = await this.flavourProvider?.listManageableBlobs(
       this.workspaceService.workspace.id
     );
     return blobs;
   }
 
-  async getBlob(blobKey: string) {
-    const blob = await this.flavourProvider?.getWorkspaceBlob(
-      this.workspaceService.workspace.id,
-      blobKey
-    );
-    return blob;
-  }
-
   async deleteBlob(blob: string, permanent: boolean) {
-    await this.flavourProvider?.deleteBlob(
+    await this.flavourProvider?.deleteManagedBlob(
       this.workspaceService.workspace.id,
       blob,
       permanent
@@ -82,7 +67,7 @@ export class UnusedBlobs extends Entity {
     await this.docsSearchService.indexer.waitForCompleted(abortSignal);
 
     const [blobs, usedBlobs] = await Promise.all([
-      this.listBlobs(),
+      this.listManageableBlobs(),
       this.getUsedBlobs(),
     ]);
 
@@ -105,12 +90,7 @@ export class UnusedBlobs extends Entity {
         {
           type: 'boolean',
           occur: 'must',
-          queries: [
-            {
-              type: 'exists',
-              field: 'blob',
-            },
-          ],
+          queries: [{ type: 'exists', field: 'blob' }],
         },
         'blob',
         { pagination: { limit, skip }, prefer: 'local' }
@@ -121,38 +101,5 @@ export class UnusedBlobs extends Entity {
         throw new Error('Local blob index pagination did not advance');
       }
     }
-  }
-
-  async hydrateBlob(
-    record: ListedBlobRecord,
-    abortSignal?: AbortSignal
-  ): Promise<HydratedBlobRecord | null> {
-    const blob = await this.getBlob(record.key);
-
-    if (!blob || abortSignal?.aborted) {
-      return null;
-    }
-
-    const fileType = await fileTypeFromBuffer(await blob.arrayBuffer());
-
-    if (abortSignal?.aborted) {
-      return null;
-    }
-
-    const mime = record.mime || fileType?.mime || 'unknown';
-    const url = URL.createObjectURL(new Blob([blob], { type: mime }));
-    // todo(@pengx17): the following may not be sufficient
-    const extension = fileType?.ext;
-    const type = extension ?? (mime?.startsWith('text/') ? 'txt' : 'unknown');
-    return {
-      ...record,
-      url,
-      extension,
-      type,
-      mime,
-      [Symbol.dispose]: () => {
-        URL.revokeObjectURL(url);
-      },
-    };
   }
 }

@@ -7,10 +7,7 @@ use std::{
 use llm_adapter::target::EgressPolicy;
 
 use super::ByokEndpoint;
-use crate::{
-  llm::Deployment,
-  runtime::{RuntimeError, RuntimeResult, config::CopilotByokRuntimeConfig},
-};
+use crate::runtime::{Deployment, RuntimeError, RuntimeResult, config::CopilotByokRuntimeConfig};
 
 const DNS_RESOLUTION_TIMEOUT: Duration = Duration::from_secs(5);
 

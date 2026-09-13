@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import {
   CopilotMessageNotFound,
@@ -7,6 +7,7 @@ import {
   Mutex,
 } from '../../../../base';
 import { BackendRuntimeProvider } from '../../../../core/backend-runtime';
+import { CopilotAccessService, type CopilotScopeMode } from '../../access';
 import { CompatSubmissionStore } from '../../compat/submission-store';
 import { ConversationPolicy } from '../../conversation/policy';
 import {
@@ -31,6 +32,7 @@ export type PreparedConversationTurn = {
   messageId?: string;
   params: Record<string, string>;
   session: ChatSession;
+  scopeMode: CopilotScopeMode;
   latestTurn?: Turn;
   quotaBackedRoutesAllowed?: boolean;
 };
@@ -48,8 +50,33 @@ export class ConversationHost {
     private readonly mutex: Mutex,
     private readonly policy: ConversationPolicy,
     private readonly runtime: BackendRuntimeProvider,
-    private readonly attachmentAdmission: AttachmentAdmissionHost
+    private readonly attachmentAdmission: AttachmentAdmissionHost,
+    private readonly access: CopilotAccessService
   ) {}
+
+  private async assertSessionAccess(
+    userId: string,
+    sessionId: string,
+    knownSession?: ChatSession
+  ): Promise<{ session: ChatSession; mode: CopilotScopeMode }> {
+    const scope =
+      knownSession?.config ??
+      (await this.sessions.getOwnedScope(sessionId, userId));
+    if (!scope) throw new CopilotSessionNotFound();
+    const { workspaceId } = scope;
+    const mode = await this.access.sessionResource(
+      { userId, workspaceId, action: 'Workspace.Copilot' },
+      [sessionId]
+    );
+    const session = await this.sessions.getInScope({
+      sessionId,
+      userId,
+      workspaceId,
+      personal: mode === 'personal',
+    });
+    if (!session) throw new CopilotSessionNotFound();
+    return { session, mode };
+  }
 
   private selectors(
     value: unknown,
@@ -75,7 +102,8 @@ export class ConversationHost {
     params: Record<string, any>,
     attachments: NonNullable<
       Parameters<AttachmentAdmissionHost['admitPromptAttachments']>[0]
-    >
+    >,
+    mode: CopilotScopeMode
   ) {
     const {
       scopeSelectors: rawSelectors,
@@ -87,14 +115,69 @@ export class ConversationHost {
       rawFocus === undefined
         ? session.config.focus
         : { selectors: this.selectors(rawFocus, 'focus') };
+    const hasWorkspaceContext =
+      attachments.length > 0 ||
+      focus.selectors.length > 0 ||
+      (Array.isArray(rawSelectors) && rawSelectors.length > 0) ||
+      (Array.isArray(rawPreferred) && rawPreferred.length > 0);
+    if (mode === 'personal') {
+      if (hasWorkspaceContext) {
+        throw new BadRequestException(
+          "Local workspaces don't support attachments or references."
+        );
+      }
+      return {
+        artifacts: [],
+        focus,
+        metadata,
+        scopeSnapshot: TurnScopeSnapshotSchema.parse({
+          version: 1,
+          resolvedAt: new Date().toISOString(),
+          selectors: [],
+          requiredDocIds: [],
+          requiredArtifactIds: [],
+          preferredSourceIds: [],
+          retrieval: {
+            mode: 'required',
+            requiredDocIds: [],
+            requiredArtifactIds: [],
+            preferredSourceIds: [],
+          },
+        }),
+      };
+    }
     const admitted = await this.attachmentAdmission.admitPromptAttachments(
       attachments,
       {
         userId: session.config.userId,
         workspaceId: session.config.workspaceId,
         sessionId: session.config.sessionId,
+        assertCanUseAttachment: async () => {
+          const access = await this.assertSessionAccess(
+            session.config.userId,
+            session.config.sessionId,
+            session
+          );
+          if (access.mode !== 'canonical') {
+            throw new BadRequestException(
+              "Local workspaces don't support attachments or references."
+            );
+          }
+        },
       }
     );
+    if (admitted.length > 0) {
+      const access = await this.assertSessionAccess(
+        session.config.userId,
+        session.config.sessionId,
+        session
+      );
+      if (access.mode !== 'canonical') {
+        throw new BadRequestException(
+          "Local workspaces don't support attachments or references."
+        );
+      }
+    }
     const artifacts = await Promise.all(
       admitted.map(async source => {
         const artifact = await this.runtime.putWorkspaceArtifact(
@@ -156,18 +239,27 @@ export class ConversationHost {
 
   private async loadAcceptedTurn(
     session: ChatSession,
+    userId: string,
     sessionId: string,
     messageId: string,
-    retry: boolean
+    retry: boolean,
+    mode: CopilotScopeMode
   ): Promise<Turn | undefined> {
-    const accepted = await this.submissions.getAccepted(messageId);
+    const accepted = await this.submissions.getAccepted(messageId, userId);
     if (!accepted) return;
     if (accepted.sessionId !== sessionId) {
       throw new CopilotMessageNotFound({ messageId });
     }
 
     if (retry) {
-      await this.sessions.revertLatestMessage(sessionId, false);
+      await this.assertSessionAccess(userId, sessionId, session);
+      await this.sessions.revertLatestMessage(
+        sessionId,
+        userId,
+        false,
+        session.config.workspaceId,
+        mode === 'personal'
+      );
       session.revertLatestMessage(false);
     }
 
@@ -176,6 +268,8 @@ export class ConversationHost {
 
     const acceptedMessage = await this.sessions.getMessage(
       sessionId,
+      userId,
+      session.config.workspaceId,
       accepted.turnId
     );
     if (acceptedMessage.role !== 'user') {
@@ -189,12 +283,16 @@ export class ConversationHost {
 
   private async loadDurableTurn(
     session: ChatSession,
+    userId: string,
     sessionId: string,
     messageId: string,
-    retry: boolean
+    retry: boolean,
+    mode: CopilotScopeMode
   ): Promise<Turn | undefined> {
     const turn = await this.sessions.findTurnByCompatSubmissionId(
       sessionId,
+      userId,
+      session.config.workspaceId,
       messageId
     );
     if (!turn?.id) {
@@ -202,11 +300,18 @@ export class ConversationHost {
     }
 
     if (retry) {
-      await this.sessions.revertLatestMessage(sessionId, false);
+      await this.assertSessionAccess(userId, sessionId, session);
+      await this.sessions.revertLatestMessage(
+        sessionId,
+        userId,
+        false,
+        session.config.workspaceId,
+        mode === 'personal'
+      );
       session.revertLatestMessage(false);
     }
 
-    await this.submissions.markAccepted(messageId, {
+    await this.submissions.markAccepted(messageId, userId, {
       sessionId,
       turnId: turn.id,
     });
@@ -225,12 +330,20 @@ export class ConversationHost {
     session: ChatSession,
     sessionId: string,
     messageId?: string,
-    retry = false
+    retry = false,
+    mode: CopilotScopeMode = 'canonical'
   ): Promise<AppendedSessionMessage> {
     const quotaBackedRoutesAllowed = () => this.policy.hasQuota(userId);
 
     if (!messageId) {
-      await this.sessions.revertLatestMessage(sessionId, false);
+      await this.assertSessionAccess(userId, sessionId, session);
+      await this.sessions.revertLatestMessage(
+        sessionId,
+        userId,
+        false,
+        session.config.workspaceId,
+        mode === 'personal'
+      );
       session.revertLatestMessage(false);
       if (!session.latestUserTurn) {
         return {
@@ -246,9 +359,11 @@ export class ConversationHost {
 
     const acceptedTurn = await this.loadAcceptedTurn(
       session,
+      userId,
       sessionId,
       messageId,
-      retry
+      retry,
+      mode
     );
     if (acceptedTurn) {
       return { turn: acceptedTurn, quotaBackedRoutesAllowed: true };
@@ -263,9 +378,11 @@ export class ConversationHost {
 
     const acceptedAfterLock = await this.loadAcceptedTurn(
       session,
+      userId,
       sessionId,
       messageId,
-      retry
+      retry,
+      mode
     );
     if (acceptedAfterLock) {
       return { turn: acceptedAfterLock, quotaBackedRoutesAllowed: true };
@@ -273,9 +390,11 @@ export class ConversationHost {
 
     const durableTurn = await this.loadDurableTurn(
       session,
+      userId,
       sessionId,
       messageId,
-      retry
+      retry,
+      mode
     );
     if (durableTurn) {
       return {
@@ -286,25 +405,41 @@ export class ConversationHost {
 
     const quotaAllowed = await quotaBackedRoutesAllowed();
 
-    const submission = await this.submissions.get(messageId);
-    if (!submission || submission.sessionId !== sessionId) {
+    const submission = await this.submissions.get(messageId, userId);
+    if (
+      !submission ||
+      submission.userId !== userId ||
+      submission.sessionId !== sessionId ||
+      submission.workspaceId !== session.config.workspaceId
+    ) {
       throw new CopilotMessageNotFound({ messageId });
     }
 
     if (retry) {
-      await this.sessions.revertLatestMessage(sessionId, true);
+      await this.assertSessionAccess(userId, sessionId, session);
+      await this.sessions.revertLatestMessage(
+        sessionId,
+        userId,
+        true,
+        session.config.workspaceId,
+        mode === 'personal'
+      );
       session.revertLatestMessage(true);
     }
 
     const prepared = await this.prepareMessageState(
       session,
       submission.params ?? {},
-      submission.attachments ?? []
+      submission.attachments ?? [],
+      mode
     );
 
+    await this.assertSessionAccess(userId, sessionId, session);
     const turn = await this.sessions.appendTurn({
       sessionId,
       userId: session.config.userId,
+      workspaceId: session.config.workspaceId,
+      personal: mode === 'personal',
       compatSubmissionId: messageId,
       focus: prepared.focus,
       artifacts: prepared.artifacts,
@@ -321,7 +456,7 @@ export class ConversationHost {
       },
     });
 
-    await this.submissions.markAccepted(messageId, {
+    await this.submissions.markAccepted(messageId, userId, {
       sessionId,
       turnId: turn.id ?? '',
     });
@@ -338,25 +473,23 @@ export class ConversationHost {
     query: Record<string, string | string[]>
   ): Promise<PreparedConversationTurn> {
     const { messageId, retry, params } = ChatQuerySchema.parse(query);
-    const session = await this.sessions.get(sessionId);
-    if (!session || session.config.userId !== userId) {
-      throw new CopilotSessionNotFound();
-    }
+    const { session, mode } = await this.assertSessionAccess(userId, sessionId);
     const appended = await this.appendSessionMessage(
       userId,
       session,
       sessionId,
       messageId,
-      retry
+      retry,
+      mode
     );
-    const currentUserMessage =
-      session.stashTurns.findLast(turn => turn.role === 'user') ??
-      appended.turn;
+    const currentUserMessage = appended.turn;
+    const terminal = await this.assertSessionAccess(userId, sessionId, session);
 
     return {
       messageId,
       params,
-      session,
+      session: terminal.session,
+      scopeMode: terminal.mode,
       latestTurn: currentUserMessage,
       quotaBackedRoutesAllowed: appended.quotaBackedRoutesAllowed,
     };
@@ -390,12 +523,31 @@ export class ConversationHost {
       toolEvents: trace.toolEvents,
       metadata: wasAborted ? {} : turn.metadata,
     };
+    const { mode } = await this.assertSessionAccess(
+      session.config.userId,
+      session.config.sessionId,
+      session
+    );
     const persisted = await this.sessions.appendTurn({
       sessionId: session.config.sessionId,
       userId: session.config.userId,
+      workspaceId: session.config.workspaceId,
+      personal: mode === 'personal',
       turn: assistantTurn,
     });
     session.pushPersistedTurn(persisted);
+    if (
+      !wasAborted &&
+      this.policy.shouldScheduleTitle({ action: session.config.promptAction })
+    ) {
+      void this.sessions
+        .generateSessionTitle({
+          sessionId: session.config.sessionId,
+          userId: session.config.userId,
+          workspaceId: session.config.workspaceId,
+        })
+        .catch(() => {});
+    }
     return persisted.id ?? null;
   }
 }

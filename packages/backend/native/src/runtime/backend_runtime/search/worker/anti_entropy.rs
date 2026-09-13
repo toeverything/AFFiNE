@@ -5,7 +5,7 @@ use sqlx::{PgPool, Row};
 
 use super::{
   ActiveGeneration, RECONCILE_BATCH, SearchProvider, SearchTable, WorkspacePhase, WorkspaceReconcileContext,
-  WorkspaceStep, mark_workspace_failed, project_document, renew_workspace_lease, upsert_document,
+  WorkspaceStep, project_document, renew_workspace_lease, upsert_document,
 };
 use crate::{
   runtime::{RuntimeError, RuntimeResult},
@@ -184,13 +184,6 @@ pub(super) async fn sweep_deleted_workspace(
   Ok(WorkspaceStep::Complete)
 }
 
-pub(super) const CANONICAL_SNAPSHOT_BATCH_SQL: &str = r#"SELECT snapshot.guid,state.target_source_version,state.target_permission_version
-     FROM snapshots snapshot
-     LEFT JOIN search_projection.document_states state
-       ON state.generation_id=$2 AND state.workspace_id=snapshot.workspace_id AND state.doc_id=snapshot.guid
-     WHERE snapshot.workspace_id=$1 AND snapshot.guid <> $1 AND ($3::text IS NULL OR snapshot.guid > $3)
-     ORDER BY snapshot.guid LIMIT $4"#;
-
 pub(super) async fn reconcile_stale_provider_rows(
   context: &WorkspaceReconcileContext<'_>,
   table: SearchTable,
@@ -259,12 +252,8 @@ pub(super) async fn reconcile_stale_provider_rows(
         },
       )
       .await;
-    } else if let Err(error) = upsert_document(pool, embedded, remote, generation, workspace_id, &doc_id).await {
-      if error.is_permanent_search_source() {
-        mark_workspace_failed(pool, generation.id, workspace_id, workspace_fence).await?;
-        return Ok(WorkspaceStep::Failed);
-      }
-      return Err(error);
+    } else {
+      upsert_document(pool, embedded, remote, generation, workspace_id, &doc_id).await?;
     }
   }
   if let Some(next_cursor) = next_cursor {
@@ -503,87 +492,6 @@ fn provider_field_i64(node: &Value, field: &str) -> Option<i64> {
     .pointer(&format!("/fields/{field}/0"))
     .and_then(Value::as_i64)
     .or_else(|| node.pointer(&format!("/_source/{field}")).and_then(Value::as_i64))
-}
-
-pub(super) async fn reconcile_source_documents(
-  context: &WorkspaceReconcileContext<'_>,
-  permission_version: i64,
-  after_doc_id: Option<String>,
-) -> RuntimeResult<WorkspaceStep> {
-  let pool = context.pool;
-  let embedded = context.embedded;
-  let remote = context.remote;
-  let generation = context.generation;
-  let workspace_id = context.workspace_id;
-  let workspace_fence = context.fence;
-  let rows = sqlx::query(CANONICAL_SNAPSHOT_BATCH_SQL)
-    .bind(workspace_id)
-    .bind(generation.id)
-    .bind(&after_doc_id)
-    .bind(RECONCILE_BATCH + 1)
-    .fetch_all(pool)
-    .await
-    .map_err(|error| RuntimeError::database("load anti-entropy search source batch", error))?;
-  let complete = rows.len() <= RECONCILE_BATCH as usize;
-  let mut after_doc_id = after_doc_id;
-  for row in rows.into_iter().take(RECONCILE_BATCH as usize) {
-    let doc_id: String = row
-      .try_get("guid")
-      .map_err(|error| RuntimeError::database("decode anti-entropy search source document", error))?;
-    let source_version: Option<i64> = row
-      .try_get("target_source_version")
-      .map_err(|error| RuntimeError::database("decode anti-entropy search source version", error))?;
-    let target_permission_version: Option<i64> = row
-      .try_get("target_permission_version")
-      .map_err(|error| RuntimeError::database("decode anti-entropy search permission version", error))?;
-    if !renew_workspace_lease(pool, generation.id, workspace_id, workspace_fence).await? {
-      return Ok(WorkspaceStep::Continue(WorkspacePhase::Source { after_doc_id }));
-    }
-    let projection_result = match (source_version, target_permission_version) {
-      (Some(source_version), Some(target_permission_version)) => {
-        provider_projection_matches(
-          pool,
-          embedded,
-          remote,
-          generation,
-          ProjectionExpectation {
-            workspace_id,
-            doc_id: &doc_id,
-            source_version,
-            permission_version: target_permission_version.max(permission_version),
-          },
-        )
-        .await
-      }
-      _ => Ok(false),
-    };
-    let projection_matches = match projection_result {
-      Ok(matches) => matches,
-      Err(error) if error.is_permanent_search_source() => {
-        mark_workspace_failed(pool, generation.id, workspace_id, workspace_fence).await?;
-        return Ok(WorkspaceStep::Failed);
-      }
-      Err(error) => return Err(error),
-    };
-    if !projection_matches {
-      if !renew_workspace_lease(pool, generation.id, workspace_id, workspace_fence).await? {
-        return Ok(WorkspaceStep::Continue(WorkspacePhase::Source { after_doc_id }));
-      }
-      if let Err(error) = upsert_document(pool, embedded, remote, generation, workspace_id, &doc_id).await {
-        if error.is_permanent_search_source() {
-          mark_workspace_failed(pool, generation.id, workspace_id, workspace_fence).await?;
-          return Ok(WorkspaceStep::Failed);
-        }
-        return Err(error);
-      }
-    }
-    after_doc_id = Some(doc_id);
-  }
-  if complete {
-    Ok(WorkspaceStep::Complete)
-  } else {
-    Ok(WorkspaceStep::Continue(WorkspacePhase::Source { after_doc_id }))
-  }
 }
 
 #[cfg(test)]

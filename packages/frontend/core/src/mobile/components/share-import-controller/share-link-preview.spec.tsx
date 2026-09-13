@@ -2089,7 +2089,7 @@ describe('structured share-preview writer', () => {
           value: [
             {
               flavour: 'local',
-              listBlobs: vi
+              listManageableBlobs: vi
                 .fn()
                 .mockResolvedValue([{ key: 'details-content-hash' }]),
             },

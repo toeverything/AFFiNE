@@ -1,19 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { getStreamAsBuffer } from 'get-stream';
+import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
+import type { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 
-import { Cache, JobQueue, NotFound, URLHelper } from '../../base';
+import { Cache, NotFound, OnEvent, URLHelper } from '../../base';
 import {
   DEFAULT_WORKSPACE_AVATAR,
   DEFAULT_WORKSPACE_NAME,
   Models,
 } from '../../models';
 import { BackendRuntimeProvider } from '../backend-runtime';
-import { DocReader } from '../doc';
+import { DocReader, PgWorkspaceDocStorageAdapter } from '../doc';
 import { Mailer } from '../mail';
 import type { SendMailCommand } from '../mail/types';
+import { NotificationService } from '../notification/service';
 import { WorkspaceRole } from '../permission';
-import { QuotaStateService } from '../quota/state';
-import { WorkspaceBlobStorage } from '../storage';
+import { StorageRuntimeProvider } from '../storage-runtime';
 
 export type InviteInfo = {
   isLink: boolean;
@@ -31,12 +32,79 @@ export class WorkspaceService {
     private readonly models: Models,
     private readonly url: URLHelper,
     private readonly doc: DocReader,
-    private readonly blobStorage: WorkspaceBlobStorage,
     private readonly mailer: Mailer,
-    private readonly queue: JobQueue,
-    private readonly quotaState: QuotaStateService,
-    private readonly runtime: BackendRuntimeProvider
+    private readonly notifications: NotificationService,
+    private readonly workspaceDocs: PgWorkspaceDocStorageAdapter,
+    private readonly storageRuntime: StorageRuntimeProvider,
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly txHost: TransactionHost<TransactionalAdapterPrisma>
   ) {}
+
+  @OnEvent('user.preDelete')
+  async onUserPreDelete({ id }: Events['user.preDelete']) {
+    const workspaces = await this.models.user.ownedWorkspaces(id);
+    for (const workspace of workspaces) {
+      await this.delete(workspace.workspaceId, id);
+    }
+  }
+
+  async delete(workspaceId: string, ownerId?: string) {
+    const storageUserIds = await this.deleteWorkspaceRows(workspaceId, ownerId);
+    if (!storageUserIds) return;
+    try {
+      await this.storageRuntime.deleteWorkspaceObjects(
+        workspaceId,
+        storageUserIds
+      );
+    } catch (error) {
+      this.logger.error(
+        `Workspace object cleanup will be reconciled: ${workspaceId}`,
+        error
+      );
+    }
+  }
+
+  @Transactional<TransactionalAdapterPrisma>({ timeout: 120_000 })
+  private async deleteWorkspaceRows(workspaceId: string, ownerId?: string) {
+    const tx = this.txHost.tx;
+    const lockKey = `storage-workspace:${workspaceId}`;
+    while (true) {
+      const [lock] = await tx.$queryRaw<{ locked: boolean }[]>`
+        SELECT pg_try_advisory_xact_lock(hashtextextended(${lockKey}, 0)) AS locked
+      `;
+      if (lock?.locked) break;
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+
+    if (
+      ownerId &&
+      !(await tx.workspaceMember.findFirst({
+        where: { workspaceId, userId: ownerId, role: 'owner', state: 'active' },
+      }))
+    )
+      return;
+
+    const [members, sessions] = await Promise.all([
+      tx.workspaceMember.findMany({
+        where: { workspaceId },
+        select: { userId: true },
+      }),
+      tx.aiSession.findMany({
+        where: { workspaceId },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+    ]);
+    const storageUserIds = [
+      ...new Set([
+        ...members.map(member => member.userId),
+        ...sessions.map(session => session.userId),
+      ]),
+    ];
+    await this.workspaceDocs.deleteSpace(workspaceId);
+    await this.models.workspace.delete(workspaceId);
+    return storageUserIds;
+  }
 
   async getInviteInfo(inviteId: string): Promise<InviteInfo> {
     // invite link
@@ -69,13 +137,20 @@ export class WorkspaceService {
 
     let avatar = DEFAULT_WORKSPACE_AVATAR;
     if (workspaceContent?.avatarKey) {
-      const avatarBlob = await this.blobStorage.get(
-        workspaceId,
-        workspaceContent.avatarKey
-      );
-
-      if (avatarBlob.body) {
-        avatar = (await getStreamAsBuffer(avatarBlob.body)).toString('base64');
+      try {
+        const owner = await this.models.workspaceUser.getOwner(workspaceId);
+        avatar = (
+          await this.runtime.readWorkspaceAvatarV1(
+            owner.id,
+            workspaceId,
+            workspaceContent.avatarKey
+          )
+        ).toString('base64');
+      } catch (error) {
+        this.logger.warn(
+          `Failed to read avatar for workspace ${workspaceId}`,
+          error
+        );
       }
     }
 
@@ -90,23 +165,34 @@ export class WorkspaceService {
     inviterId: string,
     inviteId: string
   ) {
-    await this.queue.add('notification.sendInvitationAccepted', {
-      inviterId,
-      inviteId,
+    const invite = await this.models.workspaceUser.getById(inviteId);
+    if (!invite) return;
+    await this.notifications.createInvitationAccepted({
+      userId: inviterId,
+      body: {
+        workspaceId: invite.workspaceId,
+        createdByUserId: invite.userId,
+        inviteId,
+      },
     });
   }
   async sendInvitationNotification(inviterId: string, inviteId: string) {
-    await this.queue.add('notification.sendInvitation', {
-      inviterId,
-      inviteId,
+    const invite = await this.models.workspaceUser.getById(inviteId);
+    if (!invite) return;
+    await this.notifications.createInvitation({
+      userId: invite.userId,
+      body: {
+        workspaceId: invite.workspaceId,
+        createdByUserId: inviterId,
+        inviteId,
+      },
     });
   }
 
   // ================ Team ================
   async isTeamWorkspace(workspaceId: string) {
-    const state =
-      await this.quotaState.reconcileWorkspaceQuotaState(workspaceId);
-    return ['team', 'selfhost_team'].includes(state.plan);
+    const state = await this.runtime.getWorkspaceQuotaStateV1(workspaceId);
+    return !state.usesOwnerQuota;
   }
 
   async sendTeamWorkspaceUpgradedEmail(workspaceId: string) {
@@ -165,18 +251,28 @@ export class WorkspaceService {
 
     await Promise.allSettled(
       [owner, ...admins].map(async reviewer => {
-        await this.queue.add('notification.sendInvitationReviewRequest', {
-          reviewerId: reviewer.id,
-          inviteId,
+        await this.notifications.createInvitationReviewRequest({
+          userId: reviewer.id,
+          body: {
+            workspaceId,
+            createdByUserId: inviteeUserId,
+            inviteId,
+          },
         });
       })
     );
   }
 
   async sendReviewApprovedNotification(inviteId: string, reviewerId: string) {
-    await this.queue.add('notification.sendInvitationReviewApproved', {
-      reviewerId,
-      inviteId,
+    const invite = await this.models.workspaceUser.getById(inviteId);
+    if (!invite) return;
+    await this.notifications.createInvitationReviewApproved({
+      userId: invite.userId,
+      body: {
+        workspaceId: invite.workspaceId,
+        createdByUserId: reviewerId,
+        inviteId,
+      },
     });
   }
 
@@ -185,10 +281,12 @@ export class WorkspaceService {
     workspaceId: string,
     reviewerId: string
   ) {
-    await this.queue.add('notification.sendInvitationReviewDeclined', {
-      reviewerId,
+    await this.notifications.createInvitationReviewDeclined({
       userId,
-      workspaceId,
+      body: {
+        workspaceId,
+        createdByUserId: reviewerId,
+      },
     });
   }
 
@@ -317,28 +415,5 @@ export class WorkspaceService {
       return false;
     }
     return await this.mailer.trySend(command);
-  }
-
-  async allocateSeats(workspaceId: string, quantity: number) {
-    const pendings = await this.models.workspaceUser.allocateSeats(
-      workspaceId,
-      quantity
-    );
-
-    if (!pendings.length) {
-      return;
-    }
-
-    const owner = await this.models.workspaceUser.getOwner(workspaceId);
-    for (const member of pendings) {
-      try {
-        await this.queue.add('notification.sendInvitation', {
-          inviterId: member.inviterId ?? owner.id,
-          inviteId: member.id,
-        });
-      } catch (e) {
-        this.logger.error('Failed to send invitation notification', e);
-      }
-    }
   }
 }

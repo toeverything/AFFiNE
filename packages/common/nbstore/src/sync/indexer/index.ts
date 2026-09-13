@@ -824,13 +824,15 @@ class IndexerSyncStatus {
 
   addPriority(id: string, priority: number) {
     const oldPriority = this.prioritySettings.get(id) ?? 0;
-    this.prioritySettings.set(id, priority);
-    this.jobs.setPriority(id, oldPriority + priority);
+    const newPriority = oldPriority + priority;
+    this.prioritySettings.set(id, newPriority);
+    this.jobs.setPriority(id, newPriority);
 
     return () => {
       const currentPriority = this.prioritySettings.get(id) ?? 0;
-      this.prioritySettings.set(id, currentPriority - priority);
-      this.jobs.setPriority(id, currentPriority - priority);
+      const restoredPriority = currentPriority - priority;
+      this.prioritySettings.set(id, restoredPriority);
+      this.jobs.setPriority(id, restoredPriority);
     };
   }
 

@@ -13,7 +13,7 @@ docker compose -f packages/backend/server/e2e/manticore-provider/compose.yml up 
 Use a disposable PostgreSQL database and run the provider-gated E2E:
 
 ```bash
-DATABASE_URL=postgresql://ds:ds@localhost:55433/affine_rfc6_manticore_e2e \
+DATABASE_URL=postgresql://ds:ds@localhost:55433/affine_manticore_provider_e2e \
 yarn workspace @affine/server prisma migrate deploy
 ```
 
@@ -34,7 +34,7 @@ Configure `packages/backend/server/config.json` with:
 Then run:
 
 ```bash
-DATABASE_URL=postgresql://ds:ds@localhost:55433/affine_rfc6_manticore_e2e \
+DATABASE_URL=postgresql://ds:ds@localhost:55433/affine_manticore_provider_e2e \
 yarn af server e2e src/__tests__/e2e/indexer/manticore-provider.spec.ts
 ```
 
