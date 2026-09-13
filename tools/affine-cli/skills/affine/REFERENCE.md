@@ -29,8 +29,9 @@ lock byte, not a lock the CLI holds: an app that opens the workspace between the
 write is not detected (SQLite keeps the file consistent either way; the risk is only the app
 overwriting the change on its next save). On Windows the probe is not implemented: writes proceed
 as if `--force` were given and the output carries a `warnings` entry saying so; `"error":"locked"`
-never fires there. Read commands (`list`, `read`, `blob get`) are never checked; `search` IS
-checked because its index refresh writes search-index rows into the workspace database.
+never fires there.
+Read commands (`list`, `read`, `blob get`, `search`) are never checked: they take no write lease and
+write nothing to the workspace database.
 
 **Schema check:** the store library migrates a database on open, so before opening an existing
 workspace the CLI reads its `_sqlx_migrations` table and compares it with the migrations the CLI
@@ -104,9 +105,13 @@ affine-cli doc delete    --workspace=<ws> --doc=<id>                    # -> { o
 affine-cli search --workspace=<ws> --query "<terms>"     # -> [{ docId, title, score, terms }]
 ```
 Local full-text (BM25, fuzzy + CJK/pinyin tokenizer) - **ranked relevance, not `LIKE` substring**.
-Re-indexes the workspace on each call, so newly created/updated docs are searchable immediately.
-The CLI keeps its own index (`cli:doc`, title + body) separate from the app's - neither pollutes
-the other.
+Read-only and index-free: each call crawls every doc in the workspace and scores it in process
+against a throwaway in-memory index, so newly created/updated docs are searchable immediately and
+nothing is ever written to the workspace database.
+It uses the same `memory-indexer` text-field recipe the app's own indexer uses (multilingual
+tokenizer, pinyin, prefix, fuzzy), but never touches the app's `doc`/`block` index tables, so the
+CLI cannot race the app's crawler or desync its indexed clocks.
+Title matches are boosted over body matches; `terms` lists the matched source substrings.
 
 ## Blobs (attachments)
 

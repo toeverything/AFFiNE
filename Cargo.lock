@@ -72,6 +72,7 @@ dependencies = [
  "clap",
  "dirs 5.0.1",
  "libc",
+ "memory-indexer",
  "nanoid 0.4.0",
  "pulldown-cmark 0.13.1",
  "rand 0.9.4",

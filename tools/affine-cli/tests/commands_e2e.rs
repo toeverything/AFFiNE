@@ -593,29 +593,149 @@ fn search_no_match_returns_empty_array() {
 }
 
 #[test]
-fn search_persists_snapshots_for_second_process() {
-    let base = TempBase::new("searchpersist");
+fn search_repeats_across_processes_without_an_index() {
+    let base = TempBase::new("searchrepeat");
     let ws = create_ws(base.path(), "WS");
     let doc = create_doc(base.path(), &ws, "Persisted", "# Persisted\n\nturnover figures");
 
-    // First search builds + flushes the index.
-    let _ = run_ok(base.path(), &["search", "--workspace", &ws, "--query", "turnover"]);
+    // `search` keeps no index: every invocation re-crawls, so the first run is not a warm-up.
+    let first = run_ok(base.path(), &["search", "--workspace", &ws, "--query", "turnover"]);
+    assert!(first.as_array().unwrap().iter().any(|h| h["docId"] == doc.as_str()));
 
-    // idx_snapshots should now have a row for doc:title.
-    let db = base
-        .path()
-        .join("workspaces")
-        .join("local")
-        .join(&ws)
-        .join("storage.db");
+    // Second invocation (fresh process) finds exactly the same thing.
+    let v = run_ok(base.path(), &["search", "--workspace", &ws, "--query", "turnover"]);
+    assert_eq!(v, first, "search must be deterministic across processes");
+}
+
+#[test]
+fn search_only_returns_the_doc_whose_body_matches() {
+    let base = TempBase::new("searchbodyonly");
+    let ws = create_ws(base.path(), "WS");
+    let hit = create_doc(base.path(), &ws, "Alpha", "# Alpha\n\nturbomolecular pumps");
+    let miss = create_doc(base.path(), &ws, "Beta", "# Beta\n\nhorticultural sheds");
+
+    let v = run_ok(
+        base.path(),
+        &["search", "--workspace", &ws, "--query", "turbomolecular"],
+    );
+    let arr = v.as_array().expect("search array");
+    assert_eq!(arr.len(), 1, "only the matching doc should be returned; got {arr:?}");
+    assert_eq!(arr[0]["docId"], hit.as_str());
+    assert_eq!(arr[0]["title"], "Alpha");
+    assert!(
+        arr[0]["score"].as_f64().expect("score is a number") > 0.0,
+        "the hit should carry a non-zero score; got {arr:?}"
+    );
+    assert!(
+        arr.iter().all(|h| h["docId"] != miss.as_str()),
+        "the non-matching doc must not appear; got {arr:?}"
+    );
+}
+
+#[test]
+fn search_ranks_title_match_above_body_match() {
+    let base = TempBase::new("searchrank");
+    let ws = create_ws(base.path(), "WS");
+    let in_title = create_doc(
+        base.path(),
+        &ws,
+        "Photosynthesis",
+        "# Photosynthesis\n\nchlorophyll notes",
+    );
+    let in_body = create_doc(
+        base.path(),
+        &ws,
+        "Garden notes",
+        "# Garden notes\n\nphotosynthesis happens here",
+    );
+
+    let v = run_ok(
+        base.path(),
+        &["search", "--workspace", &ws, "--query", "photosynthesis"],
+    );
+    let arr = v.as_array().expect("search array");
+    assert_eq!(arr.len(), 2, "both docs mention the term; got {arr:?}");
+    assert_eq!(
+        arr[0]["docId"],
+        in_title.as_str(),
+        "the title match should outrank the body match; got {arr:?}"
+    );
+    assert_eq!(arr[1]["docId"], in_body.as_str());
+    assert!(arr[0]["score"].as_f64().unwrap() > arr[1]["score"].as_f64().unwrap());
+    assert_eq!(
+        arr[0]["terms"],
+        serde_json::json!(["photosynthesis"]),
+        "terms should report the matched source term; got {arr:?}"
+    );
+}
+
+#[test]
+fn search_does_not_write_to_the_workspace_database() {
+    let base = TempBase::new("searchreadonly");
+    let ws = create_ws(base.path(), "WS");
+    create_doc(base.path(), &ws, "Ledger", "# Ledger\n\namortisation schedule");
+
+    let dir = base.path().join("workspaces").join("local").join(&ws);
+    let db = dir.join("storage.db");
     assert!(db.exists());
 
-    // Second invocation (fresh process) still finds it.
-    let v = run_ok(base.path(), &["search", "--workspace", &ws, "--query", "turnover"]);
+    // `doc create` took the write lease; drop its file so we can prove `search` takes none.
+    let lease = dir.join("affine-cli.client");
+    assert!(lease.exists(), "doc create should have minted a client-id/lease file");
+    std::fs::remove_file(&lease).expect("remove lease file");
+
+    let before_schema = read_db_schema(&db);
+
+    let v = run_ok(base.path(), &["search", "--workspace", &ws, "--query", "amortisation"]);
+    assert_eq!(v.as_array().unwrap().len(), 1, "search should still work: {v:?}");
+
     assert!(
-        v.as_array().unwrap().iter().any(|h| h["docId"] == doc.as_str()),
-        "second-process search should still hit"
+        !lease.exists(),
+        "a read-only search must not take (and so must not mint) the write lease"
     );
+    // (The file's byte length can still move: opening any sqlite database in WAL mode may
+    // checkpoint a pending -wal into the main file. That is the open, not the search.)
+    assert_eq!(
+        before_schema,
+        read_db_schema(&db),
+        "search must not add tables or apply migrations"
+    );
+}
+
+/// The workspace DB's table list plus its applied `_sqlx_migrations` rows, read through a
+/// read-only sqlite connection so the probe itself cannot change the file.
+fn read_db_schema(db: &Path) -> (Vec<String>, Vec<(i64, String)>) {
+    use sqlx::Row;
+    use sqlx::sqlite::SqliteConnectOptions;
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("tokio runtime");
+    rt.block_on(async {
+        let options = SqliteConnectOptions::new()
+            .filename(db)
+            .read_only(true)
+            .create_if_missing(false);
+        let pool = sqlx::SqlitePool::connect_with(options).await.expect("open db");
+        let tables: Vec<String> = sqlx::query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+            .fetch_all(&pool)
+            .await
+            .expect("list tables")
+            .into_iter()
+            .map(|row| row.get::<String, _>(0))
+            .collect();
+        let migrations: Vec<(i64, String)> =
+            sqlx::query("SELECT version, description FROM _sqlx_migrations ORDER BY version")
+                .fetch_all(&pool)
+                .await
+                .expect("list migrations")
+                .into_iter()
+                .map(|row| (row.get::<i64, _>(0), row.get::<String, _>(1)))
+                .collect();
+        pool.close().await;
+        (tables, migrations)
+    })
 }
 
 #[test]

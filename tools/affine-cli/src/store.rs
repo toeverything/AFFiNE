@@ -14,15 +14,6 @@ use crate::error::CliError;
 use crate::lease::WriteLease;
 use crate::paths;
 
-/// A single full-text-search hit, decoupled from the nbstore `NativeSearchHit` type so the
-/// command layer never depends on the storage crate's wire structs directly.
-#[derive(Debug, Clone)]
-pub struct SearchHit {
-    pub doc_id: String,
-    pub score: f64,
-    pub terms: Vec<String>,
-}
-
 /// Minimal write/read seam over a doc store. All methods are async (tokio + sqlx).
 #[allow(async_fn_in_trait)]
 pub trait DocBackend {
@@ -40,27 +31,16 @@ pub trait DocBackend {
     async fn get_blob(&self, key: &str) -> Result<Option<Blob>, CliError>;
     async fn list_blobs(&self) -> Result<Vec<ListedBlob>, CliError>;
 
-    // --- full-text search (in-memory inverted index persisted to idx_snapshots) ---
+    // --- plaintext extraction ---
     /// Crawl a doc's blocks (snapshot+updates merged internally) into title/summary/blocks.
+    ///
+    /// This is the only search-related thing the backend does. The CLI deliberately owns NO
+    /// persistent index: nbstore's indexer is a fixed pair of app-owned tables ("doc" and
+    /// "block") whose rows and indexed clocks belong to the app's own crawler, so writing
+    /// CLI-crawled documents into them would race that crawler and desync its clocks.
+    /// `commands::search` instead builds a throwaway in-memory index per invocation.
     async fn crawl_doc_data(&self, doc_id: &str) -> Result<NativeCrawlResult, CliError>;
-    /// Add (or overwrite) a doc's text in the named in-memory index. `index=true` always.
-    async fn index_doc(&self, index_name: &str, doc_id: &str, text: &str) -> Result<(), CliError>;
-    /// Persist all dirty in-memory indexes back to the `idx_snapshots` table.
-    async fn flush_index(&self) -> Result<(), CliError>;
-    /// Run a ranked search over the named index.
-    async fn search(&self, index_name: &str, query: &str) -> Result<Vec<SearchHit>, CliError>;
 }
-
-/// The single index name the CLI uses for doc search - deliberately PRIVATE to the CLI
-/// (`cli:doc`), not the app's `doc:title`.
-///
-/// The desktop app maintains one fts index per `table:field` and puts ONLY the title under
-/// `doc:title` (nbstore-sqlite indexer, `${table}:${field}`); the CLI indexes title + full
-/// body as one text. Sharing the app's index would (a) pollute the app's title search with
-/// body terms and (b) get silently overwritten back to title-only by the app's next crawl.
-/// A private index costs nothing: `search` re-crawls every doc on each run anyway, so it
-/// never depended on desktop-built snapshots.
-pub const DOC_SEARCH_INDEX: &str = "cli:doc";
 
 /// A connected local workspace store.
 ///
@@ -385,30 +365,5 @@ impl DocBackend for LocalBackend {
     async fn crawl_doc_data(&self, doc_id: &str) -> Result<NativeCrawlResult, CliError> {
         let s = self.pool.get(self.universal_id.clone()).await?;
         Ok(s.crawl_doc_data(doc_id).await?)
-    }
-
-    async fn index_doc(&self, index_name: &str, doc_id: &str, text: &str) -> Result<(), CliError> {
-        let s = self.pool.get(self.universal_id.clone()).await?;
-        s.fts_add(index_name, doc_id, text, true).await?;
-        Ok(())
-    }
-
-    async fn flush_index(&self) -> Result<(), CliError> {
-        let s = self.pool.get(self.universal_id.clone()).await?;
-        s.flush_index().await?;
-        Ok(())
-    }
-
-    async fn search(&self, index_name: &str, query: &str) -> Result<Vec<SearchHit>, CliError> {
-        let s = self.pool.get(self.universal_id.clone()).await?;
-        let hits = s.fts_search(index_name, query).await?;
-        Ok(hits
-            .into_iter()
-            .map(|h| SearchHit {
-                doc_id: h.id,
-                score: h.score,
-                terms: h.terms,
-            })
-            .collect())
     }
 }

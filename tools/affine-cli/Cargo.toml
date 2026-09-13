@@ -16,6 +16,11 @@ path = "src/main.rs"
 affine_nbstore = { workspace = true, features = ["use-as-lib"] }
 y-octo         = { workspace = true }
 
+# `search` is index-free: it builds a throwaway in-memory index per invocation instead of
+# writing into the app-owned "doc"/"block" indexer tables. Same crate (and same text-field
+# recipe) the app's indexer uses, so tokenisation, CJK handling and scoring match in-app search.
+memory-indexer = { workspace = true }
+
 # Schema check before opening a workspace through nbstore (store::check_schema): affine_schema
 # is the migration list nbstore embeds; sqlx opens the file read-only to read `_sqlx_migrations`
 # without applying anything. nbstore's `connect()` would otherwise migrate every DB it touches.
@@ -59,3 +64,8 @@ libc = { workspace = true }
 [dev-dependencies]
 # Strict JSON comparison for the vendored doc_parser's parse_doc_from_binary fixture test.
 assert-json-diff = { workspace = true }
+
+# The e2e suite opens a workspace DB read-only to assert that `search` leaves the schema
+# (sqlite_master + _sqlx_migrations) untouched. Same versions/features as the main deps.
+sqlx  = { workspace = true, default-features = false, features = ["migrate", "runtime-tokio", "sqlite"] }
+tokio = { workspace = true, features = ["rt", "macros"] }

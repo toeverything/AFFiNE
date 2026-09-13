@@ -212,7 +212,12 @@ Async (tokio). Pool keyed by `universal_id`; per-workspace SQLite file.
 - `get_doc_updates(universal_id, doc_id) -> Vec<DocUpdate>`; `set_doc_snapshot`; `mark_updates_merged`.
 - `get_doc_clock(s)`, peer-clock getters/setters (sync metadata).
 - `set_blob`, `get_blob`, `list_blobs`, `delete_blob`.
-- FTS: `fts_add_document`, `fts_search`, `fts_get_matches`, `fts_flush_index`.
+- ~~FTS: `fts_add_document`, `fts_search`, `fts_get_matches`, `fts_flush_index`.~~
+  HISTORICAL: canary c57004ea2c ("refactor(server): indexer & worker & sync perf") replaced the
+  named FTS indexes with a fixed two-table indexer (`index_upsert` / `index_search` /
+  `index_delete` over the app-owned "doc" and "block" tables).
+  The CLI no longer uses any nbstore index: `search` crawls and scores in process against a
+  throwaway `memory-indexer` index, so it never writes to the app's index tables.
 - ⚠️ confirm exact pool type name (`DocStoragePool` vs `SqliteDocStoragePool`).
 
 ## 7. The write sequences

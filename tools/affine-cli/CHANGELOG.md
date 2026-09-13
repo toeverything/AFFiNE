@@ -95,6 +95,15 @@ Where the documented contract was stronger than the mechanism, the mechanism is 
 
 ### Changed
 
+- **`search` is now index-free and read-only.**
+  It used to keep its own named full-text index (`cli:doc`, title + body) inside the workspace database, deliberately separate from the app's, and refresh it on every call.
+  Canary c57004ea2c ("refactor(server): indexer & worker & sync perf") removed named indexes from nbstore: the only indexes left are the app-owned `doc` and `block` tables, whose rows and indexed clocks belong to the app's own crawler, so there is no longer any index the CLI can write to without racing that crawler and desyncing its clocks.
+  Rather than share them, `search` now keeps no index at all.
+  Each invocation crawls every doc listed in root `meta.pages` - the same crawl it always did - builds a throwaway in-memory `memory-indexer` index from the title and body plaintext, scores the query against it, and throws the index away.
+  Tokenisation, CJK/pinyin handling, fuzzy matching and BM25 scoring therefore still match in-app search, because it is the same crate and the same text-field options the app's indexer uses.
+  Consequences: the workspace database is never written by `search` (no `idx_snapshots` rows, no new tables, no migrations), so it now opens the workspace without the write lease and without the open-app pre-flight guard and is safe to run while the AFFiNE app has the workspace open.
+  `doc create` / `doc update` / `doc set-title` / `doc delete` no longer re-index anything.
+  The JSON shape (`docId`, `title`, `score`, `terms`) is unchanged; ranking differs slightly in that a title match is now explicitly boosted over a body match, and `terms` is derived from the matched highlight spans.
 - The table id stability test now compares `prop:cells.` keys as well as `prop:rows.`/`prop:columns.`, covering the full `<rowId>:<columnId>` id contract.
 - **Connector endpoints must exist.**
   `diagram add-connector` (and the connectors `diagram create` builds) verify every id-anchored `--from`/`--to` against the loaded surface and refuse with the new structured `"error":"unknown_element"` instead of persisting a dangling connector.

@@ -11,7 +11,7 @@ use crate::engine;
 use crate::error::CliError;
 use crate::layout;
 use crate::paths;
-use crate::store::{DOC_SEARCH_INDEX, DocBackend, LocalBackend};
+use crate::store::{DocBackend, LocalBackend};
 
 /// Resolve the effective base dir from globals.
 fn base(global: &GlobalArgs) -> Result<std::path::PathBuf, CliError> {
@@ -335,10 +335,7 @@ pub async fn doc_update(global: &GlobalArgs, args: &DocUpdateArgs) -> Result<Val
     let delta = engine::update_doc(&existing, &markdown, &args.doc)?;
     backend.push_update(&args.doc, &delta).await?;
 
-    // Re-index the updated body so `search` reflects the change.
-    if let Err(e) = reindex_doc(&backend, &args.doc).await {
-        eprintln!("warning: failed to re-index {}: {e}", args.doc);
-    }
+    // No index maintenance: `search` re-crawls every doc on each run (see `search`).
 
     Ok(json!({
         "ok": true,
@@ -370,11 +367,6 @@ pub async fn doc_set_title(global: &GlobalArgs, args: &DocSetTitleArgs) -> Resul
     let root_bin = merge_target(&backend, &workspace_id).await?;
     let delta_root = engine::update_root_doc_meta_title(&root_bin, &args.doc, &args.title)?;
     backend.push_update(&workspace_id, &delta_root).await?;
-
-    // Keep the search index title in sync.
-    if let Err(e) = reindex_doc(&backend, &args.doc).await {
-        eprintln!("warning: failed to re-index {}: {e}", args.doc);
-    }
 
     Ok(json!({
         "ok": true,
@@ -429,12 +421,8 @@ pub async fn doc_delete(global: &GlobalArgs, args: &DocDeleteArgs) -> Result<Val
     // (b) Delete the page-doc's own rows (updates/snapshots/clocks/indexer_sync).
     backend.delete_doc(&args.doc).await?;
 
-    // Drop the doc from the search index too.
-    if let Err(e) = backend.index_doc(DOC_SEARCH_INDEX, &args.doc, "").await {
-        eprintln!("warning: failed to clear index for {}: {e}", args.doc);
-    } else {
-        let _ = backend.flush_index().await;
-    }
+    // Nothing to un-index: `search` is index-free and only ever sees docs still listed in
+    // root meta.pages, which step (a) just removed this one from.
 
     Ok(json!({
         "ok": true,
@@ -447,19 +435,6 @@ pub async fn doc_delete(global: &GlobalArgs, args: &DocDeleteArgs) -> Result<Val
 // ----------------------------------------------------------------------------
 // Phase 1 - full-text search
 // ----------------------------------------------------------------------------
-
-/// Crawl one doc and (re-)index its title + body plaintext under `DOC_SEARCH_INDEX`.
-/// A missing/empty doc is indexed as empty text (which removes it from results).
-async fn reindex_doc(backend: &LocalBackend, doc_id: &str) -> Result<(), CliError> {
-    let text = match backend.crawl_doc_data(doc_id).await {
-        Ok(cr) => doc_plaintext(&cr),
-        // Stale or empty doc - index empty text rather than failing the whole op.
-        Err(_) => String::new(),
-    };
-    backend.index_doc(DOC_SEARCH_INDEX, doc_id, &text).await?;
-    backend.flush_index().await?;
-    Ok(())
-}
 
 /// Build the searchable plaintext for a doc: title + every block's content joined by spaces.
 fn doc_plaintext(cr: &affine_nbstore::indexer::NativeCrawlResult) -> String {
@@ -479,17 +454,30 @@ fn doc_plaintext(cr: &affine_nbstore::indexer::NativeCrawlResult) -> String {
     parts.join(" ")
 }
 
-/// `search --workspace --query` - index every doc in the workspace on-demand, persist the
-/// snapshots, then run a ranked search over the `doc:title` in-memory index.
+/// How much a title match outweighs a body match. The app's own doc index scores title text
+/// only, so a title hit must not be drowned out by a long body that repeats a term.
+const TITLE_BOOST: f32 = 4.0;
+
+/// `search --workspace --query` - crawl every doc listed in root meta.pages, score them in
+/// process against a throwaway in-memory index, and return the ranked hits.
+///
+/// READ-ONLY by construction. It used to maintain a private `cli:doc` full-text index inside
+/// the workspace database; nbstore no longer has named indexes (canary c57004ea2c), only the
+/// app-owned "doc" and "block" tables whose rows and indexed clocks the app's crawler owns.
+/// Rather than race that crawler, the CLI keeps no index at all: it builds a `memory_indexer`
+/// index per invocation from the same crawl it always did, so tokenisation, CJK handling and
+/// BM25 scoring still match the app's, and the workspace DB is never written. That also means
+/// no write lease and no open-workspace guard: `search` is safe while the app is running.
 pub async fn search(global: &GlobalArgs, args: &SearchArgs) -> Result<Value, CliError> {
+    use memory_indexer::{
+        Document, FieldOptions, MemoryIndex, PositionEncoding, Query, Schema, SearchMode, SearchOptions,
+        Value as IndexValue,
+    };
+
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
-    // Not actually read-only: the index refresh below persists idx_snapshots rows into the
-    // workspace DB, so it takes the same open-workspace guard as every mutating command.
-    guard_workspace_writable(global, &base, &workspace_id)?;
 
     let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id, global.allow_migrate).await?;
-    // connect() (inside open) already ran init_index, loading any desktop-app snapshots.
 
     let root_bin = merge_target(&backend, &workspace_id).await?;
     if root_bin.is_empty() {
@@ -497,36 +485,120 @@ pub async fn search(global: &GlobalArgs, args: &SearchArgs) -> Result<Value, Cli
     }
     let (_name, pages) = engine::read_root_meta(root_bin)?;
 
-    // Index (or refresh) every doc's title+body.
+    // Byte position encoding so highlight spans index the stored strings directly (the app
+    // uses Utf16 because its spans cross into JS; nothing here does).
+    let mut builder = Schema::builder().position_encoding(PositionEncoding::Bytes);
+    let title_field = builder.text("title", search_text_options(), FieldOptions::indexed_stored());
+    let body_field = builder.text("body", search_text_options(), FieldOptions::indexed_stored());
+    let schema = builder
+        .build()
+        .map_err(|e| CliError::other(format!("internal error: search schema is invalid: {e}")))?;
+    let mut index = MemoryIndex::new(schema);
+
     let mut titles = std::collections::HashMap::new();
     for page in &pages {
-        titles.insert(page.id.clone(), page.title.clone().unwrap_or_default());
-        match backend.crawl_doc_data(&page.id).await {
-            Ok(cr) => {
-                let text = doc_plaintext(&cr);
-                backend.index_doc(DOC_SEARCH_INDEX, &page.id, &text).await?;
-            }
-            // A stale meta.pages entry with no doc rows - skip rather than fail the search.
-            Err(_) => continue,
-        }
-    }
-    backend.flush_index().await?;
+        // Prefer the crawled title (the doc's own), falling back to root meta.pages.
+        let meta_title = page.title.clone().unwrap_or_default();
+        // A stale meta.pages entry with no doc rows - skip rather than fail the search.
+        let Ok(cr) = backend.crawl_doc_data(&page.id).await else {
+            continue;
+        };
+        let title = if cr.title.is_empty() {
+            meta_title
+        } else {
+            cr.title.clone()
+        };
+        titles.insert(page.id.clone(), title.clone());
 
-    let hits = backend.search(DOC_SEARCH_INDEX, &args.query).await?;
-    let results: Vec<Value> = hits
+        let mut document = Document::new(&page.id);
+        document.add(title_field, title);
+        document.add(body_field, doc_plaintext(&cr));
+        index
+            .upsert(document)
+            .map_err(|e| CliError::other(format!("failed to index doc {}: {e}", page.id)))?;
+    }
+
+    let query = Query::boolean(
+        vec![],
+        vec![
+            Query::Boost {
+                query: Box::new(Query::text(title_field, args.query.clone(), SearchMode::Auto)),
+                factor: TITLE_BOOST,
+            },
+            Query::text(body_field, args.query.clone(), SearchMode::Auto),
+        ],
+        vec![],
+    );
+    let options = SearchOptions {
+        limit: pages.len().max(1),
+        offset: 0,
+        after: None,
+        sort: vec![],
+        stored_fields: vec![title_field, body_field],
+        highlight_fields: vec![title_field, body_field],
+    };
+    let result = index
+        .search(&query, options)
+        .map_err(|e| CliError::other(format!("search failed: {e}")))?;
+
+    let results: Vec<Value> = result
+        .hits
         .into_iter()
-        .map(|h| {
-            let title = titles.get(&h.doc_id).cloned().unwrap_or_default();
+        .map(|hit| {
+            // `terms` is the set of matched source substrings, recovered from the highlight
+            // spans (memory-indexer reports positions, not the terms themselves).
+            let stored: std::collections::HashMap<_, _> = hit
+                .fields
+                .iter()
+                .map(|(field, values)| {
+                    let strings: Vec<&str> = values
+                        .iter()
+                        .filter_map(|v| match v {
+                            IndexValue::String(s) => Some(s.as_str()),
+                            _ => None,
+                        })
+                        .collect();
+                    (*field, strings)
+                })
+                .collect();
+            let mut terms: Vec<String> = Vec::new();
+            for highlight in &hit.highlights {
+                let Some(values) = stored.get(&highlight.field) else {
+                    continue;
+                };
+                let Some(text) = values.get(highlight.value_index as usize) else {
+                    continue;
+                };
+                for (start, end) in &highlight.spans {
+                    if let Some(slice) = text.get(*start as usize..*end as usize) {
+                        let term = slice.to_lowercase();
+                        if !term.is_empty() && !terms.contains(&term) {
+                            terms.push(term);
+                        }
+                    }
+                }
+            }
+            let title = titles.get(&hit.id).cloned().unwrap_or_default();
             json!({
-                "docId": h.doc_id,
+                "docId": hit.id,
                 "title": title,
-                "score": h.score,
-                "terms": h.terms,
+                "score": hit.score as f64,
+                "terms": terms,
             })
         })
         .collect();
 
     Ok(json!(results))
+}
+
+/// The text-field recipe the app's own doc/block indexes use (nbstore indexer/table.rs), so
+/// the CLI tokenises, folds and fuzzy-matches exactly the way in-app search does.
+fn search_text_options() -> memory_indexer::TextOptions {
+    memory_indexer::TextOptions::multilingual()
+        .with_pinyin()
+        .with_prefix()
+        .with_fuzzy()
+        .with_positions()
 }
 
 // ----------------------------------------------------------------------------
