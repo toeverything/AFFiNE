@@ -56,7 +56,7 @@ export async function refreshEmbedYoutubeUrlData(
       title = null,
       description = null,
       creator = null,
-      creatorUrl = null,
+      creatorUrl = embedYoutubeElement.model.props.creatorUrl,
       creatorImage = null,
     } = youtubeUrlData);
 

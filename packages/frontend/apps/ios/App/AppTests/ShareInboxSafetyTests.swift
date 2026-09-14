@@ -1344,17 +1344,26 @@ final class ShareInboxSafetyTests: XCTestCase {
   }
 
   func testPreviewTransportRejectsOversizedResponsesAndUnapprovedImageURLs() async throws {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [OversizedPreviewURLProtocol.self]
-    let session = URLSession(configuration: configuration)
-    defer { session.invalidateAndCancel() }
-    let client = ShareLinkPreviewClient(session: session, appVersion: "test")
-    do {
-      _ = try await client.fetch(url: "https://example.com/article")
-      XCTFail("Expected the response limit to reject the download")
-    } catch let error as URLError {
-      XCTAssertEqual(error.code, .dataLengthExceedsMaximum)
+    let limit = 1024 * 1024
+    for (size, advertised) in [(16383, false), (16384, false), (16385, false), (limit, false), (limit + 1, false), (limit + 1, true)] {
+      let configuration = URLSessionConfiguration.ephemeral
+      configuration.protocolClasses = [PreviewResponseURLProtocol.self]
+      configuration.httpAdditionalHeaders = [
+        "X-Fixture-Bytes": String(size), "X-Fixture-Advertise-Length": String(advertised),
+      ]
+      let session = URLSession(configuration: configuration)
+      defer { session.invalidateAndCancel() }
+      let client = ShareLinkPreviewClient(session: session, appVersion: "test")
+      do {
+        let preview = try await client.fetch(url: "https://example.com/article")
+        XCTAssertLessThanOrEqual(size, limit)
+        XCTAssertEqual(preview.title, "Boundary")
+      } catch let error as URLError {
+        XCTAssertGreaterThan(size, limit)
+        XCTAssertEqual(error.code, .dataLengthExceedsMaximum)
+      }
     }
+    let client = ShareLinkPreviewClient(appVersion: "test")
     do {
       _ = try await client.fetchImage(url: "https://example.com/image.png")
       XCTFail("Expected an unapproved image URL to be rejected")
@@ -1491,7 +1500,7 @@ private actor DraftBuildGate {
   }
 }
 
-private final class OversizedPreviewURLProtocol: URLProtocol {
+private final class PreviewResponseURLProtocol: URLProtocol {
   override class func canInit(with _: URLRequest) -> Bool {
     true
   }
@@ -1501,10 +1510,15 @@ private final class OversizedPreviewURLProtocol: URLProtocol {
   }
 
   override func startLoading() {
+    let size = Int(request.value(forHTTPHeaderField: "X-Fixture-Bytes")!)!
+    let headers = request.value(forHTTPHeaderField: "X-Fixture-Advertise-Length") == "true"
+      ? ["Content-Length": String(size)] : [:]
     let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
-                                   headerFields: ["Content-Length": "1048577"])!
+                                   headerFields: headers)!
+    var data = Data(#"{"url":"https://example.com/article","title":"Boundary"}"#.utf8)
+    data.append(Data(repeating: 0x20, count: size - data.count))
     client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-    client?.urlProtocol(self, didLoad: Data([0]))
+    client?.urlProtocol(self, didLoad: data)
     client?.urlProtocolDidFinishLoading(self)
   }
 

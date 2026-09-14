@@ -195,10 +195,18 @@ struct ShareLinkPreviewClient {
     defer { bytes.task.cancel() }
     guard response.expectedContentLength <= maxBytes else { throw URLError(.dataLengthExceedsMaximum) }
     var data = Data()
+    var buffer = [UInt8]()
+    let chunkSize = 16 * 1024
+    buffer.reserveCapacity(chunkSize)
     for try await byte in bytes {
-      guard data.count < maxBytes else { throw URLError(.dataLengthExceedsMaximum) }
-      data.append(byte)
+      guard data.count + buffer.count < maxBytes else { throw URLError(.dataLengthExceedsMaximum) }
+      buffer.append(byte)
+      if buffer.count == chunkSize {
+        data.append(contentsOf: buffer)
+        buffer.removeAll(keepingCapacity: true)
+      }
     }
+    data.append(contentsOf: buffer)
     return (data, response)
   }
 

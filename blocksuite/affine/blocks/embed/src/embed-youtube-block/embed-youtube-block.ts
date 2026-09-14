@@ -1,7 +1,8 @@
 import { LoadingIcon, OpenIcon } from '@blocksuite/affine-components/icons';
-import type {
-  EmbedYoutubeModel,
-  EmbedYoutubeStyles,
+import {
+  type EmbedYoutubeModel,
+  type EmbedYoutubeStyles,
+  youtubeUrlRegex,
 } from '@blocksuite/affine-model';
 import { ImageProxyService } from '@blocksuite/affine-shared/adapters';
 import {
@@ -16,7 +17,6 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { EmbedBlockComponent } from '../common/embed-block-element.js';
 import { getEmbedCardIcons } from '../common/utils.js';
-import { youtubeUrlRegex } from './embed-youtube-model.js';
 import type { EmbedYoutubeBlockService } from './embed-youtube-service.js';
 import { styles, YoutubeIcon } from './styles.js';
 import { refreshEmbedYoutubeUrlData } from './utils.js';
@@ -89,8 +89,8 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
     const { image, title, description, creator, creatorImage } =
       this.model.props;
     const videoId =
-      this.model.props.videoId ||
-      this.model.props.url.match(youtubeUrlRegex)?.[1];
+      this.model.props.url.match(youtubeUrlRegex)?.[1] ??
+      this.model.props.videoId;
 
     const loading = this.loading;
     const theme = this.std.get(ThemeProvider).theme;
