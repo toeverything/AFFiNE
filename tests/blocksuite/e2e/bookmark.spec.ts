@@ -1,6 +1,7 @@
 import './utils/declare-test-window.js';
 
 import type { BookmarkBlockComponent } from '@blocksuite/affine/blocks/bookmark';
+import type { EmbedYoutubeBlockComponent } from '@blocksuite/affine/blocks/embed';
 import type { BlockSnapshot } from '@blocksuite/store';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
@@ -266,7 +267,9 @@ test.describe('embed card toolbar', () => {
       getEmbedCardToolbar(page);
     await cardStyleListButton.click();
     await waitNextFrame(page);
-    const listStyleBookmarkBox = await bookmark.boundingBox();
+    const listStyleBookmarkBox = await bookmark
+      .locator('.affine-bookmark-card')
+      .boundingBox();
     if (!listStyleBookmarkBox) {
       throw new Error('listStyleBookmarkBox is not found');
     }
@@ -276,7 +279,9 @@ test.describe('embed card toolbar', () => {
     await openCardStyleMenu();
     await cardStyleHorizontalButton.click();
     await waitNextFrame(page);
-    const horizontalStyleBookmarkBox = await bookmark.boundingBox();
+    const horizontalStyleBookmarkBox = await bookmark
+      .locator('.affine-bookmark-card')
+      .boundingBox();
     if (!horizontalStyleBookmarkBox) {
       throw new Error('horizontalStyleBookmarkBox is not found');
     }
@@ -384,6 +389,32 @@ test.describe('embed youtube card', () => {
     await createBookmarkBlockBySlashMenu(page, YOUTUBE_URL);
     const snapshot = (await getPageSnapshot(page)) as BlockSnapshot;
     expect(ignoreSnapshotId(snapshot)).toMatchSnapshot('embed-youtube.json');
+    await page.evaluate(() => {
+      const block = document.querySelector<EmbedYoutubeBlockComponent>(
+        'affine-embed-youtube-block'
+      )!;
+      block.store.updateBlock(block.model, {
+        creatorUrl: 'https://www.youtube.com/@original',
+      });
+      block.service.queryUrlData = async () => ({ title: 'Refreshed title' });
+      block.refreshData();
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const block = document.querySelector<EmbedYoutubeBlockComponent>(
+            'affine-embed-youtube-block'
+          )!;
+          return {
+            title: block.model.props.title,
+            creatorUrl: block.model.props.creatorUrl,
+          };
+        })
+      )
+      .toEqual({
+        title: 'Refreshed title',
+        creatorUrl: 'https://www.youtube.com/@original',
+      });
   });
 
   test(scoped`change youtube card style`, async ({ page }) => {

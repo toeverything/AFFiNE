@@ -453,9 +453,176 @@ impl StorageRuntime {
 
 #[cfg(test)]
 mod tests {
+  use std::{collections::HashMap, sync::RwLock};
+
+  use anyhow::{Context, Result as AnyResult};
+  use napi::bindgen_prelude::Buffer;
+  use sqlx::postgres::PgPoolOptions;
+  use tempfile::TempDir;
+  use tokio::sync::Mutex;
   use uuid::Uuid;
+  use y_octo::Doc;
 
   use super::*;
+  use crate::runtime::{
+    migrations::migrate_runtime_tables,
+    object_storage::{FsStorageConfig, StorageBackendConfig},
+    storage_runtime::StorageRuntimeConfig,
+  };
+
+  struct BlobCleanupFixture {
+    runtime: StorageRuntime,
+    pool: PgPool,
+    object_root: TempDir,
+    workspace_id: String,
+    doc_id: String,
+    blob_key: String,
+  }
+
+  fn attachment_doc(blob_key: Option<&str>) -> Vec<u8> {
+    let doc = Doc::default();
+    let mut blocks = doc.get_or_create_map("blocks").expect("blocks root should build");
+    let mut attachment = doc.create_map().expect("attachment should build");
+    attachment
+      .insert("sys:id".to_string(), "attachment")
+      .expect("attachment id should insert");
+    attachment
+      .insert("sys:flavour".to_string(), "affine:attachment")
+      .expect("attachment flavour should insert");
+    if let Some(blob_key) = blob_key {
+      attachment
+        .insert("prop:sourceId".to_string(), blob_key)
+        .expect("attachment source should insert");
+    }
+    blocks
+      .insert("attachment".to_string(), attachment)
+      .expect("attachment should insert");
+    doc.encode_update_v1().expect("blob cleanup fixture should encode")
+  }
+
+  async fn blob_cleanup_fixture(with_ref: bool) -> AnyResult<BlobCleanupFixture> {
+    let database_url =
+      std::env::var("DATABASE_URL").context("DATABASE_URL is required for ignored blob cleanup integration tests")?;
+    let pool = PgPoolOptions::new()
+      .max_connections(5)
+      .connect(&database_url)
+      .await
+      .context("connect postgres for blob cleanup tests")?;
+    migrate_runtime_tables(&pool)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    let object_root = tempfile::tempdir()?;
+    let runtime = StorageRuntime {
+      config: RwLock::new(StorageRuntimeConfig {
+        database_url,
+        object_storage: crate::runtime::object_storage::ObjectStorageService {
+          backends: HashMap::from([(
+            "blob".to_string(),
+            StorageBackendConfig::Fs(FsStorageConfig {
+              provider: "fs".to_string(),
+              root: object_root.path().to_string_lossy().to_string(),
+              bucket: "blob-cleanup-test".to_string(),
+            }),
+          )]),
+        },
+      }),
+      pool: Mutex::new(Some(pool.clone())),
+    };
+    let suffix = Uuid::new_v4().simple().to_string();
+    let workspace_id = format!("blob-cleanup-ws-{suffix}");
+    let doc_id = format!("blob-cleanup-doc-{suffix}");
+    let blob_key = format!("blob-cleanup-attachment-{suffix}");
+    sqlx::query("INSERT INTO workspaces (id, created_at) VALUES ($1, CURRENT_TIMESTAMP)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    let root = affine_doc_loader::add_doc_to_root_doc(Vec::new(), &doc_id, None)?;
+    let mut root_doc = Doc::default();
+    root_doc.apply_update_from_binary_v1(&root)?;
+    root_doc.get_or_create_map("blocks")?.insert("fixture".into(), "root")?;
+    let root = root_doc.encode_update_v1()?;
+    let doc = attachment_doc(with_ref.then_some(blob_key.as_str()));
+    sqlx::query(
+      "INSERT INTO snapshots (workspace_id, guid, blob, updated_at) VALUES ($1, $1, $2, CURRENT_TIMESTAMP), ($1, $3, \
+       $4, CURRENT_TIMESTAMP)",
+    )
+    .bind(&workspace_id)
+    .bind(root)
+    .bind(&doc_id)
+    .bind(doc)
+    .execute(&pool)
+    .await?;
+    sqlx::query(
+      "INSERT INTO blobs (workspace_id, key, size, mime, status, created_at) VALUES ($1, $2, 10, \
+       'application/octet-stream', 'completed', CURRENT_TIMESTAMP)",
+    )
+    .bind(&workspace_id)
+    .bind(&blob_key)
+    .execute(&pool)
+    .await?;
+    runtime
+      .put_object(
+        "blob".to_string(),
+        format!("{workspace_id}/{blob_key}"),
+        Buffer::from(b"attachment".to_vec()),
+        None,
+      )
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+
+    Ok(BlobCleanupFixture {
+      runtime,
+      pool,
+      object_root,
+      workspace_id,
+      doc_id,
+      blob_key,
+    })
+  }
+
+  async fn complete_cleanup_checkpoints(pool: &PgPool, workspace_id: &str) -> AnyResult<()> {
+    for kind in ["document_cleanup", "blob_metadata_backfill", "doc_blob_refs"] {
+      sqlx::query(
+        "INSERT INTO storage_reconciliation_checkpoints (kind, scope, status, cursor, completed_at, metadata) VALUES \
+         ($1, $2, 'completed', '{}', CURRENT_TIMESTAMP, '{}') ON CONFLICT (kind, scope) DO UPDATE SET status = \
+         'completed', completed_at = CURRENT_TIMESTAMP, metadata = CASE WHEN $1 = 'doc_blob_refs' THEN \
+         storage_reconciliation_checkpoints.metadata ELSE '{}'::jsonb END",
+      )
+      .bind(kind)
+      .bind(workspace_id)
+      .execute(pool)
+      .await?;
+    }
+    Ok(())
+  }
+
+  async fn cleanup_blob_fixture(fixture: &BlobCleanupFixture) -> AnyResult<()> {
+    for table in [
+      "blob_cleanup_candidates",
+      "doc_blob_refs",
+      "doc_blob_ref_projections",
+      "snapshots",
+      "blobs",
+    ] {
+      sqlx::query(&format!("DELETE FROM {table} WHERE workspace_id = $1"))
+        .bind(&fixture.workspace_id)
+        .execute(&fixture.pool)
+        .await?;
+    }
+    sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE scope = $1")
+      .bind(&fixture.workspace_id)
+      .execute(&fixture.pool)
+      .await?;
+    sqlx::query("DELETE FROM storage_reconciliation_runs WHERE workspace_id = $1")
+      .bind(&fixture.workspace_id)
+      .execute(&fixture.pool)
+      .await?;
+    sqlx::query("DELETE FROM workspaces WHERE id = $1")
+      .bind(&fixture.workspace_id)
+      .execute(&fixture.pool)
+      .await?;
+    Ok(())
+  }
 
   #[tokio::test]
   async fn artifact_blob_alias_is_a_cleanup_reference_until_deleting() {
@@ -510,5 +677,149 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
+  }
+
+  #[tokio::test]
+  #[ignore = "requires DATABASE_URL and a migrated PostgreSQL database"]
+  async fn blob_cleanup_projection_reprojects_reference_removal_before_deletion() -> AnyResult<()> {
+    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
+    let fixture = blob_cleanup_fixture(true).await?;
+    let _object_root = &fixture.object_root;
+    fixture
+      .runtime
+      .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    complete_cleanup_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+
+    let referenced = fixture
+      .runtime
+      .cleanup_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((referenced.deleted_objects, referenced.protected_by_doc_refs), (0, 1));
+    assert!(
+      fixture
+        .runtime
+        .head_object(
+          "blob".to_string(),
+          format!("{}/{}", fixture.workspace_id, fixture.blob_key)
+        )
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?
+        .is_some()
+    );
+
+    sqlx::query("UPDATE snapshots SET blob = $3, updated_at = clock_timestamp() WHERE workspace_id = $1 AND guid = $2")
+      .bind(&fixture.workspace_id)
+      .bind(&fixture.doc_id)
+      .bind(attachment_doc(None))
+      .execute(&fixture.pool)
+      .await?;
+    let stale = fixture
+      .runtime
+      .cleanup_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((stale.deleted_objects, stale.protected_by_metadata), (0, 1));
+
+    fixture
+      .runtime
+      .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    complete_cleanup_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+
+    let executed = fixture
+      .runtime
+      .cleanup_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(
+      (executed.deleted_objects, executed.deleted_metadata, executed.failed),
+      (1, 1, 0)
+    );
+    assert!(
+      fixture
+        .runtime
+        .head_object(
+          "blob".to_string(),
+          format!("{}/{}", fixture.workspace_id, fixture.blob_key)
+        )
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?
+        .is_none()
+    );
+
+    cleanup_blob_fixture(&fixture).await?;
+    Ok(())
+  }
+
+  #[tokio::test]
+  #[ignore = "requires DATABASE_URL and a migrated PostgreSQL database"]
+  async fn blob_cleanup_projection_outdated_pending_and_failed_projections_fail_closed() -> AnyResult<()> {
+    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
+    for status in ["fresh", "pending", "failed"] {
+      let fixture = blob_cleanup_fixture(false).await?;
+      let _object_root = &fixture.object_root;
+      fixture
+        .runtime
+        .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+      complete_cleanup_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+      sqlx::query(
+        "UPDATE doc_blob_ref_projections SET parser_version = 0, status = $3 WHERE workspace_id = $1 AND doc_id = $2",
+      )
+      .bind(&fixture.workspace_id)
+      .bind(&fixture.doc_id)
+      .bind(status)
+      .execute(&fixture.pool)
+      .await?;
+
+      let blocked_plan = fixture
+        .runtime
+        .cleanup_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+      assert_eq!(
+        (blocked_plan.deleted_objects, blocked_plan.protected_by_metadata),
+        (0, 1)
+      );
+
+      sqlx::query(
+        "UPDATE doc_blob_ref_projections p SET parser_version = $3, status = 'fresh', source_revision = s.updated_at \
+         FROM snapshots s WHERE p.workspace_id = $1 AND p.doc_id = $2 AND s.workspace_id = p.workspace_id AND s.guid \
+         = p.doc_id",
+      )
+      .bind(&fixture.workspace_id)
+      .bind(&fixture.doc_id)
+      .bind(PARSER_VERSION)
+      .execute(&fixture.pool)
+      .await?;
+      complete_cleanup_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+      assert!(
+        fixture
+          .runtime
+          .head_object(
+            "blob".to_string(),
+            format!("{}/{}", fixture.workspace_id, fixture.blob_key)
+          )
+          .await
+          .map_err(|err| anyhow::anyhow!(err.to_string()))?
+          .is_some()
+      );
+      let executed = fixture
+        .runtime
+        .cleanup_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+      assert_eq!(
+        (executed.deleted_objects, executed.deleted_metadata, executed.failed),
+        (1, 1, 0)
+      );
+      cleanup_blob_fixture(&fixture).await?;
+    }
+    Ok(())
   }
 }
