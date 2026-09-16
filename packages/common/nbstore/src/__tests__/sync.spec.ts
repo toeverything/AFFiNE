@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 
 import * as reader from '@affine/reader';
-import { NEVER } from 'rxjs';
+import { firstValueFrom, NEVER } from 'rxjs';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
@@ -33,6 +33,7 @@ import {
   SpaceStorage,
 } from '../storage';
 import { Sync } from '../sync';
+import { BlobSyncPeer } from '../sync/blob/peer';
 import { DocSyncPeer } from '../sync/doc/peer';
 import { IndexerSyncImpl } from '../sync/indexer';
 import { expectYjsEqual } from './utils';
@@ -375,11 +376,17 @@ test('doc', async () => {
     },
   });
   const removeRootPriority = sync.doc.addPriority('ws1', 100);
+  const removeForegroundPriority = sync.doc.addPriority('doc1', 200);
+  const remoteDiff = vi.spyOn(peerBDoc, 'getDocDiff');
+  expect(await firstValueFrom(sync.doc.docState$('doc1'))).toMatchObject({
+    synced: false,
+  });
   sync.start();
 
   await new Promise(resolve => setTimeout(resolve, 1000));
 
   {
+    expect(remoteDiff.mock.calls[0]?.[0]).toBe('ws1');
     const b = await peerB.get('doc').getDoc('doc1');
     expectYjsEqual(b!.bin, {
       test: {
@@ -448,6 +455,7 @@ test('doc', async () => {
   }
 
   removeDocPriority();
+  removeForegroundPriority();
   removeRootPriority();
   sync.stop();
   peerA.disconnect();
@@ -541,6 +549,58 @@ test('blob', async () => {
     expect(c).not.toBeNull();
     expect(c?.data).toEqual(new Uint8Array([4, 3, 2, 1]));
   }
+  sync.stop();
+
+  const localReads = vi.spyOn(a, 'get');
+  const localLists = vi.spyOn(a, 'list');
+  const remoteReads = vi.spyOn(c, 'get');
+  await new BlobSyncPeer('c', a, c, blobSync).fullDownload();
+  expect(localReads).not.toHaveBeenCalled();
+  expect(localLists).toHaveBeenCalledTimes(1);
+  expect(remoteReads.mock.calls.map(([key]) => key)).toEqual(['test2']);
+  remoteReads.mockRestore();
+  localLists.mockClear();
+
+  for (const key of ['fresh', 'retry']) {
+    await c.set({ key, data: new Uint8Array([1, 2, 3]), mime: 'text/plain' });
+  }
+  const entries = await c.list();
+  const scoped = Object.assign(c, {
+    registerSource: vi.fn(),
+    unregisterSource: vi.fn(),
+    async *readableSources() {
+      for (const entry of entries) {
+        for (const docId of ['first', 'second']) {
+          yield {
+            ...entry,
+            source: { type: 'currentDoc' as const, workspaceId: 'ws1', docId },
+          };
+        }
+      }
+    },
+  });
+  const get = c.get.bind(c);
+  let retryAttempts = 0;
+  const reads = vi.spyOn(c, 'get').mockImplementation(async key => {
+    if (key === 'retry' && retryAttempts++ === 0)
+      throw new Error('source denied');
+    return get(key);
+  });
+  const inventory = vi
+    .spyOn(c, 'list')
+    .mockRejectedValue(new Error('cloud inventory forbidden'));
+  await new BlobSyncPeer('scoped', a, scoped, blobSync).fullDownload();
+  expect(localReads).not.toHaveBeenCalled();
+  expect(localLists).toHaveBeenCalledTimes(1);
+  expect(inventory).not.toHaveBeenCalled();
+  expect(reads.mock.calls.map(([key]) => key)).toEqual([
+    'fresh',
+    'retry',
+    'retry',
+  ]);
+  localReads.mockRestore();
+  expect((await a.get('fresh'))?.data).toEqual(new Uint8Array([1, 2, 3]));
+  expect((await a.get('retry'))?.data).toEqual(new Uint8Array([1, 2, 3]));
 });
 
 test('doc sync peer stops retrying a doc when remote denies permission', async () => {
@@ -855,6 +915,74 @@ test('indexer completion waits for the current job to finish', async () => {
     await waitForCompleted;
     await waitForDocCompleted;
   } finally {
+    sync.stop();
+  }
+});
+
+test('indexer priority requests accumulate', async () => {
+  const docsInRootDoc = new Map([
+    ['doc-low', { title: 'Doc Low' }],
+    ['doc-high', { title: 'Doc High' }],
+  ]);
+  const crawled: string[] = [];
+  const rootDocCrawlStarted = deferred<void>();
+  const releaseRootDocCrawl = deferred<void>();
+  const docStorage = new TestDocStorage(
+    'workspace-id',
+    new Map([
+      ['doc-low', new Date('2026-01-01T00:00:00.000Z')],
+      ['doc-high', new Date('2026-01-01T00:00:00.000Z')],
+    ]),
+    async docId => {
+      crawled.push(docId);
+      return { title: docId, summary: 'summary', blocks: [] };
+    }
+  );
+  const indexer = new TrackingIndexerStorage([], 30_000);
+  // hold the loop inside the root doc crawl, so both docs stay queued while
+  // their priorities are changed
+  let holding = false;
+  vi.spyOn(indexer, 'insert').mockImplementation(async () => {
+    if (!holding) {
+      holding = true;
+      rootDocCrawlStarted.resolve();
+      await releaseRootDocCrawl.promise;
+    }
+  });
+  const sync = new IndexerSyncImpl(
+    docStorage,
+    {
+      local: indexer,
+      remotes: {},
+    },
+    new TrackingIndexerSyncStorage([])
+  );
+
+  vi.spyOn(reader, 'readAllDocsFromRootDoc').mockImplementation(
+    () => new Map(docsInRootDoc)
+  );
+
+  try {
+    sync.start();
+    await rootDocCrawlStarted.promise;
+
+    sync.addPriority('doc-low', 5);
+    // two holders on the same doc, one of them goes away
+    sync.addPriority('doc-high', 10);
+    const releaseSecondHolder = sync.addPriority('doc-high', 10);
+    releaseSecondHolder();
+
+    releaseRootDocCrawl.resolve();
+
+    await vi.waitFor(() => {
+      expect(crawled).toHaveLength(2);
+    });
+
+    // the remaining holder still asked for +10, so `doc-high` must outrank the
+    // +5 of `doc-low`
+    expect(crawled).toEqual(['doc-high', 'doc-low']);
+  } finally {
+    releaseRootDocCrawl.resolve();
     sync.stop();
   }
 });

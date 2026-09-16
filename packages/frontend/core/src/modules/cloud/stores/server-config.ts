@@ -13,8 +13,8 @@ import semver from 'semver';
 export type ServerConfigType = ServerConfigQuery['serverConfig'] &
   OauthProvidersQuery['serverConfig'];
 
-export const MIN_SUPPORTED_SERVER_VERSION = '0.27.0';
-export const BATCH_SYNC_SERVER_VERSION = '0.27.5';
+export const BATCH_SYNC_SERVER_VERSION = '0.27.0';
+export const MIN_SUPPORTED_SERVER_VERSION = BATCH_SYNC_SERVER_VERSION;
 
 const NETWORK_ERROR_PATTERNS = [
   /failed to fetch/i,
@@ -72,11 +72,6 @@ export function isBatchSyncServerVersion(version?: string | null) {
       loose: true,
     })
   );
-}
-
-export function getSyncProtocol(version?: string | null) {
-  assertSupportedServerVersion(version);
-  return isBatchSyncServerVersion(version) ? 'batch' : 'legacy';
 }
 
 function mapServerConfigError(error: unknown) {

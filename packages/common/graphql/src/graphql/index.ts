@@ -1647,6 +1647,8 @@ export const getDocRolePermissionsQuery = {
     doc(docId: $docId) {
       permissions {
         Doc_Copy
+        Doc_Analytics_Read
+        Doc_Analytics_Viewers_Read
         Doc_Delete
         Doc_Duplicate
         Doc_Properties_Read
@@ -1660,9 +1662,11 @@ export const getDocRolePermissionsQuery = {
         Doc_Users_Manage
         Doc_Users_Read
         Doc_Comments_Create
-        Doc_Comments_Delete
+        Doc_Comments_Moderate
         Doc_Comments_Read
-        Doc_Comments_Resolve
+        Doc_History_Read
+        Doc_Preview
+        Doc_Unpublish
       }
     }
   }
@@ -3031,9 +3035,8 @@ export const getWorkspaceRolePermissionsQuery = {
   workspaceRolePermissions(id: $id) {
     permissions {
       Workspace_Administrators_Manage
-      Workspace_Blobs_List
-      Workspace_Blobs_Read
-      Workspace_Blobs_Write
+      Workspace_Blobs_Manage
+      Workspace_Blobs_Upload
       Workspace_Copilot
       Workspace_CreateDoc
       Workspace_Delete

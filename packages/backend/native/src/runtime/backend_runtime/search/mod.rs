@@ -8,7 +8,7 @@ mod runtime;
 mod types;
 mod worker;
 
-use generation::{ActiveGeneration, activate, cleanup_retired_generation, config_hash, ensure, load_active};
+use generation::{ActiveGeneration, activate, cleanup_retired_generation, config_hash, ensure, fail, load_active};
 use projection::{ProjectionInput, project_document};
 use provider::{SearchChange, SearchProvider, projection_external_id};
 use query::{compile, compile_aggregate};
@@ -19,15 +19,17 @@ pub(super) use types::{RuntimeAggregateRequest, RuntimeSearchRequest};
 use worker::{reconcile_workspace, sweep_generation_orphans};
 
 use super::{
-  permission::{AuthorizedSearchScope, DocReadScope, PermissionAuthorizer, SearchActor},
+  permission::{AuthorizedSearchScope, DocReadScope, PermissionAuthorizer, PermissionTelemetry, SearchActor},
   webpki_tls_config,
 };
 
 const SCHEMA_FINGERPRINT: i32 = 1;
 const WORKSPACE_RECONCILE_FAILED: &str = "search_workspace_reconcile_failed";
+const DOCUMENT_PROJECTION_FAILED: &str = "search_document_projection_failed";
+const EMBEDDED_GENERATION_LOST: &str = "search_embedded_generation_lost";
 
 #[cfg(test)]
-pub(crate) static SEARCH_TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+pub(crate) static SEARCH_TEST_LOCK: &tokio::sync::Mutex<()> = &crate::runtime::migrations::DATABASE_TEST_LOCK;
 
 fn exact_token(value: &str) -> String {
   use sha2::{Digest, Sha256};

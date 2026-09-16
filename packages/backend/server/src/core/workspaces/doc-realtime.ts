@@ -79,10 +79,8 @@ export class DocShareRealtimeProvider implements OnModuleInit {
     docId: string
   ): Promise<DocShareStateSnapshot | null> {
     await this.assertRead(userId, workspaceId, docId);
-    const doc = await this.models.doc.getDocInfo(workspaceId, docId);
-    if (!doc) {
-      return null;
-    }
+    const doc = await this.models.doc.getMeta(workspaceId, docId);
+    if (!doc) return null;
     return {
       public: doc.public,
       mode: PublicDocMode[doc.mode],

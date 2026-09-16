@@ -16,7 +16,7 @@ resolver = "3"
   [workspace.dependencies]
   aes-gcm = "0.10"
   affine_common = { path = "./packages/common/native" }
-  affine_doc_loader = "0.1.7"
+  affine_doc_loader = "0.1.8"
   affine_importer = "0.1.2"
   affine_nbstore = { path = "./packages/frontend/native/nbstore" }
   affine_preview = { version = "0.1.0", default-features = false }
@@ -37,6 +37,7 @@ resolver = "3"
   doc_extractor = "0.1.1"
   dotenvy = "0.15"
   file-format = { version = "0.28", features = ["reader"] }
+  futures-util = "0.3"
   hex = "0.4"
   hkdf = "0.13"
   homedir = "0.3"
@@ -78,6 +79,7 @@ resolver = "3"
   pulldown-cmark = "0.13"
   rand = "0.9"
   rayon = "1.10"
+  redis = { version = "1.6", features = ["tokio-comp", "tokio-rustls-comp"] }
   rubato = "0.16"
   safefetch = "0.1.0"
   schemars = "1.2"

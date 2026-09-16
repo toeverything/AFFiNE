@@ -1,8 +1,9 @@
 import type { ExecutionContext } from '@nestjs/common';
 import { createParamDecorator } from '@nestjs/common';
+import type { UserSession } from '@prisma/client';
 
 import { getRequestResponseFromContext } from '../../base';
-import type { User, UserSession } from '../../models';
+import type { User } from '../../models';
 
 /**
  * Used to fetch current user from the request context.

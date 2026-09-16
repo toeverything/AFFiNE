@@ -54,6 +54,10 @@ impl ServerRole {
     matches!(self, Self::AllInOne)
   }
 
+  pub(super) fn owns_read_cache(self) -> bool {
+    matches!(self, Self::Frontend | Self::Api | Self::AllInOne)
+  }
+
   pub(super) fn as_str(self) -> &'static str {
     match self {
       Self::Frontend => "frontend",

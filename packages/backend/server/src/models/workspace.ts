@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { Prisma, type Workspace as WorkspaceRecord } from '@prisma/client';
 
 import { EventBus } from '../base';
+import { BackendRuntimeProvider } from '../core/backend-runtime/provider';
 import { BaseModel } from './base';
 
 type RawWorkspaceSummary = {
@@ -81,6 +82,8 @@ export type UpdateWorkspaceInput = Pick<
 
 @Injectable()
 export class WorkspaceModel extends BaseModel {
+  @Inject(BackendRuntimeProvider)
+  private readonly backendRuntime!: BackendRuntimeProvider;
   constructor(private readonly event: EventBus) {
     super();
   }
@@ -227,23 +230,9 @@ export class WorkspaceModel extends BaseModel {
   }
 
   async isTeamWorkspace(workspaceId: string) {
-    const now = new Date();
-    const count = await this.db.entitlement.count({
-      where: {
-        targetType: 'workspace',
-        targetId: workspaceId,
-        plan: { in: ['team', 'selfhost_team'] },
-        OR: [
-          {
-            status: 'active',
-            OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-          },
-          { status: 'grace', graceUntil: { gt: now } },
-        ],
-      },
-    });
-
-    return count > 0;
+    const state =
+      await this.backendRuntime.getWorkspaceQuotaStateV1(workspaceId);
+    return !state.usesOwnerQuota;
   }
 
   private withAccessPolicy(

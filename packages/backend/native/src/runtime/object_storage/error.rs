@@ -41,6 +41,7 @@ pub(crate) enum ObjectStorageError {
 }
 
 impl ObjectStorageError {
+  #[cfg(test)]
   pub(crate) fn is_not_found(&self) -> bool {
     match self {
       Self::Operation { source, .. } => source.is_not_found(),

@@ -1,4 +1,5 @@
 import Foundation
+import ImageIO
 import UIKit
 
 struct ShareLinkPreview: Decodable, Equatable {
@@ -39,23 +40,60 @@ struct ShareLinkPreview: Decodable, Equatable {
   var publishedAt: String?
   var durationSeconds: Double?
   var transcript: Transcript?
+
+  private enum CodingKeys: String, CodingKey {
+    case url, title, siteName, description, images, favicons, mediaType, provider
+    case author, publishedAt, durationSeconds, transcript
+  }
+
+  init(from decoder: Decoder) throws {
+    let values = try decoder.container(keyedBy: CodingKeys.self)
+    let rawURL = try values.decode(String.self, forKey: .url)
+    guard let normalized = ShareInboxSafety.normalizedWebURL(rawURL) else {
+      throw DecodingError.dataCorruptedError(forKey: .url, in: values, debugDescription: "Invalid preview URL")
+    }
+    url = normalized
+    func text(_ key: CodingKeys, limit: Int) -> String? {
+      guard let value = try? values.decode(String.self, forKey: key),
+            let text = SharePayloadBuilder.nonEmpty(value) else { return nil }
+      return String(text.prefix(limit))
+    }
+    title = text(.title, limit: 120)
+    siteName = text(.siteName, limit: 80)
+    description = text(.description, limit: 500)
+    mediaType = text(.mediaType, limit: 80)
+    provider = text(.provider, limit: 80)
+    publishedAt = text(.publishedAt, limit: 80)
+    images = (try? values.decode([String].self, forKey: .images))?
+      .compactMap(ShareInboxSafety.normalizedWebURL).prefix(1).map { $0 }
+    favicons = (try? values.decode([String].self, forKey: .favicons))?
+      .compactMap(ShareInboxSafety.normalizedWebURL).prefix(1).map { $0 }
+    author = try? values.decode(Author.self, forKey: .author)
+    if let name = author?.name { author?.name = String(name.prefix(80)) }
+    durationSeconds = try? values.decode(Double.self, forKey: .durationSeconds)
+    if let duration = durationSeconds, !duration.isFinite || duration < 0 { durationSeconds = nil }
+    if let source = try? values.decode(Transcript.self, forKey: .transcript), let excerpt = source.previewText {
+      transcript = Transcript(language: source.language, segments: [Transcript.Segment(text: excerpt)], chapters: nil, truncated: nil)
+    }
+  }
 }
 
 extension ShareLinkPreview.Transcript {
   var previewText: String? {
-    let text = segments
-      .map { $0.text.split(whereSeparator: \.isWhitespace).joined(separator: " ") }
-      .filter { !$0.isEmpty }
-      .joined(separator: " ")
-    guard !text.isEmpty else { return nil }
-    guard text.count > 240 else { return text }
-    return String(text.prefix(240)) + "…"
+    var text = ""
+    for segment in segments {
+      let part = String(segment.text.prefix(241)).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+      if part.isEmpty { continue }
+      if !text.isEmpty { text += " " }
+      text += part
+      if text.count > 240 { return String(text.prefix(240)) + "…" }
+    }
+    return text.isEmpty ? nil : text
   }
 }
 
 enum ShareLinkPreviewState: Equatable {
   case idle
-  case deferred
   case loading
   case loaded(ShareLinkPreview)
   case failed
@@ -90,7 +128,7 @@ struct ShareLinkPreviewClient {
     request.httpBody = try JSONEncoder().encode(
       Request(url: normalized, include: ["transcript"])
     )
-    let (data, response) = try await session.data(for: request)
+    let (data, response) = try await read(request, maxBytes: 1024 * 1024)
     guard let response = response as? HTTPURLResponse, response.statusCode == 200 else {
       throw URLError(.badServerResponse)
     }
@@ -111,25 +149,65 @@ struct ShareLinkPreviewClient {
     else {
       throw URLError(.badURL)
     }
+    guard url.scheme == "https",
+          url.host == ShareInboxConstants.officialLinkPreviewURL.host,
+          url.port == ShareInboxConstants.officialLinkPreviewURL.port,
+          url.path == "/api/worker/image-proxy"
+    else { throw URLError(.badURL) }
     var request = URLRequest(
       url: url,
       cachePolicy: .reloadIgnoringLocalCacheData,
       timeoutInterval: 3
     )
     addClientHeaders(to: &request)
-    let (data, response) = try await session.data(for: request)
+    let (data, response) = try await read(request, maxBytes: 2 * 1024 * 1024)
     guard let response = response as? HTTPURLResponse, response.statusCode == 200 else {
       throw URLError(.badServerResponse)
     }
-    guard let image = UIImage(data: data) else {
+    guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+          let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 480,
+          ] as CFDictionary)
+    else {
       throw URLError(.cannotDecodeContentData)
     }
-    return image
+    return UIImage(cgImage: thumbnail)
   }
 
   func fetchImageIfPresent(url: String?) async -> UIImage? {
     guard let url else { return nil }
     return try? await fetchImage(url: url)
+  }
+
+  private final class NoRedirect: NSObject, URLSessionTaskDelegate {
+    func urlSession(_: URLSession, task _: URLSessionTask,
+                    willPerformHTTPRedirection _: HTTPURLResponse, newRequest _: URLRequest,
+                    completionHandler: @escaping (URLRequest?) -> Void)
+    {
+      completionHandler(nil)
+    }
+  }
+
+  private func read(_ request: URLRequest, maxBytes: Int) async throws -> (Data, URLResponse) {
+    let (bytes, response) = try await session.bytes(for: request, delegate: NoRedirect())
+    defer { bytes.task.cancel() }
+    guard response.expectedContentLength <= maxBytes else { throw URLError(.dataLengthExceedsMaximum) }
+    var data = Data()
+    var buffer = [UInt8]()
+    let chunkSize = 16 * 1024
+    buffer.reserveCapacity(chunkSize)
+    for try await byte in bytes {
+      guard data.count + buffer.count < maxBytes else { throw URLError(.dataLengthExceedsMaximum) }
+      buffer.append(byte)
+      if buffer.count == chunkSize {
+        data.append(contentsOf: buffer)
+        buffer.removeAll(keepingCapacity: true)
+      }
+    }
+    data.append(contentsOf: buffer)
+    return (data, response)
   }
 
   private func addClientHeaders(to request: inout URLRequest) {

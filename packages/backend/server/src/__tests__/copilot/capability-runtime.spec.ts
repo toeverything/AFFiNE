@@ -1,15 +1,22 @@
+import { Readable } from 'node:stream';
+
 import ava from 'ava';
+import Sinon from 'sinon';
 import { z } from 'zod';
 
 import { Config, CopilotQuotaExceeded } from '../../base';
 import type { BackendRuntimeProvider } from '../../core/backend-runtime';
+import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import type { Models } from '../../models';
 import type { ByokEntitlementPolicy } from '../../plugins/copilot/byok';
 import type { ConversationPolicy } from '../../plugins/copilot/conversation/policy';
 import { CapabilityRuntime } from '../../plugins/copilot/runtime/capability-runtime';
 import { CopilotRuntimeEventConsumer } from '../../plugins/copilot/runtime/copilot-runtime-event-consumer';
+import { AttachmentAdmissionHost } from '../../plugins/copilot/runtime/hosts/attachment-admission';
+import { AttachmentMaterializer } from '../../plugins/copilot/runtime/hosts/attachment-materializer';
 import { executeToolCall } from '../../plugins/copilot/runtime/tool/bridge';
 import type { ToolRuntime } from '../../plugins/copilot/runtime/tool-runtime';
+import { CopilotStorage } from '../../plugins/copilot/storage';
 
 const test = ava;
 
@@ -36,6 +43,14 @@ function runtimeFixture(streamError?: string, enabled = true) {
         return { events: [], result: { embeddings: [[1, 2]] } };
       if (input.slot === 'search.rerank')
         return { events: [], result: { scores: [0.9] } };
+      if (input.slot === 'prompt.structured')
+        return {
+          events: [],
+          result: {
+            output_json: { text: 'hello' },
+            output_text: '{"text":"hello"}',
+          },
+        };
       if (
         input.slot === 'image.generate' ||
         input.slot === 'action.image.filter.sketch'
@@ -85,26 +100,61 @@ function runtimeFixture(streamError?: string, enabled = true) {
     consume: async () => {},
   } as unknown as CopilotRuntimeEventConsumer;
   const config = { copilot: { enabled } } as Config;
+  const storageRuntime = Sinon.createStubInstance(StorageRuntimeProvider);
+  storageRuntime.getObject.callsFake(async () => ({
+    body: Readable.from(Buffer.from('image')),
+    metadata: {
+      contentType: 'image/png',
+      contentLength: 5,
+      lastModified: new Date(0),
+    },
+  }));
+  const storage = new CopilotStorage(storageRuntime);
+  const materializer = Sinon.createStubInstance(AttachmentMaterializer);
+  materializer.fetchRemoteAttachment.resolves({
+    data: 'aW1hZ2U=',
+    mimeType: 'image/png',
+  });
   return {
     calls,
+    storageRuntime,
+    storage,
+    materializer,
     runtime: new CapabilityRuntime(
       backend,
       entitlement,
       conversation,
       tools,
       consumer,
-      config
+      config,
+      new AttachmentAdmissionHost(materializer, storage)
     ),
   };
 }
 
 test('disabled copilot rejects native execution before route access', async t => {
-  const { runtime, calls } = runtimeFixture(undefined, false);
+  const { runtime, calls, materializer } = runtimeFixture(undefined, false);
 
   t.false(await runtime.embeddingConfigured('ignored'));
   await t.throwsAsync(runtime.embed('ignored', ['text']), {
     message: 'Copilot is disabled.',
   });
+  await t.throwsAsync(
+    async () =>
+      await collect(
+        runtime.streamText({}, [
+          {
+            role: 'user',
+            content: 'hello',
+            attachments: ['https://example.com/image.png'],
+          },
+        ])
+      ),
+    {
+      message: 'Copilot is disabled.',
+    }
+  );
+  t.false(materializer.fetchRemoteAttachment.called);
   t.deepEqual(calls, []);
 });
 
@@ -136,8 +186,9 @@ test('all operation kinds enter the native slot pipeline', async t => {
   );
 });
 
-test('image request builder receives only serializable request options', async t => {
-  const { runtime, calls } = runtimeFixture();
+test('image request builder receives serializable options and materialized attachments', async t => {
+  const { runtime, calls, storage, storageRuntime, materializer } =
+    runtimeFixture();
   const controller = new AbortController();
 
   await collect(
@@ -168,10 +219,68 @@ test('image request builder receives only serializable request options', async t
       },
     },
   });
+
+  const locator = storage.sessionAttachmentUrl(
+    'session-1',
+    'workspace-1',
+    'image'
+  );
+  for (const attachment of [
+    locator,
+    { attachment: locator, mimeType: 'image/png' },
+    { kind: 'url' as const, url: locator },
+    'https://example.com/input.png',
+  ]) {
+    await collect(
+      runtime.streamImageArtifacts(
+        {},
+        [{ role: 'user', content: 'edit', attachments: [attachment] }],
+        {
+          user: 'user-1',
+          workspace: 'workspace-1',
+          session: 'session-1',
+        }
+      )
+    );
+    t.like(calls.at(-1)?.request, {
+      operation: 'edit',
+      images: [
+        {
+          kind: 'bytes',
+          data: [...Buffer.from('image')],
+          mediaType: 'image/png',
+        },
+      ],
+    });
+  }
+  t.is(storageRuntime.getObject.callCount, 3);
+  t.true(
+    storageRuntime.getObject.alwaysCalledWithExactly(
+      'copilot',
+      'user-1/workspace-1/image'
+    )
+  );
+  t.true(materializer.fetchRemoteAttachment.calledOnce);
+  await t.throwsAsync(
+    async () =>
+      await collect(
+        runtime.streamImageArtifacts(
+          {},
+          [{ role: 'user', content: 'edit', attachments: [locator] }],
+          {
+            user: 'user-1',
+            workspace: 'workspace-2',
+            session: 'session-1',
+          }
+        )
+      ),
+    { message: 'Copilot attachment scope mismatch' }
+  );
+  t.is(calls.length, 5);
 });
 
-test('text streaming consumes native generic events', async t => {
-  const { runtime, calls } = runtimeFixture();
+test('chat and structured requests materialize attachments and consume native results', async t => {
+  const { runtime, calls, storage } = runtimeFixture();
   const chunks = await collect(
     runtime.streamText({ profileId: 'profile-1', modelId: 'vendor/model:B' }, [
       { role: 'user', content: 'hello' },
@@ -183,6 +292,48 @@ test('text streaming consumes native generic events', async t => {
     profileId: 'profile-1',
     modelId: 'vendor/model:B',
   });
+  const messages = [
+    {
+      role: 'user' as const,
+      content: 'hello',
+      attachments: [
+        storage.sessionAttachmentUrl('session-1', 'workspace-1', 'image'),
+      ],
+    },
+  ];
+  const options = {
+    user: 'user-1',
+    workspace: 'workspace-1',
+    session: 'session-1',
+  };
+  await collect(runtime.streamText({}, messages, options));
+  await collect(runtime.streamObject({}, messages, options));
+  await runtime.generateStructured({}, messages, options, undefined, {
+    responseSchemaJson: {
+      type: 'object',
+      properties: { text: { type: 'string' } },
+      required: ['text'],
+    },
+    schemaHash: 'test',
+  });
+  for (const call of calls.slice(1)) {
+    t.like(call.request, {
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'hello' },
+            {
+              type: 'image',
+              source: { media_type: 'image/png', data: 'aW1hZ2U=' },
+            },
+          ],
+        },
+      ],
+    });
+    t.false(JSON.stringify(call.request).includes('/api/copilot/'));
+  }
+  t.true(messages[0].attachments[0].startsWith('/api/copilot/'));
   await t.throwsAsync(runtime.assertRoute('chat.default', {}, {}), {
     instanceOf: CopilotQuotaExceeded,
   });

@@ -403,3 +403,74 @@ test('should preview link', async t => {
     }
   }
 });
+
+test('should not forward Accept-Encoding when fetching a link-preview target', async t => {
+  const capturedHeaders: Record<string, string>[] = [];
+  const fetchSpy = stubSafeFetch(request => {
+    capturedHeaders.push(
+      (request as { headers?: Record<string, string> }).headers ?? {}
+    );
+    return {
+      body: '<html><head><meta property="og:title" content="Test" /></head></html>',
+      finalUrl: request.url,
+      headers: { 'content-type': 'text/html;charset=UTF-8' },
+    };
+  });
+
+  try {
+    const pageUrl = `http://external.com/accept-encoding-${Date.now()}`;
+    await t.context.app
+      .POST('/api/worker/link-preview')
+      .set('Origin', 'http://localhost:3010')
+      .set('Accept-Encoding', 'gzip, deflate, br')
+      .send({ url: pageUrl })
+      .expect(200);
+
+    t.true(capturedHeaders.length > 0, 'expected at least one fetch');
+    for (const headers of capturedHeaders) {
+      t.false(
+        Object.keys(headers).some(k => k.toLowerCase() === 'accept-encoding'),
+        'Accept-Encoding should not be forwarded to the fetch target'
+      );
+    }
+  } finally {
+    fetchSpy.restore();
+  }
+});
+
+test('should not forward Accept-Encoding when proxying an image', async t => {
+  const capturedHeaders: Record<string, string>[] = [];
+  const fakeBuffer = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jfJ8AAAAASUVORK5CYII=',
+    'base64'
+  );
+  const fetchSpy = stubSafeFetch(request => {
+    capturedHeaders.push(
+      (request as { headers?: Record<string, string> }).headers ?? {}
+    );
+    return {
+      body: fakeBuffer,
+      headers: { 'content-type': 'image/png' },
+    };
+  });
+
+  try {
+    const imageUrl = `http://example.com/accept-encoding-${Date.now()}.png`;
+    await t.context.app
+      .GET(`/api/worker/image-proxy?url=${imageUrl}`)
+      .set('Origin', 'http://localhost:3010')
+      .set('Accept-Encoding', 'gzip, deflate, br')
+      .send()
+      .expect(200);
+
+    t.true(capturedHeaders.length > 0, 'expected at least one fetch');
+    for (const headers of capturedHeaders) {
+      t.false(
+        Object.keys(headers).some(k => k.toLowerCase() === 'accept-encoding'),
+        'Accept-Encoding should not be forwarded to the fetch target'
+      );
+    }
+  } finally {
+    fetchSpy.restore();
+  }
+});

@@ -227,6 +227,7 @@ providerTest(
       taskId: task.id,
       payload,
       generation: 'provider-test-generation',
+      scopeMode: 'canonical',
     });
     const ready = await models.copilotTranscriptTask.get(task.id);
     t.is(ready?.status, 'ready');

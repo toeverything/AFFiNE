@@ -192,12 +192,13 @@ export const DocsExplorer = ({
       confirmButtonOptions: {
         variant: 'error',
       },
-      onConfirm: () => {
+      onConfirm: async () => {
         const selectedDocIds = contextValue.selectedDocIds$.value;
-        for (const docId of selectedDocIds) {
-          const doc = docsService.list.doc$(docId).value;
-          doc?.moveToTrash();
-        }
+        await Promise.all(
+          selectedDocIds.map(async docId => {
+            await docsService.list.doc$(docId).value?.moveToTrash();
+          })
+        );
         handleCloseFloatingToolbar();
       },
     });

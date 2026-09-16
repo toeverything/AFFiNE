@@ -80,9 +80,7 @@ struct ShareExtensionView: View {
       case let .loaded(preview):
         previewContent(preview)
       case .failed:
-        fallbackLink(showFailure: true)
-      case .deferred:
-        fallbackLink(showFailure: false)
+        fallbackLink
       case .idle:
         EmptyView()
       }
@@ -184,7 +182,7 @@ struct ShareExtensionView: View {
     .accessibilityLabel("Transcript preview: \(text)")
   }
 
-  private func fallbackLink(showFailure: Bool) -> some View {
+  private var fallbackLink: some View {
     HStack(alignment: .top, spacing: 12) {
       Image(systemName: "link")
         .font(.title2)
@@ -195,11 +193,9 @@ struct ShareExtensionView: View {
         Text(previewHost)
           .font(.system(size: 13))
           .foregroundStyle(.secondary)
-        if showFailure {
-          Text("Preview unavailable")
-            .font(.system(size: 13))
-            .foregroundStyle(.secondary)
-        }
+        Text("Preview unavailable")
+          .font(.system(size: 13))
+          .foregroundStyle(.secondary)
       }
     }
     .padding(14)

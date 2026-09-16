@@ -193,6 +193,15 @@ class StoreConsumer {
         this.docStorage.getDocTimestamp(docId),
       'docStorage.deleteDoc': (docId: string) =>
         this.docStorage.deleteDoc(docId),
+      'docStorage.applyDocLifecycle': async ({ docId, lifecycle }) => {
+        const remote = Object.values(this.storages.remotes)
+          .map(storage => storage.get('doc'))
+          .find(storage => storage.applyDocLifecycle);
+        if (!remote?.applyDocLifecycle) {
+          throw new Error('Document lifecycle is unavailable');
+        }
+        return await remote.applyDocLifecycle(docId, lifecycle);
+      },
       'docStorage.subscribeDocUpdate': () =>
         new Observable(subscriber => {
           return this.docStorage.subscribeDocUpdate((update, origin) => {
@@ -259,6 +268,9 @@ class StoreConsumer {
       'blobSync.state': () => this.blobSync.state$,
       'blobSync.blobState': blobId => this.blobSync.blobState$(blobId),
       'blobSync.downloadBlob': key => this.blobSync.downloadBlob(key),
+      'blobSync.registerSource': source => this.blobSync.registerSource(source),
+      'blobSync.unregisterSource': source =>
+        this.blobSync.unregisterSource(source),
       'blobSync.uploadBlob': ({ blob, force }) =>
         this.blobSync.uploadBlob(blob, force),
       'blobSync.fullDownload': peerId =>
