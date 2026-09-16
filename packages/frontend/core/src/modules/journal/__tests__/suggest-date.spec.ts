@@ -5,7 +5,7 @@
 import { JOURNAL_DATE_FORMAT } from '@affine/core/modules/journal';
 import { I18n } from '@affine/i18n';
 import dayjs from 'dayjs';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('emoji-mart', () => {
   return {
@@ -167,6 +167,32 @@ describe('suggestJournalDate', () => {
     const date = dayjs().date();
     expect(suggestJournalDate(`dec 33`)).toEqual({
       dateString: dayjs(`${year}-12-${date}`).format(JOURNAL_DATE_FORMAT),
+    });
+  });
+});
+
+describe('suggestJournalDate - months shorter than 31 days', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test('a day past the end of the month falls back inside that month', () => {
+    // 2026-09-16
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 16, 12, 0, 0));
+
+    expect(suggestJournalDate('feb 30')).toEqual({
+      dateString: '2026-02-16',
+    });
+  });
+
+  test("today's day is clamped to the end of a shorter month", () => {
+    // 2026-01-31
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 0, 31, 12, 0, 0));
+
+    expect(suggestJournalDate('feb')).toEqual({
+      dateString: '2026-02-28',
     });
   });
 });
