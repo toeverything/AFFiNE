@@ -9,6 +9,7 @@ import { configStorageHandlers } from './config-storage';
 import { findInPageHandlers } from './find-in-page';
 import { importHandlers } from './import';
 import { getLogFilePath, logger, revealLogFile } from './logger';
+import { markdownFileHandlers } from './markdown-file';
 import { recordingHandlers } from './recording';
 import { checkSource } from './security-restrictions';
 import { sharedStorageHandlers } from './shared-storage';
@@ -48,6 +49,7 @@ export const allHandlers = {
   i18n: i18nHandlers,
   byokStorage: byokStorageHandlers,
   auth: authHandlers,
+  markdownFile: markdownFileHandlers,
 };
 
 export const registerHandlers = () => {

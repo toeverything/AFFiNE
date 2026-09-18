@@ -1,5 +1,5 @@
 import cp from 'node:child_process';
-import { readdir, rm, symlink } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,6 +18,7 @@ import {
   icoPath,
   platform,
   productName,
+  REPO_ROOT,
 } from './scripts/make-env.js';
 
 const fromBuildIdentifier = utils.fromBuildIdentifier;
@@ -160,6 +161,40 @@ const trimElectronPakLocales = async (resourcesAppDir, targetPlatform) => {
         if (pakKeep.has(locale)) return;
         await rm(path.join(localesDir, entry.name), { force: true });
       })
+  );
+};
+
+const copyAffineNativePackage = async (
+  buildPath,
+  targetPlatform = platform
+) => {
+  if (targetPlatform !== 'darwin') return;
+
+  const nativeDir = path.join(REPO_ROOT, 'packages', 'frontend', 'native');
+  const nodeModulesDir = path.join(buildPath, 'node_modules');
+  const targetDir = path.join(nodeModulesDir, '@affine', 'native');
+
+  await rm(nodeModulesDir, { recursive: true, force: true });
+  await mkdir(targetDir, { recursive: true });
+
+  const entries = await readdir(nativeDir, { withFileTypes: true });
+  await Promise.all(
+    entries
+      .filter(entry => {
+        return (
+          entry.isFile() &&
+          (entry.name === 'package.json' ||
+            entry.name === 'index.js' ||
+            entry.name === 'index.d.ts' ||
+            entry.name.endsWith('.node'))
+        );
+      })
+      .map(entry =>
+        copyFile(
+          path.join(nativeDir, entry.name),
+          path.join(targetDir, entry.name)
+        )
+      )
   );
 };
 
@@ -374,10 +409,28 @@ export default {
           .catch(done);
       },
     ],
-    asar: true,
+    beforeAsar: [
+      (buildPath, _electronVersion, targetPlatform, _arch, done) => {
+        copyAffineNativePackage(buildPath, targetPlatform)
+          .then(() => done())
+          .catch(done);
+      },
+    ],
+    asar: {
+      unpack: '*.node',
+    },
     extendInfo: {
       NSAudioCaptureUsageDescription:
         'Please allow access in order to capture audio from other apps by AFFiNE.',
+      CFBundleDocumentTypes: [
+        {
+          CFBundleTypeName: 'Markdown Document',
+          CFBundleTypeRole: 'Editor',
+          LSHandlerRank: 'Alternate',
+          LSItemContentTypes: ['net.daringfireball.markdown'],
+          CFBundleTypeExtensions: ['md', 'markdown'],
+        },
+      ],
     },
   },
   makers,
@@ -407,7 +460,7 @@ export default {
         });
 
         await symlink(
-          path.join(__dirname, '..', '..', '..', 'node_modules'),
+          path.join(REPO_ROOT, 'node_modules'),
           path.join(__dirname, 'node_modules')
         );
       }

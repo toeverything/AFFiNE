@@ -7,6 +7,7 @@ import {
 import { applicationMenuEvents } from './application-menu';
 import { beforeAppQuit } from './cleanup';
 import { logger } from './logger';
+import { markdownFileEvents } from './markdown-file';
 import { powerEvents } from './power';
 import { recordingEvents } from './recording';
 import { checkSource } from './security-restrictions';
@@ -23,6 +24,7 @@ export const allEvents = {
   recording: recordingEvents,
   popup: popupEvents,
   power: powerEvents,
+  markdownFile: markdownFileEvents,
 };
 
 const subscriptions = new Map<number, Set<string>>();
@@ -60,6 +62,15 @@ function removeSubscription(sender: Electron.WebContents, channel: string) {
     subscriptions.delete(id);
   } else {
     subscriptions.set(id, set);
+  }
+}
+
+function wakeMarkdownSyncTarget(wc: Electron.WebContents) {
+  try {
+    wc.setBackgroundThrottling(false);
+    wc.invalidate();
+  } catch (err) {
+    logger.warn('failed to wake markdown sync target', err);
   }
 }
 
@@ -107,6 +118,9 @@ export function registerEvents() {
         );
         getTargetContents(chan).forEach(wc => {
           if (!wc.isDestroyed()) {
+            if (chan === 'markdownFile:onContentChanged') {
+              wakeMarkdownSyncTarget(wc);
+            }
             wc.send(AFFINE_EVENT_CHANNEL_NAME, chan, ...args);
           }
         });

@@ -36,7 +36,6 @@
     "@affine-tools/utils": "workspace:*",
     "@affine/auth": "workspace:*",
     "@affine/i18n": "workspace:*",
-    "@affine/native": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@electron-forge/cli": "^7.11.1",
     "@electron-forge/core": "^7.11.1",
@@ -76,7 +75,9 @@
     "zod": "^3.25.76"
   },
   "dependencies": {
+    "@affine/native": "workspace:*",
     "async-call-rpc": "^6.4.2",
+    "chokidar": "^4.0.3",
     "electron-updater": "^6.8.9",
     "link-preview-js": "^4.0.0",
     "set-cookie-parser": "^2.7.1",

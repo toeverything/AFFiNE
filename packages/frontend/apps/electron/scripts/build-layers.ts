@@ -9,9 +9,14 @@ async function assertNoRuntimeWorkspaceDependencies() {
   const packageJson = JSON.parse(
     await fs.readFile(path.resolve(electronDir, 'package.json'), 'utf8')
   ) as { dependencies?: Record<string, string> };
+  const allowedRuntimeWorkspaceDependencies = new Set(['@affine/native']);
   const workspaceDependencies = Object.entries(
     packageJson.dependencies ?? {}
-  ).filter(([, version]) => version.startsWith('workspace:'));
+  ).filter(
+    ([name, version]) =>
+      version.startsWith('workspace:') &&
+      !allowedRuntimeWorkspaceDependencies.has(name)
+  );
 
   if (workspaceDependencies.length) {
     throw new Error(
