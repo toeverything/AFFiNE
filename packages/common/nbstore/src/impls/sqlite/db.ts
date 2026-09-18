@@ -54,6 +54,8 @@ export interface NativeIndexSearchResult {
 export interface NativeDBApis {
   connect: (id: string) => Promise<void>;
   disconnect: (id: string) => Promise<void>;
+  // Only implemented on iOS/Android; permanently deletes the on-disk database.
+  deleteWorkspace?: (id: string) => Promise<void>;
   pushUpdate: (id: string, docId: string, update: Uint8Array) => Promise<Date>;
   getDocSnapshot: (id: string, docId: string) => Promise<DocRecord | null>;
   setDocSnapshot: (id: string, snapshot: DocRecord) => Promise<boolean>;
@@ -186,6 +188,10 @@ export function bindNativeDBApis(a: NativeDBApis) {
   apis = a;
 }
 
+export async function deleteNativeWorkspace(universalId: string): Promise<void> {
+  await apis?.deleteWorkspace?.(universalId);
+}
+
 export class NativeDBConnection extends AutoReconnectConnection<void> {
   readonly apis: NativeDBApisWrapper;
 
@@ -218,6 +224,9 @@ export class NativeDBConnection extends AutoReconnectConnection<void> {
       {
         get: (_target, key: keyof NativeDBApisWrapper) => {
           const v = originalApis[key];
+          if (!v) {
+            throw new Error(`Native DB API "${key}" is not implemented.`);
+          }
 
           return async (...args: any[]) => {
             return v.call(
