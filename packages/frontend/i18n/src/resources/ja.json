@@ -695,7 +695,7 @@
   "com.affine.other-page.nav.official-website": "公式サイト",
   "com.affine.other-page.nav.open-affine": "AFFiNEを開く",
   "com.affine.page-operation.add-linked-page": "リンクされたドキュメントを追加",
-  "com.affine.page-properties.more-property.more": "{{ count }} その他の物件",
+  "com.affine.page-properties.more-property.more": "{{ count }} その他のプロパティ",
   "com.affine.page-properties.more-property.one": "{{ count }} その他のプロパティ",
   "com.affine.page-properties.hide-property.one": "{{ count }} プロパティを非表示",
   "com.affine.page-properties.hide-property.more": "{{ count }} プロパティを非表示",
