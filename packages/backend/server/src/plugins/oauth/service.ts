@@ -16,6 +16,7 @@ import type {
   SessionIssueInput,
 } from '../../core/auth/session-issuer';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
+import { ServerFeature, ServerService } from '../../core/config';
 import { OAuthProviderName } from './config';
 
 type NativeOAuthCallback =
@@ -39,7 +40,8 @@ export class OAuthService {
 
   constructor(
     private readonly runtime: BackendRuntimeProvider,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly server: ServerService
   ) {
     this.activeProviders = this.configuredProviders().filter(
       provider => provider !== OAuthProviderName.OIDC
@@ -63,6 +65,11 @@ export class OAuthService {
       this.activeProviders = this.configuredProviders().filter(
         provider => provider !== OAuthProviderName.OIDC
       );
+    }
+    if (this.activeProviders.length) {
+      this.server.enableFeature(ServerFeature.OAuth);
+    } else {
+      this.server.disableFeature(ServerFeature.OAuth);
     }
   }
 

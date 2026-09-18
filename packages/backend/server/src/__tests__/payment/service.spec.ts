@@ -9,6 +9,7 @@ import {
   SubscriptionNotExists,
 } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
+import { ServerFeature, ServerService } from '../../core/config';
 import { subscriptionFromEntitlement } from '../../plugins/payment/model';
 import {
   SubscriptionService,
@@ -24,10 +25,17 @@ ava(
   async t => {
     const runtime = Sinon.createStubInstance(BackendRuntimeProvider);
     const command = runtime.executePaymentCommandV1 as Sinon.SinonStub;
+    const server = Sinon.createStubInstance(ServerService);
     const config = {
-      payment: { showLifetimePrice: false },
+      payment: { enabled: false, showLifetimePrice: false },
     } as Config;
-    const service = new SubscriptionService(runtime, config);
+    const service = new SubscriptionService(runtime, config, server);
+
+    service.onConfigInit();
+    t.true(server.disableFeature.calledWith(ServerFeature.Payment));
+    config.payment.enabled = true;
+    service.onConfigChanged({ updates: { payment: { enabled: true } } });
+    t.true(server.enableFeature.calledWith(ServerFeature.Payment));
 
     command.resolves([
       {
