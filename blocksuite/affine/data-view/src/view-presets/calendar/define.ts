@@ -28,6 +28,7 @@ export const calendarViewModel = calendarViewType.createModel<CalendarViewData>(
           },
         },
         ui: {},
+        weekStartsOn: 0,
       };
     },
   }
