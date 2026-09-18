@@ -8,7 +8,7 @@ export const root = style({
   flexDirection: 'column',
   flex: 1,
   minHeight: '100%',
-  overflow: 'auto',
+  overflow: 'hidden',
   padding: '32px max(48px, calc((100% - 880px) / 2)) 72px',
   color: cssVar('textPrimaryColor'),
   background: cssVar('backgroundPrimaryColor'),
@@ -20,6 +20,7 @@ export const header = style({
   gap: 6,
   marginBottom: 24,
   paddingBottom: 16,
+  flexShrink: 0,
   borderBottom: `1px solid ${cssVar('borderColor')}`,
 });
 
@@ -81,17 +82,11 @@ export const meta = style({
 export const viewport = style({
   position: 'relative',
   flex: 1,
-  minHeight: 360,
+  minHeight: 0,
 });
 
-export const spacer = style({
-  width: '100%',
-});
-
-export const window = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
+export const virtualList = style({
+  height: '100%',
 });
 
 export const line = style({

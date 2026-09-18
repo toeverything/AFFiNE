@@ -117,6 +117,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const peekView = useService(PeekViewService).peekView;
   const desktopApi = useService(DesktopApiService);
   const markdownFileSyncService = useService(MarkdownFileSyncService);
+  const markdownWriteBackGeneration = useRef(0);
 
   const isActiveView = useIsActiveView();
   // TODO(@eyhn): remove jotai here
@@ -368,6 +369,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       if (disposed) {
         return;
       }
+      const generation = ++markdownWriteBackGeneration.current;
       const std =
         (editorContainer as any).origin?.std ??
         (editorContainer as any).std ??
@@ -379,6 +381,9 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
       try {
         const markdown = await exportDocToMarkdown(doc.blockSuiteDoc, std);
+        if (disposed || generation !== markdownWriteBackGeneration.current) {
+          return;
+        }
         await markdownFileSyncService.writeMarkdownBindingContent(
           markdownFileBinding,
           markdown

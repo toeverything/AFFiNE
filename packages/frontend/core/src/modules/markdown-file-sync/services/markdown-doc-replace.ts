@@ -63,7 +63,7 @@ export function shouldUsePlainTextMarkdownImport(markdown: string) {
   );
 }
 
-function prepareDocForMarkdownReplace(options: {
+function getDocPageForMarkdownReplace(options: {
   workspace: WorkspaceService['workspace'];
   docId: string;
 }) {
@@ -81,22 +81,37 @@ function prepareDocForMarkdownReplace(options: {
     doc.addBlock('affine:surface' as never, {}, pageBlock.id);
   }
 
-  const children = pageBlock.model.children.filter(
+  return { doc, pageBlock };
+}
+
+type MarkdownReplaceDocPage = ReturnType<typeof getDocPageForMarkdownReplace>;
+
+function deletePreviousMarkdownContent(options: {
+  doc: MarkdownReplaceDocPage['doc'];
+  pageBlock: MarkdownReplaceDocPage['pageBlock'];
+  nextNoteBlockId: string;
+}) {
+  const children = options.pageBlock.model.children.filter(
     child => child.flavour !== 'affine:surface'
   );
   for (let index = children.length - 1; index >= 0; index--) {
-    doc.deleteBlock(children[index]);
+    if (children[index].id === options.nextNoteBlockId) {
+      continue;
+    }
+    options.doc.deleteBlock(children[index]);
   }
+}
 
-  const noteBlockId = doc.addBlock(
+function createMarkdownNote(
+  options: ReturnType<typeof getDocPageForMarkdownReplace>
+) {
+  return options.doc.addBlock(
     'affine:note',
     {
       displayMode: NoteDisplayMode.DocAndEdgeless,
     },
-    pageBlock.id
+    options.pageBlock.id
   );
-
-  return { doc, noteBlockId };
 }
 
 export async function replaceDocWithMarkdown(options: {
@@ -104,13 +119,20 @@ export async function replaceDocWithMarkdown(options: {
   docId: string;
   markdown: string;
 }) {
-  const { doc, noteBlockId } = prepareDocForMarkdownReplace(options);
-  await MarkdownTransformer.importMarkdownToBlock({
-    doc,
-    blockId: noteBlockId,
-    markdown: options.markdown,
-    extensions: getStoreManager().config.init().value.get('store'),
-  });
+  const docPage = getDocPageForMarkdownReplace(options);
+  const noteBlockId = createMarkdownNote(docPage);
+  try {
+    await MarkdownTransformer.importMarkdownToBlock({
+      doc: docPage.doc,
+      blockId: noteBlockId,
+      markdown: options.markdown,
+      extensions: getStoreManager().config.init().value.get('store'),
+    });
+  } catch (error) {
+    docPage.doc.deleteBlock(noteBlockId);
+    throw error;
+  }
+  deletePreviousMarkdownContent({ ...docPage, nextNoteBlockId: noteBlockId });
 }
 
 export async function replaceDocWithPlainTextMarkdown(options: {
@@ -120,7 +142,8 @@ export async function replaceDocWithPlainTextMarkdown(options: {
   sourceFilePath?: string;
   chunkSize?: number;
 }) {
-  const { doc, noteBlockId } = prepareDocForMarkdownReplace(options);
+  const docPage = getDocPageForMarkdownReplace(options);
+  const noteBlockId = createMarkdownNote(docPage);
   const chunkSize = options.chunkSize ?? plainTextMarkdownPreviewChunkSize;
   const complexity = getMarkdownImportComplexity(options.markdown);
   const preview = options.markdown.slice(0, plainTextMarkdownPreviewCharacters);
@@ -145,7 +168,7 @@ export async function replaceDocWithPlainTextMarkdown(options: {
     'Open the source Markdown file in an external editor for the full raw content.',
   ].filter((line): line is string => line !== null);
 
-  doc.addBlock(
+  docPage.doc.addBlock(
     'affine:paragraph',
     {
       text: new Text(summaryLines.join('\n')),
@@ -155,7 +178,7 @@ export async function replaceDocWithPlainTextMarkdown(options: {
 
   for (let offset = 0; offset < preview.length; offset += chunkSize) {
     const chunk = preview.slice(offset, offset + chunkSize);
-    doc.addBlock(
+    docPage.doc.addBlock(
       'affine:paragraph',
       {
         text: new Text(chunk),
@@ -163,4 +186,5 @@ export async function replaceDocWithPlainTextMarkdown(options: {
       noteBlockId
     );
   }
+  deletePreviousMarkdownContent({ ...docPage, nextNoteBlockId: noteBlockId });
 }

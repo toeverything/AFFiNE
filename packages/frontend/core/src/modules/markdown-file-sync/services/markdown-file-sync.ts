@@ -462,7 +462,8 @@ export class MarkdownFileSyncService extends Service {
 
   async writeMarkdownBindingContent(
     binding: MarkdownFileBinding,
-    markdown: string
+    markdown: string,
+    expectedMtimeMs?: number
   ) {
     const nextHash = await getMarkdownBindingHash(markdown);
     const currentHash =
@@ -473,7 +474,8 @@ export class MarkdownFileSyncService extends Service {
 
     const writeResult = await this.desktopApi.handler.markdownFile.write(
       binding.filePath,
-      markdown
+      markdown,
+      expectedMtimeMs
     );
     this.contentHashes.set(binding.filePath, nextHash);
     await this.desktopApi.handler.markdownFile.updateBinding({
@@ -519,18 +521,9 @@ export class MarkdownFileSyncService extends Service {
       title: 'Markdown file sync paused',
       message: payload.filePath,
     });
-    this.desktopApi.handler.markdownFile
-      .unwatch(payload.filePath)
-      .catch(error => {
-        console.error('Failed to unwatch unavailable Markdown file', error);
-      });
-    this.desktopApi.handler.markdownFile
-      .forgetBinding(payload.filePath)
-      .catch(error => {
-        console.error(
-          'Failed to forget unavailable Markdown file binding',
-          error
-        );
-      });
+    logMarkdownFileSync('kept paused markdown binding for recovery', {
+      filePath: payload.filePath,
+      reason: payload.reason,
+    });
   }
 }

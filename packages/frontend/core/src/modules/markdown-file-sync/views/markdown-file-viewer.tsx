@@ -3,6 +3,7 @@ import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { KeyboardEvent } from 'react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ListRange, Virtuoso } from 'react-virtuoso';
 
 import {
   type MarkdownFileBinding,
@@ -10,9 +11,9 @@ import {
 } from '../services/markdown-file-sync';
 import * as styles from './markdown-file-viewer.css';
 
-const averageLineHeight = 26;
 const windowLineCount = 240;
 const overscanLineCount = 80;
+const emptyLines: string[] = [];
 
 type MarkdownFileLineInfo = {
   filePath: string;
@@ -93,25 +94,17 @@ function MarkdownLine({ line, inCode }: { line: string; inCode: boolean }) {
   return <div className={styles.paragraph}>{line}</div>;
 }
 
-function MarkdownLineWindow({ lines }: { lines: string[] }) {
-  const rendered = useMemo(() => {
+function useCodeLineState(lines: string[]) {
+  return useMemo(() => {
     let inCode = false;
-    return lines.map((line, index) => {
+    return lines.map(line => {
       const wasInCode = inCode;
       if (line.trimStart().startsWith('```')) {
         inCode = !inCode;
       }
-      return (
-        <MarkdownLine
-          key={`${index}:${line.slice(0, 16)}`}
-          line={line}
-          inCode={wasInCode}
-        />
-      );
+      return wasInCode;
     });
   }, [lines]);
-
-  return <div className={styles.window}>{rendered}</div>;
 }
 
 export const MarkdownFileViewer = memo(function MarkdownFileViewer({
@@ -121,56 +114,52 @@ export const MarkdownFileViewer = memo(function MarkdownFileViewer({
 }) {
   const desktopApi = useService(DesktopApiService);
   const markdownFileSyncService = useService(MarkdownFileSyncService);
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  const lineRequestGeneration = useRef(0);
   const [lineInfo, setLineInfo] = useState<MarkdownFileLineInfo | null>(null);
   const [lineWindow, setLineWindow] =
     useState<MarkdownFileLineReadResult | null>(null);
-  const [scrollTop, setScrollTop] = useState(0);
+  const [windowStartLine, setWindowStartLine] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editorContent, setEditorContent] = useState('');
   const [loadingEditor, setLoadingEditor] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [conflictContent, setConflictContent] = useState<string | null>(null);
-
-  const startLine = Math.max(
-    0,
-    Math.floor(scrollTop / averageLineHeight) - overscanLineCount
-  );
+  const [conflictContent, setConflictContent] = useState<{
+    content: string;
+    mtimeMs: number;
+  } | null>(null);
+  const [editorMtimeMs, setEditorMtimeMs] = useState<number | null>(null);
 
   const loadLineInfo = useCallback(async () => {
-    const info = await desktopApi.handler.markdownFile.getLineInfo(
-      binding.filePath
-    );
-    setLineInfo(info);
-    return info;
+    return desktopApi.handler.markdownFile.getLineInfo(binding.filePath);
   }, [binding.filePath, desktopApi]);
 
   const loadLineWindow = useCallback(
     async (nextStartLine: number) => {
-      const result = await desktopApi.handler.markdownFile.readLines(
+      return desktopApi.handler.markdownFile.readLines(
         binding.filePath,
         nextStartLine,
         windowLineCount
       );
-      setLineWindow(result);
-      return result;
     },
     [binding.filePath, desktopApi]
   );
 
   useEffect(() => {
     let cancelled = false;
+    const generation = ++lineRequestGeneration.current;
 
     setError(null);
-    Promise.all([loadLineInfo(), loadLineWindow(startLine)])
-      .then(() => {
-        if (!cancelled) {
+    Promise.all([loadLineInfo(), loadLineWindow(windowStartLine)])
+      .then(([nextLineInfo, nextLineWindow]) => {
+        if (!cancelled && generation === lineRequestGeneration.current) {
+          setLineInfo(nextLineInfo);
+          setLineWindow(nextLineWindow);
           setError(null);
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
+        if (!cancelled && generation === lineRequestGeneration.current) {
           setError(err instanceof Error ? err.message : String(err));
         }
       });
@@ -178,7 +167,7 @@ export const MarkdownFileViewer = memo(function MarkdownFileViewer({
     return () => {
       cancelled = true;
     };
-  }, [loadLineInfo, loadLineWindow, startLine]);
+  }, [loadLineInfo, loadLineWindow, windowStartLine]);
 
   useEffect(() => {
     return desktopApi.events.markdownFile.onContentChanged(payload => {
@@ -189,18 +178,27 @@ export const MarkdownFileViewer = memo(function MarkdownFileViewer({
         desktopApi.handler.markdownFile
           .read(binding.filePath)
           .then(result => {
-            setConflictContent(result.content);
+            setConflictContent({
+              content: result.content,
+              mtimeMs: result.mtimeMs,
+            });
           })
           .catch((err: unknown) => {
             setError(err instanceof Error ? err.message : String(err));
           });
         return;
       }
-      Promise.all([loadLineInfo(), loadLineWindow(startLine)]).catch(
-        (err: unknown) => {
+      const generation = ++lineRequestGeneration.current;
+      Promise.all([loadLineInfo(), loadLineWindow(windowStartLine)])
+        .then(([nextLineInfo, nextLineWindow]) => {
+          if (generation === lineRequestGeneration.current) {
+            setLineInfo(nextLineInfo);
+            setLineWindow(nextLineWindow);
+          }
+        })
+        .catch((err: unknown) => {
           setError(err instanceof Error ? err.message : String(err));
-        }
-      );
+        });
     });
   }, [
     binding.filePath,
@@ -208,18 +206,15 @@ export const MarkdownFileViewer = memo(function MarkdownFileViewer({
     editMode,
     loadLineInfo,
     loadLineWindow,
-    startLine,
+    windowStartLine,
   ]);
-
-  const handleScroll = useCallback(() => {
-    setScrollTop(rootRef.current?.scrollTop ?? 0);
-  }, []);
 
   const openEditor = useCallback(async () => {
     setLoadingEditor(true);
     setError(null);
     try {
       const info = await loadLineInfo();
+      setLineInfo(info);
       if (!info.writable) {
         setError('Source file is read-only');
         return;
@@ -228,6 +223,7 @@ export const MarkdownFileViewer = memo(function MarkdownFileViewer({
         binding.filePath
       );
       setEditorContent(result.content);
+      setEditorMtimeMs(result.mtimeMs);
       setConflictContent(null);
       setEditMode(true);
     } catch (err) {
@@ -240,11 +236,13 @@ export const MarkdownFileViewer = memo(function MarkdownFileViewer({
   const closeEditor = useCallback(() => {
     setEditMode(false);
     setEditorContent('');
+    setEditorMtimeMs(null);
     setConflictContent(null);
   }, []);
 
   const saveEditor = useCallback(async () => {
-    const info = lineInfo ?? (await loadLineInfo());
+    const info =
+      lineInfo && editorMtimeMs !== null ? lineInfo : await loadLineInfo();
     if (!info.writable) {
       setError('Source file is read-only');
       return;
@@ -254,14 +252,37 @@ export const MarkdownFileViewer = memo(function MarkdownFileViewer({
     try {
       await markdownFileSyncService.writeMarkdownBindingContent(
         binding,
-        editorContent
+        editorContent,
+        editorMtimeMs ?? info.mtimeMs
       );
-      await Promise.all([loadLineInfo(), loadLineWindow(startLine)]);
+      const [nextLineInfo, nextLineWindow] = await Promise.all([
+        loadLineInfo(),
+        loadLineWindow(windowStartLine),
+      ]);
+      setLineInfo(nextLineInfo);
+      setLineWindow(nextLineWindow);
       setEditMode(false);
       setEditorContent('');
+      setEditorMtimeMs(null);
       setConflictContent(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+      if (message.includes('changed on disk')) {
+        desktopApi.handler.markdownFile
+          .read(binding.filePath)
+          .then(result => {
+            setConflictContent({
+              content: result.content,
+              mtimeMs: result.mtimeMs,
+            });
+          })
+          .catch((readError: unknown) => {
+            setError(
+              readError instanceof Error ? readError.message : String(readError)
+            );
+          });
+      }
     } finally {
       setSaving(false);
     }
@@ -272,20 +293,26 @@ export const MarkdownFileViewer = memo(function MarkdownFileViewer({
     loadLineInfo,
     loadLineWindow,
     markdownFileSyncService,
-    startLine,
+    windowStartLine,
+    editorMtimeMs,
+    desktopApi,
   ]);
 
   const reloadConflict = useCallback(() => {
     if (conflictContent === null) {
       return;
     }
-    setEditorContent(conflictContent);
+    setEditorContent(conflictContent.content);
+    setEditorMtimeMs(conflictContent.mtimeMs);
     setConflictContent(null);
   }, [conflictContent]);
 
   const keepMine = useCallback(() => {
+    if (conflictContent !== null) {
+      setEditorMtimeMs(conflictContent.mtimeMs);
+    }
     setConflictContent(null);
-  }, []);
+  }, [conflictContent]);
 
   const mergeConflict = useCallback(() => {
     if (conflictContent === null) {
@@ -297,10 +324,11 @@ export const MarkdownFileViewer = memo(function MarkdownFileViewer({
       current => `${mineMarker}
 ${current}
 ${'='.repeat(7)}
-${conflictContent}
+${conflictContent.content}
 ${diskMarker}
 `
     );
+    setEditorMtimeMs(conflictContent.mtimeMs);
     setConflictContent(null);
   }, [conflictContent]);
 
@@ -316,19 +344,41 @@ ${diskMarker}
     [saveEditor, saving]
   );
 
+  const handleRangeChanged = useCallback(
+    (range: ListRange) => {
+      const nextStartLine = Math.max(0, range.startIndex - overscanLineCount);
+      if (
+        lineWindow &&
+        nextStartLine >= lineWindow.startLine &&
+        range.endIndex < lineWindow.startLine + lineWindow.lines.length
+      ) {
+        return;
+      }
+      setWindowStartLine(nextStartLine);
+    },
+    [lineWindow]
+  );
+
   const totalLines = lineInfo?.lineCount ?? lineWindow?.totalLines ?? 0;
-  const topSpacerHeight =
-    (lineWindow?.startLine ?? startLine) * averageLineHeight;
-  const loadedLines = lineWindow?.lines ?? [];
-  const renderedEndLine =
-    (lineWindow?.startLine ?? startLine) + loadedLines.length;
-  const bottomSpacerHeight = Math.max(
-    0,
-    (totalLines - renderedEndLine) * averageLineHeight
+  const loadedLines = lineWindow?.lines ?? emptyLines;
+  const loadedCodeLineState = useCodeLineState(loadedLines);
+  const loadedStartLine = lineWindow?.startLine ?? windowStartLine;
+  const getLoadedLine = useCallback(
+    (index: number) => {
+      const loadedIndex = index - loadedStartLine;
+      if (loadedIndex < 0 || loadedIndex >= loadedLines.length) {
+        return null;
+      }
+      return {
+        line: loadedLines[loadedIndex],
+        inCode: loadedCodeLineState[loadedIndex] ?? false,
+      };
+    },
+    [loadedCodeLineState, loadedLines, loadedStartLine]
   );
 
   return (
-    <div className={styles.root} onScroll={handleScroll} ref={rootRef}>
+    <div className={styles.root}>
       <header className={styles.header}>
         <div className={styles.headerTop}>
           <h1 className={styles.title}>{binding.title}</h1>
@@ -435,11 +485,22 @@ ${diskMarker}
 
       {!editMode && lineWindow ? (
         <div className={styles.viewport}>
-          <div className={styles.spacer} style={{ height: topSpacerHeight }} />
-          <MarkdownLineWindow lines={loadedLines} />
-          <div
-            className={styles.spacer}
-            style={{ height: bottomSpacerHeight }}
+          <Virtuoso
+            className={styles.virtualList}
+            itemContent={index => {
+              const loadedLine = getLoadedLine(index);
+              if (!loadedLine) {
+                return <div className={styles.blank} />;
+              }
+              return (
+                <MarkdownLine
+                  inCode={loadedLine.inCode}
+                  line={loadedLine.line}
+                />
+              );
+            }}
+            rangeChanged={handleRangeChanged}
+            totalCount={totalLines}
           />
         </div>
       ) : null}

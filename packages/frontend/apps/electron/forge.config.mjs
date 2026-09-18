@@ -166,7 +166,8 @@ const trimElectronPakLocales = async (resourcesAppDir, targetPlatform) => {
 
 const copyAffineNativePackage = async (
   buildPath,
-  targetPlatform = platform
+  targetPlatform = platform,
+  targetArch = arch
 ) => {
   if (targetPlatform !== 'darwin') return;
 
@@ -178,6 +179,10 @@ const copyAffineNativePackage = async (
   await mkdir(targetDir, { recursive: true });
 
   const entries = await readdir(nativeDir, { withFileTypes: true });
+  const nativeBinaryKeep = new Set([
+    'affine.darwin-universal.node',
+    `affine.darwin-${targetArch}.node`,
+  ]);
   await Promise.all(
     entries
       .filter(entry => {
@@ -186,7 +191,7 @@ const copyAffineNativePackage = async (
           (entry.name === 'package.json' ||
             entry.name === 'index.js' ||
             entry.name === 'index.d.ts' ||
-            entry.name.endsWith('.node'))
+            nativeBinaryKeep.has(entry.name))
         );
       })
       .map(entry =>
@@ -410,8 +415,8 @@ export default {
       },
     ],
     beforeAsar: [
-      (buildPath, _electronVersion, targetPlatform, _arch, done) => {
-        copyAffineNativePackage(buildPath, targetPlatform)
+      (buildPath, _electronVersion, targetPlatform, targetArch, done) => {
+        copyAffineNativePackage(buildPath, targetPlatform, targetArch)
           .then(() => done())
           .catch(done);
       },

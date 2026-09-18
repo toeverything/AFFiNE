@@ -370,7 +370,8 @@ async function readMarkdownFile(
 
 async function writeMarkdownFile(
   filePath: string,
-  content: string
+  content: string,
+  expectedMtimeMs?: number
 ): Promise<MarkdownFileWriteResult> {
   const normalized = validateMarkdownFilePath(filePath);
   if (!normalized) {
@@ -383,6 +384,12 @@ async function writeMarkdownFile(
   const stat = await fs.stat(normalized).catch(() => null);
   if (!stat?.isFile()) {
     throw new Error('Expected a Markdown file');
+  }
+  if (
+    typeof expectedMtimeMs === 'number' &&
+    Math.abs(stat.mtimeMs - expectedMtimeMs) > 1
+  ) {
+    throw new Error('Markdown file changed on disk before save');
   }
 
   await fs.writeFile(normalized, content, 'utf8');
@@ -600,11 +607,13 @@ export const markdownFileHandlers = {
   write: async (
     _: Electron.IpcMainInvokeEvent,
     filePath: string,
-    content: string
+    content: string,
+    expectedMtimeMs?: number
   ) => {
     return writeMarkdownFile(
       assertAuthorizedMarkdownFilePath(filePath),
-      content
+      content,
+      expectedMtimeMs
     );
   },
   watch: async (_: Electron.IpcMainInvokeEvent, filePath: string) => {
