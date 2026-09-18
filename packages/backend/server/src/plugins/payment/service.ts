@@ -18,6 +18,7 @@ import {
   SubscriptionHasNotBeenCanceled,
   SubscriptionNotExists,
   SubscriptionPlanNotFound,
+  URLHelper,
   UserNotFound,
 } from '../../base';
 import { CurrentUser } from '../../core/auth';
@@ -93,7 +94,8 @@ export class SubscriptionService {
   constructor(
     private readonly runtime: BackendRuntimeProvider,
     private readonly config: Config,
-    private readonly server: ServerService
+    private readonly server: ServerService,
+    private readonly url: URLHelper
   ) {}
 
   @OnEvent('config.init')
@@ -162,7 +164,7 @@ export class SubscriptionService {
       variant: params.variant,
       coupon: params.coupon,
       quantity: args.quantity ?? params.quantity ?? undefined,
-      successUrl: params.successCallbackLink,
+      successUrl: this.url.safeLink(params.successCallbackLink || '/'),
       intentId: params.idempotencyKey ?? randomUUID(),
     });
     return { id: result.sessionId, url: result.url };
