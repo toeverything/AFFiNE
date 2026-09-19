@@ -4,6 +4,7 @@ import {
   createDocExplorerContext,
   DocExplorerContext,
 } from '@affine/core/components/explorer/context';
+import type { DocListItemView } from '@affine/core/components/explorer/docs-view/doc-list-item';
 import { DocsExplorer } from '@affine/core/components/explorer/docs-view/docs-list';
 import type { ExplorerDisplayPreference } from '@affine/core/components/explorer/types';
 import {
@@ -13,7 +14,10 @@ import {
 import { CollectionRulesService } from '@affine/core/modules/collection-rules';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
-import { WorkspaceService } from '@affine/core/modules/workspace';
+import {
+  WorkspaceLocalState,
+  WorkspaceService,
+} from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { ViewLayersIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, useServices } from '@toeverything/infra';
@@ -34,32 +38,99 @@ import { CollectionDetailHeader } from './header';
 import * as styles from './index.css';
 import { CollectionListHeader } from './list-header';
 
+const DefaultDisplayPreference: {
+  [key in DocListItemView]: ExplorerDisplayPreference;
+} = {
+  grid: {
+    view: 'grid',
+    displayProperties: [
+      'system:createdAt',
+      'system:updatedAt',
+      'system:createdBy',
+      'system:tags',
+    ],
+    orderBy: {
+      type: 'system',
+      key: 'updatedAt',
+      desc: true,
+    },
+    groupBy: undefined,
+    showDocIcon: true,
+    showDocPreview: true,
+    quickFavorite: true,
+    showDragHandle: true,
+    showMoreOperation: true,
+  },
+  masonry: {
+    view: 'masonry',
+    displayProperties: [
+      'system:createdAt',
+      'system:updatedAt',
+      'system:createdBy',
+      'system:tags',
+    ],
+    orderBy: {
+      type: 'system',
+      key: 'updatedAt',
+      desc: true,
+    },
+    groupBy: undefined,
+    showDocIcon: true,
+    showDocPreview: true,
+    quickFavorite: true,
+    showDragHandle: true,
+    showMoreOperation: true,
+  },
+  list: {
+    view: 'list',
+    displayProperties: [
+      'system:createdAt',
+      'system:updatedAt',
+      'system:createdBy',
+      'system:tags',
+    ],
+    orderBy: {
+      type: 'system',
+      key: 'updatedAt',
+      desc: true,
+    },
+    groupBy: {
+      type: 'system',
+      key: 'updatedAt',
+    },
+    showDocIcon: true,
+    showDocPreview: true,
+    quickFavorite: true,
+    showDragHandle: true,
+    showMoreOperation: true,
+  },
+};
+
 export const CollectionDetail = ({
   collection,
 }: {
   collection: Collection;
 }) => {
-  const [explorerContextValue] = useState(createDocExplorerContext);
   const collectionRulesService = useService(CollectionRulesService);
 
   const permissionService = useService(WorkspacePermissionService);
   const isAdmin = useLiveData(permissionService.permission.isAdmin$);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
 
-  const displayPreference = useLiveData(
-    explorerContextValue.displayPreference$
+  const { viewMode, setViewMode, displayPreference, setDisplayPreference } =
+    useCollectionsOptions(collection.id);
+  const [explorerContextValue] = useState(
+    createDocExplorerContext(displayPreference)
   );
-  const groupBy = useLiveData(explorerContextValue.groupBy$);
-  const orderBy = useLiveData(explorerContextValue.orderBy$);
+
+  const groupBy = displayPreference.groupBy;
+  const orderBy = displayPreference.orderBy;
   const rules = useLiveData(collection.rules$);
   const allowList = useLiveData(collection.allowList$);
 
-  const handleDisplayPreferenceChange = useCallback(
-    (displayPreference: ExplorerDisplayPreference) => {
-      explorerContextValue.displayPreference$.next(displayPreference);
-    },
-    [explorerContextValue]
-  );
+  useEffect(() => {
+    explorerContextValue.displayPreference$.next(displayPreference);
+  }, [displayPreference, explorerContextValue]);
 
   useEffect(() => {
     const subscription = collectionRulesService
@@ -107,8 +178,10 @@ export const CollectionDetail = ({
     <DocExplorerContext.Provider value={explorerContextValue}>
       <ViewHeader>
         <CollectionDetailHeader
+          viewMode={viewMode}
+          setViewMode={setViewMode}
           displayPreference={displayPreference}
-          onDisplayPreferenceChange={handleDisplayPreferenceChange}
+          onDisplayPreferenceChange={setDisplayPreference}
         />
       </ViewHeader>
       <ViewBody>
@@ -234,4 +307,75 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
       </ViewBody>
     </>
   );
+};
+
+const useCollectionsOptions = (collectionId: string) => {
+  const workspaceLocalState = useService(WorkspaceLocalState);
+  const viewModeKey = `collection${collectionId}Mode`;
+  const displayPreferenceKey = `collection${collectionId}DisplayPreference:`;
+
+  const readSavedViewMode = useCallback(() => {
+    const saved = workspaceLocalState.get<DocListItemView>(viewModeKey);
+    return saved ?? 'list';
+  }, [workspaceLocalState, viewModeKey]);
+
+  const readSavedDisplayPreference = useCallback(
+    (mode: DocListItemView) => {
+      const saved = workspaceLocalState.get<ExplorerDisplayPreference>(
+        displayPreferenceKey + mode
+      );
+      return {
+        ...DefaultDisplayPreference[mode],
+        ...saved,
+        view: mode,
+      };
+    },
+    [workspaceLocalState, displayPreferenceKey]
+  );
+
+  const [viewMode, setViewMode] =
+    useState<DocListItemView>(readSavedViewMode());
+
+  const [displayPreference, setDisplayPreference] =
+    useState<ExplorerDisplayPreference>(
+      readSavedDisplayPreference(readSavedViewMode())
+    );
+
+  const handleViewModeChange = useCallback(
+    (mode: DocListItemView) => {
+      workspaceLocalState.set(viewModeKey, mode);
+      setViewMode(mode);
+      setDisplayPreference(readSavedDisplayPreference(mode));
+    },
+    [workspaceLocalState, readSavedDisplayPreference, viewModeKey]
+  );
+
+  const handleDisplayPreferenceChange = useCallback(
+    (displayPreference: ExplorerDisplayPreference) => {
+      workspaceLocalState.set(
+        displayPreferenceKey + viewMode,
+        displayPreference
+      );
+      setDisplayPreference(readSavedDisplayPreference(viewMode));
+    },
+    [
+      viewMode,
+      workspaceLocalState,
+      displayPreferenceKey,
+      readSavedDisplayPreference,
+    ]
+  );
+
+  useEffect(() => {
+    const view = readSavedViewMode();
+    setViewMode(view);
+    setDisplayPreference(readSavedDisplayPreference(view));
+  }, [collectionId, readSavedViewMode, readSavedDisplayPreference]);
+
+  return {
+    viewMode,
+    setViewMode: handleViewModeChange,
+    displayPreference,
+    setDisplayPreference: handleDisplayPreferenceChange,
+  };
 };
