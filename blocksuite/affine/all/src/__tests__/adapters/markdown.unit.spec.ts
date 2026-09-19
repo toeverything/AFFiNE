@@ -4958,55 +4958,50 @@ bbb
 
   describe('inline latex', () => {
     test.each([
-      ['dollar sign syntax', 'inline $E=mc^2$ latex\n'],
-      ['backslash syntax', 'inline \\(E=mc^2\\) latex\n'],
-    ])('should convert %s correctly', async (_, markdown) => {
-      const blockSnapshot: BlockSnapshot = {
-        type: 'block',
-        id: 'matchesReplaceMap[0]',
-        flavour: 'affine:note',
-        props: {
-          xywh: '[0,0,800,95]',
-          background: DefaultTheme.noteBackgrounColor,
-          index: 'a0',
-          hidden: false,
-          displayMode: NoteDisplayMode.DocAndEdgeless,
-        },
-        children: [
-          {
-            type: 'block',
-            id: 'matchesReplaceMap[1]',
-            flavour: 'affine:paragraph',
-            props: {
-              type: 'text',
-              text: {
-                '$blocksuite:internal:text$': true,
-                delta: [
-                  {
-                    insert: 'inline ',
-                  },
-                  {
-                    insert: ' ',
-                    attributes: {
-                      latex: 'E=mc^2',
-                    },
-                  },
-                  {
-                    insert: ' latex',
-                  },
-                ],
-              },
-            },
-            children: [],
-          },
+      [
+        'dollar sign syntax',
+        'inline $E=mc^2$ latex\n',
+        [
+          { insert: 'inline ' },
+          { insert: ' ', attributes: { latex: 'E=mc^2' } },
+          { insert: ' latex' },
         ],
-      };
-
+      ],
+      [
+        'backslash syntax',
+        'inline \\(E=mc^2\\) latex\n',
+        [
+          { insert: 'inline ' },
+          { insert: ' ', attributes: { latex: 'E=mc^2' } },
+          { insert: ' latex' },
+        ],
+      ],
+      [
+        'digit-prefixed expressions',
+        '$(\\mathbb Z^+,|)$ has $4\\vee 6=12$ and $4\\wedge 6=2$.\n',
+        [
+          { insert: ' ', attributes: { latex: '(\\mathbb Z^+,|)' } },
+          { insert: ' has ' },
+          { insert: ' ', attributes: { latex: '4\\vee 6=12' } },
+          { insert: ' and ' },
+          { insert: ' ', attributes: { latex: '4\\wedge 6=2' } },
+          { insert: '.' },
+        ],
+      ],
+      [
+        'an even backslash run before the delimiter',
+        '\\\\$4\\vee 6=12$\n',
+        [
+          { insert: '\\' },
+          { insert: ' ', attributes: { latex: '4\\vee 6=12' } },
+        ],
+      ],
+    ])('should convert %s correctly', async (_, markdown, expectedDelta) => {
       const mdAdapter = new MarkdownAdapter(createJob(), provider);
       const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
         file: markdown,
       });
-      expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+      expect(collectSnapshotDeltas(rawBlockSnapshot)).toEqual(expectedDelta);
     });
   });
 
@@ -5045,47 +5040,29 @@ bbb
       });
       expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
     });
+  });
 
-    test('escapes dollar signs followed by a digit or space and digit', async () => {
-      const markdown =
-        'The price of the T-shirt is $9.15 and the price of the hat is $ 8\n';
-      const blockSnapshot: BlockSnapshot = {
-        type: 'block',
-        id: 'matchesReplaceMap[0]',
-        flavour: 'affine:note',
-        props: {
-          xywh: '[0,0,800,95]',
-          background: DefaultTheme.noteBackgrounColor,
-          index: 'a0',
-          hidden: false,
-          displayMode: NoteDisplayMode.DocAndEdgeless,
-        },
-        children: [
-          {
-            type: 'block',
-            id: 'matchesReplaceMap[1]',
-            flavour: 'affine:paragraph',
-            props: {
-              type: 'text',
-              text: {
-                '$blocksuite:internal:text$': true,
-                delta: [
-                  {
-                    insert:
-                      'The price of the T-shirt is $9.15 and the price of the hat is $ 8',
-                  },
-                ],
-              },
-            },
-            children: [],
-          },
-        ],
-      };
+  describe('dollar currency', () => {
+    test.each([
+      [
+        'plain prices',
+        'The T-shirt is $9.15 and the hat is $ 8\n',
+        'The T-shirt is $9.15 and the hat is $ 8',
+      ],
+      ['adjacent amounts', '$100$200\n', '$100$200'],
+      ['an escaped dollar', 'costs \\$4 today\n', 'costs $4 today'],
+      ['an escaped closing dollar', '$5\\$ and $10\n', '$5$ and $10'],
+      ['an escaped opening dollar', '\\$5 and x$\n', '$5 and x$'],
+      ['an odd backslash run', '\\\\\\$4\n', '\\$4'],
+      ['an even backslash run', 'costs \\\\$4 today\n', 'costs \\$4 today'],
+    ])('keeps %s as text', async (_, markdown, expectedText) => {
       const mdAdapter = new MarkdownAdapter(createJob(), provider);
       const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
         file: markdown,
       });
-      expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+      expect(collectSnapshotDeltas(rawBlockSnapshot)).toEqual([
+        { insert: expectedText },
+      ]);
     });
   });
 
