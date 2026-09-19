@@ -1,12 +1,9 @@
 import Capacitor
 import Intelligents
-import OSLog
 import UIKit
 import WebKit
 
-private let affineLog = Logger(subsystem: "app.affine.pro", category: "debug")
-
-class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScriptMessageHandler, AffineThemeConfigurable {
+class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, AffineThemeConfigurable {
   var intelligentsButton: IntelligentsButton?
   var appThemeUserInterfaceStyle: UIUserInterfaceStyle = .unspecified {
     didSet {
@@ -14,7 +11,6 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
     }
   }
   private var isWebContentProcessTerminated = false
-  private var consoleBridgeInstalled = false
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -65,69 +61,6 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
     dismissIntelligentsButton()
   }
 
-  private func installConsoleBridge() {
-    #if !DEBUG
-      return
-    #else
-    guard !consoleBridgeInstalled, let webView else {
-      print("[affine-native] console-bridge skipped (webView unavailable)")
-      return
-    }
-    let controller = webView.configuration.userContentController
-    consoleBridgeInstalled = true
-    controller.add(self, name: "affineConsole")
-    let consoleBridgeScript = """
-      (function() {
-        if (window.__affineNativeConsoleBridged) return;
-        window.__affineNativeConsoleBridged = true;
-        function bridge(level, args) {
-          try {
-            var msg = Array.prototype.map.call(args, function(a) {
-              if (typeof a === 'string') return a;
-              try { return JSON.stringify(a); } catch (e) { return String(a); }
-            }).join(' ');
-            window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.affineConsole
-              && window.webkit.messageHandlers.affineConsole.postMessage({ level: level, message: msg });
-          } catch (e) {}
-        }
-        var ow = console.warn.bind(console);
-        var oe = console.error.bind(console);
-        var oi = console.info.bind(console);
-        console.warn = function() { bridge('warn', arguments); return ow.apply(console, arguments); };
-        console.error = function() { bridge('error', arguments); return oe.apply(console, arguments); };
-        console.info = function() {
-          var first = arguments.length ? String(arguments[0]) : '';
-          if (first.indexOf('[viewport-lifecycle]') === 0 || first.indexOf('[affine-heartbeat]') === 0) {
-            bridge('info', arguments);
-          }
-          return oi.apply(console, arguments);
-        };
-        bridge('info', ['[viewport-lifecycle] console-bridge live']);
-      })();
-    """
-    controller.addUserScript(
-      WKUserScript(source: consoleBridgeScript, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-    )
-    // capacitorDidLoad runs after first navigation may have started — inject live too.
-    webView.evaluateJavaScript(consoleBridgeScript, completionHandler: nil)
-    print("[affine-native] console-bridge installed")
-    #endif
-  }
-
-  func userContentController(
-    _ userContentController: WKUserContentController,
-    didReceive message: WKScriptMessage
-  ) {
-    guard message.name == "affineConsole" else { return }
-    let body = message.body as? [String: Any]
-    let level = body?["level"] as? String ?? "log"
-    let text = body?["message"] as? String ?? String(describing: message.body)
-    affineLog.warning("affine-js-\(level, privacy: .public) \(text)")
-    #if DEBUG
-    print("[affine-js-\(level)] \(text)")
-    #endif
-  }
-
   override func didReceiveMemoryWarning() {
     super.didReceiveMemoryWarning()
     webView?.evaluateJavaScript("window.dispatchEvent(new Event('affine:memory-pressure'))")
@@ -148,8 +81,6 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, WKScr
       ShareInboxPlugin(),
     ]
     plugins.forEach { bridge?.registerPluginInstance($0) }
-    // WebView is guaranteed here; viewDidLoad is often too early for Cap.
-    installConsoleBridge()
   }
 
   private static let intelligentsButtonRefreshInterval: TimeInterval = 0.5

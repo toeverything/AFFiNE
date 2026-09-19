@@ -34,13 +34,6 @@ import {
   tryMoveNode,
 } from '../view/utils';
 import { calculateResponseArea } from './drag-utils';
-import {
-  mindmapDragPerfMark,
-  mindmapDragPerfMeasure,
-  mindmapDragPerfOnEnd,
-  mindmapDragPerfOnMove,
-  mindmapDragPerfOnStart,
-} from './mindmap-drag-perf';
 
 type DragMindMapCtx = {
   mindmap: MindmapElementModel;
@@ -73,9 +66,7 @@ export class MindMapDragExtension extends InteractivityExtension {
   }
 
   private _calcDragResponseArea(mindmap: MindmapElementModel) {
-    mindmapDragPerfMeasure('calcResponseArea', () => {
-      calculateResponseArea(mindmap);
-    });
+    calculateResponseArea(mindmap);
     this._responseAreaUpdated.add(mindmap);
   }
 
@@ -100,13 +91,11 @@ export class MindMapDragExtension extends InteractivityExtension {
 
     // Pencil release freezes on large sample pages when layout runs
     // applyStyle+fitContent for every node. Keep geometry layout only.
-    const layoutAfterDrag = (mindmap: MindmapElementModel, tag: string) => {
-      mindmapDragPerfMeasure(tag, () => {
-        mindmap.layout(undefined, {
-          applyStyle: !IS_MOBILE_APPLE,
-          calculateTreeBound: true,
-          stashed: true,
-        });
+    const layoutAfterDrag = (mindmap: MindmapElementModel) => {
+      mindmap.layout(undefined, {
+        applyStyle: !IS_MOBILE_APPLE,
+        calculateTreeBound: true,
+        stashed: true,
       });
     };
 
@@ -116,27 +105,23 @@ export class MindMapDragExtension extends InteractivityExtension {
         node: dragMindMapCtx.node,
       };
       hoveredCtx.merge = () => {
-        layoutAfterDrag(dragMindMapCtx.mindmap, 'layout(root-merge)');
+        layoutAfterDrag(dragMindMapCtx.mindmap);
       };
     };
 
     const applyHoverLogic = (x: number, y: number) => {
-      const hoveredMindMap = mindmapDragPerfMeasure('getHoveredMindMap', () =>
-        this._getHoveredMindMap([x, y], dragMindMapCtx)
-      );
+      const hoveredMindMap = this._getHoveredMindMap([x, y], dragMindMapCtx);
       const indicator = this._indicatorOverlay;
 
       if (indicator) {
         indicator.currentDragPos = [x, y];
-        mindmapDragPerfMeasure('indicatorRefresh', () => indicator.refresh());
+        indicator.refresh();
       }
 
       hoveredCtx?.abort?.();
 
       const hoveredNode = hoveredMindMap
-        ? mindmapDragPerfMeasure('findTargetNode', () =>
-            findTargetNode(hoveredMindMap, [x, y])
-          )
+        ? findTargetNode(hoveredMindMap, [x, y])
         : null;
 
       hoveredCtx = {
@@ -149,15 +134,13 @@ export class MindMapDragExtension extends InteractivityExtension {
         hoveredMindMap &&
         !containsNode(hoveredMindMap, hoveredNode, dragMindMapCtx.node)
       ) {
-        const operation = mindmapDragPerfMeasure('tryMoveNode', () =>
-          tryMoveNode(
-            hoveredMindMap,
-            hoveredNode,
-            dragMindMapCtx.mindmap,
-            dragMindMapCtx.node,
-            [x, y],
-            options => this._drawIndicator(options)
-          )
+        const operation = tryMoveNode(
+          hoveredMindMap,
+          hoveredNode,
+          dragMindMapCtx.mindmap,
+          dragMindMapCtx.node,
+          [x, y],
+          options => this._drawIndicator(options)
         );
 
         if (operation) {
@@ -206,59 +189,51 @@ export class MindMapDragExtension extends InteractivityExtension {
       const decision = hoveredCtx;
       hoveredCtx = null;
 
-      mindmapDragPerfMeasure('dragEnd.commit', () => {
-        if (decision?.merge) {
-          decision.merge();
-          return;
+      if (decision?.merge) {
+        decision.merge();
+        return;
+      }
+
+      decision?.abort?.();
+
+      if (decision?.detach) {
+        // Desktop uses a drag image so the model was not translated; apply
+        // the drag delta here. On iOS the node stayed in the translate set
+        // and is already at the final position (view.onDragEnd confirms it).
+        if (!IS_MOBILE_APPLE) {
+          const { x: startX, y: startY } = dragEndContext.dragStartPos;
+          const { x: endX, y: endY } = dragEndContext.dragLastPos;
+
+          dragMindMapCtx.node.element.xywh =
+            dragMindMapCtx.node.element.elementBound
+              .moveDelta(endX - startX, endY - startY)
+              .serialize();
         }
 
-        decision?.abort?.();
-
-        if (decision?.detach) {
-          // Desktop uses a drag image so the model was not translated; apply
-          // the drag delta here. On iOS the node stayed in the translate set
-          // and is already at the final position (view.onDragEnd confirms it).
-          if (!IS_MOBILE_APPLE) {
-            const { x: startX, y: startY } = dragEndContext.dragStartPos;
-            const { x: endX, y: endY } = dragEndContext.dragLastPos;
-
-            dragMindMapCtx.node.element.xywh =
-              dragMindMapCtx.node.element.elementBound
-                .moveDelta(endX - startX, endY - startY)
-                .serialize();
-          }
-
-          if (dragMindMapCtx.node !== dragMindMapCtx.mindmap.tree) {
-            mindmapDragPerfMeasure('detach+create', () => {
-              detachMindmap(dragMindMapCtx.mindmap, dragMindMapCtx.node);
-              createFromTree(
-                dragMindMapCtx.node,
-                dragMindMapCtx.mindmap.style,
-                dragMindMapCtx.mindmap.layoutType,
-                this.gfx.surface!,
-                { applyStyle: !IS_MOBILE_APPLE }
-              );
-            });
-          } else {
-            layoutAfterDrag(dragMindMapCtx.mindmap, 'layout(detach-root)');
-          }
-        } else if (dragMindMapCtx.isRoot) {
-          layoutAfterDrag(dragMindMapCtx.mindmap, 'layout(root-end)');
-        } else if (IS_MOBILE_APPLE) {
-          // Match desktop: without merge/detach the node was never meant to
-          // stay at the live-translated position. Restore instead of layout.
-          mindmapDragPerfMeasure('snapBack.xywh', () => {
-            dragMindMapCtx.node.element.xywh =
-              dragMindMapCtx.originalNodeXywh as typeof dragMindMapCtx.node.element.xywh;
-          });
+        if (dragMindMapCtx.node !== dragMindMapCtx.mindmap.tree) {
+          detachMindmap(dragMindMapCtx.mindmap, dragMindMapCtx.node);
+          createFromTree(
+            dragMindMapCtx.node,
+            dragMindMapCtx.mindmap.style,
+            dragMindMapCtx.mindmap.layoutType,
+            this.gfx.surface!,
+            { applyStyle: !IS_MOBILE_APPLE }
+          );
+        } else {
+          layoutAfterDrag(dragMindMapCtx.mindmap);
         }
-      });
+      } else if (dragMindMapCtx.isRoot) {
+        layoutAfterDrag(dragMindMapCtx.mindmap);
+      } else if (IS_MOBILE_APPLE) {
+        // Match desktop: without merge/detach the node was never meant to
+        // stay at the live-translated position. Restore instead of layout.
+        dragMindMapCtx.node.element.xywh =
+          dragMindMapCtx.originalNodeXywh as typeof dragMindMapCtx.node.element.xywh;
+      }
     };
 
     return {
       onDragMove: (context: ExtensionDragMoveContext) => {
-        mindmapDragPerfOnMove();
-        const moveStart = performance.now();
         const { x, y } = context.dragLastPos;
 
         if (IS_MOBILE_APPLE) {
@@ -275,23 +250,18 @@ export class MindMapDragExtension extends InteractivityExtension {
             ensureRootMergeHook();
           }
         }
-
-        mindmapDragPerfMark('dragMove.wall', performance.now() - moveStart);
       },
       onDragEnd: (dragEndContext: ExtensionDragEndContext) => {
         // Mobile move path throttles hover. Always resolve against the release
         // point so a stale detach/merge from mid-shake does not run.
-        mindmapDragPerfMeasure('dragEnd.flushHover', () => {
-          applyHoverLogic(
-            dragEndContext.dragLastPos.x,
-            dragEndContext.dragLastPos.y
-          );
-        });
+        applyHoverLogic(
+          dragEndContext.dragLastPos.x,
+          dragEndContext.dragLastPos.y
+        );
 
         this._responseAreaUpdated.clear();
 
         commitDragEnd(dragEndContext);
-        mindmapDragPerfOnEnd();
       },
     };
   }
@@ -368,12 +338,10 @@ export class MindMapDragExtension extends InteractivityExtension {
     dragMindMapCtx: DragMindMapCtx
   ): MindmapElementModel | null {
     const mindmap =
-      (mindmapDragPerfMeasure('getElementByPoint', () =>
-        this.gfx.getElementByPoint(position[0], position[1], {
-          all: true,
-          responsePadding: [NODE_HORIZONTAL_SPACING, NODE_VERTICAL_SPACING * 2],
-        })
-      ).find(el => {
+      (this.gfx.getElementByPoint(position[0], position[1], {
+        all: true,
+        responsePadding: [NODE_HORIZONTAL_SPACING, NODE_VERTICAL_SPACING * 2],
+      }).find(el => {
         if (!(el instanceof MindmapElementModel)) {
           return false;
         }
@@ -517,16 +485,6 @@ export class MindMapDragExtension extends InteractivityExtension {
           originalMindMapBound: mindmapBound,
           originalNodeXywh: mindmapNode.element.xywh,
         };
-
-        mindmapDragPerfOnStart({
-          isRoot,
-          nodeId: mindmapNode.id,
-          mindmapId: mindmap.id,
-          childCount: mindmap.childElements.length,
-          surfaceMindmaps: this.gfx.gfxElements.filter(
-            el => el instanceof MindmapElementModel
-          ).length,
-        });
 
         return {
           ...this._createManipulationHandlers(mindMapDragCtx),

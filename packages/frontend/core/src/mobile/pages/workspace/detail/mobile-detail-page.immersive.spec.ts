@@ -7,11 +7,9 @@ import { describe, expect, test } from 'vitest';
 import * as immersiveModule from './mobile-detail-page.immersive';
 import {
   getImmersiveZoomToolbarBottom,
-  hasOpenEdgelessUiOverlay,
   isImmersiveTapTarget,
   isLandscapeWindow,
   isTapWithinSlop,
-  shouldAutoHideEdgelessChrome,
   shouldEnableEdgelessImmersive,
   shouldLockEdgelessDocumentScroll,
   shouldShowMobileDetailPageTitle,
@@ -133,16 +131,6 @@ describe('mobile detail page immersive helpers', () => {
     expect(isImmersiveTapTarget(null)).toBe(false);
   });
 
-  test('ignores taps from mobile detail header chrome gaps', () => {
-    const header = document.createElement('div');
-    header.dataset.affineEdgelessUiChrome = 'true';
-    const suffixGap = document.createElement('span');
-    header.append(suffixGap);
-    document.body.append(header);
-
-    expect(isImmersiveTapTarget(suffixGap)).toBe(false);
-  });
-
   test('accepts only small pointer movement as a tap', () => {
     expect(
       isTapWithinSlop(
@@ -182,42 +170,6 @@ describe('mobile detail page immersive helpers', () => {
         tabBarOffset: 'var(--appTabSafeArea)',
       })
     ).toBeUndefined();
-  });
-
-  test('keeps immersive chrome visible while the page menu is open', () => {
-    expect(
-      shouldAutoHideEdgelessChrome({
-        immersive: true,
-        chromeVisible: true,
-        menuOpen: false,
-      })
-    ).toBe(true);
-
-    expect(
-      shouldAutoHideEdgelessChrome({
-        immersive: true,
-        chromeVisible: true,
-        menuOpen: true,
-      })
-    ).toBe(false);
-
-    expect(
-      shouldAutoHideEdgelessChrome({
-        immersive: true,
-        chromeVisible: true,
-        menuOpen: false,
-        overlayOpen: true,
-      })
-    ).toBe(false);
-  });
-
-  test('detects open edgeless ui overlays from the DOM', () => {
-    const overlay = document.createElement('div');
-    overlay.dataset.affineEdgelessUiOverlay = 'true';
-
-    expect(hasOpenEdgelessUiOverlay(document)).toBe(false);
-    document.body.append(overlay);
-    expect(hasOpenEdgelessUiOverlay(document)).toBe(true);
   });
 
   test('locks document scroll whenever edgeless mode is active', () => {

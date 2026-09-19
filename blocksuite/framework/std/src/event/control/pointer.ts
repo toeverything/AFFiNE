@@ -460,14 +460,6 @@ class DragController extends PointerControllerBase {
     )
       return;
 
-    if (event.type === 'pointercancel' || event.type === 'lostpointercapture') {
-      console.warn('[viewport-lifecycle] drag.end-via-cancel', {
-        type: event.type,
-        pointerType: event.pointerType,
-        wasDragging: this._dragging,
-      });
-    }
-
     const start = this._startPointerState;
     const last = this._lastPointerState;
 

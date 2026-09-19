@@ -173,69 +173,8 @@ function getScribbleProxyExclusionRects(root: ParentNode): ScribbleRect[] {
   return exclusions.filter(hasPositiveArea);
 }
 
-function getTargetSummary(target: EventTarget | null): string {
-  if (!(target instanceof Element)) {
-    return String(target);
-  }
-
-  const id = target.id ? `#${target.id}` : '';
-  const className =
-    typeof target.className === 'string' && target.className
-      ? `.${target.className.trim().replace(/\s+/g, '.')}`
-      : '';
-  return `${target.localName}${id}${className}`;
-}
-
-function getNearestInteractiveSummary(target: EventTarget | null): string {
-  if (!(target instanceof Element)) {
-    return '';
-  }
-
-  return getTargetSummary(
-    target.closest(
-      [
-        '[data-affine-edgeless-ui-chrome="true"]',
-        '[data-affine-scribble-proxy="true"]',
-        'edgeless-toolbar-widget',
-        'affine-edgeless-toolbar-widget',
-        'edgeless-zoom-toolbar',
-        'affine-edgeless-zoom-toolbar-widget',
-        'edgeless-tool-icon-button',
-        'edgeless-toolbar-button',
-        'icon-button',
-        'button',
-        '[role="button"]',
-      ].join(',')
-    )
-  );
-}
-
 function getProxyRect(proxy: HTMLTextAreaElement): ScribbleRect {
   return toScribbleRect(proxy.getBoundingClientRect());
-}
-
-function logPointerHit(event: PointerEvent | TouchEvent): void {
-  const target = event.target;
-  const nearest = getNearestInteractiveSummary(target);
-  if (!nearest) {
-    return;
-  }
-
-  const point =
-    event instanceof PointerEvent
-      ? { x: Math.round(event.clientX), y: Math.round(event.clientY) }
-      : {
-          x: Math.round(event.touches[0]?.clientX ?? 0),
-          y: Math.round(event.touches[0]?.clientY ?? 0),
-        };
-
-  console.warn('[viewport-lifecycle] scribble.hit', {
-    type: event.type,
-    pointerType: event instanceof PointerEvent ? event.pointerType : 'touch',
-    target: getTargetSummary(target),
-    nearest,
-    point,
-  });
 }
 
 function isInlineEditor(element: Element): boolean {
@@ -361,10 +300,6 @@ function insertTextIntoTarget(target: HTMLElement, text: string): void {
     if (insertTextFromPencilScribble(target, text)) {
       return;
     }
-    console.warn('[viewport-lifecycle] scribble.insert.fallback', {
-      reason: 'rich-text-helper-rejected',
-      length: text.length,
-    });
   }
 
   const doc = target.ownerDocument;
@@ -437,11 +372,6 @@ function createScribbleProxyTextarea(
     proxy.value = '';
     insertTextIntoTarget(target, text);
     applyProxyStyle(proxy, getProxyRect(proxy));
-    console.warn('[viewport-lifecycle] scribble.proxy.input', {
-      length: text.length,
-      proxyRect: getProxyRect(proxy),
-      target: getTargetSummary(target),
-    });
   });
   return proxy;
 }
@@ -581,11 +511,6 @@ export function setupNativeScribbleGate(): () => void {
 
   PencilInput.addListener('scribbleWillBegin', event => {
     const focused = focusNearestEditableScribbleTarget(event);
-    console.warn('[viewport-lifecycle] scribble.gate.focus', {
-      focused,
-      x: event.x,
-      y: event.y,
-    });
     if (!focused) {
       scheduleSync();
     }
@@ -606,8 +531,8 @@ export function setupNativeScribbleGate(): () => void {
     if (disposed) return;
 
     const freshRects = collectEditableScribbleRects();
-    const proxyCount = syncScribbleProxyTextareas();
-    const { rects, sticky } = getStickyRects(freshRects);
+    syncScribbleProxyTextareas();
+    const { rects } = getStickyRects(freshRects);
     const payload = {
       enabled: true,
       nativeInteractionEnabled: true,
@@ -618,16 +543,6 @@ export function setupNativeScribbleGate(): () => void {
       return;
     }
     lastPayload = payloadKey;
-    console.warn('[viewport-lifecycle] scribble.gate.sync', {
-      rects: payload.rects.length,
-      freshRects: freshRects.length,
-      proxyCount,
-      proxyMaxBottom: Math.max(
-        0,
-        ...payload.rects.map(rect => rect.y + rect.height)
-      ),
-      sticky,
-    });
 
     PencilInput.updateScribbleState(payload).catch(() => {
       // Native gate is best-effort; WebKit-only pointer routing remains active.
@@ -660,17 +575,8 @@ export function setupNativeScribbleGate(): () => void {
   document.addEventListener('input', scheduleSync, true);
   document.addEventListener('beforeinput', scheduleSync, true);
   document.addEventListener('selectionchange', scheduleSync, true);
-  const onPointerDown = (event: PointerEvent) => {
-    logPointerHit(event);
-    scheduleSync();
-  };
-  const onTouchStart = (event: TouchEvent) => {
-    logPointerHit(event);
-    scheduleSync();
-  };
-
-  document.addEventListener('pointerdown', onPointerDown, true);
-  document.addEventListener('touchstart', onTouchStart, true);
+  document.addEventListener('pointerdown', scheduleSync, true);
+  document.addEventListener('touchstart', scheduleSync, true);
   window.addEventListener('resize', scheduleSync, true);
   window.addEventListener('scroll', scheduleSync, true);
 
@@ -685,8 +591,8 @@ export function setupNativeScribbleGate(): () => void {
     document.removeEventListener('input', scheduleSync, true);
     document.removeEventListener('beforeinput', scheduleSync, true);
     document.removeEventListener('selectionchange', scheduleSync, true);
-    document.removeEventListener('pointerdown', onPointerDown, true);
-    document.removeEventListener('touchstart', onTouchStart, true);
+    document.removeEventListener('pointerdown', scheduleSync, true);
+    document.removeEventListener('touchstart', scheduleSync, true);
     window.removeEventListener('resize', scheduleSync, true);
     window.removeEventListener('scroll', scheduleSync, true);
     window.clearInterval(interval);

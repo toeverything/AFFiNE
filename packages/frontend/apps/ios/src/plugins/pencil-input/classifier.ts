@@ -57,11 +57,6 @@ class NativePointerClassifier implements PointerInputClassifier {
           // because of a prior id mismatch, force-clear on lift.
           const deleted = this._activePencilIds.delete(touch.id);
           if (!deleted && this._activePencilIds.size > 0) {
-            console.warn('[viewport-lifecycle] pencil.active-id-mismatch', {
-              id: touch.id,
-              phase: touch.phase,
-              stuck: [...this._activePencilIds.keys()],
-            });
             this._activePencilIds.clear();
           }
         }
@@ -82,15 +77,6 @@ class NativePointerClassifier implements PointerInputClassifier {
   classify(event: PointerEvent): InputTouchKind | undefined {
     const match = this._correlate(event);
     if (match?.kind === 'pencil' || event.pointerType === 'pen') {
-      if (event.type === 'pointerdown') {
-        console.warn('[viewport-lifecycle] pencil.pointerdown', {
-          x: Math.round(event.clientX),
-          y: Math.round(event.clientY),
-          pointerType: event.pointerType,
-          matched: match?.kind ?? 'pointerType-pen',
-          activePencilIds: this._activePencilIds.size,
-        });
-      }
       return 'pencil';
     }
     if (event.pointerType !== 'touch') {
@@ -106,21 +92,6 @@ class NativePointerClassifier implements PointerInputClassifier {
     this._prune(performance.now());
     if (this._activePencilIds.size > 0) return true;
     return performance.now() - this._lastPencilAt < PENCIL_ACTIVE_GRACE_MS;
-  }
-
-  /** Debug snapshot for heartbeat / syslog. */
-  debugState() {
-    this._prune(performance.now());
-    return {
-      activePencilIds: this._activePencilIds.size,
-      pencilGraceMs: Math.max(
-        0,
-        Math.round(
-          PENCIL_ACTIVE_GRACE_MS - (performance.now() - this._lastPencilAt)
-        )
-      ),
-      pencilActive: this.isPencilActive(),
-    };
   }
 
   private _correlate(event: PointerEvent): RecentTouch | undefined {
@@ -151,7 +122,6 @@ class NativePointerClassifier implements PointerInputClassifier {
     for (const [id, startedAt] of this._activePencilIds) {
       if (now - startedAt > ACTIVE_PENCIL_MAX_MS) {
         this._activePencilIds.delete(id);
-        console.warn('[viewport-lifecycle] pencil.active-id-expired', { id });
       }
     }
   }
@@ -181,13 +151,6 @@ export async function setupPencilInputClassifier(): Promise<void> {
     classifier = instance;
     pointerInputClassifierRuntime.classifier = instance;
     void touchClassifiedHandle;
-    (
-      window as unknown as {
-        __affinePencilDebug?: () => ReturnType<
-          NativePointerClassifier['debugState']
-        >;
-      }
-    ).__affinePencilDebug = () => instance.debugState();
   } catch (err) {
     console.warn('[pencil-input] failed to start classifier', err);
   }

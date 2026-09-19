@@ -160,12 +160,6 @@ const DetailPageImpl = ({
 
   const onLoad = useCallback(
     (editorContainer: AffineEditorContainer) => {
-      console.warn('[viewport-lifecycle] doc.onLoad', {
-        docId: doc.id,
-        mode,
-        pointerTypeHint: 'check next pencil tap if freeze follows',
-      });
-
       // provide image proxy endpoint to blocksuite
       const imageProxyUrl = new URL(
         BUILD_CONFIG.imageProxyUrl,
@@ -186,10 +180,6 @@ const DetailPageImpl = ({
       if (refNodeService) {
         disposable.add(
           refNodeService.docLinkClicked.subscribe(({ pageId, params }) => {
-            console.warn('[viewport-lifecycle] doc.linkClicked', {
-              pageId,
-              params,
-            });
             if (params) {
               const { mode, blockIds, elementIds } = params;
               return jumpToPageBlock(

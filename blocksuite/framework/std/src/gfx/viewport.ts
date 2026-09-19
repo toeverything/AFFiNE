@@ -16,24 +16,6 @@ function cutoff(value: number, ref: number, sign: number) {
   return value;
 }
 
-/** iOS doc-open / gesture diagnostics. Opt out: localStorage['affine:viewport-lifecycle']='0' */
-function viewportLifecycleLog(event: string, detail?: Record<string, unknown>) {
-  try {
-    if (
-      typeof localStorage !== 'undefined' &&
-      localStorage.getItem('affine:viewport-lifecycle') === '0'
-    ) {
-      return;
-    }
-  } catch {
-    // ignore
-  }
-  // Always log skips (the freeze signature); emit logs stay quieter.
-  if (event === 'setCenter.skip' || event.startsWith('doc.')) {
-    console.warn(`[viewport-lifecycle] ${event}`, detail ?? '');
-  }
-}
-
 export const ZOOM_MAX = 6.0;
 export const ZOOM_MIN = 0.1;
 export const ZOOM_STEP = 0.25;
@@ -328,16 +310,6 @@ export class Viewport {
 
   private _armGestureWatchdog() {
     this._lastGestureAt = performance.now();
-    if (typeof window !== 'undefined') {
-      (
-        window as unknown as {
-          __affineGestureDebug?: { panning: boolean; zooming: boolean };
-        }
-      ).__affineGestureDebug = {
-        panning: this.panning$.value,
-        zooming: this.zooming$.value,
-      };
-    }
     if (this._gestureWatchdog !== null || !this.SKIP_REFRESH_DURING_GESTURE) {
       return;
     }
@@ -345,16 +317,6 @@ export class Viewport {
     // stay true forever under SKIP_REFRESH — UI looks frozen while timers still
     // run. Force-clear after 1s without a new gesture frame.
     this._gestureWatchdog = setInterval(() => {
-      if (typeof window !== 'undefined') {
-        (
-          window as unknown as {
-            __affineGestureDebug?: { panning: boolean; zooming: boolean };
-          }
-        ).__affineGestureDebug = {
-          panning: this.panning$.value,
-          zooming: this.zooming$.value,
-        };
-      }
       if (!this.panning$.value && !this.zooming$.value) {
         const gestureWatchdog = this._gestureWatchdog;
         if (gestureWatchdog !== null) {
@@ -365,11 +327,6 @@ export class Viewport {
       }
       const idleMs = performance.now() - this._lastGestureAt;
       if (idleMs < 1000) return;
-      viewportLifecycleLog('gesture.force-clear', {
-        idleMs: Math.round(idleMs),
-        panning: this.panning$.value,
-        zooming: this.zooming$.value,
-      });
       if (this.panning$.value) this.panning$.next(false);
       if (this.zooming$.value) this.zooming$.next(false);
     }, 500);
@@ -720,15 +677,7 @@ export class Viewport {
     // Instead, the viewport-element applies a lightweight container-level
     // CSS transform to keep visuals in sync with zero per-block overhead.
     const skipRefresh = this.SKIP_REFRESH_DURING_GESTURE && gestureActive;
-    if (skipRefresh) {
-      viewportLifecycleLog('setCenter.skip', {
-        centerX,
-        centerY,
-        signalPanning,
-        panning: this.panning$.value,
-        zooming: this.zooming$.value,
-      });
-    } else {
+    if (!skipRefresh) {
       this.viewportUpdated.next({
         zoom: this.zoom,
         center: Vec.toVec(this.center) as IVec,

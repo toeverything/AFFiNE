@@ -239,7 +239,7 @@ test('paste nested lists to a nested list', async ({ page }) => {
   };
 
   // paste on start
-  await setInlineRangeInSelectedRichText(page, 0, 0);
+  await page.keyboard.press('Control+ArrowLeft');
 
   /**
    * - aaa
