@@ -337,16 +337,6 @@ export function forgetMarkdownFileBinding(filePath: string) {
   bindings.delete(normalized);
 }
 
-export function getFailedMarkdownOpenRequestsForTesting() {
-  return Array.from(openRequests.values())
-    .filter(request => request.state === 'failed')
-    .map(({ requestId, filePath, errorMessage }) => ({
-      requestId,
-      filePath,
-      errorMessage,
-    }));
-}
-
 async function readMarkdownFile(
   filePath: string
 ): Promise<MarkdownFileReadResult> {
@@ -756,25 +746,4 @@ export function setupMarkdownFileOpen(app: App) {
 
     emitMarkdownOpenRequests(filePaths);
   });
-}
-
-export async function resetMarkdownFileStateForTesting() {
-  openRequests.clear();
-  filePathToRequestId.clear();
-  bindings.clear();
-  lineCaches.clear();
-
-  for (const timer of watcherTimers.values()) {
-    clearTimeout(timer);
-  }
-  watcherTimers.clear();
-  for (const timer of unavailableTimers.values()) {
-    clearTimeout(timer);
-  }
-  unavailableTimers.clear();
-
-  await Promise.all(
-    Array.from(watchers.values()).map(watcher => watcher.close())
-  );
-  watchers.clear();
 }

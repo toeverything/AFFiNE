@@ -489,10 +489,6 @@ export class MarkdownFileSyncService extends Service {
     });
   }
 
-  hashContentForTesting(content: string) {
-    return hashMarkdownContent(content);
-  }
-
   shouldIgnoreExternalReplaceWriteback(docId: string) {
     return (this.externalReplaceInProgress.get(docId) ?? 0) > 0;
   }
