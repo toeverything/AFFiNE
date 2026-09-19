@@ -8,6 +8,7 @@ import {
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { DndService } from '@affine/core/modules/dnd/services';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { MarkdownFileSyncLifecycle } from '@affine/core/modules/markdown-file-sync';
 import { OpenInAppGuard } from '@affine/core/modules/open-in-app';
 import {
   getAFFiNEWorkspaceSchema,
@@ -345,6 +346,7 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
 
   return (
     <FrameworkScope scope={workspace.scope}>
+      <MarkdownFileSyncLifecycle />
       <DNDContextProvider>
         <OpenInAppGuard>
           <AffineErrorBoundary height="100vh">

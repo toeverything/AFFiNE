@@ -17,11 +17,19 @@ import { WorkspacePropertySidebar } from '@affine/core/components/properties/sid
 import { TrashPageFooter } from '@affine/core/components/pure/trash-page-footer';
 import { TopTip } from '@affine/core/components/top-tip';
 import { ServerService } from '@affine/core/modules/cloud';
+import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { JournalService } from '@affine/core/modules/journal';
+import {
+  isPlainTextMarkdownBinding,
+  type MarkdownFileBinding,
+  MarkdownFileSyncService,
+  MarkdownFileViewer,
+} from '@affine/core/modules/markdown-file-sync';
+import { exportDocToMarkdown } from '@affine/core/modules/markdown-file-sync/services/markdown-doc-export';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import {
@@ -57,6 +65,7 @@ import {
   useServices,
 } from '@toeverything/infra';
 import clsx from 'clsx';
+import { debounce } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -106,6 +115,9 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const { appSettings } = useAppSettingHelper();
 
   const peekView = useService(PeekViewService).peekView;
+  const desktopApi = useService(DesktopApiService);
+  const markdownFileSyncService = useService(MarkdownFileSyncService);
+  const markdownWriteBackGeneration = useRef(0);
 
   const isActiveView = useIsActiveView();
   // TODO(@eyhn): remove jotai here
@@ -318,6 +330,95 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const canEdit = useGuard('Doc_Update', doc.id);
 
   const readonly = !canEdit || isInTrash;
+  const [markdownFileBinding, setMarkdownFileBinding] =
+    useState<MarkdownFileBinding | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setMarkdownFileBinding(null);
+    desktopApi.handler.markdownFile
+      .getBindingByDocId(doc.id)
+      .then((binding: MarkdownFileBinding | null) => {
+        if (!cancelled) {
+          setMarkdownFileBinding(binding);
+        }
+      })
+      .catch(error => {
+        console.error('Failed to load markdown file binding', error);
+        if (!cancelled) {
+          setMarkdownFileBinding(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [desktopApi, doc.id]);
+
+  const isPlainTextMarkdownDoc =
+    isPlainTextMarkdownBinding(markdownFileBinding);
+
+  useEffect(() => {
+    if (!markdownFileBinding || isPlainTextMarkdownDoc || !editorContainer) {
+      return;
+    }
+
+    let disposed = false;
+    const writeBack = debounce(async () => {
+      if (disposed) {
+        return;
+      }
+      const generation = ++markdownWriteBackGeneration.current;
+      const std =
+        (editorContainer as any).origin?.std ??
+        (editorContainer as any).std ??
+        (editorContainer as any).host?.std ??
+        (document.querySelector('editor-host') as any)?.std;
+      if (!std) {
+        return;
+      }
+
+      try {
+        const markdown = await exportDocToMarkdown(doc.blockSuiteDoc, std);
+        if (disposed || generation !== markdownWriteBackGeneration.current) {
+          return;
+        }
+        await markdownFileSyncService.writeMarkdownBindingContent(
+          markdownFileBinding,
+          markdown
+        );
+      } catch (error) {
+        console.error('Failed to write Markdown file from AFFiNE doc', error);
+      }
+    }, 800);
+
+    const handleTransaction = (transaction: { local: boolean }) => {
+      if (transaction.local) {
+        if (
+          markdownFileSyncService.shouldIgnoreExternalReplaceWriteback(doc.id)
+        ) {
+          return;
+        }
+        writeBack()?.catch(console.error);
+      }
+    };
+    doc.yDoc.on('afterTransaction', handleTransaction);
+
+    return () => {
+      disposed = true;
+      doc.yDoc.off('afterTransaction', handleTransaction);
+      writeBack.cancel();
+    };
+  }, [
+    doc.blockSuiteDoc,
+    doc.id,
+    doc.yDoc,
+    editorContainer,
+    isPlainTextMarkdownDoc,
+    markdownFileBinding,
+    markdownFileSyncService,
+  ]);
 
   return (
     <FrameworkScope scope={editor.scope}>
@@ -337,31 +438,37 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
           <AffineErrorBoundary key={doc.id}>
             <TopTip pageId={doc.id} workspace={workspace} />
-            <Scrollable.Root>
-              <Scrollable.Viewport
-                onScroll={handleScroll}
-                ref={scrollViewportRef}
-                data-dragging={dragging}
-                className={clsx(
-                  'affine-page-viewport',
-                  styles.affineDocViewport,
-                  styles.editorContainer,
-                  { [styles.pageModeViewportContentBox]: mode === 'page' }
-                )}
-              >
-                <PageDetailEditor onLoad={onLoad} readonly={readonly} />
-              </Scrollable.Viewport>
-              <Scrollable.Scrollbar
-                className={clsx({
-                  [styles.scrollbar]: !appSettings.clientBorder,
-                })}
-              />
-            </Scrollable.Root>
-            <EditorOutlineViewer
-              editor={editorContainer?.host ?? null}
-              show={mode === 'page' && !isSideBarOpen}
-              openOutlinePanel={openOutlinePanel}
-            />
+            {isPlainTextMarkdownDoc && markdownFileBinding ? (
+              <MarkdownFileViewer binding={markdownFileBinding} />
+            ) : (
+              <>
+                <Scrollable.Root>
+                  <Scrollable.Viewport
+                    onScroll={handleScroll}
+                    ref={scrollViewportRef}
+                    data-dragging={dragging}
+                    className={clsx(
+                      'affine-page-viewport',
+                      styles.affineDocViewport,
+                      styles.editorContainer,
+                      { [styles.pageModeViewportContentBox]: mode === 'page' }
+                    )}
+                  >
+                    <PageDetailEditor onLoad={onLoad} readonly={readonly} />
+                  </Scrollable.Viewport>
+                  <Scrollable.Scrollbar
+                    className={clsx({
+                      [styles.scrollbar]: !appSettings.clientBorder,
+                    })}
+                  />
+                </Scrollable.Root>
+                <EditorOutlineViewer
+                  editor={editorContainer?.host ?? null}
+                  show={mode === 'page' && !isSideBarOpen}
+                  openOutlinePanel={openOutlinePanel}
+                />
+              </>
+            )}
           </AffineErrorBoundary>
           {isInTrash ? <TrashPageFooter /> : null}
         </div>

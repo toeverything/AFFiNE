@@ -569,6 +569,7 @@ __metadata:
     app-builder-lib: "npm:^26.15.0"
     async-call-rpc: "npm:^6.4.2"
     builder-util-runtime: "npm:^9.7.0"
+    chokidar: "npm:^4.0.3"
     cross-env: "npm:^10.1.0"
     debug: "npm:^4.4.0"
     electron: "npm:^39.0.0"

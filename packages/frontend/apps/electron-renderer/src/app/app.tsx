@@ -3,6 +3,7 @@ import { WindowsAppControls } from '@affine/core/components/pure/header/windows-
 import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { router } from '@affine/core/desktop/router';
 import { I18nProvider } from '@affine/core/modules/i18n';
+import { MarkdownFileSyncRouteBridge } from '@affine/core/modules/markdown-file-sync';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { CacheProvider } from '@emotion/react';
 import { FrameworkRoot, getCurrentStore } from '@toeverything/infra';
@@ -62,6 +63,7 @@ export function App() {
                 router={router}
                 future={future}
               />
+              <MarkdownFileSyncRouteBridge router={router} />
               {environment.isWindows && (
                 <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 5 }}>
                   <WindowsAppControls />
