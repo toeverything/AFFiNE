@@ -18,10 +18,6 @@ import {
 } from '@affine-test/kit/utils/page-logic';
 import { expect, type Page, test } from '@playwright/test';
 
-async function redoByKeyboard(page: Page) {
-  await withCtrlOrMeta(page, () => page.keyboard.press('Shift+z'));
-}
-
 async function openTurnIntoMenu(page: Page) {
   await selectAllByKeyboard(page);
   const toolbar = locateToolbar(page);
@@ -192,7 +188,11 @@ test('turn into callout preserves the block tree across undo and redo', async ({
   const paragraph = page.locator('affine-note affine-paragraph');
   await expect(paragraph).toContainText('undo me');
 
-  await redoByKeyboard(page);
+  if (process.platform === 'darwin') {
+    await withCtrlOrMeta(page, () => page.keyboard.press('Shift+z'));
+  } else {
+    await page.keyboard.press('Control+y');
+  }
   await expect(callout).toHaveCount(1);
   await expect(callout).toContainText('undo me');
 });
