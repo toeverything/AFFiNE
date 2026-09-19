@@ -24,6 +24,10 @@ const tabs: Tab[] = [
     to: '/tag',
     label: 'Tags',
   },
+  {
+    to: '/trash',
+    label: 'Trash',
+  },
 ];
 
 export const AllDocsTabs = () => {
