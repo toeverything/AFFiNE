@@ -11,16 +11,19 @@ import {
   InvalidLicenseSessionId,
   LicenseRevealed,
   ManagedByAppStoreOrPlay,
+  OnEvent,
   SameSubscriptionRecurring,
   SubscriptionAlreadyExists,
   SubscriptionHasBeenCanceled,
   SubscriptionHasNotBeenCanceled,
   SubscriptionNotExists,
   SubscriptionPlanNotFound,
+  URLHelper,
   UserNotFound,
 } from '../../base';
 import { CurrentUser } from '../../core/auth';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
+import { ServerFeature, ServerService } from '../../core/config';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
@@ -90,8 +93,30 @@ export interface PaymentPrice {
 export class SubscriptionService {
   constructor(
     private readonly runtime: BackendRuntimeProvider,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly server: ServerService,
+    private readonly url: URLHelper
   ) {}
+
+  @OnEvent('config.init')
+  onConfigInit() {
+    this.syncServerFeature();
+  }
+
+  @OnEvent('config.changed')
+  onConfigChanged(event: Events['config.changed']) {
+    if ('payment' in event.updates) {
+      this.syncServerFeature();
+    }
+  }
+
+  private syncServerFeature() {
+    if (this.config.payment.enabled) {
+      this.server.enableFeature(ServerFeature.Payment);
+    } else {
+      this.server.disableFeature(ServerFeature.Payment);
+    }
+  }
 
   async listPrices(_user?: CurrentUser): Promise<PaymentPrice[]> {
     const prices = await this.command<NativePrice[]>({ action: 'list_prices' });
@@ -139,7 +164,7 @@ export class SubscriptionService {
       variant: params.variant,
       coupon: params.coupon,
       quantity: args.quantity ?? params.quantity ?? undefined,
-      successUrl: params.successCallbackLink,
+      successUrl: this.url.safeLink(params.successCallbackLink || '/'),
       intentId: params.idempotencyKey ?? randomUUID(),
     });
     return { id: result.sessionId, url: result.url };

@@ -7,8 +7,10 @@ import {
   SameSubscriptionRecurring,
   SubscriptionAlreadyExists,
   SubscriptionNotExists,
+  URLHelper,
 } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
+import { ServerFeature, ServerService } from '../../core/config';
 import { subscriptionFromEntitlement } from '../../plugins/payment/model';
 import {
   SubscriptionService,
@@ -24,10 +26,19 @@ ava(
   async t => {
     const runtime = Sinon.createStubInstance(BackendRuntimeProvider);
     const command = runtime.executePaymentCommandV1 as Sinon.SinonStub;
+    const server = Sinon.createStubInstance(ServerService);
+    const url = Sinon.createStubInstance(URLHelper);
+    url.safeLink.callsFake(path => new URL(path, 'https://app.example').href);
     const config = {
-      payment: { showLifetimePrice: false },
+      payment: { enabled: false, showLifetimePrice: false },
     } as Config;
-    const service = new SubscriptionService(runtime, config);
+    const service = new SubscriptionService(runtime, config, server, url);
+
+    service.onConfigInit();
+    t.true(server.disableFeature.calledWith(ServerFeature.Payment));
+    config.payment.enabled = true;
+    service.onConfigChanged({ updates: { payment: { enabled: true } } });
+    t.true(server.enableFeature.calledWith(ServerFeature.Payment));
 
     command.resolves([
       {
@@ -87,7 +98,7 @@ ava(
         {
           plan: SubscriptionPlan.Pro,
           recurring: SubscriptionRecurring.Monthly,
-          successCallbackLink: 'https://app.example/success',
+          successCallbackLink: '/success',
           idempotencyKey: 'intent-1',
         },
         { user: { id: 'user-1', email: 'user@example.com' } }
@@ -99,6 +110,7 @@ ava(
       actorUserId: 'user-1',
       targetType: 'user',
       targetId: 'user-1',
+      successUrl: 'https://app.example/success',
       intentId: 'intent-1',
     });
 
