@@ -99,24 +99,19 @@ export function suggestJournalDate(query: string): {
 
   if (matched) {
     const [_, letters, numbers] = matched;
+    const now = dayjs();
 
-    for (const month of monthNames) {
+    for (const [monthIndex, month] of monthNames.entries()) {
       const monthMatched = fuzzyMatch(month, letters, true);
       if (monthMatched) {
-        const year = dayjs().year();
-        // dayjs rolls a day past the end of the month over into the next one,
-        // so the upper bound has to be the length of the matched month
-        const daysInMonth = dayjs(`${year}-${month}-1`).daysInMonth();
-        let day = numbers ? parseInt(numbers) : dayjs().date();
-        const invalidDay = day < 1 || day > daysInMonth;
-        if (invalidDay) {
-          // fallback to today's day, clamped to the end of the month
-          day = Math.min(dayjs().date(), daysInMonth);
-        }
+        const targetMonth = now.month(monthIndex);
+        const daysInMonth = targetMonth.daysInMonth();
+        const fallbackDay = Math.min(now.date(), daysInMonth);
+        const parsedDay = numbers ? parseInt(numbers) : fallbackDay;
+        const day =
+          parsedDay < 1 || parsedDay > daysInMonth ? fallbackDay : parsedDay;
         return {
-          dateString: dayjs(`${year}-${month}-${day}`).format(
-            JOURNAL_DATE_FORMAT
-          ),
+          dateString: targetMonth.date(day).format(JOURNAL_DATE_FORMAT),
         };
       }
     }
