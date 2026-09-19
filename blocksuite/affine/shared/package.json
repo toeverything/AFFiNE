@@ -23,6 +23,7 @@
     "@types/lodash-es": "^4.17.12",
     "@types/mdast": "^4.0.4",
     "bytes": "^3.1.2",
+    "css-tree": "^2.3.1",
     "dompurify": "^3.4.11",
     "fractional-indexing": "^3.2.0",
     "lit": "^3.2.0",
@@ -73,6 +74,7 @@
     "!dist/__tests__"
   ],
   "devDependencies": {
+    "@types/css-tree": "^2.3.11",
     "@types/pdfmake": "^0.2.12",
     "vitest": "^4.1.8"
   },
