@@ -74,7 +74,7 @@
   ],
   "devDependencies": {
     "@types/pdfmake": "^0.2.12",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   },
   "version": "0.27.5"
 }

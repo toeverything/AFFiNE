@@ -116,10 +116,6 @@ const waitForSubscriptionRevalidation = async (
   }
 };
 
-const future = {
-  v7_startTransition: true,
-} as const;
-
 const framework = new Framework();
 configureCommonModules(framework);
 configureBrowserWorkbenchModule(framework);
@@ -871,7 +867,7 @@ const IOSBackAdapter = () => {
 
 export function App() {
   return (
-    <Suspense>
+    <Suspense fallback={<AppFallback />}>
       <FrameworkRoot framework={frameworkProvider}>
         <I18nProvider>
           <MobileModalConfigProvider>
@@ -880,11 +876,7 @@ export function App() {
               <IOSBackAdapter />
               <ShareImportController provider={shareInboxProvider} />
               <BlocksuiteMenuConfigProvider>
-                <RouterProvider
-                  fallbackElement={<AppFallback />}
-                  router={router}
-                  future={future}
-                />
+                <RouterProvider router={router} />
               </BlocksuiteMenuConfigProvider>
             </AffineContext>
           </MobileModalConfigProvider>

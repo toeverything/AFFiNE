@@ -49,9 +49,11 @@ export const SignIn = ({
           if (redirectUrl.toUpperCase() === 'CLOSE_POPUP') {
             window.close();
           }
-          navigate(redirectUrl, {
-            replace: true,
-          });
+          Promise.resolve(
+            navigate(redirectUrl, {
+              replace: true,
+            })
+          ).catch(console.error);
         } else {
           handleClose();
         }
