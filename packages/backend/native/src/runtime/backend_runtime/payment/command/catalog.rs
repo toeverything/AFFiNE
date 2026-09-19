@@ -197,15 +197,7 @@ impl PaymentRuntime {
   ) -> RuntimeResult<String> {
     validate_identity(user_id, "payment user")?;
     let namespace_key = canonical_namespace(namespace)?;
-    if let Some(customer_id) = sqlx::query_scalar::<_, String>(
-      "SELECT stripe_customer_id FROM user_stripe_customers WHERE user_id=$1 AND provider_namespace=$2",
-    )
-    .bind(user_id)
-    .bind(&namespace_key)
-    .fetch_optional(&self.pool)
-    .await
-    .map_err(|error| RuntimeError::database("load Stripe customer", error))?
-    {
+    if let Some(customer_id) = load_or_adopt_stripe_customer(&self.pool, user_id, &namespace_key).await? {
       return Ok(customer_id);
     }
     let email = email
