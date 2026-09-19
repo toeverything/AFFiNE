@@ -197,7 +197,9 @@ export const MarkdownFileViewer = memo(function MarkdownFileViewer({
           }
         })
         .catch((err: unknown) => {
-          setError(err instanceof Error ? err.message : String(err));
+          if (generation === lineRequestGeneration.current) {
+            setError(err instanceof Error ? err.message : String(err));
+          }
         });
     });
   }, [
