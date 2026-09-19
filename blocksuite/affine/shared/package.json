@@ -74,6 +74,7 @@
     "!dist/__tests__"
   ],
   "devDependencies": {
+    "@types/css-tree": "^2.3.11",
     "@types/pdfmake": "^0.2.12",
     "vitest": "^4.1.8"
   },
