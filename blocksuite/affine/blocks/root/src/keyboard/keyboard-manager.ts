@@ -11,7 +11,7 @@ import {
   getSelectedModelsCommand,
 } from '@blocksuite/affine-shared/commands';
 import { matchModels } from '@blocksuite/affine-shared/utils';
-import { IS_MAC, IS_WINDOWS } from '@blocksuite/global/env';
+import { IS_LINUX, IS_MAC, IS_WINDOWS } from '@blocksuite/global/env';
 import {
   type BlockComponent,
   BlockSelection,
@@ -98,7 +98,7 @@ export class PageKeyboardManager {
           }
         },
         'Control-y': ctx => {
-          if (!IS_WINDOWS) return;
+          if (!IS_WINDOWS && !IS_LINUX) return;
 
           ctx.get('defaultState').event.preventDefault();
           if (this._doc.canRedo) {
