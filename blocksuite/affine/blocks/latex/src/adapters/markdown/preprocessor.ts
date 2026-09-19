@@ -32,7 +32,7 @@ function escapeMhchem(text: string) {
  * @param content - The content to preprocess
  * @returns The preprocessed content
  */
-function preprocessLatex(content: string) {
+export function preprocessLatex(content: string) {
   // Protect code blocks
   const codeBlocks: string[] = [];
   let preprocessedContent = content;
@@ -54,8 +54,17 @@ function preprocessLatex(content: string) {
     }
   );
 
-  // Escape dollar signs that are likely currency indicators
-  preprocessedContent = preprocessedContent.replace(/\$(?=\d)/g, '\\$');
+  // Escape dollar signs that are likely currency indicators.
+  //
+  // A dollar preceded by an odd number of backslashes is already escaped, so
+  // adding another backslash makes the run even: `\$4` becomes `\\$4`, which is
+  // a literal backslash followed by an unescaped `$` that remark-math can then
+  // treat as a delimiter. Only escape a dollar whose preceding backslash run is
+  // even, and keep that run as it was.
+  preprocessedContent = preprocessedContent.replace(
+    /(?<!\\)((?:\\\\)*)\$(?=\d)/g,
+    '$1\\$'
+  );
 
   // Restore LaTeX expressions
   preprocessedContent = preprocessedContent.replace(
