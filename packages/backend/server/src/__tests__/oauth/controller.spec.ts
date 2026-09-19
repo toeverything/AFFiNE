@@ -3,7 +3,7 @@ import ava, { TestFn } from 'ava';
 
 import { AppModule } from '../../app.module';
 import { ConfigModule } from '../../base/config';
-import { ServerFeature } from '../../core/config/types';
+import { ServerFeature, ServerService } from '../../core/config';
 import { OAuthService } from '../../plugins/oauth/service';
 import { createTestingApp, TestingApp } from '../utils';
 
@@ -118,5 +118,5 @@ test('oauth endpoints retain validation and callback error shapes', async t => {
 test('configured oauth providers remain visible through the reader', async t => {
   const { app } = t.context;
   t.deepEqual(app.get(OAuthService).providers.sort(), ['github', 'google']);
-  t.truthy(ServerFeature.OAuth);
+  t.true(app.get(ServerService).features.includes(ServerFeature.OAuth));
 });

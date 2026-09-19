@@ -57,6 +57,24 @@ async function revokeTeamPlan(workspaceId: string) {
   await app.get(EntitlementService).revokeAdminGrant('workspace', workspaceId);
 }
 
+async function waitForInvitationNotification(userId: string) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const [notification] = await app.models.notification.findManyByUserId(
+      userId,
+      {
+        includeRead: true,
+        first: 1,
+        offset: 0,
+      }
+    );
+    if (notification?.type === NotificationType.Invitation) {
+      return notification as InvitationNotification;
+    }
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  throw new Error('Invitation notification was not created');
+}
+
 e2e('should invite a user', async t => {
   const { owner, workspace } = await createWorkspace();
   const u2 = await app.create(Mockers.User);
@@ -71,13 +89,7 @@ e2e('should invite a user', async t => {
   });
 
   t.truthy(result, 'failed to invite user');
-  const [invitationNotification] =
-    await app.models.notification.findManyByUserId(u2.id, {
-      includeRead: true,
-      first: 1,
-      offset: 0,
-    });
-  const invitation = invitationNotification as InvitationNotification;
+  const invitation = await waitForInvitationNotification(u2.id);
   t.is(invitation.type, NotificationType.Invitation);
   t.is(invitation.body.createdByUserId, owner.id);
   t.is(invitation.body.inviteId, result.inviteMembers[0].inviteId!);
