@@ -361,7 +361,8 @@ export function createFromTree(
   tree: MindmapNode,
   style: MindmapStyle,
   layoutType: LayoutType,
-  surface: SurfaceBlockModel
+  surface: SurfaceBlockModel,
+  options: { applyStyle?: boolean } = {}
 ) {
   const children = new Y.Map();
   const traverse = (subtree: MindmapNode, parent?: string) => {
@@ -388,7 +389,12 @@ export function createFromTree(
     style,
   });
   const mindmap = surface.getElementById(mindmapId) as MindmapElementModel;
-  handleLayout(mindmap, mindmap.tree, true, mindmap.layoutType);
+  handleLayout(
+    mindmap,
+    mindmap.tree,
+    options.applyStyle ?? true,
+    mindmap.layoutType
+  );
 
   return mindmap;
 }

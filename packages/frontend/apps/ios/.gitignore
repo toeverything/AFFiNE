@@ -2,6 +2,7 @@ App/build
 App/Pods
 App/output
 App/App/public
+App/.spm-cache
 DerivedData
 xcuserdata
 

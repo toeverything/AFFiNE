@@ -1,7 +1,15 @@
 import { ArrowRightSmallPlusIcon } from '@blocksuite/icons/rc';
 import { Slot } from '@radix-ui/react-slot';
-import { type MouseEvent, useCallback, useEffect, useId, useMemo } from 'react';
+import {
+  type MouseEvent,
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+} from 'react';
 
+import { createPenClickCompatHandlers } from '../../../utils/pen-click-compat';
 import type { MenuSubProps } from '../menu.types';
 import { useMenuItem } from '../use-menu-item';
 import { useMobileSubMenuHelper } from './context';
@@ -9,6 +17,12 @@ import { useMobileSubMenuHelper } from './context';
 const EMPTY_SUB_CONTENT_OPTIONS: NonNullable<
   MenuSubProps['subContentOptions']
 > = {};
+
+type PenClickCompatEvent =
+  | MouseEvent<Element>
+  | PointerEvent<Element>
+  | globalThis.MouseEvent
+  | globalThis.PointerEvent;
 
 export const MobileMenuSub = ({
   title,
@@ -72,8 +86,8 @@ export const MobileMenuSubRaw = ({
   }, [addSubMenu, subMenuContent]);
 
   const onItemClick = useCallback(
-    (e: MouseEvent<HTMLElement>) => {
-      onClick?.(e);
+    (e: PenClickCompatEvent) => {
+      onClick?.(e as MouseEvent<HTMLElement>);
       doAddSubMenu();
     },
     [doAddSubMenu, onClick]
@@ -84,5 +98,10 @@ export const MobileMenuSubRaw = ({
     }
   }, [doAddSubMenu, subOptions]);
 
-  return <Slot onClick={onItemClick}>{children}</Slot>;
+  const penClickCompat = useMemo(
+    () => createPenClickCompatHandlers(onItemClick),
+    [onItemClick]
+  );
+
+  return <Slot {...penClickCompat}>{children}</Slot>;
 };

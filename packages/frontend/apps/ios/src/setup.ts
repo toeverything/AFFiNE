@@ -4,6 +4,21 @@ import './proxy';
 
 import { viewportRuntimeConfig } from '@blocksuite/affine/std/gfx';
 
+import { setupNativeScribbleGate } from './plugins/pencil-input/scribble-gate';
+import { setupWebKitPencilActivityTracker } from './plugins/pencil-input/webkit-activity';
+
+// iPad Pencil routing uses WebKit `pointerType: 'pen'` (see blocksuite pointer /
+// pan-tool). Do NOT call `setupPencilInputClassifier()` / attach
+// `TouchClassifyingGestureRecognizer` to the WKWebView: on-device A/B showed that
+// observer leaves the page unresponsive after the first Pencil stroke while the
+// JS event loop stays alive. Palm rejection via native UITouch.type needs a
+// non-WKWebView-GR approach before it can be re-enabled.
+//
+// WebKit-only activity tracking (no GR) is safe: it only sets isPencilActive()
+// from recent `pointerType === 'pen'` so finger-pan-while-Pencil can work.
+setupWebKitPencilActivityTracker();
+setupNativeScribbleGate();
+
 // iOS WKWebView terminates the web content process when edgeless compositing
 // memory (GPU-side IOSurface tiles) spikes. Two distinct triggers exist:
 //   1. Resting canvas pixel memory — bounded by CANVAS_DPR_CAP_BY_ZOOM below.

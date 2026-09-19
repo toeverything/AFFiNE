@@ -11,9 +11,9 @@ import {
   useState,
 } from 'react';
 
-import { observeResize } from '../../../utils';
+import { createPenClickCompatHandlers, observeResize } from '../../../utils';
 import { Button } from '../../button';
-import { Modal } from '../../modal';
+import { Modal, type ModalProps } from '../../modal';
 import { Scrollable } from '../../scrollbar';
 import type { MenuProps } from '../menu.types';
 import {
@@ -127,6 +127,12 @@ export const MobileMenu = ({
     [onOpenChange, open]
   );
 
+  // Pencil taps often skip synthesized `click` on the menu trigger.
+  const triggerPenClickCompat = useMemo(
+    () => createPenClickCompatHandlers(onItemClick),
+    [onItemClick]
+  );
+
   const t = useI18n();
 
   /**
@@ -151,7 +157,7 @@ export const MobileMenu = ({
 
   return (
     <>
-      <Slot onClick={onItemClick}>{children}</Slot>
+      <Slot {...triggerPenClickCompat}>{children}</Slot>
       <MobileMenuContext.Provider value={mobileMenuContextValue}>
         <Modal
           open={finalOpen}
@@ -160,10 +166,13 @@ export const MobileMenu = ({
           animation="slideBottom"
           contentAnimation="none"
           withoutCloseButton={true}
-          contentOptions={{
-            className: clsx(className, styles.mobileMenuModal),
-            ...otherContentOptions,
-          }}
+          contentOptions={
+            {
+              className: clsx(className, styles.mobileMenuModal),
+              'data-affine-edgeless-ui-overlay': 'true',
+              ...otherContentOptions,
+            } as ModalProps['contentOptions']
+          }
           contentWrapperStyle={contentWrapperStyle}
           disableAutoFocus={true}
           preserveEditingFocusOnAction
