@@ -42,7 +42,8 @@ use types::*;
 use worker::PaymentWorker;
 use write::{
   adopt_legacy_entitlement, complete_receipts_and_operation, entitlement_subject, expire_missing_sources,
-  upsert_customers, upsert_financial_facts, upsert_invoices, upsert_licenses, upsert_subscription, upsert_trials,
+  load_or_adopt_stripe_customer, upsert_customers, upsert_financial_facts, upsert_invoices, upsert_licenses,
+  upsert_subscription, upsert_trials,
 };
 
 #[cfg(test)]

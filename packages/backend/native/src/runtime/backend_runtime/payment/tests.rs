@@ -1124,6 +1124,29 @@ async fn operation_intent_is_frozen_before_send_and_blocks_overlapping_work() {
       .all(|price| price.get("created") == Some(&json!(false)))
   );
   assert!(catalog_requests.recv().await.unwrap().starts_with("GET /v1/prices?"));
+
+  let legacy_user = insert_user(&pool, &format!("{account_marker}-legacy")).await;
+  let legacy_customer = format!("cus-{account_marker}-legacy");
+  sqlx::query("INSERT INTO user_stripe_customers(user_id,stripe_customer_id,provider_namespace) VALUES($1,$2,NULL)")
+    .bind(&legacy_user)
+    .bind(&legacy_customer)
+    .execute(&pool)
+    .await
+    .unwrap();
+  assert_eq!(
+    load_or_adopt_stripe_customer(&pool, &legacy_user, &account_namespace_key)
+      .await
+      .unwrap(),
+    Some(legacy_customer)
+  );
+  assert_eq!(
+    sqlx::query_scalar::<_, String>("SELECT provider_namespace FROM user_stripe_customers WHERE user_id=$1")
+      .bind(&legacy_user)
+      .fetch_one(&pool)
+      .await
+      .unwrap(),
+    account_namespace_key
+  );
   cleanup(&pool, &account_namespace_key, &account_marker).await;
 }
 
