@@ -399,14 +399,16 @@ export class DocFrontend {
   addPriority(id: string, priority: number) {
     const undoSyncPriority = this.sync?.addPriority(id, priority);
     const oldPriority = this.prioritySettings.get(id) ?? 0;
+    const newPriority = oldPriority + priority;
 
-    this.prioritySettings.set(id, priority);
-    this.status.jobDocQueue.setPriority(id, oldPriority + priority);
+    this.prioritySettings.set(id, newPriority);
+    this.status.jobDocQueue.setPriority(id, newPriority);
 
     return () => {
       const currentPriority = this.prioritySettings.get(id) ?? 0;
-      this.prioritySettings.set(id, currentPriority - priority);
-      this.status.jobDocQueue.setPriority(id, currentPriority - priority);
+      const restoredPriority = currentPriority - priority;
+      this.prioritySettings.set(id, restoredPriority);
+      this.status.jobDocQueue.setPriority(id, restoredPriority);
 
       undoSyncPriority?.();
     };

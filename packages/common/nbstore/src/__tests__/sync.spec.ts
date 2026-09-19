@@ -918,3 +918,71 @@ test('indexer completion waits for the current job to finish', async () => {
     sync.stop();
   }
 });
+
+test('indexer priority requests accumulate', async () => {
+  const docsInRootDoc = new Map([
+    ['doc-low', { title: 'Doc Low' }],
+    ['doc-high', { title: 'Doc High' }],
+  ]);
+  const crawled: string[] = [];
+  const rootDocCrawlStarted = deferred<void>();
+  const releaseRootDocCrawl = deferred<void>();
+  const docStorage = new TestDocStorage(
+    'workspace-id',
+    new Map([
+      ['doc-low', new Date('2026-01-01T00:00:00.000Z')],
+      ['doc-high', new Date('2026-01-01T00:00:00.000Z')],
+    ]),
+    async docId => {
+      crawled.push(docId);
+      return { title: docId, summary: 'summary', blocks: [] };
+    }
+  );
+  const indexer = new TrackingIndexerStorage([], 30_000);
+  // hold the loop inside the root doc crawl, so both docs stay queued while
+  // their priorities are changed
+  let holding = false;
+  vi.spyOn(indexer, 'insert').mockImplementation(async () => {
+    if (!holding) {
+      holding = true;
+      rootDocCrawlStarted.resolve();
+      await releaseRootDocCrawl.promise;
+    }
+  });
+  const sync = new IndexerSyncImpl(
+    docStorage,
+    {
+      local: indexer,
+      remotes: {},
+    },
+    new TrackingIndexerSyncStorage([])
+  );
+
+  vi.spyOn(reader, 'readAllDocsFromRootDoc').mockImplementation(
+    () => new Map(docsInRootDoc)
+  );
+
+  try {
+    sync.start();
+    await rootDocCrawlStarted.promise;
+
+    sync.addPriority('doc-low', 5);
+    // two holders on the same doc, one of them goes away
+    sync.addPriority('doc-high', 10);
+    const releaseSecondHolder = sync.addPriority('doc-high', 10);
+    releaseSecondHolder();
+
+    releaseRootDocCrawl.resolve();
+
+    await vi.waitFor(() => {
+      expect(crawled).toHaveLength(2);
+    });
+
+    // the remaining holder still asked for +10, so `doc-high` must outrank the
+    // +5 of `doc-low`
+    expect(crawled).toEqual(['doc-high', 'doc-low']);
+  } finally {
+    releaseRootDocCrawl.resolve();
+    sync.stop();
+  }
+});

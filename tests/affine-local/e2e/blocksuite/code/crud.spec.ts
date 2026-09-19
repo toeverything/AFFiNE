@@ -93,6 +93,24 @@ test.describe('Code Block Language Selector', () => {
     expect(result.language).toBeNull();
     expect(result.tokens).toEqual([]);
   });
+
+  test('switch language and back to plain text', async ({ page }) => {
+    await initCodeBlockByOneStep(page);
+    const code = page.locator('affine-code');
+
+    await code.hover({
+      position: { x: 155, y: 65 },
+    });
+    await page.getByTestId('lang-button').click();
+    await page.getByRole('button', { name: 'Rust' }).click();
+
+    await expect(page.getByTestId('lang-button')).toHaveText('Rust');
+
+    await page.getByTestId('lang-button').click();
+    await page.getByRole('button', { name: 'Plain Text' }).click();
+
+    await expect(page.getByTestId('lang-button')).toHaveText('Plain Text');
+  });
 });
 
 test.describe('Code Block Preview', () => {
