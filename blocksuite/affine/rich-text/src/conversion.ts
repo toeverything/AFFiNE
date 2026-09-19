@@ -141,10 +141,8 @@ export const textConversionConfigs: TextConversionConfig[] = [
     flavour: 'affine:callout',
     type: undefined,
     name: 'Callout',
-    description: 'Let your words stand out.',
     hotkey: null,
     icon: FontIcon(),
-    searchAlias: ['callout'],
   },
   {
     flavour: 'affine:divider',

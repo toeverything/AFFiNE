@@ -1,3 +1,4 @@
+import { locateToolbar } from '@affine-test/kit/utils/editor';
 import {
   pressArrowDown,
   pressArrowUp,
@@ -5,34 +6,30 @@ import {
   pressEnter,
   pressEscape,
   pressTab,
+  selectAllByKeyboard,
   undoByKeyboard,
+  withCtrlOrMeta,
 } from '@affine-test/kit/utils/keyboard';
-import { locateToolbar } from '@affine-test/kit/utils/editor';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   type,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
-// ─── helpers ───────────────────────────────────────────────────────────────
-
-async function redoByKeyboard(page: Parameters<typeof undoByKeyboard>[0]) {
-  const isMac = process.platform === 'darwin';
-  await page.keyboard.press(isMac ? 'Meta+Shift+Z' : 'Control+Shift+Z');
+async function redoByKeyboard(page: Page) {
+  await withCtrlOrMeta(page, () => page.keyboard.press('Shift+z'));
 }
 
-/** Select all text in the current focused block and open the Turn-into menu */
-async function openTurnIntoMenu(page: Parameters<typeof undoByKeyboard>[0]) {
-  await page.keyboard.press('Control+A');
+async function openTurnIntoMenu(page: Page) {
+  await selectAllByKeyboard(page);
   const toolbar = locateToolbar(page);
   await toolbar.getByLabel('Conversions').click();
   return toolbar;
 }
 
-/** Convert the currently-selected content to Callout via the toolbar */
-async function convertToCallout(page: Parameters<typeof undoByKeyboard>[0]) {
+async function convertToCallout(page: Page) {
   const toolbar = await openTurnIntoMenu(page);
   await toolbar.getByLabel('Callout').click();
 }
@@ -100,12 +97,11 @@ test('press backspace in callout block', async ({ page }) => {
   await expect(callout).toHaveCount(0);
 });
 
-// ─── Turn into → Callout regression tests ──────────────────────────────────
-
-test('turn into callout: plain paragraph preserves text and creates callout', async ({
-  page,
-}) => {
-  await type(page, 'hello world');
+test('turn into callout preserves text formatting', async ({ page }) => {
+  await type(page, 'plain ');
+  await withCtrlOrMeta(page, () => page.keyboard.press('b'));
+  await type(page, 'bold');
+  await withCtrlOrMeta(page, () => page.keyboard.press('b'));
   await convertToCallout(page);
 
   const callout = page.locator('affine-callout');
@@ -113,54 +109,54 @@ test('turn into callout: plain paragraph preserves text and creates callout', as
 
   const innerParagraph = page.locator('affine-callout affine-paragraph');
   await expect(innerParagraph).toHaveCount(1);
-  await expect(innerParagraph.locator('v-line')).toHaveText('hello world');
+  await expect(innerParagraph.locator('v-line')).toHaveText('plain bold');
+  await expect(
+    innerParagraph
+      .locator('v-element', { hasText: 'bold' })
+      .locator('span')
+      .last()
+  ).toHaveCSS('font-weight', '700');
 });
 
 test('turn into callout: nested list items remain reachable after conversion', async ({
   page,
 }) => {
-  // Build:  - parent item
-  //           - child item  (indented via Tab)
   await type(page, '- parent item');
   await pressEnter(page);
   await pressTab(page);
   await type(page, 'child item');
 
-  // Navigate back to parent and convert it
   await pressArrowUp(page);
   await convertToCallout(page);
 
   const callout = page.locator('affine-callout');
   await expect(callout).toHaveCount(1);
-
-  // Both "parent item" text and "child item" must be visible inside the callout
   await expect(callout).toContainText('parent item');
   await expect(callout).toContainText('child item');
+  await expect(
+    callout.locator('affine-paragraph affine-list', {
+      hasText: 'child item',
+    })
+  ).toHaveCount(1);
 });
 
-test('turn into callout: content inside existing callout is NOT converted (no data loss)', async ({
+test('turn into callout is unavailable for descendants of a callout', async ({
   page,
 }) => {
-  // Create a callout with some text
-  await type(page, '/callout\ninner text');
+  await type(page, '/callout\n- parent item');
+  await pressEnter(page);
+  await pressTab(page);
+  await type(page, 'child item');
 
   const callout = page.locator('affine-callout');
   await expect(callout).toHaveCount(1);
 
-  // Select the inner paragraph and try to convert to callout again
-  const innerParagraph = page.locator('affine-callout affine-paragraph');
-  await innerParagraph.click();
-  await page.keyboard.press('Control+A');
-
-  const toolbar = locateToolbar(page);
-  await toolbar.getByLabel('Conversions').click();
-
-  // The Callout option must NOT appear in the menu (hidden for nested context)
+  const toolbar = await openTurnIntoMenu(page);
   await expect(toolbar.getByLabel('Callout')).toHaveCount(0);
 
-  // The inner paragraph still exists and its text is intact
   await pressEscape(page);
-  await expect(innerParagraph).toContainText('inner text');
+  await expect(callout).toContainText('parent item');
+  await expect(callout).toContainText('child item');
   await expect(callout).toHaveCount(1);
 });
 
@@ -168,23 +164,20 @@ test('turn into callout: delete after conversion removes the whole callout', asy
   page,
 }) => {
   await type(page, 'delete me');
+  await pressEscape(page);
 
-  // Use keyboard shortcut path to trigger conversion so we can check
-  // BlockSelection behavior afterwards
-  await convertToCallout(page);
+  const toolbar = locateToolbar(page);
+  await toolbar.getByLabel('Conversions').click();
+  await toolbar.getByLabel('Callout').click();
 
   const callout = page.locator('affine-callout');
   await expect(callout).toHaveCount(1);
 
-  // Press Escape to exit text editing → BlockSelection on the callout
-  await pressEscape(page);
   await page.keyboard.press('Backspace');
-
-  // The entire callout (not just the inner paragraph) should be gone
   await expect(callout).toHaveCount(0);
 });
 
-test('turn into callout: undo restores original paragraph with correct text', async ({
+test('turn into callout preserves the block tree across undo and redo', async ({
   page,
 }) => {
   await type(page, 'undo me');
@@ -196,42 +189,10 @@ test('turn into callout: undo restores original paragraph with correct text', as
   await undoByKeyboard(page);
 
   await expect(callout).toHaveCount(0);
-  const paragraph = page.locator('affine-note > affine-paragraph');
+  const paragraph = page.locator('affine-note affine-paragraph');
   await expect(paragraph).toContainText('undo me');
-});
-
-test('turn into callout: redo restores the callout after undo', async ({
-  page,
-}) => {
-  await type(page, 'redo me');
-  await convertToCallout(page);
-  await undoByKeyboard(page);
-
-  const callout = page.locator('affine-callout');
-  await expect(callout).toHaveCount(0);
 
   await redoByKeyboard(page);
   await expect(callout).toHaveCount(1);
-  await expect(callout).toContainText('redo me');
-});
-
-test('turn into callout: rich-text formatting is preserved after conversion', async ({
-  page,
-}) => {
-  // Type text and bold part of it
-  await type(page, 'plain ');
-  await page.keyboard.press('Control+B');
-  await type(page, 'bold');
-  await page.keyboard.press('Control+B');
-
-  await convertToCallout(page);
-
-  const callout = page.locator('affine-callout');
-  await expect(callout).toHaveCount(1);
-
-  // The bold span must still be inside the callout
-  const boldSpan = callout.locator('v-element[data-v-type="text"] span').filter({
-    hasText: 'bold',
-  });
-  await expect(boldSpan).toHaveCount(1);
+  await expect(callout).toContainText('undo me');
 });

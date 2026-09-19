@@ -54,7 +54,10 @@ import {
   ActionPlacement,
   blockCommentToolbarButton,
 } from '@blocksuite/affine-shared/services';
-import { getMostCommonValue } from '@blocksuite/affine-shared/utils';
+import {
+  getMostCommonValue,
+  isInsideBlockByFlavour,
+} from '@blocksuite/affine-shared/utils';
 import { tableViewMeta } from '@blocksuite/data-view/view-presets';
 import {
   CopyIcon,
@@ -106,13 +109,9 @@ const conversionsActionGroup = {
         .run();
     };
 
-    // Hide "Callout" from the menu when every selected block is already a
-    // direct child of a Callout — the schema forbids nested Callouts and the
-    // command layer would silently no-op, which is confusing to the user.
-    const allInsideCallout = selectedModels.every(model => {
-      const parent = model.store.getParent(model);
-      return parent?.flavour === 'affine:callout';
-    });
+    const hasModelInsideCallout = selectedModels.some(model =>
+      isInsideBlockByFlavour(model.store, model, 'affine:callout')
+    );
 
     return {
       content: html`
@@ -132,7 +131,7 @@ const conversionsActionGroup = {
               textConversionConfigs.filter(
                 c =>
                   c.flavour !== 'affine:divider' &&
-                  !(allInsideCallout && c.flavour === 'affine:callout')
+                  !(hasModelInsideCallout && c.flavour === 'affine:callout')
               ),
               item => item.name,
               ({ flavour, type, name, icon }) => html`

@@ -14,6 +14,7 @@ import {
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
 import {
+  isInsideBlockByFlavour,
   matchModels,
   mergeToCodeModel,
   transformModel,
@@ -29,6 +30,11 @@ import type { BlockModel } from '@blocksuite/store';
 type UpdateBlockConfig = {
   flavour: string;
   props?: Record<string, unknown>;
+};
+
+type UpdateBlockResult = {
+  updatedBlocks: BlockModel[];
+  textTargetBlocks?: BlockModel[];
 };
 
 export const updateBlockType: Command<
@@ -121,82 +127,88 @@ export const updateBlockType: Command<
     }
     return next({ updatedBlocks: [newModel] });
   };
-  const transformToCallout: Command<{}, { updatedBlocks: BlockModel[] }> = (
-    _,
-    next
-  ) => {
+  const transformToCallout: Command<{}, UpdateBlockResult> = (_, next) => {
     if (flavour !== 'affine:callout') return;
-    // When flavour IS 'affine:callout', this command MUST always be terminal
-    // (always call next, never fall through). The generic transformModel branch
-    // that follows unconditionally deletes the source block even when addBlock
-    // fails a schema check — falling through would cause data loss.
 
-    const calloutModels: BlockModel[] = [];
-    const paragraphModels: BlockModel[] = [];
+    const selectedIds = new Set(blockModels.map(model => model.id));
+    const sourceModels = blockModels.filter(model => {
+      let parent = doc.getParent(model);
+      while (parent) {
+        if (selectedIds.has(parent.id)) return false;
+        parent = doc.getParent(parent);
+      }
+      return true;
+    });
 
-    blockModels.forEach(model => {
+    const plans = sourceModels.flatMap(model => {
       if (
         !matchModels(model, [
           ParagraphBlockModel,
           ListBlockModel,
           CodeBlockModel,
-        ])
+        ]) ||
+        isInsideBlockByFlavour(doc, model, 'affine:callout')
       ) {
-        return;
+        return [];
       }
 
       const parent = doc.getParent(model);
-      if (!parent) return;
-
-      // [P1a] Callout cannot be nested inside another Callout — skip silently.
-      // We still call next() at the end so the chain does NOT fall through to
-      // the generic transformModel branch (which would delete the source block).
-      if (parent.flavour === 'affine:callout') return;
-
-      const index = parent.children.indexOf(model);
-      const textContent = model.text?.clone();
-
-      // Callout is a hub block — its text lives in a child paragraph,
-      // not in its own text prop, so we create the callout first,
-      // then add a paragraph inside it carrying the original text.
-      const calloutId = doc.addBlock('affine:callout', {}, parent, index);
-      if (!calloutId) return;
-
-      const calloutModel = doc.getModelById(calloutId);
-      if (!calloutModel) return;
-
-      const paragraphId = doc.addBlock(
-        'affine:paragraph',
-        { text: textContent },
-        calloutModel
-      );
-
-      const paragraphModel = paragraphId
-        ? doc.getModelById(paragraphId)
-        : null;
-
-      // [P1b] Re-parent nested children (e.g. indented list items) to the new
-      // paragraph so they remain reachable after the source block is removed.
-      if (paragraphModel && model.children.length > 0) {
-        doc.deleteBlock(model, { bringChildrenTo: paragraphModel });
-      } else {
-        doc.deleteBlock(model, { deleteChildren: false });
+      if (
+        !parent ||
+        parent.children.indexOf(model) === -1 ||
+        !doc.schema.isValid('affine:callout', parent.flavour) ||
+        !model.children.every(child =>
+          doc.schema.isValid(child.flavour, 'affine:paragraph')
+        )
+      ) {
+        return [];
       }
 
-      calloutModels.push(calloutModel);
-      if (paragraphModel) {
-        paragraphModels.push(paragraphModel);
-      }
+      return [{ model, parent, text: model.text?.clone() }];
     });
 
-    // Always terminal for 'affine:callout' — never fall through to
-    // genericTransform. If no blocks were converted (e.g. all were inside an
-    // existing Callout and skipped), we still call next with empty arrays.
-    const updatedBlocks =
-      paragraphModels.length > 0 ? paragraphModels : calloutModels;
-    return next({ updatedBlocks, calloutModels } as {
-      updatedBlocks: BlockModel[];
-      calloutModels: BlockModel[];
+    if (plans.length === 0 || plans.length !== sourceModels.length) {
+      return next({ updatedBlocks: [] });
+    }
+
+    const conversions: Array<{
+      source: BlockModel;
+      callout: BlockModel;
+      paragraph: BlockModel;
+    }> = [];
+
+    for (const { model, parent, text } of plans) {
+      const index = parent.children.indexOf(model);
+      const calloutId = doc.addBlock('affine:callout', {}, parent, index);
+      const callout = doc.getModelById(calloutId);
+      if (!callout) {
+        conversions.forEach(({ callout }) => doc.deleteBlock(callout));
+        return next({ updatedBlocks: [] });
+      }
+
+      const paragraphId = doc.addBlock('affine:paragraph', { text }, callout);
+      const paragraph = doc.getModelById(paragraphId);
+      if (!paragraph) {
+        doc.deleteBlock(callout);
+        conversions.forEach(({ callout }) => doc.deleteBlock(callout));
+        return next({ updatedBlocks: [] });
+      }
+
+      conversions.push({ source: model, callout, paragraph });
+    }
+
+    conversions.forEach(({ source, paragraph }) => {
+      doc.deleteBlock(
+        source,
+        source.children.length > 0
+          ? { bringChildrenTo: paragraph }
+          : { deleteChildren: false }
+      );
+    });
+
+    return next({
+      updatedBlocks: conversions.map(({ callout }) => callout),
+      textTargetBlocks: conversions.map(({ paragraph }) => paragraph),
     });
   };
   const transformToLatex: Command<{}, { updatedBlocks: BlockModel[] }> = (
@@ -232,16 +244,16 @@ export const updateBlockType: Command<
     return next({ updatedBlocks: newModels });
   };
 
-  const focusText: Command<{ updatedBlocks: BlockModel[] }> = (ctx, next) => {
-    const { updatedBlocks } = ctx;
-    if (!updatedBlocks || updatedBlocks.length === 0) {
+  const focusText: Command<UpdateBlockResult> = (ctx, next) => {
+    const targetBlocks = ctx.textTargetBlocks ?? ctx.updatedBlocks;
+    if (!targetBlocks || targetBlocks.length === 0) {
       return false;
     }
 
-    const firstNewModel = updatedBlocks[0];
-    const lastNewModel = updatedBlocks[updatedBlocks.length - 1];
+    const firstNewModel = targetBlocks[0];
+    const lastNewModel = targetBlocks[targetBlocks.length - 1];
 
-    const allTextUpdated = updatedBlocks.map(model =>
+    const allTextUpdated = targetBlocks.map(model =>
       onModelTextUpdated(std, model)
     );
     const selectionManager = host.selection;
@@ -272,7 +284,7 @@ export const updateBlockType: Command<
     return next();
   };
 
-  const focusBlock: Command<{ updatedBlocks: BlockModel[] }> = (ctx, next) => {
+  const focusBlock: Command<UpdateBlockResult> = (ctx, next) => {
     const { updatedBlocks } = ctx;
     if (!updatedBlocks || updatedBlocks.length === 0) {
       return false;
@@ -285,15 +297,8 @@ export const updateBlockType: Command<
       return false;
     }
 
-    // [P2] For Callout conversions, select the Callout container rather than
-    // the inner paragraph so that an immediate Delete removes the whole block.
-    const calloutModels = (ctx as { calloutModels?: BlockModel[] })
-      .calloutModels;
-    const targetModels =
-      calloutModels && calloutModels.length > 0 ? calloutModels : updatedBlocks;
-
     requestAnimationFrame(() => {
-      const selections = targetModels.map(model => {
+      const selections = updatedBlocks.map(model => {
         return selectionManager.create(BlockSelection, {
           blockId: model.id,
         });
@@ -332,7 +337,7 @@ export const updateBlockType: Command<
       return next();
     })
     // update block type
-    .try<{ updatedBlocks: BlockModel[] }>(chain => [
+    .try<UpdateBlockResult>(chain => [
       chain.pipe(mergeToCode),
       chain.pipe(appendDivider),
       chain.pipe(transformToCallout),
