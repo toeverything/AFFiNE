@@ -297,8 +297,8 @@
   ],
   "version": "0.27.5",
   "devDependencies": {
-    "@vanilla-extract/vite-plugin": "^5.0.0",
+    "@vanilla-extract/vite-plugin": "~5.1.5",
     "msw": "^2.13.2",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   }
 }

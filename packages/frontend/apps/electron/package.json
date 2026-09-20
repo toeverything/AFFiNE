@@ -61,7 +61,7 @@
     "electron-log": "^5.4.3",
     "electron-squirrel-startup": "1.0.1",
     "electron-window-state": "^5.0.3",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "fs-extra": "^11.2.0",
     "glob": "^11.0.0",
     "lodash-es": "^4.17.23",
@@ -72,13 +72,13 @@
     "tree-kill": "^1.2.2",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "uuid": "^14.0.0",
-    "vitest": "^4.1.8",
+    "vitest": "^4.1.11",
     "zod": "^3.25.76"
   },
   "dependencies": {
     "async-call-rpc": "^6.4.2",
     "electron-updater": "^6.8.9",
-    "link-preview-js": "^4.0.0",
+    "link-preview-js": "^4.0.4",
     "set-cookie-parser": "^2.7.1",
     "yjs": "^13.6.27"
   },
