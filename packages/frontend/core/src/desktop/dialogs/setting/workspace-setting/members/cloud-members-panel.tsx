@@ -201,30 +201,32 @@ export const CloudWorkspaceMembersPanel = ({
       emails,
     }: Parameters<InviteTeamMemberModalProps['onConfirm']>[0]) => {
       setIsMutating(true);
-      const uniqueEmails = deduplicateEmails(emails);
-      if (
-        !isTeam &&
-        workspaceQuota &&
-        uniqueEmails.length >
-          workspaceQuota.memberLimit - workspaceQuota.memberCount
-      ) {
-        setOpenMemberLimit(true);
+      try {
+        const uniqueEmails = deduplicateEmails(emails);
+        if (
+          !isTeam &&
+          workspaceQuota &&
+          uniqueEmails.length >
+            workspaceQuota.memberLimit - workspaceQuota.memberCount
+        ) {
+          setOpenMemberLimit(true);
+          return;
+        }
+        const results = await membersService.inviteMembers(uniqueEmails);
+        if (results) {
+          notify({
+            title: t['com.affine.payment.member.team.invite.notify.title']({
+              count: results.length.toString(),
+            }),
+            message: t['Invitation sent hint'](),
+          });
+          setOpenInvite(false);
+          membersService.members.revalidate();
+          workspaceQuotaService.quota.revalidate();
+        }
+      } finally {
         setIsMutating(false);
-        return;
       }
-      const results = await membersService.inviteMembers(uniqueEmails);
-      if (results) {
-        notify({
-          title: t['com.affine.payment.member.team.invite.notify.title']({
-            count: results.length.toString(),
-          }),
-          message: t['Invitation sent hint'](),
-        });
-        setOpenInvite(false);
-        membersService.members.revalidate();
-        workspaceQuotaService.quota.revalidate();
-      }
-      setIsMutating(false);
     },
     [isTeam, membersService, t, workspaceQuota, workspaceQuotaService.quota]
   );
