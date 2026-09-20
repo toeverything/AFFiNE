@@ -81,7 +81,7 @@
     "storybook": "^10.2.14",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "unplugin-swc": "^1.5.9",
-    "vite": "^7.3.5",
+    "vite": "^7.3.6",
     "vitest": "^4.1.11"
   },
   "version": "0.27.5"
