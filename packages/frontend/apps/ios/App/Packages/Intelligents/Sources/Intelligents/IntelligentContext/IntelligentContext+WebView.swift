@@ -9,6 +9,16 @@ import UIKit
 import WebKit
 
 extension IntelligentContext {
+  @MainActor
+  func waitForSelectedSources(_ documentIds: [String]) async throws {
+    _ = try await webView.callAsyncJavaScript(
+      BridgedWindowScript.waitForSelectedSources.rawValue,
+      arguments: ["documentIds": documentIds],
+      in: nil,
+      contentWorld: .page
+    )
+  }
+
   func prepareMetadataFrom(webView: WKWebView, completion: @escaping ([WebViewMetadataKey: Any]) -> Void) {
     var newMetadata: [WebViewMetadataKey: Any] = [:]
     let dispatchGroup = DispatchGroup()

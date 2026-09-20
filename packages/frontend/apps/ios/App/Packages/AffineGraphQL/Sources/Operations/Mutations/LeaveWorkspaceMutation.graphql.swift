@@ -38,6 +38,9 @@ public class LeaveWorkspaceMutation: GraphQLMutation {
         "sendLeaveMail": .variable("sendLeaveMail")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      LeaveWorkspaceMutation.Data.self
+    ] }
 
     public var leaveWorkspace: Bool { __data["leaveWorkspace"] }
   }

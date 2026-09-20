@@ -55,11 +55,12 @@ export const errorStyle = style({
 export const membersFallback = style({
   display: 'flex',
   justifyContent: 'center',
-  alignItems: 'flexStart',
+  alignItems: 'center',
   color: cssVarV2('text/secondary'),
   gap: '4px',
-  padding: '8px',
+  padding: '16px 8px',
   fontSize: cssVar('fontXs'),
+  textAlign: 'center',
 });
 
 export const memberListItem = style({

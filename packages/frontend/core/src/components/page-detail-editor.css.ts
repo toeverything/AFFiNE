@@ -3,6 +3,8 @@ export const editor = style({
   flex: 1,
   selectors: {
     '&.full-screen': {
+      width: '100%',
+      minWidth: 0,
       vars: {
         '--affine-editor-width': '100%',
         '--affine-editor-side-padding': '72px',

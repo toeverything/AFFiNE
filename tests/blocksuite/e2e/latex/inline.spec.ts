@@ -1,6 +1,13 @@
 import { expect } from '@playwright/test';
 
 import {
+  dragBetweenIndices,
+  enterPlaygroundRoom,
+  focusRichText,
+  initEmptyParagraphState,
+  waitNextFrame,
+} from '../utils/actions/index.js';
+import {
   cutByKeyboard,
   pasteByKeyboard,
   pressArrowLeft,
@@ -16,16 +23,12 @@ import {
   undoByKeyboard,
 } from '../utils/actions/keyboard.js';
 import {
-  enterPlaygroundRoom,
-  focusRichText,
-  initEmptyParagraphState,
-} from '../utils/actions/misc.js';
-import {
   assertRichTextInlineDeltas,
   assertRichTextInlineRange,
 } from '../utils/asserts.js';
 import { ZERO_WIDTH_FOR_EMPTY_LINE } from '../utils/inline-editor.js';
 import { test } from '../utils/playwright.js';
+import { getFormatBar } from '../utils/query.js';
 
 test('add inline latex at the start of line', async ({ page }, testInfo) => {
   await enterPlaygroundRoom(page);
@@ -238,6 +241,63 @@ test('add inline latex using slash menu', async ({ page }, testInfo) => {
   await pressEnter(page);
   expect(await latexEditorLine.isVisible()).not.toBeTruthy();
   expect(await latexElement.locator('.katex').innerHTML()).toBe(innerHTML);
+});
+
+test('should preserve distinct latex values when converting selections in reverse order', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyParagraphState(page);
+  await focusRichText(page);
+
+  await type(page, 'a+b test a^2 test');
+
+  await dragBetweenIndices(page, [0, 9], [0, 12]);
+  const { formatBar } = getFormatBar(page);
+  await expect(formatBar).toBeVisible();
+  await formatBar.getByRole('button', { name: 'Inline equation' }).click();
+  await waitNextFrame(page);
+
+  await assertRichTextInlineDeltas(page, [
+    {
+      insert: 'a+b test ',
+    },
+    {
+      insert: ' ',
+      attributes: {
+        latex: 'a^2',
+      },
+    },
+    {
+      insert: ' test',
+    },
+  ]);
+
+  await dragBetweenIndices(page, [0, 0], [0, 3]);
+  await expect(formatBar).toBeVisible();
+  await formatBar.getByRole('button', { name: 'Inline equation' }).click();
+  await waitNextFrame(page);
+
+  await assertRichTextInlineDeltas(page, [
+    {
+      insert: ' ',
+      attributes: {
+        latex: 'a+b',
+      },
+    },
+    {
+      insert: ' test ',
+    },
+    {
+      insert: ' ',
+      attributes: {
+        latex: 'a^2',
+      },
+    },
+    {
+      insert: ' test',
+    },
+  ]);
 });
 
 test('add inline latex using markdown shortcut', async ({ page }) => {

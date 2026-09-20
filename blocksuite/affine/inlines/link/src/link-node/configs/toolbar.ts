@@ -288,7 +288,7 @@ export const builtinInlineLinkToolbarConfig = {
             .actions=${actions}
             .context=${ctx}
             .onToggle=${onToggle}
-            .viewType$=${viewType$}
+            .viewTypeSignal=${viewType$}
           ></affine-view-dropdown-menu>`
         )}`;
       },

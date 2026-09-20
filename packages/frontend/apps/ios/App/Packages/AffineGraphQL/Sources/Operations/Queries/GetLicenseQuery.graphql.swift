@@ -27,6 +27,9 @@ public class GetLicenseQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetLicenseQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -43,6 +46,9 @@ public class GetLicenseQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("license", License?.self),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetLicenseQuery.Data.Workspace.self
+      ] }
 
       /// The selfhost license of the workspace
       public var license: License? { __data["license"] }
@@ -58,6 +64,10 @@ public class GetLicenseQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .fragment(LicenseBody.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetLicenseQuery.Data.Workspace.License.self,
+          LicenseBody.self
         ] }
 
         public var expiredAt: AffineGraphQL.DateTime? { __data["expiredAt"] }

@@ -7,7 +7,7 @@ public class WorkspaceInvoicesQuery: GraphQLQuery {
   public static let operationName: String = "workspaceInvoices"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query workspaceInvoices($take: Int!, $skip: Int!, $workspaceId: String!) { workspace(id: $workspaceId) { __typename invoiceCount invoices(take: $take, skip: $skip) { __typename id status currency amount reason lastPaymentError link createdAt } } }"#
+      #"query workspaceInvoices($take: Int!, $skip: Int!, $workspaceId: String!) { workspace(id: $workspaceId) { __typename invoiceCount invoices(take: $take, skip: $skip) { __typename status currency amount reason lastPaymentError link createdAt } } }"#
     ))
 
   public var take: Int
@@ -38,6 +38,9 @@ public class WorkspaceInvoicesQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      WorkspaceInvoicesQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -58,6 +61,9 @@ public class WorkspaceInvoicesQuery: GraphQLQuery {
           "skip": .variable("skip")
         ]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        WorkspaceInvoicesQuery.Data.Workspace.self
+      ] }
 
       /// Get user invoice count
       public var invoiceCount: Int { __data["invoiceCount"] }
@@ -73,7 +79,6 @@ public class WorkspaceInvoicesQuery: GraphQLQuery {
         public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.InvoiceType }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
-          .field("id", String?.self),
           .field("status", GraphQLEnum<AffineGraphQL.InvoiceStatus>.self),
           .field("currency", String.self),
           .field("amount", Int.self),
@@ -82,9 +87,10 @@ public class WorkspaceInvoicesQuery: GraphQLQuery {
           .field("link", String?.self),
           .field("createdAt", AffineGraphQL.DateTime.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          WorkspaceInvoicesQuery.Data.Workspace.Invoice.self
+        ] }
 
-        @available(*, deprecated, message: "removed")
-        public var id: String? { __data["id"] }
         public var status: GraphQLEnum<AffineGraphQL.InvoiceStatus> { __data["status"] }
         public var currency: String { __data["currency"] }
         public var amount: Int { __data["amount"] }

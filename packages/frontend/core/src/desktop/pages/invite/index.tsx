@@ -2,6 +2,7 @@ import { notify } from '@affine/component';
 import {
   AcceptInvitePage,
   ExpiredPage,
+  InvitationAccountMismatchPage,
   JoinFailedPage,
   RequestToJoinPage,
   SentRequestPage,
@@ -35,6 +36,7 @@ const AcceptInvite = ({ inviteId: targetInviteId }: { inviteId: string }) => {
   const navigateHelper = useNavigateHelper();
   const [accepted, setAccepted] = useState(false);
   const [requestToJoinLoading, setRequestToJoinLoading] = useState(false);
+  const [switchingAccount, setSwitchingAccount] = useState(false);
   const [acceptError, setAcceptError] = useState<UserFriendlyError | null>(
     null
   );
@@ -76,27 +78,63 @@ const AcceptInvite = ({ inviteId: targetInviteId }: { inviteId: string }) => {
           return openWorkspace();
         }
         setAcceptError(err);
+        if (err.is('INVITATION_ACCOUNT_MISMATCH')) {
+          return;
+        }
         notify.error(err);
       });
     setRequestToJoinLoading(false);
   }, [invitationService, openWorkspace, targetInviteId]);
 
-  const onSignOut = useAsyncCallback(async () => {
-    await authService.signOut();
-    navigateHelper.jumpToSignIn();
-  }, [authService, navigateHelper]);
+  const onSwitchAccount = useAsyncCallback(async () => {
+    setSwitchingAccount(true);
+    try {
+      await authService.signOut();
+      navigateHelper.jumpToSignIn(
+        `/invite/${targetInviteId}`,
+        RouteLogic.REPLACE
+      );
+    } finally {
+      setSwitchingAccount(false);
+    }
+  }, [authService, navigateHelper, targetInviteId]);
+
+  const invitationError = error ? UserFriendlyError.fromAny(error) : null;
+  const accountMismatch =
+    invitationError?.is('INVITATION_ACCOUNT_MISMATCH') ||
+    acceptError?.is('INVITATION_ACCOUNT_MISMATCH');
 
   if ((loading && !requestToJoinLoading) || inviteId !== targetInviteId) {
     return null;
   }
 
-  if (!inviteInfo && !loading) {
+  if (accountMismatch) {
+    return (
+      <InvitationAccountMismatchPage
+        user={user}
+        switchingAccount={switchingAccount}
+        onSwitchAccount={onSwitchAccount}
+        onOpenAffine={onOpenAffine}
+      />
+    );
+  }
+
+  if (
+    !inviteInfo &&
+    !loading &&
+    (!invitationError ||
+      invitationError.is('INVALID_INVITATION') ||
+      invitationError.is('NOT_FOUND'))
+  ) {
     return <ExpiredPage onOpenAffine={onOpenAffine} />;
   }
 
-  if (error || acceptError) {
+  if (invitationError || acceptError) {
     return (
-      <JoinFailedPage inviteInfo={inviteInfo} error={error || acceptError} />
+      <JoinFailedPage
+        inviteInfo={inviteInfo}
+        error={invitationError || acceptError}
+      />
     );
   }
 
@@ -123,7 +161,7 @@ const AcceptInvite = ({ inviteId: targetInviteId }: { inviteId: string }) => {
       user={user}
       inviteInfo={inviteInfo}
       requestToJoin={requestToJoin}
-      onSignOut={onSignOut}
+      onSignOut={onSwitchAccount}
     />
   );
 };
@@ -142,10 +180,13 @@ export const Component = () => {
 
   useEffect(() => {
     authService.session.revalidate();
-    if (params.inviteId) {
+  }, [authService]);
+
+  useEffect(() => {
+    if (loginStatus === 'authenticated' && params.inviteId) {
       invitationService.getInviteInfo({ inviteId: params.inviteId });
     }
-  }, [authService, invitationService, params.inviteId]);
+  }, [invitationService, loginStatus, params.inviteId]);
 
   const { jumpToSignIn } = useNavigateHelper();
 

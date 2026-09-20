@@ -26,6 +26,9 @@ public class CreateReplyMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("createReply", CreateReply.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateReplyMutation.Data.self
+    ] }
 
     public var createReply: CreateReply { __data["createReply"] }
 
@@ -45,6 +48,9 @@ public class CreateReplyMutation: GraphQLMutation {
         .field("createdAt", AffineGraphQL.DateTime.self),
         .field("updatedAt", AffineGraphQL.DateTime.self),
         .field("user", User.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CreateReplyMutation.Data.CreateReply.self
       ] }
 
       public var commentId: AffineGraphQL.ID { __data["commentId"] }
@@ -71,6 +77,9 @@ public class CreateReplyMutation: GraphQLMutation {
           .field("id", String.self),
           .field("name", String.self),
           .field("avatarUrl", String?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          CreateReplyMutation.Data.CreateReply.User.self
         ] }
 
         public var id: String { __data["id"] }

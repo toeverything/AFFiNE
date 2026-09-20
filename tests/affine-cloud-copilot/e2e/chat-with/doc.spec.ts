@@ -22,6 +22,7 @@ test.describe('AIChatWith/Doc', () => {
     await page.keyboard.insertText('Test Doc');
     await page.keyboard.press('Enter');
     await page.keyboard.insertText('DocEEee is a cute cat');
+    await utils.editor.waitForCurrentDocSynced(page);
 
     await utils.chatPanel.chatWithDoc(page, 'Test Doc');
 
@@ -53,6 +54,7 @@ test.describe('AIChatWith/Doc', () => {
     await page.keyboard.insertText('Test Doc1');
     await page.keyboard.press('Enter');
     await page.keyboard.insertText('DocEEee is a cute cat');
+    await utils.editor.waitForCurrentDocSynced(page);
 
     // Initialize the doc 2
     await clickNewPageButton(page);
@@ -61,6 +63,7 @@ test.describe('AIChatWith/Doc', () => {
     await page.keyboard.insertText('Test Doc2');
     await page.keyboard.press('Enter');
     await page.keyboard.insertText('DocFFff is a cute dog');
+    await utils.editor.waitForCurrentDocSynced(page);
 
     await utils.chatPanel.chatWithDoc(page, 'Test Doc1');
     await utils.chatPanel.chatWithDoc(page, 'Test Doc2');

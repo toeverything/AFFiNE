@@ -5,9 +5,9 @@ import {
 } from '@affine/component';
 import { ArrowLeftSmallIcon, CloseIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
-import { NavigationGestureService } from '../../modules/navigation-gesture';
+import { MobileBackCoordinator } from '../../modules/back-coordinator';
 
 export interface NavigationBackButtonProps extends IconButtonProps {
   backAction?: () => void;
@@ -23,23 +23,15 @@ export const NavigationBackButton = ({
   style: propsStyle,
   ...otherProps
 }: NavigationBackButtonProps) => {
-  const navigationGesture = useService(NavigationGestureService);
+  const backCoordinator = useService(MobileBackCoordinator);
   const isInsideModal = useIsInsideModal();
 
   const handleRouteBack = useCallback(() => {
-    backAction ? backAction() : history.back();
-  }, [backAction]);
-
-  useEffect(() => {
-    if (isInsideModal) return;
-
-    const prev = navigationGesture.enabled$.value;
-    navigationGesture.setEnabled(true);
-
-    return () => {
-      navigationGesture.setEnabled(prev);
-    };
-  }, [isInsideModal, navigationGesture]);
+    if (backAction) return backAction();
+    if (!backCoordinator.request('ui-back')) {
+      backCoordinator.request('ui-up');
+    }
+  }, [backAction, backCoordinator]);
 
   const style = useMemo(() => ({ padding: 10, ...propsStyle }), [propsStyle]);
 

@@ -273,7 +273,7 @@ const builtinSurfaceToolbarConfig = {
           @select=${onSelect}
           @toggle=${onToggle}
           .format=${format}
-          .size$=${scale$}
+          .sizeSignal=${scale$}
         ></affine-size-dropdown-menu>`;
       },
     },

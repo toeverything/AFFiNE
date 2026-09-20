@@ -2,6 +2,7 @@ import '@affine/core/bootstrap/electron';
 import '@affine/core/bootstrap/cleanup';
 import '@affine/component/theme';
 import './global.css';
+import './native-import';
 
 import { apis } from '@affine/electron-api';
 import { bindNativeDBApis } from '@affine/nbstore/sqlite';

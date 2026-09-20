@@ -216,7 +216,7 @@ export const OnboardingPage = ({
                     ],
                   };
 
-                  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                  // oxlint-disable-next-line typescript/no-floating-promises
                   fetch('/api/worker/questionnaire', {
                     method: 'POST',
                     body: JSON.stringify(answer),
@@ -255,7 +255,7 @@ export const OnboardingPage = ({
           size="extraLarge"
           onClick={() => {
             if (callbackUrl) {
-              navigate(callbackUrl);
+              Promise.resolve(navigate(callbackUrl)).catch(console.error);
             } else {
               onOpenAffine();
             }

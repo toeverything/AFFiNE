@@ -26,6 +26,9 @@ public class DeleteReplyMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("deleteReply", Bool.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      DeleteReplyMutation.Data.self
+    ] }
 
     /// Delete a reply
     public var deleteReply: Bool { __data["deleteReply"] }

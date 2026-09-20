@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "fixture-canvas-contract-v1",
+  "documents": [
+    {
+      "docId": "doc-01",
+      "title": "Project Aurora",
+      "revision": "fixture-revision-01",
+      "pageBlocks": [
+        {
+          "id": "block-01",
+          "type": "paragraph",
+          "visibility": "page",
+          "text": "Page fact alpha"
+        },
+        {
+          "id": "note-01",
+          "type": "note",
+          "visibility": "both",
+          "text": "Shared fact beta",
+          "bounds": { "x": 20, "y": 20, "width": 180, "height": 100 }
+        },
+        {
+          "id": "frame-01",
+          "type": "frame",
+          "visibility": "edgeless",
+          "title": "Delivery lane",
+          "bounds": { "x": 0, "y": 0, "width": 640, "height": 360 },
+          "childIds": ["shape-01", "text-01", "connector-01"]
+        },
+        {
+          "id": "text-block-01",
+          "type": "edgeless-text",
+          "visibility": "edgeless",
+          "text": "Canvas fact gamma",
+          "bounds": { "x": 260, "y": 70, "width": 180, "height": 40 }
+        }
+      ],
+      "surfaceElements": [
+        {
+          "id": "shape-01",
+          "type": "shape",
+          "text": "Start node",
+          "bounds": { "x": 60, "y": 180, "width": 120, "height": 60 }
+        },
+        {
+          "id": "text-01",
+          "type": "text",
+          "text": "Finish node",
+          "bounds": { "x": 420, "y": 180, "width": 120, "height": 60 }
+        },
+        {
+          "id": "connector-01",
+          "type": "connector",
+          "label": "handoff",
+          "sourceId": "shape-01",
+          "targetId": "text-01",
+          "bounds": { "x": 180, "y": 205, "width": 240, "height": 10 }
+        },
+        {
+          "id": "group-01",
+          "type": "group",
+          "title": "Milestones",
+          "children": ["shape-01", "text-01"],
+          "bounds": { "x": 40, "y": 160, "width": 520, "height": 100 }
+        },
+        {
+          "id": "brush-01",
+          "type": "brush",
+          "pointCount": 4,
+          "bounds": { "x": 30, "y": 300, "width": 200, "height": 20 }
+        },
+        {
+          "id": "mindmap-01",
+          "type": "mindmap",
+          "text": "Root idea",
+          "children": ["mindmap-02"],
+          "bounds": { "x": 700, "y": 100, "width": 140, "height": 60 }
+        },
+        {
+          "id": "mindmap-02",
+          "type": "mindmap",
+          "text": "Leaf idea",
+          "parentId": "mindmap-01",
+          "index": "0",
+          "bounds": { "x": 900, "y": 100, "width": 140, "height": 60 }
+        },
+        {
+          "id": "unknown-01",
+          "type": "fixture-unknown",
+          "bounds": { "x": 700, "y": 260, "width": 80, "height": 80 }
+        }
+      ]
+    }
+  ],
+  "expectations": [
+    {
+      "docId": "doc-01",
+      "counts": {
+        "shape": 1,
+        "text": 1,
+        "connector": 1,
+        "group": 1,
+        "brush": 1,
+        "mindmap": 2,
+        "unknown": 1
+      },
+      "bothUnitIds": ["block:note-01"],
+      "connector": {
+        "id": "connector-01",
+        "sourceId": "shape-01",
+        "targetId": "text-01"
+      },
+      "frame": {
+        "id": "frame-01",
+        "childIds": ["connector-01", "shape-01", "text-01"]
+      }
+    }
+  ]
+}

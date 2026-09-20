@@ -32,6 +32,7 @@ export class ChatContentRichText extends WithDisposable(ShadowlessElement) {
       extensions: this.extensions,
       affineFeatureFlagService: this.affineFeatureFlagService,
       theme: this.theme,
+      scrollable: false,
     })(text, this.state)}`;
   }
 }

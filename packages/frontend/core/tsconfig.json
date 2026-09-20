@@ -21,6 +21,7 @@
     { "path": "../../../blocksuite/affine/blocks/root" },
     { "path": "../../../blocksuite/affine/components" },
     { "path": "../../../blocksuite/affine/shared" },
+    { "path": "../../../blocksuite/affine/data-view" },
     { "path": "../../../blocksuite/framework/global" },
     { "path": "../../../blocksuite/framework/std" },
     { "path": "../../common/infra" },

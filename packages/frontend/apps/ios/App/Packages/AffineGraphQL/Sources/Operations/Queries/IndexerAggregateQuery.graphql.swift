@@ -34,6 +34,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      IndexerAggregateQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -49,6 +52,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("aggregate", Aggregate.self, arguments: ["input": .variable("input")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        IndexerAggregateQuery.Data.Workspace.self
       ] }
 
       /// Search a specific table with aggregate
@@ -66,6 +72,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
           .field("__typename", String.self),
           .field("buckets", [Bucket].self),
           .field("pagination", Pagination.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          IndexerAggregateQuery.Data.Workspace.Aggregate.self
         ] }
 
         public var buckets: [Bucket] { __data["buckets"] }
@@ -85,8 +94,12 @@ public class IndexerAggregateQuery: GraphQLQuery {
             .field("count", Int.self),
             .field("hits", Hits.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            IndexerAggregateQuery.Data.Workspace.Aggregate.Bucket.self
+          ] }
 
           public var key: String { __data["key"] }
+          /// Number of returned sample hits in this bucket
           public var count: Int { __data["count"] }
           /// The hits object
           public var hits: Hits { __data["hits"] }
@@ -103,6 +116,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
               .field("__typename", String.self),
               .field("nodes", [Node].self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              IndexerAggregateQuery.Data.Workspace.Aggregate.Bucket.Hits.self
+            ] }
 
             public var nodes: [Node] { __data["nodes"] }
 
@@ -118,6 +134,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
                 .field("__typename", String.self),
                 .field("fields", AffineGraphQL.JSONObject.self),
                 .field("highlights", AffineGraphQL.JSONObject?.self),
+              ] }
+              public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                IndexerAggregateQuery.Data.Workspace.Aggregate.Bucket.Hits.Node.self
               ] }
 
               /// The search result fields, see UnionSearchItemObjectType
@@ -142,9 +161,15 @@ public class IndexerAggregateQuery: GraphQLQuery {
             .field("hasMore", Bool.self),
             .field("nextCursor", String?.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            IndexerAggregateQuery.Data.Workspace.Aggregate.Pagination.self
+          ] }
 
+          /// Number of results returned in this response, not a global total
           public var count: Int { __data["count"] }
+          /// Whether the provider has more candidates; remaining visible results are not guaranteed
           public var hasMore: Bool { __data["hasMore"] }
+          /// Opaque provider candidate cursor; it does not guarantee complete visible-result pagination
           public var nextCursor: String? { __data["nextCursor"] }
         }
       }

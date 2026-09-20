@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use sqlx::migrate::{Migration, MigrationType, Migrator};
 
+pub mod import_validation;
 pub mod v1;
 
 type SimpleMigration = (

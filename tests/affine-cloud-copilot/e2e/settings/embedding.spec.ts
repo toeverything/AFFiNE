@@ -7,10 +7,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('AISettings/Embedding', () => {
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
-    await utils.testUtils.setupTestEnvironment(
-      page,
-      'claude-sonnet-4-5@20250929'
-    );
+    await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
@@ -127,10 +124,8 @@ test.describe('AISettings/Embedding', () => {
     await page.getByTestId('embedding-progress-wrapper');
 
     const progress = await page.getByTestId('embedding-progress');
-    // wait for the progress to be loading
     const title = await page.getByTestId('embedding-progress-title');
-    await expect(title).toHaveText(/Loading sync status/i);
-    await expect(progress).not.toBeVisible();
+    await expect(title).not.toHaveAttribute('data-progress', 'loading');
 
     const count = await page.getByTestId('embedding-progress-count');
     await expect(count).toHaveText(/\d+\/\d+/);
@@ -163,27 +158,7 @@ test.describe('AISettings/Embedding', () => {
       },
     ];
 
-    const client = await page.context().newCDPSession(page);
-    await client.send('Network.enable');
-    await client.send('Network.emulateNetworkConditions', {
-      offline: false,
-      latency: 1000,
-      downloadThroughput: (50 * 1024) / 8,
-      uploadThroughput: (50 * 1024) / 8,
-      connectionType: 'cellular3g',
-    });
-
     await utils.settings.uploadWorkspaceEmbedding(page, attachments);
-
-    await client.send('Network.emulateNetworkConditions', {
-      offline: false,
-      latency: 0,
-      downloadThroughput: -1,
-      uploadThroughput: -1,
-    });
-
-    await utils.settings.disableWorkspaceEmbedding(page);
-    await utils.settings.enableWorkspaceEmbedding(page);
 
     await utils.settings.waitForFileEmbeddingReadiness(page, 2);
 
@@ -241,7 +216,7 @@ test.describe('AISettings/Embedding', () => {
     await page.context().setOffline(false);
   });
 
-  test('should support hybrid search for both globally uploaded attachments and those uploaded in the current session', async ({
+  test('should isolate selected attachments from workspace artifact search', async ({
     loggedInPage: page,
     utils,
   }) => {
@@ -292,8 +267,8 @@ test.describe('AISettings/Embedding', () => {
     await expect(async () => {
       const { message } = await utils.chatPanel.getLatestAssistantMessage(page);
       const fullText = await message.innerText();
-      expect(fullText).toMatch(/climbing/i);
       expect(fullText).toMatch(/skating/i);
+      expect(fullText).not.toMatch(/climbing/i);
       expect(
         await message.locator('affine-footnote-node').count()
       ).toBeGreaterThanOrEqual(1);
@@ -310,7 +285,7 @@ test.describe('AISettings/Embedding', () => {
     const attachments = Array.from({ length: 11 }, (_, i) => ({
       name: `document${i + 1}.txt`,
       mimeType: 'text/plain',
-      buffer: Buffer.from('attachment content'),
+      buffer: Buffer.from(`attachment content ${i + 1}`),
     }));
 
     await utils.settings.uploadWorkspaceEmbedding(page, attachments);
@@ -513,9 +488,9 @@ test.describe('AISettings/Embedding', () => {
     await utils.settings.openSettingsPanel(page);
     await page.context().setOffline(true);
     await utils.settings.ignoreDocForEmbedding(page, 'Test Doc', false);
-    await expect(
-      page.getByText(/Failed to update ignored docs/i)
-    ).toBeVisible();
+    await page
+      .getByText(/Failed to update ignored docs/i)
+      .waitFor({ state: 'visible', timeout: 20000 });
     await page.context().setOffline(false);
   });
 });

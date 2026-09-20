@@ -18,6 +18,10 @@ export class CaptchaService extends Service {
     r => r?.captcha || false
   );
   challenge$ = new LiveData<string | undefined>(undefined);
+  provider$ = new LiveData<'hashcash' | 'turnstile' | undefined>(undefined);
+  turnstile$ = new LiveData<{ siteKey: string; action: string } | undefined>(
+    undefined
+  );
   isLoading$ = new LiveData(false);
   verifyToken$ = new LiveData<string | undefined>(undefined);
   error$ = new LiveData<any | undefined>(undefined);
@@ -36,36 +40,56 @@ export class CaptchaService extends Service {
         if (!this.needCaptcha$.value) {
           return {};
         }
-        const res = await this.fetchService.fetch('/api/auth/challenge', {
+        const res = await this.fetchService.fetch('/api/auth/captcha', {
           signal,
         });
         const data = (await res.json()) as {
-          challenge: string;
-          resource: string;
+          provider: 'hashcash' | 'turnstile';
+          challenge?: string;
+          resource?: string;
+          siteKey?: string;
+          action?: string;
         };
-        if (!data || !data.challenge || !data.resource) {
-          throw new Error('Invalid challenge');
-        }
-        if (this.validatorProvider) {
-          const token = await this.validatorProvider.validate(
-            data.challenge,
-            data.resource
-          );
+        if (data.provider === 'turnstile') {
+          if (!data.siteKey || !data.action) {
+            throw new Error('Invalid Turnstile configuration');
+          }
           return {
-            token,
-            challenge: data.challenge,
+            provider: data.provider,
+            turnstile: { siteKey: data.siteKey, action: data.action },
           };
         }
-        return { challenge: data.challenge, token: undefined };
+        if (
+          data.provider !== 'hashcash' ||
+          !data.challenge ||
+          !data.resource ||
+          !this.validatorProvider
+        ) {
+          throw new Error('Invalid Hashcash challenge');
+        }
+        const token = await this.validatorProvider.validate(
+          data.challenge,
+          data.resource
+        );
+        return {
+          provider: data.provider,
+          token,
+          challenge: data.challenge,
+        };
       }).pipe(
-        tap(({ challenge, token }) => {
+        tap(({ challenge, provider, token, turnstile }) => {
+          this.provider$.next(provider);
+          this.turnstile$.next(turnstile);
           this.verifyToken$.next(token);
           this.challenge$.next(challenge);
-          this.resetAfter5min();
+          if (token) this.resetAfter5min();
         }),
         catchErrorInto(this.error$),
         onStart(() => {
+          this.error$.next(undefined);
           this.challenge$.next(undefined);
+          this.provider$.next(undefined);
+          this.turnstile$.next(undefined);
           this.verifyToken$.next(undefined);
           this.isLoading$.next(true);
         }),
@@ -84,6 +108,8 @@ export class CaptchaService extends Service {
       }).pipe(
         tap(_ => {
           this.challenge$.next(undefined);
+          this.provider$.next(undefined);
+          this.turnstile$.next(undefined);
           this.verifyToken$.next(undefined);
           this.isLoading$.next(false);
         })

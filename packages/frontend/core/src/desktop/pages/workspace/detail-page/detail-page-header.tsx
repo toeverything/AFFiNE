@@ -97,8 +97,7 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
     useDetailPageHeaderResponsive(containerWidth);
 
   const docDisplayMetaService = useService(DocDisplayMetaService);
-  const i18n = useI18n();
-  const title = i18n.t(useLiveData(docDisplayMetaService.title$(page.id)));
+  const title = useLiveData(docDisplayMetaService.title$(page.id));
 
   return (
     <Header className={styles.header} ref={containerRef}>
@@ -147,8 +146,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
   }, []);
 
   const docDisplayMetaService = useService(DocDisplayMetaService);
-  const i18n = useI18n();
-  const title = i18n.t(useLiveData(docDisplayMetaService.title$(page.id)));
+  const title = useLiveData(docDisplayMetaService.title$(page.id));
 
   const editor = useService(EditorService).editor;
   const currentMode = useLiveData(editor.mode$);

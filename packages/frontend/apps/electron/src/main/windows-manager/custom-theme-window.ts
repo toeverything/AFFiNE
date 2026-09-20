@@ -2,8 +2,8 @@ import { join } from 'node:path';
 
 import { BrowserWindow, type Display, screen } from 'electron';
 
+import { customThemeViewUrl } from '../../shared/internal-origin';
 import { isMacOS } from '../../shared/utils';
-import { customThemeViewUrl } from '../constants';
 import { logger } from '../logger';
 import { buildWebPreferences } from '../web-preferences';
 

@@ -1,8 +1,11 @@
-import { difference } from 'lodash-es';
 import { filter, Observable, ReplaySubject, share, Subject } from 'rxjs';
 
-import type { BlobRecord, BlobStorage } from '../../storage';
-import { OverCapacityError, OverSizeError } from '../../storage';
+import type { BlobRecord, BlobSource, BlobStorage } from '../../storage';
+import {
+  isSourceScopedBlobStorage,
+  OverCapacityError,
+  OverSizeError,
+} from '../../storage';
 import type { BlobSyncStorage } from '../../storage/blob-sync';
 import { MANUALLY_STOP, throwIfAborted } from '../../utils/throw-if-aborted';
 
@@ -40,6 +43,42 @@ export class BlobSyncPeer {
     readonly blobSync: BlobSyncStorage
   ) {}
 
+  async registerSource(source: BlobSource, signal?: AbortSignal) {
+    if (isSourceScopedBlobStorage(this.remote)) {
+      const statusId = this.sourceStatusId(source);
+      try {
+        await this.remote.registerSource(source, signal);
+        this.status.blobErrorFree(statusId);
+      } catch (error) {
+        this.status.blobError(
+          statusId,
+          error instanceof Error ? error.message : String(error)
+        );
+        throw error;
+      }
+    }
+  }
+
+  async unregisterSource(source: BlobSource) {
+    if (isSourceScopedBlobStorage(this.remote)) {
+      const statusId = this.sourceStatusId(source);
+      try {
+        await this.remote.unregisterSource(source);
+        this.status.blobErrorFree(statusId);
+      } catch (error) {
+        this.status.blobError(
+          statusId,
+          error instanceof Error ? error.message : String(error)
+        );
+        throw error;
+      }
+    }
+  }
+
+  private sourceStatusId(source: BlobSource) {
+    return `source:${source.type}:${source.workspaceId}:${source.docId}:${source.type === 'history' ? source.timestampMs : ''}`;
+  }
+
   private readonly downloadingPromise = new Map<string, Promise<boolean>>();
 
   /**
@@ -50,9 +89,16 @@ export class BlobSyncPeer {
    *
    * @throws This method will throw an error if the download operation fails due to network issues or is aborted
    */
-  downloadBlob(blobId: string, signal?: AbortSignal): Promise<boolean> {
+  downloadBlob(
+    blobId: string,
+    signal?: AbortSignal,
+    source?: BlobSource
+  ): Promise<boolean> {
+    const downloadId = source
+      ? `${blobId}\0${source.type}\0${source.workspaceId}\0${source.docId}\0${source.type === 'history' ? source.timestampMs : ''}`
+      : blobId;
     // if the blob is already downloading, return the existing promise
-    const existing = this.downloadingPromise.get(blobId);
+    const existing = this.downloadingPromise.get(downloadId);
     if (existing) {
       return existing;
     }
@@ -73,7 +119,7 @@ export class BlobSyncPeer {
       const attempt = async () => {
         try {
           throwIfAborted(signal);
-          const data = await this.remote.get(blobId, signal);
+          const data = await this.remote.get(blobId, signal, source);
           throwIfAborted(signal);
           if (data) {
             // mark the blob as uploaded to avoid uploading the same blob again
@@ -94,7 +140,7 @@ export class BlobSyncPeer {
                 Math.pow(2, attempts - 1) * backoffRetry.delay,
                 backoffRetry.maxDelay
               );
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises
+              // oxlint-disable-next-line typescript/no-misused-promises
               setTimeout(attempt, waitTime);
             } else {
               // reach the max retry times, resolve the promise with false
@@ -107,7 +153,7 @@ export class BlobSyncPeer {
         }
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      // oxlint-disable-next-line typescript/no-floating-promises
       attempt();
     })
       .catch(error => {
@@ -122,10 +168,10 @@ export class BlobSyncPeer {
       })
       .finally(() => {
         this.status.blobDownloadFinish(blobId);
-        this.downloadingPromise.delete(blobId);
+        this.downloadingPromise.delete(downloadId);
       });
 
-    this.downloadingPromise.set(blobId, promise);
+    this.downloadingPromise.set(downloadId, promise);
     return promise;
   }
 
@@ -274,57 +320,18 @@ export class BlobSyncPeer {
     }
 
     try {
-      if (needUpload.length <= 3) {
-        // if there is only few blobs to upload, upload them one by one
-
-        // upload the blobs
-        for (const blobKey of needUpload) {
-          const data = await this.local.get(blobKey);
-          throwIfAborted(signal);
-          if (data) {
-            try {
-              await this.uploadBlob(data, false, signal);
-            } catch (err) {
-              if (err === MANUALLY_STOP) {
-                throw err;
-              }
-              // ignore the error as it has already been recorded in the sync status
-            }
-          }
+      for (const blobKey of needUpload) {
+        if (this.status.overSize.has(blobKey)) {
+          continue;
         }
-      } else {
-        // if there are many blobs to upload, call remote list to reduce unnecessary uploads
-        const remoteList = new Set((await this.remote.list()).map(b => b.key));
-
-        for (const blobKey of needUpload) {
-          if (remoteList.has(blobKey)) {
-            // if the blob is already uploaded, set the blob as uploaded
-            await this.blobSync.setBlobUploadedAt(
-              this.peerId,
-              blobKey,
-              new Date()
-            );
-
-            // mark the blob as uploaded
-            this.status.blobUploadFinish(blobKey);
-            continue;
-          }
-
-          // if the blob is over size, skip it
-          if (this.status.overSize.has(blobKey)) {
-            continue;
-          }
-
-          const data = await this.local.get(blobKey);
-          throwIfAborted(signal);
-          if (data) {
-            try {
-              await this.uploadBlob(data, false, signal);
-            } catch (err) {
-              if (err === MANUALLY_STOP) {
-                throw err;
-              }
-              // ignore the error as it has already been recorded in the sync status
+        const data = await this.local.get(blobKey);
+        throwIfAborted(signal);
+        if (data) {
+          try {
+            await this.uploadBlob(data, false, signal);
+          } catch (err) {
+            if (err === MANUALLY_STOP) {
+              throw err;
             }
           }
         }
@@ -341,35 +348,48 @@ export class BlobSyncPeer {
     await this.local.connection.waitForConnected(signal);
     await this.remote.connection.waitForConnected(signal);
 
-    const localList = (await this.local.list()).map(b => b.key);
-    const remoteList = (await this.remote.list()).map(b => b.key);
-
-    const needDownload = difference(remoteList, localList);
-
-    // mark all blobs as will download
-    for (const blobKey of needDownload) {
-      this.status.markBlobToDownload(blobKey);
-      this.status.blobWillDownload(blobKey);
+    const localKeys = new Set(
+      (await this.local.list(signal)).map(blob => blob.key)
+    );
+    if (isSourceScopedBlobStorage(this.remote)) {
+      for await (const entry of this.remote.readableSources(signal)) {
+        await this.downloadMissingBlob(
+          entry.key,
+          localKeys,
+          signal,
+          entry.source
+        );
+      }
+    } else {
+      for (const entry of await this.remote.list(signal)) {
+        await this.downloadMissingBlob(entry.key, localKeys, signal);
+      }
     }
+  }
 
+  private async downloadMissingBlob(
+    blobKey: string,
+    localKeys: Set<string>,
+    signal?: AbortSignal,
+    source?: BlobSource
+  ) {
+    if (localKeys.has(blobKey)) return;
+    this.status.markBlobToDownload(blobKey);
+    this.status.blobWillDownload(blobKey);
     try {
-      for (const blobKey of needDownload) {
-        throwIfAborted(signal);
-        // download the blobs
-        try {
-          await this.downloadBlob(blobKey, signal);
-        } catch (err) {
-          if (err === MANUALLY_STOP) {
-            throw err;
-          }
-          // ignore the error as it has already been recorded in the sync status
+      throwIfAborted(signal);
+      try {
+        if (await this.downloadBlob(blobKey, signal, source)) {
+          localKeys.add(blobKey);
         }
+      } catch (err) {
+        if (err === MANUALLY_STOP) {
+          throw err;
+        }
+        // ignore the error as it has already been recorded in the sync status
       }
     } finally {
-      // remove all will download flags
-      for (const blobKey of needDownload) {
-        this.status.blobWillDownloadFinish(blobKey);
-      }
+      this.status.blobWillDownloadFinish(blobKey);
     }
   }
 

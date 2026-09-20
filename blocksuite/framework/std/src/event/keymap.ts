@@ -3,6 +3,7 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { base, keyName } from 'w3c-keyname';
 
 import type { UIEventHandler } from './base.js';
+import { KeyboardEventState } from './state/index.js';
 
 function normalizeKeyName(name: string) {
   const parts = name.split(/-(?!$)/);
@@ -94,7 +95,8 @@ export function bindKeymap(
       event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
     const baseName = base[event.keyCode];
     const isSingleAscii = name.length === 1 && name.charCodeAt(0) <= 0x7e;
-    const isAltInputChar = event.altKey && !event.ctrlKey && !isSingleAscii;
+    const isAltInputChar =
+      event.altKey && !event.ctrlKey && !event.metaKey && !isSingleAscii;
     // Keep supporting existing Alt+digit shortcuts (e.g. Alt-0/1/2 in edgeless)
     // while preventing Alt-based locale input characters from triggering letter shortcuts.
     const isDigitBaseKey =
@@ -126,13 +128,38 @@ export function androidBindKeymapPatch(
     const event = ctx.get('defaultState').event;
     if (!(event instanceof InputEvent)) return;
 
-    if (
-      event.inputType === 'deleteContentBackward' &&
-      'Backspace' in bindings
-    ) {
-      return bindings['Backspace'](ctx);
+    const bindingName =
+      event.inputType === 'deleteContentBackward'
+        ? 'Backspace'
+        : event.inputType === 'deleteContentForward'
+          ? 'Delete'
+          : event.inputType === 'insertParagraph'
+            ? 'Enter'
+            : undefined;
+    if (!bindingName || !(bindingName in bindings)) return false;
+
+    if (!ctx.has('keyboardState')) {
+      const keyboardEvent = new KeyboardEvent('keydown', {
+        key: bindingName,
+        code: bindingName,
+        cancelable: true,
+      });
+      Object.defineProperty(keyboardEvent, 'isComposing', {
+        configurable: true,
+        value: event.isComposing,
+      });
+      ctx.add(
+        new KeyboardEventState({
+          event: keyboardEvent,
+          composing: event.isComposing,
+        })
+      );
     }
 
-    return false;
+    const handled = bindings[bindingName](ctx);
+    if (handled || ctx.get('keyboardState').raw.defaultPrevented) {
+      event.preventDefault();
+    }
+    return handled;
   };
 }

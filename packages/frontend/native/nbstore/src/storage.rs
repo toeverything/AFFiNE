@@ -1,20 +1,21 @@
 use std::sync::Arc;
 
-use affine_schema::get_migrator;
-use memory_indexer::InMemoryIndex;
+use affine_schema::{
+  get_migrator,
+  import_validation::{V2_IMPORT_SCHEMA_RULES, validate_import_schema, validate_required_schema},
+};
 use sqlx::{
   Pool, Row,
   migrate::{MigrateDatabase, Migration, Migrator},
   sqlite::{Sqlite, SqliteConnectOptions, SqlitePoolOptions},
 };
-use tokio::sync::RwLock;
 
-use super::error::Result;
+use super::{error::Result, indexer::IndexManager};
 
 pub struct SqliteDocStorage {
   pub pool: Pool<Sqlite>,
   path: String,
-  pub index: Arc<RwLock<InMemoryIndex>>,
+  pub indexes: Arc<IndexManager>,
 }
 
 impl SqliteDocStorage {
@@ -23,7 +24,7 @@ impl SqliteDocStorage {
 
     let mut pool_options = SqlitePoolOptions::new();
 
-    let index = Arc::new(RwLock::new(InMemoryIndex::default()));
+    let indexes = Arc::new(IndexManager::new());
 
     if path == ":memory:" {
       pool_options = pool_options
@@ -35,7 +36,7 @@ impl SqliteDocStorage {
       Self {
         pool: pool_options.connect_lazy_with(sqlite_options),
         path,
-        index,
+        indexes,
       }
     } else {
       Self {
@@ -43,23 +44,33 @@ impl SqliteDocStorage {
           .max_connections(4)
           .connect_lazy_with(sqlite_options.journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)),
         path,
-        index,
+        indexes,
       }
     }
   }
 
   pub async fn validate(&self) -> Result<bool> {
-    let record = sqlx::query("SELECT * FROM _sqlx_migrations ORDER BY installed_on ASC LIMIT 1;")
-      .fetch_optional(&self.pool)
-      .await;
-
-    match record {
-      Ok(Some(row)) => {
-        let name: &str = row.try_get("description")?;
-        Ok(name == "init_v2")
-      }
-      _ => Ok(false),
+    if self.path == ":memory:" {
+      return Ok(validate_required_schema(&self.pool, &V2_IMPORT_SCHEMA_RULES).await?);
     }
+
+    let Ok(pool) = self.open_readonly_pool().await else {
+      return Ok(false);
+    };
+
+    Ok(validate_required_schema(&pool, &V2_IMPORT_SCHEMA_RULES).await?)
+  }
+
+  pub async fn validate_import_schema(&self) -> Result<bool> {
+    if self.path == ":memory:" {
+      return Ok(validate_import_schema(&self.pool, &V2_IMPORT_SCHEMA_RULES).await?);
+    }
+
+    let Ok(pool) = self.open_readonly_pool().await else {
+      return Ok(false);
+    };
+
+    Ok(validate_import_schema(&pool, &V2_IMPORT_SCHEMA_RULES).await?)
   }
 
   pub async fn connect(&self) -> Result<()> {
@@ -76,10 +87,10 @@ impl SqliteDocStorage {
   async fn migrate(&self) -> Result<()> {
     let migrator = get_migrator();
     if let Err(err) = migrator.run(&self.pool).await {
-      // Compatibility: migration 3 (`add_idx_snapshots`) had a whitespace-only SQL
-      // change (trailing space) between releases, which causes sqlx to reject
-      // existing DBs with: `VersionMismatch(3)`. It's safe to fix by updating
-      // the stored checksum.
+      // Compatibility: migration 3 (`add_idx_snapshots`) had a whitespace-only
+      // SQL change (trailing space) between releases, which causes sqlx
+      // to reject existing DBs with: `VersionMismatch(3)`. It's safe to
+      // fix by updating the stored checksum.
       if matches!(err, sqlx::migrate::MigrateError::VersionMismatch(3))
         && self.try_repair_migration_3_checksum(&migrator).await?
       {
@@ -97,8 +108,8 @@ impl SqliteDocStorage {
       return Ok(false);
     };
 
-    // We're only prepared to repair the known `add_idx_snapshots` whitespace-only
-    // mismatch.
+    // We're only prepared to repair the known `add_idx_snapshots`
+    // whitespace-only mismatch.
     if migration.description.as_ref() != "add_idx_snapshots" {
       return Ok(false);
     }
@@ -159,14 +170,41 @@ impl SqliteDocStorage {
 
     Ok(())
   }
+
+  pub async fn vacuum_into(&self, path: String) -> Result<()> {
+    if self.path == ":memory:" {
+      sqlx::query("VACUUM INTO ?;").bind(path).execute(&self.pool).await?;
+      return Ok(());
+    }
+
+    let pool = self.open_readonly_pool().await?;
+    sqlx::query("VACUUM INTO ?;").bind(path).execute(&pool).await?;
+
+    Ok(())
+  }
+
+  async fn open_readonly_pool(&self) -> Result<Pool<Sqlite>> {
+    let sqlite_options = SqliteConnectOptions::new()
+      .filename(&self.path)
+      .foreign_keys(false)
+      .read_only(true);
+
+    Ok(
+      SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(sqlite_options)
+        .await?,
+    )
+  }
 }
 
 #[cfg(test)]
 mod tests {
-  use std::borrow::Cow;
+  use std::{borrow::Cow, fs, path::Path};
 
   use affine_schema::get_migrator;
   use sqlx::migrate::{Migration, Migrator};
+  use uuid::Uuid;
 
   use super::*;
 
@@ -255,5 +293,106 @@ mod tests {
     let checksum: Vec<u8> = row.get("checksum");
 
     assert_eq!(checksum, expected_checksum);
+  }
+
+  #[tokio::test]
+  async fn vacuum_into_exports_a_compacted_database() {
+    let base = std::env::temp_dir().join(format!("nbstore-vacuum-{}", Uuid::new_v4()));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    let export = base.join("backup.affine");
+
+    let storage = SqliteDocStorage::new(path_string(&source));
+    storage.connect().await.unwrap();
+
+    storage
+      .set_blob(crate::SetBlob {
+        key: "large-blob".to_string(),
+        data: Into::<crate::Data>::into(vec![7; 1024 * 1024]),
+        mime: "application/octet-stream".to_string(),
+      })
+      .await
+      .unwrap();
+    storage.delete_blob("large-blob".to_string(), true).await.unwrap();
+    storage.checkpoint().await.unwrap();
+
+    let source_len = fs::metadata(&source).unwrap().len();
+    assert!(source_len > 0);
+
+    storage.vacuum_into(path_string(&export)).await.unwrap();
+
+    let export_len = fs::metadata(&export).unwrap().len();
+    assert!(export_len < source_len);
+
+    let exported = SqliteDocStorage::new(path_string(&export));
+    exported.connect().await.unwrap();
+    assert!(exported.list_blobs().await.unwrap().is_empty());
+    exported.close().await;
+    storage.close().await;
+
+    fs::remove_dir_all(base).unwrap();
+  }
+
+  #[tokio::test]
+  async fn validate_import_schema_rejects_unexpected_schema_objects() {
+    let base = std::env::temp_dir().join(format!("nbstore-schema-{}", Uuid::new_v4()));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    fs::File::create(&source).unwrap();
+    let storage = SqliteDocStorage::new(path_string(&source));
+    storage.connect().await.unwrap();
+
+    sqlx::query("CREATE VIEW rogue_view AS SELECT space_id FROM meta")
+      .execute(&storage.pool)
+      .await
+      .unwrap();
+
+    assert!(!storage.validate_import_schema().await.unwrap());
+
+    storage.close().await;
+    fs::remove_dir_all(base).unwrap();
+  }
+
+  #[tokio::test]
+  async fn validate_import_schema_accepts_initial_v2_schema() {
+    let base = std::env::temp_dir().join(format!("nbstore-v2-schema-{}", Uuid::new_v4()));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    let source_path = path_string(&source);
+    let setup_pool = SqlitePoolOptions::new()
+      .max_connections(1)
+      .connect_with(
+        SqliteConnectOptions::new()
+          .filename(&source_path)
+          .create_if_missing(true)
+          .foreign_keys(false),
+      )
+      .await
+      .unwrap();
+
+    let mut migrations = get_migrator().migrations.to_vec();
+    migrations.truncate(1);
+    let migrator = Migrator {
+      migrations: Cow::Owned(migrations),
+      ..Migrator::DEFAULT
+    };
+
+    migrator.run(&setup_pool).await.unwrap();
+    setup_pool.close().await;
+
+    let storage = SqliteDocStorage::new(source_path);
+
+    assert!(storage.validate().await.unwrap());
+    assert!(storage.validate_import_schema().await.unwrap());
+
+    storage.close().await;
+    fs::remove_dir_all(base).unwrap();
+  }
+
+  fn path_string(path: &Path) -> String {
+    path.to_string_lossy().into_owned()
   }
 }

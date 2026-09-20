@@ -4,17 +4,15 @@ fragment CopilotChatHistory on CopilotHistories {
   docId
   parentSessionId
   promptName
-  model
-  optionalModels
   action
   pinned
   title
-  tokens
   messages {
     id
     role
     content
     attachments
+    scopeSnapshot
     streamObjects {
       type
       textDelta

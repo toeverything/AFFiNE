@@ -17,8 +17,24 @@ export type SendOptions = Omit<SendMailOptions, 'to' | 'subject' | 'html'> & {
   html: string;
 };
 
+export type MailSendResult =
+  | {
+      status: 'accepted';
+      providerMessageId?: string;
+      providerResponse?: string;
+      retryable: false;
+    }
+  | {
+      status: 'rejected' | 'failed';
+      providerResponse?: string;
+      retryable: boolean;
+      errorCode?: string;
+      error?: string;
+    };
+
 function configToSMTPOptions(
-  config: AppConfig['mailer']['SMTP']
+  config: AppConfig['mailer']['SMTP'],
+  timeoutMs = 30 * 1000
 ): SMTPTransport.Options {
   const name = resolveSMTPHeloHostname(config.name);
 
@@ -33,6 +49,9 @@ function configToSMTPOptions(
       user: config.username,
       pass: config.password,
     },
+    connectionTimeout: timeoutMs,
+    greetingTimeout: timeoutMs,
+    socketTimeout: timeoutMs,
   };
 }
 
@@ -68,7 +87,11 @@ export class MailSender {
 
   private setup() {
     const { SMTP, fallbackDomains, fallbackSMTP } = this.config.mailer;
-    const opts = configToSMTPOptions(SMTP);
+    const timeoutMs = Math.max(
+      1000,
+      Math.min(30 * 1000, this.config.mailer.deliveryWorker.leaseMs - 1000)
+    );
+    const opts = configToSMTPOptions(SMTP, timeoutMs);
 
     if (SMTP.host) {
       this.smtp = createTransport(opts);
@@ -76,7 +99,9 @@ export class MailSender {
         this.logger.warn(
           `Fallback SMTP is configured for domains: ${fallbackDomains.join(', ')}`
         );
-        this.fallbackSMTP = createTransport(configToSMTPOptions(fallbackSMTP));
+        this.fallbackSMTP = createTransport(
+          configToSMTPOptions(fallbackSMTP, timeoutMs)
+        );
       }
     } else if (env.dev) {
       createTestAccount((err, account) => {
@@ -107,17 +132,25 @@ export class MailSender {
     return [this.smtp, SMTP.sender] as const;
   }
 
-  async send(name: string, options: SendOptions) {
+  async send(name: string, options: SendOptions): Promise<MailSendResult> {
     const [, domain, ...rest] = options.to.split('@');
     if (rest.length || !domain) {
       this.logger.error(`Invalid email address: ${options.to}`);
-      return null;
+      return {
+        status: 'rejected',
+        retryable: false,
+        errorCode: 'invalid_recipient',
+      };
     }
 
     const [smtpClient, from] = this.getSender(domain);
     if (!smtpClient) {
       this.logger.warn(`Mailer SMTP transport is not configured to send mail.`);
-      return null;
+      return {
+        status: 'failed',
+        retryable: true,
+        errorCode: 'smtp_not_configured',
+      };
     }
 
     metrics.mail.counter('send_total').add(1, { name });
@@ -129,7 +162,12 @@ export class MailSender {
         this.logger.error(
           `Mail [${name}] rejected with response: ${result.response}`
         );
-        return false;
+        return {
+          status: 'rejected',
+          providerResponse: result.response,
+          retryable: false,
+          errorCode: 'provider_rejected',
+        };
       }
 
       metrics.mail.counter('accepted_total').add(1, { name });
@@ -140,11 +178,22 @@ export class MailSender {
         );
       }
 
-      return true;
+      return {
+        status: 'accepted',
+        providerMessageId:
+          typeof result.messageId === 'string' ? result.messageId : undefined,
+        providerResponse: result.response,
+        retryable: false,
+      };
     } catch (e) {
       metrics.mail.counter('failed_total').add(1, { name });
       this.logger.error(`Failed to send mail [${name}].`, e);
-      return false;
+      return {
+        status: 'failed',
+        retryable: true,
+        errorCode: 'transport_failed',
+        error: e instanceof Error ? e.message : String(e),
+      };
     }
   }
 }

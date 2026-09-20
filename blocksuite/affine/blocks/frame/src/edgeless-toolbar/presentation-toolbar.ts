@@ -407,15 +407,17 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
       </edgeless-tool-icon-button>
 
       <div class="edgeless-frame-navigator ${this.dense ? 'dense' : ''}">
-        ${this.dense
-          ? nothing
-          : html`<span
-              style="color: ${cssVar('textPrimaryColor')}"
-              class="edgeless-frame-navigator-title"
-              @click=${() => this._moveToCurrentFrame()}
-            >
-              ${frame?.props.title ?? 'no frame'}
-            </span>`}
+        ${
+          this.dense
+            ? nothing
+            : html`<span
+                style="color: ${cssVar('textPrimaryColor')}"
+                class="edgeless-frame-navigator-title"
+                @click=${() => this._moveToCurrentFrame()}
+              >
+                ${frame?.props.title ?? 'no frame'}
+              </span>`
+        }
 
         <span class="edgeless-frame-navigator-count">
           ${frames.length === 0 ? 0 : current + 1} / ${frames.length}
@@ -435,9 +437,11 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
 
       <div class="config-buttons">
         <edgeless-tool-icon-button
-          .tooltip=${document.fullscreenElement
-            ? 'Exit Full Screen'
-            : 'Enter Full Screen'}
+          .tooltip=${
+            document.fullscreenElement
+              ? 'Exit Full Screen'
+              : 'Enter Full Screen'
+          }
           @click=${() => this._toggleFullScreen()}
           .iconContainerPadding=${0}
           .iconContainerWidth=${'24px'}
@@ -446,14 +450,16 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
           ${document.fullscreenElement ? ExpandCloseIcon() : ExpandFullIcon()}
         </edgeless-tool-icon-button>
 
-        ${this.dense
-          ? nothing
-          : html`<edgeless-frame-order-button
-              .popperShow=${this.frameMenuShow}
-              .setPopperShow=${this.setFrameMenuShow}
-              .edgeless=${this.edgeless}
-            >
-            </edgeless-frame-order-button>`}
+        ${
+          this.dense
+            ? nothing
+            : html`<edgeless-frame-order-button
+                .popperShow=${this.frameMenuShow}
+                .setPopperShow=${this.setFrameMenuShow}
+                .edgeless=${this.edgeless}
+              >
+              </edgeless-frame-order-button>`
+        }
 
         <edgeless-navigator-setting-button
           .edgeless=${this.edgeless}

@@ -3,9 +3,11 @@ import { randomUUID } from 'node:crypto';
 import {
   getRecentlyUpdatedDocsQuery,
   getWorkspacePageByIdQuery,
+  type GraphQLQuery,
   publishPageMutation,
 } from '@affine/graphql';
 
+import { DocRole, WorkspaceRole } from '../../../models';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
@@ -67,38 +69,90 @@ e2e('should get recently updated docs', async t => {
   t.is(recentlyUpdatedDocs.edges[2].node.title, doc1.title);
 });
 
-e2e(
-  'should get doc with public attribute when doc snapshot not exists',
-  async t => {
-    const owner = await app.signup();
+e2e('should filter recently updated docs by doc read permission', async t => {
+  const owner = await app.signup();
+  const member = await app.createUser();
+  await app.login(member);
 
-    const workspace = await app.create(Mockers.Workspace, {
-      owner: { id: owner.id },
-    });
+  await app.switchUser(owner);
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+  await app.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: member.id,
+    type: WorkspaceRole.Collaborator,
+  });
 
-    const docId = randomUUID();
+  const privateSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+  });
+  await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: privateSnapshot.id,
+    title: 'private-doc',
+    defaultRole: DocRole.None,
+  });
 
-    // default public is false
-    const result1 = await app.gql({
-      query: getWorkspacePageByIdQuery,
-      variables: { workspaceId: workspace.id, pageId: docId },
-    });
+  const publicSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+  });
+  const publicDoc = await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: publicSnapshot.id,
+    title: 'public-doc',
+    defaultRole: DocRole.None,
+    public: true,
+  });
 
-    t.is(result1.workspace.doc.public, false);
+  await app.switchUser(member);
+  const {
+    workspace: { recentlyUpdatedDocs },
+  } = await app.gql({
+    query: getRecentlyUpdatedDocsQuery,
+    variables: {
+      workspaceId: workspace.id,
+      pagination: {
+        first: 10,
+      },
+    },
+  });
 
-    await app.gql({
+  t.is(recentlyUpdatedDocs.totalCount, 1);
+  t.deepEqual(
+    recentlyUpdatedDocs.edges.map(edge => edge.node.id),
+    [publicDoc.docId]
+  );
+});
+
+e2e('should reject publishing when doc snapshot does not exist', async t => {
+  const owner = await app.signup();
+
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+
+  const docId = randomUUID();
+
+  const result1 = await app.gql({
+    query: getWorkspacePageByIdQuery,
+    variables: { workspaceId: workspace.id, pageId: docId },
+  });
+
+  t.is(result1.workspace.doc.public, false);
+
+  await t.throwsAsync(
+    app.gql({
       query: publishPageMutation,
       variables: { workspaceId: workspace.id, pageId: docId },
-    });
-
-    const result2 = await app.gql({
-      query: getWorkspacePageByIdQuery,
-      variables: { workspaceId: workspace.id, pageId: docId },
-    });
-
-    t.is(result2.workspace.doc.public, true);
-  }
-);
+    }),
+    {
+      message: `Doc ${docId} under Space ${workspace.id} not found.`,
+    }
+  );
+});
 
 e2e('should get doc with title and summary', async t => {
   const owner = await app.signup();
@@ -151,4 +205,145 @@ e2e('should get doc with title and null summary', async t => {
 
   t.is(result.workspace.doc.title, doc.title);
   t.is(result.workspace.doc.summary, null);
+});
+
+e2e('should require owner or admin to query workspace docs', async t => {
+  const owner = await app.signup();
+  const member = await app.createUser();
+  await app.login(member);
+
+  await app.switchUser(owner);
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+  await app.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: member.id,
+    type: WorkspaceRole.Collaborator,
+  });
+
+  const docSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+  });
+  await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: docSnapshot.id,
+    title: 'private-doc',
+    defaultRole: DocRole.None,
+  });
+
+  await app.switchUser(member);
+  await t.throwsAsync(
+    app.gql({
+      query: {
+        id: 'workspaceDocsPermissionCheck',
+        op: 'workspaceDocsPermissionCheck',
+        query: `
+          query {
+            workspace(id: "${workspace.id}") {
+              docs(pagination: { first: 10 }) {
+                totalCount
+              }
+            }
+          }
+        `,
+      } satisfies GraphQLQuery,
+      variables: undefined,
+    })
+  );
+});
+
+e2e('should require Doc.Read to query workspace page meta', async t => {
+  const owner = await app.signup();
+  const member = await app.createUser();
+  await app.login(member);
+
+  await app.switchUser(owner);
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+  await app.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: member.id,
+    type: WorkspaceRole.Collaborator,
+  });
+
+  const docSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+  });
+  const doc = await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: docSnapshot.id,
+    title: 'private-doc',
+    defaultRole: DocRole.None,
+  });
+
+  await app.switchUser(member);
+  await t.throwsAsync(
+    app.gql({
+      query: {
+        id: 'workspacePageMetaPermissionCheck',
+        op: 'workspacePageMetaPermissionCheck',
+        query: `
+          query {
+            workspace(id: "${workspace.id}") {
+              pageMeta(pageId: "${doc.docId}") {
+                createdAt
+              }
+            }
+          }
+        `,
+      } satisfies GraphQLQuery,
+      variables: undefined,
+    })
+  );
+});
+
+e2e('should require Doc.Read to query doc histories', async t => {
+  const owner = await app.signup();
+  const member = await app.createUser();
+  await app.login(member);
+
+  await app.switchUser(owner);
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+  await app.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: member.id,
+    type: WorkspaceRole.Collaborator,
+  });
+
+  const docSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+  });
+  const doc = await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: docSnapshot.id,
+    title: 'private-doc',
+    defaultRole: DocRole.None,
+  });
+
+  await app.switchUser(member);
+  await t.throwsAsync(
+    app.gql({
+      query: {
+        id: 'workspaceDocHistoriesPermissionCheck',
+        op: 'workspaceDocHistoriesPermissionCheck',
+        query: `
+          query {
+            workspace(id: "${workspace.id}") {
+              histories(guid: "space:${doc.docId}") {
+                timestamp
+              }
+            }
+          }
+        `,
+      } satisfies GraphQLQuery,
+      variables: undefined,
+    })
+  );
 });

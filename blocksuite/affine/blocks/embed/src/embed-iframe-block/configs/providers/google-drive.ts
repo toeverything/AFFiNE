@@ -113,6 +113,29 @@ function isValidGoogleDriveUrl(url: string, strictMode = true): boolean {
   }
 }
 
+function isValidGoogleDriveIframeUrl(url: string): boolean {
+  try {
+    if (!validateEmbedIframeUrl(url, googleDriveUrlValidationOptions)) {
+      return false;
+    }
+
+    const parsedUrl = new URL(url);
+    const pathSegments = parsedUrl.pathname.split('/').filter(Boolean);
+
+    if (isValidGoogleDriveFileUrl(parsedUrl)) {
+      return pathSegments[3] === 'preview';
+    }
+
+    return (
+      parsedUrl.pathname === '/embeddedfolderview' &&
+      !!parsedUrl.searchParams.get('id')
+    );
+  } catch (e) {
+    console.warn('Invalid Google Drive iframe URL:', e);
+    return false;
+  }
+}
+
 /**
  * Build embed URL for Google Drive files
  * @param fileId File ID
@@ -171,7 +194,7 @@ function buildGoogleDriveEmbedUrl(url: string): string | undefined {
   }
 }
 
-const googleDriveConfig = {
+export const googleDriveConfig = {
   name: 'google-drive',
   match: (url: string) => isValidGoogleDriveUrl(url),
   buildOEmbedUrl: (url: string) => {
@@ -183,6 +206,8 @@ const googleDriveConfig = {
     return buildGoogleDriveEmbedUrl(url);
   },
   useOEmbedUrlDirectly: true,
+  validateIframeUrl: (iframeUrl: string) =>
+    isValidGoogleDriveIframeUrl(iframeUrl),
   options: {
     widthInSurface: GOOGLE_DRIVE_DEFAULT_WIDTH_IN_SURFACE,
     heightInSurface: GOOGLE_DRIVE_DEFAULT_HEIGHT_IN_SURFACE,

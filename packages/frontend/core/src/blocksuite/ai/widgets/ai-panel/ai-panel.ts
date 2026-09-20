@@ -529,18 +529,22 @@ export class AffineAIPanelWidget extends WidgetComponent {
       [
         'generating',
         () => html`
-          ${this.answer
-            ? html`
-                <ai-panel-answer
-                  .finish=${false}
-                  .config=${config.finishStateConfig}
-                  .host=${this.host}
-                >
-                  ${this.answer &&
-                  config.answerRenderer(this.answer, this.state)}
-                </ai-panel-answer>
-              `
-            : nothing}
+          ${
+            this.answer
+              ? html`
+                  <ai-panel-answer
+                    .finish=${false}
+                    .config=${config.finishStateConfig}
+                    .host=${this.host}
+                  >
+                    ${
+                      this.answer &&
+                      config.answerRenderer(this.answer, this.state)
+                    }
+                  </ai-panel-answer>
+                `
+              : nothing
+          }
           <ai-panel-generating
             .config=${config.generatingStateConfig}
             .theme=${theme}

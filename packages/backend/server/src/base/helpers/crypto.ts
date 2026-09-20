@@ -15,16 +15,10 @@ import {
   verify,
 } from 'node:crypto';
 
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import {
-  hash as hashPassword,
-  verify as verifyPassword,
-} from '@node-rs/argon2';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { hash as hashPassword } from '@node-rs/argon2';
 
-import {
-  AFFINE_PRO_LICENSE_AES_KEY,
-  AFFINE_PRO_PUBLIC_KEY,
-} from '../../native';
+import { AFFINE_PRO_PUBLIC_KEY } from '../../native';
 import { Config } from '../config';
 import { OnEvent } from '../event';
 
@@ -65,8 +59,6 @@ function parseKey(privateKey: string) {
 
 @Injectable()
 export class CryptoHelper implements OnModuleInit {
-  logger = new Logger(CryptoHelper.name);
-
   keyPair!: {
     publicKey: KeyObject;
     privateKey: KeyObject;
@@ -79,12 +71,15 @@ export class CryptoHelper implements OnModuleInit {
   private previousPublicKeys: KeyObject[] = [];
 
   AFFiNEProPublicKey: Buffer | null = null;
-  AFFiNEProLicenseAESKey: Buffer | null = null;
 
   onModuleInit() {
     if (env.selfhosted) {
       this.AFFiNEProPublicKey = this.loadAFFiNEProPublicKey();
-      this.AFFiNEProLicenseAESKey = this.loadAFFiNEProLicenseAESKey();
+      if (!this.AFFiNEProPublicKey) {
+        throw new Error(
+          'AFFINE_PRO_PUBLIC_KEY must be embedded in self-hosted server-native builds.'
+        );
+      }
     }
   }
 
@@ -173,67 +168,6 @@ export class CryptoHelper implements OnModuleInit {
     });
   }
 
-  signInternalAccessToken(input: {
-    method: string;
-    path: string;
-    now?: number;
-    nonce?: string;
-  }) {
-    const payload = {
-      v: 1 as const,
-      ts: input.now ?? Date.now(),
-      nonce: input.nonce ?? this.randomBytes(16).toString('base64url'),
-      m: input.method.toUpperCase(),
-      p: input.path,
-    };
-    const data = Buffer.from(JSON.stringify(payload), 'utf8').toString(
-      'base64url'
-    );
-    return this.sign(data);
-  }
-
-  parseInternalAccessToken(signatureWithData: string): {
-    v: 1;
-    ts: number;
-    nonce: string;
-    m: string;
-    p: string;
-  } | null {
-    const [data, signature] = signatureWithData.split(',');
-    if (!signature) {
-      return null;
-    }
-    if (!this.verify(signatureWithData)) {
-      return null;
-    }
-    try {
-      const json = Buffer.from(data, 'base64url').toString('utf8');
-      const payload = JSON.parse(json) as unknown;
-      if (!payload || typeof payload !== 'object') {
-        return null;
-      }
-      const val = payload as {
-        v?: unknown;
-        ts?: unknown;
-        nonce?: unknown;
-        m?: unknown;
-        p?: unknown;
-      };
-      if (
-        val.v !== 1 ||
-        typeof val.ts !== 'number' ||
-        typeof val.nonce !== 'string' ||
-        typeof val.m !== 'string' ||
-        typeof val.p !== 'string'
-      ) {
-        return null;
-      }
-      return { v: 1, ts: val.ts, nonce: val.nonce, m: val.m, p: val.p };
-    } catch {
-      return null;
-    }
-  }
-
   encrypt(data: string) {
     const iv = this.randomBytes();
     const cipher = createCipheriv(
@@ -272,10 +206,6 @@ export class CryptoHelper implements OnModuleInit {
     return hashPassword(password);
   }
 
-  verifyPassword(password: string, hash: string) {
-    return verifyPassword(hash, password);
-  }
-
   compare(lhs: string, rhs: string) {
     if (lhs.length !== rhs.length) {
       return false;
@@ -309,30 +239,7 @@ export class CryptoHelper implements OnModuleInit {
   private loadAFFiNEProPublicKey() {
     if (AFFINE_PRO_PUBLIC_KEY) {
       return Buffer.from(AFFINE_PRO_PUBLIC_KEY);
-    } else {
-      this.logger.warn('AFFINE_PRO_PUBLIC_KEY is not set at compile time.');
     }
-
-    if (!env.prod && process.env.AFFiNE_PRO_PUBLIC_KEY) {
-      return Buffer.from(process.env.AFFiNE_PRO_PUBLIC_KEY);
-    }
-
-    return null;
-  }
-
-  private loadAFFiNEProLicenseAESKey() {
-    if (AFFINE_PRO_LICENSE_AES_KEY) {
-      return this.sha256(AFFINE_PRO_LICENSE_AES_KEY);
-    } else {
-      this.logger.warn(
-        'AFFINE_PRO_LICENSE_AES_KEY is not set at compile time.'
-      );
-    }
-
-    if (!env.prod && process.env.AFFiNE_PRO_LICENSE_AES_KEY) {
-      return this.sha256(process.env.AFFiNE_PRO_LICENSE_AES_KEY);
-    }
-
     return null;
   }
 }

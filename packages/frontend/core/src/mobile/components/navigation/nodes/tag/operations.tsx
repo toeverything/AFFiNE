@@ -26,27 +26,47 @@ import {
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
+import { MobileNavigationMenuItems } from '../../menu-host';
 import { TagRenameSubMenu } from './dialog';
+
+export const useNavigationPanelTagNodeNewDoc = (
+  tagId: string,
+  openNodeCollapsed: () => void
+) => {
+  const { workspaceService, tagService } = useServices({
+    WorkspaceService,
+    TagService,
+  });
+  const tagRecord = useLiveData(tagService.tagList.tagByTagId$(tagId));
+  const { createPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
+  return useCallback(() => {
+    if (!tagRecord) return;
+    const newDoc = createPage();
+    tagRecord.tag(newDoc.id);
+    track.$.navigationPanel.tags.createDoc();
+    openNodeCollapsed();
+  }, [createPage, openNodeCollapsed, tagRecord]);
+};
 
 export const useNavigationPanelTagNodeOperations = (
   tagId: string,
   {
-    openNodeCollapsed,
+    handleNewDoc,
   }: {
-    openNodeCollapsed: () => void;
+    handleNewDoc: () => void;
   }
 ) => {
   const t = useI18n();
   const {
     workbenchService,
-    workspaceService,
     tagService,
     favoriteService,
     workspaceDialogService,
     globalCacheService,
   } = useServices({
     WorkbenchService,
-    WorkspaceService,
     TagService,
     DocsService,
     FavoriteService,
@@ -59,19 +79,6 @@ export const useNavigationPanelTagNodeOperations = (
     favoriteService.favoriteList.favorite$('tag', tagId)
   );
   const tagRecord = useLiveData(tagService.tagList.tagByTagId$(tagId));
-
-  const { createPage } = usePageHelper(
-    workspaceService.workspace.docCollection
-  );
-
-  const handleNewDoc = useCallback(() => {
-    if (tagRecord) {
-      const newDoc = createPage();
-      tagRecord?.tag(newDoc.id);
-      track.$.navigationPanel.tags.createDoc();
-      openNodeCollapsed();
-    }
-  }, [createPage, openNodeCollapsed, tagRecord]);
 
   const handleMoveToTrash = useCallback(() => {
     tagService.tagList.deleteTag(tagId);
@@ -214,7 +221,7 @@ export const useNavigationPanelTagNodeOperations = (
 export const useNavigationPanelTagNodeOperationsMenu = (
   tagId: string,
   option: {
-    openNodeCollapsed: () => void;
+    handleNewDoc: () => void;
   }
 ): NodeOperation[] => {
   const t = useI18n();
@@ -318,4 +325,23 @@ export const useNavigationPanelTagNodeOperationsMenu = (
       tagId,
     ]
   );
+};
+
+export const NavigationPanelTagNodeMenu = ({
+  tagId,
+  handleNewDoc,
+  additionalOperations,
+}: {
+  tagId: string;
+  handleNewDoc: () => void;
+  additionalOperations?: NodeOperation[];
+}) => {
+  const operations = useNavigationPanelTagNodeOperationsMenu(tagId, {
+    handleNewDoc,
+  });
+  const allOperations = useMemo(
+    () => [...operations, ...(additionalOperations ?? [])],
+    [additionalOperations, operations]
+  );
+  return <MobileNavigationMenuItems operations={allOperations} />;
 };

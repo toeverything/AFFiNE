@@ -12,9 +12,9 @@ import {
 } from '@nestjs/graphql';
 import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
-import { Config, URLHelper } from '../../base';
+import { Config, hasNewerVersion, URLHelper } from '../../base';
 import { Namespace } from '../../env';
-import { Feature, type WorkspaceFeatureName } from '../../models';
+import { Feature } from '../../models';
 import { CurrentUser, Public } from '../auth';
 import { Admin } from '../common';
 import { AvailableUserFeatureConfig } from '../features';
@@ -75,7 +75,7 @@ export class ServerConfigResolver {
       name:
         this.config.server.name ??
         (env.selfhosted
-          ? 'AFFiNE SelfHosted Cloud'
+          ? 'AFFiNE Self-hosted'
           : env.namespaces.canary
             ? 'AFFiNE Canary Cloud'
             : env.namespaces.beta
@@ -138,19 +138,19 @@ export class ServerConfigResolver {
       const releases = (await response.json()) as Array<{
         name: string;
         url: string;
-        body: string;
+        body: string | null;
         published_at: string;
       }>;
 
       const latest = releases.at(0);
-      if (!latest || latest.name === env.version) {
+      if (!latest || !hasNewerVersion(env.version, latest.name)) {
         return null;
       }
 
       return {
         version: latest.name,
         url: latest.url,
-        changelog: latest.body,
+        changelog: latest.body ?? '',
         publishedAt: new Date(latest.published_at),
       };
     } catch (e) {
@@ -167,13 +167,6 @@ export class ServerFeatureConfigResolver extends AvailableUserFeatureConfig {
   })
   override availableUserFeatures() {
     return super.availableUserFeatures();
-  }
-
-  @ResolveField(() => [Feature], {
-    description: 'Workspace features available for admin configuration',
-  })
-  availableWorkspaceFeatures(): WorkspaceFeatureName[] {
-    return ['unlimited_workspace', 'team_plan_v1'];
   }
 }
 

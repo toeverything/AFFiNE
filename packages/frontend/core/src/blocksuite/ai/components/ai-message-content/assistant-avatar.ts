@@ -25,9 +25,11 @@ export class AssistantAvatar extends ShadowlessElement {
   `;
 
   protected override render() {
-    return html`${this.status === 'transmitting'
-      ? AIStarIconWithAnimation
-      : AffineAvatarIcon}
+    return html`${
+      this.status === 'transmitting'
+        ? AIStarIconWithAnimation
+        : AffineAvatarIcon
+    }
     AFFiNE AI`;
   }
 }

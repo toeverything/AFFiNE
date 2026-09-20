@@ -136,7 +136,7 @@ export const YearPicker = memo(function YearPicker(
       <div className={styles.decadeViewBody}>
         {matrix.map((row, i) => {
           return (
-            // eslint-disable-next-line react/no-array-index-key
+            // oxlint-disable-next-line react/no-array-index-key
             <div key={i} className={styles.decadeViewRow}>
               {row.map(year => {
                 const isDisabled =

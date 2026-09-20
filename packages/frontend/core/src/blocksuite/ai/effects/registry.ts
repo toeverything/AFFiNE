@@ -75,6 +75,7 @@ export const appEffectElementTags = [
   'action-text',
   'ai-loading',
   'ai-chat-content',
+  'ai-chat-tabs',
   'ai-chat-toolbar',
   'ai-session-history',
   'ai-chat-messages',

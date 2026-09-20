@@ -26,8 +26,12 @@ public class CreateCopilotSessionMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("createCopilotSession", String.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateCopilotSessionMutation.Data.self
+    ] }
 
     /// Create a chat session
+    @available(*, deprecated, message: "use `createCopilotSessionWithHistory` instead")
     public var createCopilotSession: String { __data["createCopilotSession"] }
   }
 }

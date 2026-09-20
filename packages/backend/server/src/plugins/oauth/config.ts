@@ -18,6 +18,7 @@ export type OIDCArgs = {
 
 export interface OAuthOIDCProviderConfig extends OAuthProviderConfig {
   issuer: string;
+  allowPrivateNetwork?: boolean;
   args?: OIDCArgs;
 }
 
@@ -49,6 +50,22 @@ const schema: JSONSchema = {
   },
 };
 
+const oidcSchema: JSONSchema = {
+  type: 'object',
+  properties: {
+    ...schema.properties,
+    issuer: {
+      type: 'string',
+      description: 'OIDC issuer URL',
+    },
+    allowPrivateNetwork: {
+      type: 'boolean',
+      description:
+        'Allow the OIDC issuer origin to resolve to private network addresses',
+    },
+  },
+};
+
 defineModuleConfig('oauth', {
   'providers.google': {
     desc: 'Google OAuth provider config',
@@ -69,14 +86,15 @@ defineModuleConfig('oauth', {
     link: 'https://docs.github.com/en/apps/oauth-apps',
   },
   'providers.oidc': {
-    desc: 'OIDC OAuth provider config',
+    desc: 'OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true',
     default: {
       clientId: '',
       clientSecret: '',
       issuer: '',
+      allowPrivateNetwork: false,
       args: {},
     },
-    schema,
+    schema: oidcSchema,
     link: 'https://openid.net/specs/openid-connect-core-1_0.html',
     shape: z.object({
       issuer: z
@@ -84,6 +102,7 @@ defineModuleConfig('oauth', {
         .url()
         .regex(/^https?:\/\//, 'issuer must be a valid URL')
         .or(z.string().length(0)),
+      allowPrivateNetwork: z.boolean().optional(),
       args: z.object({
         scope: z.string().optional(),
         claim_id: z.string().optional(),

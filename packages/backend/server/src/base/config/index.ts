@@ -26,4 +26,9 @@ export class ConfigModule {
 }
 
 export { Config, ConfigFactory };
-export { defineModuleConfig, type JSONSchema } from './register';
+export {
+  defineModuleConfig,
+  defineNativeModuleConfig,
+  type JSONSchema,
+  type NativeAppConfigDescriptor,
+} from './register';

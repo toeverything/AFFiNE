@@ -1,7 +1,7 @@
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
+import { unsafeHTML } from '@blocksuite/affine-shared/utils';
 import katex from 'katex';
 import { html } from 'lit';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
 export const LatexTooltip = (
   str: string,
@@ -35,7 +35,8 @@ export const LatexTooltip = (
           katex.renderToString(latex, {
             displayMode,
             output: 'mathml',
-          })
+          }),
+          { USE_PROFILES: { html: true, mathMl: true } }
         )}
       </div>
     </div>`;

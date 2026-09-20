@@ -26,7 +26,14 @@ interface ExportMenuItemProps<T> {
 
 interface ExportProps {
   exportHandler: (
-    type: 'pdf' | 'html' | 'png' | 'markdown' | 'snapshot' | 'pdf-export'
+    type:
+      | 'pdf'
+      | 'html'
+      | 'png'
+      | 'markdown'
+      | 'copy-markdown'
+      | 'snapshot'
+      | 'pdf-export'
   ) => void;
   pageMode?: 'page' | 'edgeless';
   className?: string;
@@ -103,6 +110,13 @@ export const ExportMenuItems = ({
         type="markdown"
         icon={<ExportToMarkdownIcon />}
         label={t['Export to Markdown']()}
+      />
+      <ExportMenuItem
+        onSelect={() => exportHandler('copy-markdown')}
+        className={className}
+        type="copy-markdown"
+        icon={<ExportToMarkdownIcon />}
+        label={t['com.affine.export.copy-markdown']()}
       />
       {pageMode !== 'edgeless' && enable_pdfmake_export && (
         <ExportMenuItem

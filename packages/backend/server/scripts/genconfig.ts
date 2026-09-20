@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* oxlint-disable */
 import '../src/prelude';
 import '../src/app.module';
 
@@ -13,9 +13,12 @@ import {
 const IGNORED_MODULES = new Set(['db', 'redis', 'graphql']);
 
 function getDescriptors() {
-  return getAllDescriptors().filter(
-    ({ module }) => !IGNORED_MODULES.has(module)
-  );
+  return getAllDescriptors()
+    .filter(({ module }) => !IGNORED_MODULES.has(module))
+    .map(({ module, descriptors }) => ({
+      module,
+      descriptors: descriptors.filter(({ descriptor }) => !descriptor.internal),
+    }));
 }
 
 interface PropertySchema {

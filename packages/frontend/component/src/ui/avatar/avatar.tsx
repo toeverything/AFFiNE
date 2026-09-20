@@ -61,6 +61,11 @@ export type AvatarProps = {
   removeButtonProps?: HTMLAttributes<HTMLButtonElement>;
 } & HTMLAttributes<HTMLSpanElement>;
 
+const EMPTY_STYLE: CSSProperties = {};
+const EMPTY_FALLBACK_PROPS: AvatarFallbackProps = {};
+const EMPTY_HOVER_WRAPPER_PROPS: HTMLAttributes<HTMLDivElement> = {};
+const EMPTY_REMOVE_BUTTON_PROPS: HTMLAttributes<HTMLButtonElement> = {};
+
 function drawImageFit(
   img: ImageBitmap,
   ctx: CanvasRenderingContext2D,
@@ -88,32 +93,32 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
   (
     {
       size = 20,
-      style: propsStyles = {},
+      style: propsStyles = EMPTY_STYLE,
       url,
       image,
       name,
       className,
       colorfulFallback = false,
       hoverIcon,
-      fallbackProps: { className: fallbackClassName, ...fallbackProps } = {},
+      fallbackProps = EMPTY_FALLBACK_PROPS,
       imageProps,
       avatarProps,
       rounded = '50%',
       onRemove,
-      hoverWrapperProps: {
-        className: hoverWrapperClassName,
-        ...hoverWrapperProps
-      } = {},
+      hoverWrapperProps = EMPTY_HOVER_WRAPPER_PROPS,
       avatarTooltipOptions,
       removeTooltipOptions,
-      removeButtonProps: {
-        className: removeButtonClassName,
-        ...removeButtonProps
-      } = {},
+      removeButtonProps = EMPTY_REMOVE_BUTTON_PROPS,
       ...props
     },
     ref
   ) => {
+    const { className: fallbackClassName, ...otherFallbackProps } =
+      fallbackProps;
+    const { className: hoverWrapperClassName, ...otherHoverWrapperProps } =
+      hoverWrapperProps;
+    const { className: removeButtonClassName, ...otherRemoveButtonProps } =
+      removeButtonProps;
     const firstCharOfName = useMemo(() => {
       return name?.slice(0, 1);
     }, [name]);
@@ -180,7 +185,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
                 <AvatarFallback
                   className={clsx(style.avatarFallback, fallbackClassName)}
                   delayMs={url ? 600 : undefined}
-                  {...fallbackProps}
+                  {...otherFallbackProps}
                 >
                   {colorfulFallback ? (
                     <ColorfulFallback char={firstCharOfName} />
@@ -196,7 +201,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
                     fallbackClassName
                   )}
                   delayMs={url ? 600 : undefined}
-                  {...fallbackProps}
+                  {...otherFallbackProps}
                 >
                   <DefaultFallbackSvg />
                 </AvatarFallback>
@@ -204,7 +209,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
             {hoverIcon ? (
               <div
                 className={clsx(style.hoverWrapper, hoverWrapperClassName)}
-                {...hoverWrapperProps}
+                {...otherHoverWrapperProps}
               >
                 {hoverIcon}
               </div>
@@ -223,7 +228,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
             className={clsx(style.removeButton, removeButtonClassName)}
             onClick={onRemove}
             ref={setRemoveButtonDom}
-            {...removeButtonProps}
+            {...otherRemoveButtonProps}
           >
             <CloseIcon />
           </IconButton>

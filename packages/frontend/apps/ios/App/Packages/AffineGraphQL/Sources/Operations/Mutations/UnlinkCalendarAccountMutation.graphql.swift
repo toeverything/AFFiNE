@@ -26,6 +26,9 @@ public class UnlinkCalendarAccountMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("unlinkCalendarAccount", Bool.self, arguments: ["accountId": .variable("accountId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UnlinkCalendarAccountMutation.Data.self
+    ] }
 
     public var unlinkCalendarAccount: Bool { __data["unlinkCalendarAccount"] }
   }

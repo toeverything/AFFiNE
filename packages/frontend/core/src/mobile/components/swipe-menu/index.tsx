@@ -115,11 +115,16 @@ export const SwipeMenu = ({
 
     let shouldExecute = false;
 
-    return swipeHelper.init(container, {
+    const dispose = swipeHelper.init(container, {
       preventScroll: true,
       direction: 'horizontal',
       onSwipeStart() {
+        shouldExecute = false;
         activeId$.next(id);
+      },
+      onTap() {
+        shouldExecute = false;
+        activeId$.next(null);
       },
       onSwipe({ deltaX: dragX, initialDirection }) {
         if (initialDirection !== 'horizontal') return;
@@ -154,7 +159,27 @@ export const SwipeMenu = ({
           isOpenRef.current = false;
         }
       },
+      onSwipeCancel() {
+        shouldExecute = false;
+        activeId$.next(null);
+        animate(
+          content,
+          menu,
+          { deltaX: isOpenRef.current ? -normalWidth : 0, normalWidth },
+          isOpenRef.current ? -normalWidth : 0
+        );
+      },
     });
+
+    return () => {
+      dispose();
+      shouldExecute = false;
+      if (activeId$.value === id) {
+        activeId$.next(null);
+      }
+      const deltaX = isOpenRef.current ? -normalWidth : 0;
+      tick(content, menu, { deltaX, normalWidth });
+    };
   }, [executeThreshold, haptics, id, normalWidth, onExecute]);
 
   return (

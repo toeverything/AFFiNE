@@ -1,8 +1,14 @@
+import { fileURLToPath } from 'node:url';
+
 import { testResultDir } from '@affine-test/kit/playwright';
 import type {
   PlaywrightTestConfig,
   PlaywrightWorkerOptions,
 } from '@playwright/test';
+
+const runtimeConfigPath = fileURLToPath(
+  new URL('./runtime-config.json', import.meta.url)
+);
 
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
@@ -29,9 +35,9 @@ const config: PlaywrightTestConfig = {
   webServer: [
     {
       command: 'yarn run -T affine dev -p @affine/web',
-      stdout: 'ignore',
-      stderr: 'ignore',
-      timeout: 120 * 1000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      timeout: 240 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
@@ -40,16 +46,17 @@ const config: PlaywrightTestConfig = {
     },
     {
       command: 'yarn run -T affine dev -p @affine/server',
-      timeout: 120 * 1000,
+      timeout: 240 * 1000,
       reuseExistingServer: !process.env.CI,
-      stdout: 'ignore',
-      stderr: 'ignore',
+      stdout: 'pipe',
+      stderr: 'pipe',
       env: {
         DATABASE_URL:
           process.env.DATABASE_URL ??
           'postgresql://affine:affine@localhost:5432/affine',
         NODE_ENV: 'test',
         AFFINE_ENV: process.env.AFFINE_ENV ?? 'dev',
+        AFFINE_BACKEND_RUNTIME_CONFIG_PATH: runtimeConfigPath,
         DEBUG: 'affine:*',
         FORCE_COLOR: 'true',
         DEBUG_COLORS: 'true',

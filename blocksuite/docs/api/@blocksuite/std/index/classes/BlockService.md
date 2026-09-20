@@ -4,7 +4,7 @@
 
 [BlockSuite API Documentation](../../../../README.md) / [@blocksuite/std](../../README.md) / [index](../README.md) / BlockService
 
-# Class: ~~`abstract` BlockService~~
+# ~~Abstract Class: BlockService~~
 
 ## Deprecated
 

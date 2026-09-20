@@ -26,6 +26,9 @@ public class CreateCopilotMessageMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("createCopilotMessage", String.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateCopilotMessageMutation.Data.self
+    ] }
 
     /// Create a chat message
     public var createCopilotMessage: String { __data["createCopilotMessage"] }

@@ -266,7 +266,7 @@ describe('basic', () => {
 import type { FrameBlockComponent } from '@blocksuite/affine/blocks/frame';
 import type { SurfaceRefBlockComponent } from '@blocksuite/affine/blocks/surface-ref';
 
-import snapshot from '../snapshots/edgeless/surface-ref.spec.ts/surface-ref.json' assert { type: 'json' };
+import snapshot from '../snapshots/edgeless/surface-ref.spec.ts/surface-ref.json' with { type: 'json' };
 
 describe('clipboard', () => {
   test('import surface-ref snapshot should render content correctly', async () => {

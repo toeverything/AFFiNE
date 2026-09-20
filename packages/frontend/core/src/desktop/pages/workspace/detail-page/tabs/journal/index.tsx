@@ -458,8 +458,8 @@ const ConflictList = ({
           variant: 'error',
         },
         confirmText: t.Delete(),
-        onConfirm: () => {
-          docRecord.moveToTrash();
+        onConfirm: async () => {
+          await docRecord.moveToTrash();
         },
       });
     },

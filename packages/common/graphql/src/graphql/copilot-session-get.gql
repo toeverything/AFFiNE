@@ -1,15 +1,9 @@
 #import "./fragments/paginated-copilot-chats.gql"
 
-query getCopilotSession(
-  $workspaceId: String!
-  $sessionId: String!
-) {
+query getCopilotSession($workspaceId: String!, $sessionId: String!) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      chats(
-        pagination: { first: 1 }
-        options: { sessionId: $sessionId }
-      ) {
+      chats(pagination: { first: 1 }, options: { sessionId: $sessionId }) {
         ...PaginatedCopilotChats
       }
     }

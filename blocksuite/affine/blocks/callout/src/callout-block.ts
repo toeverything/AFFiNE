@@ -234,22 +234,26 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
           backgroundColor: backgroundColor ?? 'transparent',
         })}
       >
-        ${iconContent
-          ? html`
-              <div
-                @click=${this._toggleIconPicker}
-                contenteditable="false"
-                class="${calloutEmojiContainerStyles}"
-                style=${styleMap({
-                  marginTop: this._getEmojiMarginTop(),
-                })}
-              >
-                <span class="${calloutEmojiStyles}" data-testid="callout-emoji"
-                  >${iconContent}</span
+        ${
+          iconContent
+            ? html`
+                <div
+                  @click=${this._toggleIconPicker}
+                  contenteditable="false"
+                  class="${calloutEmojiContainerStyles}"
+                  style=${styleMap({
+                    marginTop: this._getEmojiMarginTop(),
+                  })}
                 >
-              </div>
-            `
-          : ''}
+                  <span
+                    class="${calloutEmojiStyles}"
+                    data-testid="callout-emoji"
+                    >${iconContent}</span
+                  >
+                </div>
+              `
+            : ''
+        }
         <div class="${calloutChildrenStyles}">
           ${this.renderChildren(this.model)}
         </div>

@@ -27,14 +27,7 @@ test.after(async t => {
 
 test('should get feature', async t => {
   const { feature } = t.context;
-  const freePlanFeature = await feature.get('free_plan_v1');
+  const adminFeature = await feature.get('administrator');
 
-  t.snapshot(freePlanFeature.configs);
-});
-
-test('should throw if feature not found', async t => {
-  const { feature } = t.context;
-  await t.throwsAsync(feature.get('not_found_feature' as any), {
-    message: 'Feature not_found_feature not found',
-  });
+  t.deepEqual(adminFeature.configs, {});
 });

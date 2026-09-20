@@ -1,6 +1,10 @@
+import type { IncomingMessage } from 'node:http';
+
+import type { RawBodyRequest } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { raw } from 'express';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import {
@@ -19,9 +23,32 @@ import {
 import { SocketIoAdapter } from './base/websocket';
 import { AuthGuard } from './core/auth';
 import { TelemetryService } from './core/telemetry/service';
+import { ServerRole } from './env';
 import { serverTimingAndCache } from './middleware/timing';
 
 const OneMB = 1024 * 1024;
+
+export function configureBodyParsers(
+  app: NestExpressApplication,
+  serverPath: string
+) {
+  let start = 0;
+  let end = serverPath.length;
+  while (start < end && serverPath[start] === '/') start++;
+  while (end > start && serverPath[end - 1] === '/') end--;
+  const serverPrefix = serverPath.slice(start, end);
+  app.use(
+    `${serverPrefix ? `/${serverPrefix}` : ''}/api/copilot/chat/:sessionId/attachments/:key`,
+    raw({
+      limit: 20 * OneMB,
+      type: () => true,
+      verify: (req: RawBodyRequest<IncomingMessage>, _res, buffer) => {
+        req.rawBody = buffer;
+      },
+    })
+  );
+  app.useBodyParser('raw', { limit: 100 * OneMB });
+}
 
 export async function run() {
   const { AppModule } = await import('./app.module');
@@ -33,15 +60,17 @@ export async function run() {
     bufferLogs: true,
   });
 
-  app.useBodyParser('raw', { limit: 100 * OneMB });
+  const config = app.get(Config);
+  configureBodyParsers(app, config.server.path);
 
   const logger = app.get(AFFiNELogger);
   app.useLogger(logger);
-  const config = app.get(Config);
   const url = app.get(URLHelper);
   let telemetry: TelemetryService | null = null;
   try {
-    telemetry = app.get(TelemetryService, { strict: false });
+    if (env.role !== ServerRole.Worker) {
+      telemetry = app.get(TelemetryService, { strict: false });
+    }
   } catch {
     telemetry = null;
   }
@@ -93,7 +122,11 @@ export async function run() {
     })
   );
 
-  app.useGlobalGuards(app.get(AuthGuard), app.get(CloudThrottlerGuard));
+  if (env.role === ServerRole.Worker) {
+    app.useGlobalGuards(app.get(CloudThrottlerGuard));
+  } else {
+    app.useGlobalGuards(app.get(AuthGuard), app.get(CloudThrottlerGuard));
+  }
   app.useGlobalInterceptors(app.get(CacheInterceptor));
   app.useGlobalFilters(new GlobalExceptionFilter(app.getHttpAdapter()));
   app.use(cookieParser());

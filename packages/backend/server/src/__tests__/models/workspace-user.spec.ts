@@ -5,7 +5,12 @@ import test from 'ava';
 import Sinon from 'sinon';
 
 import { EventBus, NewOwnerIsNotActiveMember } from '../../base';
-import { Models, WorkspaceMemberStatus, WorkspaceRole } from '../../models';
+import {
+  DocRole,
+  Models,
+  WorkspaceMemberStatus,
+  WorkspaceRole,
+} from '../../models';
 import { createModule, TestingModule } from '../create-module';
 import { Mockers } from '../mocks';
 
@@ -48,10 +53,12 @@ test('should transfer workespace owner', async t => {
     owner: { id: user.id },
   });
 
-  await module.create(Mockers.WorkspaceUser, {
-    workspaceId: workspace.id,
-    userId: user2.id,
-  });
+  await models.workspaceUser.set(
+    workspace.id,
+    user2.id,
+    WorkspaceRole.Collaborator,
+    { status: WorkspaceMemberStatus.Accepted }
+  );
 
   await models.workspaceUser.setOwner(workspace.id, user2.id);
 
@@ -65,6 +72,30 @@ test('should transfer workespace owner', async t => {
 
   const owner2 = await models.workspaceUser.getOwner(workspace.id);
   t.is(owner2.id, user2.id);
+  const oldOwnerRole = await models.workspaceUser.get(workspace.id, user.id);
+  t.is(oldOwnerRole?.type, WorkspaceRole.Collaborator);
+});
+
+test('should keep old owner as admin when transferring a team workspace', async t => {
+  const [user, user2] = await module.create(Mockers.User, 2);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: { id: user.id },
+  });
+  await module.create(Mockers.TeamWorkspace, {
+    id: workspace.id,
+    quantity: 10,
+  });
+  await models.workspaceUser.set(
+    workspace.id,
+    user2.id,
+    WorkspaceRole.Collaborator,
+    { status: WorkspaceMemberStatus.Accepted }
+  );
+
+  await models.workspaceUser.setOwner(workspace.id, user2.id);
+
+  const oldOwnerRole = await models.workspaceUser.get(workspace.id, user.id);
+  t.is(oldOwnerRole?.type, WorkspaceRole.Admin);
 });
 
 test('should throw if transfer owner to non-active member', async t => {
@@ -77,11 +108,12 @@ test('should throw if transfer owner to non-active member', async t => {
     instanceOf: NewOwnerIsNotActiveMember,
   });
 
-  await module.create(Mockers.WorkspaceUser, {
-    workspaceId: workspace.id,
-    userId: user2.id,
-    status: WorkspaceMemberStatus.AllocatingSeat,
-  });
+  await models.workspaceUser.set(
+    workspace.id,
+    user2.id,
+    WorkspaceRole.Collaborator,
+    { status: WorkspaceMemberStatus.AllocatingSeat }
+  );
 
   await t.throwsAsync(models.workspaceUser.setOwner(workspace.id, user2.id), {
     instanceOf: NewOwnerIsNotActiveMember,
@@ -127,6 +159,22 @@ test('should not get inactive workspace role', async t => {
 
   role = await models.workspaceUser.getActive(workspace.id, u1.id);
   t.is(role, null);
+});
+
+test('should not activate a missing workspace invitation', async t => {
+  const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
+
+  await t.throwsAsync(
+    models.workspaceUser.setStatus(
+      workspace.id,
+      user.id,
+      WorkspaceMemberStatus.Accepted
+    ),
+    { message: 'Cannot activate a missing workspace invitation.' }
+  );
+
+  t.is(await models.workspaceUser.get(workspace.id, user.id), null);
 });
 
 test('should update user role', async t => {
@@ -193,24 +241,67 @@ test('should delete workspace user role', async t => {
   t.is(role, null);
 });
 
+test('should remove workspace permission when changing a member to external', async t => {
+  const workspace = await module.create(Mockers.Workspace);
+  const u1 = await module.create(Mockers.User);
+
+  await models.workspaceUser.set(
+    workspace.id,
+    u1.id,
+    WorkspaceRole.Collaborator,
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
+  );
+  const docId = 'external-member-doc';
+  await models.docUser.set(workspace.id, docId, u1.id, DocRole.Editor);
+  await models.workspaceUser.set(workspace.id, u1.id, WorkspaceRole.External, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
+
+  t.is(await models.workspaceUser.get(workspace.id, u1.id), null);
+  t.is(
+    await db.workspaceMember.count({
+      where: {
+        workspaceId: workspace.id,
+        userId: u1.id,
+      },
+    }),
+    0
+  );
+  t.is(
+    await db.workspaceInvitation.count({
+      where: {
+        workspaceId: workspace.id,
+        inviteeUserId: u1.id,
+      },
+    }),
+    0
+  );
+  t.is(
+    (await models.docUser.get(workspace.id, docId, u1.id))?.type,
+    DocRole.Editor
+  );
+});
+
 test('should get user workspace roles with filter', async t => {
   const ws1 = await module.create(Mockers.Workspace);
   const ws2 = await module.create(Mockers.Workspace);
   const user = await module.create(Mockers.User);
 
-  await db.workspaceUserRole.createMany({
+  await db.workspaceMember.createMany({
     data: [
       {
         workspaceId: ws1.id,
         userId: user.id,
-        type: WorkspaceRole.Admin,
-        status: WorkspaceMemberStatus.Accepted,
+        role: 'admin',
+        state: 'active',
       },
       {
         workspaceId: ws2.id,
         userId: user.id,
-        type: WorkspaceRole.Collaborator,
-        status: WorkspaceMemberStatus.Accepted,
+        role: 'member',
+        state: 'active',
       },
     ],
   });
@@ -235,14 +326,12 @@ test('should paginate workspace user roles', async t => {
     })),
   });
 
-  await db.workspaceUserRole.createMany({
+  await db.workspaceMember.createMany({
     data: users.map((user, i) => ({
       workspaceId: workspace.id,
       userId: user.id,
-      type: WorkspaceRole.Collaborator,
-      status: Object.values(WorkspaceMemberStatus)[
-        Math.floor(Math.random() * Object.values(WorkspaceMemberStatus).length)
-      ],
+      role: 'member',
+      state: 'active',
       createdAt: new Date(Date.now() + i * 1000),
     })),
   });
@@ -268,39 +357,4 @@ test('should paginate workspace user roles', async t => {
       .toSorted((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
       .map(r => r.id)
   );
-});
-
-test('should allocate seats for AllocatingSeat and NeedMoreSeat members', async t => {
-  const users = await module.create(Mockers.User, 4);
-  const workspace = await module.create(Mockers.Workspace);
-
-  for (const user of users) {
-    await module.create(Mockers.WorkspaceUser, {
-      workspaceId: workspace.id,
-      userId: user.id,
-      status: WorkspaceMemberStatus.AllocatingSeat,
-    });
-  }
-
-  await models.workspaceUser.allocateSeats(workspace.id, 1);
-
-  let count = await db.workspaceUserRole.count({
-    where: {
-      workspaceId: workspace.id,
-      status: WorkspaceMemberStatus.Pending,
-    },
-  });
-
-  t.is(count, 1);
-
-  await models.workspaceUser.allocateSeats(workspace.id, 3);
-
-  count = await db.workspaceUserRole.count({
-    where: {
-      workspaceId: workspace.id,
-      status: WorkspaceMemberStatus.Pending,
-    },
-  });
-
-  t.is(count, 3);
 });

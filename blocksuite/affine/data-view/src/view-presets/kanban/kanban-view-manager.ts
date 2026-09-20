@@ -15,7 +15,9 @@ import {
   sortByManually,
 } from '../../core/group-by/trait.js';
 import { fromJson } from '../../core/property/utils';
+import { SortManager, sortTraitKey } from '../../core/sort/manager.js';
 import { PropertyBase } from '../../core/view-manager/property.js';
+import type { Row } from '../../core/view-manager/row.js';
 import { SingleViewBase } from '../../core/view-manager/single-view.js';
 import type { ViewManager } from '../../core/view-manager/view-manager.js';
 import type { KanbanViewColumn, KanbanViewData } from './define.js';
@@ -92,6 +94,19 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     return this.data$.value?.filter ?? emptyFilterGroup;
   });
 
+  private readonly sortList$ = computed(() => {
+    return this.data$.value?.sort;
+  });
+
+  private readonly sortManager = this.traitSet(
+    sortTraitKey,
+    new SortManager(this.sortList$, this, {
+      setSortList: sortList => {
+        this.dataUpdate(data => ({ sort: { ...data.sort, ...sortList } }));
+      },
+    })
+  );
+
   filterTrait = this.traitSet(
     filterTraitKey,
     new FilterTrait(this.filter$, this, {
@@ -140,6 +155,7 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
         return asc === false ? sorted.reverse() : sorted;
       },
       sortRow: (key, rows) => {
+        if (this.sortManager.hasSort$.value) return rows;
         const property = this.view?.groupProperties.find(v => v.key === key);
         return sortByManually(
           rows,
@@ -357,6 +373,10 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
       return evalFilter(this.filter$.value, rowMap);
     }
     return true;
+  }
+
+  protected override rowsMapping(rows: Row[]): Row[] {
+    return this.sortManager.sort(super.rowsMapping(rows));
   }
 
   propertyGetOrCreate(columnId: string): KanbanColumn {

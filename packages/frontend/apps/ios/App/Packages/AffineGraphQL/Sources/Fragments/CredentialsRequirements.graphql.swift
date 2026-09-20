@@ -16,6 +16,9 @@ public struct CredentialsRequirements: AffineGraphQL.SelectionSet, Fragment {
     .field("__typename", String.self),
     .field("password", Password.self),
   ] }
+  public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+    CredentialsRequirements.self
+  ] }
 
   public var password: Password { __data["password"] }
 
@@ -30,6 +33,10 @@ public struct CredentialsRequirements: AffineGraphQL.SelectionSet, Fragment {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("__typename", String.self),
       .fragment(PasswordLimits.self),
+    ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CredentialsRequirements.Password.self,
+      PasswordLimits.self
     ] }
 
     public var minLength: Int { __data["minLength"] }

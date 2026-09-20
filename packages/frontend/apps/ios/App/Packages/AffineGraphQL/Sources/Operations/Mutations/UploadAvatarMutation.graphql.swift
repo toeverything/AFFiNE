@@ -26,6 +26,9 @@ public class UploadAvatarMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("uploadAvatar", UploadAvatar.self, arguments: ["avatar": .variable("avatar")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UploadAvatarMutation.Data.self
+    ] }
 
     /// Upload user avatar
     public var uploadAvatar: UploadAvatar { __data["uploadAvatar"] }
@@ -44,6 +47,9 @@ public class UploadAvatarMutation: GraphQLMutation {
         .field("name", String.self),
         .field("avatarUrl", String?.self),
         .field("email", String.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        UploadAvatarMutation.Data.UploadAvatar.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

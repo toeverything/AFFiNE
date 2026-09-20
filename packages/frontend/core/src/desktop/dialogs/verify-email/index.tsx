@@ -108,10 +108,18 @@ export const VerifyEmailDialog = ({
     >
       <AuthHeader
         title={serverName}
-        subTitle={t['com.affine.settings.email.action.change']()}
+        subTitle={
+          changeEmail
+            ? t['com.affine.settings.email.action.change']()
+            : t['com.affine.settings.email.action.verify']()
+        }
       />
       <AuthContent>
-        <p>{t['com.affine.auth.verify.email.message']({ email })}</p>
+        <p>
+          {changeEmail
+            ? t['com.affine.auth.change.email.message']({ email })
+            : t['com.affine.auth.verify.email.message']({ email })}
+        </p>
         <AuthInput
           label={t['com.affine.settings.email']()}
           disabled={true}

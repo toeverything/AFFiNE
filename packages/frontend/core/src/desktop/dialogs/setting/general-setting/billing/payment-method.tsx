@@ -29,7 +29,6 @@ export const PaymentMethod = () => {
 
   const proSubscription = useLiveData(subscriptionService.subscription.pro$);
   const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
-  const isOnetime = useLiveData(subscriptionService.subscription.isOnetimeAI$);
 
   const [openCancelModal, setOpenCancelModal] = useState(false);
   return (
@@ -43,7 +42,7 @@ export const PaymentMethod = () => {
       >
         <PaymentMethodUpdater />
       </SettingRow>
-      {isBeliever || isOnetime ? null : proSubscription?.end &&
+      {isBeliever ? null : proSubscription?.end &&
         proSubscription?.canceledAt ? (
         <SettingRow
           name={t['com.affine.payment.billing-setting.expiration-date']()}

@@ -99,9 +99,11 @@ export class EdgelessNoteShadowPanel extends WithDisposable(LitElement) {
       (shadow, index) =>
         html`<style>
             .item-icon svg rect:first-of-type {
-              fill: ${this.background.startsWith('--')
-                ? `var(${this.background})`
-                : this.background};
+              fill: ${
+                this.background.startsWith('--')
+                  ? `var(${this.background})`
+                  : this.background
+              };
             }
           </style>
           <div

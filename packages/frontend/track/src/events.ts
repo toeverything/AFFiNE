@@ -1,5 +1,4 @@
 // let '$' stands for unspecific matrix
-/* eslint-disable rxjs/finnish */
 
 // SECTION: app events
 type GeneralEvents = 'openMigrationDataHelp';
@@ -92,7 +91,8 @@ type FolderEvents =
   | 'deleteFolder';
 type TagEvents = 'createTag' | 'deleteTag' | 'renameTag' | 'tagDoc';
 type FavoriteEvents = 'toggleFavorite';
-type OrganizeItemEvents = // doc, link, folder, collection, tag
+type OrganizeItemEvents =
+  // doc, link, folder, collection, tag
   | 'createOrganizeItem'
   | 'renameOrganizeItem'
   | 'moveOrganizeItem'
@@ -721,7 +721,7 @@ export type EventArgs = {
   dragStart: { type: string };
   addEmbeddingDoc: {
     type?: 'page' | 'edgeless';
-    control: 'addButton' | 'atMenu';
+    control: 'addButton' | 'atMenu' | 'dragDrop';
     method: 'doc' | 'cur-doc' | 'file' | 'tags' | 'collections' | 'suggestion';
   };
   openAttachmentInFullscreen: AttachmentEventArgs;

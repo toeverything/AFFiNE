@@ -29,9 +29,11 @@ export const typeConfig = (property: Property) => {
           style="color: var(--affine-text-secondary-color);gap:4px;font-size: 14px;"
         >
           ${renderUniLit(property.icon)}
-          ${property.view.propertyMetas$.value.find(
-            v => v.type === property.type$.value
-          )?.config.name}
+          ${
+            property.view.propertyMetas$.value.find(
+              v => v.type === property.type$.value
+            )?.config.name
+          }
         </div>`,
         options: {
           title: {

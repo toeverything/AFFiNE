@@ -1,6 +1,8 @@
 import { LinkExtension } from '@blocksuite/affine-inline-link';
 import { textKeymap } from '@blocksuite/affine-inline-preset';
+import type { AffineReference } from '@blocksuite/affine-inline-reference';
 import type {
+  EmbedYoutubeModel,
   ListBlockModel,
   ParagraphBlockModel,
 } from '@blocksuite/affine-model';
@@ -159,6 +161,26 @@ beforeEach(async () => {
   return cleanup;
 });
 
+test.each([false, true])(
+  'normalizes YouTube IDs without a mounted view (readonly: %s)',
+  readonly => {
+    const detached = createDefaultDoc(collection, { title: 'YouTube import' });
+    const note = detached.getModelsByFlavour('affine:note')[0];
+    const id = detached.addBlock(
+      'affine:embed-youtube',
+      { url: 'https://youtu.be/first' },
+      note.id
+    );
+    const model = detached.getModelById(id) as EmbedYoutubeModel;
+    expect(model.props.videoId).toBe('first');
+    expect(model.yBlock.get('prop:videoId')).toBe('first');
+    detached.readonly = readonly;
+    model.yBlock.set('prop:url', 'https://www.youtube.com/watch?v=second');
+    expect(model.props.videoId).toBe(readonly ? 'first' : 'second');
+    detached.readonly = false;
+  }
+);
+
 describe('markdown/list/paragraph/quote/code/link', () => {
   test('markdown list shortcut converts to todo list and keeps checked state', async () => {
     const { noteId, paragraphId } = await createParagraph();
@@ -275,9 +297,9 @@ describe('hotkey/bracket/linked-page', () => {
     await wait();
     const codeRichText = getRichTextByBlockId(codeId);
     setTextSelection(codeId, 1, 0);
+    await wait();
     const rightContext = mockKeyboardContext();
     rightHandler(rightContext.ctx);
-    expect(rightContext.preventDefault).not.toHaveBeenCalled();
     expect(codeRichText.inlineEditor.yTextString).toBe('()');
   });
 
@@ -312,6 +334,16 @@ describe('hotkey/bracket/linked-page', () => {
     const richText = getRichTextByBlockId(paragraphId);
     expect(richText.querySelectorAll('affine-reference').length).toBe(2);
     expect(richText.inlineEditor.yTextString.length).toBe(2);
+
+    collection.removeDoc(linkedDoc.id);
+    await wait();
+    expect(collection.docs.has(linkedDoc.id)).toBe(false);
+    const danglingReferences =
+      richText.querySelectorAll<AffineReference>('affine-reference');
+    expect(danglingReferences.length).toBe(2);
+    expect([...danglingReferences].every(reference => !reference.refMeta)).toBe(
+      true
+    );
   });
 });
 

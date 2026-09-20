@@ -55,9 +55,11 @@ export class FootNotePopupChip extends LitElement {
   override render() {
     return html`
       <div class="popup-chip-container">
-        ${this.prefixIcon
-          ? html`<div class="prefix-icon">${this.prefixIcon}</div>`
-          : nothing}
+        ${
+          this.prefixIcon
+            ? html`<div class="prefix-icon">${this.prefixIcon}</div>`
+            : nothing
+        }
         <div class="popup-chip-label" title=${this.tooltip}>${this.label}</div>
       </div>
     `;

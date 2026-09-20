@@ -1,0 +1,72 @@
+query workspaceByokSettings($id: String!, $from: DateTime!, $to: DateTime!) {
+  workspace(id: $id) {
+    id
+    byokSettings {
+      workspaceId
+      entitled
+      serverEntitled
+      localEntitled
+      policy {
+        enabled
+        allowedProviders
+        customEndpointMode
+        privateEndpointSupported
+      }
+      catalog {
+        version
+        providers {
+          provider
+          models {
+            modelId
+            displayName
+            recommended
+            capabilities {
+              input
+              output
+              features
+              attachmentKinds
+              attachmentSources
+            }
+          }
+        }
+      }
+      profiles {
+        profileId
+        provider
+        name
+        description
+        enabled
+        sortOrder
+        revision
+        definition {
+          endpoint { kind url dialect }
+          models {
+            modelId
+            enabled
+            capabilities {
+              input
+              output
+              features
+              attachmentKinds
+              attachmentSources
+            }
+          }
+        }
+        validation {
+          definitionFingerprint
+          credentialGeneration
+          connection { kind testedAt errorKind }
+          models {
+            modelId
+            checks { operation status { kind testedAt errorKind } }
+          }
+        }
+      }
+    }
+    byokUsage(from: $from, to: $to) {
+      date
+      featureKind
+      totalTokens
+    }
+  }
+}

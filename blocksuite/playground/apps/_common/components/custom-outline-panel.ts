@@ -29,11 +29,13 @@ export class CustomOutlinePanel extends WithDisposable(ShadowlessElement) {
 
   override render() {
     return html`
-      ${this._show
-        ? html`
-            <div class="custom-outline-container">${this._renderPanel()}</div>
-          `
-        : nothing}
+      ${
+        this._show
+          ? html`
+              <div class="custom-outline-container">${this._renderPanel()}</div>
+            `
+          : nothing
+      }
     `;
   }
 

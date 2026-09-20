@@ -23,7 +23,7 @@ export class IndexedDBLocker implements Locker {
   async lock(domain: string, resource: string) {
     const key = `${domain}:${resource}`;
 
-    // eslint-disable-next-line no-constant-condition
+    // oxlint-disable-next-line no-constant-condition
     while (true) {
       const trx = this.db.transaction('locks', 'readwrite');
       const record = await trx.store.get(key);

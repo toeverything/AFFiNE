@@ -17,7 +17,9 @@ function isValidSMTPAddressLiteral(hostname: string) {
   return false;
 }
 
-export function normalizeSMTPHeloHostname(hostname: string) {
+export function normalizeSMTPHeloHostname(hostname?: string) {
+  if (!hostname) return undefined;
+
   const normalized = hostname.trim().replace(/\.$/, '');
   if (!normalized) return undefined;
   if (isValidSMTPAddressLiteral(normalized)) return normalized;

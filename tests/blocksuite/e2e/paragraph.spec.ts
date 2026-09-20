@@ -3,12 +3,15 @@ import { expect } from '@playwright/test';
 
 import {
   captureHistory,
+  copyByKeyboard,
   dragBetweenIndices,
   dragOverTitle,
   enterPlaygroundRoom,
   focusRichText,
+  focusRichTextEnd,
   focusTitle,
   getBlockIds,
+  getClipboardText,
   getIndexCoordinate,
   getInlineSelectionIndex,
   getPageSnapshot,
@@ -31,8 +34,10 @@ import {
   redoByClick,
   redoByKeyboard,
   resetHistory,
+  setInlineRangeInInlineEditor,
   setSelection,
   SHORT_KEY,
+  switchEditorMode,
   switchReadonly,
   type,
   undoByClick,
@@ -48,11 +53,13 @@ import {
   assertBlockSelections,
   assertBlockTextContent,
   assertBlockType,
+  assertBlockTypes,
   assertClassName,
   assertDivider,
   assertDocTitleFocus,
   assertRichTextInlineRange,
   assertRichTexts,
+  assertTextSelection,
   assertTitle,
 } from './utils/asserts.js';
 import { test } from './utils/playwright.js';
@@ -87,10 +94,9 @@ test('init paragraph by page title enter in middle', async ({ page }) => {
   await waitDefaultPageLoaded(page);
   await focusTitle(page);
   await type(page, 'hello');
-  await page.keyboard.press('ArrowLeft');
-  await page.keyboard.press('ArrowLeft');
-  await page.keyboard.press('ArrowLeft');
+  await setInlineRangeInInlineEditor(page, { index: 2, length: 0 });
   await pressEnter(page);
+  await waitNextFrame(page, 200);
 
   await assertTitle(page, 'he');
   await assertRichTexts(page, ['llo', '']);
@@ -661,58 +667,64 @@ test('delete at start of paragraph immediately following list', async ({
   await captureHistory(page);
 
   await assertRichTexts(page, ['hello', 'a']);
-  await assertBlockChildrenIds(page, '1', ['2', '3']);
-  await assertBlockType(page, '3', 'text');
+  await assertBlockTypes(page, ['text', 'text']);
 
   // text -> bulleted
   await focusRichText(page, 1);
   await updateBlockType(page, 'affine:list', 'bulleted');
-  await assertBlockType(page, '2', 'text');
-  await assertBlockType(page, '4', 'bulleted');
+  await assertBlockTypes(page, ['text', 'bulleted']);
+  await focusRichTextEnd(page, 1);
   await pressBackspace(page, 2);
   await waitNextFrame(page);
-  await assertBlockType(page, '5', 'text');
-  await assertBlockChildrenIds(page, '1', ['2', '5']);
+  await assertBlockTypes(page, ['text', 'text']);
+  await assertBlockChildrenFlavours(page, '1', [
+    'affine:paragraph',
+    'affine:paragraph',
+  ]);
   await pressBackspace(page);
-  await assertBlockChildrenIds(page, '1', ['2']);
+  await assertBlockTypes(page, ['text']);
 
   // reset
   await undoByClick(page);
   await undoByClick(page);
   await assertRichTexts(page, ['hello', 'a']);
-  await assertBlockChildrenIds(page, '1', ['2', '3']);
-  await assertBlockType(page, '3', 'text');
+  await assertBlockTypes(page, ['text', 'text']);
 
   // text -> numbered
   await focusRichText(page, 1);
   await updateBlockType(page, 'affine:list', 'numbered');
-  await assertBlockType(page, '2', 'text');
-  await assertBlockType(page, '6', 'numbered');
+  await assertBlockTypes(page, ['text', 'numbered']);
+  await focusRichTextEnd(page, 1);
   await pressBackspace(page, 2);
   await waitNextFrame(page);
-  await assertBlockType(page, '7', 'text');
-  await assertBlockChildrenIds(page, '1', ['2', '7']);
+  await assertBlockTypes(page, ['text', 'text']);
+  await assertBlockChildrenFlavours(page, '1', [
+    'affine:paragraph',
+    'affine:paragraph',
+  ]);
   await pressBackspace(page);
-  await assertBlockChildrenIds(page, '1', ['2']);
+  await assertBlockTypes(page, ['text']);
 
   // reset
   await undoByClick(page);
   await undoByClick(page);
   await assertRichTexts(page, ['hello', 'a']);
-  await assertBlockChildrenIds(page, '1', ['2', '3']);
-  await assertBlockType(page, '3', 'text');
+  await assertBlockTypes(page, ['text', 'text']);
 
   // text -> todo
   await focusRichText(page, 1);
   await updateBlockType(page, 'affine:list', 'todo');
-  await assertBlockType(page, '2', 'text');
-  await assertBlockType(page, '8', 'todo');
+  await assertBlockTypes(page, ['text', 'todo']);
+  await focusRichTextEnd(page, 1);
   await pressBackspace(page, 2);
   await waitNextFrame(page);
-  await assertBlockType(page, '9', 'text');
-  await assertBlockChildrenIds(page, '1', ['2', '9']);
+  await assertBlockTypes(page, ['text', 'text']);
+  await assertBlockChildrenFlavours(page, '1', [
+    'affine:paragraph',
+    'affine:paragraph',
+  ]);
   await pressBackspace(page);
-  await assertBlockChildrenIds(page, '1', ['2']);
+  await assertBlockTypes(page, ['text']);
 });
 
 test('delete at start of paragraph with content', async ({ page }) => {
@@ -1321,6 +1333,75 @@ test('select divider using delete keyboard from prev/next paragraph', async ({
 });
 
 test.describe('readonly mode', () => {
+  test('heading restores persisted collapse state after readonly mode is re-entered', async ({
+    page,
+  }) => {
+    // Given a persisted collapsed heading that a readonly viewer expands locally
+    await enterPlaygroundRoom(page);
+    await initEmptyEdgelessState(page);
+    await focusRichText(page);
+    await type(page, 'Heading');
+    await updateBlockType(page, 'affine:paragraph', 'h2');
+    await pressEnter(page);
+    await type(page, 'Shared content');
+
+    const content = page.locator('affine-paragraph').nth(1);
+    await page.getByRole('button', { name: 'Collapse content' }).click();
+    await switchReadonly(page);
+    await page.getByRole('button', { name: 'Expand content' }).click();
+    await expect(content).toBeVisible();
+
+    // When the document leaves and re-enters readonly mode
+    await switchReadonly(page, false);
+    await expect(content).not.toBeVisible();
+    await switchReadonly(page);
+
+    // Then the viewer-local state is reset from the persisted collapse state
+    await expect(content).not.toBeVisible();
+  });
+
+  test('expanded heading stays open after selecting shared content', async ({
+    page,
+  }) => {
+    // Given a heading persisted as collapsed before the document becomes readonly
+    await enterPlaygroundRoom(page);
+    await initEmptyEdgelessState(page);
+    await focusRichText(page);
+    await type(page, 'Heading');
+    await updateBlockType(page, 'affine:paragraph', 'h2');
+    await pressEnter(page);
+    await type(page, 'Shared content');
+
+    const content = page.locator('affine-paragraph').nth(1);
+    await page.getByRole('button', { name: 'Collapse content' }).click();
+    await expect(content).not.toBeVisible();
+
+    await switchReadonly(page);
+    await switchEditorMode(page);
+    await switchEditorMode(page);
+
+    // When a reader expands the heading and selects its revealed content
+    await page.getByRole('button', { name: 'Expand content' }).click();
+    await expect(content).toBeVisible();
+    await dragBetweenIndices(page, [1, 0], [1, 6]);
+
+    // Then the reader's local expansion and text selection remain intact
+    await expect(content).toBeVisible();
+    const contentId = await content.getAttribute('data-block-id');
+    expect(contentId).not.toBeNull();
+    await assertTextSelection(page, {
+      blockId: contentId ?? '',
+      index: 0,
+      length: 6,
+    });
+    await copyByKeyboard(page);
+    expect(await getClipboardText(page)).toBe('Shared');
+
+    await page.getByRole('button', { name: 'Collapse content' }).click();
+    await expect(content).not.toBeVisible();
+    await assertTextSelection(page);
+  });
+
   test('should placeholder not show at readonly mode', async ({ page }) => {
     await enterPlaygroundRoom(page);
     await initEmptyParagraphState(page);

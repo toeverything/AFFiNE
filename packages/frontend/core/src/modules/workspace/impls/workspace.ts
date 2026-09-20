@@ -28,6 +28,7 @@ type WorkspaceOptions = {
   rootDoc: YDoc;
   blobSource?: BlobSource;
   onLoadDoc?: (doc: YDoc) => void;
+  onUnloadDoc?: (doc: YDoc) => void;
   onLoadAwareness?: (awareness: Awareness) => void;
   onCreateDoc?: (docId?: string) => string;
   featureFlagService?: FeatureFlagService;
@@ -47,9 +48,7 @@ export class WorkspaceImpl implements Workspace {
   meta: WorkspaceMeta;
 
   slots = {
-    /* eslint-disable rxjs/finnish */
     docListUpdated: new Subject<void>(),
-    /* eslint-enable rxjs/finnish */
   };
 
   get docs() {
@@ -57,6 +56,7 @@ export class WorkspaceImpl implements Workspace {
   }
 
   readonly onLoadDoc?: (doc: YDoc) => void;
+  readonly onUnloadDoc?: (doc: YDoc) => void;
   readonly onLoadAwareness?: (awareness: Awareness) => void;
   readonly onCreateDoc?: (docId?: string) => string;
   readonly featureFlagService?: FeatureFlagService;
@@ -66,6 +66,7 @@ export class WorkspaceImpl implements Workspace {
     rootDoc,
     blobSource,
     onLoadDoc,
+    onUnloadDoc,
     onLoadAwareness,
     onCreateDoc,
     featureFlagService,
@@ -74,6 +75,7 @@ export class WorkspaceImpl implements Workspace {
     this.featureFlagService = featureFlagService;
     this.doc = rootDoc;
     this.onLoadDoc = onLoadDoc;
+    this.onUnloadDoc = onUnloadDoc;
     this.onLoadDoc?.(this.doc);
     this.onLoadAwareness = onLoadAwareness;
     this.onCreateDoc = onCreateDoc;
@@ -176,5 +178,6 @@ export class WorkspaceImpl implements Workspace {
 
   dispose() {
     this.blockCollections.forEach(doc => doc.dispose());
+    this.onUnloadDoc?.(this.doc);
   }
 }

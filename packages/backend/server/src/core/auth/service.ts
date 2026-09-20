@@ -1,18 +1,41 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import type { UserSession } from '@prisma/client';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
 import {
+  Cache,
   Config,
-  getClientVersionFromRequest,
-  SignUpForbidden,
+  EmailAlreadyUsed,
+  EmailVerificationRequired,
+  EventBus,
+  getRequestClientIp,
+  InvalidEmailToken,
+  OnEvent,
+  SameEmailProvided,
+  TooManyRequest,
+  WrongSignInCredentials,
+  WrongSignInMethod,
 } from '../../base';
-import { Models, type User, type UserSession } from '../../models';
-import { Mailer } from '../mail/mailer';
+import { Models, type User } from '../../models';
+import {
+  BackendRuntimeProvider,
+  type RuntimeQuotaSourceInput,
+} from '../backend-runtime';
+import { EntitlementService } from '../entitlement';
+import { AuthSessionService } from './auth-session';
+import { resolveCookiePrincipal } from './cookie-session';
 import { createDevUsers } from './dev';
+import {
+  CSRF_COOKIE_NAME,
+  getSessionOptionsFromRequest,
+  SESSION_COOKIE_NAME,
+  USER_COOKIE_NAME,
+} from './input';
 import type { CurrentUser } from './session';
+import type { NativeLoginResult, SessionIssueInput } from './session-issuer';
 
 export function sessionUser(
   user: Pick<
@@ -27,25 +50,21 @@ export function sessionUser(
   });
 }
 
-function extractTokenFromHeader(authorization: string) {
-  if (!/^Bearer\s/i.test(authorization)) {
-    return;
-  }
-
-  return authorization.substring(7);
-}
-
 @Injectable()
 export class AuthService implements OnApplicationBootstrap {
   readonly cookieOptions: CookieOptions;
-  static readonly sessionCookieName = 'affine_session';
-  static readonly userCookieName = 'affine_user_id';
-  static readonly csrfCookieName = 'affine_csrf_token';
+  static readonly sessionCookieName = SESSION_COOKIE_NAME;
+  static readonly userCookieName = USER_COOKIE_NAME;
+  static readonly csrfCookieName = CSRF_COOKIE_NAME;
 
   constructor(
     private readonly config: Config,
     private readonly models: Models,
-    private readonly mailer: Mailer
+    private readonly authSessions: AuthSessionService,
+    private readonly entitlement: EntitlementService,
+    private readonly cache: Cache,
+    private readonly rt: BackendRuntimeProvider,
+    private readonly event: EventBus
   ) {
     this.cookieOptions = {
       sameSite: 'lax',
@@ -57,128 +76,141 @@ export class AuthService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     if (env.dev) {
-      await createDevUsers(this.models);
+      await createDevUsers(this.models, this.entitlement);
     }
   }
 
-  async canSignIn(_email: string) {
+  async canSignIn(email: string, req: Request) {
+    if (!env.testing) {
+      const { ttl, ipLimit, emailLimit } = this.config.auth.signInRateLimit;
+      const normalizedEmail = email.toLowerCase();
+      const ip = getRequestClientIp(req);
+
+      const emailAttempts = this.cache.increaseWithTtl(
+        this.signInRateLimitKey('email', normalizedEmail),
+        ttl
+      );
+      const ipAttempts = ip
+        ? this.cache.increaseWithTtl(this.signInRateLimitKey('ip', ip), ttl)
+        : Promise.resolve(0);
+      const [emailCount, ipCount] = await Promise.all([
+        emailAttempts,
+        ipAttempts,
+      ]);
+
+      if (emailCount > emailLimit || ipCount > ipLimit) {
+        throw new TooManyRequest();
+      }
+    }
+
     // may add more sign-in check later
     return true;
   }
 
-  /**
-   * @deprecated
-   *
-   * This is a test only helper to quickly signup a user, do not use in production
-   */
-  async signUp(email: string, password: string): Promise<CurrentUser> {
-    if (!env.testing) {
-      throw new SignUpForbidden(
-        'sign up helper is forbidden for non-test environment'
-      );
-    }
-
-    return this.models.user
-      .create({
-        email,
-        password,
-      })
-      .then(sessionUser);
+  private signInRateLimitKey(scope: 'email' | 'ip', value: string) {
+    const digest = createHash('sha256').update(value).digest('hex');
+    return `auth:sign-in-rate:${scope}:${digest}`;
   }
 
-  async signIn(email: string, password: string): Promise<CurrentUser> {
-    return this.models.user.signIn(email, password).then(sessionUser);
+  requestSource(req?: Request): RuntimeQuotaSourceInput {
+    if (!req || !this.config.auth.trustedCloudflareHeaders) {
+      return { trusted: false };
+    }
+    const rawAsn = req.get('x-affine-cf-asn');
+    const asn = rawAsn ? Number(rawAsn) : undefined;
+    return {
+      trusted: true,
+      ip: getRequestClientIp(req),
+      country: req.get('CF-IPCountry')?.trim() || undefined,
+      asn:
+        asn !== undefined &&
+        Number.isSafeInteger(asn) &&
+        asn > 0 &&
+        asn <= 0xffffffff
+          ? asn
+          : undefined,
+      rayId: req.get('CF-Ray')?.trim() || undefined,
+    };
+  }
+
+  async passwordLogin(
+    email: string,
+    password: string,
+    issue: SessionIssueInput
+  ): Promise<NativeLoginResult> {
+    try {
+      return await this.rt.executeAuthSessionCommandV1<NativeLoginResult>({
+        action: 'password_login',
+        email,
+        password,
+        issue,
+      });
+    } catch (error) {
+      if (String(error).includes('wrong_sign_in_method')) {
+        throw new WrongSignInMethod();
+      }
+      if (String(error).includes('wrong_sign_in_credentials')) {
+        throw new WrongSignInCredentials({ email });
+      }
+      throw error;
+    }
+  }
+
+  async issueUser(userId: string, issue: SessionIssueInput) {
+    return await this.rt.executeAuthSessionCommandV1<NativeLoginResult>({
+      action: 'issue_user',
+      userId,
+      issue,
+    });
   }
 
   async signOut(sessionId: string, userId?: string) {
-    // sign out all users in the session
-    if (!userId) {
-      await this.models.session.deleteSession(sessionId);
-    } else {
-      await this.models.session.deleteUserSessions(userId, sessionId);
-    }
+    await this.rt.executeAuthSessionCommandV1({
+      action: 'cookie_sign_out',
+      sessionId,
+      userId,
+    });
   }
 
   async getUserSession(
     sessionId: string,
     userId?: string
   ): Promise<{ user: CurrentUser; session: UserSession } | null> {
-    const sessions = await this.getUserSessions(sessionId);
-
-    if (!sessions.length) {
-      return null;
-    }
-
-    let userSession: UserSession | undefined;
-
-    // try read from user provided cookies.userId
-    if (userId) {
-      userSession = sessions.find(s => s.userId === userId);
-    }
-
-    // fallback to the first valid session if user provided userId is invalid
-    if (!userSession) {
-      // checked
-      // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
-      userSession = sessions.at(-1)!;
-    }
-
-    const user = await this.models.user.get(userSession.userId);
-
-    if (!user) {
-      return null;
-    }
-
-    return { user: sessionUser(user), session: userSession };
-  }
-
-  async getUserSessions(sessionId: string) {
-    return await this.models.session.findUserSessionsBySessionId(sessionId);
-  }
-
-  async createUserSession(
-    userId: string,
-    sessionId?: string,
-    ttl?: number,
-    signInClientVersion?: string
-  ) {
-    return await this.models.session.createOrRefreshUserSession(
-      userId,
+    const result = await resolveCookiePrincipal(
+      this.rt,
       sessionId,
-      ttl,
-      signInClientVersion
+      userId,
+      false
     );
+    return result.status === 'valid'
+      ? { user: result.principal.user, session: result.principal }
+      : null;
   }
 
   async getUserList(sessionId: string) {
-    const sessions = await this.models.session.findUserSessionsBySessionId(
+    return await this.rt.executeAuthSessionCommandV1<CurrentUser[]>({
+      action: 'cookie_users',
       sessionId,
-      {
-        user: true,
-      }
-    );
-    return sessions.map(({ user }) => sessionUser(user));
-  }
-
-  async createSession() {
-    return await this.models.session.createSession();
-  }
-
-  async getSession(sessionId: string) {
-    return await this.models.session.getSession(sessionId);
+    });
   }
 
   async refreshUserSessionIfNeeded(
     res: Response,
     userSession: UserSession,
-    ttr?: number,
+    _ttr?: number,
     refreshClientVersion?: string
   ): Promise<boolean> {
-    const newExpiresAt = await this.models.session.refreshUserSessionIfNeeded(
-      userSession,
-      ttr,
+    const result = await resolveCookiePrincipal(
+      this.rt,
+      userSession.sessionId,
+      userSession.userId,
+      true,
       refreshClientVersion
     );
+    const newExpiresAt =
+      result.status === 'valid' && result.refreshedExpiresAt
+        ? new Date(result.refreshedExpiresAt)
+        : undefined;
     if (!newExpiresAt) {
       // no need to refresh
       return false;
@@ -197,57 +229,16 @@ export class AuthService implements OnApplicationBootstrap {
     return true;
   }
 
-  async revokeUserSessions(userId: string) {
-    return await this.models.session.deleteUserSessions(userId);
+  async revokeUserSessions(userId: string, reason = 'security_action') {
+    return await this.authSessions.revokeUserSessions(userId, reason);
   }
 
-  getSessionOptionsFromRequest(req: Request) {
-    let sessionId: string | undefined =
-      req.cookies[AuthService.sessionCookieName];
-
-    if (!sessionId && req.headers.authorization) {
-      sessionId = extractTokenFromHeader(req.headers.authorization);
-    }
-
-    const userId: string | undefined =
-      req.cookies[AuthService.userCookieName] ||
-      req.headers[AuthService.userCookieName.replaceAll('_', '-')];
-
-    return {
-      sessionId,
-      userId,
-    };
-  }
-
-  async setCookies(
-    req: Request,
-    res: Response,
-    userId: string,
-    clientVersion?: string
-  ) {
-    const { sessionId } = this.getSessionOptionsFromRequest(req);
-
-    const signInClientVersion =
-      clientVersion ?? getClientVersionFromRequest(req);
-    const userSession = await this.createUserSession(
-      userId,
-      sessionId,
-      undefined,
-      signInClientVersion
-    );
-
-    res.cookie(AuthService.sessionCookieName, userSession.sessionId, {
-      ...this.cookieOptions,
-      expires: userSession.expiresAt ?? void 0,
-    });
-
-    res.cookie(AuthService.csrfCookieName, randomUUID(), {
-      ...this.cookieOptions,
-      httpOnly: false,
-      expires: userSession.expiresAt ?? void 0,
-    });
-
-    this.setUserCookie(res, userId);
+  @OnEvent('auth.sessions.revoke_requested')
+  async onRevokeRequested({
+    userId,
+    reason,
+  }: Events['auth.sessions.revoke_requested']) {
+    await this.revokeUserSessions(userId, reason);
   }
 
   async refreshCookies(res: Response, sessionId?: string) {
@@ -264,7 +255,7 @@ export class AuthService implements OnApplicationBootstrap {
     this.clearCookies(res);
   }
 
-  private clearCookies(res: Response<any, Record<string, any>>) {
+  clearCookies(res: Response<any, Record<string, any>>) {
     res.clearCookie(AuthService.sessionCookieName);
     res.clearCookie(AuthService.userCookieName);
     res.clearCookie(AuthService.csrfCookieName);
@@ -281,12 +272,8 @@ export class AuthService implements OnApplicationBootstrap {
   }
 
   async getUserSessionFromRequest(req: Request, res?: Response) {
-    const { sessionId, userId } = this.getSessionOptionsFromRequest(req);
-
-    if (!sessionId) {
-      return null;
-    }
-
+    const { sessionId, userId } = getSessionOptionsFromRequest(req);
+    if (!sessionId) return null;
     const session = await this.getUserSession(sessionId, userId);
 
     if (res) {
@@ -304,127 +291,105 @@ export class AuthService implements OnApplicationBootstrap {
     return session;
   }
 
-  async getTokenSessionFromRequest(req: Request) {
-    const tokenHeader = req.headers.authorization;
-    if (!tokenHeader) {
-      return null;
-    }
-
-    const tokenValue = extractTokenFromHeader(tokenHeader);
-
-    if (!tokenValue) {
-      return null;
-    }
-
-    const token = await this.models.accessToken.getByToken(tokenValue);
-
-    if (token) {
-      const user = await this.models.user.get(token.userId);
-
-      if (!user) {
-        return null;
-      }
-
-      return {
-        token,
-        user: sessionUser(user),
-      };
-    }
-
-    return null;
-  }
-
-  async changePassword(
-    id: string,
-    newPassword: string
-  ): Promise<Omit<User, 'password'>> {
-    return this.models.user.update(id, { password: newPassword });
-  }
-
-  async changeEmail(
-    id: string,
-    newEmail: string
-  ): Promise<Omit<User, 'password'>> {
-    return this.models.user.update(id, {
-      email: newEmail,
-      emailVerifiedAt: new Date(),
-    });
-  }
-
-  async setEmailVerified(id: string) {
-    return await this.models.user.update(id, {
-      emailVerifiedAt: new Date(),
-    });
-  }
-
-  async sendChangePasswordEmail(email: string, callbackUrl: string) {
-    return await this.mailer.send({
-      name: 'ChangePassword',
-      to: email,
-      props: {
-        url: callbackUrl,
-      },
-    });
-  }
-  async sendSetPasswordEmail(email: string, callbackUrl: string) {
-    return await this.mailer.send({
-      name: 'SetPassword',
-      to: email,
-      props: {
-        url: callbackUrl,
-      },
-    });
-  }
-  async sendChangeEmail(email: string, callbackUrl: string) {
-    return await this.mailer.send({
-      name: 'ChangeEmail',
-      to: email,
-      props: {
-        url: callbackUrl,
-      },
-    });
-  }
-  async sendVerifyChangeEmail(email: string, callbackUrl: string) {
-    return await this.mailer.send({
-      name: 'VerifyChangeEmail',
-      to: email,
-      props: {
-        url: callbackUrl,
-      },
-    });
-  }
-  async sendVerifyEmail(email: string, callbackUrl: string) {
-    return await this.mailer.send({
-      name: 'VerifyEmail',
-      to: email,
-      props: {
-        url: callbackUrl,
-      },
-    });
-  }
-  async sendNotificationChangeEmail(email: string) {
-    return await this.mailer.send({
-      name: 'EmailChanged',
-      to: email,
-      props: {
-        to: email,
-      },
-    });
-  }
-
-  async sendSignInEmail(
-    email: string,
-    link: string,
-    otp: string,
-    signUp: boolean
+  async prepareSecurityChallenge(
+    kind: 'change_password' | 'set_password' | 'change_email' | 'verify_email',
+    userId: string,
+    callbackUrl: string,
+    source?: RuntimeQuotaSourceInput
   ) {
-    return await this.mailer.send({
-      name: signUp ? 'SignUp' : 'SignIn',
-      to: email,
-      props: {
-        url: link,
-        otp,
-      },
+    return await this.securityCommand({
+      action: 'prepare_security_challenge',
+      kind,
+      userId,
+      callbackUrl,
+      source,
     });
+  }
+
+  async prepareVerifyChangeEmail(
+    userId: string,
+    token: string,
+    email: string,
+    callbackUrl: string,
+    source?: RuntimeQuotaSourceInput
+  ) {
+    return await this.securityCommand({
+      action: 'prepare_verify_change_email',
+      userId,
+      token,
+      email,
+      callbackUrl,
+      source,
+    });
+  }
+
+  async completePasswordChallenge(
+    userId: string,
+    token: string,
+    password: string
+  ) {
+    const result = await this.securityCommand({
+      action: 'complete_password_challenge',
+      userId,
+      token,
+      password,
+    });
+    const user = await this.models.user.get(userId, { withDisabled: true });
+    if (user) this.event.emitDetached('user.updated', user);
+    return result;
+  }
+
+  async completeEmailChallenge(userId: string, token: string, email: string) {
+    const result = await this.securityCommand({
+      action: 'complete_email_challenge',
+      userId,
+      token,
+      email,
+    });
+    const user = await this.models.user.get(userId, { withDisabled: true });
+    if (user) this.event.emitDetached('user.updated', user);
+    return result;
+  }
+
+  async completeVerifyEmailChallenge(userId: string, token: string) {
+    return await this.securityCommand({
+      action: 'complete_verify_email_challenge',
+      userId,
+      token,
+    });
+  }
+
+  async createSecurityUrl(
+    kind: 'change_password' | 'set_password' | 'change_email' | 'verify_email',
+    userId: string,
+    callbackUrl: string
+  ) {
+    return await this.securityCommand<string>({
+      action: 'create_security_url',
+      kind,
+      userId,
+      callbackUrl,
+    });
+  }
+
+  private async securityCommand<T = boolean>(command: Record<string, unknown>) {
+    try {
+      return await this.rt.executeAuthSessionCommandV1<T>(command);
+    } catch (error) {
+      const message = String(error);
+      if (message.includes('email_verification_required'))
+        throw new EmailVerificationRequired();
+      if (
+        message.includes('email_already_used') ||
+        message.includes('users_email_key')
+      )
+        throw new EmailAlreadyUsed();
+      if (message.includes('same_email_provided'))
+        throw new SameEmailProvided();
+      if (message.includes('invalid_email_token'))
+        throw new InvalidEmailToken();
+      if (message.includes('mail_quota_denied')) throw new TooManyRequest();
+      throw error;
+    }
   }
 }

@@ -118,7 +118,7 @@ Get the root block of the store.
 
 ### addBlock()
 
-> **addBlock**\<`T`\>(`flavour`, `blockProps`, `parent?`, `parentIndex?`): `string`
+> **addBlock**\<`T`\>(`flavour`, `blockProps?`, `parent?`, `parentIndex?`): `string`
 
 Creates and adds a new block to the store
 
@@ -136,7 +136,7 @@ Creates and adds a new block to the store
 
 The block's flavour (type)
 
-##### blockProps
+##### blockProps?
 
 `Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\> = `{}`
 
@@ -144,9 +144,9 @@ Optional properties for the new block
 
 ##### parent?
 
-Optional parent block or parent block ID
+`string` \| `BlockModel`\<`object`\> \| `null`
 
-`string` | `BlockModel`\<`object`\> | `null`
+Optional parent block or parent block ID
 
 ##### parentIndex?
 
@@ -182,9 +182,9 @@ Array of blocks to add
 
 ##### parent?
 
-Optional parent block or parent block ID
+`string` \| `BlockModel`\<`object`\> \| `null`
 
-`string` | `BlockModel`\<`object`\> | `null`
+Optional parent block or parent block ID
 
 ##### parentIndex?
 
@@ -202,7 +202,7 @@ Array of IDs of the newly created blocks
 
 ### addSiblingBlocks()
 
-> **addSiblingBlocks**(`targetModel`, `props`, `placement`): `string`[]
+> **addSiblingBlocks**(`targetModel`, `props`, `placement?`): `string`[]
 
 Add sibling blocks to the store
 
@@ -220,11 +220,11 @@ The target block model
 
 Array of block properties
 
-##### placement
+##### placement?
+
+`"after"` \| `"before"`
 
 Optional position to place the new blocks ('after' or 'before')
-
-`"after"` | `"before"`
 
 #### Returns
 
@@ -236,7 +236,7 @@ Array of IDs of the newly created blocks
 
 ### deleteBlock()
 
-> **deleteBlock**(`model`, `options`): `void`
+> **deleteBlock**(`model`, `options?`): `void`
 
 Delete a block from the store
 
@@ -244,11 +244,11 @@ Delete a block from the store
 
 ##### model
 
+`string` \| `BlockModel`\<`object`\>
+
 The block model or block ID to delete
 
-`string` | `BlockModel`\<`object`\>
-
-##### options
+##### options?
 
 Optional options for the deletion
 
@@ -338,9 +338,9 @@ Gets all blocks of specified flavour(s)
 
 ##### blockFlavour
 
-Single flavour or array of flavours to filter by
+`string` \| `string`[]
 
-`string` | `string`[]
+Single flavour or array of flavours to filter by
 
 #### Returns
 
@@ -388,9 +388,9 @@ Get all models of specified flavour(s)
 
 ##### blockFlavour
 
-Single flavour or array of flavours to filter by
+`string` \| `string`[]
 
-`string` | `string`[]
+Single flavour or array of flavours to filter by
 
 #### Returns
 
@@ -410,9 +410,9 @@ Get the next sibling block of a given block
 
 ##### block
 
-Block model or block ID to find next sibling for
+`string` \| `BlockModel`\<`object`\>
 
-`string` | `BlockModel`\<`object`\>
+Block model or block ID to find next sibling for
 
 #### Returns
 
@@ -432,9 +432,9 @@ Get all next sibling blocks of a given block
 
 ##### block
 
-Block model or block ID to find next siblings for
+`string` \| `BlockModel`\<`object`\>
 
-`string` | `BlockModel`\<`object`\>
+Block model or block ID to find next siblings for
 
 #### Returns
 
@@ -454,9 +454,9 @@ Gets the parent block of a given block
 
 ##### target
 
-Block model or block ID to find parent for
+`string` \| `BlockModel`\<`object`\>
 
-`string` | `BlockModel`\<`object`\>
+Block model or block ID to find parent for
 
 #### Returns
 
@@ -476,9 +476,9 @@ Get the previous sibling block of a given block
 
 ##### block
 
-Block model or block ID to find previous sibling for
+`string` \| `BlockModel`\<`object`\>
 
-`string` | `BlockModel`\<`object`\>
+Block model or block ID to find previous sibling for
 
 #### Returns
 
@@ -498,9 +498,9 @@ Get all previous sibling blocks of a given block
 
 ##### block
 
-Block model or block ID to find previous siblings for
+`string` \| `BlockModel`\<`object`\>
 
-`string` | `BlockModel`\<`object`\>
+Block model or block ID to find previous siblings for
 
 #### Returns
 
@@ -534,7 +534,7 @@ True if the block exists, false otherwise
 
 ### moveBlocks()
 
-> **moveBlocks**(`blocksToMove`, `newParent`, `targetSibling`, `shouldInsertBeforeSibling`): `void`
+> **moveBlocks**(`blocksToMove`, `newParent`, `targetSibling?`, `shouldInsertBeforeSibling?`): `void`
 
 Move blocks to a new parent block
 
@@ -552,13 +552,13 @@ Array of block models to move
 
 The new parent block model
 
-##### targetSibling
+##### targetSibling?
+
+`BlockModel`\<`object`\> \| `null`
 
 Optional target sibling block model
 
-`BlockModel`\<`object`\> | `null`
-
-##### shouldInsertBeforeSibling
+##### shouldInsertBeforeSibling?
 
 `boolean` = `true`
 
@@ -586,15 +586,15 @@ Updates a block's properties or executes a callback in a transaction
 
 ##### modelOrId
 
-The block model or block ID to update
+`string` \| `T`
 
-`string` | `T`
+The block model or block ID to update
 
 ##### callBackOrProps
 
-Either a callback function to execute or properties to update
+(() => `void`) \| `Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\>
 
-() => `void` | `Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\>
+Either a callback function to execute or properties to update
 
 #### Returns
 
@@ -624,27 +624,7 @@ const extension = store.get(SomeExtension);
 
 The extension instance
 
-> \<`T`\>(`identifier`, `options?`): `T`
-
-###### Type Parameters
-
-###### T
-
-`T`
-
-###### Parameters
-
-###### identifier
-
-`GeneralServiceIdentifier`\<`T`\>
-
-###### options?
-
-`ResolveOptions`
-
-###### Returns
-
-`T`
+\<`T`\>(`identifier`, `options?`) => `T`
 
 ***
 
@@ -667,27 +647,7 @@ const extension = store.getOptional(SomeExtension);
 
 The extension instance
 
-> \<`T`\>(`identifier`, `options?`): `T` \| `null`
-
-###### Type Parameters
-
-###### T
-
-`T`
-
-###### Parameters
-
-###### identifier
-
-`GeneralServiceIdentifier`\<`T`\>
-
-###### options?
-
-`ResolveOptions`
-
-###### Returns
-
-`T` \| `null`
+\<`T`\>(`identifier`, `options?`) => `T` \| `null`
 
 ***
 
@@ -797,7 +757,7 @@ Reset the history of the store.
 
 ### transact()
 
-> **transact**(`fn`, `shouldTransact`): `void`
+> **transact**(`fn`, `shouldTransact?`): `void`
 
 Execute a transaction.
 
@@ -807,7 +767,7 @@ Execute a transaction.
 
 () => `void`
 
-##### shouldTransact
+##### shouldTransact?
 
 `boolean` = `...`
 
@@ -969,13 +929,13 @@ The store instance
 
 ### getTransformer()
 
-> **getTransformer**(`middlewares`): `Transformer`
+> **getTransformer**(`middlewares?`): `Transformer`
 
 Creates a new transformer instance for the store
 
 #### Parameters
 
-##### middlewares
+##### middlewares?
 
 `TransformerMiddleware`[] = `[]`
 

@@ -6,8 +6,6 @@
 //
 
 import AffineGraphQL
-import Apollo
-import ApolloAPI
 import EventSource
 import Foundation
 import MarkdownParser
@@ -26,6 +24,7 @@ private extension InputBoxData {
 }
 
 public extension ChatManager {
+  @MainActor
   func startUserRequest(editorData: InputBoxData, sessionId: String) {
     append(sessionId: sessionId, UserMessageCellViewModel(
       id: .init(),
@@ -56,10 +55,10 @@ public extension ChatManager {
     }
 
     DispatchQueue.global().async {
-      self.prepareContext(
+      self.startCopilotResponse(
         workspaceId: workspaceId,
-        sessionId: sessionId,
         editorData: editorData,
+        sessionId: sessionId,
         viewModelId: viewModelId
       )
     }
@@ -67,162 +66,68 @@ public extension ChatManager {
 }
 
 private extension ChatManager {
-  func prepareContext(
-    workspaceId: String,
-    sessionId: String,
-    editorData: InputBoxData,
-    viewModelId: UUID
-  ) {
-    assert(!Thread.isMainThread)
-    let createContext = CreateCopilotContextMutation(
-      workspaceId: workspaceId,
-      sessionId: sessionId
-    )
-    QLService.shared.client.perform(mutation: createContext) { result in
-      DispatchQueue.main.async {
-        switch result {
-        case let .success(graphQLResult):
-          guard let contextId = graphQLResult.data?.createCopilotContext else {
-            self.report(sessionId, ChatError.invalidResponse)
-            return
-          }
-          print("[+] copilot context created: \(contextId)")
-
-          DispatchQueue.global().async {
-            let docAttachGroup = DispatchGroup()
-            for docAttach in editorData.documentAttachments {
-              let addDoc = AddContextDocMutation(
-                options: .init(
-                  contextId: contextId,
-                  docId: docAttach.documentID
-                )
-              )
-              docAttachGroup.enter()
-              QLService.shared.client.perform(mutation: addDoc) { result in
-                switch result {
-                case .success:
-                  print("[+] doc \(docAttach.documentID) added to context")
-                case let .failure(error):
-                  print("[-] addContextDoc failed: \(error)")
-                }
-                docAttachGroup.leave()
-              }
-            }
-
-            docAttachGroup.notify(queue: .global()) {
-              var contextSnippet = ""
-              if !editorData.documentAttachments.isEmpty {
-                let sem = DispatchSemaphore(value: 0)
-                let matchQuery = MatchContextQuery(
-                  contextId: .some(contextId),
-                  workspaceId: .some(workspaceId),
-                  content: editorData.text,
-                  limit: .none,
-                  scopedThreshold: .none,
-                  threshold: .none
-                )
-                QLService.shared.client.fetch(query: matchQuery) { result in
-                  switch result {
-                  case let .success(queryResult):
-                    let matches = queryResult.data?.currentUser?.copilot.contexts ?? []
-                    let matchDocs = matches.compactMap(\.matchWorkspaceDocs).flatMap(\.self)
-                    for context in matchDocs {
-                      contextSnippet += "<file docId=\"\(context.docId)\" chunk=\"\(context.chunk)\">\(context.content)</file>\n"
-                    }
-                  case let .failure(error):
-                    print("[-] matchContext failed: \(error)")
-                    // self.report(sessionId, error)
-                  }
-                  sem.signal()
-                }
-                sem.wait()
-              }
-              print("[+] context snippet prepared: \(contextSnippet)")
-              self.startCopilotResponse(
-                editorData: editorData,
-                contextSnippet: contextSnippet,
-                sessionId: sessionId,
-                viewModelId: viewModelId
-              )
-            }
-          }
-        case let .failure(error):
-          self.report(sessionId, error)
-          return
-        }
-      }
-    }
-  }
-
   func startCopilotResponse(
+    workspaceId: String,
     editorData: InputBoxData,
-    contextSnippet: String,
     sessionId: String,
     viewModelId: UUID
   ) {
     assert(!Thread.isMainThread)
     print("[+] starting copilot response for session: \(sessionId)")
 
-    let messageParameters: [String: AnyHashable] = [
-      // packages/frontend/core/src/blocksuite/ai/provider/setup-provider.tsx
-      "docs": editorData.documentAttachments.map(\.documentID), // affine doc
-      "files": [String](), // attachment in context, keep nil for now
-      "searchMode": editorData.isSearchEnabled ? "MUST" : "AUTO",
-    ]
-    let attachmentCount = [
-      editorData.fileAttachments.count,
-      editorData.imageAttachments.count,
-    ].reduce(0, +)
-    let attachmentFieldName = attachmentCount > 1 && attachmentCount != 0 ? "options.blobs" : "options.blob"
-    let uploadableAttachments: [GraphQLFile] = [
-      editorData.fileAttachments.map { file -> GraphQLFile in
+    let uploadableAttachments: [CopilotAttachmentUpload] = [
+      editorData.fileAttachments.map { file -> CopilotAttachmentUpload in
         .init(
-          fieldName: attachmentFieldName,
-          originalName: file.name,
+          data: file.data ?? .init(),
           mimeType: mimeType(text: file.name),
-          data: file.data ?? .init()
+          originalName: file.name
         )
       },
-      editorData.imageAttachments.map { image -> GraphQLFile in
+      editorData.imageAttachments.map { image -> CopilotAttachmentUpload in
         .init(
-          fieldName: attachmentFieldName,
-          originalName: "image.jpg",
+          data: image.imageData,
           mimeType: mimeType(pathExtension: "jpg"),
-          data: image.imageData
+          originalName: "image.jpg"
         )
       },
     ].flatMap(\.self)
-    assert(uploadableAttachments.allSatisfy { !($0.data?.isEmpty ?? true) })
-    guard let input = try? CreateChatMessageInput(
-      attachments: [],
-      blob: attachmentCount == 1 ? "" : .none,
-      blobs: attachmentCount > 1 && attachmentCount != 0 ? .some([]) : .none,
-      content: .some(contextSnippet.isEmpty ? editorData.text : "\(contextSnippet)\n\(editorData.text)"),
-      params: .some(AffineGraphQL.JSON(_jsonValue: messageParameters)),
-      sessionId: sessionId
-    ) else {
-      report(sessionId, ChatError.unknownError)
-      assertionFailure() // very unlikely to happen
-      return
-    }
-    let mutation = CreateCopilotMessageMutation(options: input)
-    QLService.shared.client.upload(operation: mutation, files: uploadableAttachments) { result in
-      print("[*] createCopilotMessage result: \(result)")
-      DispatchQueue.main.async {
-        switch result {
-        case let .success(graphQLResult):
-          guard let messageIdentifier = graphQLResult.data?.createCopilotMessage else {
-            self.report(sessionId, ChatError.invalidResponse)
-            self.delete(sessionId: sessionId, vmId: viewModelId)
-            return
-          }
+    assert(uploadableAttachments.allSatisfy { !$0.data.isEmpty })
+    Task {
+      do {
+        let selectedDocumentIds = editorData.documentAttachments.map(\.documentID)
+        if !selectedDocumentIds.isEmpty {
+          try await IntelligentContext.shared.waitForSelectedSources(selectedDocumentIds)
+        }
+        let messageParameters: AffineGraphQL.JSON = [
+          // packages/frontend/core/src/blocksuite/ai/provider/setup-provider.tsx
+          "scopeSelectors": editorData.documentAttachments.map { attachment in
+            [
+              "kind": "document",
+              "id": attachment.documentID,
+              "name": attachment.title,
+              "source": "draft",
+            ]
+          },
+          "searchMode": editorData.isSearchEnabled ? "MUST" : "AUTO",
+        ]
+        let messageIdentifier = try await QLService.shared.createCopilotMessage(
+          workspaceId: workspaceId,
+          sessionId: sessionId,
+          content: editorData.text,
+          params: messageParameters,
+          attachments: uploadableAttachments
+        )
+        DispatchQueue.main.async {
           self.startStreamingResponse(
             sessionId: sessionId,
             messageId: messageIdentifier,
             applyingTo: viewModelId
           )
-        case let .failure(error):
+        }
+      } catch {
+        DispatchQueue.main.async {
           self.report(sessionId, error)
+          self.delete(sessionId: sessionId, vmId: viewModelId)
         }
       }
     }
@@ -272,12 +177,13 @@ private extension ChatManager {
       timeoutInterval: 10
     )
     request.setValue("close", forHTTPHeaderField: "Connection")
+    request = QLService.shared.authorized(request)
 
     let closable = ClosableTask(detachedTask: .detached(operation: {
       let eventSource = EventSource()
       let dataTask = eventSource.dataTask(for: request)
       var document = ""
-      self.writeMarkdownContent(document + loadingIndicator, sessionId: sessionId, vmId: vmId)
+      await self.writeMarkdownContent(document + loadingIndicator, sessionId: sessionId, vmId: vmId)
       for await event in dataTask.events() {
         switch event {
         case .open:
@@ -287,7 +193,7 @@ private extension ChatManager {
         case let .event(event):
           guard let data = event.data else { continue }
           document += data
-          self.writeMarkdownContent(
+          await self.writeMarkdownContent(
             document + loadingIndicator,
             sessionId: sessionId,
             vmId: vmId
@@ -297,13 +203,13 @@ private extension ChatManager {
           print("[*] connection closed")
         }
       }
-      self.writeMarkdownContent(document, sessionId: sessionId, vmId: vmId)
+      await self.writeMarkdownContent(document, sessionId: sessionId, vmId: vmId)
       self.closeAll()
     }))
     self.closable.append(closable)
   }
 
-  private func writeMarkdownContent(
+  @MainActor private func writeMarkdownContent(
     _ document: String,
     sessionId: SessionID,
     vmId: UUID

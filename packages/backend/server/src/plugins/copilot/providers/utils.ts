@@ -2,7 +2,8 @@ import { Logger } from '@nestjs/common';
 import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
 import z from 'zod';
 
-import { OneMinute, safeFetch } from '../../../base';
+import { OneMinute } from '../../../base';
+import { inferRemoteMimeType } from '../../../native';
 import { PromptAttachment, StreamObject } from './types';
 
 export type VertexProviderConfig = {
@@ -33,30 +34,7 @@ type CopilotTextStreamPart =
     }
   | { type: 'error'; error: unknown };
 
-const ATTACH_HEAD_PARAMS = { timeoutMs: OneMinute / 12, maxRedirects: 3 };
-const FORMAT_INFER_MAP: Record<string, string> = {
-  pdf: 'application/pdf',
-  mp3: 'audio/mpeg',
-  opus: 'audio/opus',
-  ogg: 'audio/ogg',
-  aac: 'audio/aac',
-  m4a: 'audio/aac',
-  flac: 'audio/flac',
-  ogv: 'video/ogg',
-  wav: 'audio/wav',
-  png: 'image/png',
-  jpeg: 'image/jpeg',
-  jpg: 'image/jpeg',
-  webp: 'image/webp',
-  txt: 'text/plain',
-  md: 'text/plain',
-  mov: 'video/mov',
-  mpeg: 'video/mpeg',
-  mp4: 'video/mp4',
-  avi: 'video/avi',
-  wmv: 'video/wmv',
-  flv: 'video/flv',
-};
+const ATTACH_HEAD_TIMEOUT_MS = OneMinute / 12;
 
 function toBase64Data(data: string, encoding: 'base64' | 'utf8' = 'base64') {
   return encoding === 'base64'
@@ -97,25 +75,7 @@ export async function inferMimeType(url: string) {
   if (url.startsWith('data:')) {
     return url.split(';')[0].split(':')[1];
   }
-  const pathname = new URL(url).pathname;
-  const extension = pathname.split('.').pop();
-  if (extension) {
-    const ext = FORMAT_INFER_MAP[extension];
-    if (ext) {
-      return ext;
-    }
-  }
-  try {
-    const mimeType = await safeFetch(
-      url,
-      { method: 'HEAD' },
-      ATTACH_HEAD_PARAMS
-    ).then(res => res.headers.get('content-type'));
-    if (mimeType) return mimeType;
-  } catch {
-    // ignore and fallback to default
-  }
-  return 'application/octet-stream';
+  return inferRemoteMimeType({ url, timeoutMs: ATTACH_HEAD_TIMEOUT_MS });
 }
 
 type CitationIndexedEvent = {
@@ -164,11 +124,6 @@ export function toError(error: unknown): Error {
   }
 }
 
-type DocEditFootnote = {
-  intent: string;
-  result: string;
-};
-
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -183,8 +138,6 @@ export class TextStreamParser {
   private lastType: ChunkType | undefined;
 
   private prefix: string | null = this.CALLOUT_PREFIX;
-
-  private readonly docEditFootnotes: DocEditFootnote[] = [];
 
   public parse(chunk: CopilotTextStreamPart) {
     let result = '';
@@ -221,8 +174,8 @@ export class TextStreamParser {
             result += `\nCrawling the web "${chunk.input.url}"\n`;
             break;
           }
-          case 'doc_keyword_search': {
-            result += `\nSearching the keyword "${chunk.input.query}"\n`;
+          case 'doc_search': {
+            result += `\nSearching workspace documents for "${chunk.input.query}"\n`;
             break;
           }
           case 'doc_read': {
@@ -231,13 +184,6 @@ export class TextStreamParser {
           }
           case 'doc_compose': {
             result += `\nWriting document "${chunk.input.title}"\n`;
-            break;
-          }
-          case 'doc_edit': {
-            this.docEditFootnotes.push({
-              intent: String(chunk.input.instructions ?? ''),
-              result: '',
-            });
             break;
           }
         }
@@ -250,43 +196,11 @@ export class TextStreamParser {
         );
         result = this.addPrefix(result);
         switch (chunk.toolName) {
-          case 'doc_edit': {
+          case 'doc_search': {
             const output = asRecord(chunk.output);
-            const array = output?.result;
-            if (Array.isArray(array)) {
-              result += array
-                .map(item => {
-                  return `\n${String(asRecord(item)?.changedContent ?? '')}\n`;
-                })
-                .join('');
-              this.docEditFootnotes[this.docEditFootnotes.length - 1].result =
-                result;
-            } else {
-              this.docEditFootnotes.pop();
-            }
-            break;
-          }
-          case 'doc_semantic_search': {
-            const output = chunk.output;
-            if (Array.isArray(output)) {
-              result += `\nFound ${output.length} document${output.length !== 1 ? 's' : ''} related to “${chunk.input.query}”.\n`;
-            } else if (typeof output === 'string') {
-              result += `\n${output}\n`;
-            } else {
-              const message = asRecord(output)?.message;
-              this.logger.warn(
-                `Unexpected result type for doc_semantic_search: ${
-                  typeof message === 'string' ? message : 'Unknown error'
-                }`
-              );
-            }
-            break;
-          }
-          case 'doc_keyword_search': {
-            const output = chunk.output;
-            if (Array.isArray(output)) {
-              result += `\nFound ${output.length} document${output.length !== 1 ? 's' : ''} related to “${chunk.input.query}”.\n`;
-              result += `\n${this.getKeywordSearchLinks(output)}\n`;
+            const hits = output?.hits;
+            if (Array.isArray(hits)) {
+              result += `\nFound ${hits.length} document${hits.length !== 1 ? 's' : ''} related to “${chunk.input.query}”.\n`;
             }
             break;
           }
@@ -319,10 +233,7 @@ export class TextStreamParser {
   }
 
   public end() {
-    const footnotes = this.docEditFootnotes.map((footnote, index) => {
-      return `[^edit${index + 1}]: ${JSON.stringify({ type: 'doc-edit', ...footnote })}`;
-    });
-    return footnotes.join('\n');
+    return '';
   }
 
   private addPrefix(text: string) {
@@ -357,18 +268,6 @@ export class TextStreamParser {
   ): string {
     const links = list.reduce((acc, result) => {
       return acc + `\n\n[${result.title ?? result.url}](${result.url})\n\n`;
-    }, '');
-    return links;
-  }
-
-  private getKeywordSearchLinks(
-    list: {
-      docId: string;
-      title: string;
-    }[]
-  ): string {
-    const links = list.reduce((acc, result) => {
-      return acc + `\n\n[${result.title}](${result.docId})\n\n`;
     }, '');
     return links;
   }
@@ -476,18 +375,22 @@ export function getVertexAnthropicBaseUrl(options: VertexProviderConfig) {
   return `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/anthropic`;
 }
 
+export function getVertexGoogleBaseUrl(options: VertexProviderConfig) {
+  const normalizedBaseUrl = normalizeUrl(options.baseURL);
+  if (normalizedBaseUrl) return normalizedBaseUrl;
+  const { location, project } = options;
+  if (!location || !project) return undefined;
+  return `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google`;
+}
+
 export async function getGoogleAuth(
   options: VertexProviderConfig,
   publisher: 'anthropic' | 'google'
 ) {
   function getBaseUrl() {
-    const normalizedBaseUrl = normalizeUrl(options.baseURL);
-    if (normalizedBaseUrl) return normalizedBaseUrl;
-    const { location } = options;
-    if (location) {
-      return `https://${location}-aiplatform.googleapis.com/v1beta1/publishers/${publisher}`;
-    }
-    return undefined;
+    return publisher === 'google'
+      ? getVertexGoogleBaseUrl(options)
+      : getVertexAnthropicBaseUrl(options);
   }
 
   async function generateAuthToken() {

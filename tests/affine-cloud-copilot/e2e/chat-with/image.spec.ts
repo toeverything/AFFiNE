@@ -37,11 +37,10 @@ test.describe('AIChatWith/Image', () => {
       },
     ]);
 
-    const { content } = await utils.chatPanel.getLatestAssistantMessage(page);
-    await expect(
-      content.toLowerCase().includes('kitten') ||
-        content.toLowerCase().includes('cat')
-    ).toBe(true);
+    await expect(async () => {
+      const { content } = await utils.chatPanel.getLatestAssistantMessage(page);
+      expect(content).toMatch(/cat|kitten|feline|tabby|fluffy/i);
+    }).toPass({ timeout: 20000 });
   });
 
   test('support chat with mutiple images', async ({

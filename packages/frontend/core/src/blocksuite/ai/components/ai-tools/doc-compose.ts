@@ -120,17 +120,19 @@ export class DocComposeTool extends ArtifactTool<
 
     return html`<div class="doc-compose-result-preview">
       <div class="doc-compose-result-preview-title">${title}</div>
-      ${successResult
-        ? html`<text-renderer
-            .answer=${successResult.markdown}
-            .schema=${this.std?.store.schema}
-            .options=${{
-              customHeading: true,
-              extensions: getCustomPageEditorBlockSpecs(),
-              theme: this.theme,
-            }}
-          ></text-renderer>`
-        : html``}
+      ${
+        successResult
+          ? html`<text-renderer
+              .answer=${successResult.markdown}
+              .schema=${this.std?.store.schema}
+              .options=${{
+                customHeading: true,
+                extensions: getCustomPageEditorBlockSpecs(),
+                theme: this.theme,
+              }}
+            ></text-renderer>`
+          : html``
+      }
     </div>`;
   }
 

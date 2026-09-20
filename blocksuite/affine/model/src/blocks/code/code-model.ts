@@ -14,6 +14,7 @@ type CodeBlockProps = {
   caption: string;
   preview?: boolean;
   lineNumber?: boolean;
+  collapsed?: boolean;
   comments?: Record<string, boolean>;
 } & BlockMeta;
 
@@ -27,6 +28,7 @@ export const CodeBlockSchema = defineBlockSchema({
       caption: '',
       preview: undefined,
       lineNumber: undefined,
+      collapsed: undefined,
       comments: undefined,
       'meta:createdAt': undefined,
       'meta:createdBy': undefined,

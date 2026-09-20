@@ -114,15 +114,17 @@ export class ChatPanelChip extends SignalWatcher(
           </span>
           <affine-tooltip>${this.tooltip}</affine-tooltip>
         </div>
-        ${isCandidate
-          ? html`${PlusIcon()}`
-          : this.closeable
-            ? html`
-                <div class="chip-card-close" @click=${this.onChipDelete}>
-                  ${CloseIcon()}
-                </div>
-              `
-            : ''}
+        ${
+          isCandidate
+            ? html`${PlusIcon()}`
+            : this.closeable
+              ? html`
+                  <div class="chip-card-close" @click=${this.onChipDelete}>
+                    ${CloseIcon()}
+                  </div>
+                `
+              : ''
+        }
       </div>
     `;
   }

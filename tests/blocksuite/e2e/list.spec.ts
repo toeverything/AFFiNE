@@ -188,9 +188,11 @@ test('unindent list block', async ({ page }) => {
   await assertBlockChildrenIds(page, '2', ['3']);
 
   await pressShiftTab(page); // 0(1(2,3,4))
+  await waitNextFrame(page, 200);
   await assertBlockChildrenIds(page, '1', ['2', '3', '4']);
 
   await pressShiftTab(page);
+  await waitNextFrame(page, 200);
   await assertBlockChildrenIds(page, '1', ['2', '3', '4']);
 });
 
@@ -204,6 +206,7 @@ test('remove all indent for a list block', async ({ page }) => {
   await page.keyboard.press('Tab', { delay: 50 }); // 0(1(2(3(4))))
   await assertBlockChildrenIds(page, '3', ['4']);
   await pressBackspaceWithShortKey(page); // 0(1(2(3)4))
+  await waitNextFrame(page, 200);
   await assertBlockChildrenIds(page, '1', ['2', '4']);
   await assertBlockChildrenIds(page, '2', ['3']);
 });
@@ -231,6 +234,7 @@ test('delete at start of list block', async ({ page }) => {
   await enterPlaygroundWithList(page);
   await focusRichText(page, 1);
   await page.keyboard.press('Backspace');
+  await waitNextFrame(page, 200);
   await assertBlockChildrenFlavours(page, '1', [
     'affine:list',
     'affine:paragraph',
@@ -252,25 +256,41 @@ test('delete at start of list block', async ({ page }) => {
 
 test('nested list blocks', async ({ page }, testInfo) => {
   await enterPlaygroundWithList(page);
+  const focusListItem = async (blockId: string) => {
+    await page
+      .locator(`[data-block-id="${blockId}"]`)
+      .locator('rich-text')
+      .first()
+      .click({
+        force: true,
+      });
+  };
 
-  await focusRichText(page, 0);
+  await focusListItem('2');
   await type(page, '123');
 
-  await focusRichText(page, 1);
+  await focusListItem('3');
   await pressTab(page);
   await type(page, '456');
 
-  await focusRichText(page, 2);
+  await focusListItem('4');
   await pressTab(page);
+  await waitNextFrame(page, 200);
+  await focusListItem('4');
   await pressTab(page);
+  await waitNextFrame(page, 200);
   await type(page, '789');
+  await assertRichTexts(page, ['123', '456', '789']);
+  await waitNextFrame(page, 200);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_init.json`
   );
 
-  await focusRichText(page, 1);
+  await focusListItem('3');
   await pressShiftTab(page);
+  await waitNextFrame(page, 200);
+  await assertRichTexts(page, ['123', '456', '789']);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_finial.json`
@@ -595,14 +615,14 @@ test('delete list item with nested children items', async ({ page }) => {
   //     4
 
   await pressBackspace(page);
-  await waitNextFrame(page);
+  await waitNextFrame(page, 200);
   // 1
   // |2
   //   3
   //   4
 
   await pressBackspace(page);
-  await waitNextFrame(page);
+  await waitNextFrame(page, 200);
   // 1|2
   // 3
   // 4

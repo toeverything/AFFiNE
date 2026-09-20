@@ -3,7 +3,7 @@
   "description": "BlockSuite for Affine",
   "type": "module",
   "scripts": {
-    "build": "tsc --build --verbose"
+    "build": "yarn run -T tsc --build --verbose"
   },
   "sideEffects": false,
   "keywords": [],
@@ -78,8 +78,7 @@
     "@blocksuite/global": "workspace:*",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
-    "@blocksuite/sync": "workspace:*",
-    "rxjs": "^7.8.2"
+    "@blocksuite/sync": "workspace:*"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -296,10 +295,10 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.3",
+  "version": "0.27.5",
   "devDependencies": {
-    "@vanilla-extract/vite-plugin": "^5.0.0",
-    "msw": "^2.12.4",
-    "vitest": "^4.0.18"
+    "@vanilla-extract/vite-plugin": "~5.1.5",
+    "msw": "^2.13.2",
+    "vitest": "^4.1.11"
   }
 }

@@ -40,13 +40,15 @@ export class AIItem extends WithDisposable(LitElement) {
     >
       <span class="item-icon">${item.icon}</span>
       <div class="item-name">
-        ${item.name}${item.beta
-          ? html`<div class="item-beta">(Beta)</div>`
-          : nothing}
+        ${item.name}${
+          item.beta ? html`<div class="item-beta">(Beta)</div>` : nothing
+        }
       </div>
-      ${item.subItem
-        ? html`<span class="arrow-right-icon">${ArrowRightIcon}</span>`
-        : html`<span class="enter-icon">${EnterIcon}</span>`}
+      ${
+        item.subItem
+          ? html`<span class="arrow-right-icon">${ArrowRightIcon}</span>`
+          : html`<span class="enter-icon">${EnterIcon}</span>`
+      }
     </div>`;
   }
 

@@ -6,9 +6,11 @@ import { useMemo, useState } from 'react';
 
 import * as styles from './root.css';
 
+const EMPTY_OPERATIONS: NodeOperation[] = [];
+
 export const NavigationPanelTreeRoot = ({
   children,
-  childrenOperations = [],
+  childrenOperations = EMPTY_OPERATIONS,
   placeholder,
 }: {
   children?: React.ReactNode;

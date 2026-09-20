@@ -1,0 +1,32 @@
+{{- if eq .Values.global.deployment.platform "gcp" }}
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: affine-api-backendconfig
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "affine.labels" . | nindent 4 }}
+spec:
+  healthCheck:
+    timeoutSec: 1
+    type: HTTP
+    requestPath: /info
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: {{ .Values.front.services.sync.backendConfig.name }}
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "affine.labels" . | nindent 4 }}
+spec:
+  timeoutSec: {{ .Values.front.services.sync.backendConfig.timeoutSec }}
+  healthCheck:
+    timeoutSec: 1
+    type: HTTP
+    requestPath: /info
+{{- end }}

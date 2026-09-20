@@ -143,6 +143,7 @@ test('select all should work for multiple notes in doc mode', async ({
 
 async function clickListIcon(page: Page, i = 0) {
   const locator = page.locator('.affine-list-block__prefix').nth(i);
+  await expect(locator).toBeVisible();
   await locator.click({
     force: true,
     position: {
@@ -1375,7 +1376,7 @@ test('scroll should update dragging area and select blocks when dragging', async
   await initParagraphsByCount(page, 20);
 
   await page.mouse.click(0, 0);
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   async function getViewportScrollTop() {
     return page.evaluate(() => {
       const viewport = document.querySelector('.affine-page-viewport');

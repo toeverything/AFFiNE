@@ -85,6 +85,18 @@ class NonThrottledController {
   }
 }
 
+@UseGuards(CloudThrottlerGuard)
+@Throttle('strict')
+@Controller('/strict-throttled')
+class StrictThrottledController {
+  @Public()
+  @SkipThrottle()
+  @Get('/skip')
+  skip() {
+    return 'skip';
+  }
+}
+
 test.before(async t => {
   const app = await createTestingApp({
     imports: [
@@ -92,7 +104,7 @@ test.before(async t => {
         throttle: {
           throttlers: {
             default: {
-              ttl: 60,
+              ttl: 60_000,
               limit: 120,
             },
           },
@@ -100,7 +112,11 @@ test.before(async t => {
       }),
       AppModule,
     ],
-    controllers: [ThrottledController, NonThrottledController],
+    controllers: [
+      ThrottledController,
+      NonThrottledController,
+      StrictThrottledController,
+    ],
   });
 
   t.context.storage = app.get(ThrottlerStorage);
@@ -109,6 +125,7 @@ test.before(async t => {
 
 test.beforeEach(async t => {
   const { app } = t.context;
+  t.context.storage.storage.clear();
   await app.initTestingDB();
 });
 
@@ -237,6 +254,18 @@ test('should skip throttler for unauthenticated user when specified', async t =>
   res = await app.GET('/throttled/skip').expect(200);
 
   headers = rateLimitHeaders(res);
+
+  t.is(headers.limit, undefined!);
+  t.is(headers.remaining, undefined!);
+  t.is(headers.reset, undefined!);
+});
+
+test('should skip class-level strict throttler when specified', async t => {
+  const { app } = t.context;
+
+  const res = await app.GET('/strict-throttled/skip').expect(200);
+
+  const headers = rateLimitHeaders(res);
 
   t.is(headers.limit, undefined!);
   t.is(headers.remaining, undefined!);

@@ -1,20 +1,45 @@
-import { Type } from '@nestjs/common';
-
 import { JSONSchema } from '../../config';
-import { FsStorageConfig, FsStorageProvider } from './fs';
-import { StorageProvider } from './provider';
-import { R2StorageConfig, R2StorageProvider } from './r2';
-import { S3StorageConfig, S3StorageProvider } from './s3';
 
-export type StorageProviderName = 'fs' | 'aws-s3' | 'cloudflare-r2';
-export const StorageProviders: Record<
-  StorageProviderName,
-  Type<StorageProvider>
-> = {
-  fs: FsStorageProvider,
-  'aws-s3': S3StorageProvider,
-  'cloudflare-r2': R2StorageProvider,
-};
+export type StorageProviderName =
+  | 'fs'
+  | 'aws-s3'
+  | 'cloudflare-r2'
+  | 'assetpack';
+
+export interface FsStorageConfig {
+  path: string;
+}
+
+export type AssetpackStorageConfig = FsStorageConfig;
+
+export interface S3StorageConfig {
+  endpoint?: string;
+  region: string;
+  credentials?: {
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    sessionToken?: string;
+  };
+  forcePathStyle?: boolean;
+  requestTimeoutMs?: number;
+  minPartSize?: number;
+  presign?: {
+    expiresInSeconds?: number;
+    signContentTypeForPut?: boolean;
+  };
+  usePresignedURL?: {
+    enabled: boolean;
+    urlPrefix?: string;
+    signKey?: string;
+  };
+}
+
+export const R2_JURISDICTIONS = ['default', 'eu'] as const;
+
+export interface R2StorageConfig extends Omit<S3StorageConfig, 'endpoint'> {
+  accountId: string;
+  jurisdiction?: (typeof R2_JURISDICTIONS)[number];
+}
 
 export type StorageProviderConfig = { bucket: string } & (
   | {
@@ -29,6 +54,10 @@ export type StorageProviderConfig = { bucket: string } & (
       provider: 'cloudflare-r2';
       config: R2StorageConfig;
     }
+  | {
+      provider: 'assetpack';
+      config: AssetpackStorageConfig;
+    }
 );
 
 const S3ConfigSchema: JSONSchema = {
@@ -38,7 +67,7 @@ const S3ConfigSchema: JSONSchema = {
     endpoint: {
       type: 'string',
       description:
-        'The S3 compatible endpoint. Example: "https://s3.us-east-1.amazonaws.com" or "https://<account>.r2.cloudflarestorage.com".',
+        'The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region.',
     },
     region: {
       type: 'string',
@@ -86,8 +115,40 @@ const S3ConfigSchema: JSONSchema = {
         },
       },
     },
+    usePresignedURL: {
+      type: 'object',
+      description:
+        'Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.',
+      properties: {
+        enabled: {
+          type: 'boolean',
+          description: 'Whether browser upload URLs are enabled.',
+        },
+        urlPrefix: {
+          type: 'string',
+          description:
+            'Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured.',
+        },
+        signKey: {
+          type: 'string',
+          description:
+            'Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix.',
+        },
+      },
+    },
   },
 };
+
+const S3ConfigPropertiesWithoutEndpoint = Object.fromEntries(
+  Object.entries(
+    (
+      S3ConfigSchema as {
+        type: 'object';
+        properties?: Record<string, JSONSchema>;
+      }
+    ).properties ?? {}
+  ).filter(([key]) => key !== 'endpoint')
+) as Record<string, JSONSchema>;
 
 export const StorageJSONSchema: JSONSchema = {
   oneOf: [
@@ -137,48 +198,53 @@ export const StorageJSONSchema: JSONSchema = {
         config: {
           ...S3ConfigSchema,
           properties: {
-            ...S3ConfigSchema.properties,
+            ...S3ConfigPropertiesWithoutEndpoint,
             accountId: {
               type: 'string' as const,
               description:
                 'The account id for the cloudflare r2 storage provider.',
             },
-            usePresignedURL: {
-              type: 'object' as const,
+            jurisdiction: {
+              type: 'string' as const,
+              enum: [...R2_JURISDICTIONS],
               description:
-                'The presigned url config for the cloudflare r2 storage provider.',
-              properties: {
-                enabled: {
-                  type: 'boolean' as const,
-                  description:
-                    'Whether to use presigned url for the cloudflare r2 storage provider.',
-                },
-                urlPrefix: {
-                  type: 'string' as const,
-                  description:
-                    'The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: "https://storage.example.com"\nExample rule: is_timed_hmac_valid_v0("your_secret", http.request.uri, 10800, http.request.timestamp.sec, 6)',
-                },
-                signKey: {
-                  type: 'string' as const,
-                  description:
-                    'The presigned key for the cloudflare r2 storage provider.',
-                },
-              },
+                'Optional jurisdiction for the cloudflare r2 endpoint. Set to "eu" for EU buckets.',
             },
           },
         },
       },
     },
+    {
+      type: 'object',
+      properties: {
+        provider: {
+          type: 'string',
+          enum: ['assetpack'],
+        },
+        bucket: {
+          type: 'string',
+        },
+        config: {
+          type: 'object',
+          properties: {
+            path: {
+              type: 'string',
+            },
+          },
+          required: ['path'],
+        },
+      },
+      required: ['provider', 'bucket', 'config'],
+    },
   ],
 };
 
-export type * from './provider';
+export type * from '../types';
 export {
   applyAttachHeaders,
-  autoMetadata,
   PROXY_MULTIPART_PATH,
   PROXY_UPLOAD_PATH,
   sniffMime,
   STORAGE_PROXY_ROOT,
   toBuffer,
-} from './utils';
+} from '../utils';

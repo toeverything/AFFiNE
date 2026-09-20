@@ -14,9 +14,14 @@ import { EditorSettingProvider } from './provider/editor-setting-provider';
 import { EditorSettingService } from './services/editor-setting';
 import { SpellCheckSettingService } from './services/spell-check-setting';
 import { TraySettingService } from './services/tray-settings';
-export type { FontFamily } from './schema';
-export { EditorSettingSchema, fontStyleOptions } from './schema';
+export type { FontFamily, NewDocDateTitleFormat } from './schema';
+export {
+  EditorSettingSchema,
+  fontStyleOptions,
+  newDocDateTitleFormatOptions,
+} from './schema';
 export { EditorSettingService } from './services/editor-setting';
+export { resolveNewDocTitle } from './utils/date-title';
 
 export function configureEditorSettingModule(framework: Framework) {
   framework

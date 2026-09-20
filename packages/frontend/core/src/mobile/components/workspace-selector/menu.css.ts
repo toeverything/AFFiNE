@@ -9,7 +9,7 @@ import { style } from '@vanilla-extract/css';
 
 export const root = style({
   maxHeight:
-    'calc(100dvh - 100px - env(safe-area-inset-bottom) - env(safe-area-inset-top))',
+    'calc(100dvh - 100px - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))',
   display: 'flex',
   flexDirection: 'column',
 });

@@ -7,7 +7,6 @@ import { Input } from '@affine/admin/components/ui/input';
 import { Label } from '@affine/admin/components/ui/label';
 import { Separator } from '@affine/admin/components/ui/separator';
 import { Switch } from '@affine/admin/components/ui/switch';
-import type { FeatureType } from '@affine/graphql';
 import {
   adminUpdateWorkspaceMutation,
   adminWorkspaceQuery,
@@ -17,10 +16,8 @@ import { AccountIcon } from '@blocksuite/icons/rc';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { FeatureToggleList } from '../../../components/shared/feature-toggle-list';
 import { useMutateQueryResource, useMutation } from '../../../use-mutation';
 import { useQuery } from '../../../use-query';
-import { useServerConfig } from '../../common';
 import { RightPanelHeader } from '../../header';
 import { useRightPanel } from '../../panel/context';
 import type { WorkspaceDetail } from '../schema';
@@ -69,7 +66,6 @@ function WorkspacePanelContent({
   workspace: WorkspaceDetail;
   onClose: () => void;
 }) {
-  const serverConfig = useServerConfig();
   const { setHasDirtyChanges } = useRightPanel();
   const revalidate = useMutateQueryResource();
   const { trigger: updateWorkspace, isMutating } = useMutation({
@@ -78,7 +74,6 @@ function WorkspacePanelContent({
 
   const normalizedWorkspace = useMemo(
     () => ({
-      features: [...workspace.features],
       flags: {
         public: workspace.public,
         enableAi: workspace.enableAi,
@@ -91,14 +86,10 @@ function WorkspacePanelContent({
     [workspace]
   );
 
-  const [featureSelection, setFeatureSelection] = useState<FeatureType[]>(
-    normalizedWorkspace.features
-  );
   const [flags, setFlags] = useState(normalizedWorkspace.flags);
   const [baseline, setBaseline] = useState(normalizedWorkspace);
 
   useEffect(() => {
-    setFeatureSelection(normalizedWorkspace.features);
     setFlags(normalizedWorkspace.flags);
     setBaseline(normalizedWorkspace);
   }, [normalizedWorkspace]);
@@ -110,19 +101,13 @@ function WorkspacePanelContent({
       flags.enableSharing !== baseline.flags.enableSharing ||
       flags.enableUrlPreview !== baseline.flags.enableUrlPreview ||
       flags.enableDocEmbedding !== baseline.flags.enableDocEmbedding ||
-      flags.name !== baseline.flags.name ||
-      featureSelection.length !== baseline.features.length ||
-      featureSelection.some(f => !baseline.features.includes(f))
+      flags.name !== baseline.flags.name
     );
-  }, [baseline, featureSelection, flags]);
+  }, [baseline, flags]);
 
   useEffect(() => {
     setHasDirtyChanges(hasChanges);
   }, [hasChanges, setHasDirtyChanges]);
-
-  const handleFeaturesChange = useCallback((features: FeatureType[]) => {
-    setFeatureSelection(features);
-  }, []);
 
   const handleSave = useCallback(() => {
     const update = async () => {
@@ -136,7 +121,6 @@ function WorkspacePanelContent({
             enableUrlPreview: flags.enableUrlPreview,
             enableDocEmbedding: flags.enableDocEmbedding,
             name: flags.name || null,
-            features: featureSelection,
           },
         });
         await Promise.all([
@@ -146,7 +130,6 @@ function WorkspacePanelContent({
         toast.success('Workspace updated successfully');
         setBaseline({
           flags: { ...flags },
-          features: [...featureSelection],
         });
         setHasDirtyChanges(false);
         onClose();
@@ -156,7 +139,6 @@ function WorkspacePanelContent({
     };
     update().catch(() => {});
   }, [
-    featureSelection,
     flags,
     onClose,
     revalidate,
@@ -239,18 +221,6 @@ function WorkspacePanelContent({
           />
         </div>
 
-        <div className="space-y-3 rounded-xl border border-border/60 bg-card p-3 shadow-sm">
-          <div className="text-sm font-medium">Features</div>
-          <FeatureToggleList
-            features={serverConfig.availableWorkspaceFeatures ?? []}
-            selected={featureSelection}
-            onChange={handleFeaturesChange}
-            className="grid grid-cols-1 gap-2"
-            control="checkbox"
-            controlPosition="left"
-          />
-        </div>
-
         <div className="grid grid-cols-2 gap-3">
           <MetricCard
             label="Snapshot Size"
@@ -265,7 +235,10 @@ function WorkspacePanelContent({
             value={formatBytes(workspace.blobSize)}
           />
           <MetricCard label="Blob Count" value={`${workspace.blobCount}`} />
-          <MetricCard label="Members" value={`${workspace.memberCount}`} />
+          <MetricCard
+            label="Active Members"
+            value={`${workspace.memberCount}`}
+          />
           <MetricCard
             label="Shared Pages"
             value={`${workspace.publicPageCount}`}
@@ -273,12 +246,14 @@ function WorkspacePanelContent({
         </div>
 
         <div className="rounded-xl border border-border/60 bg-card shadow-sm">
-          <div className="px-3 py-2 text-sm font-medium">Members</div>
+          <div className="px-3 py-2 text-sm font-medium">
+            Members and Invitations
+          </div>
           <Separator />
           <div className="flex flex-col divide-y">
             {memberList.length === 0 ? (
               <div className="px-3 py-3 text-xs text-muted-foreground">
-                No members.
+                No members or invitations.
               </div>
             ) : (
               memberList.map(member => (
@@ -300,8 +275,15 @@ function WorkspacePanelContent({
                       {member.email}
                     </div>
                   </div>
-                  <div className="ml-auto text-xs px-2 py-1 rounded border">
-                    {member.role}
+                  <div className="ml-auto flex flex-col items-end gap-1 text-xs">
+                    <div className="rounded border px-2 py-1">
+                      {member.role}
+                    </div>
+                    {member.status !== 'Accepted' ? (
+                      <div className="text-muted-foreground">
+                        {member.status}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ))

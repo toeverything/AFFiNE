@@ -2,18 +2,7 @@ import { Field, ObjectType } from '@nestjs/graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 
 import { Paginated } from '../../../base';
-import { CopilotWorkspaceFile, IgnoredDoc } from '../../../models';
-
-declare global {
-  interface Events {
-    'workspace.file.embedding.finished': {
-      jobId: string;
-    };
-    'workspace.file.embedding.failed': {
-      jobId: string;
-    };
-  }
-}
+import { CopilotWorkspaceArtifact, IgnoredDoc } from '../../../models';
 
 @ObjectType('CopilotWorkspaceIgnoredDoc')
 export class CopilotWorkspaceIgnoredDocType implements IgnoredDoc {
@@ -47,22 +36,25 @@ export class PaginatedIgnoredDocsType extends Paginated(
   CopilotWorkspaceIgnoredDocType
 ) {}
 
-@ObjectType('CopilotWorkspaceFile')
-export class CopilotWorkspaceFileType implements CopilotWorkspaceFile {
+@ObjectType('CopilotWorkspaceArtifact')
+export class CopilotWorkspaceArtifactType implements CopilotWorkspaceArtifact {
   @Field(() => String)
   workspaceId!: string;
 
   @Field(() => String)
-  fileId!: string;
+  artifactId!: string;
 
   @Field(() => String)
-  blobId!: string;
+  contentHash!: string;
 
   @Field(() => String)
   fileName!: string;
 
   @Field(() => String)
-  mimeType!: string;
+  embeddingStatus!: 'processing' | 'ready' | 'failed';
+
+  @Field(() => String)
+  mediaType!: string;
 
   @Field(() => SafeIntResolver)
   size!: number;
@@ -72,6 +64,6 @@ export class CopilotWorkspaceFileType implements CopilotWorkspaceFile {
 }
 
 @ObjectType()
-export class PaginatedCopilotWorkspaceFileType extends Paginated(
-  CopilotWorkspaceFileType
+export class PaginatedCopilotWorkspaceArtifactType extends Paginated(
+  CopilotWorkspaceArtifactType
 ) {}

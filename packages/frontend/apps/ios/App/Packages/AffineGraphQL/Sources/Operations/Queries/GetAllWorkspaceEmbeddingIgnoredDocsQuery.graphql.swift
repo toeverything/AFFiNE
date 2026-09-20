@@ -26,6 +26,9 @@ public class GetAllWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetAllWorkspaceEmbeddingIgnoredDocsQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -42,6 +45,9 @@ public class GetAllWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("embedding", Embedding.self),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetAllWorkspaceEmbeddingIgnoredDocsQuery.Data.Workspace.self
+      ] }
 
       public var embedding: Embedding { __data["embedding"] }
 
@@ -56,6 +62,9 @@ public class GetAllWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("allIgnoredDocs", [AllIgnoredDoc].self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetAllWorkspaceEmbeddingIgnoredDocsQuery.Data.Workspace.Embedding.self
         ] }
 
         public var allIgnoredDocs: [AllIgnoredDoc] { __data["allIgnoredDocs"] }
@@ -72,6 +81,9 @@ public class GetAllWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("docId", String.self),
             .field("createdAt", AffineGraphQL.DateTime.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetAllWorkspaceEmbeddingIgnoredDocsQuery.Data.Workspace.Embedding.AllIgnoredDoc.self
           ] }
 
           public var docId: String { __data["docId"] }

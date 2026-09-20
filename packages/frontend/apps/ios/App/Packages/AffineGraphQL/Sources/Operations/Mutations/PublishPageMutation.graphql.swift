@@ -42,6 +42,9 @@ public class PublishPageMutation: GraphQLMutation {
         "mode": .variable("mode")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      PublishPageMutation.Data.self
+    ] }
 
     public var publishDoc: PublishDoc { __data["publishDoc"] }
 
@@ -57,6 +60,9 @@ public class PublishPageMutation: GraphQLMutation {
         .field("__typename", String.self),
         .field("id", String.self),
         .field("mode", GraphQLEnum<AffineGraphQL.PublicDocMode>.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        PublishPageMutation.Data.PublishDoc.self
       ] }
 
       public var id: String { __data["id"] }

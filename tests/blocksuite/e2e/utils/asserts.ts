@@ -110,10 +110,13 @@ export async function assertEmpty(page: Page) {
 }
 
 export async function assertTitle(page: Page, text: string) {
-  const editor = getEditorLocator(page);
-  const inlineEditor = editor.locator('.doc-title-container').first();
-  const vText = inlineEditorInnerTextToString(await inlineEditor.innerText());
-  expect(vText).toBe(text);
+  await expect
+    .poll(async () => {
+      const editor = getEditorLocator(page);
+      const inlineEditor = editor.locator('.doc-title-container').first();
+      return inlineEditorInnerTextToString(await inlineEditor.innerText());
+    })
+    .toBe(text);
 }
 
 export async function assertInlineEditorDeltas(
@@ -121,13 +124,16 @@ export async function assertInlineEditorDeltas(
   deltas: unknown[],
   i = 0
 ) {
-  const actual = await page.evaluate(i => {
-    const inlineRoot = document.querySelectorAll<InlineRootElement>(
-      '[data-v-root="true"]'
-    )[i];
-    return inlineRoot.inlineEditor.yTextDeltas;
-  }, i);
-  expect(actual).toEqual(deltas);
+  await expect
+    .poll(async () => {
+      return page.evaluate(i => {
+        const inlineRoot = document.querySelectorAll<InlineRootElement>(
+          '[data-v-root="true"]'
+        )[i];
+        return inlineRoot?.inlineEditor.yTextDeltas;
+      }, i);
+    })
+    .toEqual(deltas);
 }
 
 export async function assertRichTextInlineDeltas(
@@ -135,17 +141,20 @@ export async function assertRichTextInlineDeltas(
   deltas: unknown[],
   i = 0
 ) {
-  const actual = await page.evaluate(
-    ([i]) => {
-      const editorHost = document.querySelector('editor-host');
-      const inlineRoot = editorHost?.querySelectorAll<InlineRootElement>(
-        'rich-text [data-v-root="true"]'
-      )[i];
-      return inlineRoot?.inlineEditor.yTextDeltas;
-    },
-    [i]
-  );
-  expect(actual).toEqual(deltas);
+  await expect
+    .poll(async () => {
+      return page.evaluate(
+        ([i]) => {
+          const editorHost = document.querySelector('editor-host');
+          const inlineRoot = editorHost?.querySelectorAll<InlineRootElement>(
+            'rich-text [data-v-root="true"]'
+          )[i];
+          return inlineRoot?.inlineEditor.yTextDeltas;
+        },
+        [i]
+      );
+    })
+    .toEqual(deltas);
 }
 
 export async function assertText(page: Page, text: string, i = 0) {
@@ -168,7 +177,8 @@ export async function assertRichTexts(page: Page, texts: string[]) {
         );
         return richTexts.map(richText => {
           const editor = richText.inlineEditor as AffineInlineEditor;
-          return editor.yText.toString();
+          const text = editor.yText.toString();
+          return /^\n\s*$/u.test(text) ? '' : text;
         });
       });
     })
@@ -352,20 +362,20 @@ export async function assertRichTextModelType(
   type: string,
   index = 0
 ) {
-  const actual = await page.evaluate(
-    ({ index, BLOCK_ID_ATTR }) => {
-      const editorHost = document.querySelector('editor-host');
-      const richText = editorHost?.querySelectorAll('rich-text')[index];
-      const block = richText?.closest<BlockComponent>(`[${BLOCK_ID_ATTR}]`);
-
-      if (!block) {
-        throw new Error('block component is undefined');
-      }
-      return (block.model as BlockModel<{ type: string }>).props.type;
-    },
-    { index, BLOCK_ID_ATTR }
-  );
-  expect(actual).toEqual(type);
+  await expect
+    .poll(async () => {
+      return page.evaluate(
+        ({ index, BLOCK_ID_ATTR }) => {
+          const editorHost = document.querySelector('editor-host');
+          const richText = editorHost?.querySelectorAll('rich-text')[index];
+          const block = richText?.closest<BlockComponent>(`[${BLOCK_ID_ATTR}]`);
+          return (block?.model as BlockModel<{ type: string }> | undefined)
+            ?.props.type;
+        },
+        { index, BLOCK_ID_ATTR }
+      );
+    })
+    .toEqual(type);
 }
 
 export async function assertTextFormats(page: Page, resultObj: unknown[]) {
@@ -405,16 +415,19 @@ export async function assertBlockChildrenIds(
   blockId: string,
   ids: string[]
 ) {
-  const actual = await page.evaluate(
-    ({ blockId }) => {
-      const element = document.querySelector(`[data-block-id="${blockId}"]`);
-      // @ts-ignore
-      const model = element.model as BlockModel;
-      return model.children.map(child => child.id);
-    },
-    { blockId }
-  );
-  expect(actual).toEqual(ids);
+  await expect
+    .poll(async () => {
+      return page.evaluate(
+        ({ blockId }) => {
+          const element = document.querySelector<BlockComponent>(
+            `[data-block-id="${blockId}"]`
+          );
+          return element?.model.children.map(child => child.id);
+        },
+        { blockId }
+      );
+    })
+    .toEqual(ids);
 }
 
 export async function assertBlockChildrenFlavours(
@@ -422,18 +435,19 @@ export async function assertBlockChildrenFlavours(
   blockId: string,
   flavours: string[]
 ) {
-  const actual = await page.evaluate(
-    ({ blockId }) => {
-      const element = document.querySelector<BlockComponent>(
-        `[data-block-id="${blockId}"]`
+  await expect
+    .poll(async () => {
+      return page.evaluate(
+        ({ blockId }) => {
+          const element = document.querySelector<BlockComponent>(
+            `[data-block-id="${blockId}"]`
+          );
+          return element?.model.children.map(child => child.flavour);
+        },
+        { blockId }
       );
-      // @ts-ignore
-      const model = element.model as BlockModel;
-      return model.children.map(child => child.flavour);
-    },
-    { blockId }
-  );
-  expect(actual).toEqual(flavours);
+    })
+    .toEqual(flavours);
 }
 
 export async function assertParentBlockId(

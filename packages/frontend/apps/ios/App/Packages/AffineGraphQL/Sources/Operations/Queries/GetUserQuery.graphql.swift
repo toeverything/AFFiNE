@@ -26,6 +26,9 @@ public class GetUserQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("user", User?.self, arguments: ["email": .variable("email")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetUserQuery.Data.self
+    ] }
 
     /// Get user by email
     public var user: User? { __data["user"] }
@@ -42,6 +45,9 @@ public class GetUserQuery: GraphQLQuery {
         .field("__typename", String.self),
         .inlineFragment(AsUserType.self),
         .inlineFragment(AsLimitedUserType.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetUserQuery.Data.User.self
       ] }
 
       public var asUserType: AsUserType? { _asInlineFragment() }
@@ -62,6 +68,10 @@ public class GetUserQuery: GraphQLQuery {
           .field("avatarUrl", String?.self),
           .field("email", String.self),
           .field("hasPassword", Bool?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetUserQuery.Data.User.self,
+          GetUserQuery.Data.User.AsUserType.self
         ] }
 
         public var id: AffineGraphQL.ID { __data["id"] }
@@ -87,6 +97,10 @@ public class GetUserQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("email", String.self),
           .field("hasPassword", Bool?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetUserQuery.Data.User.self,
+          GetUserQuery.Data.User.AsLimitedUserType.self
         ] }
 
         /// User email

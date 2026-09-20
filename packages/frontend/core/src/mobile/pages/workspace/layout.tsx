@@ -18,6 +18,7 @@ import {
   FrameworkScope,
   LiveData,
   useLiveData,
+  useService,
   useServices,
 } from '@toeverything/infra';
 import {
@@ -30,7 +31,9 @@ import {
 import { map } from 'rxjs';
 
 import { AppFallback } from '../../components/app-fallback';
+import { MobileShellHost } from '../../components/mobile-shell-host';
 import { WorkspaceDialogs } from '../../dialogs';
+import { MobileBackCoordinator } from '../../modules/back-coordinator';
 
 // TODO(@forehalo): reuse the global context with [core/electron]
 declare global {
@@ -83,6 +86,7 @@ export const WorkspaceLayout = ({
         })
       );
       localStorage.setItem('last_workspace_id', workspace.id);
+      localStorage.setItem('last_workspace_flavour', workspace.flavour);
       globalContextService.globalContext.workspaceId.set(workspace.id);
       if (workspaceServer) {
         globalContextService.globalContext.serverId.set(workspaceServer.id);
@@ -134,19 +138,31 @@ export const WorkspaceLayout = ({
   return (
     <FrameworkScope scope={workspaceServer?.scope}>
       <FrameworkScope scope={workspace.scope}>
+        <WorkspaceBackReset workspaceId={workspace.id} />
         <AffineErrorBoundary height="100dvh">
           <SWRConfigProvider>
-            <WorkspaceDialogs />
+            <MobileShellHost>
+              <WorkspaceDialogs />
 
-            {/* ---- some side-effect components ---- */}
-            <PeekViewManagerModal />
-            <AiLoginRequiredModal />
-            <uniReactRoot.Root />
-            <WorkspaceSideEffects />
-            {children}
+              {/* ---- some side-effect components ---- */}
+              <PeekViewManagerModal />
+              <AiLoginRequiredModal />
+              <uniReactRoot.Root />
+              <WorkspaceSideEffects />
+              {children}
+            </MobileShellHost>
           </SWRConfigProvider>
         </AffineErrorBoundary>
       </FrameworkScope>
     </FrameworkScope>
   );
+};
+
+const WorkspaceBackReset = ({ workspaceId }: { workspaceId: string }) => {
+  const coordinator = useService(MobileBackCoordinator);
+  useEffect(() => {
+    coordinator.reset();
+    return () => coordinator.reset();
+  }, [coordinator, workspaceId]);
+  return null;
 };

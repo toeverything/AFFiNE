@@ -20,6 +20,9 @@ public class SubscriptionQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      SubscriptionQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -36,6 +39,9 @@ public class SubscriptionQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("id", AffineGraphQL.ID.self),
         .field("subscriptions", [Subscription].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        SubscriptionQuery.Data.CurrentUser.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }
@@ -60,6 +66,9 @@ public class SubscriptionQuery: GraphQLQuery {
           .field("nextBillAt", AffineGraphQL.DateTime?.self),
           .field("canceledAt", AffineGraphQL.DateTime?.self),
           .field("variant", GraphQLEnum<AffineGraphQL.SubscriptionVariant>?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          SubscriptionQuery.Data.CurrentUser.Subscription.self
         ] }
 
         @available(*, deprecated, message: "removed")

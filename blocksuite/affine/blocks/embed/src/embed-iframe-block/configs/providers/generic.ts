@@ -1,5 +1,10 @@
 import { EmbedIframeConfigExtension } from '@blocksuite/affine-shared/services';
 
+import {
+  type EmbedIframeUrlValidationOptions,
+  validateEmbedIframeUrl,
+} from '../../utils';
+
 const GENERIC_DEFAULT_WIDTH_IN_SURFACE = 800;
 const GENERIC_DEFAULT_HEIGHT_IN_SURFACE = 600;
 const GENERIC_DEFAULT_WIDTH_PERCENT = 100;
@@ -17,6 +22,11 @@ const AFFINE_DOMAINS = [
   'apple.getaffineapp.com', // Cloud domain for Apple app
 ];
 
+const genericUrlValidationOptions: EmbedIframeUrlValidationOptions = {
+  protocols: ['https:'],
+  hostnames: [],
+};
+
 /**
  * Validates if a URL is suitable for generic iframe embedding
  * Allows HTTPS URLs but excludes AFFiNE domains
@@ -27,8 +37,12 @@ function isValidGenericEmbedUrl(url: string): boolean {
   try {
     const parsedUrl = new URL(url);
 
-    // Only allow HTTPS for security
-    if (parsedUrl.protocol !== 'https:') {
+    if (
+      !validateEmbedIframeUrl(url, {
+        ...genericUrlValidationOptions,
+        hostnames: [parsedUrl.hostname],
+      })
+    ) {
       return false;
     }
 
@@ -49,7 +63,7 @@ function isValidGenericEmbedUrl(url: string): boolean {
   }
 }
 
-const genericConfig = {
+export const genericConfig = {
   name: 'generic',
   match: (url: string) => isValidGenericEmbedUrl(url),
   buildOEmbedUrl: (url: string) => {
@@ -59,6 +73,7 @@ const genericConfig = {
     return url;
   },
   useOEmbedUrlDirectly: true,
+  validateIframeUrl: (iframeUrl: string) => isValidGenericEmbedUrl(iframeUrl),
   options: {
     widthInSurface: GENERIC_DEFAULT_WIDTH_IN_SURFACE,
     heightInSurface: GENERIC_DEFAULT_HEIGHT_IN_SURFACE,

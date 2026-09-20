@@ -11,8 +11,9 @@ spec:
       {{- include "graphql.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        checksum/indexer-config: {{ include "affine.indexerConfig" . | sha256sum }}
+      {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
@@ -23,6 +24,22 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "graphql.serviceAccountName" . }}
+      {{- with .Values.global.database.gcloud }}
+      {{- if .enabled }}
+      initContainers:
+        - name: wait-for-cloud-sql-proxy
+          image: busybox:1.36.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              until wget -q -T 2 -O /dev/null "http://{{ $.Values.global.database.host }}:9801/startup"; do
+                echo "waiting for cloud sql proxy to become ready"
+                sleep 2
+              done
+      {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -33,6 +50,13 @@ spec:
               secretKeyRef:
                 name: "{{ .Values.global.secret.secretName }}"
                 key: key
+          {{- if .Values.global.secret.licenseSecretName }}
+          - name: AFFINE_PRO_LICENSE_PRIVATE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.global.secret.licenseSecretName }}"
+                key: "{{ .Values.global.secret.licensePrivateKeyKey }}"
+          {{- end }}
           - name: NODE_ENV
             value: "{{ .Values.env }}"
           - name: NODE_OPTIONS
@@ -67,15 +91,6 @@ spec:
                 key: redis-password
           - name: REDIS_SERVER_DATABASE
             value: "{{ .Values.global.redis.database }}"
-          - name: AFFINE_INDEXER_SEARCH_PROVIDER
-            value: "{{ .Values.global.indexer.provider }}"
-          - name: AFFINE_INDEXER_SEARCH_ENDPOINT
-            value: "{{ .Values.global.indexer.endpoint }}"
-          - name: AFFINE_INDEXER_SEARCH_API_KEY
-            valueFrom:
-              secretKeyRef:
-                name: indexer
-                key: indexer-apiKey
           - name: AFFINE_SERVER_PORT
             value: "{{ .Values.service.port }}"
           - name: AFFINE_SERVER_SUB_PATH
@@ -84,8 +99,6 @@ spec:
             value: "{{ .Values.app.host }}"
           - name: AFFINE_SERVER_HTTPS
             value: "{{ .Values.app.https }}"
-          - name: DOC_SERVICE_ENDPOINT
-            value: "http://{{ .Values.global.docService.name }}:{{ .Values.global.docService.port }}"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
@@ -95,13 +108,30 @@ spec:
               path: /info
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            timeoutSeconds: {{ default .Values.probe.timeoutSeconds .Values.probe.liveness.timeoutSeconds }}
+            periodSeconds: {{ default .Values.probe.periodSeconds .Values.probe.liveness.periodSeconds }}
+            failureThreshold: {{ default .Values.probe.failureThreshold .Values.probe.liveness.failureThreshold }}
+            successThreshold: {{ default .Values.probe.successThreshold .Values.probe.liveness.successThreshold }}
           readinessProbe:
             httpGet:
               path: /info
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            timeoutSeconds: {{ default .Values.probe.timeoutSeconds .Values.probe.readiness.timeoutSeconds }}
+            periodSeconds: {{ default .Values.probe.periodSeconds .Values.probe.readiness.periodSeconds }}
+            failureThreshold: {{ default .Values.probe.failureThreshold .Values.probe.readiness.failureThreshold }}
+            successThreshold: {{ default .Values.probe.successThreshold .Values.probe.readiness.successThreshold }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: indexer-config
+              mountPath: /app/config.json
+              subPath: config.json
+              readOnly: true
+      volumes:
+        - name: indexer-config
+          secret:
+            secretName: indexer
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

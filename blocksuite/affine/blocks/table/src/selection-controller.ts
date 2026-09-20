@@ -33,6 +33,22 @@ export class SelectionController implements ReactiveController {
     this.host.handleEvent('copy', this.onCopy);
     this.host.handleEvent('cut', this.onCut);
     this.host.handleEvent('paste', this.onPaste);
+    this.host.handleEvent('dragStart', context => {
+      if (IS_MOBILE || this.dataManager.readonly$.value) return false;
+      const event = context.get('pointerState').raw;
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.closest(
+          '[data-width-adjust-column-id], [data-drag-column-id], [data-drag-row-id]'
+        )
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+      }
+      return false;
+    });
   }
   private get dataManager() {
     return this.host.dataManager;
@@ -84,6 +100,17 @@ export class SelectionController implements ReactiveController {
     if (IS_MOBILE || this.dataManager.readonly$.value) {
       return;
     }
+    this.host.disposables.addFromEvent(this.host, 'pointerdown', event => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (
+        target.closest(
+          '[data-width-adjust-column-id], [data-drag-column-id], [data-drag-row-id]'
+        )
+      ) {
+        event.stopPropagation();
+      }
+    });
     this.host.disposables.addFromEvent(this.host, 'mousedown', event => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) {
@@ -273,7 +300,7 @@ export class SelectionController implements ReactiveController {
       }
       drag?.onMove(event.clientY);
     };
-    // eslint-disable-next-line sonarjs/no-identical-functions
+    // oxlint-disable-next-line sonarjs/no-identical-functions
     const onUp = () => {
       drag?.onEnd();
       window.removeEventListener('mousemove', onMove);
@@ -500,6 +527,9 @@ export class SelectionController implements ReactiveController {
     removeNativeSelection = true
   ) {
     if (selection) {
+      if (this.hasExternalNativeSelection()) {
+        return;
+      }
       const previous = this.getSelected();
       if (TableSelectionData.equals(previous, selection)) {
         return;
@@ -523,5 +553,25 @@ export class SelectionController implements ReactiveController {
       selection => selection.blockId === this.host.model.id
     );
     return selection?.is(TableSelection) ? selection.data : undefined;
+  }
+
+  private hasExternalNativeSelection() {
+    const selection = getSelection();
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+      return false;
+    }
+
+    const range = selection.getRangeAt(0);
+    if (!range.intersectsNode(this.host)) {
+      return false;
+    }
+
+    const anchorNode = selection.anchorNode;
+    const focusNode = selection.focusNode;
+    return (
+      !!anchorNode &&
+      !!focusNode &&
+      (!this.host.contains(anchorNode) || !this.host.contains(focusNode))
+    );
   }
 }

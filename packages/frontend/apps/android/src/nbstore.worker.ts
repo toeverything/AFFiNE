@@ -1,5 +1,7 @@
 import './setup-worker';
 
+import { MessagePortAuthProvider } from '@affine/mobile-shared/auth/channel';
+import { installAuthRequestProxy } from '@affine/mobile-shared/auth/request';
 import { broadcastChannelStorages } from '@affine/nbstore/broadcast-channel';
 import {
   cloudStorages,
@@ -18,19 +20,22 @@ import {
 import { type MessageCommunicapable, OpConsumer } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 
-import { readEndpointToken } from './proxy';
+const authProvider = new MessagePortAuthProvider();
+installAuthRequestProxy(authProvider);
 
 configureSocketAuthMethod((endpoint, cb) => {
-  readEndpointToken(endpoint)
-    .then(token => {
-      cb({ token });
-    })
-    .catch(e => {
-      console.error(e);
-    });
+  authProvider
+    .getValidAccessToken(endpoint)
+    .then(token => cb(token ? { token, tokenType: 'jwt' } : {}))
+    .catch(() => cb({ error: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE' }));
 });
 
 globalThis.addEventListener('message', e => {
+  if (e.data.type === 'auth-access-token-channel') {
+    authProvider.setPort(e.ports[0] as MessagePort);
+    return;
+  }
+
   if (e.data.type === 'native-db-api-channel') {
     const port = e.ports[0] as MessagePort;
     const rpc = AsyncCall<NativeDBApis>(

@@ -14,7 +14,7 @@ export const root = style({
   width: '100dvw',
 });
 export const headerSettingRow = style({
-  height: 44,
+  height: 56,
 });
 export const wsSelectorAndSearch = style({
   display: 'flex',
@@ -29,11 +29,6 @@ export const float = style({
   width: '100%',
   zIndex: 2,
 
-  display: 'flex',
-  alignItems: 'center',
-  padding: '4px 10px 4px 16px',
-  gap: 10,
-
   // visibility control
   background: 'transparent',
   selectors: {
@@ -41,6 +36,33 @@ export const float = style({
       background: cssVarV2('layer/background/mobile/primary'),
     },
   },
+});
+export const floatContent = style({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  height: 56,
+  padding: '0 10px 0 16px',
+  gap: 10,
+  selectors: {
+    [`${float}.dense &::after`]: {
+      content: '',
+      position: 'absolute',
+      right: 0,
+      bottom: 0,
+      left: 0,
+      height: '0.5px',
+      background: cssVarV2('layer/insideBorder/border'),
+    },
+  },
+});
+export const headerAction = style({
+  display: 'inline-flex',
+  width: 44,
+  height: 44,
+  flex: '0 0 44px',
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 export const floatWsSelector = style({
   width: 0,

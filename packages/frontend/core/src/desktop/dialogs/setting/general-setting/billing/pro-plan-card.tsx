@@ -10,7 +10,6 @@ import { type I18nString, i18nTime, Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
 
-import { RedeemCode } from '../plans/plan-card';
 import { CardNameLabelRow } from './card-name-label-row';
 import { PaymentMethodUpdater } from './payment-method';
 import * as styles from './style.css';
@@ -156,13 +155,6 @@ const PlanAction = ({
   subscriptionStatus?: SubscriptionStatus;
 }) => {
   const t = useI18n();
-
-  const subscription = useService(SubscriptionService).subscription;
-  const isOnetimePro = useLiveData(subscription.isOnetimePro$);
-
-  if (isOnetimePro) {
-    return <RedeemCode variant="primary" className={styles.planAction} />;
-  }
 
   return (
     <div className={styles.planActionContainer}>

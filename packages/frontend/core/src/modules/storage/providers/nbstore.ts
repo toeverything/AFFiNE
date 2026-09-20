@@ -1,10 +1,13 @@
 import type {
   StoreClient,
+  StoreManagerClient,
   WorkerInitOptions,
 } from '@affine/nbstore/worker/client';
 import { createIdentifier } from '@toeverything/infra';
 
 export interface NbstoreProvider {
+  readonly realtime: StoreManagerClient['realtime'];
+
   /**
    * Open a nbstore with the given options, if the store with the given key already exists, it will be returned.
    *

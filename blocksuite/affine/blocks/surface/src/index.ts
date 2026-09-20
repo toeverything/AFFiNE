@@ -1,4 +1,4 @@
-// oxlint-disable-next-line @typescript-eslint/triple-slash-reference
+// oxlint-disable-next-line typescript/triple-slash-reference
 /// <reference path="./effects.ts" />
 export * from './consts.js';
 export { GRID_GAP_MAX, GRID_GAP_MIN } from './consts.js';

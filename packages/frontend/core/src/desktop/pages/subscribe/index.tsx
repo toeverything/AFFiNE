@@ -1,11 +1,7 @@
 import { Button, Loading } from '@affine/component';
 import { UrlService } from '@affine/core/modules/url';
 import { UserFriendlyError } from '@affine/error';
-import {
-  SubscriptionPlan,
-  SubscriptionRecurring,
-  SubscriptionVariant,
-} from '@affine/graphql';
+import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { track } from '@affine/track';
 import { effect, fromPromise, useServices } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
@@ -24,7 +20,7 @@ import { container } from './subscribe.css';
 interface ProductTriple {
   plan: SubscriptionPlan;
   recurring: SubscriptionRecurring;
-  variant: SubscriptionVariant | null;
+  variant: null;
 }
 
 const products = {
@@ -36,9 +32,6 @@ const products = {
   'monthly-team': 'team_monthly',
   'yearly-selfhost-team': 'selfhost-team_yearly',
   'monthly-selfhost-team': 'selfhost-team_monthly',
-  'oneyear-ai': 'ai_yearly_onetime',
-  'oneyear-pro': 'pro_yearly_onetime',
-  'onemonth-pro': 'pro_monthly_onetime',
 };
 
 const allowedPlan = {
@@ -51,11 +44,6 @@ const allowedRecurring = {
   monthly: SubscriptionRecurring.Monthly,
   yearly: SubscriptionRecurring.Yearly,
   lifetime: SubscriptionRecurring.Lifetime,
-};
-
-const allowedVariant = {
-  earlyaccess: SubscriptionVariant.EA,
-  onetime: SubscriptionVariant.Onetime,
 };
 
 function getProductTriple(searchParams: URLSearchParams): ProductTriple {
@@ -72,13 +60,10 @@ function getProductTriple(searchParams: URLSearchParams): ProductTriple {
   let recurring = searchParams.get('recurring') as
     | keyof typeof allowedRecurring
     | null;
-  let variant = searchParams.get('variant') as
-    | keyof typeof allowedVariant
-    | null;
 
   if (productName && products[productName]) {
     // @ts-expect-error safe
-    [plan, recurring, variant] = products[productName].split('_');
+    [plan, recurring] = products[productName].split('_');
   }
 
   if (plan) {
@@ -87,9 +72,6 @@ function getProductTriple(searchParams: URLSearchParams): ProductTriple {
 
   if (recurring) {
     triple.recurring = allowedRecurring[recurring];
-  }
-  if (variant) {
-    triple.variant = allowedVariant[variant];
   }
 
   return triple;

@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["./.vitepress"],
+  "references": [{ "path": "../affine/all" }]
+}

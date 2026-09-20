@@ -473,12 +473,15 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
     const { zoom, selection, gfx } = this;
 
     const elements = selection.selectedElements;
-    // in surface
     const rect = getSelectedRect(elements);
 
-    // in viewport
-    const [left, top] = gfx.viewport.toViewCoord(rect.left, rect.top);
-    const [width, height] = [rect.width * zoom, rect.height * zoom];
+    // Compensate for outer CSS scale (e.g. embed-edgeless-synced-doc),
+    // matching GfxBlockComponent.getCSSTransform.
+    const { viewportX, viewportY, viewScale } = gfx.viewport;
+    const left = ((rect.left - viewportX) * zoom) / viewScale;
+    const top = ((rect.top - viewportY) * zoom) / viewScale;
+    const width = (rect.width * zoom) / viewScale;
+    const height = (rect.height * zoom) / viewScale;
 
     let rotate = 0;
     if (elements.length === 1 && elements[0].rotate) {
@@ -714,15 +717,17 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
           element => element.id,
           element => {
             const [modelX, modelY, w, h] = deserializeXYWH(element.xywh);
-            const [x, y] = gfx.viewport.toViewCoord(modelX, modelY);
+            const { viewportX, viewportY, zoom, viewScale } = gfx.viewport;
+            const x = ((modelX - viewportX) * zoom) / viewScale;
+            const y = ((modelY - viewportY) * zoom) / viewScale;
             const { left, top, borderWidth } = this._selectedRect;
             const style = {
               position: 'absolute',
               boxSizing: 'border-box',
               left: `${x - left - borderWidth}px`,
               top: `${y - top - borderWidth}px`,
-              width: `${w * this.zoom}px`,
-              height: `${h * this.zoom}px`,
+              width: `${(w * zoom) / viewScale}px`,
+              height: `${(h * zoom) / viewScale}px`,
               transform: `rotate(${element.rotate}deg)`,
               border: `1px solid var(--affine-primary-color)`,
             };

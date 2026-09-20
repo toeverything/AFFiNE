@@ -1,6 +1,17 @@
 import type { FontFamily } from '@blocksuite/affine-model';
 import { IS_FIREFOX } from '@blocksuite/global/env';
 
+function normalizeFontFamily(fontFamily: FontFamily | string): string {
+  let s = fontFamily.trim();
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1);
+  }
+  return s.toLowerCase();
+}
+
 export function wrapFontFamily(fontFamily: FontFamily | string): string {
   return `"${fontFamily}"`;
 }
@@ -21,11 +32,9 @@ export const getFontFaces = IS_FIREFOX
     }
   : () => [...document.fonts.keys()];
 
-export const isSameFontFamily = IS_FIREFOX
-  ? (fontFamily: FontFamily | string) => (fontFace: FontFace) =>
-      fontFace.family === `"${fontFamily}"`
-  : (fontFamily: FontFamily | string) => (fontFace: FontFace) =>
-      fontFace.family === fontFamily;
+export const isSameFontFamily =
+  (fontFamily: FontFamily | string) => (fontFace: FontFace) =>
+    normalizeFontFamily(fontFace.family) === normalizeFontFamily(fontFamily);
 
 export function getFontFacesByFontFamily(
   fontFamily: FontFamily | string

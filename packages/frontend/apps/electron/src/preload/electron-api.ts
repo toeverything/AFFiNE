@@ -3,10 +3,14 @@ import type { MessagePort } from 'node:worker_threads';
 
 import type { EventBasedChannel } from 'async-call-rpc';
 import { AsyncCall } from 'async-call-rpc';
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, webUtils } from 'electron';
 import { Subject } from 'rxjs';
 import { z } from 'zod';
 
+import type {
+  CreateImportSessionFromSourceOptions,
+  NativeImportBrowserSource,
+} from '../shared/import';
 import {
   AFFINE_API_CHANNEL_NAME,
   AFFINE_EVENT_CHANNEL_NAME,
@@ -275,9 +279,61 @@ function getHelperAPIs() {
 const mainAPIs = getMainAPIs();
 const helperAPIs = getHelperAPIs();
 
+type DirectoryImportFile = File & { webkitRelativePath?: string };
+
+function filePathFromFile(file: File) {
+  return webUtils.getPathForFile(file);
+}
+
+function directoryPathFromFiles(files: File[]) {
+  const first = files.find(
+    (file): file is DirectoryImportFile =>
+      !!(file as DirectoryImportFile).webkitRelativePath
+  );
+  if (!first) return null;
+  const filePath = filePathFromFile(first);
+  if (!filePath) return null;
+  const relativePath = first.webkitRelativePath;
+  if (!relativePath) return null;
+  const relativeParts = relativePath.split('/');
+  let rootPath = filePath.replaceAll('\\', '/');
+  for (let i = relativeParts.length - 1; i > 0; i--) {
+    const part = relativeParts[i];
+    if (part && rootPath.endsWith(`/${part}`)) {
+      rootPath = rootPath.slice(0, -part.length - 1);
+    }
+  }
+  return rootPath || null;
+}
+
+function resolveNativeImportSource(source: NativeImportBrowserSource) {
+  if (source.kind === 'file') {
+    const path = filePathFromFile(source.file);
+    return path ? { kind: 'filePath', path } : null;
+  }
+  const path = directoryPathFromFiles(source.files);
+  return path ? { kind: 'directoryPath', path } : null;
+}
+
 export const apis = {
   ...mainAPIs.apis,
   ...helperAPIs.apis,
+  import: {
+    ...mainAPIs.apis.import,
+    createImportSessionFromSource(
+      options: CreateImportSessionFromSourceOptions
+    ) {
+      const source = resolveNativeImportSource(options.source);
+      if (!source) {
+        throw new Error('Native import requires a local file source');
+      }
+      return mainAPIs.apis.import.createImportSession({
+        format: options.format,
+        source,
+        batchLimits: options.batchLimits,
+      });
+    },
+  },
 };
 
 export const events = {

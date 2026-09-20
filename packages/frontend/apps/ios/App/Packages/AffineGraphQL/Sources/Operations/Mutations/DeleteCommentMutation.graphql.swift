@@ -26,6 +26,9 @@ public class DeleteCommentMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("deleteComment", Bool.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      DeleteCommentMutation.Data.self
+    ] }
 
     /// Delete a comment
     public var deleteComment: Bool { __data["deleteComment"] }

@@ -7,6 +7,7 @@ import {
   Modal,
   notify,
 } from '@affine/component';
+import { buildWorkspaceSettingsRedirectUri } from '@affine/core/components/hooks/use-navigate-helper';
 import {
   useQuery,
   type UseQueryConfig,
@@ -30,6 +31,7 @@ import { GoogleIcon, LinkIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
 import {
   type FormEvent,
+  type KeyboardEvent,
   type ReactNode,
   useCallback,
   useEffect,
@@ -37,7 +39,10 @@ import {
   useState,
 } from 'react';
 
+import { WorkspaceService } from '../../../../modules/workspace';
 import { CollapsibleWrapper } from '../layout';
+import { CALENDAR_INTEGRATION_SCROLL_ANCHOR } from '../navigation-constants';
+import type { SettingState } from '../types';
 import * as styles from './integrations-panel.css';
 
 type CalendarAccount = NonNullable<
@@ -323,16 +328,22 @@ const CalDAVLinkDialog = ({
   );
 };
 
-export const IntegrationsPanel = () => {
+export const IntegrationsPanel = ({
+  onChangeSettingState,
+}: {
+  onChangeSettingState?: (settingState: SettingState) => void;
+}) => {
   const t = useI18n();
   const gqlService = useService(GraphQLService);
   const urlService = useService(UrlService);
+  const workspaceService = useService(WorkspaceService);
   const [linking, setLinking] = useState(false);
   const [unlinkingAccountId, setUnlinkingAccountId] = useState<string | null>(
     null
   );
   const [openedExternalWindow, setOpenedExternalWindow] = useState(false);
   const [caldavDialogOpen, setCaldavDialogOpen] = useState(false);
+  const canOpenCalendarSetting = workspaceService.workspace.flavour !== 'local';
   const makeConfig: <Query extends GraphQLQuery>(
     title: string
   ) => UseQueryConfig<Query> = useCallback(
@@ -394,6 +405,27 @@ export const IntegrationsPanel = () => {
     });
   }, [providers]);
 
+  const handleOpenCalendarSetting = useCallback(() => {
+    if (!canOpenCalendarSetting) return;
+
+    onChangeSettingState?.({
+      activeTab: 'workspace:integrations',
+      scrollAnchor: CALENDAR_INTEGRATION_SCROLL_ANCHOR,
+    });
+  }, [canOpenCalendarSetting, onChangeSettingState]);
+
+  const handleAccountRowKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (!canOpenCalendarSetting) return;
+
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        handleOpenCalendarSetting();
+      }
+    },
+    [canOpenCalendarSetting, handleOpenCalendarSetting]
+  );
+
   const handleLink = useCallback(
     async (provider: CalendarProviderType) => {
       if (provider === CalendarProviderType.CalDAV) {
@@ -408,7 +440,12 @@ export const IntegrationsPanel = () => {
           variables: {
             input: {
               provider,
-              redirectUri: window.location.href,
+              redirectUri: canOpenCalendarSetting
+                ? buildWorkspaceSettingsRedirectUri(window.location.href, {
+                    tab: 'workspace:integrations',
+                    scrollAnchor: CALENDAR_INTEGRATION_SCROLL_ANCHOR,
+                  })
+                : window.location.href,
             },
           },
         });
@@ -423,7 +460,7 @@ export const IntegrationsPanel = () => {
         setLinking(false);
       }
     },
-    [gqlService, t, urlService]
+    [canOpenCalendarSetting, gqlService, t, urlService]
   );
 
   const handleUnlink = useCallback(
@@ -535,7 +572,19 @@ export const IntegrationsPanel = () => {
                     ]();
 
                 return (
-                  <div key={account.id} className={styles.accountRow}>
+                  <div
+                    key={account.id}
+                    className={styles.accountRow}
+                    data-interactive={canOpenCalendarSetting}
+                    onClick={
+                      canOpenCalendarSetting
+                        ? handleOpenCalendarSetting
+                        : undefined
+                    }
+                    onKeyDown={handleAccountRowKeyDown}
+                    role={canOpenCalendarSetting ? 'button' : undefined}
+                    tabIndex={canOpenCalendarSetting ? 0 : undefined}
+                  >
                     <div className={styles.accountInfo}>
                       <div className={styles.accountIcon}>
                         {meta?.icon ?? <LinkIcon />}
@@ -562,7 +611,10 @@ export const IntegrationsPanel = () => {
                       <Button
                         variant="error"
                         disabled={unlinkingAccountId === account.id}
-                        onClick={() => void handleUnlink(account.id)}
+                        onClick={event => {
+                          event.stopPropagation();
+                          handleUnlink(account.id).catch(() => undefined);
+                        }}
                       >
                         {t['com.affine.integration.calendar.account.unlink']()}
                       </Button>

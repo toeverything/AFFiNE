@@ -376,12 +376,18 @@ export async function setEdgelessTool(
         'shape',
         false
       );
-      // Avoid clicking on the shape-element (will trigger dragging mode)
-      await shapeToolButton.click({ position: { x: 5, y: 5 } });
+      await shapeToolButton.click({ position: { x: 2, y: 2 } });
 
-      const squareShapeButton = page
-        .locator('edgeless-slide-menu edgeless-tool-icon-button')
+      const shapeMenu = page.locator('edgeless-shape-menu');
+      if ((await shapeMenu.count()) === 0 && shape === Shape.Square) {
+        break;
+      }
+      await expect(shapeMenu).toBeVisible();
+
+      const squareShapeButton = shapeMenu
+        .locator('edgeless-tool-icon-button')
         .filter({ hasText: shape });
+      await expect(squareShapeButton).toBeVisible();
       await squareShapeButton.click();
       break;
     }

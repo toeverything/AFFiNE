@@ -2,7 +2,6 @@ import {
   SubscriptionPlan,
   type SubscriptionQuery,
   SubscriptionRecurring,
-  SubscriptionVariant,
 } from '@affine/graphql';
 import {
   catchErrorInto,
@@ -43,12 +42,6 @@ export class Subscription extends Entity {
   );
   isBeliever$ = this.pro$.map(
     sub => sub?.recurring === SubscriptionRecurring.Lifetime
-  );
-  isOnetimePro$ = this.pro$.map(
-    sub => sub?.variant === SubscriptionVariant.Onetime
-  );
-  isOnetimeAI$ = this.ai$.map(
-    sub => sub?.variant === SubscriptionVariant.Onetime
   );
 
   constructor(

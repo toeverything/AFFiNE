@@ -1,0 +1,7 @@
+mutation reorderWorkspaceByokProfiles($input: ReorderWorkspaceByokProfilesInput!) {
+  reorderWorkspaceByokProfiles(input: $input) {
+    profileId
+    sortOrder
+    revision
+  }
+}

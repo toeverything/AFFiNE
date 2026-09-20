@@ -258,11 +258,13 @@ export class EdgelessShapeToolElement extends WithDisposable(LitElement) {
       >
         ${this.shape.svg}
       </div>
-      ${this.order === 1
-        ? html`<div id="backup-shape-element" class="shape">
-            ${this.shape.svg}
-          </div>`
-        : null}
+      ${
+        this.order === 1
+          ? html`<div id="backup-shape-element" class="shape">
+              ${this.shape.svg}
+            </div>`
+          : null
+      }
     `;
   }
 

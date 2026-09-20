@@ -4,7 +4,11 @@ import {
   getCurrentUserQuery,
   getWorkspaceQuery,
 } from '@affine/graphql';
+import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
+import Sinon from 'sinon';
 
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
+import { WorkspaceRole } from '../../../models';
 import { app, e2e, Mockers } from '../test';
 
 const admin = await app.create(Mockers.User, {
@@ -87,13 +91,64 @@ e2e('should register deleted account again', async t => {
     email: user.email,
   });
   t.is(res.status, 200);
-  t.like(await app.mails.waitFor('SignUp'), {
-    to: user.email,
+  const delivery = await app.get(PrismaClient).mailDelivery.findFirstOrThrow({
+    where: { mailName: 'SignUp', recipientEmail: user.email },
   });
+  t.is(delivery.recipientEmail, user.email);
 });
 
 e2e('should ban account', async t => {
+  const interrupted = await app.create(Mockers.User);
+  await app.login(admin);
+  const runtime = app.get(BackendRuntimeProvider);
+  const originalExecute = runtime.executeAuthSessionCommandV1.bind(runtime);
+  const execute = Sinon.stub(runtime, 'executeAuthSessionCommandV1').callsFake(
+    async input => {
+      if (input.action === 'set_user_disabled') {
+        throw new Error('injected disable failure');
+      }
+      return await originalExecute(input);
+    }
+  );
+  try {
+    await t.throwsAsync(
+      app.gql({
+        query: disableUserMutation,
+        variables: { id: interrupted.id },
+      })
+    );
+  } finally {
+    execute.restore();
+  }
+  const preserved = await app.get(PrismaClient).user.findUniqueOrThrow({
+    where: { email: interrupted.email },
+  });
+  t.true(preserved.disabled);
+
   const user = await app.create(Mockers.User);
+
+  const { banUser } = await app.gql({
+    query: disableUserMutation,
+    variables: {
+      id: user.id,
+    },
+  });
+
+  t.is(banUser.disabled, true);
+});
+
+e2e('should ban account with pending workspace invitation', async t => {
+  const owner = await app.create(Mockers.User);
+  const user = await app.create(Mockers.User);
+  const workspace = await app.create(Mockers.Workspace, { owner });
+
+  await app.models.workspaceInvitation.set(
+    workspace.id,
+    user.id,
+    WorkspaceRole.Collaborator,
+    WorkspaceMemberStatus.Pending,
+    { inviterId: owner.id }
+  );
 
   await app.login(admin);
 

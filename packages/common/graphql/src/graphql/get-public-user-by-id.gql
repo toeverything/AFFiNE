@@ -1,7 +1,7 @@
 query getPublicUserById($id: String!) {
-    publicUserById(id: $id) {
-        id
-        avatarUrl
-        name
-    }
+  publicUserById(id: $id) {
+    id
+    avatarUrl
+    name
+  }
 }

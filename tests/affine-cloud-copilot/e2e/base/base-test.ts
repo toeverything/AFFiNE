@@ -1,4 +1,4 @@
-// eslint-disable no-empty-pattern
+// oxlint-disable no-empty-pattern
 import { test as base } from '@affine-test/kit/playwright';
 import type { Page } from '@playwright/test';
 

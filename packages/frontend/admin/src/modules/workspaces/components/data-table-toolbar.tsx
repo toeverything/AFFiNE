@@ -1,6 +1,5 @@
 import { Button } from '@affine/admin/components/ui/button';
 import { Input } from '@affine/admin/components/ui/input';
-import type { FeatureType } from '@affine/graphql';
 import { AdminWorkspaceSort } from '@affine/graphql';
 import type { Table } from '@tanstack/react-table';
 import {
@@ -11,22 +10,18 @@ import {
   useState,
 } from 'react';
 
-import { FeatureFilterPopover } from '../../../components/shared/feature-filter-popover';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '../../../components/ui/popover';
 import { useDebouncedValue } from '../../../hooks/use-debounced-value';
-import { useServerConfig } from '../../common';
 import type { WorkspaceFlagFilter } from '../schema';
 
 interface DataTableToolbarProps<TData> {
   table?: Table<TData>;
   keyword: string;
   onKeywordChange: (keyword: string) => void;
-  selectedFeatures: FeatureType[];
-  onFeaturesChange: (features: FeatureType[]) => void;
   flags: WorkspaceFlagFilter;
   onFlagsChange: (flags: WorkspaceFlagFilter) => void;
   sort: AdminWorkspaceSort | undefined;
@@ -47,8 +42,6 @@ const sortOptions: { value: AdminWorkspaceSort; label: string }[] = [
 export function DataTableToolbar<TData>({
   keyword,
   onKeywordChange,
-  selectedFeatures,
-  onFeaturesChange,
   flags,
   onFlagsChange,
   sort,
@@ -57,8 +50,6 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const [value, setValue] = useState(keyword);
   const debouncedValue = useDebouncedValue(value, 400);
-  const serverConfig = useServerConfig();
-  const availableFeatures = serverConfig.availableWorkspaceFeatures ?? [];
 
   useEffect(() => {
     setValue(keyword);
@@ -116,15 +107,7 @@ export function DataTableToolbar<TData>({
   );
 
   return (
-    <div className="flex items-center justify-between gap-y-2 gap-x-4 flex-wrap">
-      <FeatureFilterPopover
-        selectedFeatures={selectedFeatures}
-        availableFeatures={availableFeatures}
-        onChange={onFeaturesChange}
-        align="start"
-        disabled={disabled}
-      />
-
+    <div className="flex items-center justify-end gap-y-2 gap-x-4 flex-wrap">
       <div className="flex items-center gap-y-2 flex-wrap justify-end gap-2">
         <Popover open={disabled ? false : undefined}>
           <PopoverTrigger asChild>

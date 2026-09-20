@@ -1,4 +1,4 @@
-import { getCurrentUserProfileQuery } from '@affine/graphql';
+import { copilotQuotaQuery } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
 import type { GraphQLService } from '../services/graphql';
@@ -10,7 +10,7 @@ export class UserCopilotQuotaStore extends Store {
 
   async fetchUserCopilotQuota(abortSignal?: AbortSignal) {
     const data = await this.graphqlService.gql({
-      query: getCurrentUserProfileQuery,
+      query: copilotQuotaQuery,
       context: {
         signal: abortSignal,
       },

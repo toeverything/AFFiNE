@@ -131,4 +131,47 @@ describe('workspace db management', () => {
       )
     ).toBe(false);
   });
+
+  test.each([
+    {
+      name: 'deleting a workspace',
+      outsideDirName: 'outside-delete-target',
+      call: async () => {
+        const { deleteWorkspace } =
+          await import('@affine/electron/helper/workspace/handlers');
+        return deleteWorkspace(
+          universalId({
+            peer: 'local',
+            type: 'workspace',
+            id: '../../outside-delete-target',
+          })
+        );
+      },
+    },
+    {
+      name: 'deleting backup workspaces',
+      outsideDirName: 'outside-backup-target',
+      call: async () => {
+        const { deleteBackupWorkspace } =
+          await import('@affine/electron/helper/workspace/handlers');
+        return deleteBackupWorkspace('../../outside-backup-target');
+      },
+    },
+    {
+      name: 'recovering backup workspaces',
+      outsideDirName: 'outside-recover-target',
+      call: async () => {
+        const { recoverBackupWorkspace } =
+          await import('@affine/electron/helper/workspace/handlers');
+        return recoverBackupWorkspace('../../outside-recover-target');
+      },
+    },
+  ])('rejects unsafe ids when $name', async ({ outsideDirName, call }) => {
+    const outsideDir = path.join(tmpDir, outsideDirName);
+
+    await fs.ensureDir(outsideDir);
+
+    await expect(call()).rejects.toThrow('Invalid workspace id');
+    expect(await fs.pathExists(outsideDir)).toBe(true);
+  });
 });

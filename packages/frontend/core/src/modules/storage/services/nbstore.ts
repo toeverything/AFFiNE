@@ -11,4 +11,8 @@ export class NbstoreService extends Service {
   openStore(key: string, options: WorkerInitOptions) {
     return this.nbstoreProvider.openStore(key, options);
   }
+
+  get realtime() {
+    return this.nbstoreProvider.realtime;
+  }
 }

@@ -8,6 +8,7 @@
   "include": ["./src"],
   "references": [
     { "path": "../../../../tools/utils" },
+    { "path": "../../../common/auth" },
     { "path": "../../i18n" },
     { "path": "../../native" },
     { "path": "../../../common/nbstore" },

@@ -280,7 +280,7 @@ const BlockSuiteEditorImpl = ({
 export const BlockSuiteEditor = (props: EditorProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [longerLoading, setLongerLoading] = useState(false);
-  // eslint-disable-next-line react-hooks/purity
+  // oxlint-disable-next-line react-hooks-js/purity
   const [loadStartTime] = useState(Date.now());
   const workspaceService = useService(WorkspaceService);
 

@@ -26,6 +26,9 @@ public class CreateSelfhostCustomerPortalMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("createSelfhostWorkspaceCustomerPortal", String.self, arguments: ["workspaceId": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateSelfhostCustomerPortalMutation.Data.self
+    ] }
 
     public var createSelfhostWorkspaceCustomerPortal: String { __data["createSelfhostWorkspaceCustomerPortal"] }
   }

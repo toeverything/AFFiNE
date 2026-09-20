@@ -4,6 +4,7 @@ import { css, unsafeCSS } from 'lit';
 
 export const styles = css`
   bookmark-card {
+    position: relative;
     display: block;
     height: 100%;
     width: 100%;

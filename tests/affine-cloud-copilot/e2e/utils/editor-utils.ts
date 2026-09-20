@@ -18,6 +18,37 @@ import type {
 import type { GfxModel } from '@blocksuite/std/gfx';
 import { type Page } from '@playwright/test';
 export class EditorUtils {
+  public static async waitForCurrentDocSynced(page: Page) {
+    await page.evaluate(async () => {
+      const [, , workspaceId, docId] = location.pathname.split('/');
+      const workspace = (
+        window as typeof window & {
+          currentWorkspace?: {
+            engine: {
+              doc: {
+                waitForSynced(docId: string, abort: AbortSignal): Promise<void>;
+              };
+            };
+          };
+        }
+      ).currentWorkspace;
+      if (!workspaceId || !docId || !workspace) {
+        throw new Error('Current document is unavailable');
+      }
+      const abort = AbortSignal.timeout(60_000);
+      await Promise.all([
+        workspace.engine.doc.waitForSynced(docId, abort),
+        workspace.engine.doc.waitForSynced('db$docProperties', abort),
+      ]);
+      const response = await fetch(
+        `/api/workspaces/${workspaceId}/docs/${docId}`
+      );
+      if (!response.ok) {
+        throw new Error('Current document could not be persisted');
+      }
+    });
+  }
+
   public static async focusToEditor(page: Page) {
     const title = getBlockSuiteEditorTitle(page);
     await title.focus();
@@ -81,12 +112,9 @@ export class EditorUtils {
     return page.getByTestId('title-edit-button').innerText();
   }
 
-  public static async waitForAiAnswer(page: Page) {
+  public static async waitForAiAnswer(page: Page, timeout = 2 * 60000) {
     const answer = page.getByTestId('ai-penel-answer').last();
-    await answer.waitFor({
-      state: 'visible',
-      timeout: 2 * 60000,
-    });
+    await answer.waitFor({ state: 'visible', timeout });
     return answer;
   }
 
@@ -99,10 +127,10 @@ export class EditorUtils {
       const responseTimeoutMs = options?.responseTimeoutMs ?? 60000;
 
       await action();
-      await this.waitForAiAnswer(page);
+      await this.waitForAiAnswer(page, responseTimeoutMs);
       await page.getByTestId('ai-generating').waitFor({
         state: 'hidden',
-        timeout: 2 * 60000,
+        timeout: responseTimeoutMs,
       });
 
       const responses = new Set<string>();
@@ -354,8 +382,7 @@ export class EditorUtils {
         await page.keyboard.press('Enter');
       }
     }
-    // sleep 1 sec to wait the doc sync
-    await page.waitForTimeout(1000);
+    await this.waitForCurrentDocSynced(page);
   }
 
   public static async createTagAndDoc(
@@ -573,24 +600,43 @@ export class EditorUtils {
       explainImage: this.createAction(page, () =>
         page.getByTestId('action-explain-image').click()
       ),
-      generateImage: this.createAction(page, async () => {
-        await page.getByTestId('action-generate-image').click();
-        await page.keyboard.type('generate an image');
-        await page.getByTestId('ai-panel-input-send').click();
-      }),
+      generateImage: this.createAction(
+        page,
+        async () => {
+          await page.getByTestId('action-generate-image').click();
+          const input = page.locator(
+            'affine-ai-panel-widget .ai-panel-container textarea'
+          );
+          await input.waitFor({ state: 'visible' });
+          await input.fill('generate an image');
+          await page.getByTestId('ai-panel-input-send').waitFor({
+            state: 'visible',
+          });
+          await page.getByTestId('ai-panel-input-send').click();
+        },
+        { responseTimeoutMs: 4 * 60000 }
+      ),
       generateCaption: this.createAction(page, () =>
         page.getByTestId('action-generate-caption').click()
       ),
       imageProcessing: (type: string) =>
-        this.createAction(page, async () => {
-          await page.getByTestId('action-image-processing').hover();
-          await page.getByTestId(`action-image-processing-${type}`).click();
-        })(),
+        this.createAction(
+          page,
+          async () => {
+            await page.getByTestId('action-image-processing').hover();
+            await page.getByTestId(`action-image-processing-${type}`).click();
+          },
+          { responseTimeoutMs: 4 * 60000 }
+        )(),
       imageFilter: (style: string) =>
-        this.createAction(page, async () => {
-          await page.getByTestId('action-ai-image-filter').hover();
-          await page.getByTestId(`action-image-filter-${style}`).click();
-        })(),
+        this.createAction(
+          page,
+          async () => {
+            await page.getByTestId('action-ai-image-filter').hover();
+            await page.getByTestId(`action-image-filter-${style}`).click();
+          },
+          { responseTimeoutMs: 4 * 60000 }
+        )(),
     };
   }
 

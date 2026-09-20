@@ -1,21 +1,17 @@
-import { FactoryProvider, Injectable, Logger } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
+import { Injectable, Logger } from '@nestjs/common';
 import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
-import {
-  Cache,
-  Config,
-  CryptoHelper,
-  getOrGenRequestId,
-  UserFriendlyError,
-} from '../../base';
+import { Cache } from '../../base';
 import { Models } from '../../models';
 import { WorkspaceBlobStorage } from '../storage';
 import {
+  type CanvasProjectionV1,
   type PageDocContent,
   parseDocToMarkdownFromDocSnapshot,
   parsePageDoc,
   parseWorkspaceDoc,
+  projectDocCanvas,
+  type WorkspaceDocContent,
 } from '../utils/blocksuite';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 import { type DocDiff, type DocRecord } from './storage';
@@ -32,6 +28,7 @@ export interface WorkspaceDocInfo {
 export interface DocMarkdown {
   title: string;
   markdown: string;
+  revision: string;
   knownUnsupportedBlocks: string[];
   unknownBlocks: string[];
 }
@@ -65,6 +62,11 @@ export abstract class DocReader {
     docId: string,
     aiEditable: boolean
   ): Promise<DocMarkdown | null>;
+
+  abstract getDocCanvas(
+    workspaceId: string,
+    docId: string
+  ): Promise<CanvasProjectionV1 | null>;
 
   abstract getDocDiff(
     spaceId: string,
@@ -203,11 +205,22 @@ export class DatabaseDocReader extends DocReader {
         );
       }
 
-      return markdown;
+      return { ...markdown, revision: doc.timestamp.toString() };
     } catch (error) {
       this.logger.error(`Failed to parse ${workspaceId}/${docId}.`, error);
       throw error;
     }
+  }
+
+  async getDocCanvas(
+    workspaceId: string,
+    docId: string
+  ): Promise<CanvasProjectionV1 | null> {
+    const doc = await this.workspace.getDoc(workspaceId, docId);
+    if (!doc) {
+      return null;
+    }
+    return projectDocCanvas(doc.bin, docId, doc.timestamp.toString());
   }
 
   async getDocDiff(
@@ -242,10 +255,17 @@ export class DatabaseDocReader extends DocReader {
     if (!docRecord) {
       return null;
     }
-    const content = this.parseWorkspaceContent(docRecord.bin);
-    if (!content) {
+    let content: WorkspaceDocContent | null;
+    try {
+      content = this.parseWorkspaceContent(docRecord.bin);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to parse workspace ${workspaceId} content`,
+        error as Error
+      );
       return null;
     }
+    if (!content) return null;
     let avatarUrl: string | undefined;
     if (content.avatarKey) {
       avatarUrl = this.blobStorage.getAvatarUrl(workspaceId, content.avatarKey);
@@ -259,215 +279,7 @@ export class DatabaseDocReader extends DocReader {
   }
 }
 
-@Injectable()
-export class RpcDocReader extends DatabaseDocReader {
-  protected override readonly logger = new Logger(DocReader.name);
-
-  constructor(
-    private readonly config: Config,
-    private readonly crypto: CryptoHelper,
-    protected override readonly cache: Cache,
-    protected override readonly models: Models,
-    protected override readonly blobStorage: WorkspaceBlobStorage,
-    protected override readonly workspace: PgWorkspaceDocStorageAdapter
-  ) {
-    super(cache, models, blobStorage, workspace);
-  }
-
-  private async fetch(url: string, method: 'GET' | 'POST', body?: Uint8Array) {
-    const { pathname } = new URL(url);
-    const accessToken = this.crypto.signInternalAccessToken({
-      method,
-      path: pathname,
-    });
-
-    const headers: Record<string, string> = {
-      'x-access-token': accessToken,
-      'x-cloud-trace-context': getOrGenRequestId('rpc'),
-    };
-    if (body) {
-      headers['content-type'] = 'application/octet-stream';
-    }
-    const requestInit: RequestInit = {
-      method,
-      headers,
-    };
-    if (body) {
-      requestInit.body = body;
-    }
-    const res = await fetch(url, requestInit);
-    if (!res.ok) {
-      if (res.status === 404) {
-        return null;
-      }
-      const body = (await res.json()) as UserFriendlyError;
-      throw UserFriendlyError.fromUserFriendlyErrorJSON(body);
-    }
-    return res;
-  }
-
-  override async getDoc(
-    workspaceId: string,
-    docId: string
-  ): Promise<DocRecord | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}`;
-    try {
-      const res = await this.fetch(url, 'GET');
-      if (!res) {
-        return null;
-      }
-      const timestamp = res.headers.get('x-doc-timestamp') as string;
-      const editor = res.headers.get('x-doc-editor-id') ?? undefined;
-      const bin = await res.arrayBuffer();
-      return {
-        spaceId: workspaceId,
-        docId,
-        bin: Buffer.from(bin),
-        timestamp: parseInt(timestamp),
-        editor,
-      };
-    } catch (e) {
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      }
-      const err = e as Error;
-      // other error
-      this.logger.error(
-        `Failed to fetch doc ${url}, fallback to database doc reader`,
-        err
-      );
-      // fallback to database doc reader if the error is not user friendly, like network error
-      return await super.getDoc(workspaceId, docId);
-    }
-  }
-
-  override async getDocMarkdown(
-    workspaceId: string,
-    docId: string,
-    aiEditable: boolean
-  ): Promise<DocMarkdown | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/markdown?aiEditable=${aiEditable}`;
-    try {
-      const res = await this.fetch(url, 'GET');
-      if (!res) {
-        return null;
-      }
-      return (await res.json()) as DocMarkdown;
-    } catch (e) {
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      }
-      const err = e as Error;
-      // other error
-      this.logger.error(
-        `Failed to fetch doc markdown ${url}, fallback to database doc reader`,
-        err
-      );
-      // fallback to database doc reader if the error is not user friendly, like network error
-      return await super.getDocMarkdown(workspaceId, docId, aiEditable);
-    }
-  }
-
-  override async getDocDiff(
-    workspaceId: string,
-    docId: string,
-    stateVector?: Uint8Array
-  ): Promise<DocDiff | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/diff`;
-    try {
-      const res = await this.fetch(url, 'POST', stateVector);
-      if (!res) {
-        return null;
-      }
-      const timestamp = res.headers.get('x-doc-timestamp') as string;
-      // blob missing data offset [0, 123]
-      // x-doc-missing-offset: 0,123
-      // blob stateVector data offset [124,789]
-      // x-doc-state-offset: 124,789
-      const missingOffset = res.headers.get('x-doc-missing-offset') as string;
-      const [missingStart, missingEnd] = missingOffset.split(',').map(Number);
-      const stateOffset = res.headers.get('x-doc-state-offset') as string;
-      const [stateStart, stateEnd] = stateOffset.split(',').map(Number);
-      const bin = await res.arrayBuffer();
-      return {
-        missing: new Uint8Array(bin, missingStart, missingEnd - missingStart),
-        state: new Uint8Array(bin, stateStart, stateEnd - stateStart),
-        timestamp: parseInt(timestamp),
-      };
-    } catch (e) {
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      }
-      const err = e as Error;
-      this.logger.error(
-        `Failed to fetch doc diff ${url}, fallback to database doc reader`,
-        err
-      );
-      // fallback to database doc reader if the error is not user friendly, like network error
-      return await super.getDocDiff(workspaceId, docId, stateVector);
-    }
-  }
-
-  protected override async getDocContentWithoutCache(
-    workspaceId: string,
-    docId: string,
-    fullContent = false
-  ): Promise<PageDocContent | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/content?full=${fullContent}`;
-    try {
-      const res = await this.fetch(url, 'GET');
-      if (!res) {
-        return null;
-      }
-      return (await res.json()) as PageDocContent;
-    } catch (e) {
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      }
-      const err = e as Error;
-      this.logger.error(
-        `Failed to fetch doc content ${url}, fallback to database doc reader`,
-        err
-      );
-      return await super.getDocContentWithoutCache(
-        workspaceId,
-        docId,
-        fullContent
-      );
-    }
-  }
-
-  protected override async getWorkspaceContentWithoutCache(
-    workspaceId: string
-  ): Promise<WorkspaceDocInfo | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/content`;
-    try {
-      const res = await this.fetch(url, 'GET');
-      if (!res) {
-        return null;
-      }
-      return (await res.json()) as WorkspaceDocInfo;
-    } catch (e) {
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      }
-      const err = e as Error;
-      this.logger.error(
-        `Failed to fetch workspace content ${url}, fallback to database doc reader`,
-        err
-      );
-      return await super.getWorkspaceContentWithoutCache(workspaceId);
-    }
-  }
-}
-
-export const DocReaderProvider: FactoryProvider = {
+export const DocReaderProvider = {
   provide: DocReader,
-  useFactory: (ref: ModuleRef) => {
-    if (env.flavors.doc || env.flavors.front) {
-      return ref.create(DatabaseDocReader);
-    }
-    return ref.create(RpcDocReader);
-  },
-  inject: [ModuleRef],
+  useExisting: DatabaseDocReader,
 };

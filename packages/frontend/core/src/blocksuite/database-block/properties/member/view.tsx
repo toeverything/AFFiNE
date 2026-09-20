@@ -70,7 +70,7 @@ const MemberCellComponent: ForwardRefRenderFunction<
   CellRenderProps<{}, MemberCellRawValueType, MemberCellJsonValueType>
 > = (props, ref): ReactNode => {
   const manager = useMemo(
-    () => new MemberManager(props), // eslint-disable-line react-hooks/preserve-manual-memoization
+    () => new MemberManager(props), // oxlint-disable-line react-hooks-js/preserve-manual-memoization
     [] // oxlint-disable-line react/exhaustive-deps
   );
 

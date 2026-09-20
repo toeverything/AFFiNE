@@ -73,11 +73,13 @@ export function OAuth({ redirectUrl }: { redirectUrl?: string }) {
               params.set('redirect_uri', redirectUrl);
             }
 
+            params.set('flow', 'redirect');
+
             const oauthUrl =
               serverService.server.baseUrl +
               `/oauth/login?${params.toString()}`;
 
-            urlService.openPopupWindow(oauthUrl);
+            urlService.openExternal(oauthUrl);
           };
 
       const ret = open();

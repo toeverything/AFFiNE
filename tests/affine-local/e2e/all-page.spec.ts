@@ -120,6 +120,9 @@ test('select two pages and delete', async ({ page }) => {
 
   // check the page count again
   await page.waitForTimeout(300);
+  await expect(
+    page.locator('[data-testid="floating-toolbar"]')
+  ).not.toBeVisible();
 
   expect(await getPagesCount(page)).toBe(pageCount - 2);
 });
@@ -156,8 +159,38 @@ test('select three pages with shiftKey and delete', async ({ page }) => {
 
   // check the page count again
   await page.waitForTimeout(300);
+  await expect(
+    page.locator('[data-testid="floating-toolbar"]')
+  ).not.toBeVisible();
 
   expect(await getPagesCount(page)).toBe(pageCount - 3);
+});
+
+test('select all and delete closes the floating toolbar', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await clickNewPageButton(page);
+  await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+
+  const pageCount = await getPagesCount(page);
+
+  const selectAllButton = page
+    .getByRole('button', { name: 'Select all' })
+    .last();
+  await selectAllButton.hover();
+  await selectAllButton.click();
+
+  await expect(page.locator('[data-testid="floating-toolbar"]')).toBeVisible();
+  await page.locator('[data-testid="list-toolbar-delete"]').click();
+  await page.getByRole('button', { name: 'Delete' }).click();
+
+  await page.waitForTimeout(300);
+  await expect(
+    page.locator('[data-testid="floating-toolbar"]')
+  ).not.toBeVisible();
+  expect(await getPagesCount(page)).toBeLessThan(pageCount);
 });
 
 test('create a tag and delete it', async ({ page }) => {

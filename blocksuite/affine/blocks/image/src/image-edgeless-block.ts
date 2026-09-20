@@ -276,7 +276,8 @@ export class ImageEdgelessBlockComponent extends GfxBlockComponent<ImageBlockMod
 
   override renderGfxBlock() {
     const blobUrl = this.blobUrl;
-    const { rotate = 0, size = 0, caption = 'Image' } = this.model.props;
+    const { rotate, size: rawSize, caption = 'Image' } = this.model.props;
+    const size = rawSize ?? 0;
     this._resetLodSource(blobUrl);
 
     const containerStyleMap = styleMap({

@@ -26,6 +26,9 @@ public class ForkCopilotSessionMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("forkCopilotSession", String.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ForkCopilotSessionMutation.Data.self
+    ] }
 
     /// Create a chat session
     public var forkCopilotSession: String { __data["forkCopilotSession"] }

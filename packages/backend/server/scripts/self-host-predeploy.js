@@ -38,9 +38,18 @@ function prepare() {
   }
 }
 
-function runPredeployScript() {
-  console.log('running predeploy script.');
-  execSync('yarn predeploy', {
+function runPrismaMigrations() {
+  console.log('running prisma migrations.');
+  execSync('yarn prisma migrate deploy', {
+    encoding: 'utf-8',
+    env: process.env,
+    stdio: 'inherit',
+  });
+}
+
+function runDataMigrations() {
+  console.log('running data migrations.');
+  execSync('yarn cli run', {
     encoding: 'utf-8',
     env: process.env,
     stdio: 'inherit',
@@ -85,4 +94,5 @@ function fixFailedMigrations() {
 
 prepare();
 fixFailedMigrations();
-runPredeployScript();
+runPrismaMigrations();
+runDataMigrations();

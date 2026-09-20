@@ -20,7 +20,10 @@ const config: CapacitorConfig & AppConfig = {
   ios: {
     scheme: 'AFFiNE',
     path: '.',
+    appendUserAgent: `iOS AFFiNE/${packageJson.version}`,
     webContentsDebuggingEnabled: true,
+    // Silence Capacitor's bridge logging (⚡️ TO JS / ⚡️ To Native -> / ⚡️ [log]).
+    loggingBehavior: 'none',
   },
   server: {
     // url: 'http://localhost:8080',

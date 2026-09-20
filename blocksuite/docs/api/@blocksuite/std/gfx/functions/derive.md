@@ -37,18 +37,4 @@ Note:
 
 ## Returns
 
-> (`_`, `context`): `ClassAccessorDecoratorResult`\<`GfxPrimitiveElementModel`\<`BaseElementProps`\>, `V`\>
-
-### Parameters
-
-#### \_
-
-`unknown`
-
-#### context
-
-`ClassAccessorDecoratorContext`
-
-### Returns
-
-`ClassAccessorDecoratorResult`\<`GfxPrimitiveElementModel`\<`BaseElementProps`\>, `V`\>
+(`_`, `context`) => `ClassAccessorDecoratorResult`\<`GfxPrimitiveElementModel`\<`BaseElementProps`\>, `V`\>

@@ -1,0 +1,36 @@
+{
+  "entryPoints": ["../**/*"],
+  "exclude": [
+    "../docs",
+    "../docs-site",
+    "../integration-test",
+    "../playground",
+    "**/__tests__/**/*"
+  ],
+  "packageOptions": {
+    "includeVersion": true,
+    "readme": "none",
+    "disableSources": true,
+    "excludeInternal": true,
+    "excludeExternals": true,
+    "externalPattern": ["node_modules/**/*"],
+    "entryPoints": ["src/index.ts"]
+  },
+  "plugin": ["typedoc-plugin-markdown", "./typedoc-remove-inherited.mjs"],
+  "out": "./api",
+  "entryPointStrategy": "packages",
+  "includeVersion": false,
+  "logLevel": "Error",
+  "readme": "none",
+  "name": "BlockSuite API Documentation",
+  "entryFileName": "index.md",
+  "outputFileStrategy": "modules",
+  "hidePageHeader": true,
+  "disableSources": true,
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "categorizeByGroup": true,
+  "sort": ["source-order"]
+}

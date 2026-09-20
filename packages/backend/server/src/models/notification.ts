@@ -311,15 +311,45 @@ export class NotificationModel extends BaseModel {
     return row as UnionNotification;
   }
 
-  async cleanExpiredNotifications() {
-    const { count } = await this.db.notification.deleteMany({
-      // delete notifications that are older than one year
-      where: { createdAt: { lte: new Date(Date.now() - ONE_YEAR) } },
-    });
-    if (count > 0) {
-      this.logger.log(`Deleted ${count} expired notifications`);
+  async findPendingCommentDeliveries(limit = 100) {
+    return await this.db.$queryRaw<{ id: string }[]>(Prisma.sql`
+      SELECT notification.id
+      FROM notifications notification
+      WHERE notification.type IN (
+        ${NotificationType.Comment}::"NotificationType",
+        ${NotificationType.CommentMention}::"NotificationType"
+      )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM mail_deliveries delivery
+          WHERE delivery.notification_id = notification.id
+        )
+      ORDER BY notification.created_at, notification.id
+      LIMIT ${limit}
+    `);
+  }
+
+  async cleanExpiredNotifications(limit = 1000) {
+    const deleted = await this.db.$queryRaw<{ userId: string }[]>(Prisma.sql`
+      WITH expired AS (
+        SELECT id
+        FROM notifications
+        WHERE created_at <= ${new Date(Date.now() - ONE_YEAR)}
+        ORDER BY created_at, id
+        LIMIT ${limit}
+      )
+      DELETE FROM notifications notification
+      USING expired
+      WHERE notification.id = expired.id
+      RETURNING notification.user_id AS "userId"
+    `);
+    if (deleted.length > 0) {
+      this.logger.log(`Deleted ${deleted.length} expired notifications`);
     }
-    return count;
+    return {
+      count: deleted.length,
+      userIds: [...new Set(deleted.map(row => row.userId))],
+    };
   }
 
   // #endregion

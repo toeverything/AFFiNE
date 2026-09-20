@@ -12,7 +12,7 @@ import { linkIframe } from './iframe-container';
 
 export const CodeBlockHtmlPreview = CodeBlockPreviewExtension(
   'html',
-  model => html`<html-preview .model=${model}></html-preview>`
+  model => html`<affine-html-preview .model=${model}></affine-html-preview>`
 );
 
 export class HTMLPreview extends SignalWatcher(
@@ -153,11 +153,11 @@ export class HTMLPreview extends SignalWatcher(
 }
 
 export function effects() {
-  customElements.define('html-preview', HTMLPreview);
+  customElements.define('affine-html-preview', HTMLPreview);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'html-preview': HTMLPreview;
+    'affine-html-preview': HTMLPreview;
   }
 }

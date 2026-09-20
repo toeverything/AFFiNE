@@ -9,7 +9,6 @@
   "include": ["./apps", "./examples"],
   "references": [
     { "path": "../affine/all" },
-    { "path": "../affine/components" },
     { "path": "../affine/model" },
     { "path": "../affine/shared" },
     { "path": "../affine/data-view" },

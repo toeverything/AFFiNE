@@ -27,9 +27,11 @@ export const SettingGroup = forwardRef<HTMLDivElement, SettingGroupProps>(
       <ConfigModal.RowGroup
         {...attrs}
         ref={ref}
-        title={title}
+        title={
+          title ? <div className={styles.groupTitle}>{title}</div> : undefined
+        }
         className={clsx(styles.group, className)}
-        contentClassName={contentClassName}
+        contentClassName={clsx(styles.groupContent, contentClassName)}
         contentStyle={contentStyle}
       >
         {children}

@@ -76,14 +76,16 @@ export class AIPanelGenerating extends WithDisposable(LitElement) {
       height = 300,
     } = this.config;
     return html`
-      ${stages && stages.length > 0
-        ? html`<generating-placeholder
-            .height=${height}
-            .loadingProgress=${this.loadingProgress}
-            .stages=${stages}
-            .showHeader=${!this.withAnswer}
-          ></generating-placeholder>`
-        : nothing}
+      ${
+        stages && stages.length > 0
+          ? html`<generating-placeholder
+              .height=${height}
+              .loadingProgress=${this.loadingProgress}
+              .stages=${stages}
+              .showHeader=${!this.withAnswer}
+            ></generating-placeholder>`
+          : nothing
+      }
       <div class="generating-tip" data-testid="ai-generating">
         <div class="left">${generatingIcon}</div>
         <div class="text">AI is generating...</div>

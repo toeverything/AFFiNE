@@ -218,9 +218,9 @@ export class EdgelessFrameOrderMenu extends SignalWatcher(
 
     return html`
       <div
-        class="edgeless-frame-order-items-container ${this.embed
-          ? 'embed'
-          : ''}"
+        class="edgeless-frame-order-items-container ${
+          this.embed ? 'embed' : ''
+        }"
         @click=${(e: MouseEvent) => e.stopPropagation()}
       >
         ${repeat(
@@ -235,11 +235,13 @@ export class EdgelessFrameOrderMenu extends SignalWatcher(
         )}
         <div class="indicator-line"></div>
         <div class="clone item">
-          ${frame
-            ? html`<div class="drag-indicator"></div>
-                <div class="index">${this._curIndex + 1}</div>
-                <div class="title">${frame.props.title.toString()}</div>`
-            : nothing}
+          ${
+            frame
+              ? html`<div class="drag-indicator"></div>
+                  <div class="index">${this._curIndex + 1}</div>
+                  <div class="title">${frame.props.title.toString()}</div>`
+              : nothing
+          }
         </div>
       </div>
     `;

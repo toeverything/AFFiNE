@@ -46,6 +46,20 @@ export const accountRow = style({
   borderRadius: 8,
   border: `1px solid ${cssVarV2.layer.insideBorder.border}`,
   background: cssVarV2.layer.background.primary,
+  transition: 'background-color 0.15s ease, border-color 0.15s ease',
+  selectors: {
+    '&[data-interactive="true"]': {
+      cursor: 'pointer',
+    },
+    '&[data-interactive="true"]:hover': {
+      background: cssVarV2.layer.background.hoverOverlay,
+      borderColor: cssVarV2.layer.insideBorder.blackBorder,
+    },
+    '&[data-interactive="true"]:focus-visible': {
+      outline: `2px solid ${cssVarV2.layer.insideBorder.primaryBorder}`,
+      outlineOffset: 2,
+    },
+  },
 });
 
 export const accountInfo = style({

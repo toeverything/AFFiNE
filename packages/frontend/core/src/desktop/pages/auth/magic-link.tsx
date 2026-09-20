@@ -77,13 +77,15 @@ export const Component = () => {
       .then(() => {
         const subscription = auth.session.status$.subscribe(status => {
           if (status === 'authenticated') {
-            nav(data.redirectUri ?? '/');
+            Promise.resolve(nav(data.redirectUri ?? '/')).catch(console.error);
             subscription?.unsubscribe();
           }
         });
       })
       .catch(e => {
-        nav(`/sign-in?error=${encodeURIComponent(e.message)}`);
+        Promise.resolve(
+          nav(`/sign-in?error=${encodeURIComponent(e.message)}`)
+        ).catch(console.error);
       });
   }, [auth, data, data.email, data.redirectUri, data.token, nav]);
 

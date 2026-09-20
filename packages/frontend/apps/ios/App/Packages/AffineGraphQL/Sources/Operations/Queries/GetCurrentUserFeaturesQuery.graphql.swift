@@ -20,6 +20,9 @@ public class GetCurrentUserFeaturesQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetCurrentUserFeaturesQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -40,6 +43,9 @@ public class GetCurrentUserFeaturesQuery: GraphQLQuery {
         .field("emailVerified", Bool.self),
         .field("avatarUrl", String?.self),
         .field("features", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetCurrentUserFeaturesQuery.Data.CurrentUser.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

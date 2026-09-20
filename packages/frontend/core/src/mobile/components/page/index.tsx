@@ -1,6 +1,5 @@
 import { type HTMLAttributes, type ReactNode, useEffect } from 'react';
 
-import { AppTabs } from '../app-tabs';
 import * as styles from './styles.css';
 
 interface PageProps extends HTMLAttributes<HTMLDivElement> {
@@ -25,7 +24,6 @@ export const Page = ({ children, tab = true, header, ...attrs }: PageProps) => {
     <main className={styles.page} {...attrs} data-tab={tab}>
       {header}
       {children}
-      {tab ? <AppTabs fixed={false} /> : null}
     </main>
   );
 };

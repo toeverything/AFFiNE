@@ -37,6 +37,9 @@ public class SetEnableDocEmbeddingMutation: GraphQLMutation {
         "enableDocEmbedding": .variable("enableDocEmbedding")
       ]]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      SetEnableDocEmbeddingMutation.Data.self
+    ] }
 
     /// Update workspace
     public var updateWorkspace: UpdateWorkspace { __data["updateWorkspace"] }
@@ -52,6 +55,9 @@ public class SetEnableDocEmbeddingMutation: GraphQLMutation {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("id", AffineGraphQL.ID.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        SetEnableDocEmbeddingMutation.Data.UpdateWorkspace.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

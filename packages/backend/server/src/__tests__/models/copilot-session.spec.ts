@@ -3,13 +3,19 @@ import { randomUUID } from 'node:crypto';
 import { PrismaClient, User, Workspace } from '@prisma/client';
 import ava, { ExecutionContext, TestFn } from 'ava';
 
-import { CopilotPromptInvalid, CopilotSessionInvalidInput } from '../../base';
+import {
+  CopilotPromptInvalid,
+  CopilotSessionInvalidInput,
+  CopilotSessionNotFound,
+} from '../../base';
 import {
   CopilotSessionModel,
+  Models,
   UpdateChatSessionOptions,
   UserModel,
   WorkspaceModel,
 } from '../../models';
+import { CopilotAccessService } from '../../plugins/copilot/access';
 import { createTestingModule, type TestingModule } from '../utils';
 import { cleanObject } from '../utils/copilot';
 
@@ -19,6 +25,7 @@ interface Context {
   user: UserModel;
   workspace: WorkspaceModel;
   copilotSession: CopilotSessionModel;
+  models: Models;
 }
 
 const test = ava as TestFn<Context>;
@@ -28,6 +35,7 @@ test.before(async t => {
   t.context.user = module.get(UserModel);
   t.context.workspace = module.get(WorkspaceModel);
   t.context.copilotSession = module.get(CopilotSessionModel);
+  t.context.models = module.get(Models);
   t.context.db = module.get(PrismaClient);
   t.context.module = module;
 });
@@ -47,6 +55,227 @@ test.after(async t => {
   await t.context.module.close();
 });
 
+test('personal session scope atomically binds workspace absence to actor resource', async t => {
+  const personalWorkspaceId = randomUUID();
+  const other = await t.context.user.create({ email: 'other@affine.pro' });
+  const own = await createTestSession(t, {
+    workspaceId: personalWorkspaceId,
+    pinned: true,
+  });
+  const foreign = await createTestSession(t, {
+    userId: other.id,
+    workspaceId: personalWorkspaceId,
+  });
+  const access = t.context.module.get(CopilotAccessService);
+
+  const mode = await access.sessionResource(
+    { userId: user.id, workspaceId: personalWorkspaceId },
+    [own.sessionId]
+  );
+  t.is(mode, 'personal');
+  await t.throwsAsync(
+    access.sessionResource(
+      { userId: user.id, workspaceId: personalWorkspaceId },
+      [foreign.sessionId]
+    ),
+    { instanceOf: Error }
+  );
+
+  await t.throwsAsync(
+    t.context.copilotSession.create({
+      ...own,
+      sessionId: randomUUID(),
+      personal: true,
+    }),
+    { instanceOf: CopilotSessionNotFound }
+  );
+  t.true(
+    (await t.context.db.aiSession.findUnique({ where: { id: own.sessionId } }))
+      ?.pinned
+  );
+
+  await t.context.db.workspace.create({ data: { id: personalWorkspaceId } });
+  await t.throwsAsync(
+    t.context.copilotSession.get(
+      own.sessionId,
+      user.id,
+      personalWorkspaceId,
+      true
+    ),
+    { instanceOf: Error }
+  );
+  await t.throwsAsync(
+    t.context.copilotSession.update({
+      userId: user.id,
+      sessionId: own.sessionId,
+      workspaceId: personalWorkspaceId,
+      personal: true,
+      title: 'stale-personal-update',
+    }),
+    { instanceOf: Error }
+  );
+  t.is(
+    (
+      await t.context.db.aiSession.findUnique({
+        where: { id: own.sessionId },
+        select: { title: true },
+      })
+    )?.title,
+    null
+  );
+  await t.throwsAsync(
+    access.sessionResource(
+      { userId: user.id, workspaceId: personalWorkspaceId },
+      [own.sessionId]
+    ),
+    { instanceOf: Error }
+  );
+});
+
+async function waitForPersonalScopeBarrier(
+  db: PrismaClient,
+  workspaceId: string
+) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const [result] = await db.$queryRaw<Array<{ waiting: boolean }>>`
+      WITH key AS (
+        SELECT hashtextextended(${`copilot-personal:${workspaceId}`}, 0) AS value
+      )
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_locks, key
+        WHERE locktype = 'advisory'
+          AND NOT granted
+          AND classid::bigint = ((key.value >> 32) & 4294967295)
+          AND objid::bigint = (key.value & 4294967295)
+      ) AS waiting
+    `;
+    if (result?.waiting) return true;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  return false;
+}
+
+async function waitForBlockedBackend(db: PrismaClient, pid: number) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const [result] = await db.$queryRaw<Array<{ waiting: boolean }>>`
+      SELECT cardinality(pg_blocking_pids(CAST(${pid} AS integer))) > 0 AS waiting
+    `;
+    if (result?.waiting) return true;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  return false;
+}
+
+test('workspace insert and personal session write serialize in both lock orders', async t => {
+  const second = new PrismaClient();
+  const third = new PrismaClient();
+  t.teardown(() => second.$disconnect());
+  t.teardown(() => third.$disconnect());
+
+  const canonicalFirstId = randomUUID();
+  const canonicalLock = Promise.withResolvers<void>();
+  const releaseCanonical = Promise.withResolvers<void>();
+  const canonicalInsert = second.$transaction(async tx => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`copilot-personal:${canonicalFirstId}`}, 0))`;
+    await tx.workspace.create({ data: { id: canonicalFirstId } });
+    canonicalLock.resolve();
+    await releaseCanonical.promise;
+  });
+  await canonicalLock.promise;
+  const blockedPersonal = t.context.copilotSession.create({
+    sessionId: randomUUID(),
+    userId: user.id,
+    workspaceId: canonicalFirstId,
+    docId: null,
+    pinned: false,
+    title: null,
+    promptName: 'test-prompt',
+    promptAction: null,
+    personal: true,
+  });
+  const blockedTranscript = t.context.models.copilotTranscriptTask.create({
+    userId: user.id,
+    workspaceId: canonicalFirstId,
+    blobId: randomUUID(),
+    recipeId: 'transcript.audio',
+    recipeVersion: 'v1',
+    personal: true,
+  });
+  const personalWritesBlocked = await waitForPersonalScopeBarrier(
+    t.context.db,
+    canonicalFirstId
+  );
+  releaseCanonical.resolve();
+  await canonicalInsert;
+  const rejectedPersonalWrites = await Promise.allSettled([
+    blockedPersonal,
+    blockedTranscript,
+  ]);
+  t.deepEqual(
+    rejectedPersonalWrites.map(result => result.status),
+    ['rejected', 'rejected']
+  );
+
+  const personalFirstId = randomUUID();
+  const personalSessionId = randomUUID();
+  const personalLock = Promise.withResolvers<void>();
+  const releasePersonal = Promise.withResolvers<void>();
+  const personalWrite = second.$transaction(async tx => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`copilot-personal:${personalFirstId}`}, 0))`;
+    await tx.aiSession.create({
+      data: {
+        id: personalSessionId,
+        userId: user.id,
+        workspaceId: personalFirstId,
+        docId: null,
+        pinned: false,
+        promptName: 'test-prompt',
+        promptAction: null,
+      },
+    });
+    personalLock.resolve();
+    await releasePersonal.promise;
+  });
+  await personalLock.promise;
+  const workspaceInsertStarted = Promise.withResolvers<number>();
+  const blockedWorkspace = third.$transaction(async tx => {
+    const [backend] = await tx.$queryRaw<Array<{ pid: number }>>`
+      SELECT pg_backend_pid() AS pid
+    `;
+    workspaceInsertStarted.resolve(backend.pid);
+    await tx.workspace.create({ data: { id: personalFirstId } });
+  });
+  const blockedWorkspacePid = await workspaceInsertStarted.promise;
+  const workspaceInsertBlocked = await waitForPersonalScopeBarrier(
+    t.context.db,
+    personalFirstId
+  );
+  const workspaceBackendBlocked = await waitForBlockedBackend(
+    t.context.db,
+    blockedWorkspacePid
+  );
+  releasePersonal.resolve();
+  await personalWrite;
+  await blockedWorkspace;
+  t.true(personalWritesBlocked);
+  t.true(workspaceInsertBlocked);
+  t.true(
+    workspaceBackendBlocked,
+    'workspace insert is waiting for the personal-scope transaction'
+  );
+  t.truthy(
+    await t.context.db.aiSession.findUnique({
+      where: { id: personalSessionId },
+    })
+  );
+  t.truthy(
+    await t.context.db.workspace.findUnique({
+      where: { id: personalFirstId },
+    })
+  );
+});
+
 // Test data constants
 const TEST_PROMPTS = {
   NORMAL: 'test-prompt',
@@ -54,16 +283,6 @@ const TEST_PROMPTS = {
 } as const;
 
 // Helper functions
-const createTestPrompts = async (
-  copilotSession: CopilotSessionModel,
-  db: PrismaClient
-) => {
-  await copilotSession.createPrompt(TEST_PROMPTS.NORMAL, 'gpt-5-mini');
-  await db.aiPrompt.create({
-    data: { name: TEST_PROMPTS.ACTION, model: 'gpt-5-mini', action: 'edit' },
-  });
-};
-
 const createTestSession = async (
   t: ExecutionContext<Context>,
   overrides: Partial<{
@@ -74,6 +293,7 @@ const createTestSession = async (
     pinned: boolean;
     promptName: string;
     promptAction: string | null;
+    personal: boolean;
   }> = {}
 ) => {
   const sessionData = {
@@ -116,7 +336,7 @@ const addMessagesToSession = async (
   await copilotSession.updateMessages({
     sessionId,
     userId: user.id,
-    prompt: { model: 'gpt-5-mini' },
+    workspaceId: workspace.id,
     messages: [
       {
         role: 'user',
@@ -146,12 +366,13 @@ const createSessionWithMessages = async (
 };
 
 // Simplified update assertion helpers
-type UpdateData = Omit<UpdateChatSessionOptions, 'userId' | 'sessionId'>;
+type UpdateData = Omit<
+  UpdateChatSessionOptions,
+  'userId' | 'sessionId' | 'workspaceId'
+>;
 
 test('should list and filter session type', async t => {
-  const { copilotSession, db } = t.context;
-
-  await createTestPrompts(copilotSession, db);
+  const { copilotSession } = t.context;
 
   const docId = 'doc-id-1';
   await createTestSession(t, { sessionId: randomUUID() });
@@ -201,7 +422,7 @@ test('should list and filter session type', async t => {
         docSessions.toSorted((a, b) =>
           a.promptName.localeCompare(b.promptName)
         ),
-        ['id', 'userId', 'workspaceId', 'createdAt', 'updatedAt', 'tokenCost']
+        ['id', 'userId', 'workspaceId', 'createdAt', 'updatedAt']
       ),
       'doc sessions should only include sessions with matching docId'
     );
@@ -227,8 +448,7 @@ test('should list and filter session type', async t => {
 });
 
 test('should validate session prompt compatibility', async t => {
-  const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
+  const { copilotSession } = t.context;
 
   const sessionTypes = [
     { name: 'workspace', session: { docId: null, pinned: false } },
@@ -283,8 +503,6 @@ test('should validate session prompt compatibility', async t => {
 test('should pin and unpin sessions', async t => {
   const { copilotSession, db } = t.context;
 
-  await createTestPrompts(copilotSession, db);
-
   const firstSessionId = 'first-session-id';
   const secondSessionId = 'second-session-id';
   const thirdSessionId = 'third-session-id';
@@ -302,7 +520,11 @@ test('should pin and unpin sessions', async t => {
       title: null,
     });
 
-    const firstSession = await copilotSession.get(firstSessionId);
+    const firstSession = await copilotSession.get(
+      firstSessionId,
+      user.id,
+      workspace.id
+    );
     t.truthy(firstSession, 'first session should be created successfully');
     t.is(firstSession?.pinned, true, 'first session should be pinned');
 
@@ -363,7 +585,6 @@ test('should pin and unpin sessions', async t => {
 
 test('should handle session updates and type conversions', async t => {
   const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
 
   const sessionId = randomUUID();
   const actionSessionId = randomUUID();
@@ -409,7 +630,11 @@ test('should handle session updates and type conversions', async t => {
       sessionId: forkedSessionId,
       updates: [
         { pinned: true, expected: 'allow' },
-        { promptName: TEST_PROMPTS.NORMAL, expected: 'allow' },
+        {
+          promptName: TEST_PROMPTS.NORMAL,
+          promptAction: null,
+          expected: 'allow',
+        },
         { docId: 'new-doc', expected: 'reject' },
       ],
     },
@@ -417,8 +642,16 @@ test('should handle session updates and type conversions', async t => {
     {
       sessionId,
       updates: [
-        { promptName: TEST_PROMPTS.NORMAL, expected: 'allow' },
-        { promptName: TEST_PROMPTS.ACTION, expected: 'reject' },
+        {
+          promptName: TEST_PROMPTS.NORMAL,
+          promptAction: null,
+          expected: 'allow',
+        },
+        {
+          promptName: TEST_PROMPTS.ACTION,
+          promptAction: 'edit',
+          expected: 'reject',
+        },
         { promptName: 'non-existent-prompt', expected: 'reject' },
       ],
     },
@@ -433,6 +666,7 @@ test('should handle session updates and type conversions', async t => {
           ...updateData,
           userId: user.id,
           sessionId: testSessionId,
+          workspaceId: workspace.id,
         });
         updateResults.push({
           sessionType:
@@ -466,7 +700,12 @@ test('should handle session updates and type conversions', async t => {
   const existingPinnedId = randomUUID();
   await createTestSession(t, { sessionId: existingPinnedId, pinned: true });
 
-  await copilotSession.update({ userId: user.id, sessionId, pinned: true });
+  await copilotSession.update({
+    userId: user.id,
+    sessionId,
+    workspaceId: workspace.id,
+    pinned: true,
+  });
 
   // pinning behavior
   const states = await getSessionStates(db, [sessionId, existingPinnedId]);
@@ -492,7 +731,12 @@ test('should handle session updates and type conversions', async t => {
   ];
 
   for (const [step, data] of conversions) {
-    await copilotSession.update({ userId: user.id, sessionId, ...data });
+    await copilotSession.update({
+      userId: user.id,
+      sessionId,
+      workspaceId: workspace.id,
+      ...data,
+    });
     const session = await db.aiSession.findUnique({
       where: { id: sessionId },
       select: { docId: true, pinned: true },
@@ -512,7 +756,6 @@ test('should handle session updates and type conversions', async t => {
 
 test('should handle session queries, ordering, and filtering', async t => {
   const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
 
   const docId = randomUUID();
   const sessionIds: string[] = [];
@@ -621,6 +864,114 @@ test('should handle session queries, ordering, and filtering', async t => {
   }
 
   t.snapshot(queryResults, 'comprehensive session query results');
+
+  const otherUser = await t.context.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  const otherSession = await createTestSession(t, {
+    userId: otherUser.id,
+    workspaceId: workspace.id,
+    docId,
+  });
+  await t.context.copilotSession.updateMessages({
+    sessionId: otherSession.sessionId,
+    userId: otherUser.id,
+    workspaceId: workspace.id,
+    messages: [{ role: 'user', content: 'private', createdAt: new Date() }],
+  });
+
+  const otherWorkspace = await t.context.models.workspace.create(user.id);
+  const sameUserOtherWorkspace = await createTestSession(t, {
+    workspaceId: otherWorkspace.id,
+    docId: null,
+  });
+  await t.context.copilotSession.updateMessages({
+    sessionId: sameUserOtherWorkspace.sessionId,
+    userId: user.id,
+    workspaceId: otherWorkspace.id,
+    messages: [
+      { role: 'user', content: 'other workspace', createdAt: new Date() },
+    ],
+  });
+  const otherWorkspaceMessage =
+    await t.context.db.aiSessionMessage.findFirstOrThrow({
+      where: { sessionId: sameUserOtherWorkspace.sessionId },
+    });
+  const scopedReads = {
+    expectedWorkspace: Boolean(
+      await copilotSession.get(
+        sameUserOtherWorkspace.sessionId,
+        user.id,
+        otherWorkspace.id
+      )
+    ),
+    wrongWorkspace: Boolean(
+      await copilotSession.get(
+        sameUserOtherWorkspace.sessionId,
+        user.id,
+        workspace.id
+      )
+    ),
+    wrongWorkspaceMessage: Boolean(
+      await copilotSession.getMessage(
+        sameUserOtherWorkspace.sessionId,
+        user.id,
+        workspace.id,
+        otherWorkspaceMessage.id
+      )
+    ),
+  };
+  t.snapshot(scopedReads, 'canonical session reads require workspace scope');
+
+  t.is(
+    await copilotSession.get(otherSession.sessionId, user.id, workspace.id),
+    null
+  );
+  t.is(
+    await copilotSession.getMessage(
+      otherSession.sessionId,
+      user.id,
+      workspace.id,
+      (
+        await t.context.db.aiSessionMessage.findFirstOrThrow({
+          where: { sessionId: otherSession.sessionId },
+        })
+      ).id
+    ),
+    null
+  );
+  t.false(
+    (await copilotSession.list(docParams)).some(
+      session => session.id === otherSession.sessionId
+    )
+  );
+  await t.throwsAsync(
+    copilotSession.update({
+      userId: user.id,
+      sessionId: otherSession.sessionId,
+      workspaceId: workspace.id,
+      pinned: true,
+    }),
+    { instanceOf: CopilotSessionNotFound }
+  );
+  await t.throwsAsync(
+    copilotSession.updateMessages({
+      userId: user.id,
+      sessionId: otherSession.sessionId,
+      workspaceId: workspace.id,
+      messages: [{ role: 'user', content: 'intrusion', createdAt: new Date() }],
+    }),
+    { instanceOf: CopilotSessionNotFound }
+  );
+  t.deepEqual(
+    await copilotSession.cleanup({
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId,
+      sessionIds: [otherSession.sessionId],
+    }),
+    []
+  );
 
   // should list sessions appear in correct order
   {
@@ -759,7 +1110,6 @@ test('should handle session queries, ordering, and filtering', async t => {
 
 test('should handle fork and session attachment operations', async t => {
   const { copilotSession } = t.context;
-  await createTestPrompts(copilotSession, t.context.db);
 
   const parentSessionId = randomUUID();
   const docId = randomUUID();
@@ -807,7 +1157,7 @@ test('should handle fork and session attachment operations', async t => {
       pinned: forkConfig.pinned,
       title: null,
       parentSessionId,
-      prompt: { name: TEST_PROMPTS.NORMAL, action: null, model: 'gpt-5-mini' },
+      prompt: { name: TEST_PROMPTS.NORMAL, action: null },
       messages: [
         {
           role: 'user',
@@ -826,7 +1176,11 @@ test('should handle fork and session attachment operations', async t => {
         parentSessionId,
         test
       );
-      const forkedSession = await copilotSession.get(test.sessionId);
+      const forkedSession = await copilotSession.get(
+        test.sessionId,
+        user.id,
+        workspace.id
+      );
       return {
         description: test.description,
         success: returnedId === test.sessionId,
@@ -843,7 +1197,11 @@ test('should handle fork and session attachment operations', async t => {
   );
 
   // check if pinned fork unpinned existing session
-  const originalPinned = await copilotSession.get(existingPinnedId);
+  const originalPinned = await copilotSession.get(
+    existingPinnedId,
+    user.id,
+    workspace.id
+  );
 
   t.snapshot(
     {
@@ -869,6 +1227,7 @@ test('should handle fork and session attachment operations', async t => {
   await copilotSession.update({
     userId: user.id,
     sessionId: workspaceSessionId,
+    workspaceId: workspace.id,
     docId: attachTestDocId,
   });
 
@@ -882,6 +1241,7 @@ test('should handle fork and session attachment operations', async t => {
   await copilotSession.update({
     userId: user.id,
     sessionId: workspaceSessionId,
+    workspaceId: workspace.id,
     docId: null,
   });
 
@@ -899,13 +1259,13 @@ test('should handle fork and session attachment operations', async t => {
 
   t.snapshot(
     {
-      attachPhase: {
+      afterAttach: {
         docSessionCount: docSessionsAfterAttach.length,
         bothSessionsPresent:
           docSessionsAfterAttach.some(s => s.id === workspaceSessionId) &&
           docSessionsAfterAttach.some(s => s.id === existingDocSessionId),
       },
-      detachPhase: {
+      afterDetach: {
         workspaceSessionExists: workspaceSessionsAfterDetach.some(
           s => s.id === workspaceSessionId && !s.pinned
         ),
@@ -920,7 +1280,6 @@ test('should handle fork and session attachment operations', async t => {
 
 test('should cleanup empty sessions correctly', async t => {
   const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
 
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -966,20 +1325,23 @@ test('should cleanup empty sessions correctly', async t => {
   );
 
   const result = await copilotSession.cleanupEmptySessions(oneDayAgo);
+  const orderedSessionIds = [
+    ...neverUsedSessionIds,
+    ...emptySessionIds,
+    recentSessionId,
+    sessionWithMsgId,
+  ];
 
   const remainingSessions = await db.aiSession.findMany({
     where: {
-      id: {
-        in: [
-          ...neverUsedSessionIds,
-          ...emptySessionIds,
-          recentSessionId,
-          sessionWithMsgId,
-        ],
-      },
+      id: { in: orderedSessionIds },
     },
     select: { id: true, deletedAt: true, pinned: true },
   });
+  remainingSessions.sort(
+    (left, right) =>
+      orderedSessionIds.indexOf(left.id) - orderedSessionIds.indexOf(right.id)
+  );
 
   t.snapshot(
     {
@@ -1000,9 +1362,343 @@ test('should cleanup empty sessions correctly', async t => {
   );
 });
 
+test('should append durable message and account message cost', async t => {
+  const { copilotSession, db } = t.context;
+  const workspaceId = workspace.id;
+  if (!workspaceId) {
+    t.fail('Test workspace ID is missing');
+    return;
+  }
+
+  const { sessionId } = await createTestSession(t);
+  const artifact = await db.workspaceArtifact.create({
+    data: {
+      workspaceId,
+      contentHash: `test-${sessionId}`,
+      canonicalMediaType: 'text/plain',
+      sizeBytes: 5,
+      storageScope: 'copilot',
+      storageKey: `artifacts/${sessionId}`,
+      status: 'ready',
+      readyAt: new Date(),
+    },
+  });
+  const scopeSnapshot = {
+    version: 1,
+    resolvedAt: new Date().toISOString(),
+    selectors: [
+      {
+        kind: 'artifact' as const,
+        id: artifact.id,
+        source: 'message' as const,
+      },
+    ],
+    requiredDocIds: [],
+    requiredArtifactIds: [artifact.id],
+    preferredSourceIds: [],
+    retrieval: {
+      mode: 'required' as const,
+      requiredDocIds: [],
+      requiredArtifactIds: [artifact.id],
+      preferredSourceIds: [],
+    },
+  };
+  const appended = await copilotSession.appendMessage({
+    sessionId,
+    userId: user.id,
+    workspaceId: workspace.id,
+    message: {
+      role: 'user',
+      content: 'hello durable world',
+      attachments: [
+        {
+          kind: 'file_handle',
+          fileHandle: artifact.id,
+          mimeType: 'text/plain',
+          fileName: 'note.txt',
+        },
+        {
+          kind: 'file_handle',
+          fileHandle: artifact.id,
+          mimeType: 'text/plain',
+          fileName: 'duplicate-name.txt',
+        },
+      ],
+      params: { foo: 'bar' },
+      scopeSnapshot,
+      createdAt: new Date(),
+    },
+    focus: {
+      selectors: [{ kind: 'document', id: 'doc-1', source: 'focus' }],
+    },
+    artifacts: [
+      {
+        artifactId: artifact.id,
+        role: 'attachment',
+        displayName: 'note.txt',
+      },
+      {
+        artifactId: artifact.id,
+        role: 'attachment',
+        displayName: 'duplicate-name.txt',
+      },
+    ],
+  });
+
+  const afterAppend = await db.aiSession.findUniqueOrThrow({
+    where: { id: sessionId },
+    select: { messageCost: true, focus: true },
+  });
+
+  const messageId = appended.id;
+  if (!messageId) {
+    t.fail('Appended message ID is missing');
+    return;
+  }
+  t.is(afterAppend.messageCost, 1);
+  t.is(appended.attachments?.length, 2);
+  t.deepEqual(appended.params, { foo: 'bar' });
+  t.deepEqual(appended.scopeSnapshot, scopeSnapshot);
+  t.deepEqual(afterAppend.focus, {
+    selectors: [{ kind: 'document', id: 'doc-1', source: 'focus' }],
+  });
+  const artifactReference = await db.aiMessageArtifact.findUniqueOrThrow({
+    where: {
+      messageId_artifactId_role: {
+        messageId,
+        artifactId: artifact.id,
+        role: 'attachment',
+      },
+    },
+  });
+  t.is(artifactReference.workspaceId, workspaceId);
+  t.is(artifactReference.displayName, 'note.txt');
+  t.is(
+    await db.aiMessageArtifact.count({
+      where: { messageId, artifactId: artifact.id, role: 'attachment' },
+    }),
+    1
+  );
+
+  const appendedBare = await copilotSession.appendMessage({
+    sessionId,
+    userId: user.id,
+    workspaceId: workspace.id,
+    message: {
+      role: 'assistant',
+      content: 'assistant reply',
+      createdAt: new Date(),
+    },
+  });
+
+  const storedBare = await db.aiSessionMessage.findUniqueOrThrow({
+    where: { id: appendedBare.id },
+    select: { params: true },
+  });
+
+  t.deepEqual(appendedBare.params, {});
+  t.deepEqual(storedBare.params, {});
+
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  await db.aiSession.update({
+    where: { id: sessionId },
+    data: { updatedAt: oneDayAgo },
+  });
+
+  const cleanup = await copilotSession.cleanupEmptySessions(oneDayAgo);
+  const persisted = await db.aiSession.findUnique({
+    where: { id: sessionId },
+    select: { deletedAt: true, messageCost: true },
+  });
+
+  t.deepEqual(cleanup, { removed: 0, cleaned: 0 });
+  t.truthy(persisted);
+  t.is(persisted?.deletedAt, null);
+  t.is(persisted?.messageCost, 1);
+});
+
+test('should count action runs without double-counting legacy action sessions', async t => {
+  const { copilotSession, models } = t.context;
+
+  const regular = await createTestSession(t);
+  await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    workspaceId: regular.workspaceId,
+    message: {
+      role: 'user',
+      content: 'regular message',
+      createdAt: new Date(),
+    },
+  });
+
+  const legacyAction = await createTestSession(t, {
+    promptName: TEST_PROMPTS.ACTION,
+    promptAction: 'edit',
+  });
+  const migratedAction = await createTestSession(t, {
+    promptName: TEST_PROMPTS.ACTION,
+    promptAction: 'edit',
+  });
+  const run = await models.copilotActionRun.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    sessionId: migratedAction.sessionId,
+    actionId: 'mindmap.generate',
+    actionVersion: 'v1',
+  });
+  await models.copilotActionRun.complete(run.id, {
+    status: 'succeeded',
+    result: { ok: true },
+    trace: [{ type: 'action_done', status: 'succeeded' }],
+  });
+  const retryRun = await models.copilotActionRun.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    sessionId: migratedAction.sessionId,
+    actionId: 'mindmap.generate',
+    actionVersion: 'v1',
+    attempt: 2,
+    retryOf: run.id,
+  });
+  await models.copilotActionRun.complete(retryRun.id, {
+    status: 'aborted',
+    errorCode: 'action_aborted',
+    trace: [{ type: 'error', status: 'aborted' }],
+  });
+  const persistedRetry = await models.copilotActionRun.get(retryRun.id);
+  const transcriptTask = await models.copilotTranscriptTask.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    blobId: 'audio-1',
+    recipeId: 'transcript.audio',
+    recipeVersion: 'v1',
+  });
+  await models.copilotTranscriptTask.complete(transcriptTask.id, {
+    status: 'ready',
+    protectedResult: { normalizedTranscript: '00:00:01 A: Hello' },
+  });
+  await models.copilotTranscriptTask.settle(
+    transcriptTask.id,
+    user.id,
+    workspace.id
+  );
+
+  t.like(persistedRetry, {
+    status: 'aborted',
+    attempt: 2,
+    retryOf: run.id,
+    errorCode: 'action_aborted',
+    trace: [{ type: 'error', status: 'aborted' }],
+  });
+  t.is(await copilotSession.countUserMessages(user.id), 4);
+  t.truthy(legacyAction.sessionId);
+});
+
+test('should exclude BYOK provider usage from copilot quota cost', async t => {
+  const { copilotSession, models } = t.context;
+
+  const regular = await createTestSession(t);
+  const firstMessage = await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    workspaceId: regular.workspaceId,
+    message: {
+      role: 'user',
+      content: 'regular message',
+      createdAt: new Date(),
+    },
+  });
+  const secondMessage = await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    workspaceId: regular.workspaceId,
+    message: {
+      role: 'user',
+      content: 'second BYOK message',
+      createdAt: new Date(),
+    },
+  });
+  await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    workspaceId: regular.workspaceId,
+    message: {
+      role: 'user',
+      content: 'quota-backed message',
+      createdAt: new Date(),
+    },
+  });
+  const failedRun = await models.copilotActionRun.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    actionId: 'mindmap.generate',
+    actionVersion: 'v1',
+  });
+  await models.copilotActionRun.complete(failedRun.id, {
+    status: 'failed',
+    errorCode: 'test_failed',
+  });
+  const pendingTranscriptTask = await models.copilotTranscriptTask.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    blobId: 'pending-audio',
+    recipeId: 'transcript.audio',
+    recipeVersion: 'v1',
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'openai',
+    providerSource: 'byok_server',
+    featureKind: 'chat',
+    billingUnitId: firstMessage.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'openai',
+    providerSource: 'byok_server',
+    featureKind: 'chat',
+    billingUnitId: firstMessage.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'fal',
+    providerSource: 'byok_server',
+    featureKind: 'image',
+    billingUnitId: secondMessage.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'fal',
+    providerSource: 'byok_server',
+    featureKind: 'image',
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'openai',
+    providerSource: 'byok_server',
+    featureKind: 'action',
+    billingUnitId: failedRun.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'gemini',
+    providerSource: 'byok_server',
+    featureKind: 'transcript',
+    billingUnitId: pendingTranscriptTask.id,
+  });
+
+  t.is(await copilotSession.countUserMessages(user.id), 1);
+});
+
 test('should get sessions for title generation correctly', async t => {
   const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
 
   // create valid sessions with messages
   const sessionIds: string[] = [randomUUID(), randomUUID()];
@@ -1012,7 +1708,7 @@ test('should get sessions for title generation correctly', async t => {
       await db.aiSession.update({
         where: { id },
         data: {
-          updatedAt: new Date(Date.now() - index * 1000),
+          updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000 - index * 1000),
           messages: {
             create: Array.from({ length: index + 1 }, (_, i) => ({
               role: 'assistant',
@@ -1079,6 +1775,33 @@ test('should get sessions for title generation correctly', async t => {
   );
 
   const result = await copilotSession.toBeGenerateTitle();
+  const concurrentlyVisible = await copilotSession.toBeGenerateTitle();
+
+  t.deepEqual(
+    concurrentlyVisible.map(session => session.id),
+    result.map(session => session.id)
+  );
+
+  await db.aiSession.update({
+    where: { id: result[0].id },
+    data: { title: 'Manual title' },
+  });
+  t.false(
+    await copilotSession.setTitleIfAbsent({
+      sessionId: result[0].id,
+      userId: result[0].userId,
+      workspaceId: result[0].workspaceId,
+      title: 'Generated title',
+    })
+  );
+  t.true(
+    await copilotSession.setTitleIfAbsent({
+      sessionId: result[1].id,
+      userId: result[1].userId,
+      workspaceId: result[1].workspaceId,
+      title: 'Generated title',
+    })
+  );
 
   t.snapshot(
     {

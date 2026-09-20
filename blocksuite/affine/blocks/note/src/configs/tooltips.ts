@@ -240,7 +240,7 @@ export const TodoTooltip = html`<svg width="170" height="68" viewBox="0 0 170 68
 <text fill="#8E8D91" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="10" letter-spacing="0px"><tspan x="28" y="47.6364">Make a list for building preview.</tspan></text>
 </g>
 </svg>
-`
+`;
 
 export const tooltips: Record<string, SlashMenuTooltip> = {
   Text: {

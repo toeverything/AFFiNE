@@ -12,11 +12,11 @@
 
 ### a
 
-`string` | `null` | `undefined`
+`string` \| `null` \| `undefined`
 
 ### b
 
-`string` | `null` | `undefined`
+`string` \| `null` \| `undefined`
 
 ### digits?
 

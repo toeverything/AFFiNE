@@ -47,9 +47,9 @@ export class EdgelessShapePanel extends LitElement {
             this._onSelect(name);
           }}
         >
-          ${this.shapeStyle === ShapeStyle.General
-            ? generalIcon
-            : scribbledIcon}
+          ${
+            this.shapeStyle === ShapeStyle.General ? generalIcon : scribbledIcon
+          }
         </edgeless-tool-icon-button>`
     );
   }

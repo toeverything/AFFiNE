@@ -3,14 +3,15 @@ import { z } from 'zod';
 
 import { toolError } from './error';
 import { defineTool } from './tool';
-import type { CopilotProviderFactory, PromptService } from './types';
+
+type RunPromptText = (
+  promptName: string,
+  params: Record<string, unknown>
+) => Promise<string>;
 
 const logger = new Logger('SectionEditTool');
 
-export const createSectionEditTool = (
-  promptService: PromptService,
-  factory: CopilotProviderFactory
-) => {
+export const createSectionEditTool = (prompt: RunPromptText) => {
   return defineTool({
     description:
       'Intelligently edit and modify a specific section of a document based on user instructions, with full document context awareness. This tool can refine, rewrite, translate, restructure, or enhance any part of markdown content while preserving formatting, maintaining contextual coherence, and ensuring consistency with the entire document. Perfect for targeted improvements that consider the broader document context.',
@@ -33,25 +34,11 @@ export const createSectionEditTool = (
     }),
     execute: async ({ section, instructions, document }) => {
       try {
-        const prompt = await promptService.get('Section Edit');
-        if (!prompt) {
-          throw new Error('Prompt not found');
-        }
-        const provider = await factory.getProviderByModel(prompt.model);
-        if (!provider) {
-          throw new Error('Provider not found');
-        }
-
-        const content = await provider.text(
-          {
-            modelId: prompt.model,
-          },
-          prompt.finish({
-            content: section,
-            instructions,
-            document,
-          })
-        );
+        const content = await prompt('Section Edit', {
+          content: section,
+          instructions,
+          document,
+        });
 
         return {
           content: content.trim(),

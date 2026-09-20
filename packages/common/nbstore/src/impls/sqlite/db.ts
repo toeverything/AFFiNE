@@ -15,6 +15,42 @@ export interface SqliteNativeDBOptions {
   readonly id: string;
 }
 
+export interface NativeIndexField {
+  field: string;
+  values: string[];
+}
+
+export interface NativeIndexQuery {
+  kind: 'match' | 'exists' | 'all' | 'boolean' | 'boost';
+  field?: string;
+  value?: string;
+  occur?: 'must' | 'should' | 'must_not';
+  clauses?: NativeIndexQuery[];
+  boost?: number;
+}
+
+export interface NativeIndexSearchOptions {
+  limit: number;
+  offset: number;
+  fields: string[];
+  highlights: string[];
+}
+
+export interface NativeIndexHit {
+  id: string;
+  score: number;
+  fields: NativeIndexField[];
+  highlights: {
+    field: string;
+    values: { valueIndex: number; spans: { start: number; end: number }[] }[];
+  }[];
+}
+
+export interface NativeIndexSearchResult {
+  total: number;
+  hits: NativeIndexHit[];
+}
+
 export interface NativeDBApis {
   connect: (id: string) => Promise<void>;
   disconnect: (id: string) => Promise<void>;
@@ -40,6 +76,7 @@ export interface NativeDBApis {
     indexedClock: Date,
     indexerVersion: number
   ) => Promise<void>;
+  setDocIndexedClocks: (id: string, clocks: DocIndexedClock[]) => Promise<void>;
   clearDocIndexedClock: (id: string, docId: string) => Promise<void>;
   getBlob: (id: string, key: string) => Promise<BlobRecord | null>;
   setBlob: (id: string, blob: BlobRecord) => Promise<void>;
@@ -95,36 +132,42 @@ export interface NativeDBApis {
     blobId: string
   ) => Promise<Date | null>;
   crawlDocData: (id: string, docId: string) => Promise<CrawlResult>;
-  ftsAddDocument: (
+  indexUpsert: (
     id: string,
-    indexName: string,
-    docId: string,
-    text: string,
-    index: boolean
+    table: string,
+    document: { id: string; fields: NativeIndexField[] }
   ) => Promise<void>;
-  ftsDeleteDocument: (
+  indexDelete: (id: string, table: string, docId: string) => Promise<void>;
+  indexSearch: (
     id: string,
-    indexName: string,
-    docId: string
-  ) => Promise<void>;
-  ftsSearch: (
+    table: string,
+    query: NativeIndexQuery,
+    options: NativeIndexSearchOptions
+  ) => Promise<NativeIndexSearchResult>;
+  indexAggregate: (
     id: string,
-    indexName: string,
-    query: string
-  ) => Promise<{ id: string; score: number; terms: Array<string> }[]>;
-  ftsGetDocument: (
+    table: string,
+    query: NativeIndexQuery,
+    field: string,
+    limit: number,
+    offset: number,
+    hits?: NativeIndexSearchOptions
+  ) => Promise<{
+    total: number;
+    buckets: {
+      key: string;
+      count: number;
+      score: number;
+      hits: NativeIndexHit[];
+    }[];
+  }>;
+  indexDeleteByQuery: (
     id: string,
-    indexName: string,
-    docId: string
-  ) => Promise<string | null>;
-  ftsGetMatches: (
-    id: string,
-    indexName: string,
-    docId: string,
-    query: string
-  ) => Promise<{ start: number; end: number }[]>;
-  ftsFlushIndex: (id: string) => Promise<void>;
-  ftsIndexVersion: () => Promise<number>;
+    table: string,
+    query: NativeIndexQuery
+  ) => Promise<number>;
+  indexFlush: (id: string) => Promise<void>;
+  indexVersion: () => Promise<number>;
 }
 
 type NativeDBApisWrapper = NativeDBApis extends infer APIs

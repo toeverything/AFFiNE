@@ -8,6 +8,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
+import type { Subscription } from 'rxjs';
 import { EMPTY, exhaustMap, tap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
@@ -20,7 +21,19 @@ export class MemberSearchService extends Service {
     private readonly workspaceService: WorkspaceService
   ) {
     super();
+    this.subscription = this.store
+      .subscribeMembers(this.workspaceService.workspace.id)
+      .subscribe({
+        next: () => {
+          if (this.searchText$.value) {
+            this.search(this.searchText$.value);
+          }
+        },
+        error: error => this.error$.setValue(error),
+      });
   }
+
+  private readonly subscription: Subscription;
 
   readonly PAGE_SIZE = 8;
   readonly searchText$ = new LiveData<string>('');
@@ -69,5 +82,10 @@ export class MemberSearchService extends Service {
     this.reset();
     this.searchText$.setValue(searchText ?? '');
     this.loadMore();
+  }
+
+  override dispose(): void {
+    this.loadMore.unsubscribe();
+    this.subscription.unsubscribe();
   }
 }

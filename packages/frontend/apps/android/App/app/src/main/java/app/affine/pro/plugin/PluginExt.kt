@@ -26,3 +26,7 @@ inline fun <reified T> PluginCall.getListEnsure(key: String): List<T> {
 fun PluginCall.getLongEnsure(key: String): Long {
     return getLong(key) ?: throw IllegalArgumentException("Missing $key parameter")
 }
+
+fun PluginCall.getIntEnsure(key: String): Int {
+    return getInt(key) ?: throw IllegalArgumentException("Missing $key parameter")
+}

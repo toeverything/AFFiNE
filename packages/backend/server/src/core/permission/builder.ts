@@ -1,43 +1,61 @@
 import { Injectable } from '@nestjs/common';
 
-import { DocID } from '../utils/doc';
-import { getAccessController } from './controller';
 import { Resource } from './resource';
-import { DocAction, WorkspaceAction } from './types';
-import { WorkspaceAccessController } from './workspace';
+import { PermissionService } from './service';
+import {
+  DOC_ACTIONS,
+  DocAction,
+  DocRole,
+  WORKSPACE_ACTIONS,
+  WorkspaceAction,
+  WorkspaceRole,
+} from './types';
+
+function assertPerm(permission?: PermissionService) {
+  if (!permission) {
+    throw new Error('PermissionService is required for permission checks.');
+  }
+  return permission;
+}
 
 @Injectable()
 export class AccessControllerBuilder {
+  constructor(private readonly permission?: PermissionService) {}
+
   user(userId: string) {
-    return new UserAccessControllerBuilder(userId);
+    return new UserAccessControllerBuilder(userId, this.permission);
   }
 }
 
 export class UserAccessControllerBuilder {
-  constructor(private readonly userId: string) {}
+  constructor(
+    private readonly userId: string,
+    private readonly permission?: PermissionService
+  ) {}
 
   workspace(workspaceId: string) {
-    return new WorkspaceAccessControllerBuilder({
-      userId: this.userId,
-      workspaceId,
-    });
+    return new WorkspaceAccessControllerBuilder(
+      {
+        userId: this.userId,
+        workspaceId,
+      },
+      this.permission
+    );
   }
 
-  doc(
-    docId: DocID | { workspaceId: string; docId: string }
-  ): DocAccessControllerBuilder;
+  doc(docId: {
+    workspaceId: string;
+    docId: string;
+  }): DocAccessControllerBuilder;
   doc(workspaceId: string, docId: string): DocAccessControllerBuilder;
   doc(
-    docIdOrWorkspaceId: string | DocID | { workspaceId: string; docId: string },
+    docIdOrWorkspaceId: string | { workspaceId: string; docId: string },
     doc?: string
   ) {
     let workspaceId: string;
     let docId: string;
 
-    if (docIdOrWorkspaceId instanceof DocID) {
-      workspaceId = docIdOrWorkspaceId.workspace;
-      docId = docIdOrWorkspaceId.guid;
-    } else if (typeof docIdOrWorkspaceId === 'string') {
+    if (typeof docIdOrWorkspaceId === 'string') {
       workspaceId = docIdOrWorkspaceId;
       docId = doc as string;
     } else {
@@ -45,27 +63,31 @@ export class UserAccessControllerBuilder {
       docId = docIdOrWorkspaceId.docId;
     }
 
-    return new DocAccessControllerBuilder({
-      userId: this.userId,
-      workspaceId,
-      docId,
-    });
+    return new DocAccessControllerBuilder(
+      {
+        userId: this.userId,
+        workspaceId,
+        docId,
+      },
+      this.permission
+    );
   }
 }
 
 class WorkspaceAccessControllerBuilder {
-  constructor(public readonly data: Resource<'ws'>) {}
-
-  allowLocal() {
-    this.data.allowLocal = true;
-    return this;
-  }
+  constructor(
+    public readonly data: Resource<'ws'>,
+    private readonly permission?: PermissionService
+  ) {}
 
   doc(docId: string) {
-    return new DocAccessControllerBuilder({
-      ...this.data,
-      docId,
-    });
+    return new DocAccessControllerBuilder(
+      {
+        ...this.data,
+        docId,
+      },
+      this.permission
+    );
   }
 
   /**
@@ -78,54 +100,86 @@ class WorkspaceAccessControllerBuilder {
     items: T[],
     action: DocAction
   ): Promise<T[]> {
-    const docIds = items.map(item => item.docId);
-    const checker = getAccessController('ws') as WorkspaceAccessController;
-    const docRoles = await checker.docRoles(this.data, docIds);
-    const docRolesMap = new Map(
-      docRoles.map((role, index) => [docIds[index], role])
+    const docRoles = await this.docPermissions(items, [action]);
+    const allowed = new Set(
+      docRoles.filter(doc => doc.decisions[0]?.allowed).map(doc => doc.docId)
     );
+    return items.filter(item => allowed.has(item.docId));
+  }
 
-    return items.filter(item => {
-      return docRolesMap.get(item.docId)?.permissions[action];
+  async docPermissions<T extends { docId: string }>(
+    items: T[],
+    actions: DocAction[]
+  ) {
+    const docIds = items.map(item => item.docId);
+    return await assertPerm(this.permission).batchDocPermissions({
+      userId: this.data.userId,
+      workspaceId: this.data.workspaceId,
+      docs: docIds.map(docId => ({
+        docId,
+        actions,
+      })),
     });
   }
 
   async assert(action: WorkspaceAction) {
-    const checker = getAccessController('ws');
-    await checker.assert(this.data, action);
+    await assertPerm(this.permission).assertWorkspace({
+      ...this.data,
+      action,
+    });
   }
 
   async can(action: WorkspaceAction) {
-    const checker = getAccessController('ws');
-    return await checker.can(this.data, action);
+    return await assertPerm(this.permission).canWorkspace({
+      ...this.data,
+      action,
+    });
   }
 
   async permissions() {
-    const checker = getAccessController('ws');
-    return await checker.role(this.data);
+    const result = await assertPerm(this.permission).workspacePermissions({
+      ...this.data,
+      actions: [...WORKSPACE_ACTIONS],
+    });
+    return {
+      role: result.legacyApiRole as WorkspaceRole | null,
+      permissions: Object.fromEntries(
+        result.decisions.map(decision => [decision.action, decision.allowed])
+      ) as Record<WorkspaceAction, boolean>,
+    };
   }
 }
 
 class DocAccessControllerBuilder {
-  constructor(public readonly data: Resource<'doc'>) {}
-
-  allowLocal() {
-    this.data.allowLocal = true;
-    return this;
-  }
+  constructor(
+    public readonly data: Resource<'doc'>,
+    private readonly permission?: PermissionService
+  ) {}
 
   async assert(action: DocAction) {
-    const checker = getAccessController('doc');
-    await checker.assert(this.data, action);
+    await assertPerm(this.permission).assertDoc({
+      ...this.data,
+      action,
+    });
   }
 
   async can(action: DocAction) {
-    const checker = getAccessController('doc');
-    return await checker.can(this.data, action);
+    return await assertPerm(this.permission).canDoc({
+      ...this.data,
+      action,
+    });
   }
 
   async permissions() {
-    const checker = getAccessController('doc');
-    return await checker.role(this.data);
+    const result = await assertPerm(this.permission).docPermissions({
+      ...this.data,
+      actions: [...DOC_ACTIONS],
+    });
+    return {
+      role: result.legacyApiRole as DocRole | null,
+      permissions: Object.fromEntries(
+        result.decisions.map(decision => [decision.action, decision.allowed])
+      ) as Record<DocAction, boolean>,
+    };
   }
 }

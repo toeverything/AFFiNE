@@ -20,6 +20,9 @@ public class OauthProvidersQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("serverConfig", ServerConfig.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      OauthProvidersQuery.Data.self
+    ] }
 
     /// server config
     public var serverConfig: ServerConfig { __data["serverConfig"] }
@@ -35,6 +38,9 @@ public class OauthProvidersQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("oauthProviders", [GraphQLEnum<AffineGraphQL.OAuthProviderType>].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        OauthProvidersQuery.Data.ServerConfig.self
       ] }
 
       public var oauthProviders: [GraphQLEnum<AffineGraphQL.OAuthProviderType>] { __data["oauthProviders"] }

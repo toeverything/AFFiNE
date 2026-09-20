@@ -1,4 +1,4 @@
-// eslint-disable
+// oxlint-disable
 // @ts-nocheck
 import { Node } from './utils/node';
 

@@ -25,27 +25,27 @@ public extension IntelligentContext {
       workspaceId: workspaceId
     )
 
-    let mutation = CreateCopilotSessionMutation(options: input)
+    let mutation = CreateCopilotSessionWithHistoryMutation(options: input)
 
     QLService.shared.client.perform(mutation: mutation) { result in
       switch result {
       case let .success(graphQLResult):
-        guard let sessionId = graphQLResult.data?.createCopilotSession else {
+        guard let history = graphQLResult.data?.createCopilotSessionWithHistory else {
           completion(.failure(IntelligentError.sessionCreationFailed("No session ID returned.")))
           return
         }
 
         let session = ChatSessionObject(
-          id: sessionId,
-          workspaceId: workspaceId,
-          docId: docId,
-          promptName: promptName.rawValue,
+          id: history.sessionId,
+          workspaceId: history.workspaceId,
+          docId: history.docId,
+          promptName: history.promptName,
           model: nil,
-          pinned: pinned,
+          pinned: history.pinned,
           tokens: 0,
-          createdAt: DateTime(date: Date()),
-          updatedAt: DateTime(date: Date()),
-          parentSessionId: nil
+          createdAt: history.createdAt,
+          updatedAt: history.updatedAt,
+          parentSessionId: history.parentSessionId
         )
         completion(.success(session))
 

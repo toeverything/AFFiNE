@@ -20,6 +20,9 @@ public class CalendarProvidersQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("serverConfig", ServerConfig.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CalendarProvidersQuery.Data.self
+    ] }
 
     /// server config
     public var serverConfig: ServerConfig { __data["serverConfig"] }
@@ -36,6 +39,9 @@ public class CalendarProvidersQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("calendarCalDAVProviders", [CalendarCalDAVProvider].self),
         .field("calendarProviders", [GraphQLEnum<AffineGraphQL.CalendarProviderType>].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CalendarProvidersQuery.Data.ServerConfig.self
       ] }
 
       public var calendarCalDAVProviders: [CalendarCalDAVProvider] { __data["calendarCalDAVProviders"] }
@@ -55,6 +61,9 @@ public class CalendarProvidersQuery: GraphQLQuery {
           .field("label", String.self),
           .field("requiresAppPassword", Bool?.self),
           .field("docsUrl", String?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          CalendarProvidersQuery.Data.ServerConfig.CalendarCalDAVProvider.self
         ] }
 
         public var id: String { __data["id"] }

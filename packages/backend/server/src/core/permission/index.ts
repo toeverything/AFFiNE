@@ -1,22 +1,21 @@
 import { Module } from '@nestjs/common';
 
 import { AccessControllerBuilder } from './builder';
-import { DocAccessController } from './doc';
 import { EventsListener } from './event';
-import { WorkspaceAccessController } from './workspace';
+import { PermissionService } from './service';
 
 @Module({
-  providers: [
-    WorkspaceAccessController,
-    DocAccessController,
-    AccessControllerBuilder,
-    EventsListener,
-  ],
-  exports: [AccessControllerBuilder],
+  providers: [AccessControllerBuilder, EventsListener, PermissionService],
+  exports: [AccessControllerBuilder, PermissionService],
 })
 export class PermissionModule {}
 
-export { AccessControllerBuilder as AccessController } from './builder';
+export { AccessControllerBuilder as PermissionAccess } from './builder';
+export {
+  type DotToUnderline,
+  mapPermissionsToGraphqlPermissions,
+} from './permission-map';
+export { PermissionService } from './service';
 export {
   DOC_ACTIONS,
   type DocAction,

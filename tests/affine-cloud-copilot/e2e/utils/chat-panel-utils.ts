@@ -1,4 +1,4 @@
-// eslint-disable eslint-plugin-unicorn(prefer-dom-node-dataset
+// oxlint-disable unicorn/prefer-dom-node-dataset
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -273,9 +273,7 @@ export class ChatPanelUtils {
       await expect(async () => {
         const states = await page
           .getByTestId('chat-panel-chip')
-          .evaluateAll(elements =>
-            elements.map(el => el.getAttribute('data-state'))
-          );
+          .evaluateAll(elements => elements.map(el => el.dataset.state));
 
         expect(states.every(state => state === 'finished')).toBe(true);
       }).toPass({ timeout: 20000 });
@@ -283,9 +281,7 @@ export class ChatPanelUtils {
     await expect(async () => {
       const states = await page
         .getByTestId('chat-panel-chip')
-        .evaluateAll(elements =>
-          elements.map(el => el.getAttribute('data-state'))
-        );
+        .evaluateAll(elements => elements.map(el => el.dataset.state));
       expect(states).toHaveLength(attachments.length);
       expect(states.every(state => state === 'finished')).toBe(true);
     }).toPass({ timeout: 20000 });

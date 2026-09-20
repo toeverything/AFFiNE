@@ -2,9 +2,8 @@ query getWorkspaceRolePermissions($id: String!) {
   workspaceRolePermissions(id: $id) {
     permissions {
       Workspace_Administrators_Manage
-      Workspace_Blobs_List
-      Workspace_Blobs_Read
-      Workspace_Blobs_Write
+      Workspace_Blobs_Manage
+      Workspace_Blobs_Upload
       Workspace_Copilot
       Workspace_CreateDoc
       Workspace_Delete

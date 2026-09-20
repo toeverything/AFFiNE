@@ -1,8 +1,4 @@
-import {
-  InsideModalContext,
-  ModalConfigContext,
-  Scrollable,
-} from '@affine/component';
+import { InsideModalContext, Scrollable } from '@affine/component';
 import { PageHeader } from '@affine/core/mobile/components';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
@@ -17,6 +13,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
+import { useMobileVisualLayer } from '../../modules/back-coordinator';
 import { SwipeHelper } from '../../utils';
 import * as styles from './swipe-dialog.css';
 
@@ -142,6 +139,7 @@ const close = (
 
 const SwipeDialogContext = createContext<{
   stack: Array<React.RefObject<HTMLElement | null>>;
+  backLayer?: symbol;
 }>({
   stack: [],
 });
@@ -154,17 +152,12 @@ export const SwipeDialog = ({
   onOpenChange,
 }: SwipeDialogProps) => {
   const insideModal = useContext(InsideModalContext);
-  const { onOpen: globalOnOpen } = useContext(ModalConfigContext);
   const swiperTriggerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
-  const { stack } = useContext(SwipeDialogContext);
+  const { stack, backLayer } = useContext(SwipeDialogContext);
   const prev = stack[stack.length - 1]?.current;
-  const swipeDialogContextValue = useMemo(
-    () => ({ stack: [...stack, dialogRef] }),
-    [stack]
-  );
 
   const handleClose = useCallback(() => {
     onOpenChange?.(false);
@@ -179,6 +172,15 @@ export const SwipeDialog = ({
       handleClose();
     }
   }, [handleClose, prev]);
+  const layerId = useMobileVisualLayer({
+    enabled: open,
+    parent: backLayer,
+    onBack: animateClose,
+  });
+  const swipeDialogContextValue = useMemo(
+    () => ({ stack: [...stack, dialogRef], backLayer: layerId }),
+    [layerId, stack]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -205,6 +207,9 @@ export const SwipeDialog = ({
           cancel(overlay, dialog, prev, deltaX);
         }
       },
+      onSwipeCancel: () => {
+        reset(overlay, dialog, prev);
+      },
     });
   }, [handleClose, open, prev]);
 
@@ -216,11 +221,6 @@ export const SwipeDialog = ({
       cancel(overlay, dialog, prev, overlay.clientWidth);
     }
   }, [open, prev]);
-
-  useEffect(() => {
-    if (open) return globalOnOpen?.();
-    return;
-  }, [globalOnOpen, open]);
 
   if (!open) return null;
 

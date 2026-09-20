@@ -42,6 +42,9 @@ public class SendVerifyChangeEmailMutation: GraphQLMutation {
         "callbackUrl": .variable("callbackUrl")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      SendVerifyChangeEmailMutation.Data.self
+    ] }
 
     public var sendVerifyChangeEmail: Bool { __data["sendVerifyChangeEmail"] }
   }

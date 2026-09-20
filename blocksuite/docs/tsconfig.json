@@ -7,5 +7,5 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["./.vitepress"],
-  "references": [{ "path": "../affine/all" }]
+  "references": []
 }

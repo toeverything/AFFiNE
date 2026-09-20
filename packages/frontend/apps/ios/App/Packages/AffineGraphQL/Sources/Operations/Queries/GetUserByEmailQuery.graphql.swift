@@ -26,6 +26,9 @@ public class GetUserByEmailQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("userByEmail", UserByEmail?.self, arguments: ["email": .variable("email")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetUserByEmailQuery.Data.self
+    ] }
 
     /// Get user by email for admin
     public var userByEmail: UserByEmail? { __data["userByEmail"] }
@@ -48,6 +51,9 @@ public class GetUserByEmailQuery: GraphQLQuery {
         .field("emailVerified", Bool.self),
         .field("avatarUrl", String?.self),
         .field("disabled", Bool.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetUserByEmailQuery.Data.UserByEmail.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

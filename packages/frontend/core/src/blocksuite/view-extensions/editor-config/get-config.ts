@@ -18,7 +18,6 @@ export function getEditorConfigExtension(
 
   return [
     EditorSettingExtension({
-      // eslint-disable-next-line rxjs/finnish
       setting$: editorSettingService.editorSetting.settingSignal,
       set: (k, v) => editorSettingService.editorSetting.set(k, v),
     }),

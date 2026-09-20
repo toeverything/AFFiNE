@@ -37,6 +37,9 @@ public class CreateInviteLinkMutation: GraphQLMutation {
         "expireTime": .variable("expireTime")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateInviteLinkMutation.Data.self
+    ] }
 
     public var createInviteLink: CreateInviteLink { __data["createInviteLink"] }
 
@@ -52,6 +55,9 @@ public class CreateInviteLinkMutation: GraphQLMutation {
         .field("__typename", String.self),
         .field("link", String.self),
         .field("expireTime", AffineGraphQL.DateTime.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CreateInviteLinkMutation.Data.CreateInviteLink.self
       ] }
 
       /// Invite link

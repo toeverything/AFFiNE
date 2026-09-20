@@ -7,7 +7,6 @@ import {
 import { ModuleRef } from '@nestjs/core';
 
 import { ApplyType } from '../base';
-import { AccessTokenModel } from './access-token';
 import { BlobModel } from './blob';
 import { CalendarAccountModel } from './calendar-account';
 import { CalendarEventModel } from './calendar-event';
@@ -16,54 +15,67 @@ import { CalendarSubscriptionModel } from './calendar-subscription';
 import { CommentModel } from './comment';
 import { CommentAttachmentModel } from './comment-attachment';
 import { AppConfigModel } from './config';
-import { CopilotContextModel } from './copilot-context';
+import { CopilotActionRunModel } from './copilot-action-run';
+import { CopilotWorkspaceByokConfigModel } from './copilot-byok';
 import { CopilotJobModel } from './copilot-job';
 import { CopilotSessionModel } from './copilot-session';
+import { CopilotTranscriptTaskModel } from './copilot-transcript-task';
+import { CopilotUsageModel } from './copilot-usage';
 import { CopilotWorkspaceConfigModel } from './copilot-workspace';
 import { DocModel } from './doc';
 import { DocUserModel } from './doc-user';
 import { FeatureModel } from './feature';
 import { HistoryModel } from './history';
-import { MagicLinkOtpModel } from './magic-link-otp';
+import { MailDeliveryModel } from './mail-delivery';
+import { McpCredentialModel } from './mcp-credential';
 import { NotificationModel } from './notification';
+import {
+  DocAccessPolicyModel,
+  DocGrantModel,
+  WorkspaceAccessPolicyModel,
+  WorkspaceInvitationModel,
+  WorkspaceMemberModel,
+} from './permission-write';
 import { MODELS_SYMBOL } from './provider';
-import { SessionModel } from './session';
 import { UserModel } from './user';
 import { UserDocModel } from './user-doc';
 import { UserFeatureModel } from './user-feature';
 import { UserSettingsModel } from './user-settings';
-import { VerificationTokenModel } from './verification-token';
 import { WorkspaceModel } from './workspace';
 import { WorkspaceAnalyticsModel } from './workspace-analytics';
 import { WorkspaceCalendarModel } from './workspace-calendar';
-import { WorkspaceFeatureModel } from './workspace-feature';
 import { WorkspaceUserModel } from './workspace-user';
 
 const MODELS = {
   user: UserModel,
-  session: SessionModel,
-  verificationToken: VerificationTokenModel,
-  magicLinkOtp: MagicLinkOtpModel,
+  mailDelivery: MailDeliveryModel,
   feature: FeatureModel,
   workspace: WorkspaceModel,
   userFeature: UserFeatureModel,
-  workspaceFeature: WorkspaceFeatureModel,
   doc: DocModel,
   userDoc: UserDocModel,
   workspaceUser: WorkspaceUserModel,
   docUser: DocUserModel,
   history: HistoryModel,
   notification: NotificationModel,
+  workspaceMember: WorkspaceMemberModel,
+  workspaceInvitation: WorkspaceInvitationModel,
+  workspaceAccessPolicy: WorkspaceAccessPolicyModel,
+  docAccessPolicy: DocAccessPolicyModel,
+  docGrant: DocGrantModel,
   userSettings: UserSettingsModel,
   copilotSession: CopilotSessionModel,
-  copilotContext: CopilotContextModel,
+  copilotUsage: CopilotUsageModel,
+  copilotTranscriptTask: CopilotTranscriptTaskModel,
+  copilotActionRun: CopilotActionRunModel,
   copilotWorkspace: CopilotWorkspaceConfigModel,
+  copilotWorkspaceByokConfig: CopilotWorkspaceByokConfigModel,
   copilotJob: CopilotJobModel,
   appConfig: AppConfigModel,
   comment: CommentModel,
   commentAttachment: CommentAttachmentModel,
   blob: BlobModel,
-  accessToken: AccessTokenModel,
+  mcpCredential: McpCredentialModel,
   calendarAccount: CalendarAccountModel,
   calendarSubscription: CalendarSubscriptionModel,
   calendarEvent: CalendarEventModel,
@@ -129,24 +141,25 @@ export * from './calendar-subscription';
 export * from './comment';
 export * from './comment-attachment';
 export * from './common';
-export * from './copilot-context';
+export * from './copilot-byok';
 export * from './copilot-job';
 export * from './copilot-session';
+export * from './copilot-transcript-task';
+export * from './copilot-usage';
 export * from './copilot-workspace';
 export * from './doc';
 export * from './doc-user';
 export * from './feature';
 export * from './history';
-export * from './magic-link-otp';
+export * from './mail-delivery';
 export * from './notification';
-export * from './session';
+export * from './permission-write';
 export * from './user';
 export * from './user-doc';
 export * from './user-feature';
 export * from './user-settings';
-export * from './verification-token';
 export * from './workspace';
 export * from './workspace-analytics';
 export * from './workspace-calendar';
-export * from './workspace-feature';
 export * from './workspace-user';
+export type { WorkspaceUserCompat } from './workspace-user-compat';

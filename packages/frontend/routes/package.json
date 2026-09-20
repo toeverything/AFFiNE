@@ -1,6 +1,6 @@
 {
   "name": "@affine/routes",
-  "version": "0.26.3",
+  "version": "0.27.5",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,12 +12,10 @@
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
-    "path-to-regexp": "^8.3.0",
-    "query-string": "^9.1.1",
-    "vitest": "^4.0.18"
+    "path-to-regexp": "^8.4.2",
+    "vitest": "^4.1.11"
   },
   "peerDependencies": {
-    "react": "^19.2.1",
-    "react-router-dom": "^7.12.0"
+    "react": "^19.2.1"
   }
 }

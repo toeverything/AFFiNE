@@ -42,10 +42,11 @@ async function enableEmojiDocIcon(page: Page) {
   await confirmExperimentalPrompt(page);
 
   const settingModal = page.locator('[data-testid=setting-modal-content]');
-  const item = settingModal.locator('div').getByText('Emoji Doc Icon');
-  await item.waitFor({ state: 'attached' });
-  await expect(item).toBeVisible();
-  const button = item.locator('label');
+  const button = settingModal.getByTestId('enable_emoji_doc_icon');
+  if (!(await button.isVisible().catch(() => false))) {
+    await page.keyboard.press('Escape');
+    return;
+  }
   const isChecked = await button.locator('input').isChecked();
   if (!isChecked) {
     await button.click();

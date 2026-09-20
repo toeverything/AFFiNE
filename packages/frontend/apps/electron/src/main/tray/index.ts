@@ -17,15 +17,15 @@ import {
   appGroups$,
   checkCanRecordMeeting,
   checkRecordingAvailable,
+  getCurrentRecordingStatus,
   MeetingsSettingsState,
-  recordingStatus$,
   startRecording,
   stopRecording,
   updateApplicationsPing$,
 } from '../recording/feature';
 import { MenubarStateKey, MenubarStateSchema } from '../shared-state-schema';
 import { globalStateStorage } from '../shared-storage/storage';
-import { getMainWindow } from '../windows-manager';
+import { showMainWindow } from '../windows-manager';
 import { icons } from './icons';
 export interface TrayMenuConfigItem {
   label: string;
@@ -43,12 +43,10 @@ interface TrayMenuProvider {
   getConfig(): TrayMenuConfig;
 }
 
-function showMainWindow() {
-  getMainWindow()
-    .then(w => {
-      w.show();
-    })
-    .catch(err => logger.error('Failed to show main window:', err));
+function activateMainWindow() {
+  void showMainWindow().catch(err => {
+    logger.error('Failed to show main window:', err);
+  });
 }
 
 function buildMenuConfig(config: TrayMenuConfig): MenuItemConstructorOptions[] {
@@ -109,7 +107,7 @@ class TrayState implements Disposable {
           icon: icons.journal,
           click: () => {
             logger.info('User action: Open Journal');
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.openJournal$.next();
           },
         },
@@ -118,7 +116,7 @@ class TrayState implements Disposable {
           icon: icons.page,
           click: () => {
             logger.info('User action: New Page');
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.newPageAction$.next('page');
           },
         },
@@ -127,7 +125,7 @@ class TrayState implements Disposable {
           icon: icons.edgeless,
           click: () => {
             logger.info('User action: New Edgeless');
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.newPageAction$.next('edgeless');
           },
         },
@@ -158,12 +156,13 @@ class TrayState implements Disposable {
           appGroup => appGroup.isRunning
         );
 
-        const recordingStatus = recordingStatus$.value;
+        const recordingStatus = getCurrentRecordingStatus();
 
         if (
           !recordingStatus ||
-          (recordingStatus?.status !== 'paused' &&
-            recordingStatus?.status !== 'recording')
+          (recordingStatus.status !== 'starting' &&
+            recordingStatus.status !== 'recording' &&
+            recordingStatus.status !== 'finalizing')
         ) {
           const appMenuItems = runningAppGroups.map(appGroup => ({
             label: appGroup.name,
@@ -172,7 +171,9 @@ class TrayState implements Disposable {
               logger.info(
                 `User action: Start Recording Meeting (${appGroup.name})`
               );
-              startRecording(appGroup);
+              startRecording(appGroup).catch(err => {
+                logger.error('Failed to start recording:', err);
+              });
             },
           }));
 
@@ -188,7 +189,9 @@ class TrayState implements Disposable {
                     logger.info(
                       'User action: Start Recording Meeting (System audio)'
                     );
-                    startRecording();
+                    startRecording().catch(err => {
+                      logger.error('Failed to start recording:', err);
+                    });
                   },
                 },
                 ...appMenuItems,
@@ -197,11 +200,11 @@ class TrayState implements Disposable {
             ...appMenuItems
           );
         } else {
-          const recordingLabel = recordingStatus.appGroup?.name
-            ? `Recording (${recordingStatus.appGroup?.name})`
+          const recordingLabel = recordingStatus.appName
+            ? `Recording (${recordingStatus.appName})`
             : 'Recording';
 
-          // recording is either started or paused
+          // recording is active
           items.push(
             {
               label: recordingLabel,
@@ -210,11 +213,14 @@ class TrayState implements Disposable {
             },
             {
               label: 'Stop',
+              disabled: recordingStatus.status !== 'recording',
               click: () => {
                 logger.info('User action: Stop Recording');
-                stopRecording(recordingStatus.id).catch(err => {
-                  logger.error('Failed to stop recording:', err);
-                });
+                if (recordingStatus.status === 'recording') {
+                  stopRecording(recordingStatus.id).catch(err => {
+                    logger.error('Failed to stop recording:', err);
+                  });
+                }
               },
             }
           );
@@ -224,7 +230,7 @@ class TrayState implements Disposable {
         items.push({
           label: `Meetings Settings...`,
           click: () => {
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.openInSettingModal$.next({
               activeTab: 'meetings',
             });
@@ -249,19 +255,13 @@ class TrayState implements Disposable {
           label: 'Open AFFiNE',
           click: () => {
             logger.info('User action: Open AFFiNE');
-            getMainWindow()
-              .then(w => {
-                w.show();
-              })
-              .catch(err => {
-                logger.error('Failed to open AFFiNE:', err);
-              });
+            activateMainWindow();
           },
         },
         {
           label: 'Menubar settings...',
           click: () => {
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.openInSettingModal$.next({
               activeTab: 'appearance',
               scrollAnchor: 'menubar',
@@ -271,7 +271,7 @@ class TrayState implements Disposable {
         {
           label: `About ${app.getName()}`,
           click: () => {
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.openInSettingModal$.next({
               activeTab: 'about',
             });
@@ -321,7 +321,7 @@ class TrayState implements Disposable {
             TraySettingsState.value.enabled &&
             TraySettingsState.value.openOnLeftClick
           ) {
-            showMainWindow();
+            activateMainWindow();
           } else {
             this.tray?.popUpContextMenu();
           }

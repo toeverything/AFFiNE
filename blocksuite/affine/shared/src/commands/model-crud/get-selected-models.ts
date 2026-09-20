@@ -58,8 +58,7 @@ export const getSelectedModelsCommand: Command<
     ])
     .pipe(getSelectedBlocksCommand, { types, mode })
     .pipe(ctx => {
-      const { selectedBlocks = [] } = ctx;
-      selectedModels.push(...selectedBlocks.map(el => el.model));
+      selectedModels.push(...ctx.selectedBlocks.map(el => el.model));
     })
     .run();
 

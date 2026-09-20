@@ -34,6 +34,20 @@ export const userInfoWrapper = style({
   marginTop: '28px',
 });
 
+export const currentAccount = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '12px',
+});
+
+export const accountMismatchActions = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+  width: '100%',
+});
+
 export const lineHeight = style({
   lineHeight: '1.5',
 });

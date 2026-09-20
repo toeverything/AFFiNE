@@ -42,7 +42,7 @@ export const FrameTooltip = html`<svg width="170" height="89" viewBox="0 0 170 8
 </clipPath>
 </defs>
 </svg>
-`
+`;
 
 // prettier-ignore
 export const MindMapTooltip = html`<svg width="170" height="106" viewBox="0 0 170 106" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -108,4 +108,4 @@ export const MindMapTooltip = html`<svg width="170" height="106" viewBox="0 0 17
 </clipPath>
 </defs>
 </svg>
-`
+`;

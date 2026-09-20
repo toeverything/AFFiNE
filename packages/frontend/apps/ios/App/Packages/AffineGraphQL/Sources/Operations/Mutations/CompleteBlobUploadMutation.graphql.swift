@@ -47,6 +47,9 @@ public class CompleteBlobUploadMutation: GraphQLMutation {
         "parts": .variable("parts")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CompleteBlobUploadMutation.Data.self
+    ] }
 
     public var completeBlobUpload: String { __data["completeBlobUpload"] }
   }

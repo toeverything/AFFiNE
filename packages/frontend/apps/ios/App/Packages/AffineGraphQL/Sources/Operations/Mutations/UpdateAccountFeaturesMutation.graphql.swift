@@ -37,6 +37,9 @@ public class UpdateAccountFeaturesMutation: GraphQLMutation {
         "features": .variable("features")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UpdateAccountFeaturesMutation.Data.self
+    ] }
 
     /// update user enabled feature
     public var updateUserFeatures: [GraphQLEnum<AffineGraphQL.FeatureType>] { __data["updateUserFeatures"] }

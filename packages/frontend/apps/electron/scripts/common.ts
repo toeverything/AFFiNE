@@ -98,7 +98,7 @@ export const config = (): BuildOptions => {
           JSON.stringify(val) ??
           String(
             val
-          ) /* JSON.stringify(undefined) == undefined, but we need 'undefined' */;
+          ); /* JSON.stringify(undefined) == undefined, but we need 'undefined' */
         return def;
       },
       {} as Record<string, string>

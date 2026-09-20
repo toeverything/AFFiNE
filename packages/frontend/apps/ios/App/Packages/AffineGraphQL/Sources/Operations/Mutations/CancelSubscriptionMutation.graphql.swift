@@ -37,6 +37,9 @@ public class CancelSubscriptionMutation: GraphQLMutation {
         "workspaceId": .variable("workspaceId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CancelSubscriptionMutation.Data.self
+    ] }
 
     public var cancelSubscription: CancelSubscription { __data["cancelSubscription"] }
 
@@ -54,6 +57,9 @@ public class CancelSubscriptionMutation: GraphQLMutation {
         .field("status", GraphQLEnum<AffineGraphQL.SubscriptionStatus>.self),
         .field("nextBillAt", AffineGraphQL.DateTime?.self),
         .field("canceledAt", AffineGraphQL.DateTime?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CancelSubscriptionMutation.Data.CancelSubscription.self
       ] }
 
       @available(*, deprecated, message: "removed")

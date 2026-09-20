@@ -64,15 +64,17 @@ export const GroupTitle = (
       ${icon} ${renderUniLit(view, props)} ${columnName}
       ${GroupHeaderCount(groupData)}
     </div>
-    ${!ops.readonly
-      ? html` <div class="${opsClass}">
-          <div @click="${ops.clickAdd}" class="${groupHeaderOp}">
-            ${PlusIcon()}
-          </div>
-          <div @click="${ops.clickOps}" class="${groupHeaderOp}">
-            ${MoreHorizontalIcon()}
-          </div>
-        </div>`
-      : nothing}
+    ${
+      !ops.readonly
+        ? html` <div class="${opsClass}">
+            <div @click="${ops.clickAdd}" class="${groupHeaderOp}">
+              ${PlusIcon()}
+            </div>
+            <div @click="${ops.clickOps}" class="${groupHeaderOp}">
+              ${MoreHorizontalIcon()}
+            </div>
+          </div>`
+        : nothing
+    }
   `;
 };

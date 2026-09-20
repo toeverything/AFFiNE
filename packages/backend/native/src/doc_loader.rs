@@ -1,4 +1,5 @@
-use affine_common::{doc_loader::Doc, napi_utils::map_napi_err};
+use affine_common::napi_utils::map_napi_err;
+use doc_extractor::Doc;
 use napi::{
   Env, Result, Status, Task,
   bindgen_prelude::{AsyncTask, Buffer},

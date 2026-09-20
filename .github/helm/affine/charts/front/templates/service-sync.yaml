@@ -4,8 +4,10 @@ metadata:
   name: {{ .Values.services.sync.name }}
   labels:
     {{- include "front.labels" . | nindent 4 }}
-  {{- with .Values.services.sync.annotations }}
+  {{- $annotations := omit .Values.services.sync.annotations "cloud.google.com/backend-config" }}
   annotations:
+    cloud.google.com/backend-config: {{ dict "default" .Values.services.sync.backendConfig.name | toJson | quote }}
+  {{- with $annotations }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:

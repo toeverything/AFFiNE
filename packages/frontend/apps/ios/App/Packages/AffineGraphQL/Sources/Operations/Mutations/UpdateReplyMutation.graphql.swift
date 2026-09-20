@@ -26,6 +26,9 @@ public class UpdateReplyMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("updateReply", Bool.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UpdateReplyMutation.Data.self
+    ] }
 
     /// Update a reply content
     public var updateReply: Bool { __data["updateReply"] }

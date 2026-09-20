@@ -90,48 +90,58 @@ export class AIPanelAnswer extends WithDisposable(LitElement) {
           <slot></slot>
         </div>
       </div>
-      ${this.finish
-        ? html`
-            <ai-finish-tip
-              .copy=${this.copy}
-              .host=${this.host}
-            ></ai-finish-tip>
-            ${responseGroup.length > 0
-              ? html`
-                  <ai-panel-divider></ai-panel-divider>
-                  ${responseGroup.map(
-                    (group, index) => html`
-                      ${index !== 0
-                        ? html`<ai-panel-divider></ai-panel-divider>`
-                        : nothing}
-                      <div
-                        class="response-list-container"
-                        data-testid=${group.testId}
-                      >
+      ${
+        this.finish
+          ? html`
+              <ai-finish-tip
+                .copy=${this.copy}
+                .host=${this.host}
+              ></ai-finish-tip>
+              ${
+                responseGroup.length > 0
+                  ? html`
+                      <ai-panel-divider></ai-panel-divider>
+                      ${responseGroup.map(
+                        (group, index) => html`
+                          ${
+                            index !== 0
+                              ? html`<ai-panel-divider></ai-panel-divider>`
+                              : nothing
+                          }
+                          <div
+                            class="response-list-container"
+                            data-testid=${group.testId}
+                          >
+                            <ai-item-list
+                              .host=${this.host}
+                              .groups=${[group]}
+                            ></ai-item-list>
+                          </div>
+                        `
+                      )}
+                    `
+                  : nothing
+              }
+              ${
+                responseGroup.length > 0 && this.config.actions.length > 0
+                  ? html`<ai-panel-divider></ai-panel-divider>`
+                  : nothing
+              }
+              ${
+                this.config.actions.length > 0
+                  ? html`
+                      <div class="action-list-container">
                         <ai-item-list
                           .host=${this.host}
-                          .groups=${[group]}
+                          .groups=${this.config.actions}
                         ></ai-item-list>
                       </div>
                     `
-                  )}
-                `
-              : nothing}
-            ${responseGroup.length > 0 && this.config.actions.length > 0
-              ? html`<ai-panel-divider></ai-panel-divider>`
-              : nothing}
-            ${this.config.actions.length > 0
-              ? html`
-                  <div class="action-list-container">
-                    <ai-item-list
-                      .host=${this.host}
-                      .groups=${this.config.actions}
-                    ></ai-item-list>
-                  </div>
-                `
-              : nothing}
-          `
-        : nothing}
+                  : nothing
+              }
+            `
+          : nothing
+      }
     `;
   }
 

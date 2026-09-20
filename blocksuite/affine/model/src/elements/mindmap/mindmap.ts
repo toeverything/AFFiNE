@@ -311,7 +311,6 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
         id = this.surface.addElement({
           type,
           xywh: '[0,0,100,30]',
-          maxWidth: false,
           ...props,
           ...style.node,
         });
@@ -345,7 +344,6 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
         id = this.surface.addElement({
           type,
           xywh: '[0,0,113,41]',
-          maxWidth: false,
           ...props,
           ...rootStyle,
         });
@@ -834,7 +832,12 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
     }
 
     const stashed = new Set<GfxPrimitiveElementModel>();
+    const stashedNodeIds = new Set<string>();
     const traverse = (node: MindmapNode) => {
+      if (this._stashedNode.has(node.id)) return;
+
+      this._stashedNode.add(node.id);
+      stashedNodeIds.add(node.id);
       node.element.stash('xywh');
       stashed.add(node.element);
 
@@ -846,7 +849,9 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
     traverse(mindNode);
 
     return () => {
-      this._stashedNode.delete(mindNode.id);
+      stashedNodeIds.forEach(id => {
+        this._stashedNode.delete(id);
+      });
       stashed.forEach(el => {
         el.pop('xywh');
       });

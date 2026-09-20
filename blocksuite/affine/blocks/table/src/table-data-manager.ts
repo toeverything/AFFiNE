@@ -4,6 +4,7 @@ import { nanoid, Text } from '@blocksuite/store';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 
 import type { TableAreaSelection } from './selection-schema';
+import { compareByOrder } from './utils';
 
 export class TableDataManager {
   constructor(private readonly model: TableBlockModel) {}
@@ -28,15 +29,11 @@ export class TableDataManager {
       `${this.virtualRowCount$.value + this.rows$.value.length} x ${this.virtualColumnCount$.value + this.columns$.value.length}`
   );
   readonly rows$ = computed(() => {
-    return Object.values(this.model.props.rows$.value).sort((a, b) =>
-      a.order > b.order ? 1 : -1
-    );
+    return Object.values(this.model.props.rows$.value).sort(compareByOrder);
   });
 
   readonly columns$ = computed(() => {
-    return Object.values(this.model.props.columns$.value).sort((a, b) =>
-      a.order > b.order ? 1 : -1
-    );
+    return Object.values(this.model.props.columns$.value).sort(compareByOrder);
   });
 
   readonly uiRows$ = computed(() => {

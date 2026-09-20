@@ -55,6 +55,7 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
       },
       mainAxis: 0,
       offsetHeight: 6 * 4,
+      topLayer: true,
       ...this.popperOptions,
     });
   }
@@ -124,6 +125,14 @@ export class EditorMenuContent extends LitElement {
       outline: none;
     }
 
+    :host([popover]) {
+      inset: auto;
+      margin: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+    }
+
     :host([data-show]) {
       display: flex;
       justify-content: center;
@@ -187,6 +196,7 @@ export class EditorMenuAction extends LitElement {
       color: var(--affine-text-primary-color);
       font-weight: 400;
       min-height: 30px; // 22 + 8
+      user-select: none;
     }
 
     :host(:hover),

@@ -21,6 +21,9 @@ public class ServerConfigQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("serverConfig", ServerConfig.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ServerConfigQuery.Data.self
+    ] }
 
     /// server config
     public var serverConfig: ServerConfig { __data["serverConfig"] }
@@ -43,6 +46,9 @@ public class ServerConfigQuery: GraphQLQuery {
         .field("initialized", Bool.self),
         .field("calendarProviders", [GraphQLEnum<AffineGraphQL.CalendarProviderType>].self),
         .field("credentialsRequirement", CredentialsRequirement.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ServerConfigQuery.Data.ServerConfig.self
       ] }
 
       /// server version
@@ -72,6 +78,10 @@ public class ServerConfigQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .fragment(CredentialsRequirements.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ServerConfigQuery.Data.ServerConfig.CredentialsRequirement.self,
+          CredentialsRequirements.self
         ] }
 
         public var password: Password { __data["password"] }

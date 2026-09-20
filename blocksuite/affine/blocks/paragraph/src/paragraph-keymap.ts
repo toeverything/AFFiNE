@@ -101,6 +101,9 @@ export const ParagraphKeymapExtension = KeymapExtension(
         return true;
       },
       Enter: ctx => {
+        const raw = ctx.get('keyboardState').raw;
+        if (raw.isComposing) return;
+
         const { store } = std;
         const text = std.selection.find(TextSelection);
         if (!text) return;
@@ -115,7 +118,6 @@ export const ParagraphKeymapExtension = KeymapExtension(
         const inlineRange = inlineEditor?.getInlineRange();
         if (!inlineRange || !inlineEditor) return;
 
-        const raw = ctx.get('keyboardState').raw;
         const isEnd = model.props.text.length === inlineRange.index;
 
         if (model.props.type === 'quote') {

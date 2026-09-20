@@ -70,7 +70,7 @@ export const SelfHostTeamPlan = () => {
 
       <div className={styles.leanMoreButtonContainer}>
         <Button onClick={handleClick}>
-          {t['com.affine.settings.workspace.license.lean-more']()}
+          {t['com.affine.settings.workspace.license.learn-more']()}
         </Button>
       </div>
     </div>

@@ -51,6 +51,7 @@ import {
   waitNextFrame,
 } from '../utils/actions/index.js';
 import {
+  assertBlockChildrenIds,
   assertBlockCount,
   assertBlockSelections,
   assertClipItems,
@@ -114,6 +115,13 @@ test('native range delete with indent', async ({ page }, testInfo) => {
   // abc
   //   def
   //     ghi
+  await assertRichTexts(page, ['123', '456', '789', 'abc', 'def', 'ghi']);
+  await assertBlockChildrenIds(page, '1', ['2', '5']);
+  await assertBlockChildrenIds(page, '2', ['3']);
+  await assertBlockChildrenIds(page, '3', ['4']);
+  await assertBlockChildrenIds(page, '5', ['6']);
+  await assertBlockChildrenIds(page, '6', ['7']);
+  await waitNextFrame(page);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_init.json`
@@ -129,18 +137,21 @@ test('native range delete with indent', async ({ page }, testInfo) => {
   //     ghi
 
   await pressBackspace(page);
+  await waitNextFrame(page);
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_after_backspace.json`
   );
 
   await waitNextFrame(page);
   await undoByKeyboard(page);
+  await waitNextFrame(page);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_after_undo.json`
   );
 
   await redoByKeyboard(page);
+  await waitNextFrame(page);
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_after_redo.json`
   );
@@ -280,22 +291,29 @@ test('cursor move to up and down with children block', async ({ page }) => {
     await page.keyboard.press('ArrowRight');
   }
   await page.keyboard.press('ArrowUp');
-  const indexOne = await getInlineSelectionIndex(page);
-  const textOne = await getInlineSelectionText(page);
-  expect(textOne).toBe('arrow down test 2');
-  expect(indexOne).toBe(13);
+  await expect
+    .poll(async () => {
+      return {
+        index: await getInlineSelectionIndex(page),
+        text: await getInlineSelectionText(page),
+      };
+    })
+    .toEqual({ index: 13, text: 'arrow down test 2' });
   for (let i = 0; i < 3; i++) {
     await page.keyboard.press('ArrowLeft');
   }
   await page.keyboard.press('ArrowUp');
-  const indexTwo = await getInlineSelectionIndex(page);
-  const textTwo = await getInlineSelectionText(page);
-  expect(textTwo).toBe('arrow down test 1');
-  expect(indexTwo).toBeGreaterThanOrEqual(12);
-  expect(indexTwo).toBeLessThanOrEqual(17);
+  await expect
+    .poll(async () => {
+      const index = await getInlineSelectionIndex(page);
+      const text = await getInlineSelectionText(page);
+      return text === 'arrow down test 1' && index >= 12 && index <= 17;
+    })
+    .toBe(true);
   await page.keyboard.press('ArrowDown');
-  const textThree = await getInlineSelectionText(page);
-  expect(textThree).toBe('arrow down test 2');
+  await expect
+    .poll(() => getInlineSelectionText(page))
+    .toBe('arrow down test 2');
 });
 
 test('cursor move left and right', async ({ page }) => {

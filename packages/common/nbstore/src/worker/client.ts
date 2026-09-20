@@ -1,3 +1,14 @@
+import type {
+  RealtimeConfigureInput,
+  RealtimeRequestInputOf,
+  RealtimeRequestName,
+  RealtimeRequestOutputOf,
+  RealtimeStatus,
+  RealtimeSubscriptionReady,
+  RealtimeTopicEventOf,
+  RealtimeTopicInputOf,
+  RealtimeTopicName,
+} from '@affine/realtime';
 import { OpClient, transfer } from '@toeverything/infra/op';
 import type { Observable } from 'rxjs';
 import { v4 as uuid } from 'uuid';
@@ -14,7 +25,10 @@ import {
   type AggregateResult,
   type AwarenessRecord,
   type BlobRecord,
+  type BlobSource,
   type BlobStorage,
+  type DocLifecycle,
+  type DocLifecycleResult,
   type DocRecord,
   type DocStorage,
   type DocUpdate,
@@ -38,6 +52,30 @@ import type { StoreInitOptions, WorkerManagerOps, WorkerOps } from './ops';
 
 export type { StoreInitOptions as WorkerInitOptions } from './ops';
 
+type RealtimeWorkerClient = {
+  call<Op extends RealtimeRequestName>(
+    name: 'realtime.request',
+    payload: {
+      op: Op;
+      input: RealtimeRequestInputOf<Op>;
+      timeoutMs?: number;
+    }
+  ): Promise<RealtimeRequestOutputOf<Op>>;
+  ob$<Topic extends RealtimeTopicName>(
+    name: 'realtime.subscribe',
+    payload: {
+      topic: Topic;
+      input: RealtimeTopicInputOf<Topic>;
+    }
+  ): Observable<RealtimeTopicEventOf<Topic> | RealtimeSubscriptionReady>;
+};
+
+function realtimeAbortError(op: RealtimeRequestName) {
+  const error = new Error(`Realtime request aborted: ${op}`);
+  error.name = 'AbortError';
+  return error;
+}
+
 export class StoreManagerClient {
   private readonly connections = new Map<
     string,
@@ -49,9 +87,11 @@ export class StoreManagerClient {
 
   constructor(private readonly client: OpClient<WorkerManagerOps>) {
     this.telemetry = new TelemetryClient(this.client);
+    this.realtime = new RealtimeClient(this.client);
   }
 
   readonly telemetry: TelemetryClient;
+  readonly realtime: RealtimeClient;
 
   open(key: string, options: StoreInitOptions) {
     const { port1, port2 } = new MessageChannel();
@@ -138,6 +178,62 @@ class TelemetryClient {
   }
 }
 
+export class RealtimeClient {
+  constructor(private readonly client: OpClient<WorkerManagerOps>) {}
+
+  configure(context: RealtimeConfigureInput): Promise<void> {
+    return this.client.call('realtime.configure', context);
+  }
+
+  request<Op extends RealtimeRequestName>(
+    op: Op,
+    input: RealtimeRequestInputOf<Op>,
+    options?: { timeoutMs?: number; signal?: AbortSignal }
+  ): Promise<RealtimeRequestOutputOf<Op>> {
+    const request = (this.client as unknown as RealtimeWorkerClient).call(
+      'realtime.request',
+      {
+        op,
+        input,
+        timeoutMs: options?.timeoutMs,
+      }
+    );
+    if (!options?.signal) {
+      return request;
+    }
+    if (options.signal.aborted) {
+      return Promise.reject(realtimeAbortError(op));
+    }
+    let abortHandler: (() => void) | undefined;
+    const aborted = new Promise<never>((_resolve, reject) => {
+      abortHandler = () => reject(realtimeAbortError(op));
+      options.signal?.addEventListener('abort', abortHandler, { once: true });
+    });
+    return Promise.race([request, aborted]).finally(() => {
+      if (abortHandler) {
+        options.signal?.removeEventListener('abort', abortHandler);
+      }
+    });
+  }
+
+  subscribe<Topic extends RealtimeTopicName>(
+    topic: Topic,
+    input: RealtimeTopicInputOf<Topic>
+  ): Observable<RealtimeTopicEventOf<Topic> | RealtimeSubscriptionReady> {
+    return (this.client as unknown as RealtimeWorkerClient).ob$(
+      'realtime.subscribe',
+      {
+        topic,
+        input,
+      }
+    );
+  }
+
+  status(): Promise<RealtimeStatus> {
+    return this.client.call('realtime.status');
+  }
+}
+
 export class StoreClient {
   constructor(private readonly client: OpClient<WorkerOps>) {
     this.docStorage = new WorkerDocStorage(this.client);
@@ -208,6 +304,16 @@ class WorkerDocStorage implements DocStorage {
 
   async deleteDoc(docId: string) {
     return this.client.call('docStorage.deleteDoc', docId);
+  }
+
+  async applyDocLifecycle(
+    docId: string,
+    lifecycle: DocLifecycle
+  ): Promise<DocLifecycleResult> {
+    return this.client.call('docStorage.applyDocLifecycle', {
+      docId,
+      lifecycle,
+    });
   }
 
   subscribeDocUpdate(callback: (update: DocRecord, origin?: string) => void) {
@@ -328,6 +434,12 @@ class WorkerBlobSync implements BlobSync {
 
   downloadBlob(blobId: string): Promise<boolean> {
     return this.client.call('blobSync.downloadBlob', blobId);
+  }
+  registerSource(source: BlobSource): Promise<void> {
+    return this.client.call('blobSync.registerSource', source);
+  }
+  unregisterSource(source: BlobSource): Promise<void> {
+    return this.client.call('blobSync.unregisterSource', source);
   }
   uploadBlob(blob: BlobRecord, force?: boolean): Promise<true> {
     return this.client.call('blobSync.uploadBlob', { blob, force });

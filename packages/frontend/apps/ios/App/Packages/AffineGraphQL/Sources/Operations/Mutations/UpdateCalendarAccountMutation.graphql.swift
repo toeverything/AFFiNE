@@ -37,6 +37,9 @@ public class UpdateCalendarAccountMutation: GraphQLMutation {
         "refreshIntervalMinutes": .variable("refreshIntervalMinutes")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UpdateCalendarAccountMutation.Data.self
+    ] }
 
     public var updateCalendarAccount: UpdateCalendarAccount? { __data["updateCalendarAccount"] }
 
@@ -61,6 +64,9 @@ public class UpdateCalendarAccountMutation: GraphQLMutation {
         .field("calendarsCount", Int.self),
         .field("createdAt", AffineGraphQL.DateTime.self),
         .field("updatedAt", AffineGraphQL.DateTime.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        UpdateCalendarAccountMutation.Data.UpdateCalendarAccount.self
       ] }
 
       public var id: String { __data["id"] }

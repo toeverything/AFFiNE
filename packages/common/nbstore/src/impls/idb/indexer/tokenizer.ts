@@ -52,7 +52,7 @@ export class NGramTokenizer implements Tokenizer {
 
   tokenize(text: string): Token[] {
     const splitted: Token[] = [];
-    for (let i = 0; i < text.length; ) {
+    for (let i = 0; i < text.length;) {
       const nextBreak = Graphemer.nextBreak(text, i);
       const c = text.substring(i, nextBreak);
 
@@ -119,7 +119,7 @@ export class GeneralTokenizer implements Tokenizer {
     let end = 0;
     let lang: string | null = null;
 
-    for (let i = 0; i < text.length; ) {
+    for (let i = 0; i < text.length;) {
       const nextBreak = Graphemer.nextBreak(text, i);
       const c = text.substring(i, nextBreak);
 

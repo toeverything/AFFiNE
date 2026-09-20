@@ -37,6 +37,9 @@ public class CreateChangePasswordUrlMutation: GraphQLMutation {
         "userId": .variable("userId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateChangePasswordUrlMutation.Data.self
+    ] }
 
     /// Create change password url
     public var createChangePasswordUrl: String { __data["createChangePasswordUrl"] }

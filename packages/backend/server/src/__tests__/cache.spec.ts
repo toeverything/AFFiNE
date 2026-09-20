@@ -50,6 +50,13 @@ test('should be able to set cache with ttl', async t => {
   t.true(ttl > 0);
 });
 
+test('should reject invalid ttl options', async t => {
+  t.false(await cache.set(key('test-invalid-ttl'), 1, { ttl: 0 }));
+  t.is(await cache.get(key('test-invalid-ttl')), undefined);
+  t.false(await cache.setnx(key('test-invalid-ttl-nx'), 1, { ttl: 0 }));
+  t.is(await cache.get(key('test-invalid-ttl-nx')), undefined);
+});
+
 test('should be able to incr/decr number cache', async t => {
   t.true(await cache.set(key('test-incr'), 1));
   t.is(await cache.increase(key('test-incr')), 2);
@@ -60,6 +67,11 @@ test('should be able to incr/decr number cache', async t => {
   // increase an nonexists number
   t.is(await cache.increase(key('test-incr2')), 1);
   t.is(await cache.increase(key('test-incr2')), 2);
+
+  const expiringKey = key('test-incr-with-ttl');
+  t.is(await cache.increaseWithTtl(expiringKey, 1000), 1);
+  t.is(await cache.increaseWithTtl(expiringKey, 1000), 2);
+  t.true((await cache.ttl(expiringKey)) > 0);
 });
 
 test('should be able to manipulate list cache', async t => {

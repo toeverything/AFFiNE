@@ -3,7 +3,6 @@ import {
   type ListNotificationsQuery,
   listNotificationsQuery,
   mentionUserMutation,
-  notificationCountQuery,
   type PaginationInput,
   readAllNotificationsMutation,
   readNotificationMutation,
@@ -50,17 +49,6 @@ export class NotificationStore extends Store {
       'notification-count:' + this.serverService.server.id,
       count
     );
-  }
-
-  async getNotificationCount(signal?: AbortSignal) {
-    const result = await this.gqlService.gql({
-      query: notificationCountQuery,
-      context: {
-        signal,
-      },
-    });
-
-    return result.currentUser?.notifications.totalCount;
   }
 
   async listNotification(pagination: PaginationInput, signal?: AbortSignal) {

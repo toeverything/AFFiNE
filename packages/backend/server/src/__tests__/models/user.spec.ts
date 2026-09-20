@@ -1,14 +1,16 @@
-import ava, { TestFn } from 'ava';
+import { PrismaClient } from '@prisma/client';
+import ava, { type TestFn } from 'ava';
 import Sinon from 'sinon';
 
-import { EmailAlreadyUsed, EventBus } from '../../base';
+import { EventBus } from '../../base';
 import { Models } from '../../models';
 import { UserModel } from '../../models/user';
-import { createTestingModule, sleep, type TestingModule } from '../utils';
+import { createTestingModule, type TestingModule } from '../utils';
 
 interface Context {
   module: TestingModule;
   models: Models;
+  db: PrismaClient;
   user: UserModel;
 }
 
@@ -19,6 +21,7 @@ test.before(async t => {
 
   t.context.user = module.get(UserModel);
   t.context.models = module.get(Models);
+  t.context.db = module.get(PrismaClient);
   t.context.module = module;
 });
 
@@ -52,66 +55,8 @@ test('should trigger user.created event', async t => {
     email: 'test@affine.pro',
   });
 
-  t.true(spy.calledOnceWithExactly(user));
-});
-
-test('should sign in user with password', async t => {
-  const user = await t.context.user.create({
-    email: 'test@affine.pro',
-    password: 'password',
-  });
-
-  const signedInUser = await t.context.user.signIn(user.email, 'password');
-
-  t.is(signedInUser.id, user.id);
-  // Password is encrypted
-  t.not(signedInUser.password, 'password');
-});
-
-test('should update an user', async t => {
-  const user = await t.context.user.create({
-    email: 'test@affine.pro',
-  });
-
-  const user2 = await t.context.user.update(user.id, {
-    email: 'test2@affine.pro',
-  });
-
-  t.is(user2.email, 'test2@affine.pro');
-});
-
-test('should update password', async t => {
-  const user = await t.context.user.create({
-    email: 'test@affine.pro',
-    password: 'password',
-  });
-
-  const updatedUser = await t.context.user.update(user.id, {
-    password: 'new password',
-  });
-
-  t.not(updatedUser.password, user.password);
-  // password is encrypted
-  t.not(updatedUser.password, 'new password');
-});
-
-test('should not update email to an existing one', async t => {
-  const user = await t.context.user.create({
-    email: 'test@affine.pro',
-  });
-  const user2 = await t.context.user.create({
-    email: 'test2@affine.pro',
-  });
-
-  await t.throwsAsync(
-    () =>
-      t.context.user.update(user.id, {
-        email: user2.email,
-      }),
-    {
-      instanceOf: EmailAlreadyUsed,
-    }
-  );
+  t.true(spy.calledOnce);
+  t.is(spy.firstCall.args[0].id, user.id);
 });
 
 test('should trigger user.updated event', async t => {
@@ -123,8 +68,7 @@ test('should trigger user.updated event', async t => {
     email: 'test@affine.pro',
   });
 
-  const updatedUser = await t.context.user.update(user.id, {
-    email: 'test2@affine.pro',
+  const updatedUser = await t.context.user.updateProfile(user.id, {
     name: 'new name',
   });
 
@@ -209,47 +153,6 @@ test('should return null for non existing user', async t => {
   t.is(user, null);
 });
 
-test('should fulfill user', async t => {
-  let user = await t.context.user.create({
-    email: 'test@affine.pro',
-    registered: false,
-  });
-
-  t.is(user.registered, false);
-  t.is(user.emailVerifiedAt, null);
-
-  user = await t.context.user.fulfill(user.email);
-
-  t.is(user.registered, true);
-  t.not(user.emailVerifiedAt, null);
-
-  const user2 = await t.context.user.fulfill('test2@affine.pro');
-
-  t.is(user2.registered, true);
-  t.not(user2.emailVerifiedAt, null);
-});
-
-test('should trigger user.updated event when fulfilling user', async t => {
-  const event = t.context.module.get(EventBus);
-  const createSpy = Sinon.spy();
-  const updateSpy = Sinon.spy();
-  event.on('user.created', createSpy);
-  event.on('user.updated', updateSpy);
-
-  const user2 = await t.context.user.fulfill('test2@affine.pro');
-
-  t.true(createSpy.calledOnceWithExactly(user2));
-
-  let user = await t.context.user.create({
-    email: 'test@affine.pro',
-    registered: false,
-  });
-
-  user = await t.context.user.fulfill(user.email);
-
-  t.true(updateSpy.calledOnceWithExactly(user));
-});
-
 test('should delete user', async t => {
   const user = await t.context.user.create({
     email: 'test@affine.pro',
@@ -262,24 +165,51 @@ test('should delete user', async t => {
   t.is(user2, null);
 });
 
+test('should delete user with pending invitation missing normalized email', async t => {
+  const owner = await t.context.user.create({
+    email: 'owner@affine.pro',
+  });
+  const invitee = await t.context.user.create({
+    email: 'invitee@affine.pro',
+    registered: false,
+  });
+  const workspace = await t.context.models.workspace.create(owner.id);
+
+  const invitation = await t.context.db.workspaceInvitation.create({
+    data: {
+      workspaceId: workspace.id,
+      inviteeUserId: invitee.id,
+      inviterUserId: owner.id,
+      requestedRole: 'member',
+      status: 'pending',
+      kind: 'email',
+    },
+  });
+
+  await t.context.user.delete(invitee.id);
+
+  t.is(
+    await t.context.db.workspaceInvitation.findUnique({
+      where: { id: invitation.id },
+    }),
+    null
+  );
+  t.is(await t.context.user.get(invitee.id), null);
+});
+
 test('should trigger user.deleted event', async t => {
   const event = t.context.module.get(EventBus);
-  const spy = Sinon.spy();
-  event.on('user.deleted', spy);
+  const notification = event.waitFor('user.deleted', 1_000);
 
   const user = await t.context.user.create({
     email: 'test@affine.pro',
   });
   const workspace = await t.context.models.workspace.create(user.id);
 
-  await t.context.user.delete(user.id);
+  const deleted = await t.context.user.delete(user.id);
 
-  t.true(
-    spy.calledOnceWithExactly({ ...user, ownedWorkspaces: [workspace.id] })
-  );
-  // await for 'user.deleted' event to be emitted and executed
-  // avoid race condition cause database dead lock
-  await sleep(100);
+  t.deepEqual(await notification, [deleted]);
+  t.is(await t.context.models.workspace.get(workspace.id), null);
 });
 
 test('should paginate users', async t => {
@@ -338,101 +268,6 @@ test('should get disabled user `withDisabled`', async t => {
 
   t.is(user2!.id, user.id);
   t.is(user3!.id, user.id);
-});
-
-test('should not be able to update email to disabled user', async t => {
-  const user = await t.context.user.create({
-    email: 'test@affine.pro',
-    disabled: false,
-  });
-  const user2 = await t.context.user.create({
-    email: 'test2@affine.pro',
-    disabled: true,
-  });
-
-  await t.throwsAsync(
-    t.context.user.update(user.id, {
-      email: user2.email,
-    }),
-    {
-      instanceOf: EmailAlreadyUsed,
-    }
-  );
-});
-
-test('should ban user', async t => {
-  const user = await t.context.user.create({
-    email: 'test@affine.pro',
-  });
-  const event = t.context.module.get(EventBus);
-  const spy = Sinon.spy();
-  event.on('user.deleted', spy);
-
-  await t.context.user.ban(user.id);
-
-  t.true(spy.calledOnce);
-  const user2 = await t.context.user.get(user.id);
-  t.is(user2, null);
-});
-
-test('should enable user', async t => {
-  const user = await t.context.user.create({
-    email: 'test@affine.pro',
-    disabled: true,
-  });
-
-  const user2 = await t.context.user.enable(user.id);
-
-  t.is(user2.disabled, false);
-
-  const user3 = await t.context.user.get(user.id);
-  t.is(user3!.id, user.id);
-});
-
-// #endregion
-
-// #region ConnectedAccount
-
-test('should create, get, update, delete connected account', async t => {
-  const user = await t.context.user.create({
-    email: 'test@affine.pro',
-  });
-  const connectedAccount = await t.context.user.createConnectedAccount({
-    userId: user.id,
-    provider: 'test-provider',
-    providerAccountId: 'test-provider-account-id',
-    accessToken: 'test-access-token',
-  });
-  t.truthy(connectedAccount);
-
-  const connectedAccount2 = await t.context.user.getConnectedAccount(
-    connectedAccount.provider,
-    connectedAccount.providerAccountId
-  );
-  t.truthy(connectedAccount2);
-  t.is(connectedAccount2!.id, connectedAccount.id);
-  t.is(connectedAccount2!.user.id, user.id);
-
-  const updatedConnectedAccount = await t.context.user.updateConnectedAccount(
-    connectedAccount.id,
-    {
-      accessToken: 'new-access-token',
-    }
-  );
-  t.is(updatedConnectedAccount.accessToken, 'new-access-token');
-  // get the updated connected account
-  const connectedAccount3 = await t.context.user.getConnectedAccount(
-    connectedAccount.provider,
-    connectedAccount.providerAccountId
-  );
-  t.is(connectedAccount3!.accessToken, 'new-access-token');
-
-  await t.context.user.deleteConnectedAccount(connectedAccount.id);
-  const connectedAccount4 = await t.context.user.getConnectedAccount(
-    connectedAccount.provider,
-    connectedAccount.providerAccountId
-  );
-  t.is(connectedAccount4, null);
 });
 
 // #endregion

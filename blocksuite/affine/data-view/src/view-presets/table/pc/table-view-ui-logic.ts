@@ -191,11 +191,13 @@ export class TableViewUI extends DataViewUIBase<TableViewUILogic> {
       paddingRight: `${vPadding}px`,
     });
     return html`
-      ${this.logic.headerWidget
-        ? renderUniLit(this.logic.headerWidget, {
-            dataViewLogic: this.logic,
-          })
-        : ''}
+      ${
+        this.logic.headerWidget
+          ? renderUniLit(this.logic.headerWidget, {
+              dataViewLogic: this.logic,
+            })
+          : ''
+      }
       <div class="${tableWrapperStyle}" style="${wrapperStyle}">
         <div
           ${ref(this.logic.scrollContainer$)}
@@ -207,11 +209,13 @@ export class TableViewUI extends DataViewUIBase<TableViewUILogic> {
             class="affine-database-table-container"
             style="${containerStyle}"
           >
-            ${this.logic.view.groupTrait.allHidden$.value
-              ? html`<div class="${groupsHiddenMessageStyle}">
-                  All groups are hidden
-                </div>`
-              : this.renderTable()}
+            ${
+              this.logic.view.groupTrait.allHidden$.value
+                ? html`<div class="${groupsHiddenMessageStyle}">
+                    All groups are hidden
+                  </div>`
+                : this.renderTable()
+            }
           </div>
         </div>
       </div>

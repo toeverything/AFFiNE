@@ -67,11 +67,14 @@ interface ErrorBaseProps {
   buttons?: ReactElement[];
 }
 
+const DEFAULT_ICON = <FileIcon />;
+const EMPTY_BUTTONS: ReactElement[] = [];
+
 const ErrorBase = ({
   title,
   subtitle,
-  icon = <FileIcon />,
-  buttons = [],
+  icon = DEFAULT_ICON,
+  buttons = EMPTY_BUTTONS,
 }: ErrorBaseProps) => {
   return (
     <div className={clsx([styles.viewer, styles.error])}>

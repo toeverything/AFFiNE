@@ -1,7 +1,12 @@
 import { z } from 'zod';
 
-import type { ChatPrompt } from './prompt/chat-prompt';
+import type { Turn } from './core/types';
+import type { ResolvedPrompt } from './prompt';
 import { PromptMessageSchema, PureMessageSchema } from './providers/types';
+import {
+  type SessionFocus,
+  TurnScopeSnapshotSchema,
+} from './runtime/contracts/shared';
 
 const takeFirst = (v: unknown) => (Array.isArray(v) ? v[0] : v);
 
@@ -35,17 +40,40 @@ export type ToolsConfig = z.infer<typeof ToolsConfigSchema>;
 export const ChatQuerySchema = z
   .object({
     messageId: zMaybeString,
+    profileId: zMaybeString,
     modelId: zMaybeString,
+    routeTargetId: zMaybeString,
+    byokLeaseId: zMaybeString,
     retry: zBool,
     reasoning: zBool,
     webSearch: zBool,
     toolsConfig: ToolsConfigSchema,
   })
   .catchall(z.string())
+  .superRefine((value, context) => {
+    if (!!value.profileId !== !!value.modelId) {
+      context.addIssue({
+        code: 'custom',
+        message: 'profileId and modelId must be provided together',
+      });
+    }
+    for (const field of ['requirements', 'deployment', 'profiles', 'presets']) {
+      if (Object.hasOwn(value, field)) {
+        context.addIssue({
+          code: 'custom',
+          path: [field],
+          message: `${field} is owned by the native route policy`,
+        });
+      }
+    }
+  })
   .transform(
     ({
       messageId,
+      profileId,
       modelId,
+      routeTargetId,
+      byokLeaseId,
       retry,
       reasoning,
       webSearch,
@@ -53,7 +81,10 @@ export const ChatQuerySchema = z
       ...params
     }) => ({
       messageId,
+      profileId,
       modelId,
+      routeTargetId,
+      byokLeaseId,
       retry,
       reasoning,
       webSearch,
@@ -66,6 +97,7 @@ export const ChatQuerySchema = z
 
 export const ChatMessageSchema = PromptMessageSchema.extend({
   id: z.string().optional(),
+  scopeSnapshot: TurnScopeSnapshotSchema.nullable().optional(),
   createdAt: z.date(),
 }).strict();
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
@@ -81,11 +113,7 @@ export const ChatHistorySchema = z
     title: z.string().nullable(),
 
     action: z.string().nullable(),
-    model: z.string(),
-    optionalModels: z.array(z.string()),
     promptName: z.string(),
-
-    tokens: z.number(),
     messages: z.array(ChatMessageSchema),
     createdAt: z.date(),
     updatedAt: z.date(),
@@ -102,30 +130,31 @@ export type SubmittedMessage = z.infer<typeof SubmittedMessageSchema>;
 
 // ======== Chat Session ========
 
-export type ChatSessionOptions = Pick<
-  ChatHistory,
-  'userId' | 'workspaceId' | 'docId' | 'promptName' | 'pinned'
-> & {
+export type ChatSessionOptions = {
+  userId: string;
+  workspaceId: string;
+  docId: string | null;
+  promptName: string;
+  pinned: boolean;
   reuseLatestChat?: boolean;
+  personal?: boolean;
 };
 
-export type ChatSessionForkOptions = Pick<
-  ChatHistory,
-  'userId' | 'sessionId' | 'workspaceId' | 'docId'
-> & {
+export type ChatSessionForkOptions = {
+  userId: string;
+  sessionId: string;
+  workspaceId: string;
+  docId: string;
   latestMessageId?: string;
+  personal?: boolean;
 };
 
-export type ChatSessionState = Pick<
-  ChatHistory,
-  'userId' | 'sessionId' | 'workspaceId' | 'docId' | 'messages'
-> & {
-  prompt: ChatPrompt;
-};
-
-export type CopilotContextFile = {
-  id: string; // fileId
-  created_at: number;
-  // embedding status
-  status: 'in_progress' | 'completed' | 'failed';
+export type ChatSessionState = {
+  userId: string;
+  sessionId: string;
+  workspaceId: string;
+  docId: string | null;
+  turns: Turn[];
+  focus: SessionFocus;
+  prompt: ResolvedPrompt;
 };

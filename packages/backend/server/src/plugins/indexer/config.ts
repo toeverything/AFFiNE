@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { defineModuleConfig } from '../../base';
 
 export enum SearchProviderType {
-  Manticoresearch = 'manticoresearch',
+  Embedded = 'embedded',
   Elasticsearch = 'elasticsearch',
+  ManticoreSearch = 'manticoresearch',
 }
 
 const SearchProviderTypeSchema = z.nativeEnum(SearchProviderType);
@@ -20,9 +21,6 @@ declare global {
         username: string;
         password: string;
       };
-      autoIndex: {
-        batchSize: number;
-      };
     };
   }
 }
@@ -31,18 +29,15 @@ defineModuleConfig('indexer', {
   enabled: {
     desc: 'Enable indexer plugin',
     default: false,
-    env: ['AFFINE_INDEXER_ENABLED', 'boolean'],
   },
   'provider.type': {
-    desc: 'Indexer search service provider name',
-    default: SearchProviderType.Manticoresearch,
+    desc: 'Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.',
+    default: SearchProviderType.Embedded,
     shape: SearchProviderTypeSchema,
-    env: ['AFFINE_INDEXER_SEARCH_PROVIDER', 'string'],
   },
   'provider.endpoint': {
-    desc: 'Indexer search service endpoint',
-    default: 'http://localhost:9308',
-    env: ['AFFINE_INDEXER_SEARCH_ENDPOINT', 'string'],
+    desc: 'Remote indexer endpoint. Not used by the embedded provider.',
+    default: '',
     validate: val => {
       // allow to be nullable and empty string
       if (!val) {
@@ -53,25 +48,17 @@ defineModuleConfig('indexer', {
     },
   },
   'provider.apiKey': {
-    desc: 'Indexer search service api key. Optional for elasticsearch',
+    desc: 'Indexer search service api key. Optional for remote providers',
     link: 'https://www.elastic.co/guide/server/current/api-key.html',
     default: '',
-    env: ['AFFINE_INDEXER_SEARCH_API_KEY', 'string'],
   },
   'provider.username': {
-    desc: 'Indexer search service auth username, if not set, basic auth will be disabled. Optional for elasticsearch',
+    desc: 'Indexer search service auth username, if not set, basic auth will be disabled. Optional for remote providers',
     link: 'https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html',
     default: '',
-    env: ['AFFINE_INDEXER_SEARCH_USERNAME', 'string'],
   },
   'provider.password': {
-    desc: 'Indexer search service auth password, if not set, basic auth will be disabled. Optional for elasticsearch',
+    desc: 'Indexer search service auth password, if not set, basic auth will be disabled. Optional for remote providers',
     default: '',
-    env: ['AFFINE_INDEXER_SEARCH_PASSWORD', 'string'],
-  },
-  'autoIndex.batchSize': {
-    desc: 'Number of workspaces automatically indexed per batch',
-    default: 10,
-    shape: z.number().int().positive().max(1000),
   },
 });

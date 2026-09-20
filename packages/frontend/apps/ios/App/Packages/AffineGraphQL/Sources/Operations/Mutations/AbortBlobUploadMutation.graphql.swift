@@ -42,6 +42,9 @@ public class AbortBlobUploadMutation: GraphQLMutation {
         "uploadId": .variable("uploadId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AbortBlobUploadMutation.Data.self
+    ] }
 
     public var abortBlobUpload: Bool { __data["abortBlobUpload"] }
   }

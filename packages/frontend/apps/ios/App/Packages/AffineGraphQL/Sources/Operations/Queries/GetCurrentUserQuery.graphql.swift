@@ -7,7 +7,7 @@ public class GetCurrentUserQuery: GraphQLQuery {
   public static let operationName: String = "getCurrentUser"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getCurrentUser { currentUser { __typename id name email emailVerified avatarUrl token { __typename sessionToken } } }"#
+      #"query getCurrentUser { currentUser { __typename id name email emailVerified avatarUrl hasPassword features } }"#
     ))
 
   public init() {}
@@ -19,6 +19,9 @@ public class GetCurrentUserQuery: GraphQLQuery {
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Query }
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
+    ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetCurrentUserQuery.Data.self
     ] }
 
     /// Get current user
@@ -39,7 +42,11 @@ public class GetCurrentUserQuery: GraphQLQuery {
         .field("email", String.self),
         .field("emailVerified", Bool.self),
         .field("avatarUrl", String?.self),
-        .field("token", Token.self),
+        .field("hasPassword", Bool?.self),
+        .field("features", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetCurrentUserQuery.Data.CurrentUser.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }
@@ -51,24 +58,10 @@ public class GetCurrentUserQuery: GraphQLQuery {
       public var emailVerified: Bool { __data["emailVerified"] }
       /// User avatar url
       public var avatarUrl: String? { __data["avatarUrl"] }
-      @available(*, deprecated, message: "use [/api/auth/sign-in?native=true] instead")
-      public var token: Token { __data["token"] }
-
-      /// CurrentUser.Token
-      ///
-      /// Parent Type: `TokenType`
-      public struct Token: AffineGraphQL.SelectionSet {
-        public let __data: DataDict
-        public init(_dataDict: DataDict) { __data = _dataDict }
-
-        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.TokenType }
-        public static var __selections: [ApolloAPI.Selection] { [
-          .field("__typename", String.self),
-          .field("sessionToken", String?.self),
-        ] }
-
-        public var sessionToken: String? { __data["sessionToken"] }
-      }
+      /// User password has been set
+      public var hasPassword: Bool? { __data["hasPassword"] }
+      /// Enabled features of a user
+      public var features: [GraphQLEnum<AffineGraphQL.FeatureType>] { __data["features"] }
     }
   }
 }

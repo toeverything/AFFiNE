@@ -65,18 +65,32 @@ export function configureDefaultAuthProvider(framework: Framework) {
 
         if (credential.verifyToken) {
           headers['x-captcha-token'] = credential.verifyToken;
+          headers['x-captcha-provider'] = credential.challenge
+            ? 'hashcash'
+            : 'turnstile';
         }
         if (credential.challenge) {
           headers['x-captcha-challenge'] = credential.challenge;
         }
 
-        await fetchService.fetch('/api/auth/sign-in', {
+        const res = await fetchService.fetch('/api/auth/sign-in', {
           method: 'POST',
-          body: JSON.stringify(credential),
+          body: JSON.stringify({
+            email: credential.email,
+            password: credential.password,
+          }),
           headers: {
             'content-type': 'application/json',
             ...headers,
           },
+        });
+        return await res.json();
+      },
+      async signInOpenAppSignInCode(code: string) {
+        await fetchService.fetch('/api/auth/open-app/sign-in', {
+          method: 'POST',
+          body: JSON.stringify({ code }),
+          headers: { 'content-type': 'application/json' },
         });
       },
       async signOut() {
@@ -86,6 +100,7 @@ export function configureDefaultAuthProvider(framework: Framework) {
           headers: csrfToken ? { 'x-affine-csrf-token': csrfToken } : undefined,
         });
       },
+      async clearSession() {},
     };
   });
 }

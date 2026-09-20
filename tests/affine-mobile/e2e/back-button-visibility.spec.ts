@@ -1,22 +1,21 @@
 import { test } from '@affine-test/kit/mobile';
 import { expect, type Page } from '@playwright/test';
 
-import { expandCollapsibleSection, openTab } from './utils';
+import { expandCollapsibleSection, openTab, pageBack } from './utils';
 
 const locateBack = (page: Page) => page.getByTestId('page-header-back');
 
-test('new doc via app tab should not show back', async ({ page }) => {
-  // directly open new doc, should not show back
+test('new doc returns to its source without creating a New destination', async ({
+  page,
+}) => {
   await openTab(page, 'New Page');
-  await expect(locateBack(page)).not.toBeVisible();
-  const docId = await page.evaluate(() => location.pathname.split('/').pop());
+  await expect(locateBack(page)).toBeVisible();
+  await pageBack(page);
+  await expect(page).toHaveURL(/\/home$/);
 
-  // back to home, and open the doc, should show back
-  await openTab(page, 'home');
   await expandCollapsibleSection(page, 'recent');
-  const docCard = page.locator(
-    `[data-testid="doc-card"][data-doc-id="${docId}"]`
-  );
+  const docCard = page.getByTestId('doc-card').first();
+  await expect(docCard).toBeVisible();
   await docCard.click();
   await expect(locateBack(page)).toBeVisible();
 });

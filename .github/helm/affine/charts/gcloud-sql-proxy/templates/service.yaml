@@ -12,6 +12,10 @@ spec:
       targetPort: cloud-sql-proxy
       protocol: TCP
       name: cloud-sql-proxy
+    - port: 9801
+      targetPort: 9801
+      protocol: TCP
+      name: health
   selector:
     {{- include "gcloud-sql-proxy.selectorLabels" . | nindent 4 }}
 {{- end }}

@@ -1,6 +1,8 @@
 mod error;
 mod ffi_types;
 mod payload_codec;
+#[cfg(any(target_os = "android", target_os = "ios"))]
+mod preview;
 mod storage;
 #[cfg(test)]
 mod tests;
@@ -12,8 +14,11 @@ use affine_common::hashcash::Stamp;
 pub(crate) use error::Result;
 pub use error::UniffiError;
 pub use ffi_types::{
-  Blob, BlockInfo, CrawlResult, DocClock, DocRecord, DocUpdate, ListedBlob, MatchRange, SearchHit, SetBlob,
+  Blob, BlockInfo, CrawlResult, DocClock, DocIndexedClock, DocRecord, DocUpdate, IndexAggregateResult, IndexBucket,
+  IndexField, IndexHighlight, IndexHighlightValue, IndexHit, IndexSearchResult, IndexSpan, ListedBlob, SetBlob,
 };
+#[cfg(any(target_os = "android", target_os = "ios"))]
+pub use preview::{render_mermaid_preview_svg, render_typst_preview_svg};
 pub use storage::{DocStoragePool, new_doc_storage_pool};
 
 uniffi::setup_scaffolding!("affine_mobile_native");

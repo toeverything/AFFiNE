@@ -1,4 +1,3 @@
-import { cleanupWorkspace } from '@affine-test/kit/utils/cloud';
 import { expect, type Page } from '@playwright/test';
 
 const WORKSPACE_EMBEDDING_SWITCH_TEST_ID = 'workspace-embedding-setting-switch';
@@ -6,6 +5,9 @@ const WORKSPACE_EMBEDDING_SWITCH_TEST_ID = 'workspace-embedding-setting-switch';
 export class SettingsPanelUtils {
   public static async openSettingsPanel(page: Page) {
     if (await page.getByTestId('workspace-setting:embedding').isHidden()) {
+      await page
+        .getByTestId('slider-bar-workspace-setting-button')
+        .waitFor({ state: 'visible' });
       await page.getByTestId('slider-bar-workspace-setting-button').click();
       await page.getByTestId('workspace-setting:embedding').click();
       await page.getByTestId('workspace-embedding-setting-header').waitFor({
@@ -18,7 +20,7 @@ export class SettingsPanelUtils {
     if (
       await page.getByTestId('workspace-embedding-setting-wrapper').isVisible()
     ) {
-      await page.getByTestId('modal-close-button').click();
+      await page.keyboard.press('Escape');
       await page.getByTestId('workspace-embedding-setting-wrapper').waitFor({
         state: 'hidden',
       });
@@ -92,7 +94,7 @@ export class SettingsPanelUtils {
 
       await page
         .getByTestId('workspace-embedding-setting-attachment-uploading-item')
-        .waitFor({ state: 'hidden' });
+        .waitFor({ state: 'hidden', timeout: 30_000 });
     }
   }
 
@@ -161,13 +163,22 @@ export class SettingsPanelUtils {
     const searcher = await page.getByTestId('doc-selector-layout');
     const searchInput = await page.getByTestId('doc-selector-search-input');
 
+    await searchInput.waitFor({ state: 'visible' });
     await searchInput.focus();
     await page.keyboard.insertText(doc);
 
-    const pageListItem = searcher.getByTestId('doc-list-item');
-    await expect(pageListItem).toHaveCount(1);
-    const pageListItemTitle = pageListItem.getByTestId('doc-list-item-title');
-    await expect(pageListItemTitle).toHaveText(doc);
+    const pageListItem = searcher
+      .getByTestId('doc-list-item')
+      .filter({
+        has: page
+          .getByTestId('doc-list-item-title')
+          .getByText(doc, { exact: true }),
+      })
+      .first();
+    await expect(pageListItem).toBeVisible();
+    await expect(pageListItem.getByTestId('doc-list-item-title')).toHaveText(
+      doc
+    );
     await pageListItem.click();
 
     await searcher.getByTestId('doc-selector-confirm-button').click();
@@ -200,7 +211,7 @@ export class SettingsPanelUtils {
       await searchInput.focus();
       await page.keyboard.insertText(doc);
 
-      const pageListItem = searcher.getByTestId('page-list-item');
+      const pageListItem = searcher.getByTestId('doc-list-item');
       await expect(pageListItem).toHaveCount(1);
 
       await pageListItem.getByTestId('affine-checkbox').uncheck();
@@ -215,7 +226,6 @@ export class SettingsPanelUtils {
     status = 'synced'
   ) {
     await expect(async () => {
-      await cleanupWorkspace(page.url().split('/').slice(-2)[0] || '');
       await this.openSettingsPanel(page);
       const title = page.getByTestId('embedding-progress-title');
       // oxlint-disable-next-line prefer-dom-node-dataset
@@ -254,8 +264,17 @@ export class SettingsPanelUtils {
         'workspace-embedding-setting-attachment-item'
       );
       await expect(attachmentItems).toHaveCount(expectedFileCount);
+      await expect(
+        attachmentList.getByTestId(
+          'workspace-embedding-setting-attachment-uploading-item'
+        )
+      ).toHaveCount(0);
     }).toPass({ timeout });
 
-    await this.waitForEmbeddingComplete(page, timeout);
+    await expect(async () => {
+      await expect(
+        page.getByTestId('workspace-embedding-setting-attachment-ready-item')
+      ).toHaveCount(expectedFileCount);
+    }).toPass({ timeout });
   }
 }

@@ -159,7 +159,6 @@ test.describe('single edgeless element to linked doc', () => {
       const container = document.querySelector('affine-edgeless-root');
       return container!.service.crud.getElementsByType('group').map(s => ({
         type: s.type,
-        // oxlint-disable-next-line @typescript-eslint/no-explicit-any
         children: s.childElements.map((c: any) => c.type || c.flavour),
       }));
     });

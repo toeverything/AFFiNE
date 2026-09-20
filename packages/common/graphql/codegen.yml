@@ -1,6 +1,6 @@
 hooks:
   afterOneFileWrite:
-    - prettier --write
+    - oxfmt --write
 config:
   strict: true
   maybeValue: T | null

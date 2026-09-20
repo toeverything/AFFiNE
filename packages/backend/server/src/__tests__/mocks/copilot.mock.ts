@@ -1,252 +1,101 @@
-import { randomBytes } from 'node:crypto';
+import serverNativeModule from '@affine/server-native';
 
-import {
-  CopilotChatOptions,
-  CopilotEmbeddingOptions,
-  CopilotImageOptions,
-  CopilotStructuredOptions,
-  ModelConditions,
-  ModelInputType,
-  ModelOutputType,
-  PromptMessage,
-  StreamObject,
-} from '../../plugins/copilot/providers';
-import {
-  DEFAULT_DIMENSIONS,
-  OpenAIProvider,
-} from '../../plugins/copilot/providers/openai';
-import { sleep } from '../utils/utils';
+import { EMBEDDING_DIMENSIONS } from '../../models';
 
-export class MockCopilotProvider extends OpenAIProvider {
-  override readonly models = [
-    {
-      id: 'test',
-      capabilities: [
-        {
-          input: [ModelInputType.Text],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-          defaultForOutputType: true,
-        },
-      ],
-    },
-    {
-      id: 'test-image',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Image],
-          defaultForOutputType: true,
-        },
-      ],
-    },
-    {
-      id: 'gpt-5',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
-      ],
-    },
-    {
-      id: 'gpt-5-2025-08-07',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
-      ],
-    },
-    {
-      id: 'gpt-5-mini',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
-      ],
-    },
-    {
-      id: 'gpt-5-nano',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
-      ],
-    },
-    {
-      id: 'gpt-image-1',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Image],
-          defaultForOutputType: true,
-        },
-      ],
-    },
-    {
-      id: 'gemini-2.5-flash',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
-      ],
-    },
-    {
-      id: 'gemini-2.5-pro',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
-      ],
-    },
-    {
-      id: 'gemini-3.1-pro-preview',
-      capabilities: [
-        {
-          input: [
-            ModelInputType.Text,
-            ModelInputType.Image,
-            ModelInputType.Audio,
-          ],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
-      ],
-    },
-  ];
+const STREAM_END = '__AFFINE_COPILOT_STREAM_END__';
+const TEXT = 'generate text to text';
+const STREAM_TEXT = 'generate text to text stream';
 
-  override async text(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): Promise<string> {
-    const fullCond = {
-      ...cond,
-      outputType: ModelOutputType.Text,
+function structuredValue(schema: unknown, key?: string): unknown {
+  if (!schema || typeof schema !== 'object') return TEXT;
+  const value = schema as Record<string, unknown>;
+  if (Array.isArray(value.enum)) return value.enum[0];
+  if (Array.isArray(value.anyOf)) return structuredValue(value.anyOf[0], key);
+  if (Array.isArray(value.oneOf)) return structuredValue(value.oneOf[0], key);
+  if (value.type === 'object') {
+    return Object.fromEntries(
+      Object.entries((value.properties as Record<string, unknown>) ?? {}).map(
+        ([name, property]) => [name, structuredValue(property, name)]
+      )
+    );
+  }
+  if (value.type === 'array') return [structuredValue(value.items, key)];
+  if (value.type === 'boolean') return true;
+  if (value.type === 'number' || value.type === 'integer') return 1;
+  if (key === 'title') return 'Weekly Sync';
+  if (key === 'speaker' || key === 'a') return 'A';
+  if (key === 'text' || key === 'transcription' || key === 't') {
+    return 'Hello, everyone.';
+  }
+  return TEXT;
+}
+
+function executionResult(input: { slot: string; request: unknown }) {
+  const request = input.request as Record<string, unknown>;
+  let result: unknown;
+  if (input.slot === 'index.embedding') {
+    const inputs = request.inputs as unknown[];
+    const dimensions =
+      (request.dimensions as number | undefined) ?? EMBEDDING_DIMENSIONS;
+    result = {
+      embeddings: inputs.map(() =>
+        Array.from({ length: dimensions }, (_, index) => index + 1)
+      ),
     };
-    await this.checkParams({ messages, cond: fullCond, options });
-    // make some time gap for history test case
-    await sleep(100);
-    return 'generate text to text';
+  } else if (input.slot === 'search.rerank') {
+    const candidates = request.candidates as unknown[];
+    result = {
+      scores: candidates.map((_, index) => candidates.length - index),
+    };
+  } else if (input.slot === 'image.generate') {
+    result = {
+      images: [
+        {
+          data_base64: Buffer.from('generated image').toString('base64'),
+          media_type: 'image/jpeg',
+        },
+      ],
+    };
+  } else if (input.slot.includes('structured')) {
+    const outputJson = structuredValue(request.schema);
+    result = {
+      output_json: outputJson,
+      output_text: JSON.stringify(outputJson),
+    };
+  } else {
+    result = { output_text: TEXT };
   }
+  return JSON.stringify({ events: [], result });
+}
 
-  override async *streamText(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): AsyncIterable<string> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ messages, cond: fullCond, options });
-
-    // make some time gap for history test case
-    await sleep(100);
-
-    const result = 'generate text to text stream';
-    for (const message of result) {
-      yield message;
-      if (options.signal?.aborted) {
-        break;
-      }
+export function installMockCopilotRuntime() {
+  const prototype = serverNativeModule.BackendRuntime.prototype;
+  const execute = prototype.executeCopilot;
+  const stream = prototype.executeCopilotStream;
+  prototype.executeCopilot = async input => executionResult(input);
+  prototype.executeCopilotStream = async (
+    _input,
+    _maxSteps,
+    callback,
+    _toolCallback
+  ) => {
+    callback(null, JSON.stringify({ type: 'message_start', model: 'test' }));
+    for (const text of STREAM_TEXT) {
+      callback(null, JSON.stringify({ type: 'text_delta', text }));
     }
-  }
-
-  override async structure(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotStructuredOptions = {}
-  ): Promise<string> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Structured };
-    await this.checkParams({ messages, cond: fullCond, options });
-
-    // make some time gap for history test case
-    await sleep(100);
-    return 'generate text to text';
-  }
-
-  override async *streamImages(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotImageOptions = {}
-  ) {
-    const fullCond = { ...cond, outputType: ModelOutputType.Image };
-    await this.checkParams({ messages, cond: fullCond, options });
-
-    // make some time gap for history test case
-    await sleep(100);
-
-    const { content: prompt } = [...messages].pop() || {};
-    if (!prompt) throw new Error('Prompt is required');
-
-    const imageUrls = [
-      `https://example.com/${cond.modelId || 'test'}.jpg`,
-      prompt,
-    ];
-
-    for (const imageUrl of imageUrls) {
-      yield imageUrl;
-      if (options.signal?.aborted) {
-        break;
-      }
-    }
-    return;
-  }
-
-  // ====== text to embedding ======
-
-  override async embedding(
-    cond: ModelConditions,
-    messages: string | string[],
-    options: CopilotEmbeddingOptions = { dimensions: DEFAULT_DIMENSIONS }
-  ): Promise<number[][]> {
-    messages = Array.isArray(messages) ? messages : [messages];
-    const fullCond = { ...cond, outputType: ModelOutputType.Embedding };
-    await this.checkParams({ embeddings: messages, cond: fullCond, options });
-
-    // make some time gap for history test case
-    await sleep(100);
-    return [Array.from(randomBytes(options.dimensions)).map(v => v % 128)];
-  }
-
-  override async *streamObject(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): AsyncIterable<StreamObject> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Object };
-    await this.checkParams({ messages, cond: fullCond, options });
-
-    // make some time gap for history test case
-    await sleep(100);
-
-    const result = 'generate text to object stream';
-    for (const data of result) {
-      yield { type: 'text-delta', textDelta: data } as const;
-      if (options.signal?.aborted) {
-        break;
-      }
-    }
-  }
+    callback(
+      null,
+      JSON.stringify({
+        type: 'done',
+        finish_reason: 'stop',
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+      })
+    );
+    callback(null, STREAM_END);
+    return { abort() {} };
+  };
+  return () => {
+    prototype.executeCopilot = execute;
+    prototype.executeCopilotStream = stream;
+  };
 }

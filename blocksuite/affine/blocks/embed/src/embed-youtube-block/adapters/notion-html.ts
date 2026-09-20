@@ -1,8 +1,10 @@
-import { EmbedYoutubeBlockSchema } from '@blocksuite/affine-model';
+import {
+  EmbedYoutubeBlockSchema,
+  youtubeUrlRegex,
+} from '@blocksuite/affine-model';
 import { BlockNotionHtmlAdapterExtension } from '@blocksuite/affine-shared/adapters';
 
 import { createEmbedBlockNotionHtmlAdapterMatcher } from '../../common/adapters/notion-html.js';
-import { youtubeUrlRegex } from '../embed-youtube-model.js';
 
 export const embedYoutubeBlockNotionHtmlAdapterMatcher =
   createEmbedBlockNotionHtmlAdapterMatcher(

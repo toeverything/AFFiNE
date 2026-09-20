@@ -3,7 +3,7 @@
   "description": "Affine scroll anchoring widget.",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "yarn run -T tsc"
   },
   "sideEffects": false,
   "keywords": [],
@@ -17,8 +17,7 @@
     "@blocksuite/std": "workspace:*",
     "@preact/signals-core": "^1.8.0",
     "@toeverything/theme": "^1.1.23",
-    "lit": "^3.2.0",
-    "rxjs": "^7.8.2"
+    "lit": "^3.2.0"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -30,5 +29,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.3"
+  "version": "0.27.5"
 }

@@ -5,6 +5,7 @@ import {
 import {
   BlockMarkdownAdapterExtension,
   type BlockMarkdownAdapterMatcher,
+  createAttachmentBlockSnapshot,
   FOOTNOTE_DEFINITION_PREFIX,
   getFootnoteDefinitionText,
   isFootnoteDefinitionNode,
@@ -56,18 +57,15 @@ export const attachmentBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher 
           }
           walkerContext
             .openNode(
-              {
-                type: 'block',
+              createAttachmentBlockSnapshot({
                 id: nanoid(),
-                flavour: AttachmentBlockSchema.model.flavour,
                 props: {
                   name: fileName,
                   sourceId: blobId,
                   footnoteIdentifier,
                   style: 'citation',
                 },
-                children: [],
-              },
+              }),
               'children'
             )
             .closeNode();

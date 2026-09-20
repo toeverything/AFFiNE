@@ -42,6 +42,9 @@ public class DeleteBlobMutation: GraphQLMutation {
         "permanently": .variable("permanently")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      DeleteBlobMutation.Data.self
+    ] }
 
     public var deleteBlob: Bool { __data["deleteBlob"] }
   }

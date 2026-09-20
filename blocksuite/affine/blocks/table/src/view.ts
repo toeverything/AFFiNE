@@ -9,6 +9,7 @@ import { literal } from 'lit/static-html.js';
 
 import { tableSlashMenuConfig } from './configs/slash-menu';
 import { effects } from './effects';
+import { TableKeymapExtension } from './table-keymap.js';
 
 export class TableViewExtension extends ViewExtensionProvider {
   override name = 'affine-table-block';
@@ -22,6 +23,7 @@ export class TableViewExtension extends ViewExtensionProvider {
     super.setup(context);
     context.register([
       FlavourExtension(TableModelFlavour),
+      TableKeymapExtension,
       BlockViewExtension(TableModelFlavour, literal`affine-table`),
       SlashMenuConfigExtension(TableModelFlavour, tableSlashMenuConfig),
     ]);

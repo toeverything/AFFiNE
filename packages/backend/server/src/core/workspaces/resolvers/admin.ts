@@ -25,13 +25,7 @@ import { SafeIntResolver } from 'graphql-scalars';
 
 import { PaginationInput, URLHelper } from '../../../base';
 import { PageInfo } from '../../../base/graphql/pagination';
-import {
-  Feature,
-  Models,
-  WorkspaceFeatureName,
-  WorkspaceMemberStatus,
-  WorkspaceRole,
-} from '../../../models';
+import { Models, WorkspaceMemberStatus } from '../../../models';
 import { Admin } from '../../common';
 import { WorkspaceUserType } from '../../user';
 import { TimeWindow } from './analytics-types';
@@ -58,6 +52,16 @@ enum AdminSharedLinksOrder {
 
 registerEnumType(AdminSharedLinksOrder, {
   name: 'AdminSharedLinksOrder',
+});
+
+enum AdminWorkspaceMemberRole {
+  Owner = 'Owner',
+  Admin = 'Admin',
+  Collaborator = 'Collaborator',
+}
+
+registerEnumType(AdminWorkspaceMemberRole, {
+  name: 'AdminWorkspaceMemberRole',
 });
 
 function hasSelectedField(
@@ -109,9 +113,6 @@ class ListWorkspaceInput {
   @Field(() => String, { nullable: true })
   keyword?: string;
 
-  @Field(() => [Feature], { nullable: true })
-  features?: WorkspaceFeatureName[];
-
   @Field(() => AdminWorkspaceSort, { nullable: true })
   orderBy?: AdminWorkspaceSort;
 
@@ -145,8 +146,8 @@ class AdminWorkspaceMember {
   @Field(() => String, { nullable: true })
   avatarUrl?: string | null;
 
-  @Field(() => WorkspaceRole)
-  role!: WorkspaceRole;
+  @Field(() => AdminWorkspaceMemberRole)
+  role!: `${AdminWorkspaceMemberRole}`;
 
   @Field(() => WorkspaceMemberStatus)
   status!: WorkspaceMemberStatus;
@@ -177,6 +178,9 @@ class AdminDashboardInput {
 
   @Field(() => Int, { nullable: true, defaultValue: 28 })
   sharedLinkWindowDays?: number;
+
+  @Field(() => Int, { nullable: true, defaultValue: 7 })
+  copilotWindowDays?: number;
 }
 
 @ObjectType()
@@ -240,6 +244,9 @@ class AdminDashboard {
 
   @Field(() => SafeIntResolver)
   copilotConversations!: number;
+
+  @Field(() => TimeWindow)
+  copilotWindow!: TimeWindow;
 
   @Field(() => SafeIntResolver)
   workspaceStorageBytes!: number;
@@ -382,9 +389,6 @@ export class AdminWorkspace {
   @Field()
   enableDocEmbedding!: boolean;
 
-  @Field(() => [Feature])
-  features!: WorkspaceFeatureName[];
-
   @Field(() => WorkspaceUserType, { nullable: true })
   owner?: WorkspaceUserType | null;
 
@@ -425,9 +429,6 @@ class AdminUpdateWorkspaceInput extends PartialType(
 ) {
   @Field()
   id!: string;
-
-  @Field(() => [Feature], { nullable: true })
-  features?: WorkspaceFeatureName[];
 }
 
 @Injectable()
@@ -457,7 +458,6 @@ export class AdminWorkspaceResolver {
       first: filter.first,
       skip: filter.skip,
       keyword: filter.keyword,
-      features: filter.features,
       order: this.mapSort(filter.orderBy),
       flags: {
         public: filter.public ?? undefined,
@@ -479,7 +479,6 @@ export class AdminWorkspaceResolver {
     this.assertCloudOnly();
     const total = await this.models.workspace.adminCountWorkspaces({
       keyword: filter.keyword,
-      features: filter.features,
       flags: {
         public: filter.public ?? undefined,
         enableAi: filter.enableAi ?? undefined,
@@ -497,18 +496,7 @@ export class AdminWorkspaceResolver {
   })
   async adminWorkspace(@Args('id') id: string) {
     this.assertCloudOnly();
-    const { rows } = await this.models.workspace.adminListWorkspaces({
-      first: 1,
-      skip: 0,
-      keyword: id,
-      order: 'createdAt',
-      includeTotal: false,
-    });
-    const row = rows.find(r => r.id === id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return await this.models.workspace.adminGetWorkspace(id);
   }
 
   @Query(() => AdminDashboard, {
@@ -537,6 +525,7 @@ export class AdminWorkspaceResolver {
       storageHistoryDays: input?.storageHistoryDays,
       syncHistoryHours: input?.syncHistoryHours,
       sharedLinkWindowDays: input?.sharedLinkWindowDays,
+      copilotWindowDays: input?.copilotWindowDays,
       includeTopSharedLinks,
     });
 
@@ -611,34 +600,11 @@ export class AdminWorkspaceResolver {
       after: undefined,
     };
 
-    if (query) {
-      const list = await this.models.workspaceUser.search(
-        workspaceId,
-        query,
-        pagination
-      );
-      return list.map(({ user, status, type }) => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatarUrl: user.avatarUrl,
-        role: type,
-        status,
-      }));
-    }
-
-    const [list] = await this.models.workspaceUser.paginate(
-      workspaceId,
-      pagination
-    );
-    return list.map(({ user, status, type }) => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      role: type,
-      status,
-    }));
+    return await this.models.workspaceUser.adminListMembers(workspaceId, {
+      first: pagination.first,
+      offset: pagination.offset,
+      query,
+    });
   }
 
   @ResolveField(() => [AdminWorkspaceSharedLink], {
@@ -654,7 +620,7 @@ export class AdminWorkspaceResolver {
   }
 
   @Mutation(() => AdminWorkspace, {
-    description: 'Update workspace flags and features for admin',
+    description: 'Update workspace flags for admin',
     nullable: true,
   })
   async adminUpdateWorkspace(
@@ -662,39 +628,13 @@ export class AdminWorkspaceResolver {
     input: AdminUpdateWorkspaceInput
   ) {
     this.assertCloudOnly();
-    const { id, features, ...updates } = input;
+    const { id, ...updates } = input;
 
     if (Object.keys(updates).length) {
       await this.models.workspace.update(id, updates);
     }
 
-    if (features) {
-      const current = await this.models.workspaceFeature.list(id);
-      const toAdd = features.filter(feature => !current.includes(feature));
-      const toRemove = current.filter(feature => !features.includes(feature));
-
-      await Promise.all([
-        ...toAdd.map(feature =>
-          this.models.workspaceFeature.add(id, feature, 'admin panel update')
-        ),
-        ...toRemove.map(feature =>
-          this.models.workspaceFeature.remove(id, feature)
-        ),
-      ]);
-    }
-
-    const { rows } = await this.models.workspace.adminListWorkspaces({
-      first: 1,
-      skip: 0,
-      keyword: id,
-      order: 'createdAt',
-      includeTotal: false,
-    });
-    const row = rows.find(r => r.id === id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return await this.models.workspace.adminGetWorkspace(id);
   }
 
   private mapSort(orderBy?: AdminWorkspaceSort) {

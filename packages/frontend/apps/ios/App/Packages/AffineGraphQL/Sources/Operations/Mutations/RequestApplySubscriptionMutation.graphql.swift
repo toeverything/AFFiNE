@@ -26,6 +26,9 @@ public class RequestApplySubscriptionMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("requestApplySubscription", [RequestApplySubscription].self, arguments: ["transactionId": .variable("transactionId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RequestApplySubscriptionMutation.Data.self
+    ] }
 
     /// Request to apply the subscription in advance
     public var requestApplySubscription: [RequestApplySubscription] { __data["requestApplySubscription"] }
@@ -49,6 +52,9 @@ public class RequestApplySubscriptionMutation: GraphQLMutation {
         .field("nextBillAt", AffineGraphQL.DateTime?.self),
         .field("canceledAt", AffineGraphQL.DateTime?.self),
         .field("variant", GraphQLEnum<AffineGraphQL.SubscriptionVariant>?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        RequestApplySubscriptionMutation.Data.RequestApplySubscription.self
       ] }
 
       @available(*, deprecated, message: "removed")

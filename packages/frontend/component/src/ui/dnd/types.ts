@@ -48,10 +48,12 @@ export type toExternalData<D extends DNDData> = (
   args: DraggableGetFeedbackArgs,
   data?: DraggableGet<D['draggable']>
 ) => {
-  [Key in
-    | 'text/uri-list'
-    | 'text/plain'
-    | 'text/html'
-    | 'Files'
-    | (string & {})]?: string;
+  [
+    Key in
+      | 'text/uri-list'
+      | 'text/plain'
+      | 'text/html'
+      | 'Files'
+      | (string & {})
+  ]?: string;
 };

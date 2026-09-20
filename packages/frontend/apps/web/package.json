@@ -1,6 +1,6 @@
 {
   "name": "@affine/web",
-  "version": "0.26.3",
+  "version": "0.27.5",
   "description": "AFFiNE Desktop Web application",
   "private": true,
   "browser": "src/index.tsx",
@@ -12,20 +12,17 @@
     "@affine/component": "workspace:*",
     "@affine/core": "workspace:*",
     "@affine/env": "workspace:*",
-    "@affine/i18n": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@affine/track": "workspace:*",
     "@emotion/react": "^11.14.0",
-    "@sentry/react": "^10.40.0",
     "@toeverything/infra": "workspace:*",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "react-router-dom": "^6.30.3"
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
-    "cross-env": "^10.1.0",
-    "typescript": "^5.9.3"
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   }
 }

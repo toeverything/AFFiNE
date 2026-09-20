@@ -26,6 +26,9 @@ public class UpdateAppConfigMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("updateAppConfig", AffineGraphQL.JSONObject.self, arguments: ["updates": .variable("updates")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UpdateAppConfigMutation.Data.self
+    ] }
 
     /// update app configuration
     public var updateAppConfig: AffineGraphQL.JSONObject { __data["updateAppConfig"] }

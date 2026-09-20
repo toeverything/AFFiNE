@@ -10,6 +10,18 @@ export const cellContainerStyle = css({
   isolation: 'auto',
   textAlign: 'start',
   verticalAlign: 'top',
+  'affine-table[data-internal-range-selection="true"] &': {
+    userSelect: 'text',
+    WebkitUserSelect: 'text',
+  },
+  'affine-table[data-internal-range-selection="true"] & rich-text': {
+    userSelect: 'text',
+    WebkitUserSelect: 'text',
+  },
+  'affine-table[data-internal-range-selection="true"] & rich-text *': {
+    userSelect: 'text',
+    WebkitUserSelect: 'text',
+  },
 });
 
 export const columnOptionsCellStyle = css({

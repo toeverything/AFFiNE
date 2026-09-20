@@ -3,9 +3,12 @@ import {
   registerAffineCommand,
 } from '@affine/core/commands';
 import { useSharingUrl } from '@affine/core/components/hooks/affine/use-share-url';
+import { getDefaultShareMode } from '@affine/core/components/hooks/affine/use-share-url.utils';
+import { EditorService } from '@affine/core/modules/editor';
 import { useIsActiveView } from '@affine/core/modules/workbench';
 import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
 import { track } from '@affine/track';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
 
 export function useRegisterCopyLinkCommands({
@@ -18,6 +21,7 @@ export function useRegisterCopyLinkCommands({
   const isActiveView = useIsActiveView();
   const workspaceId = workspaceMeta.id;
   const isCloud = workspaceMeta.flavour !== 'local';
+  const currentMode = useLiveData(useService(EditorService).editor.mode$);
 
   const { onClickCopyLink } = useSharingUrl({
     workspaceId,
@@ -42,12 +46,14 @@ export function useRegisterCopyLinkCommands({
         icon: null,
         run() {
           track.$.cmdk.general.copyShareLink();
-          isActiveView && isCloud && onClickCopyLink();
+          isActiveView &&
+            isCloud &&
+            onClickCopyLink(getDefaultShareMode(currentMode));
         },
       })
     );
     return () => {
       unsubs.forEach(unsub => unsub());
     };
-  }, [docId, isActiveView, isCloud, onClickCopyLink]);
+  }, [currentMode, docId, isActiveView, isCloud, onClickCopyLink]);
 }

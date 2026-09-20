@@ -12,10 +12,10 @@ export const safeArea = style({
       paddingBottom: `calc(${fallbackVar(bottomOffsetVar, '0px')} + 0px)`,
     },
     '&[data-standalone][data-top]': {
-      paddingTop: `calc(env(safe-area-inset-top, 12px) + ${topOffsetVar})`,
+      paddingTop: `calc(var(--safe-area-inset-top, env(safe-area-inset-top, 12px)) + ${topOffsetVar})`,
     },
     '&[data-standalone][data-bottom]': {
-      paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${fallbackVar(bottomOffsetVar, '0px')})`,
+      paddingBottom: `calc(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + ${fallbackVar(bottomOffsetVar, '0px')})`,
     },
   },
 });

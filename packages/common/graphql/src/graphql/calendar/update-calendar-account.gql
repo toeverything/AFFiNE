@@ -1,5 +1,11 @@
-mutation updateCalendarAccount($accountId: String!, $refreshIntervalMinutes: Int!) {
-  updateCalendarAccount(accountId: $accountId, refreshIntervalMinutes: $refreshIntervalMinutes) {
+mutation updateCalendarAccount(
+  $accountId: String!
+  $refreshIntervalMinutes: Int!
+) {
+  updateCalendarAccount(
+    accountId: $accountId
+    refreshIntervalMinutes: $refreshIntervalMinutes
+  ) {
     id
     provider
     providerAccountId

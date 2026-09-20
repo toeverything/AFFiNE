@@ -1,0 +1,8 @@
+mutation createWorkspaceByokLocalLease(
+  $input: CreateWorkspaceByokLocalLeaseInput!
+) {
+  createWorkspaceByokLocalLease(input: $input) {
+    leaseId
+    expiresAt
+  }
+}

@@ -38,6 +38,9 @@ public class ListCommentChangesQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ListCommentChangesQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -57,6 +60,9 @@ public class ListCommentChangesQuery: GraphQLQuery {
           "pagination": .variable("pagination")
         ]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ListCommentChangesQuery.Data.Workspace.self
+      ] }
 
       /// Get comment changes of a doc
       public var commentChanges: CommentChanges { __data["commentChanges"] }
@@ -74,6 +80,9 @@ public class ListCommentChangesQuery: GraphQLQuery {
           .field("totalCount", Int.self),
           .field("edges", [Edge].self),
           .field("pageInfo", PageInfo.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ListCommentChangesQuery.Data.Workspace.CommentChanges.self
         ] }
 
         public var totalCount: Int { __data["totalCount"] }
@@ -93,6 +102,9 @@ public class ListCommentChangesQuery: GraphQLQuery {
             .field("cursor", String.self),
             .field("node", Node.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            ListCommentChangesQuery.Data.Workspace.CommentChanges.Edge.self
+          ] }
 
           public var cursor: String { __data["cursor"] }
           public var node: Node { __data["node"] }
@@ -111,6 +123,9 @@ public class ListCommentChangesQuery: GraphQLQuery {
               .field("id", AffineGraphQL.ID.self),
               .field("commentId", AffineGraphQL.ID?.self),
               .field("item", AffineGraphQL.JSONObject.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              ListCommentChangesQuery.Data.Workspace.CommentChanges.Edge.Node.self
             ] }
 
             /// The action of the comment change
@@ -136,6 +151,9 @@ public class ListCommentChangesQuery: GraphQLQuery {
             .field("endCursor", String?.self),
             .field("hasNextPage", Bool.self),
             .field("hasPreviousPage", Bool.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            ListCommentChangesQuery.Data.Workspace.CommentChanges.PageInfo.self
           ] }
 
           public var startCursor: String? { __data["startCursor"] }

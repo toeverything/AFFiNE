@@ -32,9 +32,12 @@ export const AuthInput = ({
         onEnter={onEnter}
         {...inputProps}
       />
-      {error && errorHint ? (
-        <div className={styles.authInputError}>{errorHint}</div>
-      ) : null}
+      <div
+        className={styles.authInputError}
+        style={{ visibility: error ? 'visible' : 'hidden' }}
+      >
+        {errorHint}
+      </div>
     </div>
   );
 };

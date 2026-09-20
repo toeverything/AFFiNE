@@ -42,6 +42,9 @@ public class ChangePasswordMutation: GraphQLMutation {
         "newPassword": .variable("newPassword")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ChangePasswordMutation.Data.self
+    ] }
 
     public var changePassword: Bool { __data["changePassword"] }
   }

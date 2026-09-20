@@ -148,9 +148,9 @@ export class MobileTableGroup extends SignalWatcher(
           class=${`group-toggle-btn ${this.collapsed$.value ? '' : 'expanded'}`}
           role="button"
           aria-expanded=${this.collapsed$.value ? 'false' : 'true'}
-          aria-label=${this.collapsed$.value
-            ? 'Expand group'
-            : 'Collapse group'}
+          aria-label=${
+            this.collapsed$.value ? 'Expand group' : 'Collapse group'
+          }
           tabindex="0"
           @click=${this._toggleCollapse}
           @keydown=${(e: KeyboardEvent) => {
@@ -160,9 +160,11 @@ export class MobileTableGroup extends SignalWatcher(
             }
           }}
         >
-          ${this.collapsed$.value
-            ? ToggleRightIcon({ width: '16px', height: '16px' })
-            : ToggleDownIcon({ width: '16px', height: '16px' })}
+          ${
+            this.collapsed$.value
+              ? ToggleRightIcon({ width: '16px', height: '16px' })
+              : ToggleDownIcon({ width: '16px', height: '16px' })
+          }
         </div>
 
         ${GroupTitle(this.group, {
@@ -198,20 +200,22 @@ export class MobileTableGroup extends SignalWatcher(
           }
         )}
       </div>
-      ${this.view.readonly$.value
-        ? null
-        : html` <div
-            class="data-view-table-group-add-row dv-hover"
-            @click="${this.clickAddRow}"
-          >
-            <div
-              class="data-view-table-group-add-row-button dv-icon-16"
-              data-test-id="affine-database-add-row-button"
-              role="button"
+      ${
+        this.view.readonly$.value
+          ? null
+          : html` <div
+              class="data-view-table-group-add-row dv-hover"
+              @click="${this.clickAddRow}"
             >
-              ${PlusIcon()}<span style="font-size: 12px">New Record</span>
-            </div>
-          </div>`}
+              <div
+                class="data-view-table-group-add-row-button dv-icon-16"
+                data-test-id="affine-database-add-row-button"
+                role="button"
+              >
+                ${PlusIcon()}<span style="font-size: 12px">New Record</span>
+              </div>
+            </div>`
+      }
     `;
   }
 

@@ -1,8 +1,13 @@
 import type { MindMapView } from '@blocksuite/affine/gfx/mindmap';
-import { LayoutType, type MindmapElementModel } from '@blocksuite/affine-model';
-import { Bound } from '@blocksuite/global/gfx';
+import { mountShapeTextEditor } from '@blocksuite/affine/gfx/shape';
+import {
+  LayoutType,
+  type MindmapElementModel,
+  type ShapeElementModel,
+} from '@blocksuite/affine-model';
+import { Bound, deserializeXYWH } from '@blocksuite/global/gfx';
 import type { GfxController } from '@blocksuite/std/gfx';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { click, pointermove, wait } from '../utils/common.js';
 import { getDocRootBlock } from '../utils/edgeless.js';
@@ -34,6 +39,148 @@ describe('mindmap', () => {
     gfx = getDocRootBlock(window.doc, window.editor, 'edgeless').gfx;
 
     return cleanup;
+  });
+
+  test('should update mindmap node size during IME composition', async () => {
+    const mindmapId = gfx.surface!.addElement({
+      type: 'mindmap',
+      children: { text: 'root', children: [{ text: 'leaf1' }] },
+    });
+    const mindmap = () => gfx.getElementById(mindmapId) as MindmapElementModel;
+    const root = getDocRootBlock(window.doc, window.editor, 'edgeless');
+
+    doc.captureSync();
+    await wait();
+
+    const rootNode = mindmap().tree.element as ShapeElementModel;
+    const updateSpy = vi.spyOn(gfx.surface!, 'updateElement');
+
+    mountShapeTextEditor(rootNode, root);
+    await wait();
+
+    const shapeEditor = root.querySelector('edgeless-shape-text-editor') as
+      | (HTMLElement & {
+          inlineEditorContainer?: HTMLElement;
+          richText?: HTMLElement;
+        })
+      | null;
+
+    expect(shapeEditor).not.toBeNull();
+    expect(shapeEditor?.richText).toBeTruthy();
+    expect(shapeEditor?.inlineEditorContainer).toBeTruthy();
+    expect(rootNode.maxWidth).toBe(512);
+    const initialWidth = mindmap().tree.element.w;
+    const initialHeight = mindmap().tree.element.h;
+    const exaggeratedScrollWidth = initialWidth + 1000;
+    const exaggeratedScrollHeight = initialHeight + 1000;
+    updateSpy.mockClear();
+
+    const preedit = shapeEditor!.inlineEditorContainer!.querySelector(
+      '[data-v-text="true"]'
+    );
+    expect(preedit).toBeTruthy();
+    shapeEditor!.inlineEditorContainer?.dispatchEvent(
+      new CompositionEvent('compositionstart', {
+        data: '',
+        bubbles: true,
+      })
+    );
+    preedit!.textContent =
+      '测试测试测试测试测试测试测试测试测试测试测试测试测试测试测试测试';
+    Object.defineProperty(shapeEditor!.inlineEditorContainer!, 'scrollWidth', {
+      configurable: true,
+      get: () => exaggeratedScrollWidth,
+    });
+    Object.defineProperty(shapeEditor!.inlineEditorContainer!, 'scrollHeight', {
+      configurable: true,
+      get: () => exaggeratedScrollHeight,
+    });
+
+    const compositionUpdate = new CompositionEvent('compositionupdate', {
+      data: '测试测试测试测试测试测试测试测试测试测试测试测试测试测试测试测试',
+      bubbles: true,
+    });
+
+    shapeEditor!.inlineEditorContainer?.dispatchEvent(compositionUpdate);
+    await wait();
+    await wait();
+
+    const compositionWidths = updateSpy.mock.calls
+      .filter(
+        (call): call is [string, { xywh: string }] =>
+          call[0] === rootNode.id &&
+          typeof call[1] === 'object' &&
+          call[1] !== null &&
+          'xywh' in call[1] &&
+          typeof call[1].xywh === 'string'
+      )
+      .map(([, payload]) => deserializeXYWH(payload.xywh)[2]);
+    const compositionHeights = updateSpy.mock.calls
+      .filter(
+        (call): call is [string, { xywh: string }] =>
+          call[0] === rootNode.id &&
+          typeof call[1] === 'object' &&
+          call[1] !== null &&
+          'xywh' in call[1] &&
+          typeof call[1].xywh === 'string'
+      )
+      .map(([, payload]) => deserializeXYWH(payload.xywh)[3]);
+
+    expect(compositionWidths.length).toBeGreaterThan(0);
+    expect(Math.max(...compositionWidths)).toBeGreaterThan(initialWidth);
+    expect(Math.max(...compositionWidths)).toBeLessThanOrEqual(512);
+    expect(Math.max(...compositionWidths)).toBeLessThan(exaggeratedScrollWidth);
+    expect(Math.max(...compositionHeights)).toBeGreaterThan(initialHeight);
+    expect(Math.max(...compositionHeights)).toBeLessThan(
+      exaggeratedScrollHeight
+    );
+
+    const compositionEnd = new CompositionEvent('compositionend', {
+      data: '测试测试测试测试测试测试测试测试测试测试测试测试测试测试测试测试',
+      bubbles: true,
+    });
+
+    shapeEditor!.inlineEditorContainer?.dispatchEvent(compositionEnd);
+    await wait();
+  });
+
+  test('should wrap long mindmap editor content by max width instead of viewport', async () => {
+    const text = 'abcdefghijklmnopqrstuvwxyz'.repeat(20);
+    const mindmapId = gfx.surface!.addElement({
+      type: 'mindmap',
+      children: { text, children: [{ text: 'leaf1' }] },
+    });
+    const mindmap = () => gfx.getElementById(mindmapId) as MindmapElementModel;
+    const root = getDocRootBlock(window.doc, window.editor, 'edgeless');
+
+    doc.captureSync();
+    await wait();
+
+    const rootNode = mindmap().tree.element as ShapeElementModel;
+    gfx.viewport.setViewport(1, [
+      -gfx.viewport.width / 2 + 48,
+      gfx.viewport.height / 2,
+    ]);
+    await wait();
+
+    mountShapeTextEditor(rootNode, root);
+    await wait();
+    const shapeEditor = root.querySelector('edgeless-shape-text-editor') as
+      | (HTMLElement & {
+          richText?: HTMLElement;
+        })
+      | null;
+
+    expect(shapeEditor?.richText).toBeTruthy();
+    const richText = shapeEditor!.richText!;
+    const viewLeft = gfx.viewport.toViewCoord(rootNode.x, rootNode.y)[0];
+
+    expect(viewLeft).toBeGreaterThan(gfx.viewport.width - 64);
+    expect(rootNode.maxWidth).toBe(512);
+    expect(rootNode.w).toBeLessThanOrEqual(512);
+    expect(richText.clientWidth).toBeGreaterThan(400);
+    expect(richText.clientWidth).toBeLessThanOrEqual(512);
+    expect(richText.scrollWidth).toBeLessThanOrEqual(richText.clientWidth + 1);
   });
 
   test('delete the root node should remove all children', async () => {

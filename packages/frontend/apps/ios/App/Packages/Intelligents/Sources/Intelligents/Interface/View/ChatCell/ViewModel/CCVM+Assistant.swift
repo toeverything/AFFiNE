@@ -40,7 +40,7 @@ struct AssistantMessageCellViewModel: ChatCellViewModel {
 
   var preprocessedContent: MarkdownTextView.PreprocessedContent
 
-  init(
+  @MainActor init(
     id: UUID,
     content: String,
     timestamp: Date,

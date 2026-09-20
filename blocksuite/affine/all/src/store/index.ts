@@ -1,3 +1,3 @@
-/* eslint-disable @typescript-eslint/no-restricted-imports */
+/* oxlint-disable no-restricted-imports */
 
 export * from '@blocksuite/store';

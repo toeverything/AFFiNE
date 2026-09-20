@@ -20,11 +20,13 @@ export const header = style({
   position: 'relative',
   padding: '8px var(--h-padding, 16px)',
   width: '100%',
-  height: '36px',
+  minHeight: '36px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
+  gap: 12,
   zIndex: 1,
+  borderBottom: `0.5px solid ${cssVarV2('layer/insideBorder/border')}`,
 });
 
 export const title = style({
@@ -80,6 +82,14 @@ export const loadingIcon = style({
   width: '44px',
   height: '44px',
   color: 'var(--affine-icon-secondary)',
+});
+
+export const tabsContainer = style({
+  flex: 1,
+  minWidth: 0,
+  display: 'flex',
+  alignItems: 'center',
+  overflow: 'hidden',
 });
 
 globalStyle(`${playground} svg`, {

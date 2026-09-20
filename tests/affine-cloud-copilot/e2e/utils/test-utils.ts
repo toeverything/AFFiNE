@@ -1,8 +1,5 @@
 import { skipOnboarding } from '@affine-test/kit/playwright';
-import {
-  createRandomAIUser,
-  switchDefaultChatModel,
-} from '@affine-test/kit/utils/cloud';
+import { createRandomAIUser } from '@affine-test/kit/utils/cloud';
 import { openHomePage, setCoreUrl } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
@@ -61,12 +58,7 @@ export class TestUtils {
     await waitForEditorLoad(page);
   }
 
-  public async setupTestEnvironment(
-    page: Page,
-    defaultModel = 'gemini-2.5-flash'
-  ) {
-    await switchDefaultChatModel(defaultModel);
-
+  public async setupTestEnvironment(page: Page) {
     await skipOnboarding(page.context());
     await openHomePage(page);
     await this.createNewPage(page);

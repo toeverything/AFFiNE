@@ -7,7 +7,12 @@ import {
   throttleTime,
 } from 'rxjs';
 
-import type { BlobRecord, BlobStorage, BlobSyncStorage } from '../../storage';
+import type {
+  BlobRecord,
+  BlobSource,
+  BlobStorage,
+  BlobSyncStorage,
+} from '../../storage';
 import type { PeerStorageOptions } from '../types';
 import { BlobSyncPeer } from './peer';
 
@@ -38,6 +43,8 @@ export interface BlobSync {
    * @throws This method will throw an error if the download is aborted or fails due to network issues.
    */
   downloadBlob(blobId: string): Promise<boolean>;
+  registerSource(source: BlobSource): Promise<void>;
+  unregisterSource(source: BlobSource): Promise<void>;
   /**
    * Upload a blob to all peers
    * @param blob - The blob to upload
@@ -159,6 +166,18 @@ export class BlobSyncImpl implements BlobSync {
     });
   }
 
+  async registerSource(source: BlobSource): Promise<void> {
+    await Promise.all(
+      this.peers.map(peer =>
+        peer.registerSource(source, this.abortController.signal)
+      )
+    );
+  }
+
+  async unregisterSource(source: BlobSource): Promise<void> {
+    await Promise.all(this.peers.map(peer => peer.unregisterSource(source)));
+  }
+
   uploadBlob(blob: BlobRecord, force = false): Promise<true> {
     return Promise.all(
       this.peers.map(p =>
@@ -190,7 +209,7 @@ export class BlobSyncImpl implements BlobSync {
   ): Promise<void> {
     return Promise.race([
       Promise.all(
-        // eslint-disable-next-line @typescript-eslint/await-thenable
+        // oxlint-disable-next-line typescript/await-thenable
         peerId
           ? [this.fullDownloadPeer(peerId)]
           : this.peers.map(p => this.fullDownloadPeer(p.peerId))

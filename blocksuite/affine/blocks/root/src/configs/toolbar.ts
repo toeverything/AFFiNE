@@ -15,6 +15,7 @@ import {
 import type { HighlightType } from '@blocksuite/affine-components/highlight-dropdown-menu';
 import { toast } from '@blocksuite/affine-components/toast';
 import { EditorChevronDown } from '@blocksuite/affine-components/toolbar';
+import { insertInlineLatex } from '@blocksuite/affine-inline-latex';
 import {
   deleteTextCommand,
   formatBlockCommand,
@@ -53,7 +54,10 @@ import {
   ActionPlacement,
   blockCommentToolbarButton,
 } from '@blocksuite/affine-shared/services';
-import { getMostCommonValue } from '@blocksuite/affine-shared/utils';
+import {
+  getMostCommonValue,
+  isInsideBlockByFlavour,
+} from '@blocksuite/affine-shared/utils';
 import { tableViewMeta } from '@blocksuite/data-view/view-presets';
 import {
   CopyIcon,
@@ -61,6 +65,7 @@ import {
   DeleteIcon,
   DuplicateIcon,
   LinkedPageIcon,
+  TeXIcon,
 } from '@blocksuite/icons/lit';
 import {
   type BlockComponent,
@@ -104,6 +109,10 @@ const conversionsActionGroup = {
         .run();
     };
 
+    const hasModelInsideCallout = selectedModels.some(model =>
+      isInsideBlockByFlavour(model.store, model, 'affine:callout')
+    );
+
     return {
       content: html`
         <editor-menu-button
@@ -119,7 +128,11 @@ const conversionsActionGroup = {
         >
           <div data-size="large" data-orientation="vertical">
             ${repeat(
-              textConversionConfigs.filter(c => c.flavour !== 'affine:divider'),
+              textConversionConfigs.filter(
+                c =>
+                  c.flavour !== 'affine:divider' &&
+                  !(hasModelInsideCallout && c.flavour === 'affine:callout')
+              ),
               item => item.name,
               ({ flavour, type, name, icon }) => html`
                 <editor-menu-action
@@ -199,9 +212,9 @@ const alignActionGroup = {
 const inlineTextActionGroup = {
   id: 'b.inline-text',
   when: ({ chain }) => isFormatSupported(chain).run()[0],
-  actions: textFormatConfigs.map(
+  actions: textFormatConfigs.flatMap(
     ({ id, name, action, activeWhen, icon }, score) => {
-      return {
+      const textAction: ToolbarAction = {
         id,
         icon,
         score,
@@ -209,6 +222,28 @@ const inlineTextActionGroup = {
         run: ({ host }) => action(host),
         active: ({ host }) => activeWhen(host),
       };
+
+      if (id !== 'underline') {
+        return [textAction];
+      }
+
+      return [
+        textAction,
+        {
+          id: 'inline-latex',
+          icon: TeXIcon(),
+          score: score + 0.5,
+          tooltip: 'Inline Equation',
+          run: ({ host }) => {
+            host.std.command
+              .chain()
+              .pipe(getTextSelectionCommand)
+              .pipe(insertInlineLatex)
+              .run();
+          },
+          active: () => false,
+        },
+      ];
     }
   ),
 } as const satisfies ToolbarActionGroup;

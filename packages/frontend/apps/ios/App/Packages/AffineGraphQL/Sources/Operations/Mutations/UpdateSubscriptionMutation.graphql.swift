@@ -42,6 +42,9 @@ public class UpdateSubscriptionMutation: GraphQLMutation {
         "workspaceId": .variable("workspaceId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UpdateSubscriptionMutation.Data.self
+    ] }
 
     public var updateSubscriptionRecurring: UpdateSubscriptionRecurring { __data["updateSubscriptionRecurring"] }
 
@@ -59,6 +62,9 @@ public class UpdateSubscriptionMutation: GraphQLMutation {
         .field("plan", GraphQLEnum<AffineGraphQL.SubscriptionPlan>.self),
         .field("recurring", GraphQLEnum<AffineGraphQL.SubscriptionRecurring>.self),
         .field("nextBillAt", AffineGraphQL.DateTime?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        UpdateSubscriptionMutation.Data.UpdateSubscriptionRecurring.self
       ] }
 
       @available(*, deprecated, message: "removed")

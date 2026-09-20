@@ -8,6 +8,7 @@ import {
   dragOverTitle,
   enterPlaygroundRoom,
   focusRichText,
+  focusRichTextEnd,
   focusTitle,
   getClipboardHTML,
   getClipboardSnapshot,
@@ -342,7 +343,7 @@ test(scoped`paste parent block`, async ({ page }) => {
   await type(page, 'This is child 2');
   await setInlineRangeInSelectedRichText(page, 0, 3);
   await copyByKeyboard(page);
-  await focusRichText(page, 2);
+  await focusRichTextEnd(page, 2);
   await page.keyboard.press(`${SHORT_KEY}+v`);
   await assertRichTexts(page, [
     'This is parent',
@@ -363,7 +364,7 @@ test(scoped`clipboard copy multi selection`, async ({ page }) => {
   await waitNextFrame(page);
   await copyByKeyboard(page);
   await waitNextFrame(page);
-  await focusRichText(page, 1);
+  await focusRichTextEnd(page, 1);
   await pasteByKeyboard(page);
   await waitNextFrame(page);
   await type(page, 'cursor');

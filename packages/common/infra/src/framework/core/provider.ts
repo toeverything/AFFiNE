@@ -64,7 +64,7 @@ export abstract class FrameworkProvider {
 
   createEntity = <
     T extends Entity<any>,
-    Props extends T extends Component<infer P> ? P : never,
+    Props extends (T extends Component<infer P> ? P : never),
   >(
     identifier: GeneralIdentifier<T>,
     ...[props]: Props extends Record<string, never> ? [] : [Props]
@@ -78,7 +78,7 @@ export abstract class FrameworkProvider {
 
   createScope = <
     T extends Scope<any>,
-    Props extends T extends Component<infer P> ? P : never,
+    Props extends (T extends Component<infer P> ? P : never),
   >(
     root: GeneralIdentifier<T>,
     ...[props]: Props extends Record<string, never> ? [] : [Props]
@@ -226,7 +226,7 @@ class Resolver extends FrameworkProvider {
     const result = new Map<ComponentVariant, any>();
 
     for (const [variant, factory] of vars) {
-      // eslint-disable-next-line sonarjs/no-identical-functions
+      // oxlint-disable-next-line sonarjs/no-identical-functions
       const runFactory = () => {
         const nextResolver = this.track(identifier);
         try {

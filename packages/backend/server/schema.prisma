@@ -24,33 +24,36 @@ model User {
   /// for example, the value will be false if user never registered and invited into a workspace by others.
   registered      Boolean   @default(true)
   disabled        Boolean   @default(false)
+  authEpoch       Int       @default(0) @map("auth_epoch")
 
   features                    UserFeature[]
   userStripeCustomer          UserStripeCustomer?
-  workspaces                  WorkspaceUserRole[]
+  workspaceMembers            WorkspaceMember[]
+  workspaceInvitations        WorkspaceInvitation[]          @relation("workspace_invitation_invitee")
+  createdWorkspaceInvitations WorkspaceInvitation[]          @relation("workspace_invitation_inviter")
   // Invite others to join the workspace
-  WorkspaceInvitations        WorkspaceUserRole[]         @relation("inviter")
-  docPermissions              WorkspaceDocUserRole[]
   connectedAccounts           ConnectedAccount[]
   calendarAccounts            CalendarAccount[]
+  mcpCredentials              McpCredential[]
   sessions                    UserSession[]
   aiSessions                  AiSession[]
   appConfigs                  AppConfig[]
   userSnapshots               UserSnapshot[]
-  createdSnapshot             Snapshot[]                  @relation("createdSnapshot")
-  updatedSnapshot             Snapshot[]                  @relation("updatedSnapshot")
-  createdUpdate               Update[]                    @relation("createdUpdate")
-  createdHistory              SnapshotHistory[]           @relation("createdHistory")
-  createdAiJobs               AiJobs[]                    @relation("createdAiJobs")
+  createdSnapshot             Snapshot[]                     @relation("createdSnapshot")
+  updatedSnapshot             Snapshot[]                     @relation("updatedSnapshot")
+  createdUpdate               Update[]                       @relation("createdUpdate")
+  createdHistory              SnapshotHistory[]              @relation("createdHistory")
+  createdAiJobs               AiJobs[]                       @relation("createdAiJobs")
   // receive notifications
-  notifications               Notification[]              @relation("user_notifications")
+  notifications               Notification[]                 @relation("user_notifications")
   settings                    UserSettings?
   comments                    Comment[]
   replies                     Reply[]
-  commentAttachments          CommentAttachment[]         @relation("createdCommentAttachments")
-  AccessToken                 AccessToken[]
+  commentAttachments          CommentAttachment[]            @relation("createdCommentAttachments")
   workspaceCalendars          WorkspaceCalendar[]
   workspaceMemberLastAccesses WorkspaceMemberLastAccess[]
+  quotaState                  EffectiveUserQuotaState?
+  ownedQuotaStates            EffectiveWorkspaceQuotaState[]
 
   @@index([email])
   @@map("users")
@@ -60,6 +63,7 @@ model ConnectedAccount {
   id                String    @id @default(uuid()) @db.VarChar
   userId            String    @map("user_id") @db.VarChar
   provider          String    @db.VarChar
+  providerNamespace String?   @map("provider_namespace") @db.Text
   providerAccountId String    @map("provider_account_id") @db.VarChar
   scope             String?   @db.Text
   accessToken       String?   @map("access_token") @db.Text
@@ -92,11 +96,61 @@ model UserSession {
   refreshClientVersion String?   @map("refresh_client_version") @db.VarChar
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authSession AuthSession?
 
   @@unique([sessionId, userId])
   @@map("user_sessions")
+}
+
+model AuthSession {
+  id                String    @id @default(uuid()) @db.VarChar
+  userSessionId     String    @unique @map("user_session_id") @db.VarChar
+  installationId    String    @map("installation_id") @db.VarChar
+  platform          String    @db.VarChar
+  deviceName        String?   @map("device_name") @db.VarChar
+  appVersion        String?   @map("app_version") @db.VarChar
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt        DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  idleExpiresAt     DateTime  @map("idle_expires_at") @db.Timestamptz(3)
+  absoluteExpiresAt DateTime  @map("absolute_expires_at") @db.Timestamptz(3)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokeReason      String?   @map("revoke_reason") @db.VarChar
+  lastIpHash        String?   @map("last_ip_hash") @db.VarChar
+  lastUserAgent     String?   @map("last_user_agent") @db.VarChar
+
+  userSession   UserSession        @relation(fields: [userSessionId], references: [id], onDelete: Cascade)
+  refreshTokens AuthRefreshToken[]
+
+  @@index([installationId])
+  @@index([idleExpiresAt])
+  @@index([absoluteExpiresAt])
+  @@map("auth_sessions")
+}
+
+model AuthRefreshToken {
+  id                  String    @id @db.VarChar
+  authSessionId       String    @map("auth_session_id") @db.VarChar
+  generation          Int
+  secretHash          String    @map("secret_hash") @db.VarChar
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt           DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt              DateTime? @map("used_at") @db.Timestamptz(3)
+  replacedById        String?   @unique @map("replaced_by_id") @db.VarChar
+  graceUsedAt         DateTime? @map("grace_used_at") @db.Timestamptz(3)
+  revokedAt           DateTime? @map("revoked_at") @db.Timestamptz(3)
+  successorCiphertext String?   @map("successor_ciphertext") @db.Text
+  successorExpiresAt  DateTime? @map("successor_expires_at") @db.Timestamptz(3)
+
+  authSession AuthSession       @relation(fields: [authSessionId], references: [id], onDelete: Cascade)
+  replacedBy  AuthRefreshToken? @relation("AuthRefreshRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces    AuthRefreshToken? @relation("AuthRefreshRotation")
+
+  @@unique([authSessionId, generation])
+  @@index([authSessionId, usedAt])
+  @@index([expiresAt])
+  @@map("auth_refresh_tokens")
 }
 
 model VerificationToken {
@@ -128,12 +182,9 @@ model Workspace {
   // NOTE: manually set this column type to identity in migration file
   sid                 Int      @unique @default(autoincrement())
   id                  String   @id @default(uuid()) @db.VarChar
-  public              Boolean
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // workspace level feature flags
   enableAi            Boolean  @default(true) @map("enable_ai")
-  enableSharing       Boolean  @default(true) @map("enable_sharing")
-  enableUrlPreview    Boolean  @default(false) @map("enable_url_preview")
   enableDocEmbedding  Boolean  @default(true) @map("enable_doc_embedding")
   name                String?  @db.VarChar
   avatarKey           String?  @map("avatar_key") @db.VarChar
@@ -142,11 +193,10 @@ model Workspace {
 
   features                   WorkspaceFeature[]
   docs                       WorkspaceDoc[]
-  permissions                WorkspaceUserRole[]
-  docPermissions             WorkspaceDocUserRole[]
   blobs                      Blob[]
   ignoredDocs                AiWorkspaceIgnoredDocs[]
-  embedFiles                 AiWorkspaceFiles[]
+  byokConfigs                AiWorkspaceByokConfig[]
+  aiUsageEvents              AiUsageEvent[]
   comments                   Comment[]
   commentAttachments         CommentAttachment[]
   workspaceCalendars         WorkspaceCalendar[]
@@ -155,10 +205,258 @@ model Workspace {
   workspaceAdminStatsDaily   WorkspaceAdminStatsDaily[]
   workspaceDocViewDaily      WorkspaceDocViewDaily[]
   workspaceMemberLastAccess  WorkspaceMemberLastAccess[]
+  quotaState                 EffectiveWorkspaceQuotaState?
+  accessPolicy               WorkspaceAccessPolicy?
+  members                    WorkspaceMember[]
+  invitations                WorkspaceInvitation[]
+  docAccessPolicies          DocAccessPolicy[]
+  docGrants                  DocGrant[]
+  mcpCredentials             McpCredential[]
+  artifacts                  WorkspaceArtifact[]
 
   @@index([lastCheckEmbeddings])
   @@index([createdAt])
   @@map("workspaces")
+}
+
+model Entitlement {
+  id            String    @id @default(uuid()) @db.VarChar
+  targetType    String    @map("target_type") @db.Text
+  targetId      String?   @map("target_id") @db.VarChar
+  source        String    @db.Text
+  plan          String    @db.Text
+  status        String    @db.Text
+  subjectId     String?   @map("subject_id") @db.VarChar
+  issuer        String?   @db.Text
+  quantity      Int?      @db.Integer
+  signedPayload Bytes?    @map("signed_payload") @db.ByteA
+  tokenHash     String?   @map("token_hash") @db.Text
+  metadata      Json      @default("{}") @db.JsonB
+  issuedAt      DateTime? @map("issued_at") @db.Timestamptz(3)
+  startsAt      DateTime? @map("starts_at") @db.Timestamptz(3)
+  expiresAt     DateTime? @map("expires_at") @db.Timestamptz(3)
+  validatedAt   DateTime? @map("validated_at") @db.Timestamptz(3)
+  graceUntil    DateTime? @map("grace_until") @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  userQuotaStates      EffectiveUserQuotaState[]
+  workspaceQuotaStates EffectiveWorkspaceQuotaState[]
+
+  @@index([targetType, targetId, status])
+  @@index([status, expiresAt])
+  @@map("entitlements")
+}
+
+// TODO(gc-convergence): drop this v0.27.4 projection after old readers and predeploy retire; current quota reads use canonical facts and bounded memory cache.
+model EffectiveUserQuotaState {
+  userId               String    @id @map("user_id") @db.VarChar
+  plan                 String    @db.Text
+  sourceEntitlementId  String?   @map("source_entitlement_id") @db.VarChar
+  blobLimit            BigInt    @map("blob_limit") @db.BigInt
+  storageQuota         BigInt    @map("storage_quota") @db.BigInt
+  usedStorageQuota     BigInt    @default(0) @map("used_storage_quota") @db.BigInt
+  historyPeriodSeconds Int       @map("history_period_seconds") @db.Integer
+  copilotActionLimit   Int?      @map("copilot_action_limit") @db.Integer
+  flags                Json      @default("{}") @db.JsonB
+  known                Boolean   @default(false)
+  stale                Boolean   @default(false)
+  lastReconciledAt     DateTime? @map("last_reconciled_at") @db.Timestamptz(3)
+  staleAfter           DateTime? @map("stale_after") @db.Timestamptz(3)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceEntitlement Entitlement? @relation(fields: [sourceEntitlementId], references: [id], onDelete: SetNull)
+
+  @@index([known, stale])
+  @@index([staleAfter])
+  @@map("effective_user_quota_states")
+}
+
+// TODO(gc-convergence): drop this v0.27.4 projection after old readers and predeploy retire; current quota reads use canonical facts and bounded memory cache.
+model EffectiveWorkspaceQuotaState {
+  workspaceId             String    @id @map("workspace_id") @db.VarChar
+  plan                    String    @db.Text
+  sourceEntitlementId     String?   @map("source_entitlement_id") @db.VarChar
+  ownerUserId             String?   @map("owner_user_id") @db.VarChar
+  usesOwnerQuota          Boolean   @default(false) @map("uses_owner_quota")
+  seatLimit               Int       @map("seat_limit") @db.Integer
+  memberCount             Int       @default(0) @map("member_count") @db.Integer
+  overcapacityMemberCount Int       @default(0) @map("overcapacity_member_count") @db.Integer
+  blobLimit               BigInt    @map("blob_limit") @db.BigInt
+  storageQuota            BigInt    @map("storage_quota") @db.BigInt
+  usedStorageQuota        BigInt    @default(0) @map("used_storage_quota") @db.BigInt
+  historyPeriodSeconds    Int       @map("history_period_seconds") @db.Integer
+  readonly                Boolean   @default(false)
+  readonlyReasons         String[]  @default([]) @map("readonly_reasons") @db.Text
+  flags                   Json      @default("{}") @db.JsonB
+  known                   Boolean   @default(false)
+  stale                   Boolean   @default(false)
+  lastReconciledAt        DateTime? @map("last_reconciled_at") @db.Timestamptz(3)
+  staleAfter              DateTime? @map("stale_after") @db.Timestamptz(3)
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace         Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner             User?        @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
+  sourceEntitlement Entitlement? @relation(fields: [sourceEntitlementId], references: [id], onDelete: SetNull)
+
+  @@index([ownerUserId])
+  @@index([known, stale])
+  @@index([readonly, stale])
+  @@index([staleAfter])
+  @@map("effective_workspace_quota_states")
+}
+
+model WorkspaceMember {
+  id          String   @id @default(dbgenerated()) @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  userId      String   @map("user_id") @db.VarChar
+  role        String   @db.Text
+  state       String   @default("active") @db.Text
+  source      String   @default("legacy") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId, state])
+  @@index([userId, state])
+  @@index([workspaceId, role, state])
+  @@map("workspace_members")
+}
+
+model WorkspaceInvitation {
+  id              String    @id @default(dbgenerated()) @db.VarChar
+  workspaceId     String    @map("workspace_id") @db.VarChar
+  inviteeUserId   String?   @map("invitee_user_id") @db.VarChar
+  normalizedEmail String?   @map("normalized_email") @db.VarChar
+  inviterUserId   String?   @map("inviter_user_id") @db.VarChar
+  requestedRole   String    @default("member") @map("requested_role") @db.Text
+  status          String    @db.Text
+  kind            String    @default("email") @db.Text
+  // Partial unique index exists in migration: token_hash WHERE token_hash IS NOT NULL.
+  tokenHash       String?   @map("token_hash") @db.Text
+  expiresAt       DateTime? @map("expires_at") @db.Timestamptz(3)
+  acceptedAt      DateTime? @map("accepted_at") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  inviteeUser User?     @relation("workspace_invitation_invitee", fields: [inviteeUserId], references: [id], onDelete: SetNull)
+  inviter     User?     @relation("workspace_invitation_inviter", fields: [inviterUserId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, inviteeUserId])
+  @@index([workspaceId, status])
+  @@index([inviteeUserId, status])
+  @@index([workspaceId, normalizedEmail, status])
+  @@map("workspace_invitations")
+}
+
+model WorkspaceAccessPolicy {
+  workspaceId          String   @id @map("workspace_id") @db.VarChar
+  visibility           String   @default("private") @db.Text
+  sharingEnabled       Boolean  @default(true) @map("sharing_enabled")
+  urlPreviewEnabled    Boolean  @default(false) @map("url_preview_enabled")
+  memberDefaultDocRole String   @default("manager") @map("member_default_doc_role") @db.Text
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([visibility])
+  @@index([urlPreviewEnabled, sharingEnabled])
+  @@map("workspace_access_policies")
+}
+
+model DocAccessPolicy {
+  workspaceId       String    @map("workspace_id") @db.VarChar
+  docId             String    @map("doc_id") @db.VarChar
+  visibility        String    @default("private") @db.Text
+  publicRole        String?   @map("public_role") @db.Text
+  memberDefaultRole String?   @map("member_default_role") @db.Text
+  urlPreviewEnabled Boolean   @default(false) @map("url_preview_enabled")
+  publishedAt       DateTime? @map("published_at") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, docId])
+  @@index([workspaceId, docId])
+  @@map("doc_access_policies")
+}
+
+model MailDelivery {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mailName           String    @map("mail_name") @db.Text
+  mailClass          String    @map("mail_class") @db.Text
+  priority           String    @default("normal") @db.Text
+  status             String    @db.Text
+  dedupeKey          String?   @map("dedupe_key") @db.Text
+  recipientEmail     String?   @map("recipient_email") @db.Text
+  recipientHash      String    @map("recipient_hash") @db.Text
+  recipientDomain    String    @map("recipient_domain") @db.Text
+  recipientUserId    String?   @map("recipient_user_id") @db.VarChar
+  actorUserId        String?   @map("actor_user_id") @db.VarChar
+  workspaceId        String?   @map("workspace_id") @db.VarChar
+  notificationId     String?   @map("notification_id") @db.VarChar
+  abuseSubjectKey    String?   @map("abuse_subject_key") @db.Text
+  quotaReservationId String?   @map("quota_reservation_id") @db.Uuid
+  quotaDecision      Json?     @map("quota_decision") @db.JsonB
+  payload            Json?     @db.JsonB
+  sendAfter          DateTime  @default(now()) @map("send_after") @db.Timestamptz(3)
+  expiresAt          DateTime? @map("expires_at") @db.Timestamptz(3)
+  attemptCount       Int       @default(0) @map("attempt_count") @db.Integer
+  maxAttempts        Int       @default(3) @map("max_attempts") @db.Integer
+  lockedBy           String?   @map("locked_by") @db.Text
+  lockedUntil        DateTime? @map("locked_until") @db.Timestamptz(3)
+  firstAttemptAt     DateTime? @map("first_attempt_at") @db.Timestamptz(3)
+  lastAttemptAt      DateTime? @map("last_attempt_at") @db.Timestamptz(3)
+  sentAt             DateTime? @map("sent_at") @db.Timestamptz(3)
+  settledAt          DateTime? @map("settled_at") @db.Timestamptz(3)
+  canceledAt         DateTime? @map("canceled_at") @db.Timestamptz(3)
+  failedAt           DateTime? @map("failed_at") @db.Timestamptz(3)
+  providerMessageId  String?   @map("provider_message_id") @db.Text
+  providerResponse   String?   @map("provider_response") @db.Text
+  lastErrorCode      String?   @map("last_error_code") @db.Text
+  lastError          String?   @map("last_error") @db.Text
+  retentionState     String    @default("full") @map("retention_state") @db.Text
+  anonymizedAt       DateTime? @map("anonymized_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@index([mailName, status, createdAt])
+  @@index([mailClass, status, createdAt])
+  @@index([status, createdAt])
+  @@index([status, sendAfter, lockedUntil], map: "mail_deliveries_ready_idx")
+  @@index([settledAt])
+  @@index([recipientDomain, createdAt])
+  @@index([workspaceId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([abuseSubjectKey, createdAt])
+  @@map("mail_deliveries")
+}
+
+model DocGrant {
+  workspaceId   String   @map("workspace_id") @db.VarChar
+  docId         String   @map("doc_id") @db.VarChar
+  principalType String   @map("principal_type") @db.Text
+  principalId   String   @map("principal_id") @db.VarChar
+  role          String   @db.Text
+  grantedBy     String?  @map("granted_by") @db.VarChar
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, docId, principalType, principalId])
+  @@index([principalType, principalId, role])
+  @@index([workspaceId, docId, role])
+  @@map("doc_grants")
 }
 
 // Table for workspace page meta data
@@ -169,9 +467,6 @@ model Workspace {
 model WorkspaceDoc {
   workspaceId String    @map("workspace_id") @db.VarChar
   docId       String    @map("page_id") @db.VarChar
-  public      Boolean   @default(false)
-  // Workspace user's default role in this page, default is `Manager`
-  defaultRole Int       @default(30) @db.SmallInt
   // Page/Edgeless
   mode        Int       @default(0) @db.SmallInt
   // Whether the doc is blocked
@@ -183,8 +478,6 @@ model WorkspaceDoc {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, docId])
-  @@index([workspaceId, public])
-  @@index([public, publishedAt])
   @@map("workspace_pages")
 }
 
@@ -208,45 +501,6 @@ enum WorkspaceMemberSource {
   Email
   /// Invited by link
   Link
-}
-
-model WorkspaceUserRole {
-  id          String                @id @default(uuid()) @db.VarChar
-  workspaceId String                @map("workspace_id") @db.VarChar
-  userId      String                @map("user_id") @db.VarChar
-  // Workspace Role, Owner/Admin/Collaborator/External
-  type        Int                   @db.SmallInt
-  /// the invite status of the workspace member
-  status      WorkspaceMemberStatus @default(Pending)
-  source      WorkspaceMemberSource @default(Email)
-  inviterId   String?               @map("inviter_id") @db.VarChar
-  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  inviter   User?     @relation(name: "inviter", fields: [inviterId], references: [id], onDelete: SetNull)
-
-  @@unique([workspaceId, userId])
-  // optimize for querying user's workspace permissions
-  @@index([workspaceId, type, status])
-  @@index(userId)
-  @@map("workspace_user_permissions")
-}
-
-model WorkspaceDocUserRole {
-  workspaceId String   @map("workspace_id") @db.VarChar
-  docId       String   @map("page_id") @db.VarChar
-  userId      String   @map("user_id") @db.VarChar
-  // External/Reader/Editor/Manager/Owner
-  type        Int      @db.SmallInt
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@id([workspaceId, docId, userId])
-  @@map("workspace_page_user_permissions")
 }
 
 model UserFeature {
@@ -301,7 +555,6 @@ model WorkspaceAdminStats {
   blobSize        BigInt   @default(0) @map("blob_size") @db.BigInt
   memberCount     BigInt   @default(0) @map("member_count") @db.BigInt
   publicPageCount BigInt   @default(0) @map("public_page_count") @db.BigInt
-  features        String[] @default([]) @db.Text
   updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -405,8 +658,6 @@ model Snapshot {
   // we need to clear all hanging updates and snapshots before enable the foreign key on workspaceId
   // workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  embedding AiWorkspaceEmbedding[]
-
   @@id([workspaceId, id])
   @@index([workspaceId, updatedAt])
   @@map("snapshots")
@@ -459,64 +710,35 @@ model SnapshotHistory {
   @@map("snapshot_histories")
 }
 
-enum AiPromptRole {
+enum AiSessionMessageRole {
   system
   assistant
   user
-}
 
-model AiPromptMessage {
-  promptId    Int          @map("prompt_id") @db.Integer
-  // if a group of prompts contains multiple sentences, idx specifies the order of each sentence
-  idx         Int          @db.Integer
-  // system/assistant/user
-  role        AiPromptRole
-  // prompt content
-  content     String       @db.Text
-  attachments Json?        @db.Json
-  params      Json?        @db.Json
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  prompt AiPrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
-
-  @@unique([promptId, idx])
-  @@map("ai_prompts_messages")
-}
-
-model AiPrompt {
-  id             Int      @id @default(autoincrement()) @db.Integer
-  name           String   @unique @db.VarChar(32)
-  // an mark identifying which view to use to display the session
-  // it is only used in the frontend and does not affect the backend
-  action         String?  @db.VarChar
-  model          String   @db.VarChar
-  optionalModels String[] @default([]) @map("optional_models") @db.VarChar
-  config         Json?    @db.Json
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
-  // whether the prompt is modified by the admin panel
-  modified       Boolean  @default(false)
-
-  messages AiPromptMessage[]
-  sessions AiSession[]
-
-  @@map("ai_prompts_metadata")
+  // the database type keeps the legacy name so the previous release, whose
+  // Prisma client casts enum values as "AiPromptRole", can keep writing
+  // ai_sessions_messages while it runs against the same database
+  @@map("AiPromptRole")
 }
 
 model AiSessionMessage {
-  id            String       @id @default(uuid()) @db.VarChar
-  sessionId     String       @map("session_id") @db.VarChar
-  role          AiPromptRole
-  content       String       @db.Text
-  streamObjects Json?        @db.Json
-  attachments   Json?        @db.Json
-  params        Json?        @db.Json
-  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                 String               @id @default(uuid()) @db.VarChar
+  sessionId          String               @map("session_id") @db.VarChar
+  compatSubmissionId String?              @map("compat_submission_id") @db.VarChar
+  role               AiSessionMessageRole
+  content            String               @db.Text
+  streamObjects      Json?                @db.Json
+  attachments        Json?                @db.Json
+  params             Json?                @db.Json
+  scopeSnapshot      Json?                @map("scope_snapshot") @db.JsonB
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session   AiSession           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  artifacts AiMessageArtifact[]
 
   @@index([sessionId])
+  @@index([sessionId, compatSubmissionId])
   @@index([createdAt, role])
   @@map("ai_sessions_messages")
 }
@@ -533,15 +755,14 @@ model AiSession {
   // the session id of the parent session if this session is a forked session
   parentSessionId String?   @map("parent_session_id") @db.VarChar
   messageCost     Int       @default(0)
-  tokenCost       Int       @default(0)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
+  focus           Json?     @db.JsonB
 
-  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  prompt   AiPrompt           @relation(fields: [promptName], references: [name], onDelete: Cascade)
-  messages AiSessionMessage[]
-  context  AiContext[]
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages   AiSessionMessage[]
+  actionRuns AiActionRun[]
 
   //NOTE:
   // unrecorded index:
@@ -554,57 +775,106 @@ model AiSession {
   @@map("ai_sessions_metadata")
 }
 
-model AiContext {
-  id        String @id @default(uuid()) @db.VarChar
-  sessionId String @map("session_id") @db.VarChar
-  config    Json   @db.Json
+model WorkspaceArtifact {
+  id                   String    @id @default(uuid()) @db.Uuid
+  workspaceId          String    @map("workspace_id") @db.VarChar
+  contentHash          String    @map("content_hash") @db.VarChar
+  displayName          String?   @map("display_name") @db.VarChar
+  fileName             String?   @map("file_name") @db.VarChar
+  canonicalMediaType   String    @map("canonical_media_type") @db.VarChar
+  sizeBytes            BigInt    @map("size_bytes")
+  storageScope         String    @map("storage_scope") @db.VarChar
+  storageKey           String    @map("storage_key") @db.Text
+  status               String    @db.VarChar
+  libraryOwned         Boolean   @default(false) @map("library_owned")
+  reservationExpiresAt DateTime? @map("reservation_expires_at") @db.Timestamptz(3)
+  readyAt              DateTime? @map("ready_at") @db.Timestamptz(3)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  messages  AiMessageArtifact[]
 
-  embeddings AiContextEmbedding[]
-  session    AiSession            @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@map("ai_contexts")
+  @@unique([workspaceId, contentHash])
+  @@unique([workspaceId, id])
+  @@index([workspaceId, status])
+  @@index([status, reservationExpiresAt])
+  @@map("workspace_artifacts")
 }
 
-model AiContextEmbedding {
-  id        String                      @id @default(uuid()) @db.VarChar
-  contextId String                      @map("context_id") @db.VarChar
-  fileId    String                      @map("file_id") @db.VarChar
-  // a file can be divided into multiple chunks and embedded separately.
-  chunk     Int                         @db.Integer
-  content   String                      @db.VarChar
-  embedding Unsupported("vector(1024)")
+model AiMessageArtifact {
+  messageId   String   @map("message_id") @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  artifactId  String   @map("artifact_id") @db.Uuid
+  role        String   @db.VarChar
+  displayName String?  @map("display_name") @db.VarChar
+  metadata    Json?    @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  message  AiSessionMessage  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  artifact WorkspaceArtifact @relation(fields: [workspaceId, artifactId], references: [workspaceId, id], onDelete: Cascade)
 
-  context AiContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
-
-  @@unique([contextId, fileId, chunk])
-  @@index([embedding], map: "ai_context_embeddings_idx")
-  @@map("ai_context_embeddings")
+  @@id([messageId, artifactId, role])
+  @@index([workspaceId, artifactId])
+  @@map("ai_message_artifacts")
 }
 
-model AiWorkspaceEmbedding {
-  workspaceId String                      @map("workspace_id") @db.VarChar
-  docId       String                      @map("doc_id") @db.VarChar
-  // a doc can be divided into multiple chunks and embedded separately.
-  chunk       Int                         @db.Integer
-  content     String                      @db.VarChar
-  embedding   Unsupported("vector(1024)")
+model AiActionRun {
+  id                 String   @id @default(uuid()) @db.VarChar
+  userId             String   @map("user_id") @db.VarChar
+  workspaceId        String   @map("workspace_id") @db.VarChar
+  docId              String?  @map("doc_id") @db.VarChar
+  sessionId          String?  @map("session_id") @db.VarChar
+  userMessageId      String?  @map("user_message_id") @db.VarChar
+  compatSubmissionId String?  @map("compat_submission_id") @db.VarChar
+  assistantMessageId String?  @map("assistant_message_id") @db.VarChar
+  actionId           String   @map("action_id") @db.VarChar
+  actionVersion      String   @map("action_version") @db.VarChar
+  status             String   @db.VarChar
+  attempt            Int      @default(1)
+  retryOf            String?  @map("retry_of") @db.VarChar
+  inputSnapshot      Json?    @map("input_snapshot") @db.Json
+  result             Json?    @db.Json
+  artifacts          Json?    @db.Json
+  resultSummary      String?  @map("result_summary") @db.Text
+  errorCode          String?  @map("error_code") @db.VarChar
+  trace              Json?    @db.Json
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  session AiSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
-  // workspace level search not available for non-cloud workspaces
-  // so we can match this record with the snapshot one by one
-  snapshot Snapshot @relation(fields: [workspaceId, docId], references: [workspaceId, id], onDelete: Cascade)
+  @@index([userId, workspaceId])
+  @@index([sessionId])
+  @@index([actionId, actionVersion])
+  @@index([status])
+  @@index([retryOf])
+  @@map("ai_action_runs")
+}
 
-  @@id([workspaceId, docId, chunk])
-  @@index([embedding], map: "ai_workspace_embeddings_idx")
-  @@map("ai_workspace_embeddings")
+model AiTranscriptTask {
+  id                 String    @id @default(uuid()) @db.VarChar
+  userId             String    @map("user_id") @db.VarChar
+  workspaceId        String    @map("workspace_id") @db.VarChar
+  blobId             String    @map("blob_id") @db.VarChar
+  status             String    @db.VarChar
+  recipeId           String    @map("recipe_id") @db.VarChar
+  recipeVersion      String    @map("recipe_version") @db.VarChar
+  actionRunId        String?   @map("action_run_id") @db.VarChar
+  dispatchGeneration String?   @map("dispatch_generation") @db.VarChar
+  inputSnapshot      Json?     @map("input_snapshot") @db.Json
+  publicMeta         Json?     @map("public_meta") @db.Json
+  protectedResult    Json?     @map("protected_result") @db.Json
+  errorCode          String?   @map("error_code") @db.VarChar
+  settledAt          DateTime? @map("settled_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId, workspaceId])
+  @@index([workspaceId, blobId])
+  @@index([status])
+  @@index([actionRunId])
+  @@map("ai_transcript_tasks")
 }
 
 model AiWorkspaceIgnoredDocs {
@@ -619,56 +889,60 @@ model AiWorkspaceIgnoredDocs {
   @@map("ai_workspace_ignored_docs")
 }
 
-model AiWorkspaceFiles {
-  workspaceId String @map("workspace_id") @db.VarChar
-  fileId      String @map("file_id") @db.VarChar
-  blobId      String @default("") @map("blob_id") @db.VarChar
-  fileName    String @map("file_name") @db.VarChar
-  mimeType    String @map("mime_type") @db.VarChar
-  size        Int    @db.Integer
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+model AiWorkspaceByokConfig {
+  id                   String    @id @default(uuid()) @db.VarChar
+  workspaceId          String    @map("workspace_id") @db.VarChar
+  provider             String    @db.VarChar
+  name                 String    @db.VarChar
+  description          String?   @db.VarChar
+  encryptedApiKey      String    @map("encrypted_api_key") @db.Text
+  definition           Json      @db.JsonB
+  revision             Int       @default(1)
+  credentialGeneration Int       @default(1) @map("credential_generation")
+  validation           Json?     @db.JsonB
+  sortOrder            Int       @default(0) @map("sort_order")
+  enabled              Boolean   @default(true)
+  lastUsedAt           DateTime? @map("last_used_at") @db.Timestamptz(3)
+  lastErrorAt          DateTime? @map("last_error_at") @db.Timestamptz(3)
+  lastError            String?   @map("last_error") @db.Text
+  createdBy            String?   @map("created_by") @db.VarChar
+  updatedBy            String?   @map("updated_by") @db.VarChar
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  embeddings AiWorkspaceFileEmbedding[]
-
-  @@id([workspaceId, fileId])
-  @@map("ai_workspace_files")
+  @@unique([workspaceId, provider, name])
+  @@index([workspaceId])
+  @@index([workspaceId, provider, enabled, sortOrder])
+  @@map("ai_workspace_byok_configs")
 }
 
-model AiWorkspaceFileEmbedding {
-  workspaceId String                      @map("workspace_id") @db.VarChar
-  fileId      String                      @map("file_id") @db.VarChar
-  // a file can be divided into multiple chunks and embedded separately.
-  chunk       Int                         @db.Integer
-  content     String                      @db.VarChar
-  embedding   Unsupported("vector(1024)")
+model AiUsageEvent {
+  id               String   @id @default(uuid()) @db.VarChar
+  workspaceId      String   @map("workspace_id") @db.VarChar
+  userId           String?  @map("user_id") @db.VarChar
+  provider         String   @db.VarChar
+  providerSource   String   @map("provider_source") @db.VarChar
+  featureKind      String   @map("feature_kind") @db.VarChar
+  model            String?  @db.VarChar
+  sessionId        String?  @map("session_id") @db.VarChar
+  taskId           String?  @map("task_id") @db.VarChar
+  actionId         String?  @map("action_id") @db.VarChar
+  billingUnitId    String?  @map("billing_unit_id") @db.VarChar
+  promptTokens     Int      @default(0) @map("prompt_tokens")
+  completionTokens Int      @default(0) @map("completion_tokens")
+  totalTokens      Int      @default(0) @map("total_tokens")
+  cachedTokens     Int      @default(0) @map("cached_tokens")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  file AiWorkspaceFiles @relation(fields: [workspaceId, fileId], references: [workspaceId, fileId], onDelete: Cascade)
-
-  @@id([workspaceId, fileId, chunk])
-  @@index([embedding], map: "ai_workspace_file_embeddings_idx")
-  @@map("ai_workspace_file_embeddings")
-}
-
-model AiWorkspaceBlobEmbedding {
-  workspaceId String                      @map("workspace_id") @db.VarChar
-  blobId      String                      @map("blob_id") @db.VarChar
-  // a file can be divided into multiple chunks and embedded separately.
-  chunk       Int                         @db.Integer
-  content     String                      @db.VarChar
-  embedding   Unsupported("vector(1024)")
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  blob Blob @relation(fields: [workspaceId, blobId], references: [workspaceId, key], onDelete: Cascade)
-
-  @@id([workspaceId, blobId, chunk])
-  @@index([embedding], map: "ai_workspace_blob_embeddings_idx")
-  @@map("ai_workspace_blob_embeddings")
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, providerSource, createdAt])
+  @@index([featureKind, createdAt])
+  @@index([userId, providerSource, featureKind, billingUnitId], map: "ai_usage_events_quota_exempt_idx")
+  @@map("ai_usage_events")
 }
 
 enum AiJobStatus {
@@ -726,57 +1000,52 @@ model AppConfig {
 }
 
 model UserStripeCustomer {
-  userId           String   @id @map("user_id") @db.VarChar
-  stripeCustomerId String   @unique @map("stripe_customer_id") @db.VarChar
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  userId            String   @id @map("user_id") @db.VarChar
+  stripeCustomerId  String   @unique @map("stripe_customer_id") @db.VarChar
+  providerNamespace String?  @map("provider_namespace") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_stripe_customers")
 }
 
-model Subscription {
-  id                   Int       @id @default(autoincrement()) @db.Integer
-  targetId             String    @map("target_id") @db.VarChar
-  plan                 String    @db.VarChar(20)
-  // yearly/monthly/lifetime
-  recurring            String    @db.VarChar(20)
-  // onetime subscription or anything else
-  variant              String?   @db.VarChar(20)
-  quantity             Int       @default(1) @db.Integer
-  // subscription.id, null for lifetime payment or one time payment subscription
-  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
-  // stripe schedule id
-  stripeScheduleId     String?   @map("stripe_schedule_id") @db.VarChar
-  // subscription provider: stripe or revenuecat
-  provider             Provider  @default(stripe)
-  // iap store for revenuecat subscriptions
-  iapStore             IapStore? @map("iap_store")
-  // revenuecat entitlement name like "Pro" / "AI"
-  rcEntitlement        String?   @map("rc_entitlement") @db.VarChar
-  // revenuecat product id like "app.affine.pro.Annual"
-  rcProductId          String?   @map("rc_product_id") @db.VarChar
-  // external reference, appstore originalTransactionId or play purchaseToken
-  rcExternalRef        String?   @map("rc_external_ref") @db.VarChar
-  // subscription.status, active/past_due/canceled/unpaid...
-  status               String    @db.VarChar(20)
-  // subscription.current_period_start
-  start                DateTime  @map("start") @db.Timestamptz(3)
-  // subscription.current_period_end, null for lifetime payment
-  end                  DateTime? @map("end") @db.Timestamptz(3)
-  // subscription.billing_cycle_anchor
-  nextBillAt           DateTime? @map("next_bill_at") @db.Timestamptz(3)
-  // subscription.canceled_at
-  canceledAt           DateTime? @map("canceled_at") @db.Timestamptz(3)
-  // subscription.trial_start
-  trialStart           DateTime? @map("trial_start") @db.Timestamptz(3)
-  // subscription.trial_end
-  trialEnd             DateTime? @map("trial_end") @db.Timestamptz(3)
-  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+model ProviderSubscription {
+  id                     String    @id @default(uuid()) @db.VarChar
+  provider               Provider
+  providerNamespace      String?   @map("provider_namespace") @db.Text
+  sourceIdentity         String?   @map("source_identity") @db.Text
+  targetType             String    @map("target_type") @db.Text
+  targetId               String    @map("target_id") @db.VarChar
+  plan                   String    @db.VarChar(20)
+  recurring              String?   @db.VarChar(20)
+  status                 String    @db.VarChar(20)
+  externalCustomerId     String?   @map("external_customer_id") @db.VarChar
+  externalSubscriptionId String?   @map("external_subscription_id") @db.VarChar
+  externalProductId      String?   @map("external_product_id") @db.VarChar
+  externalPriceId        String?   @map("external_price_id") @db.VarChar
+  iapStore               IapStore? @map("iap_store")
+  externalRef            String?   @map("external_ref") @db.VarChar
+  currency               String?   @db.VarChar(3)
+  amount                 Int?      @db.Integer
+  quantity               Int?      @db.Integer
+  periodStart            DateTime? @map("period_start") @db.Timestamptz(3)
+  periodEnd              DateTime? @map("period_end") @db.Timestamptz(3)
+  trialStart             DateTime? @map("trial_start") @db.Timestamptz(3)
+  trialEnd               DateTime? @map("trial_end") @db.Timestamptz(3)
+  canceledAt             DateTime? @map("canceled_at") @db.Timestamptz(3)
+  givesAccess            Boolean?  @map("gives_access")
+  willRenew              Boolean?  @map("will_renew")
+  metadata               Json      @default("{}") @db.JsonB
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  @@unique([targetId, plan])
-  @@map("subscriptions")
+  @@unique([provider, externalSubscriptionId])
+  @@unique([providerNamespace, sourceIdentity])
+  @@unique([provider, iapStore, externalRef, externalProductId, externalCustomerId])
+  @@index([targetType, targetId, plan, status])
+  @@index([provider, externalCustomerId])
+  @@map("provider_subscriptions")
 }
 
 enum Provider {
@@ -791,6 +1060,7 @@ enum IapStore {
 
 model Invoice {
   stripeInvoiceId             String   @id @map("stripe_invoice_id")
+  providerNamespace           String?  @map("provider_namespace") @db.Text
   targetId                    String   @map("target_id") @db.VarChar
   currency                    String   @db.VarChar(3)
   // CNY 12.50 stored as 1250
@@ -810,8 +1080,108 @@ model Invoice {
   @@map("invoices")
 }
 
+model PaymentEvent {
+  id                 String    @id @default(uuid()) @db.VarChar
+  provider           Provider
+  providerNamespace  String?   @map("provider_namespace") @db.Text
+  eventType          String    @map("event_type") @db.VarChar
+  externalEventId    String    @map("external_event_id") @db.VarChar
+  targetType         String?   @map("target_type") @db.Text
+  targetId           String?   @map("target_id") @db.VarChar
+  externalInvoiceId  String?   @map("external_invoice_id") @db.VarChar
+  externalPaymentId  String?   @map("external_payment_id") @db.VarChar
+  plan               String?   @db.VarChar(20)
+  amount             Int?      @db.Integer
+  currency           String?   @db.VarChar(3)
+  occurredAt         DateTime? @map("occurred_at") @db.Timestamptz(3)
+  processingStatus   String    @default("pending") @map("processing_status") @db.VarChar(20)
+  processingAttempts Int       @default(0) @map("processing_attempts") @db.Integer
+  processedAt        DateTime? @map("processed_at") @db.Timestamptz(3)
+  nextAttemptAt      DateTime? @map("next_attempt_at") @db.Timestamptz(3)
+  lastError          String?   @map("last_error") @db.Text
+  metadata           Json      @default("{}") @db.JsonB
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([provider, externalEventId])
+  @@unique([providerNamespace, externalEventId])
+  @@index([processingStatus, updatedAt])
+  @@index([targetType, targetId])
+  @@map("payment_events")
+}
+
+model SubscriptionTrialUsage {
+  id                String   @id @default(uuid()) @db.VarChar
+  targetType        String   @map("target_type") @db.Text
+  targetId          String   @map("target_id") @db.VarChar
+  plan              String   @db.VarChar(20)
+  provider          Provider
+  providerNamespace String?  @map("provider_namespace") @db.Text
+  externalRef       String?  @map("external_ref") @db.VarChar
+  firstUsedAt       DateTime @default(now()) @map("first_used_at") @db.Timestamptz(3)
+  metadata          Json     @default("{}") @db.JsonB
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([targetType, targetId, plan])
+  @@index([provider, externalRef])
+  @@map("subscription_trial_usages")
+}
+
+model PaymentFinancialFact {
+  id                String    @id @default(uuid()) @db.VarChar
+  provider          Provider
+  providerNamespace String    @map("provider_namespace") @db.Text
+  objectKind        String    @map("object_kind") @db.Text
+  externalId        String    @map("external_id") @db.Text
+  sourceIdentity    String?   @map("source_identity") @db.Text
+  externalInvoiceId String?   @map("external_invoice_id") @db.Text
+  externalPaymentId String?   @map("external_payment_id") @db.Text
+  status            String    @db.Text
+  amount            Int?      @db.Integer
+  currency          String?   @db.VarChar(3)
+  occurredAt        DateTime? @map("occurred_at") @db.Timestamptz(3)
+  metadata          Json      @default("{}") @db.JsonB
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([providerNamespace, objectKind, externalId], map: "payment_financial_facts_namespace_kind_external_key")
+  @@index([providerNamespace, sourceIdentity])
+  @@index([providerNamespace, externalInvoiceId], map: "payment_financial_facts_namespace_invoice_idx")
+  @@map("payment_financial_facts")
+}
+
+model PaymentOperation {
+  id                 String    @id @default(uuid()) @db.VarChar
+  provider           Provider
+  providerNamespace  String    @map("provider_namespace") @db.Text
+  operationType      String    @map("operation_type") @db.Text
+  intentId           String    @map("intent_id") @db.Text
+  primaryResourceKey String    @map("primary_resource_key") @db.Text
+  resourceKeys       String[]  @default([]) @map("resource_keys") @db.Text
+  targetType         String?   @map("target_type") @db.Text
+  targetId           String?   @map("target_id") @db.VarChar
+  status             String    @default("pending") @db.Text
+  steps              Json      @default("[]") @db.JsonB
+  result             Json?     @db.JsonB
+  firstSentAt        DateTime? @map("first_sent_at") @db.Timestamptz(3)
+  replayDeadline     DateTime? @map("replay_deadline") @db.Timestamptz(3)
+  nextAttemptAt      DateTime? @map("next_attempt_at") @db.Timestamptz(3)
+  attemptCount       Int       @default(0) @map("attempt_count") @db.Integer
+  lastErrorCode      String?   @map("last_error_code") @db.Text
+  lastError          String?   @map("last_error") @db.Text
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([providerNamespace, intentId])
+  @@index([status, nextAttemptAt])
+  @@index([providerNamespace, primaryResourceKey])
+  @@map("payment_operations")
+}
+
 model License {
   key         String    @id @map("key") @db.VarChar
+  workspaceId String?   @map("workspace_id") @db.VarChar
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   revealedAt  DateTime? @map("revealed_at") @db.Timestamptz(3)
   installedAt DateTime? @map("installed_at") @db.Timestamptz(3)
@@ -844,20 +1214,22 @@ enum BlobStatus {
 // like, total size of blobs in a workspace, or blob list for sync service.
 // it should only be a map of metadata of blobs stored anywhere else
 model Blob {
-  workspaceId String     @map("workspace_id") @db.VarChar
-  key         String     @db.VarChar
-  size        Int        @db.Integer
-  mime        String     @db.VarChar
-  status      BlobStatus @default(completed)
-  uploadId    String?    @map("upload_id") @db.VarChar
-  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  deletedAt   DateTime?  @map("deleted_at") @db.Timestamptz(3)
+  workspaceId          String     @map("workspace_id") @db.VarChar
+  key                  String     @db.VarChar
+  size                 Int        @db.Integer
+  mime                 String     @db.VarChar
+  status               BlobStatus @default(completed)
+  reservationId        String?    @default(dbgenerated("gen_random_uuid()")) @map("reservation_id") @db.Uuid
+  reservationExpiresAt DateTime?  @map("reservation_expires_at") @db.Timestamptz(3)
+  uploadId             String?    @map("upload_id") @db.VarChar
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt            DateTime?  @map("deleted_at") @db.Timestamptz(3)
 
-  workspace                Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  AiWorkspaceBlobEmbedding AiWorkspaceBlobEmbedding[]
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, key])
   @@index([workspaceId, status, deletedAt])
+  @@index([workspaceId, status, deletedAt, reservationExpiresAt])
   @@map("blobs")
 }
 
@@ -962,36 +1334,58 @@ model Reply {
 
 model CommentAttachment {
   // NOTE: manually set this column type to identity in migration file
-  sid         Int      @unique @default(autoincrement())
-  workspaceId String   @map("workspace_id") @db.VarChar
-  docId       String   @map("doc_id") @db.VarChar
-  key         String   @db.VarChar
-  size        Int      @db.Integer
-  mime        String   @db.VarChar
-  name        String   @db.VarChar
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  createdBy   String?  @map("created_by") @db.VarChar
+  sid                  Int        @unique @default(autoincrement())
+  workspaceId          String     @map("workspace_id") @db.VarChar
+  docId                String     @map("doc_id") @db.VarChar
+  key                  String     @db.VarChar
+  size                 Int        @db.Integer
+  mime                 String     @db.VarChar
+  name                 String     @db.VarChar
+  status               BlobStatus @default(completed)
+  reservationId        String?    @default(dbgenerated("gen_random_uuid()")) @map("reservation_id") @db.Uuid
+  reservationExpiresAt DateTime?  @map("reservation_expires_at") @db.Timestamptz(3)
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy            String?    @map("created_by") @db.VarChar
+  deletedAt            DateTime?  @map("deleted_at") @db.Timestamptz(3)
 
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   // will delete creator record if creator's account is deleted
   createdByUser User?     @relation(name: "createdCommentAttachments", fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@id([workspaceId, docId, key])
+  @@index([workspaceId, status, deletedAt, reservationExpiresAt])
   @@map("comment_attachments")
 }
 
-model AccessToken {
-  id        String    @id @default(uuid()) @db.VarChar
-  name      String    @db.VarChar
-  token     String    @unique @db.VarChar
-  userId    String    @map("user_id") @db.VarChar
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
+enum McpAccessMode {
+  READ_ONLY
+  READ_WRITE
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model McpCredential {
+  id           String        @id @default(uuid()) @db.VarChar
+  familyId     String        @map("family_id") @db.VarChar
+  generation   Int           @default(0)
+  name         String        @db.VarChar
+  secretHash   String        @unique @map("secret_hash") @db.VarChar
+  fingerprint  String        @db.VarChar
+  userId       String        @map("user_id") @db.VarChar
+  workspaceId  String        @map("workspace_id") @db.VarChar
+  accessMode   McpAccessMode @default(READ_ONLY) @map("access_mode")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt    DateTime      @map("expires_at") @db.Timestamptz(3)
+  lastUsedAt   DateTime?     @map("last_used_at") @db.Timestamptz(3)
+  revokedAt    DateTime?     @map("revoked_at") @db.Timestamptz(3)
+  replacedById String?       @map("replaced_by_id") @db.VarChar
+  graceEndsAt  DateTime?     @map("grace_ends_at") @db.Timestamptz(3)
 
-  @@index([userId])
-  @@map("access_tokens")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, generation])
+  @@index([userId, workspaceId])
+  @@index([expiresAt])
+  @@map("mcp_credentials")
 }
 
 model CalendarAccount {
@@ -1037,6 +1431,9 @@ model CalendarSubscription {
   enabled            Boolean   @default(true)
   syncToken          String?   @map("sync_token") @db.Text
   lastSyncAt         DateTime? @map("last_sync_at") @db.Timestamptz(3)
+  nextSyncAt         DateTime  @default(now()) @map("next_sync_at") @db.Timestamptz(3)
+  syncRetryCount     Int       @default(0) @map("sync_retry_count")
+  syncClaimedUntil   DateTime? @map("sync_claimed_until") @db.Timestamptz(3)
   customChannelId    String?   @map("custom_channel_id") @db.VarChar
   customResourceId   String?   @map("custom_resource_id") @db.VarChar
   channelExpiration  DateTime? @map("channel_expiration") @db.Timestamptz(3)
@@ -1050,6 +1447,8 @@ model CalendarSubscription {
   @@unique([accountId, externalCalendarId])
   @@index([accountId])
   @@index([provider, externalCalendarId])
+  @@index([customChannelId])
+  @@index([enabled, nextSyncAt])
   @@map("calendar_subscriptions")
 }
 

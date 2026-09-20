@@ -261,7 +261,7 @@ export const MultiMemberSelect: React.FC<MemberManagerOptions> = props => {
   const inputRef = useRef<HTMLInputElement>(null);
   const memberListRef = useRef<HTMLDivElement>(null);
   const memberManager = useMemo(
-    () => new MemberManager(props), // eslint-disable-line react-hooks/preserve-manual-memoization
+    () => new MemberManager(props), // oxlint-disable-line react-hooks-js/preserve-manual-memoization
     [] // oxlint-disable-line react/exhaustive-deps
   );
 

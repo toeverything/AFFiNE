@@ -1,4 +1,4 @@
-import { Button, IconButton, IconType, Modal } from '@affine/component';
+import { Button, IconButton, Modal } from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
@@ -7,8 +7,10 @@ import {
   GlobalDialogService,
   type WORKSPACE_DIALOG_SCHEMA,
 } from '@affine/core/modules/dialogs';
-import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
-import { OrganizeService } from '@affine/core/modules/organize';
+import {
+  type ImportRunContext,
+  ImportService,
+} from '@affine/core/modules/import';
 import { UrlService } from '@affine/core/modules/url';
 import {
   getAFFiNEWorkspaceSchema,
@@ -18,13 +20,13 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import { openFilesWith } from '@blocksuite/affine/shared/utils';
+import { openDirectory, openFilesWith } from '@blocksuite/affine/shared/utils';
 import type { Workspace } from '@blocksuite/affine/store';
 import {
   DocxTransformer,
   HtmlTransformer,
+  type ImportWarning,
   MarkdownTransformer,
-  NotionHtmlTransformer,
   ZipTransformer,
 } from '@blocksuite/affine/widgets/linked-doc';
 import {
@@ -45,6 +47,7 @@ import {
   type SVGAttributes,
   useCallback,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -52,161 +55,97 @@ import * as style from './styles.css';
 
 const logger = new DebugLogger('import');
 
-type NotionPageIcon = {
-  type: 'emoji' | 'image';
-  content: string; // emoji unicode or image URL/data
-};
-
-type FolderHierarchy = {
-  name: string;
-  path: string;
-  children: Map<string, FolderHierarchy>;
-  pageId?: string;
-  parentPath?: string;
-  icon?: NotionPageIcon;
-};
-
-// Helper function to create folder structure using OrganizeService
-function createFolderStructure(
-  organizeService: OrganizeService,
-  hierarchy: FolderHierarchy,
-  parentFolderId: string | null = null,
-  explorerIconService?: ExplorerIconService
-): {
-  folderId: string | null;
-  docLinks: Array<{ folderId: string; docId: string }>;
-} {
-  const docLinks: Array<{ folderId: string; docId: string }> = [];
-  const rootFolder = organizeService.folderTree.rootFolder;
-
-  function processHierarchyNode(
-    node: FolderHierarchy,
-    currentParentId: string | null
-  ): string | null {
-    let currentFolderId = currentParentId;
-
-    // If this node represents a folder (has children but no pageId), create it
-    if (node.children.size > 0 && !node.pageId && node.name) {
-      const parent = currentParentId
-        ? organizeService.folderTree.folderNode$(currentParentId).value
-        : rootFolder;
-
-      if (parent) {
-        const index = parent.indexAt('after');
-        currentFolderId = parent.createFolder(node.name, index);
-      }
-    }
-
-    // Process all children
-    for (const child of node.children.values()) {
-      if (child.pageId) {
-        // This is a document, link it to the current folder
-        if (currentFolderId) {
-          docLinks.push({ folderId: currentFolderId, docId: child.pageId });
-        }
-
-        // Set icon for the document if available
-        if (child.icon && explorerIconService) {
-          logger.debug('=== Setting icon for document ===');
-          logger.debug('Document ID:', child.pageId);
-          logger.debug('Icon data:', child.icon);
-
-          try {
-            let iconData;
-            if (child.icon.type === 'emoji') {
-              iconData = {
-                type: IconType.Emoji as const,
-                unicode: child.icon.content,
-              };
-              logger.debug('Created emoji icon data:', iconData);
-            } else if (child.icon.type === 'image') {
-              // For image icons, we'd need to handle blob conversion
-              // For now, let's skip image icons or convert them to default
-              // This could be enhanced later to download and convert images to blobs
-              logger.debug(
-                'Skipping image icon (not implemented):',
-                child.icon.content
-              );
-              iconData = undefined;
-            }
-
-            if (iconData) {
-              logger.debug('Calling explorerIconService.setIcon with:', {
-                where: 'doc',
-                id: child.pageId,
-                icon: iconData,
-              });
-              explorerIconService.setIcon({
-                where: 'doc',
-                id: child.pageId,
-                icon: iconData,
-              });
-              logger.debug('Icon set successfully for document:', child.pageId);
-            } else {
-              logger.debug('No valid icon data to set');
-            }
-          } catch (error) {
-            logger.error(
-              'Error setting icon for document:',
-              child.pageId,
-              error
-            );
-            logger.warn(
-              'Failed to set icon for document:',
-              child.pageId,
-              error
-            );
-          }
-        } else {
-          if (!child.icon) {
-            logger.debug('No icon found for document:', child.pageId);
-          }
-          if (!explorerIconService) {
-            logger.debug(
-              'ExplorerIconService not available for document:',
-              child.pageId
-            );
-          }
-        }
-      } else if (child.children.size > 0) {
-        // This is a subfolder, process it recursively
-        processHierarchyNode(child, currentFolderId);
-      }
-    }
-
-    return currentFolderId;
-  }
-
-  const rootFolderId = processHierarchyNode(hierarchy, parentFolderId);
-  return { folderId: rootFolderId, docLinks };
+function shouldSnapshotPickedFiles(type: ImportType, acceptType: AcceptType) {
+  if (acceptType === 'Directory' || acceptType === 'Skip') return false;
+  return !['markdownZip', 'notion', 'bear', 'oneNote'].includes(type);
 }
 
 type ImportType =
   | 'markdown'
   | 'markdownZip'
   | 'notion'
+  | 'obsidian'
+  | 'bear'
+  | 'oneNote'
   | 'snapshot'
   | 'html'
   | 'docx'
   | 'dotaffinefile';
-type AcceptType = 'Markdown' | 'Zip' | 'Html' | 'Docx' | 'Skip'; // Skip is used for dotaffinefile
+type AcceptType =
+  | 'Markdown'
+  | 'Zip'
+  | 'Html'
+  | 'Docx'
+  | 'OneNote'
+  | 'Directory'
+  | 'Skip'; // Skip is used for dotaffinefile
 type Status = 'idle' | 'importing' | 'success' | 'error';
+type ImportErrorState = {
+  code: string;
+  message: string;
+  sourcePath?: string;
+};
 type ImportResult = {
   docIds: string[];
   entryId?: string;
   isWorkspaceFile?: boolean;
   rootFolderId?: string;
+  importedWorkspace?: WorkspaceMetadata;
+  warnings?: ImportWarning[];
 };
+
+type ImportedWorkspacePayload = {
+  workspace: WorkspaceMetadata;
+};
+
+type ImportFunctionArgs = {
+  docCollection: Workspace;
+  files: File[];
+  importAffineFile: () => Promise<WorkspaceMetadata | undefined>;
+  importService?: ImportService;
+  context: ImportRunContext;
+};
+
+function toImportErrorState(error: unknown): ImportErrorState {
+  const sourcePath =
+    typeof error === 'object' &&
+    error !== null &&
+    'sourcePath' in error &&
+    typeof error.sourcePath === 'string'
+      ? error.sourcePath
+      : undefined;
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return {
+      code: 'cancelled',
+      message: 'Import cancelled',
+      sourcePath,
+    };
+  }
+  if (error instanceof Error) {
+    return {
+      code: error.name || 'import-error',
+      message: error.message || 'Unknown error occurred',
+      sourcePath,
+    };
+  }
+  return {
+    code: 'unknown',
+    message: 'Unknown error occurred',
+    sourcePath,
+  };
+}
+
+function requireImportService(importService?: ImportService) {
+  if (!importService) {
+    throw new Error('Import service is unavailable');
+  }
+  return importService;
+}
 
 type ImportConfig = {
   fileOptions: { acceptType: AcceptType; multiple: boolean };
-  importFunction: (
-    docCollection: Workspace,
-    files: File[],
-    handleImportAffineFile: () => Promise<WorkspaceMetadata | undefined>,
-    organizeService?: OrganizeService,
-    explorerIconService?: ExplorerIconService
-  ) => Promise<ImportResult>;
+  nativeOnly?: boolean;
+  importFunction: (args: ImportFunctionArgs) => Promise<ImportResult>;
 };
 
 const importOptions = [
@@ -265,6 +204,45 @@ const importOptions = [
     type: 'notion' as ImportType,
   },
   {
+    key: 'obsidian',
+    label: 'com.affine.import.obsidian',
+    prefixIcon: (
+      <ExportToMarkdownIcon color={cssVar('black')} width={20} height={20} />
+    ),
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.obsidian.tooltip',
+    testId: 'editor-option-menu-import-obsidian',
+    type: 'obsidian' as ImportType,
+  },
+  {
+    key: 'bear',
+    label: 'com.affine.import.bear',
+    prefixIcon: (
+      <FileIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.bear.tooltip',
+    testId: 'editor-option-menu-import-bear',
+    type: 'bear' as ImportType,
+  },
+  {
+    key: 'oneNote',
+    label: 'com.affine.import.onenote',
+    prefixIcon: (
+      <FileIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.onenote.tooltip',
+    testId: 'editor-option-menu-import-onenote',
+    type: 'oneNote' as ImportType,
+  },
+  {
     key: 'docx',
     label: 'com.affine.import.docx',
     prefixIcon: <FileIcon color={cssVar('black')} width={20} height={20} />,
@@ -308,13 +286,7 @@ const importOptions = [
 const importConfigs: Record<ImportType, ImportConfig> = {
   markdown: {
     fileOptions: { acceptType: 'Markdown', multiple: true },
-    importFunction: async (
-      docCollection,
-      files,
-      _handleImportAffineFile,
-      _organizeService,
-      _explorerIconService
-    ) => {
+    importFunction: async ({ docCollection, files }) => {
       const docIds: string[] = [];
       for (const file of files) {
         const text = await file.text();
@@ -335,37 +307,20 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   },
   markdownZip: {
     fileOptions: { acceptType: 'Zip', multiple: false },
-    importFunction: async (
-      docCollection,
-      files,
-      _handleImportAffineFile,
-      _organizeService,
-      _explorerIconService
-    ) => {
+    importFunction: async ({ files, importService, context }) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
         throw new Error('Expected a single zip file for markdownZip import');
       }
-      const docIds = await MarkdownTransformer.importMarkdownZip({
-        collection: docCollection,
-        schema: getAFFiNEWorkspaceSchema(),
-        imported: file,
-        extensions: getStoreManager().config.init().value.get('store'),
-      });
-      return {
-        docIds,
-      };
+      return requireImportService(importService).importMarkdownZip(
+        file,
+        context
+      );
     },
   },
   html: {
     fileOptions: { acceptType: 'Html', multiple: true },
-    importFunction: async (
-      docCollection,
-      files,
-      _handleImportAffineFile,
-      _organizeService,
-      _explorerIconService
-    ) => {
+    importFunction: async ({ docCollection, files }) => {
       const docIds: string[] = [];
       for (const file of files) {
         const text = await file.text();
@@ -386,69 +341,50 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   },
   notion: {
     fileOptions: { acceptType: 'Zip', multiple: false },
-    importFunction: async (
-      docCollection,
-      files,
-      _handleImportAffineFile,
-      organizeService,
-      explorerIconService
-    ) => {
+    importFunction: async ({ files, importService, context }) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
         throw new Error('Expected a single zip file for notion import');
       }
-      const { entryId, pageIds, isWorkspaceFile, folderHierarchy } =
-        await NotionHtmlTransformer.importNotionZip({
-          collection: docCollection,
-          schema: getAFFiNEWorkspaceSchema(),
-          imported: file,
-          extensions: getStoreManager().config.init().value.get('store'),
-        });
-
-      let rootFolderId: string | undefined;
-
-      // Create folder structure if hierarchy exists and OrganizeService is available
-      if (
-        folderHierarchy &&
-        organizeService &&
-        folderHierarchy.children.size > 0
-      ) {
-        try {
-          const { folderId, docLinks } = createFolderStructure(
-            organizeService,
-            folderHierarchy,
-            null,
-            explorerIconService
-          );
-          rootFolderId = folderId || undefined;
-
-          // Create links for all documents to their respective folders
-          for (const { folderId, docId } of docLinks) {
-            const folder =
-              organizeService.folderTree.folderNode$(folderId).value;
-            if (folder) {
-              const index = folder.indexAt('after');
-              folder.createLink('doc', docId, index);
-            }
-          }
-        } catch (error) {
-          logger.warn('Failed to create folder structure:', error);
-          // Continue with import even if folder creation fails
-        }
+      return requireImportService(importService).importNotionZip(file, context);
+    },
+  },
+  obsidian: {
+    fileOptions: { acceptType: 'Directory', multiple: false },
+    importFunction: async ({ files, importService, context }) => {
+      return requireImportService(importService).importObsidianVault(
+        files,
+        context
+      );
+    },
+  },
+  bear: {
+    fileOptions: { acceptType: 'Zip', multiple: false },
+    importFunction: async ({ files, importService, context }) => {
+      const file = files.length === 1 ? files[0] : null;
+      if (!file) {
+        throw new Error('Expected a single .bear2bk file for Bear import');
       }
-
-      return {
-        docIds: pageIds,
-        entryId,
-        isWorkspaceFile,
-        rootFolderId,
-      };
+      return requireImportService(importService).importBearBackup(
+        file,
+        context
+      );
+    },
+  },
+  oneNote: {
+    fileOptions: { acceptType: 'OneNote', multiple: false },
+    nativeOnly: true,
+    importFunction: async ({ files, importService, context }) => {
+      const file = files.length === 1 ? files[0] : null;
+      if (!file) {
+        throw new Error('Expected a single OneNote file');
+      }
+      return requireImportService(importService).importOneNote(file, context);
     },
   },
   docx: {
     fileOptions: { acceptType: 'Docx', multiple: false },
-    importFunction: async (docCollection, file) => {
-      const files = Array.isArray(file) ? file : [file];
+    importFunction: async ({ docCollection, files }) => {
       const docIds: string[] = [];
       for (const file of files) {
         const docId = await DocxTransformer.importDocx({
@@ -464,13 +400,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   },
   snapshot: {
     fileOptions: { acceptType: 'Zip', multiple: false },
-    importFunction: async (
-      docCollection,
-      files,
-      _handleImportAffineFile,
-      _organizeService,
-      _explorerIconService
-    ) => {
+    importFunction: async ({ docCollection, files }) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
         throw new Error('Expected a single zip file for snapshot import');
@@ -482,7 +412,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           file
         )
       )
-        .filter(doc => doc !== undefined)
+        .filter((doc): doc is NonNullable<typeof doc> => doc !== undefined)
         .map(doc => doc.id);
 
       return {
@@ -492,18 +422,13 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   },
   dotaffinefile: {
     fileOptions: { acceptType: 'Skip', multiple: false },
-    importFunction: async (
-      _,
-      __,
-      handleImportAffineFile,
-      _organizeService,
-      _explorerIconService
-    ) => {
-      await handleImportAffineFile();
+    importFunction: async ({ importAffineFile }) => {
+      const workspace = await importAffineFile();
       return {
         docIds: [],
         entryId: undefined,
         isWorkspaceFile: true,
+        importedWorkspace: workspace,
       };
     },
   },
@@ -516,6 +441,7 @@ const ImportOptionItem = ({
   suffixTooltip,
   type,
   onImport,
+  disabled,
   ...props
 }: {
   label: string;
@@ -524,10 +450,16 @@ const ImportOptionItem = ({
   suffixTooltip?: string;
   type: ImportType;
   onImport: (type: ImportType) => void;
+  disabled?: boolean;
 }) => {
   const t = useI18n();
   return (
-    <div className={style.importItem} onClick={() => onImport(type)} {...props}>
+    <div
+      className={disabled ? style.importItemDisabled : style.importItem}
+      onClick={() => onImport(type)}
+      aria-disabled={disabled}
+      {...props}
+    >
       {prefixIcon}
       <div className={style.importItemLabel}>{t[label]()}</div>
       {suffixIcon && (
@@ -561,18 +493,24 @@ const ImportOptions = ({
             suffixTooltip,
             testId,
             type,
-          }) => (
-            <ImportOptionItem
-              key={key}
-              prefixIcon={prefixIcon}
-              suffixIcon={suffixIcon}
-              suffixTooltip={suffixTooltip}
-              label={label}
-              type={type}
-              onImport={onImport}
-              data-testid={testId}
-            />
-          )
+          }) => {
+            const disabled = Boolean(
+              importConfigs[type].nativeOnly && !BUILD_CONFIG.isElectron
+            );
+            return (
+              <ImportOptionItem
+                key={key}
+                prefixIcon={prefixIcon}
+                suffixIcon={suffixIcon}
+                suffixTooltip={suffixTooltip}
+                label={label}
+                type={type}
+                onImport={onImport}
+                disabled={disabled}
+                data-testid={testId}
+              />
+            );
+          }
         )}
       </div>
       <div className={style.importModalTip}>
@@ -591,8 +529,18 @@ const ImportOptions = ({
   );
 };
 
-const ImportingStatus = () => {
+const ImportingStatus = ({
+  progress,
+  onCancel,
+}: {
+  progress: { completed: number; total: number } | null;
+  onCancel: () => void;
+}) => {
   const t = useI18n();
+  const progressLabel =
+    progress && progress.total > 0
+      ? `${progress.completed}/${progress.total}`
+      : null;
   return (
     <>
       <div className={style.importModalTitle}>
@@ -601,11 +549,25 @@ const ImportingStatus = () => {
       <p className={style.importStatusContent}>
         {t['com.affine.import.status.importing.message']()}
       </p>
+      {progressLabel ? (
+        <div className={style.importProgress}>{progressLabel}</div>
+      ) : null}
+      <div className={style.importModalButtonContainer}>
+        <Button onClick={onCancel} variant="secondary">
+          {t['Cancel']()}
+        </Button>
+      </div>
     </>
   );
 };
 
-const SuccessStatus = ({ onComplete }: { onComplete: () => void }) => {
+const SuccessStatus = ({
+  warnings,
+  onComplete,
+}: {
+  warnings: string[];
+  onComplete: () => void;
+}) => {
   const t = useI18n();
   return (
     <>
@@ -624,6 +586,13 @@ const SuccessStatus = ({ onComplete }: { onComplete: () => void }) => {
         </a>
         .
       </p>
+      {warnings.length ? (
+        <div className={style.importWarnings}>
+          {warnings.map((warning, index) => (
+            <div key={`${warning}-${index}`}>{warning}</div>
+          ))}
+        </div>
+      ) : null}
       <div className={style.importModalButtonContainer}>
         <Button onClick={onComplete} variant="primary">
           {t['Complete']()}
@@ -637,7 +606,7 @@ const ErrorStatus = ({
   error,
   onRetry,
 }: {
-  error: string | null;
+  error: ImportErrorState | null;
   onRetry: () => void;
 }) => {
   const t = useI18n();
@@ -648,8 +617,11 @@ const ErrorStatus = ({
         {t['com.affine.import.status.failed.title']()}
       </div>
       <p className={style.importStatusContent}>
-        {error || 'Unknown error occurred'}
+        {error?.message || 'Unknown error occurred'}
       </p>
+      {error?.sourcePath ? (
+        <div className={style.importErrorDetail}>{error.sourcePath}</div>
+      ) : null}
       <div className={style.importModalButtonContainer}>
         <Button
           onClick={() => {
@@ -672,12 +644,16 @@ export const ImportDialog = ({
 }: DialogComponentProps<WORKSPACE_DIALOG_SCHEMA['import']>) => {
   const t = useI18n();
   const [status, setStatus] = useState<Status>('idle');
-  const [importError, setImportError] = useState<string | null>(null);
+  const [importError, setImportError] = useState<ImportErrorState | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importProgress, setImportProgress] = useState<{
+    completed: number;
+    total: number;
+  } | null>(null);
+  const importAbortControllerRef = useRef<AbortController | null>(null);
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
-  const organizeService = useService(OrganizeService);
-  const explorerIconService = useService(ExplorerIconService);
+  const importService = useService(ImportService);
 
   const globalDialogService = useService(GlobalDialogService);
 
@@ -713,29 +689,43 @@ export const ImportDialog = ({
       });
 
       return new Promise<WorkspaceMetadata | undefined>((resolve, reject) => {
-        globalDialogService.open('import-workspace', undefined, payload => {
-          if (payload) {
-            handleCreatedWorkspace({ metadata: payload.workspace });
-            resolve(payload.workspace);
-          } else {
-            reject(new Error('No workspace imported'));
+        globalDialogService.open(
+          'import-workspace',
+          undefined,
+          (payload?: ImportedWorkspacePayload) => {
+            if (payload) {
+              resolve(payload.workspace);
+            } else {
+              reject(new Error('No workspace imported'));
+            }
           }
-        });
+        );
       });
     };
-  }, [globalDialogService, handleCreatedWorkspace]);
+  }, [globalDialogService]);
 
   const handleImport = useAsyncCallback(
     async (type: ImportType) => {
       setImportError(null);
+      setImportProgress(null);
       try {
         const importConfig = importConfigs[type];
+        if (importConfig.nativeOnly && !BUILD_CONFIG.isElectron) {
+          throw new Error(t['com.affine.import.onenote.desktop-only']());
+        }
         const { acceptType, multiple } = importConfig.fileOptions;
 
         const files =
           acceptType === 'Skip'
             ? []
-            : await openFilesWith(acceptType, multiple);
+            : acceptType === 'Directory'
+              ? await openDirectory({
+                  fileSystemAccess: false,
+                })
+              : await openFilesWith(acceptType, multiple, {
+                  fileSystemAccess: false,
+                  snapshot: shouldSnapshotPickedFiles(type, acceptType),
+                });
 
         if (!files || (files.length === 0 && acceptType !== 'Skip')) {
           throw new Error(
@@ -751,16 +741,37 @@ export const ImportDialog = ({
           });
         }
 
-        const { docIds, entryId, isWorkspaceFile, rootFolderId } =
-          await importConfig.importFunction(
-            docCollection,
-            files,
-            handleImportAffineFile,
-            organizeService,
-            explorerIconService
-          );
+        const abortController = new AbortController();
+        importAbortControllerRef.current = abortController;
+        const {
+          docIds,
+          entryId,
+          isWorkspaceFile,
+          rootFolderId,
+          importedWorkspace,
+          warnings,
+        } = await importConfig.importFunction({
+          docCollection,
+          files,
+          importAffineFile: handleImportAffineFile,
+          importService,
+          context: {
+            signal: abortController.signal,
+            onProgress: progress => {
+              setImportProgress(progress);
+            },
+          },
+        });
+        importAbortControllerRef.current = null;
 
-        setImportResult({ docIds, entryId, isWorkspaceFile, rootFolderId });
+        setImportResult({
+          docIds,
+          entryId,
+          isWorkspaceFile,
+          rootFolderId,
+          importedWorkspace,
+          warnings,
+        });
         setStatus('success');
         track.$.importModal.$.import({
           type,
@@ -773,39 +784,62 @@ export const ImportDialog = ({
           control: 'import',
         });
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error occurred';
-        setImportError(errorMessage);
+        importAbortControllerRef.current = null;
+        const structuredError = toImportErrorState(error);
+        setImportError(structuredError);
         setStatus('error');
         track.$.importModal.$.import({
           type,
           status: 'failed',
-          error: errorMessage || undefined,
+          error: structuredError.message || undefined,
         });
         logger.error('Failed to import', error);
       }
     },
-    [
-      docCollection,
-      explorerIconService,
-      handleImportAffineFile,
-      organizeService,
-      t,
-    ]
+    [docCollection, handleImportAffineFile, importService, t]
   );
 
+  const finishImport = useCallback(() => {
+    if (importResult?.importedWorkspace) {
+      handleCreatedWorkspace({ metadata: importResult.importedWorkspace });
+    }
+    if (!importResult) {
+      close();
+      return;
+    }
+    close({
+      docIds: importResult.docIds,
+      entryId: importResult.entryId,
+      isWorkspaceFile: importResult.isWorkspaceFile,
+    });
+  }, [close, handleCreatedWorkspace, importResult]);
+
   const handleComplete = useCallback(() => {
-    close(importResult || undefined);
-  }, [importResult, close]);
+    finishImport();
+  }, [finishImport]);
 
   const handleRetry = () => {
+    setImportProgress(null);
     setStatus('idle');
   };
 
+  const handleCancel = useCallback(() => {
+    importAbortControllerRef.current?.abort();
+  }, []);
+
   const statusComponents = {
     idle: <ImportOptions onImport={handleImport} />,
-    importing: <ImportingStatus />,
-    success: <SuccessStatus onComplete={handleComplete} />,
+    importing: (
+      <ImportingStatus progress={importProgress} onCancel={handleCancel} />
+    ),
+    success: (
+      <SuccessStatus
+        warnings={(importResult?.warnings ?? []).map(warning =>
+          typeof warning === 'string' ? warning : warning.message
+        )}
+        onComplete={handleComplete}
+      />
+    ),
     error: <ErrorStatus error={importError} onRetry={handleRetry} />,
   };
 
@@ -814,7 +848,7 @@ export const ImportDialog = ({
       open
       onOpenChange={(open: boolean) => {
         if (!open) {
-          close(importResult || undefined);
+          finishImport();
         }
       }}
       width={480}

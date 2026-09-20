@@ -21,12 +21,11 @@
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "@affine/electron-api": "workspace:*",
     "@affine/error": "workspace:*",
     "@affine/graphql": "workspace:*",
     "@affine/i18n": "workspace:*",
-    "@atlaskit/pragmatic-drag-and-drop": "^1.7.7",
-    "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.1.0",
+    "@atlaskit/pragmatic-drag-and-drop": "^2.0.0",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "^2.0.0",
     "@blocksuite/icons": "^2.2.17",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
@@ -51,7 +50,6 @@
     "check-password-strength": "^3.0.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
-    "emoji-mart": "^5.6.0",
     "emojibase-data": "^16.0.3",
     "foxact": "^0.2.49",
     "jotai": "^2.10.3",
@@ -64,7 +62,7 @@
     "react": "^19.2.1",
     "react-dom": "19.2.1",
     "react-paginate": "^8.3.0",
-    "react-router-dom": "^6.30.3",
+    "react-router-dom": "^7.18.4",
     "react-transition-state": "^2.2.0",
     "sonner": "^2.0.7",
     "swr": "^2.3.7",
@@ -72,7 +70,6 @@
   },
   "devDependencies": {
     "@affine-tools/utils": "workspace:*",
-    "@blocksuite/affine": "workspace:*",
     "@storybook/react": "^10.2.14",
     "@storybook/react-vite": "^10.2.14",
     "@testing-library/dom": "^10.4.0",
@@ -82,10 +79,10 @@
     "@types/react-dom": "^19.0.2",
     "@vanilla-extract/css": "^1.17.0",
     "storybook": "^10.2.14",
-    "typescript": "^5.9.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "unplugin-swc": "^1.5.9",
-    "vite": "^7.2.7",
-    "vitest": "^4.0.18"
+    "vite": "^7.3.6",
+    "vitest": "^4.1.11"
   },
-  "version": "0.26.3"
+  "version": "0.27.5"
 }

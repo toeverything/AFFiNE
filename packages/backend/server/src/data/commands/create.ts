@@ -2,54 +2,37 @@ import { appendFileSync, writeFileSync } from 'node:fs';
 import { join, parse } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { Logger } from '@nestjs/common';
+import { input } from '@inquirer/prompts';
+import { Injectable, Logger } from '@nestjs/common';
 import { camelCase, kebabCase, upperFirst } from 'lodash-es';
-import {
-  Command,
-  CommandRunner,
-  InquirerService,
-  Question,
-  QuestionSet,
-} from 'nest-commander';
 
-@QuestionSet({ name: 'name-questions' })
-export class NameQuestion {
-  @Question({
-    name: 'name',
-    message: 'Name of the data migration script:',
-  })
-  parseName(val: string) {
-    return val.trim();
-  }
-}
-
-@Command({
-  name: 'create',
-  arguments: '[name]',
-  description: 'create a data migration script',
-})
-export class CreateCommand extends CommandRunner {
+@Injectable()
+export class CreateCommand {
   logger = new Logger(CreateCommand.name);
-  constructor(private readonly inquirer: InquirerService) {
-    super();
-  }
 
-  override async run(inputs: string[]): Promise<void> {
-    let name = inputs[0];
+  async execute(name?: string): Promise<void> {
+    let resolvedName = name;
 
-    if (!name) {
-      name = (
-        await this.inquirer.ask<{ name: string }>('name-questions', undefined)
-      ).name;
+    if (!resolvedName) {
+      resolvedName = (
+        await input({
+          message: 'Name of the data migration script:',
+          validate(value) {
+            return value.trim().length > 0 || 'A migration name is required';
+          },
+        })
+      ).trim();
     }
 
     const timestamp = Date.now();
-    const content = this.createScript(upperFirst(camelCase(name)) + timestamp);
+    const content = this.createScript(
+      upperFirst(camelCase(resolvedName)) + timestamp
+    );
     const migrationDir = join(
       fileURLToPath(import.meta.url),
       '../../migrations'
     );
-    const fileName = `${timestamp}-${kebabCase(name)}.ts`;
+    const fileName = `${timestamp}-${kebabCase(resolvedName)}.ts`;
     const filePath = join(migrationDir, fileName);
 
     this.logger.log(`Creating ${fileName}...`);

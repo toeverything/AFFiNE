@@ -19,7 +19,8 @@ export class MockUser extends Mocker<MockUserInput, MockedUser> {
     const password = input?.password ?? faker.internet.password();
     const user = await this.db.user.create({
       data: {
-        email: faker.internet.email(),
+        createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+        email: `${faker.string.uuid()}@example.com`,
         name: faker.person.fullName(),
         password: password ? hashSync(password) : undefined,
         ...userInput,

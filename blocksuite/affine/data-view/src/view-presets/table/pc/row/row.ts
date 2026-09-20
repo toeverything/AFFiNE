@@ -177,28 +177,30 @@ export class TableRowView extends SignalWatcher(
   protected override render(): unknown {
     const view = this.view;
     return html`
-      ${view.readonly$.value
-        ? nothing
-        : html`<div class="data-view-table-left-bar" style="height: 34px">
-            <div style="display: flex;">
-              <div
-                class="data-view-table-view-drag-handler show-on-hover-row row-selected-bg"
-                @click=${this._clickDragHandler}
-              >
+      ${
+        view.readonly$.value
+          ? nothing
+          : html`<div class="data-view-table-left-bar" style="height: 34px">
+              <div style="display: flex;">
                 <div
-                  style="width: 4px;
+                  class="data-view-table-view-drag-handler show-on-hover-row row-selected-bg"
+                  @click=${this._clickDragHandler}
+                >
+                  <div
+                    style="width: 4px;
                   border-radius: 2px;
                   height: 12px;
                   background-color: var(--affine-placeholder-color);"
-                ></div>
+                  ></div>
+                </div>
+                <row-select-checkbox
+                  .tableViewLogic="${this.tableViewLogic}"
+                  .rowId="${this.rowId}"
+                  .groupKey="${this.groupKey}"
+                ></row-select-checkbox>
               </div>
-              <row-select-checkbox
-                .tableViewLogic="${this.tableViewLogic}"
-                .rowId="${this.rowId}"
-                .groupKey="${this.groupKey}"
-              ></row-select-checkbox>
-            </div>
-          </div>`}
+            </div>`
+      }
       ${repeat(
         view.properties$.value,
         v => v.id,
@@ -265,19 +267,23 @@ export class TableRowView extends SignalWatcher(
               </dv-table-view-cell-container>
               <div class="${cellDivider}"></div>
             </div>
-            ${!column.readonly$.value &&
-            column.view.mainProperties$.value.titleColumn === column.id
-              ? html`<div class="row-ops show-on-hover-row">
-                  <div class="row-op" @click="${clickDetail}">
-                    ${CenterPeekIcon()}
-                  </div>
-                  ${!view.readonly$.value
-                    ? html`<div class="row-op" @click="${openMenu}">
-                        ${MoreHorizontalIcon()}
-                      </div>`
-                    : nothing}
-                </div>`
-              : nothing}
+            ${
+              !column.readonly$.value &&
+              column.view.mainProperties$.value.titleColumn === column.id
+                ? html`<div class="row-ops show-on-hover-row">
+                    <div class="row-op" @click="${clickDetail}">
+                      ${CenterPeekIcon()}
+                    </div>
+                    ${
+                      !view.readonly$.value
+                        ? html`<div class="row-op" @click="${openMenu}">
+                            ${MoreHorizontalIcon()}
+                          </div>`
+                        : nothing
+                    }
+                  </div>`
+                : nothing
+            }
           `;
         }
       )}

@@ -1,3 +1,0 @@
-mutation removeContextCategory($options: RemoveContextCategoryInput!) {
-  removeContextCategory(options: $options)
-}

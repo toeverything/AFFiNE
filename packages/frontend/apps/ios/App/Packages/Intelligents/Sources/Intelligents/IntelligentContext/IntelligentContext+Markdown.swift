@@ -9,7 +9,7 @@ import Foundation
 import MarkdownView
 
 extension IntelligentContext {
-  func prepareMarkdownViewThemes() {
+  @MainActor func prepareMarkdownViewThemes() {
     MarkdownTheme.default.colors.body = .affineTextPrimary
     MarkdownTheme.default.colors.highlight = .affineTextLink
   }

@@ -26,6 +26,9 @@ public class GrantDocUserRolesMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("grantDocUserRoles", Bool.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GrantDocUserRolesMutation.Data.self
+    ] }
 
     public var grantDocUserRoles: Bool { __data["grantDocUserRoles"] }
   }

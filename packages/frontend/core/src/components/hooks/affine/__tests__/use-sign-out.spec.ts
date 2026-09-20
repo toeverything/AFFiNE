@@ -1,4 +1,3 @@
-/* eslint-disable rxjs/finnish */
 /**
  * @vitest-environment happy-dom
  */

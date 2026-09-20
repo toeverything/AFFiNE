@@ -329,6 +329,7 @@ export class GoogleCalendarProvider extends CalendarProvider {
 
   private async fetchWithTokenHandling<T>(url: string, accessToken: string) {
     const response = await fetch(url, {
+      signal: this.withTimeout(),
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,

@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { chunk } from 'lodash-es';
 
 import {
@@ -7,12 +9,12 @@ import {
   EventBus,
   FailedToSaveUpdates,
   FailedToUpsertSnapshot,
-  JobQueue,
   metrics,
   Mutex,
 } from '../../../base';
 import { retryable } from '../../../base/utils/promise';
 import { Models } from '../../../models';
+import { BackendRuntimeProvider } from '../../backend-runtime';
 import { DocStorageOptions } from '../options';
 import {
   DocRecord,
@@ -46,20 +48,91 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     private readonly mutex: Mutex,
     private readonly event: EventBus,
     protected override readonly options: DocStorageOptions,
-    private readonly queue: JobQueue
+    private readonly runtime: BackendRuntimeProvider
   ) {
     super(options);
+  }
+
+  override async getDoc(
+    workspaceId: string,
+    docId: string
+  ): Promise<DocRecord | null> {
+    await using _lock = await this.lockDocForUpdate(workspaceId, docId);
+    const result = await this.getDocInTransaction(workspaceId, docId);
+    if (result.snapshotUpdated && result.doc) {
+      this.event.emitDetached('doc.snapshot.updated', {
+        workspaceId,
+        docId,
+        blob: Buffer.from(result.doc.bin),
+      });
+    }
+    return result.doc;
+  }
+
+  @Transactional<TransactionalAdapterPrisma>({ timeout: 60000 })
+  private async getDocInTransaction(workspaceId: string, docId: string) {
+    await this.models.doc.lockDocContent(workspaceId, docId);
+    return await this.getDocUnderLock(workspaceId, docId);
   }
 
   async pushDocUpdates(
     workspaceId: string,
     docId: string,
     updates: Uint8Array[],
+    editorId: string,
+    expectedPermissionGeneration?: number,
+    writeIntent: 'update_doc' | 'create_doc' = 'update_doc',
+    permissionDocId?: string
+  ) {
+    return await this.pushDocUpdatesWithContract(
+      workspaceId,
+      docId,
+      updates,
+      editorId,
+      {
+        actorUserId: editorId,
+        writeIntent,
+        permissionDocId,
+        expectedPermissionGeneration,
+      }
+    );
+  }
+
+  async pushDocUpdatesTrusted(
+    workspaceId: string,
+    docId: string,
+    updates: Uint8Array[],
     editorId?: string
+  ) {
+    return await this.pushDocUpdatesWithContract(
+      workspaceId,
+      docId,
+      updates,
+      editorId,
+      { trusted: true }
+    );
+  }
+
+  private async pushDocUpdatesWithContract(
+    workspaceId: string,
+    docId: string,
+    updates: Uint8Array[],
+    editorId: string | undefined,
+    contract:
+      | {
+          actorUserId: string;
+          writeIntent: 'update_doc' | 'create_doc';
+          permissionDocId?: string;
+          expectedPermissionGeneration?: number;
+        }
+      | { trusted: true }
   ) {
     if (!updates.length) {
       return 0;
     }
+
+    updates = await this.filterValidDocUpdates(workspaceId, docId, updates);
+    if (!updates.length) return 0;
 
     const isNewDoc = !(await this.models.doc.exists(workspaceId, docId));
 
@@ -72,45 +145,29 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
           pendings = pendings.slice(done);
         }
 
-        let turn = 0;
         const batchCount = 10;
         for (const batch of chunk(pendings, batchCount)) {
-          const now = Date.now();
-          await this.models.doc.createUpdates(
-            batch.map((update, i) => {
-              const subSeq = turn * batchCount + i + 1;
-              const createdAt = now + subSeq;
-              timestamp = Math.max(timestamp, createdAt);
-
-              return {
-                spaceId: workspaceId,
-                docId,
-                blob: Buffer.from(update),
-                timestamp: createdAt,
-                editorId,
-              };
-            })
-          );
-          await this.queue.add(
-            'doc.mergePendingDocUpdates',
-            {
-              workspaceId,
-              docId,
-            },
-            {
-              // keep it simple to let all update merged in one job
-              jobId: `doc:merge-pending-updates:${workspaceId}:${docId}`,
-              delay: 5 * 1000 /* 5s */,
-              priority: 100,
-            }
-          );
-          turn++;
+          const input = {
+            workspaceId,
+            docId,
+            updates: batch.map(update => Buffer.from(update)),
+          };
+          timestamp =
+            'trusted' in contract
+              ? await this.runtime.appendWorkspaceDocUpdatesTrustedV1({
+                  ...input,
+                  editorId,
+                })
+              : await this.runtime.appendWorkspaceDocUpdatesV1({
+                  ...input,
+                  ...contract,
+                });
           done += batch.length;
         }
       });
 
       if (isNewDoc) {
-        this.event.emitDetached('doc.created', {
+        await this.event.emitDetachedAsync('doc.created', {
           workspaceId,
           docId,
           editor: editorId,
@@ -134,8 +191,8 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     }));
   }
 
-  async deleteDoc(workspaceId: string, docId: string) {
-    await this.models.doc.delete(workspaceId, docId);
+  async deleteDoc(_workspaceId: string, _docId: string) {
+    return;
   }
 
   async deleteSpace(workspaceId: string) {
@@ -332,14 +389,6 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
         timestamp: snapshot.timestamp,
         editorId: snapshot.editor,
       });
-
-      if (updatedSnapshot) {
-        this.event.emitDetached('doc.snapshot.updated', {
-          workspaceId: snapshot.spaceId,
-          docId: snapshot.docId,
-          blob,
-        });
-      }
 
       return !!updatedSnapshot;
     } catch (e) {

@@ -45,6 +45,7 @@ async function createRootTag(
   // set color
   await changeTagColor(dialog, color);
   // confirm
+  await dialog.getByTestId('rename-input').focus();
   await dialog.getByTestId('rename-confirm').tap();
   const tag = await locateTag(section, name);
   await expect(tag).toBeVisible();
@@ -55,7 +56,10 @@ async function createRootTag(
 }
 
 test('create a tag from navigation panel', async ({ page }) => {
-  await createRootTag(page, 'Test Tag');
+  const tag = await createRootTag(page, 'Test Tag');
+  await tag.getByTestId('navigation-panel-collapsed-button').tap();
+  await expect(tag).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByTestId('navigation-panel-tag-add-page')).toBeVisible();
 });
 
 test('rename a tag from navigation panel', async ({ page }) => {
@@ -64,6 +68,25 @@ test('rename a tag from navigation panel', async ({ page }) => {
 
   const tag = await createRootTag(page, originalName);
   const menu = await openNavigationPanelNodeMenu(page, tag);
+  const rename = menu.getByTestId('rename-tag');
+  const renameBox = await rename.boundingBox();
+  expect(renameBox).not.toBeNull();
+  if (!renameBox) throw new Error('Rename action has no layout box');
+  const touchPoint = {
+    x: renameBox.x + renameBox.width / 2,
+    y: renameBox.y + renameBox.height / 2,
+  };
+  await page.touchscreen.tap(touchPoint.x, touchPoint.y);
+  await expect(menu.getByTestId('rename-input')).toBeVisible();
+  const back = menu.getByTestId('mobile-menu-back-button').last();
+  const backBox = await back.boundingBox();
+  expect(backBox).not.toBeNull();
+  if (!backBox) throw new Error('Rename back button has no layout box');
+  await page.touchscreen.tap(
+    backBox.x + backBox.width / 2,
+    backBox.y + backBox.height / 2
+  );
+  await expect(menu.getByTestId('rename-tag')).toBeVisible();
   await menu.getByTestId('rename-tag').tap();
   const focusedTestid = await getAttrOfActiveElement(page);
   expect(focusedTestid).toEqual('rename-input');

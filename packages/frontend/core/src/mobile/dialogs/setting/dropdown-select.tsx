@@ -33,11 +33,13 @@ export interface SettingDropdownSelectProps<
   native?: boolean;
 }
 
+const EMPTY_OPTIONS: DropdownItem<string>[] = [];
+
 export const SettingDropdownSelect = <
   V extends string = string,
   E extends boolean | undefined = true,
 >({
-  options = [],
+  options = EMPTY_OPTIONS as DropdownItem<V>[],
   value,
   emitValue = true,
   onChange,
@@ -98,7 +100,7 @@ export const NativeSettingDropdownSelect = <
   V extends string = string,
   E extends boolean | undefined = true,
 >({
-  options = [],
+  options = EMPTY_OPTIONS as DropdownItem<V>[],
   value,
   emitValue = true,
   onChange,

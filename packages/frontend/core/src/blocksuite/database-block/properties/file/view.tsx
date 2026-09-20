@@ -362,7 +362,7 @@ const FileCellComponent: ForwardRefRenderFunction<
 > = (props, ref): ReactNode => {
   const peekView = useService(PeekViewService);
   const manager = useMemo(
-    () => new FileCellManager(props, peekView), // eslint-disable-line react-hooks/preserve-manual-memoization
+    () => new FileCellManager(props, peekView), // oxlint-disable-line react-hooks-js/preserve-manual-memoization
     [] // oxlint-disable-line react/exhaustive-deps
   );
 

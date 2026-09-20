@@ -15,7 +15,12 @@ test('should create config', t => {
   const config = module.get(Config);
 
   t.is(typeof config.auth.passwordRequirements.max, 'number');
-  t.is(typeof config.job.queue, 'object');
+  t.deepEqual(config.copilot.byok.allowedProviders, [
+    'openai',
+    'anthropic',
+    'gemini',
+    'fal',
+  ]);
 });
 
 test('should override config', async t => {
@@ -26,13 +31,6 @@ test('should override config', async t => {
           passwordRequirements: {
             max: 100,
             min: 6,
-          },
-        },
-        job: {
-          queues: {
-            notification: {
-              concurrency: 1000,
-            },
           },
         },
       }),
@@ -89,6 +87,16 @@ test('should validate config', t => {
     error.message,
     'Invalid app config for module `auth` with key `passwordRequirements`. Minimum length of password must be less than maximum length.'
   );
+
+  const [nativeError] = config.validate([
+    {
+      module: 'copilot',
+      key: 'byok.allowedProviders',
+      value: ['openai', 'openai'],
+    },
+  ])!;
+  t.true(nativeError instanceof InvalidAppConfig);
+  t.regex(nativeError.message, /supported and unique/);
 });
 
 test('should override correctly', t => {

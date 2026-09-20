@@ -21,7 +21,7 @@ export async function inviteUsers(
   app: TestingApp,
   workspaceId: string,
   emails: string[]
-): Promise<Array<{ email: string; inviteId?: string; sentSuccess?: boolean }>> {
+): Promise<Array<{ email: string; inviteId?: string }>> {
   const res = await app.gql(
     `
     mutation inviteMembers($workspaceId: String!, $emails: [String!]!) {
@@ -31,7 +31,6 @@ export async function inviteUsers(
       ) {
         email
         inviteId
-        sentSuccess
       }
     }
     `,

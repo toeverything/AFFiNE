@@ -2,6 +2,7 @@ import { OpConsumer } from '@toeverything/infra/op';
 import { Observable } from 'rxjs';
 
 import { type StorageConstructor } from '../impls';
+import { RealtimeManager } from '../realtime';
 import { SpaceStorage } from '../storage';
 import type { AwarenessRecord } from '../storage/awareness';
 import { Sync } from '../sync';
@@ -192,6 +193,15 @@ class StoreConsumer {
         this.docStorage.getDocTimestamp(docId),
       'docStorage.deleteDoc': (docId: string) =>
         this.docStorage.deleteDoc(docId),
+      'docStorage.applyDocLifecycle': async ({ docId, lifecycle }) => {
+        const remote = Object.values(this.storages.remotes)
+          .map(storage => storage.get('doc'))
+          .find(storage => storage.applyDocLifecycle);
+        if (!remote?.applyDocLifecycle) {
+          throw new Error('Document lifecycle is unavailable');
+        }
+        return await remote.applyDocLifecycle(docId, lifecycle);
+      },
       'docStorage.subscribeDocUpdate': () =>
         new Observable(subscriber => {
           return this.docStorage.subscribeDocUpdate((update, origin) => {
@@ -258,6 +268,9 @@ class StoreConsumer {
       'blobSync.state': () => this.blobSync.state$,
       'blobSync.blobState': blobId => this.blobSync.blobState$(blobId),
       'blobSync.downloadBlob': key => this.blobSync.downloadBlob(key),
+      'blobSync.registerSource': source => this.blobSync.registerSource(source),
+      'blobSync.unregisterSource': source =>
+        this.blobSync.unregisterSource(source),
       'blobSync.uploadBlob': ({ blob, force }) =>
         this.blobSync.uploadBlob(blob, force),
       'blobSync.fullDownload': peerId =>
@@ -340,6 +353,7 @@ export class StoreManagerConsumer {
     { store: StoreConsumer; refCount: number }
   >();
   private readonly telemetry = new TelemetryManager();
+  private readonly realtime = new RealtimeManager();
 
   constructor(
     private readonly availableStorageImplementations: StorageConstructor[]
@@ -393,6 +407,12 @@ export class StoreManagerConsumer {
       'telemetry.pageview': event => this.telemetry.pageview(event),
       'telemetry.flush': () => this.telemetry.flush(),
       'telemetry.getQueueState': () => this.telemetry.getQueueState(),
+      'realtime.configure': context => this.realtime.setContext(context),
+      'realtime.request': ({ op, input, timeoutMs }) =>
+        this.realtime.request(op, input, { timeoutMs }),
+      'realtime.subscribe': ({ topic, input }) =>
+        this.realtime.subscribe(topic, input),
+      'realtime.status': () => this.realtime.getStatus(),
     });
   }
 }

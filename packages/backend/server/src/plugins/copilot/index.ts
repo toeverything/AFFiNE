@@ -4,85 +4,95 @@ import { Module } from '@nestjs/common';
 
 import { ServerConfigModule } from '../../core';
 import { DocStorageModule } from '../../core/doc';
+import { EntitlementModule } from '../../core/entitlement';
 import { FeatureModule } from '../../core/features';
 import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
+import { StorageModule } from '../../core/storage';
 import { WorkspaceModule } from '../../core/workspaces';
 import { IndexerModule } from '../indexer';
-import {
-  CopilotContextResolver,
-  CopilotContextRootResolver,
-  CopilotContextService,
-} from './context';
+import { CopilotAttachmentController } from './attachment-controller';
 import { CopilotController } from './controller';
-import { CopilotCronJobs } from './cron';
-import { CopilotEmbeddingJob } from './embedding';
+import { CopilotFeatureGuard, CopilotFeatureService } from './feature';
 import { WorkspaceMcpController } from './mcp/controller';
-import { WorkspaceMcpProvider } from './mcp/provider';
-import { ChatMessageCache } from './message';
-import { PromptService } from './prompt';
-import { CopilotProviderFactory, CopilotProviders } from './providers';
+import { McpCredentialService } from './mcp/credential';
+import { McpCredentialResolver } from './mcp/resolver';
 import {
-  CopilotResolver,
-  PromptsManagementResolver,
-  UserCopilotResolver,
-} from './resolver';
-import { ChatSessionService } from './session';
-import { CopilotStorage } from './storage';
-import {
-  CopilotTranscriptionResolver,
-  CopilotTranscriptionService,
-} from './transcript';
-import { CopilotWorkflowExecutors, CopilotWorkflowService } from './workflow';
-import {
-  CopilotWorkspaceEmbeddingConfigResolver,
-  CopilotWorkspaceEmbeddingResolver,
-  CopilotWorkspaceService,
-} from './workspace';
+  COPILOT_API_PROVIDERS,
+  COPILOT_FEATURE_PROVIDERS,
+  COPILOT_JOB_PROVIDERS,
+  COPILOT_KERNEL_PROVIDERS,
+  COPILOT_TRANSCRIPT_REALTIME_PROVIDERS,
+} from './module-providers';
+
+const COPILOT_SHARED_IMPORTS = [
+  DocStorageModule,
+  EntitlementModule,
+  FeatureModule,
+  QuotaModule,
+  PermissionModule,
+  ServerConfigModule,
+  StorageModule,
+  WorkspaceModule,
+  IndexerModule,
+];
+
+@Module({
+  imports: [ServerConfigModule],
+  providers: [CopilotFeatureService, CopilotFeatureGuard],
+  exports: [CopilotFeatureService, CopilotFeatureGuard],
+})
+export class CopilotAvailabilityModule {}
+
+@Module({
+  imports: [...COPILOT_SHARED_IMPORTS, CopilotAvailabilityModule],
+  providers: [...COPILOT_KERNEL_PROVIDERS],
+  exports: [CopilotAvailabilityModule, ...COPILOT_KERNEL_PROVIDERS],
+})
+export class CopilotKernelModule {}
+
+@Module({
+  imports: [PermissionModule, CopilotAvailabilityModule, CopilotKernelModule],
+  providers: [...COPILOT_TRANSCRIPT_REALTIME_PROVIDERS],
+})
+export class CopilotRealtimeModule {}
+
+@Module({
+  imports: [...COPILOT_SHARED_IMPORTS, CopilotKernelModule],
+  providers: [...COPILOT_FEATURE_PROVIDERS],
+  exports: [...COPILOT_FEATURE_PROVIDERS],
+})
+export class CopilotFeatureModule {}
 
 @Module({
   imports: [
-    DocStorageModule,
-    FeatureModule,
-    QuotaModule,
+    ...COPILOT_SHARED_IMPORTS,
+    CopilotKernelModule,
+    CopilotFeatureModule,
+  ],
+  providers: [...COPILOT_API_PROVIDERS],
+  exports: [...COPILOT_API_PROVIDERS],
+})
+export class CopilotApiModule {}
+
+@Module({
+  imports: [
     PermissionModule,
-    ServerConfigModule,
-    WorkspaceModule,
-    IndexerModule,
+    CopilotKernelModule,
+    CopilotFeatureModule,
+    CopilotApiModule,
   ],
-  providers: [
-    // providers
-    ...CopilotProviders,
-    CopilotProviderFactory,
-    // services
-    ChatSessionService,
-    CopilotResolver,
-    ChatMessageCache,
-    PromptService,
-    CopilotStorage,
-    // workflow
-    CopilotWorkflowService,
-    ...CopilotWorkflowExecutors,
-    // context
-    CopilotContextResolver,
-    CopilotContextService,
-    // jobs
-    CopilotEmbeddingJob,
-    CopilotCronJobs,
-    // transcription
-    CopilotTranscriptionService,
-    CopilotTranscriptionResolver,
-    // workspace embeddings
-    CopilotWorkspaceService,
-    CopilotWorkspaceEmbeddingResolver,
-    CopilotWorkspaceEmbeddingConfigResolver,
-    // gql resolvers
-    UserCopilotResolver,
-    PromptsManagementResolver,
-    CopilotContextRootResolver,
-    // mcp
-    WorkspaceMcpProvider,
+  providers: [McpCredentialService, McpCredentialResolver],
+  controllers: [
+    CopilotAttachmentController,
+    CopilotController,
+    WorkspaceMcpController,
   ],
-  controllers: [CopilotController, WorkspaceMcpController],
 })
 export class CopilotModule {}
+
+@Module({
+  imports: [CopilotKernelModule, CopilotFeatureModule],
+  providers: [...COPILOT_JOB_PROVIDERS],
+})
+export class CopilotWorkerModule {}

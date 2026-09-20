@@ -269,7 +269,7 @@ const RandomBars = ({ count, header }: { count: number; header?: boolean }) => {
         />
       ) : null}
       {Array.from({ length: count }).map((_, index) => (
-        // oxlint-disable-next-line eslint-plugin-react(no-array-index-key)
+        // oxlint-disable-next-line react/no-array-index-key
         <RandomBar key={index} />
       ))}
     </div>

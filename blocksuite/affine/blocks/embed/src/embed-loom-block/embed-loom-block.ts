@@ -89,14 +89,14 @@ export class EmbedLoomBlockComponent extends EmbedBlockComponent<
   }
 
   override renderBlock() {
-    const { image, title = 'Loom', description, videoId } = this.model.props;
+    const { image, title, description, videoId } = this.model.props;
 
     const loading = this.loading;
     const theme = this.std.get(ThemeProvider).theme;
     const imageProxyService = this.store.get(ImageProxyService);
     const { EmbedCardBannerIcon } = getEmbedCardIcons(theme);
     const titleIcon = loading ? LoadingIcon() : LoomIcon;
-    const titleText = loading ? 'Loading...' : title;
+    const titleText = loading ? 'Loading...' : title || 'Loom';
     const descriptionText = loading ? '' : description;
     const bannerImage =
       !loading && image
@@ -118,28 +118,30 @@ export class EmbedLoomBlockComponent extends EmbedBlockComponent<
           @dblclick=${this._handleDoubleClick}
         >
           <div class="affine-embed-loom-video">
-            ${videoId
-              ? html`
-                  <div class="affine-embed-loom-video-iframe-container">
-                    <iframe
-                      src=${`https://www.loom.com/embed/${videoId}?hide_title=true`}
-                      frameborder="0"
-                      allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                      sandbox="allow-scripts allow-same-origin allow-presentation"
-                      loading="lazy"
-                      credentialless
-                    ></iframe>
+            ${
+              videoId
+                ? html`
+                    <div class="affine-embed-loom-video-iframe-container">
+                      <iframe
+                        src=${`https://www.loom.com/embed/${videoId}?hide_title=true`}
+                        frameborder="0"
+                        allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                        sandbox="allow-scripts allow-same-origin allow-presentation"
+                        loading="lazy"
+                        credentialless
+                      ></iframe>
 
-                    <!-- overlay to prevent the iframe from capturing pointer events -->
-                    <div
-                      class=${classMap({
-                        'affine-embed-loom-video-iframe-overlay': true,
-                        hide: !this.showOverlay$.value,
-                      })}
-                    ></div>
-                  </div>
-                `
-              : bannerImage}
+                      <!-- overlay to prevent the iframe from capturing pointer events -->
+                      <div
+                        class=${classMap({
+                          'affine-embed-loom-video-iframe-overlay': true,
+                          hide: !this.showOverlay$.value,
+                        })}
+                      ></div>
+                    </div>
+                  `
+                : bannerImage
+            }
           </div>
           <div class="affine-embed-loom-content">
             <div class="affine-embed-loom-content-header">

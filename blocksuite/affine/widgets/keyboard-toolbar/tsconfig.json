@@ -24,13 +24,11 @@
     { "path": "../../inlines/latex" },
     { "path": "../../inlines/link" },
     { "path": "../../inlines/preset" },
-    { "path": "../../inlines/reference" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },
     { "path": "../../data-view" },
     { "path": "../../../framework/global" },
-    { "path": "../../../framework/std" },
-    { "path": "../../../framework/store" }
+    { "path": "../../../framework/std" }
   ]
 }

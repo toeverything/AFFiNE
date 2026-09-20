@@ -49,7 +49,7 @@ export class ImportTemplateService extends Service {
     docBinary: Uint8Array
     // todo: support doc mode on init
   ) {
-    // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // oxlint-disable-next-line typescript/no-non-null-assertion
     let docId: string = null!;
     const { id: workspaceId } = await this.workspacesService.create(
       flavour,

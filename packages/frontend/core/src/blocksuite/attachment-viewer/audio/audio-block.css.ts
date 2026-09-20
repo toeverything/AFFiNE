@@ -54,4 +54,5 @@ export const reloadButtonIcon = style({
 globalStyle(`.affine-attachment-container:has(${root})`, {
   border: 'none',
   overflow: 'visible',
+  height: 'fit-content !important',
 });

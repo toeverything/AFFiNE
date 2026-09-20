@@ -34,6 +34,7 @@ import {
   type SingleView,
   uniMap,
 } from '@blocksuite/data-view';
+import { CalendarExternalSourceProvider } from '@blocksuite/data-view/view-presets';
 import { widgetPresets } from '@blocksuite/data-view/widget-presets';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import { Rect } from '@blocksuite/global/gfx';
@@ -148,6 +149,14 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
           dataSource.serviceSet(
             ExternalGroupByConfigProvider(config.name),
             config
+          );
+        });
+      this.std.provider
+        .getAll(CalendarExternalSourceProvider)
+        .forEach(source => {
+          dataSource.serviceSet(
+            CalendarExternalSourceProvider(source.id),
+            source
           );
         });
     });
@@ -293,6 +302,12 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
       widgetPresets.tools.viewOptions,
       widgetPresets.tools.tableAddRow,
     ],
+    calendar: [
+      widgetPresets.tools.filter,
+      widgetPresets.tools.search,
+      widgetPresets.tools.viewOptions,
+      widgetPresets.tools.tableAddRow,
+    ],
   });
 
   private readonly viewSelection$ = computed(() => {
@@ -427,6 +442,7 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
         headerWidget: this.headerWidget,
         onDrag: this.onDrag,
         clipboard: this.std.clipboard,
+        dnd: this.std.dnd,
         notification: {
           toast: message => {
             const notification = this.std.getOptional(NotificationProvider);

@@ -1,6 +1,6 @@
 import { SearchIcon } from '@blocksuite/icons/rc';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { useCallback, useState } from 'react';
+import { type KeyboardEvent, useCallback, useState } from 'react';
 
 import { IconButton } from '../../../button';
 import Input from '../../../input';
@@ -38,12 +38,20 @@ export const EmojiPicker = ({
     [addRecent, onSelect]
   );
 
+  const handleSearchKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+    },
+    []
+  );
+
   return (
     <div className={pickerStyles.root}>
       <header className={pickerStyles.searchContainer}>
         <Input
           value={keyword}
           onChange={setKeyword}
+          onKeyDown={handleSearchKeyDown}
           className={pickerStyles.searchInput}
           preFix={
             <div style={{ marginLeft: 10, lineHeight: 0 }}>

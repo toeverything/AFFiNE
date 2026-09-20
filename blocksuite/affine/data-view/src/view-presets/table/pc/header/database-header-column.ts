@@ -431,14 +431,16 @@ export class DatabaseHeaderColumn extends SignalWatcher(
         ${draggable(column.id)}
         ${droppable(column.id)}
       >
-        ${this.readonly
-          ? null
-          : html` <button class="${classes}">
-              <div class="hover-trigger"></div>
-              <div class="control-h"></div>
-              <div class="control-l"></div>
-              <div class="control-r"></div>
-            </button>`}
+        ${
+          this.readonly
+            ? null
+            : html` <button class="${classes}">
+                <div class="hover-trigger"></div>
+                <div class="control-h"></div>
+                <div class="control-l"></div>
+                <div class="control-r"></div>
+              </button>`
+        }
         <div class="affine-database-column-text ${column.type$.value}">
           <div
             class="affine-database-column-type-icon dv-hover"

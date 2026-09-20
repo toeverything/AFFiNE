@@ -1,4 +1,4 @@
-import { handleError } from './copilot-client';
+import { handleError } from '../runtime/request/copilot-client';
 import { RequestTimeoutError } from './error';
 
 export function delay(ms: number) {

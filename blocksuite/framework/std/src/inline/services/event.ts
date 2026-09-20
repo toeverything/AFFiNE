@@ -13,10 +13,57 @@ import { isMaybeInlineRangeEqual } from '../utils/inline-range.js';
 import { transformInput } from '../utils/transform-input.js';
 import type { BeforeinputHookCtx, CompositionEndHookCtx } from './hook.js';
 
+type AndroidIMEInputType = 'deleteContentBackward' | 'deleteContentForward';
+
+type AndroidIMEInputDetail = {
+  inputType?: AndroidIMEInputType;
+  handled?: boolean;
+};
+
+type AndroidIMEBridge = {
+  getProtocolVersion?: () => number;
+  finishComposingSession?: () => void;
+  finishDeleteSession?: () => void;
+  setEditorFocused?: (focused: boolean) => void;
+};
+
+declare global {
+  interface HTMLElementEventMap {
+    'affine-android-ime-input': CustomEvent<AndroidIMEInputDetail>;
+  }
+}
+
 export class EventService<TextAttributes extends BaseTextAttributes> {
   private _compositionInlineRange: InlineRange | null = null;
 
   private _isComposing = false;
+
+  private readonly _androidIMEBridge = () => {
+    const bridge = (
+      globalThis as typeof globalThis & {
+        AffineAndroidIME?: AndroidIMEBridge;
+      }
+    ).AffineAndroidIME;
+    return bridge?.getProtocolVersion?.() === 1 ? bridge : undefined;
+  };
+
+  private readonly _finishAndroidComposingSession = (isDelete: boolean) => {
+    if (!IS_ANDROID) return;
+
+    window.setTimeout(() => {
+      const bridge = this._androidIMEBridge();
+      if (isDelete) {
+        bridge?.finishDeleteSession?.();
+      } else {
+        bridge?.finishComposingSession?.();
+      }
+    }, 0);
+  };
+
+  private readonly _setAndroidEditorFocused = (focused: boolean) => {
+    if (!IS_ANDROID) return;
+    this._androidIMEBridge()?.setEditorFocused?.(focused);
+  };
 
   private readonly _getClosestInlineRoot = (node: Node): Element | null => {
     const el = node instanceof Element ? node : node.parentElement;
@@ -203,6 +250,97 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     );
 
     this.editor.slots.inputting.next(event.data ?? '');
+
+    if (
+      IS_ANDROID &&
+      (ctx.raw.inputType === 'deleteContentBackward' ||
+        ctx.raw.inputType === 'deleteContentForward' ||
+        ctx.raw.inputType === 'insertParagraph' ||
+        ctx.raw.inputType === 'insertLineBreak' ||
+        (ctx.raw.inputType === 'insertText' &&
+          (ctx.data === ' ' || ctx.data === '\n')))
+    ) {
+      this._finishAndroidComposingSession(
+        ctx.raw.inputType === 'deleteContentBackward' ||
+          ctx.raw.inputType === 'deleteContentForward'
+      );
+    }
+  };
+
+  private readonly _onAndroidIMEInput = async (
+    event: CustomEvent<AndroidIMEInputDetail>
+  ) => {
+    if (!IS_ANDROID) return;
+
+    const inputType = event.detail?.inputType;
+    if (
+      inputType !== 'deleteContentBackward' &&
+      inputType !== 'deleteContentForward'
+    ) {
+      return;
+    }
+
+    const range = this.editor.rangeService.getNativeRange();
+    if (!range || !this._isRangeCompletelyInRoot(range)) return;
+
+    event.detail.handled = true;
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.editor.isReadonly) return;
+
+    let inlineRange = this.editor.toInlineRange(range);
+    if (!inlineRange) {
+      this.editor.rerenderWholeEditor();
+      await this.editor.waitForUpdate();
+      const newRange = this.editor.rangeService.getNativeRange();
+      inlineRange = newRange ? this.editor.toInlineRange(newRange) : null;
+      if (!inlineRange) return;
+    }
+
+    if (inlineRange.length === 0) {
+      if (inputType === 'deleteContentBackward') {
+        if (inlineRange.index === 0) return;
+        inlineRange = {
+          index: inlineRange.index - 1,
+          length: 1,
+        };
+      } else {
+        if (inlineRange.index >= this.editor.yTextLength) return;
+        inlineRange = {
+          index: inlineRange.index,
+          length: 1,
+        };
+      }
+    }
+
+    this._isComposing = false;
+    this._compositionInlineRange = null;
+
+    const raw = new InputEvent('beforeinput', {
+      inputType,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    const ctx: BeforeinputHookCtx<TextAttributes> = {
+      inlineEditor: this.editor,
+      raw,
+      inlineRange,
+      data: null,
+      attributes: {} as TextAttributes,
+    };
+    this.editor.hooks.beforeinput?.(ctx);
+
+    transformInput<TextAttributes>(
+      ctx.raw.inputType,
+      ctx.data,
+      ctx.attributes,
+      ctx.inlineRange,
+      this.editor as never
+    );
+    this.editor.slots.inputting.next('');
+    this._finishAndroidComposingSession(true);
   };
 
   private readonly _onClick = (event: MouseEvent) => {
@@ -265,6 +403,7 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     }
 
     this.editor.slots.inputting.next(event.data ?? '');
+    this._finishAndroidComposingSession(false);
   };
 
   private readonly _onCompositionStart = (event: CompositionEvent) => {
@@ -432,6 +571,30 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     this.editor.disposables.addFromEvent(eventSource, 'beforeinput', e => {
       this._onBeforeInput(e).catch(console.error);
     });
+    this.editor.disposables.addFromEvent(
+      eventSource,
+      'affine-android-ime-input',
+      e => {
+        this._onAndroidIMEInput(e).catch(console.error);
+      }
+    );
+    this.editor.disposables.addFromEvent(eventSource, 'focusin', () => {
+      this._setAndroidEditorFocused(true);
+    });
+    this.editor.disposables.addFromEvent(
+      eventSource,
+      'focusout',
+      (event: FocusEvent) => {
+        const relatedTarget = event.relatedTarget;
+        if (
+          relatedTarget instanceof Node &&
+          this.editor.rootElement?.contains(relatedTarget)
+        ) {
+          return;
+        }
+        this._setAndroidEditorFocused(false);
+      }
+    );
     this.editor.disposables.addFromEvent(
       eventSource,
       'compositionstart',

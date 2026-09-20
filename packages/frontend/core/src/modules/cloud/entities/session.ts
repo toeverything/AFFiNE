@@ -93,6 +93,14 @@ export class AuthSession extends Entity {
     )
   );
 
+  async revalidateOnce() {
+    const sessionInfo = await this.getSession();
+    if (!isEqual(this.store.getCachedAuthSession(), sessionInfo)) {
+      this.store.setCachedAuthSession(sessionInfo);
+    }
+    return sessionInfo;
+  }
+
   private async getSession(): Promise<AuthSessionInfo | null> {
     try {
       const session = await this.store.fetchSession();
