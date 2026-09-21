@@ -6,6 +6,7 @@ import {
   relationColumnConfig,
   reverseRelationColumnConfig,
 } from './relation/cell-renderer.js';
+import { rollupColumnConfig } from './rollup/cell-renderer.js';
 import { linkColumnConfig } from './link/cell-renderer.js';
 import { richTextColumnConfig } from './rich-text/cell-renderer.js';
 import { titleColumnConfig } from './title/cell-renderer.js';
@@ -34,4 +35,5 @@ export const databaseBlockProperties = {
   iconColumnConfig,
   relationColumnConfig,
   reverseRelationColumnConfig,
+  rollupColumnConfig,
 };

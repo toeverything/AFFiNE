@@ -30,6 +30,7 @@ import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import { getIcon } from './block-icons.js';
 import { getRowIcon } from './properties/icon/read.js';
 import { resolveLinkedRows } from './properties/relation/resolve.js';
+import { computeRollup } from './properties/rollup/compute.js';
 import { renderIconValue } from './properties/icon/render.js';
 import {
   databaseBlockProperties,
@@ -109,10 +110,15 @@ export class DatabaseBlockDataSource extends DataSourceBase {
         return model.text;
       },
     },
-    // A reverse relation is derived, never stored. Routing it through here
+    // Rollups and reverse relations are derived, never stored. Routing it through here
     // rather than through the cell renderer means filters, sorts and the
     // column footer see the same value the cell shows, and the signals read
     // while resolving make `cellValueGet` re-run on their own.
+    rollup: {
+      valueSet: () => {},
+      valueGet: (rowId: string, propertyId: string) =>
+        computeRollup(this._model.store, this._model, rowId, propertyId),
+    },
     'relation-reverse': {
       valueSet: () => {},
       valueGet: (rowId: string, propertyId: string) =>

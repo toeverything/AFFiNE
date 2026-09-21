@@ -12,6 +12,7 @@ import {
   ReverseRelationCell,
 } from './properties/relation/cell-renderer';
 import { RichTextCell } from './properties/rich-text/cell-renderer';
+import { RollupCell } from './properties/rollup/cell-renderer';
 import { IconCell } from './properties/title/icon';
 import { HeaderAreaTextCell } from './properties/title/text';
 
@@ -28,6 +29,7 @@ export function effects() {
     'affine-database-relation-reverse-cell',
     ReverseRelationCell
   );
+  customElements.define('affine-database-rollup-cell', RollupCell);
   customElements.define('center-peek', CenterPeek);
   customElements.define('database-datasource-note-renderer', NoteRenderer);
   customElements.define('database-datasource-block-renderer', BlockRenderer);
