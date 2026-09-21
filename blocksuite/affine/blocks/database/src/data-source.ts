@@ -30,6 +30,7 @@ import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import { getIcon } from './block-icons.js';
 import { getRowIcon } from './properties/icon/read.js';
 import { resolveLinkedRows } from './properties/relation/resolve.js';
+import { computeRelationFilter } from './properties/relation-filter/compute.js';
 import { computeRollup } from './properties/rollup/compute.js';
 import { renderIconValue } from './properties/icon/render.js';
 import {
@@ -118,6 +119,16 @@ export class DatabaseBlockDataSource extends DataSourceBase {
       valueSet: () => {},
       valueGet: (rowId: string, propertyId: string) =>
         computeRollup(this._model.store, this._model, rowId, propertyId),
+    },
+    'relation-filter': {
+      valueSet: () => {},
+      valueGet: (rowId: string, propertyId: string) =>
+        computeRelationFilter(
+          this._model.store,
+          this._model,
+          rowId,
+          propertyId
+        ),
     },
     'relation-reverse': {
       valueSet: () => {},
