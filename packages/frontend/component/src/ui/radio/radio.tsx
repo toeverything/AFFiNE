@@ -261,9 +261,24 @@ export const RadioGroup = memo(function RadioGroup({
             {...testId}
             {...item.attrs}
             disabled={disabled}
-            onPointerDown={onPenPointerDown(item.value)}
-            onPointerUp={onPenPointerUp(item.value)}
-            onPointerCancel={onPenPointerCancel}
+            onPointerDown={event => {
+              item.attrs?.onPointerDown?.(event);
+              if (!event.defaultPrevented) {
+                onPenPointerDown(item.value)(event);
+              }
+            }}
+            onPointerUp={event => {
+              item.attrs?.onPointerUp?.(event);
+              if (event.defaultPrevented) {
+                onPenPointerCancel();
+                return;
+              }
+              onPenPointerUp(item.value)(event);
+            }}
+            onPointerCancel={event => {
+              item.attrs?.onPointerCancel?.(event);
+              onPenPointerCancel();
+            }}
             onClick={event => {
               if (onPenClick(event)) {
                 return;

@@ -514,6 +514,21 @@ export class InteractivityManager extends GfxExtension {
       if (isCancel && !shouldCommitCancel) {
         dragMoveCoalescer.cancel();
         this._safeExecute(() => {
+          this.std.store.transact(() => {
+            internal.elements.forEach(({ view, originalBound }) => {
+              const restoreContext = {
+                currentBound: originalBound,
+                dx: 0,
+                dy: 0,
+                elements: internal.elements,
+              };
+
+              view.onDragMove(restoreContext);
+              view.onDragEnd(restoreContext);
+            });
+          });
+        }, 'Error while restoring elements after cancelled drag');
+        this._safeExecute(() => {
           activeExtensionHandlers.forEach(handler => handler?.clear?.());
         }, 'Error while executing extension `clear` handler');
         return;

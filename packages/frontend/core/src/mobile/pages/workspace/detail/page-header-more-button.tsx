@@ -1,11 +1,4 @@
-import {
-  IconButton,
-  isWithinPenTapSlop,
-  notify,
-  type PenDownPoint,
-  toast,
-  useConfirmModal,
-} from '@affine/component';
+import { IconButton, notify, toast, useConfirmModal } from '@affine/component';
 import {
   MenuSeparator,
   MenuSub,
@@ -33,13 +26,7 @@ import {
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { truncate } from 'lodash-es';
-import {
-  type PointerEvent,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type PointerEvent, useCallback, useEffect, useState } from 'react';
 
 import { MobileBackCoordinator } from '../../../modules/back-coordinator';
 import { JournalConflictsMenuItem } from './menu/journal-conflicts';
@@ -69,8 +56,6 @@ export const PageHeaderMenuButton = ({
   );
   const primaryMode = useLiveData(editorService.editor.doc.primaryMode$);
   const title = useLiveData(editorService.editor.doc.title$);
-  const penDownRef = useRef<PenDownPoint | null>(null);
-
   const { favorite, toggleFavorite } = useFavorite(docId);
   const { openConfirmModal } = useConfirmModal();
   const backCoordinator = useService(MobileBackCoordinator);
@@ -145,44 +130,14 @@ export const PageHeaderMenuButton = ({
 
   const handleMorePointerDown = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
-      // Don't preventDefault — that cancels the subsequent click that opens
-      // MobileMenu. Only stop bubbling and blur so WKWebView doesn't focus the
-      // editor under the header (which opens the keyboard instead).
+      // MobileMenu owns Pencil activation. Keep this handler focused on
+      // preventing the editor beneath the header from receiving focus.
       event.stopPropagation();
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
-      if (event.pointerType === 'pen') {
-        penDownRef.current = {
-          pointerId: event.pointerId,
-          x: event.clientX,
-          y: event.clientY,
-        };
-        event.preventDefault();
-        handleMenuOpenChange(true);
-      }
     },
-    [handleMenuOpenChange]
-  );
-
-  const handleMorePointerUp = useCallback(
-    (event: PointerEvent<HTMLButtonElement>) => {
-      const penDown = penDownRef.current;
-      penDownRef.current = null;
-      if (
-        event.pointerType !== 'pen' ||
-        !penDown ||
-        penDown.pointerId !== event.pointerId ||
-        !isWithinPenTapSlop(penDown, event)
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      handleMenuOpenChange(true);
-    },
-    [handleMenuOpenChange]
+    []
   );
 
   const EditMenu = (
@@ -266,7 +221,6 @@ export const PageHeaderMenuButton = ({
         data-testid="detail-page-header-more-button"
         className={styles.iconButton}
         onPointerDown={handleMorePointerDown}
-        onPointerUp={handleMorePointerUp}
       >
         <MoreHorizontalIcon />
       </IconButton>

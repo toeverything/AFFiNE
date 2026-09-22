@@ -79,6 +79,7 @@ export class MindMapDragExtension extends InteractivityExtension {
   private _createManipulationHandlers(dragMindMapCtx: DragMindMapCtx): {
     onDragMove?: (context: ExtensionDragMoveContext) => void;
     onDragEnd?: (context: ExtensionDragEndContext) => void;
+    clear?: () => void;
   } {
     let hoveredCtx: {
       mindmap: MindmapElementModel | null;
@@ -263,6 +264,11 @@ export class MindMapDragExtension extends InteractivityExtension {
 
         commitDragEnd(dragEndContext);
       },
+      clear: () => {
+        hoveredCtx?.abort?.();
+        hoveredCtx = null;
+        this._responseAreaUpdated.clear();
+      },
     };
   }
 
@@ -338,23 +344,25 @@ export class MindMapDragExtension extends InteractivityExtension {
     dragMindMapCtx: DragMindMapCtx
   ): MindmapElementModel | null {
     const mindmap =
-      (this.gfx.getElementByPoint(position[0], position[1], {
-        all: true,
-        responsePadding: [NODE_HORIZONTAL_SPACING, NODE_VERTICAL_SPACING * 2],
-      }).find(el => {
-        if (!(el instanceof MindmapElementModel)) {
-          return false;
-        }
+      (this.gfx
+        .getElementByPoint(position[0], position[1], {
+          all: true,
+          responsePadding: [NODE_HORIZONTAL_SPACING, NODE_VERTICAL_SPACING * 2],
+        })
+        .find(el => {
+          if (!(el instanceof MindmapElementModel)) {
+            return false;
+          }
 
-        if (
-          el === dragMindMapCtx.mindmap &&
-          !dragMindMapCtx.originalMindMapBound.containsPoint(position)
-        ) {
-          return false;
-        }
+          if (
+            el === dragMindMapCtx.mindmap &&
+            !dragMindMapCtx.originalMindMapBound.containsPoint(position)
+          ) {
+            return false;
+          }
 
-        return true;
-      }) as MindmapElementModel) ?? null;
+          return true;
+        }) as MindmapElementModel) ?? null;
 
     if (
       mindmap &&
@@ -486,9 +494,13 @@ export class MindMapDragExtension extends InteractivityExtension {
           originalNodeXywh: mindmapNode.element.xywh,
         };
 
+        const { clear: clearManipulation, ...manipulationHandlers } =
+          this._createManipulationHandlers(mindMapDragCtx);
+
         return {
-          ...this._createManipulationHandlers(mindMapDragCtx),
+          ...manipulationHandlers,
           clear() {
+            clearManipulation?.();
             clearOpacity();
             clearDragStatus?.();
             if (!isRoot && useDragImage) {
