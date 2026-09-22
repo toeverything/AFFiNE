@@ -33,7 +33,16 @@ test('switch to edgeless mode', async ({ page }) => {
   await page.click('[data-testid="detail-page-header-more-button"]');
   await expect(page.getByRole('dialog')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Default to Edgeless mode' }).click();
+  const switchMode = page.getByRole('button', {
+    name: 'Default to Edgeless mode',
+  });
+  const switchModeBox = await switchMode.boundingBox();
+  expect(switchModeBox).not.toBeNull();
+  if (!switchModeBox) throw new Error('Switch mode action has no layout box');
+  await page.touchscreen.tap(
+    switchModeBox.x + switchModeBox.width / 2,
+    switchModeBox.y + switchModeBox.height / 2
+  );
   await expect(page.locator('.affine-edgeless-viewport')).toBeVisible();
 });
 

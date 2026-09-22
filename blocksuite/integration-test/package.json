@@ -34,12 +34,12 @@
     "!dist/__tests__"
   ],
   "devDependencies": {
-    "@vanilla-extract/vite-plugin": "^5.0.0",
-    "@vitest/browser-playwright": "^4.1.10",
+    "@vanilla-extract/vite-plugin": "~5.1.5",
+    "@vitest/browser-playwright": "^4.1.11",
     "playwright": "=1.58.2",
-    "vite": "^7.3.5",
+    "vite": "^7.3.6",
     "vite-plugin-wasm": "^3.5.0",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   },
   "version": "0.27.5"
 }

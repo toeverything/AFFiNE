@@ -102,7 +102,9 @@ export const Component = () => {
         );
       })
       .catch(e => {
-        nav(`/sign-in?error=${encodeURIComponent(e.message)}`);
+        Promise.resolve(
+          nav(`/sign-in?error=${encodeURIComponent(e.message)}`)
+        ).catch(console.error);
       });
   }, [data, auth, nav]);
 
