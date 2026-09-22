@@ -169,9 +169,7 @@ jobs:
     needs:
       - mobile-native-build-filter
     env:
-      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
-      CARGO_PROFILE_RELEASE_DEBUG: '1'
-      CARGO_PROFILE_RELEASE_LTO: 'thin'
+      AFFINE_ANDROID_CARGO_PROFILE: debug
     steps:
       - uses: actions/checkout@v7
 
@@ -249,9 +247,7 @@ jobs:
       - mobile-native-build-filter
     env:
       AFFINE_ANDROID_NATIVE_TARGET: x86_64
-      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
-      CARGO_PROFILE_RELEASE_DEBUG: '1'
-      CARGO_PROFILE_RELEASE_LTO: 'thin'
+      AFFINE_ANDROID_CARGO_PROFILE: debug
     steps:
       - uses: actions/checkout@v7
 
@@ -434,6 +430,7 @@ jobs:
           target: x86_64-unknown-linux-gnu
           package: 'affine'
           no-build: 'true'
+          cache-key: lint
       - name: fmt check
         run: |
           rustup toolchain add nightly
@@ -1250,6 +1247,7 @@ jobs:
           target: x86_64-unknown-linux-gnu
           package: 'affine'
           no-build: 'true'
+          cache-key: test-debug
 
       - name: Install latest nextest release
         uses: taiki-e/install-action@v2
@@ -1266,13 +1264,13 @@ jobs:
           PGPASSWORD: affine
 
       - name: Run workspace Rust tests
-        run: cargo nextest run --workspace --exclude affine_server_native --features use-as-lib --release --no-fail-fast
+        run: cargo nextest run --workspace --exclude affine_server_native --features use-as-lib --no-fail-fast
 
       - name: Run server-native Rust tests with PostgreSQL and Redis
-        run: cargo nextest run -p affine_server_native --release --no-fail-fast --test-threads=1
+        run: cargo nextest run -p affine_server_native --no-fail-fast --test-threads=1
 
       - name: Run native storage cleanup integration tests
-        run: cargo test -p affine_server_native --release blob_cleanup_projection_ -- --ignored --nocapture
+        run: cargo test -p affine_server_native blob_cleanup_projection_ -- --ignored --nocapture
 
   copilot-test-filter:
     name: Copilot test filter

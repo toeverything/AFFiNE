@@ -162,7 +162,7 @@ cargo {
     targetDirectory = "../../../../../../target"
     apiLevel = 28
     targetIncludes = ["libaffine_mobile_native.so"]
-    profile = "release"
+    profile = providers.environmentVariable("AFFINE_ANDROID_CARGO_PROFILE").getOrElse("release")
 }
 
 kotlin {
