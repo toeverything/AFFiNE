@@ -7,6 +7,10 @@ version = "0.0.0"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+default    = []
+use-as-lib = ["affine_nbstore/use-as-lib", "napi-derive/noop", "napi/noop"]
+
 [dependencies]
 affine_common = { workspace = true, features = ["hashcash", "ydoc-loader"] }
 affine_doc_loader = { workspace = true }

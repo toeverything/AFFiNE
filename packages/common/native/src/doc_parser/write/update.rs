@@ -24,7 +24,7 @@ const MAX_LCS_CELLS: usize = 2_000_000;
 
 #[derive(Debug, Clone)]
 enum NodeSpec {
-  Supported(BlockSpec),
+  Supported(Box<BlockSpec>),
   /// A block flavour we don't support for markdown diffing/updating (e.g.
   /// `affine:database`).
   ///
@@ -262,7 +262,7 @@ fn parse_markdown_targets(markdown: &str) -> Result<Vec<TargetNode>, ParseError>
 fn target_from_block_node(node: BlockNode, id_hint: Option<String>) -> TargetNode {
   TargetNode {
     id_hint,
-    spec: NodeSpec::Supported(node.spec),
+    spec: NodeSpec::Supported(Box::new(node.spec)),
     children: node
       .children
       .into_iter()
@@ -276,7 +276,7 @@ fn target_node_to_block_node(node: &TargetNode) -> Result<BlockNode, ParseError>
     return Err(ParseError::ParserError("cannot_insert_opaque_block".into()));
   };
   Ok(BlockNode {
-    spec: spec.clone(),
+    spec: spec.as_ref().clone(),
     children: node
       .children
       .iter()
@@ -502,7 +502,7 @@ fn build_stored_tree(block_id: &str, block: &Map, pool: &HashMap<String, Map>) -
 
   Ok(StoredNode {
     id: block_id.to_string(),
-    spec: NodeSpec::Supported(spec),
+    spec: NodeSpec::Supported(Box::new(spec)),
     children,
   })
 }

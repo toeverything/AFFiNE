@@ -49,8 +49,8 @@ pub(crate) fn parse_frontmatter(markdown: &str) -> (FrontmatterMeta, String) {
       }
       "title" => {
         let normalized = normalize_scalar(value);
-        // Preserve explicit empty titles (`title: ""`) so round-trip hashing can
-        // distinguish them from a missing title field.
+        // Preserve explicit empty titles (`title: ""`) so round-trip hashing
+        // can distinguish them from a missing title field.
         meta.title = Some(normalized);
       }
       "favorite" => {

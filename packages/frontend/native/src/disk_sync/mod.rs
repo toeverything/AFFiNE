@@ -1,16 +1,12 @@
-use std::{
-  collections::HashMap,
-  sync::{
-    Arc,
-    atomic::{AtomicU64, Ordering},
-  },
-};
+use std::{collections::HashMap, sync::Arc};
+
+#[cfg(not(feature = "use-as-lib"))]
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use chrono::NaiveDateTime;
-use napi::{
-  bindgen_prelude::{Error as NapiError, Result as NapiResult, Uint8Array},
-  threadsafe_function::ThreadsafeFunction,
-};
+use napi::bindgen_prelude::{Error as NapiError, Result as NapiResult, Uint8Array};
+#[cfg(not(feature = "use-as-lib"))]
+use napi::threadsafe_function::ThreadsafeFunction;
 use napi_derive::napi;
 use once_cell::sync::Lazy;
 use tokio::sync::{Mutex, RwLock};
@@ -29,6 +25,7 @@ use session::DiskSession;
 
 static SESSIONS: Lazy<RwLock<HashMap<String, Arc<DiskSession>>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 static START_SESSION_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+#[cfg(not(feature = "use-as-lib"))]
 static NEXT_SUBSCRIBER_ID: AtomicU64 = AtomicU64::new(1);
 
 #[napi(object)]
@@ -82,9 +79,11 @@ pub struct DiskSyncEvent {
 }
 
 #[napi]
+#[derive(Default)]
 pub struct DiskSync;
 
 #[napi]
+#[cfg(not(feature = "use-as-lib"))]
 pub struct DiskSyncSubscriber {
   session_id: String,
   subscriber_id: u64,
@@ -158,6 +157,7 @@ impl DiskSync {
   }
 
   #[napi]
+  #[cfg(not(feature = "use-as-lib"))]
   pub async fn subscribe_events(
     &self,
     session_id: String,
@@ -185,6 +185,7 @@ impl DiskSync {
 }
 
 #[napi]
+#[cfg(not(feature = "use-as-lib"))]
 impl DiskSyncSubscriber {
   #[napi]
   pub async fn unsubscribe(&self) -> NapiResult<()> {

@@ -101,8 +101,10 @@ pub(crate) fn extract_all_root_meta(root_bin: &[u8]) -> Result<HashMap<String, F
         continue;
       };
 
-      let mut meta = FrontmatterMeta::default();
-      meta.id = Some(doc_id.clone());
+      let mut meta = FrontmatterMeta {
+        id: Some(doc_id.clone()),
+        ..Default::default()
+      };
 
       if let Some(Any::String(title)) = values.get("title") {
         meta.title = Some(title.clone());
@@ -242,9 +244,11 @@ fn any_to_value(doc: &Doc, any: Any) -> Result<Value, String> {
 }
 
 fn extract_meta_from_page_map(page_map: &Map, doc_id: Option<String>) -> FrontmatterMeta {
-  let mut meta = FrontmatterMeta::default();
-  meta.id = doc_id.or_else(|| get_string_from_map(page_map, "id"));
-  meta.title = get_string_from_map(page_map, "title");
+  let mut meta = FrontmatterMeta {
+    id: doc_id.or_else(|| get_string_from_map(page_map, "id")),
+    title: get_string_from_map(page_map, "title"),
+    ..Default::default()
+  };
 
   if let Some(tags) = page_map.get("tags") {
     meta.tags = extract_tags_from_value(&tags);

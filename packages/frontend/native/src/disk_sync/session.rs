@@ -2,16 +2,21 @@ use std::{
   collections::{HashMap, HashSet, VecDeque},
   fs,
   path::{Path, PathBuf},
-  sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-  },
+  sync::Arc,
+};
+
+#[cfg(not(feature = "use-as-lib"))]
+use std::{
+  sync::atomic::{AtomicBool, Ordering},
   time::Duration,
 };
 
 use affine_common::doc_parser::{build_full_doc, parse_doc_to_markdown, update_doc};
+#[cfg(not(feature = "use-as-lib"))]
 use napi::threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode};
-use tokio::{sync::Mutex, task::JoinHandle};
+use tokio::sync::Mutex;
+#[cfg(not(feature = "use-as-lib"))]
+use tokio::task::JoinHandle;
 
 use super::{
   DiskDocClock, DiskDocUpdateInput, DiskSessionOptions, DiskSyncDocUpdateEvent, DiskSyncEvent,
@@ -39,8 +44,11 @@ pub(crate) struct DiskSession {
   missing_logged: Arc<Mutex<HashSet<PathBuf>>>,
   last_sync: Arc<Mutex<HashMap<String, chrono::NaiveDateTime>>>,
   last_error: Arc<Mutex<Option<String>>>,
+  #[cfg(not(feature = "use-as-lib"))]
   subscribers: Arc<Mutex<HashMap<u64, Arc<ThreadsafeFunction<DiskSyncEvent, ()>>>>>,
+  #[cfg(not(feature = "use-as-lib"))]
   poll_task: Arc<Mutex<Option<JoinHandle<()>>>>,
+  #[cfg(not(feature = "use-as-lib"))]
   closed: Arc<AtomicBool>,
   scan_guard: Arc<Mutex<()>>,
 }
@@ -73,20 +81,27 @@ impl DiskSession {
       missing_logged: Arc::new(Mutex::new(HashSet::new())),
       last_sync: Arc::new(Mutex::new(HashMap::new())),
       last_error: Arc::new(Mutex::new(None)),
+      #[cfg(not(feature = "use-as-lib"))]
       subscribers: Arc::new(Mutex::new(HashMap::new())),
+      #[cfg(not(feature = "use-as-lib"))]
       poll_task: Arc::new(Mutex::new(None)),
+      #[cfg(not(feature = "use-as-lib"))]
       closed: Arc::new(AtomicBool::new(false)),
       scan_guard: Arc::new(Mutex::new(())),
     })
   }
 
   pub(crate) async fn close(&self) {
-    self.closed.store(true, Ordering::Relaxed);
-    self.stop_poll_task().await;
-    self.subscribers.lock().await.clear();
+    #[cfg(not(feature = "use-as-lib"))]
+    {
+      self.closed.store(true, Ordering::Relaxed);
+      self.stop_poll_task().await;
+      self.subscribers.lock().await.clear();
+    }
     self.state_db.close().await;
   }
 
+  #[cfg(not(feature = "use-as-lib"))]
   pub(crate) async fn add_subscriber(
     &self,
     subscriber_id: u64,
@@ -112,6 +127,7 @@ impl DiskSession {
     Ok(())
   }
 
+  #[cfg(not(feature = "use-as-lib"))]
   pub(crate) async fn remove_subscriber(&self, subscriber_id: u64) {
     let should_stop = {
       let mut subscribers = self.subscribers.lock().await;
@@ -124,6 +140,7 @@ impl DiskSession {
     }
   }
 
+  #[cfg(not(feature = "use-as-lib"))]
   async fn ensure_poll_task(&self) {
     if self.closed.load(Ordering::Relaxed) {
       return;
@@ -173,6 +190,7 @@ impl DiskSession {
     }));
   }
 
+  #[cfg(not(feature = "use-as-lib"))]
   async fn stop_poll_task(&self) {
     let mut poll_task = self.poll_task.lock().await;
     if let Some(handle) = poll_task.take() {
@@ -194,6 +212,7 @@ impl DiskSession {
     Ok(())
   }
 
+  #[cfg(not(feature = "use-as-lib"))]
   async fn emit_event(&self, event: DiskSyncEvent) {
     let subscribers = {
       let subscribers = self.subscribers.lock().await;
@@ -209,6 +228,11 @@ impl DiskSession {
     for callback in subscribers {
       let _ = callback.call(Ok(event.clone()), ThreadsafeFunctionCallMode::NonBlocking);
     }
+  }
+
+  #[cfg(feature = "use-as-lib")]
+  async fn emit_event(&self, event: DiskSyncEvent) {
+    self.events.lock().await.push_back(event);
   }
 
   async fn queue_error_event(&self, message: impl Into<String>) {
@@ -487,9 +511,10 @@ impl DiskSession {
   ) -> Result<DiskDocClock, String> {
     // Serialize local updates with filesystem scanning/importing.
     //
-    // Without this guard, root-meta exports and page exports can run concurrently
-    // and race on the same markdown file/baseline, causing the file content to
-    // flip between different snapshots while the client is editing.
+    // Without this guard, root-meta exports and page exports can run
+    // concurrently and race on the same markdown file/baseline, causing the
+    // file content to flip between different snapshots while the client is
+    // editing.
     let _guard = self.scan_guard.lock().await;
 
     let timestamp = now_naive();
@@ -575,7 +600,8 @@ impl DiskSession {
         self.resolve_file_path(&doc_id, meta.title.as_deref()).await?
       };
 
-      // Avoid overwriting local filesystem edits that haven't been imported yet.
+      // Avoid overwriting local filesystem edits that haven't been imported
+      // yet.
       if self.is_markdown_dirty(&doc_id, &path).await {
         self
           .state_db
@@ -642,8 +668,9 @@ impl DiskSession {
     let merged_doc = match merge_update_binary(current_doc.as_deref(), &update_bin, Some(&doc_id)) {
       Ok(merged_doc) => merged_doc,
       Err(err) => {
-        // A single malformed document update must not break the whole sync loop.
-        // Otherwise every push retries globally and delays other documents.
+        // A single malformed document update must not break the whole sync
+        // loop. Otherwise every push retries globally and delays other
+        // documents.
         if current_doc.is_some() && err.contains("failed to apply existing update") {
           {
             let mut docs = self.docs.lock().await;
@@ -705,9 +732,9 @@ impl DiskSession {
     let file_path = self.resolve_file_path(&doc_id, meta.title.as_deref()).await?;
 
     // Avoid overwriting local filesystem edits that haven't been imported yet.
-    // This is especially important when multiple export passes happen (e.g. page
-    // update + root meta update) and users edit the markdown file in between
-    // them.
+    // This is especially important when multiple export passes happen (e.g.
+    // page update + root meta update) and users edit the markdown file in
+    // between them.
     if self.is_markdown_dirty(&doc_id, &file_path).await {
       self
         .state_db
@@ -758,7 +785,8 @@ impl DiskSession {
     }
 
     // No baseline means the file is not tracked by this session yet.
-    // If it already exists, treat it as dirty and let the import path handle it.
+    // If it already exists, treat it as dirty and let the import path handle
+    // it.
     let baseline = {
       let baselines = self.baselines.lock().await;
       baselines.get(doc_id).cloned()
