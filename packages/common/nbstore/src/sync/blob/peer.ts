@@ -271,7 +271,14 @@ export class BlobSyncPeer {
       }
       // wait for 15s before next loop
       await new Promise<void>(resolve => {
-        setTimeout(resolve, 15000);
+        const finish = () => {
+          clearTimeout(timer);
+          signal?.removeEventListener('abort', finish);
+          resolve();
+        };
+        const timer = setTimeout(finish, 15000);
+        if (signal?.aborted) finish();
+        else signal?.addEventListener('abort', finish, { once: true });
       });
       if (signal?.aborted) {
         return;
