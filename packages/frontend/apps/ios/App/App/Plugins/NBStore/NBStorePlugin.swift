@@ -10,6 +10,7 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
   public let pluginMethods: [CAPPluginMethod] = [
     CAPPluginMethod(name: "connect", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "disconnect", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "deleteWorkspace", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "setSpaceId", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "pushUpdate", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getDocSnapshot", returnType: CAPPluginReturnPromise),
@@ -86,6 +87,39 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve()
       } catch {
         call.reject("Failed to disconnect, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func deleteWorkspace(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let spaceId = try call.getStringEnsure("spaceId")
+        let spaceType = try call.getStringEnsure("spaceType")
+        let peer = try call.getStringEnsure("peer")
+        guard let documentDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+          call.reject("Failed to get document file urls")
+          return
+        }
+        let peerDir = documentDir.appending(path: "workspaces")
+          .appending(path: spaceType)
+          .appending(path:
+            peer
+              .replacing(#/[\/!@#$%^&*()+~`"':;,?<>|]/#, with: "_")
+              .replacing(/_+/, with: "_")
+              .replacing(/_+$/, with: ""))
+        let db = peerDir.appending(path: spaceId + ".db")
+        let resolvedDb = db.standardizedFileURL.path()
+        let resolvedPeerDir = peerDir.standardizedFileURL.path()
+        guard resolvedDb.hasPrefix(resolvedPeerDir.hasSuffix("/") ? resolvedPeerDir : resolvedPeerDir + "/") else {
+          call.reject("Failed to delete workspace, resolved path escapes the workspace directory.")
+          return
+        }
+        try await docStoragePool.deleteWorkspace(universalId: id, path: db.path())
+        call.resolve()
+      } catch {
+        call.reject("Failed to delete workspace, \(error)", nil, error)
       }
     }
   }

@@ -1,5 +1,5 @@
 // @ts-nocheck
-/* oxlint-disable */
+/* eslint-disable */
 import { createElement, useMemo, type ComponentType, type JSX } from "react";
 import { useTranslation, Trans, type TransProps } from "react-i18next";
 type TypedTransProps<Value, Components, Context extends string | undefined = undefined> = Omit<TransProps<string, never, never, Context>, "values" | "ns" | "i18nKey"> & ({} extends Value ? {} : {
@@ -2051,6 +2051,10 @@ export function useAFFiNEI18N(): {
       * `After you leave, you will not be able to access content within this workspace.`
       */
     ["com.affine.deleteLeaveWorkspace.leaveDescription"](): string;
+    /**
+      * `Successfully left workspace`
+      */
+    ["com.affine.deleteLeaveWorkspace.leaveSuccess"](): string;
     /**
       * `Docs`
       */

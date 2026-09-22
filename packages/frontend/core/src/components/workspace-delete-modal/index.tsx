@@ -5,7 +5,7 @@ import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-in
 import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { Trans, useI18n } from '@affine/i18n';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import * as styles from './style.css';
 
@@ -18,12 +18,18 @@ export const WorkspaceDeleteModal = ({
   workspaceMetadata,
   ...props
 }: WorkspaceDeleteProps) => {
-  const { onConfirm } = props;
+  const { onConfirm, open, confirmButtonOptions } = props;
   const [deleteStr, setDeleteStr] = useState<string>('');
   const info = useWorkspaceInfo(workspaceMetadata);
   const workspaceName = info?.name ?? UNTITLED_WORKSPACE_NAME;
-  const allowDelete = deleteStr === workspaceName;
+  // Fail closed until the profile has loaded.
+  const allowDelete = info != null && deleteStr === workspaceName;
   const t = useI18n();
+
+  // The modal stays mounted, so reset on close/reopen.
+  useEffect(() => {
+    setDeleteStr('');
+  }, [open, workspaceMetadata.id]);
 
   const handleOnEnter = useCallback(() => {
     if (allowDelete) {
@@ -36,12 +42,13 @@ export const WorkspaceDeleteModal = ({
       title={`${t['com.affine.workspaceDelete.title']()}?`}
       cancelText={t['com.affine.workspaceDelete.button.cancel']()}
       confirmText={t['com.affine.workspaceDelete.button.delete']()}
+      {...props}
       confirmButtonOptions={{
         variant: 'error',
-        disabled: !allowDelete,
         'data-testid': 'delete-workspace-confirm-button',
+        ...confirmButtonOptions,
+        disabled: !allowDelete,
       }}
-      {...props}
     >
       {workspaceMetadata.flavour === 'local' ? (
         <Trans i18nKey="com.affine.workspaceDelete.description">
@@ -65,6 +72,7 @@ export const WorkspaceDeleteModal = ({
       <div className={styles.inputContent}>
         <Input
           autoFocus
+          value={deleteStr}
           onChange={setDeleteStr}
           data-testid="delete-workspace-input"
           onEnter={handleOnEnter}
