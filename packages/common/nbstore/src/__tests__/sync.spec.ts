@@ -1,9 +1,10 @@
 import 'fake-indexeddb/auto';
 
 import * as reader from '@affine/reader';
+import { OpConsumer } from '@toeverything/infra/op';
 import { firstValueFrom, NEVER } from 'rxjs';
 import { afterEach, expect, test, vi } from 'vitest';
-import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
+import { Doc as YDoc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { DummyConnection } from '../connection';
 import {
@@ -32,10 +33,17 @@ import {
   type SearchResult,
   SpaceStorage,
 } from '../storage';
+import { DummyAwarenessStorage } from '../storage/dummy/awareness';
+import { DummyBlobStorage } from '../storage/dummy/blob';
+import { DummyBlobSyncStorage } from '../storage/dummy/blob-sync';
 import { Sync } from '../sync';
+import { BlobSyncImpl } from '../sync/blob';
 import { BlobSyncPeer } from '../sync/blob/peer';
 import { DocSyncPeer } from '../sync/doc/peer';
 import { IndexerSyncImpl } from '../sync/indexer';
+import { StoreManagerConsumer } from '../worker/consumer';
+import type { StoreInitOptions, WorkerManagerOps } from '../worker/ops';
+import { StoreConsumer } from '../worker/store';
 import { expectYjsEqual } from './utils';
 
 afterEach(() => {
@@ -55,7 +63,8 @@ function deferred<T = void>() {
 class TestDocStorage implements DocStorage {
   readonly storageType = 'doc' as const;
   readonly connection = new DummyConnection();
-  readonly isReadonly = false;
+  isReadonly = false;
+  syncMetadataScope?: 'connection' | 'persistent';
   private readonly subscribers = new Set<
     (update: DocRecord, origin?: string) => void
   >();
@@ -94,7 +103,7 @@ class TestDocStorage implements DocStorage {
     return timestamp ? { docId, timestamp } : null;
   }
 
-  async getDocTimestamps(): Promise<DocClocks> {
+  async getDocTimestamps(_after?: Date): Promise<DocClocks> {
     return Object.fromEntries(this.timestamps);
   }
 
@@ -115,6 +124,7 @@ class TestDocStorage implements DocStorage {
 }
 
 class TimestampBlindDocStorage extends IndexedDBDocStorage {
+  syncMetadataScope: 'connection' | 'persistent' = 'persistent';
   override async getDocTimestamps(): Promise<DocClocks> {
     return {};
   }
@@ -296,172 +306,178 @@ class TrackingIndexerSyncStorage extends IndexerSyncStorageBase {
   }
 }
 
-test('doc', async () => {
-  const doc = new YDoc();
-  doc.getMap('test').set('hello', 'world');
-  const update = encodeStateAsUpdate(doc);
+test.each(['persistent', 'connection'] as const)(
+  'doc (%s clocks)',
+  async scope => {
+    const workspaceId = `ws1-${scope}`;
+    const doc = new YDoc();
+    doc.getMap('test').set('hello', 'world');
+    const update = encodeStateAsUpdate(doc);
 
-  const peerADoc = new IndexedDBDocStorage({
-    id: 'ws1',
-    flavour: 'a',
-    type: 'workspace',
-  });
-
-  const peerASync = new IndexedDBDocSyncStorage({
-    id: 'ws1',
-    flavour: 'a',
-    type: 'workspace',
-  });
-
-  const peerBDoc = new TimestampBlindDocStorage({
-    id: 'ws1',
-    flavour: 'b',
-    type: 'workspace',
-  });
-  const peerCDoc = new IndexedDBDocStorage({
-    id: 'ws1',
-    flavour: 'c',
-    type: 'workspace',
-  });
-
-  const peerA = new SpaceStorage({
-    doc: peerADoc,
-    docSync: peerASync,
-  });
-  const peerB = new SpaceStorage({
-    doc: peerBDoc,
-  });
-  const peerC = new SpaceStorage({
-    doc: peerCDoc,
-  });
-
-  peerA.connect();
-  peerB.connect();
-  peerC.connect();
-
-  await peerA.waitForConnected();
-  await peerB.waitForConnected();
-  await peerC.waitForConnected();
-
-  await peerA.get('doc').pushDocUpdate({
-    docId: 'doc1',
-    bin: update,
-  });
-  const prioritizedDocId = 'prioritized-doc';
-  const localPrioritizedDoc = new YDoc();
-  localPrioritizedDoc.getMap('test').set('local', true);
-  const localPrioritizedClock = await peerA.get('doc').pushDocUpdate({
-    docId: prioritizedDocId,
-    bin: encodeStateAsUpdate(localPrioritizedDoc),
-  });
-  await peerASync.setPeerPushedClock('b', localPrioritizedClock);
-  const remotePrioritizedDoc = new YDoc();
-  remotePrioritizedDoc.getMap('test').set('remote', true);
-  await peerB.get('doc').pushDocUpdate({
-    docId: prioritizedDocId,
-    bin: encodeStateAsUpdate(remotePrioritizedDoc),
-  });
-  const rootDoc = new YDoc();
-  rootDoc.getMap('meta').set('name', 'Self-host workspace');
-  await peerB.get('doc').pushDocUpdate({
-    docId: 'ws1',
-    bin: encodeStateAsUpdate(rootDoc),
-  });
-
-  const sync = new Sync({
-    local: peerA,
-    remotes: {
-      b: peerB,
-      c: peerC,
-    },
-  });
-  const removeRootPriority = sync.doc.addPriority('ws1', 100);
-  const removeForegroundPriority = sync.doc.addPriority('doc1', 200);
-  const remoteDiff = vi.spyOn(peerBDoc, 'getDocDiff');
-  expect(await firstValueFrom(sync.doc.docState$('doc1'))).toMatchObject({
-    synced: false,
-  });
-  sync.start();
-
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  {
-    expect(remoteDiff.mock.calls[0]?.[0]).toBe('ws1');
-    const b = await peerB.get('doc').getDoc('doc1');
-    expectYjsEqual(b!.bin, {
-      test: {
-        hello: 'world',
-      },
+    const peerADoc = new IndexedDBDocStorage({
+      id: workspaceId,
+      flavour: 'a',
+      type: 'workspace',
     });
 
-    const c = await peerC.get('doc').getDoc('doc1');
-    expectYjsEqual(c!.bin, {
-      test: {
-        hello: 'world',
-      },
+    const peerASync = new IndexedDBDocSyncStorage({
+      id: workspaceId,
+      flavour: 'a',
+      type: 'workspace',
     });
 
-    const root = await peerA.get('doc').getDoc('ws1');
-    expectYjsEqual(root!.bin, {
-      meta: {
-        name: 'Self-host workspace',
-      },
+    const peerBDoc = new TimestampBlindDocStorage({
+      id: workspaceId,
+      flavour: 'b',
+      type: 'workspace',
+    });
+    peerBDoc.syncMetadataScope = scope;
+    const peerCDoc = new IndexedDBDocStorage({
+      id: workspaceId,
+      flavour: 'c',
+      type: 'workspace',
     });
 
-    const prioritized = await peerA.get('doc').getDoc(prioritizedDocId);
-    expectYjsEqual(prioritized!.bin, {
-      test: {
-        local: true,
+    const peerA = new SpaceStorage({
+      doc: peerADoc,
+      docSync: peerASync,
+    });
+    const peerB = new SpaceStorage({
+      doc: peerBDoc,
+    });
+    const peerC = new SpaceStorage({
+      doc: peerCDoc,
+    });
+
+    peerA.connect();
+    peerB.connect();
+    peerC.connect();
+
+    await peerA.waitForConnected();
+    await peerB.waitForConnected();
+    await peerC.waitForConnected();
+
+    await peerA.get('doc').pushDocUpdate({
+      docId: 'doc1',
+      bin: update,
+    });
+    const prioritizedDocId = 'prioritized-doc';
+    const localPrioritizedDoc = new YDoc();
+    localPrioritizedDoc.getMap('test').set('local', true);
+    const localPrioritizedClock = await peerA.get('doc').pushDocUpdate({
+      docId: prioritizedDocId,
+      bin: encodeStateAsUpdate(localPrioritizedDoc),
+    });
+    await peerASync.setPeerPushedClock('b', localPrioritizedClock);
+    const remotePrioritizedDoc = new YDoc();
+    remotePrioritizedDoc.getMap('test').set('remote', true);
+    await peerB.get('doc').pushDocUpdate({
+      docId: prioritizedDocId,
+      bin: encodeStateAsUpdate(remotePrioritizedDoc),
+    });
+    const rootDoc = new YDoc();
+    rootDoc.getMap('meta').set('name', 'Self-host workspace');
+    await peerB.get('doc').pushDocUpdate({
+      docId: workspaceId,
+      bin: encodeStateAsUpdate(rootDoc),
+    });
+
+    const sync = new Sync({
+      local: peerA,
+      remotes: {
+        b: peerB,
+        c: peerC,
       },
     });
+    const removeRootPriority = sync.doc.addPriority(workspaceId, 100);
+    const removeForegroundPriority = sync.doc.addPriority('doc1', 200);
+    const remoteDiff = vi.spyOn(peerBDoc, 'getDocDiff');
+    expect(await firstValueFrom(sync.doc.docState$('doc1'))).toMatchObject({
+      synced: false,
+    });
+    sync.start();
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    {
+      expect(remoteDiff.mock.calls[0]?.[0]).toBe(workspaceId);
+      const b = await peerB.get('doc').getDoc('doc1');
+      expectYjsEqual(b!.bin, {
+        test: {
+          hello: 'world',
+        },
+      });
+
+      const c = await peerC.get('doc').getDoc('doc1');
+      expectYjsEqual(c!.bin, {
+        test: {
+          hello: 'world',
+        },
+      });
+
+      const root = await peerA.get('doc').getDoc(workspaceId);
+      expectYjsEqual(root!.bin, {
+        meta: {
+          name: 'Self-host workspace',
+        },
+      });
+
+      const prioritized = await peerA.get('doc').getDoc(prioritizedDocId);
+      expectYjsEqual(prioritized!.bin, {
+        test: {
+          local: true,
+          ...(scope === 'connection' ? { remote: true } : {}),
+        },
+      });
+    }
+
+    const removeDocPriority = sync.doc.addPriority(prioritizedDocId, 100);
+    await vi.waitFor(async () => {
+      const prioritized = await peerA.get('doc').getDoc(prioritizedDocId);
+      expectYjsEqual(prioritized!.bin, {
+        test: {
+          local: true,
+          remote: true,
+        },
+      });
+    });
+
+    doc.getMap('test').set('foo', 'bar');
+    const update2 = encodeStateAsUpdate(doc);
+    await peerC.get('doc').pushDocUpdate({
+      docId: 'doc1',
+      bin: update2,
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    {
+      const a = await peerA.get('doc').getDoc('doc1');
+      expectYjsEqual(a!.bin, {
+        test: {
+          hello: 'world',
+          foo: 'bar',
+        },
+      });
+
+      const c = await peerC.get('doc').getDoc('doc1');
+      expectYjsEqual(c!.bin, {
+        test: {
+          hello: 'world',
+          foo: 'bar',
+        },
+      });
+    }
+
+    removeDocPriority();
+    removeForegroundPriority();
+    removeRootPriority();
+    await sync.stop();
+    peerA.disconnect();
+    peerB.disconnect();
+    peerC.disconnect();
   }
-
-  const removeDocPriority = sync.doc.addPriority(prioritizedDocId, 100);
-  await vi.waitFor(async () => {
-    const prioritized = await peerA.get('doc').getDoc(prioritizedDocId);
-    expectYjsEqual(prioritized!.bin, {
-      test: {
-        local: true,
-        remote: true,
-      },
-    });
-  });
-
-  doc.getMap('test').set('foo', 'bar');
-  const update2 = encodeStateAsUpdate(doc);
-  await peerC.get('doc').pushDocUpdate({
-    docId: 'doc1',
-    bin: update2,
-  });
-
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  {
-    const a = await peerA.get('doc').getDoc('doc1');
-    expectYjsEqual(a!.bin, {
-      test: {
-        hello: 'world',
-        foo: 'bar',
-      },
-    });
-
-    const c = await peerC.get('doc').getDoc('doc1');
-    expectYjsEqual(c!.bin, {
-      test: {
-        hello: 'world',
-        foo: 'bar',
-      },
-    });
-  }
-
-  removeDocPriority();
-  removeForegroundPriority();
-  removeRootPriority();
-  sync.stop();
-  peerA.disconnect();
-  peerB.disconnect();
-  peerC.disconnect();
-});
+);
 
 test('blob', async () => {
   const a = new IndexedDBBlobStorage({
@@ -549,7 +565,7 @@ test('blob', async () => {
     expect(c).not.toBeNull();
     expect(c?.data).toEqual(new Uint8Array([4, 3, 2, 1]));
   }
-  sync.stop();
+  await sync.stop();
 
   const localReads = vi.spyOn(a, 'get');
   const localLists = vi.spyOn(a, 'list');
@@ -843,7 +859,7 @@ test('indexer defers indexed clock persistence until a refresh happens on delaye
     );
     expect(calls).not.toContain('setClock:doc1');
 
-    sync.stop();
+    await sync.stop();
 
     await vi.waitFor(() => {
       expect(calls).toContain('setClock:doc1');
@@ -855,7 +871,7 @@ test('indexer defers indexed clock persistence until a refresh happens on delaye
     expect(lastRefreshIndex).toBeGreaterThanOrEqual(0);
     expect(setClockIndex).toBeGreaterThan(lastRefreshIndex);
   } finally {
-    sync.stop();
+    await sync.stop();
   }
 });
 
@@ -915,7 +931,7 @@ test('indexer completion waits for the current job to finish', async () => {
     await waitForCompleted;
     await waitForDocCompleted;
   } finally {
-    sync.stop();
+    await sync.stop();
   }
 });
 
@@ -983,6 +999,273 @@ test('indexer priority requests accumulate', async () => {
     expect(crawled).toEqual(['doc-high', 'doc-low']);
   } finally {
     releaseRootDocCrawl.resolve();
-    sync.stop();
+    await sync.stop();
+  }
+});
+
+test('connection-scoped readonly peers ignore persisted clocks on every connection', async () => {
+  const local = new IndexedDBDocStorage({
+    id: 'readonly-epochs',
+    flavour: 'local',
+    type: 'workspace',
+  });
+  const metadata = new IndexedDBDocSyncStorage({
+    id: 'readonly-epochs',
+    flavour: 'local',
+    type: 'workspace',
+  });
+  local.connection.connect();
+  metadata.connection.connect();
+  await Promise.all([
+    local.connection.waitForConnected(),
+    metadata.connection.waitForConnected(),
+  ]);
+  const clock = { docId: 'doc', timestamp: new Date(100) };
+  await metadata.setPeerPulledRemoteClock('disk', clock);
+  await metadata.setPeerRemoteClock('disk', clock);
+  const remote = new TestDocStorage(
+    'readonly-epochs',
+    new Map([['doc', new Date(1)]]),
+    async () => null
+  );
+  remote.isReadonly = true;
+  remote.syncMetadataScope = 'connection';
+  const document = new YDoc();
+  const diff = vi.spyOn(remote, 'getDocDiff');
+  const timestamps = vi.spyOn(remote, 'getDocTimestamps');
+  const persisted = vi.spyOn(metadata, 'setPeerPulledRemoteClock');
+  const peer = new DocSyncPeer('disk', local, metadata, remote);
+  try {
+    for (const revision of [1, 2]) {
+      document.getMap('test').set('revision', revision);
+      diff.mockResolvedValue({
+        docId: 'doc',
+        missing: encodeStateAsUpdate(document),
+        state: encodeStateVector(document),
+        timestamp: new Date(1),
+      });
+      const abort = new AbortController();
+      const running = peer.mainLoop(abort.signal);
+      try {
+        await vi.waitFor(async () => {
+          const record = await local.getDoc('doc');
+          expect(record).not.toBeNull();
+          expectYjsEqual(record!.bin, { test: { revision } });
+        });
+      } finally {
+        abort.abort();
+        await running;
+      }
+    }
+    expect(timestamps.mock.calls.every(([after]) => after === undefined)).toBe(
+      true
+    );
+    expect(persisted).not.toHaveBeenCalled();
+  } finally {
+    local.connection.disconnect();
+    metadata.connection.disconnect();
+    document.destroy();
+  }
+});
+
+test.each([0, 7000])(
+  'blob stop drains a missing download during backoff at %i ms',
+  async elapsed => {
+    vi.useFakeTimers();
+    const remote = new IndexedDBBlobStorage({
+      id: 'missing-backoff',
+      flavour: 'remote',
+      type: 'workspace',
+    });
+    const get = vi.spyOn(remote, 'get').mockResolvedValue(null);
+    const sync = new BlobSyncImpl(
+      { local: new DummyBlobStorage(), remotes: { remote } },
+      new DummyBlobSyncStorage()
+    );
+    const download = sync.downloadBlob('missing');
+    const rejected = expect(download).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+    try {
+      await vi.advanceTimersByTimeAsync(elapsed);
+      const attempts = elapsed === 0 ? 1 : 4;
+      expect(get).toHaveBeenCalledTimes(attempts);
+      let stopped = false;
+      const stopping = sync.stop().then(() => {
+        stopped = true;
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(stopped).toBe(true);
+      await stopping;
+      await rejected;
+      expect(vi.getTimerCount()).toBe(0);
+      await vi.advanceTimersByTimeAsync(8000);
+      expect(get).toHaveBeenCalledTimes(attempts);
+    } finally {
+      await vi.runAllTimersAsync();
+      await sync.stop();
+      vi.useRealTimers();
+    }
+  }
+);
+
+test('remote replacement preserves subscriptions, priorities, sources and sync instances', async () => {
+  const local = new SpaceStorage({
+    doc: new IndexedDBDocStorage({
+      id: 'reconfigure',
+      flavour: 'local',
+      type: 'workspace',
+    }),
+  });
+  const remoteDoc = new TimestampBlindDocStorage({
+    id: 'reconfigure',
+    flavour: 'remote',
+    type: 'workspace',
+  });
+  const awareness = new DummyAwarenessStorage();
+  const awarenessSubscribe = vi.spyOn(awareness, 'subscribeUpdate');
+  const registerSource = vi.fn(async () => {});
+  const remote = new SpaceStorage({
+    doc: remoteDoc,
+    awareness,
+    blob: Object.assign(new DummyBlobStorage(), {
+      registerSource,
+      unregisterSource: vi.fn(async () => {}),
+      async *readableSources() {},
+    }),
+  });
+  local.connect();
+  remote.connect();
+  await local.waitForConnected();
+  await remote.waitForConnected();
+  const document = new YDoc();
+  document.getMap('test').set('remote', true);
+  await remoteDoc.pushDocUpdate({
+    docId: 'prioritized',
+    bin: encodeStateAsUpdate(document),
+  });
+  const sync = new Sync({ local, remotes: {} });
+  const original = [sync.doc, sync.blob, sync.indexer, sync.awareness];
+  const updates: boolean[] = [];
+  const subscription = sync.doc
+    .docState$('prioritized')
+    .subscribe(state => updates.push(state.synced));
+  const priority = sync.doc.addPriority('prioritized', 100);
+  const awarenessCallback = vi.fn();
+  const unsubscribeAwareness = sync.awareness.subscribeUpdate(
+    'prioritized',
+    awarenessCallback,
+    async () => null
+  );
+  await sync.blob.registerSource({
+    type: 'currentDoc',
+    workspaceId: 'reconfigure',
+    docId: 'prioritized',
+  });
+  sync.start();
+  try {
+    await sync.reconfigure({ disk: remote });
+    expect([sync.doc, sync.blob, sync.indexer, sync.awareness]).toEqual(
+      original
+    );
+    expect(registerSource).toHaveBeenCalledTimes(1);
+    expect(awarenessSubscribe).toHaveBeenCalledWith(
+      'prioritized',
+      awarenessCallback,
+      expect.any(Function)
+    );
+    await vi.waitFor(async () => {
+      const record = await local.get('doc').getDoc('prioritized');
+      expect(record).not.toBeNull();
+      expectYjsEqual(record!.bin, { test: { remote: true } });
+    });
+    await vi.waitFor(() => expect(updates.at(-1)).toBe(true));
+    await sync.reconfigure({});
+    expect(await firstValueFrom(sync.doc.state$)).toMatchObject({
+      synced: true,
+      total: 0,
+    });
+  } finally {
+    subscription.unsubscribe();
+    priority();
+    unsubscribeAwareness();
+    await sync.stop();
+    local.disconnect();
+    remote.disconnect();
+    document.destroy();
+  }
+});
+
+test('store opens serialize A to B to A, propagate failures and drain before close', async () => {
+  const channel = new MessageChannel();
+  const consumer = new OpConsumer<WorkerManagerOps>(channel.port1);
+  const register = vi.spyOn(consumer, 'registerAll');
+  const manager = new StoreManagerConsumer([]);
+  manager.bindConsumer(consumer);
+  const handlers = register.mock.calls[0][0];
+  const context = { signal: new AbortController().signal };
+  const a: StoreInitOptions = { local: {}, remotes: {} };
+  const b: StoreInitOptions = { local: {}, remotes: { disk: {} } };
+  const gate = deferred();
+  const entered = deferred();
+  const reconfigure = StoreConsumer.prototype.reconfigure;
+  const order: StoreInitOptions[] = [];
+  vi.spyOn(StoreConsumer.prototype, 'reconfigure').mockImplementation(
+    async function (this: StoreConsumer, options) {
+      order.push(options);
+      if (options === b) {
+        entered.resolve();
+        await gate.promise;
+      }
+      return reconfigure.call(this, options);
+    }
+  );
+  const destroyed = vi.spyOn(StoreConsumer.prototype, 'destroy');
+  const channels: MessageChannel[] = [];
+  const open = (closeKey: string, options: StoreInitOptions) => {
+    const ports = new MessageChannel();
+    channels.push(ports);
+    return handlers.open(
+      { key: 'workspace', closeKey, options, port: ports.port1 },
+      context
+    );
+  };
+  try {
+    await open('a', a);
+    const openingB = open('b', b);
+    await entered.promise;
+    const openingA = open('a2', a);
+    const closingA = handlers.close('a', context);
+    const closingB = handlers.close('b', context);
+    expect(order).toEqual([b]);
+    expect(destroyed).not.toHaveBeenCalled();
+    gate.resolve();
+    await Promise.all([openingB, openingA, closingA, closingB]);
+    expect(order).toEqual([b, a]);
+    await expect(
+      open('bad', {
+        local: {},
+        remotes: {
+          disk: {
+            doc: {
+              name: 'IndexedDBDocStorage',
+              opts: { id: 'bad', flavour: 'bad', type: 'workspace' },
+            },
+          },
+        },
+      })
+    ).rejects.toThrow('not found');
+    await open('recovered', a);
+    await handlers.close('a2', context);
+    await handlers.close('recovered', context);
+    expect(destroyed).toHaveBeenCalledTimes(1);
+  } finally {
+    gate.resolve();
+    channel.port1.close();
+    channel.port2.close();
+    for (const ports of channels) {
+      ports.port1.close();
+      ports.port2.close();
+    }
   }
 });

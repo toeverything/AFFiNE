@@ -4,6 +4,7 @@ import { Observable, ReplaySubject, share, Subject } from 'rxjs';
 import { diffUpdate, encodeStateVectorFromUpdate, mergeUpdates } from 'yjs';
 
 import type { DocStorage, DocSyncStorage } from '../../storage';
+import { DummyDocSyncStorage } from '../../storage/dummy/doc-sync';
 import { AsyncPriorityQueue } from '../../utils/async-priority-queue';
 import { ClockMap } from '../../utils/clock';
 import { isEmptyUpdate } from '../../utils/is-empty-update';
@@ -156,13 +157,20 @@ export class DocSyncPeer {
   private readonly uniqueId = `sync:${this.peerId}:${nanoid()}`;
   private readonly prioritySettings = new Map<string, number>();
 
+  readonly syncMetadata: DocSyncStorage;
+
   constructor(
     readonly peerId: string,
     readonly local: DocStorage,
-    readonly syncMetadata: DocSyncStorage,
+    syncMetadata: DocSyncStorage,
     readonly remote: DocStorage,
     readonly options: DocSyncPeerOptions = {}
-  ) {}
+  ) {
+    this.syncMetadata =
+      remote.syncMetadataScope === 'connection'
+        ? new DummyDocSyncStorage()
+        : syncMetadata;
+  }
 
   private status: Status = {
     docs: new Set<string>(),
@@ -268,6 +276,7 @@ export class DocSyncPeer {
         (await this.syncMetadata.getPeerPushedClock(this.peerId, docId))
           ?.timestamp ?? null;
       const clock = await this.local.getDocTimestamp(docId);
+      const remoteClock = this.status.remoteClocks.get(docId);
 
       throwIfAborted(signal);
       if (
@@ -282,7 +291,6 @@ export class DocSyncPeer {
         const pulled =
           (await this.syncMetadata.getPeerPulledRemoteClock(this.peerId, docId))
             ?.timestamp ?? null;
-        const remoteClock = this.status.remoteClocks.get(docId);
         const hasRemoteClock = remoteClock.getTime() > 0;
         const hasPulled = pulled !== null && pulled.getTime() > 0;
         if (
@@ -731,7 +739,6 @@ export class DocSyncPeer {
         this.actions.addDoc(docId);
       }
 
-      // get cached clocks from metadata
       const cachedClocks = await this.syncMetadata.getPeerRemoteClocks(
         this.peerId
       );
@@ -742,11 +749,13 @@ export class DocSyncPeer {
       }
       this.statusUpdatedSubject$.next(true);
 
-      // get new clocks from server
-      const maxClockValue = this.status.remoteClocks.max;
-      const newClocks = await this.remote.getDocTimestamps(maxClockValue);
+      const newClocks = await this.remote.getDocTimestamps(
+        this.remote.syncMetadataScope === 'connection'
+          ? undefined
+          : this.status.remoteClocks.max
+      );
       for (const [id, v] of Object.entries(newClocks)) {
-        this.status.remoteClocks.set(id, v);
+        this.status.remoteClocks.setIfBigger(id, v);
       }
       this.statusUpdatedSubject$.next(true);
 

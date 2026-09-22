@@ -1,6 +1,7 @@
 import { readAllDocsFromRootDoc } from '@affine/reader';
 import { omit } from 'lodash-es';
 import {
+  BehaviorSubject,
   filter,
   first,
   lastValueFrom,
@@ -107,11 +108,26 @@ export interface IndexerSync {
 
 export class IndexerSyncImpl implements IndexerSync {
   private abort: AbortController | null = null;
+  private running: Promise<void> = Promise.resolve();
   private readonly rootDocId = this.doc.spaceId;
   private readonly status = new IndexerSyncStatus(this.rootDocId);
 
   private readonly indexer: IndexerStorage;
-  private readonly remote?: IndexerStorage;
+  private readonly remote$ = new BehaviorSubject<IndexerStorage | undefined>(
+    undefined
+  );
+  private get remote() {
+    return this.remote$.value;
+  }
+
+  setRemotes(remotes: Record<string, IndexerStorage>) {
+    this.peers.remotes = remotes;
+    this.remote$.next(
+      Object.values(remotes).find(
+        remote => !(remote instanceof DummyIndexerStorage)
+      )
+    );
+  }
   private readonly pendingIndexedClocks = new Map<
     string,
     { docId: string; timestamp: Date; indexerVersion: number }
@@ -160,7 +176,7 @@ export class IndexerSyncImpl implements IndexerSync {
   ) {
     // sync feature only works on local indexer
     this.indexer = this.peers.local;
-    this.remote = Object.values(this.peers.remotes).find(remote => !!remote);
+    this.setRemotes(this.peers.remotes);
   }
 
   enableBatterySaveMode() {
@@ -187,17 +203,23 @@ export class IndexerSyncImpl implements IndexerSync {
     const abort = new AbortController();
     this.abort = abort;
 
-    this.mainLoop(abort.signal).catch(error => {
-      if (error === MANUALLY_STOP) {
+    this.running = this.running
+      .then(() => {
+        if (!abort.signal.aborted) return this.mainLoop(abort.signal);
         return;
-      }
-      console.error('index error', error);
-    });
+      })
+      .catch(error => {
+        if (error === MANUALLY_STOP) {
+          return;
+        }
+        console.error('index error', error);
+      });
   }
 
   stop() {
     this.abort?.abort(MANUALLY_STOP);
     this.abort = null;
+    return this.running;
   }
 
   addPriority(id: string, priority: number) {
@@ -596,13 +618,14 @@ export class IndexerSyncImpl implements IndexerSync {
     query: Query<T>,
     options?: O & { prefer?: IndexerPreferOptions }
   ): Promise<SearchResult<T, O>> {
+    const remote = this.remote;
     if (
       options?.prefer === 'remote' &&
-      this.remote &&
-      !(this.remote instanceof DummyIndexerStorage)
+      remote &&
+      !(remote instanceof DummyIndexerStorage)
     ) {
-      await this.remote.connection.waitForConnected();
-      return await this.remote.search(table, query, omit(options, 'prefer'));
+      await remote.connection.waitForConnected();
+      return await remote.search(table, query, omit(options, 'prefer'));
     } else {
       await this.indexer.connection.waitForConnected();
       return await this.indexer.search(table, query, omit(options, 'prefer'));
@@ -618,13 +641,14 @@ export class IndexerSyncImpl implements IndexerSync {
     field: keyof IndexerSchema[T],
     options?: O & { prefer?: IndexerPreferOptions }
   ): Promise<AggregateResult<T, O>> {
+    const remote = this.remote;
     if (
       options?.prefer === 'remote' &&
-      this.remote &&
-      !(this.remote instanceof DummyIndexerStorage)
+      remote &&
+      !(remote instanceof DummyIndexerStorage)
     ) {
-      await this.remote.connection.waitForConnected();
-      return await this.remote.aggregate(
+      await remote.connection.waitForConnected();
+      return await remote.aggregate(
         table,
         query,
         field,
@@ -646,26 +670,19 @@ export class IndexerSyncImpl implements IndexerSync {
     query: Query<T>,
     options?: O & { prefer?: IndexerPreferOptions }
   ): Observable<SearchResult<T, O>> {
-    if (
-      options?.prefer === 'remote' &&
-      this.remote &&
-      !(this.remote instanceof DummyIndexerStorage)
-    ) {
-      const remote = this.remote;
-      return fromPromise(signal =>
-        remote.connection.waitForConnected(signal)
-      ).pipe(
-        switchMap(() => remote.search$(table, query, omit(options, 'prefer')))
-      );
-    } else {
-      return fromPromise(signal =>
-        this.indexer.connection.waitForConnected(signal)
-      ).pipe(
-        switchMap(() =>
-          this.indexer.search$(table, query, omit(options, 'prefer'))
-        )
-      );
-    }
+    return this.remote$.pipe(
+      switchMap(remote => {
+        const storage =
+          options?.prefer === 'remote' && remote ? remote : this.indexer;
+        return fromPromise(signal =>
+          storage.connection.waitForConnected(signal)
+        ).pipe(
+          switchMap(() =>
+            storage.search$(table, query, omit(options, 'prefer'))
+          )
+        );
+      })
+    );
   }
 
   aggregate$<
@@ -677,28 +694,19 @@ export class IndexerSyncImpl implements IndexerSync {
     field: keyof IndexerSchema[T],
     options?: O & { prefer?: IndexerPreferOptions }
   ): Observable<AggregateResult<T, O>> {
-    if (
-      options?.prefer === 'remote' &&
-      this.remote &&
-      !(this.remote instanceof DummyIndexerStorage)
-    ) {
-      const remote = this.remote;
-      return fromPromise(signal =>
-        remote.connection.waitForConnected(signal)
-      ).pipe(
-        switchMap(() =>
-          remote.aggregate$(table, query, field, omit(options, 'prefer'))
-        )
-      );
-    } else {
-      return fromPromise(signal =>
-        this.indexer.connection.waitForConnected(signal)
-      ).pipe(
-        switchMap(() =>
-          this.indexer.aggregate$(table, query, field, omit(options, 'prefer'))
-        )
-      );
-    }
+    return this.remote$.pipe(
+      switchMap(remote => {
+        const storage =
+          options?.prefer === 'remote' && remote ? remote : this.indexer;
+        return fromPromise(signal =>
+          storage.connection.waitForConnected(signal)
+        ).pipe(
+          switchMap(() =>
+            storage.aggregate$(table, query, field, omit(options, 'prefer'))
+          )
+        );
+      })
+    );
   }
 }
 

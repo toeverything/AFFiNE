@@ -93,10 +93,11 @@ dependencies = [
 
 [[package]]
 name = "affine_doc_loader"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be10d572575084fc546056a9df6b39b0c0beb6964961870dd86cafa6d85dc016"
+checksum = "33f7e38cc3ce6ade7a5f2a8c04f8f3211a36211bbcd8502016801c52e78692cc"
 dependencies = [
+ "affine_merge",
  "chrono",
  "nanoid",
  "pulldown-cmark 0.13.1",
@@ -152,6 +153,17 @@ dependencies = [
  "uuid",
  "windows 0.62.2",
  "windows-core 0.62.2",
+]
+
+[[package]]
+name = "affine_merge"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97115a1f834d5aa6f1fa7ea1e5e4e17f9bbdc1078b529c0a909db8f392edbedb"
+dependencies = [
+ "serde",
+ "thiserror 2.0.18",
+ "y-octo",
 ]
 
 [[package]]
@@ -3109,7 +3121,7 @@ dependencies = [
  "libc",
  "log",
  "rustversion",
- "windows-link 0.1.3",
+ "windows-link 0.2.1",
  "windows-result 0.4.1",
 ]
 
@@ -10627,7 +10639,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -11281,9 +11293,9 @@ checksum = "aee1b19627c7c60102ab80d3a9cbe18de90bfe03bfa6c3715447681f0e8c8af6"
 
 [[package]]
 name = "y-octo"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b72d63c74097d8d9f79237787d714a18ef0203a5da7a8bdb75e99db2db26cf78"
+checksum = "1b067d00433f8ea8e07988706e8664d137dd35e262bf8a6f5ea82afe8d3ee920"
 dependencies = [
  "ahash",
  "arbitrary",

@@ -109,53 +109,34 @@ export class BlobSyncPeer {
       count: this.remote.isReadonly ? 1 : 5, // readonly remote storage will not retry
     };
 
-    const promise = new Promise<boolean>((resolve, reject) => {
+    const promise = (async () => {
       this.status.markBlobToDownload(blobId);
-      // mark the blob as downloading
       this.status.blobDownloading(blobId);
 
-      let attempts = 0;
-
-      const attempt = async () => {
-        try {
-          throwIfAborted(signal);
-          const data = await this.remote.get(blobId, signal, source);
-          throwIfAborted(signal);
-          if (data) {
-            // mark the blob as uploaded to avoid uploading the same blob again
-            await this.blobSync.setBlobUploadedAt(
-              this.peerId,
-              blobId,
-              new Date()
-            );
-            await this.local.set(data, signal);
-
-            this.status.blobDownloadSuccess(blobId);
-            resolve(true);
-          } else {
-            // if the blob is not found, maybe the uploader have't uploaded the blob yet, we will retry several times
-            attempts++;
-            if (attempts < backoffRetry.count) {
-              const waitTime = Math.min(
-                Math.pow(2, attempts - 1) * backoffRetry.delay,
-                backoffRetry.maxDelay
-              );
-              // oxlint-disable-next-line typescript/no-misused-promises
-              setTimeout(attempt, waitTime);
-            } else {
-              // reach the max retry times, resolve the promise with false
-              resolve(false);
-            }
-          }
-        } catch (error) {
-          // if we encounter any error, reject without retry
-          reject(error);
+      for (let attempt = 0; attempt < backoffRetry.count; attempt++) {
+        throwIfAborted(signal);
+        const data = await this.remote.get(blobId, signal, source);
+        throwIfAborted(signal);
+        if (data) {
+          await this.blobSync.setBlobUploadedAt(
+            this.peerId,
+            blobId,
+            new Date()
+          );
+          await this.local.set(data, signal);
+          this.status.blobDownloadSuccess(blobId);
+          return true;
         }
-      };
-
-      // oxlint-disable-next-line typescript/no-floating-promises
-      attempt();
-    })
+        if (attempt + 1 < backoffRetry.count) {
+          const waitTime = Math.min(
+            2 ** attempt * backoffRetry.delay,
+            backoffRetry.maxDelay
+          );
+          await waitForRetry(waitTime, signal);
+        }
+      }
+      return false;
+    })()
       .catch(error => {
         if (error === MANUALLY_STOP) {
           throw error;
@@ -270,9 +251,7 @@ export class BlobSyncPeer {
         console.warn('Blob full upload error, retry in 15s', err);
       }
       // wait for 15s before next loop
-      await new Promise<void>(resolve => {
-        setTimeout(resolve, 15000);
-      });
+      await waitForRetry(15000, signal);
       if (signal?.aborted) {
         return;
       }
@@ -396,6 +375,19 @@ export class BlobSyncPeer {
   async markBlobUploaded(blobKey: string): Promise<void> {
     await this.blobSync.setBlobUploadedAt(this.peerId, blobKey, new Date());
   }
+}
+
+function waitForRetry(delay: number, signal?: AbortSignal): Promise<void> {
+  return new Promise(resolve => {
+    const finish = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', finish);
+      resolve();
+    };
+    const timer = setTimeout(finish, delay);
+    if (signal?.aborted) finish();
+    else signal?.addEventListener('abort', finish, { once: true });
+  });
 }
 
 class BlobSyncPeerStatus {
