@@ -998,7 +998,7 @@ fn normalize_html_lists(markdown: &str) -> String {
 
   let mut out = String::with_capacity(markdown.len());
   let mut in_fence = false;
-  let mut fence_marker: Option<String> = None;
+  let mut fence_marker: Option<FenceMarker> = None;
   let mut list_stack: Vec<ListState> = Vec::new();
 
   for chunk in markdown.split_inclusive('\n') {
@@ -1009,8 +1009,8 @@ fn normalize_html_lists(markdown: &str) -> String {
     if let Some(marker) = fence_marker_start(trimmed) {
       if !in_fence {
         in_fence = true;
-        fence_marker = Some(marker.to_string());
-      } else if fence_marker.as_deref() == Some(marker) {
+        fence_marker = Some(marker);
+      } else if fence_marker.is_some_and(|opener| marker.kind == opener.kind && marker.len >= opener.len) {
         in_fence = false;
         fence_marker = None;
       }
@@ -1033,14 +1033,20 @@ fn normalize_html_lists(markdown: &str) -> String {
   out
 }
 
-fn fence_marker_start(line: &str) -> Option<&'static str> {
-  if line.starts_with("```") {
-    Some("```")
-  } else if line.starts_with("~~~") {
-    Some("~~~")
-  } else {
-    None
+#[derive(Debug, Clone, Copy)]
+struct FenceMarker {
+  kind: u8,
+  len: usize,
+}
+
+fn fence_marker_start(line: &str) -> Option<FenceMarker> {
+  let kind = *line.as_bytes().first()?;
+  if !matches!(kind, b'`' | b'~') {
+    return None;
   }
+
+  let len = line.bytes().take_while(|byte| *byte == kind).count();
+  (len >= 3).then_some(FenceMarker { kind, len })
 }
 
 fn normalize_html_lists_line(line: &str, list_stack: &mut Vec<ListState>) -> String {
@@ -1154,7 +1160,9 @@ fn parse_html_tag(html: &str) -> Option<HtmlTag> {
 
 fn parse_style_color(style: &str) -> Option<String> {
   for part in style.split(';') {
-    let (key, value) = part.split_once(':')?;
+    let Some((key, value)) = part.split_once(':') else {
+      continue;
+    };
     if key.trim().eq_ignore_ascii_case("color") {
       let color = value.trim();
       if !color.is_empty() {
@@ -1565,6 +1573,15 @@ mod tests {
   }
 
   #[test]
+  fn test_normalize_html_lists_ignores_shorter_closing_fence() {
+    let markdown =
+      "````html\n<ul><li>Code item</li></ul>\n```\n<ul><li>Still code</li></ul>\n````\n<ul><li>List item</li></ul>";
+    let expected = "````html\n<ul><li>Code item</li></ul>\n```\n<ul><li>Still code</li></ul>\n````\n- List item\n";
+
+    assert_eq!(normalize_html_lists(markdown), expected);
+  }
+
+  #[test]
   fn test_parse_markdown_blocks_html_underline() {
     use y_octo::{Any, TextDeltaOp, TextInsert};
 
@@ -1601,6 +1618,24 @@ mod tests {
     let markdown = r#"<span style="color: red">Colored</span>"#;
     let doc = parse_markdown(markdown).expect("parse markdown");
     assert_eq!(doc.blocks.len(), 1);
+
+    let color_attr = doc.blocks[0].spec.text.iter().find_map(|op| match op {
+      TextDeltaOp::Insert {
+        format: Some(attrs), ..
+      } => attrs.get(InlineStyle::Color.key()),
+      _ => None,
+    });
+    assert!(matches!(color_attr, Some(Any::String(value)) if value == "red"));
+  }
+
+  #[test]
+  fn test_parse_markdown_blocks_html_span_color_after_malformed_declaration() {
+    use y_octo::{Any, TextDeltaOp};
+
+    use super::super::inline::InlineStyle;
+
+    let markdown = r#"<span style="font-weight; color: red">Colored</span>"#;
+    let doc = parse_markdown(markdown).expect("parse markdown");
 
     let color_attr = doc.blocks[0].spec.text.iter().find_map(|op| match op {
       TextDeltaOp::Insert {

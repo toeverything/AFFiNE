@@ -26,7 +26,7 @@ fn test_roundtrip_list_items() {
 #[test]
 fn test_roundtrip_code_block() {
   let markdown = "```rust\nfn main() {}\n```";
-  let expected = "```rust\nfn main() {}\n\n```\n\n";
+  let expected = "```rust\nfn main() {}\n```\n\n";
   assert_markdown_roundtrip(markdown, expected);
 }
 

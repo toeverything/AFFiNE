@@ -122,6 +122,26 @@ describe('DiskDocStorage', () => {
     });
   });
 
+  it('waits for a pending session stop before reconnecting', async () => {
+    const pendingStop = Promise.withResolvers<void>();
+    stopSession.mockImplementationOnce(() => pendingStop.promise);
+    const storage = createStorage();
+
+    storage.connection.connect();
+    await storage.connection.waitForConnected();
+    storage.connection.disconnect();
+    storage.connection.connect();
+
+    await Promise.resolve();
+    expect(startSession).toHaveBeenCalledTimes(1);
+
+    pendingStop.resolve();
+    await storage.connection.waitForConnected();
+    expect(startSession).toHaveBeenCalledTimes(2);
+
+    storage.connection.disconnect();
+  });
+
   it('forwards local updates and emits doc update events', async () => {
     const storage = createStorage();
     storage.connection.connect();

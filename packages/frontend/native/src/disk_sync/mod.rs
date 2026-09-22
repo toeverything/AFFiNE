@@ -13,7 +13,7 @@ use napi::{
 };
 use napi_derive::napi;
 use once_cell::sync::Lazy;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 
 mod frontmatter;
 mod root_meta;
@@ -28,6 +28,7 @@ mod tests;
 use session::DiskSession;
 
 static SESSIONS: Lazy<RwLock<HashMap<String, Arc<DiskSession>>>> = Lazy::new(|| RwLock::new(HashMap::new()));
+static START_SESSION_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 static NEXT_SUBSCRIBER_ID: AtomicU64 = AtomicU64::new(1);
 
 #[napi(object)]
@@ -98,6 +99,8 @@ impl DiskSync {
 
   #[napi]
   pub async fn start_session(&self, session_id: String, options: DiskSessionOptions) -> NapiResult<()> {
+    let _start_guard = START_SESSION_LOCK.lock().await;
+
     {
       let sessions = SESSIONS.read().await;
       if sessions.contains_key(&session_id) {

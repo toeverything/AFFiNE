@@ -115,4 +115,31 @@ describe('disk helper handlers', () => {
       })
     ).rejects.toThrow('[disk] applyLocalUpdate failed: invalid_binary');
   });
+
+  it('stops and clears the session when unsubscribe fails', async () => {
+    diskSyncMocks.subscribeEvents
+      .mockResolvedValueOnce({
+        unsubscribe: () => new Error('unsubscribe_failed'),
+      })
+      .mockResolvedValueOnce({
+        unsubscribe: () => {},
+      });
+
+    const options = {
+      workspaceId: 'workspace-unsubscribe-failure',
+      syncFolder: '/tmp/disk-sync',
+    };
+    await startSession('session-unsubscribe-failure', options);
+
+    await expect(stopSession('session-unsubscribe-failure')).rejects.toThrow(
+      '[disk] unsubscribe failed: unsubscribe_failed'
+    );
+    expect(diskSyncMocks.stopSession).toHaveBeenCalledWith(
+      'session-unsubscribe-failure'
+    );
+
+    await startSession('session-unsubscribe-failure', options);
+    expect(diskSyncMocks.subscribeEvents).toHaveBeenCalledTimes(2);
+    await stopSession('session-unsubscribe-failure');
+  });
 });

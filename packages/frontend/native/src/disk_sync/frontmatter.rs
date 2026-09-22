@@ -121,7 +121,69 @@ pub(crate) fn render_frontmatter(meta: &FrontmatterMeta, body: &str) -> String {
 }
 
 fn normalize_scalar(value: &str) -> String {
-  value.trim().trim_matches('"').trim_matches('\'').to_string()
+  let value = value.trim();
+
+  if let Some(inner) = value.strip_prefix('"').and_then(|value| value.strip_suffix('"')) {
+    return unescape_double_quoted_scalar(inner);
+  }
+
+  if let Some(inner) = value.strip_prefix('\'').and_then(|value| value.strip_suffix('\'')) {
+    return inner.replace("''", "'");
+  }
+
+  value.to_string()
+}
+
+fn unescape_double_quoted_scalar(value: &str) -> String {
+  let mut unescaped = String::with_capacity(value.len());
+  let mut chars = value.chars();
+
+  while let Some(ch) = chars.next() {
+    if ch != '\\' {
+      unescaped.push(ch);
+      continue;
+    }
+
+    match chars.next() {
+      Some('0') => unescaped.push('\0'),
+      Some('a') => unescaped.push('\x07'),
+      Some('b') => unescaped.push('\x08'),
+      Some('t') => unescaped.push('\t'),
+      Some('n') => unescaped.push('\n'),
+      Some('v') => unescaped.push('\x0b'),
+      Some('f') => unescaped.push('\x0c'),
+      Some('r') => unescaped.push('\r'),
+      Some('e') => unescaped.push('\x1b'),
+      Some('"') => unescaped.push('"'),
+      Some('\\') => unescaped.push('\\'),
+      Some('x') => push_hex_escape(&mut chars, 2, 'x', &mut unescaped),
+      Some('u') => push_hex_escape(&mut chars, 4, 'u', &mut unescaped),
+      Some('U') => push_hex_escape(&mut chars, 8, 'U', &mut unescaped),
+      Some(other) => {
+        unescaped.push('\\');
+        unescaped.push(other);
+      }
+      None => unescaped.push('\\'),
+    }
+  }
+
+  unescaped
+}
+
+fn push_hex_escape(chars: &mut impl Iterator<Item = char>, width: usize, marker: char, output: &mut String) {
+  let digits: String = chars.take(width).collect();
+  let decoded = (digits.len() == width)
+    .then(|| u32::from_str_radix(&digits, 16).ok())
+    .flatten()
+    .and_then(char::from_u32);
+
+  if let Some(decoded) = decoded {
+    output.push(decoded);
+  } else {
+    output.push('\\');
+    output.push(marker);
+    output.push_str(&digits);
+  }
 }
 
 pub(crate) fn parse_bool(value: &str) -> Option<bool> {
@@ -169,6 +231,28 @@ fn quote_yaml_scalar(value: &str) -> String {
     return value.to_string();
   }
 
-  let escaped = value.replace('"', "\\\"");
+  let mut escaped = String::with_capacity(value.len());
+  for ch in value.chars() {
+    match ch {
+      '\0' => escaped.push_str("\\0"),
+      '\x07' => escaped.push_str("\\a"),
+      '\x08' => escaped.push_str("\\b"),
+      '\t' => escaped.push_str("\\t"),
+      '\n' => escaped.push_str("\\n"),
+      '\x0b' => escaped.push_str("\\v"),
+      '\x0c' => escaped.push_str("\\f"),
+      '\r' => escaped.push_str("\\r"),
+      '\x1b' => escaped.push_str("\\e"),
+      '"' => escaped.push_str("\\\""),
+      '\\' => escaped.push_str("\\\\"),
+      other if other.is_control() && (other as u32) <= 0xffff => {
+        escaped.push_str(&format!("\\u{:04X}", other as u32));
+      }
+      other if other.is_control() => {
+        escaped.push_str(&format!("\\U{:08X}", other as u32));
+      }
+      other => escaped.push(other),
+    }
+  }
   format!("\"{}\"", escaped)
 }

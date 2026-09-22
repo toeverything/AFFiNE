@@ -62,6 +62,8 @@ export function bindDiskSyncApis(a: DiskSyncApis) {
 export class DiskSyncConnection extends AutoReconnectConnection<{
   unsubscribe: () => void;
 }> {
+  private stopping: Promise<void> | null = null;
+
   readonly apis: DiskSyncApisWrapper;
   readonly sessionId: string;
 
@@ -106,6 +108,7 @@ export class DiskSyncConnection extends AutoReconnectConnection<{
   }
 
   override async doConnect() {
+    await this.stopping;
     await this.apis.startSession({
       workspaceId: this.id,
       syncFolder: this.options.syncFolder,
@@ -120,7 +123,7 @@ export class DiskSyncConnection extends AutoReconnectConnection<{
     } catch (error) {
       console.error('DiskSyncConnection unsubscribe failed', error);
     }
-    this.apis.stopSession().catch(error => {
+    this.stopping = this.apis.stopSession().catch(error => {
       console.error('DiskSyncConnection stopSession failed', error);
     });
   }

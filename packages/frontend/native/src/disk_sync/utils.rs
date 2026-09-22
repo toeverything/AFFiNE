@@ -15,6 +15,9 @@ pub(crate) fn collect_markdown_files(root: &Path, output: &mut Vec<PathBuf>) -> 
   for entry in entries {
     let entry = entry.map_err(|err| format!("failed to read directory entry: {}", err))?;
     let path = entry.path();
+    let file_type = entry
+      .file_type()
+      .map_err(|err| format!("failed to read file type for {}: {}", path.display(), err))?;
 
     if path
       .file_name()
@@ -24,7 +27,11 @@ pub(crate) fn collect_markdown_files(root: &Path, output: &mut Vec<PathBuf>) -> 
       continue;
     }
 
-    if path.is_dir() {
+    if file_type.is_symlink() {
+      continue;
+    }
+
+    if file_type.is_dir() {
       collect_markdown_files(&path, output)?;
       continue;
     }

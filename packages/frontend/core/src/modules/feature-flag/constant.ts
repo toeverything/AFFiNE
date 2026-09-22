@@ -4,6 +4,7 @@ import type { FlagInfo } from './types';
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 const isMobile = BUILD_CONFIG.isMobileEdition;
 const isIOS = BUILD_CONFIG.isIOS;
+const isAndroid = BUILD_CONFIG.isAndroid;
 
 export const AFFINE_FLAGS = {
   enable_ai: {
@@ -106,7 +107,7 @@ export const AFFINE_FLAGS = {
     feedbackType: 'discord',
     feedbackLink:
       'https://discord.com/channels/959027316334407691/1280014319865696351/1280014319865696351',
-    configurable: true,
+    configurable: false,
     defaultState: true,
   },
   enable_emoji_doc_icon: {
@@ -118,7 +119,7 @@ export const AFFINE_FLAGS = {
     feedbackType: 'discord',
     feedbackLink:
       'https://discord.com/channels/959027316334407691/1280014319865696351',
-    configurable: true,
+    configurable: false,
     defaultState: true,
   },
   enable_editor_settings: {
@@ -202,6 +203,14 @@ export const AFFINE_FLAGS = {
     description: 'Enable AI Button on mobile',
     configurable: isMobile && isIOS,
     defaultState: isMobile && isIOS,
+  },
+  enable_mermaid_wasm_native_renderer: {
+    category: 'affine',
+    displayName: 'Enable Native Mermaid Renderer',
+    description:
+      'Use the new Mermaid renderer backend. Web uses WASM, desktop uses native, and mobile always uses native. The native renderer is more than 10x faster, but its styling/aesthetic quality and the types of graphics it supports are not as good as the JS version.',
+    configurable: !isIOS && !isAndroid,
+    defaultState: isIOS || isAndroid,
   },
   enable_turbo_renderer: {
     category: 'blocksuite',

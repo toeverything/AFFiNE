@@ -49,7 +49,10 @@ impl<'a> MarkdownWriter<'a> {
     self.output.push_str(lang);
     self.output.push('\n');
     self.output.push_str(text);
-    self.output.push_str("\n```\n\n");
+    if !text.ends_with('\n') {
+      self.output.push('\n');
+    }
+    self.output.push_str("```\n\n");
   }
 
   pub(crate) fn push_divider(&mut self) {

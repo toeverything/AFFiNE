@@ -14,7 +14,7 @@ import {
   createLocalWorkspace,
   openWorkspaceListModal,
 } from '@affine-test/kit/utils/workspace';
-import { expect } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import fs from 'fs-extra';
 
 declare global {
@@ -127,6 +127,81 @@ async function assertNbstoreOpenedWithDiskRemote(
   }
 }
 
+async function setFolder({
+  page,
+  shell,
+  workspaceName,
+  workspaceId,
+  folder,
+  waitForWorkspace,
+}: {
+  page: Page;
+  shell: Page;
+  workspaceName: string;
+  workspaceId: string;
+  folder: string;
+  waitForWorkspace: () => Promise<unknown>;
+}) {
+  const maybeAutoReload = page
+    .waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20_000 })
+    .catch(() => null);
+  await page.evaluate(
+    async ({ workspaceId, folder }) => {
+      const apis = (window as any).__apis;
+      if (!apis?.sharedStorage?.setGlobalState) {
+        throw new Error('sharedStorage api is not available');
+      }
+
+      const loc = window.location as any;
+      const originalReload = loc.reload?.bind(loc);
+      try {
+        loc.reload = () => {};
+      } catch {}
+
+      await apis.sharedStorage.setGlobalState(
+        'workspace-engine:disk-sync-folders:v1',
+        {
+          [workspaceId]: folder,
+        }
+      );
+      await apis.sharedStorage.setGlobalState(
+        'affine-flag:enable_disk_sync',
+        true
+      );
+
+      try {
+        loc.reload = originalReload;
+      } catch {}
+    },
+    { workspaceId, folder }
+  );
+  await maybeAutoReload;
+  try {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+  } catch {}
+  await waitForEditorLoad(page);
+  await ensureWorkspaceSelected(page, workspaceName);
+  await waitForWorkspace();
+
+  const folderConfig = await page.evaluate(
+    ({ workspaceId }) => {
+      const gs = (globalThis as any).__sharedStorage?.globalState;
+      const folders = gs?.get('workspace-engine:disk-sync-folders:v1');
+      return {
+        hasSharedStorage: !!gs,
+        enabled: gs?.get('affine-flag:enable_disk_sync'),
+        folder: folders?.[workspaceId] ?? null,
+      };
+    },
+    { workspaceId }
+  );
+  expect(folderConfig.hasSharedStorage).toBe(true);
+  expect(folderConfig.enabled).toBe(true);
+  expect(folderConfig.folder).toBe(folder);
+
+  await assertNbstoreOpenedWithDiskRemote(page, shell, folder);
+}
+
 test('disk markdown sync: export/update/import', async ({
   page,
   shell,
@@ -156,74 +231,14 @@ test('disk markdown sync: export/update/import', async ({
   const syncFolder = path.join(appInfo.sessionData, 'disk-sync-e2e', w.meta.id);
   await fs.emptyDir(syncFolder);
 
-  // Configure via globalState directly to avoid coupling this E2E to the UI panel.
-  const maybeAutoReload = page
-    .waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20_000 })
-    .catch(() => null);
-  await page.evaluate(
-    async ({ workspaceId, folder }) => {
-      const apis = (window as any).__apis;
-      if (!apis?.sharedStorage?.setGlobalState) {
-        throw new Error('sharedStorage api is not available');
-      }
-
-      // FeatureFlagService will reload the page when the flag changes.
-      // Override it temporarily so we can persist state first, then reload from the test.
-      const loc = window.location as any;
-      const originalReload = loc.reload?.bind(loc);
-      try {
-        loc.reload = () => {};
-      } catch {
-        // ignore if it is not writable
-      }
-
-      await apis.sharedStorage.setGlobalState(
-        'workspace-engine:disk-sync-folders:v1',
-        {
-          [workspaceId]: folder,
-        }
-      );
-      await apis.sharedStorage.setGlobalState(
-        'affine-flag:enable_disk_sync',
-        true
-      );
-
-      try {
-        loc.reload = originalReload;
-      } catch {
-        // ignore if it is not writable
-      }
-    },
-    { workspaceId: w.meta.id, folder: syncFolder }
-  );
-  await maybeAutoReload;
-  // If we blocked the auto reload, reload now so workspace-engine can pick up the remote options.
-  // If the app already navigated, Playwright will throw ERR_ABORTED here; just ignore.
-  try {
-    await page.reload({ waitUntil: 'domcontentloaded' });
-  } catch {}
-  await waitForEditorLoad(page);
-  await ensureWorkspaceSelected(page, workspaceName);
-  await workspace.current();
-
-  const folderConfig = await page.evaluate(
-    ({ workspaceId }) => {
-      const gs = (globalThis as any).__sharedStorage?.globalState;
-      const folders = gs?.get('workspace-engine:disk-sync-folders:v1');
-      return {
-        hasSharedStorage: !!gs,
-        enabled: gs?.get('affine-flag:enable_disk_sync'),
-        folder: folders?.[workspaceId] ?? null,
-        folderKeyType: typeof folders,
-      };
-    },
-    { workspaceId: w.meta.id }
-  );
-  expect(folderConfig.hasSharedStorage).toBe(true);
-  expect(folderConfig.enabled).toBe(true);
-  expect(folderConfig.folder).toBe(syncFolder);
-
-  await assertNbstoreOpenedWithDiskRemote(page, shell, syncFolder);
+  await setFolder({
+    page,
+    shell,
+    workspaceName,
+    workspaceId: w.meta.id,
+    folder: syncFolder,
+    waitForWorkspace: () => workspace.current(),
+  });
 
   // Collect disk events for debugging and for asserting the import pipeline actually fired.
   await page.evaluate(() => {
@@ -342,76 +357,22 @@ test('disk markdown sync: switching folders re-exports existing docs', async ({
   await fs.emptyDir(folderA);
   await fs.emptyDir(folderB);
 
-  const setFolder = async (folder: string) => {
-    const maybeAutoReload = page
-      .waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20_000 })
-      .catch(() => null);
-    await page.evaluate(
-      async ({ workspaceId, folder }) => {
-        const apis = (window as any).__apis;
-        if (!apis?.sharedStorage?.setGlobalState) {
-          throw new Error('sharedStorage api is not available');
-        }
-
-        const loc = window.location as any;
-        const originalReload = loc.reload?.bind(loc);
-        try {
-          loc.reload = () => {};
-        } catch {}
-
-        await apis.sharedStorage.setGlobalState(
-          'workspace-engine:disk-sync-folders:v1',
-          {
-            [workspaceId]: folder,
-          }
-        );
-        await apis.sharedStorage.setGlobalState(
-          'affine-flag:enable_disk_sync',
-          true
-        );
-
-        try {
-          loc.reload = originalReload;
-        } catch {}
-      },
-      { workspaceId: w.meta.id, folder }
-    );
-    await maybeAutoReload;
-    try {
-      await page.reload({ waitUntil: 'domcontentloaded' });
-    } catch {}
-    await waitForEditorLoad(page);
-    await ensureWorkspaceSelected(page, workspaceName);
-    await workspace.current();
-
-    const folderConfig = await page.evaluate(
-      ({ workspaceId, expectedFolder }) => {
-        const gs = (globalThis as any).__sharedStorage?.globalState;
-        const folders = gs?.get('workspace-engine:disk-sync-folders:v1');
-        return {
-          hasSharedStorage: !!gs,
-          enabled: gs?.get('affine-flag:enable_disk_sync'),
-          folder: folders?.[workspaceId] ?? null,
-          expected: expectedFolder,
-        };
-      },
-      { workspaceId: w.meta.id, expectedFolder: folder }
-    );
-    expect(folderConfig.hasSharedStorage).toBe(true);
-    expect(folderConfig.enabled).toBe(true);
-    expect(folderConfig.folder).toBe(folder);
-
-    await assertNbstoreOpenedWithDiskRemote(page, shell, folder);
+  const folderContext = {
+    page,
+    shell,
+    workspaceName,
+    workspaceId: w.meta.id,
+    waitForWorkspace: () => workspace.current(),
   };
 
   // First bind: export should appear in folder A.
-  await setFolder(folderA);
+  await setFolder({ ...folderContext, folder: folderA });
   await expect
     .poll(() => findMarkdownFileContaining(folderA, body), { timeout: 30_000 })
     .not.toBeNull();
 
   // Switch to a brand new empty folder: export should appear again in folder B.
-  await setFolder(folderB);
+  await setFolder({ ...folderContext, folder: folderB });
   await expect
     .poll(() => findMarkdownFileContaining(folderB, body), { timeout: 30_000 })
     .not.toBeNull();
@@ -446,65 +407,14 @@ test('disk markdown sync: preserves database blocks', async ({
   );
   await fs.emptyDir(syncFolder);
 
-  const maybeAutoReload = page
-    .waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20_000 })
-    .catch(() => null);
-  await page.evaluate(
-    async ({ workspaceId, folder }) => {
-      const apis = (window as any).__apis;
-      if (!apis?.sharedStorage?.setGlobalState) {
-        throw new Error('sharedStorage api is not available');
-      }
-
-      const loc = window.location as any;
-      const originalReload = loc.reload?.bind(loc);
-      try {
-        loc.reload = () => {};
-      } catch {}
-
-      await apis.sharedStorage.setGlobalState(
-        'workspace-engine:disk-sync-folders:v1',
-        {
-          [workspaceId]: folder,
-        }
-      );
-      await apis.sharedStorage.setGlobalState(
-        'affine-flag:enable_disk_sync',
-        true
-      );
-
-      try {
-        loc.reload = originalReload;
-      } catch {}
-    },
-    { workspaceId: w.meta.id, folder: syncFolder }
-  );
-  await maybeAutoReload;
-  try {
-    await page.reload({ waitUntil: 'domcontentloaded' });
-  } catch {}
-  await waitForEditorLoad(page);
-  await ensureWorkspaceSelected(page, workspaceName);
-  await workspace.current();
-
-  const folderConfig = await page.evaluate(
-    ({ workspaceId, folder }) => {
-      const gs = (globalThis as any).__sharedStorage?.globalState;
-      const folders = gs?.get('workspace-engine:disk-sync-folders:v1');
-      return {
-        hasSharedStorage: !!gs,
-        enabled: gs?.get('affine-flag:enable_disk_sync'),
-        folder: folders?.[workspaceId] ?? null,
-        expected: folder,
-      };
-    },
-    { workspaceId: w.meta.id, folder: syncFolder }
-  );
-  expect(folderConfig.hasSharedStorage).toBe(true);
-  expect(folderConfig.enabled).toBe(true);
-  expect(folderConfig.folder).toBe(syncFolder);
-
-  await assertNbstoreOpenedWithDiskRemote(page, shell, syncFolder);
+  await setFolder({
+    page,
+    shell,
+    workspaceName,
+    workspaceId: w.meta.id,
+    folder: syncFolder,
+    waitForWorkspace: () => workspace.current(),
+  });
 
   // Ensure we're viewing the target page so UI assertions below are stable.
   await clickSideBarAllPageButton(page);

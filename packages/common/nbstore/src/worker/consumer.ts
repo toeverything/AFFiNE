@@ -148,6 +148,30 @@ class StoreConsumer {
     const prevInit = this.initOptions;
     const storages = this.storages;
 
+    const nextRemotes = Object.fromEntries(
+      Object.entries(init.remotes).map(([peerId, nextPeerOpts]) => {
+        const prevPeerOpts = prevInit.remotes[peerId];
+        if (prevPeerOpts && isEqual(prevPeerOpts, nextPeerOpts)) {
+          return [peerId, storages.remotes[peerId]];
+        }
+        return [
+          peerId,
+          new SpaceStorage(
+            Object.fromEntries(
+              Object.entries(nextPeerOpts).map(([type, opt]) => {
+                return [type, this.createStorage(opt)];
+              })
+            )
+          ),
+        ];
+      })
+    );
+    const nextStorages = {
+      local: storages.local,
+      remotes: nextRemotes,
+    };
+    const nextSync = new Sync(nextStorages);
+
     this.sync.stop();
 
     // Destroy removed or changed remote peers.
@@ -159,32 +183,24 @@ class StoreConsumer {
       }
       const remote = storages.remotes[peerId];
       if (remote) {
-        delete storages.remotes[peerId];
         remote.disconnect();
         await remote.destroy();
       }
     }
 
-    // Create added or changed remote peers.
+    // Connect added or changed remote peers.
     for (const [peerId, nextPeerOpts] of Object.entries(init.remotes)) {
       const prevPeerOpts = prevInit.remotes[peerId];
       const changed = !prevPeerOpts || !isEqual(prevPeerOpts, nextPeerOpts);
       if (!changed) {
         continue;
       }
-      const remote = new SpaceStorage(
-        Object.fromEntries(
-          Object.entries(nextPeerOpts).map(([type, opt]) => {
-            return [type, this.createStorage(opt)];
-          })
-        )
-      );
-      storages.remotes[peerId] = remote;
-      remote.connect();
+      nextRemotes[peerId].connect();
     }
 
-    this.sync = new Sync(storages);
-    this.sync.start();
+    this.storages = nextStorages;
+    this.sync = nextSync;
+    nextSync.start();
     this.initOptions = init;
   }
 

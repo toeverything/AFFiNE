@@ -151,9 +151,13 @@ export async function startSession(
 }
 
 export async function stopSession(sessionId: string): Promise<void> {
-  await subscriptions.get(sessionId)?.();
+  const unsubscribe = subscriptions.get(sessionId);
   subscriptions.delete(sessionId);
-  unwrapNapiResult(await diskSync.stopSession(sessionId), 'stopSession');
+  try {
+    await unsubscribe?.();
+  } finally {
+    unwrapNapiResult(await diskSync.stopSession(sessionId), 'stopSession');
+  }
 }
 
 export async function applyLocalUpdate(

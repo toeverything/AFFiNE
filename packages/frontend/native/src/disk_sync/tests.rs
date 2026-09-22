@@ -10,8 +10,11 @@ use uuid::Uuid;
 use y_octo::{Any, DocOptions, Value};
 
 use super::{
-  DiskDocUpdateInput, DiskSessionOptions, DiskSync, frontmatter::parse_frontmatter, root_meta::build_root_meta_update,
-  types::FrontmatterMeta, utils::collect_markdown_files,
+  DiskDocUpdateInput, DiskSessionOptions, DiskSync,
+  frontmatter::{parse_frontmatter, render_frontmatter},
+  root_meta::build_root_meta_update,
+  types::FrontmatterMeta,
+  utils::collect_markdown_files,
 };
 
 fn temp_dir() -> PathBuf {
@@ -140,6 +143,82 @@ Body
   let (meta, _) = parse_frontmatter(raw);
   assert_eq!(meta.id.as_deref(), Some("doc-empty-title"));
   assert_eq!(meta.title.as_deref(), Some(""));
+}
+
+#[test]
+fn frontmatter_round_trips_escaped_scalars() {
+  let meta = FrontmatterMeta {
+    id: Some(r#"doc\windows"#.to_string()),
+    title: Some("First line\nSecond \\\"line\\\"\u{0001}\u{007f}".to_string()),
+    tags: Some(vec![r#"folder\tag"#.to_string(), "multi\nline".to_string()]),
+    favorite: None,
+    trash: None,
+  };
+
+  let rendered = render_frontmatter(&meta, "Body");
+  let (parsed, body) = parse_frontmatter(&rendered);
+
+  assert_eq!(parsed.id, meta.id);
+  assert_eq!(parsed.title, meta.title);
+  assert_eq!(parsed.tags, meta.tags);
+  assert_eq!(body, "Body\n");
+}
+
+#[tokio::test]
+async fn concurrent_starts_initialize_one_session() {
+  let first_dir = temp_dir();
+  let second_dir = temp_dir();
+  let sync = DiskSync::new();
+  let session_id = format!("session-concurrent-{}", Uuid::new_v4());
+
+  let first = sync.start_session(
+    session_id.clone(),
+    DiskSessionOptions {
+      workspace_id: "ws-concurrent-first".to_string(),
+      sync_folder: first_dir.to_string_lossy().to_string(),
+    },
+  );
+  let second = sync.start_session(
+    session_id.clone(),
+    DiskSessionOptions {
+      workspace_id: "ws-concurrent-second".to_string(),
+      sync_folder: second_dir.to_string_lossy().to_string(),
+    },
+  );
+
+  let (first_result, second_result) = tokio::join!(first, second);
+  first_result.expect("start first session");
+  second_result.expect("start second session");
+
+  let initialized_dirs = [&first_dir, &second_dir]
+    .into_iter()
+    .filter(|dir| dir.join(".affine-sync/state.db").exists())
+    .count();
+
+  sync.stop_session(session_id).await.expect("stop session");
+  let _ = fs::remove_dir_all(first_dir);
+  let _ = fs::remove_dir_all(second_dir);
+
+  assert_eq!(initialized_dirs, 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn collect_markdown_files_skips_symlink_directories() {
+  use std::os::unix::fs::symlink;
+
+  let dir = temp_dir();
+  let nested = dir.join("nested");
+  fs::create_dir(&nested).expect("create nested directory");
+  let markdown = nested.join("doc.md");
+  fs::write(&markdown, "# Document").expect("write markdown");
+  symlink(&dir, nested.join("loop")).expect("create directory symlink");
+
+  let mut files = Vec::new();
+  collect_markdown_files(&dir, &mut files).expect("collect markdown files");
+
+  assert_eq!(files, vec![markdown]);
+  let _ = fs::remove_dir_all(dir);
 }
 
 #[tokio::test]

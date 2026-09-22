@@ -2,7 +2,10 @@ import '@affine/core/bootstrap/electron';
 
 import { apis, events } from '@affine/electron-api';
 import { broadcastChannelStorages } from '@affine/nbstore/broadcast-channel';
-import { cloudStorages } from '@affine/nbstore/cloud';
+import {
+  cloudStorages,
+  configureSocketAuthMethod,
+} from '@affine/nbstore/cloud';
 import { bindDiskSyncApis, diskStorages } from '@affine/nbstore/disk';
 import { bindNativeDBApis, sqliteStorages } from '@affine/nbstore/sqlite';
 import {
@@ -23,6 +26,15 @@ bindNativeDBApis(apis!.nbstore);
 bindNativeDBV1Apis(apis!.db);
 // oxlint-disable-next-line no-non-null-assertion
 bindDiskSyncApis(createDiskSyncApis(apis!.diskSync, events!.diskSync));
+configureSocketAuthMethod((endpoint, cb) => {
+  // oxlint-disable-next-line no-non-null-assertion
+  apis!.auth
+    .getValidAccessToken(endpoint)
+    .then(({ token }: { token?: string | null }) => {
+      cb(token ? { token, tokenType: 'jwt' } : {});
+    })
+    .catch(() => cb({ error: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE' }));
+});
 
 const storeManager = new StoreManagerConsumer([
   ...sqliteStorages,

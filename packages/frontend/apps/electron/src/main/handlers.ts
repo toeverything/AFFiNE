@@ -11,7 +11,10 @@ import { importHandlers } from './import';
 import { getLogFilePath, logger, revealLogFile } from './logger';
 import { recordingHandlers } from './recording';
 import { checkSource } from './security-restrictions';
-import { sharedStorageHandlers } from './shared-storage';
+import {
+  sharedStorageHandlers,
+  sharedStorageSyncHandlers,
+} from './shared-storage';
 import { uiHandlers } from './ui/handlers';
 import { updaterHandlers } from './updater';
 import { popupHandlers } from './windows-manager/popup';
@@ -48,6 +51,10 @@ export const allHandlers = {
   i18n: i18nHandlers,
   byokStorage: byokStorageHandlers,
   auth: authHandlers,
+};
+
+const allSyncHandlers = {
+  sharedStorage: sharedStorageSyncHandlers,
 };
 
 export const registerHandlers = () => {
@@ -106,12 +113,32 @@ export const registerHandlers = () => {
   ipcMain.on(AFFINE_API_CHANNEL_NAME, (e, ...args: any[]) => {
     if (!checkSource(e)) return;
 
-    handleIpcMessage(e, ...args)
-      .then(ret => {
-        e.returnValue = ret;
-      })
-      .catch(() => {
-        // never throw
-      });
+    const channel = args[0];
+    if (typeof channel !== 'string') {
+      logger.error('invalid synchronous ipc message', args);
+      return;
+    }
+
+    const [namespace, key] = channel.split(':');
+    if (!namespace || !key) {
+      logger.error('invalid synchronous ipc message', args);
+      return;
+    }
+
+    // @ts-expect-error - namespaces and keys are validated at runtime
+    const handler = allSyncHandlers[namespace]?.[key];
+    if (!handler) {
+      logger.error('synchronous handler not found for ', channel);
+      return;
+    }
+
+    try {
+      e.returnValue = handler(...args.slice(1));
+    } catch (error) {
+      logger.error(
+        `error in synchronous ipc handler when calling ${channel}`,
+        error
+      );
+    }
   });
 };
