@@ -12,6 +12,7 @@ const EDITABLE_SCRIBBLE_SELECTOR = [
 const MAX_RECT_COUNT = 80;
 const MIN_RECT_SIZE = 1;
 const POLL_INTERVAL = 500;
+const PROXY_INTERACTIVE_TTL = 1200;
 const STICKY_RECT_TTL = 2500;
 const INLINE_EDITOR_PADDING_LEFT = 220;
 const INLINE_EDITOR_PADDING_RIGHT = 160;
@@ -42,6 +43,7 @@ interface ScribbleProxyRecord {
 }
 
 const scribbleProxyRecords = new WeakMap<Document, ScribbleProxyRecord[]>();
+const scribbleProxyTimers = new WeakMap<HTMLTextAreaElement, number>();
 
 function isHTMLElement(element: Element): element is HTMLElement {
   return element instanceof HTMLElement;
@@ -53,6 +55,10 @@ function isVisibleEditable(element: Element): boolean {
   }
 
   if (element.closest('[contenteditable="false"]')) {
+    return false;
+  }
+
+  if (element.closest('[inert], [aria-hidden="true"]')) {
     return false;
   }
 
@@ -183,6 +189,55 @@ function isInlineEditor(element: Element): boolean {
     element.dataset.vRoot === 'true' &&
     element.getAttribute('contenteditable') === 'true'
   );
+}
+
+function getProxyTarget(doc: Document, element: Element): HTMLElement | null {
+  const proxy = element.closest('[data-affine-scribble-proxy="true"]');
+  if (!(proxy instanceof HTMLTextAreaElement)) {
+    return null;
+  }
+
+  return (
+    scribbleProxyRecords.get(doc)?.find(record => record.proxy === proxy)
+      ?.target ?? null
+  );
+}
+
+function isActiveEditable(element: Element, doc: Document): boolean {
+  const active = doc.activeElement;
+  return (
+    element === active ||
+    (active instanceof Element && element.contains(active)) ||
+    selectionIsInside(element)
+  );
+}
+
+function isForegroundScribbleTarget(
+  element: Element,
+  point: ScribblePoint,
+  root: ParentNode
+): boolean {
+  if (element.closest('[inert], [aria-hidden="true"]')) {
+    return false;
+  }
+
+  const doc = root.ownerDocument ?? (root as Document);
+  const hit = doc.elementFromPoint(point.x, point.y);
+  if (!hit) {
+    return isActiveEditable(element, doc);
+  }
+
+  const proxyTarget = getProxyTarget(doc, hit);
+  if (proxyTarget === element) {
+    return true;
+  }
+
+  const hitEditable = hit.closest(EDITABLE_SCRIBBLE_SELECTOR);
+  if (hitEditable) {
+    return hitEditable === element;
+  }
+
+  return element.contains(hit) || isActiveEditable(element, doc);
 }
 
 function getEditableScribbleElements(root: ParentNode): Element[] {
@@ -351,6 +406,37 @@ function applyProxyStyle(
   });
 }
 
+function clearProxyInteractiveTimer(proxy: HTMLTextAreaElement): void {
+  const timer = scribbleProxyTimers.get(proxy);
+  if (timer === undefined) return;
+  proxy.ownerDocument.defaultView?.clearTimeout(timer);
+  scribbleProxyTimers.delete(proxy);
+}
+
+function setProxyInteractive(
+  proxy: HTMLTextAreaElement,
+  rect: ScribbleRect,
+  interactive: boolean
+): void {
+  clearProxyInteractiveTimer(proxy);
+  if (interactive) {
+    proxy.dataset.affineScribbleProxyActive = 'true';
+  } else {
+    delete proxy.dataset.affineScribbleProxyActive;
+  }
+  applyProxyStyle(proxy, rect, interactive);
+}
+
+function enableProxyForScribble(proxy: HTMLTextAreaElement): void {
+  setProxyInteractive(proxy, getProxyRect(proxy), true);
+  const win = proxy.ownerDocument.defaultView;
+  if (!win) return;
+  const timer = win.setTimeout(() => {
+    setProxyInteractive(proxy, getProxyRect(proxy), false);
+  }, PROXY_INTERACTIVE_TTL);
+  scribbleProxyTimers.set(proxy, timer);
+}
+
 function createScribbleProxyTextarea(
   target: HTMLElement,
   rect: ScribbleRect
@@ -371,7 +457,7 @@ function createScribbleProxyTextarea(
     const text = proxy.value;
     proxy.value = '';
     insertTextIntoTarget(target, text);
-    applyProxyStyle(proxy, getProxyRect(proxy));
+    setProxyInteractive(proxy, getProxyRect(proxy), false);
   });
   return proxy;
 }
@@ -381,7 +467,10 @@ export function disposeScribbleProxyTextareas(
 ): void {
   const doc = root.ownerDocument ?? (root as Document);
   const records = scribbleProxyRecords.get(doc);
-  records?.forEach(({ proxy }) => proxy.remove());
+  records?.forEach(({ proxy }) => {
+    clearProxyInteractiveTimer(proxy);
+    proxy.remove();
+  });
   scribbleProxyRecords.delete(doc);
 }
 
@@ -408,7 +497,11 @@ export function syncScribbleProxyTextareas(
         existingProxy && existingProxy.isConnected
           ? existingProxy
           : createScribbleProxyTextarea(target, rect);
-      applyProxyStyle(proxy, rect, doc.activeElement === proxy);
+      applyProxyStyle(
+        proxy,
+        rect,
+        proxy.dataset.affineScribbleProxyActive === 'true'
+      );
       if (!proxy.isConnected) {
         doc.body.append(proxy);
       }
@@ -419,6 +512,7 @@ export function syncScribbleProxyTextareas(
   const activeProxies = new Set(records.map(({ proxy }) => proxy));
   previousRecords.forEach(({ proxy }) => {
     if (!activeProxies.has(proxy)) {
+      clearProxyInteractiveTimer(proxy);
       proxy.remove();
     }
   });
@@ -438,11 +532,19 @@ export function focusNearestEditableScribbleTarget(
       rects: toClippedElementScribbleRects(element, root),
     }))
     .filter(({ rects }) => rects.some(rect => containsPoint(rect, point)))
-    .sort(
-      (a, b) =>
+    .filter(({ element }) => isForegroundScribbleTarget(element, point, root))
+    .sort((a, b) => {
+      const activeDelta =
+        Number(isActiveEditable(b.element, doc)) -
+        Number(isActiveEditable(a.element, doc));
+      if (activeDelta !== 0) {
+        return activeDelta;
+      }
+      return (
         Math.min(...a.rects.map(rect => distanceToRectCenter(rect, point))) -
         Math.min(...b.rects.map(rect => distanceToRectCenter(rect, point)))
-    )[0]?.element;
+      );
+    })[0]?.element;
 
   if (!target || !isHTMLElement(target)) {
     return false;
@@ -455,7 +557,7 @@ export function focusNearestEditableScribbleTarget(
       .get(doc)
       ?.find(record => record.target === target)?.proxy;
     if (proxy?.isConnected) {
-      applyProxyStyle(proxy, getProxyRect(proxy), true);
+      enableProxyForScribble(proxy);
       proxy.focus({ preventScroll: true });
     }
   }

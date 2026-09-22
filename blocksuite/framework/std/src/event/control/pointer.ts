@@ -96,6 +96,8 @@ abstract class PointerControllerBase {
     protected _getRect: () => DOMRect
   ) {}
 
+  dispose(): void {}
+
   abstract listen(): void;
 }
 
@@ -157,6 +159,13 @@ class PointerEventForward extends PointerControllerBase {
 
   private readonly _startStates = new Map<PointerId, PointerEventState>();
 
+  private readonly _cancel = (event: PointerEvent) => {
+    const { pointerId } = event;
+    this._ignoredPointerIds.delete(pointerId);
+    this._startStates.delete(pointerId);
+    this._lastStates.delete(pointerId);
+  };
+
   private readonly _upOrOut = (up: boolean) => (event: PointerEvent) => {
     const { pointerId } = event;
 
@@ -194,6 +203,8 @@ class PointerEventForward extends PointerControllerBase {
     disposables.addFromEvent(host, 'pointermove', this._move);
     disposables.addFromEvent(host, 'pointerup', this._upOrOut(true));
     disposables.addFromEvent(host, 'pointerout', this._upOrOut(false));
+    disposables.addFromEvent(host, 'pointercancel', this._cancel);
+    disposables.addFromEvent(host, 'lostpointercapture', this._cancel);
   }
 }
 
@@ -242,6 +253,14 @@ class ClickController extends PointerControllerBase {
 
   private _pointerDownCount = 0;
 
+  private readonly _cancel = (event: PointerEvent) => {
+    this._ignoredPointerIds.delete(event.pointerId);
+    if (this._downPointerState?.raw.pointerId === event.pointerId) {
+      this._downPointerState = null;
+      this._pointerDownCount = 0;
+    }
+  };
+
   private readonly _up = (event: PointerEvent) => {
     if (this._ignoredPointerIds.has(event.pointerId)) {
       this._ignoredPointerIds.delete(event.pointerId);
@@ -283,6 +302,8 @@ class ClickController extends PointerControllerBase {
 
     disposables.addFromEvent(host, 'pointerdown', this._down);
     disposables.addFromEvent(host, 'pointerup', this._up);
+    disposables.addFromEvent(host, 'pointercancel', this._cancel);
+    disposables.addFromEvent(host, 'lostpointercapture', this._cancel);
   }
 }
 
@@ -336,15 +357,19 @@ class DragController extends PointerControllerBase {
     // Ephemeral listeners — must be removed on up/cancel. Do NOT use
     // disposables.addFromEvent here: that permanently retains dispose entries
     // on every pointerdown and previously paired poorly with pointercancel.
-    document.addEventListener('pointermove', this._move);
-    document.addEventListener('pointerup', this._up);
-    document.addEventListener('pointercancel', this._up);
-    document.addEventListener('lostpointercapture', this._up);
+    const doc = this._dispatcher.host.ownerDocument;
+    this._listenerDocument = doc;
+    doc.addEventListener('pointermove', this._move);
+    doc.addEventListener('pointerup', this._up);
+    doc.addEventListener('pointercancel', this._up);
+    doc.addEventListener('lostpointercapture', this._up);
   };
 
   private _dragging = false;
 
   private _lastPointerState: PointerEventState | null = null;
+
+  private _listenerDocument: Document | null = null;
 
   private _startPointerState: PointerEventState | null = null;
 
@@ -440,10 +465,13 @@ class DragController extends PointerControllerBase {
   };
 
   private _detachDocumentListeners() {
-    document.removeEventListener('pointermove', this._move);
-    document.removeEventListener('pointerup', this._up);
-    document.removeEventListener('pointercancel', this._up);
-    document.removeEventListener('lostpointercapture', this._up);
+    const doc = this._listenerDocument;
+    if (!doc) return;
+    doc.removeEventListener('pointermove', this._move);
+    doc.removeEventListener('pointerup', this._up);
+    doc.removeEventListener('pointercancel', this._up);
+    doc.removeEventListener('lostpointercapture', this._up);
+    this._listenerDocument = null;
   }
 
   private readonly _reset = () => {
@@ -559,7 +587,14 @@ class DragController extends PointerControllerBase {
     disposables.addFromEvent(host, 'dragover', this._nativeDragOver);
     disposables.addFromEvent(host, 'dragleave', this._nativeDragLeave);
   }
+
+  override dispose(): void {
+    this._reset();
+    this._nativeDragging = false;
+  }
 }
+
+const DUAL_POINTER_DISTANCE_THRESHOLD_SQ = 4;
 
 abstract class DualDragControllerBase extends PointerControllerBase {
   private readonly _down = (event: PointerEvent) => {
@@ -689,6 +724,8 @@ abstract class DualDragControllerBase extends PointerControllerBase {
     disposables.addFromEvent(host, 'pointermove', this._move);
     disposables.addFromEvent(host, 'pointerup', this._upOrOut);
     disposables.addFromEvent(host, 'pointerout', this._upOrOut);
+    disposables.addFromEvent(host, 'pointercancel', this._upOrOut);
+    disposables.addFromEvent(host, 'lostpointercapture', this._upOrOut);
   }
 }
 
@@ -714,7 +751,11 @@ class PinchController extends DualDragControllerBase {
 
     // the changes of distance between two pointers is not far enough
     if (
-      !isFarEnough(deltaFirstPointer, deltaSecondPointer) ||
+      !isFarEnough(
+        deltaFirstPointer,
+        deltaSecondPointer,
+        DUAL_POINTER_DISTANCE_THRESHOLD_SQ
+      ) ||
       deltaDotProduct > 0 ||
       deltaFirstPointerValue < deltaValueThreshold ||
       deltaSecondPointerValue < deltaValueThreshold
@@ -739,7 +780,11 @@ class PanController extends DualDragControllerBase {
 
     // the center move distance is not far enough
     if (
-      !isFarEnough(deltaFirstPointer, deltaSecondPointer) &&
+      !isFarEnough(
+        deltaFirstPointer,
+        deltaSecondPointer,
+        DUAL_POINTER_DISTANCE_THRESHOLD_SQ
+      ) &&
       deltaDotProduct < 0
     )
       return;
@@ -794,6 +839,7 @@ export class PointerControl {
       clearInterval(this._pollingInterval);
       this._pollingInterval = null;
     }
+    this.controllers.forEach(controller => controller.dispose());
   }
 
   listen() {
