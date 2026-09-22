@@ -64,14 +64,21 @@ dependencies = [
 name = "affine_common"
 version = "0.1.0"
 dependencies = [
+ "assert-json-diff",
  "chrono",
  "criterion",
  "hex",
+ "nanoid 0.4.0",
  "napi",
+ "pulldown-cmark 0.13.1",
  "rand 0.9.4",
  "rayon",
+ "serde",
+ "serde_json",
  "sha3 0.12.0",
  "tempfile",
+ "thiserror 2.0.18",
+ "y-octo",
 ]
 
 [[package]]
@@ -98,7 +105,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be10d572575084fc546056a9df6b39b0c0beb6964961870dd86cafa6d85dc016"
 dependencies = [
  "chrono",
- "nanoid",
+ "nanoid 0.5.0",
  "pulldown-cmark 0.13.1",
  "serde",
  "serde_json",
@@ -115,7 +122,7 @@ checksum = "5826d670f6d43faa7809ef6a06d4a8c5ff493b970399c5c3c5659d25e572746b"
 dependencies = [
  "affine_doc_loader",
  "chrono",
- "nanoid",
+ "nanoid 0.5.0",
  "pulldown-cmark 0.13.1",
  "serde",
  "serde_json",
@@ -197,11 +204,13 @@ dependencies = [
  "onenote_parser",
  "serde_json",
  "sha2 0.11.0",
+ "sha3 0.12.0",
  "sqlx",
  "thiserror 2.0.18",
  "tokio",
  "typed-path",
  "uuid",
+ "y-octo",
  "zip",
 ]
 
@@ -3109,7 +3118,7 @@ dependencies = [
  "libc",
  "log",
  "rustversion",
- "windows-link 0.1.3",
+ "windows-link 0.2.1",
  "windows-result 0.4.1",
 ]
 
@@ -5434,6 +5443,15 @@ dependencies = [
  "num-traits",
  "simba",
  "typenum",
+]
+
+[[package]]
+name = "nanoid"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ffa00dec017b5b1a8b7cf5e2c008bfda1aa7e0697ac1508b491fdf2622fb4d8"
+dependencies = [
+ "rand 0.8.6",
 ]
 
 [[package]]
@@ -10627,7 +10645,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -11291,7 +11309,7 @@ dependencies = [
  "byteorder",
  "log",
  "loom",
- "nanoid",
+ "nanoid 0.5.0",
  "nom 8.0.0",
  "ordered-float",
  "rand 0.10.1",

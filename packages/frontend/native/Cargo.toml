@@ -8,12 +8,13 @@ version = "0.0.0"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-affine_common = { workspace = true, features = ["hashcash"] }
+affine_common = { workspace = true, features = ["hashcash", "ydoc-loader"] }
 affine_doc_loader = { workspace = true }
 affine_importer = { workspace = true }
 affine_media_capture = { path = "./media_capture" }
 affine_nbstore = { workspace = true, features = ["napi"] }
 affine_sqlite_v1 = { path = "./sqlite_v1" }
+chrono = { workspace = true }
 hex = { workspace = true }
 infer = { workspace = true }
 napi = { workspace = true }
@@ -22,16 +23,19 @@ once_cell = { workspace = true }
 onenote_parser = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
+sha3 = { workspace = true }
 sqlx = { workspace = true, default-features = false, features = [
   "chrono",
   "macros",
   "migrate",
   "runtime-tokio",
   "sqlite",
+  "tls-rustls",
 ] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 typed-path = { workspace = true }
+y-octo = { workspace = true }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 affine_preview = { workspace = true, features = ["mermaid", "typst"] }
@@ -59,5 +63,6 @@ sqlx = { workspace = true, default-features = false, features = [
   "migrate",
   "runtime-tokio",
   "sqlite",
+  "tls-rustls",
 ] }
 tokio = { workspace = true, features = ["full"] }

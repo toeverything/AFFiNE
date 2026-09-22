@@ -36,9 +36,8 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
     let retry = 0;
 
     while (true) {
+      const trx = this.db.transaction(['updates', 'clocks'], 'readwrite');
       try {
-        const trx = this.db.transaction(['updates', 'clocks'], 'readwrite');
-
         await trx.objectStore('updates').add({
           ...update,
           createdAt: timestamp,
@@ -47,7 +46,9 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
         await trx.objectStore('clocks').put({ docId: update.docId, timestamp });
 
         trx.commit();
+        await trx.done;
       } catch (e) {
+        await trx.done.catch(() => {});
         if (e instanceof Error && e.name === 'ConstraintError') {
           retry++;
           if (retry < 10) {

@@ -539,6 +539,7 @@ __metadata:
     react-router-dom: "npm:^7.18.4"
     typescript: "npm:@typescript/typescript6@6.0.2"
     uuid: "npm:^14.0.0"
+    vitest: "npm:^4.1.11"
   languageName: unknown
   linkType: soft
 
@@ -820,6 +821,7 @@ __metadata:
     fake-indexeddb: "npm:^6.0.0"
     graphemer: "npm:^1.4.0"
     idb: "npm:^8.0.0"
+    lib0: "npm:^0.2.114"
     lodash-es: "npm:^4.17.23"
     nanoid: "npm:^5.1.6"
     rxjs: "npm:^7.8.2"

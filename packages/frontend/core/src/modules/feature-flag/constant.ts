@@ -4,7 +4,6 @@ import type { FlagInfo } from './types';
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 const isMobile = BUILD_CONFIG.isMobileEdition;
 const isIOS = BUILD_CONFIG.isIOS;
-const isAndroid = BUILD_CONFIG.isAndroid;
 
 export const AFFINE_FLAGS = {
   enable_ai: {
@@ -107,7 +106,7 @@ export const AFFINE_FLAGS = {
     feedbackType: 'discord',
     feedbackLink:
       'https://discord.com/channels/959027316334407691/1280014319865696351/1280014319865696351',
-    configurable: false,
+    configurable: true,
     defaultState: true,
   },
   enable_emoji_doc_icon: {
@@ -119,7 +118,7 @@ export const AFFINE_FLAGS = {
     feedbackType: 'discord',
     feedbackLink:
       'https://discord.com/channels/959027316334407691/1280014319865696351',
-    configurable: false,
+    configurable: true,
     defaultState: true,
   },
   enable_editor_settings: {
@@ -204,14 +203,6 @@ export const AFFINE_FLAGS = {
     configurable: isMobile && isIOS,
     defaultState: isMobile && isIOS,
   },
-  enable_mermaid_wasm_native_renderer: {
-    category: 'affine',
-    displayName: 'Enable Native Mermaid Renderer',
-    description:
-      'Use the new Mermaid renderer backend. Web uses WASM, desktop uses native, and mobile always uses native. The native renderer is more than 10x faster, but its styling/aesthetic quality and the types of graphics it supports are not as good as the JS version.',
-    configurable: !isIOS && !isAndroid,
-    defaultState: isIOS || isAndroid,
-  },
   enable_turbo_renderer: {
     category: 'blocksuite',
     bsFlag: 'enable_turbo_renderer',
@@ -295,6 +286,14 @@ export const AFFINE_FLAGS = {
       'Limit indexing and other compute-intensive tasks on this device, may experience longer loading time and latency in search and other features, in exchange for quietness.',
     configurable: true,
     defaultState: isMobile,
+  },
+  enable_disk_sync: {
+    category: 'affine',
+    displayName: 'Enable Disk Markdown Sync',
+    description:
+      'Enable experimental local-folder Markdown bidirectional sync on Electron desktop. WARNING: We are not responsible for any data loss without thorough testing.',
+    configurable: BUILD_CONFIG.isElectron && isCanaryBuild,
+    defaultState: false,
   },
   enable_mobile_database_editing: {
     category: 'blocksuite',

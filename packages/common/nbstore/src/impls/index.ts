@@ -1,6 +1,7 @@
 import type { Storage } from '../storage';
 import type { broadcastChannelStorages } from './broadcast-channel';
 import type { cloudStorages } from './cloud';
+import type { diskStorages } from './disk';
 import type { idbStorages } from './idb';
 import type { idbV1Storages } from './idb/v1';
 import type { sqliteStorages } from './sqlite';
@@ -15,6 +16,7 @@ type Storages =
   | typeof cloudStorages
   | typeof idbV1Storages
   | typeof idbStorages
+  | typeof diskStorages
   | typeof sqliteStorages
   | typeof sqliteV1Storages
   | typeof broadcastChannelStorages;

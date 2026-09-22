@@ -1,8 +1,8 @@
 import { OpConsumer } from '@toeverything/infra/op';
+import { isEqual } from 'lodash-es';
 import { Observable } from 'rxjs';
 
 import { type StorageConstructor } from '../impls';
-import { RealtimeManager } from '../realtime';
 import { SpaceStorage } from '../storage';
 import type { AwarenessRecord } from '../storage/awareness';
 import { Sync } from '../sync';
@@ -14,8 +14,9 @@ import type { StoreInitOptions, WorkerManagerOps, WorkerOps } from './ops';
 export type { WorkerManagerOps };
 
 class StoreConsumer {
-  private readonly storages: PeerStorageOptions<SpaceStorage>;
-  private readonly sync: Sync;
+  private storages: PeerStorageOptions<SpaceStorage> | null = null;
+  private sync: Sync | null = null;
+  private initOptions: StoreInitOptions;
 
   get ensureLocal() {
     if (!this.storages) {
@@ -71,20 +72,29 @@ class StoreConsumer {
     private readonly availableStorageImplementations: StorageConstructor[],
     init: StoreInitOptions
   ) {
+    this.initOptions = init;
+    this.initWithOptions(init);
+  }
+
+  private createStorage(opt: any): any {
+    if (opt === undefined) {
+      return undefined;
+    }
+    const Storage = this.availableStorageImplementations.find(
+      impl => impl.identifier === opt.name
+    );
+    if (!Storage) {
+      throw new Error(`Storage implementation ${opt.name} not found`);
+    }
+    return new Storage(opt.opts as any);
+  }
+
+  private initWithOptions(init: StoreInitOptions) {
     this.storages = {
       local: new SpaceStorage(
         Object.fromEntries(
           Object.entries(init.local).map(([type, opt]) => {
-            if (opt === undefined) {
-              return [type, undefined];
-            }
-            const Storage = this.availableStorageImplementations.find(
-              impl => impl.identifier === opt.name
-            );
-            if (!Storage) {
-              throw new Error(`Storage implementation ${opt.name} not found`);
-            }
-            return [type, new Storage(opt.opts as any)];
+            return [type, this.createStorage(opt)];
           })
         )
       ),
@@ -95,18 +105,7 @@ class StoreConsumer {
             new SpaceStorage(
               Object.fromEntries(
                 Object.entries(opts).map(([type, opt]) => {
-                  if (opt === undefined) {
-                    return [type, undefined];
-                  }
-                  const Storage = this.availableStorageImplementations.find(
-                    impl => impl.identifier === opt.name
-                  );
-                  if (!Storage) {
-                    throw new Error(
-                      `Storage implementation ${opt.name} not found`
-                    );
-                  }
-                  return [type, new Storage(opt.opts as any)];
+                  return [type, this.createStorage(opt)];
                 })
               )
             ),
@@ -126,6 +125,69 @@ class StoreConsumer {
     this.registerHandlers(consumer);
   }
 
+  async reconfigure(init: StoreInitOptions) {
+    if (isEqual(this.initOptions, init)) {
+      return;
+    }
+
+    // If local storage config changes, fall back to full teardown/rebuild.
+    // (Remote-only changes are expected, like enabling folder sync.)
+    if (
+      !this.storages ||
+      !this.sync ||
+      !isEqual(this.initOptions.local, init.local)
+    ) {
+      await this.destroy();
+      this.initOptions = init;
+      this.initWithOptions(init);
+      return;
+    }
+
+    // Remote-only change: rebuild sync graph and remote storages in-place so
+    // existing OpConsumers keep working.
+    const prevInit = this.initOptions;
+    const storages = this.storages;
+
+    this.sync.stop();
+
+    // Destroy removed or changed remote peers.
+    for (const [peerId, prevPeerOpts] of Object.entries(prevInit.remotes)) {
+      const nextPeerOpts = init.remotes[peerId];
+      const changed = !nextPeerOpts || !isEqual(prevPeerOpts, nextPeerOpts);
+      if (!changed) {
+        continue;
+      }
+      const remote = storages.remotes[peerId];
+      if (remote) {
+        delete storages.remotes[peerId];
+        remote.disconnect();
+        await remote.destroy();
+      }
+    }
+
+    // Create added or changed remote peers.
+    for (const [peerId, nextPeerOpts] of Object.entries(init.remotes)) {
+      const prevPeerOpts = prevInit.remotes[peerId];
+      const changed = !prevPeerOpts || !isEqual(prevPeerOpts, nextPeerOpts);
+      if (!changed) {
+        continue;
+      }
+      const remote = new SpaceStorage(
+        Object.fromEntries(
+          Object.entries(nextPeerOpts).map(([type, opt]) => {
+            return [type, this.createStorage(opt)];
+          })
+        )
+      );
+      storages.remotes[peerId] = remote;
+      remote.connect();
+    }
+
+    this.sync = new Sync(storages);
+    this.sync.start();
+    this.initOptions = init;
+  }
+
   async destroy() {
     this.sync?.stop();
     this.storages?.local.disconnect();
@@ -134,6 +196,9 @@ class StoreConsumer {
       remote.disconnect();
       await remote.destroy();
     }
+
+    this.sync = null;
+    this.storages = null;
   }
 
   private readonly ENABLE_BATTERY_SAVE_MODE_DELAY = 1000;
@@ -193,15 +258,6 @@ class StoreConsumer {
         this.docStorage.getDocTimestamp(docId),
       'docStorage.deleteDoc': (docId: string) =>
         this.docStorage.deleteDoc(docId),
-      'docStorage.applyDocLifecycle': async ({ docId, lifecycle }) => {
-        const remote = Object.values(this.storages.remotes)
-          .map(storage => storage.get('doc'))
-          .find(storage => storage.applyDocLifecycle);
-        if (!remote?.applyDocLifecycle) {
-          throw new Error('Document lifecycle is unavailable');
-        }
-        return await remote.applyDocLifecycle(docId, lifecycle);
-      },
       'docStorage.subscribeDocUpdate': () =>
         new Observable(subscriber => {
           return this.docStorage.subscribeDocUpdate((update, origin) => {
@@ -268,9 +324,6 @@ class StoreConsumer {
       'blobSync.state': () => this.blobSync.state$,
       'blobSync.blobState': blobId => this.blobSync.blobState$(blobId),
       'blobSync.downloadBlob': key => this.blobSync.downloadBlob(key),
-      'blobSync.registerSource': source => this.blobSync.registerSource(source),
-      'blobSync.unregisterSource': source =>
-        this.blobSync.unregisterSource(source),
       'blobSync.uploadBlob': ({ blob, force }) =>
         this.blobSync.uploadBlob(blob, force),
       'blobSync.fullDownload': peerId =>
@@ -350,10 +403,14 @@ export class StoreManagerConsumer {
   private readonly storeDisposers = new Map<string, () => void>();
   private readonly storePool = new Map<
     string,
-    { store: StoreConsumer; refCount: number }
+    {
+      store: StoreConsumer;
+      refCount: number;
+      options: StoreInitOptions;
+      reconfiguring?: Promise<void>;
+    }
   >();
   private readonly telemetry = new TelemetryManager();
-  private readonly realtime = new RealtimeManager();
 
   constructor(
     private readonly availableStorageImplementations: StorageConstructor[]
@@ -374,7 +431,22 @@ export class StoreManagerConsumer {
             this.availableStorageImplementations,
             options
           );
-          storeRef = { store, refCount: 0 };
+          storeRef = { store, refCount: 0, options };
+        } else if (!isEqual(storeRef.options, options)) {
+          const currentStoreRef = storeRef;
+          // Options can change across renderer reloads (or when features like
+          // folder sync are enabled). Reconfigure the shared store in-place
+          // so existing consumers keep working with the latest remotes.
+          currentStoreRef.reconfiguring = (
+            currentStoreRef.reconfiguring ?? Promise.resolve()
+          )
+            .then(async () => {
+              await currentStoreRef.store.reconfigure(options);
+              currentStoreRef.options = options;
+            })
+            .catch(error => {
+              console.error('failed to reconfigure store', key, error);
+            });
         }
         storeRef.refCount++;
 
@@ -407,12 +479,6 @@ export class StoreManagerConsumer {
       'telemetry.pageview': event => this.telemetry.pageview(event),
       'telemetry.flush': () => this.telemetry.flush(),
       'telemetry.getQueueState': () => this.telemetry.getQueueState(),
-      'realtime.configure': context => this.realtime.setContext(context),
-      'realtime.request': ({ op, input, timeoutMs }) =>
-        this.realtime.request(op, input, { timeoutMs }),
-      'realtime.subscribe': ({ topic, input }) =>
-        this.realtime.subscribe(topic, input),
-      'realtime.status': () => this.realtime.getStatus(),
     });
   }
 }
