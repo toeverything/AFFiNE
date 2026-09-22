@@ -35,7 +35,9 @@ import {
 } from '../storage';
 import { DummyAwarenessStorage } from '../storage/dummy/awareness';
 import { DummyBlobStorage } from '../storage/dummy/blob';
+import { DummyBlobSyncStorage } from '../storage/dummy/blob-sync';
 import { Sync } from '../sync';
+import { BlobSyncImpl } from '../sync/blob';
 import { BlobSyncPeer } from '../sync/blob/peer';
 import { DocSyncPeer } from '../sync/doc/peer';
 import { IndexerSyncImpl } from '../sync/indexer';
@@ -1065,6 +1067,47 @@ test('connection-scoped readonly peers ignore persisted clocks on every connecti
     document.destroy();
   }
 });
+
+test.each([0, 7000])(
+  'blob stop drains a missing download during backoff at %i ms',
+  async elapsed => {
+    vi.useFakeTimers();
+    const remote = new IndexedDBBlobStorage({
+      id: 'missing-backoff',
+      flavour: 'remote',
+      type: 'workspace',
+    });
+    const get = vi.spyOn(remote, 'get').mockResolvedValue(null);
+    const sync = new BlobSyncImpl(
+      { local: new DummyBlobStorage(), remotes: { remote } },
+      new DummyBlobSyncStorage()
+    );
+    const download = sync.downloadBlob('missing');
+    const rejected = expect(download).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+    try {
+      await vi.advanceTimersByTimeAsync(elapsed);
+      const attempts = elapsed === 0 ? 1 : 4;
+      expect(get).toHaveBeenCalledTimes(attempts);
+      let stopped = false;
+      const stopping = sync.stop().then(() => {
+        stopped = true;
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(stopped).toBe(true);
+      await stopping;
+      await rejected;
+      expect(vi.getTimerCount()).toBe(0);
+      await vi.advanceTimersByTimeAsync(8000);
+      expect(get).toHaveBeenCalledTimes(attempts);
+    } finally {
+      await vi.runAllTimersAsync();
+      await sync.stop();
+      vi.useRealTimers();
+    }
+  }
+);
 
 test('remote replacement preserves subscriptions, priorities, sources and sync instances', async () => {
   const local = new SpaceStorage({
