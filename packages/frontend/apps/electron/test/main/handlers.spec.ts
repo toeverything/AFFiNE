@@ -87,4 +87,20 @@ describe('main IPC handlers', () => {
 
     expect(setReturnValue).toHaveBeenCalledWith(undefined);
   });
+
+  it('responds to valid synchronous IPC requests exactly once', async () => {
+    const { registerHandlers } = await import('../../src/main/handlers');
+    registerHandlers();
+    const syncListener = fixtures.on.mock.calls[0][1];
+    const setReturnValue = vi.fn();
+    const event = { senderFrame: { url: 'file:///app/index.html' } };
+    Object.defineProperty(event, 'returnValue', {
+      set: setReturnValue,
+    });
+
+    syncListener(event, 'sharedStorage:getAllGlobalState');
+
+    expect(setReturnValue).toHaveBeenCalledTimes(1);
+    expect(setReturnValue).toHaveBeenCalledWith(fixtures.globalState);
+  });
 });

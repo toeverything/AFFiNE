@@ -491,7 +491,7 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
         if in_blockquote {
           if let Some(block) = active.as_mut() {
             if !block.is_empty() {
-              block.push_text("\n", None);
+              block.push_text("\n\n", None);
             }
           } else {
             active = Some(BlockDraft::new(BlockFlavour::Paragraph, Some(BlockType::Quote)));

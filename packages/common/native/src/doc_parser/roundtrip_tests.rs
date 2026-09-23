@@ -66,6 +66,7 @@ fn test_roundtrip_quote_preserves_paragraph_and_soft_breaks() {
   let rendered = parse_doc_to_markdown(bin, "quote-paragraphs".to_string(), false, None)
     .expect("render quote doc")
     .markdown;
+  assert!(rendered.contains("> first paragraph\n> \n> second paragraph"));
   let reparsed = build_full_doc("Quote", &rendered, "quote-paragraphs-reparsed").expect("reparse quote markdown");
   let rerendered = parse_doc_to_markdown(reparsed, "quote-paragraphs-reparsed".to_string(), false, None)
     .expect("rerender quote doc")

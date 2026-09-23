@@ -111,20 +111,22 @@ export const registerHandlers = () => {
   });
 
   ipcMain.on(AFFINE_API_CHANNEL_NAME, (e, ...args: any[]) => {
-    // Always assign returnValue so sendSync callers are released on validation
-    // and handler failures as well as successful calls.
-    e.returnValue = undefined;
-    if (!checkSource(e)) return;
+    if (!checkSource(e)) {
+      e.returnValue = undefined;
+      return;
+    }
 
     const channel = args[0];
     if (typeof channel !== 'string') {
       logger.error('invalid synchronous ipc message', args);
+      e.returnValue = undefined;
       return;
     }
 
     const [namespace, key] = channel.split(':');
     if (!namespace || !key) {
       logger.error('invalid synchronous ipc message', args);
+      e.returnValue = undefined;
       return;
     }
 
@@ -132,6 +134,7 @@ export const registerHandlers = () => {
     const handler = allSyncHandlers[namespace]?.[key];
     if (!handler) {
       logger.error('synchronous handler not found for ', channel);
+      e.returnValue = undefined;
       return;
     }
 
@@ -142,6 +145,7 @@ export const registerHandlers = () => {
         `error in synchronous ipc handler when calling ${channel}`,
         error
       );
+      e.returnValue = undefined;
     }
   });
 };

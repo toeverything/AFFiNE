@@ -371,6 +371,27 @@ async fn duplicate_doc_ids_are_rejected_without_rebinding() {
         .is_some_and(|message| message.contains("duplicate markdown doc id"))
   }));
 
+  let duplicate_error = events
+    .iter()
+    .find_map(|event| event.message.as_deref())
+    .expect("duplicate error");
+  let first_path = dir.join("first.md");
+  let second_path = dir.join("second.md");
+  let bound_path = if duplicate_error.contains(&format!("in {} and {}", first_path.display(), second_path.display())) {
+    first_path
+  } else {
+    second_path
+  };
+  fs::remove_file(bound_path).expect("remove the file that won the duplicate binding");
+
+  let events = sync
+    .pull_events(session_id.clone())
+    .await
+    .expect("retry duplicate after conflict is removed");
+  assert!(events.iter().any(|event| {
+    event.r#type == "doc-update" && event.update.as_ref().is_some_and(|update| update.doc_id == doc_id)
+  }));
+
   teardown(&sync, &session_id, &dir).await;
 }
 

@@ -335,11 +335,6 @@ impl DiskSession {
       if let Err(err) = self.import_file_if_changed(&file_path).await {
         self.state_db.append_event(None, "import-error", &err).await.ok();
         self.queue_error_event(err).await;
-        if let Ok(after_failure) = file_fingerprint_async(file_path.clone()).await
-          && after_failure == fingerprint
-        {
-          self.file_fingerprints.lock().await.insert(file_path, after_failure);
-        }
         continue;
       }
 
