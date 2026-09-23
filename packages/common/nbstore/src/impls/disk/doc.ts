@@ -20,6 +20,7 @@ export interface DiskDocStorageOptions {
 export class DiskDocStorage extends DocStorageBase<DiskDocStorageOptions> {
   static readonly identifier = 'DiskDocStorage';
 
+  readonly syncMetadataScope = 'connection' as const;
   readonly connection: DiskSyncConnection;
 
   private readonly snapshots = new Map<string, DocRecord>();

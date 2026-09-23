@@ -21,7 +21,6 @@ test('failed remote reconfigure leaves the existing sync running', async () => {
   manager.bindConsumer(managerConsumer);
 
   const stop = vi.spyOn(Sync.prototype, 'stop');
-  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
   const firstStoreChannel = new MessageChannel();
   const secondStoreChannel = new MessageChannel();
   const initialOptions: StoreInitOptions = { local: {}, remotes: {} };
@@ -47,26 +46,20 @@ test('failed remote reconfigure leaves the existing sync running', async () => {
         [firstStoreChannel.port1]
       )
     );
-    await managerClient.call(
-      'open',
-      transfer(
-        {
-          port: secondStoreChannel.port1,
-          key: 'workspace',
-          closeKey: 'second',
-          options: invalidOptions,
-        },
-        [secondStoreChannel.port1]
+    await expect(
+      managerClient.call(
+        'open',
+        transfer(
+          {
+            port: secondStoreChannel.port1,
+            key: 'workspace',
+            closeKey: 'second',
+            options: invalidOptions,
+          },
+          [secondStoreChannel.port1]
+        )
       )
-    );
-
-    await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith(
-        'failed to reconfigure store',
-        'workspace',
-        expect.any(Error)
-      );
-    });
+    ).rejects.toThrow('Storage implementation missing-storage not found');
     expect(stop).not.toHaveBeenCalled();
   } finally {
     await managerClient.call('close', 'second').catch(() => {});

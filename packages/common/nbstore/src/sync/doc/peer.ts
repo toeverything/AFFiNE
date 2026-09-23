@@ -4,6 +4,7 @@ import { Observable, ReplaySubject, share, Subject } from 'rxjs';
 import { diffUpdate, encodeStateVectorFromUpdate, mergeUpdates } from 'yjs';
 
 import type { DocStorage, DocSyncStorage } from '../../storage';
+import { DummyDocSyncStorage } from '../../storage/dummy/doc-sync';
 import { AsyncPriorityQueue } from '../../utils/async-priority-queue';
 import { ClockMap } from '../../utils/clock';
 import { isEmptyUpdate } from '../../utils/is-empty-update';
@@ -156,13 +157,20 @@ export class DocSyncPeer {
   private readonly uniqueId = `sync:${this.peerId}:${nanoid()}`;
   private readonly prioritySettings = new Map<string, number>();
 
+  readonly syncMetadata: DocSyncStorage;
+
   constructor(
     readonly peerId: string,
     readonly local: DocStorage,
-    readonly syncMetadata: DocSyncStorage,
+    syncMetadata: DocSyncStorage,
     readonly remote: DocStorage,
     readonly options: DocSyncPeerOptions = {}
-  ) {}
+  ) {
+    this.syncMetadata =
+      remote.syncMetadataScope === 'connection'
+        ? new DummyDocSyncStorage()
+        : syncMetadata;
+  }
 
   private status: Status = {
     docs: new Set<string>(),
@@ -275,9 +283,7 @@ export class DocSyncPeer {
         !this.remote.isReadonly &&
         clock &&
         (pushedClock === null ||
-          pushedClock.getTime() < clock.timestamp.getTime() ||
-          (this.peerId === 'disk' &&
-            remoteClock.getTime() < clock.timestamp.getTime()))
+          pushedClock.getTime() < clock.timestamp.getTime())
       ) {
         await this.jobs.pullAndPush(docId, signal);
       } else {
@@ -513,10 +519,7 @@ export class DocSyncPeer {
       if (!this.status.docs.has(docId)) {
         this.status.docs.add(docId);
         this.statusUpdatedSubject$.next(docId);
-        this.schedule({
-          type: 'connect',
-          docId,
-        });
+        this.schedule({ type: 'connect', docId });
       }
     },
   };
@@ -736,12 +739,9 @@ export class DocSyncPeer {
         this.actions.addDoc(docId);
       }
 
-      const forceFullRemoteClockRefresh = this.peerId === 'disk';
-
-      // get cached clocks from metadata
-      const cachedClocks = forceFullRemoteClockRefresh
-        ? {}
-        : await this.syncMetadata.getPeerRemoteClocks(this.peerId);
+      const cachedClocks = await this.syncMetadata.getPeerRemoteClocks(
+        this.peerId
+      );
       this.status.remoteClocks.clear();
       throwIfAborted(signal);
       for (const [id, v] of Object.entries(cachedClocks)) {
@@ -749,16 +749,13 @@ export class DocSyncPeer {
       }
       this.statusUpdatedSubject$.next(true);
 
-      // get clocks from server
-      const maxClockValue = forceFullRemoteClockRefresh
-        ? undefined
-        : this.status.remoteClocks.max;
-      const newClocks = await this.remote.getDocTimestamps(maxClockValue);
-      if (forceFullRemoteClockRefresh) {
-        this.status.remoteClocks.clear();
-      }
+      const newClocks = await this.remote.getDocTimestamps(
+        this.remote.syncMetadataScope === 'connection'
+          ? undefined
+          : this.status.remoteClocks.max
+      );
       for (const [id, v] of Object.entries(newClocks)) {
-        this.status.remoteClocks.set(id, v);
+        this.status.remoteClocks.setIfBigger(id, v);
       }
       this.statusUpdatedSubject$.next(true);
 

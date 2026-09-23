@@ -16,7 +16,7 @@ resolver = "3"
   [workspace.dependencies]
   aes-gcm = "0.10"
   affine_common = { path = "./packages/common/native" }
-  affine_doc_loader = "0.1.8"
+  affine_doc_loader = "0.1.9"
   affine_importer = "0.1.2"
   affine_nbstore = { path = "./packages/frontend/native/nbstore" }
   affine_preview = { version = "0.1.0", default-features = false }
@@ -117,7 +117,7 @@ resolver = "3"
     "Win32_UI_Shell_PropertiesSystem",
   ] }
   windows-core = { version = "0.62" }
-  y-octo = "0.1.0"
+  y-octo = "0.1.1"
   zeroize = "1.9"
   zip = "8.6"
 

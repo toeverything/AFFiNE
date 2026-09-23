@@ -1,13 +1,15 @@
-import type { Observable } from 'rxjs';
 import {
+  BehaviorSubject,
   combineLatest,
   filter,
   first,
   lastValueFrom,
   map,
+  Observable,
   of,
   ReplaySubject,
   share,
+  switchMap,
   throttleTime,
 } from 'rxjs';
 
@@ -45,19 +47,30 @@ export interface DocSync {
 }
 
 export class DocSyncImpl implements DocSync {
-  private readonly peers: DocSyncPeer[] = Object.entries(
-    this.storages.remotes
-  ).map(
-    ([peerId, remote]) =>
-      new DocSyncPeer(peerId, this.storages.local, this.sync, remote)
-  );
+  private readonly peers$ = new BehaviorSubject<DocSyncPeer[]>([]);
+  private get peers() {
+    return this.peers$.value;
+  }
+
+  setRemotes(remotes: Record<string, DocStorage>) {
+    this.storages.remotes = remotes;
+    this.peers$.next(
+      Object.entries(remotes).map(
+        ([id, remote]) =>
+          this.peers.find(
+            peer => peer.peerId === id && peer.remote === remote
+          ) ?? new DocSyncPeer(id, this.storages.local, this.sync, remote)
+      )
+    );
+  }
   private abort: AbortController | null = null;
   private running: Promise<void> = Promise.resolve();
   private resetting: Promise<void> | null = null;
 
-  private readonly _state$ = combineLatest(
-    this.peers.map(peer => peer.peerState$)
-  ).pipe(
+  private readonly _state$ = this.peers$.pipe(
+    switchMap(peers =>
+      peers.length ? combineLatest(peers.map(peer => peer.peerState$)) : of([])
+    ),
     map(allPeers =>
       allPeers.length === 0
         ? {
@@ -95,7 +108,9 @@ export class DocSyncImpl implements DocSync {
   constructor(
     readonly storages: PeerStorageOptions<DocStorage>,
     readonly sync: DocSyncStorage
-  ) {}
+  ) {
+    this.setRemotes(storages.remotes);
+  }
 
   /**
    * for testing
@@ -111,15 +126,12 @@ export class DocSyncImpl implements DocSync {
   }
 
   private _docState$(docId: string): Observable<DocSyncDocState> {
-    if (this.peers.length === 0) {
-      return of({
-        errorMessage: null,
-        retrying: false,
-        syncing: false,
-        synced: true,
-      });
-    }
-    return combineLatest(this.peers.map(peer => peer.docState$(docId))).pipe(
+    return this.peers$.pipe(
+      switchMap(peers =>
+        peers.length
+          ? combineLatest(peers.map(peer => peer.docState$(docId)))
+          : of([])
+      ),
       map(allPeers => {
         return {
           errorMessage:
@@ -175,11 +187,22 @@ export class DocSyncImpl implements DocSync {
   stop() {
     this.abort?.abort(MANUALLY_STOP);
     this.abort = null;
+    return this.running;
   }
 
   addPriority(id: string, priority: number) {
-    const undo = this.peers.map(peer => peer.addPriority(id, priority));
-    return () => undo.forEach(fn => fn());
+    const subscription = this.peers$
+      .pipe(
+        switchMap(
+          peers =>
+            new Observable(() => {
+              const undo = peers.map(peer => peer.addPriority(id, priority));
+              return () => undo.forEach(dispose => dispose());
+            })
+        )
+      )
+      .subscribe();
+    return () => subscription.unsubscribe();
   }
 
   resetSync() {
@@ -197,12 +220,10 @@ export class DocSyncImpl implements DocSync {
 
   private async performReset() {
     const running = this.abort !== null;
-    const activeRun = this.running;
     const shouldConnectSyncStorage =
       this.sync.connection.status === 'idle' ||
       this.sync.connection.status === 'closed';
-    this.stop();
-    await activeRun;
+    await this.stop();
     if (shouldConnectSyncStorage) {
       this.sync.connection.connect();
     }

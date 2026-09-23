@@ -73,6 +73,8 @@ export interface DocStorage extends Storage {
   readonly storageType: 'doc';
   readonly isReadonly: boolean;
   readonly spaceId: string;
+  /** Whether sync clocks can be reused across connections. Defaults to persistent. */
+  readonly syncMetadataScope?: 'connection' | 'persistent';
   /**
    * Get a doc record with latest binary.
    */
