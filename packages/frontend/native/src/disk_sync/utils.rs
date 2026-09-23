@@ -1,6 +1,7 @@
 use std::{
   fs,
   path::{Path, PathBuf},
+  sync::atomic::{AtomicU64, Ordering},
 };
 
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -8,6 +9,8 @@ use sha3::{Digest, Sha3_256};
 use y_octo::{Doc, DocOptions, StateVector};
 
 use super::{frontmatter::normalize_tags, types::FrontmatterMeta};
+
+static NEXT_GENERATED_ID: AtomicU64 = AtomicU64::new(0);
 
 pub(crate) fn collect_markdown_files(root: &Path, output: &mut Vec<PathBuf>) -> Result<(), String> {
   let entries = fs::read_dir(root).map_err(|err| format!("failed to read directory {}: {}", root.display(), err))?;
@@ -56,7 +59,8 @@ pub(crate) fn generate_missing_doc_id(file_path: &Path) -> String {
     .filter(|value| !value.is_empty())
     .unwrap_or_else(|| "doc".to_string());
 
-  format!("{}-{}", stem, Utc::now().timestamp_millis())
+  let sequence = NEXT_GENERATED_ID.fetch_add(1, Ordering::Relaxed);
+  format!("{}-{}-{}", stem, Utc::now().timestamp_millis(), sequence)
 }
 
 pub(crate) fn derive_title_from_markdown(markdown: &str) -> Option<String> {
@@ -85,8 +89,8 @@ pub(crate) fn sanitize_file_stem(input: &str) -> String {
   let mut out = String::with_capacity(input.len());
 
   for ch in input.chars() {
-    if ch.is_ascii_alphanumeric() {
-      out.push(ch.to_ascii_lowercase());
+    if ch.is_alphanumeric() {
+      out.extend(ch.to_lowercase());
     } else if (ch == '-' || ch == '_' || ch == ' ') && !out.ends_with('-') {
       out.push('-');
     }
@@ -105,7 +109,7 @@ pub(crate) fn write_atomic(path: &Path, content: &str) -> Result<(), String> {
     .map_err(|err| format!("failed to create parent directory {}: {}", parent.display(), err))?;
 
   let temp_name = format!(
-    ".affine-sync-tmp-{}-{}.md",
+    ".affine-sync-tmp-{}-{}.tmp",
     std::process::id(),
     Utc::now().timestamp_millis()
   );

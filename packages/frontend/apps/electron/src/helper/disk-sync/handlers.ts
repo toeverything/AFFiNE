@@ -102,6 +102,24 @@ type DiskSyncRuntime = InstanceType<typeof DiskSync> & {
 
 const diskSync = new DiskSync() as DiskSyncRuntime;
 const subscriptions = new Map<string, () => Promise<void>>();
+const sessionOps = new Map<string, Promise<void>>();
+
+function runSessionOp<T>(sessionId: string, op: () => Promise<T>): Promise<T> {
+  const previous = sessionOps.get(sessionId) ?? Promise.resolve();
+  const next = previous.then(op);
+  const tail = next.then(
+    () => {},
+    () => {}
+  );
+  sessionOps.set(sessionId, tail);
+  const cleanup = () => {
+    if (sessionOps.get(sessionId) === tail) {
+      sessionOps.delete(sessionId);
+    }
+  };
+  void tail.then(cleanup, cleanup);
+  return next;
+}
 
 function e2eLog(options: DiskSessionOptions, line: string) {
   if (process.env.AFFINE_E2E !== '1') {
@@ -115,49 +133,53 @@ function e2eLog(options: DiskSessionOptions, line: string) {
   }
 }
 
-export async function startSession(
+export function startSession(
   sessionId: string,
   options: DiskSessionOptions
 ): Promise<void> {
-  e2eLog(
-    options,
-    `startSession\t${sessionId}\tworkspaceId=${options.workspaceId}\tsyncFolder=${options.syncFolder}`
-  );
-  unwrapNapiResult(
-    await diskSync.startSession(sessionId, options),
-    'startSession'
-  );
+  return runSessionOp(sessionId, async () => {
+    e2eLog(
+      options,
+      `startSession\t${sessionId}\tworkspaceId=${options.workspaceId}\tsyncFolder=${options.syncFolder}`
+    );
+    unwrapNapiResult(
+      await diskSync.startSession(sessionId, options),
+      'startSession'
+    );
 
-  if (subscriptions.has(sessionId)) {
-    return;
-  }
+    if (subscriptions.has(sessionId)) {
+      return;
+    }
 
-  const subscriber = unwrapNapiResult(
-    await diskSync.subscribeEvents(sessionId, (err, event) => {
-      if (err) {
-        return;
-      }
-      const normalizedEvent = normalizeDiskSyncEvent(event);
-      if (!normalizedEvent) {
-        return;
-      }
-      diskSyncSubjects.event$.next({ sessionId, event: normalizedEvent });
-    }),
-    'subscribeEvents'
-  );
-  subscriptions.set(sessionId, async () => {
-    unwrapNapiResult(await subscriber.unsubscribe(), 'unsubscribe');
+    const subscriber = unwrapNapiResult(
+      await diskSync.subscribeEvents(sessionId, (err, event) => {
+        if (err) {
+          return;
+        }
+        const normalizedEvent = normalizeDiskSyncEvent(event);
+        if (!normalizedEvent) {
+          return;
+        }
+        diskSyncSubjects.event$.next({ sessionId, event: normalizedEvent });
+      }),
+      'subscribeEvents'
+    );
+    subscriptions.set(sessionId, async () => {
+      unwrapNapiResult(await subscriber.unsubscribe(), 'unsubscribe');
+    });
   });
 }
 
-export async function stopSession(sessionId: string): Promise<void> {
-  const unsubscribe = subscriptions.get(sessionId);
-  subscriptions.delete(sessionId);
-  try {
-    await unsubscribe?.();
-  } finally {
-    unwrapNapiResult(await diskSync.stopSession(sessionId), 'stopSession');
-  }
+export function stopSession(sessionId: string): Promise<void> {
+  return runSessionOp(sessionId, async () => {
+    const unsubscribe = subscriptions.get(sessionId);
+    subscriptions.delete(sessionId);
+    try {
+      await unsubscribe?.();
+    } finally {
+      unwrapNapiResult(await diskSync.stopSession(sessionId), 'stopSession');
+    }
+  });
 }
 
 export async function applyLocalUpdate(

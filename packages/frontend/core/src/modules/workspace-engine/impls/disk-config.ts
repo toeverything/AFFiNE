@@ -1,5 +1,7 @@
 const DISK_SYNC_FLAG_STORAGE_KEY = 'affine-flag:enable_disk_sync';
 const DISK_SYNC_FOLDERS_STORAGE_KEY = 'workspace-engine:disk-sync-folders:v1';
+const DISK_SYNC_FOLDER_STORAGE_KEY_PREFIX =
+  'workspace-engine:disk-sync-folder:v2:';
 
 type GlobalStateStorageLike = {
   get<T>(key: string): T | undefined;
@@ -71,6 +73,18 @@ export function setDiskSyncEnabled(enabled: boolean): void {
 }
 
 export function getDiskSyncFolderPath(workspaceId: string): string | null {
+  const storage = getElectronGlobalStateStorage();
+  if (!storage) {
+    return null;
+  }
+
+  const folder = storage.get<unknown>(
+    `${DISK_SYNC_FOLDER_STORAGE_KEY_PREFIX}${workspaceId}`
+  );
+  if (folder !== undefined) {
+    return typeof folder === 'string' && folder.length > 0 ? folder : null;
+  }
+
   return readFolderMap()[workspaceId] ?? null;
 }
 
@@ -83,13 +97,10 @@ export function setDiskSyncFolderPath(
     return;
   }
 
-  const folders = readFolderMap();
-  if (!folder) {
-    delete folders[workspaceId];
-  } else {
-    folders[workspaceId] = folder;
-  }
-  storage.set(DISK_SYNC_FOLDERS_STORAGE_KEY, folders);
+  storage.set(
+    `${DISK_SYNC_FOLDER_STORAGE_KEY_PREFIX}${workspaceId}`,
+    folder || null
+  );
 }
 
 export function getDiskSyncRemoteOptions(workspaceId: string): {
@@ -107,3 +118,5 @@ export function getDiskSyncRemoteOptions(workspaceId: string): {
 
 export const DISK_SYNC_FEATURE_FLAG_KEY = DISK_SYNC_FLAG_STORAGE_KEY;
 export const DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY = DISK_SYNC_FOLDERS_STORAGE_KEY;
+export const DISK_SYNC_FOLDER_GLOBAL_STATE_KEY_PREFIX =
+  DISK_SYNC_FOLDER_STORAGE_KEY_PREFIX;

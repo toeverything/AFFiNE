@@ -7,12 +7,17 @@ pub(crate) fn parse_frontmatter(markdown: &str) -> (FrontmatterMeta, String) {
   }
 
   let rest = &normalized[4..];
-  let Some(end) = rest.find("\n---\n") else {
+  let (frontmatter_block, body) = if let Some(body) = rest.strip_prefix("---\n") {
+    ("", body.to_string())
+  } else if rest == "---" {
+    ("", String::new())
+  } else if let Some(end) = rest.find("\n---\n") {
+    (&rest[..end], rest[(end + 5)..].to_string())
+  } else if let Some(frontmatter_block) = rest.strip_suffix("\n---") {
+    (frontmatter_block, String::new())
+  } else {
     return (FrontmatterMeta::default(), normalized);
   };
-
-  let frontmatter_block = &rest[..end];
-  let body = rest[(end + 5)..].to_string();
 
   let mut meta = FrontmatterMeta::default();
   let mut in_tags_block = false;

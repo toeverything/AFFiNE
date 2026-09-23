@@ -72,4 +72,19 @@ describe('main IPC handlers', () => {
       expect(event.returnValue).toEqual(value);
     }
   );
+
+  it('responds to invalid synchronous IPC requests', async () => {
+    const { registerHandlers } = await import('../../src/main/handlers');
+    registerHandlers();
+    const syncListener = fixtures.on.mock.calls[0][1];
+    const setReturnValue = vi.fn();
+    const event = {};
+    Object.defineProperty(event, 'returnValue', {
+      set: setReturnValue,
+    });
+
+    syncListener(event, 'missing:handler');
+
+    expect(setReturnValue).toHaveBeenCalledWith(undefined);
+  });
 });

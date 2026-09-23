@@ -54,3 +54,49 @@ fn test_roundtrip_image_with_caption() {
   let expected = "<img\n  src=\"blob://image-id\"\n  alt=\"Alt\"\n  width=\"auto\"\n  height=\"auto\"\n/>\n\n";
   assert_markdown_roundtrip(markdown, expected);
 }
+
+#[test]
+fn test_roundtrip_quote_preserves_paragraph_and_soft_breaks() {
+  let markdown = "> first line\n> second line";
+  let expected = "> first line\n> second line\n\n";
+  assert_markdown_roundtrip(markdown, expected);
+
+  let paragraphs = "> first paragraph\n>\n> second paragraph";
+  let bin = build_full_doc("Quote", paragraphs, "quote-paragraphs").expect("create quote doc");
+  let rendered = parse_doc_to_markdown(bin, "quote-paragraphs".to_string(), false, None)
+    .expect("render quote doc")
+    .markdown;
+  let reparsed = build_full_doc("Quote", &rendered, "quote-paragraphs-reparsed").expect("reparse quote markdown");
+  let rerendered = parse_doc_to_markdown(reparsed, "quote-paragraphs-reparsed".to_string(), false, None)
+    .expect("rerender quote doc")
+    .markdown;
+  assert_eq!(rerendered, rendered);
+}
+
+#[test]
+fn test_roundtrip_preserves_text_after_inline_image() {
+  let markdown = "Intro ![Alt](blob://image-id) trailing text";
+  let bin = build_full_doc("Image", markdown, "inline-image-text").expect("create doc");
+  let rendered = parse_doc_to_markdown(bin, "inline-image-text".to_string(), false, None)
+    .expect("render doc")
+    .markdown;
+
+  assert!(rendered.contains("Intro"));
+  assert!(rendered.contains("trailing text"));
+}
+
+#[test]
+fn test_roundtrip_code_block_uses_a_safe_fence() {
+  let markdown = "````markdown\n```\ninside\n```\n````";
+  let bin = build_full_doc("Fence", markdown, "safe-fence").expect("create doc");
+  let rendered = parse_doc_to_markdown(bin.clone(), "safe-fence".to_string(), false, None)
+    .expect("render doc")
+    .markdown;
+  assert!(rendered.starts_with("````markdown\n```\n"));
+
+  let reparsed = build_full_doc("Fence", &rendered, "safe-fence-reparsed").expect("reparse rendered markdown");
+  let rerendered = parse_doc_to_markdown(reparsed, "safe-fence-reparsed".to_string(), false, None)
+    .expect("rerender doc")
+    .markdown;
+  assert_eq!(rerendered, rendered);
+}

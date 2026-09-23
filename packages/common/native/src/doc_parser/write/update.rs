@@ -562,7 +562,7 @@ fn sync_nodes(
           NodeSpec::Supported(spec) if spec.flavour == BlockFlavour::Callout => {
             new_children.push(node.id.clone());
           }
-          NodeSpec::Supported(_) => collect_tree_ids(node, &mut to_remove),
+          NodeSpec::Supported(_) => collect_deleted_tree(node, &mut to_remove, &mut new_children),
         }
       }
     }
@@ -573,6 +573,18 @@ fn sync_nodes(
   }
 
   Ok(new_children)
+}
+
+fn collect_deleted_tree(node: &StoredNode, to_remove: &mut Vec<String>, preserved: &mut Vec<String>) {
+  to_remove.push(node.id.clone());
+
+  for child in &node.children {
+    match &child.spec {
+      NodeSpec::Opaque { .. } => preserved.push(child.id.clone()),
+      NodeSpec::Supported(spec) if spec.flavour == BlockFlavour::Callout => preserved.push(child.id.clone()),
+      NodeSpec::Supported(_) => collect_deleted_tree(child, to_remove, preserved),
+    }
+  }
 }
 
 fn diff_blocks(current: &[StoredNode], target: &[TargetNode]) -> Vec<PatchOp> {
@@ -736,13 +748,6 @@ fn sync_children(doc: &Doc, blocks_map: &mut Map, block_id: &str, children: &[St
   Ok(())
 }
 
-fn collect_tree_ids(node: &StoredNode, output: &mut Vec<String>) {
-  output.push(node.id.clone());
-  for child in &node.children {
-    collect_tree_ids(child, output);
-  }
-}
-
 fn check_limits(current: &[StoredNode], target: &[TargetNode]) -> Result<(), ParseError> {
   let current_count = count_tree_nodes(current);
   let target_count = count_tree_nodes(target);
@@ -764,7 +769,12 @@ mod tests {
 
   use super::{super::builder::text_ops_from_plain, *};
   use crate::doc_parser::{
-    block_spec::BlockType, blocksuite::get_string, build_full_doc, markdown::MAX_MARKDOWN_CHARS, parse_doc_to_markdown,
+    block_spec::BlockType,
+    blocksuite::get_string,
+    build_full_doc,
+    markdown::MAX_MARKDOWN_CHARS,
+    parse_doc_to_markdown,
+    schema::{PROP_TEXT, PROP_TYPE},
   };
 
   #[test]
@@ -1320,6 +1330,63 @@ mod tests {
       .expect("render markdown")
       .markdown;
     assert!(md.contains("Hello."));
+  }
+
+  #[test]
+  fn test_update_ydoc_promotes_opaque_descendants_of_deleted_blocks() {
+    let doc_id = "opaque-list-child";
+    let doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    let mut blocks_map = doc.get_or_create_map("blocks").expect("create blocks map");
+
+    let page_id = "page-1";
+    let note_id = "note-1";
+    let list_id = "list-1";
+    let db_id = "db-1";
+
+    let mut page = insert_block_map(&doc, &mut blocks_map, page_id).expect("insert page");
+    let mut note = insert_block_map(&doc, &mut blocks_map, note_id).expect("insert note");
+    let mut list = insert_block_map(&doc, &mut blocks_map, list_id).expect("insert list");
+    let mut db = insert_block_map(&doc, &mut blocks_map, db_id).expect("insert db");
+
+    insert_sys_fields(&mut page, page_id, PAGE_FLAVOUR).expect("page sys fields");
+    insert_children(&doc, &mut page, &[note_id.to_string()]).expect("page children");
+    insert_text(&doc, &mut page, PROP_TITLE, &text_ops_from_plain("Title")).expect("page title");
+
+    insert_sys_fields(&mut note, note_id, NOTE_FLAVOUR).expect("note sys fields");
+    insert_children(&doc, &mut note, &[list_id.to_string()]).expect("note children");
+
+    insert_sys_fields(&mut list, list_id, "affine:list").expect("list sys fields");
+    insert_children(&doc, &mut list, &[db_id.to_string()]).expect("list children");
+    insert_text(&doc, &mut list, PROP_TEXT, &text_ops_from_plain("Delete me")).expect("list text");
+    list
+      .insert(PROP_TYPE.to_string(), Any::String("bulleted".to_string()))
+      .expect("list type");
+
+    insert_sys_fields(&mut db, db_id, "affine:database").expect("db sys fields");
+    insert_children(&doc, &mut db, &[]).expect("db children");
+
+    let initial_bin = doc
+      .encode_state_as_update_v1(&StateVector::default())
+      .expect("encode initial");
+    let delta = update_doc(&initial_bin, "# Title", doc_id).expect("remove list through markdown");
+
+    let mut updated_doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    updated_doc
+      .apply_update_from_binary_v1(&initial_bin)
+      .expect("apply initial");
+    updated_doc.apply_update_from_binary_v1(&delta).expect("apply delta");
+
+    let blocks_map = updated_doc.get_map("blocks").expect("blocks map");
+    assert!(
+      blocks_map.get(list_id).is_none(),
+      "representable parent should be deleted"
+    );
+    assert!(blocks_map.get(db_id).is_some(), "opaque descendant must remain");
+    let note = blocks_map
+      .get(note_id)
+      .and_then(|value| value.to_map())
+      .expect("note map");
+    assert!(collect_child_ids(&note).contains(&db_id.to_string()));
   }
 
   #[test]

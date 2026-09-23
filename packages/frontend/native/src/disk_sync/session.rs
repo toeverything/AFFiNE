@@ -2,14 +2,15 @@ use std::{
   collections::{HashMap, HashSet, VecDeque},
   fs,
   path::{Path, PathBuf},
-  sync::Arc,
+  sync::{
+    Arc,
+    atomic::{AtomicBool, AtomicU64, Ordering},
+  },
+  time::SystemTime,
 };
 
 #[cfg(not(feature = "use-as-lib"))]
-use std::{
-  sync::atomic::{AtomicBool, Ordering},
-  time::Duration,
-};
+use std::time::Duration;
 
 use affine_common::doc_parser::{build_full_doc, parse_doc_to_markdown, update_doc};
 #[cfg(not(feature = "use-as-lib"))]
@@ -17,6 +18,9 @@ use napi::threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use tokio::sync::Mutex;
 #[cfg(not(feature = "use-as-lib"))]
 use tokio::task::JoinHandle;
+
+#[cfg(not(feature = "use-as-lib"))]
+type SubscriberCallback = Arc<ThreadsafeFunction<DiskSyncEvent, ()>>;
 
 use super::{
   DiskDocClock, DiskDocUpdateInput, DiskSessionOptions, DiskSyncDocUpdateEvent, DiskSyncEvent,
@@ -42,15 +46,24 @@ pub(crate) struct DiskSession {
   path_bindings: Arc<Mutex<HashMap<PathBuf, String>>>,
   baselines: Arc<Mutex<HashMap<String, Baseline>>>,
   missing_logged: Arc<Mutex<HashSet<PathBuf>>>,
+  file_fingerprints: Arc<Mutex<HashMap<PathBuf, FileFingerprint>>>,
+  scan_generation: Arc<AtomicU64>,
   last_sync: Arc<Mutex<HashMap<String, chrono::NaiveDateTime>>>,
   last_error: Arc<Mutex<Option<String>>>,
   #[cfg(not(feature = "use-as-lib"))]
-  subscribers: Arc<Mutex<HashMap<u64, Arc<ThreadsafeFunction<DiskSyncEvent, ()>>>>>,
+  subscribers: Arc<Mutex<HashMap<u64, SubscriberCallback>>>,
   #[cfg(not(feature = "use-as-lib"))]
   poll_task: Arc<Mutex<Option<JoinHandle<()>>>>,
   #[cfg(not(feature = "use-as-lib"))]
   closed: Arc<AtomicBool>,
+  workspace_ready: Arc<AtomicBool>,
   scan_guard: Arc<Mutex<()>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct FileFingerprint {
+  len: u64,
+  modified: Option<SystemTime>,
 }
 
 impl DiskSession {
@@ -79,6 +92,8 @@ impl DiskSession {
       path_bindings: Arc::new(Mutex::new(path_bindings)),
       baselines: Arc::new(Mutex::new(baselines)),
       missing_logged: Arc::new(Mutex::new(HashSet::new())),
+      file_fingerprints: Arc::new(Mutex::new(HashMap::new())),
+      scan_generation: Arc::new(AtomicU64::new(0)),
       last_sync: Arc::new(Mutex::new(HashMap::new())),
       last_error: Arc::new(Mutex::new(None)),
       #[cfg(not(feature = "use-as-lib"))]
@@ -87,6 +102,7 @@ impl DiskSession {
       poll_task: Arc::new(Mutex::new(None)),
       #[cfg(not(feature = "use-as-lib"))]
       closed: Arc::new(AtomicBool::new(false)),
+      workspace_ready: Arc::new(AtomicBool::new(false)),
       scan_guard: Arc::new(Mutex::new(())),
     })
   }
@@ -281,21 +297,65 @@ impl DiskSession {
   }
 
   pub(crate) async fn scan_once(&self) -> Result<(), String> {
-    let _guard = self.scan_guard.lock().await;
+    if !self.workspace_ready.load(Ordering::Acquire) {
+      return Ok(());
+    }
 
-    let mut markdown_files = Vec::new();
-    collect_markdown_files(&self.sync_folder, &mut markdown_files)?;
+    let _guard = self.scan_guard.lock().await;
+    self.scan_files_once().await
+  }
+
+  async fn scan_files_once(&self) -> Result<(), String> {
+    let markdown_files = collect_markdown_files_async(self.sync_folder.clone()).await?;
+    let generation = self.scan_generation.fetch_add(1, Ordering::Relaxed) + 1;
+    let force_content_verification = generation.is_multiple_of(20);
 
     let mut seen_paths = HashSet::new();
     for file_path in markdown_files {
       seen_paths.insert(file_path.clone());
+
+      let fingerprint = match file_fingerprint_async(file_path.clone()).await {
+        Ok(fingerprint) => fingerprint,
+        Err(err) => {
+          self.state_db.append_event(None, "import-error", &err).await.ok();
+          self.queue_error_event(err).await;
+          continue;
+        }
+      };
+      let unchanged = self
+        .file_fingerprints
+        .lock()
+        .await
+        .get(&file_path)
+        .is_some_and(|cached| cached == &fingerprint);
+      if unchanged && !force_content_verification {
+        continue;
+      }
+
       if let Err(err) = self.import_file_if_changed(&file_path).await {
         self.state_db.append_event(None, "import-error", &err).await.ok();
         self.queue_error_event(err).await;
+        if let Ok(after_failure) = file_fingerprint_async(file_path.clone()).await
+          && after_failure == fingerprint
+        {
+          self.file_fingerprints.lock().await.insert(file_path, after_failure);
+        }
+        continue;
+      }
+
+      if let Ok(after_import) = file_fingerprint_async(file_path.clone()).await
+        && after_import == fingerprint
+      {
+        self.file_fingerprints.lock().await.insert(file_path, after_import);
       }
     }
 
     self.handle_missing_files(&seen_paths).await?;
+    self
+      .file_fingerprints
+      .lock()
+      .await
+      .retain(|path, _| seen_paths.contains(path));
 
     Ok(())
   }
@@ -325,10 +385,9 @@ impl DiskSession {
   }
 
   async fn import_file_if_changed(&self, file_path: &Path) -> Result<(), String> {
-    let raw = fs::read_to_string(file_path)
-      .map_err(|err| format!("failed to read markdown file {}: {}", file_path.display(), err))?;
+    let raw = read_to_string_async(file_path.to_path_buf(), "read markdown file").await?;
 
-    let (mut meta, body) = parse_frontmatter(&raw);
+    let (mut meta, mut body) = parse_frontmatter(&raw);
     let mut doc_id = meta.id.clone();
 
     if doc_id.is_none() {
@@ -336,7 +395,10 @@ impl DiskSession {
       meta.id = doc_id.clone();
 
       let rendered = render_frontmatter(&meta, &body);
-      write_atomic(file_path, &rendered)?;
+      write_atomic_async(file_path.to_path_buf(), rendered).await?;
+      let normalized = read_to_string_async(file_path.to_path_buf(), "read normalized markdown file").await?;
+      let (_, normalized_body) = parse_frontmatter(&normalized);
+      body = normalized_body;
     }
 
     let doc_id = doc_id.ok_or_else(|| format!("failed to resolve doc id for markdown file {}", file_path.display()))?;
@@ -536,6 +598,11 @@ impl DiskSession {
       self
         .apply_local_root_update(update.bin.as_ref().to_vec(), timestamp, origin)
         .await?;
+      if !self.workspace_ready.swap(true, Ordering::AcqRel)
+        && let Err(err) = self.scan_files_once().await
+      {
+        self.queue_error_event(err).await;
+      }
       return Ok(DiskDocClock {
         doc_id: update.doc_id,
         timestamp,
@@ -590,13 +657,7 @@ impl DiskSession {
       let (body, body_from_doc) = if let Some(body) = doc_body {
         (body, true)
       } else if let Some(path) = binding_path.as_ref().filter(|path| path.exists()) {
-        let existing = fs::read_to_string(path).map_err(|err| {
-          format!(
-            "failed to read markdown for metadata update {}: {}",
-            path.display(),
-            err
-          )
-        })?;
+        let existing = read_to_string_async(path.clone(), "read markdown for metadata update").await?;
         let (_, body) = parse_frontmatter(&existing);
         (body, false)
       } else {
@@ -624,15 +685,27 @@ impl DiskSession {
         continue;
       }
 
-      let meta_with_id = preserve_extra_frontmatter(meta.clone().with_id(doc_id.clone()), &path)?;
+      let meta_with_id = preserve_extra_frontmatter(meta.clone().with_id(doc_id.clone()), &path).await?;
+      let md_hash = hash_string(&body);
+      let meta_hash = hash_meta(&meta_with_id);
+      let unchanged = self
+        .baselines
+        .lock()
+        .await
+        .get(&doc_id)
+        .is_some_and(|baseline| baseline.md_hash == md_hash && baseline.meta_hash == meta_hash);
+      if unchanged && path.exists() {
+        continue;
+      }
       let rendered = render_frontmatter(&meta_with_id, &body);
-      write_atomic(&path, &rendered)?;
+      write_atomic_async(path.clone(), rendered).await?;
+      self.remember_file_fingerprint(&path).await;
 
       let baseline = Baseline {
         base_clock: String::new(),
         base_vector: String::new(),
-        md_hash: hash_string(&body),
-        meta_hash: hash_meta(&meta_with_id),
+        md_hash,
+        meta_hash,
         synced_at: timestamp,
       };
 
@@ -758,9 +831,10 @@ impl DiskSession {
       return Ok(());
     }
 
-    let meta_with_id = preserve_extra_frontmatter(meta.clone().with_id(doc_id.clone()), &file_path)?;
+    let meta_with_id = preserve_extra_frontmatter(meta.clone().with_id(doc_id.clone()), &file_path).await?;
     let rendered = render_frontmatter(&meta_with_id, &markdown.markdown);
-    write_atomic(&file_path, &rendered)?;
+    write_atomic_async(file_path.clone(), rendered).await?;
+    self.remember_file_fingerprint(&file_path).await;
 
     let baseline = Baseline {
       base_clock: String::new(),
@@ -808,7 +882,7 @@ impl DiskSession {
       return true;
     };
 
-    let raw = match fs::read_to_string(file_path) {
+    let raw = match read_to_string_async(file_path.to_path_buf(), "read markdown for dirty check").await {
       Ok(raw) => raw,
       Err(err) => {
         self
@@ -843,6 +917,16 @@ impl DiskSession {
     let meta_hash = hash_meta(&normalized_meta);
 
     baseline.md_hash != md_hash || baseline.meta_hash != meta_hash
+  }
+
+  async fn remember_file_fingerprint(&self, file_path: &Path) {
+    if let Ok(fingerprint) = file_fingerprint_async(file_path.to_path_buf()).await {
+      self
+        .file_fingerprints
+        .lock()
+        .await
+        .insert(file_path.to_path_buf(), fingerprint);
+    }
   }
 
   async fn meta_for_doc(&self, doc_id: &str, fallback_title: Option<String>) -> Result<FrontmatterMeta, String> {
@@ -917,14 +1001,50 @@ impl DiskSession {
   }
 }
 
-fn preserve_extra_frontmatter(mut meta: FrontmatterMeta, file_path: &Path) -> Result<FrontmatterMeta, String> {
+async fn preserve_extra_frontmatter(mut meta: FrontmatterMeta, file_path: &Path) -> Result<FrontmatterMeta, String> {
   if !file_path.exists() {
     return Ok(meta);
   }
 
-  let raw = fs::read_to_string(file_path)
-    .map_err(|err| format!("failed to preserve frontmatter from {}: {}", file_path.display(), err))?;
+  let raw = read_to_string_async(file_path.to_path_buf(), "preserve frontmatter from").await?;
   let (existing_meta, _) = parse_frontmatter(&raw);
   meta.extra = existing_meta.extra;
   Ok(meta)
+}
+
+async fn collect_markdown_files_async(root: PathBuf) -> Result<Vec<PathBuf>, String> {
+  tokio::task::spawn_blocking(move || {
+    let mut files = Vec::new();
+    collect_markdown_files(&root, &mut files)?;
+    Ok(files)
+  })
+  .await
+  .map_err(|err| format!("markdown scan task failed: {err}"))?
+}
+
+async fn file_fingerprint_async(path: PathBuf) -> Result<FileFingerprint, String> {
+  tokio::task::spawn_blocking(move || {
+    let metadata =
+      fs::metadata(&path).map_err(|err| format!("failed to read metadata for {}: {err}", path.display()))?;
+    Ok(FileFingerprint {
+      len: metadata.len(),
+      modified: metadata.modified().ok(),
+    })
+  })
+  .await
+  .map_err(|err| format!("file metadata task failed: {err}"))?
+}
+
+async fn read_to_string_async(path: PathBuf, operation: &'static str) -> Result<String, String> {
+  tokio::task::spawn_blocking(move || {
+    fs::read_to_string(&path).map_err(|err| format!("failed to {operation} {}: {err}", path.display()))
+  })
+  .await
+  .map_err(|err| format!("file read task failed: {err}"))?
+}
+
+async fn write_atomic_async(path: PathBuf, content: String) -> Result<(), String> {
+  tokio::task::spawn_blocking(move || write_atomic(&path, &content))
+    .await
+    .map_err(|err| format!("file write task failed: {err}"))?
 }

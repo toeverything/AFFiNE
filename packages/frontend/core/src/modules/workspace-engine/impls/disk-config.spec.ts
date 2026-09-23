@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   DISK_SYNC_FEATURE_FLAG_KEY,
+  DISK_SYNC_FOLDER_GLOBAL_STATE_KEY_PREFIX,
   DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY,
   getDiskSyncEnabled,
   getDiskSyncFolderPath,
@@ -50,9 +51,9 @@ describe('disk-config', () => {
   it('stores folder path per workspace and resolves remote options only when enabled', () => {
     setDiskSyncFolderPath('workspace-a', '/tmp/a');
     expect(getDiskSyncFolderPath('workspace-a')).toBe('/tmp/a');
-    expect(state.get(DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY)).toEqual({
-      'workspace-a': '/tmp/a',
-    });
+    expect(
+      state.get(`${DISK_SYNC_FOLDER_GLOBAL_STATE_KEY_PREFIX}workspace-a`)
+    ).toBe('/tmp/a');
 
     expect(getDiskSyncRemoteOptions('workspace-a')).toBeNull();
 
@@ -60,6 +61,24 @@ describe('disk-config', () => {
     expect(getDiskSyncRemoteOptions('workspace-a')).toEqual({
       syncFolder: '/tmp/a',
     });
+  });
+
+  it('persists workspace folders under independent keys', () => {
+    setDiskSyncFolderPath('workspace-a', '/tmp/a');
+    setDiskSyncFolderPath('workspace-b', '/tmp/b');
+
+    expect([...state.values()]).toContain('/tmp/a');
+    expect([...state.values()]).toContain('/tmp/b');
+    expect(getDiskSyncFolderPath('workspace-a')).toBe('/tmp/a');
+    expect(getDiskSyncFolderPath('workspace-b')).toBe('/tmp/b');
+  });
+
+  it('reads legacy folder maps when no workspace key exists', () => {
+    state.set(DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY, {
+      'workspace-legacy': '/tmp/legacy',
+    });
+
+    expect(getDiskSyncFolderPath('workspace-legacy')).toBe('/tmp/legacy');
   });
 
   it('ignores config when not running in electron', () => {

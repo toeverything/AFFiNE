@@ -14,7 +14,7 @@ use super::{
   frontmatter::{parse_frontmatter, render_frontmatter},
   root_meta::build_root_meta_update,
   types::FrontmatterMeta,
-  utils::collect_markdown_files,
+  utils::{collect_markdown_files, generate_missing_doc_id, sanitize_file_stem},
 };
 
 fn temp_dir() -> PathBuf {
@@ -95,6 +95,22 @@ async fn teardown(sync: &DiskSync, session_id: &str, dir: &Path) {
   }
 }
 
+async fn prime_workspace(sync: &DiskSync, session_id: &str, workspace_id: &str) {
+  let root = DocOptions::new().with_guid(workspace_id.to_string()).build();
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: workspace_id.to_string(),
+        bin: Uint8Array::new(root.encode_update_v1().expect("encode workspace root")),
+        editor: Some("test".to_string()),
+      },
+      Some("origin:local".to_string()),
+    )
+    .await
+    .expect("prime workspace root");
+}
+
 fn is_numeric_any(value: &Any) -> bool {
   match value {
     Any::Integer(_) | Any::BigInt64(_) => true,
@@ -143,6 +159,25 @@ Body
   let (meta, _) = parse_frontmatter(raw);
   assert_eq!(meta.id.as_deref(), Some("doc-empty-title"));
   assert_eq!(meta.title.as_deref(), Some(""));
+}
+
+#[test]
+fn parse_frontmatter_accepts_empty_and_eof_delimiters() {
+  let (empty, body) = parse_frontmatter("---\n---\nBody");
+  assert_eq!(empty.id, None);
+  assert_eq!(body, "Body");
+
+  let (meta, body) = parse_frontmatter("---\nid: eof-doc\ntitle: EOF\n---");
+  assert_eq!(meta.id.as_deref(), Some("eof-doc"));
+  assert_eq!(meta.title.as_deref(), Some("EOF"));
+  assert!(body.is_empty());
+}
+
+#[test]
+fn generated_doc_ids_are_unique_and_file_stems_keep_unicode() {
+  let path = Path::new("/tmp/README.md");
+  assert_ne!(generate_missing_doc_id(path), generate_missing_doc_id(path));
+  assert_eq!(sanitize_file_stem("会议记录 Überblick"), "会议记录-überblick");
 }
 
 #[test]
@@ -243,7 +278,7 @@ fn collect_markdown_files_skips_symlink_directories() {
 }
 
 #[tokio::test]
-async fn start_session_imports_markdown_and_creates_state_db() {
+async fn start_session_defers_import_until_workspace_root_is_loaded() {
   let dir = temp_dir();
   let md_path = dir.join("doc-a.md");
   fs::write(
@@ -266,9 +301,20 @@ async fn start_session_imports_markdown_and_creates_state_db() {
     .await
     .expect("start session");
 
-  let events = sync.pull_events(session_id.to_string()).await.expect("pull events");
+  let events = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("pull before root");
 
   assert!(events.iter().any(|event| event.r#type == "ready"));
+  assert!(
+    events.iter().all(|event| event.r#type != "doc-update"),
+    "disk files must not be imported before the local workspace root is loaded"
+  );
+
+  prime_workspace(&sync, session_id, "ws-a").await;
+  let events = sync.pull_events(session_id.to_string()).await.expect("pull after root");
+
   assert!(events.iter().any(|event| {
     event.r#type == "doc-update" && event.update.as_ref().is_some_and(|update| update.doc_id == "doc-a")
   }));
@@ -309,6 +355,7 @@ async fn duplicate_doc_ids_are_rejected_without_rebinding() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, &session_id, "ws-duplicate-id").await;
   let events = sync.pull_events(session_id.clone()).await.expect("pull events");
   let page_updates = events
     .iter()
@@ -436,6 +483,7 @@ async fn local_export_does_not_claim_an_unscanned_existing_file() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, &session_id, "ws-unscanned-collision").await;
   let _ = sync.pull_events(session_id.clone()).await.expect("pull first");
 
   let occupied = dir.join("collision.md");
@@ -487,6 +535,7 @@ async fn empty_title_export_does_not_trigger_self_import() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, session_id, "ws-empty-title").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   let doc_id = "doc-empty-title";
@@ -537,6 +586,7 @@ async fn invalid_local_update_does_not_block_other_docs_exports() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, session_id, "ws-invalid-update").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   let doc_a_id = "doc-invalid-a";
@@ -657,6 +707,99 @@ async fn apply_local_root_update_skips_metadata_only_placeholder_without_doc_bod
 }
 
 #[tokio::test]
+async fn unchanged_root_metadata_does_not_rewrite_markdown() {
+  let dir = temp_dir();
+  let sync = DiskSync::new();
+  let session_id = "session-root-meta-unchanged";
+  let workspace_id = "ws-root-meta-unchanged";
+  let doc_id = "doc-root-meta-unchanged";
+
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: workspace_id.to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("start session");
+  prime_workspace(&sync, session_id, workspace_id).await;
+
+  let page = build_full_doc("Root Meta", "# Root Meta\n\nbody", doc_id).expect("build page");
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: doc_id.to_string(),
+        bin: Uint8Array::new(page),
+        editor: None,
+      },
+      Some("origin:page".to_string()),
+    )
+    .await
+    .expect("apply page");
+
+  let root_update = build_root_meta_update(
+    &[],
+    workspace_id,
+    doc_id,
+    &FrontmatterMeta {
+      id: None,
+      title: Some("Root Meta".to_string()),
+      tags: Some(vec!["alpha".to_string()]),
+      favorite: Some(false),
+      trash: Some(false),
+      extra: Vec::new(),
+    },
+  )
+  .expect("build root update");
+
+  for _ in 0..2 {
+    sync
+      .apply_local_update(
+        session_id.to_string(),
+        DiskDocUpdateInput {
+          doc_id: workspace_id.to_string(),
+          bin: Uint8Array::new(root_update.clone()),
+          editor: None,
+        },
+        Some("origin:root-meta".to_string()),
+      )
+      .await
+      .expect("apply root update");
+  }
+
+  let mut files = Vec::new();
+  collect_markdown_files(&dir, &mut files).expect("collect markdown files");
+  assert_eq!(files.len(), 1);
+  let modified_before = fs::metadata(&files[0])
+    .and_then(|metadata| metadata.modified())
+    .expect("read modified time");
+
+  tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: workspace_id.to_string(),
+        bin: Uint8Array::new(root_update),
+        editor: None,
+      },
+      Some("origin:root-meta".to_string()),
+    )
+    .await
+    .expect("reapply unchanged root update");
+
+  let modified_after = fs::metadata(&files[0])
+    .and_then(|metadata| metadata.modified())
+    .expect("read modified time after unchanged update");
+  assert_eq!(modified_after, modified_before);
+
+  teardown(&sync, session_id, &dir).await;
+}
+
+#[tokio::test]
 async fn file_change_after_export_is_imported_into_workspace() {
   let dir = temp_dir();
 
@@ -674,6 +817,7 @@ async fn file_change_after_export_is_imported_into_workspace() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, session_id, "ws-export-import").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   let doc_id = "doc-export-import";
@@ -737,6 +881,7 @@ async fn code_block_update_keeps_markdown_exporting() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, session_id, "ws-code-block-export").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   let doc_id = "doc-code-block";
@@ -828,14 +973,20 @@ async fn file_change_after_start_is_imported_via_pull_events() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, session_id, "ws-poll").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   fs::write(&md_path, "---\nid: doc-poll\ntitle: Poll\n---\n\n# Poll\n\ntwo").expect("write changed markdown");
 
-  let events = sync
-    .pull_events(session_id.to_string())
-    .await
-    .expect("pull after change");
+  let mut events = Vec::new();
+  for _ in 0..20 {
+    events.extend(
+      sync
+        .pull_events(session_id.to_string())
+        .await
+        .expect("pull after change"),
+    );
+  }
 
   assert!(events.iter().any(|event| {
     event.r#type == "doc-update" && event.update.as_ref().is_some_and(|update| update.doc_id == "doc-poll")
@@ -865,6 +1016,7 @@ async fn import_without_title_allows_followup_local_export() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, session_id, workspace_id).await;
   let events = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   let imported = fs::read_to_string(&md_path).expect("read imported markdown");
@@ -927,6 +1079,7 @@ async fn local_update_preserves_unknown_frontmatter() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, session_id, "ws-extra-frontmatter").await;
   let events = sync.pull_events(session_id.to_string()).await.expect("pull first");
   let imported_doc = events
     .iter()
@@ -982,6 +1135,7 @@ async fn import_sets_root_meta_create_and_updated_date() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, session_id, workspace_id).await;
   let events = sync.pull_events(session_id.to_string()).await.expect("pull events");
   let imported = fs::read_to_string(&md_path).expect("read imported markdown");
   let (meta, _) = parse_frontmatter(&imported);
@@ -1058,6 +1212,7 @@ async fn no_delete_policy_does_not_emit_doc_delete() {
     .await
     .expect("start session");
 
+  prime_workspace(&sync, session_id, "ws-delete").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   fs::remove_file(&md_path).expect("remove markdown file");

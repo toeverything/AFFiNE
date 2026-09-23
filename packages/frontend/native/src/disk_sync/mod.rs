@@ -109,7 +109,6 @@ impl DiskSync {
 
     let session = DiskSession::new(options).await.map_err(to_napi_error)?;
     session.queue_ready_event().await.map_err(to_napi_error)?;
-    session.scan_once().await.map_err(to_napi_error)?;
 
     let mut sessions = SESSIONS.write().await;
     sessions.insert(session_id, Arc::new(session));

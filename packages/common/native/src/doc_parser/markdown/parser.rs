@@ -312,6 +312,7 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
   let mut active: Option<BlockDraft> = None;
   let mut in_blockquote = false;
   let mut pending_image: Option<ImageDraft> = None;
+  let mut resume_after_embed: Option<(BlockFlavour, Option<BlockType>)> = None;
   let mut pending_bookmark: Option<String> = None;
   let mut table_state: Option<TableState> = None;
   let mut span_stack: Vec<bool> = Vec::new();
@@ -480,13 +481,19 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
         ));
       }
       Event::End(TagEnd::Heading(_)) => {
-        if let Some(block) = active.take() {
+        if let Some(block) = active.take()
+          && !block.is_empty()
+        {
           attach_block(block.finish(), &mut list_items, &mut blocks);
         }
       }
       Event::Start(Tag::Paragraph) => {
         if in_blockquote {
-          if active.is_none() {
+          if let Some(block) = active.as_mut() {
+            if !block.is_empty() {
+              block.push_text("\n", None);
+            }
+          } else {
             active = Some(BlockDraft::new(BlockFlavour::Paragraph, Some(BlockType::Quote)));
           }
         } else if list_items.is_empty() {
@@ -501,11 +508,10 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
           attach_block(bookmark_block(url), &mut list_items, &mut blocks);
           continue;
         }
-        if in_blockquote {
-          if let Some(block) = active.as_mut() {
-            block.push_text("\n", None);
-          }
-        } else if let Some(block) = active.take() {
+        if !in_blockquote
+          && let Some(block) = active.take()
+          && !block.is_empty()
+        {
           attach_block(block.finish(), &mut list_items, &mut blocks);
         }
       }
@@ -514,7 +520,9 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
       }
       Event::End(TagEnd::BlockQuote(_)) => {
         in_blockquote = false;
-        if let Some(block) = active.take() {
+        if let Some(block) = active.take()
+          && !block.is_empty()
+        {
           attach_block(block.finish(), &mut list_items, &mut blocks);
         }
       }
@@ -590,10 +598,11 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
         }
       }
       Event::Start(Tag::Image { dest_url, .. }) => {
-        if let Some(block) = active.take()
-          && !block.is_empty()
-        {
-          attach_block(block.finish(), &mut list_items, &mut blocks);
+        if let Some(block) = active.take() {
+          resume_after_embed = Some((block.flavour, block.block_type.clone()));
+          if !block.is_empty() {
+            attach_block(block.finish(), &mut list_items, &mut blocks);
+          }
         }
         pending_image = Some(ImageDraft {
           source: dest_url.to_string(),
@@ -606,6 +615,9 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
         if let Some(image) = pending_image.take() {
           let image = image.finish()?;
           attach_block(image_block(image), &mut list_items, &mut blocks);
+        }
+        if let Some((flavour, block_type)) = resume_after_embed.take() {
+          active = Some(BlockDraft::new(flavour, block_type));
         }
       }
       Event::Text(text) => {
@@ -643,18 +655,23 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
           continue;
         }
         if let Some(image) = parse_img_tag(&html) {
-          if let Some(block) = active.take()
-            && !block.is_empty()
-          {
-            attach_block(block.finish(), &mut list_items, &mut blocks);
+          if let Some(block) = active.take() {
+            resume_after_embed = Some((block.flavour, block.block_type.clone()));
+            if !block.is_empty() {
+              attach_block(block.finish(), &mut list_items, &mut blocks);
+            }
           }
           let image = image.finish()?;
           attach_block(image_block(image), &mut list_items, &mut blocks);
+          if let Some((flavour, block_type)) = resume_after_embed.take() {
+            active = Some(BlockDraft::new(flavour, block_type));
+          }
         } else if let Some(embed) = parse_iframe_tag(&html) {
-          if let Some(block) = active.take()
-            && !block.is_empty()
-          {
-            attach_block(block.finish(), &mut list_items, &mut blocks);
+          if let Some(block) = active.take() {
+            resume_after_embed = Some((block.flavour, block.block_type.clone()));
+            if !block.is_empty() {
+              attach_block(block.finish(), &mut list_items, &mut blocks);
+            }
           }
           match embed {
             IframeEmbed::Youtube(video_id) => {
@@ -663,6 +680,9 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
             IframeEmbed::Iframe(url) => {
               attach_block(embed_iframe_block(url), &mut list_items, &mut blocks);
             }
+          }
+          if let Some((flavour, block_type)) = resume_after_embed.take() {
+            active = Some(BlockDraft::new(flavour, block_type));
           }
         } else if is_html_line_break(&html) {
           if let Some(image) = pending_image.as_mut() {
@@ -709,7 +729,11 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
         if let Some(image) = pending_image.as_mut() {
           image.caption.push(' ');
         } else {
-          let break_text = if matches!(active.as_ref().map(|b| b.flavour), Some(BlockFlavour::Code)) {
+          let break_text = if matches!(active.as_ref().map(|b| b.flavour), Some(BlockFlavour::Code))
+            || active
+              .as_ref()
+              .is_some_and(|block| block.block_type == Some(BlockType::Quote))
+          {
             "\n"
           } else {
             " "
@@ -1006,7 +1030,9 @@ fn normalize_html_lists(markdown: &str) -> String {
       if !in_fence {
         in_fence = true;
         fence_marker = Some(marker);
-      } else if fence_marker.is_some_and(|opener| marker.kind == opener.kind && marker.len >= opener.len) {
+      } else if fence_marker.is_some_and(|opener| {
+        marker.kind == opener.kind && marker.len >= opener.len && trimmed[marker.len..].trim().is_empty()
+      }) {
         in_fence = false;
         fence_marker = None;
       }
@@ -1573,6 +1599,15 @@ mod tests {
     let markdown =
       "````html\n<ul><li>Code item</li></ul>\n```\n<ul><li>Still code</li></ul>\n````\n<ul><li>List item</li></ul>";
     let expected = "````html\n<ul><li>Code item</li></ul>\n```\n<ul><li>Still code</li></ul>\n````\n- List item\n";
+
+    assert_eq!(normalize_html_lists(markdown), expected);
+  }
+
+  #[test]
+  fn test_normalize_html_lists_ignores_fence_marker_with_trailing_text() {
+    let markdown = "````html\n<ul><li>Code item</li></ul>\n````still-code\n<ul><li>Still code</li></ul>\n````\n<ul><li>List item</li></ul>";
+    let expected =
+      "````html\n<ul><li>Code item</li></ul>\n````still-code\n<ul><li>Still code</li></ul>\n````\n- List item\n";
 
     assert_eq!(normalize_html_lists(markdown), expected);
   }

@@ -142,4 +142,36 @@ describe('disk helper handlers', () => {
     expect(diskSyncMocks.subscribeEvents).toHaveBeenCalledTimes(2);
     await stopSession('session-unsubscribe-failure');
   });
+
+  it('serializes stop and restart for the same session id', async () => {
+    let releaseStop!: () => void;
+    diskSyncMocks.stopSession.mockImplementationOnce(
+      () =>
+        new Promise<void>(resolve => {
+          releaseStop = resolve;
+        })
+    );
+
+    const options = {
+      workspaceId: 'workspace-serialized-restart',
+      syncFolder: '/tmp/disk-sync',
+    };
+    await startSession('session-serialized-restart', options);
+
+    const stopping = stopSession('session-serialized-restart');
+    await vi.waitFor(() => {
+      expect(diskSyncMocks.stopSession).toHaveBeenCalledTimes(1);
+    });
+    const restarting = startSession('session-serialized-restart', options);
+
+    await Promise.resolve();
+    expect(diskSyncMocks.startSession).toHaveBeenCalledTimes(1);
+
+    releaseStop();
+    await stopping;
+    await restarting;
+    expect(diskSyncMocks.startSession).toHaveBeenCalledTimes(2);
+
+    await stopSession('session-serialized-restart');
+  });
 });

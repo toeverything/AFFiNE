@@ -111,6 +111,9 @@ export const registerHandlers = () => {
   });
 
   ipcMain.on(AFFINE_API_CHANNEL_NAME, (e, ...args: any[]) => {
+    // Always assign returnValue so sendSync callers are released on validation
+    // and handler failures as well as successful calls.
+    e.returnValue = undefined;
     if (!checkSource(e)) return;
 
     const channel = args[0];

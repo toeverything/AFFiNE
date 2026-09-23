@@ -15,15 +15,13 @@ impl<'a> MarkdownWriter<'a> {
   pub(crate) fn push_paragraph(&mut self, prefix: &str, text: &str) {
     if prefix == "> " {
       let quoted = text
+        .trim_end_matches('\n')
         .split('\n')
         .map(|line| format!("{prefix}{line}"))
         .collect::<Vec<_>>()
         .join("\n");
       self.output.push_str(&quoted);
-      if !text.ends_with('\n') {
-        self.output.push('\n');
-      }
-      self.output.push('\n');
+      self.output.push_str("\n\n");
       return;
     }
 
@@ -45,14 +43,17 @@ impl<'a> MarkdownWriter<'a> {
   }
 
   pub(crate) fn push_code_block(&mut self, lang: &str, text: &str) {
-    self.output.push_str("```");
+    let longest_run = text.split(|ch| ch != '`').map(str::len).max().unwrap_or(0);
+    let fence = "`".repeat(longest_run.max(2) + 1);
+    self.output.push_str(&fence);
     self.output.push_str(lang);
     self.output.push('\n');
     self.output.push_str(text);
     if !text.ends_with('\n') {
       self.output.push('\n');
     }
-    self.output.push_str("```\n\n");
+    self.output.push_str(&fence);
+    self.output.push_str("\n\n");
   }
 
   pub(crate) fn push_divider(&mut self) {
