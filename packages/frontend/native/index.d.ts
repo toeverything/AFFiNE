@@ -104,6 +104,53 @@ export interface MermaidRenderResult {
   svg: string
 }
 
+export type NapiResult<T> = T | Error
+
+export declare class DiskSync {
+  constructor()
+  startSession(sessionId: string, options: DiskSessionOptions): Promise<NapiResult<undefined>>
+  stopSession(sessionId: string): Promise<NapiResult<undefined>>
+  applyLocalUpdate(sessionId: string, update: DiskDocUpdateInput, origin?: string | undefined | null): Promise<NapiResult<DiskDocClock>>
+  pullEvents(sessionId: string): Promise<NapiResult<Array<DiskSyncEvent>>>
+  subscribeEvents(sessionId: string, callback: ((err: Error | null, arg: DiskSyncEvent) => void)): Promise<NapiResult<DiskSyncSubscriber>>
+}
+
+export declare class DiskSyncSubscriber {
+  unsubscribe(): Promise<NapiResult<undefined>>
+}
+
+export interface DiskDocClock {
+  docId: string
+  timestamp: Date
+}
+
+export interface DiskDocUpdateInput {
+  docId: string
+  bin: Uint8Array
+  editor?: string
+}
+
+export interface DiskSessionOptions {
+  workspaceId: string
+  syncFolder: string
+}
+
+export interface DiskSyncDocUpdateEvent {
+  docId: string
+  bin: Uint8Array
+  timestamp: Date
+  editor?: string
+}
+
+export interface DiskSyncEvent {
+  type: string
+  update?: DiskSyncDocUpdateEvent
+  docId?: string
+  timestamp?: Date
+  origin?: string
+  message?: string
+}
+
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
 
 export declare function nextImportBatch(sessionId: string): string | null

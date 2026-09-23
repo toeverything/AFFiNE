@@ -1,11 +1,12 @@
 import '@affine/core/bootstrap/electron';
 
-import { apis } from '@affine/electron-api';
+import { apis, events } from '@affine/electron-api';
 import { broadcastChannelStorages } from '@affine/nbstore/broadcast-channel';
 import {
   cloudStorages,
   configureSocketAuthMethod,
 } from '@affine/nbstore/cloud';
+import { bindDiskSyncApis, diskStorages } from '@affine/nbstore/disk';
 import { bindNativeDBApis, sqliteStorages } from '@affine/nbstore/sqlite';
 import {
   bindNativeDBV1Apis,
@@ -17,10 +18,14 @@ import {
 } from '@affine/nbstore/worker/consumer';
 import { OpConsumer } from '@toeverything/infra/op';
 
+import { createDiskSyncApis } from './disk-sync-bridge';
+
 // oxlint-disable-next-line no-non-null-assertion
 bindNativeDBApis(apis!.nbstore);
 // oxlint-disable-next-line no-non-null-assertion
 bindNativeDBV1Apis(apis!.db);
+// oxlint-disable-next-line no-non-null-assertion
+bindDiskSyncApis(createDiskSyncApis(apis!.diskSync, events!.diskSync));
 configureSocketAuthMethod((endpoint, cb) => {
   // oxlint-disable-next-line no-non-null-assertion
   apis!.auth
@@ -34,6 +39,7 @@ configureSocketAuthMethod((endpoint, cb) => {
 const storeManager = new StoreManagerConsumer([
   ...sqliteStorages,
   ...sqliteV1Storages,
+  ...diskStorages,
   ...broadcastChannelStorages,
   ...cloudStorages,
 ]);

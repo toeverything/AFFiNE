@@ -9,7 +9,7 @@ import type { ElectronApplication } from 'playwright';
 import { _electron as electron } from 'playwright';
 import treeKill from 'tree-kill';
 
-import { test as base } from './playwright';
+import { test as base, testResultDir } from './playwright';
 import { removeWithRetry } from './utils/utils';
 
 const electronRoot = new Package('@affine/electron').path;
@@ -373,13 +373,18 @@ export const test = base.extend<{
         }
       }
       env.DEBUG = 'pw:browser';
+      delete env.ELECTRON_RUN_AS_NODE;
       env.SKIP_ONBOARDING = '1';
+      env.AFFINE_E2E = env.AFFINE_E2E || '1';
 
       const launch = () =>
         electron.launch({
           args: [clonedDist],
           env,
           cwd: clonedDist,
+          recordVideo: {
+            dir: testResultDir,
+          },
           colorScheme: 'light',
         });
 

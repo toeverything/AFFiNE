@@ -296,6 +296,14 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: isMobile,
   },
+  enable_disk_sync: {
+    category: 'affine',
+    displayName: 'Enable Disk Markdown Sync',
+    description:
+      'Enable experimental local-folder Markdown bidirectional sync on Electron desktop. WARNING: We are not responsible for any data loss without thorough testing.',
+    configurable: BUILD_CONFIG.isElectron && isCanaryBuild,
+    defaultState: false,
+  },
   enable_mobile_database_editing: {
     category: 'blocksuite',
     bsFlag: 'enable_mobile_database_editing',

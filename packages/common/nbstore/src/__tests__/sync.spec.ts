@@ -36,6 +36,8 @@ import {
 import { DummyAwarenessStorage } from '../storage/dummy/awareness';
 import { DummyBlobStorage } from '../storage/dummy/blob';
 import { DummyBlobSyncStorage } from '../storage/dummy/blob-sync';
+import { DummyDocStorage } from '../storage/dummy/doc';
+import { DummyDocSyncStorage } from '../storage/dummy/doc-sync';
 import { Sync } from '../sync';
 import { BlobSyncImpl } from '../sync/blob';
 import { BlobSyncPeer } from '../sync/blob/peer';
@@ -186,6 +188,55 @@ class PermissionDeniedConnection extends DummyConnection {
 
 class PermissionDeniedConnectionDocStorage extends PermissionDeniedRemoteDocStorage {
   override readonly connection = new PermissionDeniedConnection();
+}
+
+class SelectivePermissionRemoteDocStorage implements DocStorage {
+  readonly storageType = 'doc' as const;
+  readonly connection = new DummyConnection();
+  readonly isReadonly = false;
+  readonly pushedDocs: string[] = [];
+
+  constructor(
+    readonly spaceId: string,
+    private readonly deniedDocId: string
+  ) {}
+
+  async getDoc(_docId: string): Promise<DocRecord | null> {
+    return null;
+  }
+
+  async getDocDiff(
+    _docId: string,
+    _state?: Uint8Array
+  ): Promise<DocDiff | null> {
+    return null;
+  }
+
+  async pushDocUpdate(update: DocUpdate): Promise<DocClock> {
+    this.pushedDocs.push(update.docId);
+    if (update.docId === this.deniedDocId) {
+      const error = new Error('No permission to update doc');
+      error.name = 'DOC_ACTION_DENIED';
+      throw error;
+    }
+    return { docId: update.docId, timestamp: new Date() };
+  }
+
+  async getDocTimestamp(_docId: string): Promise<DocClock | null> {
+    return null;
+  }
+
+  async getDocTimestamps(): Promise<DocClocks> {
+    return {};
+  }
+
+  async deleteDoc(_docId: string): Promise<void> {
+    return;
+  }
+
+  subscribeDocUpdate(_callback: (update: DocRecord, origin?: string) => void) {
+    return () => {};
+  }
 }
 
 class TrackingIndexerStorage extends IndexerStorageBase {
@@ -617,6 +668,140 @@ test('blob', async () => {
   localReads.mockRestore();
   expect((await a.get('fresh'))?.data).toEqual(new Uint8Array([1, 2, 3]));
   expect((await a.get('retry'))?.data).toEqual(new Uint8Array([1, 2, 3]));
+});
+
+test('doc sync peer emits one terminal state when sync is skipped', async () => {
+  const peer = new DocSyncPeer(
+    'readonly-local',
+    new DummyDocStorage(),
+    new DummyDocSyncStorage(),
+    new DummyDocStorage()
+  );
+  const abort = new AbortController();
+  const loop = peer.mainLoop(abort.signal);
+  const states: Array<{
+    syncing: boolean;
+    synced: boolean;
+    retrying: boolean;
+    errorMessage: string | null;
+  }> = [];
+
+  await Promise.resolve();
+  const subscription = peer.docState$('doc').subscribe(state => {
+    states.push(state);
+  });
+
+  expect(states).toEqual([
+    {
+      syncing: false,
+      synced: true,
+      retrying: false,
+      errorMessage: null,
+    },
+  ]);
+
+  subscription.unsubscribe();
+  abort.abort();
+  await loop;
+});
+
+test('doc sync peer priority requests accumulate', async () => {
+  const local = new IndexedDBDocStorage({
+    id: 'ws-priority',
+    flavour: 'local-priority',
+    type: 'workspace',
+  });
+  const syncMetadata = new IndexedDBDocSyncStorage({
+    id: 'ws-priority',
+    flavour: 'local-priority',
+    type: 'workspace',
+  });
+  const remote = new TestDocStorage('ws-priority', new Map(), async () => null);
+  const peer = new DocSyncPeer('remote-priority', local, syncMetadata, remote);
+  const abort = new AbortController();
+
+  local.connection.connect();
+  syncMetadata.connection.connect();
+  await local.connection.waitForConnected();
+  await syncMetadata.connection.waitForConnected();
+
+  for (const docId of ['doc-low', 'doc-high']) {
+    const doc = new YDoc();
+    doc.getMap('test').set('id', docId);
+    await local.pushDocUpdate({ docId, bin: encodeStateAsUpdate(doc) });
+  }
+
+  peer.addPriority('doc-low', 5);
+  peer.addPriority('doc-high', 10);
+  const releaseSecondHolder = peer.addPriority('doc-high', 10);
+  releaseSecondHolder();
+
+  const reads: string[] = [];
+  vi.spyOn(remote, 'getDocDiff').mockImplementation(async docId => {
+    reads.push(docId);
+    return null;
+  });
+
+  const loop = peer.mainLoop(abort.signal);
+  try {
+    await vi.waitFor(() => {
+      expect(reads).toHaveLength(2);
+    });
+    expect(reads).toEqual(['doc-high', 'doc-low']);
+  } finally {
+    abort.abort();
+    await loop;
+    local.connection.disconnect();
+    syncMetadata.connection.disconnect();
+  }
+});
+
+test('doc sync peer continues after one doc is denied permission', async () => {
+  const local = new IndexedDBDocStorage({
+    id: 'ws-selective-denied',
+    flavour: 'local-selective-denied',
+    type: 'workspace',
+  });
+  const syncMetadata = new IndexedDBDocSyncStorage({
+    id: 'ws-selective-denied',
+    flavour: 'local-selective-denied',
+    type: 'workspace',
+  });
+  const remote = new SelectivePermissionRemoteDocStorage(
+    'ws-selective-denied',
+    'doc-denied'
+  );
+  const peer = new DocSyncPeer(
+    'remote-selective-denied',
+    local,
+    syncMetadata,
+    remote
+  );
+  const abort = new AbortController();
+
+  local.connection.connect();
+  syncMetadata.connection.connect();
+  await local.connection.waitForConnected();
+  await syncMetadata.connection.waitForConnected();
+
+  for (const docId of ['doc-denied', 'doc-allowed']) {
+    const doc = new YDoc();
+    doc.getMap('test').set('id', docId);
+    await local.pushDocUpdate({ docId, bin: encodeStateAsUpdate(doc) });
+  }
+
+  const loop = peer.mainLoop(abort.signal);
+  try {
+    await vi.waitFor(() => {
+      expect(remote.pushedDocs).toContain('doc-allowed');
+    });
+    expect(remote.pushedDocs.filter(id => id === 'doc-denied')).toHaveLength(1);
+  } finally {
+    abort.abort();
+    await loop.catch(() => {});
+    local.connection.disconnect();
+    syncMetadata.connection.disconnect();
+  }
 });
 
 test('doc sync peer stops retrying a doc when remote denies permission', async () => {
