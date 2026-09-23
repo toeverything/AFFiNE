@@ -48,6 +48,14 @@ export class DocsStore extends Store {
           return;
         }
 
+        // Re-creating an id that already has a meta.pages entry (e.g. a
+        // re-import producing the same deterministic doc id) must not add a
+        // duplicate entry or reset the original createDate.
+        // https://github.com/toeverything/AFFiNE/issues/15629
+        if (docs.toArray().some(page => page.get('id') === id)) {
+          return;
+        }
+
         docs.push([
           new YMap([
             ['id', id],
