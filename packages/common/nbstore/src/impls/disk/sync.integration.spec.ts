@@ -23,11 +23,13 @@ async function waitForLocalDoc(localDoc: IndexedDBDocStorage, docId: string) {
 
 test('sync local <-> disk remote updates through DocSyncPeer', async () => {
   const workspaceId = 'ws-disk-integration';
-  const sessionId = universalId({
+  const syncFolder = '/tmp/disk-sync';
+  const workspaceSessionId = universalId({
     peer: 'local',
     type: 'workspace',
     id: workspaceId,
   });
+  const sessionId = `${workspaceSessionId}:${encodeURIComponent(syncFolder)}`;
 
   const listeners = new Map<string, Set<(event: DiskSyncEvent) => void>>();
   const remoteDocs = new Map<string, { timestamp: Date; bin: Uint8Array }>();
@@ -89,7 +91,7 @@ test('sync local <-> disk remote updates through DocSyncPeer', async () => {
     id: workspaceId,
     flavour: 'local',
     type: 'workspace',
-    syncFolder: '/tmp/disk-sync',
+    syncFolder,
   });
 
   const local = new SpaceStorage({

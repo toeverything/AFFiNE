@@ -174,6 +174,9 @@ pub(crate) fn hash_meta(meta: &FrontmatterMeta) -> String {
   canonical.push_str("|trash=");
   canonical.push_str(if meta.trash.unwrap_or(false) { "true" } else { "false" });
 
+  canonical.push_str("|extra=");
+  canonical.push_str(&meta.extra.join("\u{1e}"));
+
   hash_string(&canonical)
 }
 

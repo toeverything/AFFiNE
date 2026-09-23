@@ -6,6 +6,10 @@ type GlobalStateStorageLike = {
   set<T>(key: string, value: T): void;
 };
 
+function isDiskSyncSupported(): boolean {
+  return BUILD_CONFIG.isElectron && BUILD_CONFIG.appBuildType === 'canary';
+}
+
 function getElectronGlobalStateStorage(): GlobalStateStorageLike | null {
   if (!BUILD_CONFIG.isElectron) {
     return null;
@@ -45,6 +49,9 @@ function readFolderMap(): Record<string, string> {
 }
 
 export function getDiskSyncEnabled(): boolean {
+  if (!isDiskSyncSupported()) {
+    return false;
+  }
   const storage = getElectronGlobalStateStorage();
   if (!storage) {
     return false;
@@ -53,6 +60,9 @@ export function getDiskSyncEnabled(): boolean {
 }
 
 export function setDiskSyncEnabled(enabled: boolean): void {
+  if (!isDiskSyncSupported()) {
+    return;
+  }
   const storage = getElectronGlobalStateStorage();
   if (!storage) {
     return;

@@ -16,6 +16,7 @@ pub(crate) struct FrontmatterMeta {
   pub(crate) tags: Option<Vec<String>>,
   pub(crate) favorite: Option<bool>,
   pub(crate) trash: Option<bool>,
+  pub(crate) extra: Vec<String>,
 }
 
 impl FrontmatterMeta {

@@ -153,6 +153,7 @@ fn frontmatter_round_trips_escaped_scalars() {
     tags: Some(vec![r#"folder\tag"#.to_string(), "multi\nline".to_string()]),
     favorite: None,
     trash: None,
+    extra: Vec::new(),
   };
 
   let rendered = render_frontmatter(&meta, "Body");
@@ -162,6 +163,26 @@ fn frontmatter_round_trips_escaped_scalars() {
   assert_eq!(parsed.title, meta.title);
   assert_eq!(parsed.tags, meta.tags);
   assert_eq!(body, "Body\n");
+}
+
+#[test]
+fn frontmatter_preserves_unknown_fields() {
+  let raw = r#"---
+id: doc-extra
+title: Extra
+aliases:
+  - First alias
+custom: keep-me
+---
+
+Body
+"#;
+
+  let (meta, body) = parse_frontmatter(raw);
+  let rendered = render_frontmatter(&meta, &body);
+
+  assert!(rendered.contains("aliases:\n  - First alias"));
+  assert!(rendered.contains("custom: keep-me"));
 }
 
 #[tokio::test]
@@ -261,6 +282,52 @@ async fn start_session_imports_markdown_and_creates_state_db() {
 }
 
 #[tokio::test]
+async fn duplicate_doc_ids_are_rejected_without_rebinding() {
+  let dir = temp_dir();
+  let session_id = format!("session-duplicate-id-{}", Uuid::new_v4());
+  let doc_id = "duplicate-doc";
+  fs::write(
+    dir.join("first.md"),
+    format!("---\nid: {doc_id}\ntitle: First\n---\n\n# First\n\nfirst body"),
+  )
+  .expect("write first markdown");
+  fs::write(
+    dir.join("second.md"),
+    format!("---\nid: {doc_id}\ntitle: Second\n---\n\n# Second\n\nsecond body"),
+  )
+  .expect("write second markdown");
+
+  let sync = DiskSync::new();
+  sync
+    .start_session(
+      session_id.clone(),
+      DiskSessionOptions {
+        workspace_id: "ws-duplicate-id".to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("start session");
+
+  let events = sync.pull_events(session_id.clone()).await.expect("pull events");
+  let page_updates = events
+    .iter()
+    .filter(|event| event.r#type == "doc-update" && event.update.as_ref().is_some_and(|update| update.doc_id == doc_id))
+    .count();
+
+  assert_eq!(page_updates, 1, "duplicate ids must not rebind one doc");
+  assert!(events.iter().any(|event| {
+    event.r#type == "error"
+      && event
+        .message
+        .as_deref()
+        .is_some_and(|message| message.contains("duplicate markdown doc id"))
+  }));
+
+  teardown(&sync, &session_id, &dir).await;
+}
+
+#[tokio::test]
 async fn apply_local_update_exports_markdown_even_with_unsupported_block() {
   let dir = temp_dir();
 
@@ -350,6 +417,56 @@ async fn apply_local_update_exports_markdown_with_stable_id() {
   assert!(content.contains("# Exported"));
 
   teardown(&sync, session_id, &dir).await;
+}
+
+#[tokio::test]
+async fn local_export_does_not_claim_an_unscanned_existing_file() {
+  let dir = temp_dir();
+  let sync = DiskSync::new();
+  let session_id = format!("session-unscanned-collision-{}", Uuid::new_v4());
+
+  sync
+    .start_session(
+      session_id.clone(),
+      DiskSessionOptions {
+        workspace_id: "ws-unscanned-collision".to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("start session");
+
+  let _ = sync.pull_events(session_id.clone()).await.expect("pull first");
+
+  let occupied = dir.join("collision.md");
+  fs::write(
+    &occupied,
+    "---\nid: external-doc\ntitle: Collision\n---\n\n# Collision\n\nexternal",
+  )
+  .expect("write unscanned markdown");
+
+  let local_doc = build_full_doc("Collision", "# Collision\n\nlocal", "local-doc").expect("build local doc");
+  sync
+    .apply_local_update(
+      session_id.clone(),
+      DiskDocUpdateInput {
+        doc_id: "local-doc".to_string(),
+        bin: Uint8Array::new(local_doc),
+        editor: Some("test".to_string()),
+      },
+      Some("origin:local".to_string()),
+    )
+    .await
+    .expect("apply local update");
+
+  let occupied_content = fs::read_to_string(&occupied).expect("read occupied markdown");
+  assert!(occupied_content.contains("id: external-doc"));
+
+  let exported = fs::read_to_string(dir.join("collision-2.md")).expect("read collision-free export");
+  assert!(exported.contains("id: local-doc"));
+  assert!(exported.contains("local"));
+
+  teardown(&sync, &session_id, &dir).await;
 }
 
 #[tokio::test]
@@ -514,6 +631,7 @@ async fn apply_local_root_update_skips_metadata_only_placeholder_without_doc_bod
       tags: Some(vec!["alpha".to_string()]),
       favorite: Some(true),
       trash: Some(false),
+      extra: Vec::new(),
     },
   )
   .expect("build root meta update");
@@ -780,6 +898,64 @@ async fn import_without_title_allows_followup_local_export() {
     .expect("apply local update");
 
   let updated = fs::read_to_string(&md_path).expect("read markdown after local edit");
+  assert!(updated.contains("two"));
+
+  teardown(&sync, session_id, &dir).await;
+}
+
+#[tokio::test]
+async fn local_update_preserves_unknown_frontmatter() {
+  let dir = temp_dir();
+  let md_path = dir.join("doc-extra.md");
+  let doc_id = "doc-extra";
+  fs::write(
+    &md_path,
+    "---\nid: doc-extra\ntitle: Extra\naliases:\n  - First alias\ncustom: keep-me\n---\n\n# Extra\n\none",
+  )
+  .expect("write markdown with custom frontmatter");
+
+  let sync = DiskSync::new();
+  let session_id = "session-extra-frontmatter";
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: "ws-extra-frontmatter".to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("start session");
+
+  let events = sync.pull_events(session_id.to_string()).await.expect("pull first");
+  let imported_doc = events
+    .iter()
+    .find_map(|event| {
+      event
+        .update
+        .as_ref()
+        .filter(|update| update.doc_id == doc_id)
+        .map(|update| update.bin.as_ref().to_vec())
+    })
+    .expect("imported page update");
+  let delta = update_doc(&imported_doc, "# Extra\n\ntwo", doc_id).expect("build local edit delta");
+
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: doc_id.to_string(),
+        bin: Uint8Array::new(delta),
+        editor: Some("test".to_string()),
+      },
+      Some("origin:local".to_string()),
+    )
+    .await
+    .expect("apply local update");
+
+  let updated = fs::read_to_string(&md_path).expect("read updated markdown");
+  assert!(updated.contains("aliases:\n  - First alias"));
+  assert!(updated.contains("custom: keep-me"));
   assert!(updated.contains("two"));
 
   teardown(&sync, session_id, &dir).await;

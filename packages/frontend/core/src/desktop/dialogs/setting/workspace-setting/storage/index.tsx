@@ -10,6 +10,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { EnableCloudPanel } from '../preference/enable-cloud';
 import { BlobManagementPanel } from './blob-management';
 import { DiskSyncPanel } from './disk-sync';
+import { shouldShowDiskSyncPanel } from './disk-sync-session';
 import { DesktopExportPanel } from './export';
 import { WorkspaceQuotaPanel } from './workspace-quota';
 
@@ -36,7 +37,10 @@ export const WorkspaceSettingStorage = ({
       {workspace.flavour === 'local' ? (
         <>
           <EnableCloudPanel onCloseSetting={onCloseSetting} />{' '}
-          {BUILD_CONFIG.isElectron && (
+          {shouldShowDiskSyncPanel(
+            BUILD_CONFIG.isElectron,
+            BUILD_CONFIG.appBuildType
+          ) && (
             <SettingWrapper>
               <DiskSyncPanel workspaceId={workspace.id} />
             </SettingWrapper>

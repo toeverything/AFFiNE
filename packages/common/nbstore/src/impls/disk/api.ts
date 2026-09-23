@@ -79,11 +79,14 @@ export class DiskSyncConnection extends AutoReconnectConnection<{
     if (!apis) {
       throw new Error('Not in native context.');
     }
-    this.sessionId = universalId({
+    const workspaceSessionId = universalId({
       peer: this.flavour,
       type: this.type,
       id: this.id,
     });
+    this.sessionId = `${workspaceSessionId}:${encodeURIComponent(
+      this.options.syncFolder
+    )}`;
     this.apis = this.wrapApis(apis);
   }
 

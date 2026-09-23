@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { shouldReloadDiskSyncSession } from './disk-sync-session';
+import {
+  shouldReloadDiskSyncSession,
+  shouldShowDiskSyncPanel,
+} from './disk-sync-session';
+
+describe('shouldShowDiskSyncPanel', () => {
+  it('only exposes disk sync in Electron canary builds', () => {
+    expect(shouldShowDiskSyncPanel(true, 'canary')).toBe(true);
+    expect(shouldShowDiskSyncPanel(true, 'beta')).toBe(false);
+    expect(shouldShowDiskSyncPanel(true, 'stable')).toBe(false);
+    expect(shouldShowDiskSyncPanel(false, 'canary')).toBe(false);
+  });
+});
 
 describe('shouldReloadDiskSyncSession', () => {
   it('does not reload when feature is disabled', () => {

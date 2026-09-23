@@ -353,6 +353,7 @@ impl DiskSession {
       tags: normalize_tags(meta.tags.clone()),
       favorite: Some(meta.favorite.unwrap_or(false)),
       trash: Some(meta.trash.unwrap_or(false)),
+      extra: meta.extra.clone(),
     };
 
     let md_hash = hash_string(&body);
@@ -367,6 +368,18 @@ impl DiskSession {
       let bindings = self.bindings.lock().await;
       bindings.get(&doc_id).cloned()
     };
+
+    if let Some(bound_path) = current_binding.as_ref()
+      && !paths_equal(bound_path, file_path)
+      && bound_path.exists()
+    {
+      return Err(format!(
+        "duplicate markdown doc id {} in {} and {}",
+        doc_id,
+        bound_path.display(),
+        file_path.display()
+      ));
+    }
 
     let unchanged = baseline
       .as_ref()
@@ -611,7 +624,7 @@ impl DiskSession {
         continue;
       }
 
-      let meta_with_id = meta.clone().with_id(doc_id.clone());
+      let meta_with_id = preserve_extra_frontmatter(meta.clone().with_id(doc_id.clone()), &path)?;
       let rendered = render_frontmatter(&meta_with_id, &body);
       write_atomic(&path, &rendered)?;
 
@@ -745,7 +758,7 @@ impl DiskSession {
       return Ok(());
     }
 
-    let meta_with_id = meta.clone().with_id(doc_id.clone());
+    let meta_with_id = preserve_extra_frontmatter(meta.clone().with_id(doc_id.clone()), &file_path)?;
     let rendered = render_frontmatter(&meta_with_id, &markdown.markdown);
     write_atomic(&file_path, &rendered)?;
 
@@ -823,6 +836,7 @@ impl DiskSession {
       tags: normalize_tags(meta.tags.clone()),
       favorite: Some(meta.favorite.unwrap_or(false)),
       trash: Some(meta.trash.unwrap_or(false)),
+      extra: meta.extra.clone(),
     };
 
     let md_hash = hash_string(&body);
@@ -880,6 +894,13 @@ impl DiskSession {
         continue;
       }
 
+      // A filesystem watcher may not have imported a newly created file yet.
+      // Never reserve its path for another document before the next scan.
+      if candidate.exists() {
+        index += 1;
+        continue;
+      }
+
       {
         let mut bindings = self.bindings.lock().await;
         bindings.insert(doc_id.to_string(), candidate.clone());
@@ -894,4 +915,16 @@ impl DiskSession {
       return Ok(candidate);
     }
   }
+}
+
+fn preserve_extra_frontmatter(mut meta: FrontmatterMeta, file_path: &Path) -> Result<FrontmatterMeta, String> {
+  if !file_path.exists() {
+    return Ok(meta);
+  }
+
+  let raw = fs::read_to_string(file_path)
+    .map_err(|err| format!("failed to preserve frontmatter from {}: {}", file_path.display(), err))?;
+  let (existing_meta, _) = parse_frontmatter(&raw);
+  meta.extra = existing_meta.extra;
+  Ok(meta)
 }

@@ -30,6 +30,7 @@ describe('disk-config', () => {
     globalThis.BUILD_CONFIG = {
       ...originalBuildConfig,
       isElectron: true,
+      appBuildType: 'canary',
     };
   });
 
@@ -74,5 +75,19 @@ describe('disk-config', () => {
     expect(getDiskSyncEnabled()).toBe(false);
     expect(getDiskSyncFolderPath('workspace-b')).toBeNull();
     expect(getDiskSyncRemoteOptions('workspace-b')).toBeNull();
+  });
+
+  it('ignores persisted disk sync config outside canary builds', () => {
+    globalThis.BUILD_CONFIG = {
+      ...globalThis.BUILD_CONFIG,
+      appBuildType: 'stable',
+    };
+    state.set(DISK_SYNC_FEATURE_FLAG_KEY, true);
+    state.set(DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY, {
+      'workspace-stable': '/tmp/stable',
+    });
+
+    expect(getDiskSyncEnabled()).toBe(false);
+    expect(getDiskSyncRemoteOptions('workspace-stable')).toBeNull();
   });
 });

@@ -40,11 +40,11 @@ function createRootMetaUpdate(docIds: string[]): Uint8Array {
 }
 
 describe('DiskDocStorage', () => {
-  const sessionId = universalId({
+  const sessionId = `${universalId({
     peer: 'local',
     type: 'workspace',
     id: 'workspace-test',
-  });
+  })}:${encodeURIComponent('/tmp/sync')}`;
   const listeners = new Map<string, Set<(event: DiskSyncEvent) => void>>();
 
   const startSession = vi.fn(
@@ -87,12 +87,12 @@ describe('DiskDocStorage', () => {
     }
   }
 
-  function createStorage() {
+  function createStorage(syncFolder = '/tmp/sync') {
     return new DiskDocStorage({
       flavour: 'local',
       type: 'workspace',
       id: 'workspace-test',
-      syncFolder: '/tmp/sync',
+      syncFolder,
     });
   }
 
@@ -140,6 +140,24 @@ describe('DiskDocStorage', () => {
     expect(startSession).toHaveBeenCalledTimes(2);
 
     storage.connection.disconnect();
+  });
+
+  it('isolates native sessions for different sync folders', async () => {
+    const first = createStorage('/tmp/sync-a');
+    const second = createStorage('/tmp/sync-b');
+
+    first.connection.connect();
+    second.connection.connect();
+    await Promise.all([
+      first.connection.waitForConnected(),
+      second.connection.waitForConnected(),
+    ]);
+
+    const startedSessionIds = startSession.mock.calls.map(([id]) => id);
+    expect(new Set(startedSessionIds).size).toBe(2);
+
+    first.connection.disconnect();
+    second.connection.disconnect();
   });
 
   it('forwards local updates and emits doc update events', async () => {

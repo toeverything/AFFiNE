@@ -1074,6 +1074,13 @@ mod tests {
       final_count > base_count,
       "Expected merged blocks after concurrent updates, got {final_count} vs {base_count}"
     );
+
+    let merged_markdown = parse_doc_to_markdown(final_doc.encode_update_v1().unwrap(), doc_id.to_string(), false, None)
+      .expect("render concurrently merged document")
+      .markdown;
+    assert!(merged_markdown.contains("Modified by client A."));
+    assert!(merged_markdown.contains("Added by client B."));
+    assert!(!merged_markdown.contains("Base paragraph."));
   }
 
   #[test]

@@ -34,6 +34,7 @@ pub(crate) fn parse_frontmatter(markdown: &str) -> (FrontmatterMeta, String) {
     in_tags_block = false;
 
     let Some((key, value)) = line.split_once(':') else {
+      meta.extra.push(raw_line.to_string());
       continue;
     };
 
@@ -69,7 +70,7 @@ pub(crate) fn parse_frontmatter(markdown: &str) -> (FrontmatterMeta, String) {
           }
         }
       }
-      _ => {}
+      _ => meta.extra.push(raw_line.to_string()),
     }
   }
 
@@ -106,6 +107,8 @@ pub(crate) fn render_frontmatter(meta: &FrontmatterMeta, body: &str) -> String {
   if let Some(trash) = meta.trash {
     lines.push(format!("trash: {}", trash));
   }
+
+  lines.extend(meta.extra.iter().cloned());
 
   lines.push("---".to_string());
   lines.push(String::new());
