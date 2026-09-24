@@ -57,9 +57,16 @@ describe('DocsStore.createDoc', () => {
   test('still creates a fresh doc id normally', () => {
     const { store, rootYDoc } = createStore();
 
-    const id = store.createDoc();
+    const { id } = store.createDoc();
 
     expect(pages(rootYDoc)).toHaveLength(1);
     expect(pages(rootYDoc)[0]?.get('id')).toBe(id);
+  });
+
+  test('reports isNew so callers can skip resetting createdAt on reuse', () => {
+    const { store } = createStore();
+
+    expect(store.createDoc('doc-1').isNew).toBe(true);
+    expect(store.createDoc('doc-1').isNew).toBe(false);
   });
 });

@@ -36,6 +36,7 @@ export class DocsStore extends Store {
 
   createDoc(docId?: string) {
     const id = docId ?? nanoid();
+    let isNew = true;
 
     transact(
       this.workspaceService.workspace.rootYDoc,
@@ -53,6 +54,7 @@ export class DocsStore extends Store {
         // duplicate entry or reset the original createDate.
         // https://github.com/toeverything/AFFiNE/issues/15629
         if (docs.toArray().some(page => page.get('id') === id)) {
+          isNew = false;
           return;
         }
 
@@ -68,7 +70,7 @@ export class DocsStore extends Store {
       { force: true }
     );
 
-    return id;
+    return { id, isNew };
   }
 
   watchDocIds() {
