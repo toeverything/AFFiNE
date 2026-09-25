@@ -8,6 +8,7 @@ import {
   type FormulaCellValue,
   type FormulaPropertyData,
   formulaTypeToTypeInstance,
+  getFormulaExpression,
   inferFormulaResultType,
 } from './cell-value.js';
 
@@ -32,7 +33,7 @@ export const formulaPropertyModelConfig = formulaPropertyType.modelConfig<
     isEmpty: ({ value }) => value == null || value === '',
     type: ({ data, dataSource }) =>
       formulaTypeToTypeInstance(
-        inferFormulaResultType(dataSource, data.expression)
+        inferFormulaResultType(dataSource, getFormulaExpression(data))
       ),
   },
   rawValue: {
