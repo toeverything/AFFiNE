@@ -1,4 +1,9 @@
-import type { TableBlockModel, TableCell } from '@blocksuite/affine-model';
+import type {
+  CellTextAlign,
+  CellVerticalAlign,
+  TableBlockModel,
+  TableCell,
+} from '@blocksuite/affine-model';
 import { generateFractionalIndexingKeyBetween } from '@blocksuite/affine-shared/utils';
 import { nanoid, Text } from '@blocksuite/store';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
@@ -375,5 +380,182 @@ export class TableDataManager {
       });
     });
     return newRowId;
+  }
+
+  // ── Cell Merging ────────────────────────────────────────────────────────
+
+  /**
+   * Merge all cells in the area selection into the top-left cell.
+   * The text of all non-empty covered cells is concatenated (newline-separated)
+   * into the top-left cell. All other covered cells are marked hidden.
+   */
+  mergeCells(selection: TableAreaSelection) {
+    const rows = this.rows$.value;
+    const columns = this.columns$.value;
+    const { rowStartIndex, rowEndIndex, columnStartIndex, columnEndIndex } =
+      selection;
+
+    if (rowStartIndex === rowEndIndex && columnStartIndex === columnEndIndex) {
+      return; // single cell — nothing to merge
+    }
+
+    const colSpan = columnEndIndex - columnStartIndex + 1;
+    const rowSpan = rowEndIndex - rowStartIndex + 1;
+
+    const topLeftRow = rows[rowStartIndex];
+    const topLeftCol = columns[columnStartIndex];
+    if (!topLeftRow || !topLeftCol) return;
+
+    const topLeftKey = `${topLeftRow.rowId}:${topLeftCol.columnId}`;
+
+    for (let r = rowStartIndex; r <= rowEndIndex; r++) {
+      for (let c = columnStartIndex; c <= columnEndIndex; c++) {
+        const row = rows[r];
+        const col = columns[c];
+        if (!row || !col) continue;
+        const current = this.model.props.cells[`${row.rowId}:${col.columnId}`];
+        if (!current) continue;
+        if (current.hidden) return;
+        const cs = current.colSpan ?? 1;
+        const rs = current.rowSpan ?? 1;
+        if (cs > 1 || rs > 1) {
+          const spanRowEnd = r + rs - 1;
+          const spanColEnd = c + cs - 1;
+          if (spanRowEnd > rowEndIndex || spanColEnd > columnEndIndex) {
+            return;
+          }
+        }
+      }
+    }
+
+    this.model.store.transact(() => {
+      // Collect non-empty text from all covered cells (excluding top-left)
+      const extraTexts: string[] = [];
+      for (let r = rowStartIndex; r <= rowEndIndex; r++) {
+        for (let c = columnStartIndex; c <= columnEndIndex; c++) {
+          if (r === rowStartIndex && c === columnStartIndex) continue;
+          const row = rows[r];
+          const col = columns[c];
+          if (!row || !col) continue;
+          const key = `${row.rowId}:${col.columnId}`;
+          const cell = this.model.props.cells[key];
+          if (cell) {
+            const t = cell.text.toString();
+            if (t.trim()) extraTexts.push(t);
+            if (cell.text.length > 0) {
+              cell.text.replace(0, cell.text.length, '');
+            }
+            delete cell.colSpan;
+            delete cell.rowSpan;
+            cell.hidden = true;
+          }
+        }
+      }
+
+      // Update the top-left cell — mutate in place to keep Y.Text attached
+      const topLeft = this.model.props.cells[topLeftKey];
+      if (topLeft) {
+        delete topLeft.hidden;
+        if (extraTexts.length) {
+          const topLeftText = topLeft.text.toString();
+          const combined =
+            topLeftText + (topLeftText ? '\n' : '') + extraTexts.join('\n');
+          topLeft.text.replace(0, topLeft.text.length, combined);
+        }
+        topLeft.colSpan = colSpan;
+        topLeft.rowSpan = rowSpan;
+      }
+    });
+  }
+
+  /**
+   * Unmerge a previously merged cell back to individual cells.
+   */
+  unmergeCells(rowId: string, columnId: string) {
+    const key = `${rowId}:${columnId}`;
+    const cell = this.model.props.cells[key];
+    if (!cell || (!cell.colSpan && !cell.rowSpan)) return;
+
+    const rows = this.rows$.value;
+    const columns = this.columns$.value;
+    const rowIndex = rows.findIndex(r => r.rowId === rowId);
+    const colIndex = columns.findIndex(c => c.columnId === columnId);
+    if (rowIndex === -1 || colIndex === -1) return;
+
+    const colSpan = cell.colSpan ?? 1;
+    const rowSpan = cell.rowSpan ?? 1;
+
+    this.model.store.transact(() => {
+      // Reset the top-left cell — mutate in place to keep Y.Text attached
+      const topLeft = this.model.props.cells[key];
+      if (topLeft) {
+        delete topLeft.colSpan;
+        delete topLeft.rowSpan;
+      }
+
+      // Restore all covered cells — clear hidden flag in place
+      for (let r = rowIndex; r < rowIndex + rowSpan; r++) {
+        for (let c = colIndex; c < colIndex + colSpan; c++) {
+          if (r === rowIndex && c === colIndex) continue;
+          const row = rows[r];
+          const col = columns[c];
+          if (!row || !col) continue;
+          const coveredKey = `${row.rowId}:${col.columnId}`;
+          const existing = this.model.props.cells[coveredKey];
+          if (existing) {
+            delete existing.hidden;
+          }
+        }
+      }
+    });
+  }
+
+  // ── Text / Vertical Alignment ────────────────────────────────────────
+
+  setSelectionTextAlign(selection: TableAreaSelection, align: CellTextAlign) {
+    const rows = this.rows$.value;
+    const columns = this.columns$.value;
+    this.model.store.transact(() => {
+      for (let r = selection.rowStartIndex; r <= selection.rowEndIndex; r++) {
+        for (
+          let c = selection.columnStartIndex;
+          c <= selection.columnEndIndex;
+          c++
+        ) {
+          const row = rows[r];
+          const col = columns[c];
+          if (!row || !col) continue;
+          const cell = this.model.props.cells[`${row.rowId}:${col.columnId}`];
+          if (cell) {
+            cell.textAlign = align;
+          }
+        }
+      }
+    });
+  }
+
+  setSelectionVerticalAlign(
+    selection: TableAreaSelection,
+    align: CellVerticalAlign
+  ) {
+    const rows = this.rows$.value;
+    const columns = this.columns$.value;
+    this.model.store.transact(() => {
+      for (let r = selection.rowStartIndex; r <= selection.rowEndIndex; r++) {
+        for (
+          let c = selection.columnStartIndex;
+          c <= selection.columnEndIndex;
+          c++
+        ) {
+          const row = rows[r];
+          const col = columns[c];
+          if (!row || !col) continue;
+          const cell = this.model.props.cells[`${row.rowId}:${col.columnId}`];
+          if (cell) {
+            cell.verticalAlign = align;
+          }
+        }
+      }
+    });
   }
 }
