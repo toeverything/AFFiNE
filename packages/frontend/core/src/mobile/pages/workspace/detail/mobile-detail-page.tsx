@@ -47,9 +47,11 @@ import * as styles from './mobile-detail-page.css';
 import {
   getImmersiveZoomToolbarBottom,
   getLandscapeWindowMeasurement,
+  hasOpenEdgelessUiOverlay,
   isImmersiveTapTarget,
   isLandscapeWindow,
   isTapWithinSlop,
+  shouldAutoHideEdgelessChrome,
   shouldEnableEdgelessImmersive,
   shouldLockEdgelessDocumentScroll,
   shouldShowMobileDetailPageTitle,
@@ -204,7 +206,7 @@ const DetailPageImpl = ({
         disposable.dispose();
       };
     },
-    [docCollection.id, editor, jumpToPageBlock, openPage, server]
+    [doc.id, docCollection.id, editor, jumpToPageBlock, mode, openPage, server]
   );
 
   const canEdit = useGuard('Doc_Update', doc.id);
@@ -289,12 +291,14 @@ const MobileDetailPageHeader = ({
   allJournalDates,
   handleDateChange,
   trackScrollTitle,
+  onMenuOpenChange,
 }: {
   date?: string;
   title?: string;
   allJournalDates: Set<string | null | undefined>;
   handleDateChange: (date: string) => void;
   trackScrollTitle: boolean;
+  onMenuOpenChange?: (open: boolean) => void;
 }) => {
   const [showTitle, setShowTitle] = useState(getShouldShowTitle);
 
@@ -340,7 +344,7 @@ const MobileDetailPageHeader = ({
       suffix={
         <>
           <PageHeaderShareButton />
-          <PageHeaderMenuButton />
+          <PageHeaderMenuButton onOpenChange={onMenuOpenChange} />
         </>
       }
       bottom={
@@ -381,6 +385,7 @@ const MobileDetailPageContent = ({
   const mode = useLiveData(editor.mode$);
   const [isLandscape, setIsLandscape] = useState(getIsLandscape);
   const [chromeVisible, setChromeVisible] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const tapStateRef = useRef<{
     pointerId: number;
     clientX: number;
@@ -450,22 +455,39 @@ const MobileDetailPageContent = ({
 
   useEffect(() => {
     setChromeVisible(!immersive);
+    setMenuOpen(false);
     tapStateRef.current = null;
   }, [immersive, pageId]);
 
   useEffect(() => {
-    if (!immersive || !chromeVisible) {
+    if (
+      !shouldAutoHideEdgelessChrome({
+        immersive,
+        chromeVisible,
+        menuOpen,
+        overlayOpen: hasOpenEdgelessUiOverlay(),
+      })
+    ) {
       return;
     }
 
-    const timeout = window.setTimeout(() => {
-      setChromeVisible(false);
-    }, 3000);
+    let timeout = 0;
+    const scheduleAutoHide = () => {
+      timeout = window.setTimeout(() => {
+        if (menuOpen || hasOpenEdgelessUiOverlay()) {
+          scheduleAutoHide();
+          return;
+        }
+        setChromeVisible(false);
+      }, 3000);
+    };
+
+    scheduleAutoHide();
 
     return () => {
       window.clearTimeout(timeout);
     };
-  }, [chromeVisible, immersive]);
+  }, [chromeVisible, immersive, menuOpen]);
 
   const immersiveTapHandlers = useMemo<ImmersiveTapHandlers | undefined>(() => {
     if (!immersive) {
@@ -511,6 +533,7 @@ const MobileDetailPageContent = ({
           allJournalDates={allJournalDates}
           handleDateChange={handleDateChange}
           trackScrollTitle={trackScrollTitle}
+          onMenuOpenChange={setMenuOpen}
         />
       )}
       <JournalConflictBlock date={date} />

@@ -8,6 +8,8 @@ import type { IVec } from '@blocksuite/global/gfx';
 import type { PointerEventState } from '@blocksuite/std';
 import { BaseTool } from '@blocksuite/std/gfx';
 
+import { getPointerSamples } from './pointer-samples.js';
+
 export class BrushTool extends BaseTool {
   static BRUSH_POP_GAP = 20;
 
@@ -42,13 +44,11 @@ export class BrushTool extends BaseTool {
       : 'vertical';
   }
 
-  private _tryGetPressurePoints(e: PointerEventState): number[][] {
-    if (!this._draggingPathPressures) {
-      return [];
-    }
-    const pressures = [...this._draggingPathPressures, e.pressure];
-    this._draggingPathPressures = pressures;
-
+  private _mapPressurePoints(
+    e: PointerEventState,
+    points: number[][],
+    pressures: number[]
+  ): number[][] {
     // we do not use the `e.raw.pointerType` to detect because it is not reliable,
     // such as some digital pens do not support pressure even thought the `e.raw.pointerType` is equal to `'pen'`
     const pointerId = e.raw.pointerId;
@@ -60,10 +60,6 @@ export class BrushTool extends BaseTool {
       this._pressureSupportedPointerIds.add(pointerId);
     }
 
-    const points = this._draggingPathPoints;
-    if (!points) {
-      return [];
-    }
     if (this._pressureSupportedPointerIds.has(pointerId)) {
       return points.map(([x, y], i) => [x, y, pressures[i]]);
     } else {
@@ -93,36 +89,50 @@ export class BrushTool extends BaseTool {
       !this._draggingElementId ||
       !this._draggingElement ||
       !this.gfx.surface ||
-      !this._draggingPathPoints
+      !this._draggingPathPoints ||
+      !this._draggingPathPressures
     )
       return;
 
-    let pointX = e.point.x;
-    let pointY = e.point.y;
     const holdingShiftKey = e.keys.shift || this.gfx.keyboard.shiftKey$.peek();
-    if (holdingShiftKey) {
-      if (!this._straightLineType) {
-        this._straightLineType = this._getStraightLineType([pointX, pointY]);
-      }
+    // Straight-line mode snaps to an axis from the final position, so coalesced
+    // sub-samples would fight the snap; use only the event's own point there.
+    const samples = holdingShiftKey
+      ? [{ x: e.point.x, y: e.point.y, pressure: e.pressure }]
+      : getPointerSamples(e);
 
-      if (this._straightLineType === 'horizontal') {
-        pointY = this._lastPoint?.[1] ?? pointY;
-      } else if (this._straightLineType === 'vertical') {
-        pointX = this._lastPoint?.[0] ?? pointX;
-      }
-    } else if (this._straightLineType) {
+    if (!holdingShiftKey && this._straightLineType) {
       this._straightLineType = null;
     }
 
-    const [modelX, modelY] = this.gfx.viewport.toModelCoord(pointX, pointY);
+    const points = [...this._draggingPathPoints];
+    const pressures = [...this._draggingPathPressures];
 
-    const points = [...this._draggingPathPoints, [modelX, modelY]];
+    for (const sample of samples) {
+      let pointX = sample.x;
+      let pointY = sample.y;
+      if (holdingShiftKey) {
+        if (!this._straightLineType) {
+          this._straightLineType = this._getStraightLineType([pointX, pointY]);
+        }
+        if (this._straightLineType === 'horizontal') {
+          pointY = this._lastPoint?.[1] ?? pointY;
+        } else if (this._straightLineType === 'vertical') {
+          pointX = this._lastPoint?.[0] ?? pointX;
+        }
+      }
 
-    this._lastPoint = [pointX, pointY];
+      const [modelX, modelY] = this.gfx.viewport.toModelCoord(pointX, pointY);
+      points.push([modelX, modelY]);
+      pressures.push(sample.pressure);
+      this._lastPoint = [pointX, pointY];
+    }
+
     this._draggingPathPoints = points;
+    this._draggingPathPressures = pressures;
 
     this.gfx.updateElement(this._draggingElement, {
-      points: this._tryGetPressurePoints(e),
+      points: this._mapPressurePoints(e, points, pressures),
     });
 
     if (
