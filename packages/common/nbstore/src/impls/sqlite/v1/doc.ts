@@ -1,8 +1,8 @@
 import { DummyConnection } from '../../../connection';
 import {
   type DocRecord,
-  DocStorageBase,
   type DocUpdate,
+  SnapshotDocStorageBase,
 } from '../../../storage';
 import { getIdConverter, type IdConverter } from '../../../utils/id-converter';
 import { isEmptyUpdate } from '../../../utils/is-empty-update';
@@ -19,7 +19,7 @@ const CONST_TIMESTAMP = new Date(1893456000000);
 /**
  * @deprecated readonly
  */
-export class SqliteV1DocStorage extends DocStorageBase<{
+export class SqliteV1DocStorage extends SnapshotDocStorageBase<{
   type: SpaceType;
   id: string;
 }> {

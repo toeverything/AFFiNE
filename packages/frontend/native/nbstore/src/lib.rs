@@ -51,6 +51,12 @@ pub struct DocRecord {
   pub timestamp: NaiveDateTime,
 }
 
+#[napi(object)]
+pub struct ReadonlyDocRecords {
+  pub snapshot: Option<DocRecord>,
+  pub updates: Vec<DocUpdate>,
+}
+
 #[derive(Debug)]
 #[napi(object)]
 pub struct DocClock {
@@ -153,34 +159,18 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn get_doc_snapshot(&self, universal_id: String, doc_id: String) -> Result<Option<DocRecord>> {
-    Ok(self.get(universal_id).await?.get_doc_snapshot(doc_id).await?)
+  pub async fn get_doc(&self, universal_id: String, doc_id: String) -> Result<Option<DocRecord>> {
+    Ok(self.get(universal_id).await?.get_doc(doc_id).await?)
   }
 
   #[napi]
-  pub async fn set_doc_snapshot(&self, universal_id: String, snapshot: DocRecord) -> Result<bool> {
-    Ok(self.get(universal_id).await?.set_doc_snapshot(snapshot).await?)
+  pub async fn read_doc_records_readonly(&self, path: String, doc_id: String) -> Result<ReadonlyDocRecords> {
+    Ok(SqliteDocStorage::read_doc_records_readonly(&path, &doc_id).await?)
   }
 
   #[napi]
-  pub async fn get_doc_updates(&self, universal_id: String, doc_id: String) -> Result<Vec<DocUpdate>> {
-    Ok(self.get(universal_id).await?.get_doc_updates(doc_id).await?)
-  }
-
-  #[napi]
-  pub async fn mark_updates_merged(
-    &self,
-    universal_id: String,
-    doc_id: String,
-    updates: Vec<NaiveDateTime>,
-  ) -> Result<u32> {
-    Ok(
-      self
-        .get(universal_id)
-        .await?
-        .mark_updates_merged(doc_id, updates)
-        .await?,
-    )
+  pub async fn read_blob_readonly(&self, path: String, key: String) -> Result<Option<Blob>> {
+    Ok(SqliteDocStorage::read_blob_readonly(&path, &key).await?)
   }
 
   #[napi]

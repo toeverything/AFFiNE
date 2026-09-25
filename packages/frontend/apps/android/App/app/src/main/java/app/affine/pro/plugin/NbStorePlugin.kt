@@ -8,7 +8,6 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import kotlinx.coroutines.Dispatchers
 import timber.log.Timber
-import uniffi.affine_mobile_native.DocRecord
 import uniffi.affine_mobile_native.DocIndexedClock
 import uniffi.affine_mobile_native.IndexHit
 import uniffi.affine_mobile_native.SetBlob
@@ -107,12 +106,12 @@ class NbStorePlugin : Plugin() {
   }
 
   @PluginMethod
-  fun getDocSnapshot(call: PluginCall) {
+  fun getDoc(call: PluginCall) {
     launch(Dispatchers.IO) {
       try {
         val id = call.getStringEnsure("id")
         val docId = call.getStringEnsure("docId")
-        val record = docStoragePool.getDocSnapshot(universalId = id, docId = docId)
+        val record = docStoragePool.getDoc(universalId = id, docId = docId)
         record?.let {
           call.resolve(
             JSObject()
@@ -122,65 +121,7 @@ class NbStorePlugin : Plugin() {
           )
         } ?: call.resolve()
       } catch (e: Exception) {
-        call.reject("Failed to get doc snapshot, ${e.message}", null, e)
-      }
-    }
-  }
-
-  @PluginMethod
-  fun setDocSnapshot(call: PluginCall) {
-    launch(Dispatchers.IO) {
-      try {
-        val id = call.getStringEnsure("id")
-        val docId = call.getStringEnsure("docId")
-        val bin = call.getStringEnsure("bin")
-        val timestamp = call.getLongEnsure("timestamp")
-        val success = docStoragePool.setDocSnapshot(
-          universalId = id,
-          snapshot = DocRecord(docId, bin, timestamp)
-        )
-        call.resolve(JSObject().put("success", success))
-      } catch (e: Exception) {
-        call.reject("Failed to set doc snapshot, ${e.message}", null, e)
-      }
-    }
-  }
-
-  @PluginMethod
-  fun getDocUpdates(call: PluginCall) {
-    launch(Dispatchers.IO) {
-      try {
-        val id = call.getStringEnsure("id")
-        val docId = call.getStringEnsure("docId")
-        val updates = docStoragePool.getDocUpdates(universalId = id, docId = docId)
-        val mapped = JSArray(updates.map {
-          JSObject()
-            .put("docId", it.docId)
-            .put("timestamp", it.timestamp)
-            .put("bin", it.bin)
-        })
-        call.resolve(JSObject().put("updates", mapped))
-      } catch (e: Exception) {
-        call.reject("Failed to get doc updates, ${e.message}", null, e)
-      }
-    }
-  }
-
-  @PluginMethod
-  fun markUpdatesMerged(call: PluginCall) {
-    launch(Dispatchers.IO) {
-      try {
-        val id = call.getStringEnsure("id")
-        val docId = call.getStringEnsure("docId")
-        val times = call.getListEnsure<Long>("timestamps")
-        val count = docStoragePool.markUpdatesMerged(
-          universalId = id,
-          docId = docId,
-          updates = times
-        )
-        call.resolve(JSObject().put("count", count))
-      } catch (e: Exception) {
-        call.reject("Failed to mark updates merged, ${e.message}", null, e)
+        call.reject("Failed to get doc, ${e.message}", null, e)
       }
     }
   }

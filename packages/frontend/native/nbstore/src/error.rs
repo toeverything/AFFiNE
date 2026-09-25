@@ -16,6 +16,10 @@ pub enum Error {
   IndexNotReady,
   #[error("Serialization Error: {0}")]
   Serialization(String),
+  #[error("Document update has missing dependencies")]
+  IncompleteDoc,
+  #[error("Document changed during compaction")]
+  ConcurrentModification,
   #[error(transparent)]
   Indexer(#[from] memory_indexer::Error),
   #[error(transparent)]

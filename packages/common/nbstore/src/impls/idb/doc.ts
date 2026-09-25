@@ -3,8 +3,8 @@ import {
   type DocClock,
   type DocClocks,
   type DocRecord,
-  DocStorageBase,
   type DocUpdate,
+  SnapshotDocStorageBase,
 } from '../../storage';
 import { IDBConnection, type IDBConnectionOptions } from './db';
 import { IndexedDBLocker } from './lock';
@@ -15,7 +15,7 @@ interface ChannelMessage {
   origin?: string;
 }
 
-export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
+export class IndexedDBDocStorage extends SnapshotDocStorageBase<IDBConnectionOptions> {
   static readonly identifier = 'IndexedDBDocStorage';
 
   readonly connection = share(new IDBConnection(this.options));

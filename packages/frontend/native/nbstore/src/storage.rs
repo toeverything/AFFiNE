@@ -184,8 +184,12 @@ impl SqliteDocStorage {
   }
 
   async fn open_readonly_pool(&self) -> Result<Pool<Sqlite>> {
+    Self::open_readonly_path(&self.path).await
+  }
+
+  pub(crate) async fn open_readonly_path(path: &str) -> Result<Pool<Sqlite>> {
     let sqlite_options = SqliteConnectOptions::new()
-      .filename(&self.path)
+      .filename(path)
       .foreign_keys(false)
       .read_only(true);
 

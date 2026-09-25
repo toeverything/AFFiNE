@@ -62,35 +62,10 @@ export interface NbStorePlugin {
     // base64 encoded data
     data: string;
   }) => Promise<{ timestamp: number }>;
-  getDocSnapshot: (options: { id: string; docId: string }) => Promise<
-    | {
-        docId: string;
-        // base64 encoded data
-        bin: string;
-        timestamp: number;
-      }
-    | undefined
-  >;
-  setDocSnapshot: (options: {
+  getDoc: (options: {
     id: string;
     docId: string;
-    // base64 encoded data
-    bin: string;
-    timestamp: number;
-  }) => Promise<{ success: boolean }>;
-  getDocUpdates: (options: { id: string; docId: string }) => Promise<{
-    updates: {
-      docId: string;
-      timestamp: number;
-      // base64 encoded data
-      bin: string;
-    }[];
-  }>;
-  markUpdatesMerged: (options: {
-    id: string;
-    docId: string;
-    timestamps: number[];
-  }) => Promise<{ count: number }>;
+  }) => Promise<{ docId: string; bin: string; timestamp: number } | undefined>;
   deleteDoc: (options: { id: string; docId: string }) => Promise<void>;
   getDocClocks: (options: { id: string; after?: number | null }) => Promise<{
     clocks: {
