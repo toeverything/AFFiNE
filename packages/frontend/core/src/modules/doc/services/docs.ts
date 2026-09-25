@@ -147,7 +147,7 @@ export class DocsService extends Service {
         ? middleware.beforeCreate(options)
         : options;
     }
-    const id = this.store.createDoc(options.id);
+    const { id, isNew } = this.store.createDoc(options.id);
     const docStore = this.store.getBlockSuiteDoc(id);
     if (!docStore) {
       throw new Error('Failed to create doc');
@@ -168,7 +168,12 @@ export class DocsService extends Service {
     for (const middleware of this.docCreateMiddlewares) {
       middleware.afterCreate?.(docRecord, options);
     }
-    docRecord.setCreatedAt(Date.now());
+    // Re-creating an existing id (e.g. a re-import producing the same
+    // deterministic doc id) must not reset its original creation date.
+    // https://github.com/toeverything/AFFiNE/issues/15629
+    if (isNew) {
+      docRecord.setCreatedAt(Date.now());
+    }
     docRecord.setUpdatedAt(Date.now());
     this.eventBus.emit(DocCreated, {
       doc: docRecord,
