@@ -17,7 +17,8 @@ type ViewerState =
   | { kind: 'ready' }
   | { kind: 'error'; message: string; retryable: boolean };
 
-const LOAD_TIMEOUT = 20_000;
+// How long to wait for the viewer to announce itself after its page loaded.
+const INIT_TIMEOUT = 15_000;
 
 export class DrawioViewer extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -172,14 +173,21 @@ export class DrawioViewer extends SignalWatcher(
     }
 
     this.xml$.value = content;
+  }
+
+  // The iframe is lazy, so the timeout only starts once it actually loaded
+  // (or failed to), not while it's still off screen.
+  private readonly onFrameLoad = () => {
+    if (this.state$.peek().kind !== 'loading') return;
+    this.clearLoadTimeout();
     this.timeout = setTimeout(() => {
       this.state$.value = {
         kind: 'error',
         message: `Couldn't load the draw.io viewer from ${this.viewerOrigin}.`,
         retryable: true,
       };
-    }, LOAD_TIMEOUT);
-  }
+    }, INIT_TIMEOUT);
+  };
 
   private readonly retry = (event: MouseEvent) => {
     event.stopPropagation();
@@ -220,6 +228,7 @@ export class DrawioViewer extends SignalWatcher(
               referrerpolicy="no-referrer"
               loading="lazy"
               credentialless
+              @load=${this.onFrameLoad}
             ></iframe>`
           : null
       }
