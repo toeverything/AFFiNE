@@ -23,6 +23,7 @@ import type { TemplateResult } from 'lit';
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { isDrawioAttachment } from './drawio/utils';
 import { getAttachmentBlob } from './utils';
 
 export type AttachmentEmbedConfig = {
@@ -249,6 +250,28 @@ const embedConfig: AttachmentEmbedConfig[] = [
         src=${blobUrl}
         controls
       ></audio>`,
+  },
+  {
+    name: 'drawio',
+    shouldShowStatus: true,
+    check: (model, maxFileSize) =>
+      isDrawioAttachment(model) && model.props.size <= maxFileSize,
+    action: model => {
+      // Same size as other iframe embeds.
+      const bound = Bound.deserialize(model.props.xywh);
+      bound.w = EMBED_CARD_WIDTH.figma;
+      bound.h = EMBED_CARD_HEIGHT.figma;
+      model.store.updateBlock(model, {
+        embed: true,
+        style: 'figma',
+        xywh: bound.serialize(),
+      });
+    },
+    render: (model, blobUrl) =>
+      html`<affine-attachment-drawio-viewer
+        .blobUrl=${blobUrl}
+        .name=${model.props.name}
+      ></affine-attachment-drawio-viewer>`,
   },
 ];
 
