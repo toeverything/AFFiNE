@@ -11,7 +11,7 @@ export class BroadcastChannelConnection extends AutoReconnectConnection<Broadcas
     super();
   }
 
-  override async doConnect() {
+  override doConnect() {
     return new BroadcastChannel(this.channelName);
   }
 
