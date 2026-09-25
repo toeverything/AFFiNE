@@ -14,6 +14,7 @@ affine_importer = { workspace = true }
 affine_media_capture = { path = "./media_capture" }
 affine_nbstore = { workspace = true, features = ["napi"] }
 affine_sqlite_v1 = { path = "./sqlite_v1" }
+chrono = { workspace = true }
 hex = { workspace = true }
 infer = { workspace = true }
 napi = { workspace = true }
@@ -22,6 +23,7 @@ once_cell = { workspace = true }
 onenote_parser = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
+sha3 = { workspace = true }
 sqlx = { workspace = true, default-features = false, features = [
   "chrono",
   "macros",
@@ -32,6 +34,8 @@ sqlx = { workspace = true, default-features = false, features = [
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 typed-path = { workspace = true }
+uuid = { workspace = true }
+y-octo = { workspace = true }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 affine_preview = { workspace = true, features = ["mermaid", "typst"] }
@@ -47,7 +51,6 @@ mimalloc = { workspace = true, features = ["local_dynamic_tls"] }
 
 [dev-dependencies]
 chrono = { workspace = true }
-uuid   = { workspace = true }
 zip    = { workspace = true }
 
 [build-dependencies]

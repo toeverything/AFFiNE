@@ -702,6 +702,100 @@ test('doc sync peer stops retrying a doc when remote denies permission', async (
   }
 });
 
+test('Markdown review pauses only its doc and resumes after source acceptance', async () => {
+  const local = new IndexedDBDocStorage({
+    id: 'ws-disk-review',
+    flavour: 'local-disk-review',
+    type: 'workspace',
+  });
+  const syncMetadata = new IndexedDBDocSyncStorage({
+    id: 'ws-disk-review',
+    flavour: 'local-disk-review',
+    type: 'workspace',
+  });
+  const remote = new TestDocStorage(
+    'ws-disk-review',
+    new Map(),
+    async () => null
+  );
+  const pushRemote = remote.pushDocUpdate.bind(remote);
+  let needsReview = true;
+  const push = vi
+    .spyOn(remote, 'pushDocUpdate')
+    .mockImplementation((update, origin) => {
+      if (update.docId === 'doc-review' && needsReview) {
+        const error = new Error('Review Markdown source candidate');
+        error.name = 'DISK_SOURCE_REVIEW_REQUIRED';
+        throw error;
+      }
+      return pushRemote(update, origin);
+    });
+  const peer = new DocSyncPeer('disk-review', local, syncMetadata, remote);
+  const abort = new AbortController();
+
+  local.connection.connect();
+  syncMetadata.connection.connect();
+  await Promise.all([
+    local.connection.waitForConnected(),
+    syncMetadata.connection.waitForConnected(),
+  ]);
+  const doc = new YDoc();
+  doc.getMap('test').set('value', 1);
+  for (const docId of ['doc-review', 'doc-healthy']) {
+    await local.pushDocUpdate({ docId, bin: encodeStateAsUpdate(doc) });
+  }
+
+  const running = peer.mainLoop(abort.signal);
+  try {
+    await vi.waitFor(async () => {
+      expect(await remote.getDocTimestamp('doc-healthy')).not.toBeNull();
+      let state: { errorMessage: string | null; retrying: boolean } | undefined;
+      const dispose = peer.docState$('doc-review').subscribe(next => {
+        state = next;
+      });
+      dispose.unsubscribe();
+      expect(state?.errorMessage).toContain('Review Markdown source candidate');
+      expect(state?.retrying).toBe(false);
+    });
+
+    const attempts = push.mock.calls.filter(
+      ([update]) => update.docId === 'doc-review'
+    ).length;
+    doc.getMap('test').set('value', 2);
+    await local.pushDocUpdate({
+      docId: 'doc-review',
+      bin: encodeStateAsUpdate(doc),
+    });
+    await vi.waitFor(() => {
+      expect(
+        push.mock.calls.filter(([update]) => update.docId === 'doc-review')
+          .length
+      ).toBeGreaterThan(attempts);
+    });
+
+    needsReview = false;
+    await pushRemote(
+      { docId: 'doc-review', bin: new Uint8Array([0, 0]) },
+      'disk:source-discovered'
+    );
+    await vi.waitFor(async () => {
+      expect(await remote.getDocTimestamp('doc-review')).not.toBeNull();
+      let state: { errorMessage: string | null; synced: boolean } | undefined;
+      const dispose = peer.docState$('doc-review').subscribe(next => {
+        state = next;
+      });
+      dispose.unsubscribe();
+      expect(state).toMatchObject({ errorMessage: null, synced: true });
+    });
+  } finally {
+    abort.abort();
+    await running;
+    local.connection.disconnect();
+    syncMetadata.connection.disconnect();
+    doc.destroy();
+  }
+});
+
 test('doc sync peer stops retrying when remote connection denies permission', async () => {
   const local = new IndexedDBDocStorage({
     id: 'ws-connection-denied',

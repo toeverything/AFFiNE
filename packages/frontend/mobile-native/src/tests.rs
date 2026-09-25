@@ -4,10 +4,7 @@ use std::{
   time::{SystemTime, UNIX_EPOCH},
 };
 
-use affine_nbstore::DocUpdate as NbDocUpdate;
-use chrono::{DateTime, Utc};
-
-use crate::{UniffiError, cache, ffi_types::DocUpdate, storage::new_doc_storage_pool};
+use crate::{UniffiError, cache, storage::new_doc_storage_pool};
 
 static TEST_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -18,43 +15,6 @@ fn unique_id(prefix: &str) -> String {
     .expect("system clock before unix epoch")
     .as_nanos();
   format!("{prefix}-{now}-{counter}")
-}
-
-#[test]
-fn doc_update_roundtrip_base64() {
-  let timestamp = DateTime::<Utc>::from_timestamp_millis(1_700_000_000_000)
-    .unwrap()
-    .naive_utc();
-  let original = NbDocUpdate {
-    doc_id: "doc-1".to_string(),
-    timestamp,
-    bin: vec![1, 2, 3, 4, 5],
-  };
-
-  let encoded: DocUpdate = original.into();
-  let decoded = NbDocUpdate::try_from(encoded).unwrap();
-
-  assert_eq!(decoded.doc_id, "doc-1");
-  assert_eq!(decoded.timestamp, timestamp);
-  assert_eq!(decoded.bin, vec![1, 2, 3, 4, 5]);
-}
-
-#[test]
-fn doc_update_rejects_invalid_base64() {
-  let update = DocUpdate {
-    doc_id: "doc-2".to_string(),
-    timestamp: 0,
-    bin: "not-base64!!".to_string(),
-  };
-
-  let err = match NbDocUpdate::try_from(update) {
-    Ok(_) => panic!("expected base64 decode error"),
-    Err(err) => err,
-  };
-  match err {
-    UniffiError::Base64DecodingError(_) => {}
-    other => panic!("unexpected error: {other:?}"),
-  }
 }
 
 #[tokio::test]

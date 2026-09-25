@@ -89,7 +89,7 @@ __metadata:
   dependencies:
     "@affine-tools/utils": "workspace:*"
     "@blocksuite/affine": "workspace:*"
-    "@node-rs/argon2": "npm:^2.0.2"
+    "@node-rs/argon2": "npm:^2.2.1"
     "@playwright/test": "npm:=1.58.2"
     "@toeverything/infra": "workspace:*"
     express: "npm:^5.1.0"
@@ -539,6 +539,7 @@ __metadata:
     react-router-dom: "npm:^7.18.4"
     typescript: "npm:@typescript/typescript6@6.0.2"
     uuid: "npm:^14.0.0"
+    vitest: "npm:^4.1.11"
   languageName: unknown
   linkType: soft
 
@@ -803,6 +804,7 @@ __metadata:
     ava: "npm:^7.0.0"
     rxjs: "npm:^7.8.2"
     typescript: "npm:@typescript/typescript6@6.0.2"
+    yjs: "npm:^13.6.27"
   languageName: unknown
   linkType: soft
 
@@ -944,8 +946,7 @@ __metadata:
     "@nestjs/testing": "patch:@nestjs/testing@npm%3A11.1.18#~/.yarn/patches/@nestjs-testing-npm-11.1.18-32c0f6af12.patch"
     "@nestjs/throttler": "npm:^6.5.0"
     "@nestjs/websockets": "npm:^11.1.18"
-    "@node-rs/argon2": "npm:^2.0.2"
-    "@node-rs/crc32": "npm:^1.10.6"
+    "@node-rs/argon2": "npm:^2.2.1"
     "@opentelemetry/api": "npm:^1.9.0"
     "@opentelemetry/core": "npm:^2.10.0"
     "@opentelemetry/exporter-prometheus": "npm:^0.221.0"
@@ -8279,7 +8280,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/wasm-runtime@npm:^0.2.11, @napi-rs/wasm-runtime@npm:^0.2.5":
+"@napi-rs/wasm-runtime@npm:^0.2.11":
   version: 0.2.12
   resolution: "@napi-rs/wasm-runtime@npm:0.2.12"
   dependencies:
@@ -8882,124 +8883,114 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-android-arm-eabi@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-android-arm-eabi@npm:2.0.2"
+"@node-rs/argon2-android-arm-eabi@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-android-arm-eabi@npm:2.2.1"
   conditions: os=android & cpu=arm
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-android-arm64@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-android-arm64@npm:2.0.2"
+"@node-rs/argon2-android-arm64@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-android-arm64@npm:2.2.1"
   conditions: os=android & cpu=arm64
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-darwin-arm64@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-darwin-arm64@npm:2.0.2"
+"@node-rs/argon2-darwin-arm64@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-darwin-arm64@npm:2.2.1"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-darwin-x64@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-darwin-x64@npm:2.0.2"
+"@node-rs/argon2-darwin-x64@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-darwin-x64@npm:2.2.1"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-freebsd-x64@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-freebsd-x64@npm:2.0.2"
+"@node-rs/argon2-freebsd-x64@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-freebsd-x64@npm:2.2.1"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-linux-arm-gnueabihf@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-linux-arm-gnueabihf@npm:2.0.2"
+"@node-rs/argon2-linux-arm-gnueabihf@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-linux-arm-gnueabihf@npm:2.2.1"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-linux-arm64-gnu@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-linux-arm64-gnu@npm:2.0.2"
+"@node-rs/argon2-linux-arm64-gnu@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-linux-arm64-gnu@npm:2.2.1"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-linux-arm64-musl@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-linux-arm64-musl@npm:2.0.2"
+"@node-rs/argon2-linux-arm64-musl@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-linux-arm64-musl@npm:2.2.1"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-linux-x64-gnu@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-linux-x64-gnu@npm:2.0.2"
+"@node-rs/argon2-linux-x64-gnu@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-linux-x64-gnu@npm:2.2.1"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-linux-x64-musl@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-linux-x64-musl@npm:2.0.2"
+"@node-rs/argon2-linux-x64-musl@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-linux-x64-musl@npm:2.2.1"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-wasm32-wasi@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-wasm32-wasi@npm:2.0.2"
-  dependencies:
-    "@napi-rs/wasm-runtime": "npm:^0.2.5"
-  conditions: cpu=wasm32
-  languageName: node
-  linkType: hard
-
-"@node-rs/argon2-win32-arm64-msvc@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-win32-arm64-msvc@npm:2.0.2"
+"@node-rs/argon2-win32-arm64-msvc@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-win32-arm64-msvc@npm:2.2.1"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-win32-ia32-msvc@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-win32-ia32-msvc@npm:2.0.2"
+"@node-rs/argon2-win32-ia32-msvc@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-win32-ia32-msvc@npm:2.2.1"
   conditions: os=win32 & cpu=ia32
   languageName: node
   linkType: hard
 
-"@node-rs/argon2-win32-x64-msvc@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2-win32-x64-msvc@npm:2.0.2"
+"@node-rs/argon2-win32-x64-msvc@npm:2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2-win32-x64-msvc@npm:2.2.1"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@node-rs/argon2@npm:^2.0.2":
-  version: 2.0.2
-  resolution: "@node-rs/argon2@npm:2.0.2"
+"@node-rs/argon2@npm:^2.2.1":
+  version: 2.2.1
+  resolution: "@node-rs/argon2@npm:2.2.1"
   dependencies:
-    "@node-rs/argon2-android-arm-eabi": "npm:2.0.2"
-    "@node-rs/argon2-android-arm64": "npm:2.0.2"
-    "@node-rs/argon2-darwin-arm64": "npm:2.0.2"
-    "@node-rs/argon2-darwin-x64": "npm:2.0.2"
-    "@node-rs/argon2-freebsd-x64": "npm:2.0.2"
-    "@node-rs/argon2-linux-arm-gnueabihf": "npm:2.0.2"
-    "@node-rs/argon2-linux-arm64-gnu": "npm:2.0.2"
-    "@node-rs/argon2-linux-arm64-musl": "npm:2.0.2"
-    "@node-rs/argon2-linux-x64-gnu": "npm:2.0.2"
-    "@node-rs/argon2-linux-x64-musl": "npm:2.0.2"
-    "@node-rs/argon2-wasm32-wasi": "npm:2.0.2"
-    "@node-rs/argon2-win32-arm64-msvc": "npm:2.0.2"
-    "@node-rs/argon2-win32-ia32-msvc": "npm:2.0.2"
-    "@node-rs/argon2-win32-x64-msvc": "npm:2.0.2"
+    "@node-rs/argon2-android-arm-eabi": "npm:2.2.1"
+    "@node-rs/argon2-android-arm64": "npm:2.2.1"
+    "@node-rs/argon2-darwin-arm64": "npm:2.2.1"
+    "@node-rs/argon2-darwin-x64": "npm:2.2.1"
+    "@node-rs/argon2-freebsd-x64": "npm:2.2.1"
+    "@node-rs/argon2-linux-arm-gnueabihf": "npm:2.2.1"
+    "@node-rs/argon2-linux-arm64-gnu": "npm:2.2.1"
+    "@node-rs/argon2-linux-arm64-musl": "npm:2.2.1"
+    "@node-rs/argon2-linux-x64-gnu": "npm:2.2.1"
+    "@node-rs/argon2-linux-x64-musl": "npm:2.2.1"
+    "@node-rs/argon2-win32-arm64-msvc": "npm:2.2.1"
+    "@node-rs/argon2-win32-ia32-msvc": "npm:2.2.1"
+    "@node-rs/argon2-win32-x64-msvc": "npm:2.2.1"
   dependenciesMeta:
     "@node-rs/argon2-android-arm-eabi":
       optional: true
@@ -9021,166 +9012,13 @@ __metadata:
       optional: true
     "@node-rs/argon2-linux-x64-musl":
       optional: true
-    "@node-rs/argon2-wasm32-wasi":
-      optional: true
     "@node-rs/argon2-win32-arm64-msvc":
       optional: true
     "@node-rs/argon2-win32-ia32-msvc":
       optional: true
     "@node-rs/argon2-win32-x64-msvc":
       optional: true
-  checksum: 10/8f2c6c2b0e5254aadef7e99b96eb3c49bb3a342d31b1f0b16bf155f468593c4a9ba16fe043feecf5b7a38f92e6780428a656ca166386268b38bd559091bd6955
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-android-arm-eabi@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-android-arm-eabi@npm:1.10.6"
-  conditions: os=android & cpu=arm
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-android-arm64@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-android-arm64@npm:1.10.6"
-  conditions: os=android & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-darwin-arm64@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-darwin-arm64@npm:1.10.6"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-darwin-x64@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-darwin-x64@npm:1.10.6"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-freebsd-x64@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-freebsd-x64@npm:1.10.6"
-  conditions: os=freebsd & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-linux-arm-gnueabihf@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-linux-arm-gnueabihf@npm:1.10.6"
-  conditions: os=linux & cpu=arm
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-linux-arm64-gnu@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-linux-arm64-gnu@npm:1.10.6"
-  conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-linux-arm64-musl@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-linux-arm64-musl@npm:1.10.6"
-  conditions: os=linux & cpu=arm64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-linux-x64-gnu@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-linux-x64-gnu@npm:1.10.6"
-  conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-linux-x64-musl@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-linux-x64-musl@npm:1.10.6"
-  conditions: os=linux & cpu=x64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-wasm32-wasi@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-wasm32-wasi@npm:1.10.6"
-  dependencies:
-    "@napi-rs/wasm-runtime": "npm:^0.2.5"
-  conditions: cpu=wasm32
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-win32-arm64-msvc@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-win32-arm64-msvc@npm:1.10.6"
-  conditions: os=win32 & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-win32-ia32-msvc@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-win32-ia32-msvc@npm:1.10.6"
-  conditions: os=win32 & cpu=ia32
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32-win32-x64-msvc@npm:1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32-win32-x64-msvc@npm:1.10.6"
-  conditions: os=win32 & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@node-rs/crc32@npm:^1.10.6":
-  version: 1.10.6
-  resolution: "@node-rs/crc32@npm:1.10.6"
-  dependencies:
-    "@node-rs/crc32-android-arm-eabi": "npm:1.10.6"
-    "@node-rs/crc32-android-arm64": "npm:1.10.6"
-    "@node-rs/crc32-darwin-arm64": "npm:1.10.6"
-    "@node-rs/crc32-darwin-x64": "npm:1.10.6"
-    "@node-rs/crc32-freebsd-x64": "npm:1.10.6"
-    "@node-rs/crc32-linux-arm-gnueabihf": "npm:1.10.6"
-    "@node-rs/crc32-linux-arm64-gnu": "npm:1.10.6"
-    "@node-rs/crc32-linux-arm64-musl": "npm:1.10.6"
-    "@node-rs/crc32-linux-x64-gnu": "npm:1.10.6"
-    "@node-rs/crc32-linux-x64-musl": "npm:1.10.6"
-    "@node-rs/crc32-wasm32-wasi": "npm:1.10.6"
-    "@node-rs/crc32-win32-arm64-msvc": "npm:1.10.6"
-    "@node-rs/crc32-win32-ia32-msvc": "npm:1.10.6"
-    "@node-rs/crc32-win32-x64-msvc": "npm:1.10.6"
-  dependenciesMeta:
-    "@node-rs/crc32-android-arm-eabi":
-      optional: true
-    "@node-rs/crc32-android-arm64":
-      optional: true
-    "@node-rs/crc32-darwin-arm64":
-      optional: true
-    "@node-rs/crc32-darwin-x64":
-      optional: true
-    "@node-rs/crc32-freebsd-x64":
-      optional: true
-    "@node-rs/crc32-linux-arm-gnueabihf":
-      optional: true
-    "@node-rs/crc32-linux-arm64-gnu":
-      optional: true
-    "@node-rs/crc32-linux-arm64-musl":
-      optional: true
-    "@node-rs/crc32-linux-x64-gnu":
-      optional: true
-    "@node-rs/crc32-linux-x64-musl":
-      optional: true
-    "@node-rs/crc32-wasm32-wasi":
-      optional: true
-    "@node-rs/crc32-win32-arm64-msvc":
-      optional: true
-    "@node-rs/crc32-win32-ia32-msvc":
-      optional: true
-    "@node-rs/crc32-win32-x64-msvc":
-      optional: true
-  checksum: 10/4be21ff4aa37e4c219de3321da93ea03eac11b3a17d67f0d1ad0e164461a497a1e7ca3b39fb68f463bbde7670ff80aec7400f83279f03ceffea43be631369bf1
+  checksum: 10/d492e9430fe5d807d87a50273514c854a5161f4ffd029c5e1bda400c22f78c0b9f1027749b1786b4e4331a6b489303d8b86239df734811e49c7d3cb3bab7746c
   languageName: node
   linkType: hard
 

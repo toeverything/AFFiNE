@@ -12,10 +12,7 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     CAPPluginMethod(name: "disconnect", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "setSpaceId", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "pushUpdate", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "getDocSnapshot", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "setDocSnapshot", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "getDocUpdates", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "markUpdatesMerged", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "getDoc", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "deleteDoc", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getDocClocks", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getDocClock", returnType: CAPPluginReturnPromise),
@@ -117,13 +114,12 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     }
   }
 
-  @objc func getDocSnapshot(_ call: CAPPluginCall) {
+  @objc func getDoc(_ call: CAPPluginCall) {
     Task {
       do {
         let id = try call.getStringEnsure("id")
         let docId = try call.getStringEnsure("docId")
-
-        if let record = try await docStoragePool.getDocSnapshot(universalId: id, docId: docId) {
+        if let record = try await docStoragePool.getDoc(universalId: id, docId: docId) {
           call.resolve([
             "docId": record.docId,
             "bin": record.bin,
@@ -133,58 +129,7 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
           call.resolve()
         }
       } catch {
-        call.reject("Failed to get doc snapshot, \(error)", nil, error)
-      }
-    }
-  }
-
-  @objc func setDocSnapshot(_ call: CAPPluginCall) {
-    Task {
-      do {
-        let id = try call.getStringEnsure("id")
-        let docId = try call.getStringEnsure("docId")
-        let bin = try call.getStringEnsure("bin")
-        let timestamp = try call.getIntEnsure("timestamp")
-        let success = try await docStoragePool.setDocSnapshot(
-          universalId: id,
-          snapshot: DocRecord(docId: docId, bin: bin, timestamp: Int64(timestamp))
-        )
-        call.resolve(["success": success])
-      } catch {
-        call.reject("Failed to set doc snapshot, \(error)", nil, error)
-      }
-    }
-  }
-
-  @objc func getDocUpdates(_ call: CAPPluginCall) {
-    Task {
-      do {
-        let id = try call.getStringEnsure("id")
-        let docId = try call.getStringEnsure("docId")
-        let updates = try await docStoragePool.getDocUpdates(universalId: id, docId: docId)
-        let mapped = updates.map { [
-          "docId": $0.docId,
-          "timestamp": $0.timestamp,
-          "bin": $0.bin,
-        ] }
-        call.resolve(["updates": mapped])
-      } catch {
-        call.reject("Failed to get doc updates, \(error)", nil, error)
-      }
-    }
-  }
-
-  @objc func markUpdatesMerged(_ call: CAPPluginCall) {
-    Task {
-      do {
-        let id = try call.getStringEnsure("id")
-        let docId = try call.getStringEnsure("docId")
-        let times = try call.getArrayEnsure("timestamps", Int64.self)
-
-        let count = try await docStoragePool.markUpdatesMerged(universalId: id, docId: docId, updates: times)
-        call.resolve(["count": count])
-      } catch {
-        call.reject("Failed to mark updates merged, \(error)", nil, error)
+        call.reject("Failed to get doc, \(error)", nil, error)
       }
     }
   }

@@ -12,6 +12,7 @@
     "./broadcast-channel": "./src/impls/broadcast-channel/index.ts",
     "./idb/v1": "./src/impls/idb/v1/index.ts",
     "./cloud": "./src/impls/cloud/index.ts",
+    "./disk": "./src/impls/disk/index.ts",
     "./sqlite": "./src/impls/sqlite/index.ts",
     "./sqlite/v1": "./src/impls/sqlite/v1/index.ts",
     "./sync": "./src/sync/index.ts",

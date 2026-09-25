@@ -89,6 +89,15 @@ export interface DocStorage extends Storage {
    * @param origin - Internal identifier to recognize the source in the "update" event. Will not be stored or transferred.
    */
   pushDocUpdate(update: DocUpdate, origin?: string): Promise<DocClock>;
+  prepareDocImport?(
+    docId: string,
+    localSnapshot: Uint8Array | null,
+    localRoot: Uint8Array | null
+  ): Promise<void>;
+  acknowledgeDocUpdate?(
+    docId: string,
+    localSnapshot: Uint8Array
+  ): Promise<void>;
 
   /**
    * Get the timestamp of the latest update of a doc.
@@ -142,40 +151,7 @@ export abstract class DocStorageBase<Opts = {}> implements DocStorage {
 
   constructor(protected readonly options: Opts & DocStorageOptions) {}
 
-  async getDoc(docId: string) {
-    await using _lock = this.isReadonly
-      ? undefined
-      : await this.lockDocForUpdate(docId);
-
-    const snapshot = await this.getDocSnapshot(docId);
-    const updates = await this.getDocUpdates(docId);
-
-    if (updates.length) {
-      const { timestamp, bin, editor } = await this.squash(
-        snapshot ? [snapshot, ...updates] : updates
-      );
-
-      const newSnapshot = {
-        spaceId: this.spaceId,
-        docId,
-        bin,
-        timestamp,
-        editor,
-      };
-
-      // if is readonly, we will not set the new snapshot
-      if (!this.isReadonly) {
-        await this.setDocSnapshot(newSnapshot, snapshot);
-
-        // always mark updates as merged unless throws
-        await this.markUpdatesMerged(docId, updates);
-      }
-
-      return newSnapshot;
-    }
-
-    return snapshot;
-  }
+  abstract getDoc(docId: string): Promise<DocRecord | null>;
 
   async getDocDiff(docId: string, state?: Uint8Array) {
     const doc = await this.getDoc(docId);
@@ -242,9 +218,52 @@ export abstract class DocStorageBase<Opts = {}> implements DocStorage {
     this.event.off(event, callback);
   }
 
-  /**
-   * Get a doc snapshot from storage
-   */
+  protected mergeUpdates(updates: Uint8Array[]) {
+    const merge = this.options?.mergeUpdates ?? mergeUpdates;
+
+    return merge(updates.filter(bin => !isEmptyUpdate(bin)));
+  }
+
+  protected async lockDocForUpdate(docId: string): Promise<AsyncDisposable> {
+    return this.locker.lock(`workspace:${this.spaceId}:update`, docId);
+  }
+}
+
+export abstract class SnapshotDocStorageBase<
+  Opts = {},
+> extends DocStorageBase<Opts> {
+  override async getDoc(docId: string) {
+    await using _lock = this.isReadonly
+      ? undefined
+      : await this.lockDocForUpdate(docId);
+
+    const snapshot = await this.getDocSnapshot(docId);
+    const updates = await this.getDocUpdates(docId);
+
+    if (updates.length) {
+      const { timestamp, bin, editor } = await this.squash(
+        snapshot ? [snapshot, ...updates] : updates
+      );
+
+      const newSnapshot = {
+        spaceId: this.spaceId,
+        docId,
+        bin,
+        timestamp,
+        editor,
+      };
+
+      if (!this.isReadonly) {
+        await this.setDocSnapshot(newSnapshot, snapshot);
+        await this.markUpdatesMerged(docId, updates);
+      }
+
+      return newSnapshot;
+    }
+
+    return snapshot;
+  }
+
   protected abstract getDocSnapshot(docId: string): Promise<DocRecord | null>;
   /**
    * Set the doc snapshot into storage
@@ -307,15 +326,5 @@ export abstract class DocStorageBase<Opts = {}> implements DocStorage {
       timestamp: lastUpdate.timestamp,
       editor: lastUpdate.editor,
     };
-  }
-
-  protected mergeUpdates(updates: Uint8Array[]) {
-    const merge = this.options?.mergeUpdates ?? mergeUpdates;
-
-    return merge(updates.filter(bin => !isEmptyUpdate(bin)));
-  }
-
-  protected async lockDocForUpdate(docId: string): Promise<AsyncDisposable> {
-    return this.locker.lock(`workspace:${this.spaceId}:update`, docId);
   }
 }

@@ -104,7 +104,7 @@ else
   exit 1
 fi
 
-$CARGO run -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --library "$BINDGEN_LIB" --language swift --out-dir $SRCROOT/../../ios/App/App/uniffi
+$CARGO run -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --no-format --library "$BINDGEN_LIB" --language swift --out-dir "$SRCROOT/../../ios/App/App/uniffi"
 
 if [ $IS_SIMULATOR -eq 0 ]; then
   cp "$DEVICE_ARM64_LIB" "$OUTPUT_LIB"
