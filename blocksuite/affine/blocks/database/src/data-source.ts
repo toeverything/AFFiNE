@@ -20,7 +20,11 @@ import {
   ViewManagerBase,
   type ViewMeta,
 } from '@blocksuite/data-view';
-import { propertyPresets } from '@blocksuite/data-view/property-presets';
+import {
+  FORMULA_PROPERTY_TYPE,
+  formulaCellValueGet,
+  propertyPresets,
+} from '@blocksuite/data-view/property-presets';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { EditorHost } from '@blocksuite/std';
@@ -101,6 +105,11 @@ export class DatabaseBlockDataSource extends DataSourceBase {
         }
         return model.text;
       },
+    },
+    [FORMULA_PROPERTY_TYPE]: {
+      valueSet: () => {},
+      valueGet: (rowId: string, propertyId: string) =>
+        formulaCellValueGet(this, rowId, propertyId),
     },
   };
 
