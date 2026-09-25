@@ -2,6 +2,7 @@ import {
   DefaultTool,
   EdgelessLegacySlotIdentifier,
 } from '@blocksuite/affine-block-surface';
+import { EditorSettingProvider } from '@blocksuite/affine-shared/services';
 import { on } from '@blocksuite/affine-shared/utils';
 import type { PointerEventState } from '@blocksuite/std';
 import {
@@ -78,9 +79,18 @@ export class PanTool extends BaseTool<PanToolOption> {
 
   override mounted(): void {
     this.addHook('pointerDown', evt => {
-      const shouldPanWithMiddle = evt.raw.button === MouseButton.MIDDLE;
+      const editorSetting = this.std.getOptional(
+        EditorSettingProvider
+      )?.setting$;
+      const enableRightButtonPanning =
+        editorSetting?.peek().enableRightButtonPanning ?? false;
 
-      if (!shouldPanWithMiddle) {
+      const button = evt.raw.button;
+      const shouldPan = enableRightButtonPanning
+        ? button === MouseButton.SECONDARY
+        : button === MouseButton.MIDDLE;
+
+      if (!shouldPan) {
         return;
       }
 
@@ -135,7 +145,11 @@ export class PanTool extends BaseTool<PanToolOption> {
       });
 
       const dispose = on(document, 'pointerup', evt => {
-        if (evt.button === MouseButton.MIDDLE) {
+        const shouldRestore = enableRightButtonPanning
+          ? evt.button === MouseButton.SECONDARY
+          : evt.button === MouseButton.MIDDLE;
+
+        if (shouldRestore) {
           restoreToPrevious();
         }
         dispose();
