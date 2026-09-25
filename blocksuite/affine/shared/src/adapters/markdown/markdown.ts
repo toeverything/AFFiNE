@@ -41,7 +41,8 @@ import {
   MarkdownASTToDeltaMatcherIdentifier,
   MarkdownDeltaConverter,
 } from './delta-converter';
-import { remarkGfm } from './gfm';
+import { flattenTableCellNewlines, remarkGfm } from './gfm';
+import { linkDestinationHandlers } from './link-destination';
 import { MarkdownPreprocessorManager } from './preprocessor';
 import { remarkCallout } from './remark-plugins/remark-callout';
 import type { Markdown, MarkdownAST } from './type';
@@ -212,10 +213,12 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
   }
 
   private _astToMarkdown(ast: Root) {
+    flattenTableCellNewlines(ast);
     return unified()
       .use(remarkGfm)
       .use(remarkStringify, {
         resourceLink: true,
+        handlers: linkDestinationHandlers,
       })
       .use(remarkMath)
       .stringify(ast)
