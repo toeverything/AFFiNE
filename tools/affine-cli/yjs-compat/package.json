@@ -1,0 +1,9 @@
+{
+  "name": "affine-cli-yjs-compat",
+  "private": true,
+  "type": "module",
+  "description": "Real-yjs decode check for affine-cli's y-octo writers. yjs is pinned to the version the app resolves at the repo root (package.json patches yjs@13.6.21) - bump them together.",
+  "dependencies": {
+    "yjs": "13.6.21"
+  }
+}
