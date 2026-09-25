@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import type { apis } from '@affine/electron-api';
-import { test } from '@affine-test/kit/electron';
+import { cleanupElectronApp, test } from '@affine-test/kit/electron';
 import {
   addDatabase,
   clickNewPageButton,
@@ -312,7 +312,7 @@ test('disk markdown sync: imports source edits after app restart', async ({
   if (!mdFile) {
     throw new Error('exported markdown before restart not found');
   }
-  await electronApp.close();
+  await cleanupElectronApp(electronApp);
   const env: Record<string, string> = {};
   for (const [key, value] of Object.entries(process.env)) {
     if (value) {
@@ -360,7 +360,7 @@ test('disk markdown sync: imports source edits after app restart', async ({
       reopenedPage.locator('affine-note').first().getByText(mdEdit)
     ).toBeVisible({ timeout: 30_000 });
   } finally {
-    await restarted.close();
+    await cleanupElectronApp(restarted);
   }
 });
 

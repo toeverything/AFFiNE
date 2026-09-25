@@ -203,7 +203,7 @@ const waitForElectronPage = async (
   throw new Error(`Timed out waiting for ${label}`);
 };
 
-const cleanupElectronApp = async (electronApp: ElectronApplication) => {
+export const cleanupElectronApp = async (electronApp: ElectronApplication) => {
   let child: ChildProcess;
   try {
     child = electronApp.process();
