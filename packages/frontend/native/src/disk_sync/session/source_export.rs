@@ -178,7 +178,7 @@ impl DiskSession {
         return Ok(Some(candidate.display().to_string()));
       }
     } else {
-      write_new_atomic(&file_path, &rendered)?;
+      write_new_file(&file_path, &rendered)?;
     }
 
     let checkpoint = SourceCheckpoint {

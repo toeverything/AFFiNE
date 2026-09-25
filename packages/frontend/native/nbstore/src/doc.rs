@@ -247,11 +247,8 @@ impl SqliteDocStorage {
         .execute(&mut *tx)
         .await?;
       tx.commit().await?;
-      return Ok(Some(DocRecord {
-        doc_id,
-        bin: bin.into(),
-        timestamp,
-      }));
+      let bin = bin.into();
+      return Ok(Some(DocRecord { doc_id, bin, timestamp }));
     }
     Err(Error::ConcurrentModification)
   }

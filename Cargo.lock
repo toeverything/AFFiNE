@@ -226,7 +226,6 @@ dependencies = [
  "affine_common",
  "affine_doc_loader",
  "affine_schema",
- "anyhow",
  "assert-json-diff",
  "bincode 2.0.1",
  "chrono",

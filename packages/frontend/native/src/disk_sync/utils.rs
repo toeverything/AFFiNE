@@ -1,5 +1,6 @@
 use std::{
-  fs,
+  fs::{self, OpenOptions},
+  io::Write,
   path::{Path, PathBuf},
 };
 
@@ -98,20 +99,34 @@ pub(crate) fn sanitize_file_stem(input: &str) -> String {
   if out.is_empty() { "doc".to_string() } else { out }
 }
 
-pub(crate) fn write_new_atomic(path: &Path, content: &str) -> Result<(), String> {
+pub(crate) fn write_new_file(path: &Path, content: &str) -> Result<(), String> {
   let parent = path
     .parent()
     .ok_or_else(|| format!("path {} has no parent directory", path.display()))?;
   fs::create_dir_all(parent)
     .map_err(|err| format!("failed to create parent directory {}: {}", parent.display(), err))?;
   let temp_path = parent.join(format!(".affine-sync-tmp-{}.md", Uuid::new_v4()));
-  fs::write(&temp_path, content)
-    .map_err(|err| format!("failed to write temp file {}: {}", temp_path.display(), err))?;
-  let result = fs::hard_link(&temp_path, path)
-    .map_err(|err| format!("failed to create new markdown file {}: {}", path.display(), err));
+  if let Err(err) = fs::write(&temp_path, content) {
+    let _ = fs::remove_file(&temp_path);
+    return Err(format!("failed to write temp file {}: {}", temp_path.display(), err));
+  }
+  let result = match fs::hard_link(&temp_path, path) {
+    Ok(()) => Ok(()),
+    Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => Err(err),
+    Err(_) => write_new_without_hard_link(path, content),
+  };
   let _ = fs::remove_file(&temp_path);
-  result?;
-  Ok(())
+  result.map_err(|err| format!("failed to create new markdown file {}: {}", path.display(), err))
+}
+
+fn write_new_without_hard_link(path: &Path, content: &str) -> std::io::Result<()> {
+  let mut file = OpenOptions::new().write(true).create_new(true).open(path)?;
+  let result = file.write_all(content.as_bytes());
+  drop(file);
+  if result.is_err() {
+    let _ = fs::remove_file(path);
+  }
+  result
 }
 
 pub(crate) fn hash_string(value: &str) -> String {
@@ -267,5 +282,21 @@ pub(crate) fn paths_equal(lhs: &Path, rhs: &Path) -> bool {
   match (lhs.canonicalize(), rhs.canonicalize()) {
     (Ok(lhs), Ok(rhs)) => lhs == rhs,
     _ => false,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn new_file_fallback_keeps_existing_content() {
+    let dir = std::env::temp_dir().join(format!("affine-disk-fallback-{}", Uuid::new_v4()));
+    fs::create_dir(&dir).expect("create directory");
+    let path = dir.join("note.md");
+    write_new_without_hard_link(&path, "new content").expect("create file");
+    assert!(write_new_without_hard_link(&path, "replacement").is_err());
+    assert_eq!(fs::read_to_string(&path).expect("read file"), "new content");
+    fs::remove_dir_all(dir).expect("remove directory");
   }
 }

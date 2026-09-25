@@ -6,7 +6,7 @@ use std::{
     Arc,
     atomic::{AtomicBool, Ordering},
   },
-  time::Duration,
+  time::{Duration, Instant, SystemTime},
 };
 
 use affine_doc_loader::{
@@ -24,12 +24,13 @@ use super::{
   utils::{
     collect_markdown_files, derive_title_from_markdown, derive_title_from_path, generate_missing_doc_id, hash_meta,
     hash_string, is_empty_update, merge_frontend_update_binary, merge_root_update_binary, merge_update_binary,
-    now_naive, paths_equal, same_update_state, sanitize_file_stem, write_new_atomic,
+    now_naive, paths_equal, same_update_state, sanitize_file_stem, write_new_file,
   },
 };
 
 mod source_export;
 mod source_import;
+mod source_scan;
 
 enum PageExportError {
   Unexportable(String),
@@ -42,6 +43,9 @@ impl From<String> for PageExportError {
   }
 }
 
+type DiskEventCallback = ThreadsafeFunction<DiskSyncEvent, ()>;
+const FULL_SCAN_INTERVAL: Duration = Duration::from_secs(5);
+
 impl std::fmt::Display for PageExportError {
   fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
@@ -53,6 +57,12 @@ impl std::fmt::Display for PageExportError {
 enum SourcePreparation {
   Awaiting(PathBuf),
   Ready,
+}
+
+#[derive(Default)]
+struct ScanCache {
+  files: HashMap<PathBuf, (SystemTime, u64)>,
+  last_full_scan: Option<Instant>,
 }
 
 #[derive(Clone)]
@@ -69,10 +79,11 @@ pub(crate) struct DiskSession {
   checkpoints: Arc<Mutex<HashMap<String, SourceCheckpoint>>>,
   source_preparation: Arc<Mutex<HashMap<String, SourcePreparation>>>,
   missing_logged: Arc<Mutex<HashSet<PathBuf>>>,
-  subscribers: Arc<Mutex<HashMap<u64, Arc<ThreadsafeFunction<DiskSyncEvent, ()>>>>>,
+  subscribers: Arc<Mutex<HashMap<u64, Arc<DiskEventCallback>>>>,
   poll_task: Arc<Mutex<Option<JoinHandle<()>>>>,
   closed: Arc<AtomicBool>,
   scan_guard: Arc<Mutex<()>>,
+  scan_cache: Arc<Mutex<ScanCache>>,
 }
 
 impl DiskSession {
@@ -106,7 +117,7 @@ impl DiskSession {
         return Err(format!("candidate {} was changed externally", candidate.display()));
       }
     } else {
-      write_new_atomic(&candidate, content)?;
+      write_new_file(&candidate, content)?;
     }
     Ok(candidate)
   }
@@ -147,6 +158,7 @@ impl DiskSession {
       poll_task: Arc::new(Mutex::new(None)),
       closed: Arc::new(AtomicBool::new(false)),
       scan_guard: Arc::new(Mutex::new(())),
+      scan_cache: Arc::new(Mutex::new(ScanCache::default())),
     })
   }
 
@@ -157,11 +169,7 @@ impl DiskSession {
     self.state_db.close().await;
   }
 
-  pub(crate) async fn add_subscriber(
-    &self,
-    subscriber_id: u64,
-    callback: ThreadsafeFunction<DiskSyncEvent, ()>,
-  ) -> Result<(), String> {
+  pub(crate) async fn add_subscriber(&self, subscriber_id: u64, callback: DiskEventCallback) -> Result<(), String> {
     let callback = Arc::new(callback);
 
     let backlog = {
@@ -328,5 +336,19 @@ impl DiskSession {
       drained.push(event);
     }
     Ok(drained)
+  }
+}
+
+fn normalized_meta_for_file(doc_id: &str, path: &Path, meta: FrontmatterMeta, body: &str) -> FrontmatterMeta {
+  let title = meta
+    .title
+    .or_else(|| derive_title_from_markdown(body))
+    .unwrap_or_else(|| derive_title_from_path(path));
+  FrontmatterMeta {
+    id: Some(doc_id.to_string()),
+    title: Some(title),
+    tags: normalize_tags(meta.tags),
+    favorite: Some(meta.favorite.unwrap_or(false)),
+    trash: Some(meta.trash.unwrap_or(false)),
   }
 }

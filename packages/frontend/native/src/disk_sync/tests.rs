@@ -10,8 +10,11 @@ use uuid::Uuid;
 use y_octo::{Any, DocOptions, StateVector, Value};
 
 use super::{
-  DiskDocUpdateInput, DiskSessionOptions, DiskSync, frontmatter::parse_frontmatter, root_meta::build_root_meta_update,
-  types::FrontmatterMeta, utils::collect_markdown_files,
+  DiskDocUpdateInput, DiskSessionOptions, DiskSync,
+  frontmatter::{parse_frontmatter, render_frontmatter},
+  root_meta::build_root_meta_update,
+  types::FrontmatterMeta,
+  utils::collect_markdown_files,
 };
 
 #[test]
@@ -252,6 +255,27 @@ Body.
   assert_eq!(meta.favorite, Some(true));
   assert_eq!(meta.trash, Some(false));
   assert!(body.contains("# Heading"));
+
+  for value in [
+    "Say \"hi\"",
+    "path\\name",
+    "path\\\"name",
+    "first\nsecond",
+    "first\n---\nsecond",
+    "'quoted'",
+  ] {
+    let expected = FrontmatterMeta {
+      id: Some("doc-1".to_string()),
+      title: Some(value.to_string()),
+      tags: Some(vec![value.to_string()]),
+      favorite: Some(true),
+      trash: Some(false),
+    };
+    let (actual, parsed_body) = parse_frontmatter(&render_frontmatter(&expected, "Body"));
+    assert_eq!(actual.title, expected.title, "title: {value:?}");
+    assert_eq!(actual.tags, expected.tags, "tags: {value:?}");
+    assert_eq!(parsed_body, "Body\n", "body: {value:?}");
+  }
 }
 
 #[test]
@@ -424,7 +448,7 @@ async fn apply_local_update_exports_markdown_with_stable_id() {
 }
 
 #[tokio::test]
-async fn empty_title_export_does_not_trigger_self_import() {
+async fn quoted_and_empty_title_exports_do_not_pause() {
   let dir = temp_dir();
 
   let sync = DiskSync::new();
@@ -467,6 +491,47 @@ async fn empty_title_export_does_not_trigger_self_import() {
     event.r#type == "doc-update"
       && event.origin.as_deref() == Some("disk:file-import")
       && event.update.as_ref().is_some_and(|update| update.doc_id == doc_id)
+  }));
+
+  let quoted_id = "doc-quoted-title";
+  let quoted_doc = build_full_doc("Say \"hi\"\\path", "# Note\n\none", quoted_id).expect("build quoted-title doc");
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: quoted_id.to_string(),
+        bin: Uint8Array::new(quoted_doc.clone()),
+        editor: Some("test".to_string()),
+      },
+    )
+    .await
+    .expect("export quoted title");
+  let _ = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("pull quoted export");
+  let delta = update_doc(&quoted_doc, "# Note\n\ntwo", quoted_id).expect("build followup edit");
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: quoted_id.to_string(),
+        bin: Uint8Array::new(delta),
+        editor: Some("test".to_string()),
+      },
+    )
+    .await
+    .expect("export after quoted title");
+  let events = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("pull followup export");
+  assert!(!events.iter().any(|event| {
+    event.r#type == "error"
+      && event
+        .message
+        .as_deref()
+        .is_some_and(|message| message.contains("export paused"))
   }));
 
   teardown(&sync, session_id, &dir).await;

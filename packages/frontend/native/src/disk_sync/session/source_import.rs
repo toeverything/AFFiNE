@@ -22,82 +22,6 @@ impl DiskSession {
     self.state_db.acknowledge_source_update(doc_id, snapshot).await
   }
 
-  pub(crate) async fn scan_once(&self) -> Result<(), String> {
-    let _guard = self.scan_guard.lock().await;
-
-    let mut markdown_files = Vec::new();
-    collect_markdown_files(&self.sync_folder, &mut markdown_files)?;
-
-    let mut seen_paths = HashSet::new();
-    for file_path in markdown_files {
-      seen_paths.insert(file_path.clone());
-      if let Err(err) = self.discover_source_change(&file_path).await {
-        self.queue_error_event(err).await;
-      }
-    }
-
-    self.handle_missing_files(&seen_paths).await;
-
-    Ok(())
-  }
-
-  async fn discover_source_change(&self, file_path: &Path) -> Result<(), String> {
-    let raw = fs::read_to_string(file_path)
-      .map_err(|err| format!("failed to read markdown file {}: {}", file_path.display(), err))?;
-    let (meta, body) = parse_frontmatter(&raw);
-    let doc_id = if let Some(id) = meta.id.clone() {
-      id
-    } else {
-      self.doc_id_for_unmarked_file(file_path).await
-    };
-    if let Some(bound) = self.bindings.lock().await.get(&doc_id) {
-      if bound.exists() && !paths_equal(bound, file_path) {
-        return Err(format!("multiple markdown sources claim doc {}", doc_id));
-      }
-    }
-    let checkpoint = self.checkpoints.lock().await.get(&doc_id).cloned();
-    let unchanged = checkpoint.is_some_and(|checkpoint| {
-      checkpoint.markdown == body
-        && checkpoint.meta_hash == hash_meta(&normalized_meta_for_file(&doc_id, file_path, meta, &body))
-    }) && self
-      .bindings
-      .lock()
-      .await
-      .get(&doc_id)
-      .is_some_and(|bound| paths_equal(bound, file_path));
-    let new = {
-      let mut preparation = self.source_preparation.lock().await;
-      match preparation.get(&doc_id) {
-        Some(SourcePreparation::Ready) if unchanged => return Ok(()),
-        Some(SourcePreparation::Ready) => {
-          preparation.insert(doc_id.clone(), SourcePreparation::Awaiting(file_path.to_path_buf()));
-          true
-        }
-        Some(SourcePreparation::Awaiting(existing)) if !paths_equal(existing, file_path) => {
-          return Err(format!("multiple markdown sources claim doc {}", doc_id));
-        }
-        Some(SourcePreparation::Awaiting(_)) => false,
-        None => {
-          preparation.insert(doc_id.clone(), SourcePreparation::Awaiting(file_path.to_path_buf()));
-          true
-        }
-      }
-    };
-    if new {
-      self
-        .emit_event(DiskSyncEvent {
-          r#type: "source-discovered".to_string(),
-          update: None,
-          doc_id: Some(doc_id),
-          timestamp: Some(now_naive()),
-          origin: None,
-          message: None,
-        })
-        .await;
-    }
-    Ok(())
-  }
-
   pub(crate) async fn prepare_source_doc(
     &self,
     doc_id: &str,
@@ -195,27 +119,6 @@ impl DiskSession {
       .await
       .insert(doc_id.to_string(), SourcePreparation::Ready);
     Ok(self.docs.lock().await.get(doc_id).cloned())
-  }
-
-  async fn handle_missing_files(&self, seen_paths: &HashSet<PathBuf>) {
-    let path_bindings = self.path_bindings.lock().await.clone();
-    let mut missing_logged = self.missing_logged.lock().await;
-
-    for (path, doc_id) in path_bindings {
-      if seen_paths.contains(&path) {
-        missing_logged.remove(&path);
-        continue;
-      }
-
-      if missing_logged.contains(&path) {
-        continue;
-      }
-
-      missing_logged.insert(path.clone());
-      self
-        .queue_error_event(format!("markdown file for {} is missing: {}", doc_id, path.display()))
-        .await;
-    }
   }
 
   async fn import_file_if_changed(&self, file_path: &Path) -> Result<(), String> {
@@ -461,19 +364,5 @@ impl DiskSession {
       }
     }
     Ok(true)
-  }
-}
-
-fn normalized_meta_for_file(doc_id: &str, path: &Path, meta: FrontmatterMeta, body: &str) -> FrontmatterMeta {
-  let title = meta
-    .title
-    .or_else(|| derive_title_from_markdown(body))
-    .unwrap_or_else(|| derive_title_from_path(path));
-  FrontmatterMeta {
-    id: Some(doc_id.to_string()),
-    title: Some(title),
-    tags: normalize_tags(meta.tags),
-    favorite: Some(meta.favorite.unwrap_or(false)),
-    trash: Some(meta.trash.unwrap_or(false)),
   }
 }

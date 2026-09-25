@@ -121,7 +121,34 @@ pub(crate) fn render_frontmatter(meta: &FrontmatterMeta, body: &str) -> String {
 }
 
 fn normalize_scalar(value: &str) -> String {
-  value.trim().trim_matches('"').trim_matches('\'').to_string()
+  let value = value.trim();
+  if let Some(inner) = value.strip_prefix('"').and_then(|value| value.strip_suffix('"')) {
+    let mut normalized = String::with_capacity(inner.len());
+    let mut chars = inner.chars();
+    while let Some(ch) = chars.next() {
+      if ch != '\\' {
+        normalized.push(ch);
+        continue;
+      }
+      match chars.next() {
+        Some('n') => normalized.push('\n'),
+        Some('r') => normalized.push('\r'),
+        Some('t') => normalized.push('\t'),
+        Some('"') => normalized.push('"'),
+        Some('\\') => normalized.push('\\'),
+        Some(other) => {
+          normalized.push('\\');
+          normalized.push(other);
+        }
+        None => normalized.push('\\'),
+      }
+    }
+    return normalized;
+  }
+  if let Some(inner) = value.strip_prefix('\'').and_then(|value| value.strip_suffix('\'')) {
+    return inner.replace("''", "'");
+  }
+  value.to_string()
 }
 
 pub(crate) fn parse_bool(value: &str) -> Option<bool> {
@@ -169,6 +196,11 @@ fn quote_yaml_scalar(value: &str) -> String {
     return value.to_string();
   }
 
-  let escaped = value.replace('"', "\\\"");
+  let escaped = value
+    .replace('\\', "\\\\")
+    .replace('"', "\\\"")
+    .replace('\n', "\\n")
+    .replace('\r', "\\r")
+    .replace('\t', "\\t");
   format!("\"{}\"", escaped)
 }

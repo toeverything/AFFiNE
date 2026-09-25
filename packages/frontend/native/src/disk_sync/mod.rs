@@ -82,6 +82,7 @@ pub struct DiskSyncEvent {
   pub message: Option<String>,
 }
 
+#[derive(Default)]
 #[napi]
 pub struct DiskSync;
 

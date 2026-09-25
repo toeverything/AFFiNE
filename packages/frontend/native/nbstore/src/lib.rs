@@ -12,12 +12,12 @@ pub mod storage;
 use affine_common::napi_utils::to_napi_error;
 use chrono::NaiveDateTime;
 use napi::bindgen_prelude::*;
+#[cfg(not(feature = "use-as-lib"))]
 use napi_derive::napi;
+#[cfg(not(feature = "use-as-lib"))]
 use pool::{Ref, SqliteDocStoragePool};
+#[cfg(not(feature = "use-as-lib"))]
 use storage::SqliteDocStorage;
-
-#[cfg(feature = "use-as-lib")]
-type Result<T> = anyhow::Result<T>;
 
 #[cfg(not(feature = "use-as-lib"))]
 type Result<T> = napi::Result<T>;
@@ -29,68 +29,64 @@ impl From<error::Error> for napi::Error {
   }
 }
 
-#[cfg(feature = "use-as-lib")]
-pub type Data = Vec<u8>;
-
-#[cfg(not(feature = "use-as-lib"))]
 pub type Data = Uint8Array;
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocUpdate {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub bin: Data,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocRecord {
   pub doc_id: String,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub bin: Data,
   pub timestamp: NaiveDateTime,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct ReadonlyDocRecords {
   pub snapshot: Option<DocRecord>,
   pub updates: Vec<DocUpdate>,
 }
 
 #[derive(Debug)]
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocClock {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
 }
 
 #[derive(Debug)]
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocIndexedClock {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
   pub indexer_version: i64,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct SetBlob {
   pub key: String,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub data: Data,
   pub mime: String,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct Blob {
   pub key: String,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub data: Data,
   pub mime: String,
   pub size: i64,
   pub created_at: NaiveDateTime,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct ListedBlob {
   pub key: String,
   pub size: i64,
@@ -98,11 +94,13 @@ pub struct ListedBlob {
   pub created_at: NaiveDateTime,
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 pub struct DocStoragePool {
   pool: SqliteDocStoragePool,
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 impl DocStoragePool {
   #[napi(constructor)]
@@ -475,11 +473,13 @@ impl DocStoragePool {
   }
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 pub struct DocStorage {
   storage: SqliteDocStorage,
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 impl DocStorage {
   #[napi(constructor, async_runtime)]
