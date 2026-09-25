@@ -169,8 +169,22 @@ impl SqliteDocStorage {
 
   pub async fn get_doc(&self, doc_id: String) -> Result<Option<DocRecord>> {
     for _ in 0..8 {
-      let snapshot = self.get_doc_snapshot(doc_id.clone()).await?;
-      let updates = self.get_doc_updates(doc_id.clone()).await?;
+      let mut read_tx = self.pool.begin().await?;
+      let snapshot = sqlx::query_as!(
+        DocRecord,
+        "SELECT doc_id, data as bin, updated_at as timestamp FROM snapshots WHERE doc_id = ?",
+        doc_id
+      )
+      .fetch_optional(&mut *read_tx)
+      .await?;
+      let updates = sqlx::query_as!(
+        DocUpdate,
+        "SELECT doc_id, created_at as timestamp, data as bin FROM updates WHERE doc_id = ? ORDER BY created_at",
+        doc_id
+      )
+      .fetch_all(&mut *read_tx)
+      .await?;
+      read_tx.commit().await?;
       if updates.is_empty() {
         return Ok(snapshot);
       }
@@ -458,20 +472,40 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn concurrent_get_doc_does_not_drop_new_updates() {
+  async fn get_doc_reads_snapshot_and_updates_from_one_view() {
     let path = std::env::temp_dir().join(format!("affine-get-doc-{}.db", uuid::Uuid::new_v4()));
     let storage = SqliteDocStorage::new(path.to_string_lossy().to_string());
     storage.connect().await.unwrap();
     let (first, second) = text_updates();
     storage.push_update("doc".to_string(), first).await.unwrap();
-    let (left, right, pushed) = tokio::join!(
-      storage.get_doc("doc".to_string()),
-      storage.get_doc("doc".to_string()),
-      storage.push_update("doc".to_string(), second)
-    );
-    assert!(left.unwrap().is_some());
-    assert!(right.unwrap().is_some());
-    let pushed = pushed.unwrap();
+    let first_record = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+    let pushed = storage.push_update("doc".to_string(), second).await.unwrap();
+
+    let mut read_tx = storage.pool.begin().await.unwrap();
+    let snapshot = sqlx::query_as!(
+      DocRecord,
+      "SELECT doc_id, data as bin, updated_at as timestamp FROM snapshots WHERE doc_id = ?",
+      "doc"
+    )
+    .fetch_optional(&mut *read_tx)
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(snapshot.bin.deref(), first_record.bin.deref());
+    let compacted = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+    assert!(compacted.timestamp >= pushed);
+    assert!(storage.get_doc_updates("doc".to_string()).await.unwrap().is_empty());
+    let updates = sqlx::query_as!(
+      DocUpdate,
+      "SELECT doc_id, created_at as timestamp, data as bin FROM updates WHERE doc_id = ? ORDER BY created_at",
+      "doc"
+    )
+    .fetch_all(&mut *read_tx)
+    .await
+    .unwrap();
+    assert_eq!(updates.len(), 1);
+    read_tx.commit().await.unwrap();
+
     let record = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
     assert!(record.timestamp >= pushed);
     let mut doc = DocOptions::new().with_guid("doc".to_string()).build();

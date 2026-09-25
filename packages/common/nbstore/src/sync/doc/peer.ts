@@ -108,7 +108,9 @@ function isRemotePermissionError(error: unknown) {
 function isDocScopedError(error: unknown) {
   return (
     isRemotePermissionError(error) ||
-    (error instanceof Error && error.name === 'DISK_SOURCE_EXPORT_FAILED')
+    (error instanceof Error &&
+      (error.name === 'DISK_SOURCE_EXPORT_FAILED' ||
+        error.name === 'DISK_SOURCE_REVIEW_REQUIRED'))
   );
 }
 
@@ -597,11 +599,21 @@ export class DocSyncPeer {
       docId,
       update,
       remoteClock,
+      origin,
     }: {
       docId: string;
       update: Uint8Array;
       remoteClock: Date;
+      origin?: string;
     }) => {
+      if (
+        origin === 'disk:source-discovered' &&
+        this.status.retryOnLocalUpdate.delete(docId)
+      ) {
+        this.status.docErrors.delete(docId);
+        this.schedule({ type: 'connect', docId });
+        return;
+      }
       if (this.status.docErrors.has(docId)) {
         return;
       }
@@ -773,6 +785,7 @@ export class DocSyncPeer {
             docId,
             update: bin,
             remoteClock: timestamp,
+            origin,
           });
         })
       );
@@ -926,7 +939,8 @@ export class DocSyncPeer {
       this.status.docErrors.set(docId, message);
       if (
         error instanceof Error &&
-        error.name === 'DISK_SOURCE_EXPORT_FAILED'
+        (error.name === 'DISK_SOURCE_EXPORT_FAILED' ||
+          error.name === 'DISK_SOURCE_REVIEW_REQUIRED')
       ) {
         this.status.retryOnLocalUpdate.add(docId);
       }

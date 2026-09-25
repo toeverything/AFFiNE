@@ -172,18 +172,13 @@ impl DiskSession {
   pub(crate) async fn add_subscriber(&self, subscriber_id: u64, callback: DiskEventCallback) -> Result<(), String> {
     let callback = Arc::new(callback);
 
-    let backlog = {
-      let mut events = self.events.lock().await;
-      events.drain(..).collect::<Vec<_>>()
-    };
-
     {
       let mut subscribers = self.subscribers.lock().await;
-      subscribers.insert(subscriber_id, callback.clone());
-    }
-
-    for event in backlog {
-      let _ = callback.call(Ok(event), ThreadsafeFunctionCallMode::NonBlocking);
+      let mut events = self.events.lock().await;
+      for event in events.drain(..) {
+        let _ = callback.call(Ok(event), ThreadsafeFunctionCallMode::NonBlocking);
+      }
+      subscribers.insert(subscriber_id, callback);
     }
 
     self.ensure_poll_task().await;
@@ -259,18 +254,14 @@ impl DiskSession {
   }
 
   async fn emit_event(&self, event: DiskSyncEvent) {
-    let subscribers = {
-      let subscribers = self.subscribers.lock().await;
-      subscribers.values().cloned().collect::<Vec<_>>()
-    };
-
+    let subscribers = self.subscribers.lock().await;
     if subscribers.is_empty() {
       let mut events = self.events.lock().await;
       events.push_back(event);
       return;
     }
 
-    for callback in subscribers {
+    for callback in subscribers.values() {
       let _ = callback.call(Ok(event.clone()), ThreadsafeFunctionCallMode::NonBlocking);
     }
   }

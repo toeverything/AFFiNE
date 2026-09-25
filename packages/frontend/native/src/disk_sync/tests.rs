@@ -19,20 +19,20 @@ use super::{
 
 #[test]
 fn merged_doc_update_preserves_stepwise_yjs_structs() {
-  let original = include_bytes!("fixtures/stepwise-yjs.bin");
-  let merged = super::utils::merge_frontend_update_binary(None, original).expect("merge Yjs update");
+  let original = hex::decode(include_str!("fixtures/stepwise-yjs.hex").replace('\n', "")).expect("decode Yjs update");
+  let merged = super::utils::merge_frontend_update_binary(None, &original).expect("merge Yjs update");
   assert_eq!(merged, original);
   let merged_again =
-    super::utils::merge_frontend_update_binary(Some(&merged), original).expect("merge repeated update");
+    super::utils::merge_frontend_update_binary(Some(&merged), &original).expect("merge repeated update");
   assert_eq!(merged_again, original);
 
   let mut doc = DocOptions::new().build();
-  doc.apply_update_from_binary_v1(original).expect("load Yjs update");
+  doc.apply_update_from_binary_v1(&original).expect("load Yjs update");
   let reencoded = doc
     .encode_state_as_update_v1(&StateVector::default())
     .expect("re-encode Yjs update");
   assert_ne!(reencoded, original);
-  assert!(super::utils::same_update_state(&reencoded, original).expect("compare update state"));
+  assert!(super::utils::same_update_state(&reencoded, &original).expect("compare update state"));
 }
 
 fn temp_dir() -> PathBuf {
