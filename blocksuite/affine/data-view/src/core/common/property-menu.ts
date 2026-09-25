@@ -57,9 +57,7 @@ export const typeConfig = (property: Property) => {
                       return;
                     }
                     property.typeSet?.(config.type);
-                    if (config.type === FORMULA_PROPERTY_TYPE) {
-                      popFormulaEditor(popupTargetFromElement(ele), property);
-                    }
+                    afterPropertyTypeChange(property, config.type, ele);
                   },
                 });
               }),
@@ -70,6 +68,20 @@ export const typeConfig = (property: Property) => {
       formulaConfig(property),
     ],
   });
+};
+
+/**
+ * Opens the formula editor right after a property is switched to a formula,
+ * so the new column doesn't stay empty.
+ */
+export const afterPropertyTypeChange = (
+  property: Property,
+  type: string,
+  anchor: HTMLElement
+) => {
+  if (type === FORMULA_PROPERTY_TYPE) {
+    popFormulaEditor(popupTargetFromElement(anchor), property);
+  }
 };
 
 export const formulaConfig = (property: Property) => {
