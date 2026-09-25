@@ -2868,11 +2868,13 @@ __metadata:
     "@preact/signals-core": "npm:^1.8.0"
     "@toeverything/theme": "npm:^1.1.23"
     "@types/bytes": "npm:^3.1.5"
+    "@types/css-tree": "npm:^2.3.11"
     "@types/hast": "npm:^3.0.4"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/mdast": "npm:^4.0.4"
     "@types/pdfmake": "npm:^0.2.12"
     bytes: "npm:^3.1.2"
+    css-tree: "npm:^2.3.1"
     dompurify: "npm:^3.4.11"
     fractional-indexing: "npm:^3.2.0"
     lit: "npm:^3.2.0"
@@ -14074,6 +14076,13 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10/6e49b741345e67834cd19d766228509e4b37d6d5c272355bb059502b4787f5adf58776d9114ac5f0f407966e0347ae8d1f995d7ea41e6a24f716d36b3010401b
+  languageName: node
+  linkType: hard
+
+"@types/css-tree@npm:^2.3.11":
+  version: 2.3.11
+  resolution: "@types/css-tree@npm:2.3.11"
+  checksum: 10/c4e1e990257cc8f9c90ebe3ec1b3d53733f9883cf772bbf1c2da462bb9fa6770b6ed98f24e176d1e0ad2c6b276b8ced5cd3d676b793518bec09adf2dd077a307
   languageName: node
   linkType: hard
 
