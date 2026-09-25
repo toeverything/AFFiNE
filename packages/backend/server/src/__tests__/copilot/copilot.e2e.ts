@@ -2,7 +2,14 @@ import '../../plugins/copilot';
 
 import { createHash, randomUUID } from 'node:crypto';
 
-import { createCopilotMessageMutation } from '@affine/graphql';
+import {
+  createCopilotMessageMutation,
+  createMcpCredentialMutation,
+  McpAccessMode as GraphqlMcpAccessMode,
+  mcpCredentialsQuery,
+  revokeMcpCredentialMutation,
+  rotateMcpCredentialMutation,
+} from '@affine/graphql';
 import { McpAccessMode, PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
@@ -74,6 +81,41 @@ test('disabled copilot hides its server feature and rejects every API transport'
       .POST(`/api/workspaces/${workspace.id}/mcp`)
       .send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })
       .expect(403);
+    await t.throwsAsync(
+      app.gql({
+        query: mcpCredentialsQuery,
+        variables: { workspaceId: workspace.id },
+      })
+    );
+    await t.throwsAsync(
+      app.gql({
+        query: createMcpCredentialMutation,
+        variables: {
+          input: {
+            workspaceId: workspace.id,
+            name: 'disabled',
+            accessMode: GraphqlMcpAccessMode.READ_ONLY,
+            expirationDays: 90,
+          },
+        },
+      })
+    );
+    await t.throwsAsync(
+      app.gql({
+        query: rotateMcpCredentialMutation,
+        variables: {
+          id: randomUUID(),
+          workspaceId: workspace.id,
+          expirationDays: 90,
+        },
+      })
+    );
+    await t.throwsAsync(
+      app.gql({
+        query: revokeMcpCredentialMutation,
+        variables: { id: randomUUID(), workspaceId: workspace.id },
+      })
+    );
   } finally {
     config.copilot.enabled = true;
     feature.onConfigChanged({ updates: { copilot: { enabled: true } } });
