@@ -302,6 +302,15 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
 
     this.contentEditable = String(editing && !this.store.readonly$.value);
 
+    // Disable macOS text replacement to prevent aggressive autocorrect
+    if (editing && !this.store.readonly$.value) {
+      this.setAttribute('autocorrect', 'off');
+      this.setAttribute('autocapitalize', 'off');
+    } else {
+      this.removeAttribute('autocorrect');
+      this.removeAttribute('autocapitalize');
+    }
+
     return html`
       <div
         class="edgeless-text-block-container"
