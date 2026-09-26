@@ -369,3 +369,191 @@ describe('calendar month layout', () => {
     expect(layout.days.every(day => day.segments.length === 0)).toBe(true);
   });
 });
+
+describe('calendar month layout - weekStartsOn', () => {
+  // May 2026: 1st is a Friday (day 5)
+  // Sunday start  -> visible range starts Sun 2026-04-26
+  // Monday start  -> visible range starts Mon 2026-04-27
+
+  it('pads month view to full weeks starting on Sunday by default', () => {
+    const range = getCalendarVisibleMonthRange(day('2026-05-01'));
+    expect(new Date(range.from).getDay()).toBe(0); // Sunday
+    expect(new Date(range.to).getDay()).toBe(6); // Saturday
+  });
+
+  it('pads month view to full weeks starting on Monday when weekStartsOn=1', () => {
+    const range = getCalendarVisibleMonthRange(day('2026-05-01'), 1);
+    expect(new Date(range.from).getDay()).toBe(1); // Monday
+    expect(new Date(range.to).getDay()).toBe(0); // Sunday
+  });
+
+  it('first day of first week is Monday when weekStartsOn=1', () => {
+    const layout = createCalendarMonthLayout({
+      month: day('2026-05-01'),
+      entries: [],
+      weekStartsOn: 1,
+    });
+    const firstDay = layout.weeks[0]?.[0];
+    expect(firstDay).toBeDefined();
+    expect(new Date(firstDay!.date).getDay()).toBe(1); // Monday
+  });
+
+  it('first day of first week is Sunday when weekStartsOn=0', () => {
+    const layout = createCalendarMonthLayout({
+      month: day('2026-05-01'),
+      entries: [],
+      weekStartsOn: 0,
+    });
+    const firstDay = layout.weeks[0]?.[0];
+    expect(firstDay).toBeDefined();
+    expect(new Date(firstDay!.date).getDay()).toBe(0); // Sunday
+  });
+
+  it('last day of last week is Sunday when weekStartsOn=1', () => {
+    const layout = createCalendarMonthLayout({
+      month: day('2026-05-01'),
+      entries: [],
+      weekStartsOn: 1,
+    });
+    const lastWeek = layout.weeks.at(-1)!;
+    const lastDay = lastWeek.at(-1)!;
+    expect(new Date(lastDay.date).getDay()).toBe(0); // Sunday
+  });
+
+  it('last day of last week is Saturday when weekStartsOn=0', () => {
+    const layout = createCalendarMonthLayout({
+      month: day('2026-05-01'),
+      entries: [],
+      weekStartsOn: 0,
+    });
+    const lastWeek = layout.weeks.at(-1)!;
+    const lastDay = lastWeek.at(-1)!;
+    expect(new Date(lastDay.date).getDay()).toBe(6); // Saturday
+  });
+
+  it('every week has exactly 7 days regardless of weekStartsOn', () => {
+    for (const weekStartsOn of [0, 1] as const) {
+      const layout = createCalendarMonthLayout({
+        month: day('2026-05-01'),
+        entries: [],
+        weekStartsOn,
+      });
+      for (const week of layout.weeks) {
+        expect(week).toHaveLength(7);
+      }
+    }
+  });
+
+  it('still places a single-day entry on the correct day when weekStartsOn=1', () => {
+    const entry = {
+      kind: 'row',
+      id: 'database:row-1',
+      sourceId: 'database',
+      rowId: 'row-1',
+      title: 'Task',
+      startAt: day('2026-05-15'),
+      cardProperties: [],
+      canResizeRange: false,
+    } satisfies CalendarEntry;
+
+    const layout = createCalendarMonthLayout({
+      month: day('2026-05-01'),
+      entries: [entry],
+      weekStartsOn: 1,
+    });
+
+    expect(
+      layout.days.find(item => item.date === day('2026-05-15'))?.entries
+    ).toEqual([entry]);
+  });
+
+  it('splits range entries correctly with Monday start - segment positions differ from Sunday start', () => {
+    // 2026-05-09 is a Saturday; in a Sunday-start grid it is column index 6 of week 1
+    // In a Monday-start grid May 9 falls on Saturday = column index 5 of week 2
+    const entry = {
+      kind: 'external',
+      id: 'external:1',
+      sourceId: 'workspace-calendar',
+      externalId: '1',
+      title: 'Trip',
+      startAt: day('2026-05-09'),
+      endAt: new Date('2026-05-12T12:00:00').getTime(),
+      canResizeRange: false,
+    } satisfies CalendarEntry;
+
+    const sundayLayout = createCalendarMonthLayout({
+      month: day('2026-05-01'),
+      entries: [entry],
+      weekStartsOn: 0,
+    });
+    const mondayLayout = createCalendarMonthLayout({
+      month: day('2026-05-01'),
+      entries: [entry],
+      weekStartsOn: 1,
+    });
+
+    // Sunday-start: May 9 (Sat) = last column of week 1
+    expect(sundayLayout.segments[0]).toMatchObject({
+      weekIndex: 1,
+      startIndex: 6,
+    });
+
+    // Monday-start: May 9 (Sat) = column 5 of week 1 (Mon=0…Sun=6)
+    expect(mondayLayout.segments[0]).toMatchObject({
+      weekIndex: 1,
+      startIndex: 5,
+    });
+  });
+
+  it('visible month range is identical for Sunday-start month where 1st falls on Sunday', () => {
+    // 2026-11-01 is a Sunday -> no padding on the left needed for either start mode
+    const rangeSun = getCalendarVisibleMonthRange(day('2026-11-01'), 0);
+    const rangeMon = getCalendarVisibleMonthRange(day('2026-11-01'), 1);
+
+    expect(new Date(rangeSun.from).getDay()).toBe(0); // starts on 2026-11-01 itself
+    expect(new Date(rangeMon.from).getDay()).toBe(1); // Monday 2026-10-26
+    // Both ranges cover Nov 1
+    expect(rangeSun.from).toBeLessThanOrEqual(day('2026-11-01'));
+    expect(rangeMon.from).toBeLessThanOrEqual(day('2026-11-01'));
+  });
+
+  it('no left-padding when 1st of month is Monday and weekStartsOn=1', () => {
+    // 2026-06-01 is a Monday - visible range should start exactly on June 1 with Monday start
+    const range = getCalendarVisibleMonthRange(day('2026-06-01'), 1);
+    expect(range.from).toBe(day('2026-06-01'));
+    expect(new Date(range.from).getDay()).toBe(1); // Monday
+  });
+
+  it('no left-padding when 1st of month is Sunday and weekStartsOn=0', () => {
+    // 2026-11-01 is a Sunday - visible range should start exactly on Nov 1 with Sunday start
+    const range = getCalendarVisibleMonthRange(day('2026-11-01'), 0);
+    expect(range.from).toBe(day('2026-11-01'));
+    expect(new Date(range.from).getDay()).toBe(0); // Sunday
+  });
+
+  it('full left-padding (6 days) when 1st is Saturday and weekStartsOn=0', () => {
+    // 2026-08-01 is a Saturday -> Sunday-start grid needs 6 days of left padding
+    const range = getCalendarVisibleMonthRange(day('2026-08-01'), 0);
+    expect(new Date(range.from).getDay()).toBe(0); // Sunday
+    const leftPad =
+      (day('2026-08-01') - range.from) / (24 * 60 * 60 * 1000);
+    expect(leftPad).toBe(6);
+  });
+
+  it('full left-padding (6 days) when 1st is Sunday and weekStartsOn=1', () => {
+    // 2026-11-01 is a Sunday -> Monday-start grid needs 6 days of left padding
+    const range = getCalendarVisibleMonthRange(day('2026-11-01'), 1);
+    expect(new Date(range.from).getDay()).toBe(1); // Monday
+    const leftPad =
+      (day('2026-11-01') - range.from) / (24 * 60 * 60 * 1000);
+    expect(leftPad).toBe(6);
+  });
+
+  it('monthStart and monthEnd bounds are always present in the visible range', () => {
+    for (const weekStartsOn of [0, 1] as const) {
+      const range = getCalendarVisibleMonthRange(day('2026-05-01'), weekStartsOn);
+      expect(range.from).toBeLessThanOrEqual(range.monthStart);
+      expect(range.to).toBeGreaterThanOrEqual(range.monthEnd);
+    }
+  });
+});
