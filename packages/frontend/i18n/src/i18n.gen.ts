@@ -8959,6 +8959,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.storage.unused-blobs.delete.warning"](): string;
     /**
+      * `Some blob files could not be deleted. Failed items remain selected.`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs.delete.failed"](): string;
+    /**
       * `Join Failed`
       */
     ["com.affine.fail-to-join-workspace.title"](): string;
