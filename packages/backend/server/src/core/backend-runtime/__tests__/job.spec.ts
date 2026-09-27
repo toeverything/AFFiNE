@@ -24,12 +24,14 @@ import {
 import {
   BackendRuntimeEmbeddingService,
   BackendRuntimeHousekeepingJob,
+  BackendRuntimeSearchJob,
 } from '../job';
 
 interface Context {
   module: TestingModule;
   embeddingService: BackendRuntimeEmbeddingService;
   job: BackendRuntimeHousekeepingJob;
+  searchJob: BackendRuntimeSearchJob;
   getSnapshot: Sinon.SinonStub;
   allowEmbedding: Sinon.SinonStub;
   runtime: {
@@ -40,6 +42,9 @@ interface Context {
     embeddingHealth: Sinon.SinonStub;
     syncEmbeddingState: Sinon.SinonStub;
     executeAuthSessionCommandV1: Sinon.SinonStub;
+    searchEnabled: Sinon.SinonStub;
+    reconcileSearchProjection: Sinon.SinonStub;
+    searchStatus: Sinon.SinonStub;
   };
 }
 
@@ -57,6 +62,9 @@ test.before(async t => {
     embeddingHealth: Sinon.stub().resolves({ enabled: true }),
     syncEmbeddingState: Sinon.stub(),
     executeAuthSessionCommandV1: Sinon.stub().resolves({}),
+    searchEnabled: Sinon.stub().returns(false),
+    reconcileSearchProjection: Sinon.stub().resolves(2),
+    searchStatus: Sinon.stub().resolves({ ready: true, state: 'active' }),
   };
   t.context.module = await createTestingModule({
     imports: [
@@ -92,6 +100,7 @@ test.before(async t => {
     BackendRuntimeEmbeddingService
   );
   t.context.job = t.context.module.get(BackendRuntimeHousekeepingJob);
+  t.context.searchJob = t.context.module.get(BackendRuntimeSearchJob);
 });
 
 test.beforeEach(t => {
@@ -101,6 +110,9 @@ test.beforeEach(t => {
   t.context.runtime.cleanupUnreferencedArtifacts.reset();
   t.context.runtime.embeddingHealth.resetHistory();
   t.context.runtime.syncEmbeddingState.reset();
+  t.context.runtime.searchEnabled.resetHistory();
+  t.context.runtime.reconcileSearchProjection.resetHistory();
+  t.context.runtime.searchStatus.resetHistory();
   t.context.getSnapshot.resetHistory();
   t.context.allowEmbedding.resetHistory();
 });
@@ -209,4 +221,10 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   t.is(t.context.runtime.cleanupExpiredRuntimeGates.callCount, 1);
   t.is(t.context.runtime.cleanupExpiredRollingQuota.callCount, 1);
   t.is(t.context.runtime.cleanupUnreferencedArtifacts.callCount, 1);
+
+  t.is(await t.context.searchJob.reconcileProjection(7), 0);
+  t.false(t.context.runtime.reconcileSearchProjection.called);
+  t.context.runtime.searchEnabled.returns(true);
+  t.is(await t.context.searchJob.reconcileProjection(7), 2);
+  t.true(t.context.runtime.reconcileSearchProjection.calledOnceWithExactly(7));
 });

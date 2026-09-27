@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 [dependencies]
 aes-gcm = { workspace = true }
 affine_common = { workspace = true, features = ["hashcash", "napi"] }
-affine_core = "0.0.4"
+affine_core = "0.0.5"
 affine_doc_loader = { workspace = true }
 anyhow = { workspace = true }
 argon2 = "0.6"

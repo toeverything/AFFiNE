@@ -12,6 +12,7 @@ import { BackfillPermissionProjection1765500000000 } from '../migrations/1765500
 import { BackfillTranscriptStorageKeys1786805802350 } from '../migrations/1786805802350-backfill-transcript-storage-keys';
 import { ConvergeManagedProviderProfiles1786810000000 } from '../migrations/1786810000000-converge-managed-provider-profiles';
 import { MigrateLegacyContextBlobArtifacts1786820000000 } from '../migrations/1786820000000-migrate-legacy-context-blob-artifacts';
+import { DisableIncompleteManagedProfiles1790300000000 } from '../migrations/1790300000000-disable-incomplete-managed-profiles';
 
 interface Context {
   module: TestingModule;
@@ -208,7 +209,7 @@ test('managed provider migration preserves explicit profiles and converts legacy
     where: { id: 'copilot.providers.profiles' },
   });
   t.deepEqual(migrated.value, [
-    profiles[0],
+    { ...profiles[0], enabled: false },
     {
       ...profiles[1],
       models: ['lora/image-to-image', 'workflowutils/teed'],
@@ -308,6 +309,43 @@ test('managed provider migration preserves explicit profiles and converts legacy
       },
     ]
   );
+
+  const migratedDefaults = (
+    await t.context.db.appConfig.findUniqueOrThrow({
+      where: { id: 'copilot.providers.profiles' },
+    })
+  ).value;
+  if (!Array.isArray(migratedDefaults))
+    throw new Error('profiles must be an array');
+  await t.context.db.appConfig.update({
+    where: { id: 'copilot.providers.profiles' },
+    data: {
+      value: [
+        ...migratedDefaults,
+        {
+          id: 'already-migrated-incomplete',
+          type: 'openai',
+          models: ['gpt-4o-mini'],
+          config: {},
+        },
+      ],
+    },
+  });
+  await DisableIncompleteManagedProfiles1790300000000.up(t.context.db);
+  await DisableIncompleteManagedProfiles1790300000000.up(t.context.db);
+  const repaired = await t.context.db.appConfig.findUniqueOrThrow({
+    where: { id: 'copilot.providers.profiles' },
+  });
+  t.deepEqual(repaired.value, [
+    ...migratedDefaults,
+    {
+      id: 'already-migrated-incomplete',
+      type: 'openai',
+      models: ['gpt-4o-mini'],
+      config: {},
+      enabled: false,
+    },
+  ]);
 
   await t.context.db.appConfig.update({
     where: { id: 'copilot.providers.profiles' },

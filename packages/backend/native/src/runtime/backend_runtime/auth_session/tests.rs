@@ -703,6 +703,21 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
     .unwrap()
     .to_string();
   keyring::rotate(&pool, &config, &user_id, &old_key).await.unwrap();
+  let stored_after_rotation: serde_json::Value =
+    sqlx::query_scalar("SELECT value FROM app_configs WHERE id='auth.session.signingKeys'")
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  let active = stored_after_rotation
+    .as_array()
+    .unwrap()
+    .iter()
+    .find(|key| key["status"] == "active")
+    .unwrap()
+    .as_object()
+    .unwrap();
+  assert!(!active.contains_key("retiredAt"));
+  assert!(!active.contains_key("verifyUntil"));
   let old_access = rotated["accessToken"].as_str().unwrap();
   let old_principal = principal::resolve(
     &pool,

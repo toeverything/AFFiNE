@@ -273,6 +273,29 @@ fn resolves_r2_proxy_upload_capability_from_config_json_shape() {
 
   assert!(config.use_presigned_url);
   assert!(config.proxy_upload);
+  let fields = [
+    serde_json::json!("ws"),
+    serde_json::json!("file"),
+    serde_json::json!("text/plain"),
+    serde_json::json!(7),
+  ];
+  let token = config
+    .proxy_upload_token("/api/storage/upload", &fields, 1_700_000_000)
+    .unwrap()
+    .unwrap();
+  // TODO(0.27.5): Remove this old Node token-format comparison after 0.27.4
+  // upload URLs expire.
+  assert_eq!(token, "NXaxFbKQjOOnqo5ggDsuK1jf8w5LlM7tLRWRoj_EmtY");
+  assert!(
+    config
+      .verify_proxy_upload_token("/api/storage/upload", &fields, 1_700_000_000, &token)
+      .unwrap()
+  );
+  assert!(
+    !config
+      .verify_proxy_upload_token("/api/storage/upload", &fields, 1_700_000_001, &token)
+      .unwrap()
+  );
   let request = config
     .custom_presign_get_at(&ObjectKey::new("workspace/blob.m4a").unwrap(), 1_700_000_000)
     .unwrap()

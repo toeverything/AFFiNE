@@ -15,15 +15,16 @@ import {
   verify,
 } from 'node:crypto';
 
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { hash as hashPassword } from '@node-rs/argon2';
 
 import { AFFINE_PRO_PUBLIC_KEY } from '../../native';
-import { Config } from '../config';
 import { OnEvent } from '../event';
 
 const NONCE_LENGTH = 12;
 const AUTH_TAG_LENGTH = 12;
+
+export const CRYPTO_KEY_SOURCE = Symbol('CRYPTO_KEY_SOURCE');
 
 function generatePrivateKey(): string {
   const { privateKey } = generateKeyPairSync('ec', {
@@ -83,23 +84,27 @@ export class CryptoHelper implements OnModuleInit {
     }
   }
 
-  constructor(private readonly config: Config) {}
+  constructor(
+    @Inject(CRYPTO_KEY_SOURCE)
+    private readonly source: { nodeCryptoPrivateKey(): string }
+  ) {}
 
   @OnEvent('config.init')
   onConfigInit() {
     this.setup();
   }
 
-  @OnEvent('config.changed')
-  onConfigChanged(event: Events['config.changed']) {
-    if (event.updates.crypto?.privateKey) {
+  @OnEvent('backendRuntime.configApplied')
+  onConfigApplied(event: Events['backendRuntime.configApplied']) {
+    if (event.updates.crypto && 'privateKey' in event.updates.crypto) {
       this.setup();
     }
   }
 
   private setup() {
     const prevPublicKey = this.keyPair?.publicKey;
-    const privateKey = this.config.crypto.privateKey || generatePrivateKey();
+    const privateKey =
+      this.source.nodeCryptoPrivateKey() || generatePrivateKey();
     const { priv, pub } = parseKey(privateKey);
     const publicKey = pub
       .export({ format: 'pem', type: 'spki' })

@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import {
-  ConfigFactory,
   CopilotSelectedSourcesFailed,
   CopilotSelectedSourcesLimitExceeded,
   CopilotSelectedSourcesProcessing,
@@ -173,14 +172,11 @@ export class BackendRuntimeHousekeepingJob {
 
 @Injectable()
 export class BackendRuntimeSearchJob {
-  constructor(
-    private readonly rt: BackendRuntimeProvider,
-    private readonly config: ConfigFactory
-  ) {}
+  constructor(private readonly rt: BackendRuntimeProvider) {}
 
   @Cron(CronExpression.EVERY_30_SECONDS)
   async reconcileProjection(limit = 100) {
-    if (!this.config.config.indexer.enabled) return 0;
+    if (!this.rt.searchEnabled()) return 0;
     const startedAt = performance.now();
     try {
       const reconciled = await this.rt.reconcileSearchProjection(limit);

@@ -4,8 +4,8 @@ use napi::Result;
 use sqlx::{Row, postgres::PgPoolOptions};
 
 use super::{
-  BackendRuntime, BackendRuntimeConfig, BackendRuntimeHealth, EmbeddingHealth, ObjectStorageService, RuntimeError,
-  RuntimeResult, SearchRuntime, blob_access, embedding_schema_health, invalidation,
+  BackendRuntime, BackendRuntimeConfig, BackendRuntimeHealth, EmbeddingHealth, RuntimeError, RuntimeResult,
+  SearchRuntime, blob_access, embedding_schema_health, invalidation,
   invalidation::{InvalidationHintV1, InvalidationTarget},
   napi_error,
   payment::PaymentRuntime,
@@ -14,16 +14,6 @@ use super::{
 
 #[napi_derive::napi]
 impl BackendRuntime {
-  #[napi]
-  pub fn configure_object_storage(&self, config_json: String) -> Result<()> {
-    let object_storage = ObjectStorageService::from_config_json(&config_json).map_err(to_napi_error)?;
-    *self
-      .object_storage
-      .write()
-      .map_err(|_| napi_error("object storage service lock poisoned"))? = Arc::new(object_storage);
-    Ok(())
-  }
-
   #[napi]
   pub async fn start(&self) -> Result<()> {
     self.start_inner().await.map_err(to_napi_error)
@@ -50,14 +40,12 @@ impl BackendRuntime {
       .map_err(|err| RuntimeError::database("BackendRuntime postgres health check failed", err))?;
 
     let initialized = async {
-      let inline_config = self
-        .inline_config
-        .read()
-        .map_err(|_| RuntimeError::invalid_state("BackendRuntime inline config lock poisoned"))?
-        .clone();
-      let config = self
-        .config()?
-        .with_db_overrides(&pool, &self.config_source, inline_config.as_ref())
+      let baseline = BackendRuntimeConfig::from_server_config(
+        self.bootstrap_private_key.as_ref().map(|key| key.to_string()),
+        &self.server_config,
+      )?;
+      let config = baseline
+        .with_db_overrides_from_server_config(&pool, &self.server_config)
         .await?;
       let deployment = config.deployment;
       let redis = config.redis.clone();
@@ -77,7 +65,8 @@ impl BackendRuntime {
         None
       };
       *self.payment.lock().await = payment;
-      let object_storage = self.object_storage()?.with_db_overrides(&pool).await?;
+      let storage_baseline = self.server_config.object_storage().clone();
+      let object_storage = storage_baseline.with_db_overrides(&pool).await?;
       *self
         .object_storage
         .write()
@@ -231,36 +220,24 @@ impl BackendRuntime {
   }
 
   #[napi]
-  pub async fn reload_config(
-    &self,
-    private_key: Option<String>,
-    object_storage_config: Option<String>,
-    inline_config: Option<String>,
-  ) -> Result<()> {
+  pub async fn reload_config(&self) -> Result<()> {
     let _reload = self.config_reload.lock().await;
     let pool = self.pool().await.map_err(to_napi_error)?;
-    let active_private_key = self.config().map_err(to_napi_error)?.private_key.to_string();
-    let inline_config = inline_config
-      .map(|value| serde_json::from_str(&value))
-      .transpose()
-      .map_err(|error| to_napi_error(RuntimeError::json("decode inline runtime config", error)))?
-      .or_else(|| self.inline_config.read().ok().and_then(|value| value.clone()));
-    let config = BackendRuntimeConfig::from_config_source_with_inline(
-      private_key.or(Some(active_private_key)),
-      &self.config_source,
-      inline_config.as_ref(),
+    let config = BackendRuntimeConfig::from_server_config(
+      self.bootstrap_private_key.as_ref().map(|key| key.to_string()),
+      &self.server_config,
     )
     .map_err(to_napi_error)?
-    .with_db_overrides(&pool, &self.config_source, inline_config.as_ref())
+    .with_db_overrides_from_server_config(&pool, &self.server_config)
     .await
     .map_err(to_napi_error)?;
-    let object_storage = match object_storage_config {
-      Some(config) => ObjectStorageService::from_config_json(&config).map_err(to_napi_error)?,
-      None => self.object_storage().map_err(to_napi_error)?.as_ref().clone(),
-    }
-    .with_db_overrides(&pool)
-    .await
-    .map_err(to_napi_error)?;
+    let object_storage = self
+      .server_config
+      .object_storage()
+      .clone()
+      .with_db_overrides(&pool)
+      .await
+      .map_err(to_napi_error)?;
     let search = if !self.script_mode && config.search.enabled {
       if config.search.provider == "embedded" && !self.role.allows_embedded_search() {
         return Err(napi_error(format!(
@@ -314,11 +291,6 @@ impl BackendRuntime {
     } else {
       None
     };
-    *self
-      .inline_config
-      .write()
-      .map_err(|_| napi_error("BackendRuntime inline config lock poisoned"))? = inline_config;
-
     let embedding = self.embedding.lock().await.as_ref().cloned();
     if let Some(embedding) = embedding {
       embedding

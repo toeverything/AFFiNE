@@ -1,6 +1,6 @@
 import { indexerSearchDocsQuery } from '@affine/graphql';
 
-import { Config } from '../../../base';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
 import {
@@ -10,7 +10,9 @@ import {
   reconcileSearchProjection,
 } from '../test';
 
-const indexerE2e = app.get(Config).indexer.enabled ? e2e.serial : e2e.skip;
+const indexerE2e = app.get(BackendRuntimeProvider).searchEnabled()
+  ? e2e.serial
+  : e2e.skip;
 
 indexerE2e('should search docs by keyword', async t => {
   const owner = await app.signup();

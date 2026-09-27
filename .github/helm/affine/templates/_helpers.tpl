@@ -62,8 +62,8 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Render the indexer runtime configuration shared by the Secret and Pod checksums.
+Render the server runtime configuration shared by the Secret and Pod checksums.
 */}}
-{{- define "affine.indexerConfig" -}}
-{{- dict "indexer" (dict "enabled" .Values.global.indexer.enabled "provider" (dict "type" .Values.global.indexer.provider "endpoint" .Values.global.indexer.endpoint "apiKey" .Values.global.indexer.apiKey "username" .Values.global.indexer.username "password" .Values.global.indexer.password)) | toJson -}}
+{{- define "affine.serverConfig" -}}
+{{- dict "deployment" (dict "type" (ternary "selfhosted" "cloud" (eq .Values.global.deployment.type "selfhosted"))) "indexer" (dict "enabled" .Values.global.indexer.enabled "provider" (dict "type" .Values.global.indexer.provider "endpoint" .Values.global.indexer.endpoint "apiKey" .Values.global.indexer.apiKey "username" .Values.global.indexer.username "password" .Values.global.indexer.password)) | toJson -}}
 {{- end }}

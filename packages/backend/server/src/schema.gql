@@ -256,7 +256,7 @@ type AppConfigValidateResult {
   key: String!
   module: String!
   valid: Boolean!
-  value: JSON!
+  value: JSON
 }
 
 input AudioSliceManifestItemInput {
@@ -1957,8 +1957,11 @@ type Query {
   """Workspaces count for admin"""
   adminWorkspacesCount(filter: ListWorkspaceInput!): Int!
 
-  """get the whole app configuration"""
+  """get visible app configuration values"""
   appConfig: JSONObject!
+
+  """get app configuration value sources and secret status"""
+  appConfigMetadata: JSONObject!
   authSigningKeys: [AuthSigningKeyType!]!
 
   """Get current user"""
@@ -2491,9 +2494,10 @@ type UnsupportedSubscriptionPlanDataType {
 }
 
 input UpdateAppConfigInput {
+  clear: Boolean
   key: String!
   module: String!
-  value: JSON!
+  value: JSON
 }
 
 input UpdateChatSessionInput {

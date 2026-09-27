@@ -1,29 +1,40 @@
 import { generateKeyPairSync } from 'node:crypto';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import test from 'ava';
 import Sinon from 'sinon';
 
-import type { Config } from '../../../base';
+import type { EventBus } from '../../../base';
+import { ServerConfigHandle } from '../../../native';
 import { BackendRuntimeProvider } from '../provider';
 
 const privateKey = generateKeyPairSync('ec', {
   namedCurve: 'P-256',
 }).privateKey.export({ format: 'pem', type: 'pkcs8' }) as string;
-const storage = {
-  provider: 'assetpack',
-  bucket: 'test',
-  config: { path: '/tmp/affine-backend-runtime-test' },
-};
-const config = {
-  crypto: { privateKey },
-  storages: { blob: { storage }, avatar: { storage } },
-  copilot: { storage },
-} as Config;
+const directory = mkdtempSync(join(tmpdir(), 'affine-backend-runtime-'));
+const configPath = join(directory, 'config.json');
+writeFileSync(
+  configPath,
+  JSON.stringify({
+    deployment: { type: 'selfhosted' },
+    crypto: { privateKey },
+    copilot: { enabled: false },
+  })
+);
+const serverConfig = new ServerConfigHandle(configPath);
+test.after.always(() => rmSync(directory, { recursive: true, force: true }));
 
 test('backend-runtime provider starts without migrations and exposes explicit migration', async t => {
-  const provider = new BackendRuntimeProvider(config, []);
+  const event = {
+    emitAsync: Sinon.stub().resolves(),
+  };
+  const provider = new BackendRuntimeProvider(
+    serverConfig,
+    event as unknown as EventBus
+  );
   const runtime = {
-    configureObjectStorage: Sinon.stub(),
     start: Sinon.stub().resolves(),
     stop: Sinon.stub().resolves(),
     runMigrations: Sinon.stub().resolves(),
@@ -49,31 +60,36 @@ test('backend-runtime provider starts without migrations and exposes explicit mi
   await provider.onConfigChanged({ updates: { mailer: {} } });
   await provider.onConfigChanged({ updates: { copilot: {} } });
   await provider.onConfigChanged({ updates: { storages: {} } });
+  await provider.onConfigChanged({ updates: { oauth: {} } });
   const health = await provider.health();
+  t.is(runtime.reloadConfig.callCount, 3);
+  t.true(runtime.reloadConfig.alwaysCalledWithExactly());
+  t.is(event.emitAsync.callCount, 5);
+  t.true(
+    event.emitAsync.calledWith('backendRuntime.configApplied', {
+      updates: { copilot: {} },
+    })
+  );
+  t.true(
+    event.emitAsync.calledWith('backendRuntime.configApplied', {
+      updates: { oauth: {} },
+    })
+  );
+
+  runtime.reloadConfig.rejects(new Error('sensitive native credential'));
+  await provider.onConfigChanged({ updates: { copilot: {} } });
   await provider.stop();
 
   t.is(runtime.start.callCount, 2);
   t.is(runtime.runMigrations.callCount, 1);
-  t.is(runtime.reloadConfig.callCount, 2);
-  t.true(
-    runtime.reloadConfig.alwaysCalledWithExactly(
-      privateKey,
-      JSON.stringify({
-        storages: {
-          'blob.storage': storage,
-          'avatar.storage': storage,
-        },
-        copilot: { storage },
-      }),
-      '{}'
-    )
-  );
+  t.is(runtime.reloadConfig.callCount, 4);
+  t.is(event.emitAsync.callCount, 5);
   t.true(health.databaseConnected);
   t.is(runtime.stop.callCount, 1);
 });
 
 test('backend-runtime provider measures explicit typed methods', async t => {
-  const provider = new BackendRuntimeProvider(config, []);
+  const provider = new BackendRuntimeProvider(serverConfig);
   const runtime = {
     cleanupExpiredRuntimeStates: Sinon.stub().resolves(3),
     assertCopilotRoute: Sinon.stub().resolves(),
@@ -98,7 +114,7 @@ test('backend-runtime provider measures explicit typed methods', async t => {
 });
 
 test('backend-runtime provider encodes recursive search contracts at the native boundary', async t => {
-  const provider = new BackendRuntimeProvider(config, []);
+  const provider = new BackendRuntimeProvider(serverConfig);
   const runtime = {
     searchAuthorized: Sinon.stub().resolves({
       ok: true,
@@ -198,7 +214,7 @@ test('backend-runtime provider encodes recursive search contracts at the native 
 });
 
 test('backend-runtime provider aborts a stream handle that resolves after iterator cancellation', async t => {
-  const provider = new BackendRuntimeProvider(config, []);
+  const provider = new BackendRuntimeProvider(serverConfig);
   const abort = Sinon.stub();
   let resolveHandle!: (handle: { abort: () => void }) => void;
   const runtime = {

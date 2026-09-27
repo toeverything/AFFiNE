@@ -2,14 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 import {
   BlobInvalid,
-  Config,
-  createStorageUploadToken,
   PROXY_MULTIPART_PATH,
   PROXY_UPLOAD_PATH,
   type PutObjectMetadata,
-  type S3StorageConfig,
   SIGNED_URL_EXPIRED,
-  type StorageProviderConfig,
   URLHelper,
 } from '../../../base';
 import { Models } from '../../../models';
@@ -18,12 +14,11 @@ import { StorageRuntimeProvider } from '../../storage-runtime';
 import { MULTIPART_PART_SIZE } from '../constants';
 
 type UploadURLConfig = {
-  signKey?: string;
+  proxyUpload: boolean;
   urlPrefix?: string;
 };
 
 type UploadProxyConfig = {
-  signKey: string;
   urlPrefix: string;
 };
 
@@ -32,8 +27,7 @@ export class WorkspaceBlobStorage {
   constructor(
     private readonly models: Models,
     private readonly url: URLHelper,
-    private readonly rt: StorageRuntimeProvider,
-    private readonly config: Config
+    private readonly rt: StorageRuntimeProvider
   ) {}
 
   async putReservation(
@@ -64,7 +58,7 @@ export class WorkspaceBlobStorage {
         serverMediatedOnly: true,
       };
     }
-    if (!config.signKey) {
+    if (!config.proxyUpload) {
       return capabilities;
     }
     return {
@@ -84,9 +78,8 @@ export class WorkspaceBlobStorage {
   ) {
     const config = this.uploadURLConfig();
     if (!config) return;
-    if (config.signKey) {
+    if (config.proxyUpload) {
       return this.createProxyUploadUrl(workspaceId, key, metadata, {
-        signKey: config.signKey,
         urlPrefix: config.urlPrefix ?? this.url.baseUrl,
       });
     }
@@ -128,7 +121,7 @@ export class WorkspaceBlobStorage {
       partNumber
     );
     const reservationId = await this.reservationId(workspaceId, key);
-    if (config.signKey) {
+    if (config.proxyUpload) {
       return this.createProxyMultipartUrl(
         workspaceId,
         key,
@@ -136,7 +129,6 @@ export class WorkspaceBlobStorage {
         partNumber,
         contentLength,
         {
-          signKey: config.signKey,
           urlPrefix: config.urlPrefix ?? this.url.baseUrl,
         }
       );
@@ -211,18 +203,7 @@ export class WorkspaceBlobStorage {
   }
 
   private uploadURLConfig(): UploadURLConfig | undefined {
-    const storage = this.config.storages.blob.storage as StorageProviderConfig;
-    if (storage.provider !== 'cloudflare-r2' && storage.provider !== 'aws-s3') {
-      return;
-    }
-    const usePresignedURL = (storage.config as S3StorageConfig).usePresignedURL;
-    if (!usePresignedURL?.enabled) {
-      return;
-    }
-    return {
-      signKey: usePresignedURL.signKey || undefined,
-      urlPrefix: usePresignedURL.urlPrefix || undefined,
-    };
+    return this.rt.uploadUrlConfig('blob') ?? undefined;
   }
 
   private createProxyUploadUrl(
@@ -238,12 +219,13 @@ export class WorkspaceBlobStorage {
     }
     const expiresAt = new Date(Date.now() + SIGNED_URL_EXPIRED * 1000);
     const expiresAtSeconds = Math.floor(expiresAt.getTime() / 1000);
-    const token = createStorageUploadToken(
+    const token = this.rt.signUploadToken(
+      'blob',
       PROXY_UPLOAD_PATH,
       [workspaceId, key, contentType, contentLength],
-      expiresAtSeconds,
-      proxy.signKey
+      expiresAtSeconds
     );
+    if (!token) throw new BlobInvalid('Upload proxy is unavailable');
     return {
       url: this.linkProxyUrl(proxy.urlPrefix, PROXY_UPLOAD_PATH, {
         workspaceId,
@@ -268,12 +250,13 @@ export class WorkspaceBlobStorage {
   ) {
     const expiresAt = new Date(Date.now() + SIGNED_URL_EXPIRED * 1000);
     const expiresAtSeconds = Math.floor(expiresAt.getTime() / 1000);
-    const token = createStorageUploadToken(
+    const token = this.rt.signUploadToken(
+      'blob',
       PROXY_MULTIPART_PATH,
       [workspaceId, key, uploadId, partNumber, contentLength],
-      expiresAtSeconds,
-      proxy.signKey
+      expiresAtSeconds
     );
+    if (!token) throw new BlobInvalid('Upload proxy is unavailable');
     return {
       url: this.linkProxyUrl(proxy.urlPrefix, PROXY_MULTIPART_PATH, {
         workspaceId,

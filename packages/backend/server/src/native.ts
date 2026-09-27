@@ -68,6 +68,7 @@ import serverNativeModule, {
 } from '@affine/server-native';
 
 export type {
+  AppConfigCommand,
   BuiltInManagedTarget,
   BuiltInManagedTargetTier,
   BuiltInRouteOptions,
@@ -321,6 +322,8 @@ export const readAllDocIdsFromRootDoc =
   serverNativeModule.readAllDocIdsFromRootDoc;
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const BackendRuntime = serverNativeModule.BackendRuntime;
+export const ServerConfigHandle = serverNativeModule.ServerConfigHandle;
+export type ServerConfigHandle = InstanceType<typeof ServerConfigHandle>;
 export const StorageRuntime = serverNativeModule.StorageRuntime;
 
 export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';

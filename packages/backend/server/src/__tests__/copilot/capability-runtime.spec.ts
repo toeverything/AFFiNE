@@ -4,7 +4,7 @@ import ava from 'ava';
 import Sinon from 'sinon';
 import { z } from 'zod';
 
-import { Config, CopilotQuotaExceeded } from '../../base';
+import { CopilotQuotaExceeded } from '../../base';
 import type { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import type { Models } from '../../models';
@@ -33,6 +33,7 @@ function runtimeFixture(streamError?: string, enabled = true) {
     targetOverride?: { profileId: string; modelId: string };
   }> = [];
   const backend = {
+    copilotEnabled: () => enabled,
     executeCopilot: async (input: {
       slot: string;
       request: unknown;
@@ -99,7 +100,6 @@ function runtimeFixture(streamError?: string, enabled = true) {
   const consumer = {
     consume: async () => {},
   } as unknown as CopilotRuntimeEventConsumer;
-  const config = { copilot: { enabled } } as Config;
   const storageRuntime = Sinon.createStubInstance(StorageRuntimeProvider);
   storageRuntime.getObject.callsFake(async () => ({
     body: Readable.from(Buffer.from('image')),
@@ -126,7 +126,6 @@ function runtimeFixture(streamError?: string, enabled = true) {
       conversation,
       tools,
       consumer,
-      config,
       new AttachmentAdmissionHost(materializer, storage)
     ),
   };
