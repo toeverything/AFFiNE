@@ -2,7 +2,7 @@ use affine_core::auth::{
   AuthChallengePurpose, LoginMethodFacts, MAGIC_LINK_TTL_SECONDS, OPEN_APP_TTL_SECONDS, OtpAttemptDecision,
   challenge_identity_matches, login_methods, otp_attempt_decision,
 };
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
+use argon2::{Argon2, PasswordVerifier, password_hash::phc::PasswordHash};
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use sqlx::{PgPool, Postgres, Row, Transaction};

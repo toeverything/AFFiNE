@@ -1,11 +1,19 @@
 import type { MainEventRegister } from '../type';
-import { applyLocalUpdate, startSession, stopSession } from './handlers';
+import {
+  acknowledgeSourceUpdate,
+  applyLocalUpdate,
+  prepareSourceDoc,
+  startSession,
+  stopSession,
+} from './handlers';
 import { diskSyncSubjects } from './subjects';
 
 export const diskSyncHandlers = {
   startSession,
   stopSession,
   applyLocalUpdate,
+  acknowledgeSourceUpdate,
+  prepareSourceDoc,
 };
 
 export const diskSyncEvents = {

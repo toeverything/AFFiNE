@@ -1,27 +1,18 @@
-import type { DocClock, DocUpdate } from '@affine/nbstore';
-import type {
-  DiskSessionOptions,
-  DiskSyncApis,
-  DiskSyncEvent,
-} from '@affine/nbstore/disk';
+import type { DiskSyncApis, DiskSyncEvent } from '@affine/nbstore/disk';
 
 type DiskSyncEventPayload = {
   sessionId: string;
   event: DiskSyncEvent;
 };
 
-interface DiskSyncHandlers {
-  startSession: (
-    sessionId: string,
-    options: DiskSessionOptions
-  ) => Promise<void>;
-  stopSession: (sessionId: string) => Promise<void>;
-  applyLocalUpdate: (
-    sessionId: string,
-    update: DocUpdate,
-    origin?: string
-  ) => Promise<DocClock>;
-}
+type DiskSyncHandlers = Pick<
+  DiskSyncApis,
+  | 'startSession'
+  | 'stopSession'
+  | 'applyLocalUpdate'
+  | 'acknowledgeSourceUpdate'
+  | 'prepareSourceDoc'
+>;
 
 interface DiskSyncEvents {
   onEvent: (callback: (payload: DiskSyncEventPayload) => void) => () => void;
@@ -38,8 +29,19 @@ export function createDiskSyncApis(
     stopSession: sessionId => {
       return handlers.stopSession(sessionId);
     },
-    applyLocalUpdate: (sessionId, update, origin) => {
-      return handlers.applyLocalUpdate(sessionId, update, origin);
+    applyLocalUpdate: (sessionId, update) => {
+      return handlers.applyLocalUpdate(sessionId, update);
+    },
+    acknowledgeSourceUpdate: (sessionId, docId, localSnapshot) => {
+      return handlers.acknowledgeSourceUpdate(sessionId, docId, localSnapshot);
+    },
+    prepareSourceDoc: (sessionId, docId, localSnapshot, localRoot) => {
+      return handlers.prepareSourceDoc(
+        sessionId,
+        docId,
+        localSnapshot,
+        localRoot
+      );
     },
     subscribeEvents: (sessionId, callback) => {
       return events.onEvent(payload => {

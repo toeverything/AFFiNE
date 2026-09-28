@@ -1,10 +1,7 @@
 import path from 'node:path';
 
 import { DocStorage, ValidationResult } from '@affine/native';
-import {
-  parseUniversalId,
-  universalId as generateUniversalId,
-} from '@affine/nbstore';
+import { parseUniversalId } from '@affine/nbstore';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 import { applyUpdate, Doc as YDoc } from 'yjs';
@@ -180,27 +177,21 @@ async function getWorkspaceDocMeta(
   dbPath: string
 ): Promise<WorkspaceDocMeta | null> {
   const pool = getDocStoragePool();
-  const universalId = generateUniversalId({
-    peer: 'deleted-local',
-    type: 'workspace',
-    id: workspaceId,
-  });
   try {
-    await pool.connect(universalId, dbPath);
-    await pool.checkpoint(universalId);
-    const snapshot = await pool.getDocSnapshot(universalId, workspaceId);
-    const pendingUpdates = await pool.getDocUpdates(universalId, workspaceId);
-    if (snapshot) {
-      const updates = snapshot.bin;
+    const { snapshot, updates: pendingUpdates } =
+      await pool.readDocRecordsReadonly(dbPath, workspaceId);
+    if (snapshot || pendingUpdates.length) {
       const ydoc = new YDoc();
-      applyUpdate(ydoc, updates);
+      if (snapshot) {
+        applyUpdate(ydoc, snapshot.bin);
+      }
       pendingUpdates.forEach(update => {
         applyUpdate(ydoc, update.bin);
       });
       const meta = ydoc.getMap('meta').toJSON();
       const dbFileStat = await fs.stat(dbPath);
       const blob = meta.avatar
-        ? await pool.getBlob(universalId, meta.avatar)
+        ? await pool.readBlobReadonly(dbPath, meta.avatar)
         : null;
       return {
         id: workspaceId,
@@ -216,8 +207,6 @@ async function getWorkspaceDocMeta(
   } catch {
     // try using v1
     return await getWorkspaceDocMetaV1(workspaceId, dbPath);
-  } finally {
-    await pool.disconnect(universalId);
   }
   return null;
 }

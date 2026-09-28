@@ -5,11 +5,14 @@ use std::{
 };
 
 use sqlx::{
-  Pool, Row, Sqlite,
+  Pool, Row, Sqlite, SqliteConnection,
   sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions},
 };
 
-use super::{types::Baseline, utils::now_naive};
+use super::{
+  types::SourceCheckpoint,
+  utils::{merge_update_binary, now_naive},
+};
 
 #[derive(Clone)]
 pub(crate) struct StateDb {
@@ -48,17 +51,6 @@ impl StateDb {
   async fn init(&self) -> Result<(), String> {
     sqlx::query(
       r#"
-      CREATE TABLE IF NOT EXISTS schema_version (
-        version INTEGER PRIMARY KEY
-      );
-      "#,
-    )
-    .execute(&self.pool)
-    .await
-    .map_err(|err| format!("failed to create schema_version table: {}", err))?;
-
-    sqlx::query(
-      r#"
       CREATE TABLE IF NOT EXISTS bindings (
         workspace_id TEXT NOT NULL,
         doc_id TEXT NOT NULL,
@@ -85,42 +77,47 @@ impl StateDb {
 
     sqlx::query(
       r#"
-      CREATE TABLE IF NOT EXISTS baselines (
+      CREATE TABLE IF NOT EXISTS source_checkpoints (
         workspace_id TEXT NOT NULL,
         doc_id TEXT NOT NULL,
-        base_clock TEXT NOT NULL,
-        base_vector TEXT NOT NULL,
-        md_hash TEXT NOT NULL,
+        snapshot BLOB NOT NULL,
+        markdown TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        profile INTEGER NOT NULL,
         meta_hash TEXT NOT NULL,
-        synced_at DATETIME NOT NULL,
         PRIMARY KEY(workspace_id, doc_id)
       );
       "#,
     )
     .execute(&self.pool)
     .await
-    .map_err(|err| format!("failed to create baselines table: {}", err))?;
+    .map_err(|err| format!("failed to create source checkpoint table: {}", err))?;
 
     sqlx::query(
       r#"
-      CREATE TABLE IF NOT EXISTS events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        workspace_id TEXT NOT NULL,
-        doc_id TEXT,
-        kind TEXT NOT NULL,
-        ts DATETIME NOT NULL,
-        payload TEXT NOT NULL
+      CREATE TABLE IF NOT EXISTS root_snapshots (
+        workspace_id TEXT PRIMARY KEY,
+        snapshot BLOB NOT NULL
       );
       "#,
     )
     .execute(&self.pool)
     .await
-    .map_err(|err| format!("failed to create events table: {}", err))?;
+    .map_err(|err| format!("failed to create root snapshot table: {}", err))?;
 
-    sqlx::query("INSERT OR IGNORE INTO schema_version(version) VALUES (1);")
-      .execute(&self.pool)
-      .await
-      .map_err(|err| format!("failed to initialize schema_version: {}", err))?;
+    sqlx::query(
+      r#"
+      CREATE TABLE IF NOT EXISTS pending_source_updates (
+        workspace_id TEXT NOT NULL,
+        doc_id TEXT NOT NULL,
+        bin BLOB NOT NULL,
+        PRIMARY KEY(workspace_id, doc_id)
+      );
+      "#,
+    )
+    .execute(&self.pool)
+    .await
+    .map_err(|err| format!("failed to create pending source update table: {}", err))?;
 
     Ok(())
   }
@@ -171,87 +168,253 @@ impl StateDb {
     Ok(())
   }
 
-  pub(crate) async fn load_baselines(&self) -> Result<HashMap<String, Baseline>, String> {
-    let rows = sqlx::query(
+  pub(crate) async fn load_root_snapshot(&self) -> Result<Vec<u8>, String> {
+    sqlx::query_scalar("SELECT snapshot FROM root_snapshots WHERE workspace_id = ?")
+      .bind(&self.workspace_id)
+      .fetch_optional(&self.pool)
+      .await
+      .map(|snapshot| snapshot.unwrap_or_default())
+      .map_err(|err| format!("failed to load root snapshot: {}", err))
+  }
+
+  pub(crate) async fn store_root_snapshot(&self, snapshot: &[u8]) -> Result<(), String> {
+    sqlx::query(
       r#"
-      SELECT doc_id, base_clock, base_vector, md_hash, meta_hash, synced_at
-      FROM baselines
-      WHERE workspace_id = ?;
+      INSERT INTO root_snapshots (workspace_id, snapshot) VALUES (?, ?)
+      ON CONFLICT(workspace_id) DO UPDATE SET snapshot = excluded.snapshot
       "#,
+    )
+    .bind(&self.workspace_id)
+    .bind(snapshot)
+    .execute(&self.pool)
+    .await
+    .map_err(|err| format!("failed to persist root snapshot: {}", err))?;
+    Ok(())
+  }
+
+  async fn stage_root_update_in_tx(
+    &self,
+    tx: &mut SqliteConnection,
+    snapshot: &[u8],
+    update: &[u8],
+  ) -> Result<Vec<u8>, String> {
+    let pending: Option<Vec<u8>> =
+      sqlx::query_scalar("SELECT bin FROM pending_source_updates WHERE workspace_id = ? AND doc_id = ?")
+        .bind(&self.workspace_id)
+        .bind(&self.workspace_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|err| format!("failed to read pending root update: {}", err))?;
+    let pending = match pending {
+      Some(previous) => merge_update_binary(Some(&previous), update)?,
+      None => update.to_vec(),
+    };
+    sqlx::query(
+      r#"
+      INSERT INTO root_snapshots (workspace_id, snapshot) VALUES (?, ?)
+      ON CONFLICT(workspace_id) DO UPDATE SET snapshot = excluded.snapshot
+      "#,
+    )
+    .bind(&self.workspace_id)
+    .bind(snapshot)
+    .execute(&mut *tx)
+    .await
+    .map_err(|err| format!("failed to stage root snapshot: {}", err))?;
+    sqlx::query(
+      r#"
+      INSERT INTO pending_source_updates (workspace_id, doc_id, bin) VALUES (?, ?, ?)
+      ON CONFLICT(workspace_id, doc_id) DO UPDATE SET bin = excluded.bin
+      "#,
+    )
+    .bind(&self.workspace_id)
+    .bind(&self.workspace_id)
+    .bind(&pending)
+    .execute(&mut *tx)
+    .await
+    .map_err(|err| format!("failed to stage root update: {}", err))?;
+    Ok(pending)
+  }
+
+  pub(crate) async fn load_source_checkpoints(&self) -> Result<HashMap<String, SourceCheckpoint>, String> {
+    let rows = sqlx::query(
+      "SELECT doc_id, snapshot, markdown, scope, profile, meta_hash FROM source_checkpoints WHERE workspace_id = ?",
     )
     .bind(&self.workspace_id)
     .fetch_all(&self.pool)
     .await
-    .map_err(|err| format!("failed to load baselines: {}", err))?;
+    .map_err(|err| format!("failed to load source checkpoints: {}", err))?;
 
-    let mut map = HashMap::new();
+    let mut checkpoints = HashMap::new();
     for row in rows {
-      let doc_id: String = row.get("doc_id");
-      map.insert(
-        doc_id,
-        Baseline {
-          base_clock: row.get("base_clock"),
-          base_vector: row.get("base_vector"),
-          md_hash: row.get("md_hash"),
+      checkpoints.insert(
+        row.get("doc_id"),
+        SourceCheckpoint {
+          snapshot: row.get("snapshot"),
+          markdown: row.get("markdown"),
+          scope: row.get("scope"),
+          profile: row.get::<i64, _>("profile") as u32,
           meta_hash: row.get("meta_hash"),
-          synced_at: row.get("synced_at"),
         },
       );
     }
-    Ok(map)
+    Ok(checkpoints)
   }
 
-  pub(crate) async fn upsert_baseline(&self, doc_id: &str, baseline: &Baseline) -> Result<(), String> {
+  pub(crate) async fn upsert_source_checkpoint(
+    &self,
+    doc_id: &str,
+    checkpoint: &SourceCheckpoint,
+  ) -> Result<(), String> {
     sqlx::query(
       r#"
-      INSERT INTO baselines (
-        workspace_id,
-        doc_id,
-        base_clock,
-        base_vector,
-        md_hash,
-        meta_hash,
-        synced_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO source_checkpoints (workspace_id, doc_id, snapshot, markdown, scope, profile, meta_hash)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(workspace_id, doc_id)
       DO UPDATE SET
-        base_clock = excluded.base_clock,
-        base_vector = excluded.base_vector,
-        md_hash = excluded.md_hash,
-        meta_hash = excluded.meta_hash,
-        synced_at = excluded.synced_at;
+        snapshot = excluded.snapshot,
+        markdown = excluded.markdown,
+        scope = excluded.scope,
+        profile = excluded.profile,
+        meta_hash = excluded.meta_hash
       "#,
     )
     .bind(&self.workspace_id)
     .bind(doc_id)
-    .bind(&baseline.base_clock)
-    .bind(&baseline.base_vector)
-    .bind(&baseline.md_hash)
-    .bind(&baseline.meta_hash)
-    .bind(baseline.synced_at)
+    .bind(&checkpoint.snapshot)
+    .bind(&checkpoint.markdown)
+    .bind(&checkpoint.scope)
+    .bind(i64::from(checkpoint.profile))
+    .bind(&checkpoint.meta_hash)
     .execute(&self.pool)
     .await
-    .map_err(|err| format!("failed to upsert baseline for doc {}: {}", doc_id, err))?;
-
+    .map_err(|err| format!("failed to persist source checkpoint for doc {}: {}", doc_id, err))?;
     Ok(())
   }
 
-  pub(crate) async fn append_event(&self, doc_id: Option<&str>, kind: &str, payload: &str) -> Result<(), String> {
+  pub(crate) async fn stage_source_import(
+    &self,
+    doc_id: &str,
+    file_path: &Path,
+    checkpoint: &SourceCheckpoint,
+    update: &[u8],
+    root_update: Option<(&[u8], &[u8])>,
+  ) -> Result<(Option<Vec<u8>>, Option<Vec<u8>>), String> {
+    let mut tx = self
+      .pool
+      .begin()
+      .await
+      .map_err(|err| format!("failed to start source transaction: {}", err))?;
+    let pending: Option<Vec<u8>> =
+      sqlx::query_scalar("SELECT bin FROM pending_source_updates WHERE workspace_id = ? AND doc_id = ?")
+        .bind(&self.workspace_id)
+        .bind(doc_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|err| format!("failed to read pending source update: {}", err))?;
+    let pending = if update.is_empty() || update == [0, 0] {
+      pending
+    } else {
+      Some(match pending {
+        Some(previous) => merge_update_binary(Some(&previous), update)?,
+        None => update.to_vec(),
+      })
+    };
     sqlx::query(
       r#"
-      INSERT INTO events (workspace_id, doc_id, kind, ts, payload)
-      VALUES (?, ?, ?, ?, ?);
+      INSERT INTO source_checkpoints (workspace_id, doc_id, snapshot, markdown, scope, profile, meta_hash)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(workspace_id, doc_id)
+      DO UPDATE SET snapshot = excluded.snapshot, markdown = excluded.markdown,
+        scope = excluded.scope, profile = excluded.profile, meta_hash = excluded.meta_hash
       "#,
     )
     .bind(&self.workspace_id)
     .bind(doc_id)
-    .bind(kind)
-    .bind(now_naive())
-    .bind(payload)
-    .execute(&self.pool)
+    .bind(&checkpoint.snapshot)
+    .bind(&checkpoint.markdown)
+    .bind(&checkpoint.scope)
+    .bind(i64::from(checkpoint.profile))
+    .bind(&checkpoint.meta_hash)
+    .execute(&mut *tx)
     .await
-    .map_err(|err| format!("failed to append event {}: {}", kind, err))?;
+    .map_err(|err| format!("failed to stage source checkpoint: {}", err))?;
+    sqlx::query(
+      r#"
+      INSERT INTO bindings (workspace_id, doc_id, file_path, enabled, updated_at)
+      VALUES (?, ?, ?, 1, ?)
+      ON CONFLICT(workspace_id, doc_id) DO UPDATE SET
+        file_path = excluded.file_path,
+        enabled = 1,
+        updated_at = excluded.updated_at
+      "#,
+    )
+    .bind(&self.workspace_id)
+    .bind(doc_id)
+    .bind(file_path.to_string_lossy().to_string())
+    .bind(now_naive())
+    .execute(&mut *tx)
+    .await
+    .map_err(|err| format!("failed to stage source binding: {}", err))?;
+    if let Some(bin) = pending.as_ref() {
+      sqlx::query(
+        r#"
+        INSERT INTO pending_source_updates (workspace_id, doc_id, bin) VALUES (?, ?, ?)
+        ON CONFLICT(workspace_id, doc_id) DO UPDATE SET bin = excluded.bin
+        "#,
+      )
+      .bind(&self.workspace_id)
+      .bind(doc_id)
+      .bind(bin)
+      .execute(&mut *tx)
+      .await
+      .map_err(|err| format!("failed to stage source update: {}", err))?;
+    }
+    let root_pending = if let Some((snapshot, update)) = root_update {
+      Some(self.stage_root_update_in_tx(&mut tx, snapshot, update).await?)
+    } else {
+      None
+    };
+    tx.commit()
+      .await
+      .map_err(|err| format!("failed to commit source transaction: {}", err))?;
+    Ok((pending, root_pending))
+  }
 
+  pub(crate) async fn pending_source_updates(&self) -> Result<Vec<(String, Vec<u8>)>, String> {
+    let rows = sqlx::query("SELECT doc_id, bin FROM pending_source_updates WHERE workspace_id = ?")
+      .bind(&self.workspace_id)
+      .fetch_all(&self.pool)
+      .await
+      .map_err(|err| format!("failed to load pending source updates: {}", err))?;
+    Ok(
+      rows
+        .into_iter()
+        .map(|row| (row.get("doc_id"), row.get("bin")))
+        .collect(),
+    )
+  }
+
+  pub(crate) async fn acknowledge_source_update(&self, doc_id: &str, local: &[u8]) -> Result<(), String> {
+    let pending: Option<Vec<u8>> =
+      sqlx::query_scalar("SELECT bin FROM pending_source_updates WHERE workspace_id = ? AND doc_id = ?")
+        .bind(&self.workspace_id)
+        .bind(doc_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|err| format!("failed to read pending source update: {}", err))?;
+    if let Some(pending) = pending {
+      let merged = merge_update_binary(Some(local), &pending)?;
+      let canonical_local = merge_update_binary(None, local)?;
+      if merged == canonical_local {
+        sqlx::query("DELETE FROM pending_source_updates WHERE workspace_id = ? AND doc_id = ? AND bin = ?")
+          .bind(&self.workspace_id)
+          .bind(doc_id)
+          .bind(pending)
+          .execute(&self.pool)
+          .await
+          .map_err(|err| format!("failed to acknowledge source update: {}", err))?;
+      }
+    }
     Ok(())
   }
 

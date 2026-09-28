@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use argon2::{
-  Argon2,
-  password_hash::{PasswordHash, PasswordVerifier},
+  Argon2, PasswordHasher,
+  password_hash::{PasswordVerifier, phc::PasswordHash},
 };
 use serde_json::json;
 use sqlx::{PgPool, postgres::PgPoolOptions};
@@ -148,6 +148,21 @@ async fn oidc_server(nonce: Arc<tokio::sync::Mutex<String>>) -> String {
     }
   });
   issuer
+}
+
+#[test]
+fn argon2_upgrade_verifies_existing_hashes() {
+  let existing = "$argon2id$v=19$m=19456,t=2,p=1$/JC3Ue87NEBXtjra7TY9TQ$oysAbNozbP/Z6kdbyPXYDRcZFr4WJlFEHhx+88QRjoc";
+  let parsed = PasswordHash::new(existing).unwrap();
+  assert!(Argon2::default().verify_password(b"p4-password", &parsed).is_ok());
+
+  let generated = Argon2::default().hash_password(b"replacement-password").unwrap();
+  assert!(generated.to_string().starts_with("$argon2id$v=19$m=19456,t=2,p=1$"));
+  assert!(
+    Argon2::default()
+      .verify_password(b"replacement-password", &generated)
+      .is_ok()
+  );
 }
 
 #[tokio::test]

@@ -14,12 +14,12 @@ affine_common = { workspace = true, features = ["hashcash", "napi"] }
 affine_core = "0.0.4"
 affine_doc_loader = { workspace = true }
 anyhow = { workspace = true }
-argon2 = "0.5"
+argon2 = "0.6"
 assetpack-core = "0.1.0"
 assetpack-transform-precomp2 = "0.1.0"
 base64 = { workspace = true }
 chrono = { workspace = true }
-crc32fast = "1.5.0"
+crc32fast = "1.5.2"
 doc_extractor = { workspace = true }
 file-format = { workspace = true }
 futures-util = { workspace = true }

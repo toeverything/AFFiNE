@@ -12,8 +12,6 @@ import {
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 
-import { shouldReloadDiskSyncSession } from './disk-sync-session';
-
 export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
   const desktopApi = useService(DesktopApiService);
   const featureFlagService = useService(FeatureFlagService);
@@ -43,7 +41,7 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
   );
 
   const onChooseFolder = useAsyncCallback(async () => {
-    const result = await desktopApi.handler.dialog.selectDBFileLocation();
+    const result = await desktopApi.handler.dialog.selectMarkdownSyncFolder();
     if (result?.canceled || !result?.filePath) {
       return;
     }
@@ -52,7 +50,7 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
     }
     setDiskSyncFolderPath(workspaceId, result.filePath);
     setFolder(result.filePath);
-    if (shouldReloadDiskSyncSession(enabled, folder, result.filePath)) {
+    if (enabled) {
       window.location.reload();
       return;
     }
@@ -67,7 +65,7 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
     }
     setDiskSyncFolderPath(workspaceId, null);
     setFolder(null);
-    if (shouldReloadDiskSyncSession(enabled, folder, null)) {
+    if (enabled) {
       window.location.reload();
     }
   }, [enabled, folder, workspaceId]);
@@ -76,9 +74,7 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
     <>
       <SettingRow
         name={'Markdown Folder Sync (Experimental)'}
-        desc={
-          'Enable local-folder Markdown sync through native pseudo remote (Electron only).'
-        }
+        desc={'Sync pages with Markdown files in a local folder.'}
       >
         <Switch
           aria-label="Disk Markdown Sync"
@@ -111,6 +107,13 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
           ) : null}
         </div>
       </SettingRow>
+      {enabled && folder ? (
+        <SettingRow
+          name={'Review Markdown changes'}
+          desc={`Changes to existing files are saved in ${folder}/.affine-sync/candidates. Review a candidate, then copy it over the Markdown file with the same id to accept it.`}
+          spreadCol={false}
+        />
+      ) : null}
     </>
   );
 };

@@ -1,10 +1,7 @@
 use affine_core::auth::{
   AuthChallengePurpose, SECURITY_CHALLENGE_TTL_SECONDS, challenge_active, challenge_identity_matches,
 };
-use argon2::{
-  Argon2, PasswordHasher,
-  password_hash::{SaltString, rand_core::OsRng},
-};
+use argon2::{Argon2, PasswordHasher};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres, Row, Transaction};
@@ -214,7 +211,7 @@ pub(super) async fn complete_password(
   let password = password.to_string();
   let password_hash = tokio::task::spawn_blocking(move || {
     Argon2::default()
-      .hash_password(password.as_bytes(), &SaltString::generate(&mut OsRng))
+      .hash_password(password.as_bytes())
       .map(|hash| hash.to_string())
   })
   .await

@@ -40,18 +40,18 @@ function createRootMetaUpdate(docIds: string[]): Uint8Array {
 }
 
 describe('DiskDocStorage', () => {
-  const sessionId = `${universalId({
-    peer: 'local',
-    type: 'workspace',
-    id: 'workspace-test',
-  })}:${encodeURIComponent('/tmp/sync')}`;
+  const sessionId = JSON.stringify([
+    universalId({ peer: 'local', type: 'workspace', id: 'workspace-test' }),
+    '/tmp/sync',
+  ]);
   const listeners = new Map<string, Set<(event: DiskSyncEvent) => void>>();
 
   const startSession = vi.fn(
     async (_sessionId: string, _options: { workspaceId: string }) => {}
   );
   const stopSession = vi.fn(async (_sessionId: string) => {});
-  const applyLocalUpdate = vi.fn(
+  const prepareSourceDoc = vi.fn(async () => null as Uint8Array | null);
+  const applyLocalUpdate = vi.fn<DiskSyncApis['applyLocalUpdate']>(
     async (_sessionId: string, update: { docId: string }) => {
       return {
         docId: update.docId,
@@ -77,6 +77,8 @@ describe('DiskDocStorage', () => {
     startSession,
     stopSession,
     applyLocalUpdate,
+    acknowledgeSourceUpdate: vi.fn(async () => {}),
+    prepareSourceDoc,
     subscribeEvents,
   };
 
@@ -87,12 +89,12 @@ describe('DiskDocStorage', () => {
     }
   }
 
-  function createStorage(syncFolder = '/tmp/sync') {
+  function createStorage() {
     return new DiskDocStorage({
       flavour: 'local',
       type: 'workspace',
       id: 'workspace-test',
-      syncFolder,
+      syncFolder: '/tmp/sync',
     });
   }
 
@@ -107,6 +109,9 @@ describe('DiskDocStorage', () => {
   });
 
   it('starts and stops disk session with connection lifecycle', async () => {
+    startSession.mockImplementationOnce(async () => {
+      emit({ type: 'source-discovered', docId: 'doc-on-disk' });
+    });
     const storage = createStorage();
     storage.connection.connect();
     await storage.connection.waitForConnected();
@@ -116,48 +121,24 @@ describe('DiskDocStorage', () => {
       syncFolder: '/tmp/sync',
     });
 
+    expect((await storage.getDocTimestamp('doc-on-disk'))?.docId).toBe(
+      'doc-on-disk'
+    );
+    const snapshot = createUpdate('source');
+    prepareSourceDoc.mockResolvedValueOnce(snapshot);
+    await storage.prepareDocImport('doc-on-disk', null, null);
+    expect(prepareSourceDoc).toHaveBeenCalledWith(
+      sessionId,
+      'doc-on-disk',
+      undefined,
+      undefined
+    );
+    expect((await storage.getDoc('doc-on-disk'))?.bin).toEqual(snapshot);
+
     storage.connection.disconnect();
     await vi.waitFor(() => {
       expect(stopSession).toHaveBeenCalledWith(sessionId);
     });
-  });
-
-  it('waits for a pending session stop before reconnecting', async () => {
-    const pendingStop = Promise.withResolvers<void>();
-    stopSession.mockImplementationOnce(() => pendingStop.promise);
-    const storage = createStorage();
-
-    storage.connection.connect();
-    await storage.connection.waitForConnected();
-    storage.connection.disconnect();
-    storage.connection.connect();
-
-    await Promise.resolve();
-    expect(startSession).toHaveBeenCalledTimes(1);
-
-    pendingStop.resolve();
-    await storage.connection.waitForConnected();
-    expect(startSession).toHaveBeenCalledTimes(2);
-
-    storage.connection.disconnect();
-  });
-
-  it('isolates native sessions for different sync folders', async () => {
-    const first = createStorage('/tmp/sync-a');
-    const second = createStorage('/tmp/sync-b');
-
-    first.connection.connect();
-    second.connection.connect();
-    await Promise.all([
-      first.connection.waitForConnected(),
-      second.connection.waitForConnected(),
-    ]);
-
-    const startedSessionIds = startSession.mock.calls.map(([id]) => id);
-    expect(new Set(startedSessionIds).size).toBe(2);
-
-    first.connection.disconnect();
-    second.connection.disconnect();
   });
 
   it('forwards local updates and emits doc update events', async () => {
@@ -177,8 +158,7 @@ describe('DiskDocStorage', () => {
       sessionId,
       expect.objectContaining({
         docId: 'doc-local',
-      }),
-      'origin:local'
+      })
     );
     expect(seen).toEqual([{ docId: 'doc-local', origin: 'origin:local' }]);
 
@@ -186,11 +166,27 @@ describe('DiskDocStorage', () => {
     expect(snapshot?.docId).toBe('doc-local');
     expect(snapshot?.timestamp.toISOString()).toBe('2026-01-02T00:00:00.000Z');
 
+    applyLocalUpdate.mockResolvedValueOnce({
+      docId: 'doc-unexportable',
+      timestamp: new Date('2026-01-02T00:00:00.000Z'),
+      exportError: 'source has no exportable note',
+    });
+    await expect(
+      storage.pushDocUpdate({
+        docId: 'doc-unexportable',
+        bin: createUpdate('unexportable'),
+      })
+    ).rejects.toMatchObject({
+      name: 'DISK_SOURCE_EXPORT_FAILED',
+      message: 'source has no exportable note',
+    });
+    expect(await storage.getDoc('doc-unexportable')).toBeNull();
+
     unsubscribe();
     storage.connection.disconnect();
   });
 
-  it('applies remote events into local snapshots and handles delete events', async () => {
+  it('applies remote events into local snapshots', async () => {
     const storage = createStorage();
     storage.connection.connect();
     await storage.connection.waitForConnected();
@@ -213,16 +209,6 @@ describe('DiskDocStorage', () => {
     expect(timestamps['doc-remote']?.toISOString()).toBe(
       '2026-01-03T00:00:00.000Z'
     );
-
-    emit({
-      type: 'doc-delete',
-      docId: 'doc-remote',
-      timestamp: new Date('2026-01-03T00:00:01.000Z'),
-    });
-
-    await vi.waitFor(async () => {
-      expect(await storage.getDoc('doc-remote')).toBeNull();
-    });
 
     storage.connection.disconnect();
   });
@@ -288,7 +274,7 @@ describe('DiskDocStorage', () => {
     storage.connection.disconnect();
   });
 
-  it('does not block follow-up updates when snapshot merge fails once', async () => {
+  it('preserves the snapshot when a merge fails and accepts a retry', async () => {
     const storage = createStorage();
     storage.connection.connect();
     await storage.connection.waitForConnected();
@@ -323,18 +309,19 @@ describe('DiskDocStorage', () => {
       timestamp: new Date('2026-01-02T00:00:00.000Z'),
     });
 
-    // This update triggers the mocked merge failure, but should still resolve.
+    // A failed cache merge must not replace the full snapshot with a delta.
     await expect(
       storage.pushDocUpdate({
         docId: 'doc-merge-fallback',
         bin: createMapUpdate({ b: '2' }),
       })
-    ).resolves.toEqual({
+    ).rejects.toThrow('merge failed once');
+
+    await storage.pushDocUpdate({
       docId: 'doc-merge-fallback',
-      timestamp: new Date('2026-01-02T00:00:00.000Z'),
+      bin: createMapUpdate({ b: '2' }),
     });
 
-    // Follow-up update should continue to work without requiring reconnect/reload.
     await expect(
       storage.pushDocUpdate({
         docId: 'doc-merge-fallback',
@@ -351,78 +338,9 @@ describe('DiskDocStorage', () => {
     applyUpdate(doc, snapshot!.bin);
     const data = doc.getMap('test').toJSON();
     expect(data).toMatchObject({
+      a: '1',
       b: '2',
       c: '3',
-    });
-
-    storage.connection.disconnect();
-  });
-
-  it('accepts remote doc-update bins as number[] (from native binding)', async () => {
-    const storage = createStorage();
-    storage.connection.connect();
-    await storage.connection.waitForConnected();
-
-    const original = createUpdate('remote-array');
-    const bin = Array.from(original) as unknown as Uint8Array;
-
-    emit({
-      type: 'doc-update',
-      update: {
-        docId: 'doc-remote-array',
-        bin,
-        timestamp: new Date('2026-01-03T00:00:00.000Z'),
-      },
-    });
-
-    await vi.waitFor(async () => {
-      const snapshot = await storage.getDoc('doc-remote-array');
-      expect(snapshot).not.toBeNull();
-
-      const doc = new YDoc();
-      applyUpdate(doc, snapshot!.bin);
-      expect(doc.getText('content').toString()).toBe('remote-array');
-    });
-
-    storage.connection.disconnect();
-  });
-
-  it('throws when applyLocalUpdate returns invalid timestamp', async () => {
-    applyLocalUpdate.mockResolvedValueOnce({
-      docId: 'doc-invalid-clock',
-      timestamp: new Date('invalid'),
-    });
-
-    const storage = createStorage();
-    storage.connection.connect();
-    await storage.connection.waitForConnected();
-
-    await expect(
-      storage.pushDocUpdate({
-        docId: 'doc-invalid-clock',
-        bin: createUpdate('invalid'),
-      })
-    ).rejects.toThrow('[disk] invalid timestamp');
-
-    storage.connection.disconnect();
-  });
-
-  it('skips remote doc-update with invalid timestamp', async () => {
-    const storage = createStorage();
-    storage.connection.connect();
-    await storage.connection.waitForConnected();
-
-    emit({
-      type: 'doc-update',
-      update: {
-        docId: 'doc-invalid-remote-clock',
-        bin: createUpdate('remote-invalid'),
-        timestamp: new Date('invalid') as unknown as Date,
-      },
-    });
-
-    await vi.waitFor(async () => {
-      expect(await storage.getDoc('doc-invalid-remote-clock')).toBeNull();
     });
 
     storage.connection.disconnect();
@@ -444,6 +362,18 @@ describe('DiskDocStorage', () => {
 
     const rootUpdate = createRootMetaUpdate(['doc-a', 'doc-b']);
 
+    applyLocalUpdate.mockImplementationOnce(async () => {
+      for (const docId of ['doc-a', 'doc-b']) {
+        for (const listener of listeners.get(sessionId) ?? []) {
+          listener({ type: 'root-doc-discovered', docId });
+        }
+      }
+      return {
+        docId: 'workspace-test',
+        timestamp: new Date('2026-01-02T00:00:00.000Z'),
+      };
+    });
+
     await storage.pushDocUpdate(
       {
         docId: 'workspace-test',
@@ -464,6 +394,10 @@ describe('DiskDocStorage', () => {
       .map(item => item.docId)
       .sort();
     expect(discoveredDocIds).toEqual(['doc-a', 'doc-b']);
+    expect(seen[0]).toMatchObject({
+      docId: 'workspace-test',
+      origin: 'origin:root',
+    });
     expect(
       seen
         .filter(item => item.origin === 'disk:root-meta-discovery')

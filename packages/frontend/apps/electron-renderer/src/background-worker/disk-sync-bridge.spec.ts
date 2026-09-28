@@ -7,6 +7,8 @@ describe('createDiskSyncApis', () => {
   it('forwards handler calls and filters events by session id', async () => {
     const startSession = vi.fn(async () => {});
     const stopSession = vi.fn(async () => {});
+    const acknowledgeSourceUpdate = vi.fn(async () => {});
+    const prepareSourceDoc = vi.fn(async () => null);
     const applyLocalUpdate = vi.fn(async () => ({
       docId: 'doc-1',
       timestamp: new Date('2026-01-04T00:00:00.000Z'),
@@ -27,7 +29,13 @@ describe('createDiskSyncApis', () => {
     );
 
     const apis = createDiskSyncApis(
-      { startSession, stopSession, applyLocalUpdate },
+      {
+        startSession,
+        stopSession,
+        applyLocalUpdate,
+        acknowledgeSourceUpdate,
+        prepareSourceDoc,
+      },
       { onEvent }
     );
 
@@ -48,8 +56,7 @@ describe('createDiskSyncApis', () => {
     expect(stopSession).toHaveBeenCalledWith('session-a');
     expect(applyLocalUpdate).toHaveBeenCalledWith(
       'session-a',
-      expect.objectContaining({ docId: 'doc-1' }),
-      undefined
+      expect.objectContaining({ docId: 'doc-1' })
     );
 
     const callback = vi.fn();
@@ -67,7 +74,10 @@ describe('createDiskSyncApis', () => {
     };
 
     for (const listener of listeners) {
-      listener({ sessionId: 'session-b', event: { type: 'ready' } });
+      listener({
+        sessionId: 'session-b',
+        event: { type: 'source-discovered', docId: 'doc-b' },
+      });
       listener({ sessionId: 'session-a', event: docUpdate });
     }
 

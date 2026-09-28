@@ -30,7 +30,8 @@
     "@types/node": "^22.0.0",
     "ava": "^7.0.0",
     "rxjs": "^7.8.2",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "yjs": "^13.6.27"
   },
   "engines": {
     "node": ">= 10"

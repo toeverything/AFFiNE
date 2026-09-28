@@ -7,12 +7,8 @@ version = "0.0.0"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[features]
-default    = []
-use-as-lib = ["affine_nbstore/use-as-lib", "napi-derive/noop", "napi/noop"]
-
 [dependencies]
-affine_common = { workspace = true, features = ["hashcash", "ydoc-loader"] }
+affine_common = { workspace = true, features = ["hashcash"] }
 affine_doc_loader = { workspace = true }
 affine_importer = { workspace = true }
 affine_media_capture = { path = "./media_capture" }
@@ -34,11 +30,11 @@ sqlx = { workspace = true, default-features = false, features = [
   "migrate",
   "runtime-tokio",
   "sqlite",
-  "tls-rustls",
 ] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 typed-path = { workspace = true }
+uuid = { workspace = true }
 y-octo = { workspace = true }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
@@ -55,7 +51,6 @@ mimalloc = { workspace = true, features = ["local_dynamic_tls"] }
 
 [dev-dependencies]
 chrono = { workspace = true }
-uuid   = { workspace = true }
 zip    = { workspace = true }
 
 [build-dependencies]
@@ -67,6 +62,5 @@ sqlx = { workspace = true, default-features = false, features = [
   "migrate",
   "runtime-tokio",
   "sqlite",
-  "tls-rustls",
 ] }
 tokio = { workspace = true, features = ["full"] }

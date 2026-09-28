@@ -1,6 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
 import type { DiskSyncEvent as NativeDiskSyncEvent } from '@affine/native';
 import { DiskSync } from '@affine/native';
 import type { DocClock, DocUpdate } from '@affine/nbstore';
@@ -8,40 +5,20 @@ import type { DiskSessionOptions, DiskSyncEvent } from '@affine/nbstore/disk';
 
 import { diskSyncSubjects } from './subjects';
 
-interface DiskSyncSubscriber {
-  unsubscribe(): Promise<void | Error> | void | Error;
-}
-
-type NapiMaybe<T> = T | Error;
-
-function unwrapNapiResult<T>(result: NapiMaybe<T>, action: string): T {
-  if (result instanceof Error) {
-    throw new Error(`[disk] ${action} failed: ${result.message}`);
-  }
-  return result;
-}
-
-function normalizeTimestamp(timestamp: unknown): Date | null {
-  const normalized =
-    timestamp instanceof Date ? timestamp : new Date(timestamp as string);
-  if (Number.isNaN(normalized.getTime())) {
-    return null;
-  }
-  return normalized;
-}
-
 function normalizeDiskSyncEvent(
   event: NativeDiskSyncEvent
 ): DiskSyncEvent | null {
   switch (event.type) {
-    case 'ready':
-      return { type: 'ready' };
+    case 'source-discovered':
+      return typeof event.docId === 'string'
+        ? { type: 'source-discovered', docId: event.docId }
+        : null;
+    case 'root-doc-discovered':
+      return typeof event.docId === 'string'
+        ? { type: 'root-doc-discovered', docId: event.docId }
+        : null;
     case 'doc-update': {
-      if (!event.update || !(event.update.bin instanceof Uint8Array)) {
-        return null;
-      }
-      const timestamp = normalizeTimestamp(event.update.timestamp);
-      if (!timestamp) {
+      if (!event.update) {
         return null;
       }
       return {
@@ -49,24 +26,10 @@ function normalizeDiskSyncEvent(
         update: {
           docId: event.update.docId,
           bin: event.update.bin,
-          timestamp,
+          timestamp: event.update.timestamp,
           editor: event.update.editor,
         },
         origin: event.origin,
-      };
-    }
-    case 'doc-delete': {
-      if (typeof event.docId !== 'string') {
-        return null;
-      }
-      const timestamp = normalizeTimestamp(event.timestamp);
-      if (!timestamp) {
-        return null;
-      }
-      return {
-        type: 'doc-delete',
-        docId: event.docId,
-        timestamp,
       };
     }
     case 'error': {
@@ -83,113 +46,107 @@ function normalizeDiskSyncEvent(
   }
 }
 
-type DiskSyncRuntime = InstanceType<typeof DiskSync> & {
-  startSession(
-    sessionId: string,
-    options: DiskSessionOptions
-  ): Promise<NapiMaybe<void>>;
-  stopSession(sessionId: string): Promise<NapiMaybe<void>>;
-  applyLocalUpdate(
-    sessionId: string,
-    update: DocUpdate,
-    origin?: string
-  ): Promise<NapiMaybe<DocClock>>;
-  subscribeEvents(
-    sessionId: string,
-    callback: (err: Error | null, event: NativeDiskSyncEvent) => void
-  ): Promise<NapiMaybe<DiskSyncSubscriber>>;
-};
+const diskSync = new DiskSync();
+const sessions = new Map<
+  string,
+  { users: number; unsubscribe: () => Promise<void> }
+>();
+const operations = new Map<string, Promise<void>>();
 
-const diskSync = new DiskSync() as DiskSyncRuntime;
-const subscriptions = new Map<string, () => Promise<void>>();
-const sessionOps = new Map<string, Promise<void>>();
-
-function runSessionOp<T>(sessionId: string, op: () => Promise<T>): Promise<T> {
-  const previous = sessionOps.get(sessionId) ?? Promise.resolve();
-  const next = previous.then(op);
-  const tail = next.then(
+function serializeSession(sessionId: string, operation: () => Promise<void>) {
+  const result = (operations.get(sessionId) ?? Promise.resolve()).then(
+    operation
+  );
+  const settled = result.then(
     () => {},
     () => {}
   );
-  sessionOps.set(sessionId, tail);
-  const cleanup = () => {
-    if (sessionOps.get(sessionId) === tail) {
-      sessionOps.delete(sessionId);
+  operations.set(sessionId, settled);
+  const clear = () => {
+    if (operations.get(sessionId) === settled) {
+      operations.delete(sessionId);
     }
   };
-  void tail.then(cleanup, cleanup);
-  return next;
+  settled.then(clear, clear);
+  return result;
 }
 
-function e2eLog(options: DiskSessionOptions, line: string) {
-  if (process.env.AFFINE_E2E !== '1') {
-    return;
-  }
-  try {
-    const p = path.join(options.syncFolder, '.disk-e2e.log');
-    fs.appendFileSync(p, `${new Date().toISOString()}\t${line}\n`, 'utf8');
-  } catch {
-    // ignore
-  }
-}
-
-export function startSession(
+export async function startSession(
   sessionId: string,
   options: DiskSessionOptions
 ): Promise<void> {
-  return runSessionOp(sessionId, async () => {
-    e2eLog(
-      options,
-      `startSession\t${sessionId}\tworkspaceId=${options.workspaceId}\tsyncFolder=${options.syncFolder}`
-    );
-    unwrapNapiResult(
-      await diskSync.startSession(sessionId, options),
-      'startSession'
-    );
-
-    if (subscriptions.has(sessionId)) {
+  return serializeSession(sessionId, async () => {
+    const active = sessions.get(sessionId);
+    if (active) {
+      active.users++;
       return;
     }
 
-    const subscriber = unwrapNapiResult(
-      await diskSync.subscribeEvents(sessionId, (err, event) => {
-        if (err) {
-          return;
+    await diskSync.startSession(sessionId, options);
+    try {
+      const subscriber = await diskSync.subscribeEvents(
+        sessionId,
+        (err, event) => {
+          if (err) {
+            return;
+          }
+          const normalizedEvent = normalizeDiskSyncEvent(event);
+          if (normalizedEvent) {
+            diskSyncSubjects.event$.next({ sessionId, event: normalizedEvent });
+          }
         }
-        const normalizedEvent = normalizeDiskSyncEvent(event);
-        if (!normalizedEvent) {
-          return;
-        }
-        diskSyncSubjects.event$.next({ sessionId, event: normalizedEvent });
-      }),
-      'subscribeEvents'
-    );
-    subscriptions.set(sessionId, async () => {
-      unwrapNapiResult(await subscriber.unsubscribe(), 'unsubscribe');
-    });
+      );
+      sessions.set(sessionId, {
+        users: 1,
+        unsubscribe: async () => {
+          await subscriber.unsubscribe();
+        },
+      });
+    } catch (error) {
+      await diskSync.stopSession(sessionId);
+      throw error;
+    }
   });
 }
 
-export function stopSession(sessionId: string): Promise<void> {
-  return runSessionOp(sessionId, async () => {
-    const unsubscribe = subscriptions.get(sessionId);
-    subscriptions.delete(sessionId);
+export async function stopSession(sessionId: string): Promise<void> {
+  return serializeSession(sessionId, async () => {
+    const active = sessions.get(sessionId);
+    if (!active) {
+      return;
+    }
+    if (--active.users > 0) {
+      return;
+    }
+    sessions.delete(sessionId);
     try {
-      await unsubscribe?.();
+      await active.unsubscribe();
     } finally {
-      unwrapNapiResult(await diskSync.stopSession(sessionId), 'stopSession');
+      await diskSync.stopSession(sessionId);
     }
   });
 }
 
 export async function applyLocalUpdate(
   sessionId: string,
-  update: DocUpdate,
-  origin?: string
+  update: DocUpdate
 ): Promise<DocClock> {
-  // syncFolder isn't directly available here; we log per session start only.
-  return unwrapNapiResult(
-    await diskSync.applyLocalUpdate(sessionId, update, origin),
-    'applyLocalUpdate'
-  );
+  return diskSync.applyLocalUpdate(sessionId, update);
+}
+
+export async function acknowledgeSourceUpdate(
+  sessionId: string,
+  docId: string,
+  localSnapshot: Uint8Array
+): Promise<void> {
+  await diskSync.acknowledgeSourceUpdate(sessionId, docId, localSnapshot);
+}
+
+export async function prepareSourceDoc(
+  sessionId: string,
+  docId: string,
+  localSnapshot?: Uint8Array,
+  localRoot?: Uint8Array
+): Promise<Uint8Array | null> {
+  return diskSync.prepareSourceDoc(sessionId, docId, localSnapshot, localRoot);
 }

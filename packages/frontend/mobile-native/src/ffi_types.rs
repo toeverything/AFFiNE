@@ -1,6 +1,6 @@
 use affine_nbstore::{
-  Blob as NbBlob, Data, DocClock as NbDocClock, DocIndexedClock as NbDocIndexedClock, DocRecord as NbDocRecord,
-  DocUpdate as NbDocUpdate, ListedBlob as NbListedBlob, SetBlob as NbSetBlob,
+  Blob as NbBlob, Data, DocClock as NbDocClock, DocIndexedClock as NbDocIndexedClock, ListedBlob as NbListedBlob,
+  SetBlob as NbSetBlob,
   indexer::{
     NativeBlockInfo, NativeCrawlResult, NativeIndexAggregateResult, NativeIndexBucket, NativeIndexField,
     NativeIndexHighlight, NativeIndexHighlightValue, NativeIndexHit, NativeIndexSearchResult, NativeIndexSpan,
@@ -19,62 +19,6 @@ pub struct DocRecord {
   // base64 encoded data
   pub bin: String,
   pub timestamp: i64,
-}
-
-impl From<NbDocRecord> for DocRecord {
-  fn from(record: NbDocRecord) -> Self {
-    Self {
-      doc_id: record.doc_id,
-      bin: encode_base64_data(&record.bin),
-      timestamp: record.timestamp.and_utc().timestamp_millis(),
-    }
-  }
-}
-
-impl TryFrom<DocRecord> for NbDocRecord {
-  type Error = UniffiError;
-
-  fn try_from(record: DocRecord) -> Result<Self> {
-    Ok(Self {
-      doc_id: record.doc_id,
-      bin: Into::<Data>::into(decode_base64_data(&record.bin)?),
-      timestamp: DateTime::<Utc>::from_timestamp_millis(record.timestamp)
-        .ok_or(UniffiError::TimestampDecodingError)?
-        .naive_utc(),
-    })
-  }
-}
-
-#[derive(uniffi::Record)]
-pub struct DocUpdate {
-  pub doc_id: String,
-  pub timestamp: i64,
-  // base64 encoded data
-  pub bin: String,
-}
-
-impl From<NbDocUpdate> for DocUpdate {
-  fn from(update: NbDocUpdate) -> Self {
-    Self {
-      doc_id: update.doc_id,
-      timestamp: update.timestamp.and_utc().timestamp_millis(),
-      bin: encode_base64_data(&update.bin),
-    }
-  }
-}
-
-impl TryFrom<DocUpdate> for NbDocUpdate {
-  type Error = UniffiError;
-
-  fn try_from(update: DocUpdate) -> Result<Self> {
-    Ok(Self {
-      doc_id: update.doc_id,
-      timestamp: DateTime::<Utc>::from_timestamp_millis(update.timestamp)
-        .ok_or(UniffiError::TimestampDecodingError)?
-        .naive_utc(),
-      bin: Into::<Data>::into(decode_base64_data(&update.bin)?),
-    })
-  }
 }
 
 #[derive(uniffi::Record)]

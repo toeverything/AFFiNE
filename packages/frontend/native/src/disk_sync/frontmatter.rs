@@ -130,15 +130,12 @@ pub(crate) fn render_frontmatter(meta: &FrontmatterMeta, body: &str) -> String {
 
 fn normalize_scalar(value: &str) -> String {
   let value = value.trim();
-
   if let Some(inner) = value.strip_prefix('"').and_then(|value| value.strip_suffix('"')) {
     return unescape_double_quoted_scalar(inner);
   }
-
   if let Some(inner) = value.strip_prefix('\'').and_then(|value| value.strip_suffix('\'')) {
     return inner.replace("''", "'");
   }
-
   value.to_string()
 }
 

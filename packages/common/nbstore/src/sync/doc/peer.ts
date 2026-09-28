@@ -40,6 +40,7 @@ interface Status {
   docs: Set<string>;
   connectedDocs: Set<string>;
   docErrors: Map<string, string>;
+  retryOnLocalUpdate: Set<string>;
   jobDocQueue: AsyncPriorityQueue;
   jobMap: Map<string, Job[]>;
   remoteClocks: ClockMap;
@@ -102,6 +103,15 @@ function isRemotePermissionError(error: unknown) {
   }
   const name = error.name.toUpperCase();
   return name === 'DOC_ACTION_DENIED' || name === 'SPACE_ACCESS_DENIED';
+}
+
+function isDocScopedError(error: unknown) {
+  return (
+    isRemotePermissionError(error) ||
+    (error instanceof Error &&
+      (error.name === 'DISK_SOURCE_EXPORT_FAILED' ||
+        error.name === 'DISK_SOURCE_REVIEW_REQUIRED'))
+  );
 }
 
 function isEqualUint8Arrays(a: Uint8Array, b: Uint8Array) {
@@ -176,6 +186,7 @@ export class DocSyncPeer {
     docs: new Set<string>(),
     connectedDocs: new Set<string>(),
     docErrors: new Map<string, string>(),
+    retryOnLocalUpdate: new Set<string>(),
     jobDocQueue: new AsyncPriorityQueue(),
     jobMap: new Map(),
     remoteClocks: new ClockMap(new Map()),
@@ -185,6 +196,29 @@ export class DocSyncPeer {
     errorMessage: null,
   };
   private readonly statusUpdatedSubject$ = new Subject<string | true>();
+
+  private async acknowledgeRemoteSourceUpdate(docId: string) {
+    if (!this.remote.acknowledgeDocUpdate) {
+      return;
+    }
+    const local = await this.local.getDoc(docId);
+    if (local) {
+      await this.remote.acknowledgeDocUpdate(docId, local.bin);
+    }
+  }
+
+  private async prepareRemoteDoc(docId: string) {
+    if (!this.remote.prepareDocImport) {
+      return;
+    }
+    const local = await this.local.getDoc(docId);
+    const root = await this.local.getDoc(this.local.spaceId);
+    await this.remote.prepareDocImport(
+      docId,
+      local?.bin ?? null,
+      root?.bin ?? null
+    );
+  }
 
   private get currentErrorMessage() {
     return (
@@ -272,6 +306,7 @@ export class DocSyncPeer {
 
   private readonly jobs = createJobErrorCatcher({
     connect: async (docId: string, signal?: AbortSignal) => {
+      await this.prepareRemoteDoc(docId);
       const pushedClock =
         (await this.syncMetadata.getPeerPushedClock(this.peerId, docId))
           ?.timestamp ?? null;
@@ -367,6 +402,7 @@ export class DocSyncPeer {
           },
           this.uniqueId
         );
+        await this.acknowledgeRemoteSourceUpdate(docId);
         throwIfAborted(signal);
         await this.syncMetadata.setPeerPulledRemoteClock(this.peerId, {
           docId,
@@ -404,6 +440,7 @@ export class DocSyncPeer {
         });
       } else {
         if (localDocRecord) {
+          await this.acknowledgeRemoteSourceUpdate(docId);
           if (!isEmptyUpdate(localDocRecord.bin)) {
             throwIfAborted(signal);
             const { timestamp: remoteClock } = await this.remote.pushDocUpdate(
@@ -432,6 +469,7 @@ export class DocSyncPeer {
       }
     },
     pull: async (docId: string, signal?: AbortSignal) => {
+      await this.prepareRemoteDoc(docId);
       const docRecord = await this.local.getDoc(docId);
 
       const stateVector =
@@ -440,6 +478,7 @@ export class DocSyncPeer {
           : new Uint8Array();
       const serverDoc = await this.remote.getDocDiff(docId, stateVector);
       if (!serverDoc) {
+        await this.acknowledgeRemoteSourceUpdate(docId);
         return;
       }
       const { missing: newData, timestamp: remoteClock } = serverDoc;
@@ -451,6 +490,7 @@ export class DocSyncPeer {
         },
         this.uniqueId
       );
+      await this.acknowledgeRemoteSourceUpdate(docId);
       throwIfAborted(signal);
       await this.syncMetadata.setPeerPulledRemoteClock(this.peerId, {
         docId,
@@ -489,6 +529,7 @@ export class DocSyncPeer {
             },
             this.uniqueId
           );
+          await this.acknowledgeRemoteSourceUpdate(docId);
 
           // schedule push job to mark the timestamp as pushed timestamp
           this.schedule({
@@ -534,6 +575,11 @@ export class DocSyncPeer {
       update: Uint8Array;
       clock: Date;
     }) => {
+      if (this.status.retryOnLocalUpdate.delete(docId)) {
+        this.status.docErrors.delete(docId);
+        this.schedule({ type: 'connect', docId });
+        return;
+      }
       if (this.status.docErrors.has(docId)) {
         return;
       }
@@ -553,11 +599,21 @@ export class DocSyncPeer {
       docId,
       update,
       remoteClock,
+      origin,
     }: {
       docId: string;
       update: Uint8Array;
       remoteClock: Date;
+      origin?: string;
     }) => {
+      if (
+        origin === 'disk:source-discovered' &&
+        this.status.retryOnLocalUpdate.delete(docId)
+      ) {
+        this.status.docErrors.delete(docId);
+        this.schedule({ type: 'connect', docId });
+        return;
+      }
       if (this.status.docErrors.has(docId)) {
         return;
       }
@@ -605,6 +661,7 @@ export class DocSyncPeer {
           docs: new Set(),
           connectedDocs: new Set(),
           docErrors: new Map(),
+          retryOnLocalUpdate: new Set(),
           jobDocQueue: new AsyncPriorityQueue(),
           jobMap: new Map(),
           remoteClocks: new ClockMap(new Map()),
@@ -728,6 +785,7 @@ export class DocSyncPeer {
             docId,
             update: bin,
             remoteClock: timestamp,
+            origin,
           });
         })
       );
@@ -869,16 +927,23 @@ export class DocSyncPeer {
       await job();
       return true;
     } catch (error) {
-      if (!isRemotePermissionError(error)) {
+      if (!isDocScopedError(error)) {
         throw error;
       }
 
       const message = error instanceof Error ? error.message : String(error);
-      console.warn('Sync skipped for doc due to remote permission error', {
+      console.warn('Sync paused for doc', {
         docId,
         error,
       });
       this.status.docErrors.set(docId, message);
+      if (
+        error instanceof Error &&
+        (error.name === 'DISK_SOURCE_EXPORT_FAILED' ||
+          error.name === 'DISK_SOURCE_REVIEW_REQUIRED')
+      ) {
+        this.status.retryOnLocalUpdate.add(docId);
+      }
       this.status.connectedDocs.delete(docId);
       this.status.jobMap.delete(docId);
       this.statusUpdatedSubject$.next(docId);

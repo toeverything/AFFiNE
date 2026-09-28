@@ -1,12 +1,16 @@
-use std::{collections::HashMap, sync::Arc};
-
-#[cfg(not(feature = "use-as-lib"))]
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+  collections::HashMap,
+  sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+  },
+};
 
 use chrono::NaiveDateTime;
-use napi::bindgen_prelude::{Error as NapiError, Result as NapiResult, Uint8Array};
-#[cfg(not(feature = "use-as-lib"))]
-use napi::threadsafe_function::ThreadsafeFunction;
+use napi::{
+  bindgen_prelude::{Error as NapiError, Result, Uint8Array},
+  threadsafe_function::ThreadsafeFunction,
+};
 use napi_derive::napi;
 use once_cell::sync::Lazy;
 use tokio::sync::{Mutex, RwLock};
@@ -25,7 +29,6 @@ use session::DiskSession;
 
 static SESSIONS: Lazy<RwLock<HashMap<String, Arc<DiskSession>>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 static START_SESSION_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
-#[cfg(not(feature = "use-as-lib"))]
 static NEXT_SUBSCRIBER_ID: AtomicU64 = AtomicU64::new(1);
 
 #[napi(object)]
@@ -46,6 +49,8 @@ pub struct DiskDocUpdateInput {
 pub struct DiskDocClock {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
+  pub review_required: Option<String>,
+  pub export_error: Option<String>,
 }
 
 #[napi(object)]
@@ -78,12 +83,11 @@ pub struct DiskSyncEvent {
   pub message: Option<String>,
 }
 
-#[napi]
 #[derive(Default)]
+#[napi]
 pub struct DiskSync;
 
 #[napi]
-#[cfg(not(feature = "use-as-lib"))]
 pub struct DiskSyncSubscriber {
   session_id: String,
   subscriber_id: u64,
@@ -97,7 +101,7 @@ impl DiskSync {
   }
 
   #[napi]
-  pub async fn start_session(&self, session_id: String, options: DiskSessionOptions) -> NapiResult<()> {
+  pub async fn start_session(&self, session_id: String, options: DiskSessionOptions) -> Result<()> {
     let _start_guard = START_SESSION_LOCK.lock().await;
 
     {
@@ -108,7 +112,8 @@ impl DiskSync {
     }
 
     let session = DiskSession::new(options).await.map_err(to_napi_error)?;
-    session.queue_ready_event().await.map_err(to_napi_error)?;
+    session.replay_pending_updates().await.map_err(to_napi_error)?;
+    session.scan_once().await.map_err(to_napi_error)?;
 
     let mut sessions = SESSIONS.write().await;
     sessions.insert(session_id, Arc::new(session));
@@ -116,7 +121,7 @@ impl DiskSync {
   }
 
   #[napi]
-  pub async fn stop_session(&self, session_id: String) -> NapiResult<()> {
+  pub async fn stop_session(&self, session_id: String) -> Result<()> {
     let mut sessions = SESSIONS.write().await;
     if let Some(session) = sessions.remove(&session_id) {
       session.close().await;
@@ -125,12 +130,25 @@ impl DiskSync {
   }
 
   #[napi]
-  pub async fn apply_local_update(
+  pub async fn apply_local_update(&self, session_id: String, update: DiskDocUpdateInput) -> Result<DiskDocClock> {
+    let session = {
+      let sessions = SESSIONS.read().await;
+      sessions
+        .get(&session_id)
+        .cloned()
+        .ok_or_else(|| to_napi_error(format!("disk session {} is not started", session_id)))?
+    };
+
+    session.apply_local_update(update).await.map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub async fn acknowledge_source_update(
     &self,
     session_id: String,
-    update: DiskDocUpdateInput,
-    origin: Option<String>,
-  ) -> NapiResult<DiskDocClock> {
+    doc_id: String,
+    snapshot: Uint8Array,
+  ) -> Result<()> {
     let session = {
       let sessions = SESSIONS.read().await;
       sessions
@@ -138,12 +156,20 @@ impl DiskSync {
         .cloned()
         .ok_or_else(|| to_napi_error(format!("disk session {} is not started", session_id)))?
     };
-
-    session.apply_local_update(update, origin).await.map_err(to_napi_error)
+    session
+      .acknowledge_source_update(&doc_id, snapshot.as_ref())
+      .await
+      .map_err(to_napi_error)
   }
 
   #[napi]
-  pub async fn pull_events(&self, session_id: String) -> NapiResult<Vec<DiskSyncEvent>> {
+  pub async fn prepare_source_doc(
+    &self,
+    session_id: String,
+    doc_id: String,
+    local_snapshot: Option<Uint8Array>,
+    local_root: Option<Uint8Array>,
+  ) -> Result<Option<Uint8Array>> {
     let session = {
       let sessions = SESSIONS.read().await;
       sessions
@@ -151,17 +177,19 @@ impl DiskSync {
         .cloned()
         .ok_or_else(|| to_napi_error(format!("disk session {} is not started", session_id)))?
     };
-
-    session.pull_events().await.map_err(to_napi_error)
+    session
+      .prepare_source_doc(&doc_id, local_snapshot.as_deref(), local_root.as_deref())
+      .await
+      .map(|snapshot| snapshot.map(Uint8Array::new))
+      .map_err(to_napi_error)
   }
 
   #[napi]
-  #[cfg(not(feature = "use-as-lib"))]
   pub async fn subscribe_events(
     &self,
     session_id: String,
     callback: ThreadsafeFunction<DiskSyncEvent, ()>,
-  ) -> NapiResult<DiskSyncSubscriber> {
+  ) -> Result<DiskSyncSubscriber> {
     let session = {
       let sessions = SESSIONS.read().await;
       sessions
@@ -183,11 +211,24 @@ impl DiskSync {
   }
 }
 
+#[cfg(test)]
+impl DiskSync {
+  pub async fn pull_events(&self, session_id: String) -> Result<Vec<DiskSyncEvent>> {
+    let session = {
+      let sessions = SESSIONS.read().await;
+      sessions
+        .get(&session_id)
+        .cloned()
+        .ok_or_else(|| to_napi_error(format!("disk session {} is not started", session_id)))?
+    };
+    session.pull_events().await.map_err(to_napi_error)
+  }
+}
+
 #[napi]
-#[cfg(not(feature = "use-as-lib"))]
 impl DiskSyncSubscriber {
   #[napi]
-  pub async fn unsubscribe(&self) -> NapiResult<()> {
+  pub async fn unsubscribe(&self) -> Result<()> {
     let session = {
       let sessions = SESSIONS.read().await;
       sessions.get(&self.session_id).cloned()

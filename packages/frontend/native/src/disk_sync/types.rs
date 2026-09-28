@@ -1,14 +1,3 @@
-use chrono::NaiveDateTime;
-
-#[derive(Clone)]
-pub(crate) struct Baseline {
-  pub(crate) base_clock: String,
-  pub(crate) base_vector: String,
-  pub(crate) md_hash: String,
-  pub(crate) meta_hash: String,
-  pub(crate) synced_at: NaiveDateTime,
-}
-
 #[derive(Clone, Debug, Default)]
 pub(crate) struct FrontmatterMeta {
   pub(crate) id: Option<String>,
@@ -24,4 +13,13 @@ impl FrontmatterMeta {
     self.id = Some(id);
     self
   }
+}
+
+#[derive(Clone)]
+pub(crate) struct SourceCheckpoint {
+  pub(crate) snapshot: Vec<u8>,
+  pub(crate) markdown: String,
+  pub(crate) scope: String,
+  pub(crate) profile: u32,
+  pub(crate) meta_hash: String,
 }

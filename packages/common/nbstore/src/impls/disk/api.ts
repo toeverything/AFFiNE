@@ -8,7 +8,8 @@ export interface DiskSessionOptions {
 }
 
 export type DiskSyncEvent =
-  | { type: 'ready' }
+  | { type: 'source-discovered'; docId: string }
+  | { type: 'root-doc-discovered'; docId: string }
   | {
       type: 'doc-update';
       update: {
@@ -19,7 +20,6 @@ export type DiskSyncEvent =
       };
       origin?: string;
     }
-  | { type: 'doc-delete'; docId: string; timestamp: Date }
   | { type: 'error'; message: string };
 
 export interface DiskSyncApis {
@@ -30,9 +30,21 @@ export interface DiskSyncApis {
   stopSession: (sessionId: string) => Promise<void>;
   applyLocalUpdate: (
     sessionId: string,
-    update: DocUpdate,
-    origin?: string
-  ) => Promise<DocClock>;
+    update: DocUpdate
+  ) => Promise<
+    DocClock & { reviewRequired?: string | null; exportError?: string | null }
+  >;
+  acknowledgeSourceUpdate: (
+    sessionId: string,
+    docId: string,
+    localSnapshot: Uint8Array
+  ) => Promise<void>;
+  prepareSourceDoc: (
+    sessionId: string,
+    docId: string,
+    localSnapshot?: Uint8Array,
+    localRoot?: Uint8Array
+  ) => Promise<Uint8Array | null>;
   subscribeEvents: (
     sessionId: string,
     callback: (event: DiskSyncEvent) => void
@@ -46,13 +58,6 @@ interface DiskSyncOptions {
   readonly syncFolder: string;
 }
 
-interface DiskSyncApisWrapper {
-  startSession: (options: DiskSessionOptions) => Promise<void>;
-  stopSession: () => Promise<void>;
-  applyLocalUpdate: (update: DocUpdate, origin?: string) => Promise<DocClock>;
-  subscribeEvents: (callback: (event: DiskSyncEvent) => void) => () => void;
-}
-
 let apis: DiskSyncApis | null = null;
 
 export function bindDiskSyncApis(a: DiskSyncApis) {
@@ -62,9 +67,7 @@ export function bindDiskSyncApis(a: DiskSyncApis) {
 export class DiskSyncConnection extends AutoReconnectConnection<{
   unsubscribe: () => void;
 }> {
-  private stopping: Promise<void> | null = null;
-
-  readonly apis: DiskSyncApisWrapper;
+  private readonly native: DiskSyncApis;
   readonly sessionId: string;
 
   readonly flavour = this.options.flavour;
@@ -79,45 +82,57 @@ export class DiskSyncConnection extends AutoReconnectConnection<{
     if (!apis) {
       throw new Error('Not in native context.');
     }
-    const workspaceSessionId = universalId({
-      peer: this.flavour,
-      type: this.type,
-      id: this.id,
-    });
-    this.sessionId = `${workspaceSessionId}:${encodeURIComponent(
-      this.options.syncFolder
-    )}`;
-    this.apis = this.wrapApis(apis);
+    this.native = apis;
+    this.sessionId = JSON.stringify([
+      universalId({ peer: this.flavour, type: this.type, id: this.id }),
+      options.syncFolder,
+    ]);
   }
 
   override get shareId(): string {
-    return `disk:${this.sessionId}:${this.options.syncFolder}`;
+    return `disk:${this.sessionId}`;
   }
 
-  private wrapApis(originalApis: DiskSyncApis): DiskSyncApisWrapper {
-    const sessionId = this.sessionId;
-    return new Proxy(
-      {},
-      {
-        get: (_target, key: keyof DiskSyncApisWrapper) => {
-          const method = originalApis[key];
-          return (...args: unknown[]) => {
-            // oxlint-disable-next-line @typescript-eslint/no-explicit-any
-            return (method as any)(sessionId, ...args);
-          };
-        },
-      }
-    ) as DiskSyncApisWrapper;
+  applyLocalUpdate(update: DocUpdate) {
+    return this.native.applyLocalUpdate(this.sessionId, update);
+  }
+
+  acknowledgeSourceUpdate(docId: string, localSnapshot: Uint8Array) {
+    return this.native.acknowledgeSourceUpdate(
+      this.sessionId,
+      docId,
+      localSnapshot
+    );
+  }
+
+  prepareSourceDoc(
+    docId: string,
+    localSnapshot?: Uint8Array,
+    localRoot?: Uint8Array
+  ) {
+    return this.native.prepareSourceDoc(
+      this.sessionId,
+      docId,
+      localSnapshot,
+      localRoot
+    );
   }
 
   override async doConnect() {
-    await this.stopping;
-    await this.apis.startSession({
-      workspaceId: this.id,
-      syncFolder: this.options.syncFolder,
-    });
-    const unsubscribe = this.apis.subscribeEvents(this.onEvent);
-    return { unsubscribe };
+    const unsubscribe = this.native.subscribeEvents(
+      this.sessionId,
+      this.onEvent
+    );
+    try {
+      await this.native.startSession(this.sessionId, {
+        workspaceId: this.id,
+        syncFolder: this.options.syncFolder,
+      });
+      return { unsubscribe };
+    } catch (error) {
+      unsubscribe();
+      throw error;
+    }
   }
 
   override doDisconnect(conn: { unsubscribe: () => void }) {
@@ -126,7 +141,7 @@ export class DiskSyncConnection extends AutoReconnectConnection<{
     } catch (error) {
       console.error('DiskSyncConnection unsubscribe failed', error);
     }
-    this.stopping = this.apis.stopSession().catch(error => {
+    this.native.stopSession(this.sessionId).catch(error => {
       console.error('DiskSyncConnection stopSession failed', error);
     });
   }

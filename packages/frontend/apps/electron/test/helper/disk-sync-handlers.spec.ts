@@ -9,6 +9,8 @@ const diskSyncMocks = vi.hoisted(() => {
       docId: 'doc-1',
       timestamp: new Date('2026-01-06T00:00:00.000Z'),
     })),
+    prepareSourceDoc: vi.fn(async () => new Uint8Array([0, 0])),
+    acknowledgeSourceUpdate: vi.fn(async () => {}),
     subscribeEvents: vi.fn(
       (
         _sessionId: string,
@@ -44,10 +46,26 @@ vi.mock('@affine/native', () => {
 
     applyLocalUpdate(
       sessionId: string,
-      update: { docId: string; bin: Uint8Array },
-      origin?: string
+      update: { docId: string; bin: Uint8Array }
     ) {
-      return diskSyncMocks.applyLocalUpdate(sessionId, update, origin);
+      return diskSyncMocks.applyLocalUpdate(sessionId, update);
+    }
+
+    prepareSourceDoc(
+      sessionId: string,
+      docId: string,
+      local?: Uint8Array,
+      root?: Uint8Array
+    ) {
+      return diskSyncMocks.prepareSourceDoc(sessionId, docId, local, root);
+    }
+
+    acknowledgeSourceUpdate(
+      sessionId: string,
+      docId: string,
+      snapshot: Uint8Array
+    ) {
+      return diskSyncMocks.acknowledgeSourceUpdate(sessionId, docId, snapshot);
     }
   }
 
@@ -55,7 +73,7 @@ vi.mock('@affine/native', () => {
 });
 
 import {
-  applyLocalUpdate,
+  prepareSourceDoc,
   startSession,
   stopSession,
 } from '../../src/helper/disk-sync/handlers';
@@ -74,7 +92,12 @@ describe('disk helper handlers', () => {
         callback: (err: Error | null, event: DiskSyncEvent) => void
       ) => {
         callback(null, {
-          type: 'ready',
+          type: 'source-discovered',
+          docId: 'doc-source',
+        } as DiskSyncEvent);
+        callback(null, {
+          type: 'root-doc-discovered',
+          docId: 'doc-root',
         } as DiskSyncEvent);
         return Promise.resolve({
           unsubscribe,
@@ -92,10 +115,21 @@ describe('disk helper handlers', () => {
       syncFolder: '/tmp/disk-sync',
     });
 
-    expect(seen).toContain('ready');
+    expect(seen).toContain('source-discovered');
+    expect(seen).toContain('root-doc-discovered');
     expect(diskSyncMocks.subscribeEvents).toHaveBeenCalledWith(
       'session-subscribe',
       expect.any(Function)
+    );
+
+    const local = new Uint8Array([1, 2]);
+    const root = new Uint8Array([3, 4]);
+    await prepareSourceDoc('session-subscribe', 'doc-source', local, root);
+    expect(diskSyncMocks.prepareSourceDoc).toHaveBeenCalledWith(
+      'session-subscribe',
+      'doc-source',
+      local,
+      root
     );
 
     await stopSession('session-subscribe');
@@ -103,75 +137,27 @@ describe('disk helper handlers', () => {
     subscription.unsubscribe();
   });
 
-  it('throws when native applyLocalUpdate returns Error payload', async () => {
-    diskSyncMocks.applyLocalUpdate.mockResolvedValueOnce(
-      new Error('invalid_binary')
-    );
-
-    await expect(
-      applyLocalUpdate('session-subscribe', {
-        docId: 'doc-failed',
-        bin: new Uint8Array([1, 2, 3]),
-      })
-    ).rejects.toThrow('[disk] applyLocalUpdate failed: invalid_binary');
-  });
-
-  it('stops and clears the session when unsubscribe fails', async () => {
-    diskSyncMocks.subscribeEvents
-      .mockResolvedValueOnce({
-        unsubscribe: () => new Error('unsubscribe_failed'),
-      })
-      .mockResolvedValueOnce({
-        unsubscribe: () => {},
-      });
-
+  it('keeps a shared native session open until every window disconnects', async () => {
+    const unsubscribe = vi.fn(async () => {});
+    diskSyncMocks.subscribeEvents.mockResolvedValue({ unsubscribe });
     const options = {
-      workspaceId: 'workspace-unsubscribe-failure',
-      syncFolder: '/tmp/disk-sync',
+      workspaceId: 'workspace-shared',
+      syncFolder: '/tmp/disk-sync-shared',
     };
-    await startSession('session-unsubscribe-failure', options);
 
-    await expect(stopSession('session-unsubscribe-failure')).rejects.toThrow(
-      '[disk] unsubscribe failed: unsubscribe_failed'
-    );
-    expect(diskSyncMocks.stopSession).toHaveBeenCalledWith(
-      'session-unsubscribe-failure'
-    );
-
-    await startSession('session-unsubscribe-failure', options);
-    expect(diskSyncMocks.subscribeEvents).toHaveBeenCalledTimes(2);
-    await stopSession('session-unsubscribe-failure');
-  });
-
-  it('serializes stop and restart for the same session id', async () => {
-    let releaseStop!: () => void;
-    diskSyncMocks.stopSession.mockImplementationOnce(
-      () =>
-        new Promise<void>(resolve => {
-          releaseStop = resolve;
-        })
-    );
-
-    const options = {
-      workspaceId: 'workspace-serialized-restart',
-      syncFolder: '/tmp/disk-sync',
-    };
-    await startSession('session-serialized-restart', options);
-
-    const stopping = stopSession('session-serialized-restart');
-    await vi.waitFor(() => {
-      expect(diskSyncMocks.stopSession).toHaveBeenCalledTimes(1);
-    });
-    const restarting = startSession('session-serialized-restart', options);
-
-    await Promise.resolve();
+    await Promise.all([
+      startSession('session-shared', options),
+      startSession('session-shared', options),
+    ]);
     expect(diskSyncMocks.startSession).toHaveBeenCalledTimes(1);
+    expect(diskSyncMocks.subscribeEvents).toHaveBeenCalledTimes(1);
 
-    releaseStop();
-    await stopping;
-    await restarting;
-    expect(diskSyncMocks.startSession).toHaveBeenCalledTimes(2);
+    await stopSession('session-shared');
+    expect(unsubscribe).not.toHaveBeenCalled();
+    expect(diskSyncMocks.stopSession).not.toHaveBeenCalled();
 
-    await stopSession('session-serialized-restart');
+    await stopSession('session-shared');
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(diskSyncMocks.stopSession).toHaveBeenCalledTimes(1);
   });
 });

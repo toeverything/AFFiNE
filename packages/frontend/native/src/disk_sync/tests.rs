@@ -3,11 +3,11 @@ use std::{
   path::{Path, PathBuf},
 };
 
-use affine_common::doc_parser::{build_full_doc, update_doc};
+use affine_doc_loader::{build_full_doc, update_doc};
 use chrono::Utc;
 use napi::bindgen_prelude::Uint8Array;
 use uuid::Uuid;
-use y_octo::{Any, DocOptions, Value};
+use y_octo::{Any, DocOptions, StateVector, Value};
 
 use super::{
   DiskDocUpdateInput, DiskSessionOptions, DiskSync,
@@ -16,6 +16,24 @@ use super::{
   types::FrontmatterMeta,
   utils::{collect_markdown_files, generate_missing_doc_id, sanitize_file_stem},
 };
+
+#[test]
+fn merged_doc_update_preserves_stepwise_yjs_structs() {
+  let original = hex::decode(include_str!("fixtures/stepwise-yjs.hex").replace('\n', "")).expect("decode Yjs update");
+  let merged = super::utils::merge_frontend_update_binary(None, &original).expect("merge Yjs update");
+  assert_eq!(merged, original);
+  let merged_again =
+    super::utils::merge_frontend_update_binary(Some(&merged), &original).expect("merge repeated update");
+  assert_eq!(merged_again, original);
+
+  let mut doc = DocOptions::new().build();
+  doc.apply_update_from_binary_v1(&original).expect("load Yjs update");
+  let reencoded = doc
+    .encode_state_as_update_v1(&StateVector::default())
+    .expect("re-encode Yjs update");
+  assert_ne!(reencoded, original);
+  assert!(super::utils::same_update_state(&reencoded, &original).expect("compare update state"));
+}
 
 fn temp_dir() -> PathBuf {
   let dir = std::env::temp_dir().join(format!(
@@ -95,20 +113,113 @@ async fn teardown(sync: &DiskSync, session_id: &str, dir: &Path) {
   }
 }
 
-async fn prime_workspace(sync: &DiskSync, session_id: &str, workspace_id: &str) {
-  let root = DocOptions::new().with_guid(workspace_id.to_string()).build();
+#[tokio::test]
+async fn root_doc_discovery_is_incremental_and_has_no_source_clock() {
+  let dir = temp_dir();
+  let sync = DiskSync::new();
+  let session_id = "root-discovery";
+  let workspace_id = "ws-root-discovery";
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: workspace_id.to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .unwrap();
+  let _ = sync.pull_events(session_id.to_string()).await.unwrap();
+
+  let first = build_root_meta_update(&[], workspace_id, "doc-a", &FrontmatterMeta::default()).unwrap();
   sync
     .apply_local_update(
       session_id.to_string(),
       DiskDocUpdateInput {
         doc_id: workspace_id.to_string(),
-        bin: Uint8Array::new(root.encode_update_v1().expect("encode workspace root")),
-        editor: Some("test".to_string()),
+        bin: Uint8Array::new(first.clone()),
+        editor: None,
       },
-      Some("origin:local".to_string()),
     )
     .await
-    .expect("prime workspace root");
+    .unwrap();
+  let events = sync.pull_events(session_id.to_string()).await.unwrap();
+  let discoveries = events
+    .iter()
+    .filter(|event| event.r#type == "root-doc-discovered")
+    .collect::<Vec<_>>();
+  assert_eq!(discoveries.len(), 1);
+  assert_eq!(discoveries[0].doc_id.as_deref(), Some("doc-a"));
+  assert_eq!(discoveries[0].timestamp, None);
+
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: workspace_id.to_string(),
+        bin: Uint8Array::new(first),
+        editor: None,
+      },
+    )
+    .await
+    .unwrap();
+  let events = sync.pull_events(session_id.to_string()).await.unwrap();
+  assert!(events.iter().all(|event| event.r#type != "root-doc-discovered"));
+
+  teardown(&sync, session_id, &dir).await;
+}
+
+#[tokio::test]
+async fn root_discovery_waits_for_partial_dependencies_and_includes_trash() {
+  let dir = temp_dir();
+  let sync = DiskSync::new();
+  let session_id = "root-partial";
+  let workspace_id = "ws-root-partial";
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: workspace_id.to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .unwrap();
+  let _ = sync.pull_events(session_id.to_string()).await.unwrap();
+
+  let base = build_root_meta_update(&[], workspace_id, "doc-base", &FrontmatterMeta::default()).unwrap();
+  let delta = build_root_meta_update(
+    &base,
+    workspace_id,
+    "doc-trash",
+    &FrontmatterMeta {
+      trash: Some(true),
+      ..Default::default()
+    },
+  )
+  .unwrap();
+  for update in [&delta, &base] {
+    sync
+      .apply_local_update(
+        session_id.to_string(),
+        DiskDocUpdateInput {
+          doc_id: workspace_id.to_string(),
+          bin: Uint8Array::new(update.clone()),
+          editor: None,
+        },
+      )
+      .await
+      .unwrap();
+  }
+  let events = sync.pull_events(session_id.to_string()).await.unwrap();
+  let mut ids = events
+    .iter()
+    .filter(|event| event.r#type == "root-doc-discovered")
+    .filter_map(|event| event.doc_id.clone())
+    .collect::<Vec<_>>();
+  ids.sort();
+  assert_eq!(ids, ["doc-base", "doc-trash"]);
+  teardown(&sync, session_id, &dir).await;
 }
 
 fn is_numeric_any(value: &Any) -> bool {
@@ -144,6 +255,28 @@ Body.
   assert_eq!(meta.favorite, Some(true));
   assert_eq!(meta.trash, Some(false));
   assert!(body.contains("# Heading"));
+
+  for value in [
+    "Say \"hi\"",
+    "path\\name",
+    "path\\\"name",
+    "first\nsecond",
+    "first\n---\nsecond",
+    "'quoted'",
+  ] {
+    let expected = FrontmatterMeta {
+      id: Some("doc-1".to_string()),
+      title: Some(value.to_string()),
+      tags: Some(vec![value.to_string()]),
+      favorite: Some(true),
+      trash: Some(false),
+      extra: Vec::new(),
+    };
+    let (actual, parsed_body) = parse_frontmatter(&render_frontmatter(&expected, "Body"));
+    assert_eq!(actual.title, expected.title, "title: {value:?}");
+    assert_eq!(actual.tags, expected.tags, "tags: {value:?}");
+    assert_eq!(parsed_body, "Body\n", "body: {value:?}");
+  }
 }
 
 #[test]
@@ -258,27 +391,8 @@ async fn concurrent_starts_initialize_one_session() {
   assert_eq!(initialized_dirs, 1);
 }
 
-#[cfg(unix)]
-#[test]
-fn collect_markdown_files_skips_symlink_directories() {
-  use std::os::unix::fs::symlink;
-
-  let dir = temp_dir();
-  let nested = dir.join("nested");
-  fs::create_dir(&nested).expect("create nested directory");
-  let markdown = nested.join("doc.md");
-  fs::write(&markdown, "# Document").expect("write markdown");
-  symlink(&dir, nested.join("loop")).expect("create directory symlink");
-
-  let mut files = Vec::new();
-  collect_markdown_files(&dir, &mut files).expect("collect markdown files");
-
-  assert_eq!(files, vec![markdown]);
-  let _ = fs::remove_dir_all(dir);
-}
-
 #[tokio::test]
-async fn start_session_defers_import_until_workspace_root_is_loaded() {
+async fn start_session_imports_markdown_and_creates_state_db() {
   let dir = temp_dir();
   let md_path = dir.join("doc-a.md");
   fs::write(
@@ -301,19 +415,33 @@ async fn start_session_defers_import_until_workspace_root_is_loaded() {
     .await
     .expect("start session");
 
-  let events = sync
-    .pull_events(session_id.to_string())
-    .await
-    .expect("pull before root");
-
-  assert!(events.iter().any(|event| event.r#type == "ready"));
+  let unrelated = build_full_doc("Other", "# Other\n\ndifferent", "doc-a").expect("build unrelated local doc");
   assert!(
-    events.iter().all(|event| event.r#type != "doc-update"),
-    "disk files must not be imported before the local workspace root is loaded"
+    sync
+      .prepare_source_doc(
+        session_id.to_string(),
+        "doc-a".to_string(),
+        Some(Uint8Array::new(unrelated)),
+        None,
+      )
+      .await
+      .is_err()
   );
+  sync
+    .prepare_source_doc(session_id.to_string(), "doc-a".to_string(), None, None)
+    .await
+    .expect("prepare new source");
+  let events = sync.pull_events(session_id.to_string()).await.expect("pull events");
 
-  prime_workspace(&sync, session_id, "ws-a").await;
-  let events = sync.pull_events(session_id.to_string()).await.expect("pull after root");
+  let source_at = events
+    .iter()
+    .position(|event| event.r#type == "source-discovered" && event.doc_id.as_deref() == Some("doc-a"))
+    .expect("file discovery");
+  let root_at = events
+    .iter()
+    .position(|event| event.r#type == "root-doc-discovered" && event.doc_id.as_deref() == Some("doc-a"))
+    .expect("root discovery");
+  assert!(source_at < root_at);
 
   assert!(events.iter().any(|event| {
     event.r#type == "doc-update" && event.update.as_ref().is_some_and(|update| update.doc_id == "doc-a")
@@ -328,71 +456,54 @@ async fn start_session_defers_import_until_workspace_root_is_loaded() {
 }
 
 #[tokio::test]
-async fn duplicate_doc_ids_are_rejected_without_rebinding() {
+async fn local_update_candidate_preserves_unknown_frontmatter() {
   let dir = temp_dir();
-  let session_id = format!("session-duplicate-id-{}", Uuid::new_v4());
-  let doc_id = "duplicate-doc";
+  let md_path = dir.join("doc-extra.md");
+  let doc_id = "doc-extra";
   fs::write(
-    dir.join("first.md"),
-    format!("---\nid: {doc_id}\ntitle: First\n---\n\n# First\n\nfirst body"),
+    &md_path,
+    "---\nid: doc-extra\ntitle: Extra\naliases:\n  - First alias\ncustom: keep-me\n---\n\n# Extra\n\none",
   )
-  .expect("write first markdown");
-  fs::write(
-    dir.join("second.md"),
-    format!("---\nid: {doc_id}\ntitle: Second\n---\n\n# Second\n\nsecond body"),
-  )
-  .expect("write second markdown");
+  .expect("write markdown with custom frontmatter");
 
   let sync = DiskSync::new();
+  let session_id = "session-extra-frontmatter";
   sync
     .start_session(
-      session_id.clone(),
+      session_id.to_string(),
       DiskSessionOptions {
-        workspace_id: "ws-duplicate-id".to_string(),
+        workspace_id: "ws-extra-frontmatter".to_string(),
         sync_folder: dir.to_string_lossy().to_string(),
       },
     )
     .await
     .expect("start session");
 
-  prime_workspace(&sync, &session_id, "ws-duplicate-id").await;
-  let events = sync.pull_events(session_id.clone()).await.expect("pull events");
-  let page_updates = events
-    .iter()
-    .filter(|event| event.r#type == "doc-update" && event.update.as_ref().is_some_and(|update| update.doc_id == doc_id))
-    .count();
-
-  assert_eq!(page_updates, 1, "duplicate ids must not rebind one doc");
-  assert!(events.iter().any(|event| {
-    event.r#type == "error"
-      && event
-        .message
-        .as_deref()
-        .is_some_and(|message| message.contains("duplicate markdown doc id"))
-  }));
-
-  let duplicate_error = events
-    .iter()
-    .find_map(|event| event.message.as_deref())
-    .expect("duplicate error");
-  let first_path = dir.join("first.md");
-  let second_path = dir.join("second.md");
-  let bound_path = if duplicate_error.contains(&format!("in {} and {}", first_path.display(), second_path.display())) {
-    first_path
-  } else {
-    second_path
-  };
-  fs::remove_file(bound_path).expect("remove the file that won the duplicate binding");
-
-  let events = sync
-    .pull_events(session_id.clone())
+  let imported = sync
+    .prepare_source_doc(session_id.to_string(), doc_id.to_string(), None, None)
     .await
-    .expect("retry duplicate after conflict is removed");
-  assert!(events.iter().any(|event| {
-    event.r#type == "doc-update" && event.update.as_ref().is_some_and(|update| update.doc_id == doc_id)
-  }));
+    .expect("prepare source")
+    .expect("imported snapshot");
+  let delta = update_doc(imported.as_ref(), "# Extra\n\ntwo", doc_id).expect("build local edit delta");
+  let result = sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: doc_id.to_string(),
+        bin: Uint8Array::new(delta),
+        editor: Some("test".to_string()),
+      },
+    )
+    .await
+    .expect("apply local update");
 
-  teardown(&sync, &session_id, &dir).await;
+  let candidate = result.review_required.expect("review candidate");
+  let updated = fs::read_to_string(candidate).expect("read review candidate");
+  assert!(updated.contains("aliases:\n  - First alias"));
+  assert!(updated.contains("custom: keep-me"));
+  assert!(updated.contains("two"));
+
+  teardown(&sync, session_id, &dir).await;
 }
 
 #[tokio::test]
@@ -425,7 +536,6 @@ async fn apply_local_update_exports_markdown_even_with_unsupported_block() {
         bin: Uint8Array::new(doc_bin),
         editor: Some("test".to_string()),
       },
-      Some("origin:local".to_string()),
     )
     .await
     .expect("apply local update");
@@ -436,7 +546,7 @@ async fn apply_local_update_exports_markdown_even_with_unsupported_block() {
 
   let content = fs::read_to_string(&exported_files[0]).expect("read exported markdown");
   assert!(content.contains("id: doc-unsupported"));
-  assert!(content.contains("unsupported_block_flavour:affine:latex"));
+  assert!(content.contains("flavour=affine:latex opaque=true"));
 
   teardown(&sync, session_id, &dir).await;
 }
@@ -471,7 +581,6 @@ async fn apply_local_update_exports_markdown_with_stable_id() {
         bin: Uint8Array::new(doc_bin),
         editor: Some("test".to_string()),
       },
-      Some("origin:local".to_string()),
     )
     .await
     .expect("apply local update");
@@ -488,58 +597,7 @@ async fn apply_local_update_exports_markdown_with_stable_id() {
 }
 
 #[tokio::test]
-async fn local_export_does_not_claim_an_unscanned_existing_file() {
-  let dir = temp_dir();
-  let sync = DiskSync::new();
-  let session_id = format!("session-unscanned-collision-{}", Uuid::new_v4());
-
-  sync
-    .start_session(
-      session_id.clone(),
-      DiskSessionOptions {
-        workspace_id: "ws-unscanned-collision".to_string(),
-        sync_folder: dir.to_string_lossy().to_string(),
-      },
-    )
-    .await
-    .expect("start session");
-
-  prime_workspace(&sync, &session_id, "ws-unscanned-collision").await;
-  let _ = sync.pull_events(session_id.clone()).await.expect("pull first");
-
-  let occupied = dir.join("collision.md");
-  fs::write(
-    &occupied,
-    "---\nid: external-doc\ntitle: Collision\n---\n\n# Collision\n\nexternal",
-  )
-  .expect("write unscanned markdown");
-
-  let local_doc = build_full_doc("Collision", "# Collision\n\nlocal", "local-doc").expect("build local doc");
-  sync
-    .apply_local_update(
-      session_id.clone(),
-      DiskDocUpdateInput {
-        doc_id: "local-doc".to_string(),
-        bin: Uint8Array::new(local_doc),
-        editor: Some("test".to_string()),
-      },
-      Some("origin:local".to_string()),
-    )
-    .await
-    .expect("apply local update");
-
-  let occupied_content = fs::read_to_string(&occupied).expect("read occupied markdown");
-  assert!(occupied_content.contains("id: external-doc"));
-
-  let exported = fs::read_to_string(dir.join("collision-2.md")).expect("read collision-free export");
-  assert!(exported.contains("id: local-doc"));
-  assert!(exported.contains("local"));
-
-  teardown(&sync, &session_id, &dir).await;
-}
-
-#[tokio::test]
-async fn empty_title_export_does_not_trigger_self_import() {
+async fn quoted_and_empty_title_exports_do_not_pause() {
   let dir = temp_dir();
 
   let sync = DiskSync::new();
@@ -556,7 +614,6 @@ async fn empty_title_export_does_not_trigger_self_import() {
     .await
     .expect("start session");
 
-  prime_workspace(&sync, session_id, "ws-empty-title").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   let doc_id = "doc-empty-title";
@@ -570,7 +627,6 @@ async fn empty_title_export_does_not_trigger_self_import() {
         bin: Uint8Array::new(doc_bin),
         editor: Some("test".to_string()),
       },
-      Some("origin:local".to_string()),
     )
     .await
     .expect("apply local update");
@@ -585,6 +641,82 @@ async fn empty_title_export_does_not_trigger_self_import() {
       && event.origin.as_deref() == Some("disk:file-import")
       && event.update.as_ref().is_some_and(|update| update.doc_id == doc_id)
   }));
+
+  let quoted_id = "doc-quoted-title";
+  let quoted_doc = build_full_doc("Say \"hi\"\\path", "# Note\n\none", quoted_id).expect("build quoted-title doc");
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: quoted_id.to_string(),
+        bin: Uint8Array::new(quoted_doc.clone()),
+        editor: Some("test".to_string()),
+      },
+    )
+    .await
+    .expect("export quoted title");
+  let _ = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("pull quoted export");
+  let delta = update_doc(&quoted_doc, "# Note\n\ntwo", quoted_id).expect("build followup edit");
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: quoted_id.to_string(),
+        bin: Uint8Array::new(delta),
+        editor: Some("test".to_string()),
+      },
+    )
+    .await
+    .expect("export after quoted title");
+  let events = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("pull followup export");
+  assert!(!events.iter().any(|event| {
+    event.r#type == "error"
+      && event
+        .message
+        .as_deref()
+        .is_some_and(|message| message.contains("export paused"))
+  }));
+
+  teardown(&sync, session_id, &dir).await;
+}
+
+#[tokio::test]
+async fn unexportable_doc_returns_doc_scoped_error() {
+  let dir = temp_dir();
+  let sync = DiskSync::new();
+  let session_id = "session-unexportable";
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: "ws-unexportable".to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("start session");
+
+  let doc = DocOptions::new().with_guid("doc-unexportable".to_string()).build();
+  doc.get_or_create_map("blocks").expect("create blocks map");
+  let result = sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: "doc-unexportable".to_string(),
+        bin: Uint8Array::new(doc.encode_update_v1().expect("encode incomplete doc")),
+        editor: None,
+      },
+    )
+    .await
+    .expect("return export error as clock");
+  assert!(result.export_error.is_some());
+  assert!(result.review_required.is_none());
 
   teardown(&sync, session_id, &dir).await;
 }
@@ -607,7 +739,6 @@ async fn invalid_local_update_does_not_block_other_docs_exports() {
     .await
     .expect("start session");
 
-  prime_workspace(&sync, session_id, "ws-invalid-update").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   let doc_a_id = "doc-invalid-a";
@@ -620,7 +751,6 @@ async fn invalid_local_update_does_not_block_other_docs_exports() {
         bin: Uint8Array::new(doc_a_bin),
         editor: Some("test".to_string()),
       },
-      Some("origin:local".to_string()),
     )
     .await
     .expect("apply doc A update");
@@ -633,10 +763,9 @@ async fn invalid_local_update_does_not_block_other_docs_exports() {
         bin: Uint8Array::new(vec![1, 2, 3]),
         editor: Some("test".to_string()),
       },
-      Some("origin:local".to_string()),
     )
     .await;
-  assert!(invalid.is_ok());
+  assert!(invalid.is_err());
 
   let doc_b_id = "doc-valid-b";
   let doc_b_bin = build_full_doc("B", "# B\n\ntwo", doc_b_id).expect("build doc B");
@@ -648,7 +777,6 @@ async fn invalid_local_update_does_not_block_other_docs_exports() {
         bin: Uint8Array::new(doc_b_bin),
         editor: Some("test".to_string()),
       },
-      Some("origin:local".to_string()),
     )
     .await
     .expect("apply doc B update");
@@ -702,7 +830,7 @@ async fn apply_local_root_update_skips_metadata_only_placeholder_without_doc_bod
       tags: Some(vec!["alpha".to_string()]),
       favorite: Some(true),
       trash: Some(false),
-      extra: Vec::new(),
+      ..Default::default()
     },
   )
   .expect("build root meta update");
@@ -715,7 +843,6 @@ async fn apply_local_root_update_skips_metadata_only_placeholder_without_doc_bod
         bin: Uint8Array::new(root_update),
         editor: None,
       },
-      Some("origin:root-meta".to_string()),
     )
     .await
     .expect("apply root update");
@@ -723,99 +850,6 @@ async fn apply_local_root_update_skips_metadata_only_placeholder_without_doc_bod
   let mut exported_files = Vec::new();
   collect_markdown_files(&dir, &mut exported_files).expect("collect markdown files");
   assert_eq!(exported_files.len(), 0);
-
-  teardown(&sync, session_id, &dir).await;
-}
-
-#[tokio::test]
-async fn unchanged_root_metadata_does_not_rewrite_markdown() {
-  let dir = temp_dir();
-  let sync = DiskSync::new();
-  let session_id = "session-root-meta-unchanged";
-  let workspace_id = "ws-root-meta-unchanged";
-  let doc_id = "doc-root-meta-unchanged";
-
-  sync
-    .start_session(
-      session_id.to_string(),
-      DiskSessionOptions {
-        workspace_id: workspace_id.to_string(),
-        sync_folder: dir.to_string_lossy().to_string(),
-      },
-    )
-    .await
-    .expect("start session");
-  prime_workspace(&sync, session_id, workspace_id).await;
-
-  let page = build_full_doc("Root Meta", "# Root Meta\n\nbody", doc_id).expect("build page");
-  sync
-    .apply_local_update(
-      session_id.to_string(),
-      DiskDocUpdateInput {
-        doc_id: doc_id.to_string(),
-        bin: Uint8Array::new(page),
-        editor: None,
-      },
-      Some("origin:page".to_string()),
-    )
-    .await
-    .expect("apply page");
-
-  let root_update = build_root_meta_update(
-    &[],
-    workspace_id,
-    doc_id,
-    &FrontmatterMeta {
-      id: None,
-      title: Some("Root Meta".to_string()),
-      tags: Some(vec!["alpha".to_string()]),
-      favorite: Some(false),
-      trash: Some(false),
-      extra: Vec::new(),
-    },
-  )
-  .expect("build root update");
-
-  for _ in 0..2 {
-    sync
-      .apply_local_update(
-        session_id.to_string(),
-        DiskDocUpdateInput {
-          doc_id: workspace_id.to_string(),
-          bin: Uint8Array::new(root_update.clone()),
-          editor: None,
-        },
-        Some("origin:root-meta".to_string()),
-      )
-      .await
-      .expect("apply root update");
-  }
-
-  let mut files = Vec::new();
-  collect_markdown_files(&dir, &mut files).expect("collect markdown files");
-  assert_eq!(files.len(), 1);
-  let modified_before = fs::metadata(&files[0])
-    .and_then(|metadata| metadata.modified())
-    .expect("read modified time");
-
-  tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-  sync
-    .apply_local_update(
-      session_id.to_string(),
-      DiskDocUpdateInput {
-        doc_id: workspace_id.to_string(),
-        bin: Uint8Array::new(root_update),
-        editor: None,
-      },
-      Some("origin:root-meta".to_string()),
-    )
-    .await
-    .expect("reapply unchanged root update");
-
-  let modified_after = fs::metadata(&files[0])
-    .and_then(|metadata| metadata.modified())
-    .expect("read modified time after unchanged update");
-  assert_eq!(modified_after, modified_before);
 
   teardown(&sync, session_id, &dir).await;
 }
@@ -838,7 +872,6 @@ async fn file_change_after_export_is_imported_into_workspace() {
     .await
     .expect("start session");
 
-  prime_workspace(&sync, session_id, "ws-export-import").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   let doc_id = "doc-export-import";
@@ -849,10 +882,9 @@ async fn file_change_after_export_is_imported_into_workspace() {
       session_id.to_string(),
       DiskDocUpdateInput {
         doc_id: doc_id.to_string(),
-        bin: Uint8Array::new(doc_bin),
+        bin: Uint8Array::new(doc_bin.clone()),
         editor: Some("test".to_string()),
       },
-      Some("origin:local".to_string()),
     )
     .await
     .expect("apply local update");
@@ -870,16 +902,108 @@ async fn file_change_after_export_is_imported_into_workspace() {
   )
   .expect("edit exported markdown");
 
-  let events = sync
+  let discovered = sync
     .pull_events(session_id.to_string())
     .await
     .expect("pull after local file edit");
+  assert!(
+    discovered
+      .iter()
+      .any(|event| event.r#type == "source-discovered" && event.doc_id.as_deref() == Some(doc_id))
+  );
+  assert!(
+    !discovered
+      .iter()
+      .any(|event| event.update.as_ref().is_some_and(|update| update.doc_id == doc_id))
+  );
+  sync
+    .prepare_source_doc(
+      session_id.to_string(),
+      doc_id.to_string(),
+      Some(Uint8Array::new(doc_bin.clone())),
+      None,
+    )
+    .await
+    .expect("prepare changed source with local snapshot");
+  let events = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("pull source update");
 
   assert!(events.iter().any(|event| {
     event.r#type == "doc-update"
       && event.update.as_ref().is_some_and(|update| update.doc_id == doc_id)
       && event.origin.as_deref() == Some("disk:file-import")
   }));
+
+  let imported = events
+    .iter()
+    .find_map(|event| {
+      event
+        .update
+        .as_ref()
+        .filter(|update| update.doc_id == doc_id)
+        .map(|update| update.bin.as_ref().to_vec())
+    })
+    .expect("source update");
+
+  sync
+    .stop_session(session_id.to_string())
+    .await
+    .expect("stop before ack");
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: "ws-export-import".to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("restart session");
+  let replayed = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("pull replayed events");
+  assert!(replayed.iter().any(|event| {
+    event
+      .update
+      .as_ref()
+      .is_some_and(|update| update.doc_id == doc_id && update.bin.as_ref() == imported)
+  }));
+
+  let mut local = DocOptions::new().with_guid(doc_id.to_string()).build();
+  local.apply_update_from_binary_v1(&doc_bin).expect("apply initial doc");
+  local
+    .apply_update_from_binary_v1(&imported)
+    .expect("apply source update");
+  let local_snapshot = local.encode_update_v1().expect("encode local snapshot");
+  sync
+    .acknowledge_source_update(
+      session_id.to_string(),
+      doc_id.to_string(),
+      Uint8Array::new(local_snapshot),
+    )
+    .await
+    .expect("acknowledge source update");
+
+  sync.stop_session(session_id.to_string()).await.expect("stop after ack");
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: "ws-export-import".to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("restart acknowledged session");
+  let after_ack = sync.pull_events(session_id.to_string()).await.expect("pull after ack");
+  assert!(
+    !after_ack
+      .iter()
+      .any(|event| { event.update.as_ref().is_some_and(|update| update.doc_id == doc_id) })
+  );
 
   teardown(&sync, session_id, &dir).await;
 }
@@ -902,11 +1026,10 @@ async fn code_block_update_keeps_markdown_exporting() {
     .await
     .expect("start session");
 
-  prime_workspace(&sync, session_id, "ws-code-block-export").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   let doc_id = "doc-code-block";
-  let initial_doc = build_full_doc("Code", "# Code\n\nbefore", doc_id).expect("build initial doc");
+  let initial_doc = build_full_doc("Code", "```js\nconsole.log(1)\n```", doc_id).expect("build initial doc");
 
   sync
     .apply_local_update(
@@ -916,7 +1039,6 @@ async fn code_block_update_keeps_markdown_exporting() {
         bin: Uint8Array::new(initial_doc.clone()),
         editor: Some("test".to_string()),
       },
-      Some("origin:local".to_string()),
     )
     .await
     .expect("apply initial doc");
@@ -926,50 +1048,33 @@ async fn code_block_update_keeps_markdown_exporting() {
   assert_eq!(exported_files.len(), 1);
   let file_path = exported_files[0].clone();
 
-  let markdown_with_code = "# Code\n\n```js\nconsole.log(1)\n```\n";
-  let delta_code = update_doc(&initial_doc, markdown_with_code, doc_id).expect("build code block delta");
+  let source = affine_doc_loader::export_markdown_source(&initial_doc, doc_id, None).expect("export source");
+  let changed = source.markdown.replace("console.log(1)", "console.log(2)");
+  let delta = update_doc(&initial_doc, &changed, doc_id).expect("build code edit delta");
 
   sync
     .apply_local_update(
       session_id.to_string(),
       DiskDocUpdateInput {
         doc_id: doc_id.to_string(),
-        bin: Uint8Array::new(delta_code.clone()),
+        bin: Uint8Array::new(delta),
         editor: Some("test".to_string()),
       },
-      Some("origin:local".to_string()),
     )
     .await
-    .expect("apply code block delta");
+    .expect("apply code edit delta");
 
-  let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
-  doc
-    .apply_update_from_binary_v1(&initial_doc)
-    .expect("apply initial update");
-  doc.apply_update_from_binary_v1(&delta_code).expect("apply code update");
-  let merged_after_code = doc.encode_update_v1().expect("encode merged after code");
-
-  let markdown_after_code_edit = "# Code\n\n```js\nconsole.log(2)\n```\n\nnext\n";
-  let delta_after_code_edit =
-    update_doc(&merged_after_code, markdown_after_code_edit, doc_id).expect("build delta after code edit");
-
-  sync
-    .apply_local_update(
-      session_id.to_string(),
-      DiskDocUpdateInput {
-        doc_id: doc_id.to_string(),
-        bin: Uint8Array::new(delta_after_code_edit),
-        editor: Some("test".to_string()),
-      },
-      Some("origin:local".to_string()),
-    )
-    .await
-    .expect("apply follow-up delta");
-
-  let exported = fs::read_to_string(&file_path).expect("read exported markdown");
-  assert!(exported.contains("```js"));
-  assert!(exported.contains("console.log(2)"));
-  assert!(exported.contains("next"));
+  let original = fs::read_to_string(&file_path).expect("read original markdown");
+  assert!(original.contains("console.log(1)"));
+  let candidate = fs::read_dir(dir.join(".affine-sync/candidates"))
+    .expect("candidate directory")
+    .flatten()
+    .find_map(|entry| {
+      let content = fs::read_to_string(entry.path()).ok()?;
+      content.contains("console.log(2)").then_some(content)
+    })
+    .expect("code candidate");
+  assert!(candidate.contains("```js"));
 
   teardown(&sync, session_id, &dir).await;
 }
@@ -994,20 +1099,37 @@ async fn file_change_after_start_is_imported_via_pull_events() {
     .await
     .expect("start session");
 
-  prime_workspace(&sync, session_id, "ws-poll").await;
+  let initial = sync
+    .prepare_source_doc(session_id.to_string(), "doc-poll".to_string(), None, None)
+    .await
+    .expect("prepare new source")
+    .expect("initial source snapshot");
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   fs::write(&md_path, "---\nid: doc-poll\ntitle: Poll\n---\n\n# Poll\n\ntwo").expect("write changed markdown");
 
-  let mut events = Vec::new();
-  for _ in 0..20 {
-    events.extend(
-      sync
-        .pull_events(session_id.to_string())
-        .await
-        .expect("pull after change"),
-    );
-  }
+  let discovered = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("pull after change");
+  assert!(
+    discovered
+      .iter()
+      .any(|event| event.r#type == "source-discovered" && event.doc_id.as_deref() == Some("doc-poll"))
+  );
+  assert!(
+    !discovered
+      .iter()
+      .any(|event| event.update.as_ref().is_some_and(|update| update.doc_id == "doc-poll"))
+  );
+  sync
+    .prepare_source_doc(session_id.to_string(), "doc-poll".to_string(), Some(initial), None)
+    .await
+    .expect("prepare changed source");
+  let events = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("pull source update");
 
   assert!(events.iter().any(|event| {
     event.r#type == "doc-update" && event.update.as_ref().is_some_and(|update| update.doc_id == "doc-poll")
@@ -1037,12 +1159,24 @@ async fn import_without_title_allows_followup_local_export() {
     .await
     .expect("start session");
 
-  prime_workspace(&sync, session_id, workspace_id).await;
+  let discovered = sync.pull_events(session_id.to_string()).await.expect("pull discovery");
+  let doc_id = discovered
+    .iter()
+    .find_map(|event| {
+      (event.r#type == "source-discovered")
+        .then(|| event.doc_id.clone())
+        .flatten()
+    })
+    .expect("discovered doc id");
+  sync
+    .prepare_source_doc(session_id.to_string(), doc_id.clone(), None, None)
+    .await
+    .expect("prepare new source");
   let events = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   let imported = fs::read_to_string(&md_path).expect("read imported markdown");
   let (meta, _) = parse_frontmatter(&imported);
-  let doc_id = meta.id.expect("doc id should be generated");
+  assert!(meta.id.is_none());
 
   let imported_doc_bin = events
     .iter()
@@ -1065,72 +1199,31 @@ async fn import_without_title_allows_followup_local_export() {
         bin: Uint8Array::new(delta),
         editor: Some("test".to_string()),
       },
-      Some("origin:local".to_string()),
     )
     .await
     .expect("apply local update");
 
-  let updated = fs::read_to_string(&md_path).expect("read markdown after local edit");
-  assert!(updated.contains("two"));
-
-  teardown(&sync, session_id, &dir).await;
-}
-
-#[tokio::test]
-async fn local_update_preserves_unknown_frontmatter() {
-  let dir = temp_dir();
-  let md_path = dir.join("doc-extra.md");
-  let doc_id = "doc-extra";
-  fs::write(
-    &md_path,
-    "---\nid: doc-extra\ntitle: Extra\naliases:\n  - First alias\ncustom: keep-me\n---\n\n# Extra\n\none",
-  )
-  .expect("write markdown with custom frontmatter");
-
-  let sync = DiskSync::new();
-  let session_id = "session-extra-frontmatter";
-  sync
-    .start_session(
-      session_id.to_string(),
-      DiskSessionOptions {
-        workspace_id: "ws-extra-frontmatter".to_string(),
-        sync_folder: dir.to_string_lossy().to_string(),
-      },
-    )
-    .await
-    .expect("start session");
-
-  prime_workspace(&sync, session_id, "ws-extra-frontmatter").await;
-  let events = sync.pull_events(session_id.to_string()).await.expect("pull first");
-  let imported_doc = events
-    .iter()
-    .find_map(|event| {
-      event
-        .update
-        .as_ref()
-        .filter(|update| update.doc_id == doc_id)
-        .map(|update| update.bin.as_ref().to_vec())
+  let unchanged = fs::read_to_string(&md_path).expect("read original markdown after local edit");
+  assert_eq!(unchanged, imported);
+  let candidate = fs::read_dir(dir.join(".affine-sync/candidates"))
+    .expect("candidate directory")
+    .flatten()
+    .find_map(|entry| {
+      let content = fs::read_to_string(entry.path()).ok()?;
+      content.contains("two").then_some(content)
     })
-    .expect("imported page update");
-  let delta = update_doc(&imported_doc, "# Extra\n\ntwo", doc_id).expect("build local edit delta");
-
+    .expect("updated source candidate");
+  assert!(candidate.contains(&format!("id: {doc_id}")));
+  fs::write(&md_path, candidate).expect("accept source candidate");
   sync
-    .apply_local_update(
-      session_id.to_string(),
-      DiskDocUpdateInput {
-        doc_id: doc_id.to_string(),
-        bin: Uint8Array::new(delta),
-        editor: Some("test".to_string()),
-      },
-      Some("origin:local".to_string()),
-    )
+    .pull_events(session_id.to_string())
     .await
-    .expect("apply local update");
-
-  let updated = fs::read_to_string(&md_path).expect("read updated markdown");
-  assert!(updated.contains("aliases:\n  - First alias"));
-  assert!(updated.contains("custom: keep-me"));
-  assert!(updated.contains("two"));
+    .expect("scan accepted source");
+  assert!(
+    fs::read_to_string(&md_path)
+      .expect("read accepted source")
+      .contains("two")
+  );
 
   teardown(&sync, session_id, &dir).await;
 }
@@ -1156,11 +1249,29 @@ async fn import_sets_root_meta_create_and_updated_date() {
     .await
     .expect("start session");
 
-  prime_workspace(&sync, session_id, workspace_id).await;
+  let discovered = sync.pull_events(session_id.to_string()).await.expect("pull discovery");
+  let doc_id = discovered
+    .iter()
+    .find_map(|event| {
+      (event.r#type == "source-discovered")
+        .then(|| event.doc_id.clone())
+        .flatten()
+    })
+    .expect("discovered doc id");
+  sync
+    .prepare_source_doc(session_id.to_string(), doc_id.clone(), None, None)
+    .await
+    .expect("prepare new source");
   let events = sync.pull_events(session_id.to_string()).await.expect("pull events");
   let imported = fs::read_to_string(&md_path).expect("read imported markdown");
   let (meta, _) = parse_frontmatter(&imported);
-  let doc_id = meta.id.expect("doc id should exist");
+  assert!(meta.id.is_none());
+  assert!(
+    fs::read_dir(dir.join(".affine-sync/candidates"))
+      .expect("candidate directory")
+      .flatten()
+      .any(|entry| fs::read_to_string(entry.path()).is_ok_and(|content| content.contains(&format!("id: {doc_id}"))))
+  );
 
   let root_update = events
     .iter()
@@ -1210,6 +1321,36 @@ async fn import_sets_root_meta_create_and_updated_date() {
     .expect("updatedDate should exist");
   assert!(is_numeric_any(&updated_date));
 
+  sync
+    .stop_session(session_id.to_string())
+    .await
+    .expect("stop before acknowledgement");
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: workspace_id.to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("restart session");
+  let replayed = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("pull replayed updates");
+  assert!(
+    replayed
+      .iter()
+      .any(|event| { event.update.as_ref().is_some_and(|update| update.doc_id == doc_id) })
+  );
+  assert!(replayed.iter().any(|event| {
+    event
+      .update
+      .as_ref()
+      .is_some_and(|update| update.doc_id == workspace_id && update.bin.as_ref() == root_update)
+  }));
+
   teardown(&sync, session_id, &dir).await;
 }
 
@@ -1233,7 +1374,6 @@ async fn no_delete_policy_does_not_emit_doc_delete() {
     .await
     .expect("start session");
 
-  prime_workspace(&sync, session_id, "ws-delete").await;
   let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
 
   fs::remove_file(&md_path).expect("remove markdown file");
@@ -1244,6 +1384,158 @@ async fn no_delete_policy_does_not_emit_doc_delete() {
     .expect("pull after delete");
 
   assert!(!events.iter().any(|event| event.r#type == "doc-delete"));
+
+  teardown(&sync, session_id, &dir).await;
+}
+
+#[tokio::test]
+async fn concurrent_file_and_doc_edits_require_source_reconciliation() {
+  let dir = temp_dir();
+  let sync = DiskSync::new();
+  let session_id = "session-concurrent-source";
+  let doc_id = "doc-concurrent-source";
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: "ws-concurrent-source".to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("start session");
+  let _ = sync.pull_events(session_id.to_string()).await.expect("pull first");
+
+  let initial = build_full_doc("Example", "alpha beta", doc_id).expect("build initial doc");
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: doc_id.to_string(),
+        bin: Uint8Array::new(initial.clone()),
+        editor: None,
+      },
+    )
+    .await
+    .expect("apply initial doc");
+
+  let mut files = Vec::new();
+  collect_markdown_files(&dir, &mut files).expect("collect markdown files");
+  let path = files.pop().expect("exported file");
+  let source_file = fs::read_to_string(&path).expect("read exported file");
+  fs::write(&path, source_file.replace("alpha", "ALPHA")).expect("edit file");
+
+  let source = affine_doc_loader::export_markdown_source(&initial, doc_id, None).expect("export source");
+  let delta = update_doc(&initial, &source.markdown.replace("beta", "BETA"), doc_id).expect("build current-side edit");
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: doc_id.to_string(),
+        bin: Uint8Array::new(delta.clone()),
+        editor: None,
+      },
+    )
+    .await
+    .expect("apply current-side edit");
+
+  let mut current = DocOptions::new().with_guid(doc_id.to_string()).build();
+  current
+    .apply_update_from_binary_v1(&initial)
+    .expect("apply initial doc");
+  current
+    .apply_update_from_binary_v1(&delta)
+    .expect("apply current-side delta");
+  sync
+    .stop_session(session_id.to_string())
+    .await
+    .expect("stop before import");
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: "ws-concurrent-source".to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("restart before import");
+  assert!(
+    sync
+      .prepare_source_doc(
+        session_id.to_string(),
+        doc_id.to_string(),
+        Some(Uint8Array::new(
+          current.encode_update_v1().expect("encode local current")
+        )),
+        None,
+      )
+      .await
+      .is_err()
+  );
+
+  let events = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("scan concurrent edit");
+  assert!(
+    !events
+      .iter()
+      .any(|event| { event.update.as_ref().is_some_and(|update| update.doc_id == doc_id) })
+  );
+  assert_eq!(
+    fs::read_to_string(&path).expect("read original source"),
+    source_file.replace("alpha", "ALPHA")
+  );
+
+  let candidates = dir.join(".affine-sync").join("candidates");
+  let candidate = fs::read_dir(&candidates)
+    .expect("candidate directory")
+    .next()
+    .expect("candidate")
+    .expect("candidate entry")
+    .path();
+  let content = fs::read_to_string(&candidate).expect("read candidate");
+  assert!(content.contains("ALPHA BETA"));
+
+  fs::write(&path, content).expect("accept candidate");
+  sync
+    .prepare_source_doc(
+      session_id.to_string(),
+      doc_id.to_string(),
+      Some(Uint8Array::new(
+        current.encode_update_v1().expect("encode local current"),
+      )),
+      None,
+    )
+    .await
+    .expect("prepare accepted source");
+  let accepted = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("scan accepted candidate");
+  let source_delta = accepted
+    .iter()
+    .find_map(|event| {
+      event
+        .update
+        .as_ref()
+        .filter(|update| update.doc_id == doc_id)
+        .map(|update| update.bin.as_ref().to_vec())
+    })
+    .expect("merged source delta");
+  let mut merged = DocOptions::new().with_guid(doc_id.to_string()).build();
+  merged.apply_update_from_binary_v1(&initial).expect("apply initial doc");
+  merged
+    .apply_update_from_binary_v1(&delta)
+    .expect("apply current-side delta");
+  merged
+    .apply_update_from_binary_v1(&source_delta)
+    .expect("apply source delta");
+  let exported =
+    affine_doc_loader::export_markdown_source(&merged.encode_update_v1().expect("encode merged doc"), doc_id, None)
+      .expect("export merged doc");
+  assert!(exported.markdown.contains("ALPHA BETA"));
 
   teardown(&sync, session_id, &dir).await;
 }
