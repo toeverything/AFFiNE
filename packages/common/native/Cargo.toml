@@ -6,32 +6,16 @@ publish      = false
 version      = "0.1.0"
 
 [features]
-default = []
+default  = []
 hashcash = ["chrono", "hex", "sha3", "rand"]
-napi = ["dep:napi"]
-ydoc-loader = [
-  "assert-json-diff",
-  "nanoid",
-  "pulldown-cmark",
-  "serde",
-  "serde_json",
-  "thiserror",
-  "y-octo",
-]
+napi     = ["dep:napi"]
 
 [dependencies]
-assert-json-diff = { workspace = true, optional = true }
-chrono           = { workspace = true, optional = true }
-hex              = { workspace = true, optional = true }
-nanoid           = { workspace = true, optional = true }
-napi             = { workspace = true, optional = true }
-pulldown-cmark   = { workspace = true, optional = true }
-rand             = { workspace = true, optional = true }
-serde            = { workspace = true, optional = true, features = ["derive"] }
-serde_json       = { workspace = true, optional = true }
-sha3             = { workspace = true, optional = true }
-thiserror        = { workspace = true, optional = true }
-y-octo           = { workspace = true, optional = true }
+chrono = { workspace = true, optional = true }
+hex    = { workspace = true, optional = true }
+napi   = { workspace = true, optional = true }
+rand   = { workspace = true, optional = true }
+sha3   = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
