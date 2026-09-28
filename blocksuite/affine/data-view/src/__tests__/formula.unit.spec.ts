@@ -146,6 +146,15 @@ describe('formula evaluation', () => {
     expect(runtimeError('dateAdd(now(), 1, "fortnight")')).toContain(
       'expects a unit'
     );
+    expect(runtimeError('dateAdd(now(), 1e20, "hours")')).toBe(
+      'The result is not a valid date'
+    );
+    expect(runtimeError('dateAdd(now(), 1e10, "years")')).toBe(
+      'The result is not a valid date'
+    );
+    expect(runtimeError('dateSubtract(now(), 1e12, "days")')).toBe(
+      'The result is not a valid date'
+    );
   });
 
   it('short circuits logic', () => {

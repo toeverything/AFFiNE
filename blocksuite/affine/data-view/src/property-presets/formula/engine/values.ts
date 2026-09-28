@@ -112,6 +112,13 @@ export const checkNumber = (value: number): number => {
   return value;
 };
 
+export const checkDate = (value: Date): Date => {
+  if (Number.isNaN(value.getTime())) {
+    throw new FormulaRuntimeError('The result is not a valid date');
+  }
+  return value;
+};
+
 export const checkText = (value: string): string => {
   if (value.length > MAX_TEXT_LENGTH) {
     throw new FormulaRuntimeError(

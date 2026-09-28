@@ -132,6 +132,17 @@ export const formulaTypeToTypeInstance = (type: FormulaType): TypeInstance => {
 const evaluating = new Set<string>();
 const inferring = new Set<string>();
 
+// Results of formula properties already computed during the current
+// top-level evaluation or type inference. Without them, a formula that
+// reads another formula several times recomputes it each time, which grows
+// exponentially along a chain of formulas. Both live only for one
+// synchronous top-level call, so they never hold stale values.
+let valueMemo: Map<string, FormulaCellValue> | undefined;
+let typeMemo: Map<string, FormulaType> | undefined;
+// Counts hits on the `inferring` cycle guard. A type inferred while a cycle
+// was cut short depends on where the cycle was entered, so it isn't cached.
+let inferCycleHits = 0;
+
 const inferFromCompiled = (
   dataSource: DataSource,
   compiled: FormulaCompileResult
@@ -143,13 +154,21 @@ const inferFromCompiled = (
     if (dataSource.propertyTypeGet(id) !== FORMULA_PROPERTY_TYPE) {
       return typeInstanceToFormulaType(dataSource.propertyDataTypeGet(id));
     }
-    if (inferring.has(id)) return 'unknown';
+    const cached = typeMemo?.get(id);
+    if (cached) return cached;
+    if (inferring.has(id)) {
+      inferCycleHits++;
+      return 'unknown';
+    }
     inferring.add(id);
+    const hitsBefore = inferCycleHits;
     try {
-      return inferFormulaResultType(
+      const type = inferFormulaResultType(
         dataSource,
         getFormulaExpression(dataSource.propertyDataGet(id))
       );
+      if (inferCycleHits === hitsBefore) typeMemo?.set(id, type);
+      return type;
     } finally {
       inferring.delete(id);
     }
@@ -161,7 +180,25 @@ export const inferFormulaResultType = (
   expression: string
 ): FormulaType => {
   if (!expression.trim()) return 'unknown';
-  return inferFromCompiled(dataSource, compileFormulaCached(expression));
+  const ownsMemo = !typeMemo;
+  typeMemo ??= new Map();
+  try {
+    return inferFromCompiled(dataSource, compileFormulaCached(expression));
+  } finally {
+    if (ownsMemo) typeMemo = undefined;
+  }
+};
+
+const readFormulaProperty = (
+  dataSource: DataSource,
+  rowId: string,
+  id: string
+): unknown => {
+  const key = `${rowId}:${id}`;
+  if (valueMemo?.has(key)) return valueMemo.get(key);
+  const value = dataSource.cellValueGet(rowId, id);
+  valueMemo?.set(key, value as FormulaCellValue);
+  return value;
 };
 
 const readProperty = (
@@ -174,7 +211,10 @@ const readProperty = (
     throw new FormulaRuntimeError(`Unknown property "${ref}"`);
   }
   const type = dataSource.propertyTypeGet(id);
-  const value = dataSource.cellValueGet(rowId, id);
+  const value =
+    type === FORMULA_PROPERTY_TYPE
+      ? readFormulaProperty(dataSource, rowId, id)
+      : dataSource.cellValueGet(rowId, id);
   if (type === FORMULA_PROPERTY_TYPE) {
     if (value instanceof FormulaErrorValue) {
       throw new FormulaRuntimeError(
@@ -214,6 +254,8 @@ export const evaluateFormulaForRow = (
     if (evaluating.has(key)) return new FormulaErrorValue(CIRCULAR_REFERENCE);
     evaluating.add(key);
   }
+  const ownsMemo = !valueMemo;
+  valueMemo ??= new Map();
   try {
     const result = evaluateFormula(compiled.ast, {
       property: ref => readProperty(dataSource, rowId, ref),
@@ -222,6 +264,7 @@ export const evaluateFormulaForRow = (
     return result.ok ? result.value : new FormulaErrorValue(result.error);
   } finally {
     if (key) evaluating.delete(key);
+    if (ownsMemo) valueMemo = undefined;
   }
 };
 

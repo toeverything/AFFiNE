@@ -16,6 +16,7 @@ import { getISODay } from 'date-fns/getISODay';
 import { startOfDay } from 'date-fns/startOfDay';
 
 import {
+  checkDate,
   checkNumber,
   checkText,
   expectDate,
@@ -165,19 +166,19 @@ const MS_PER_UNIT: Partial<Record<DateUnit, number>> = {
 
 const addToDate = (date: Date, amount: number, unit: DateUnit): Date => {
   const ms = MS_PER_UNIT[unit];
-  if (ms) return new Date(date.getTime() + amount * ms);
+  if (ms) return checkDate(new Date(date.getTime() + amount * ms));
   const whole = Math.trunc(amount);
   switch (unit) {
     case 'year':
-      return addYears(date, whole);
+      return checkDate(addYears(date, whole));
     case 'quarter':
-      return addQuarters(date, whole);
+      return checkDate(addQuarters(date, whole));
     case 'month':
-      return addMonths(date, whole);
+      return checkDate(addMonths(date, whole));
     case 'week':
-      return addWeeks(date, whole);
+      return checkDate(addWeeks(date, whole));
     default:
-      return addDays(date, whole);
+      return checkDate(addDays(date, whole));
   }
 };
 

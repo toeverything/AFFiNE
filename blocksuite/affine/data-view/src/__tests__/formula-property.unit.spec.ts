@@ -156,6 +156,32 @@ describe('formula property', () => {
     );
   });
 
+  it('computes each referenced formula once per evaluation', () => {
+    const chain = [formula('f1', 'F1', 'prop("price")')];
+    for (let i = 2; i <= 8; i++) {
+      const prev = `prop("F${i - 1}")`;
+      chain.push(formula(`f${i}`, `F${i}`, `${prev} + ${prev} + ${prev}`));
+    }
+    const { dataSource } = createDataSource([...baseColumns, ...chain], {
+      r1: row,
+    });
+    const propertyDataGet = dataSource.propertyDataGet.bind(dataSource);
+    let reads = 0;
+    dataSource.propertyDataGet = (id: string) => {
+      if (id === 'f1') reads++;
+      return propertyDataGet(id);
+    };
+
+    expect(formulaCellValueGet(dataSource, 'r1', 'f8')).toBe(2.5 * 3 ** 7);
+    expect(reads).toBe(1);
+
+    reads = 0;
+    expect(dataSource.propertyDataTypeGet('f8')?.name).toBe(
+      t.number.instance().name
+    );
+    expect(reads).toBe(1);
+  });
+
   it('reports unknown properties', () => {
     const { dataSource } = createDataSource(
       [...baseColumns, formula('f', 'F', 'prop("Missing") + 1')],
