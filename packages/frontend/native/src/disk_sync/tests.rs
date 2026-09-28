@@ -295,6 +295,15 @@ Body
 }
 
 #[test]
+fn parse_frontmatter_accepts_indentless_tag_sequences() {
+  let raw = "---\nid: doc-tags\ntags:\n- alpha\n- beta\n---\n\nBody";
+  let (meta, body) = parse_frontmatter(raw);
+
+  assert_eq!(meta.tags, Some(vec!["alpha".to_string(), "beta".to_string()]));
+  assert_eq!(body, "\nBody");
+}
+
+#[test]
 fn parse_frontmatter_accepts_empty_and_eof_delimiters() {
   let (empty, body) = parse_frontmatter("---\n---\nBody");
   assert_eq!(empty.id, None);

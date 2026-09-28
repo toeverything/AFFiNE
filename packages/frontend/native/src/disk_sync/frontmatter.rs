@@ -33,7 +33,7 @@ pub(crate) fn parse_frontmatter(markdown: &str) -> (FrontmatterMeta, String) {
       .next()
       .is_some_and(|character| character.is_whitespace());
 
-    if in_tags_block && indented && line.starts_with('-') {
+    if in_tags_block && line.starts_with('-') {
       let value = normalize_scalar(line.trim_start_matches('-').trim());
       if !value.is_empty() {
         meta.tags.get_or_insert_with(Vec::new).push(value);
