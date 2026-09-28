@@ -9,6 +9,7 @@ export {
 } from './drawio/utils';
 export * from './edgeless-clipboard-config';
 export {
+  AttachmentDrawioEmbedUrlExtension,
   type AttachmentEmbedConfig,
   AttachmentEmbedConfigIdentifier,
   AttachmentEmbedProvider,

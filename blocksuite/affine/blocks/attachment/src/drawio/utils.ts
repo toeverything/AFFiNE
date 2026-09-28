@@ -2,8 +2,8 @@ import type { AttachmentBlockModel } from '@blocksuite/affine-model';
 
 /**
  * draw.io in embed mode, see https://www.drawio.com/doc/faq/embed-mode.
- * Self-hosted deployments can point this at their own draw.io server by
- * overriding the `drawio` attachment embed config.
+ * Self-hosted deployments can point the embed at their own draw.io server
+ * with `AttachmentDrawioEmbedUrlExtension`.
  */
 export const DEFAULT_DRAWIO_EMBED_URL = 'https://embed.diagrams.net/';
 
