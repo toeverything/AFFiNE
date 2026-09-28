@@ -122,6 +122,8 @@ impl DiskSync {
 
   #[napi]
   pub async fn stop_session(&self, session_id: String) -> Result<()> {
+    let _start_guard = START_SESSION_LOCK.lock().await;
+
     let mut sessions = SESSIONS.write().await;
     if let Some(session) = sessions.remove(&session_id) {
       session.close().await;

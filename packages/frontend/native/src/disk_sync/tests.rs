@@ -10,7 +10,7 @@ use uuid::Uuid;
 use y_octo::{Any, DocOptions, StateVector, Value};
 
 use super::{
-  DiskDocUpdateInput, DiskSessionOptions, DiskSync,
+  DiskDocUpdateInput, DiskSessionOptions, DiskSync, SESSIONS, START_SESSION_LOCK,
   frontmatter::{parse_frontmatter, render_frontmatter},
   root_meta::build_root_meta_update,
   types::FrontmatterMeta,
@@ -340,7 +340,10 @@ id: doc-extra
 title: Extra
 aliases:
   - First alias
-custom: keep-me
+custom:
+  title: Nested
+  tags:
+    - keep-me
 ---
 
 Body
@@ -349,8 +352,10 @@ Body
   let (meta, body) = parse_frontmatter(raw);
   let rendered = render_frontmatter(&meta, &body);
 
+  assert_eq!(meta.title.as_deref(), Some("Extra"));
+  assert_eq!(meta.tags, None);
   assert!(rendered.contains("aliases:\n  - First alias"));
-  assert!(rendered.contains("custom: keep-me"));
+  assert!(rendered.contains("custom:\n  title: Nested\n  tags:\n    - keep-me"));
 }
 
 #[tokio::test]
@@ -389,6 +394,38 @@ async fn concurrent_starts_initialize_one_session() {
   let _ = fs::remove_dir_all(second_dir);
 
   assert_eq!(initialized_dirs, 1);
+}
+
+#[tokio::test]
+async fn stop_session_waits_for_session_lifecycle_lock() {
+  let dir = temp_dir();
+  let session_id = format!("session-stop-race-{}", Uuid::new_v4());
+  DiskSync::new()
+    .start_session(
+      session_id.clone(),
+      DiskSessionOptions {
+        workspace_id: "ws-stop-race".to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("start session");
+
+  let lifecycle_guard = START_SESSION_LOCK.lock().await;
+  let stop_session_id = session_id.clone();
+  let mut stop = tokio::spawn(async move { DiskSync::new().stop_session(stop_session_id).await });
+
+  assert!(
+    tokio::time::timeout(std::time::Duration::from_millis(20), &mut stop)
+      .await
+      .is_err(),
+    "stop should wait for an in-flight session lifecycle operation"
+  );
+
+  drop(lifecycle_guard);
+  stop.await.expect("join stop task").expect("stop session");
+  assert!(!SESSIONS.read().await.contains_key(&session_id));
+  fs::remove_dir_all(dir).expect("remove directory");
 }
 
 #[tokio::test]
