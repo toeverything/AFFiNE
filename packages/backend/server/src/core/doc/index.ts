@@ -29,6 +29,7 @@ import { DocWriter } from './writer';
     DatabaseDocReader,
     DocReader,
     DocWriter,
+    DocStorageOptions,
     PgWorkspaceDocStorageAdapter,
     PgUserspaceDocStorageAdapter,
   ],
@@ -44,6 +45,7 @@ export class DocStorageWorkerModule {}
 export {
   DatabaseDocReader,
   DocReader,
+  DocStorageOptions,
   DocWriter,
   PgUserspaceDocStorageAdapter,
   PgWorkspaceDocStorageAdapter,

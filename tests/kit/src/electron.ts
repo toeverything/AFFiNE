@@ -203,8 +203,13 @@ const waitForElectronPage = async (
   throw new Error(`Timed out waiting for ${label}`);
 };
 
-const cleanupElectronApp = async (electronApp: ElectronApplication) => {
-  const child = electronApp.process();
+export const cleanupElectronApp = async (electronApp: ElectronApplication) => {
+  let child: ChildProcess;
+  try {
+    child = electronApp.process();
+  } catch {
+    return;
+  }
   const waitForAppClose = () =>
     new Promise<void>(resolve => {
       if (child.exitCode !== null || child.signalCode !== null) {
@@ -373,7 +378,9 @@ export const test = base.extend<{
         }
       }
       env.DEBUG = 'pw:browser';
+      delete env.ELECTRON_RUN_AS_NODE;
       env.SKIP_ONBOARDING = '1';
+      env.AFFINE_E2E = env.AFFINE_E2E || '1';
 
       const launch = () =>
         electron.launch({

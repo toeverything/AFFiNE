@@ -128,7 +128,8 @@ impl SearchRuntime {
          JOIN snapshots source
            ON source.workspace_id=state.workspace_id AND source.guid=state.doc_id
          WHERE state.generation_id=$1 AND state.workspace_id=$2
-           AND state.doc_id=ANY($3) AND state.published_source_exists"#,
+           AND state.doc_id=ANY($3) AND state.published_source_exists
+           AND state.last_error IS NULL"#,
     )
     .bind(generation.id)
     .bind(workspace_id)

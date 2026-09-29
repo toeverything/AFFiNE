@@ -205,28 +205,19 @@ export interface CommentChangeSnapshot {
 }
 
 export interface UserQuotaStateSnapshot {
-  userId: string;
   plan: string;
-  sourceEntitlementId: string | null;
+  seatLimit: number;
   blobLimit: number;
   storageQuota: number;
   usedStorageQuota: number;
   historyPeriodSeconds: number;
-  copilotActionLimit: number | null;
-  flags: Record<string, unknown>;
-  known: boolean;
-  stale: boolean;
-  lastReconciledAt: string | Date | null;
-  staleAfter: string | Date | null;
-  createdAt: string | Date;
-  updatedAt: string | Date;
+  copilotActionLimit?: number;
+  unlimitedCopilot: boolean;
 }
 
 export interface WorkspaceQuotaStateSnapshot {
-  workspaceId: string;
   plan: string;
-  sourceEntitlementId: string | null;
-  ownerUserId: string | null;
+  ownerUserId: string;
   usesOwnerQuota: boolean;
   seatLimit: number;
   memberCount: number;
@@ -237,13 +228,7 @@ export interface WorkspaceQuotaStateSnapshot {
   historyPeriodSeconds: number;
   readonly: boolean;
   readonlyReasons: string[];
-  flags: Record<string, unknown>;
-  known: boolean;
-  stale: boolean;
-  lastReconciledAt: string | Date | null;
-  staleAfter: string | Date | null;
-  createdAt: string | Date;
-  updatedAt: string | Date;
+  unlimitedCopilot: boolean;
 }
 
 export type NotificationCountChangedReason =

@@ -1,5 +1,7 @@
 use std::{
+  collections::BTreeMap,
   fs,
+  io::{Read, Seek, SeekFrom},
   path::{Path, PathBuf},
   time::SystemTime,
 };
@@ -9,7 +11,8 @@ use serde::Deserialize;
 use super::{
   FsStorageConfig,
   types::{
-    ObjectDeleteOutcome, ObjectGetResult, ObjectListEntry, ObjectMetadata, ObjectPutMetadata, checksum_crc32_base64,
+    ObjectDeleteOutcome, ObjectGetResult, ObjectListEntry, ObjectListPage, ObjectMetadata, ObjectPutMetadata,
+    checksum_crc32_base64,
   },
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
@@ -131,6 +134,25 @@ pub(super) fn fs_get(config: &FsStorageConfig, key: &str) -> Result<Option<Objec
   Ok(Some(ObjectGetResult { body, metadata }))
 }
 
+pub(super) fn fs_get_range(config: &FsStorageConfig, key: &str, offset: u64, length: usize) -> Result<Option<Vec<u8>>> {
+  let path = fs_object_path(config, key)?;
+  let mut file = match fs::File::open(&path) {
+    Ok(file) => file,
+    Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+    Err(err) => return Err(RuntimeError::io("StorageRuntime fs open object failed", err)),
+  };
+  file
+    .seek(SeekFrom::Start(offset))
+    .map_err(|err| RuntimeError::io("StorageRuntime fs seek object failed", err))?;
+  let mut body = vec![0; length];
+  let read = file
+    .read(&mut body)
+    .map_err(|err| RuntimeError::io("StorageRuntime fs read object range failed", err))?;
+  body.truncate(read);
+  Ok(Some(body))
+}
+
+#[cfg(test)]
 pub(super) fn fs_list(config: &FsStorageConfig, prefix: Option<String>) -> Result<Vec<ObjectListEntry>> {
   let root = fs_bucket_path(config);
   let prefix = prefix.map(|prefix| normalize_storage_prefix(&prefix)).transpose()?;
@@ -154,6 +176,140 @@ pub(super) fn fs_list(config: &FsStorageConfig, prefix: Option<String>) -> Resul
   Ok(entries)
 }
 
+pub(super) fn fs_list_page(
+  config: &FsStorageConfig,
+  prefix: Option<String>,
+  continuation_token: Option<String>,
+  start_after: Option<String>,
+  delimiter: Option<String>,
+  max_keys: i32,
+) -> Result<ObjectListPage> {
+  let marker = match continuation_token {
+    Some(token) => Some(
+      token
+        .strip_prefix("local:")
+        .ok_or_else(|| RuntimeError::invalid_input("invalid local object list continuation token"))?
+        .to_string(),
+    ),
+    None => start_after,
+  };
+  let root = fs_bucket_path(config);
+  let prefix = prefix.map(|prefix| normalize_storage_prefix(&prefix)).transpose()?;
+  let mut dir = root.clone();
+  let mut name_prefix = prefix.as_deref();
+  if let Some(prefix) = name_prefix
+    && !prefix.is_empty()
+  {
+    let parts = prefix.split('/').collect::<Vec<_>>();
+    if parts.len() > 1 {
+      for part in &parts[..parts.len() - 1] {
+        dir.push(part);
+      }
+      name_prefix = parts.last().copied();
+    }
+  }
+  let page_size = usize::try_from(max_keys).map_err(|_| RuntimeError::invalid_input("invalid fs page size"))?;
+  let mut items = BTreeMap::new();
+  collect_fs_page_items(
+    &root,
+    &dir,
+    name_prefix,
+    prefix.as_deref().unwrap_or_default(),
+    delimiter.as_deref(),
+    marker.as_deref(),
+    page_size + 1,
+    &mut items,
+  )?;
+  let has_more = items.len() > page_size;
+  while items.len() > page_size {
+    items.pop_last();
+  }
+  Ok(object_list_page(items, has_more))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn collect_fs_page_items(
+  root: &Path,
+  dir: &Path,
+  name_prefix: Option<&str>,
+  prefix: &str,
+  delimiter: Option<&str>,
+  marker: Option<&str>,
+  capacity: usize,
+  items: &mut BTreeMap<String, Option<ObjectListEntry>>,
+) -> Result<()> {
+  let read_dir = match fs::read_dir(dir) {
+    Ok(read_dir) => read_dir,
+    Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+    Err(err) => return Err(RuntimeError::io("StorageRuntime fs list failed", err)),
+  };
+  for entry in read_dir {
+    let entry = entry.map_err(|err| RuntimeError::io("StorageRuntime fs list entry failed", err))?;
+    let path = entry.path();
+    let name = entry.file_name().to_string_lossy().to_string();
+    if path.is_dir() {
+      if name_prefix.is_none_or(|prefix| name.starts_with(prefix)) {
+        collect_fs_page_items(root, &path, None, prefix, delimiter, marker, capacity, items)?;
+      }
+      continue;
+    }
+    if name.ends_with(".metadata.json") || name_prefix.is_some_and(|prefix| !name.starts_with(prefix)) {
+      continue;
+    }
+    let key = path
+      .strip_prefix(root)
+      .map_err(|err| RuntimeError::invalid_state(format!("StorageRuntime fs path trim failed: {err}")))?
+      .to_string_lossy()
+      .replace('\\', "/");
+    let item_key = delimiter
+      .and_then(|delimiter| {
+        let suffix = key.strip_prefix(prefix)?;
+        let end = suffix.find(delimiter)? + delimiter.len();
+        Some(format!("{prefix}{}", &suffix[..end]))
+      })
+      .unwrap_or_else(|| key.clone());
+    if marker.is_some_and(|marker| item_key.as_str() <= marker) {
+      continue;
+    }
+    let item = if item_key == key {
+      let Some(metadata) = read_fs_metadata(&path)? else {
+        continue;
+      };
+      Some(ObjectListEntry {
+        key,
+        content_length: metadata.content_length,
+        last_modified_ms: metadata.last_modified_ms,
+      })
+    } else {
+      None
+    };
+    items.entry(item_key).or_insert(item);
+    if items.len() > capacity {
+      items.pop_last();
+    }
+  }
+  Ok(())
+}
+
+fn object_list_page(items: BTreeMap<String, Option<ObjectListEntry>>, has_more: bool) -> ObjectListPage {
+  let next_continuation_token = has_more
+    .then(|| items.last_key_value().map(|(key, _)| format!("local:{key}")))
+    .flatten();
+  let mut page = ObjectListPage {
+    entries: Vec::new(),
+    common_prefixes: Vec::new(),
+    next_continuation_token,
+  };
+  for (key, entry) in items {
+    match entry {
+      Some(entry) => page.entries.push(entry),
+      None => page.common_prefixes.push(key),
+    }
+  }
+  page
+}
+
+#[cfg(test)]
 fn collect_fs_entries(
   root: &Path,
   dir: &Path,
@@ -175,23 +331,18 @@ fn collect_fs_entries(
         collect_fs_entries(root, &path, None, entries)?;
       }
     } else if !name.ends_with(".metadata.json") && name_prefix.is_none_or(|prefix| name.starts_with(prefix)) {
-      let stat = entry
-        .metadata()
-        .map_err(|err| RuntimeError::io("StorageRuntime fs metadata failed", err))?;
       let key = path
         .strip_prefix(root)
         .map_err(|err| RuntimeError::invalid_state(format!("StorageRuntime fs path trim failed: {err}")))?
         .to_string_lossy()
         .replace('\\', "/");
-      entries.push(ObjectListEntry {
-        key,
-        content_length: stat.len() as i64,
-        last_modified_ms: stat
-          .modified()
-          .ok()
-          .and_then(|time| system_time_ms(time).ok())
-          .unwrap_or(0),
-      });
+      if let Some(metadata) = read_fs_metadata(&path)? {
+        entries.push(ObjectListEntry {
+          key,
+          content_length: metadata.content_length,
+          last_modified_ms: metadata.last_modified_ms,
+        });
+      }
     }
   }
   Ok(())
@@ -331,6 +482,8 @@ mod tests {
     assert_eq!(metadata.content_length, 5);
     assert_eq!(metadata.checksum_crc32.as_deref(), Some(checksum.as_str()));
     assert_eq!(fs_get(&config, "workspace/blob").unwrap().unwrap().body, body);
+    assert_eq!(fs_get_range(&config, "workspace/blob", 1, 2).unwrap().unwrap(), b"el");
+    assert_eq!(fs_get_range(&config, "workspace/blob", 4, 8).unwrap().unwrap(), b"o");
   }
 
   #[test]

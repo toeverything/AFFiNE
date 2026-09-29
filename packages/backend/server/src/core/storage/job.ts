@@ -1,57 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { EventBus, JobQueue, OneDay, OnJob } from '../../base';
-import { StorageRuntimeProvider } from '../storage-runtime';
+import { BackendRuntimeProvider } from '../backend-runtime';
 
-declare global {
-  interface Jobs {
-    'backendRuntime.cleanExpiredPendingBlobs': {};
-  }
-}
+const CLEANUP_BATCH_SIZE = 1000;
+const CLEANUP_MAX_BATCHES = 100;
 
 @Injectable()
 export class BlobUploadCleanupJob {
   private readonly logger = new Logger(BlobUploadCleanupJob.name);
 
-  constructor(
-    private readonly rt: StorageRuntimeProvider,
-    private readonly event: EventBus,
-    private readonly queue: JobQueue
-  ) {}
+  constructor(private readonly rt: BackendRuntimeProvider) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async nightlyJob() {
-    await this.queue.add(
-      'backendRuntime.cleanExpiredPendingBlobs',
-      {},
-      {
-        jobId: 'nightly-blob-clean-expired-pending',
-      }
-    );
-  }
-
-  @OnJob('backendRuntime.cleanExpiredPendingBlobs')
   async cleanExpiredPendingBlobs() {
-    const cutoff = Date.now() - OneDay;
-    let scanned = 0;
     let deleted = 0;
-    for (;;) {
-      const result = await this.rt.cleanupExpiredPendingBlobs(cutoff, 1000);
-      scanned += result.scanned;
-      deleted += result.deleted;
-      await Promise.all(
-        result.workspaceIds.map(workspaceId =>
-          this.event.emitAsync('workspace.blobs.updated', { workspaceId })
-        )
-      );
-      if (result.scanned < 1000) {
+    for (let batch = 0; batch < CLEANUP_MAX_BATCHES; batch++) {
+      const count =
+        await this.rt.cleanupExpiredStorageReservationsV1(CLEANUP_BATCH_SIZE);
+      deleted += count;
+      if (count < CLEANUP_BATCH_SIZE) {
         break;
       }
     }
 
-    this.logger.log(
-      `cleaned ${deleted} expired pending blobs, scanned ${scanned}`
-    );
+    this.logger.log(`cleaned ${deleted} expired storage reservations`);
   }
 }

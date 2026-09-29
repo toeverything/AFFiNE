@@ -2495,6 +2495,7 @@
   "error.NOT_IN_SPACE": "You should join in Space {{spaceId}} before broadcasting messages.",
   "error.ALREADY_IN_SPACE": "You have already joined in Space {{spaceId}}.",
   "error.SPACE_ACCESS_DENIED": "You do not have permission to access Space {{spaceId}}.",
+  "error.SYNC_PERMISSION_GENERATION_CHANGED": "Permissions for Space {{spaceId}} changed during synchronization.",
   "error.SPACE_OWNER_NOT_FOUND": "Owner of Space {{spaceId}} not found.",
   "error.SPACE_SHOULD_HAVE_ONLY_ONE_OWNER": "Space should have only one owner.",
   "error.OWNER_CAN_NOT_LEAVE_WORKSPACE": "Owner can not leave the workspace.",

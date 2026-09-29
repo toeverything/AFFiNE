@@ -28,9 +28,7 @@ export class StorageApiModule {}
 @Module({
   imports: [StorageModule],
   providers: [StorageBlobJob, BlobUploadCleanupJob],
-  exports: [StorageBlobJob],
 })
 export class StorageWorkerModule {}
 
-export { StorageBlobJob } from './blob-job';
 export { AvatarStorage, CommentAttachmentStorage, WorkspaceBlobStorage };

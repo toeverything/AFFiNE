@@ -21,7 +21,7 @@ import {
   type FileUpload,
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
-import { PermissionAccess } from '../../../core/permission';
+import { CopilotAccessService } from '../access';
 import { CopilotEnabled } from '../feature';
 import { CopilotType } from '../resolver';
 import type { TranscriptionJob } from './job';
@@ -278,7 +278,7 @@ const FinishedStatus: Set<AiJobStatus> = new Set([
 @Resolver(() => CopilotType)
 export class CopilotTranscriptionResolver {
   constructor(
-    private readonly ac: PermissionAccess,
+    private readonly access: CopilotAccessService,
     private readonly transcript: CopilotTranscriptionService
   ) {}
 
@@ -337,23 +337,20 @@ export class CopilotTranscriptionResolver {
     })
     input: SubmitAudioTranscriptionInput | null
   ): Promise<TranscriptionResultType | null> {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
     const allBlobs = blob ? [blob, ...(blobs || [])].filter(v => !!v) : blobs;
     if (!allBlobs || allBlobs.length === 0) {
       throw new CopilotTranscriptionAudioNotProvided();
     }
 
+    const mode = await this.access.transcriptSubmission(user.id, workspaceId);
     const task = await this.transcript.submitTask(
       user.id,
       workspaceId,
       blobId,
       // oxlint-disable-next-line typescript/await-thenable
       await Promise.all(allBlobs),
-      input ?? undefined
+      input ?? undefined,
+      mode === 'personal'
     );
 
     return this.handleJobResult(task);
@@ -365,16 +362,14 @@ export class CopilotTranscriptionResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('taskId') taskId: string
   ): Promise<TranscriptionResultType | null> {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
-
+    const mode = await this.access.transcriptResource(user.id, workspaceId, {
+      taskId,
+    });
     const jobResult = await this.transcript.retryTask(
       user.id,
       workspaceId,
-      taskId
+      taskId,
+      mode === 'personal'
     );
     return this.handleJobResult(jobResult);
   }
@@ -385,12 +380,15 @@ export class CopilotTranscriptionResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('taskId') taskId: string
   ): Promise<TranscriptionResultType | null> {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
-    const job = await this.transcript.settleTask(user.id, workspaceId, taskId);
+    const mode = await this.access.transcriptResource(user.id, workspaceId, {
+      taskId,
+    });
+    const job = await this.transcript.settleTask(
+      user.id,
+      workspaceId,
+      taskId,
+      mode === 'personal'
+    );
     return this.handleJobResult(job);
   }
 
@@ -411,17 +409,17 @@ export class CopilotTranscriptionResolver {
     if (!copilot.workspaceId) return null;
     if (!taskId && !blobId) return null;
 
-    await this.ac
-      .user(user.id)
-      .workspace(copilot.workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
-
+    const mode = await this.access.transcriptResource(
+      user.id,
+      copilot.workspaceId,
+      { taskId, blobId }
+    );
     const job = await this.transcript.queryTask(
       user.id,
       copilot.workspaceId,
       taskId,
-      blobId
+      blobId,
+      mode === 'personal'
     );
     return this.handleJobResult(job);
   }

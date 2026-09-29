@@ -25,117 +25,6 @@
         }
       }
     },
-    "job": {
-      "type": "object",
-      "description": "Configuration for job module",
-      "properties": {
-        "queue": {
-          "type": "object",
-          "description": "The config for job queues\n@default {\"attempts\":5,\"backoff\":{\"type\":\"exponential\",\"delay\":1000},\"removeOnComplete\":true,\"removeOnFail\":{\"age\":86400,\"count\":500}}\n@link https://api.docs.bullmq.io/interfaces/v5.QueueOptions.html",
-          "default": {
-            "attempts": 5,
-            "backoff": {
-              "type": "exponential",
-              "delay": 1000
-            },
-            "removeOnComplete": true,
-            "removeOnFail": {
-              "age": 86400,
-              "count": 500
-            }
-          }
-        },
-        "worker": {
-          "type": "object",
-          "description": "The config for job workers\n@default {}\n@link https://api.docs.bullmq.io/interfaces/v5.WorkerOptions.html",
-          "default": {}
-        },
-        "queues.copilot": {
-          "type": "object",
-          "description": "The config for copilot job queue\n@default {\"concurrency\":10}",
-          "properties": {
-            "concurrency": {
-              "type": "number"
-            }
-          },
-          "default": {
-            "concurrency": 10
-          }
-        },
-        "queues.calendar": {
-          "type": "object",
-          "description": "The config for calendar job queue\n@default {\"concurrency\":4}",
-          "properties": {
-            "concurrency": {
-              "type": "number"
-            }
-          },
-          "default": {
-            "concurrency": 4
-          }
-        },
-        "queues.doc": {
-          "type": "object",
-          "description": "The config for doc job queue\n@default {\"concurrency\":1}",
-          "properties": {
-            "concurrency": {
-              "type": "number"
-            }
-          },
-          "default": {
-            "concurrency": 1
-          }
-        },
-        "queues.notification": {
-          "type": "object",
-          "description": "The config for notification job queue\n@default {\"concurrency\":10}",
-          "properties": {
-            "concurrency": {
-              "type": "number"
-            }
-          },
-          "default": {
-            "concurrency": 10
-          }
-        },
-        "queues.nightly": {
-          "type": "object",
-          "description": "The config for nightly job queue\n@default {\"concurrency\":1}",
-          "properties": {
-            "concurrency": {
-              "type": "number"
-            }
-          },
-          "default": {
-            "concurrency": 1
-          }
-        },
-        "queues.backendRuntime": {
-          "type": "object",
-          "description": "The config for backend runtime job queue\n@default {\"concurrency\":1}",
-          "properties": {
-            "concurrency": {
-              "type": "number"
-            }
-          },
-          "default": {
-            "concurrency": 1
-          }
-        },
-        "queues.inviteAbuse": {
-          "type": "object",
-          "description": "The config for invite abuse disposition job queue\n@default {\"concurrency\":1}",
-          "properties": {
-            "concurrency": {
-              "type": "number"
-            }
-          },
-          "default": {
-            "concurrency": 1
-          }
-        }
-      }
-    },
     "throttle": {
       "type": "object",
       "description": "Configuration for throttle module",
@@ -205,16 +94,6 @@
             "ipLimit": 20,
             "emailLimit": 5
           }
-        },
-        "inviteQuotaShadowMode": {
-          "type": "boolean",
-          "description": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions.\n@default false",
-          "default": false
-        },
-        "inviteQuotaFailOpenOnRuntimeError": {
-          "type": "boolean",
-          "description": "Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production.\n@default false",
-          "default": false
         },
         "passwordRequirements": {
           "type": "object",
@@ -1615,10 +1494,12 @@
         },
         "stripe": {
           "type": "object",
-          "description": "Stripe sdk options and credentials\n@default {\"apiKey\":\"\",\"webhookKey\":\"\"}\n@link https://docs.stripe.com/api",
+          "description": "Stripe sdk options and credentials\n@default {\"apiKey\":\"\",\"webhookKey\":\"\",\"accountId\":\"\",\"environment\":\"test\"}\n@link https://docs.stripe.com/api",
           "default": {
             "apiKey": "",
-            "webhookKey": ""
+            "webhookKey": "",
+            "accountId": "",
+            "environment": "test"
           }
         },
         "revenuecat": {

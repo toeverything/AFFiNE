@@ -152,7 +152,7 @@ export class R2UploadController {
     if (!record) {
       throw new BlobInvalid('Blob upload is not initialized');
     }
-    if (record.status === 'completed') {
+    if (record.status === 'completed' || record.deletedAt) {
       throw new BlobInvalid('Blob upload is already completed');
     }
 
@@ -176,7 +176,7 @@ export class R2UploadController {
     try {
       await this.rt.putObject(
         'blob',
-        `${workspaceId}/${key}`,
+        `${workspaceId}/.reservations/${record.reservationId}/${key}`,
         await toBuffer(req),
         { contentType, contentLength }
       );
@@ -233,7 +233,7 @@ export class R2UploadController {
     if (!record) {
       throw new BlobInvalid('Multipart upload is not initialized');
     }
-    if (record.status === 'completed') {
+    if (record.status === 'completed' || record.deletedAt) {
       throw new BlobInvalid('Blob upload is already completed');
     }
     if (record.uploadId !== uploadId) {
@@ -262,7 +262,7 @@ export class R2UploadController {
     try {
       const etag = await this.rt.proxyUploadPart(
         'blob',
-        `${workspaceId}/${key}`,
+        `${workspaceId}/.reservations/${record.reservationId}/${key}`,
         uploadId,
         partNumber,
         await toBuffer(req),

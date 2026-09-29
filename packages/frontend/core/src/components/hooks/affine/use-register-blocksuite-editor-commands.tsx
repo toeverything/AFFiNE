@@ -87,7 +87,7 @@ export function useRegisterBlocksuiteEditorCommands(
             toast(t['com.affine.no-permission']());
             return;
           }
-          doc.moveToTrash();
+          await doc.moveToTrash();
         } catch (error) {
           console.error(error);
           const userFriendlyError = UserFriendlyError.fromAny(error);
@@ -336,7 +336,7 @@ export function useRegisterBlocksuiteEditorCommands(
           }
           track.$.cmdk.editor.restoreDoc();
 
-          doc.restoreFromTrash();
+          await doc.restoreFromTrash();
         },
       })
     );

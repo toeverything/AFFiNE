@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use sqlx::{FromRow, PgPool};
+use sqlx::{FromRow, PgConnection, PgExecutor, PgPool};
 use y_octo::Doc;
 
 use super::{RuntimeError, RuntimeResult};
@@ -11,9 +11,9 @@ pub(in crate::runtime) struct CurrentDoc {
 }
 
 #[derive(FromRow)]
-pub(super) struct CurrentDocUpdate {
-  pub(super) blob: Vec<u8>,
-  pub(super) created_at: DateTime<Utc>,
+pub(in crate::runtime) struct CurrentDocUpdate {
+  pub(in crate::runtime) blob: Vec<u8>,
+  pub(in crate::runtime) created_at: DateTime<Utc>,
 }
 
 pub(in crate::runtime) async fn load_current_doc(
@@ -49,8 +49,8 @@ pub(in crate::runtime) async fn load_current_doc(
   merge_current_doc(snapshot, updates)
 }
 
-pub(super) async fn load_canonical_doc(
-  pool: &PgPool,
+pub(super) async fn load_canonical_doc<'a>(
+  connection: impl PgExecutor<'a>,
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<Option<CurrentDoc>> {
@@ -63,21 +63,25 @@ pub(super) async fn load_canonical_doc(
   )
   .bind(workspace_id)
   .bind(doc_id)
-  .fetch_optional(pool)
+  .fetch_optional(connection)
   .await
   .map_err(|err| RuntimeError::database("Canonical doc snapshot load failed", err))
 }
 
-pub(super) async fn has_pending_updates(pool: &PgPool, workspace_id: &str, doc_id: &str) -> RuntimeResult<bool> {
+pub(super) async fn has_pending_updates<'a>(
+  connection: impl PgExecutor<'a>,
+  workspace_id: &str,
+  doc_id: &str,
+) -> RuntimeResult<bool> {
   sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM updates WHERE workspace_id = $1 AND guid = $2)")
     .bind(workspace_id)
     .bind(doc_id)
-    .fetch_one(pool)
+    .fetch_one(connection)
     .await
     .map_err(|err| RuntimeError::database("Pending doc updates check failed", err))
 }
 
-pub(super) fn merge_current_doc(
+pub(in crate::runtime) fn merge_current_doc(
   snapshot: Option<CurrentDoc>,
   updates: Vec<CurrentDocUpdate>,
 ) -> RuntimeResult<Option<CurrentDoc>> {
@@ -112,14 +116,21 @@ pub(super) fn merge_current_doc(
 }
 
 pub(super) async fn load_workspace_live_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  load_workspace_canonical_doc_ids(pool, workspace_id).await
+  let mut connection = pool
+    .acquire()
+    .await
+    .map_err(|error| RuntimeError::database("acquire workspace root connection", error))?;
+  load_workspace_canonical_doc_ids(&mut connection, workspace_id).await
 }
 
-pub(super) async fn load_workspace_canonical_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  if has_pending_updates(pool, workspace_id, workspace_id).await? {
+pub(super) async fn load_workspace_canonical_doc_ids(
+  connection: &mut PgConnection,
+  workspace_id: &str,
+) -> RuntimeResult<Vec<String>> {
+  if has_pending_updates(&mut *connection, workspace_id, workspace_id).await? {
     return Err(RuntimeError::invalid_state("Workspace root doc has pending updates"));
   }
-  workspace_live_doc_ids(load_canonical_doc(pool, workspace_id, workspace_id).await?)
+  workspace_live_doc_ids(load_canonical_doc(&mut *connection, workspace_id, workspace_id).await?)
 }
 
 fn workspace_live_doc_ids(root: Option<CurrentDoc>) -> RuntimeResult<Vec<String>> {

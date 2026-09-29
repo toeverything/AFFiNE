@@ -6,7 +6,7 @@ import {
   WorkspaceInviteLinkExpireTime,
 } from '@affine/graphql';
 import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
-import test from 'ava';
+import ava from 'ava';
 import type { Request } from 'express';
 import Sinon from 'sinon';
 
@@ -16,7 +16,6 @@ import { Config } from '../../../base';
 import { ActionForbidden, TooManyRequest } from '../../../base/error';
 import { Models, WorkspaceRole } from '../../../models';
 import { BackendRuntimeProvider } from '../../backend-runtime';
-import { EntitlementService } from '../../entitlement';
 import { QuotaService } from '../../quota';
 import {
   getAbuseRequestSource,
@@ -25,8 +24,9 @@ import {
 } from '../abuse';
 
 let app: TestingApp;
+const test = ava.serial;
 const quota = {
-  assertWorkspaceActionAllowed: Sinon.stub(),
+  assertWorkspaceInviteLinkAllowed: Sinon.stub(),
   assertWorkspaceInviteQuota: Sinon.stub(),
   commitWorkspaceInviteQuota: Sinon.stub(),
   releaseWorkspaceInviteQuota: Sinon.stub(),
@@ -45,7 +45,7 @@ test.before(async () => {
 });
 
 test.beforeEach(() => {
-  quota.assertWorkspaceActionAllowed.reset();
+  quota.assertWorkspaceInviteLinkAllowed.reset();
   quota.assertWorkspaceInviteQuota.reset();
   quota.commitWorkspaceInviteQuota.reset();
   quota.releaseWorkspaceInviteQuota.reset();
@@ -78,7 +78,6 @@ test('invite quota rejection has no invite side effects', async t => {
   t.is(await models.user.getUserByEmail(targetEmail), null);
   t.is(await models.workspaceUser.count(workspace.id), 1);
   t.is(app.mails.send.callCount, 0);
-  t.is(app.queue.count('notification.sendInvitation'), 0);
   t.is(quota.commitWorkspaceInviteQuota.callCount, 0);
   t.is(quota.releaseWorkspaceInviteQuota.callCount, 0);
 });
@@ -120,7 +119,6 @@ test('abuse request source trusts Cloudflare facts only when configured', t => {
 
 test('invite quota rejection keeps mapped response when disposition fails', async t => {
   const service = new InviteQuotaAssertService(
-    app.get(Config),
     {
       getWorkspaceSeatQuota: Sinon.stub().resolves({
         memberLimit: 10,
@@ -159,24 +157,34 @@ test('abuse disposition applies action scope to invitation artifacts', async t =
   const models = app.get(Models);
   const db = app.get(PrismaClient);
   const disposition = app.get(InviteAbuseDispositionService);
+  const runtime = app.get(BackendRuntimeProvider);
+  const invalidateSeatUsage = Sinon.stub(
+    runtime,
+    'quotaSeatUsageTransitionV1'
+  ).resolves();
 
   for (const scenario of [
     {
       name: 'actor',
-      subjectKey: 'actor-subject',
       subjectKind: 'actor_email',
       action: 'quarantine_actor',
+      reason: 'high_risk_domain_burst',
     },
     {
       name: 'workspace',
-      subjectKey: 'workspace-subject',
       subjectKind: 'workspace',
       action: 'quarantine_workspace',
+      reason: 'workspace_high_risk_domain_burst',
     },
   ] as const) {
     const actor = await app.create(Mockers.User);
     const invitee = await app.create(Mockers.User);
     const workspace = await app.create(Mockers.Workspace, { owner: actor });
+    const actorEmailHash = `actor_email_sha256:v1:${createHash('sha256').update(actor.id).digest('hex')}`;
+    const subjectKey =
+      scenario.name === 'actor'
+        ? actorEmailHash
+        : workspaceSubjectKey(workspace.id);
     const anotherWorkspace = await app.create(Mockers.Workspace, {
       owner: actor,
     });
@@ -201,7 +209,7 @@ test('abuse disposition applies action scope to invitation artifacts', async t =
       recipientEmail: invitee.email,
       actorUserId: actor.id,
       workspaceId: workspace.id,
-      abuseSubjectKey: scenario.subjectKey,
+      abuseSubjectKey: subjectKey,
       payload: {
         name: 'MemberInvitation',
         to: invitee.email,
@@ -240,11 +248,14 @@ test('abuse disposition applies action scope to invitation artifacts', async t =
           kind,
           user_id,
           actor_email_hash,
+          email_domain,
           status,
+          action,
+          action_reason,
           first_seen_at,
           last_seen_at
         )
-        VALUES (${scenario.subjectKey}, ${scenario.subjectKind}, ${actor.id}, 'hash', 'quarantined', now(), now())
+        VALUES (${subjectKey}, ${scenario.subjectKind}, ${scenario.name === 'actor' ? actor.id : null}, ${actorEmailHash}, 'example.com', 'quarantined', ${scenario.action}, ${scenario.reason}, now(), now())
         ON CONFLICT (subject_key) DO NOTHING
         RETURNING subject_key
       ),
@@ -254,10 +265,12 @@ test('abuse disposition applies action scope to invitation artifacts', async t =
           workspace_id,
           user_id,
           actor_email_hash,
+          target_domains,
+          counters,
           decision,
           reason
         )
-        VALUES (${scenario.subjectKey}, ${workspace.id}, ${actor.id}, 'hash', ${scenario.action}, 'test')
+        VALUES (${subjectKey}, ${workspace.id}, ${actor.id}, ${actorEmailHash}, '[{"domain":"qq.com","count":1}]'::jsonb, '{"requested":1}'::jsonb, ${scenario.action}, ${scenario.reason})
         RETURNING id
       )
       INSERT INTO runtime_invite_abuse_actions (
@@ -266,21 +279,28 @@ test('abuse disposition applies action scope to invitation artifacts', async t =
         action,
         status
       )
-      SELECT ${scenario.subjectKey}, evidence.id, ${scenario.action}, 'pending'
+      SELECT ${subjectKey}, evidence.id, ${scenario.action}, 'pending'
       FROM evidence
       RETURNING id
     `;
-
     await disposition.execute({
       actorUserId: actor.id,
       workspaceId: workspace.id,
       actionRequired: {
         action: scenario.action,
-        subjectKey: scenario.subjectKey,
+        subjectKey,
         evidenceId: '1',
         actionId: actionId.toString(),
       },
     });
+    t.deepEqual(
+      invalidateSeatUsage.lastCall.args[0].toSorted(),
+      (scenario.name === 'actor'
+        ? [workspace.id, anotherWorkspace.id]
+        : [workspace.id]
+      ).toSorted(),
+      scenario.action
+    );
 
     if (scenario.name === 'actor') {
       t.is(
@@ -335,19 +355,39 @@ test('workspace quarantine blocks invite link creation', async t => {
   const owner = await app.create(Mockers.User);
   const workspace = await app.create(Mockers.Workspace, { owner });
   const subjectKey = workspaceSubjectKey(workspace.id);
+  const actorEmailHash = `actor_email_sha256:v1:${createHash('sha256').update(owner.id).digest('hex')}`;
   await db.$executeRaw`
-    INSERT INTO runtime_invite_abuse_subjects (
-      subject_key,
-      kind,
-      status,
-      first_seen_at,
-      last_seen_at
+    WITH subject AS (
+      INSERT INTO runtime_invite_abuse_subjects (
+        subject_key,
+        kind,
+        actor_email_hash,
+        email_domain,
+        status,
+        action,
+        action_reason,
+        first_seen_at,
+        last_seen_at
+      )
+      VALUES (${subjectKey}, 'workspace', ${actorEmailHash}, 'example.com', 'quarantined', 'quarantine_workspace', 'workspace_high_risk_domain_burst', now(), now())
+      ON CONFLICT (subject_key)
+      DO UPDATE SET
+        status = 'quarantined',
+        updated_at = now()
+      RETURNING subject_key
     )
-    VALUES (${subjectKey}, 'workspace', 'quarantined', now(), now())
-    ON CONFLICT (subject_key)
-    DO UPDATE SET
-      status = 'quarantined',
-      updated_at = now()
+    INSERT INTO runtime_invite_abuse_evidence (
+      subject_key,
+      workspace_id,
+      user_id,
+      actor_email_hash,
+      target_domains,
+      counters,
+      decision,
+      reason
+    )
+    SELECT subject_key, ${workspace.id}, ${owner.id}, ${actorEmailHash}, '[{"domain":"qq.com","count":1}]'::jsonb, '{"requested":1}'::jsonb, 'quarantine_workspace', 'workspace_high_risk_domain_burst'
+    FROM subject
   `;
 
   const previousDelay = config.auth.newAccountActionDelay;
@@ -368,54 +408,45 @@ test('workspace quarantine blocks invite link creation', async t => {
   }
 });
 
-test('workspace action admission applies exemption before content policy', async t => {
-  const db = app.get(PrismaClient);
+test('workspace action admission maps native allow and deny decisions', async t => {
+  const evaluateWorkspaceInviteLinkV1 = Sinon.stub();
+  evaluateWorkspaceInviteLinkV1.onFirstCall().resolves({
+    allowed: false,
+    reason: 'new_account_action_delay',
+    retryAfterSeconds: 60,
+  });
+  evaluateWorkspaceInviteLinkV1.onSecondCall().resolves({ allowed: true });
   const inviteQuota = new InviteQuotaAssertService(
-    app.get(Config),
-    app.get(QuotaService),
-    app.get(BackendRuntimeProvider),
-    app.get(InviteAbuseDispositionService)
+    {} as unknown as QuotaService,
+    { evaluateWorkspaceInviteLinkV1 } as unknown as BackendRuntimeProvider,
+    {} as unknown as InviteAbuseDispositionService
   );
-  const owner = await app.create(Mockers.User);
-  await db.user.update({
-    where: { id: owner.id },
-    data: { createdAt: new Date() },
-  });
-  const workspace = await app.create(Mockers.Workspace, {
-    owner,
-    name: 'Join example.com',
-  });
+  const input = { actorUserId: 'actor', workspaceId: 'workspace' };
 
-  await t.throwsAsync(
-    inviteQuota.assertWorkspaceActionAllowed({
-      actorUserId: owner.id,
-      workspaceId: workspace.id,
-      action: 'inviteMember',
-    }),
-    { instanceOf: ActionForbidden }
-  );
-
-  await app.get(EntitlementService).upsertAdminGrant({
-    targetType: 'user',
-    targetId: owner.id,
-    plan: 'pro',
+  await t.throwsAsync(inviteQuota.assertWorkspaceInviteLinkAllowed(input), {
+    instanceOf: ActionForbidden,
   });
-  await t.notThrowsAsync(
-    inviteQuota.assertWorkspaceActionAllowed({
-      actorUserId: owner.id,
-      workspaceId: workspace.id,
-      action: 'inviteMember',
-    })
+  await t.notThrowsAsync(inviteQuota.assertWorkspaceInviteLinkAllowed(input));
+  t.true(
+    evaluateWorkspaceInviteLinkV1.alwaysCalledWithExactly('actor', 'workspace')
   );
-
-  await app.login(owner);
-  await t.throwsAsync(
-    app.gql({
-      query: createInviteLinkMutation,
-      variables: {
-        workspaceId: workspace.id,
-        expireTime: WorkspaceInviteLinkExpireTime.OneDay,
-      },
-    })
-  );
+});
+test('invite link mutation uses native invite-link admission', async t => {
+  const realApp = await createApp();
+  try {
+    const owner = await realApp.create(Mockers.User);
+    const workspace = await realApp.create(Mockers.Workspace, { owner });
+    await realApp.login(owner);
+    await t.throwsAsync(
+      realApp.gql({
+        query: createInviteLinkMutation,
+        variables: {
+          workspaceId: workspace.id,
+          expireTime: WorkspaceInviteLinkExpireTime.OneDay,
+        },
+      })
+    );
+  } finally {
+    await realApp.close();
+  }
 });

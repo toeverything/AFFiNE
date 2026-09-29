@@ -15,7 +15,6 @@ test('should create config', t => {
   const config = module.get(Config);
 
   t.is(typeof config.auth.passwordRequirements.max, 'number');
-  t.is(typeof config.job.queue, 'object');
   t.deepEqual(config.copilot.byok.allowedProviders, [
     'openai',
     'anthropic',
@@ -32,13 +31,6 @@ test('should override config', async t => {
           passwordRequirements: {
             max: 100,
             min: 6,
-          },
-        },
-        job: {
-          queues: {
-            notification: {
-              concurrency: 1000,
-            },
           },
         },
       }),

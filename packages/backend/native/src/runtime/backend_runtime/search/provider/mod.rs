@@ -1,4 +1,5 @@
 mod manticore;
+mod manticore_query;
 mod remote;
 
 use serde_json::{Value, json};
@@ -10,7 +11,7 @@ use crate::runtime::{RuntimeError, RuntimeResult, SearchRuntimeConfig};
 fn provider_write_error(status: u16) -> RuntimeError {
   match status {
     408 | 429 | 500..=599 => RuntimeError::SearchProviderUnavailable,
-    400..=499 => RuntimeError::SearchSourceInvalid("search provider rejected projection".to_string()),
+    400..=499 => RuntimeError::SearchGenerationInvalid("search provider rejected projection".to_string()),
     _ => RuntimeError::invalid_state("provider_apply_failed"),
   }
 }
@@ -61,7 +62,7 @@ impl SearchChange {
 }
 
 pub(super) enum SearchProvider {
-  /// Elasticsearch-compatible provider with the RFC6 shared projection
+  /// Elasticsearch-compatible provider with the shared search projection
   /// contract.
   Elasticsearch(RemoteProvider),
   /// Manticore Search provides candidate retrieval. Canonical permission facts

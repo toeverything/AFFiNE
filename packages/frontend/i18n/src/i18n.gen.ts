@@ -10061,6 +10061,12 @@ export function useAFFiNEI18N(): {
         readonly spaceId: string;
     }): string;
     /**
+      * `Permissions for Space {{spaceId}} changed during synchronization.`
+      */
+    ["error.SYNC_PERMISSION_GENERATION_CHANGED"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
       * `Owner of Space {{spaceId}} not found.`
       */
     ["error.SPACE_OWNER_NOT_FOUND"](options: {

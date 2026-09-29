@@ -3,12 +3,12 @@ import { z } from 'zod';
 
 import { Config } from '../../../base/config';
 import { CopilotTranscriptionJobNotFound } from '../../../base/error/errors.gen';
-import { PermissionAccess } from '../../../core/permission';
 import {
   RealtimeRegistry,
   realtimeTranscriptTaskRoom,
   registerRealtimeLiveQuery,
 } from '../../../core/realtime';
+import { CopilotAccessService } from '../access';
 import { assertCopilotEnabled } from '../availability';
 import { CopilotTranscriptionReader } from './reader';
 import { CopilotTranscriptionRetryService } from './retry';
@@ -16,7 +16,7 @@ import { CopilotTranscriptionRetryService } from './retry';
 @Injectable()
 export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
   constructor(
-    private readonly ac: PermissionAccess,
+    private readonly access: CopilotAccessService,
     private readonly transcript: CopilotTranscriptionReader,
     private readonly retry: CopilotTranscriptionRetryService,
     private readonly registry: RealtimeRegistry,
@@ -43,12 +43,18 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
         taskId: z.string(),
       }),
       handle: async (user, input) => {
-        await this.assertCopilot(user.id, input.workspaceId);
         return {
-          task: await this.retry.retryTask(
+          task: await this.withCopilot(
             user.id,
             input.workspaceId,
-            input.taskId
+            { taskId: input.taskId },
+            personal =>
+              this.retry.retryTask(
+                user.id,
+                input.workspaceId,
+                input.taskId,
+                personal
+              )
           ),
         };
       },
@@ -59,13 +65,19 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
         name: 'copilot.transcript.task.get',
         input: requestInput,
         handle: async (user, input) => {
-          await this.assertCopilot(user.id, input.workspaceId);
           return {
-            task: await this.transcript.queryTask(
+            task: await this.withCopilot(
               user.id,
               input.workspaceId,
-              input.taskId,
-              input.blobId
+              { taskId: input.taskId, blobId: input.blobId },
+              personal =>
+                this.transcript.queryTaskInScope({
+                  userId: user.id,
+                  workspaceId: input.workspaceId,
+                  taskId: input.taskId,
+                  blobId: input.blobId,
+                  personal,
+                })
             ),
           };
         },
@@ -74,11 +86,17 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
         name: 'copilot.transcript.task.changed',
         input: topicInput,
         authorize: async (user, input) => {
-          await this.assertCopilot(user.id, input.workspaceId);
-          const task = await this.transcript.queryTask(
+          const task = await this.withCopilot(
             user.id,
             input.workspaceId,
-            input.taskId
+            { taskId: input.taskId },
+            personal =>
+              this.transcript.queryTaskInScope({
+                userId: user.id,
+                workspaceId: input.workspaceId,
+                taskId: input.taskId,
+                personal,
+              })
           );
           if (!task) {
             throw new CopilotTranscriptionJobNotFound();
@@ -90,12 +108,18 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
     });
   }
 
-  private async assertCopilot(userId: string, workspaceId: string) {
+  private async withCopilot<T>(
+    userId: string,
+    workspaceId: string,
+    resource: { taskId?: string; blobId?: string },
+    operation: (personal: boolean) => Promise<T>
+  ) {
     assertCopilotEnabled(this.config);
-    await this.ac
-      .user(userId)
-      .workspace(workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
+    const mode = await this.access.transcriptResource(
+      userId,
+      workspaceId,
+      resource
+    );
+    return await operation(mode === 'personal');
   }
 }

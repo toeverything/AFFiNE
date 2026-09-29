@@ -1,22 +1,4 @@
-import type { Stripe } from 'stripe';
-
 import { defineModuleConfig } from '../../base';
-
-export interface PaymentStartupConfig {
-  stripe?: {
-    keys: {
-      APIKey: string;
-      webhookKey: string;
-    };
-  } & Stripe.StripeConfig;
-  revenuecat?: {
-    apiKey?: string;
-    webhookAuth?: string;
-    enabled?: boolean;
-    environment?: 'sandbox' | 'production';
-    productMap?: Record<string, { plan: string; recurring: string }>;
-  };
-}
 
 export interface PaymentRuntimeConfig {
   showLifetimePrice: boolean;
@@ -27,14 +9,16 @@ declare global {
     payment: {
       enabled: boolean;
       showLifetimePrice: boolean;
-      stripe: ConfigItem<
-        {
-          /** Preferred place for Stripe API key */
-          apiKey?: string;
-          /** Preferred place for Stripe Webhook key */
-          webhookKey?: string;
-        } & Stripe.StripeConfig
-      >;
+      stripe: ConfigItem<{
+        /** Preferred place for Stripe API key */
+        apiKey?: string;
+        /** Preferred place for Stripe Webhook key */
+        webhookKey?: string;
+        /** Stripe account owning all canonical payment facts */
+        accountId?: string;
+        /** Stripe mode used to isolate canonical payment facts */
+        environment?: 'test' | 'live';
+      }>;
       revenuecat: ConfigItem<{
         /** Whether enable RevenueCat integration */
         enabled?: boolean;
@@ -67,6 +51,8 @@ defineModuleConfig('payment', {
     default: {
       apiKey: '',
       webhookKey: '',
+      accountId: '',
+      environment: 'test',
     },
     link: 'https://docs.stripe.com/api',
   },

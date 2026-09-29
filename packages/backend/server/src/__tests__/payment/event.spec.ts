@@ -1,477 +1,120 @@
-import { TransactionHost } from '@nestjs-cls/transactional';
-import { PrismaClient } from '@prisma/client';
-import ava, { TestFn } from 'ava';
+import ava from 'ava';
 import Sinon from 'sinon';
 
-import { CryptoHelper, EventBus, JobQueue } from '../../base';
-import { EntitlementService } from '../../core/entitlement';
-import { WorkspacePolicyService } from '../../core/permission';
-import { QuotaStateService } from '../../core/quota/state';
+import type { Config } from '../../base';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { WorkspaceService } from '../../core/workspaces';
-import { Models } from '../../models';
-import { licenseClient, LicenseService } from '../../plugins/license/service';
+import type { Models } from '../../models';
 import { StripeWebhookController } from '../../plugins/payment/controller';
-import { SubscriptionCronJobs } from '../../plugins/payment/cron';
 import { PaymentEventHandlers } from '../../plugins/payment/event';
+import { LicenseController } from '../../plugins/payment/license-controller';
+import { RevenueCatWebhookController } from '../../plugins/payment/revenuecat-controller';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
-  SubscriptionVariant,
 } from '../../plugins/payment/types';
 
-type Context = Record<string, never>;
+ava('payment HTTP and event adapters only forward protocol data', async t => {
+  const runtime = Sinon.createStubInstance(BackendRuntimeProvider);
+  const execute = runtime.executePaymentCommandV1 as Sinon.SinonStub;
+  const capture = runtime.capturePaymentWebhookV1 as Sinon.SinonStub;
+  const workspace = Sinon.createStubInstance(WorkspaceService);
+  const config = {
+    payment: { enabled: true, stripe: { apiKey: 'sk_test_protocol' } },
+  } as Config;
+  const models = {
+    workspaceUser: {
+      chargedCount: Sinon.stub().resolves(3),
+      getOwner: Sinon.stub().resolves({ id: 'owner-1' }),
+    },
+  } as unknown as Models;
+  const events = new PaymentEventHandlers(workspace, runtime, config, models);
 
-const test = ava as TestFn<Context>;
+  execute.resolves({ status: 'pending' });
+  await events.prepareSubscriptionCancellation({ id: 'user-1' });
+  t.deepEqual(execute.lastCall.args, [
+    { action: 'prepare_user_deletion', userId: 'user-1' },
+  ]);
+  await events.updateTeamSubscriptionQuantity({ workspaceId: 'workspace-1' });
+  t.like(execute.lastCall.args[0], {
+    action: 'update_quantity',
+    actorUserId: 'owner-1',
+    targetType: 'workspace',
+    targetId: 'workspace-1',
+    plan: 'team',
+    quantity: 3,
+  });
 
-const originalActivateLicense = licenseClient.activate;
-
-test.afterEach.always(() => {
-  licenseClient.activate = originalActivateLicense;
-});
-
-test('workspace subscription activation only sends upgrade notification', async t => {
-  const events: Array<{ name: string; payload: unknown }> = [];
-  let reconciled = false;
-  const handler = new PaymentEventHandlers(
-    {
-      isTeamWorkspace: async () => true,
-      sendTeamWorkspaceUpgradedEmail: async () => {},
-    } as unknown as WorkspaceService,
-    {
-      reconcileWorkspaceQuotaState: async () => {
-        reconciled = true;
-      },
-    } as unknown as WorkspacePolicyService,
-    {
-      reconcileWorkspaceQuotaState: async () => ({ seatLimit: 7 }),
-    } as unknown as QuotaStateService,
-    {
-      emit: (name: string, payload: unknown) => events.push({ name, payload }),
-    } as unknown as EventBus
-  );
-
-  await handler.onWorkspaceSubscriptionUpdated({
-    workspaceId: 'ws',
+  workspace.isTeamWorkspace.resolves(false);
+  workspace.sendTeamWorkspaceUpgradedEmail.resolves();
+  await events.onWorkspaceSubscriptionUpdated({
+    workspaceId: 'workspace-1',
     plan: SubscriptionPlan.Team,
     recurring: SubscriptionRecurring.Yearly,
-    quantity: 999,
-  });
-
-  t.deepEqual(events, []);
-  t.false(reconciled);
-});
-
-test('workspace entitlement change allocates seats from effective quota state', async t => {
-  const events: Array<{ name: string; payload: unknown }> = [];
-  const handler = new PaymentEventHandlers(
-    {} as unknown as WorkspaceService,
-    {} as unknown as WorkspacePolicyService,
-    {
-      reconcileWorkspaceQuotaState: async () => ({
-        plan: 'team',
-        seatLimit: 7,
-      }),
-    } as unknown as QuotaStateService,
-    {
-      emit: (name: string, payload: unknown) => events.push({ name, payload }),
-    } as unknown as EventBus
-  );
-
-  await handler.onEntitlementChanged({
-    targetType: 'workspace',
-    targetId: 'ws',
-  });
-
-  t.deepEqual(events, [
-    {
-      name: 'workspace.members.allocateSeats',
-      payload: { workspaceId: 'ws', quantity: 7 },
-    },
-  ]);
-});
-
-test('onetime selfhost license seat allocation ignores projected license quantity', async t => {
-  const events: Array<{ name: string; payload: unknown }> = [];
-  const service = new LicenseService(
-    {
-      installedLicense: {
-        findUnique: async () => ({
-          key: 'license-key',
-          workspaceId: 'ws',
-          quantity: 999,
-          recurring: SubscriptionRecurring.Yearly,
-          variant: SubscriptionVariant.Onetime,
-        }),
-      },
-    } as unknown as PrismaClient,
-    {
-      emit: (name: string, payload: unknown) => events.push({ name, payload }),
-    } as unknown as EventBus,
-    {} as unknown as Models,
-    {} as unknown as CryptoHelper,
-    {} as unknown as WorkspacePolicyService,
-    {} as unknown as EntitlementService,
-    {
-      reconcileWorkspaceQuotaState: async () => ({ seatLimit: 4 }),
-    } as unknown as QuotaStateService
-  );
-
-  await service.updateTeamSeats({
-    workspaceId: 'ws',
-  } as Events['workspace.members.updated']);
-
-  t.deepEqual(events, [
-    {
-      name: 'workspace.members.allocateSeats',
-      payload: { workspaceId: 'ws', quantity: 4 },
-    },
-  ]);
-});
-
-test('recurring selfhost license activation returns activation projection without remote health recheck', async t => {
-  const transactionHost = Sinon.stub(TransactionHost, 'getInstance').returns({
-    withTransaction: (...args: unknown[]) =>
-      (args.at(-1) as () => Promise<unknown>)(),
-  } as TransactionHost);
-  t.teardown(() => transactionHost.restore());
-  const events: Array<{ name: string; payload: unknown }> = [];
-  const upserts: unknown[] = [];
-  const entitlements: unknown[] = [];
-  const operations: string[] = [];
-  const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
-  const service = new LicenseService(
-    {
-      installedLicense: {
-        findUnique: async () => null,
-        create: async (input: unknown) => {
-          upserts.push(input);
-          operations.push('source');
-          return {
-            workspaceId: 'ws',
-            key: 'license-key',
-            quantity: 3,
-            recurring: SubscriptionRecurring.Monthly,
-            variant: null,
-          };
-        },
-      },
-    } as unknown as PrismaClient,
-    {
-      emit: (name: string, payload: unknown) => events.push({ name, payload }),
-    } as unknown as EventBus,
-    {} as unknown as Models,
-    {} as unknown as CryptoHelper,
-    {} as unknown as WorkspacePolicyService,
-    {
-      upsertFromValidatedSelfhostLicense: async (input: unknown) => {
-        entitlements.push(input);
-        operations.push('entitlement');
-      },
-    } as unknown as EntitlementService,
-    {} as unknown as QuotaStateService
-  );
-
-  let activatedLicenseKey: string | undefined;
-  licenseClient.activate = async ({ licenseKey }) => {
-    activatedLicenseKey = licenseKey;
-    return {
-      license: {
-        plan: SubscriptionPlan.SelfHostedTeam,
-        recurring: SubscriptionRecurring.Monthly,
-        quantity: 3,
-        expiresAt,
-        validateKey: 'next-validate-key',
-      },
-    };
-  };
-
-  const license = await service.activateTeamLicense('ws', 'license-key');
-
-  t.like(license, {
-    workspaceId: 'ws',
-    key: 'license-key',
-    quantity: 3,
-    recurring: SubscriptionRecurring.Monthly,
-  });
-  t.is(entitlements.length, 1);
-  t.is(upserts.length, 1);
-  t.is(activatedLicenseKey, 'license-key');
-  t.deepEqual(operations, ['source', 'entitlement']);
-  t.deepEqual(events, [
-    {
-      name: 'workspace.subscription.activated',
-      payload: {
-        workspaceId: 'ws',
-        plan: SubscriptionPlan.SelfHostedTeam,
-        recurring: SubscriptionRecurring.Monthly,
-        quantity: 3,
-      },
-    },
-  ]);
-});
-
-test('stripe webhook persists failed async processing for retry visibility', async t => {
-  const event = {
-    id: 'evt_1',
-    type: 'invoice.paid',
-    created: 1710000000,
-    data: { object: { id: 'in_1' } },
-  };
-  const updates: unknown[] = [];
-  const db = {
-    paymentEvent: {
-      findUnique: async () => null,
-      create: async (input: unknown) => {
-        updates.push(input);
-        return { id: 'payment_event_1' };
-      },
-      updateMany: async (input: unknown) => {
-        updates.push(input);
-        return { count: 1 };
-      },
-      update: async (input: unknown) => {
-        updates.push(input);
-        return {};
-      },
-    },
-  } as unknown as PrismaClient;
-  const controller = new StripeWebhookController(
-    { payment: { stripe: { webhookKey: 'whsec' } } } as never,
-    db,
-    {
-      stripe: {
-        webhooks: {
-          constructEvent: () => event,
-        },
-      },
-    } as never,
-    {
-      emitAsync: async () => {
-        throw new Error('handler failed');
-      },
-    } as unknown as EventBus
-  );
-
-  await controller.handleWebhook({
-    rawBody: Buffer.from('{}'),
-    headers: { 'stripe-signature': 'sig' },
-  } as never);
-  await new Promise(resolve => setImmediate(resolve));
-
-  t.like(updates[0], {
-    data: {
-      provider: 'stripe',
-      eventType: 'invoice.paid',
-      externalEventId: 'evt_1',
-    },
-  });
-  t.deepEqual(
-    updates.slice(1).map(update => (update as { data: unknown }).data),
-    [
-      {
-        processingStatus: 'processing',
-        processingAttempts: { increment: 1 },
-      },
-      {
-        processingStatus: 'failed',
-        lastError: 'handler failed',
-      },
-    ]
-  );
-});
-
-test('stripe webhook skips already processed events', async t => {
-  const event = {
-    id: 'evt_processed',
-    type: 'invoice.paid',
-    created: 1710000000,
-    data: { object: { id: 'in_1' } },
-  };
-  const controller = new StripeWebhookController(
-    { payment: { stripe: { webhookKey: 'whsec' } } } as never,
-    {
-      paymentEvent: {
-        findUnique: async () => ({
-          id: 'payment_event_processed',
-          processingStatus: 'processed',
-        }),
-      },
-    } as unknown as PrismaClient,
-    {
-      stripe: {
-        webhooks: {
-          constructEvent: () => event,
-        },
-      },
-    } as never,
-    {
-      emitAsync: async () => {
-        t.fail('processed event should not be emitted again');
-      },
-    } as unknown as EventBus
-  );
-
-  await controller.handleWebhook({
-    rawBody: Buffer.from('{}'),
-    headers: { 'stripe-signature': 'sig' },
-  } as never);
-  await new Promise(resolve => setImmediate(resolve));
-
-  t.pass();
-});
-
-test('stripe webhook skips events already claimed by another processor', async t => {
-  const event = {
-    id: 'evt_claimed',
-    type: 'invoice.paid',
-    created: 1710000000,
-    data: { object: { id: 'in_1' } },
-  };
-  const controller = new StripeWebhookController(
-    { payment: { stripe: { webhookKey: 'whsec' } } } as never,
-    {
-      paymentEvent: {
-        findUnique: async () => null,
-        create: async () => ({ id: 'payment_event_claimed' }),
-        updateMany: async () => ({ count: 0 }),
-      },
-    } as unknown as PrismaClient,
-    {
-      stripe: {
-        webhooks: {
-          constructEvent: () => event,
-        },
-      },
-    } as never,
-    {
-      emitAsync: async () => {
-        t.fail('unclaimed event should not be emitted');
-      },
-    } as unknown as EventBus
-  );
-
-  await controller.handleWebhook({
-    rawBody: Buffer.from('{}'),
-    headers: { 'stripe-signature': 'sig' },
-  } as never);
-  await new Promise(resolve => setImmediate(resolve));
-
-  t.pass();
-});
-
-test('stripe webhook replay job reprocesses pending events', async t => {
-  const updates: unknown[] = [];
-  const emitted: unknown[] = [];
-  let findManyInput: unknown;
-  const cron = new SubscriptionCronJobs(
-    {
-      paymentEvent: {
-        findMany: async (input: unknown) => {
-          findManyInput = input;
-          return [
-            {
-              id: 'payment_event_1',
-              eventType: 'invoice.paid',
-              metadata: { id: 'in_1' },
-            },
-          ];
-        },
-        updateMany: async (input: unknown) => {
-          updates.push(input);
-          return { count: 1 };
-        },
-        update: async (input: unknown) => {
-          updates.push(input);
-          return {};
-        },
-      },
-    } as unknown as PrismaClient,
-    {
-      emitAsync: async (name: string, payload: unknown) => {
-        emitted.push({ name, payload });
-      },
-    } as unknown as EventBus,
-    {} as unknown as JobQueue,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never
-  );
-
-  await cron.replayStripeWebhookEvents();
-
-  t.deepEqual(emitted, [
-    { name: 'stripe.invoice.paid', payload: { id: 'in_1' } },
-  ]);
-  t.like(findManyInput, {
-    where: {
-      OR: [
-        { processingStatus: { in: ['pending', 'failed'] } },
-        { processingStatus: 'processing' },
-      ],
-    },
-  });
-  t.deepEqual((updates[0] as { data: unknown }).data, {
-    processingStatus: 'processing',
-    processingAttempts: { increment: 1 },
-  });
-  t.like((updates[1] as { data: unknown }).data, {
-    processingStatus: 'processed',
-    lastError: null,
+    quantity: 4,
   });
   t.true(
-    (updates[1] as { data: { processedAt: Date } }).data.processedAt instanceof
-      Date
-  );
-});
-
-test('stripe webhook replay job keeps failed events retryable', async t => {
-  const updates: unknown[] = [];
-  const cron = new SubscriptionCronJobs(
-    {
-      paymentEvent: {
-        findMany: async () => [
-          {
-            id: 'payment_event_1',
-            eventType: 'invoice.paid',
-            metadata: { id: 'in_1' },
-          },
-        ],
-        updateMany: async (input: unknown) => {
-          updates.push(input);
-          return { count: 1 };
-        },
-        update: async (input: unknown) => {
-          updates.push(input);
-          return {};
-        },
-      },
-    } as unknown as PrismaClient,
-    {
-      emitAsync: async () => {
-        throw new Error('handler still failing');
-      },
-    } as unknown as EventBus,
-    {} as unknown as JobQueue,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never
+    workspace.sendTeamWorkspaceUpgradedEmail.calledOnceWith('workspace-1')
   );
 
-  await cron.replayStripeWebhookEvents();
-
+  capture.resolves({ status: 'pending' });
+  const stripe = new StripeWebhookController(runtime);
   t.deepEqual(
-    updates.map(update => (update as { data: unknown }).data),
-    [
-      {
-        processingStatus: 'processing',
-        processingAttempts: { increment: 1 },
-      },
-      {
-        processingStatus: 'failed',
-        lastError: 'handler still failing',
-      },
-    ]
+    await stripe.handleWebhook({
+      rawBody: Buffer.from('{"id":"evt_1"}'),
+      headers: { 'stripe-signature': 'stripe-signature' },
+    } as never),
+    { status: 'pending' }
   );
+  t.deepEqual(capture.lastCall.args, [
+    'stripe',
+    Buffer.from('{"id":"evt_1"}'),
+    'stripe-signature',
+  ]);
+
+  const revenuecat = new RevenueCatWebhookController(runtime);
+  await revenuecat.handleWebhook({
+    rawBody: Buffer.from('{"event":{"id":"rc_1"}}'),
+    headers: { authorization: 'Bearer revenuecat' },
+  } as never);
+  t.deepEqual(capture.lastCall.args, [
+    'revenuecat',
+    Buffer.from('{"event":{"id":"rc_1"}}'),
+    'Bearer revenuecat',
+  ]);
+
+  execute.resolves({
+    license: Buffer.from('signed-license').toString('base64'),
+    validateKey: 'validate-key',
+    recurring: 'yearly',
+  });
+  const response = {
+    status: Sinon.stub().returnsThis(),
+    header: Sinon.stub().returnsThis(),
+    send: Sinon.stub().returnsThis(),
+  };
+  const licenses = new LicenseController(runtime);
+  await licenses.activate(response as never, 'license-key', {
+    workspaceId: 'remote-workspace',
+    operationId: 'ac8f50e4-6113-4a1e-b46e-0c0a3f99e1cf',
+  });
+  t.true(response.status.calledWith(200));
+  t.true(response.header.calledWith('x-next-validate-key', 'validate-key'));
+  t.true(response.header.calledWith('x-license-recurring', 'yearly'));
+  t.deepEqual(response.send.lastCall.args, [Buffer.from('signed-license')]);
+
+  const licensePortal =
+    runtime.createLicenseCustomerPortalV1 as Sinon.SinonStub;
+  licensePortal.resolves('https://billing.example/license-portal');
+  t.deepEqual(
+    await licenses.createCustomerPortal(
+      'license-key',
+      'b7afc067-12ec-4018-9cc4-23bb4e57e0df'
+    ),
+    { url: 'https://billing.example/license-portal' }
+  );
+  t.deepEqual(licensePortal.lastCall.args, [
+    'license-key',
+    'b7afc067-12ec-4018-9cc4-23bb4e57e0df',
+  ]);
 });

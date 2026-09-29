@@ -83,18 +83,3 @@ export class SocketIoRedis extends Redis {
     );
   }
 }
-
-@Injectable()
-export class QueueRedis extends Redis {
-  constructor(config: Config) {
-    super(
-      redisOptions({
-        ...config.redis,
-        ...config.redis.ioredis,
-        db: (config.redis.db ?? 0) + 4,
-        // required explicitly set to `null` by bullmq
-        maxRetriesPerRequest: null,
-      })
-    );
-  }
-}

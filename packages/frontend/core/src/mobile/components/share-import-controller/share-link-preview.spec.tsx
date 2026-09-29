@@ -1,61 +1,26 @@
 /** @vitest-environment happy-dom */
 
-import { type Server, ServersService } from '@affine/core/modules/cloud';
-import {
-  ImportClipperService,
-  type ShareImportInput,
-} from '@affine/core/modules/import-clipper';
-import {
-  type WorkspaceMetadata,
-  WorkspacesService,
-} from '@affine/core/modules/workspace';
+import { type Server } from '@affine/core/modules/cloud';
+import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
 import { ServerDeploymentType } from '@affine/graphql';
-import { ToggleButton } from '@blocksuite/affine/components/toggle-button';
+import { LinkPreviewDetails } from '@blocksuite/affine/components/link-preview';
 import {
   type LinkPreviewCacheProvider,
+  type LinkPreviewResult,
   LinkPreviewService,
 } from '@blocksuite/affine/shared/services';
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
-import type * as Infra from '@toeverything/infra';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import * as Infra from '@toeverything/infra';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import {
   createAffineLinkPreviewFetch,
   resolveLinkPreviewEndpoint,
 } from '../../../blocksuite/view-extensions/link-preview-service/link-preview-service';
-import { createShareMarkdown } from '../../../modules/import-clipper/services/import';
-import { createShareBlockPlan } from '../../../modules/import-clipper/services/share-block-plan';
-import { ShareImportController } from './index';
-import {
-  LinkPreview,
-  resolveShareTitle,
-  transcriptPreviewText,
-} from './link-preview';
-import {
-  resolveShareWorkspaceMode,
-  SharePreviewRouteOwner,
-} from './preview-route-owner';
+import { LinkPreview, resolveShareTitle } from './link-preview';
+import { parseShareLinkPreview, readShareLinkPreview } from './preview';
+import { SharePreviewRouteOwner } from './preview-route-owner';
 import type { PendingShareItem, ShareLinkPreview } from './types';
-
-const controllerServiceMocks = vi.hoisted(() => ({
-  services: new Map<string, unknown>(),
-}));
-
-vi.mock('@toeverything/infra', async importOriginal => {
-  const original = await importOriginal<typeof Infra>();
-  return {
-    ...original,
-    useLiveData: (source: { value: unknown }) => source.value,
-    useService: (token: { name: string }) =>
-      controllerServiceMocks.services.get(token.name),
-  };
-});
 
 const cache: LinkPreviewCacheProvider = {
   get: () => undefined,
@@ -66,34 +31,232 @@ const cache: LinkPreviewCacheProvider = {
   clear: () => {},
 };
 
-const item = (previewRoute?: PendingShareItem['previewRoute']) =>
+const item = () =>
   ({
     id: 'item',
     documentId: 'doc',
+    schemaVersion: 2,
+    importAttemptId: 'attempt',
     title: 'Shared',
     content: { kind: 'url', url: 'https://youtube.com/watch?v=123' },
-    previewRoute,
-  }) satisfies PendingShareItem;
+  }) as unknown as PendingShareItem;
+
+const officialMedia = (name: string) =>
+  `https://app.affine.pro/api/worker/image-proxy?url=${name}`;
 
 const workspace = (flavour: string) =>
   ({ id: 'workspace', flavour }) as WorkspaceMetadata;
 
 const server = (id: string, baseUrl: string, type?: ServerDeploymentType) =>
-  ({ id, baseUrl, config$: { value: { type } } }) as unknown as Server;
+  ({
+    id,
+    baseUrl,
+    config$: new Infra.LiveData({ type }),
+    fetch: (...args: Parameters<typeof globalThis.fetch>) =>
+      globalThis.fetch(...args),
+  }) as unknown as Server;
 
 afterEach(() => {
   cleanup();
-  controllerServiceMocks.services.clear();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
-describe('link preview transport and route ownership', () => {
-  test('adds the app version only in the AFFiNE transport', async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(JSON.stringify({ title: 'Preview' }), { status: 200 })
+describe('link preview response parsing', () => {
+  test.each([
+    [
+      {
+        segments: Array.from({ length: 501 }, (_, i) => ({
+          text: `Caption ${i}`,
+        })),
+      },
+    ],
+    [{ segments: [{ text: '中'.repeat(200_000) }] }],
+  ])(
+    'clips production transcripts without losing base metadata',
+    transcript => {
+      const preview = parseShareLinkPreview({
+        url: 'https://example.com',
+        title: 'Article',
+        transcript,
+      });
+      expect(preview?.title).toBe('Article');
+      expect(preview?.transcript?.segments).toHaveLength(1);
+      expect(Array.from(preview!.transcript!.segments[0].text)).toHaveLength(
+        241
       );
+    }
+  );
+  test('omits malformed optional fields and clips long display values', () => {
+    const preview = parseShareLinkPreview({
+      url: 'https://example.com',
+      title: 'A'.repeat(1000),
+      description: 'Summary',
+      durationSeconds: -1,
+      images: ['bad', officialMedia('one'), officialMedia('two')],
+      author: { name: null },
+      transcript: { segments: [{ text: '' }, { text: 'Valid' }] },
+    });
+    expect(preview).toMatchObject({
+      title: 'A'.repeat(120) + '…',
+      description: 'Summary',
+      images: [officialMedia('one')],
+      transcript: { segments: [{ text: 'Valid' }] },
+    });
+    expect(preview?.author).toBeUndefined();
+    expect(preview?.durationSeconds).toBeUndefined();
+  });
+  test('cancels an oversized streamed response before reading the remainder', async () => {
+    const cancel = vi.fn();
+    const response = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new Uint8Array(1024 * 1024 + 1));
+        },
+        cancel,
+      })
+    );
+    await expect(readShareLinkPreview(response)).rejects.toThrow('too large');
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  test.each([
+    {},
+    { url: '/relative' },
+    { url: 'https://user:pass@example.com' },
+  ])('rejects an invalid source URL', input => {
+    expect(parseShareLinkPreview(input)).toBeUndefined();
+  });
+});
+
+describe('link preview transport and route ownership', () => {
+  test('uses the selected workspace server with a relative URL-only preview request', async () => {
+    const serverFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ url: item().content.url }), {
+        status: 200,
+      })
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ url: item().content.url }), {
+          status: 200,
+        })
+      )
+    );
+    const selectedServer = server(
+      'self',
+      'https://self.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    Object.assign(selectedServer, { fetch: serverFetch });
+    const owner = new SharePreviewRouteOwner(item());
+
+    owner.selectWorkspace(workspace('self'), [selectedServer]);
+
+    await expect(owner.load()).resolves.toEqual({ url: item().content.url });
+    expect(serverFetch).toHaveBeenCalledWith('/api/worker/link-preview', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-affine-version': BUILD_CONFIG.appVersion,
+      },
+      body: JSON.stringify({
+        url: item().content.url,
+        include: ['transcript'],
+      }),
+      credentials: 'omit',
+      signal: expect.anything(),
+    });
+  });
+
+  test('isolates base, transcript and endpoint caches', async () => {
+    const results = new Map<string, LinkPreviewResult>();
+    const requests = new Map<string, Promise<LinkPreviewResult>>();
+    const serviceCache: LinkPreviewCacheProvider = {
+      get: key => results.get(key),
+      set: (key, value) => {
+        results.set(key, value);
+      },
+      getPendingRequest: key => requests.get(key),
+      setPendingRequest: (key, value) => {
+        requests.set(key, value);
+      },
+      deletePendingRequest: key => {
+        requests.delete(key);
+      },
+      clear: () => {
+        results.clear();
+        requests.clear();
+      },
+    };
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            url: 'https://example.com/article',
+            title: 'Article',
+            transcript: { segments: [{ text: 'Full transcript' }] },
+          })
+        )
+    );
+    const service = new LinkPreviewService(serviceCache, fetch);
+    service.setEndpoint('https://one.example/preview');
+    const base = await service.query('https://example.com/article');
+    const rich = await service.query('https://example.com/article', undefined, [
+      'transcript',
+    ]);
+    expect(base.transcript).toBeUndefined();
+    expect(rich.transcript?.segments[0].text).toBe('Full transcript');
+    await service.query('https://example.com/article', undefined, [
+      'transcript',
+    ]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    service.setEndpoint('https://two.example/preview');
+    await service.query('https://example.com/article');
+    await service.query('https://example.com/article', undefined, [
+      'transcript',
+    ]);
+    expect(fetch).toHaveBeenCalledTimes(4);
+    const first = new AbortController();
+    const second = new AbortController();
+    await Promise.all([
+      service.query('https://example.com/independent', first.signal, [
+        'transcript',
+      ]),
+      service.query('https://example.com/independent', second.signal, [
+        'transcript',
+      ]),
+    ]);
+    expect(fetch).toHaveBeenCalledTimes(6);
+  });
+
+  test('keeps the official route frozen while destinations change', () => {
+    const owner = new SharePreviewRouteOwner({
+      ...item(),
+      previewRoute: 'official',
+    });
+    owner.selectWorkspace(workspace('local'), []);
+    const generation = owner.generation;
+    owner.selectWorkspace(workspace('self'), [
+      server('self', 'https://self.example', ServerDeploymentType.Selfhosted),
+    ]);
+    expect(owner.routeEndpoint).toBe(
+      'https://app.affine.pro/api/worker/link-preview'
+    );
+    expect(owner.generation).toBe(generation);
+  });
+
+  test('adds the app version only in the AFFiNE transport', async () => {
+    const fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          url: 'https://example.com/versioned',
+          title: 'Preview',
+        }),
+        { status: 200 }
+      )
+    );
     const service = new LinkPreviewService(
       cache,
       createAffineLinkPreviewFetch('0.27.0', fetch)
@@ -155,15 +318,7 @@ describe('link preview transport and route ownership', () => {
 
   test.each([
     [
-      'official route',
-      'official' as const,
-      workspace('local'),
-      [] as Server[],
-      'https://app.affine.pro/api/worker/link-preview',
-    ],
-    [
       'self-hosted route',
-      'deferred' as const,
       workspace('self'),
       [
         server(
@@ -176,39 +331,25 @@ describe('link preview transport and route ownership', () => {
     ],
     [
       'cloud route',
-      'deferred' as const,
       workspace('cloud'),
       [server('cloud', 'https://cloud.example/', ServerDeploymentType.Affine)],
       'https://app.affine.pro/api/worker/link-preview',
     ],
-    [
-      'local deferred route',
-      'deferred' as const,
-      workspace('local'),
-      [],
-      undefined,
-    ],
-    [
-      'missing server',
-      'deferred' as const,
-      workspace('missing'),
-      [],
-      undefined,
-    ],
+    ['local deferred route', workspace('local'), [], undefined],
+    ['missing server', workspace('missing'), [], undefined],
     [
       'server with unknown config',
-      'deferred' as const,
       workspace('unknown'),
       [server('unknown', 'https://unknown.example/')],
       undefined,
     ],
-  ])('selects the %s', (_name, route, target, servers, endpoint) => {
-    const owner = new SharePreviewRouteOwner(item(route));
+  ])('selects the %s', (_name, target, servers, endpoint) => {
+    const owner = new SharePreviewRouteOwner(item());
     owner.selectWorkspace(target, servers);
     expect(owner.routeEndpoint).toBe(endpoint);
   });
 
-  test('freezes a selected workspace route and deduplicates only active requests', async () => {
+  test('uses the current selected workspace server and deduplicates active requests', async () => {
     let resolve!: (response: Response) => void;
     const fetch = vi.fn<typeof globalThis.fetch>(
       () =>
@@ -217,48 +358,52 @@ describe('link preview transport and route ownership', () => {
         })
     );
     vi.stubGlobal('fetch', fetch);
-    const owner = new SharePreviewRouteOwner(item('deferred'));
+    const owner = new SharePreviewRouteOwner(item());
     const selected = workspace('self');
     owner.selectWorkspace(selected, [
       server('self', 'https://first.example/', ServerDeploymentType.Selfhosted),
     ]);
-    owner.selectWorkspace(selected, [
-      server(
-        'self',
-        'https://changed.example/',
-        ServerDeploymentType.Selfhosted
-      ),
-    ]);
-
+    const selectedServer = server(
+      'self',
+      'https://changed.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    owner.selectWorkspace(selected, [selectedServer]);
+    const generation = owner.generation;
     const first = owner.load()!;
+    owner.selectWorkspace(selected, [selectedServer]);
+    expect(owner.generation).toBe(generation);
     expect(owner.load()).toBe(first);
     expect(fetch.mock.calls[0]?.[1]?.headers).toEqual({
       'Content-Type': 'application/json',
       'x-affine-version': BUILD_CONFIG.appVersion,
     });
     expect(owner.routeEndpoint).toBe(
-      'https://first.example/api/worker/link-preview'
+      'https://changed.example/api/worker/link-preview'
     );
     resolve(
       new Response(
         JSON.stringify({
           url: item().content.url,
-          title: 42,
-          images: ['https://example.com/image.jpg', 42],
-          transcript: { segments: 'invalid' },
+          title: 'Preview',
+          images: ['https://example.com/image.jpg'],
+          provider: 'youtube',
+          durationSeconds: 90,
+          transcript: { segments: [{ text: 'Transcript' }] },
         }),
         { status: 200 }
       )
     );
-    await expect(first).resolves.toEqual({
+    await expect(first).resolves.toMatchObject({
       url: item().content.url,
-      images: ['https://example.com/image.jpg'],
+      title: 'Preview',
+      images: [
+        'https://changed.example/api/worker/image-proxy?url=https%3A%2F%2Fexample.com%2Fimage.jpg',
+      ],
+      transcript: { segments: [{ text: 'Transcript' }] },
     });
-    fetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ url: item().content.url }), { status: 200 })
-    );
     await owner.load();
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   test('invalidates an active request when the selected endpoint changes', () => {
@@ -266,7 +411,7 @@ describe('link preview transport and route ownership', () => {
       () => new Promise<Response>(() => {})
     );
     vi.stubGlobal('fetch', fetch);
-    const owner = new SharePreviewRouteOwner(item('deferred'));
+    const owner = new SharePreviewRouteOwner(item());
     owner.selectWorkspace(workspace('self'), [
       server('self', 'https://self.example/', ServerDeploymentType.Selfhosted),
     ]);
@@ -278,9 +423,86 @@ describe('link preview transport and route ownership', () => {
 
     expect(second).not.toBe(first);
     expect(fetch.mock.calls.map(([url]) => url)).toEqual([
-      'https://self.example/api/worker/link-preview',
+      '/api/worker/link-preview',
       'https://app.affine.pro/api/worker/link-preview',
     ]);
+  });
+
+  test('uses the replacement server instead of a cached preview for the same workspace', async () => {
+    const selectedWorkspace = workspace('self');
+    const firstServer = server(
+      'self',
+      'https://first.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    Object.assign(firstServer, {
+      fetch: vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ url: item().content.url, title: 'Preview A' }),
+            { status: 200 }
+          )
+        ),
+    });
+    let resolveSecond!: (response: Response) => void;
+    const secondFetch = vi.fn(
+      () =>
+        new Promise<Response>(resolve => {
+          resolveSecond = resolve;
+        })
+    );
+    const replacementServer = server(
+      'self',
+      'https://second.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    Object.assign(replacementServer, { fetch: secondFetch });
+    const owner = new SharePreviewRouteOwner(item());
+    owner.selectWorkspace(selectedWorkspace, [firstServer]);
+    const previewA = await owner.load();
+    expect(previewA?.title).toBe('Preview A');
+    owner.selectWorkspace(selectedWorkspace, [replacementServer]);
+    const preview = owner.load();
+
+    expect(secondFetch).toHaveBeenCalledWith(
+      '/api/worker/link-preview',
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    );
+    resolveSecond(
+      new Response(
+        JSON.stringify({ url: item().content.url, title: 'Preview B' }),
+        { status: 200 }
+      )
+    );
+    await expect(preview).resolves.toMatchObject({ title: 'Preview B' });
+  });
+
+  test('rejects a late response after its workspace generation is replaced', async () => {
+    let resolveFirst!: (response: Response) => void;
+    const firstServer = server(
+      'first',
+      'https://first.example/',
+      ServerDeploymentType.Selfhosted
+    );
+    Object.assign(firstServer, {
+      fetch: vi.fn(
+        () =>
+          new Promise<Response>(resolve => {
+            resolveFirst = resolve;
+          })
+      ),
+    });
+    const owner = new SharePreviewRouteOwner(item());
+    owner.selectWorkspace(workspace('first'), [firstServer]);
+    const first = owner.load()!;
+
+    owner.selectWorkspace(workspace('local'), []);
+    resolveFirst(
+      new Response(JSON.stringify({ url: item().content.url }), { status: 200 })
+    );
+
+    await expect(first).rejects.toMatchObject({ name: 'AbortError' });
   });
 
   test('does not reuse an aborted request', async () => {
@@ -297,8 +519,10 @@ describe('link preview transport and route ownership', () => {
         })
     );
     vi.stubGlobal('fetch', fetch);
-    const owner = new SharePreviewRouteOwner(item('official'));
-    owner.selectWorkspace(undefined, []);
+    const owner = new SharePreviewRouteOwner(item());
+    owner.selectWorkspace(workspace('cloud'), [
+      server('cloud', 'https://app.affine.pro/', ServerDeploymentType.Affine),
+    ]);
     const controller = new AbortController();
     const first = owner.load(controller.signal)!;
 
@@ -312,206 +536,6 @@ describe('link preview transport and route ownership', () => {
       new Response(JSON.stringify({ url: item().content.url }), { status: 200 })
     );
     await expect(second).resolves.toMatchObject({ url: item().content.url });
-  });
-
-  test('treats a legacy missing route as deferred until workspace selection', async () => {
-    const fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ url: item().content.url }), {
-        status: 200,
-      })
-    );
-    vi.stubGlobal('fetch', fetch);
-    const owner = new SharePreviewRouteOwner(item(undefined));
-
-    owner.selectWorkspace(undefined, []);
-    expect(owner.routeEndpoint).toBeUndefined();
-    expect(owner.load()).toBeUndefined();
-    expect(fetch).not.toHaveBeenCalled();
-
-    owner.selectWorkspace(workspace('cloud'), [
-      server('cloud', 'https://cloud.example/', ServerDeploymentType.Affine),
-    ]);
-    expect(owner.routeEndpoint).toBe(
-      'https://app.affine.pro/api/worker/link-preview'
-    );
-    await owner.load();
-    expect(fetch).toHaveBeenCalledTimes(1);
-  });
-
-  test.each([
-    [
-      'self-hosted configuration without an account',
-      [
-        server(
-          'self',
-          'https://self.example/',
-          ServerDeploymentType.Selfhosted
-        ),
-      ],
-      true,
-      'selfHostedPresent',
-    ],
-    [
-      'configuration still loading',
-      [server('unknown', 'https://unknown.example/')],
-      true,
-      'unknown',
-    ],
-    [
-      'signed-in cloud configuration',
-      [server('cloud', 'https://cloud.example/', ServerDeploymentType.Affine)],
-      true,
-      'cloudOnly',
-    ],
-    ['signed-out cloud configuration', [], false, 'signedOut'],
-  ])('resolves %s safely', (_name, servers, signedIn, mode) => {
-    expect(resolveShareWorkspaceMode(servers, signedIn)).toBe(mode);
-  });
-});
-
-describe('share destination selection lifecycle', () => {
-  test('keeps one workspace selection across preview completion and refreshes', async () => {
-    const selectedWorkspace = {
-      id: 'selected-workspace',
-      flavour: 'local',
-    } as WorkspaceMetadata;
-    const workspaces$ = { value: [selectedWorkspace] };
-    const servers$ = { value: [] as Server[] };
-    const pending = {
-      ...item('official'),
-      content: {
-        kind: 'url' as const,
-        url: 'https://youtube.com/watch?v=selection',
-      },
-    } satisfies PendingShareItem;
-    let resolvePreview!: (response: Response) => void;
-    const previewFetch = vi.fn(
-      () =>
-        new Promise<Response>(resolve => {
-          resolvePreview = resolve;
-        })
-    );
-    vi.stubGlobal('fetch', previewFetch);
-
-    const importer = {
-      getShareDestinationOptions: vi.fn().mockResolvedValue({
-        verification: 'confirmed',
-        tags: [{ id: 'tag-one', name: 'Tag One', color: '#123456' }],
-        collections: [{ id: 'collection-one', name: 'Collection One' }],
-      }),
-      importShareToWorkspace: vi
-        .fn()
-        .mockResolvedValue({ status: 'imported', docId: 'saved-doc' }),
-    };
-    controllerServiceMocks.services.set(WorkspacesService.name, {
-      list: { workspaces$ },
-      getProfile: () => ({ name$: { value: 'Workspace One' } }),
-    });
-    controllerServiceMocks.services.set(ServersService.name, {
-      serversWithAccount$: { value: [] },
-      servers$,
-    });
-    controllerServiceMocks.services.set(ImportClipperService.name, importer);
-
-    const provider = {
-      updateWorkspaceMode: vi.fn().mockResolvedValue(undefined),
-      listPending: vi.fn().mockResolvedValue([pending]),
-      updateTarget: vi.fn().mockResolvedValue(undefined),
-      resolveAttachment: vi.fn().mockResolvedValue(undefined),
-      complete: vi.fn().mockResolvedValue(undefined),
-      setError: vi.fn().mockResolvedValue(undefined),
-    };
-    const view = render(<ShareImportController provider={provider} />);
-
-    await screen.findByText('Choose where to save');
-    fireEvent.click(screen.getByRole('button', { name: /Workspace Choose/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Workspace One/ }));
-
-    const save = await screen.findByRole('button', { name: 'Save' });
-    await waitFor(() =>
-      expect((save as HTMLButtonElement).disabled).toBe(false)
-    );
-    expect(
-      screen.getByRole('button', { name: /Workspace Workspace One/ })
-    ).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('button', { name: /Tags Optional/ }));
-    await screen.findByRole('button', { name: /Tag One/ });
-    resolvePreview(
-      new Response(JSON.stringify({ url: pending.content.url }), {
-        status: 200,
-      })
-    );
-    previewFetch.mockResolvedValue(
-      new Response(JSON.stringify({ url: pending.content.url }), {
-        status: 200,
-      })
-    );
-    await waitFor(() => expect(provider.listPending).toHaveBeenCalledTimes(1));
-    expect(screen.getByText('Tags')).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('button', { name: /Tag One/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
-    fireEvent.click(
-      screen.getByRole('button', { name: /Collection Optional/ })
-    );
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Collection One' })
-    );
-
-    workspaces$.value = [{ ...selectedWorkspace }];
-    servers$.value = [];
-    view.rerender(<ShareImportController provider={provider} />);
-    expect(
-      screen.getByRole('button', { name: /Workspace Workspace One/ })
-    ).toBeTruthy();
-    expect(
-      (screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement)
-        .disabled
-    ).toBe(false);
-    expect(provider.listPending).toHaveBeenCalledTimes(1);
-
-    workspaces$.value = [];
-    view.rerender(<ShareImportController provider={provider} />);
-    expect(
-      (screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement)
-        .disabled
-    ).toBe(true);
-    workspaces$.value = [{ ...selectedWorkspace }];
-    view.rerender(<ShareImportController provider={provider} />);
-    await waitFor(() =>
-      expect(
-        (screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement)
-          .disabled
-      ).toBe(false)
-    );
-
-    window.dispatchEvent(new Event('affine:share-inbox'));
-    await waitFor(() => expect(provider.listPending).toHaveBeenCalledTimes(2));
-    expect(
-      screen.getByRole('button', { name: /Workspace Workspace One/ })
-    ).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() =>
-      expect(provider.updateTarget).toHaveBeenCalledWith('item', {
-        workspaceId: 'selected-workspace',
-        workspaceFlavour: 'local',
-        tagIds: ['tag-one'],
-        collectionId: 'collection-one',
-      })
-    );
-    expect(importer.getShareDestinationOptions).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'selected-workspace', flavour: 'local' })
-    );
-    expect(importer.importShareToWorkspace).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'selected-workspace', flavour: 'local' }),
-      expect.objectContaining({
-        tagIds: ['tag-one'],
-        collectionId: 'collection-one',
-      }),
-      { allowOffline: false }
-    );
   });
 });
 
@@ -542,7 +566,7 @@ describe('share preview presentation', () => {
       undefined,
     ],
     [
-      'invalid persisted URL',
+      'invalid URL',
       () => Promise.reject(new Error('unavailable')),
       'Link',
       '/relative',
@@ -553,24 +577,24 @@ describe('share preview presentation', () => {
       selectWorkspace: vi.fn(),
       load,
     } as unknown as SharePreviewRouteOwner;
-    render(
+    const { container } = render(
       <LinkPreview
         item={{
-          ...item('official'),
+          ...item(),
           content: {
-            ...item('official').content,
+            ...item().content,
             url: url ?? item().content.url,
           },
         }}
         owner={owner}
         workspace={undefined}
         servers={[]}
-        onPreview={() => {}}
       />
     );
     await waitFor(() =>
       expect(screen.getAllByText(expected).length).toBeGreaterThan(0)
     );
+    expect(container.querySelector('section > img')).toBeNull();
   });
 
   test('ignores stale preview results after the item changes', async () => {
@@ -593,17 +617,17 @@ describe('share preview presentation', () => {
     const owner = {
       selectWorkspace: vi.fn(),
       load,
+      workspaceKey: 'self:workspace',
+      generation: 1,
     } as unknown as SharePreviewRouteOwner;
-    const onPreview = vi.fn();
-    const firstItem = { ...item('official'), id: 'first' };
-    const secondItem = { ...item('official'), id: 'second' };
+    const firstItem = { ...item(), id: 'first' };
+    const secondItem = { ...item(), id: 'second' };
     const view = render(
       <LinkPreview
         item={firstItem}
         owner={owner}
         workspace={undefined}
         servers={[]}
-        onPreview={onPreview}
       />
     );
     view.rerender(
@@ -612,28 +636,22 @@ describe('share preview presentation', () => {
         owner={owner}
         workspace={undefined}
         servers={[]}
-        onPreview={onPreview}
       />
     );
 
     resolveFirst({ url: firstItem.content.url!, title: 'Stale preview' });
     await Promise.resolve();
     expect(screen.queryByText('Stale preview')).toBeNull();
-    expect(onPreview).not.toHaveBeenCalled();
 
     resolveSecond({ url: secondItem.content.url!, title: 'Current preview' });
     await screen.findByText('Current preview');
-    expect(onPreview).toHaveBeenCalledTimes(1);
-    expect(onPreview).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Current preview' })
-    );
   });
 
   test('uses one media-first card for rich preview content', async () => {
     const shared = {
-      ...item('official'),
+      ...item(),
       content: {
-        ...item('official').content,
+        ...item().content,
         text: 'Selected passage',
       },
     } satisfies PendingShareItem;
@@ -645,6 +663,7 @@ describe('share preview presentation', () => {
           url: shared.content.url!,
           title: 'Provider title',
           images: ['https://youtube.com/thumbnail.jpg'],
+          durationSeconds: 90,
           transcript: {
             segments: [{ text: '  Hello\n\tworld  ' }, { text: ' again ' }],
           },
@@ -656,56 +675,17 @@ describe('share preview presentation', () => {
         owner={owner}
         workspace={undefined}
         servers={[]}
-        onPreview={() => {}}
       />
     );
 
-    await screen.findByText('Transcript');
+    await screen.findByText('Provider title');
+    expect(screen.getByText('Transcript')).toBeTruthy();
     expect(screen.getByText('Hello world again')).toBeTruthy();
-    expect(
-      screen.getByRole('group', {
-        name: 'Transcript preview: Hello world again',
-      })
-    ).toBeTruthy();
+    expect(screen.getByText('1:30')).toBeTruthy();
     expect(screen.getByText('Selected passage')).toBeTruthy();
     expect(container.querySelector('section > img')?.getAttribute('src')).toBe(
       'https://youtube.com/thumbnail.jpg'
     );
-    const family = String.fromCodePoint(
-      0x1f468,
-      0x200d,
-      0x1f469,
-      0x200d,
-      0x1f467
-    );
-    expect(
-      transcriptPreviewText({
-        segments: [{ text: '  ' }, { text: family.repeat(241) }],
-      })
-    ).toBe(`${family.repeat(240)}…`);
-    expect(
-      transcriptPreviewText({ segments: [{ text: '\n\t' }] })
-    ).toBeUndefined();
-  });
-
-  test('keeps failure compact without an empty media region', async () => {
-    const owner = {
-      routeEndpoint: 'https://app.affine.pro/api/worker/link-preview',
-      selectWorkspace: vi.fn(),
-      load: () => Promise.reject(new Error('unavailable')),
-    } as unknown as SharePreviewRouteOwner;
-    const { container } = render(
-      <LinkPreview
-        item={item('official')}
-        owner={owner}
-        workspace={undefined}
-        servers={[]}
-        onPreview={() => {}}
-      />
-    );
-
-    await screen.findByText('Preview unavailable');
-    expect(container.querySelector('section > img')).toBeNull();
   });
 
   test.each([
@@ -720,182 +700,60 @@ describe('share preview presentation', () => {
   );
 });
 
-describe('share document block projection', () => {
-  test.each<
-    [
-      string,
-      ShareImportInput,
-      Parameters<typeof createShareBlockPlan>[1],
-      unknown,
-      string,
-    ]
-  >([
-    [
-      'generic metadata',
-      {
-        documentId: 'doc',
-        title: 'Page',
-        content: { kind: 'url', url: 'https://example.com' },
-        preview: {
-          url: 'https://redirect.example',
-          title: 'Example',
-          description: 'Description',
-          favicons: ['https://example.com/icon.png'],
-          images: ['https://example.com/image.png'],
-        },
-        tagIds: [],
-      },
-      null,
-      [
-        {
-          flavour: 'affine:bookmark',
-          props: {
-            url: 'https://example.com',
-            title: 'Example',
-            description: 'Description',
-            icon: 'https://example.com/icon.png',
-            image: 'https://example.com/image.png',
-            style: 'horizontal',
-          },
-        },
-      ],
-      '',
-    ],
-    [
-      'YouTube selection, chapters, and structured transcript',
-      {
-        documentId: 'doc',
-        title: 'Video',
-        content: {
-          kind: 'url',
-          url: 'https://youtube.com/watch?v=123',
-          text: 'Selected passage',
-        },
-        preview: {
-          url: 'https://youtube.com/watch?v=123',
-          provider: 'youtube',
-          transcript: {
-            chapters: [{ title: 'Opening', startSeconds: 0 }],
-            segments: [
-              { text: 'Welcome', startSeconds: 1, speaker: 'Host' },
-              { text: 'Plain paragraph' },
-            ],
-          },
-        },
-        tagIds: [],
-      },
-      { flavour: 'affine:embed-youtube', styles: ['video'] },
-      [
-        {
-          flavour: 'affine:embed-youtube',
-          props: {
-            url: 'https://youtube.com/watch?v=123',
-            style: 'video',
-          },
-        },
-        {
-          flavour: 'affine:paragraph',
-          props: { type: 'quote', text: 'Selected passage' },
-        },
-        {
-          flavour: 'affine:callout',
-          props: {
-            icon: { type: 'emoji', unicode: '💬' },
-            backgroundColorName: 'grey',
-          },
-          children: [
-            {
-              flavour: 'affine:paragraph',
-              props: { type: 'h6', text: 'Transcript', collapsed: true },
-            },
-            {
-              flavour: 'affine:paragraph',
-              props: { type: 'h6', text: 'Opening' },
-            },
-            {
-              flavour: 'affine:paragraph',
-              props: { type: 'text', text: '[0:01] Host: Welcome' },
-            },
-            {
-              flavour: 'affine:paragraph',
-              props: { type: 'text', text: 'Plain paragraph' },
-            },
-          ],
-        },
-      ],
-      '',
-    ],
-    [
-      'X duplicate transcript',
-      {
-        documentId: 'doc',
-        title: 'Post',
-        content: { kind: 'url', url: 'https://x.com/affine/status/123' },
-        preview: {
-          url: 'https://x.com/affine/status/123',
-          provider: 'x',
-          description: 'A complete post',
-          transcript: {
-            segments: [{ text: 'A complete' }, { text: 'post' }],
-          },
-        },
-        tagIds: [],
-      },
-      null,
-      [
-        {
-          flavour: 'affine:bookmark',
-          props: {
-            url: 'https://x.com/affine/status/123',
-            title: undefined,
-            description: 'A complete post',
-            icon: undefined,
-            image: undefined,
-            style: 'horizontal',
-          },
-        },
-      ],
-      '',
-    ],
-    [
-      'plain text',
-      {
-        documentId: 'doc',
-        title: 'Note',
-        content: { kind: 'text', text: 'Plain *shared* text' },
-        tagIds: [],
-      },
-      null,
-      [],
-      'Plain \\*shared\\* text',
-    ],
-  ])(
-    'creates the same stable projection for %s',
-    (_name, input, embed, expected, markdown) => {
-      expect(createShareBlockPlan(input, embed)).toEqual(expected);
-      expect(createShareBlockPlan(input, embed)).toEqual(expected);
-      expect(createShareMarkdown(input)).toBe(markdown);
+describe('editor link details', () => {
+  test('loads lazily, renders the full transcript and discards stale URL responses', async () => {
+    if (!customElements.get('affine-link-preview-details')) {
+      customElements.define('affine-link-preview-details', LinkPreviewDetails);
     }
-  );
-});
-
-describe('collapsed content accessibility', () => {
-  test('uses native button semantics and identifies the controlled content', async () => {
-    if (!customElements.get('blocksuite-toggle-button')) {
-      customElements.define('blocksuite-toggle-button', ToggleButton);
-    }
-    const toggle = document.createElement('blocksuite-toggle-button');
-    toggle.collapsed = true;
-    toggle.controls = 'heading-children-id';
-    toggle.updateCollapsed = vi.fn();
-    document.body.append(toggle);
-    await toggle.updateComplete;
-
-    const button = toggle.querySelector('button')!;
-    expect(button.getAttribute('aria-label')).toBe('Expand content');
-    expect(button.getAttribute('aria-expanded')).toBe('false');
-    expect(button.getAttribute('aria-controls')).toBe('heading-children-id');
-    button.click();
-    expect(toggle.updateCollapsed).toHaveBeenCalledWith(false);
+    let resolve!: (
+      value: Awaited<ReturnType<LinkPreviewService['query']>>
+    ) => void;
+    const query = vi
+      .fn<LinkPreviewService['query']>()
+      .mockImplementationOnce(
+        () =>
+          new Promise(done => {
+            resolve = done;
+          })
+      )
+      .mockResolvedValue({
+        author: { name: 'Author' },
+        transcript: {
+          segments: [{ text: 'Full '.repeat(1000), startSeconds: 61 }],
+          chapters: [{ title: 'Chapter', startSeconds: 0 }],
+        },
+      });
+    const element = document.createElement('affine-link-preview-details');
+    element.provider = {
+      query,
+      endpoint: 'https://example.com/preview',
+      setEndpoint: () => {},
+    };
+    element.url = 'https://example.com/old';
+    document.body.append(element);
+    await element.updateComplete;
+    expect(query).not.toHaveBeenCalled();
+    element.shadowRoot!.querySelector('button')!.click();
+    await element.updateComplete;
+    const oldSignal = query.mock.calls[0][1]!;
+    element.url = 'https://example.com/new';
+    await element.updateComplete;
+    expect(oldSignal.aborted).toBe(true);
+    resolve({ transcript: { segments: [{ text: 'Stale transcript' }] } });
+    await Promise.resolve();
+    element.shadowRoot!.querySelector('button')!.click();
+    await waitFor(() =>
+      expect(element.shadowRoot!.textContent).toContain('Full '.repeat(1000))
+    );
+    expect(element.shadowRoot!.textContent).not.toContain('Stale transcript');
+    expect(element.shadowRoot!.textContent).toContain('1:01');
+    expect(element.shadowRoot!.textContent).toContain('Chapter');
+    expect(query.mock.calls[1][2]).toEqual(['transcript']);
+    expect(
+      element
+        .shadowRoot!.querySelector('[contenteditable]')
+        ?.getAttribute('contenteditable')
+    ).toBe('false');
+    element.remove();
   });
 });

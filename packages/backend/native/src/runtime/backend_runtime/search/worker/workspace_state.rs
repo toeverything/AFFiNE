@@ -92,6 +92,7 @@ pub(super) async fn claim_workspace(
                 SELECT 1 FROM search_projection.document_states document
                 WHERE document.generation_id=state.generation_id
                   AND document.workspace_id=state.workspace_id
+                  AND document.last_error IS NULL
                   AND document.available_at <= now()
                   AND (document.target_source_version <> document.published_source_version
                     OR document.target_source_exists <> document.published_source_exists
@@ -99,10 +100,12 @@ pub(super) async fn claim_workspace(
               ) AS has_due_publications
        FROM search_projection.workspace_states state
        WHERE generation_id=$1 AND workspace_id=$2
+         AND state.last_error IS DISTINCT FROM 'search_workspace_reconcile_failed'
          AND (available_at <= now() OR EXISTS(
            SELECT 1 FROM search_projection.document_states document
            WHERE document.generation_id=state.generation_id
              AND document.workspace_id=state.workspace_id
+             AND document.last_error IS NULL
              AND document.available_at <= now()
              AND (document.target_source_version <> document.published_source_version
                OR document.target_source_exists <> document.published_source_exists
@@ -295,9 +298,10 @@ pub(super) async fn complete_workspace(
            applied_permission_version=CASE
              WHEN state.required_permission_version <= $4
               AND NOT EXISTS (
-                SELECT 1 FROM search_projection.document_states document
-                WHERE document.generation_id=state.generation_id
+             SELECT 1 FROM search_projection.document_states document
+             WHERE document.generation_id=state.generation_id
                   AND document.workspace_id=state.workspace_id
+                  AND document.last_error IS NULL
                   AND document.target_permission_version <> document.published_permission_version
               )
              THEN GREATEST(state.applied_permission_version,state.required_permission_version)
@@ -308,6 +312,7 @@ pub(super) async fn complete_workspace(
              WHEN EXISTS (
                SELECT 1 FROM search_projection.document_states document
                WHERE document.generation_id=state.generation_id AND document.workspace_id=state.workspace_id
+                 AND document.last_error IS NULL
                  AND (document.target_source_version <> document.published_source_version
                    OR document.target_source_exists <> document.published_source_exists
                    OR document.target_permission_version <> document.published_permission_version)
@@ -320,6 +325,7 @@ pub(super) async fn complete_workspace(
               AND NOT EXISTS (
                 SELECT 1 FROM search_projection.document_states document
                 WHERE document.generation_id=state.generation_id AND document.workspace_id=state.workspace_id
+                  AND document.last_error IS NULL
                   AND (document.target_source_version <> document.published_source_version
                     OR document.target_source_exists <> document.published_source_exists
                     OR document.target_permission_version <> document.published_permission_version)
@@ -468,8 +474,8 @@ mod tests {
     .unwrap();
     sqlx::query(
       r#"INSERT INTO search_projection.generations(
-           id,provider,state,config_hash,schema_version,scan_high_water_sid,scan_cursor_sid
-         ) VALUES($1,'embedded','building',$2,1,0,0)"#,
+           id,provider,state,config_hash,schema_version,manifest,scan_high_water_sid,scan_cursor_sid
+         ) VALUES($1,'embedded','building',$2,1,'{"doc":"doc","block":"block"}',0,0)"#,
     )
     .bind(generation_id)
     .bind(config_hash(&config))
@@ -572,7 +578,7 @@ mod tests {
       )
     );
 
-    let runtime = SearchRuntime::new(pool.clone(), config).unwrap();
+    let runtime = SearchRuntime::new(pool.clone(), config, crate::runtime::Deployment::Cloud).unwrap();
     runtime.embedded.prepare_generation(generation_id).await;
     assert_eq!(runtime.reconcile_pending(1).await.unwrap(), 0);
     assert_eq!(

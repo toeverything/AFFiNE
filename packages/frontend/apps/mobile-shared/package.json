@@ -1,6 +1,6 @@
 {
   "name": "@affine/mobile-shared",
-  "version": "0.27.0",
+  "version": "0.27.5",
   "type": "module",
   "private": true,
   "sideEffects": false,
@@ -18,6 +18,6 @@
   },
   "devDependencies": {
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   }
 }

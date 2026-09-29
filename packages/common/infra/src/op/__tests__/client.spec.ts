@@ -86,15 +86,17 @@ describe('op client', () => {
     expect(data.byteLength).toBe(0);
   });
 
-  it('should send optional payload call with abort signal', async ctx => {
-    const abortController = new AbortController();
-    const result = ctx.producer.call(
-      'init',
-      { fastText: true },
-      abortController.signal
-    );
+  it.for([true, false])(
+    'should preserve payload with optional abort signal: %s',
+    async (withSignal, ctx) => {
+      const abortController = new AbortController();
+      const result = ctx.producer.call(
+        'init',
+        { fastText: true },
+        withSignal ? abortController.signal : undefined
+      );
 
-    expect(ctx.postMessage.mock.calls[0][0]).toMatchInlineSnapshot(`
+      expect(ctx.postMessage.mock.calls[0][0]).toMatchInlineSnapshot(`
       {
         "id": "init:1",
         "name": "init",
@@ -105,14 +107,15 @@ describe('op client', () => {
       }
     `);
 
-    ctx.handlers.return({
-      type: 'return',
-      id: 'init:1',
-      data: { ok: true },
-    });
+      ctx.handlers.return({
+        type: 'return',
+        id: 'init:1',
+        data: { ok: true },
+      });
 
-    await expect(result).resolves.toEqual({ ok: true });
-  });
+      await expect(result).resolves.toEqual({ ok: true });
+    }
+  );
 
   it('should send undefined payload for optional input call', async ctx => {
     const result = ctx.producer.call('init', undefined);

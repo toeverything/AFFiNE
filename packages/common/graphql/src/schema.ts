@@ -975,14 +975,16 @@ export interface DocPageAnalyticsSummary {
 
 export interface DocPermissions {
   __typename?: 'DocPermissions';
+  Doc_Analytics_Read: Scalars['Boolean']['output'];
+  Doc_Analytics_Viewers_Read: Scalars['Boolean']['output'];
   Doc_Comments_Create: Scalars['Boolean']['output'];
-  Doc_Comments_Delete: Scalars['Boolean']['output'];
+  Doc_Comments_Moderate: Scalars['Boolean']['output'];
   Doc_Comments_Read: Scalars['Boolean']['output'];
-  Doc_Comments_Resolve: Scalars['Boolean']['output'];
-  Doc_Comments_Update: Scalars['Boolean']['output'];
   Doc_Copy: Scalars['Boolean']['output'];
   Doc_Delete: Scalars['Boolean']['output'];
   Doc_Duplicate: Scalars['Boolean']['output'];
+  Doc_History_Read: Scalars['Boolean']['output'];
+  Doc_Preview: Scalars['Boolean']['output'];
   Doc_Properties_Read: Scalars['Boolean']['output'];
   Doc_Properties_Update: Scalars['Boolean']['output'];
   Doc_Publish: Scalars['Boolean']['output'];
@@ -990,6 +992,7 @@ export interface DocPermissions {
   Doc_Restore: Scalars['Boolean']['output'];
   Doc_TransferOwner: Scalars['Boolean']['output'];
   Doc_Trash: Scalars['Boolean']['output'];
+  Doc_Unpublish: Scalars['Boolean']['output'];
   Doc_Update: Scalars['Boolean']['output'];
   Doc_Users_Manage: Scalars['Boolean']['output'];
   Doc_Users_Read: Scalars['Boolean']['output'];
@@ -1119,6 +1122,7 @@ export type ErrorDataUnion =
   | SubscriptionAlreadyExistsDataType
   | SubscriptionNotExistsDataType
   | SubscriptionPlanNotFoundDataType
+  | SyncPermissionGenerationChangedDataType
   | UnknownOauthProviderDataType
   | UnsupportedClientVersionDataType
   | UnsupportedServerVersionDataType
@@ -1270,6 +1274,7 @@ export enum ErrorNames {
   SUBSCRIPTION_HAS_NOT_BEEN_CANCELED = 'SUBSCRIPTION_HAS_NOT_BEEN_CANCELED',
   SUBSCRIPTION_NOT_EXISTS = 'SUBSCRIPTION_NOT_EXISTS',
   SUBSCRIPTION_PLAN_NOT_FOUND = 'SUBSCRIPTION_PLAN_NOT_FOUND',
+  SYNC_PERMISSION_GENERATION_CHANGED = 'SYNC_PERMISSION_GENERATION_CHANGED',
   TOO_MANY_REQUEST = 'TOO_MANY_REQUEST',
   UNKNOWN_OAUTH_PROVIDER = 'UNKNOWN_OAUTH_PROVIDER',
   UNSPLASH_IS_NOT_CONFIGURED = 'UNSPLASH_IS_NOT_CONFIGURED',
@@ -3086,6 +3091,11 @@ export enum SubscriptionVariant {
   Onetime = 'Onetime',
 }
 
+export interface SyncPermissionGenerationChangedDataType {
+  __typename?: 'SyncPermissionGenerationChangedDataType';
+  spaceId: Scalars['String']['output'];
+}
+
 export enum TimeBucket {
   Day = 'Day',
   Hour = 'Hour',
@@ -3582,14 +3592,14 @@ export interface WorkspacePermissionNotFoundDataType {
 export interface WorkspacePermissions {
   __typename?: 'WorkspacePermissions';
   Workspace_Administrators_Manage: Scalars['Boolean']['output'];
-  Workspace_Blobs_List: Scalars['Boolean']['output'];
-  Workspace_Blobs_Read: Scalars['Boolean']['output'];
-  Workspace_Blobs_Write: Scalars['Boolean']['output'];
+  Workspace_Blobs_Manage: Scalars['Boolean']['output'];
+  Workspace_Blobs_Upload: Scalars['Boolean']['output'];
   Workspace_Copilot: Scalars['Boolean']['output'];
   Workspace_CreateDoc: Scalars['Boolean']['output'];
   Workspace_Delete: Scalars['Boolean']['output'];
   Workspace_Organize_Read: Scalars['Boolean']['output'];
   Workspace_Payment_Manage: Scalars['Boolean']['output'];
+  Workspace_Preview: Scalars['Boolean']['output'];
   Workspace_Properties_Create: Scalars['Boolean']['output'];
   Workspace_Properties_Delete: Scalars['Boolean']['output'];
   Workspace_Properties_Read: Scalars['Boolean']['output'];
@@ -3642,8 +3652,6 @@ export interface WorkspaceType {
   blobUploadPartUrl: BlobUploadPart;
   /** List blobs of workspace */
   blobs: Array<ListedBlob>;
-  /** Blobs size of workspace */
-  blobsSize: Scalars['Int']['output'];
   byokSettings: WorkspaceByokSettingsType;
   byokUsage: Array<WorkspaceByokUsagePointType>;
   calendars: Array<WorkspaceCalendarObjectType>;
@@ -5971,6 +5979,8 @@ export type GetDocRolePermissionsQuery = {
       permissions: {
         __typename?: 'DocPermissions';
         Doc_Copy: boolean;
+        Doc_Analytics_Read: boolean;
+        Doc_Analytics_Viewers_Read: boolean;
         Doc_Delete: boolean;
         Doc_Duplicate: boolean;
         Doc_Properties_Read: boolean;
@@ -5984,9 +5994,11 @@ export type GetDocRolePermissionsQuery = {
         Doc_Users_Manage: boolean;
         Doc_Users_Read: boolean;
         Doc_Comments_Create: boolean;
-        Doc_Comments_Delete: boolean;
+        Doc_Comments_Moderate: boolean;
         Doc_Comments_Read: boolean;
-        Doc_Comments_Resolve: boolean;
+        Doc_History_Read: boolean;
+        Doc_Preview: boolean;
+        Doc_Unpublish: boolean;
       };
     };
   };
@@ -7669,9 +7681,8 @@ export type GetWorkspaceRolePermissionsQuery = {
     permissions: {
       __typename?: 'WorkspacePermissions';
       Workspace_Administrators_Manage: boolean;
-      Workspace_Blobs_List: boolean;
-      Workspace_Blobs_Read: boolean;
-      Workspace_Blobs_Write: boolean;
+      Workspace_Blobs_Manage: boolean;
+      Workspace_Blobs_Upload: boolean;
       Workspace_Copilot: boolean;
       Workspace_CreateDoc: boolean;
       Workspace_Delete: boolean;

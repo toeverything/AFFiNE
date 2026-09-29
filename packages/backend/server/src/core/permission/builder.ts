@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 
-import { DocID } from '../utils/doc';
 import { Resource } from './resource';
 import { PermissionService } from './service';
 import {
@@ -44,21 +43,19 @@ export class UserAccessControllerBuilder {
     );
   }
 
-  doc(
-    docId: DocID | { workspaceId: string; docId: string }
-  ): DocAccessControllerBuilder;
+  doc(docId: {
+    workspaceId: string;
+    docId: string;
+  }): DocAccessControllerBuilder;
   doc(workspaceId: string, docId: string): DocAccessControllerBuilder;
   doc(
-    docIdOrWorkspaceId: string | DocID | { workspaceId: string; docId: string },
+    docIdOrWorkspaceId: string | { workspaceId: string; docId: string },
     doc?: string
   ) {
     let workspaceId: string;
     let docId: string;
 
-    if (docIdOrWorkspaceId instanceof DocID) {
-      workspaceId = docIdOrWorkspaceId.workspace;
-      docId = docIdOrWorkspaceId.guid;
-    } else if (typeof docIdOrWorkspaceId === 'string') {
+    if (typeof docIdOrWorkspaceId === 'string') {
       workspaceId = docIdOrWorkspaceId;
       docId = doc as string;
     } else {
@@ -83,11 +80,6 @@ class WorkspaceAccessControllerBuilder {
     private readonly permission?: PermissionService
   ) {}
 
-  allowLocal() {
-    this.data.allowLocal = true;
-    return this;
-  }
-
   doc(docId: string) {
     return new DocAccessControllerBuilder(
       {
@@ -108,26 +100,25 @@ class WorkspaceAccessControllerBuilder {
     items: T[],
     action: DocAction
   ): Promise<T[]> {
+    const docRoles = await this.docPermissions(items, [action]);
+    const allowed = new Set(
+      docRoles.filter(doc => doc.decisions[0]?.allowed).map(doc => doc.docId)
+    );
+    return items.filter(item => allowed.has(item.docId));
+  }
+
+  async docPermissions<T extends { docId: string }>(
+    items: T[],
+    actions: DocAction[]
+  ) {
     const docIds = items.map(item => item.docId);
-    const docRoles = await assertPerm(this.permission).batchDocPermissions({
+    return await assertPerm(this.permission).batchDocPermissions({
       userId: this.data.userId,
       workspaceId: this.data.workspaceId,
       docs: docIds.map(docId => ({
         docId,
-        actions: [action],
+        actions,
       })),
-      allowLocal: this.data.allowLocal,
-    });
-    const docRolesMap = new Map(
-      docRoles.map((role, index) => [docIds[index], role])
-    );
-
-    return items.filter(item => {
-      return docRolesMap
-        .get(item.docId)
-        ?.decisions.some(
-          decision => decision.action === action && decision.allowed
-        );
     });
   }
 
@@ -164,11 +155,6 @@ class DocAccessControllerBuilder {
     public readonly data: Resource<'doc'>,
     private readonly permission?: PermissionService
   ) {}
-
-  allowLocal() {
-    this.data.allowLocal = true;
-    return this;
-  }
 
   async assert(action: DocAction) {
     await assertPerm(this.permission).assertDoc({

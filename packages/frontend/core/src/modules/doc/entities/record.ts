@@ -83,11 +83,15 @@ export class DocRecord extends Entity<{ id: string }> {
   }
 
   moveToTrash() {
-    return this.setMeta({ trash: true, trashDate: Date.now() });
+    return this.docsStore.applyDocLifecycle(this.id, 'trash');
   }
 
   restoreFromTrash() {
-    return this.setMeta({ trash: false, trashDate: undefined });
+    return this.docsStore.applyDocLifecycle(this.id, 'restore');
+  }
+
+  deletePermanently() {
+    return this.docsStore.applyDocLifecycle(this.id, 'delete');
   }
 
   title$ = this.meta$.map(meta => meta.title ?? '');

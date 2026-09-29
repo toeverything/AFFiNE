@@ -1,15 +1,8 @@
-use crate::permission::PermissionEvaluationInputV1;
+use affine_core::access_control::{AccessGrant, AclFacts, AuthorizationRequest};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::runtime::backend_runtime) enum SearchActor {
   User { user_id: String },
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum DocAclCapability {
-  Enabled,
-  Disabled,
-  Unknown,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -32,9 +25,9 @@ pub(in crate::runtime::backend_runtime) struct AuthorizedSearchScope {
 }
 
 pub(super) struct PermissionSnapshot {
-  pub(super) capability: DocAclCapability,
-  pub(super) evaluation: PermissionEvaluationInputV1,
-  pub(super) actor_user_id: String,
+  pub(super) request: AuthorizationRequest,
+  pub(super) facts: AclFacts,
+  pub(super) grant: AccessGrant,
   pub(super) active_member: bool,
   pub(super) sharing_enabled: bool,
 }

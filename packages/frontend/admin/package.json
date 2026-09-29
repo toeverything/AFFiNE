@@ -1,6 +1,6 @@
 {
   "name": "@affine/admin",
-  "version": "0.27.0",
+  "version": "0.27.5",
   "private": true,
   "dependencies": {
     "@affine/component": "workspace:*",
@@ -9,7 +9,6 @@
     "@affine/graphql": "workspace:*",
     "@affine/routes": "workspace:*",
     "@blocksuite/icons": "^2.2.17",
-    "@queuedash/ui": "^3.16.0",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.3",
     "@radix-ui/react-aspect-ratio": "^1.1.1",
@@ -51,7 +50,7 @@
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^3.0.6",
-    "react-router-dom": "^7.18.2",
+    "react-router-dom": "^7.18.4",
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "swr": "^2.3.7",
@@ -65,7 +64,7 @@
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "tailwindcss-animate": "^1.0.7",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   },
   "scripts": {
     "build": "affine bundle",

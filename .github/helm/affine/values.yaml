@@ -15,6 +15,10 @@ global:
   secret:
     secretName: 'server-private-key'
     privateKey: ''
+    # Name of an externally managed Secret containing the license signing key.
+    # The chart never generates this key. Leave empty to disable license issuance.
+    licenseSecretName: ''
+    licensePrivateKeyKey: 'license-private-key'
   database:
     user: 'postgres'
     host: 'pg-postgresql'

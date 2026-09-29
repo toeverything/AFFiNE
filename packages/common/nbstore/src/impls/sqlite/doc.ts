@@ -3,7 +3,6 @@ import {
   type BlockInfo,
   type CrawlResult,
   type DocClocks,
-  type DocRecord,
   DocStorageBase,
   type DocUpdate,
 } from '../../storage';
@@ -15,6 +14,10 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
 
   get db() {
     return this.connection.apis;
+  }
+
+  override getDoc(docId: string) {
+    return this.db.getDoc(docId);
   }
 
   override async pushDocUpdate(update: DocUpdate, origin?: string) {
@@ -49,37 +52,6 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
 
   override async getDocTimestamp(docId: string) {
     return this.db.getDocClock(docId);
-  }
-
-  protected override async getDocSnapshot(docId: string) {
-    const snapshot = await this.db.getDocSnapshot(docId);
-
-    if (!snapshot) {
-      return null;
-    }
-
-    return snapshot;
-  }
-
-  protected override async setDocSnapshot(
-    snapshot: DocRecord
-  ): Promise<boolean> {
-    return this.db.setDocSnapshot({
-      docId: snapshot.docId,
-      bin: snapshot.bin,
-      timestamp: snapshot.timestamp,
-    });
-  }
-
-  protected override async getDocUpdates(docId: string) {
-    return this.db.getDocUpdates(docId);
-  }
-
-  protected override markUpdatesMerged(docId: string, updates: DocRecord[]) {
-    return this.db.markUpdatesMerged(
-      docId,
-      updates.map(update => update.timestamp)
-    );
   }
 
   override async crawlDocData(docId: string): Promise<CrawlResult | null> {

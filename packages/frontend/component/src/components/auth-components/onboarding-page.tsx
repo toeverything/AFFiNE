@@ -255,7 +255,7 @@ export const OnboardingPage = ({
           size="extraLarge"
           onClick={() => {
             if (callbackUrl) {
-              navigate(callbackUrl);
+              Promise.resolve(navigate(callbackUrl)).catch(console.error);
             } else {
               onOpenAffine();
             }

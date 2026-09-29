@@ -9,6 +9,7 @@ import {
   SearchPermissionSyncing,
   SearchProviderUnavailable,
   SpaceAccessDenied,
+  UserFriendlyError,
 } from '../../../base';
 import { ConfigFactory } from '../../../base/config';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
@@ -81,29 +82,23 @@ test('does not schedule or run native search reconciliation when disabled', asyn
     reconcileSearchProjection: Sinon.stub(),
     searchStatus: Sinon.stub(),
   };
-  const queue = { add: Sinon.stub() };
   const config = {
     config: { indexer: { enabled: false } },
   } as unknown as ConfigFactory;
   const job = new BackendRuntimeSearchJob(
     runtime as unknown as BackendRuntimeProvider,
-    queue as never,
     config
   );
 
-  await job.scheduleReconciliation();
-  t.is(queue.add.callCount, 0);
-  t.is(await job.reconcileProjection({ limit: 100 }), 0);
+  t.is(await job.reconcileProjection(), 0);
   t.false(runtime.reconcileSearchProjection.called);
   t.false(runtime.searchStatus.called);
 
   config.config.indexer.enabled = true;
-  await job.scheduleReconciliation();
-  t.deepEqual(queue.add.firstCall.args[2], {
-    jobId: 'backend-runtime-search-reconciliation',
-    attempts: 1,
-    removeOnFail: true,
-  });
+  runtime.reconcileSearchProjection.resolves(0);
+  runtime.searchStatus.resolves({ ready: true });
+  t.is(await job.reconcileProjection(), 0);
+  t.true(runtime.reconcileSearchProjection.calledOnceWithExactly(100));
 });
 
 test('maps native search results and typed errors at the Node boundary', async t => {
@@ -178,6 +173,7 @@ test('maps native search results and typed errors at the Node boundary', async t
   );
   t.is(aggregateResult.pagination.count, 1);
 
+  const mappings = [];
   for (const [errorCode, expected] of [
     ['workspace_denied', SpaceAccessDenied],
     ['invalid_request', InvalidIndexerInput],
@@ -192,8 +188,18 @@ test('maps native search results and typed errors at the Node boundary', async t
     const error = await t.throwsAsync(
       service.search('actor', 'workspace', input)
     );
+    if (!(error instanceof UserFriendlyError)) {
+      throw error;
+    }
     t.true(error instanceof expected, errorCode);
+    mappings.push({
+      errorCode,
+      name: error.name,
+      status: error.status,
+      type: error.type,
+    });
   }
+  t.snapshot(mappings);
 });
 
 test('searchDocs keeps filtering and enrichment in Node', async t => {

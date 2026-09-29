@@ -18,6 +18,7 @@ services:
     environment:
       - REDIS_SERVER_HOST=redis
       - DATABASE_URL=postgresql://affine@postgres:5432/affine
+      - DEPLOYMENT_TYPE=selfhosted
     restart: unless-stopped
 
   affine_migration:
@@ -30,6 +31,7 @@ services:
     environment:
       - REDIS_SERVER_HOST=redis
       - DATABASE_URL=postgresql://affine@postgres:5432/affine
+      - DEPLOYMENT_TYPE=selfhosted
     depends_on:
       postgres:
         condition: service_healthy

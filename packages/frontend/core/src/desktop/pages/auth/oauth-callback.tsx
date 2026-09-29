@@ -100,7 +100,9 @@ export const Component = () => {
         location.replace(resolveOAuthRedirect(redirectUri, location.origin));
       })
       .catch(e => {
-        nav(`/sign-in?error=${encodeURIComponent(e.message)}`);
+        Promise.resolve(
+          nav(`/sign-in?error=${encodeURIComponent(e.message)}`)
+        ).catch(console.error);
       });
   }, [data, auth, nav]);
 

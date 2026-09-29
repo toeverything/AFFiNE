@@ -11,6 +11,10 @@ inputs:
     description: 'Whether to skip building'
     required: false
     default: 'false'
+  cache-key:
+    description: 'Additional cache key to separate build purposes'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -73,6 +77,7 @@ runs:
         workspaces: ${{ env.DEV_DRIVE_WORKSPACE }}
         save-if: ${{ github.ref_name == 'canary' }}
         shared-key: ${{ steps.cache-key.outputs.shared-key }}
+        key: ${{ inputs.cache-key }}
       env:
         CARGO_HOME: ${{ env.DEV_DRIVE }}/.cargo
         RUSTUP_HOME: ${{ env.DEV_DRIVE }}/.rustup
@@ -83,6 +88,7 @@ runs:
       with:
         save-if: ${{ github.ref_name == 'canary' }}
         shared-key: ${{ steps.cache-key.outputs.shared-key }}
+        key: ${{ inputs.cache-key }}
 
     - name: Build
       shell: bash

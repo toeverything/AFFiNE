@@ -45,6 +45,7 @@ import {
   type CopilotRuntimeEvent,
   CopilotRuntimeEventConsumer,
 } from './copilot-runtime-event-consumer';
+import { AttachmentAdmissionHost } from './hosts/attachment-admission';
 import { mapNativeSemanticError } from './native-errors';
 import {
   buildCanonicalNativeRequest,
@@ -80,8 +81,22 @@ export class CapabilityRuntime {
     private readonly conversations: ConversationPolicy,
     private readonly tools: ToolRuntime,
     private readonly events: CopilotRuntimeEventConsumer,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly attachments: AttachmentAdmissionHost
   ) {}
+
+  private async prepareMessages(
+    messages: PromptMessage[],
+    options: RuntimeOptions
+  ) {
+    assertCopilotEnabled(this.config);
+    return await this.attachments.preparePromptMessages(messages, {
+      userId: options.user ?? '',
+      workspaceId: options.workspace ?? '',
+      sessionId: options.session,
+      signal: options.signal,
+    });
+  }
 
   private async access(options: RuntimeOptions) {
     assertCopilotEnabled(this.config);
@@ -183,7 +198,7 @@ export class CapabilityRuntime {
     const toolSet = await this.tools.getTools(options, '');
     const { request } = await buildCanonicalNativeRequest({
       model: 'route-selected',
-      messages,
+      messages: await this.prepareMessages(messages, options),
       options,
       toolContracts: buildToolContracts(toolSet),
       attachmentCapability,
@@ -306,7 +321,7 @@ export class CapabilityRuntime {
     }
     const { request } = await buildCanonicalNativeStructuredRequest({
       model: 'route-selected',
-      messages,
+      messages: await this.prepareMessages(messages, options),
       options,
       responseContract: contract,
       attachmentCapability,
@@ -408,7 +423,10 @@ export class CapabilityRuntime {
       slot,
       buildLlmImageRequestFromMessages({
         model: 'route-selected',
-        messages: preparePromptMessagesForNativeRequest(messages, true),
+        messages: preparePromptMessagesForNativeRequest(
+          await this.prepareMessages(messages, options),
+          true
+        ),
         options: { quality, seed, modelName, loras },
       }),
       cond,

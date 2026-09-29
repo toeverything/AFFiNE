@@ -14,6 +14,7 @@ import {
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
 import {
+  isInsideBlockByFlavour,
   matchModels,
   mergeToCodeModel,
   transformModel,
@@ -29,6 +30,11 @@ import type { BlockModel } from '@blocksuite/store';
 type UpdateBlockConfig = {
   flavour: string;
   props?: Record<string, unknown>;
+};
+
+type UpdateBlockResult = {
+  updatedBlocks: BlockModel[];
+  textTargetBlocks?: BlockModel[];
 };
 
 export const updateBlockType: Command<
@@ -121,6 +127,90 @@ export const updateBlockType: Command<
     }
     return next({ updatedBlocks: [newModel] });
   };
+  const transformToCallout: Command<{}, UpdateBlockResult> = (_, next) => {
+    if (flavour !== 'affine:callout') return;
+
+    const selectedIds = new Set(blockModels.map(model => model.id));
+    const sourceModels = blockModels.filter(model => {
+      let parent = doc.getParent(model);
+      while (parent) {
+        if (selectedIds.has(parent.id)) return false;
+        parent = doc.getParent(parent);
+      }
+      return true;
+    });
+
+    const plans = sourceModels.flatMap(model => {
+      if (
+        !matchModels(model, [
+          ParagraphBlockModel,
+          ListBlockModel,
+          CodeBlockModel,
+        ]) ||
+        isInsideBlockByFlavour(doc, model, 'affine:callout')
+      ) {
+        return [];
+      }
+
+      const parent = doc.getParent(model);
+      if (
+        !parent ||
+        parent.children.indexOf(model) === -1 ||
+        !doc.schema.isValid('affine:callout', parent.flavour) ||
+        !model.children.every(child =>
+          doc.schema.isValid(child.flavour, 'affine:paragraph')
+        )
+      ) {
+        return [];
+      }
+
+      return [{ model, parent, text: model.text?.clone() }];
+    });
+
+    if (plans.length === 0 || plans.length !== sourceModels.length) {
+      return next({ updatedBlocks: [] });
+    }
+
+    const conversions: Array<{
+      source: BlockModel;
+      callout: BlockModel;
+      paragraph: BlockModel;
+    }> = [];
+
+    for (const { model, parent, text } of plans) {
+      const index = parent.children.indexOf(model);
+      const calloutId = doc.addBlock('affine:callout', {}, parent, index);
+      const callout = doc.getModelById(calloutId);
+      if (!callout) {
+        conversions.forEach(({ callout }) => doc.deleteBlock(callout));
+        return next({ updatedBlocks: [] });
+      }
+
+      const paragraphId = doc.addBlock('affine:paragraph', { text }, callout);
+      const paragraph = doc.getModelById(paragraphId);
+      if (!paragraph) {
+        doc.deleteBlock(callout);
+        conversions.forEach(({ callout }) => doc.deleteBlock(callout));
+        return next({ updatedBlocks: [] });
+      }
+
+      conversions.push({ source: model, callout, paragraph });
+    }
+
+    conversions.forEach(({ source, paragraph }) => {
+      doc.deleteBlock(
+        source,
+        source.children.length > 0
+          ? { bringChildrenTo: paragraph }
+          : { deleteChildren: false }
+      );
+    });
+
+    return next({
+      updatedBlocks: conversions.map(({ callout }) => callout),
+      textTargetBlocks: conversions.map(({ paragraph }) => paragraph),
+    });
+  };
   const transformToLatex: Command<{}, { updatedBlocks: BlockModel[] }> = (
     _,
     next
@@ -154,16 +244,16 @@ export const updateBlockType: Command<
     return next({ updatedBlocks: newModels });
   };
 
-  const focusText: Command<{ updatedBlocks: BlockModel[] }> = (ctx, next) => {
-    const { updatedBlocks } = ctx;
-    if (!updatedBlocks || updatedBlocks.length === 0) {
+  const focusText: Command<UpdateBlockResult> = (ctx, next) => {
+    const targetBlocks = ctx.textTargetBlocks ?? ctx.updatedBlocks;
+    if (!targetBlocks || targetBlocks.length === 0) {
       return false;
     }
 
-    const firstNewModel = updatedBlocks[0];
-    const lastNewModel = updatedBlocks[updatedBlocks.length - 1];
+    const firstNewModel = targetBlocks[0];
+    const lastNewModel = targetBlocks[targetBlocks.length - 1];
 
-    const allTextUpdated = updatedBlocks.map(model =>
+    const allTextUpdated = targetBlocks.map(model =>
       onModelTextUpdated(std, model)
     );
     const selectionManager = host.selection;
@@ -194,7 +284,7 @@ export const updateBlockType: Command<
     return next();
   };
 
-  const focusBlock: Command<{ updatedBlocks: BlockModel[] }> = (ctx, next) => {
+  const focusBlock: Command<UpdateBlockResult> = (ctx, next) => {
     const { updatedBlocks } = ctx;
     if (!updatedBlocks || updatedBlocks.length === 0) {
       return false;
@@ -206,6 +296,7 @@ export const updateBlockType: Command<
     if (blockSelections.length === 0) {
       return false;
     }
+
     requestAnimationFrame(() => {
       const selections = updatedBlocks.map(model => {
         return selectionManager.create(BlockSelection, {
@@ -246,9 +337,10 @@ export const updateBlockType: Command<
       return next();
     })
     // update block type
-    .try<{ updatedBlocks: BlockModel[] }>(chain => [
+    .try<UpdateBlockResult>(chain => [
       chain.pipe(mergeToCode),
       chain.pipe(appendDivider),
+      chain.pipe(transformToCallout),
       chain.pipe(transformToLatex),
       chain.pipe((_, next) => {
         const newModels: BlockModel[] = [];

@@ -1,8 +1,20 @@
 import { LinkPreviewDataSchema } from '@blocksuite/affine-model';
 import { z } from 'zod';
 
+import { LinkPreviewResponseSchema } from './response';
+
 const _StorageSchema = z.object({
-  data: z.record(LinkPreviewDataSchema.partial()),
+  data: z.record(
+    LinkPreviewDataSchema.partial().extend(
+      LinkPreviewResponseSchema.pick({
+        siteName: true,
+        provider: true,
+        author: true,
+        publishedAt: true,
+        durationSeconds: true,
+      }).shape
+    )
+  ),
   expires: z.number().optional(),
 });
 

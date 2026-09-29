@@ -5,14 +5,20 @@ import {
 } from '@affine/graphql';
 
 import { Config } from '../../../base';
-import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
-import { app, e2e } from '../test';
+import {
+  addDocumentToRoot,
+  app,
+  e2e,
+  reconcileSearchProjection,
+} from '../test';
 
 const indexer = app.get(Config).indexer;
 const remoteE2e =
-  indexer.enabled && indexer.provider.type === 'elasticsearch' ? e2e : e2e.skip;
+  indexer.enabled && indexer.provider.type === 'elasticsearch'
+    ? e2e.serial
+    : e2e.skip;
 
 async function indexDocument(
   workspaceId: string,
@@ -21,18 +27,14 @@ async function indexDocument(
   markdown: string
 ) {
   await app.create(Mockers.DocMeta, { workspaceId, docId });
+  await addDocumentToRoot(workspaceId, docId);
   await app.create(Mockers.DocSnapshot, {
     workspaceId,
     docId,
     user,
     blob: createDocWithMarkdown(docId, markdown, docId),
   });
-  const runtime = app.get(BackendRuntimeProvider);
-  for (let attempt = 0; attempt < 50; attempt++) {
-    await runtime.reconcileSearchProjection(1000);
-    if ((await runtime.searchStatus()).ready) return;
-  }
-  throw new Error('search projection did not become ready');
+  await reconcileSearchProjection();
 }
 
 remoteE2e(

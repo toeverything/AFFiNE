@@ -1,6 +1,5 @@
 import { getCurrentUserQuery } from '@affine/graphql';
 
-import { JobExecutor } from '../../../base/job/queue/executor';
 import { DatabaseDocReader, DocReader } from '../../../core/doc';
 import { RealtimeGateway } from '../../../core/realtime/gateway';
 import { createApp } from '../create-app';
@@ -23,15 +22,7 @@ const withFlavor = async <T>(
   // @ts-expect-error override
   globalThis.env.FLAVOR = flavor;
   try {
-    await using app = await createApp({
-      tapModule(module) {
-        module.overrideProvider(JobExecutor).useValue({
-          onConfigInit: async () => {},
-          onConfigChanged: async () => {},
-          onModuleDestroy: async () => {},
-        });
-      },
-    });
+    await using app = await createApp();
     return await run(app);
   } finally {
     mutableEnv.FLAVOR = previousFlavor;

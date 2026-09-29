@@ -21,37 +21,18 @@ export function resolveShareTitle(
     : originalTitle || fallback;
 }
 
-const graphemeSegmenter = new Intl.Segmenter(undefined, {
-  granularity: 'grapheme',
-});
-
-export function transcriptPreviewText(
-  transcript: Preview['transcript']
-): string | undefined {
-  const text = transcript?.segments
-    .map(segment => segment.text.trim().replace(/\s+/g, ' '))
-    .filter(Boolean)
-    .join(' ');
-  if (!text) return undefined;
-  const graphemes = Array.from(
-    graphemeSegmenter.segment(text),
-    segment => segment.segment
-  );
-  return graphemes.length > 240 ? `${graphemes.slice(0, 240).join('')}…` : text;
-}
+import { transcriptPreviewText } from './preview';
 
 export const LinkPreview = ({
   item,
   owner,
   workspace,
   servers,
-  onPreview,
 }: {
   item: PendingShareItem;
   owner: SharePreviewRouteOwner;
   workspace: WorkspaceMetadata | undefined;
   servers: Server[];
-  onPreview(preview: Preview | undefined): void;
 }) => {
   const [state, setState] = useState<PreviewState>({ status: 'idle' });
   const activeRequest = useRef<Promise<Preview> | undefined>(undefined);
@@ -64,7 +45,6 @@ export const LinkPreview = ({
     if (!request) {
       activeRequest.current = undefined;
       setState({ status: 'idle' });
-      onPreview(undefined);
       return () => {
         active = false;
         controller.abort();
@@ -77,17 +57,14 @@ export const LinkPreview = ({
       preview => {
         if (!isCurrent()) return;
         setState({ status: 'loaded', preview });
-        onPreview(preview);
       },
       error => {
         if (!isCurrent()) return;
         if (error instanceof DOMException && error.name === 'AbortError') {
           setState({ status: 'idle' });
-          onPreview(undefined);
           return;
         }
         setState({ status: 'failed' });
-        onPreview(undefined);
       }
     );
     return () => {
@@ -95,7 +72,7 @@ export const LinkPreview = ({
       if (activeRequest.current === request) activeRequest.current = undefined;
       controller.abort();
     };
-  }, [item.id, onPreview, owner, servers, workspace]);
+  }, [item.id, owner, servers, workspace]);
 
   let hostname = 'Link';
   if (item.content.url) {

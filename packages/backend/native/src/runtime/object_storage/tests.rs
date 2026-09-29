@@ -65,6 +65,7 @@ fn scoped_write_keys_are_closed() {
       StorageScope::Copilot,
       format!("context-files/{NANOID}/{UUID}/{NANOID}/{HASH}"),
     ),
+    (StorageScope::Copilot, format!("artifacts/{NANOID}/{HASH}")),
     (StorageScope::Avatar, format!("{UUID}-avatar-1700000000000")),
   ] {
     assert!(validate_scoped_write_key(scope, &key).is_ok(), "{scope:?} key {key:?}");
@@ -81,6 +82,7 @@ fn scoped_write_keys_are_closed() {
     (StorageScope::Copilot, format!("{UUID}/{NANOID}/{}", "é".repeat(30))),
     (StorageScope::Copilot, format!("context-files/{NANOID}/{UUID}/{HASH}")),
     (StorageScope::Copilot, format!("workspace-files/{NANOID}/{UUID}")),
+    (StorageScope::Copilot, format!("artifacts/{NANOID}/not-a-hash")),
     (StorageScope::Avatar, format!("{UUID}/avatar-1700000000000")),
     (StorageScope::Avatar, format!("{UUID}-avatar-not-a-ts")),
     (StorageScope::Avatar, "-avatar-1700000000000".to_string()),

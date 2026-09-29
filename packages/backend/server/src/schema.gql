@@ -848,14 +848,16 @@ type DocPageAnalyticsSummary {
 }
 
 type DocPermissions {
+  Doc_Analytics_Read: Boolean!
+  Doc_Analytics_Viewers_Read: Boolean!
   Doc_Comments_Create: Boolean!
-  Doc_Comments_Delete: Boolean!
+  Doc_Comments_Moderate: Boolean!
   Doc_Comments_Read: Boolean!
-  Doc_Comments_Resolve: Boolean!
-  Doc_Comments_Update: Boolean!
   Doc_Copy: Boolean!
   Doc_Delete: Boolean!
   Doc_Duplicate: Boolean!
+  Doc_History_Read: Boolean!
+  Doc_Preview: Boolean!
   Doc_Properties_Read: Boolean!
   Doc_Properties_Update: Boolean!
   Doc_Publish: Boolean!
@@ -863,6 +865,7 @@ type DocPermissions {
   Doc_Restore: Boolean!
   Doc_TransferOwner: Boolean!
   Doc_Trash: Boolean!
+  Doc_Unpublish: Boolean!
   Doc_Update: Boolean!
   Doc_Users_Manage: Boolean!
   Doc_Users_Read: Boolean!
@@ -926,7 +929,7 @@ type EditorType {
   name: String!
 }
 
-union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarProviderRequestErrorDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceArtifactDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | ImageFormatNotSupportedDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | ResponseTooLargeErrorDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SearchIndexFailedDataType | SearchIndexNotReadyDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SsrfBlockedErrorDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedServerVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
+union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarProviderRequestErrorDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceArtifactDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | ImageFormatNotSupportedDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | ResponseTooLargeErrorDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SearchIndexFailedDataType | SearchIndexNotReadyDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SsrfBlockedErrorDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | SyncPermissionGenerationChangedDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedServerVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -1070,6 +1073,7 @@ enum ErrorNames {
   SUBSCRIPTION_HAS_NOT_BEEN_CANCELED
   SUBSCRIPTION_NOT_EXISTS
   SUBSCRIPTION_PLAN_NOT_FOUND
+  SYNC_PERMISSION_GENERATION_CHANGED
   TOO_MANY_REQUEST
   UNKNOWN_OAUTH_PROVIDER
   UNSPLASH_IS_NOT_CONFIGURED
@@ -2400,6 +2404,10 @@ enum SubscriptionVariant {
   Onetime
 }
 
+type SyncPermissionGenerationChangedDataType {
+  spaceId: String!
+}
+
 enum TimeBucket {
   Day
   Hour
@@ -2851,14 +2859,14 @@ type WorkspacePermissionNotFoundDataType {
 
 type WorkspacePermissions {
   Workspace_Administrators_Manage: Boolean!
-  Workspace_Blobs_List: Boolean!
-  Workspace_Blobs_Read: Boolean!
-  Workspace_Blobs_Write: Boolean!
+  Workspace_Blobs_Manage: Boolean!
+  Workspace_Blobs_Upload: Boolean!
   Workspace_Copilot: Boolean!
   Workspace_CreateDoc: Boolean!
   Workspace_Delete: Boolean!
   Workspace_Organize_Read: Boolean!
   Workspace_Payment_Manage: Boolean!
+  Workspace_Preview: Boolean!
   Workspace_Properties_Create: Boolean!
   Workspace_Properties_Delete: Boolean!
   Workspace_Properties_Read: Boolean!
@@ -2909,9 +2917,6 @@ type WorkspaceType {
 
   """List blobs of workspace"""
   blobs: [ListedBlob!]!
-
-  """Blobs size of workspace"""
-  blobsSize: Int!
   byokSettings: WorkspaceByokSettingsType!
   byokUsage(from: DateTime!, to: DateTime!): [WorkspaceByokUsagePointType!]!
   calendars: [WorkspaceCalendarObjectType!]!

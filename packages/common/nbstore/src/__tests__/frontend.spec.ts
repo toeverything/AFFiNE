@@ -147,3 +147,46 @@ test('awareness', async () => {
     });
   });
 });
+
+test('doc priority requests accumulate', async () => {
+  const docStorage = new IndexedDBDocStorage({
+    id: 'ws-priority',
+    flavour: 'a',
+    type: 'workspace',
+  });
+
+  docStorage.connection.connect();
+
+  await docStorage.connection.waitForConnected();
+
+  const frontend = new DocFrontend(docStorage, DocSyncImpl.dummy);
+
+  // two holders prioritize the same doc, then one of them goes away
+  frontend.addPriority('high', 10);
+  const releaseSecondHolder = frontend.addPriority('high', 10);
+  releaseSecondHolder();
+
+  frontend.addPriority('low', 5);
+
+  const loadOrder: string[] = [];
+  vitest.spyOn(docStorage, 'getDoc').mockImplementation(async docId => {
+    loadOrder.push(docId);
+    return null;
+  });
+
+  // both load jobs are queued before the main loop starts, so the queue
+  // priority alone decides which doc is loaded first
+  frontend.connectDoc(new YDoc({ guid: 'low' }));
+  frontend.connectDoc(new YDoc({ guid: 'high' }));
+
+  frontend.start();
+
+  await vitest.waitFor(
+    () => {
+      expect(loadOrder).toEqual(['high', 'low']);
+    },
+    { timeout: 2000 }
+  );
+
+  frontend.stop();
+});

@@ -8,19 +8,21 @@ import {
   LinkPreviewCacheIdentifier,
   type LinkPreviewCacheProvider,
 } from './link-preview-cache';
+import {
+  type LinkPreviewResponseData,
+  readLinkPreviewResponse,
+} from './response';
 
-export type LinkPreviewResponseData = {
-  url: string;
-  title?: string;
-  siteName?: string;
-  description?: string;
-  images?: string[];
-  mediaType?: string;
-  contentType?: string;
-  charset?: string;
-  videos?: string[];
-  favicons?: string[];
-};
+export type LinkPreviewResult = Partial<LinkPreviewData> &
+  Pick<
+    LinkPreviewResponseData,
+    | 'siteName'
+    | 'provider'
+    | 'author'
+    | 'publishedAt'
+    | 'durationSeconds'
+    | 'transcript'
+  >;
 
 export interface LinkPreviewProvider {
   /**
@@ -28,8 +30,9 @@ export interface LinkPreviewProvider {
    */
   query: (
     url: string,
-    signal?: AbortSignal
-  ) => Promise<Partial<LinkPreviewData>>;
+    signal?: AbortSignal,
+    include?: Array<'transcript'>
+  ) => Promise<LinkPreviewResult>;
   /**
    * Set the endpoint for link preview
    */
@@ -73,15 +76,16 @@ export class LinkPreviewService
 
   private readonly _fetchStandardPreview = async (
     url: string,
-    signal?: AbortSignal
-  ): Promise<Partial<LinkPreviewData>> => {
+    signal?: AbortSignal,
+    include?: Array<'transcript'>
+  ): Promise<LinkPreviewResult> => {
     if (!this.endpoint) return {};
     const response = await this._fetch(this.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, ...(include?.length ? { include } : {}) }),
       signal,
     })
       .then(r => {
@@ -102,8 +106,16 @@ export class LinkPreviewService
 
     if (!response) return {};
 
-    const data: LinkPreviewResponseData = await response.json();
+    const data = await readLinkPreviewResponse(response);
     return {
+      siteName: data.siteName,
+      provider: data.provider,
+      author: data.author,
+      publishedAt: data.publishedAt,
+      durationSeconds: data.durationSeconds,
+      ...(include?.includes('transcript')
+        ? { transcript: data.transcript }
+        : {}),
       title: data.title ?? null,
       description: data.description ?? null,
       icon: data.favicons?.[0],
@@ -116,16 +128,23 @@ export class LinkPreviewService
    */
   query = async (
     url: string,
-    signal?: AbortSignal
-  ): Promise<Partial<LinkPreviewData>> => {
-    // Check memory cache, if hit, return the cached data
-    const cached = this._cache.get(url);
+    signal?: AbortSignal,
+    include?: Array<'transcript'>
+  ): Promise<LinkPreviewResult> => {
+    if (!this.endpoint) return {};
+    const sourceKey = JSON.stringify([this.endpoint, url]);
+    const key = include?.includes('transcript')
+      ? `transcript:${sourceKey}`
+      : sourceKey;
+    const cached = this._cache.get(key);
     if (cached) {
       return cached;
     }
 
     // Check pending requests, if there is a pending request, return the promise
-    const pendingRequest = this._cache.getPendingRequest(url);
+    const pendingRequest = signal
+      ? undefined
+      : this._cache.getPendingRequest(key);
     if (pendingRequest) {
       return pendingRequest;
     }
@@ -134,20 +153,20 @@ export class LinkPreviewService
     const promise = (async () => {
       try {
         // Fetch new data
-        const data = await this._fetchStandardPreview(url, signal);
+        const data = await this._fetchStandardPreview(url, signal, include);
         // If the data is not empty, set the data to the cache
         if (data && Object.keys(data).length > 0) {
-          this._cache.set(url, data);
+          this._cache.set(key, data);
         }
         return data;
       } finally {
         // Delete the pending request regardless of success or failure
-        this._cache.deletePendingRequest(url);
+        if (!signal) this._cache.deletePendingRequest(key);
       }
     })();
 
     // Set the promise to the cache
-    this._cache.setPendingRequest(url, promise);
+    if (!signal) this._cache.setPendingRequest(key, promise);
     return promise;
   };
 }

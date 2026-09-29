@@ -87,10 +87,10 @@ impl SqliteDocStorage {
   async fn migrate(&self) -> Result<()> {
     let migrator = get_migrator();
     if let Err(err) = migrator.run(&self.pool).await {
-      // Compatibility: migration 3 (`add_idx_snapshots`) had a whitespace-only SQL
-      // change (trailing space) between releases, which causes sqlx to reject
-      // existing DBs with: `VersionMismatch(3)`. It's safe to fix by updating
-      // the stored checksum.
+      // Compatibility: migration 3 (`add_idx_snapshots`) had a whitespace-only
+      // SQL change (trailing space) between releases, which causes sqlx
+      // to reject existing DBs with: `VersionMismatch(3)`. It's safe to
+      // fix by updating the stored checksum.
       if matches!(err, sqlx::migrate::MigrateError::VersionMismatch(3))
         && self.try_repair_migration_3_checksum(&migrator).await?
       {
@@ -108,8 +108,8 @@ impl SqliteDocStorage {
       return Ok(false);
     };
 
-    // We're only prepared to repair the known `add_idx_snapshots` whitespace-only
-    // mismatch.
+    // We're only prepared to repair the known `add_idx_snapshots`
+    // whitespace-only mismatch.
     if migration.description.as_ref() != "add_idx_snapshots" {
       return Ok(false);
     }
@@ -184,8 +184,12 @@ impl SqliteDocStorage {
   }
 
   async fn open_readonly_pool(&self) -> Result<Pool<Sqlite>> {
+    Self::open_readonly_path(&self.path).await
+  }
+
+  pub(crate) async fn open_readonly_path(path: &str) -> Result<Pool<Sqlite>> {
     let sqlite_options = SqliteConnectOptions::new()
-      .filename(&self.path)
+      .filename(path)
       .foreign_keys(false)
       .read_only(true);
 

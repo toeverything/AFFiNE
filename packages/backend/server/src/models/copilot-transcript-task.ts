@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { Prisma } from '@prisma/client';
 import { Prisma as PrismaClient } from '@prisma/client';
 
@@ -21,13 +22,26 @@ function isRecordNotFound(error: unknown) {
 
 @Injectable()
 export class CopilotTranscriptTaskModel extends BaseModel {
+  private async lockPersonalScope(workspaceId: string, personal?: boolean) {
+    if (!personal) return;
+    await this.db
+      .$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`copilot-personal:${workspaceId}`}, 0))`;
+    if (await this.db.workspace.count({ where: { id: workspaceId } })) {
+      throw new Error('Canonical workspace requires Copilot authorization');
+    }
+  }
+
+  @Transactional()
   async create(
     input: Pick<
       Prisma.AiTranscriptTaskCreateArgs['data'],
       'userId' | 'workspaceId' | 'blobId' | 'recipeId' | 'recipeVersion'
     > &
-      Partial<Prisma.AiTranscriptTaskCreateArgs['data']>
+      Partial<Prisma.AiTranscriptTaskCreateArgs['data']> & {
+        personal?: boolean;
+      }
   ) {
+    await this.lockPersonalScope(input.workspaceId, input.personal);
     return await this.db.aiTranscriptTask.create({
       data: {
         userId: input.userId,
@@ -49,13 +63,16 @@ export class CopilotTranscriptTaskModel extends BaseModel {
     return row ?? null;
   }
 
+  @Transactional()
   async getWithUser(
     userId: string,
     workspaceId: string,
     taskId?: string,
-    blobId?: string
+    blobId?: string,
+    personal?: boolean
   ) {
     if (!taskId && !blobId) return null;
+    await this.lockPersonalScope(workspaceId, personal);
     const row = await this.db.aiTranscriptTask.findFirst({
       where: {
         userId,
@@ -84,13 +101,16 @@ export class CopilotTranscriptTaskModel extends BaseModel {
     }
   }
 
+  @Transactional()
   async claimRetry(
     id: string,
     userId: string,
     workspaceId: string,
     actionRunId: string | null,
-    dispatchGeneration: string
+    dispatchGeneration: string,
+    personal?: boolean
   ) {
+    await this.lockPersonalScope(workspaceId, personal);
     const { count } = await this.db.aiTranscriptTask.updateMany({
       where: {
         id,
@@ -108,14 +128,21 @@ export class CopilotTranscriptTaskModel extends BaseModel {
     return count === 1;
   }
 
+  @Transactional()
   async claimDispatch(
     id: string,
+    userId: string,
+    workspaceId: string,
     dispatchGeneration: string,
-    actionRunId: string | null
+    actionRunId: string | null,
+    personal?: boolean
   ) {
+    await this.lockPersonalScope(workspaceId, personal);
     const { count } = await this.db.aiTranscriptTask.updateMany({
       where: {
         id,
+        userId,
+        workspaceId,
         status: 'pending',
         dispatchGeneration,
         actionRunId,
@@ -125,15 +152,22 @@ export class CopilotTranscriptTaskModel extends BaseModel {
     return count === 1;
   }
 
+  @Transactional()
   async attachActionRun(
     id: string,
+    userId: string,
+    workspaceId: string,
     dispatchGeneration: string,
     actionRunId: string | null,
-    nextActionRunId: string
+    nextActionRunId: string,
+    personal?: boolean
   ) {
+    await this.lockPersonalScope(workspaceId, personal);
     const { count } = await this.db.aiTranscriptTask.updateMany({
       where: {
         id,
+        userId,
+        workspaceId,
         status: 'running',
         dispatchGeneration,
         actionRunId,
@@ -143,15 +177,22 @@ export class CopilotTranscriptTaskModel extends BaseModel {
     return count === 1;
   }
 
+  @Transactional()
   async completeDispatch(
     id: string,
+    userId: string,
+    workspaceId: string,
     dispatchGeneration: string,
     actionRunId: string | null,
-    input: Prisma.AiTranscriptTaskUpdateArgs['data']
+    input: Prisma.AiTranscriptTaskUpdateArgs['data'],
+    personal?: boolean
   ) {
+    await this.lockPersonalScope(workspaceId, personal);
     const { count } = await this.db.aiTranscriptTask.updateMany({
       where: {
         id,
+        userId,
+        workspaceId,
         status: 'running',
         dispatchGeneration,
         actionRunId,
@@ -241,14 +282,30 @@ export class CopilotTranscriptTaskModel extends BaseModel {
     }
   }
 
-  async settle(id: string) {
-    const task = await this.get(id);
+  @Transactional()
+  async settle(
+    id: string,
+    userId: string,
+    workspaceId: string,
+    personal?: boolean
+  ) {
+    await this.lockPersonalScope(workspaceId, personal);
+    const task = await this.getWithUser(
+      userId,
+      workspaceId,
+      id,
+      undefined,
+      personal
+    );
     if (!task) return null;
 
-    return await this.db.aiTranscriptTask.update({
-      where: { id },
+    const { count } = await this.db.aiTranscriptTask.updateMany({
+      where: { id, userId, workspaceId },
       data: { status: 'settled', settledAt: task.settledAt ?? new Date() },
     });
+    return count === 1
+      ? await this.getWithUser(userId, workspaceId, id, undefined, personal)
+      : null;
   }
 
   async countSettledByUser(userId: string) {
