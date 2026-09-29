@@ -307,7 +307,8 @@ export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
 export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
 export const assertSafeUrl = serverNativeModule.assertSafeUrl;
 export const scanContentPolicyV1 = serverNativeModule.scanContentPolicyV1;
-export const safeFetch = serverNativeModule.safeFetch;
+export const safeFetch: typeof serverNativeModule.safeFetch = (...args) =>
+  serverNativeModule.safeFetch(...args);
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;

@@ -35,6 +35,7 @@ interface Context {
   getSnapshot: Sinon.SinonStub;
   allowEmbedding: Sinon.SinonStub;
   runtime: {
+    nodeCryptoPrivateKey: Sinon.SinonStub;
     cleanupExpiredRuntimeStates: Sinon.SinonStub;
     cleanupExpiredRuntimeGates: Sinon.SinonStub;
     cleanupExpiredRollingQuota: Sinon.SinonStub;
@@ -55,6 +56,7 @@ test.before(async t => {
     join(process.cwd(), 'src/__tests__/__fixtures__/test-doc.snapshot.bin')
   );
   t.context.runtime = {
+    nodeCryptoPrivateKey: Sinon.stub().returns(''),
     cleanupExpiredRuntimeStates: Sinon.stub(),
     cleanupExpiredRuntimeGates: Sinon.stub(),
     cleanupExpiredRollingQuota: Sinon.stub(),
