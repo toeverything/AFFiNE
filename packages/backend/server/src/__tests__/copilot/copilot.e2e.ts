@@ -14,10 +14,8 @@ import { McpAccessMode, PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 
-import { Config } from '../../base';
 import { ServerFeature, ServerService } from '../../core';
 import { Models } from '../../models';
-import { CopilotFeatureService } from '../../plugins/copilot/feature';
 import { McpCredentialService } from '../../plugins/copilot/mcp/credential';
 import { WorkspaceMcpProvider } from '../../plugins/copilot/mcp/provider';
 import { installMockCopilotRuntime } from '../mocks';
@@ -58,14 +56,13 @@ test.after.always(async t => {
 
 test('disabled copilot hides its server feature and rejects every API transport', async t => {
   const { app } = t.context;
-  const config = app.get(Config);
-  const feature = app.get(CopilotFeatureService);
   const server = app.get(ServerService);
   await app.signupV1();
   const workspace = await createWorkspace(app);
 
-  config.copilot.enabled = false;
-  feature.onConfigChanged({ updates: { copilot: { enabled: false } } });
+  await server.updateConfig(null, [
+    { module: 'copilot', key: 'enabled', value: false },
+  ]);
   try {
     t.false(server.features.includes(ServerFeature.Copilot));
     await t.throwsAsync(
@@ -117,8 +114,9 @@ test('disabled copilot hides its server feature and rejects every API transport'
       })
     );
   } finally {
-    config.copilot.enabled = true;
-    feature.onConfigChanged({ updates: { copilot: { enabled: true } } });
+    await server.updateConfig(null, [
+      { module: 'copilot', key: 'enabled', clear: true },
+    ]);
   }
 });
 

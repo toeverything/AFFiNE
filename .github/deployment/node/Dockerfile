@@ -32,4 +32,4 @@ ENV LD_PRELOAD=libjemalloc.so.2
 
 EXPOSE 3010
 
-CMD ["node", "./dist/main.js"]
+CMD ["sh", "-c", "node ./scripts/upgrade-config.js && exec node ./dist/main.js"]

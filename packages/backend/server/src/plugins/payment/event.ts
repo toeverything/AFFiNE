@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 
-import { Config, OnEvent } from '../../base';
+import { OnEvent } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { WorkspaceService } from '../../core/workspaces';
 import { Models } from '../../models';
@@ -12,13 +12,12 @@ export class PaymentEventHandlers {
   constructor(
     private readonly workspace: WorkspaceService,
     private readonly runtime: BackendRuntimeProvider,
-    private readonly config: Config,
     private readonly models: Models
   ) {}
 
   @OnEvent('user.preDelete')
   async prepareSubscriptionCancellation({ id }: Events['user.preDelete']) {
-    if (!this.config.payment.enabled || !this.config.payment.stripe?.apiKey) {
+    if (!this.runtime.stripeEnabled()) {
       return;
     }
     await this.runtime.executePaymentCommandV1({
@@ -31,7 +30,7 @@ export class PaymentEventHandlers {
   async updateTeamSubscriptionQuantity({
     workspaceId,
   }: Events['workspace.members.updated']) {
-    if (!this.config.payment.enabled || !this.config.payment.stripe?.apiKey) {
+    if (!this.runtime.stripeEnabled()) {
       return;
     }
     const quantity = await this.models.workspaceUser.chargedCount(workspaceId);

@@ -19,16 +19,6 @@ runs:
       env:
         PGPASSWORD: affine
 
-    - name: Run init-db script
-      shell: bash
-      env:
-        NODE_ENV: test
-      run: |
-        yarn affine @affine/server prisma generate
-        yarn affine @affine/server data-migration admit-legacy-context-blobs
-        yarn affine @affine/server prisma migrate deploy
-        yarn affine @affine/server data-migration run
-
     - name: Import config
       shell: bash
       run: |
@@ -55,3 +45,12 @@ runs:
         else
           jq -n --argjson indexer "$default_indexer" '{indexer: $indexer}' > ./packages/backend/server/config.json
         fi
+
+    - name: Run init-db script
+      shell: bash
+      env:
+        NODE_ENV: test
+      run: |
+        yarn affine @affine/server prisma generate
+        yarn affine @affine/server prisma migrate deploy
+        yarn affine @affine/server data-migration run

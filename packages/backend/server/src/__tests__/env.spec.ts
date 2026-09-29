@@ -1,6 +1,10 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import test from 'ava';
 
-import { Env } from '../env';
+import { DeploymentType, Env } from '../env';
 
 const envs = { ...process.env };
 test.beforeEach(() => {
@@ -64,6 +68,24 @@ test('should read DEPLOYMENT_TYPE', t => {
     process.env.DEPLOYMENT_TYPE = 'unknown';
     new Env();
   });
+
+  const directory = mkdtempSync(join(tmpdir(), 'affine-env-config-'));
+  try {
+    const configPath = join(directory, 'config.json');
+    writeFileSync(
+      configPath,
+      JSON.stringify({ deployment: { type: 'selfhosted' } })
+    );
+    process.env.DEPLOYMENT_TYPE = 'affine';
+    const selected = new Env(configPath);
+    t.is(selected.serverConfigHandle.deploymentType, 'selfhosted');
+    t.is(selected.DEPLOYMENT_TYPE, DeploymentType.Selfhosted);
+    t.true(selected.selfhosted);
+    process.env.DEPLOYMENT_TYPE = 'unknown';
+    t.is(new Env(configPath).DEPLOYMENT_TYPE, DeploymentType.Selfhosted);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test('should read FLAVOR', t => {

@@ -58,7 +58,6 @@ resolver = "3"
   memory-indexer = "0.4.0"
   mimalloc = "0.1"
   mp4parse = "0.17"
-  nanoid = "0.4"
   napi = { version = "3.7.0", features = [
     "async",
     "chrono_date",
@@ -76,7 +75,6 @@ resolver = "3"
     "onepkg",
   ] }
   p256 = { version = "0.13", features = ["ecdsa", "pem"] }
-  pulldown-cmark = "0.13"
   rand = "0.9"
   rayon = "1.10"
   redis = { version = "1.6", features = ["tokio-comp", "tokio-rustls-comp"] }

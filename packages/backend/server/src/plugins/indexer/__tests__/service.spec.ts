@@ -11,7 +11,6 @@ import {
   SpaceAccessDenied,
   UserFriendlyError,
 } from '../../../base';
-import { ConfigFactory } from '../../../base/config';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { BackendRuntimeSearchJob } from '../../../core/backend-runtime/job';
 import { ServerFeature, ServerService } from '../../../core/config';
@@ -26,7 +25,6 @@ test.afterEach.always(() => {
 
 function enabledServer() {
   return {
-    getConfig: Sinon.stub().returns({ indexer: { enabled: true } }),
     enableFeature: Sinon.stub(),
     disableFeature: Sinon.stub(),
   };
@@ -34,6 +32,7 @@ function enabledServer() {
 
 test('exposes the indexer capability while its projection is building', async t => {
   const runtime = {
+    searchEnabled: Sinon.stub().returns(true),
     searchStatus: Sinon.stub(),
     searchAuthorized: Sinon.stub().resolves({
       ok: true,
@@ -48,7 +47,7 @@ test('exposes the indexer capability while its projection is building', async t 
   );
 
   await service.onApplicationBootstrap();
-  await service.onConfigChanged({ updates: { indexer: {} } } as never);
+  await service.onConfigApplied({ updates: { indexer: {} } } as never);
   await service.search('actor', 'workspace', {} as never);
 
   t.is(server.enableFeature.callCount, 3);
@@ -58,10 +57,10 @@ test('exposes the indexer capability while its projection is building', async t 
 
 test('does not query native search when the indexer is disabled', async t => {
   const runtime = {
+    searchEnabled: Sinon.stub().returns(false),
     searchStatus: Sinon.stub(),
   };
   const server = {
-    getConfig: Sinon.stub().returns({ indexer: { enabled: false } }),
     enableFeature: Sinon.stub(),
     disableFeature: Sinon.stub(),
   };
@@ -79,22 +78,19 @@ test('does not query native search when the indexer is disabled', async t => {
 
 test('does not schedule or run native search reconciliation when disabled', async t => {
   const runtime = {
+    searchEnabled: Sinon.stub().returns(false),
     reconcileSearchProjection: Sinon.stub(),
     searchStatus: Sinon.stub(),
   };
-  const config = {
-    config: { indexer: { enabled: false } },
-  } as unknown as ConfigFactory;
   const job = new BackendRuntimeSearchJob(
-    runtime as unknown as BackendRuntimeProvider,
-    config
+    runtime as unknown as BackendRuntimeProvider
   );
 
   t.is(await job.reconcileProjection(), 0);
   t.false(runtime.reconcileSearchProjection.called);
   t.false(runtime.searchStatus.called);
 
-  config.config.indexer.enabled = true;
+  runtime.searchEnabled.returns(true);
   runtime.reconcileSearchProjection.resolves(0);
   runtime.searchStatus.resolves({ ready: true });
   t.is(await job.reconcileProjection(), 0);
@@ -103,6 +99,7 @@ test('does not schedule or run native search reconciliation when disabled', asyn
 
 test('maps native search results and typed errors at the Node boundary', async t => {
   const runtime = {
+    searchEnabled: Sinon.stub().returns(true),
     searchStatus: Sinon.stub().resolves({ ready: true }),
     searchAuthorized: Sinon.stub(),
     aggregateAuthorized: Sinon.stub(),
@@ -225,6 +222,7 @@ test('searchDocs keeps filtering and enrichment in Node', async t => {
     highlights: { content: ['<b>body</b>'] },
   };
   const runtime = {
+    searchEnabled: Sinon.stub().returns(true),
     searchStatus: Sinon.stub().resolves({ ready: true }),
     aggregateAuthorized: Sinon.stub().resolves({
       ok: true,

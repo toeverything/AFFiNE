@@ -41,6 +41,22 @@ export function backendRuntimeErrorCode(error: unknown) {
 export class BackendRuntimeCoreOperations {
   constructor(protected readonly runtime: RuntimeInstance) {}
 
+  stripeEnabled() {
+    return this.runtime.stripeEnabled();
+  }
+
+  paymentEnabled() {
+    return this.runtime.paymentEnabled();
+  }
+
+  copilotEnabled() {
+    return this.runtime.copilotEnabled();
+  }
+
+  nodeCryptoPrivateKey() {
+    return this.runtime.nodeCryptoPrivateKey();
+  }
+
   executePaymentCommandV1<T = unknown>(input: Record<string, unknown>) {
     return this.measured('executePaymentCommandV1', runtime =>
       runtime.executePaymentCommandV1(input)

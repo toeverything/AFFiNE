@@ -48,6 +48,7 @@ impl PaymentRuntime {
       .get::<Option<String>, _>("validate_key")
       .unwrap_or_else(|| operation_id.to_string());
     let envelope = issue_license(
+      self.license_issuer_private_key.as_ref().map(|key| key.as_str()),
       license_key,
       workspace_id,
       subscription.quantity,
@@ -145,6 +146,7 @@ impl PaymentRuntime {
     }
     let subscription = active_license_subscription(&mut tx, license_key, &namespace).await?;
     let envelope = issue_license(
+      self.license_issuer_private_key.as_ref().map(|key| key.as_str()),
       license_key,
       workspace_id,
       subscription.quantity,
@@ -304,14 +306,14 @@ fn decode_subscription(row: sqlx::postgres::PgRow) -> RuntimeResult<ActiveLicens
 }
 
 fn issue_license(
+  private_key: Option<&str>,
   license_id: &str,
   workspace_id: &str,
   seat_quantity: i32,
   subscription_end: Option<DateTime<Utc>>,
   now: DateTime<Utc>,
 ) -> RuntimeResult<Vec<u8>> {
-  let private_key = std::env::var("AFFINE_PRO_LICENSE_PRIVATE_KEY")
-    .map_err(|_| RuntimeError::invalid_state("license_private_key_missing"))?;
+  let private_key = private_key.ok_or_else(|| RuntimeError::invalid_state("license_private_key_missing"))?;
   LicenseIssuer::issue(
     LicenseIssuance {
       license_id,
@@ -320,7 +322,7 @@ fn issue_license(
       subscription_end,
       now,
     },
-    &private_key,
+    private_key,
   )
   .map_err(|_| RuntimeError::invalid_state("license_issue_failed"))
 }

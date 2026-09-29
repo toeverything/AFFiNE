@@ -76,9 +76,9 @@ dependencies = [
 
 [[package]]
 name = "affine_core"
-version = "0.0.4"
+version = "0.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5626fc812421da8dd685e58d130ff6823d098ea4f412b9fb6350f8d14878c19"
+checksum = "acda52a0c7f4ee390c1a05814ffe5ddaaa86a4f877b611505281d4d47858d721"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -179,7 +179,6 @@ dependencies = [
  "homedir",
  "lru 0.16.3",
  "objc2",
- "objc2-foundation",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",

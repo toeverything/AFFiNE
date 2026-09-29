@@ -12,7 +12,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/indexer-config: {{ include "affine.indexerConfig" . | sha256sum }}
+        checksum/server-config: {{ include "affine.serverConfig" . | sha256sum }}
       {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}

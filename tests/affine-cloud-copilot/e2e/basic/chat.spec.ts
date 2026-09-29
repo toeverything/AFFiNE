@@ -513,7 +513,7 @@ test.describe('AIBasic/Chat', () => {
 
     // create new doc
     await utils.editor.createDoc(page, 'Doc 1', 'doc1');
-    await utils.chatPanel.expectToHaveHistory(page, [
+    await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
         content: 'Hello, how can you help me? Answer in 50 words.',

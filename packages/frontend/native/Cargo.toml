@@ -55,12 +55,4 @@ zip    = { workspace = true }
 
 [build-dependencies]
 napi-build = { workspace = true }
-sqlx = { workspace = true, default-features = false, features = [
-  "chrono",
-  "json",
-  "macros",
-  "migrate",
-  "runtime-tokio",
-  "sqlite",
-] }
-tokio = { workspace = true, features = ["full"] }
+tokio      = { workspace = true, features = ["full"] }

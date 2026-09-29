@@ -4,7 +4,7 @@ import {
   SearchTable,
 } from '@affine/graphql';
 
-import { Config } from '../../../base';
+import { ServerService } from '../../../core/config';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
 import {
@@ -14,9 +14,10 @@ import {
   reconcileSearchProjection,
 } from '../test';
 
-const indexer = app.get(Config).indexer;
+const indexer = (await app.get(ServerService).getEffectiveAdminConfig())
+  .indexer;
 const remoteE2e =
-  indexer.enabled && indexer.provider.type === 'elasticsearch'
+  indexer?.enabled && indexer.provider?.type === 'elasticsearch'
     ? e2e.serial
     : e2e.skip;
 
