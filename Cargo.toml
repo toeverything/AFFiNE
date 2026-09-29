@@ -122,6 +122,13 @@ resolver = "3"
 [profile.dev.package.sqlx-macros]
 opt-level = 3
 
+# hashcash minting runs a PoW hash loop that is infeasible at opt-level 0
+[profile.dev.package.keccak]
+opt-level = 3
+
+[profile.dev.package.sha3]
+opt-level = 3
+
 [profile.release]
 codegen-units = 1
 lto           = "fat"
