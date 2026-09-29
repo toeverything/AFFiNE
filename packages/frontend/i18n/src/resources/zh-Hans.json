@@ -2114,6 +2114,7 @@
   "com.affine.settings.workspace.storage.unused-blobs.selected": "已选中",
   "com.affine.settings.workspace.storage.unused-blobs.delete.title": "删除 blob 文件",
   "com.affine.settings.workspace.storage.unused-blobs.delete.warning": "您确定要删除这些 blob 文件吗？此操作无法撤销。在继续之前，请确保您不再需要它们。",
+  "com.affine.settings.workspace.storage.unused-blobs.delete.failed": "部分 blob 文件删除失败，失败项仍保持选中。",
   "com.affine.fail-to-join-workspace.title": "加入失败",
   "com.affine.fail-to-join-workspace.description-1": "由于可用席位不足，无法加入<1/> <2>{{workspaceName}}</2>。",
   "com.affine.fail-to-join-workspace.description-2": "请联系您的工作区所有者以添加更多席位。",
