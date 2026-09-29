@@ -246,6 +246,7 @@ impl RedisRuntimeConfig {
     let username = env::var("REDIS_SERVER_USERNAME")
       .ok()
       .and_then(non_empty_string)
+      .or_else(|| env::var("REDIS_SERVER_USER").ok().and_then(non_empty_string))
       .unwrap_or(file.username);
     let password = env::var("REDIS_SERVER_PASSWORD")
       .ok()

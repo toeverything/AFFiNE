@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -6,6 +6,10 @@ import test from 'ava';
 import { get, has } from 'lodash-es';
 
 import { createModule } from '../../../__tests__/create-module';
+import {
+  applyTestConfigOverrides,
+  createTestRuntimeConfig,
+} from '../../../__tests__/utils/runtime-config';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { ServerConfigHandle } from '../../../native';
 import { InvalidAppConfig } from '../../error';
@@ -13,11 +17,38 @@ import { CryptoHelper } from '../../helpers';
 import { CacheRedis, SessionRedis, SocketIoRedis } from '../../redis/instances';
 import { Config } from '../config';
 import { ConfigFactory, ConfigModule } from '../index';
-import { override } from '../register';
+import { getDefaultConfig, override } from '../register';
 
 const module = await createModule();
 test.after.always(async () => {
   await module.close();
+});
+
+test('test runtime config applies explicit overrides after fixture values', async t => {
+  const fixture = await createTestRuntimeConfig(
+    'postgresql://test:test@localhost/test',
+    getDefaultConfig().indexer
+  );
+  try {
+    applyTestConfigOverrides(fixture.configPath, {
+      copilot: { enabled: false },
+      storages: {
+        blob: {
+          storage: {
+            provider: 'fs',
+            bucket: 'blobs',
+            config: { path: fixture.storagePath },
+          },
+        },
+      },
+    });
+    const config = JSON.parse(readFileSync(fixture.configPath, 'utf-8'));
+    t.false(config.copilot.enabled);
+    t.is(config.storages['blob.storage'].provider, 'fs');
+    t.is(config.storages['avatar.storage'].provider, 'assetpack');
+  } finally {
+    await fixture.cleanup();
+  }
 });
 
 test('should create config', async t => {

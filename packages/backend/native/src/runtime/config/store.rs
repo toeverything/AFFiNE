@@ -6,7 +6,7 @@ use sqlx::{PgPool, Row};
 #[cfg(test)]
 use super::{AppConfigFile, deserialize_app_config};
 use super::{BackendRuntimeConfig, RuntimeError, RuntimeResult, ServerConfig, merge_config_value};
-use crate::runtime::object_storage::ObjectStorageService;
+use crate::runtime::object_storage::{ObjectStorageService, backends_from_flat_overrides};
 
 pub(crate) struct AppConfigChange {
   pub(crate) key: String,
@@ -182,6 +182,12 @@ pub(crate) async fn save_app_config_changes(
   );
   BackendRuntimeConfig::from_value(bootstrap_private_key, native.clone(), config.deployment())?;
   ObjectStorageService::from_config_value(&native)?;
+  backends_from_flat_overrides(
+    prospective
+      .iter()
+      .filter(|(key, _)| matches!(key.as_str(), "storages.blob.storage" | "storages.avatar.storage"))
+      .map(|(key, value)| (key.as_str(), value.clone())),
+  )?;
   for change in changes {
     match &change.value {
       Some(value) => {
@@ -405,6 +411,20 @@ mod tests {
         &[native(
           "db.datasourceUrl",
           Some(serde_json::json!("postgresql://unreachable"))
+        )],
+      )
+      .await
+      .is_err()
+    );
+    assert!(
+      save_app_config_changes(
+        &pool,
+        &config,
+        None,
+        None,
+        &[native(
+          "storages.blob.storage",
+          Some(serde_json::json!({"provider":"invalid","bucket":"blobs","config":{}}))
         )],
       )
       .await

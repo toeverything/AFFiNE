@@ -4,6 +4,8 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { set } from 'lodash-es';
+
 import { getDefaultConfig, override } from '../../base/config/register';
 
 const { privateKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
@@ -56,15 +58,25 @@ export function applyTestConfigOverrides(
   overrides: DeepPartial<AppConfig> = {}
 ) {
   const config = getDefaultConfig();
-  override(config, overrides);
   const fixture = JSON.parse(readFileSync(configPath, 'utf-8'));
+  for (const [module, values] of Object.entries(fixture)) {
+    if (module === 'deployment') continue;
+    for (const [key, value] of Object.entries(
+      values as Record<string, unknown>
+    )) {
+      set(config, `${module}.${key}`, value);
+    }
+  }
+  override(config, overrides);
   writeFileSync(
     configPath,
     JSON.stringify({
       ...config,
-      ...fixture,
-      copilot: { ...config.copilot, ...fixture.copilot },
-      indexer: config.indexer,
+      deployment: fixture.deployment,
+      storages: {
+        'avatar.storage': config.storages.avatar.storage,
+        'blob.storage': config.storages.blob.storage,
+      },
     })
   );
 }

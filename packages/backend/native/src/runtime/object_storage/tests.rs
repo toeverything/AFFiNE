@@ -1,7 +1,7 @@
 use reqwest::StatusCode;
 
 use super::{
-  backend::backends_from_config_json,
+  backend::{backends_from_config_json, backends_from_flat_overrides},
   config::ObjectStorageConfig,
   error::ObjectStorageError,
   types::{
@@ -114,6 +114,13 @@ fn resolves_storage_config_from_config_json_shape() {
   .unwrap();
   assert_eq!(configured.get("blob").unwrap().bucket(), "custom-blobs");
   assert_eq!(configured.get("copilot").unwrap().bucket(), "copilot");
+  assert!(
+    backends_from_flat_overrides([(
+      "storages.blob.storage",
+      serde_json::json!({"provider":"invalid","bucket":"blobs","config":{}})
+    )])
+    .is_err()
+  );
 
   let storage = StorageProviderConfig {
     provider: "cloudflare-r2".to_string(),

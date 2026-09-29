@@ -172,10 +172,23 @@ pub(super) async fn backends_from_db(pool: &PgPool) -> RuntimeResult<HashMap<Str
     Err(sqlx::Error::Database(err)) if err.code().as_deref() == Some("42P01") => return Ok(HashMap::new()),
     Err(err) => return Err(RuntimeError::database("failed to load app config overrides", err)),
   };
+  backends_from_flat_overrides(
+    rows
+      .into_iter()
+      .map(|row| (row.get::<String, _>("id"), row.get::<Value, _>("value"))),
+  )
+}
+
+pub(in crate::runtime) fn backends_from_flat_overrides<I, S>(
+  rows: I,
+) -> RuntimeResult<HashMap<String, StorageBackendConfig>>
+where
+  I: IntoIterator<Item = (S, Value)>,
+  S: AsRef<str>,
+{
   let mut root = Map::new();
-  for row in rows {
-    let path: String = row.get("id");
-    let value: Value = row.get("value");
+  for (path, value) in rows {
+    let path = path.as_ref();
     let Some((module, key)) = path.split_once('.') else {
       continue;
     };

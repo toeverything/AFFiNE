@@ -98,7 +98,7 @@ export class BackendRuntimeProvider
   async start() {
     await this.runtime.start();
     await this.event?.emitAsync('backendRuntime.configApplied', {
-      updates: { payment: {}, indexer: {}, copilot: {}, crypto: {} },
+      updates: { payment: {}, indexer: {}, copilot: {}, crypto: {}, oauth: {} },
     });
     const health = await this.health();
     this.logger.log(`backend runtime started: db=${health.databaseConnected}`);

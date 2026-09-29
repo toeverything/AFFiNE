@@ -88,6 +88,7 @@ function generateAdminConfigJson(outputPath: string) {
       let type: string;
       switch (descriptor.schema?.type) {
         case 'number':
+        case 'integer':
           type = 'Number';
           break;
         case 'boolean':

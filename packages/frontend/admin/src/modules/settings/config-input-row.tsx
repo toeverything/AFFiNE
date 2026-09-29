@@ -231,7 +231,7 @@ export const ConfigRow = ({
             className="mt-2 self-start"
             onClick={onClear}
           >
-            Reset to file
+            Reset override
           </Button>
         ) : null}
         {mergedError && (

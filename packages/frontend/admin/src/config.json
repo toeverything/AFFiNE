@@ -52,35 +52,35 @@
       "desc": "Require email domain verification for restricted resources."
     },
     "newAccountActionDelay": {
-      "type": "String",
+      "type": "Number",
       "desc": "Minimum account age in seconds for invites and document publishing."
     },
     "session.ttl": {
-      "type": "String",
+      "type": "Number",
       "desc": "Application auth expiration in seconds."
     },
     "session.ttr": {
-      "type": "String",
+      "type": "Number",
       "desc": "Application auth refresh interval in seconds."
     },
     "token.accessTokenTtl": {
-      "type": "String",
+      "type": "Number",
       "desc": "Access JWT expiration in seconds."
     },
     "token.refreshIdleTtl": {
-      "type": "String",
+      "type": "Number",
       "desc": "Refresh session inactivity expiration in seconds."
     },
     "token.refreshAbsoluteTtl": {
-      "type": "String",
+      "type": "Number",
       "desc": "Refresh session absolute expiration in seconds."
     },
     "token.refreshGracePeriod": {
-      "type": "String",
+      "type": "Number",
       "desc": "Refresh rotation concurrency grace period in seconds."
     },
     "token.refreshRetention": {
-      "type": "String",
+      "type": "Number",
       "desc": "Expired refresh generation retention in seconds."
     }
   },

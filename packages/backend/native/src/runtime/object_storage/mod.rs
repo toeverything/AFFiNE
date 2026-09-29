@@ -9,7 +9,9 @@ mod service;
 mod tests;
 pub(crate) mod types;
 
-pub(in crate::runtime) use backend::{FsStorageConfig, StorageBackendConfig, default_storage_provider_config};
+pub(in crate::runtime) use backend::{
+  FsStorageConfig, StorageBackendConfig, backends_from_flat_overrides, default_storage_provider_config,
+};
 #[cfg(test)]
 pub(in crate::runtime) use config::ObjectStorageConfig;
 pub(in crate::runtime) use config::storage_provider_schema;
