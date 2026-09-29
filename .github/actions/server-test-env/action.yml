@@ -52,6 +52,5 @@ runs:
         NODE_ENV: test
       run: |
         yarn affine @affine/server prisma generate
-        yarn affine @affine/server data-migration admit-legacy-context-blobs
         yarn affine @affine/server prisma migrate deploy
         yarn affine @affine/server data-migration run
