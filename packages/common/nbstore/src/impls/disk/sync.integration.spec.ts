@@ -223,6 +223,111 @@ test('sync local <-> disk remote updates through DocSyncPeer', async () => {
   remote.disconnect();
 });
 
+test('replaces a stale local source without loading its oversized snapshot', async () => {
+  const workspaceId = 'ws-disk-replace-source';
+  const docId = 'doc-large-source';
+  const sessionId = JSON.stringify([
+    universalId({ peer: 'local', type: 'workspace', id: workspaceId }),
+    '/tmp/disk-sync-replace-source',
+  ]);
+  const listeners = new Map<string, Set<(event: DiskSyncEvent) => void>>();
+
+  const replacement = new YDoc();
+  replacement.getMap('test').set('origin', 'bounded-preview');
+  const replacementSnapshot = encodeStateAsUpdate(replacement);
+
+  const apis: DiskSyncApis = {
+    acknowledgeSourceUpdate: async () => {},
+    shouldReplaceSourceDoc: vi.fn(async (_sessionId, currentDocId) => {
+      return currentDocId === docId;
+    }),
+    prepareSourceDoc: vi.fn(async (_sessionId, currentDocId) => {
+      return currentDocId === docId ? replacementSnapshot : null;
+    }),
+    startSession: async currentSessionId => {
+      for (const callback of listeners.get(currentSessionId) ?? []) {
+        callback({ type: 'source-discovered', docId });
+      }
+    },
+    stopSession: async currentSessionId => {
+      listeners.delete(currentSessionId);
+    },
+    applyLocalUpdate: async (_sessionId, update) => ({
+      docId: update.docId,
+      timestamp: new Date(),
+    }),
+    subscribeEvents: (currentSessionId, callback) => {
+      let set = listeners.get(currentSessionId);
+      if (!set) {
+        set = new Set();
+        listeners.set(currentSessionId, set);
+      }
+      set.add(callback);
+      return () => set?.delete(callback);
+    },
+  };
+  bindDiskSyncApis(apis);
+
+  const localDoc = new IndexedDBDocStorage({
+    id: workspaceId,
+    flavour: 'local',
+    type: 'workspace',
+  });
+  const localDocSync = new IndexedDBDocSyncStorage({
+    id: workspaceId,
+    flavour: 'local',
+    type: 'workspace',
+  });
+  const remoteDoc = new DiskDocStorage({
+    id: workspaceId,
+    flavour: 'local',
+    type: 'workspace',
+    syncFolder: '/tmp/disk-sync-replace-source',
+  });
+
+  const local = new SpaceStorage({ doc: localDoc, docSync: localDocSync });
+  const remote = new SpaceStorage({ doc: remoteDoc });
+  local.connect();
+  remote.connect();
+  await local.waitForConnected();
+  await remote.waitForConnected();
+
+  const stale = new YDoc();
+  stale.getMap('test').set('origin', 'oversized-local-snapshot');
+  await localDoc.pushDocUpdate({
+    docId,
+    bin: encodeStateAsUpdate(stale),
+  });
+
+  const originalGetDoc = localDoc.getDoc.bind(localDoc);
+  const getDoc = vi.spyOn(localDoc, 'getDoc');
+  const deleteDoc = vi.spyOn(localDoc, 'deleteDoc');
+
+  const sync = new Sync({ local, remotes: { disk: remote } });
+  sync.start();
+
+  await vi.waitFor(() => {
+    expect(deleteDoc).toHaveBeenCalledWith(docId);
+  });
+  const readsBeforeDelete = getDoc.mock.calls.filter(
+    ([currentDocId], index) =>
+      currentDocId === docId &&
+      getDoc.mock.invocationCallOrder[index] <
+        deleteDoc.mock.invocationCallOrder[0]
+  );
+  expect(readsBeforeDelete).toHaveLength(0);
+
+  await vi.waitFor(async () => {
+    const record = await originalGetDoc(docId);
+    expect(record).not.toBeNull();
+    expectYjsEqual(record!.bin, { test: { origin: 'bounded-preview' } });
+  });
+  expect(apis.shouldReplaceSourceDoc).toHaveBeenCalledWith(sessionId, docId);
+
+  await sync.stop();
+  remote.disconnect();
+});
+
 test('forces initial push when disk has stale pushed clocks but remote is empty', async () => {
   const workspaceId = 'ws-disk-stale-push';
 

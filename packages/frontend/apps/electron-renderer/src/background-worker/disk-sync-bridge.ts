@@ -12,7 +12,8 @@ type DiskSyncHandlers = Pick<
   | 'applyLocalUpdate'
   | 'acknowledgeSourceUpdate'
   | 'prepareSourceDoc'
->;
+> &
+  Required<Pick<DiskSyncApis, 'shouldReplaceSourceDoc'>>;
 
 interface DiskSyncEvents {
   onEvent: (callback: (payload: DiskSyncEventPayload) => void) => () => void;
@@ -42,6 +43,9 @@ export function createDiskSyncApis(
         localSnapshot,
         localRoot
       );
+    },
+    shouldReplaceSourceDoc: (sessionId, docId) => {
+      return handlers.shouldReplaceSourceDoc(sessionId, docId);
     },
     subscribeEvents: (sessionId, callback) => {
       return events.onEvent(payload => {

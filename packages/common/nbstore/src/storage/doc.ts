@@ -94,6 +94,7 @@ export interface DocStorage extends Storage {
     localSnapshot: Uint8Array | null,
     localRoot: Uint8Array | null
   ): Promise<void>;
+  shouldReplaceLocalDoc?(docId: string): Promise<boolean>;
   acknowledgeDocUpdate?(
     docId: string,
     localSnapshot: Uint8Array

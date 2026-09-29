@@ -9,7 +9,7 @@ import type { ElectronApplication } from 'playwright';
 import { _electron as electron } from 'playwright';
 import treeKill from 'tree-kill';
 
-import { test as base } from './playwright';
+import { test as base, testResultDir } from './playwright';
 import { removeWithRetry } from './utils/utils';
 
 const electronRoot = new Package('@affine/electron').path;
@@ -387,6 +387,9 @@ export const test = base.extend<{
           args: [clonedDist],
           env,
           cwd: clonedDist,
+          recordVideo: {
+            dir: testResultDir,
+          },
           colorScheme: 'light',
         });
 

@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use chrono::{DateTime, NaiveDateTime};
 use sqlx::{QueryBuilder, Row};
-use y_octo::{DocOptions, merge_updates_v1};
+use y_octo::DocOptions;
 
 use super::{
   DocClock, DocRecord, DocUpdate, ReadonlyDocRecords,
@@ -201,21 +201,21 @@ impl SqliteDocStorage {
         segments.push(record.bin.to_vec());
       }
       segments.extend(updates.iter().map(|update| update.bin.to_vec()));
-      let bin = if segments.len() == 1 {
-        segments.pop().expect("one segment")
-      } else {
-        merge_updates_v1(segments)
-          .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?
-          .encode_v1()
-          .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?
-      };
       let mut doc = DocOptions::new().with_guid(doc_id.clone()).build();
-      doc
-        .apply_update_from_binary_v1(&bin)
-        .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?;
+      for segment in segments {
+        doc
+          .apply_update_from_binary_v1(&segment)
+          .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?;
+      }
       if doc.has_pending_updates() {
+        if snapshot.is_some() {
+          return Ok(snapshot);
+        }
         return Err(Error::IncompleteDoc);
       }
+      let bin = doc
+        .encode_update_v1()
+        .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?;
 
       let mut tx = self.pool.begin().await?;
       let installed = if let Some(previous) = &snapshot {
@@ -418,6 +418,60 @@ mod tests {
     assert!(record.timestamp >= second_clock);
     let mut doc = DocOptions::new().with_guid("doc".to_string()).build();
     doc.apply_update_from_binary_v1(&record.bin).unwrap();
+    assert_eq!(doc.get_or_create_text("content").unwrap().to_string(), "hello world");
+    assert!(storage.get_doc_updates("doc".to_string()).await.unwrap().is_empty());
+  }
+
+  #[tokio::test]
+  async fn get_doc_compacts_overlapping_full_snapshots() {
+    let storage = get_storage().await;
+    let doc = DocOptions::new().with_guid("doc".to_string()).build();
+    let mut text = doc.get_or_create_text("content").unwrap();
+    text.insert(0, "hello").unwrap();
+    storage
+      .push_update("doc".to_string(), doc.encode_update_v1().unwrap())
+      .await
+      .unwrap();
+    storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+
+    text.insert(5, " world").unwrap();
+    storage
+      .push_update("doc".to_string(), doc.encode_update_v1().unwrap())
+      .await
+      .unwrap();
+
+    let record = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+    let mut compacted = DocOptions::new().with_guid("doc".to_string()).build();
+    compacted.apply_update_from_binary_v1(&record.bin).unwrap();
+    assert_eq!(
+      compacted.get_or_create_text("content").unwrap().to_string(),
+      "hello world"
+    );
+    assert!(storage.get_doc_updates("doc".to_string()).await.unwrap().is_empty());
+  }
+
+  #[tokio::test]
+  async fn get_doc_returns_last_snapshot_until_missing_dependencies_arrive() {
+    let storage = get_storage().await;
+    let empty = DocOptions::new().with_guid("doc".to_string()).build();
+    let snapshot_bin = empty.encode_update_v1().unwrap();
+    let snapshot = DocRecord {
+      doc_id: "doc".to_string(),
+      bin: snapshot_bin.clone().into(),
+      timestamp: Utc::now().naive_utc(),
+    };
+    storage.set_doc_snapshot(snapshot).await.unwrap();
+
+    let (first, second) = text_updates();
+    storage.push_update("doc".to_string(), second).await.unwrap();
+    let fallback = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+    assert_eq!(fallback.bin.as_ref(), snapshot_bin.as_slice());
+    assert_eq!(storage.get_doc_updates("doc".to_string()).await.unwrap().len(), 1);
+
+    storage.push_update("doc".to_string(), first).await.unwrap();
+    let recovered = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+    let mut doc = DocOptions::new().with_guid("doc".to_string()).build();
+    doc.apply_update_from_binary_v1(&recovered.bin).unwrap();
     assert_eq!(doc.get_or_create_text("content").unwrap().to_string(), "hello world");
     assert!(storage.get_doc_updates("doc".to_string()).await.unwrap().is_empty());
   }

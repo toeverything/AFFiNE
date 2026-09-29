@@ -17,12 +17,17 @@ function nextRev(revisions: Map<string, number>, key: string) {
   return r;
 }
 
+export const sharedStorageSyncHandlers = {
+  getAllGlobalState: () => globalStateStorage.all(),
+  getAllGlobalCache: () => globalCacheStorage.all(),
+};
+
 export const sharedStorageHandlers = {
   getAllGlobalState: async () => {
-    return globalStateStorage.all();
+    return sharedStorageSyncHandlers.getAllGlobalState();
   },
   getAllGlobalCache: async () => {
-    return globalCacheStorage.all();
+    return sharedStorageSyncHandlers.getAllGlobalCache();
   },
 
   setGlobalState: async (_e, key: string, value: any, sourceId?: string) => {

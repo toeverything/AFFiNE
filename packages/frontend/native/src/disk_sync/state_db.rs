@@ -82,9 +82,11 @@ impl StateDb {
         doc_id TEXT NOT NULL,
         snapshot BLOB NOT NULL,
         markdown TEXT NOT NULL,
+        source_markdown TEXT,
         scope TEXT NOT NULL,
         profile INTEGER NOT NULL,
         meta_hash TEXT NOT NULL,
+        readonly_preview INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY(workspace_id, doc_id)
       );
       "#,
@@ -92,6 +94,33 @@ impl StateDb {
     .execute(&self.pool)
     .await
     .map_err(|err| format!("failed to create source checkpoint table: {}", err))?;
+
+    let checkpoint_columns = sqlx::query("PRAGMA table_info(source_checkpoints)")
+      .fetch_all(&self.pool)
+      .await
+      .map_err(|err| format!("failed to inspect source checkpoint table: {}", err))?;
+    if !checkpoint_columns
+      .iter()
+      .any(|column| column.get::<String, _>("name") == "source_markdown")
+    {
+      sqlx::query("ALTER TABLE source_checkpoints ADD COLUMN source_markdown TEXT")
+        .execute(&self.pool)
+        .await
+        .map_err(|err| format!("failed to migrate source checkpoint table: {}", err))?;
+    }
+    sqlx::query("UPDATE source_checkpoints SET source_markdown = markdown WHERE source_markdown IS NULL")
+      .execute(&self.pool)
+      .await
+      .map_err(|err| format!("failed to backfill source checkpoint projections: {}", err))?;
+    if !checkpoint_columns
+      .iter()
+      .any(|column| column.get::<String, _>("name") == "readonly_preview")
+    {
+      sqlx::query("ALTER TABLE source_checkpoints ADD COLUMN readonly_preview INTEGER NOT NULL DEFAULT 0")
+        .execute(&self.pool)
+        .await
+        .map_err(|err| format!("failed to migrate source preview checkpoints: {}", err))?;
+    }
 
     sqlx::query(
       r#"
@@ -196,19 +225,12 @@ impl StateDb {
     &self,
     tx: &mut SqliteConnection,
     snapshot: &[u8],
-    update: &[u8],
+    _update: &[u8],
   ) -> Result<Vec<u8>, String> {
-    let pending: Option<Vec<u8>> =
-      sqlx::query_scalar("SELECT bin FROM pending_source_updates WHERE workspace_id = ? AND doc_id = ?")
-        .bind(&self.workspace_id)
-        .bind(&self.workspace_id)
-        .fetch_optional(&mut *tx)
-        .await
-        .map_err(|err| format!("failed to read pending root update: {}", err))?;
-    let pending = match pending {
-      Some(previous) => merge_update_binary(Some(&previous), update)?,
-      None => update.to_vec(),
-    };
+    // Pending updates are replayed without knowing which local snapshot the
+    // renderer currently has. Persist a standalone snapshot so replay cannot
+    // leave Yjs structs waiting on an older disk-only dependency.
+    let pending = snapshot.to_vec();
     sqlx::query(
       r#"
       INSERT INTO root_snapshots (workspace_id, snapshot) VALUES (?, ?)
@@ -237,7 +259,7 @@ impl StateDb {
 
   pub(crate) async fn load_source_checkpoints(&self) -> Result<HashMap<String, SourceCheckpoint>, String> {
     let rows = sqlx::query(
-      "SELECT doc_id, snapshot, markdown, scope, profile, meta_hash FROM source_checkpoints WHERE workspace_id = ?",
+      "SELECT doc_id, snapshot, markdown, source_markdown, scope, profile, meta_hash, readonly_preview FROM source_checkpoints WHERE workspace_id = ?",
     )
     .bind(&self.workspace_id)
     .fetch_all(&self.pool)
@@ -251,9 +273,11 @@ impl StateDb {
         SourceCheckpoint {
           snapshot: row.get("snapshot"),
           markdown: row.get("markdown"),
+          source_markdown: row.get("source_markdown"),
           scope: row.get("scope"),
           profile: row.get::<i64, _>("profile") as u32,
           meta_hash: row.get("meta_hash"),
+          readonly_preview: row.get::<i64, _>("readonly_preview") != 0,
         },
       );
     }
@@ -267,24 +291,28 @@ impl StateDb {
   ) -> Result<(), String> {
     sqlx::query(
       r#"
-      INSERT INTO source_checkpoints (workspace_id, doc_id, snapshot, markdown, scope, profile, meta_hash)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO source_checkpoints (workspace_id, doc_id, snapshot, markdown, source_markdown, scope, profile, meta_hash, readonly_preview)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(workspace_id, doc_id)
       DO UPDATE SET
         snapshot = excluded.snapshot,
         markdown = excluded.markdown,
+        source_markdown = excluded.source_markdown,
         scope = excluded.scope,
         profile = excluded.profile,
-        meta_hash = excluded.meta_hash
+        meta_hash = excluded.meta_hash,
+        readonly_preview = excluded.readonly_preview
       "#,
     )
     .bind(&self.workspace_id)
     .bind(doc_id)
     .bind(&checkpoint.snapshot)
     .bind(&checkpoint.markdown)
+    .bind(&checkpoint.source_markdown)
     .bind(&checkpoint.scope)
     .bind(i64::from(checkpoint.profile))
     .bind(&checkpoint.meta_hash)
+    .bind(i64::from(checkpoint.readonly_preview))
     .execute(&self.pool)
     .await
     .map_err(|err| format!("failed to persist source checkpoint for doc {}: {}", doc_id, err))?;
@@ -304,7 +332,7 @@ impl StateDb {
       .begin()
       .await
       .map_err(|err| format!("failed to start source transaction: {}", err))?;
-    let pending: Option<Vec<u8>> =
+    let previous_pending: Option<Vec<u8>> =
       sqlx::query_scalar("SELECT bin FROM pending_source_updates WHERE workspace_id = ? AND doc_id = ?")
         .bind(&self.workspace_id)
         .bind(doc_id)
@@ -312,29 +340,33 @@ impl StateDb {
         .await
         .map_err(|err| format!("failed to read pending source update: {}", err))?;
     let pending = if update.is_empty() || update == [0, 0] {
-      pending
+      previous_pending
     } else {
-      Some(match pending {
-        Some(previous) => merge_update_binary(Some(&previous), update)?,
-        None => update.to_vec(),
-      })
+      // The checkpoint snapshot already includes the imported file change and
+      // any local state supplied during preparation. It is safe to replay on
+      // its own and supersedes any older pending delta.
+      Some(checkpoint.snapshot.clone())
     };
     sqlx::query(
       r#"
-      INSERT INTO source_checkpoints (workspace_id, doc_id, snapshot, markdown, scope, profile, meta_hash)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO source_checkpoints (workspace_id, doc_id, snapshot, markdown, source_markdown, scope, profile, meta_hash, readonly_preview)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(workspace_id, doc_id)
       DO UPDATE SET snapshot = excluded.snapshot, markdown = excluded.markdown,
-        scope = excluded.scope, profile = excluded.profile, meta_hash = excluded.meta_hash
+        source_markdown = excluded.source_markdown, scope = excluded.scope,
+        profile = excluded.profile, meta_hash = excluded.meta_hash,
+        readonly_preview = excluded.readonly_preview
       "#,
     )
     .bind(&self.workspace_id)
     .bind(doc_id)
     .bind(&checkpoint.snapshot)
     .bind(&checkpoint.markdown)
+    .bind(&checkpoint.source_markdown)
     .bind(&checkpoint.scope)
     .bind(i64::from(checkpoint.profile))
     .bind(&checkpoint.meta_hash)
+    .bind(i64::from(checkpoint.readonly_preview))
     .execute(&mut *tx)
     .await
     .map_err(|err| format!("failed to stage source checkpoint: {}", err))?;

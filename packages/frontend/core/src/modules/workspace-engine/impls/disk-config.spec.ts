@@ -2,12 +2,16 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   DISK_SYNC_FEATURE_FLAG_KEY,
+  DISK_SYNC_FOLDER_GLOBAL_STATE_KEY_PREFIX,
   DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY,
+  DISK_SYNC_SOURCE_FILE_GLOBAL_STATE_KEY_PREFIX,
   getDiskSyncEnabled,
   getDiskSyncFolderPath,
   getDiskSyncRemoteOptions,
+  getDiskSyncSourceFilePath,
   setDiskSyncEnabled,
   setDiskSyncFolderPath,
+  setDiskSyncSourceFilePath,
 } from './disk-config';
 
 describe('disk-config', () => {
@@ -30,6 +34,7 @@ describe('disk-config', () => {
     globalThis.BUILD_CONFIG = {
       ...originalBuildConfig,
       isElectron: true,
+      appBuildType: 'canary',
     };
   });
 
@@ -41,24 +46,71 @@ describe('disk-config', () => {
   it('reads and writes feature flag from electron global state', () => {
     expect(getDiskSyncEnabled()).toBe(false);
 
-    setDiskSyncEnabled(true);
+    void setDiskSyncEnabled(true);
     expect(getDiskSyncEnabled()).toBe(true);
     expect(state.get(DISK_SYNC_FEATURE_FLAG_KEY)).toBe(true);
   });
 
+  it('exposes the persistence promise from electron global state writes', () => {
+    const persisted = Promise.resolve();
+    (globalThis as any).__sharedStorage.globalState.set = <T>(
+      key: string,
+      value: T
+    ) => {
+      state.set(key, value);
+      return persisted;
+    };
+
+    expect(setDiskSyncFolderPath('workspace-a', '/tmp/a')).toBe(persisted);
+    expect(setDiskSyncEnabled(true)).toBe(persisted);
+  });
+
   it('stores folder path per workspace and resolves remote options only when enabled', () => {
-    setDiskSyncFolderPath('workspace-a', '/tmp/a');
+    void setDiskSyncFolderPath('workspace-a', '/tmp/a');
+    void setDiskSyncSourceFilePath('workspace-a', '/tmp/a/A.md');
     expect(getDiskSyncFolderPath('workspace-a')).toBe('/tmp/a');
-    expect(state.get(DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY)).toEqual({
-      'workspace-a': '/tmp/a',
-    });
+    expect(getDiskSyncSourceFilePath('workspace-a')).toBe('/tmp/a/A.md');
+    expect(
+      state.get(`${DISK_SYNC_FOLDER_GLOBAL_STATE_KEY_PREFIX}workspace-a`)
+    ).toBe('/tmp/a');
+    expect(
+      state.get(`${DISK_SYNC_SOURCE_FILE_GLOBAL_STATE_KEY_PREFIX}workspace-a`)
+    ).toBe('/tmp/a/A.md');
 
     expect(getDiskSyncRemoteOptions('workspace-a')).toBeNull();
 
-    setDiskSyncEnabled(true);
+    void setDiskSyncEnabled(true);
+    expect(getDiskSyncRemoteOptions('workspace-a')).toEqual({
+      syncFolder: '/tmp/a',
+      sourceFile: '/tmp/a/A.md',
+    });
+  });
+
+  it('keeps folder sync behavior when no source file is configured', () => {
+    void setDiskSyncFolderPath('workspace-a', '/tmp/a');
+    void setDiskSyncEnabled(true);
+
     expect(getDiskSyncRemoteOptions('workspace-a')).toEqual({
       syncFolder: '/tmp/a',
     });
+  });
+
+  it('persists workspace folders under independent keys', () => {
+    void setDiskSyncFolderPath('workspace-a', '/tmp/a');
+    void setDiskSyncFolderPath('workspace-b', '/tmp/b');
+
+    expect([...state.values()]).toContain('/tmp/a');
+    expect([...state.values()]).toContain('/tmp/b');
+    expect(getDiskSyncFolderPath('workspace-a')).toBe('/tmp/a');
+    expect(getDiskSyncFolderPath('workspace-b')).toBe('/tmp/b');
+  });
+
+  it('reads legacy folder maps when no workspace key exists', () => {
+    state.set(DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY, {
+      'workspace-legacy': '/tmp/legacy',
+    });
+
+    expect(getDiskSyncFolderPath('workspace-legacy')).toBe('/tmp/legacy');
   });
 
   it('ignores config when not running in electron', () => {
@@ -74,5 +126,19 @@ describe('disk-config', () => {
     expect(getDiskSyncEnabled()).toBe(false);
     expect(getDiskSyncFolderPath('workspace-b')).toBeNull();
     expect(getDiskSyncRemoteOptions('workspace-b')).toBeNull();
+  });
+
+  it('ignores persisted disk sync config outside canary builds', () => {
+    globalThis.BUILD_CONFIG = {
+      ...globalThis.BUILD_CONFIG,
+      appBuildType: 'stable',
+    };
+    state.set(DISK_SYNC_FEATURE_FLAG_KEY, true);
+    state.set(DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY, {
+      'workspace-stable': '/tmp/stable',
+    });
+
+    expect(getDiskSyncEnabled()).toBe(false);
+    expect(getDiskSyncRemoteOptions('workspace-stable')).toBeNull();
   });
 });

@@ -10,6 +10,7 @@ const diskSyncMocks = vi.hoisted(() => {
       timestamp: new Date('2026-01-06T00:00:00.000Z'),
     })),
     prepareSourceDoc: vi.fn(async () => new Uint8Array([0, 0])),
+    resolveSourceDocId: vi.fn(async () => 'doc-source'),
     acknowledgeSourceUpdate: vi.fn(async () => {}),
     subscribeEvents: vi.fn(
       (
@@ -60,6 +61,10 @@ vi.mock('@affine/native', () => {
       return diskSyncMocks.prepareSourceDoc(sessionId, docId, local, root);
     }
 
+    resolveSourceDocId(sessionId: string, filePath: string) {
+      return diskSyncMocks.resolveSourceDocId(sessionId, filePath);
+    }
+
     acknowledgeSourceUpdate(
       sessionId: string,
       docId: string,
@@ -74,6 +79,7 @@ vi.mock('@affine/native', () => {
 
 import {
   prepareSourceDoc,
+  resolveSourceDocId,
   startSession,
   stopSession,
 } from '../../src/helper/disk-sync/handlers';
@@ -82,6 +88,7 @@ import { diskSyncSubjects } from '../../src/helper/disk-sync/subjects';
 describe('disk helper handlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    diskSyncMocks.prepareSourceDoc.mockResolvedValue(new Uint8Array([0, 0]));
   });
 
   it('forwards subscribeEvents payload and unsubscribes on stop', async () => {
@@ -94,6 +101,7 @@ describe('disk helper handlers', () => {
         callback(null, {
           type: 'source-discovered',
           docId: 'doc-source',
+          filePath: '/tmp/disk-sync/source.md',
         } as DiskSyncEvent);
         callback(null, {
           type: 'root-doc-discovered',
@@ -132,6 +140,18 @@ describe('disk helper handlers', () => {
       root
     );
 
+    await expect(
+      resolveSourceDocId(
+        'workspace-subscribe',
+        '/tmp/disk-sync',
+        '/tmp/disk-sync/source.md'
+      )
+    ).resolves.toBe('doc-source');
+    expect(diskSyncMocks.resolveSourceDocId).toHaveBeenCalledWith(
+      'session-subscribe',
+      '/tmp/disk-sync/source.md'
+    );
+
     await stopSession('session-subscribe');
     expect(unsubscribe).toHaveBeenCalledTimes(1);
     subscription.unsubscribe();
@@ -159,5 +179,58 @@ describe('disk helper handlers', () => {
     await stopSession('session-shared');
     expect(unsubscribe).toHaveBeenCalledTimes(1);
     expect(diskSyncMocks.stopSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('publishes a doc-scoped error when source preparation fails', async () => {
+    diskSyncMocks.prepareSourceDoc.mockRejectedValueOnce(
+      new Error('unsupported Markdown table edit')
+    );
+    const events: DiskSyncEvent[] = [];
+    const subscription = diskSyncSubjects.event$.subscribe(payload => {
+      if (payload.sessionId === 'session-failed-import') {
+        events.push(payload.event);
+      }
+    });
+
+    await expect(
+      prepareSourceDoc('session-failed-import', 'doc-failed-import')
+    ).rejects.toThrow('unsupported Markdown table edit');
+    expect(events).toContainEqual({
+      type: 'error',
+      docId: 'doc-failed-import',
+      message: 'unsupported Markdown table edit',
+    });
+
+    subscription.unsubscribe();
+  });
+
+  it('resolves a source through the session bound to that exact file', async () => {
+    diskSyncMocks.resolveSourceDocId.mockImplementation(
+      async sessionId => `doc-from-${sessionId}`
+    );
+    const common = {
+      workspaceId: 'workspace-files',
+      syncFolder: '/tmp/disk-sync-files',
+    };
+
+    await startSession('session-a', {
+      ...common,
+      sourceFile: '/tmp/disk-sync-files/A.md',
+    });
+    await startSession('session-b', {
+      ...common,
+      sourceFile: '/tmp/disk-sync-files/B.md',
+    });
+
+    await expect(
+      resolveSourceDocId(
+        common.workspaceId,
+        common.syncFolder,
+        '/tmp/disk-sync-files/B.md'
+      )
+    ).resolves.toBe('doc-from-session-b');
+
+    await stopSession('session-a');
+    await stopSession('session-b');
   });
 });

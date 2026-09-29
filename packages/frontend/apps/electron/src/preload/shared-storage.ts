@@ -10,9 +10,12 @@ import {
 const CLIENT_ID: string = Math.random().toString(36).slice(2);
 
 function invokeWithCatch(key: string, ...args: any[]) {
-  ipcRenderer.invoke(AFFINE_API_CHANNEL_NAME, key, ...args).catch(err => {
-    console.error(`Failed to invoke ${key}`, err);
-  });
+  return ipcRenderer
+    .invoke(AFFINE_API_CHANNEL_NAME, key, ...args)
+    .then(() => undefined)
+    .catch(err => {
+      console.error(`Failed to invoke ${key}`, err);
+    });
 }
 
 function createSharedStorageApi(
@@ -114,12 +117,12 @@ function createSharedStorageApi(
     ready: initPromise,
     del(key: string) {
       memory.del(key);
-      invokeWithCatch(`sharedStorage:${api.del}`, key, CLIENT_ID);
+      return invokeWithCatch(`sharedStorage:${api.del}`, key, CLIENT_ID);
     },
     clear() {
       memory.clear();
       revisions.clear();
-      invokeWithCatch(`sharedStorage:${api.clear}`, CLIENT_ID);
+      return invokeWithCatch(`sharedStorage:${api.clear}`, CLIENT_ID);
     },
     get<T>(key: string): T | undefined {
       return memory.get(key);
@@ -129,7 +132,7 @@ function createSharedStorageApi(
     },
     set(key: string, value: unknown) {
       memory.set(key, value);
-      invokeWithCatch(`sharedStorage:${api.set}`, key, value, CLIENT_ID);
+      return invokeWithCatch(`sharedStorage:${api.set}`, key, value, CLIENT_ID);
     },
     watch<T>(key: string, cb: (i: T | undefined) => void): () => void {
       const subscription = memory.watch(key).subscribe(i => cb(i as T));

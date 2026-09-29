@@ -9,9 +9,13 @@ import { configStorageHandlers } from './config-storage';
 import { findInPageHandlers } from './find-in-page';
 import { importHandlers } from './import';
 import { getLogFilePath, logger, revealLogFile } from './logger';
+import { markdownOpenHandlers } from './markdown-open';
 import { recordingHandlers } from './recording';
 import { checkSource } from './security-restrictions';
-import { sharedStorageHandlers } from './shared-storage';
+import {
+  sharedStorageHandlers,
+  sharedStorageSyncHandlers,
+} from './shared-storage';
 import { uiHandlers } from './ui/handlers';
 import { updaterHandlers } from './updater';
 import { popupHandlers } from './windows-manager/popup';
@@ -28,7 +32,7 @@ export const debugHandlers = {
 
 export const i18nHandlers = {
   changeLanguage: async (_: Electron.IpcMainInvokeEvent, language: string) => {
-    return I18n.changeLanguage(language);
+    await I18n.changeLanguage(language);
   },
 };
 
@@ -48,6 +52,11 @@ export const allHandlers = {
   i18n: i18nHandlers,
   byokStorage: byokStorageHandlers,
   auth: authHandlers,
+  markdownOpen: markdownOpenHandlers,
+};
+
+const allSyncHandlers = {
+  sharedStorage: sharedStorageSyncHandlers,
 };
 
 export const registerHandlers = () => {
@@ -109,16 +118,36 @@ export const registerHandlers = () => {
       return;
     }
 
-    handleIpcMessage(e, ...args)
-      .then(ret => {
-        e.returnValue = ret;
-      })
-      .catch(error => {
-        logger.error(
-          `error in sync ipc handler when calling ${args[0]}`,
-          error
-        );
-        e.returnValue = undefined;
-      });
+    const channel = args[0];
+    if (typeof channel !== 'string') {
+      logger.error('invalid synchronous ipc message', args);
+      e.returnValue = undefined;
+      return;
+    }
+
+    const [namespace, key] = channel.split(':');
+    if (!namespace || !key) {
+      logger.error('invalid synchronous ipc message', args);
+      e.returnValue = undefined;
+      return;
+    }
+
+    // @ts-expect-error - namespaces and keys are validated at runtime
+    const handler = allSyncHandlers[namespace]?.[key];
+    if (!handler) {
+      logger.error('synchronous handler not found for ', channel);
+      e.returnValue = undefined;
+      return;
+    }
+
+    try {
+      e.returnValue = handler(...args.slice(1));
+    } catch (error) {
+      logger.error(
+        `error in synchronous ipc handler when calling ${channel}`,
+        error
+      );
+      e.returnValue = undefined;
+    }
   });
 };

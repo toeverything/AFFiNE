@@ -1,5 +1,6 @@
 use std::{
   collections::HashMap,
+  path::Path,
   sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
@@ -13,7 +14,7 @@ use napi::{
 };
 use napi_derive::napi;
 use once_cell::sync::Lazy;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 
 mod frontmatter;
 mod root_meta;
@@ -28,12 +29,14 @@ mod tests;
 use session::DiskSession;
 
 static SESSIONS: Lazy<RwLock<HashMap<String, Arc<DiskSession>>>> = Lazy::new(|| RwLock::new(HashMap::new()));
+static START_SESSION_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 static NEXT_SUBSCRIBER_ID: AtomicU64 = AtomicU64::new(1);
 
 #[napi(object)]
 pub struct DiskSessionOptions {
   pub workspace_id: String,
   pub sync_folder: String,
+  pub source_file: Option<String>,
 }
 
 #[napi(object)]
@@ -77,6 +80,7 @@ pub struct DiskSyncEvent {
   pub r#type: String,
   pub update: Option<DiskSyncDocUpdateEvent>,
   pub doc_id: Option<String>,
+  pub file_path: Option<String>,
   pub timestamp: Option<NaiveDateTime>,
   pub origin: Option<String>,
   pub message: Option<String>,
@@ -101,6 +105,8 @@ impl DiskSync {
 
   #[napi]
   pub async fn start_session(&self, session_id: String, options: DiskSessionOptions) -> Result<()> {
+    let _start_guard = START_SESSION_LOCK.lock().await;
+
     {
       let sessions = SESSIONS.read().await;
       if sessions.contains_key(&session_id) {
@@ -119,6 +125,8 @@ impl DiskSync {
 
   #[napi]
   pub async fn stop_session(&self, session_id: String) -> Result<()> {
+    let _start_guard = START_SESSION_LOCK.lock().await;
+
     let mut sessions = SESSIONS.write().await;
     if let Some(session) = sessions.remove(&session_id) {
       session.close().await;
@@ -179,6 +187,31 @@ impl DiskSync {
       .await
       .map(|snapshot| snapshot.map(Uint8Array::new))
       .map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub async fn should_replace_source_doc(&self, session_id: String, doc_id: String) -> Result<bool> {
+    let session = {
+      let sessions = SESSIONS.read().await;
+      sessions
+        .get(&session_id)
+        .cloned()
+        .ok_or_else(|| to_napi_error(format!("disk session {} is not started", session_id)))?
+    };
+    Ok(session.should_replace_source_doc(&doc_id).await)
+  }
+
+  #[napi]
+  pub async fn resolve_source_doc_id(&self, session_id: String, file_path: String) -> Result<Option<String>> {
+    let session = {
+      let sessions = SESSIONS.read().await;
+      sessions
+        .get(&session_id)
+        .cloned()
+        .ok_or_else(|| to_napi_error(format!("disk session {} is not started", session_id)))?
+    };
+
+    Ok(session.resolve_source_doc_id(Path::new(&file_path)).await)
   }
 
   #[napi]

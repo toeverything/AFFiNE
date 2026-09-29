@@ -1,2 +1,2 @@
 export { sharedStorageEvents } from './events';
-export { sharedStorageHandlers } from './handlers';
+export { sharedStorageHandlers, sharedStorageSyncHandlers } from './handlers';

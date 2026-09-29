@@ -9,6 +9,7 @@ describe('createDiskSyncApis', () => {
     const stopSession = vi.fn(async () => {});
     const acknowledgeSourceUpdate = vi.fn(async () => {});
     const prepareSourceDoc = vi.fn(async () => null);
+    const shouldReplaceSourceDoc = vi.fn(async () => false);
     const applyLocalUpdate = vi.fn(async () => ({
       docId: 'doc-1',
       timestamp: new Date('2026-01-04T00:00:00.000Z'),
@@ -35,6 +36,7 @@ describe('createDiskSyncApis', () => {
         applyLocalUpdate,
         acknowledgeSourceUpdate,
         prepareSourceDoc,
+        shouldReplaceSourceDoc,
       },
       { onEvent }
     );
@@ -48,6 +50,7 @@ describe('createDiskSyncApis', () => {
       docId: 'doc-1',
       bin: new Uint8Array([1, 2, 3]),
     });
+    await apis.shouldReplaceSourceDoc?.('session-a', 'doc-1');
 
     expect(startSession).toHaveBeenCalledWith('session-a', {
       workspaceId: 'workspace-a',
@@ -58,6 +61,7 @@ describe('createDiskSyncApis', () => {
       'session-a',
       expect.objectContaining({ docId: 'doc-1' })
     );
+    expect(shouldReplaceSourceDoc).toHaveBeenCalledWith('session-a', 'doc-1');
 
     const callback = vi.fn();
     const unsubscribe = apis.subscribeEvents('session-a', callback);

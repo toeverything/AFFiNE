@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import type { DiskSyncEvent as NativeDiskSyncEvent } from '@affine/native';
 import { DiskSync } from '@affine/native';
 import type { DocClock, DocUpdate } from '@affine/nbstore';
@@ -10,8 +12,13 @@ function normalizeDiskSyncEvent(
 ): DiskSyncEvent | null {
   switch (event.type) {
     case 'source-discovered':
-      return typeof event.docId === 'string'
-        ? { type: 'source-discovered', docId: event.docId }
+      return typeof event.docId === 'string' &&
+        typeof event.filePath === 'string'
+        ? {
+            type: 'source-discovered',
+            docId: event.docId,
+            filePath: event.filePath,
+          }
         : null;
     case 'root-doc-discovered':
       return typeof event.docId === 'string'
@@ -49,7 +56,11 @@ function normalizeDiskSyncEvent(
 const diskSync = new DiskSync();
 const sessions = new Map<
   string,
-  { users: number; unsubscribe: () => Promise<void> }
+  {
+    users: number;
+    options: DiskSessionOptions;
+    unsubscribe: () => Promise<void>;
+  }
 >();
 const operations = new Map<string, Promise<void>>();
 
@@ -98,6 +109,7 @@ export async function startSession(
       );
       sessions.set(sessionId, {
         users: 1,
+        options,
         unsubscribe: async () => {
           await subscriber.unsubscribe();
         },
@@ -107,6 +119,27 @@ export async function startSession(
       throw error;
     }
   });
+}
+
+export async function resolveSourceDocId(
+  workspaceId: string,
+  syncFolder: string,
+  filePath: string
+): Promise<string | null> {
+  const normalizedFolder = path.resolve(syncFolder);
+  const normalizedFile = path.resolve(filePath);
+  const activeSession = [...sessions.entries()].find(([, active]) => {
+    return (
+      active.options.workspaceId === workspaceId &&
+      path.resolve(active.options.syncFolder) === normalizedFolder &&
+      (!active.options.sourceFile ||
+        path.resolve(active.options.sourceFile) === normalizedFile)
+    );
+  });
+  if (!activeSession) {
+    return null;
+  }
+  return diskSync.resolveSourceDocId(activeSession[0], normalizedFile);
 }
 
 export async function stopSession(sessionId: string): Promise<void> {
@@ -148,5 +181,29 @@ export async function prepareSourceDoc(
   localSnapshot?: Uint8Array,
   localRoot?: Uint8Array
 ): Promise<Uint8Array | null> {
-  return diskSync.prepareSourceDoc(sessionId, docId, localSnapshot, localRoot);
+  try {
+    return await diskSync.prepareSourceDoc(
+      sessionId,
+      docId,
+      localSnapshot,
+      localRoot
+    );
+  } catch (error) {
+    diskSyncSubjects.event$.next({
+      sessionId,
+      event: {
+        type: 'error',
+        docId,
+        message: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
+  }
+}
+
+export async function shouldReplaceSourceDoc(
+  sessionId: string,
+  docId: string
+): Promise<boolean> {
+  return diskSync.shouldReplaceSourceDoc(sessionId, docId);
 }

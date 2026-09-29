@@ -299,7 +299,8 @@ export const AFFINE_FLAGS = {
   enable_disk_sync: {
     category: 'affine',
     displayName: 'Enable Disk Markdown Sync',
-    description: 'Sync workspace pages with Markdown files in a local folder.',
+    description:
+      'Enable experimental local-folder Markdown bidirectional sync on Electron desktop. WARNING: We are not responsible for any data loss without thorough testing.',
     configurable: BUILD_CONFIG.isElectron && isCanaryBuild,
     defaultState: false,
   },

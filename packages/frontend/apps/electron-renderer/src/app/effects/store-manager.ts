@@ -61,6 +61,20 @@ export function setupStoreManager(framework: Framework) {
   framework.impl(NbstoreProvider, {
     realtime: storeManagerClient.realtime,
     openStore(key, options) {
+      try {
+        // E2E/debug only: capture init options passed to the nbstore worker.
+        (globalThis as any).__e2eNbstoreOpenStoreLogs =
+          (globalThis as any).__e2eNbstoreOpenStoreLogs ?? [];
+        (globalThis as any).__e2eNbstoreOpenStoreLogs.push({
+          key,
+          remotes: Object.keys(options?.remotes ?? {}),
+          diskSyncFolder:
+            (options as any)?.remotes?.['disk']?.doc?.opts?.syncFolder ?? null,
+        });
+      } catch {
+        // ignore
+      }
+
       const { store, dispose } = storeManagerClient.open(key, options);
 
       return {

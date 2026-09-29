@@ -209,15 +209,21 @@ export class DocSyncPeer {
 
   private async prepareRemoteDoc(docId: string) {
     if (!this.remote.prepareDocImport) {
-      return;
+      return false;
     }
-    const local = await this.local.getDoc(docId);
+    const replaceLocal =
+      (await this.remote.shouldReplaceLocalDoc?.(docId)) ?? false;
+    const local = replaceLocal ? null : await this.local.getDoc(docId);
     const root = await this.local.getDoc(this.local.spaceId);
     await this.remote.prepareDocImport(
       docId,
       local?.bin ?? null,
       root?.bin ?? null
     );
+    if (replaceLocal) {
+      await this.local.deleteDoc(docId);
+    }
+    return replaceLocal;
   }
 
   private get currentErrorMessage() {
@@ -306,7 +312,12 @@ export class DocSyncPeer {
 
   private readonly jobs = createJobErrorCatcher({
     connect: async (docId: string, signal?: AbortSignal) => {
-      await this.prepareRemoteDoc(docId);
+      const replacedLocal = await this.prepareRemoteDoc(docId);
+      if (replacedLocal) {
+        this.status.connectedDocs.add(docId);
+        this.statusUpdatedSubject$.next(docId);
+        return;
+      }
       const pushedClock =
         (await this.syncMetadata.getPeerPushedClock(this.peerId, docId))
           ?.timestamp ?? null;

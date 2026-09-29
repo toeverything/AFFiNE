@@ -17,6 +17,9 @@ export type SettingTab =
   | `workspace:${'preference' | 'properties' | 'members' | 'storage' | 'billing' | 'license' | 'integrations' | 'embedding' | 'byok' | 'search'}`;
 
 export type GLOBAL_DIALOG_SCHEMA = {
+  'bind-markdown-folder': (props: { filePath: string; folderPath: string }) => {
+    workspaceId: string;
+  };
   'create-workspace': (props: { serverId?: string }) => {
     metadata: WorkspaceMetadata;
     defaultDocId?: string;
