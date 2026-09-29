@@ -5,10 +5,11 @@ import { type SpaceType, universalId } from '../../utils/universal-id';
 export interface DiskSessionOptions {
   workspaceId: string;
   syncFolder: string;
+  sourceFile?: string;
 }
 
 export type DiskSyncEvent =
-  | { type: 'source-discovered'; docId: string }
+  | { type: 'source-discovered'; docId: string; filePath?: string }
   | { type: 'root-doc-discovered'; docId: string }
   | {
       type: 'doc-update';
@@ -20,7 +21,7 @@ export type DiskSyncEvent =
       };
       origin?: string;
     }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string; docId?: string };
 
 export interface DiskSyncApis {
   startSession: (
@@ -45,6 +46,10 @@ export interface DiskSyncApis {
     localSnapshot?: Uint8Array,
     localRoot?: Uint8Array
   ) => Promise<Uint8Array | null>;
+  shouldReplaceSourceDoc?: (
+    sessionId: string,
+    docId: string
+  ) => Promise<boolean>;
   subscribeEvents: (
     sessionId: string,
     callback: (event: DiskSyncEvent) => void
@@ -56,6 +61,7 @@ interface DiskSyncOptions {
   readonly type: SpaceType;
   readonly id: string;
   readonly syncFolder: string;
+  readonly sourceFile?: string;
 }
 
 let apis: DiskSyncApis | null = null;
@@ -83,10 +89,14 @@ export class DiskSyncConnection extends AutoReconnectConnection<{
       throw new Error('Not in native context.');
     }
     this.native = apis;
-    this.sessionId = JSON.stringify([
+    const sessionScope = [
       universalId({ peer: this.flavour, type: this.type, id: this.id }),
       options.syncFolder,
-    ]);
+    ];
+    if (options.sourceFile) {
+      sessionScope.push(options.sourceFile);
+    }
+    this.sessionId = JSON.stringify(sessionScope);
   }
 
   override get shareId(): string {
@@ -118,6 +128,13 @@ export class DiskSyncConnection extends AutoReconnectConnection<{
     );
   }
 
+  shouldReplaceSourceDoc(docId: string) {
+    return (
+      this.native.shouldReplaceSourceDoc?.(this.sessionId, docId) ??
+      Promise.resolve(false)
+    );
+  }
+
   override async doConnect() {
     const unsubscribe = this.native.subscribeEvents(
       this.sessionId,
@@ -127,6 +144,9 @@ export class DiskSyncConnection extends AutoReconnectConnection<{
       await this.native.startSession(this.sessionId, {
         workspaceId: this.id,
         syncFolder: this.options.syncFolder,
+        ...(this.options.sourceFile
+          ? { sourceFile: this.options.sourceFile }
+          : {}),
       });
       return { unsubscribe };
     } catch (error) {

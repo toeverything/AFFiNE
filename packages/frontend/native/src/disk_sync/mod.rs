@@ -1,5 +1,6 @@
 use std::{
   collections::HashMap,
+  path::Path,
   sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
@@ -35,6 +36,7 @@ static NEXT_SUBSCRIBER_ID: AtomicU64 = AtomicU64::new(1);
 pub struct DiskSessionOptions {
   pub workspace_id: String,
   pub sync_folder: String,
+  pub source_file: Option<String>,
 }
 
 #[napi(object)]
@@ -78,6 +80,7 @@ pub struct DiskSyncEvent {
   pub r#type: String,
   pub update: Option<DiskSyncDocUpdateEvent>,
   pub doc_id: Option<String>,
+  pub file_path: Option<String>,
   pub timestamp: Option<NaiveDateTime>,
   pub origin: Option<String>,
   pub message: Option<String>,
@@ -184,6 +187,31 @@ impl DiskSync {
       .await
       .map(|snapshot| snapshot.map(Uint8Array::new))
       .map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub async fn should_replace_source_doc(&self, session_id: String, doc_id: String) -> Result<bool> {
+    let session = {
+      let sessions = SESSIONS.read().await;
+      sessions
+        .get(&session_id)
+        .cloned()
+        .ok_or_else(|| to_napi_error(format!("disk session {} is not started", session_id)))?
+    };
+    Ok(session.should_replace_source_doc(&doc_id).await)
+  }
+
+  #[napi]
+  pub async fn resolve_source_doc_id(&self, session_id: String, file_path: String) -> Result<Option<String>> {
+    let session = {
+      let sessions = SESSIONS.read().await;
+      sessions
+        .get(&session_id)
+        .cloned()
+        .ok_or_else(|| to_napi_error(format!("disk session {} is not started", session_id)))?
+    };
+
+    Ok(session.resolve_source_doc_id(Path::new(&file_path)).await)
   }
 
   #[napi]

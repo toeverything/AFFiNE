@@ -9,6 +9,7 @@ import { configStorageHandlers } from './config-storage';
 import { findInPageHandlers } from './find-in-page';
 import { importHandlers } from './import';
 import { getLogFilePath, logger, revealLogFile } from './logger';
+import { markdownOpenHandlers } from './markdown-open';
 import { recordingHandlers } from './recording';
 import { checkSource } from './security-restrictions';
 import {
@@ -31,7 +32,7 @@ export const debugHandlers = {
 
 export const i18nHandlers = {
   changeLanguage: async (_: Electron.IpcMainInvokeEvent, language: string) => {
-    return I18n.changeLanguage(language);
+    await I18n.changeLanguage(language);
   },
 };
 
@@ -51,6 +52,7 @@ export const allHandlers = {
   i18n: i18nHandlers,
   byokStorage: byokStorageHandlers,
   auth: authHandlers,
+  markdownOpen: markdownOpenHandlers,
 };
 
 const allSyncHandlers = {

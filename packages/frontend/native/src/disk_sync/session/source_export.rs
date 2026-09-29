@@ -22,6 +22,15 @@ impl DiskSession {
       });
     }
 
+    if !self.should_sync_doc(&update.doc_id).await {
+      return Ok(DiskDocClock {
+        doc_id: update.doc_id,
+        timestamp,
+        review_required: None,
+        export_error: None,
+      });
+    }
+
     let (review_required, export_error) = match self
       .apply_local_page_update(update.doc_id.clone(), update.bin.as_ref().to_vec())
       .await
@@ -54,7 +63,9 @@ impl DiskSession {
     let metas = extract_all_root_meta(&merged_root)?;
 
     for (doc_id, meta) in metas {
-      self.export_root_meta_for_doc(&doc_id, &meta).await?;
+      if self.should_sync_doc(&doc_id).await {
+        self.export_root_meta_for_doc(&doc_id, &meta).await?;
+      }
     }
 
     Ok(())
@@ -125,12 +136,57 @@ impl DiskSession {
       return Ok(None);
     }
 
+    let readonly_preview = self
+      .checkpoints
+      .lock()
+      .await
+      .get(&doc_id)
+      .is_some_and(|checkpoint| checkpoint.readonly_preview);
+    if readonly_preview {
+      let current = self.docs.lock().await.get(&doc_id).cloned();
+      let merged = merge_frontend_update_binary(current.as_deref(), &update_bin)?;
+      if let Some(current) = current.as_deref()
+        && same_update_state(current, &merged)?
+      {
+        return Ok(None);
+      }
+      return Err(PageExportError::Unexportable(format!(
+        "Markdown source for {} is open as a read-only preview; AFFiNE edits are not written to the source file",
+        doc_id
+      )));
+    }
+
     let current_doc = {
       let docs = self.docs.lock().await;
       docs.get(&doc_id).cloned()
     };
 
     let merged_doc = merge_frontend_update_binary(current_doc.as_deref(), &update_bin)?;
+    let merged_doc = if let Some(current_doc) = current_doc.as_deref() {
+      let normalized = normalize_source_merge_current(current_doc, &merged_doc, &doc_id)?;
+      if same_update_state(current_doc, &normalized)? {
+        return Ok(None);
+      }
+      let current_source = export_markdown_source(current_doc, &doc_id, None).ok();
+      let normalized_source = export_markdown_source(&normalized, &doc_id, None).ok();
+      let current_title = parse_doc_to_markdown(current_doc.to_vec(), doc_id.clone(), true, None)
+        .ok()
+        .map(|result| result.title);
+      let normalized_title = parse_doc_to_markdown(normalized.clone(), doc_id.clone(), true, None)
+        .ok()
+        .map(|result| result.title);
+      if current_source
+        .zip(normalized_source)
+        .is_some_and(|(current, normalized)| current.markdown == normalized.markdown)
+        && current_title == normalized_title
+      {
+        self.docs.lock().await.insert(doc_id.clone(), normalized);
+        return Ok(None);
+      }
+      normalized
+    } else {
+      merged_doc
+    };
 
     {
       let mut docs = self.docs.lock().await;
@@ -183,10 +239,12 @@ impl DiskSession {
 
     let checkpoint = SourceCheckpoint {
       snapshot: merged_doc,
-      markdown: markdown.markdown,
+      markdown: markdown.markdown.clone(),
+      source_markdown: markdown.markdown,
       scope: markdown.scope,
       profile: markdown.profile,
       meta_hash: hash_meta(&meta_with_id),
+      readonly_preview: false,
     };
     self.state_db.upsert_source_checkpoint(&doc_id, &checkpoint).await?;
     self.checkpoints.lock().await.insert(doc_id.clone(), checkpoint);

@@ -3,6 +3,8 @@ import {
   acknowledgeSourceUpdate,
   applyLocalUpdate,
   prepareSourceDoc,
+  resolveSourceDocId,
+  shouldReplaceSourceDoc,
   startSession,
   stopSession,
 } from './handlers';
@@ -14,6 +16,8 @@ export const diskSyncHandlers = {
   applyLocalUpdate,
   acknowledgeSourceUpdate,
   prepareSourceDoc,
+  shouldReplaceSourceDoc,
+  resolveSourceDocId,
 };
 
 export const diskSyncEvents = {

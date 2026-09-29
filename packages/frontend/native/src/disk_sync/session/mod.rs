@@ -22,9 +22,10 @@ use super::{
   state_db::StateDb,
   types::{FrontmatterMeta, SourceCheckpoint},
   utils::{
-    collect_markdown_files, derive_title_from_markdown, derive_title_from_path, generate_missing_doc_id, hash_meta,
-    hash_string, is_empty_update, merge_frontend_update_binary, merge_root_update_binary, merge_update_binary,
-    now_naive, paths_equal, same_update_state, sanitize_file_stem, write_new_file,
+    annotate_markdown_blocks, collect_markdown_files, derive_title_from_markdown, derive_title_from_path,
+    generate_missing_doc_id, hash_meta, hash_string, is_complete_update, is_empty_update, load_doc_or_new,
+    merge_complete_root_update, merge_frontend_update_binary, merge_root_update_binary, merge_update_binary,
+    normalize_source_merge_current, now_naive, paths_equal, same_update_state, sanitize_file_stem, write_new_file,
   },
 };
 
@@ -69,6 +70,7 @@ struct ScanCache {
 pub(crate) struct DiskSession {
   workspace_id: String,
   sync_folder: PathBuf,
+  source_file: Option<PathBuf>,
   state_db: StateDb,
   events: Arc<Mutex<VecDeque<DiskSyncEvent>>>,
   docs: Arc<Mutex<HashMap<String, Vec<u8>>>>,
@@ -87,6 +89,50 @@ pub(crate) struct DiskSession {
 }
 
 impl DiskSession {
+  async fn source_doc_id(&self) -> Option<String> {
+    let source_file = self.source_file.clone()?;
+    if let Some(doc_id) = self
+      .path_bindings
+      .lock()
+      .await
+      .iter()
+      .find_map(|(bound_path, doc_id)| paths_equal(bound_path, &source_file).then(|| doc_id.clone()))
+    {
+      return Some(doc_id);
+    }
+    self
+      .source_preparation
+      .lock()
+      .await
+      .iter()
+      .find_map(|(doc_id, state)| match state {
+        SourcePreparation::Awaiting(path) if paths_equal(path, &source_file) => Some(doc_id.clone()),
+        _ => None,
+      })
+  }
+
+  async fn should_sync_doc(&self, doc_id: &str) -> bool {
+    if self.source_file.is_none() {
+      return true;
+    }
+
+    self.source_doc_id().await.as_deref() == Some(doc_id)
+  }
+
+  pub(crate) async fn resolve_source_doc_id(&self, file_path: &Path) -> Option<String> {
+    let doc_id = self
+      .path_bindings
+      .lock()
+      .await
+      .iter()
+      .find_map(|(bound_path, doc_id)| paths_equal(bound_path, file_path).then(|| doc_id.clone()))?;
+    matches!(
+      self.source_preparation.lock().await.get(&doc_id),
+      Some(SourcePreparation::Ready)
+    )
+    .then_some(doc_id)
+  }
+
   async fn doc_id_for_unmarked_file(&self, file_path: &Path) -> String {
     if let Some(id) = self.path_bindings.lock().await.get(file_path).cloned() {
       return id;
@@ -124,6 +170,20 @@ impl DiskSession {
 
   pub(crate) async fn new(options: DiskSessionOptions) -> Result<Self, String> {
     let sync_folder = PathBuf::from(&options.sync_folder);
+    let source_file = options.source_file.map(PathBuf::from);
+    if let Some(source_file) = &source_file {
+      let is_markdown = source_file
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("md") || extension.eq_ignore_ascii_case("markdown"));
+      if !source_file.is_absolute() || !source_file.starts_with(&sync_folder) || !is_markdown {
+        return Err(format!(
+          "source file {} must be an absolute Markdown path inside {}",
+          source_file.display(),
+          sync_folder.display()
+        ));
+      }
+    }
     fs::create_dir_all(&sync_folder)
       .map_err(|err| format!("failed to create sync folder {}: {}", sync_folder.display(), err))?;
 
@@ -144,6 +204,7 @@ impl DiskSession {
     Ok(Self {
       workspace_id: options.workspace_id,
       sync_folder,
+      source_file,
       state_db,
       events: Arc::new(Mutex::new(VecDeque::new())),
       docs: Arc::new(Mutex::new(docs)),
@@ -273,6 +334,7 @@ impl DiskSession {
         r#type: "error".to_string(),
         update: None,
         doc_id: None,
+        file_path: None,
         timestamp: Some(now_naive()),
         origin: None,
         message: Some(message),
@@ -285,6 +347,7 @@ impl DiskSession {
       .emit_event(DiskSyncEvent {
         r#type: "doc-update".to_string(),
         doc_id: Some(update.doc_id.clone()),
+        file_path: None,
         timestamp: Some(update.timestamp),
         update: Some(update),
         origin,
@@ -296,8 +359,12 @@ impl DiskSession {
   async fn discover_root_docs(&self, root: &[u8]) -> Result<(), String> {
     let projection = affine_doc_loader::project_workspace_root(root.to_vec(), true)
       .map_err(|err| format!("failed to project root docs: {err}"))?;
+    let source_doc_id = self.source_doc_id().await;
     let mut discovered = self.discovered_root_docs.lock().await;
     for doc_id in projection.doc_ids {
+      if self.source_file.is_some() && source_doc_id.as_deref() != Some(doc_id.as_str()) {
+        continue;
+      }
       if doc_id == self.workspace_id || !discovered.insert(doc_id.clone()) {
         continue;
       }
@@ -306,6 +373,7 @@ impl DiskSession {
           r#type: "root-doc-discovered".to_string(),
           update: None,
           doc_id: Some(doc_id),
+          file_path: None,
           timestamp: None,
           origin: None,
           message: None,

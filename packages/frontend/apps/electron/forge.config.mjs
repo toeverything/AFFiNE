@@ -378,6 +378,15 @@ export default {
     extendInfo: {
       NSAudioCaptureUsageDescription:
         'Please allow access in order to capture audio from other apps by AFFiNE.',
+      CFBundleDocumentTypes: [
+        {
+          CFBundleTypeName: 'Markdown Document',
+          CFBundleTypeRole: 'Editor',
+          LSHandlerRank: 'Alternate',
+          LSItemContentTypes: ['net.daringfireball.markdown'],
+          CFBundleTypeExtensions: ['md', 'markdown'],
+        },
+      ],
     },
   },
   makers,

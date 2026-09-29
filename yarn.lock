@@ -537,6 +537,7 @@ __metadata:
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
     react-router-dom: "npm:^7.18.4"
+    rxjs: "npm:^7.8.2"
     typescript: "npm:@typescript/typescript6@6.0.2"
     uuid: "npm:^14.0.0"
     vitest: "npm:^4.1.11"

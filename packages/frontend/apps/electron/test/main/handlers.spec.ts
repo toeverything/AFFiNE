@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const fixtures = vi.hoisted(() => ({
+  changeLanguage: vi.fn(),
   checkSource: vi.fn(() => true),
   globalCache: { cacheKey: 'cache-value' },
   globalState: { stateKey: 'state-value' },
@@ -9,7 +10,7 @@ const fixtures = vi.hoisted(() => ({
 }));
 
 vi.mock('@affine/i18n', () => ({
-  I18n: { changeLanguage: vi.fn() },
+  I18n: { changeLanguage: fixtures.changeLanguage },
 }));
 vi.mock('electron', () => ({
   ipcMain: {
@@ -32,6 +33,7 @@ vi.mock('../../src/main/logger', () => ({
   logger: { debug: vi.fn(), error: vi.fn() },
   revealLogFile: vi.fn(),
 }));
+vi.mock('../../src/main/markdown-open', () => ({ markdownOpenHandlers: {} }));
 vi.mock('../../src/main/recording', () => ({ recordingHandlers: {} }));
 vi.mock('../../src/main/security-restrictions', () => ({
   checkSource: fixtures.checkSource,
@@ -102,5 +104,16 @@ describe('main IPC handlers', () => {
 
     expect(setReturnValue).toHaveBeenCalledTimes(1);
     expect(setReturnValue).toHaveBeenCalledWith(fixtures.globalState);
+  });
+
+  it('does not return the non-cloneable i18next translation function', async () => {
+    const translationFunction = vi.fn();
+    fixtures.changeLanguage.mockResolvedValue(translationFunction);
+    const { i18nHandlers } = await import('../../src/main/handlers');
+
+    const result = await i18nHandlers.changeLanguage({} as never, 'en');
+
+    expect(fixtures.changeLanguage).toHaveBeenCalledWith('en');
+    expect(result).toBeUndefined();
   });
 });

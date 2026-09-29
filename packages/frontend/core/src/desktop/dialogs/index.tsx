@@ -7,6 +7,7 @@ import {
 import type { WORKSPACE_DIALOG_SCHEMA } from '@affine/core/modules/dialogs/constant';
 import { useLiveData, useService } from '@toeverything/infra';
 
+import { BindMarkdownFolderDialog } from './bind-markdown-folder';
 import { ChangePasswordDialog } from './change-password';
 import { CollectionEditorDialog } from './collection-editor';
 import { CreateWorkspaceDialog } from './create-workspace';
@@ -25,6 +26,7 @@ import { SignInDialog } from './sign-in';
 import { VerifyEmailDialog } from './verify-email';
 
 const GLOBAL_DIALOGS = {
+  'bind-markdown-folder': BindMarkdownFolderDialog,
   'create-workspace': CreateWorkspaceDialog,
   'import-workspace': ImportWorkspaceDialog,
   'import-template': ImportTemplateDialog,

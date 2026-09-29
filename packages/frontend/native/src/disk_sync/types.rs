@@ -19,7 +19,9 @@ impl FrontmatterMeta {
 pub(crate) struct SourceCheckpoint {
   pub(crate) snapshot: Vec<u8>,
   pub(crate) markdown: String,
+  pub(crate) source_markdown: String,
   pub(crate) scope: String,
   pub(crate) profile: u32,
   pub(crate) meta_hash: String,
+  pub(crate) readonly_preview: bool,
 }

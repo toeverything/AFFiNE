@@ -7,6 +7,7 @@ import {
 import { applicationMenuEvents } from './application-menu';
 import { beforeAppQuit } from './cleanup';
 import { logger } from './logger';
+import { markdownOpenEvents } from './markdown-open';
 import { powerEvents } from './power';
 import { recordingEvents } from './recording';
 import { checkSource } from './security-restrictions';
@@ -23,6 +24,7 @@ export const allEvents = {
   recording: recordingEvents,
   popup: popupEvents,
   power: powerEvents,
+  markdownOpen: markdownOpenEvents,
 };
 
 const subscriptions = new Map<number, Set<string>>();

@@ -8,6 +8,7 @@ import {
   DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY,
   getDiskSyncFolderPath,
   setDiskSyncFolderPath,
+  setDiskSyncSourceFilePath,
 } from '@affine/core/modules/workspace-engine/impls/disk-config';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
@@ -45,10 +46,10 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
     if (result?.canceled || !result?.filePath) {
       return;
     }
-    if (result.filePath === folder) {
-      return;
-    }
-    setDiskSyncFolderPath(workspaceId, result.filePath);
+    await Promise.all([
+      setDiskSyncFolderPath(workspaceId, result.filePath),
+      setDiskSyncSourceFilePath(workspaceId, null),
+    ]);
     setFolder(result.filePath);
     if (enabled) {
       window.location.reload();
@@ -57,13 +58,16 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
     notify.success({
       title: 'Disk sync folder updated',
     });
-  }, [desktopApi.handler.dialog, enabled, folder, workspaceId]);
+  }, [desktopApi.handler.dialog, enabled, workspaceId]);
 
-  const onClearFolder = useCallback(() => {
+  const onClearFolder = useAsyncCallback(async () => {
     if (!folder) {
       return;
     }
-    setDiskSyncFolderPath(workspaceId, null);
+    await Promise.all([
+      setDiskSyncFolderPath(workspaceId, null),
+      setDiskSyncSourceFilePath(workspaceId, null),
+    ]);
     setFolder(null);
     if (enabled) {
       window.location.reload();

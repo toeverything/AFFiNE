@@ -6,6 +6,13 @@ impl DiskSession {
     let mut missing_logged = self.missing_logged.lock().await;
 
     for (path, doc_id) in path_bindings {
+      if self
+        .source_file
+        .as_ref()
+        .is_some_and(|source_file| !paths_equal(source_file, &path))
+      {
+        continue;
+      }
       if seen_paths.contains(&path) {
         missing_logged.remove(&path);
         continue;
@@ -25,8 +32,14 @@ impl DiskSession {
   pub(crate) async fn scan_once(&self) -> Result<(), String> {
     let _guard = self.scan_guard.lock().await;
 
-    let mut markdown_files = Vec::new();
-    collect_markdown_files(&self.sync_folder, &mut markdown_files)?;
+    let markdown_files = match &self.source_file {
+      Some(source_file) => vec![source_file.clone()],
+      None => {
+        let mut files = Vec::new();
+        collect_markdown_files(&self.sync_folder, &mut files)?;
+        files
+      }
+    };
 
     let now = Instant::now();
     let full_scan = self
@@ -93,16 +106,39 @@ impl DiskSession {
     {
       return Err(format!("multiple markdown sources claim doc {}", doc_id));
     }
+    let normalized_meta = normalized_meta_for_file(&doc_id, file_path, meta, &body);
     let checkpoint = self.checkpoints.lock().await.get(&doc_id).cloned();
-    let unchanged = checkpoint.is_some_and(|checkpoint| {
-      checkpoint.markdown == body
-        && checkpoint.meta_hash == hash_meta(&normalized_meta_for_file(&doc_id, file_path, meta, &body))
-    }) && self
-      .bindings
-      .lock()
-      .await
-      .get(&doc_id)
-      .is_some_and(|bound| paths_equal(bound, file_path));
+    let unchanged = checkpoint
+      .as_ref()
+      .is_some_and(|checkpoint| checkpoint.markdown == body && checkpoint.meta_hash == hash_meta(&normalized_meta))
+      && self
+        .bindings
+        .lock()
+        .await
+        .get(&doc_id)
+        .is_some_and(|bound| paths_equal(bound, file_path));
+    let restored_root = if unchanged {
+      let root = self.root_doc.lock().await.clone();
+      (is_complete_update(&root)? && extract_root_meta_for_doc(&root, &doc_id)?.is_some()).then_some(root)
+    } else {
+      None
+    };
+    if unchanged && restored_root.is_none() {
+      self
+        .repair_unchanged_source_root(
+          &doc_id,
+          file_path,
+          checkpoint.as_ref().expect("unchanged source checkpoint"),
+          &normalized_meta,
+        )
+        .await?;
+      self
+        .source_preparation
+        .lock()
+        .await
+        .insert(doc_id, SourcePreparation::Ready);
+      return Ok(());
+    }
     let new = {
       let mut preparation = self.source_preparation.lock().await;
       match preparation.get(&doc_id) {
@@ -115,18 +151,26 @@ impl DiskSession {
           return Err(format!("multiple markdown sources claim doc {}", doc_id));
         }
         Some(SourcePreparation::Awaiting(_)) => false,
+        None if restored_root.is_some() => {
+          preparation.insert(doc_id.clone(), SourcePreparation::Ready);
+          false
+        }
         None => {
           preparation.insert(doc_id.clone(), SourcePreparation::Awaiting(file_path.to_path_buf()));
           true
         }
       }
     };
+    if let Some(root) = restored_root {
+      self.discover_root_docs(&root).await?;
+    }
     if new {
       self
         .emit_event(DiskSyncEvent {
           r#type: "source-discovered".to_string(),
           update: None,
           doc_id: Some(doc_id),
+          file_path: Some(file_path.to_string_lossy().to_string()),
           timestamp: Some(now_naive()),
           origin: None,
           message: None,
@@ -150,6 +194,7 @@ mod tests {
     let session = DiskSession::new(DiskSessionOptions {
       workspace_id: "ws-cache".to_string(),
       sync_folder: dir.to_string_lossy().to_string(),
+      source_file: None,
     })
     .await
     .expect("start session");
@@ -176,14 +221,11 @@ mod tests {
     assert!(session.events.lock().await.is_empty());
     session.scan_cache.lock().await.last_full_scan = Some(Instant::now() - FULL_SCAN_INTERVAL);
     session.scan_once().await.expect("full scan");
-    assert!(
-      session
-        .events
-        .lock()
-        .await
-        .iter()
-        .any(|event| { event.r#type == "source-discovered" && event.doc_id.as_deref() == Some("doc-cache") })
-    );
+    assert!(session.events.lock().await.iter().any(|event| {
+      event.r#type == "source-discovered"
+        && event.doc_id.as_deref() == Some("doc-cache")
+        && event.file_path.as_deref() == path.to_str()
+    }));
 
     session.close().await;
     fs::remove_dir_all(dir).expect("remove directory");

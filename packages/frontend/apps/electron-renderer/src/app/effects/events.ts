@@ -7,6 +7,7 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import { apis, events } from '@affine/electron-api';
 import type { FrameworkProvider } from '@toeverything/infra';
 
+import { setupMarkdownOpenEvents } from './markdown-open';
 import { setupRecordingEvents } from './recording';
 import { getCurrentWorkspace } from './utils';
 
@@ -73,4 +74,5 @@ export function setupEvents(frameworkProvider: FrameworkProvider) {
   });
 
   setupRecordingEvents(frameworkProvider);
+  setupMarkdownOpenEvents(frameworkProvider);
 }
