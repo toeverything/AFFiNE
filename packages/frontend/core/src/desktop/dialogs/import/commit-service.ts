@@ -1,6 +1,9 @@
 import type { IconData } from '@affine/component';
 import type { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
-import type { OrganizeService } from '@affine/core/modules/organize';
+import type {
+  FolderNode,
+  OrganizeService,
+} from '@affine/core/modules/organize';
 import type { TagService } from '@affine/core/modules/tag';
 import {
   type ExtensionType,
@@ -186,10 +189,20 @@ export class ImportCommitService {
               nextPending.push(folder);
               continue;
             }
-            const folderId = parent.createFolder(
-              folder.name,
-              parent.indexAt('after')
+            // folderIdByPath is per ImportCommitService instance, and a new
+            // instance is built for every import, so re-importing the same
+            // file must look for an already-committed sibling folder by name
+            // instead of always creating a new one.
+            // https://github.com/toeverything/AFFiNE/issues/15629
+            const existing = parent.children$.value.find(
+              (child: FolderNode) =>
+                child.id &&
+                child.type$.value === 'folder' &&
+                child.name$.value === folder.name
             );
+            const folderId =
+              existing?.id ??
+              parent.createFolder(folder.name, parent.indexAt('after'));
             this.folderIdByPath.set(folder.path, folderId);
             rootFolderId ??= folderId;
             progressed = true;
@@ -244,7 +257,17 @@ export class ImportCommitService {
       const parent =
         organizeService.folderTree.folderNode$(parentFolderId).value;
       if (!parent) return false;
-      parent.createLink('doc', folder.pageId, parent.indexAt('after'));
+      // linkedDocsByFolder is per ImportCommitService instance, and a new
+      // instance is built for every import, so re-importing the same file
+      // must check the folder's actual current links instead of always
+      // creating a new one. https://github.com/toeverything/AFFiNE/issues/15629
+      const alreadyLinked = parent.children$.value.some(
+        (child: FolderNode) =>
+          child.type$.value === 'doc' && child.data$.value === folder.pageId
+      );
+      if (!alreadyLinked) {
+        parent.createLink('doc', folder.pageId, parent.indexAt('after'));
+      }
       this.linkedDocsByFolder.add(linkKey);
     }
     this.applyIcon(folder.pageId, folder.icon);

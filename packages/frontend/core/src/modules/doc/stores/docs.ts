@@ -36,6 +36,7 @@ export class DocsStore extends Store {
 
   createDoc(docId?: string) {
     const id = docId ?? nanoid();
+    let isNew = true;
 
     transact(
       this.workspaceService.workspace.rootYDoc,
@@ -45,6 +46,15 @@ export class DocsStore extends Store {
           .get('pages');
 
         if (!docs || !(docs instanceof YArray)) {
+          return;
+        }
+
+        // Re-creating an id that already has a meta.pages entry (e.g. a
+        // re-import producing the same deterministic doc id) must not add a
+        // duplicate entry or reset the original createDate.
+        // https://github.com/toeverything/AFFiNE/issues/15629
+        if (docs.toArray().some(page => page.get('id') === id)) {
+          isNew = false;
           return;
         }
 
@@ -60,7 +70,7 @@ export class DocsStore extends Store {
       { force: true }
     );
 
-    return id;
+    return { id, isNew };
   }
 
   watchDocIds() {

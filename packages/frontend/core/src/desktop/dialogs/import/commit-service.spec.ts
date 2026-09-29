@@ -62,19 +62,35 @@ function createFolderTree() {
 
   class FolderNode {
     readonly children: string[] = [];
+    name$ = { value: '' };
+    type$ = { value: 'folder' };
+    data$ = { value: '' };
 
-    constructor(readonly id: string) {
+    constructor(
+      readonly id: string,
+      opts: { name?: string; type?: string; data?: string } = {}
+    ) {
+      this.name$.value = opts.name ?? '';
+      this.type$.value = opts.type ?? 'folder';
+      this.data$.value = opts.data ?? '';
       folders.set(id, this);
     }
 
-    createFolder() {
+    get children$() {
+      return { value: this.children.map(childId => folders.get(childId)!) };
+    }
+
+    createFolder(name: string) {
       const id = `folder-${++nextId}`;
       this.children.push(id);
-      new FolderNode(id);
+      new FolderNode(id, { name, type: 'folder' });
       return id;
     }
 
-    createLink(...[, docId]: ['doc', string]) {
+    createLink(type: 'doc', docId: string) {
+      const id = `link-${++nextId}`;
+      this.children.push(id);
+      new FolderNode(id, { type, data: docId });
       links.push({ parentId: this.id, docId });
     }
 
@@ -400,6 +416,44 @@ describe('ImportCommitService', () => {
 
     const first = await service.commitBatch(batch);
     const second = await service.commitBatch(batch);
+
+    expect(first.rootFolderId).toBe('folder-1');
+    expect(second.rootFolderId).toBe('folder-1');
+    expect(folderTree.links).toEqual([
+      { parentId: 'folder-1', docId: 'doc-1' },
+    ]);
+  });
+
+  // https://github.com/toeverything/AFFiNE/issues/15629
+  test('keeps folder and doc links idempotent when a fresh instance re-imports the same file', async () => {
+    const collection = new TestWorkspace({ id: 'test' });
+    collection.meta.initialize();
+    collection.createDoc('doc-1');
+    // folderIdByPath is per ImportCommitService instance; a real re-import
+    // builds a new one, so this reproduces the actual flow instead of
+    // reusing one service across both commits.
+    const folderTree = createFolderTree();
+    const batch: ImportBatch = {
+      docs: [],
+      blobs: [],
+      folders: [
+        { path: 'Root', name: 'Root' },
+        {
+          path: 'Root/Doc',
+          name: 'Doc',
+          parentPath: 'Root',
+          pageId: 'doc-1',
+        },
+      ],
+      done: true,
+    };
+
+    const first = await createCommitService(collection, {
+      organizeService: folderTree.service,
+    }).commitBatch(batch);
+    const second = await createCommitService(collection, {
+      organizeService: folderTree.service,
+    }).commitBatch(batch);
 
     expect(first.rootFolderId).toBe('folder-1');
     expect(second.rootFolderId).toBe('folder-1');
