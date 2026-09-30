@@ -52,7 +52,7 @@ const TOOLBAR_PADDING_X = 12;
 const TOOLBAR_HEIGHT = 64;
 const QUICK_TOOLS_GAP = 10;
 const QUICK_TOOL_SIZE = 36;
-const QUICK_TOOL_MORE_SIZE = 20;
+const QUICK_TOOL_MORE_SIZE = 36;
 const SENIOR_TOOLS_GAP = 0;
 const SENIOR_TOOL_WIDTH = 96;
 const SENIOR_TOOL_NAV_SIZE = 20;
@@ -183,6 +183,9 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
     }
     .quick-tool-more-button {
       padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .senior-tool-item {
@@ -520,7 +523,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
       <div class="quick-tool-more">
         <icon-button
           ?disabled=${!this._denseQuickTools}
-          .size=${20}
+          .size=${QUICK_TOOL_MORE_SIZE}
           class="quick-tool-more-button"
           @click=${this._openMoreQuickToolsMenu}
           ?active=${this._quickTools

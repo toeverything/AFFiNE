@@ -10,6 +10,7 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
       overrideUserInterfaceStyle = appThemeUserInterfaceStyle
     }
   }
+  private var isWebContentProcessTerminated = false
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -25,6 +26,11 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
     webView?.scrollView.bounces = false
     webView?.scrollView.pinchGestureRecognizer?.isEnabled = false
     webView?.scrollView.delegate = self
+    #if DEBUG
+      if #available(iOS 16.4, *) {
+        webView?.isInspectable = true
+      }
+    #endif
 
     // Inject viewport meta to prevent WKWebView smart zoom
     let viewportScript = """
@@ -70,6 +76,7 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
       NavigationGesturePlugin(),
       NbStorePlugin(),
       PayWallPlugin(associatedController: self),
+      PencilInputPlugin(),
       PreviewPlugin(),
       ShareInboxPlugin(),
     ]
@@ -166,6 +173,8 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
   // "⚡️ WebView process terminated" and reloads instead. Kept as defensive
   // fallback, matching the prior baseline behavior.
   func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+    isWebContentProcessTerminated = true
+    NSLog("[affine-webview] WebContent process terminated — reloading")
     webView.reload()
   }
 }

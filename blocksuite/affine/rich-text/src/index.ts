@@ -11,5 +11,6 @@ export {
   onModelTextUpdated,
   selectTextModel,
 } from './dom';
+export { insertTextFromPencilScribble } from './pencil-scribble';
 export { RichText } from './rich-text';
 export * from './utils';
