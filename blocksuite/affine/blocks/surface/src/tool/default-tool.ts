@@ -1,3 +1,4 @@
+import { EditorSettingProvider } from '@blocksuite/affine-shared/services';
 import { resetNativeSelection } from '@blocksuite/affine-shared/utils';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { IVec } from '@blocksuite/global/gfx';
@@ -27,6 +28,13 @@ export class DefaultTool extends BaseTool {
   static override toolName: string = 'default';
 
   private _edgeScrollingTimer: number | null = null;
+
+  override get allowDragWithRightButton(): boolean {
+    const editorSetting = this.std.getOptional(EditorSettingProvider)?.setting$;
+    const enableRightButtonPanning =
+      editorSetting?.peek().enableRightButtonPanning ?? false;
+    return !enableRightButtonPanning;
+  }
 
   private readonly _clearDisposable = () => {
     if (this._disposables) {
