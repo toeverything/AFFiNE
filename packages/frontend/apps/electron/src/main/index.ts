@@ -13,6 +13,7 @@ import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
 import { setupRecordingFeature } from './recording/feature';
+import { ensureSecureLinuxPasswordStore } from './secure-storage';
 import { registerSecurityRestrictions } from './security-restrictions';
 import { setupTrayState } from './tray';
 import { registerUpdater } from './updater';
@@ -20,6 +21,8 @@ import { launch } from './windows-manager/launcher';
 import { launchStage } from './windows-manager/stage';
 
 app.enableSandbox();
+
+ensureSecureLinuxPasswordStore();
 
 if (isDev) {
   // In electron the dev server will be resolved to 0.0.0.0, but it
