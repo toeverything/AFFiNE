@@ -27,6 +27,8 @@ let storeManagerClient: StoreManagerClient;
 
 const workerUrl = getWorkerUrl('nbstore');
 
+performance.mark('worker:connect');
+
 if (
   window.SharedWorker &&
   localStorage.getItem('disableSharedWorker') !== 'true'
@@ -34,9 +36,23 @@ if (
   const worker = new SharedWorker(workerUrl, {
     name: 'affine-shared-worker',
   });
+  const connectHandler = (message: MessageEvent) => {
+    if (message.data === 'connected') {
+      performance.measure('worker:connected', 'worker:connect');
+      worker.port.removeEventListener('message', connectHandler);
+    }
+  };
+  worker.port.addEventListener('message', connectHandler);
   storeManagerClient = new StoreManagerClient(new OpClient(worker.port));
 } else {
   const worker = new Worker(workerUrl);
+  const connectHandler = (message: MessageEvent) => {
+    if (message.data === 'connected') {
+      performance.measure('worker:connected', 'worker:connect');
+      worker.removeEventListener('message', connectHandler);
+    }
+  };
+  worker.addEventListener('message', connectHandler);
   storeManagerClient = new StoreManagerClient(new OpClient(worker));
 }
 setTelemetryTransport(storeManagerClient.telemetry);
