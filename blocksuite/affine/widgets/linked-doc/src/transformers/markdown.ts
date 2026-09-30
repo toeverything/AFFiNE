@@ -445,7 +445,7 @@ function prepareNotionMarkdownFile({
   };
 }
 
-function applySnapshotTitle(snapshot: DocSnapshot, title: string) {
+export function applySnapshotTitle(snapshot: DocSnapshot, title: string) {
   snapshot.meta.title = title;
   snapshot.blocks.props.title = {
     '$blocksuite:internal:text$': true,
