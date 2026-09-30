@@ -9,7 +9,16 @@ type DateFilters =
   | 'this-month'
   | 'this-week'
   | 'this-quarter'
-  | 'this-year';
+  | 'this-year'
+  | 'last-30-minutes'
+  | 'last-1-hour'
+  | 'last-3-hours'
+  | 'last-6-hours'
+  | 'last-12-hours'
+  | 'last-24-hours';
+// NOTE: last-60-minutes and last-180-minutes were removed — they were exact
+// aliases of last-1-hour and last-3-hours respectively, producing duplicate
+// entries in the filter method dropdown.
 
 export type WorkspacePropertyTypes = {
   tags: {
