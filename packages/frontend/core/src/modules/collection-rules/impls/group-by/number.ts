@@ -21,7 +21,7 @@ export class NumberPropertyGroupByProvider
       map(o => {
         const result = new Map<string, Set<string>>();
         for (const [id, value] of o) {
-          const number = Number(value);
+          const number = value ? Number(value) : NaN;
           if (Number.isNaN(number)) {
             continue;
           }
