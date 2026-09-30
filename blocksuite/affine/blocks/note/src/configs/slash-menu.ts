@@ -18,6 +18,7 @@ import {
   type SlashMenuActionItem,
   type SlashMenuConfig,
   SlashMenuConfigExtension,
+  type SlashMenuContext,
   type SlashMenuItem,
 } from '@blocksuite/affine-widget-slash-menu';
 import { HeadingsIcon } from '@blocksuite/icons/lit';
@@ -45,7 +46,7 @@ const noteSlashMenuConfig: SlashMenuConfig = {
       .map(config => createConversionItem(config, `0_Basic@${basicIndex++}`)),
 
     ...textConversionConfigs
-      .filter(i => i.type && ['divider', 'quote'].includes(i.type))
+      .filter(i => i.type === 'quote')
       .map(
         config =>
           ({
@@ -59,6 +60,35 @@ const noteSlashMenuConfig: SlashMenuConfig = {
               ),
           }) satisfies SlashMenuActionItem
       ),
+
+    ...textConversionConfigs
+      .filter(i => i.type === 'divider')
+      .map(config => {
+        const item = createConversionItem(config, `0_Basic@${basicIndex++}`);
+        return {
+          name: item.name,
+          icon: item.icon,
+          group: item.group,
+          description: item.description,
+          when: item.when,
+          subMenu: [
+            { label: 'Solid', type: 'solid' },
+            { label: 'Dotted', type: 'dotted' },
+            { label: 'Dashed', type: 'dashed' },
+            { label: 'Loosely Dashed', type: 'loosely-dashed' },
+            { label: 'Lines', type: 'lines' },
+          ].map(({ label, type }) => ({
+            name: label,
+            icon: item.icon,
+            action: (ctx: SlashMenuContext) => {
+              ctx.std.command.exec(updateBlockType, {
+                flavour: 'affine:divider',
+                props: { type },
+              });
+            },
+          })),
+        };
+      }),
 
     ...textConversionConfigs
       .filter(i => i.flavour === 'affine:list')
