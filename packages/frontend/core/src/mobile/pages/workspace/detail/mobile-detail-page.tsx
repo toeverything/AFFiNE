@@ -206,7 +206,7 @@ const DetailPageImpl = ({
         disposable.dispose();
       };
     },
-    [doc.id, docCollection.id, editor, jumpToPageBlock, mode, openPage, server]
+    [docCollection.id, editor, jumpToPageBlock, openPage, server]
   );
 
   const canEdit = useGuard('Doc_Update', doc.id);

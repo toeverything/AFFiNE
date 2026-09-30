@@ -1,8 +1,13 @@
 import type { PointerInputClassifier } from './input-classifier.js';
 
-/** Matches iOS JS classifier grace: short gap between Pencil strokes. */
+/**
+ * Matches iOS JS classifier grace: short gap between Pencil strokes.
+ *
+ * @internal
+ */
 export const WEBKIT_PENCIL_ACTIVE_GRACE_MS = 700;
 
+/** @internal */
 export type WebKitPencilActivityTracker = PointerInputClassifier & {
   /** Record a browser pointer event; only `pointerType === 'pen'` counts. */
   note: (event: Pick<PointerEvent, 'pointerType'>) => void;
@@ -18,6 +23,8 @@ export type WebKitPencilActivityTracker = PointerInputClassifier & {
  * Used on iPad when attaching `TouchClassifyingGestureRecognizer` to WKWebView
  * is unsafe. Enables {@link isPencilInputActive} so finger-pan routing can run
  * while the Pencil is the active instrument (plus a short grace after lift).
+ *
+ * @internal
  */
 export function createWebKitPencilActivityTracker(options?: {
   graceMs?: number;

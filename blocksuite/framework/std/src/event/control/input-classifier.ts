@@ -14,8 +14,10 @@
  * and pointer handling behaves exactly as before.
  */
 
+/** @internal */
 export type InputTouchKind = 'pencil' | 'finger' | 'palm';
 
+/** @internal */
 export interface PointerInputClassifier {
   /**
    * Classify a pointer event using host-native touch information.
@@ -35,20 +37,29 @@ export interface PointerInputClassifier {
   isPencilActive: () => boolean;
 }
 
+/** @internal */
 export const pointerInputClassifierRuntime: {
   classifier: PointerInputClassifier | null;
 } = {
   classifier: null,
 };
 
-/** Convenience wrapper; safe to call on any platform. */
+/**
+ * Convenience wrapper; safe to call on any platform.
+ *
+ * @internal
+ */
 export function classifyPointerInput(
   event: PointerEvent
 ): InputTouchKind | undefined {
   return pointerInputClassifierRuntime.classifier?.classify(event);
 }
 
-/** Whether an Apple Pencil is currently the active instrument. */
+/**
+ * Whether an Apple Pencil is currently the active instrument.
+ *
+ * @internal
+ */
 export function isPencilInputActive(): boolean {
   return pointerInputClassifierRuntime.classifier?.isPencilActive() ?? false;
 }
