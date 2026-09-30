@@ -6,7 +6,11 @@ import {
 } from '@blocksuite/affine-components/context-menu';
 import { TextBackgroundDuotoneIcon } from '@blocksuite/affine-components/icons';
 import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
-import type { TableColumn, TableRow } from '@blocksuite/affine-model';
+import type {
+  CellTextAlign,
+  TableColumn,
+  TableRow,
+} from '@blocksuite/affine-model';
 import { RichText } from '@blocksuite/affine-rich-text';
 import { cssVarV2 } from '@blocksuite/affine-shared/theme';
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
@@ -27,6 +31,10 @@ import {
   InsertLeftIcon,
   InsertRightIcon,
   PasteIcon,
+  SplitViewIcon,
+  TextAlignCenterIcon,
+  TextAlignLeftIcon,
+  TextAlignRightIcon,
 } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import type { Text } from '@blocksuite/store';
@@ -90,6 +98,12 @@ export class TableCell extends SignalWatcher(
 
   @property({ attribute: false })
   accessor selectionController!: SelectionController;
+
+  @property({ type: Number })
+  accessor colSpan = 1;
+
+  @property({ type: Number })
+  accessor rowSpan = 1;
 
   @property({ attribute: false })
   accessor height: number | undefined;
@@ -402,6 +416,47 @@ export class TableCell extends SignalWatcher(
     }
     if (selected.type === 'area' && e.currentTarget instanceof HTMLElement) {
       const target = popupTargetFromElement(e.currentTarget);
+
+      const isMultiCell =
+        selected.rowStartIndex !== selected.rowEndIndex ||
+        selected.columnStartIndex !== selected.columnEndIndex;
+
+      // Check if the focused cell is a merged cell (so we can offer Unmerge)
+      const focusedCell = this.dataManager.getCell(
+        this.row?.rowId ?? '',
+        this.column?.columnId ?? ''
+      );
+      const isMerged =
+        (focusedCell?.colSpan ?? 1) > 1 || (focusedCell?.rowSpan ?? 1) > 1;
+
+      const alignItems: ReturnType<typeof menu.action>[] = (
+        [
+          {
+            label: 'Left',
+            align: 'left' as CellTextAlign,
+            icon: TextAlignLeftIcon(),
+          },
+          {
+            label: 'Center',
+            align: 'center' as CellTextAlign,
+            icon: TextAlignCenterIcon(),
+          },
+          {
+            label: 'Right',
+            align: 'right' as CellTextAlign,
+            icon: TextAlignRightIcon(),
+          },
+        ] as const
+      ).map(({ label, align, icon }) =>
+        menu.action({
+          name: label,
+          prefix: icon,
+          select: () => {
+            this.dataManager.setSelectionTextAlign(selected, align);
+          },
+        })
+      );
+
       popMenu(target, {
         options: {
           items: [
@@ -423,6 +478,47 @@ export class TableCell extends SignalWatcher(
                       this.selectionController.doPaste(text, selected);
                     });
                   },
+                }),
+              ],
+            }),
+            // ── Merge / Unmerge ──────────────────────────────────
+            menu.group({
+              items: [
+                ...(isMultiCell
+                  ? [
+                      menu.action({
+                        name: 'Merge cells',
+                        prefix: SplitViewIcon(),
+                        select: () => {
+                          this.dataManager.mergeCells(selected);
+                        },
+                      }),
+                    ]
+                  : []),
+                ...(isMerged
+                  ? [
+                      menu.action({
+                        name: 'Unmerge cells',
+                        prefix: SplitViewIcon(),
+                        select: () => {
+                          if (this.row && this.column) {
+                            this.dataManager.unmergeCells(
+                              this.row.rowId,
+                              this.column.columnId
+                            );
+                          }
+                        },
+                      }),
+                    ]
+                  : []),
+              ],
+            }),
+            // ── Text Alignment ───────────────────────────────────
+            menu.group({
+              items: [
+                menu.subMenu({
+                  name: 'Text align',
+                  options: { items: alignItems },
                 }),
               ],
             }),
@@ -533,6 +629,10 @@ export class TableCell extends SignalWatcher(
   });
 
   tdStyle() {
+    const cell = this.dataManager.getCell(
+      this.row?.rowId ?? '',
+      this.column?.columnId ?? ''
+    );
     const columnWidth = this.virtualWidth$.value ?? this.column?.width;
     const backgroundColor =
       this.column?.backgroundColor ?? this.row?.backgroundColor ?? undefined;
@@ -540,6 +640,8 @@ export class TableCell extends SignalWatcher(
       backgroundColor,
       minWidth: columnWidth ? `${columnWidth}px` : `${DefaultColumnWidth}px`,
       maxWidth: columnWidth ? `${columnWidth}px` : `${ColumnMaxWidth}px`,
+      textAlign: cell?.textAlign ?? 'start',
+      verticalAlign: cell?.verticalAlign ?? 'top',
     });
   }
 
@@ -742,6 +844,8 @@ export class TableCell extends SignalWatcher(
       <td
         data-row-id=${this.row?.rowId}
         data-column-id=${this.column?.columnId}
+        colspan=${this.colSpan > 1 ? this.colSpan : nothing}
+        rowspan=${this.rowSpan > 1 ? this.rowSpan : nothing}
         @mouseenter=${() => {
           this.tdMouseEnter(this.rowIndex, this.columnIndex);
         }}
