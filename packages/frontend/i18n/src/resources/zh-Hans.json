@@ -1189,6 +1189,8 @@
   "com.affine.rootAppSidebar.collections": "精选",
   "com.affine.rootAppSidebar.notifications": "提醒",
   "com.affine.rootAppSidebar.doc.link-doc-only": "此处只能放置文档",
+  "com.affine.rootAppSidebar.doc.unlink": "取消链接",
+  "com.affine.rootAppSidebar.doc.unlinked": "已取消链接",
   "com.affine.rootAppSidebar.docs.no-subdoc": "没有链接文档",
   "com.affine.rootAppSidebar.docs.references-loading": "链接文档加载中...",
   "com.affine.rootAppSidebar.explorer.collection-add-tooltip": "新建文档",
