@@ -1019,7 +1019,7 @@ __metadata:
     nanoid: "npm:^5.1.6"
     nest-winston: "npm:^1.9.7"
     nestjs-cls: "npm:^6.0.0"
-    nodemailer: "npm:^9.1.1"
+    nodemailer: "npm:^10.0.0"
     nodemon: "npm:^3.1.14"
     on-headers: "npm:^1.1.0"
     piscina: "npm:^5.1.4"
@@ -26644,10 +26644,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nodemailer@npm:^9.1.1":
-  version: 9.1.1
-  resolution: "nodemailer@npm:9.1.1"
-  checksum: 10/d84fd16456a8b1e1f979e65f78f3963819ed0500aaf51544d5da04634ceb0364e5ad7c784793bf7dd7b0028d4bee1d48e5b316394c5c538dbda99f4fc5aa7502
+"nodemailer@npm:^10.0.0":
+  version: 10.0.13
+  resolution: "nodemailer@npm:10.0.13"
+  checksum: 10/eb1d2d7fd11d7609141a9ae03ad5ea3cd7c71a55eb5ab0d81dc324eddb1b41723cbb9080f423a3bdb3259f87eece8ba2ce514099b59cac631aa4bd68a1faa5f9
   languageName: node
   linkType: hard
 
