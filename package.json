@@ -107,7 +107,7 @@
     "@vitest/browser": "^4.1.11",
     "@vitest/coverage-istanbul": "^4.1.11",
     "@vitest/ui": "^4.1.11",
-    "electron": "^39.0.0",
+    "electron": "^41.0.0",
     "eslint": "9.39.2",
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-lit": "^2.2.1",
