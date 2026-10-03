@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.27
 
 # Adds a start script to the published AFFiNE image. Nothing is compiled here.
 FROM ghcr.io/toeverything/affine:stable
