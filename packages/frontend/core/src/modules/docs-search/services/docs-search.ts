@@ -63,6 +63,11 @@ export type IndexedDocReference = {
   params?: ReturnType<typeof toDocSearchParams>;
 };
 
+/**
+ * Default number of referencing blocks read by `watchRefsTo`.
+ */
+const REFS_TO_SEARCH_LIMIT = 100;
+
 const stringField = (value: unknown) =>
   typeof value === 'string'
     ? value
@@ -350,6 +355,50 @@ export class DocsSearchService extends Service {
               current.get(sourceId) ?? []
             )
           )
+        )
+      );
+  }
+
+  /**
+   * Watch the ids of docs that contain a reference to the given doc.
+   *
+   * At most `limit` referencing blocks are read, so a doc that is linked
+   * from a very large number of places may not list every source doc.
+   */
+  watchRefsTo(
+    docId: string,
+    limit = REFS_TO_SEARCH_LIMIT
+  ): Observable<string[]> {
+    return this.indexer
+      .search$(
+        'block',
+        {
+          type: 'match',
+          field: 'refDocId',
+          match: docId,
+        },
+        {
+          fields: ['docId'],
+          pagination: {
+            limit,
+          },
+        }
+      )
+      .pipe(
+        map(({ nodes }) => {
+          const sourceIds = new Set<string>();
+          for (const node of nodes) {
+            const sourceId = stringField(node.fields.docId);
+            if (sourceId && sourceId !== docId) {
+              sourceIds.add(sourceId);
+            }
+          }
+          return Array.from(sourceIds);
+        }),
+        distinctUntilChanged(
+          (previous, current) =>
+            previous.length === current.length &&
+            previous.every((id, index) => id === current[index])
         )
       );
   }
