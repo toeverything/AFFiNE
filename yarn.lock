@@ -553,7 +553,7 @@ __metadata:
     "@affine/native": "workspace:*"
     "@affine/nbstore": "workspace:*"
     "@electron-forge/cli": "npm:^7.11.1"
-    "@electron-forge/core": "npm:^7.11.1"
+    "@electron-forge/core": "patch:@electron-forge/core@npm%3A7.11.1#~/.yarn/patches/@electron-forge-core-npm-7.11.1-b6ae130da1.patch"
     "@electron-forge/maker-deb": "npm:^7.11.1"
     "@electron-forge/maker-dmg": "npm:^7.11.1"
     "@electron-forge/maker-flatpak": "npm:^7.11.1"
@@ -4088,7 +4088,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron-forge/core@npm:7.11.1, @electron-forge/core@npm:^7.11.1":
+"@electron-forge/core@npm:7.11.1":
   version: 7.11.1
   resolution: "@electron-forge/core@npm:7.11.1"
   dependencies:
@@ -4127,6 +4127,48 @@ __metadata:
     source-map-support: "npm:^0.5.13"
     username: "npm:^5.1.0"
   checksum: 10/67965b38c63aa5a81dfb4491159739d51c8758c24ef4611a1b3a77c708bec0ae37e51cca9eee54eab649aa8daaaa6e6da86db177b027f33e20f1377a301882c6
+  languageName: node
+  linkType: hard
+
+"@electron-forge/core@patch:@electron-forge/core@npm%3A7.11.1#~/.yarn/patches/@electron-forge-core-npm-7.11.1-b6ae130da1.patch":
+  version: 7.11.1
+  resolution: "@electron-forge/core@patch:@electron-forge/core@npm%3A7.11.1#~/.yarn/patches/@electron-forge-core-npm-7.11.1-b6ae130da1.patch::version=7.11.1&hash=3bfc58"
+  dependencies:
+    "@electron-forge/core-utils": "npm:7.11.1"
+    "@electron-forge/maker-base": "npm:7.11.1"
+    "@electron-forge/plugin-base": "npm:7.11.1"
+    "@electron-forge/publisher-base": "npm:7.11.1"
+    "@electron-forge/shared-types": "npm:7.11.1"
+    "@electron-forge/template-base": "npm:7.11.1"
+    "@electron-forge/template-vite": "npm:7.11.1"
+    "@electron-forge/template-vite-typescript": "npm:7.11.1"
+    "@electron-forge/template-webpack": "npm:7.11.1"
+    "@electron-forge/template-webpack-typescript": "npm:7.11.1"
+    "@electron-forge/tracer": "npm:7.11.1"
+    "@electron/get": "npm:^3.0.0"
+    "@electron/packager": "npm:^18.3.5"
+    "@electron/rebuild": "npm:^3.7.0"
+    "@malept/cross-spawn-promise": "npm:^2.0.0"
+    "@vscode/sudo-prompt": "npm:^9.3.1"
+    chalk: "npm:^4.0.0"
+    debug: "npm:^4.3.1"
+    fast-glob: "npm:^3.2.7"
+    filenamify: "npm:^4.1.0"
+    find-up: "npm:^5.0.0"
+    fs-extra: "npm:^10.0.0"
+    global-dirs: "npm:^3.0.0"
+    got: "npm:^11.8.5"
+    interpret: "npm:^3.1.1"
+    jiti: "npm:^2.4.2"
+    listr2: "npm:^7.0.2"
+    lodash: "npm:^4.17.20"
+    log-symbols: "npm:^4.0.0"
+    node-fetch: "npm:^2.6.7"
+    rechoir: "npm:^0.8.0"
+    semver: "npm:^7.2.1"
+    source-map-support: "npm:^0.5.13"
+    username: "npm:^5.1.0"
+  checksum: 10/cb46bec1d0f0bb638d6999ba3759b8c55de82807568077d9e680183ad4a1dec9f515d0fc7429fa73a4ae7e0b443b2efc0d8170bea1ff7c82c0b99d1721695048
   languageName: node
   linkType: hard
 
