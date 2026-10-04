@@ -1,4 +1,9 @@
 import { DefaultTool } from '@blocksuite/affine-block-surface';
+import {
+  edgelessToolShortcutsVersion$,
+  formatEdgelessToolShortcut,
+  getEdgelessToolShortcut,
+} from '@blocksuite/affine-shared/utils';
 import { QuickToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { HandIcon, SelectIcon } from '@blocksuite/icons/lit';
 import { effect } from '@preact/signals-core';
@@ -73,12 +78,23 @@ export class EdgelessDefaultToolButton extends QuickToolMixin(LitElement) {
   }
 
   override render() {
+    void edgelessToolShortcutsVersion$.value;
     const type = this.edgelessTool?.toolType?.toolName;
     const { active } = this;
     const tipInfo =
       type === 'pan'
-        ? { tip: 'Hand', shortcut: 'H' }
-        : { tip: 'Select', shortcut: 'V' };
+        ? {
+            tip: 'Hand',
+            shortcut: formatEdgelessToolShortcut(
+              getEdgelessToolShortcut('hand')
+            ),
+          }
+        : {
+            tip: 'Select',
+            shortcut: formatEdgelessToolShortcut(
+              getEdgelessToolShortcut('select')
+            ),
+          };
     return html`
       <edgeless-tool-icon-button
         class="edgeless-default-button ${type}"

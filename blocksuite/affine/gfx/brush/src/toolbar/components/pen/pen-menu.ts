@@ -8,7 +8,10 @@ import {
   FeatureFlagService,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
-import type { ColorEvent } from '@blocksuite/affine-shared/utils';
+import {
+  type ColorEvent,
+  edgelessToolShortcutsVersion$,
+} from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
@@ -109,6 +112,7 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
   override type = [BrushTool, HighlighterTool];
 
   override render() {
+    void edgelessToolShortcutsVersion$.value;
     const {
       _theme$: { value: theme },
       colors$: {

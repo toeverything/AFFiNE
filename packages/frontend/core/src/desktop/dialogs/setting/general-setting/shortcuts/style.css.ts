@@ -15,6 +15,7 @@ export const shortcutRow = style({
 });
 export const shortcutKeyContainer = style({
   display: 'flex',
+  alignItems: 'center',
 });
 export const shortcutKey = style({
   minWidth: '24px',
@@ -31,4 +32,29 @@ export const shortcutKey = style({
       marginRight: '2px',
     },
   },
+});
+
+export const shortcutRecorder = style({
+  border: 0,
+  padding: 0,
+  color: 'inherit',
+  cursor: 'pointer',
+  background: 'transparent',
+  outline: 'none',
+});
+
+export const shortcutKeyConflict = style({
+  color: cssVar('errorColor'),
+  outline: `1px solid ${cssVar('errorColor')}`,
+});
+
+export const resetShortcut = style({
+  width: '20px',
+  height: '20px',
+  marginLeft: '4px',
+  padding: 0,
+  border: 0,
+  color: cssVar('textSecondaryColor'),
+  cursor: 'pointer',
+  background: 'transparent',
 });

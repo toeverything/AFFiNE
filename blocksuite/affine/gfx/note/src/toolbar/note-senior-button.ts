@@ -7,6 +7,11 @@ import {
   EditPropsStore,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
+import {
+  edgelessToolShortcutsVersion$,
+  formatEdgelessToolShortcut,
+  getEdgelessToolShortcut,
+} from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import { computed } from '@preact/signals-core';
@@ -180,6 +185,7 @@ export class EdgelessNoteSeniorButton extends EdgelessToolbarToolMixin(
   }
 
   override render() {
+    void edgelessToolShortcutsVersion$.value;
     const appTheme = this.edgeless.std.get(ThemeProvider).app$.value;
 
     return html`<edgeless-toolbar-button
@@ -189,7 +195,9 @@ export class EdgelessNoteSeniorButton extends EdgelessToolbarToolMixin(
           ? ''
           : html`<affine-tooltip-content-with-shortcut
               data-tip="${'Note'}"
-              data-shortcut="${'N'}"
+              data-shortcut="${formatEdgelessToolShortcut(
+                getEdgelessToolShortcut('note')
+              )}"
             ></affine-tooltip-content-with-shortcut>`
       }
       .tooltipOffset=${5}
