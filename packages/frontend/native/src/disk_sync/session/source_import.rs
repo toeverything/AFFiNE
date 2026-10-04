@@ -61,7 +61,9 @@ fn large_markdown_preview(markdown: &str) -> String {
     ""
   };
   format!(
-    "# Large Markdown preview\n\n> This file is too large or complex for full AFFiNE editing.{truncation_note} This preview is read-only and changes made here are not written to the source file.\n\n{fence}text\n{excerpt}\n{fence}\n"
+    "# Large Markdown preview\n\n> This file is too large or complex for full AFFiNE editing.{truncation_note} This \
+     preview is read-only and changes made here are not written to the source \
+     file.\n\n{fence}text\n{excerpt}\n{fence}\n"
   )
 }
 

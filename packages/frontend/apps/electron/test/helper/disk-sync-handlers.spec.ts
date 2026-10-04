@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import type { DiskSyncEvent } from '@affine/nbstore/disk';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -92,6 +94,8 @@ describe('disk helper handlers', () => {
   });
 
   it('forwards subscribeEvents payload and unsubscribes on stop', async () => {
+    const syncFolder = path.resolve('/tmp/disk-sync');
+    const sourceFile = path.resolve('/tmp/disk-sync/source.md');
     const unsubscribe = vi.fn();
     diskSyncMocks.subscribeEvents.mockImplementation(
       (
@@ -101,7 +105,7 @@ describe('disk helper handlers', () => {
         callback(null, {
           type: 'source-discovered',
           docId: 'doc-source',
-          filePath: '/tmp/disk-sync/source.md',
+          filePath: sourceFile,
         } as DiskSyncEvent);
         callback(null, {
           type: 'root-doc-discovered',
@@ -120,7 +124,7 @@ describe('disk helper handlers', () => {
 
     await startSession('session-subscribe', {
       workspaceId: 'workspace-subscribe',
-      syncFolder: '/tmp/disk-sync',
+      syncFolder,
     });
 
     expect(seen).toContain('source-discovered');
@@ -141,15 +145,11 @@ describe('disk helper handlers', () => {
     );
 
     await expect(
-      resolveSourceDocId(
-        'workspace-subscribe',
-        '/tmp/disk-sync',
-        '/tmp/disk-sync/source.md'
-      )
+      resolveSourceDocId('workspace-subscribe', syncFolder, sourceFile)
     ).resolves.toBe('doc-source');
     expect(diskSyncMocks.resolveSourceDocId).toHaveBeenCalledWith(
       'session-subscribe',
-      '/tmp/disk-sync/source.md'
+      sourceFile
     );
 
     await stopSession('session-subscribe');

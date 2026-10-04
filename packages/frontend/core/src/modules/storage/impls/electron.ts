@@ -24,12 +24,15 @@ export class ElectronGlobalState implements GlobalState {
     });
   }
   set<T>(key: string, value: T): void {
+    // oxlint-disable-next-line typescript/no-floating-promises -- preload handles IPC errors
     this.electronApi.sharedStorage.globalState.set(key, value);
   }
   del(key: string): void {
+    // oxlint-disable-next-line typescript/no-floating-promises -- preload handles IPC errors
     this.electronApi.sharedStorage.globalState.del(key);
   }
   clear(): void {
+    // oxlint-disable-next-line typescript/no-floating-promises -- preload handles IPC errors
     this.electronApi.sharedStorage.globalState.clear();
   }
 }
@@ -55,12 +58,15 @@ export class ElectronGlobalCache implements GlobalCache {
     });
   }
   set<T>(key: string, value: T): void {
+    // oxlint-disable-next-line typescript/no-floating-promises -- preload handles IPC errors
     this.electronApi.sharedStorage.globalCache.set(key, value);
   }
   del(key: string): void {
+    // oxlint-disable-next-line typescript/no-floating-promises -- preload handles IPC errors
     this.electronApi.sharedStorage.globalCache.del(key);
   }
   clear(): void {
+    // oxlint-disable-next-line typescript/no-floating-promises -- preload handles IPC errors
     this.electronApi.sharedStorage.globalCache.clear();
   }
 }

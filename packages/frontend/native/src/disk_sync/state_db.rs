@@ -259,7 +259,8 @@ impl StateDb {
 
   pub(crate) async fn load_source_checkpoints(&self) -> Result<HashMap<String, SourceCheckpoint>, String> {
     let rows = sqlx::query(
-      "SELECT doc_id, snapshot, markdown, source_markdown, scope, profile, meta_hash, readonly_preview FROM source_checkpoints WHERE workspace_id = ?",
+      "SELECT doc_id, snapshot, markdown, source_markdown, scope, profile, meta_hash, readonly_preview FROM \
+       source_checkpoints WHERE workspace_id = ?",
     )
     .bind(&self.workspace_id)
     .fetch_all(&self.pool)
