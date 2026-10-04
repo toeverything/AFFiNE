@@ -397,6 +397,7 @@ export const appConfigQuery = {
   op: 'appConfig',
   query: `query appConfig {
   appConfig
+  appConfigMetadata
 }`,
 };
 

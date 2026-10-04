@@ -68,6 +68,7 @@ import serverNativeModule, {
 } from '@affine/server-native';
 
 export type {
+  AppConfigCommand,
   BuiltInManagedTarget,
   BuiltInManagedTargetTier,
   BuiltInRouteOptions,
@@ -306,7 +307,8 @@ export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
 export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
 export const assertSafeUrl = serverNativeModule.assertSafeUrl;
 export const scanContentPolicyV1 = serverNativeModule.scanContentPolicyV1;
-export const safeFetch = serverNativeModule.safeFetch;
+export const safeFetch: typeof serverNativeModule.safeFetch = (...args) =>
+  serverNativeModule.safeFetch(...args);
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;
@@ -321,6 +323,8 @@ export const readAllDocIdsFromRootDoc =
   serverNativeModule.readAllDocIdsFromRootDoc;
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const BackendRuntime = serverNativeModule.BackendRuntime;
+export const ServerConfigHandle = serverNativeModule.ServerConfigHandle;
+export type ServerConfigHandle = InstanceType<typeof ServerConfigHandle>;
 export const StorageRuntime = serverNativeModule.StorageRuntime;
 
 export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';

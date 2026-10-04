@@ -59,7 +59,6 @@ resolver = "3"
   memory-indexer = "0.4.0"
   mimalloc = "0.1"
   mp4parse = "0.17"
-  nanoid = "0.4"
   napi = { version = "3.7.0", features = [
     "async",
     "chrono_date",
@@ -77,7 +76,6 @@ resolver = "3"
     "onepkg",
   ] }
   p256 = { version = "0.13", features = ["ecdsa", "pem"] }
-  pulldown-cmark = "0.13"
   rand = "0.9"
   rayon = "1.10"
   redis = { version = "1.6", features = ["tokio-comp", "tokio-rustls-comp"] }
@@ -123,6 +121,13 @@ resolver = "3"
   zip = "8.6"
 
 [profile.dev.package.sqlx-macros]
+opt-level = 3
+
+# hashcash minting runs a PoW hash loop that is infeasible at opt-level 0
+[profile.dev.package.keccak]
+opt-level = 3
+
+[profile.dev.package.sha3]
 opt-level = 3
 
 [profile.release]

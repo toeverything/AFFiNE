@@ -5,6 +5,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use tokio::sync::{Mutex, Semaphore};
+use zeroize::Zeroizing;
 
 use super::{
   super::{BackendRuntime, to_napi_error},
@@ -22,6 +23,7 @@ pub(in crate::runtime::backend_runtime) struct PaymentRuntime {
   pub(super) deployment: Deployment,
   pub(super) revenuecat_config: Option<crate::runtime::RevenueCatRuntimeConfig>,
   pub(super) mail_hash_key: [u8; 32],
+  pub(super) license_issuer_private_key: Option<Arc<Zeroizing<String>>>,
   pub(super) worker: Mutex<Option<super::PaymentWorker>>,
 }
 
@@ -51,6 +53,9 @@ impl PaymentRuntime {
       deployment,
       revenuecat_config: config.revenuecat.clone(),
       mail_hash_key: Sha256::digest(private_key.as_bytes()).into(),
+      license_issuer_private_key: std::env::var("AFFINE_PRO_LICENSE_PRIVATE_KEY")
+        .ok()
+        .map(|key| Arc::new(Zeroizing::new(key))),
       worker: Mutex::new(None),
     })
   }
@@ -223,6 +228,24 @@ impl PaymentRuntime {
 
 #[napi_derive::napi]
 impl BackendRuntime {
+  #[napi]
+  pub fn payment_enabled(&self) -> napi::Result<bool> {
+    let config = self
+      .config
+      .read()
+      .map_err(|_| napi::Error::from_reason("BackendRuntime config lock poisoned"))?;
+    Ok(config.payment.enabled)
+  }
+
+  #[napi]
+  pub fn stripe_enabled(&self) -> napi::Result<bool> {
+    let config = self
+      .config
+      .read()
+      .map_err(|_| napi::Error::from_reason("BackendRuntime config lock poisoned"))?;
+    Ok(config.payment.enabled && config.payment.stripe.is_some())
+  }
+
   #[napi]
   pub async fn execute_payment_command_v1(&self, input: Value) -> napi::Result<Value> {
     let outcome = self

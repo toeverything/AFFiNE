@@ -1,5 +1,5 @@
-use anyhow::{Context, Result as AnyResult, anyhow};
-use sqlx::postgres::PgPoolOptions;
+use anyhow::{Context, Result as AnyResult, anyhow, ensure};
+use sqlx::{Row, postgres::PgPoolOptions};
 
 use super::{
   super::migrations::{RUNTIME_MIGRATIONS, migrate_runtime_tables},
@@ -8,6 +8,167 @@ use super::{
 
 pub(super) fn pg_test_lock() -> &'static tokio::sync::Mutex<()> {
   &crate::runtime::migrations::DATABASE_TEST_LOCK
+}
+
+fn test_server_config() -> AnyResult<Arc<ServerConfig>> {
+  let directory = tempfile::tempdir()?;
+  let path = directory.path().join("config.json");
+  std::fs::write(&path, r#"{"deployment":{"type":"cloud"}}"#)?;
+  Ok(Arc::new(
+    ServerConfig::open(&path, None).map_err(|error| anyhow!(error.to_string()))?,
+  ))
+}
+
+fn configure_test_storage(runtime: &BackendRuntime, bucket: &str, path: &std::path::Path) {
+  let config = serde_json::json!({
+    "storages": {
+      "blob.storage": {
+        "provider": "fs",
+        "bucket": bucket,
+        "config": { "path": path.to_string_lossy() }
+      }
+    }
+  });
+  let storage = ObjectStorageService::from_config_json(&config.to_string()).unwrap();
+  *runtime.object_storage.write().unwrap() = Arc::new(storage);
+}
+
+#[tokio::test]
+async fn shared_config_file_database_schema_and_runtime_harness() -> AnyResult<()> {
+  let _guard = pg_test_lock().lock().await;
+  let Ok(database_url) = std::env::var("DATABASE_URL") else {
+    return Ok(());
+  };
+  let directory = tempfile::tempdir()?;
+  let config_path = directory.path().join("config.json");
+  let file_storage_path = directory.path().join("file-storage");
+  let db_storage_path = directory.path().join("db-storage");
+  std::fs::write(
+    &config_path,
+    serde_json::json!({
+      "deployment": { "type": "cloud" },
+      "copilot": { "enabled": true },
+      "storages": {
+        "blob.storage": {
+          "provider": "fs",
+          "bucket": "file-bucket",
+          "config": { "path": file_storage_path }
+        }
+      }
+    })
+    .to_string(),
+  )?;
+  let handle = ServerConfigHandle::new(config_path.to_string_lossy().into_owned(), None)?;
+  ensure!(handle.inner.path() == config_path.canonicalize()?);
+  ensure!(
+    crate::runtime::app_config_descriptors("copilot".to_string())?
+      .iter()
+      .any(|descriptor| descriptor.key == "enabled" && descriptor.default_value == serde_json::json!(false))
+  );
+  ensure!(
+    crate::runtime::validate_app_config_value("copilot".to_string(), "enabled".to_string(), serde_json::json!(true))?
+      .is_empty()
+  );
+  ensure!(
+    !crate::runtime::validate_app_config_value(
+      "copilot".to_string(),
+      "enabled".to_string(),
+      serde_json::json!("true")
+    )?
+    .is_empty()
+  );
+
+  let pool = PgPoolOptions::new().max_connections(2).connect(&database_url).await?;
+  let keys = ["copilot.enabled", "indexer.enabled", "storages.blob.storage"];
+  let originals =
+    sqlx::query("SELECT id, value, created_at, updated_at, last_updated_by FROM app_configs WHERE id = ANY($1)")
+      .bind(keys)
+      .fetch_all(&pool)
+      .await?
+      .into_iter()
+      .map(|row| {
+        (
+          row.get::<String, _>("id"),
+          row.get::<serde_json::Value, _>("value"),
+          row.get::<chrono::DateTime<chrono::Utc>, _>("created_at"),
+          row.get::<chrono::DateTime<chrono::Utc>, _>("updated_at"),
+          row.get::<Option<String>, _>("last_updated_by"),
+        )
+      })
+      .collect::<Vec<_>>();
+  for (key, value) in [
+    ("copilot.enabled", serde_json::json!(false)),
+    ("indexer.enabled", serde_json::json!(false)),
+    (
+      "storages.blob.storage",
+      serde_json::json!({
+        "provider": "fs",
+        "bucket": "db-bucket",
+        "config": { "path": db_storage_path }
+      }),
+    ),
+  ] {
+    sqlx::query(
+      "INSERT INTO app_configs(id,value,created_at,updated_at) VALUES($1,$2,now(),now()) ON CONFLICT(id) DO UPDATE \
+       SET value=$2,updated_at=now()",
+    )
+    .bind(key)
+    .bind(value)
+    .execute(&pool)
+    .await?;
+  }
+
+  let mut runtime = BackendRuntime::new(&handle, Some("test-private-key".to_string()), None, None)?;
+  runtime.role = ServerRole::Frontend;
+  let storage = crate::runtime::storage_runtime::StorageRuntime::new(&handle)?;
+  let result: AnyResult<()> = async {
+    runtime.start().await.map_err(|error| anyhow!(error.to_string()))?;
+    storage.start().await.map_err(|error| anyhow!(error.to_string()))?;
+    let backend_health = runtime.health().await?;
+    ensure!(backend_health.started && backend_health.database_connected);
+    ensure!(!runtime.config()?.copilot.enabled);
+    let storage_health = storage.health().await?;
+    ensure!(storage_health.started && storage_health.database_connected);
+    ensure!(storage_health.bucket.as_deref() == Some("db-bucket"));
+
+    sqlx::query("DELETE FROM app_configs WHERE id = ANY($1)")
+      .bind(keys)
+      .execute(&pool)
+      .await?;
+    runtime
+      .reload_config()
+      .await
+      .map_err(|error| anyhow!(error.to_string()))?;
+    storage
+      .reload_config()
+      .await
+      .map_err(|error| anyhow!(error.to_string()))?;
+    ensure!(runtime.config()?.copilot.enabled);
+    ensure!(storage.health().await?.bucket.as_deref() == Some("file-bucket"));
+    Ok(())
+  }
+  .await;
+  let storage_stop = storage.stop().await;
+  let runtime_stop = runtime.stop().await;
+  sqlx::query("DELETE FROM app_configs WHERE id = ANY($1)")
+    .bind(keys)
+    .execute(&pool)
+    .await?;
+  for (key, value, created_at, updated_at, last_updated_by) in originals {
+    sqlx::query("INSERT INTO app_configs(id,value,created_at,updated_at,last_updated_by) VALUES($1,$2,$3,$4,$5)")
+      .bind(key)
+      .bind(value)
+      .bind(created_at)
+      .bind(updated_at)
+      .bind(last_updated_by)
+      .execute(&pool)
+      .await?;
+  }
+  pool.close().await;
+  result?;
+  storage_stop.map_err(|error| anyhow!(error.to_string()))?;
+  runtime_stop.map_err(|error| anyhow!(error.to_string()))?;
+  Ok(())
 }
 
 #[test]
@@ -57,25 +218,13 @@ async fn failed_start_rolls_back_resources_and_can_restart() -> AnyResult<()> {
     pool.close().await;
   }
   runtime.role = ServerRole::Frontend;
-  {
-    let mut config = runtime.config.write().unwrap();
-    let current = config.as_ref();
-    *config = Arc::new(BackendRuntimeConfig {
-      database_url: current.database_url.clone(),
-      auth: current.auth.clone(),
-      invite_quota: current.invite_quota.clone(),
-      private_key: Arc::clone(&current.private_key),
-      deployment: crate::runtime::Deployment::SelfHosted,
-      copilot: current.copilot.clone(),
-      search: crate::runtime::config::SearchRuntimeConfig {
-        enabled: true,
-        provider: "embedded".to_string(),
-        ..Default::default()
-      },
-      redis: current.redis.clone(),
-      payment: current.payment.clone(),
-    });
-  }
+  let directory = tempfile::tempdir()?;
+  let config_path = directory.path().join("config.json");
+  std::fs::write(
+    &config_path,
+    r#"{"deployment":{"type":"selfhosted"},"indexer":{"enabled":true,"provider":{"type":"embedded"}}}"#,
+  )?;
+  runtime.server_config = Arc::new(ServerConfig::open(&config_path, None)?);
 
   let error = runtime.start_inner().await.unwrap_err();
   assert!(error.to_string().contains("embedded search is only available"));
@@ -87,21 +236,8 @@ async fn failed_start_rolls_back_resources_and_can_restart() -> AnyResult<()> {
   assert!(runtime.embedding.lock().await.is_none());
   assert!(runtime.embedding_worker.lock().await.is_none());
 
-  {
-    let mut config = runtime.config.write().unwrap();
-    let current = config.as_ref();
-    *config = Arc::new(BackendRuntimeConfig {
-      database_url: current.database_url.clone(),
-      auth: current.auth.clone(),
-      invite_quota: current.invite_quota.clone(),
-      private_key: Arc::clone(&current.private_key),
-      deployment: current.deployment,
-      copilot: current.copilot.clone(),
-      search: Default::default(),
-      redis: current.redis.clone(),
-      payment: current.payment.clone(),
-    });
-  }
+  std::fs::write(&config_path, r#"{"deployment":{"type":"selfhosted"}}"#)?;
+  runtime.server_config = Arc::new(ServerConfig::open(&config_path, None)?);
   runtime.role = ServerRole::AllInOne;
   runtime
     .start_inner()
@@ -128,12 +264,15 @@ async fn failed_config_reload_keeps_active_resources() -> AnyResult<()> {
   };
   runtime.role = ServerRole::Frontend;
   let config_path = std::env::temp_dir().join(format!("affine-runtime-config-{}.json", uuid::Uuid::new_v4()));
-  std::fs::write(&config_path, r#"{"indexer":{"enabled":true,"provider":"embedded"}}"#)?;
-  runtime.config_source = ConfigSource::new(Some(vec![config_path.to_string_lossy().into_owned()]));
+  std::fs::write(
+    &config_path,
+    r#"{"deployment":{"type":"cloud"},"indexer":{"enabled":true,"provider":{"type":"embedded"}}}"#,
+  )?;
+  runtime.server_config = Arc::new(ServerConfig::open(&config_path, None)?);
   let active_config = runtime.config()?;
   let active_storage = runtime.object_storage()?;
 
-  let result = runtime.reload_config(None, None, None).await;
+  let result = runtime.reload_config().await;
   std::fs::remove_file(config_path)?;
 
   assert!(result.is_err());
@@ -209,9 +348,10 @@ pub(super) async fn runtime_from_database_url() -> AnyResult<Option<BackendRunti
   .await
   .context("cleanup invite abuse subjects for backend runtime tests")?;
 
+  let server_config = test_server_config()?;
   Ok(Some(BackendRuntime {
-    config_source: Default::default(),
-    inline_config: Arc::new(RwLock::new(None)),
+    server_config: Arc::clone(&server_config),
+    bootstrap_private_key: None,
     role: ServerRole::AllInOne,
     script_mode: false,
     config: Arc::new(RwLock::new(Arc::new(BackendRuntimeConfig {
@@ -228,9 +368,7 @@ pub(super) async fn runtime_from_database_url() -> AnyResult<Option<BackendRunti
     config_reload: Arc::new(Mutex::new(())),
     pool: Arc::new(Mutex::new(Some(pool))),
     embedding_health: Arc::new(RwLock::new(super::EmbeddingHealth::disabled("test", None))),
-    object_storage: Arc::new(RwLock::new(Arc::new(
-      crate::runtime::object_storage::ObjectStorageService::from_config_files()?,
-    ))),
+    object_storage: Arc::new(RwLock::new(Arc::new(server_config.object_storage().clone()))),
     embedding: Arc::new(Mutex::new(None)),
     embedding_worker: Arc::new(Mutex::new(None)),
     search: Arc::new(Mutex::new(None)),
@@ -407,8 +545,8 @@ async fn runtime_gate_sql_semantics_are_atomic_and_ttl_bound() {
   let mut tasks = Vec::new();
   for _ in 0..16 {
     let runtime = BackendRuntime {
-      config_source: Default::default(),
-      inline_config: Arc::new(RwLock::new(None)),
+      server_config: Arc::clone(&runtime.server_config),
+      bootstrap_private_key: None,
       role: ServerRole::AllInOne,
       script_mode: false,
       config: Arc::new(RwLock::new(runtime.config().unwrap())),
@@ -807,12 +945,7 @@ async fn strict_storage_reservation_serializes_last_bytes_and_recovers_ledger_ro
   };
   let pool = runtime.pool().await.unwrap();
   let temp = tempfile::tempdir().unwrap();
-  runtime
-    .configure_object_storage(format!(
-      r#"{{"storages":{{"blob.storage":{{"provider":"fs","bucket":"strict-storage","config":{{"path":{}}}}}}}}}"#,
-      serde_json::to_string(temp.path()).unwrap()
-    ))
-    .unwrap();
+  configure_test_storage(&runtime, "strict-storage", temp.path());
   let user_id = "rust-test:strict-storage:user";
   let workspace_id = "rust-test:strict-storage:workspace";
   sqlx::query("DELETE FROM workspaces WHERE id=$1")
@@ -1248,12 +1381,7 @@ async fn strict_blob_management_authorizes_inventory_and_denies_before_object_cl
     return;
   };
   let temp = tempfile::tempdir().unwrap();
-  runtime
-    .configure_object_storage(format!(
-      r#"{{"storages":{{"blob.storage":{{"provider":"fs","bucket":"blob-management","config":{{"path":{}}}}}}}}}"#,
-      serde_json::to_string(temp.path()).unwrap()
-    ))
-    .unwrap();
+  configure_test_storage(&runtime, "blob-management", temp.path());
   let pool = runtime.pool().await.unwrap();
   let workspace_id = "rust-test:blob-management:workspace";
   let owner_id = "rust-test:blob-management:owner";
@@ -1581,12 +1709,7 @@ async fn strict_comment_reservation_rejects_hijack_and_cleans_expired_generation
     .unwrap();
   }
   let temp = tempfile::tempdir().unwrap();
-  runtime
-    .configure_object_storage(format!(
-      r#"{{"storages":{{"blob.storage":{{"provider":"fs","bucket":"strict-comment","config":{{"path":{}}}}}}}}}"#,
-      serde_json::to_string(temp.path()).unwrap()
-    ))
-    .unwrap();
+  configure_test_storage(&runtime, "strict-comment", temp.path());
   while runtime.cleanup_expired_storage_reservations_v1(100).await.unwrap() > 0 {}
   let input = |user_id: &str| types::RuntimeStorageReservationInput {
     workspace_id: workspace_id.to_string(),

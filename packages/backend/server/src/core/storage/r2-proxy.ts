@@ -1,18 +1,12 @@
-import { timingSafeEqual } from 'node:crypto';
-
 import { Controller, Logger, Put, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 import {
   BlobInvalid,
   CallMetric,
-  Config,
-  createStorageUploadToken,
   PROXY_MULTIPART_PATH,
   PROXY_UPLOAD_PATH,
-  type S3StorageConfig,
   STORAGE_PROXY_ROOT,
-  type StorageProviderConfig,
   toBuffer,
 } from '../../base';
 import { Models } from '../../models';
@@ -22,59 +16,19 @@ import { MULTIPART_PART_SIZE } from './constants';
 
 type QueryValue = Request['query'][string];
 
-type UploadProxyConfig = {
-  signKey: string;
-};
-
 @Controller(STORAGE_PROXY_ROOT)
 export class R2UploadController {
   private readonly logger = new Logger(R2UploadController.name);
 
   constructor(
-    private readonly config: Config,
     private readonly models: Models,
     private readonly rt: StorageRuntimeProvider
   ) {}
 
-  private getUploadProxyConfig(): UploadProxyConfig {
-    const storage = this.config.storages.blob.storage as StorageProviderConfig;
-    if (storage.provider !== 'cloudflare-r2' && storage.provider !== 'aws-s3') {
+  private ensureUploadProxyEnabled() {
+    if (!this.rt.uploadUrlConfig('blob')?.proxyUpload) {
       throw new BlobInvalid('Invalid endpoint');
     }
-    const uploadConfig = (storage.config as S3StorageConfig).usePresignedURL;
-    const signKey = uploadConfig?.signKey;
-    if (!uploadConfig?.enabled || !signKey) {
-      throw new BlobInvalid('Invalid endpoint');
-    }
-    return { signKey };
-  }
-
-  private safeEqual(expected: string, actual: string) {
-    const a = Buffer.from(expected);
-    const b = Buffer.from(actual);
-
-    if (a.length !== b.length) {
-      return false;
-    }
-
-    return timingSafeEqual(a, b);
-  }
-
-  private verifyToken(
-    path: string,
-    canonicalFields: (string | number)[],
-    expiresAt: number,
-    token: string,
-    signKey: string
-  ) {
-    const expected = createStorageUploadToken(
-      path,
-      canonicalFields,
-      expiresAt,
-      signKey
-    );
-
-    return this.safeEqual(expected, token);
   }
 
   private expectString(value: QueryValue, field: string): string {
@@ -116,7 +70,7 @@ export class R2UploadController {
   @Put('upload')
   @CallMetric('controllers', 'r2_proxy_upload')
   async upload(@Req() req: Request, @Res() res: Response) {
-    const { signKey } = this.getUploadProxyConfig();
+    this.ensureUploadProxyEnabled();
 
     const workspaceId = this.expectString(req.query.workspaceId, 'workspaceId');
     const key = this.expectString(req.query.key, 'key');
@@ -137,12 +91,12 @@ export class R2UploadController {
     this.ensureNotExpired(expiresAt);
 
     if (
-      !this.verifyToken(
+      !this.rt.verifyUploadToken(
+        'blob',
         PROXY_UPLOAD_PATH,
         [workspaceId, key, contentType, contentLengthFromQuery],
         expiresAt,
-        token,
-        signKey
+        token
       )
     ) {
       throw new BlobInvalid('Invalid upload token');
@@ -192,7 +146,7 @@ export class R2UploadController {
   @Put('multipart')
   @CallMetric('controllers', 'r2_proxy_multipart')
   async uploadPart(@Req() req: Request, @Res() res: Response) {
-    const { signKey } = this.getUploadProxyConfig();
+    this.ensureUploadProxyEnabled();
 
     const workspaceId = this.expectString(req.query.workspaceId, 'workspaceId');
     const key = this.expectString(req.query.key, 'key');
@@ -218,12 +172,12 @@ export class R2UploadController {
     this.ensureNotExpired(expiresAt);
 
     if (
-      !this.verifyToken(
+      !this.rt.verifyUploadToken(
+        'blob',
         PROXY_MULTIPART_PATH,
         [workspaceId, key, uploadId, partNumber, contentLengthFromQuery],
         expiresAt,
-        token,
-        signKey
+        token
       )
     ) {
       throw new BlobInvalid('Invalid upload token');

@@ -30,14 +30,16 @@ ava(
     const url = Sinon.createStubInstance(URLHelper);
     url.safeLink.callsFake(path => new URL(path, 'https://app.example').href);
     const config = {
-      payment: { enabled: false, showLifetimePrice: false },
+      payment: { showLifetimePrice: false },
     } as Config;
     const service = new SubscriptionService(runtime, config, server, url);
+    const paymentEnabled = runtime.paymentEnabled as Sinon.SinonStub;
 
+    paymentEnabled.returns(false);
     service.onConfigInit();
     t.true(server.disableFeature.calledWith(ServerFeature.Payment));
-    config.payment.enabled = true;
-    service.onConfigChanged({ updates: { payment: { enabled: true } } });
+    paymentEnabled.returns(true);
+    service.onConfigApplied({ updates: { payment: { enabled: true } } });
     t.true(server.enableFeature.calledWith(ServerFeature.Payment));
 
     command.resolves([

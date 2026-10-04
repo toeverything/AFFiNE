@@ -351,7 +351,6 @@ test('abuse disposition applies action scope to invitation artifacts', async t =
 
 test('workspace quarantine blocks invite link creation', async t => {
   const db = app.get(PrismaClient);
-  const config = app.get(Config);
   const owner = await app.create(Mockers.User);
   const workspace = await app.create(Mockers.Workspace, { owner });
   const subjectKey = workspaceSubjectKey(workspace.id);
@@ -390,22 +389,20 @@ test('workspace quarantine blocks invite link creation', async t => {
     FROM subject
   `;
 
-  const previousDelay = config.auth.newAccountActionDelay;
-  config.auth.newAccountActionDelay = 0;
-  try {
-    await app.login(owner);
-    await t.throwsAsync(
-      app.gql({
-        query: createInviteLinkMutation,
-        variables: {
-          workspaceId: workspace.id,
-          expireTime: WorkspaceInviteLinkExpireTime.OneDay,
-        },
-      })
-    );
-  } finally {
-    config.auth.newAccountActionDelay = previousDelay;
-  }
+  await db.user.update({
+    where: { id: owner.id },
+    data: { createdAt: new Date('2020-01-01') },
+  });
+  await app.login(owner);
+  await t.throwsAsync(
+    app.gql({
+      query: createInviteLinkMutation,
+      variables: {
+        workspaceId: workspace.id,
+        expireTime: WorkspaceInviteLinkExpireTime.OneDay,
+      },
+    })
+  );
 });
 
 test('workspace action admission maps native allow and deny decisions', async t => {
