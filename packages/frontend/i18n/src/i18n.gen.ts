@@ -2466,6 +2466,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.explorer.display-menu.ordering"](): string;
     /**
+      * `Show more parent docs`
+      */
+    ["com.affine.header.breadcrumb.more"](): string;
+    /**
       * `View in Page mode`
       */
     ["com.affine.header.mode-switch.page"](): string;
@@ -6862,6 +6866,14 @@ export function useAFFiNEI18N(): {
       * `Once enabled, you can use an emoji as the doc icon. When the first character of the doc name is an emoji, it will be extracted and used as its icon.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-emoji-doc-icon.description"](): string;
+    /**
+      * `Doc Breadcrumb`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-doc-breadcrumb.name"](): string;
+    /**
+      * `Show the docs that link to the current doc as a breadcrumb in the doc header, so you can navigate back up a tree of linked docs.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-doc-breadcrumb.description"](): string;
     /**
       * `Editor Settings`
       */
