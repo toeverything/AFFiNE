@@ -67,6 +67,16 @@ export function setupMarkdownOpenEvents(frameworkProvider: FrameworkProvider) {
     await apis?.markdownOpen.complete(requestId);
   };
 
+  const completeAndContinue = async (requestId: string) => {
+    try {
+      await complete(requestId);
+    } catch (error) {
+      console.error('Failed to complete Markdown request:', error);
+    } finally {
+      processNextUnboundRequest();
+    }
+  };
+
   const openResolvedMarkdown = async (
     request: MarkdownOpenRequest,
     workspaceId: string,
@@ -192,8 +202,7 @@ export function setupMarkdownOpenEvents(frameworkProvider: FrameworkProvider) {
                   title: 'Failed to open Markdown file',
                   message: request.filePath,
                 });
-                await complete(request.requestId);
-                processNextUnboundRequest();
+                await completeAndContinue(request.requestId);
               });
             return;
           }
@@ -202,8 +211,13 @@ export function setupMarkdownOpenEvents(frameworkProvider: FrameworkProvider) {
             .then(() =>
               resolveExistingBinding(request, workspaceId, syncFolder)
             )
-            .catch(error => {
+            .catch(async error => {
               console.error('Failed to open Markdown workspace:', error);
+              notify.error({
+                title: 'Failed to open Markdown file',
+                message: request.filePath,
+              });
+              await completeAndContinue(request.requestId);
             });
         }
         return;
@@ -241,8 +255,7 @@ export function setupMarkdownOpenEvents(frameworkProvider: FrameworkProvider) {
                 title: 'Failed to open Markdown file',
                 message: request.filePath,
               });
-              await complete(request.requestId);
-              processNextUnboundRequest();
+              await completeAndContinue(request.requestId);
             });
         }
       );

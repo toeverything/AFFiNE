@@ -5,10 +5,10 @@ import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hoo
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import {
-  DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY,
   getDiskSyncFolderPath,
   setDiskSyncFolderPath,
   setDiskSyncSourceFilePath,
+  watchDiskSyncFolderPath,
 } from '@affine/core/modules/workspace-engine/impls/disk-config';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
@@ -23,16 +23,11 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
 
   useEffect(() => {
     setFolder(getDiskSyncFolderPath(workspaceId));
-    const unwatch = desktopApi.sharedStorage.globalState.watch<
-      Record<string, string>
-    >(DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY, folders => {
-      const next = folders?.[workspaceId];
-      setFolder(typeof next === 'string' && next.length > 0 ? next : null);
-    });
+    const unwatch = watchDiskSyncFolderPath(workspaceId, setFolder);
     return () => {
       unwatch();
     };
-  }, [desktopApi.sharedStorage.globalState, workspaceId]);
+  }, [workspaceId]);
 
   const onToggle = useCallback(
     (checked: boolean) => {

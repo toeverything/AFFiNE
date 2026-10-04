@@ -80,6 +80,7 @@ vi.mock('@affine/native', () => {
 });
 
 import {
+  diskSyncPathsEqual,
   prepareSourceDoc,
   resolveSourceDocId,
   startSession,
@@ -232,5 +233,36 @@ describe('disk helper handlers', () => {
 
     await stopSession('session-a');
     await stopSession('session-b');
+  });
+
+  it('prefers an exact-file session over a folder-only session', async () => {
+    diskSyncMocks.resolveSourceDocId.mockImplementation(
+      async sessionId => `doc-from-${sessionId}`
+    );
+    const common = {
+      workspaceId: 'workspace-session-priority',
+      syncFolder: '/tmp/disk-sync-session-priority',
+    };
+    const sourceFile = `${common.syncFolder}/source.md`;
+
+    await startSession('session-folder-only', common);
+    await startSession('session-exact-file', { ...common, sourceFile });
+
+    await expect(
+      resolveSourceDocId(common.workspaceId, common.syncFolder, sourceFile)
+    ).resolves.toBe('doc-from-session-exact-file');
+
+    await stopSession('session-folder-only');
+    await stopSession('session-exact-file');
+  });
+
+  it('matches Windows disk-sync paths case-insensitively', () => {
+    expect(
+      diskSyncPathsEqual(
+        'C:\\Notes\\Markdown\\Source.md',
+        'c:\\notes\\markdown\\source.md',
+        'win32'
+      )
+    ).toBe(true);
   });
 });

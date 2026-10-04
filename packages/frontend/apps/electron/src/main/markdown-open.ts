@@ -52,13 +52,8 @@ export function setupMarkdownOpen(app: App) {
     }
   });
 
-  app.on('second-instance', (event, commandLine) => {
-    const handled = markdownPathsFromCommandLine(commandLine).some(filePath =>
-      enqueueAndReveal(filePath)
-    );
-    if (handled) {
-      event.preventDefault();
-    }
+  app.on('second-instance', (_event, commandLine) => {
+    markdownPathsFromCommandLine(commandLine).forEach(enqueueAndReveal);
   });
 
   app.on('ready', () => {

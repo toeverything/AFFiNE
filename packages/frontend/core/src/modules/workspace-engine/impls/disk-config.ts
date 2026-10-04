@@ -8,6 +8,8 @@ const DISK_SYNC_SOURCE_FILE_STORAGE_KEY_PREFIX =
 type GlobalStateStorageLike = {
   get<T>(key: string): T | undefined;
   set<T>(key: string, value: T): Promise<void> | void;
+  setOrThrow?<T>(key: string, value: T): Promise<void>;
+  watch?<T>(key: string, callback: (value: T | undefined) => void): () => void;
 };
 
 function isDiskSyncSupported(): boolean {
@@ -105,6 +107,20 @@ export function setDiskSyncFolderPath(
   );
 }
 
+export function watchDiskSyncFolderPath(
+  workspaceId: string,
+  callback: (folder: string | null) => void
+): () => void {
+  const storage = getElectronGlobalStateStorage();
+  if (!storage?.watch) {
+    return () => {};
+  }
+  return storage.watch(
+    `${DISK_SYNC_FOLDER_STORAGE_KEY_PREFIX}${workspaceId}`,
+    () => callback(getDiskSyncFolderPath(workspaceId))
+  );
+}
+
 export function getDiskSyncSourceFilePath(workspaceId: string): string | null {
   const storage = getElectronGlobalStateStorage();
   if (!storage) {
@@ -126,10 +142,11 @@ export function setDiskSyncSourceFilePath(
     return;
   }
 
-  return storage.set(
-    `${DISK_SYNC_SOURCE_FILE_STORAGE_KEY_PREFIX}${workspaceId}`,
-    file || null
-  );
+  const key = `${DISK_SYNC_SOURCE_FILE_STORAGE_KEY_PREFIX}${workspaceId}`;
+  const value = file || null;
+  return storage.setOrThrow
+    ? storage.setOrThrow(key, value)
+    : storage.set(key, value);
 }
 
 export function getDiskSyncRemoteOptions(workspaceId: string): {

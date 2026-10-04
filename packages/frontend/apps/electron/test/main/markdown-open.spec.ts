@@ -66,4 +66,39 @@ describe('setupMarkdownOpen', () => {
     );
     expect(() => structuredClone(pending)).not.toThrow();
   });
+
+  it('queues every Markdown path from a second instance', async () => {
+    const listeners = new Map<string, (...args: any[]) => void>();
+    const app = {
+      on: vi.fn((event: string, callback: (...args: any[]) => void) => {
+        listeners.set(event, callback);
+      }),
+      whenReady: vi.fn(async () => {}),
+    } as unknown as App;
+    const firstPath = path.resolve('/tmp/second-instance-first.md');
+    const secondPath = path.resolve('/tmp/second-instance-second.markdown');
+
+    setupMarkdownOpen(app);
+    listeners.get('second-instance')?.({ preventDefault: vi.fn() }, [
+      'affine',
+      firstPath,
+      secondPath,
+    ]);
+
+    const pending = await markdownOpenHandlers.getPending({} as never);
+    expect(pending).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ filePath: firstPath }),
+        expect.objectContaining({ filePath: secondPath }),
+      ])
+    );
+
+    await Promise.all(
+      pending
+        .filter(({ filePath }) => [firstPath, secondPath].includes(filePath))
+        .map(({ requestId }) =>
+          markdownOpenHandlers.complete({} as never, requestId)
+        )
+    );
+  });
 });

@@ -12,15 +12,20 @@ import {
   setDiskSyncEnabled,
   setDiskSyncFolderPath,
   setDiskSyncSourceFilePath,
+  watchDiskSyncFolderPath,
 } from './disk-config';
 
 describe('disk-config', () => {
   const originalBuildConfig = globalThis.BUILD_CONFIG;
   const originalSharedStorage = (globalThis as any).__sharedStorage;
   const state = new Map<string, unknown>();
+  let watchedKey: string | null;
+  let watchCallback: (() => void) | null;
 
   beforeEach(() => {
     state.clear();
+    watchedKey = null;
+    watchCallback = null;
     (globalThis as any).__sharedStorage = {
       globalState: {
         get<T>(key: string): T | undefined {
@@ -28,6 +33,11 @@ describe('disk-config', () => {
         },
         set<T>(key: string, value: T): void {
           state.set(key, value);
+        },
+        watch<T>(key: string, callback: (value: T | undefined) => void) {
+          watchedKey = key;
+          watchCallback = () => callback(state.get(key) as T | undefined);
+          return () => {};
         },
       },
     };
@@ -63,6 +73,28 @@ describe('disk-config', () => {
 
     expect(setDiskSyncFolderPath('workspace-a', '/tmp/a')).toBe(persisted);
     expect(setDiskSyncEnabled(true)).toBe(persisted);
+  });
+
+  it('uses the rejecting persistence path for source-file selection', async () => {
+    const persistenceError = new Error('IPC write failed');
+    (globalThis as any).__sharedStorage.globalState.setOrThrow = () =>
+      Promise.reject(persistenceError);
+
+    await expect(
+      setDiskSyncSourceFilePath('workspace-a', '/tmp/a/source.md')
+    ).rejects.toBe(persistenceError);
+  });
+
+  it('watches the workspace-specific folder key', () => {
+    const observed: Array<string | null> = [];
+    watchDiskSyncFolderPath('workspace-a', folder => observed.push(folder));
+
+    expect(watchedKey).toBe(
+      `${DISK_SYNC_FOLDER_GLOBAL_STATE_KEY_PREFIX}workspace-a`
+    );
+    state.set(watchedKey!, '/tmp/updated');
+    watchCallback?.();
+    expect(observed).toEqual(['/tmp/updated']);
   });
 
   it('stores folder path per workspace and resolves remote options only when enabled', () => {

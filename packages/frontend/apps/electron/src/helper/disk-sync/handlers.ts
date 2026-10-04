@@ -126,20 +126,36 @@ export async function resolveSourceDocId(
   syncFolder: string,
   filePath: string
 ): Promise<string | null> {
-  const normalizedFolder = path.resolve(syncFolder);
-  const normalizedFile = path.resolve(filePath);
-  const activeSession = [...sessions.entries()].find(([, active]) => {
+  const matchingSessions = [...sessions.entries()].filter(([, active]) => {
     return (
       active.options.workspaceId === workspaceId &&
-      path.resolve(active.options.syncFolder) === normalizedFolder &&
-      (!active.options.sourceFile ||
-        path.resolve(active.options.sourceFile) === normalizedFile)
+      diskSyncPathsEqual(active.options.syncFolder, syncFolder)
     );
   });
+  const activeSession =
+    matchingSessions.find(([, active]) => {
+      return (
+        active.options.sourceFile &&
+        diskSyncPathsEqual(active.options.sourceFile, filePath)
+      );
+    }) ?? matchingSessions.find(([, active]) => !active.options.sourceFile);
   if (!activeSession) {
     return null;
   }
-  return diskSync.resolveSourceDocId(activeSession[0], normalizedFile);
+  return diskSync.resolveSourceDocId(activeSession[0], path.resolve(filePath));
+}
+
+export function diskSyncPathsEqual(
+  left: string,
+  right: string,
+  platform: NodeJS.Platform = process.platform
+): boolean {
+  const pathApi = platform === 'win32' ? path.win32 : path;
+  const resolvedLeft = pathApi.resolve(left);
+  const resolvedRight = pathApi.resolve(right);
+  return platform === 'win32'
+    ? resolvedLeft.toLowerCase() === resolvedRight.toLowerCase()
+    : resolvedLeft === resolvedRight;
 }
 
 export async function stopSession(sessionId: string): Promise<void> {

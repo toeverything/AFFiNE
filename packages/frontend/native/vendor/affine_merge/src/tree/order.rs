@@ -7,10 +7,10 @@ pub(super) fn merge_order(
   budget: &mut WorkBudget,
 ) -> Result<Vec<NodeId>, MergeError> {
   if external == base {
-    return Ok(current.to_vec());
+    return ensure_unique(current.to_vec());
   }
   if current == base || current == external {
-    return Ok(external.to_vec());
+    return ensure_unique(external.to_vec());
   }
   let existing: BTreeSet<_> = base.iter().collect();
   let current_old: Vec<_> = current.iter().filter(|id| existing.contains(id)).cloned().collect();
@@ -58,15 +58,33 @@ pub(super) fn merge_order(
     }
   }
   let mut result = Vec::new();
+  let mut seen = BTreeSet::new();
   for i in 0..=order.len() {
     if let Some(inserted) = gaps.remove(&i) {
-      result.extend(inserted);
+      for id in inserted {
+        if !seen.insert(id.clone()) {
+          return Err(MergeError::ConcurrentEdit);
+        }
+        result.push(id);
+      }
     }
     if let Some(id) = order.get(i) {
+      if !seen.insert(id.clone()) {
+        return Err(MergeError::ConcurrentEdit);
+      }
       result.push(id.clone());
     }
   }
   Ok(result)
+}
+
+fn ensure_unique(nodes: Vec<NodeId>) -> Result<Vec<NodeId>, MergeError> {
+  let mut seen = BTreeSet::new();
+  if nodes.iter().all(|id| seen.insert(id)) {
+    Ok(nodes)
+  } else {
+    Err(MergeError::ConcurrentEdit)
+  }
 }
 
 fn merge_reorders(
@@ -116,4 +134,61 @@ fn merge_reorders(
     return Err(MergeError::ConcurrentEdit);
   }
   Ok(output)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn node(id: u64) -> NodeId {
+    NodeId::Existing(id.to_string())
+  }
+
+  #[test]
+  fn rejects_same_inserted_node_at_different_positions() {
+    let a = node(1);
+    let b = node(2);
+    let x = node(3);
+    let mut budget = WorkBudget::default();
+
+    assert_eq!(
+      merge_order(
+        &[a.clone(), b.clone()],
+        &[x.clone(), a.clone(), b.clone()],
+        &[a, b, x],
+        &mut budget,
+      ),
+      Err(MergeError::ConcurrentEdit)
+    );
+  }
+
+  #[test]
+  fn rejects_duplicate_nodes_from_fast_paths() {
+    let a = node(1);
+    let b = node(2);
+    let x = node(3);
+
+    for (base, current, external) in [
+      (
+        vec![a.clone(), b.clone()],
+        vec![a.clone(), a.clone(), b.clone()],
+        vec![a.clone(), b.clone()],
+      ),
+      (
+        vec![a.clone(), b.clone()],
+        vec![a.clone(), b.clone()],
+        vec![a.clone(), b.clone(), b.clone()],
+      ),
+      (
+        vec![a.clone(), b.clone()],
+        vec![x.clone(), a.clone(), b.clone(), x.clone()],
+        vec![x.clone(), a.clone(), b.clone(), x.clone()],
+      ),
+    ] {
+      assert_eq!(
+        merge_order(&base, &current, &external, &mut WorkBudget::default()),
+        Err(MergeError::ConcurrentEdit)
+      );
+    }
+  }
 }
