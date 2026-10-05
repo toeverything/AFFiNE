@@ -49,6 +49,7 @@ describe('draw.io attachments', () => {
       true
     );
     expect(isDrawioXml('<mxfiles>')).toBe(false);
+    expect(isDrawioXml('<mxfile></mxfile>trailing content')).toBe(false);
     expect(isDrawioXml('<html><body><mxfile></mxfile></body></html>')).toBe(
       false
     );

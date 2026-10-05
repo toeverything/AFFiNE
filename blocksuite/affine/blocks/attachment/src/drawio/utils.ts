@@ -22,13 +22,17 @@ export const isDrawioAttachment = (model: AttachmentBlockModel) =>
   model.props.type === DRAWIO_MIME_TYPE || isDrawioFileName(model.props.name);
 
 /**
- * Loose check that the file content is a draw.io diagram, so we don't send
- * arbitrary files to the viewer.
+ * Checks the complete file content before sending it to the viewer, so we don't
+ * send arbitrary or malformed files to the viewer.
  */
 export const isDrawioXml = (content: string) => {
-  const head = content.trimStart().slice(0, 2048);
-  return /^(<\?xml[^>]*\?>\s*)?(<!--[\s\S]*?-->\s*)*<(mxfile|mxGraphModel)[\s>]/.test(
-    head
+  const document = new DOMParser().parseFromString(content, 'application/xml');
+  const root = document.documentElement;
+  return (
+    root != null &&
+    root.localName !== 'parsererror' &&
+    document.getElementsByTagName('parsererror').length === 0 &&
+    (root.localName === 'mxfile' || root.localName === 'mxGraphModel')
   );
 };
 

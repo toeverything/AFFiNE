@@ -117,6 +117,9 @@ export class DrawioViewer extends SignalWatcher(
         JSON.stringify({ action: 'load', xml, autosave: 0, title: this.name }),
         this.viewerOrigin
       );
+    }
+
+    if (message.event === 'load') {
       this.clearLoadTimeout();
       this.state$.value = { kind: 'ready' };
     }
