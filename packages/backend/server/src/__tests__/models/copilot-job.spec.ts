@@ -8,7 +8,7 @@ import {
 import ava, { TestFn } from 'ava';
 
 import { Config } from '../../base';
-import { CopilotJobModel } from '../../models';
+import { CopilotJobModel, CopilotTranscriptTaskModel } from '../../models';
 import { UserModel } from '../../models/user';
 import { WorkspaceModel } from '../../models/workspace';
 import { createTestingModule, type TestingModule } from '../utils';
@@ -20,6 +20,7 @@ interface Context {
   user: UserModel;
   workspace: WorkspaceModel;
   copilotJob: CopilotJobModel;
+  transcriptTask: CopilotTranscriptTaskModel;
 }
 
 const test = ava as TestFn<Context>;
@@ -29,6 +30,7 @@ test.before(async t => {
   t.context.user = module.get(UserModel);
   t.context.workspace = module.get(WorkspaceModel);
   t.context.copilotJob = module.get(CopilotJobModel);
+  t.context.transcriptTask = module.get(CopilotTranscriptTaskModel);
   t.context.db = module.get(PrismaClient);
   t.context.config = module.get(Config);
   t.context.module = module;
@@ -133,4 +135,128 @@ test('should claim job', async t => {
     AiJobStatus.claimed,
     'should update job status to claimed'
   );
+});
+
+test('should fence transcript dispatch generations atomically', async t => {
+  const task = await t.context.transcriptTask.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    blobId: 'transcript-blob',
+    recipeId: 'transcript.audio',
+    recipeVersion: 'v1',
+    inputSnapshot: { normalizedTranscript: 'source' },
+  });
+  const adoptions = await Promise.all([
+    t.context.transcriptTask.adoptLegacyDispatch(
+      task.id,
+      null,
+      'legacy-generation-a'
+    ),
+    t.context.transcriptTask.adoptLegacyDispatch(
+      task.id,
+      null,
+      'legacy-generation-b'
+    ),
+  ]);
+  t.is(adoptions.filter(Boolean).length, 1);
+  const adopted = await t.context.transcriptTask.get(task.id);
+  const adoptedGeneration = adopted?.dispatchGeneration;
+  if (!adoptedGeneration) {
+    t.fail('legacy dispatch should have a generation');
+    return;
+  }
+  t.true(
+    await t.context.transcriptTask.claimDispatch(
+      task.id,
+      adoptedGeneration,
+      null
+    )
+  );
+  t.true(
+    await t.context.transcriptTask.completeDispatch(
+      task.id,
+      adoptedGeneration,
+      null,
+      {
+        status: 'failed',
+        protectedResult: { normalizedTranscript: 'source' },
+        errorCode: 'provider_failed',
+      }
+    )
+  );
+
+  const claims = await Promise.all([
+    t.context.transcriptTask.claimRetry(
+      task.id,
+      user.id,
+      workspace.id,
+      null,
+      'generation-a'
+    ),
+    t.context.transcriptTask.claimRetry(
+      task.id,
+      user.id,
+      workspace.id,
+      null,
+      'generation-b'
+    ),
+  ]);
+  t.is(claims.filter(Boolean).length, 1);
+
+  const claimed = await t.context.transcriptTask.get(task.id);
+  const generation = claimed?.dispatchGeneration;
+  if (!generation) {
+    t.fail('retry should have a dispatch generation');
+    return;
+  }
+  t.false(
+    await t.context.transcriptTask.claimDispatch(
+      task.id,
+      generation === 'generation-a' ? 'generation-b' : 'generation-a',
+      null
+    )
+  );
+  t.true(
+    await t.context.transcriptTask.claimDispatch(task.id, generation, null)
+  );
+  t.true(
+    await t.context.transcriptTask.attachActionRun(
+      task.id,
+      generation,
+      null,
+      'run-next'
+    )
+  );
+  t.false(
+    await t.context.transcriptTask.attachActionRun(
+      task.id,
+      generation,
+      null,
+      'run-duplicate'
+    )
+  );
+  t.false(
+    await t.context.transcriptTask.completeDispatch(
+      task.id,
+      generation,
+      'run-duplicate',
+      { status: 'ready' }
+    )
+  );
+  t.true(
+    await t.context.transcriptTask.completeDispatch(
+      task.id,
+      generation,
+      'run-next',
+      {
+        status: 'ready',
+        protectedResult: { normalizedTranscript: 'result' },
+      }
+    )
+  );
+  t.like(await t.context.transcriptTask.get(task.id), {
+    status: 'ready',
+    dispatchGeneration: null,
+    actionRunId: 'run-next',
+  });
 });

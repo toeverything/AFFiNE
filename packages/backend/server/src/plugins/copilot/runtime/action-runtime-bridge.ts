@@ -49,6 +49,15 @@ export type ActionRuntimeBridgeEvent = NativeActionEvent & {
   runId: string;
 };
 
+export type ActionRuntimeBridgeOutput = {
+  result: unknown;
+  attachments?: unknown[];
+};
+
+export type ActionRuntimeBridgeExecutor = (
+  input: ActionRuntimeBridgeInput
+) => Promise<ActionRuntimeBridgeOutput>;
+
 export type ActionRuntimeBridgeRunContext = {
   runId: string;
   attempt: number;
@@ -173,7 +182,8 @@ export class ActionRuntimeBridge {
   }
 
   async *runStream(
-    input: ActionRuntimeBridgeInput
+    input: ActionRuntimeBridgeInput,
+    executor?: ActionRuntimeBridgeExecutor
   ): AsyncIterableIterator<ActionRuntimeBridgeEvent> {
     const attempt = await this.resolveAttempt(input);
     const run = await this.models.copilotActionRun.create({
@@ -206,8 +216,10 @@ export class ActionRuntimeBridge {
         status: 'running',
       };
       yield { ...actionStart, runId: run.id };
-      const output = await this.execute(inputWithBillingUnit);
-      for (const artifact of output.attachments) {
+      const output = executor
+        ? await executor(inputWithBillingUnit)
+        : await this.execute(inputWithBillingUnit);
+      for (const artifact of output.attachments ?? []) {
         const attachment = input.persistAttachment
           ? await input.persistAttachment(artifact)
           : artifact;

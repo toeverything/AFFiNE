@@ -83,6 +83,13 @@ export interface RealtimeRequestMap {
     };
     output: { task: unknown | null };
   };
+  'copilot.transcript.task.retry': {
+    input: {
+      workspaceId: string;
+      taskId: string;
+    };
+    output: { task: unknown | null };
+  };
   'user.quota-state.get': {
     input: Record<string, never>;
     output: { state: UserQuotaStateSnapshot };

@@ -196,11 +196,7 @@ providerTest(
   'managed transcript route executes the provider-neutral job port',
   async t => {
     const { models, runtime, transcript } = t.context;
-    await assertManagedRoute(
-      runtime,
-      'transcript.audio',
-      'Transcript audio structured'
-    );
+    await assertManagedRoute(runtime, 'transcript.audio', 'Transcript audio');
     const user = await models.user.create({
       email: `copilot-provider-transcript-${randomUUID()}@affine.pro`,
     });
@@ -222,11 +218,16 @@ providerTest(
       blobId,
       recipeId: 'transcript.audio',
       recipeVersion: 'v1',
+      dispatchGeneration: 'provider-test-generation',
       inputSnapshot: payload,
       publicMeta: { sourceAudio: payload.sourceAudio, infos: payload.infos },
     });
 
-    await transcript.transcriptTask({ taskId: task.id, payload });
+    await transcript.transcriptTask({
+      taskId: task.id,
+      payload,
+      generation: 'provider-test-generation',
+    });
     const ready = await models.copilotTranscriptTask.get(task.id);
     t.is(ready?.status, 'ready');
     t.is(

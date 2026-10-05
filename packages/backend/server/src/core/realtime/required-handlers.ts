@@ -12,6 +12,7 @@ export const REALTIME_GATEWAY_REQUIRED_REQUESTS = [
   'notification.count.get',
   'comment.changes.get',
   'copilot.transcript.task.get',
+  'copilot.transcript.task.retry',
   'user.quota-state.get',
   'workspace.quota-state.get',
 ] as const satisfies readonly RealtimeRequestName[];

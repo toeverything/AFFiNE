@@ -7,3 +7,4 @@ export * from './1763800000000-rebuild-manticore-mixed-script-indexes';
 export * from './1765500000000-backfill-permission-projection';
 export * from './1765600000000-backfill-entitlement-projection';
 export * from './1786805802350-backfill-transcript-storage-keys';
+export * from './1786810000000-converge-managed-provider-profiles';

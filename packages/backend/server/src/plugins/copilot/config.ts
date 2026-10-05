@@ -35,7 +35,7 @@ type CopilotProviderProfileCommon = {
   displayName?: string;
   priority?: number;
   enabled?: boolean;
-  models: string[];
+  models?: string[];
   middleware?: ProviderMiddlewareConfig;
 };
 

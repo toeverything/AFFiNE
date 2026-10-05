@@ -1,15 +1,3 @@
-DELETE FROM "app_configs"
-WHERE "id" IN (
-  'copilot.providers.openai',
-  'copilot.providers.cloudflareWorkersAi',
-  'copilot.providers.fal',
-  'copilot.providers.gemini',
-  'copilot.providers.geminiVertex',
-  'copilot.providers.anthropic',
-  'copilot.providers.anthropicVertex',
-  'copilot.providers.defaults'
-);
-
 ALTER TABLE "ai_workspace_byok_configs"
   ADD COLUMN "definition" JSONB NOT NULL DEFAULT '{}',
   ADD COLUMN "revision" INTEGER NOT NULL DEFAULT 1,
@@ -68,5 +56,5 @@ CREATE TABLE "ai_message_artifacts" (
 CREATE INDEX "ai_message_artifacts_workspace_id_artifact_id_idx" ON "ai_message_artifacts"("workspace_id", "artifact_id");
 
 -- After stable and beta no longer run binaries built with the 115-migration
--- schema, remove the old provider keys, obsolete local-lease rows, ai_contexts,
+-- schema, remove the old provider defaults, obsolete local-lease rows, ai_contexts,
 -- ai_context_embeddings, and ai_workspace_embeddings in one cleanup migration.

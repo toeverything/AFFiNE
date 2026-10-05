@@ -42,6 +42,7 @@ import { CopilotStorage } from './storage';
 import {
   CopilotTranscriptionReader,
   CopilotTranscriptionResolver,
+  CopilotTranscriptionRetryService,
   CopilotTranscriptionService,
   CopilotTranscriptRealtimeProvider,
 } from './transcript';
@@ -89,6 +90,7 @@ export const COPILOT_RUNTIME_PROVIDERS = [
 
 export const COPILOT_TRANSCRIPT_REALTIME_PROVIDERS = [
   CopilotTranscriptionReader,
+  CopilotTranscriptionRetryService,
   CopilotTranscriptRealtimeProvider,
   CopilotEmbeddingRealtimeProvider,
   DelegatedEditorRealtimeProvider,

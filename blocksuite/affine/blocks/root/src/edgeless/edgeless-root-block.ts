@@ -356,7 +356,11 @@ export class EdgelessRootBlockComponent extends BlockComponent<
         }
         // pan
         else {
-          const simulateHorizontalScroll = IS_WINDOWS && e.shiftKey;
+          // Enable Shift+wheel horizontal scroll on Windows (no native deltaX),
+          // and on any platform when using a mouse without horizontal scroll
+          // (deltaX === 0 means no native horizontal input, e.g. external mouse on macOS/Linux).
+          const simulateHorizontalScroll =
+            e.shiftKey && (IS_WINDOWS || e.deltaX === 0);
           const dx = simulateHorizontalScroll
             ? e.deltaY / viewport.zoom
             : e.deltaX / viewport.zoom;

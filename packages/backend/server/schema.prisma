@@ -847,21 +847,22 @@ model AiActionRun {
 }
 
 model AiTranscriptTask {
-  id              String    @id @default(uuid()) @db.VarChar
-  userId          String    @map("user_id") @db.VarChar
-  workspaceId     String    @map("workspace_id") @db.VarChar
-  blobId          String    @map("blob_id") @db.VarChar
-  status          String    @db.VarChar
-  recipeId        String    @map("recipe_id") @db.VarChar
-  recipeVersion   String    @map("recipe_version") @db.VarChar
-  actionRunId     String?   @map("action_run_id") @db.VarChar
-  inputSnapshot   Json?     @map("input_snapshot") @db.Json
-  publicMeta      Json?     @map("public_meta") @db.Json
-  protectedResult Json?     @map("protected_result") @db.Json
-  errorCode       String?   @map("error_code") @db.VarChar
-  settledAt       DateTime? @map("settled_at") @db.Timestamptz(3)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                 String    @id @default(uuid()) @db.VarChar
+  userId             String    @map("user_id") @db.VarChar
+  workspaceId        String    @map("workspace_id") @db.VarChar
+  blobId             String    @map("blob_id") @db.VarChar
+  status             String    @db.VarChar
+  recipeId           String    @map("recipe_id") @db.VarChar
+  recipeVersion      String    @map("recipe_version") @db.VarChar
+  actionRunId        String?   @map("action_run_id") @db.VarChar
+  dispatchGeneration String?   @map("dispatch_generation") @db.VarChar
+  inputSnapshot      Json?     @map("input_snapshot") @db.Json
+  publicMeta         Json?     @map("public_meta") @db.Json
+  protectedResult    Json?     @map("protected_result") @db.Json
+  errorCode          String?   @map("error_code") @db.VarChar
+  settledAt          DateTime? @map("settled_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([userId, workspaceId])
   @@index([workspaceId, blobId])
