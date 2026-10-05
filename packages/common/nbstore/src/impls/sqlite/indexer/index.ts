@@ -7,20 +7,24 @@ import type {
   AggregateOptions,
   AggregateResult,
   IndexerDocument,
+  IndexerSchema,
   Query,
   SearchOptions,
   SearchResult,
 } from '../../../storage';
 import { IndexerStorageBase } from '../../../storage';
-import { IndexerSchema } from '../../../storage/indexer/schema';
 import { fromPromise } from '../../../utils/from-promise';
 import { backoffRetry, exhaustMapWithTrailing } from '../../idb/indexer/utils';
-import { NativeDBConnection, type SqliteNativeDBOptions } from '../db';
+import {
+  NativeDBConnection,
+  type NativeIndexQuery,
+  type NativeIndexSearchOptions,
+  type SqliteNativeDBOptions,
+} from '../db';
 import { createNode } from './node-builder';
-import { queryRaw } from './query';
-import { getText, tryParseArrayField } from './utils';
 
 const SQLITE_INDEXER_VERSION_OFFSET = 1;
+const NATIVE_INDEXER_MAX_LIMIT = 0xffffffff;
 
 export class SqliteIndexerStorage extends IndexerStorageBase {
   static readonly identifier = 'SqliteIndexerStorage';
@@ -43,33 +47,21 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
     query: Query<T>,
     options?: O
   ): Promise<SearchResult<T, O>> {
-    const match = await queryRaw(this.connection, table, query);
-
-    // Pagination
     const limit = options?.pagination?.limit ?? 10;
     const skip = options?.pagination?.skip ?? 0;
-    const ids = match.toArray();
-    const pagedIds = ids.slice(skip, skip + limit);
-
-    const nodes = [];
-    for (const id of pagedIds) {
-      const node = await createNode(
-        this.connection,
-        table,
-        id,
-        match.getScore(id),
-        options ?? {},
-        query
-      );
-      nodes.push(node);
-    }
+    const result = await this.connection.apis.indexSearch(
+      String(table),
+      toNativeQuery(query),
+      toNativeOptions(options, limit, skip)
+    );
+    const nodes = result.hits.map(hit => createNode(hit, options ?? {}));
 
     return {
       pagination: {
-        count: ids.length,
+        count: result.total,
         limit,
         skip,
-        hasMore: ids.length > skip + limit,
+        hasMore: result.total > skip + limit,
       },
       nodes,
     };
@@ -84,72 +76,49 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
     field: keyof IndexerSchema[T],
     options?: O
   ): Promise<AggregateResult<T, O>> {
-    const match = await queryRaw(this.connection, table, query);
-    const ids = match.toArray();
-
-    const buckets: any[] = [];
-
-    for (const id of ids) {
-      const text = await this.connection.apis.ftsGetDocument(
-        `${table}:${field as string}`,
-        id
-      );
-      if (typeof text === 'string' && text.length > 0) {
-        let values: string[] = [text];
-        const parsed = tryParseArrayField(text);
-        if (parsed) {
-          values = parsed;
-        }
-
-        for (const val of values) {
-          let bucket = buckets.find(b => b.key === val);
-          if (!bucket) {
-            bucket = { key: val, count: 0, score: 0 };
-            if (options?.hits) {
-              bucket.hits = {
-                pagination: { count: 0, limit: 0, skip: 0, hasMore: false },
-                nodes: [],
-              };
-            }
-            buckets.push(bucket);
+    const limit = options?.pagination?.limit ?? 10;
+    const skip = options?.pagination?.skip ?? 0;
+    const hitLimit = options?.hits?.pagination?.limit ?? 3;
+    const hitSkip = options?.hits?.pagination?.skip ?? 0;
+    const result = await this.connection.apis.indexAggregate(
+      String(table),
+      toNativeQuery(query),
+      String(field),
+      toNativeLimit(limit),
+      skip,
+      options?.hits
+        ? toNativeOptions(options.hits, hitLimit, hitSkip)
+        : undefined
+    );
+    const hitsOptions = options?.hits;
+    const buckets = result.buckets.map(bucket => ({
+      key: bucket.key,
+      count: bucket.count,
+      score: bucket.score,
+      ...(hitsOptions
+        ? {
+            hits: {
+              pagination: {
+                count: bucket.count,
+                limit: hitLimit,
+                skip: hitSkip,
+                hasMore: bucket.count > hitSkip + hitLimit,
+              },
+              nodes: bucket.hits.map(hit => createNode(hit, hitsOptions)),
+            },
           }
-          bucket.count++;
-
-          if (options?.hits) {
-            const hitLimit = options.hits.pagination?.limit ?? 3;
-            if (bucket.hits.nodes.length < hitLimit) {
-              const node = await createNode(
-                this.connection,
-                table,
-                id,
-                match.getScore(id),
-                options.hits,
-                query
-              );
-              bucket.hits.nodes.push(node);
-              bucket.hits.pagination.count++;
-            }
-          }
-        }
-      } else if (text != null && typeof text !== 'string') {
-        console.warn('[nbstore] invalid indexed aggregate type', {
-          table,
-          field: field as string,
-          id,
-          type: typeof text,
-        });
-      }
-    }
+        : {}),
+    }));
 
     return {
       pagination: {
-        count: buckets.length,
-        limit: 0,
-        skip: 0,
-        hasMore: false,
+        count: result.total,
+        limit,
+        skip,
+        hasMore: result.total > skip + limit,
       },
       buckets,
-    };
+    } as AggregateResult<T, O>;
   }
 
   search$<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
@@ -190,38 +159,23 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
     table: T,
     query: Query<T>
   ): Promise<void> {
-    const match = await queryRaw(this.connection, table, query);
-    const ids = match.toArray();
-    for (const id of ids) {
-      await this.delete(table, id);
-    }
+    await this.connection.apis.indexDeleteByQuery(
+      String(table),
+      toNativeQuery(query)
+    );
   }
 
   async insert<T extends keyof IndexerSchema>(
     table: T,
     document: IndexerDocument<T>
   ): Promise<void> {
-    const schema = IndexerSchema[table];
-    for (const [field, values] of document.fields) {
-      const fieldSchema = schema[field];
-      // @ts-expect-error -- IndexerSchema uses runtime-keyed fields from each table schema.
-      const shouldIndex = fieldSchema.index !== false;
-      // @ts-expect-error -- IndexerSchema uses runtime-keyed fields from each table schema.
-      const shouldStore = fieldSchema.store !== false;
-
-      if (!shouldStore && !shouldIndex) continue;
-
-      const text = getText(values);
-
-      if (typeof text === 'string') {
-        await this.connection.apis.ftsAddDocument(
-          `${table}:${field as string}`,
-          document.id,
-          text,
-          shouldIndex
-        );
-      }
-    }
+    await this.connection.apis.indexUpsert(String(table), {
+      id: document.id,
+      fields: [...document.fields].map(([field, values]) => ({
+        field: String(field),
+        values,
+      })),
+    });
     this.tableUpdate$.next(table);
   }
 
@@ -229,10 +183,7 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
     table: T,
     id: string
   ): Promise<void> {
-    const schema = IndexerSchema[table];
-    for (const field of Object.keys(schema)) {
-      await this.connection.apis.ftsDeleteDocument(`${table}:${field}`, id);
-    }
+    await this.connection.apis.indexDelete(String(table), id);
     this.tableUpdate$.next(table);
   }
 
@@ -249,13 +200,56 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
   }
 
   async refreshIfNeed(): Promise<void> {
-    await this.connection.apis.ftsFlushIndex();
+    await this.connection.apis.indexFlush();
   }
 
   async indexVersion(): Promise<number> {
     return (
-      (await this.connection.apis.ftsIndexVersion()) +
+      (await this.connection.apis.indexVersion()) +
       SQLITE_INDEXER_VERSION_OFFSET
     );
   }
+}
+
+function toNativeQuery(query: Query<any>): NativeIndexQuery {
+  switch (query.type) {
+    case 'match':
+      return { kind: 'match', field: String(query.field), value: query.match };
+    case 'exists':
+      return { kind: 'exists', field: String(query.field) };
+    case 'all':
+      return { kind: 'all' };
+    case 'boolean':
+      return {
+        kind: 'boolean',
+        occur: query.occur,
+        clauses: query.queries.map(toNativeQuery),
+      };
+    case 'boost':
+      return {
+        kind: 'boost',
+        boost: query.boost,
+        clauses: [toNativeQuery(query.query)],
+      };
+  }
+}
+
+function toNativeOptions(
+  options: SearchOptions<any> | undefined,
+  limit: number,
+  offset: number
+): NativeIndexSearchOptions {
+  const highlights = options?.highlights?.map(item => String(item.field)) ?? [];
+  return {
+    limit: toNativeLimit(limit),
+    offset,
+    fields: [
+      ...new Set([...(options?.fields?.map(String) ?? []), ...highlights]),
+    ],
+    highlights,
+  };
+}
+
+function toNativeLimit(limit: number) {
+  return limit === Infinity ? NATIVE_INDEXER_MAX_LIMIT : limit;
 }

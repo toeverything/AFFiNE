@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 
 import { gqlFetcherFactory } from '@affine/graphql';
-import { INestApplication, ModuleMetadata } from '@nestjs/common';
+import { INestApplication, ModuleMetadata, Type } from '@nestjs/common';
 import { NestApplication } from '@nestjs/core';
 import {
   Test,
@@ -20,25 +20,32 @@ import {
   ConfigFactory,
   EventBus,
   GlobalExceptionFilter,
-  JobQueue,
   OneMB,
 } from '../../base';
+import { OVERRIDE_CONFIG_TOKEN } from '../../base/config/factory';
+import { getDefaultConfig } from '../../base/config/register';
 import { ThrottlerStorage } from '../../base/throttler';
 import { SocketIoAdapter } from '../../base/websocket';
 import { AuthGuard, AuthService } from '../../core/auth';
-import { BACKEND_RUNTIME_CONFIG_PATHS } from '../../core/backend-runtime';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { Mailer } from '../../core/mail';
+import { StorageRuntimeProvider } from '../../core/storage-runtime';
+import { ServerRole } from '../../env';
 import { Models } from '../../models';
+import { ServerConfigHandle } from '../../native';
+import { IndexerService } from '../../plugins/indexer/service';
 import {
   createFactory,
   MockedUser,
-  MockJobQueue,
   MockMailer,
   MockUser,
   MockUserInput,
 } from '../mocks';
 import { parseCookies, TEST_LOG_LEVEL } from '../utils';
-import { createTestRuntimeConfig } from '../utils/runtime-config';
+import {
+  applyTestConfigOverrides,
+  createTestRuntimeConfig,
+} from '../utils/runtime-config';
 
 interface TestingAppMetadata {
   tapModule?(m: TestingModuleBuilder): void;
@@ -52,9 +59,16 @@ export class TestingApp extends NestApplication {
   private csrfCookie: string | null = null;
   private readonly userCookies: Set<string> = new Set();
 
+  private getOptional<T>(token: Type<T>) {
+    try {
+      return this.get(token, { strict: false });
+    } catch {
+      return undefined;
+    }
+  }
+
   create = createFactory(this.get(PrismaClient, { strict: false }));
-  mails = this.get(Mailer, { strict: false }) as MockMailer;
-  queue = this.get(JobQueue, { strict: false }) as MockJobQueue;
+  mails = this.getOptional(Mailer) as unknown as MockMailer;
   eventBus = this.get(EventBus, { strict: false });
   models = this.get(Models, { strict: false });
 
@@ -241,8 +255,10 @@ export class TestingApp extends NestApplication {
 export async function createApp(
   metadata: TestingAppMetadata = {}
 ): Promise<TestingApp> {
+  const config = getDefaultConfig();
   const runtimeConfig = await createTestRuntimeConfig(
-    new ConfigFactory().config.db.datasourceUrl
+    config.db.datasourceUrl,
+    config.indexer
   );
   const { buildAppModule } = await import('../../app.module');
   const { tapModule, tapApp } = metadata;
@@ -252,10 +268,13 @@ export async function createApp(
   });
 
   builder.overrideProvider(Mailer).useValue(new MockMailer());
-  builder.overrideProvider(JobQueue).useValue(new MockJobQueue());
-  builder
-    .overrideProvider(BACKEND_RUNTIME_CONFIG_PATHS)
-    .useValue([runtimeConfig.configPath]);
+  builder.overrideProvider(ServerConfigHandle).useFactory({
+    factory: (overrides?: DeepPartial<AppConfig>) => {
+      applyTestConfigOverrides(runtimeConfig.configPath, overrides);
+      return new ServerConfigHandle(runtimeConfig.configPath);
+    },
+    inject: [{ token: OVERRIDE_CONFIG_TOKEN, optional: true }],
+  });
 
   // when custom override happens
   if (tapModule) {
@@ -326,7 +345,11 @@ export async function createApp(
     })
   );
 
-  app.useGlobalGuards(app.get(AuthGuard), app.get(CloudThrottlerGuard));
+  if (globalThis.env.role === ServerRole.Worker) {
+    app.useGlobalGuards(app.get(CloudThrottlerGuard));
+  } else {
+    app.useGlobalGuards(app.get(AuthGuard), app.get(CloudThrottlerGuard));
+  }
   app.useGlobalInterceptors(app.get(CacheInterceptor));
   app.useGlobalFilters(new GlobalExceptionFilter(app.getHttpAdapter()));
 
@@ -340,6 +363,12 @@ export async function createApp(
 
   try {
     await app.init();
+    await app.get(BackendRuntimeProvider, { strict: false }).runMigrations();
+    await app.get(StorageRuntimeProvider, { strict: false }).runMigrations();
+    if (globalThis.env.isApi || globalThis.env.isFrontend) {
+      await app.get(IndexerService, { strict: false }).onApplicationBootstrap();
+    }
+    await app.listen(0);
   } catch (error) {
     await app.close();
     throw error;

@@ -1,13 +1,20 @@
 import { Module } from '@nestjs/common';
 
 import { FunctionalityModules } from '../app.module';
-import { IndexerModule } from '../plugins/indexer';
+import { ServerConfigModule } from '../core/config';
 import { CreateCommand } from './commands/create';
+import { CutoverCommand } from './commands/cutover';
 import { ImportConfigCommand } from './commands/import';
 import { RevertCommand, RunCommand } from './commands/run';
 
 @Module({
-  imports: [...FunctionalityModules, IndexerModule],
-  providers: [CreateCommand, RunCommand, RevertCommand, ImportConfigCommand],
+  imports: [...FunctionalityModules, ServerConfigModule],
+  providers: [
+    CreateCommand,
+    CutoverCommand,
+    RunCommand,
+    RevertCommand,
+    ImportConfigCommand,
+  ],
 })
 export class CliAppModule {}

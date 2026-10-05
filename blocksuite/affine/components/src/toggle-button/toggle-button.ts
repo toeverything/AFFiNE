@@ -15,6 +15,11 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
       align-items: start;
       justify-content: start;
       position: absolute;
+      padding: 0;
+      border: 0;
+      color: inherit;
+      background: transparent;
+      font: inherit;
       width: 16px;
       height: 16px;
       top: calc((1em - 16px) / 2 + 5px);
@@ -28,6 +33,11 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
 
     .toggle-icon:hover {
       background: var(--affine-hover-color);
+    }
+
+    .toggle-icon:focus-visible {
+      opacity: 1;
+      outline: 1px solid var(--affine-primary-color);
     }
 
     .toggle-icon[data-collapsed='true'] {
@@ -53,34 +63,23 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
   `;
 
   override render() {
-    const toggleDownTemplate = html`
-      <div
-        contenteditable="false"
-        class="toggle-icon"
-        @click=${() => this.updateCollapsed(!this.collapsed)}
-      >
-        ${ToggleDownIcon({
-          width: '16px',
-          height: '16px',
-        })}
-      </div>
-    `;
-
-    const toggleRightTemplate = html`
-      <div
+    return html`
+      <button
+        type="button"
         contenteditable="false"
         class="toggle-icon"
         data-collapsed=${this.collapsed}
+        aria-label=${this.collapsed ? 'Expand content' : 'Collapse content'}
+        aria-expanded=${!this.collapsed}
+        aria-controls=${this.controls}
         @click=${() => this.updateCollapsed(!this.collapsed)}
       >
-        ${ToggleRightIcon({
+        ${(this.collapsed ? ToggleRightIcon : ToggleDownIcon)({
           width: '16px',
           height: '16px',
         })}
-      </div>
+      </button>
     `;
-
-    return this.collapsed ? toggleRightTemplate : toggleDownTemplate;
   }
 
   @property({ attribute: false })
@@ -88,6 +87,9 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor updateCollapsed!: (collapsed: boolean) => void;
+
+  @property({ attribute: false })
+  accessor controls!: string;
 }
 
 declare global {

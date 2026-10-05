@@ -296,6 +296,13 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: isMobile,
   },
+  enable_disk_sync: {
+    category: 'affine',
+    displayName: 'Enable Disk Markdown Sync',
+    description: 'Sync workspace pages with Markdown files in a local folder.',
+    configurable: BUILD_CONFIG.isElectron && isCanaryBuild,
+    defaultState: false,
+  },
   enable_mobile_database_editing: {
     category: 'blocksuite',
     bsFlag: 'enable_mobile_database_editing',

@@ -394,6 +394,16 @@ export class SpaceAccessDenied extends UserFriendlyError {
   }
 }
 @ObjectType()
+class SyncPermissionGenerationChangedDataType {
+  @Field() spaceId!: string
+}
+
+export class SyncPermissionGenerationChanged extends UserFriendlyError {
+  constructor(args: SyncPermissionGenerationChangedDataType, message?: string | ((args: SyncPermissionGenerationChangedDataType) => string)) {
+    super('service_unavailable', 'sync_permission_generation_changed', message, args);
+  }
+}
+@ObjectType()
 class SpaceOwnerNotFoundDataType {
   @Field() spaceId!: string
 }
@@ -600,6 +610,12 @@ export class NewOwnerIsNotActiveMember extends UserFriendlyError {
 export class InvalidInvitation extends UserFriendlyError {
   constructor(message?: string) {
     super('invalid_input', 'invalid_invitation', message);
+  }
+}
+
+export class InvitationAccountMismatch extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'invitation_account_mismatch', message);
   }
 }
 @ObjectType()
@@ -1123,6 +1139,38 @@ export class InvalidAppConfigInput extends UserFriendlyError {
     super('invalid_input', 'invalid_app_config_input', message, args);
   }
 }
+@ObjectType()
+class SearchIndexNotReadyDataType {
+  @Field() spaceId!: string
+}
+
+export class SearchIndexNotReady extends UserFriendlyError {
+  constructor(args: SearchIndexNotReadyDataType, message?: string | ((args: SearchIndexNotReadyDataType) => string)) {
+    super('service_unavailable', 'search_index_not_ready', message, args);
+  }
+}
+
+export class SearchPermissionSyncing extends UserFriendlyError {
+  constructor(message?: string) {
+    super('service_unavailable', 'search_permission_syncing', message);
+  }
+}
+
+export class SearchProviderUnavailable extends UserFriendlyError {
+  constructor(message?: string) {
+    super('service_unavailable', 'search_provider_unavailable', message);
+  }
+}
+@ObjectType()
+class SearchIndexFailedDataType {
+  @Field() diagnosticId!: string
+}
+
+export class SearchIndexFailed extends UserFriendlyError {
+  constructor(args: SearchIndexFailedDataType, message?: string | ((args: SearchIndexFailedDataType) => string)) {
+    super('service_unavailable', 'search_index_failed', message, args);
+  }
+}
 
 export class SearchProviderNotFound extends UserFriendlyError {
   constructor(message?: string) {
@@ -1226,6 +1274,7 @@ export enum ErrorNames {
   NOT_IN_SPACE,
   ALREADY_IN_SPACE,
   SPACE_ACCESS_DENIED,
+  SYNC_PERMISSION_GENERATION_CHANGED,
   SPACE_OWNER_NOT_FOUND,
   SPACE_SHOULD_HAVE_ONLY_ONE_OWNER,
   OWNER_CAN_NOT_LEAVE_WORKSPACE,
@@ -1251,6 +1300,7 @@ export enum ErrorNames {
   CAN_NOT_BATCH_GRANT_DOC_OWNER_PERMISSIONS,
   NEW_OWNER_IS_NOT_ACTIVE_MEMBER,
   INVALID_INVITATION,
+  INVITATION_ACCOUNT_MISMATCH,
   NO_MORE_SEAT,
   UNSUPPORTED_SUBSCRIPTION_PLAN,
   FAILED_TO_CHECKOUT,
@@ -1320,6 +1370,10 @@ export enum ErrorNames {
   MENTION_USER_ONESELF_DENIED,
   INVALID_APP_CONFIG,
   INVALID_APP_CONFIG_INPUT,
+  SEARCH_INDEX_NOT_READY,
+  SEARCH_PERMISSION_SYNCING,
+  SEARCH_PROVIDER_UNAVAILABLE,
+  SEARCH_INDEX_FAILED,
   SEARCH_PROVIDER_NOT_FOUND,
   INVALID_SEARCH_PROVIDER_REQUEST,
   INVALID_INDEXER_INPUT,
@@ -1335,5 +1389,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [GraphqlBadRequestDataType, HttpRequestErrorDataType, SsrfBlockedErrorDataType, ResponseTooLargeErrorDataType, ImageFormatNotSupportedDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CalendarProviderRequestErrorDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotFailedToAddWorkspaceArtifactDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, UnsupportedServerVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
+    [GraphqlBadRequestDataType, HttpRequestErrorDataType, SsrfBlockedErrorDataType, ResponseTooLargeErrorDataType, ImageFormatNotSupportedDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SyncPermissionGenerationChangedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CalendarProviderRequestErrorDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotFailedToAddWorkspaceArtifactDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, UnsupportedServerVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, SearchIndexNotReadyDataType, SearchIndexFailedDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
 });

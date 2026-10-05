@@ -137,9 +137,12 @@ export class WorkspaceShareSetting extends Entity {
       this.inviteLink$.next(null);
       return;
     }
-    this.inviteLinkExpireTimer = setTimeout(() => {
-      this.inviteLink$.next(null);
-    }, delay);
+    this.inviteLinkExpireTimer = setTimeout(
+      () => {
+        this.scheduleInviteLinkExpiry(inviteLink);
+      },
+      Math.min(delay, 2 ** 31 - 1)
+    );
     this.inviteLinkExpireTimer.unref?.();
   }
 

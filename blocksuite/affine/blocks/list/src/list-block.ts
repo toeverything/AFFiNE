@@ -154,7 +154,9 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
       textAlign: this.model.props.textAlign$?.value,
     });
 
+    const childrenId = `list-children-${this.model.id}`;
     const children = html`<div
+      id=${childrenId}
       class="affine-block-children-container"
       style=${styleMap({
         paddingLeft: `${BLOCK_CHILDREN_CONTAINER_PADDING_LEFT}px`,
@@ -179,6 +181,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
               ? html`
                   <blocksuite-toggle-button
                     .collapsed=${collapsed}
+                    .controls=${childrenId}
                     .updateCollapsed=${(value: boolean) => {
                       if (this.store.readonly) {
                         this._readonlyCollapsed = value;

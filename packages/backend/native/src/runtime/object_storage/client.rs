@@ -8,7 +8,6 @@ use reqwest::{
   Client as ReqwestClient, Method, StatusCode,
   header::{CONTENT_LENGTH, CONTENT_TYPE, ETAG, HeaderMap, HeaderName, HeaderValue, LAST_MODIFIED},
 };
-use rustls::RootCertStore;
 use rusty_s3::{
   Bucket, Credentials,
   actions::{
@@ -27,11 +26,13 @@ use super::{
     ObjectListPage, ObjectMetadata, ObjectPrefix, ObjectPutMetadata, PresignedObjectRequest, completed_multipart_parts,
     trim_etag,
   },
+  webpki_tls_config,
 };
 
 const DEFAULT_REQUEST_TIMEOUT_MS: u64 = 30_000;
 const MAX_MULTIPART_PART_NUMBER: i32 = 10_000;
 const MAX_RESPONSE_BODY_BYTES: usize = i32::MAX as usize;
+const MAX_ERROR_RESPONSE_BODY_BYTES: usize = 64 * 1024;
 const DELETE_OBJECTS_MAX_KEYS: usize = 1000;
 const DELETE_OBJECTS_MAX_ATTEMPTS: usize = 5;
 const DELETE_OBJECTS_BACKOFF_BASE_MS: u64 = 1_000;
@@ -60,26 +61,16 @@ struct ReqwestStorageHttpClient {
 impl ReqwestStorageHttpClient {
   fn new(request_timeout_ms: Option<u64>) -> ObjectStorageResult<Self> {
     let builder = ReqwestClient::builder()
-      .tls_backend_preconfigured(Self::webpki_tls_config()?)
+      .tls_backend_preconfigured(
+        webpki_tls_config()
+          .map_err(|err| ObjectStorageError::Config(format!("ObjectStorage TLS config failed: {err}")))?,
+      )
       .timeout(Duration::from_millis(
         request_timeout_ms.unwrap_or(DEFAULT_REQUEST_TIMEOUT_MS),
       ));
     Ok(Self {
       client: builder.build().map_err(ObjectStorageError::HttpClientBuild)?,
     })
-  }
-
-  fn webpki_tls_config() -> ObjectStorageResult<rustls::ClientConfig> {
-    let roots = RootCertStore {
-      roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
-    };
-    Ok(
-      rustls::ClientConfig::builder_with_provider(rustls::crypto::aws_lc_rs::default_provider().into())
-        .with_safe_default_protocol_versions()
-        .map_err(|err| ObjectStorageError::Config(format!("ObjectStorage TLS config failed: {err}")))?
-        .with_root_certificates(roots)
-        .with_no_client_auth(),
-    )
   }
 
   async fn execute(&self, request: StorageHttpRequest) -> ObjectStorageResult<StorageHttpResponse> {
@@ -499,19 +490,40 @@ impl ObjectStorageClient {
     }))
   }
 
-  pub(crate) async fn list(&self, prefix: Option<ObjectPrefix>) -> ObjectStorageResult<Vec<ObjectListEntry>> {
-    let mut entries = Vec::new();
-    let mut token = None;
-    loop {
-      let page = self.list_page(prefix.clone(), token, None, 1000).await?;
-      entries.extend(page.entries);
-      if let Some(next_token) = page.next_continuation_token {
-        token = Some(next_token);
-      } else {
-        break;
-      }
+  pub(crate) async fn get_range(
+    &self,
+    key: &ObjectKey,
+    offset: u64,
+    length: usize,
+  ) -> ObjectStorageResult<Option<Vec<u8>>> {
+    let action = GetObject::new(&self.bucket, Some(&self.credentials), key);
+    let requested_length = length.max(1);
+    let end = offset.saturating_add(requested_length as u64).saturating_sub(1);
+    let response = self
+      .http
+      .execute(StorageHttpRequest {
+        method: Method::GET,
+        url: action.sign(expires_in(self.presign_expires_in_seconds)),
+        headers: HashMap::from([("range".to_string(), format!("bytes={offset}-{end}"))]),
+        body: None,
+        max_response_body_bytes: requested_length.max(MAX_ERROR_RESPONSE_BODY_BYTES),
+      })
+      .await
+      .map_err(|source| operation_error(format!("ObjectStorage range get failed for {key}"), source))?;
+    if response.status == StatusCode::NOT_FOUND && is_not_found_body(&response.body) {
+      return Ok(None);
     }
-    Ok(entries)
+    if response.status == StatusCode::RANGE_NOT_SATISFIABLE {
+      return Ok(Some(Vec::new()));
+    }
+    ensure_success_status(&response, &format!("ObjectStorage range get failed for {key}"))?;
+    if length == 0 {
+      return Ok(Some(Vec::new()));
+    }
+    if response.body.len() > length {
+      return Err(ObjectStorageError::BodyTooLarge { limit: length });
+    }
+    Ok(Some(response.body))
   }
 
   pub(crate) async fn list_page(
@@ -519,6 +531,7 @@ impl ObjectStorageClient {
     prefix: Option<ObjectPrefix>,
     continuation_token: Option<String>,
     start_after: Option<ObjectKey>,
+    delimiter: Option<String>,
     max_keys: i32,
   ) -> ObjectStorageResult<ObjectListPage> {
     let max_keys = usize::try_from(max_keys)
@@ -527,6 +540,9 @@ impl ObjectStorageClient {
     action.with_max_keys(max_keys);
     if let Some(prefix) = prefix {
       action.with_prefix(prefix.into_string());
+    }
+    if let Some(delimiter) = delimiter {
+      action.with_delimiter(delimiter);
     }
     if let Some(continuation_token) = &continuation_token {
       action.with_continuation_token(continuation_token.clone());
@@ -559,6 +575,7 @@ impl ObjectStorageClient {
           last_modified_ms: parse_rfc3339_ms(&object.last_modified),
         })
         .collect(),
+      common_prefixes: parsed.common_prefixes.into_iter().map(|prefix| prefix.prefix).collect(),
       next_continuation_token: parsed.next_continuation_token,
     })
   }

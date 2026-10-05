@@ -6,6 +6,7 @@ import {
   createHighlighterCore,
   createOnigurumaEngine,
   type HighlighterCore,
+  type LanguageInput,
   type MaybeGetter,
 } from 'shiki';
 import getWasm from 'shiki/wasm';
@@ -22,6 +23,7 @@ export class CodeBlockHighlighter extends LifeCycleWatcher {
   // Singleton highlighter instance
   private static _sharedHighlighter: HighlighterCore | null = null;
   private static _highlighterPromise: Promise<HighlighterCore> | null = null;
+  private static readonly _languagePromises = new Map<string, Promise<void>>();
   private static _refCount = 0;
 
   private _darkThemeKey: string | undefined;
@@ -34,6 +36,20 @@ export class CodeBlockHighlighter extends LifeCycleWatcher {
     return theme === ColorScheme.Dark
       ? this._darkThemeKey
       : this._lightThemeKey;
+  }
+
+  loadLanguage(lang: string, input: LanguageInput) {
+    const highlighter = this.highlighter$.value;
+    if (!highlighter) return Promise.resolve();
+
+    let promise = CodeBlockHighlighter._languagePromises.get(lang);
+    if (!promise) {
+      promise = highlighter.loadLanguage(input).finally(() => {
+        CodeBlockHighlighter._languagePromises.delete(lang);
+      });
+      CodeBlockHighlighter._languagePromises.set(lang, promise);
+    }
+    return promise;
   }
 
   private readonly _loadTheme = async (

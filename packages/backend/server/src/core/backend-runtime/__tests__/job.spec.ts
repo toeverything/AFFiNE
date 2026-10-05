@@ -16,26 +16,36 @@ import {
   CopilotSelectedSourcesUnavailable,
 } from '../../../base';
 import { Models } from '../../../models';
-import { BackendRuntimeModule, BackendRuntimeProvider } from '../index';
 import {
-  BackendRuntimeEmbeddingJob,
+  BackendRuntimeModule,
+  BackendRuntimeProvider,
+  BackendRuntimeWorkerModule,
+} from '../index';
+import {
+  BackendRuntimeEmbeddingService,
   BackendRuntimeHousekeepingJob,
+  BackendRuntimeSearchJob,
 } from '../job';
 
 interface Context {
   module: TestingModule;
-  embeddingJob: BackendRuntimeEmbeddingJob;
+  embeddingService: BackendRuntimeEmbeddingService;
   job: BackendRuntimeHousekeepingJob;
+  searchJob: BackendRuntimeSearchJob;
   getSnapshot: Sinon.SinonStub;
   allowEmbedding: Sinon.SinonStub;
   runtime: {
+    nodeCryptoPrivateKey: Sinon.SinonStub;
     cleanupExpiredRuntimeStates: Sinon.SinonStub;
     cleanupExpiredRuntimeGates: Sinon.SinonStub;
     cleanupExpiredRollingQuota: Sinon.SinonStub;
     cleanupUnreferencedArtifacts: Sinon.SinonStub;
-    reconcileEmbeddingWorkspaces: Sinon.SinonStub;
     embeddingHealth: Sinon.SinonStub;
     syncEmbeddingState: Sinon.SinonStub;
+    executeAuthSessionCommandV1: Sinon.SinonStub;
+    searchEnabled: Sinon.SinonStub;
+    reconcileSearchProjection: Sinon.SinonStub;
+    searchStatus: Sinon.SinonStub;
   };
 }
 
@@ -46,16 +56,24 @@ test.before(async t => {
     join(process.cwd(), 'src/__tests__/__fixtures__/test-doc.snapshot.bin')
   );
   t.context.runtime = {
+    nodeCryptoPrivateKey: Sinon.stub().returns(''),
     cleanupExpiredRuntimeStates: Sinon.stub(),
     cleanupExpiredRuntimeGates: Sinon.stub(),
     cleanupExpiredRollingQuota: Sinon.stub(),
     cleanupUnreferencedArtifacts: Sinon.stub(),
-    reconcileEmbeddingWorkspaces: Sinon.stub(),
     embeddingHealth: Sinon.stub().resolves({ enabled: true }),
     syncEmbeddingState: Sinon.stub(),
+    executeAuthSessionCommandV1: Sinon.stub().resolves({}),
+    searchEnabled: Sinon.stub().returns(false),
+    reconcileSearchProjection: Sinon.stub().resolves(2),
+    searchStatus: Sinon.stub().resolves({ ready: true, state: 'active' }),
   };
   t.context.module = await createTestingModule({
-    imports: [ScheduleModule.forRoot(), BackendRuntimeModule],
+    imports: [
+      ScheduleModule.forRoot(),
+      BackendRuntimeModule,
+      BackendRuntimeWorkerModule,
+    ],
     tapModule: builder => {
       builder
         .overrideProvider(BackendRuntimeProvider)
@@ -80,8 +98,11 @@ test.before(async t => {
     models.workspace,
     'allowEmbedding'
   ).resolves(true);
-  t.context.embeddingJob = t.context.module.get(BackendRuntimeEmbeddingJob);
+  t.context.embeddingService = t.context.module.get(
+    BackendRuntimeEmbeddingService
+  );
   t.context.job = t.context.module.get(BackendRuntimeHousekeepingJob);
+  t.context.searchJob = t.context.module.get(BackendRuntimeSearchJob);
 });
 
 test.beforeEach(t => {
@@ -89,28 +110,22 @@ test.beforeEach(t => {
   t.context.runtime.cleanupExpiredRuntimeGates.reset();
   t.context.runtime.cleanupExpiredRollingQuota.reset();
   t.context.runtime.cleanupUnreferencedArtifacts.reset();
-  t.context.runtime.reconcileEmbeddingWorkspaces.reset();
   t.context.runtime.embeddingHealth.resetHistory();
   t.context.runtime.syncEmbeddingState.reset();
+  t.context.runtime.searchEnabled.resetHistory();
+  t.context.runtime.reconcileSearchProjection.resetHistory();
+  t.context.runtime.searchStatus.resetHistory();
   t.context.getSnapshot.resetHistory();
   t.context.allowEmbedding.resetHistory();
 });
 
 test.after.always(async t => {
   Sinon.restore();
-  await t.context.module.close();
+  await t.context.module?.close();
 });
 
 test('backend-runtime jobs ingest documents and clean runtime state', async t => {
-  await t.context.embeddingJob.onDocSnapshotUpdated({
-    workspaceId: 'workspace-1',
-    docId: 'doc-1',
-    blob: Buffer.alloc(0),
-  });
-  const { payload } = await t.context.module.queue.waitFor(
-    'backendRuntime.syncDocumentEmbedding'
-  );
-  await t.context.embeddingJob.syncDocument(payload);
+  await t.context.embeddingService.syncDocument('workspace-1', 'doc-1');
   t.is(t.context.getSnapshot.callCount, 1);
   t.is(t.context.runtime.syncEmbeddingState.callCount, 1);
   t.like(t.context.runtime.syncEmbeddingState.firstCall.args[0], {
@@ -127,35 +142,14 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
       .length > 0
   );
 
-  const documentJobCount = t.context.module.queue.count(
-    'backendRuntime.syncDocumentEmbedding'
-  );
-  await t.context.embeddingJob.onDocSnapshotUpdated({
-    workspaceId: 'workspace-1',
-    docId: 'db$docProperties',
-    blob: Buffer.alloc(0),
-  });
-  t.is(
-    t.context.module.queue.count('backendRuntime.syncDocumentEmbedding'),
-    documentJobCount
-  );
-
-  await t.context.embeddingJob.onDocSnapshotUpdated({
-    workspaceId: 'workspace-1',
-    docId: 'workspace-1',
-    blob: Buffer.alloc(0),
-  });
-  const reconcile = await t.context.module.queue.waitFor(
-    'backendRuntime.reconcileDocumentEmbeddings'
-  );
-  await t.context.embeddingJob.reconcileDocuments(reconcile.payload);
+  await t.context.embeddingService.reconcileDocuments('workspace-1');
   t.like(t.context.runtime.syncEmbeddingState.secondCall.args[0], {
     workspaceId: 'workspace-1',
     enabled: true,
     reconcileDocuments: true,
   });
 
-  await t.context.embeddingJob.prepareSelectedDocuments('workspace-1', [
+  await t.context.embeddingService.prepareSelectedDocuments('workspace-1', [
     'doc-1',
     'doc-1',
   ]);
@@ -181,7 +175,9 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   ] as const) {
     t.context.runtime.syncEmbeddingState.rejects(new Error(nativeError));
     const error = await t.throwsAsync(() =>
-      t.context.embeddingJob.prepareSelectedDocuments('workspace-1', ['doc-1'])
+      t.context.embeddingService.prepareSelectedDocuments('workspace-1', [
+        'doc-1',
+      ])
     );
     t.true(error instanceof expectedError);
   }
@@ -189,7 +185,7 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
 
   await t.throwsAsync(
     () =>
-      t.context.embeddingJob.prepareSelectedDocuments(
+      t.context.embeddingService.prepareSelectedDocuments(
         'workspace-1',
         Array.from({ length: 65 }, (_, index) => `doc-${index}`)
       ),
@@ -198,17 +194,14 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   t.context.getSnapshot.resolves(null);
   await t.throwsAsync(
     () =>
-      t.context.embeddingJob.prepareSelectedDocuments('workspace-1', [
+      t.context.embeddingService.prepareSelectedDocuments('workspace-1', [
         'missing-doc',
       ]),
     { instanceOf: CopilotSelectedSourcesUnavailable }
   );
   const callsBeforeMissingBackgroundDoc =
     t.context.runtime.syncEmbeddingState.callCount;
-  await t.context.embeddingJob.syncDocument({
-    workspaceId: 'workspace-1',
-    docId: 'missing-doc',
-  });
+  await t.context.embeddingService.syncDocument('workspace-1', 'missing-doc');
   t.is(
     t.context.runtime.syncEmbeddingState.callCount,
     callsBeforeMissingBackgroundDoc + 1
@@ -223,7 +216,6 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   t.context.runtime.cleanupExpiredRuntimeGates.resolves(1);
   t.context.runtime.cleanupExpiredRollingQuota.resolves(1);
   t.context.runtime.cleanupUnreferencedArtifacts.resolves(1);
-  t.context.runtime.reconcileEmbeddingWorkspaces.resolves(2);
 
   await t.context.job.cleanExpiredRuntimeHousekeeping();
 
@@ -231,5 +223,10 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   t.is(t.context.runtime.cleanupExpiredRuntimeGates.callCount, 1);
   t.is(t.context.runtime.cleanupExpiredRollingQuota.callCount, 1);
   t.is(t.context.runtime.cleanupUnreferencedArtifacts.callCount, 1);
-  t.is(t.context.runtime.reconcileEmbeddingWorkspaces.callCount, 1);
+
+  t.is(await t.context.searchJob.reconcileProjection(7), 0);
+  t.false(t.context.runtime.reconcileSearchProjection.called);
+  t.context.runtime.searchEnabled.returns(true);
+  t.is(await t.context.searchJob.reconcileProjection(7), 2);
+  t.true(t.context.runtime.reconcileSearchProjection.calledOnceWithExactly(7));
 });

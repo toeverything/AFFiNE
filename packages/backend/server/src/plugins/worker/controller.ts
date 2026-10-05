@@ -48,6 +48,20 @@ const FETCH_TIMEOUT_MS = 10_000;
 const IMAGE_PROXY_MAX_BYTES = 10 * 1024 * 1024;
 const LINK_PREVIEW_MAX_BYTES = 2 * 1024 * 1024;
 
+function safeLogUrl(value: string | URL | undefined) {
+  if (!value) return undefined;
+  try {
+    const url = value instanceof URL ? value : new URL(value);
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return 'invalid-url';
+  }
+}
+
+function safeLogError(error: unknown) {
+  return error instanceof Error ? error.name : 'UnknownError';
+}
+
 function toBadRequestReason(reason: SSRFBlockReason) {
   switch (reason) {
     case 'disallowed_protocol':
@@ -109,7 +123,10 @@ export class WorkerController {
       ? isRefererAllowed(referer, this.allowedOrigin)
       : false;
     if (!originAllowed && !refererAllowed) {
-      this.logger.error('Invalid Origin', 'ERROR', { origin, referer });
+      this.logger.error('Invalid Origin', {
+        origin: safeLogUrl(origin),
+        referer: safeLogUrl(referer),
+      });
       throw new BadRequest('Invalid header');
     }
     const url = new URL(req.url, this.url.requestBaseUrl);
@@ -120,9 +137,11 @@ export class WorkerController {
 
     const targetURL = fixUrl(imageURL);
     if (!targetURL) {
-      this.logger.error(`Invalid URL: ${url}`);
+      this.logger.error('Invalid URL', { url: safeLogUrl(imageURL) });
       throw new BadRequest(`Invalid URL`);
     }
+
+    const logUrl = safeLogUrl(targetURL);
 
     const cachedUrl = `image-proxy:${targetURL.toString()}`;
     const cachedResponse = await this.cache.get<string>(cachedUrl);
@@ -162,23 +181,23 @@ export class WorkerController {
       if (error instanceof SsrfBlockedError) {
         const reason = error.data?.reason as SSRFBlockReason | undefined;
         this.logger.warn('Blocked image proxy target', {
-          url: imageURL,
+          url: logUrl,
           reason,
         });
         throw new BadRequest(toBadRequestReason(reason ?? 'invalid_url'));
       }
       if (error instanceof ResponseTooLargeError) {
         this.logger.warn('Image proxy response too large', {
-          url: imageURL,
+          url: logUrl,
           limitBytes: error.data?.limitBytes,
           receivedBytes: error.data?.receivedBytes,
         });
         throw new BadRequest('Response too large');
       }
       this.logger.error('Failed to fetch image', {
-        origin,
-        url: imageURL,
-        error,
+        origin: safeLogUrl(origin),
+        url: logUrl,
+        error: safeLogError(error),
       });
       throw new BadRequest('Failed to fetch image');
     }
@@ -212,8 +231,8 @@ export class WorkerController {
         });
       }
       this.logger.error('Failed to fetch image', {
-        origin,
-        url: imageURL,
+        origin: safeLogUrl(origin),
+        url: logUrl,
         status: response.status,
       });
       throw new BadRequest('Failed to fetch image');
@@ -225,8 +244,8 @@ export class WorkerController {
       return inspectImageForProxy(buffer);
     } catch (error) {
       this.logger.warn('Image proxy rejected invalid image', {
-        url,
-        error,
+        url: safeLogUrl(url),
+        error: safeLogError(error),
       });
       throw new BadRequest('Invalid image');
     }
@@ -243,7 +262,7 @@ export class WorkerController {
       .header({
         ...getCorsHeaders(origin),
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, x-affine-version',
       })
       .send();
   }
@@ -262,21 +281,32 @@ export class WorkerController {
       ? isRefererAllowed(referer, this.allowedOrigin)
       : false;
     if (!originAllowed && !refererAllowed) {
-      this.logger.error('Invalid Origin', { origin, referer });
+      this.logger.error('Invalid Origin', {
+        origin: safeLogUrl(origin),
+        referer: safeLogUrl(referer),
+      });
       throw new BadRequest('Invalid header');
     }
 
-    this.logger.debug('Received request', { origin, method: request.method });
+    const logOrigin = safeLogUrl(origin);
+    this.logger.debug('Received request', {
+      origin: logOrigin,
+      method: request.method,
+    });
 
     const requestBody = parseJson<LinkPreviewRequest>(request.body);
     const targetURL = fixUrl(requestBody?.url);
     // not allow same site preview
     if (!targetURL || isOriginAllowed(targetURL.origin, this.allowedOrigin)) {
-      this.logger.error('Invalid URL', { origin, url: requestBody?.url });
+      this.logger.error('Invalid URL', {
+        origin: logOrigin,
+        url: safeLogUrl(requestBody?.url),
+      });
       throw new BadRequest('Invalid URL');
     }
 
-    this.logger.debug('Processing request', { origin, url: targetURL });
+    const logUrl = safeLogUrl(targetURL);
+    this.logger.debug('Processing request', { origin: logOrigin, url: logUrl });
 
     try {
       const cachedUrl = `link-preview:${targetURL.toString()}`;
@@ -303,8 +333,8 @@ export class WorkerController {
         }
       );
       this.logger.debug('Fetched URL', {
-        origin,
-        url: targetURL,
+        origin: logOrigin,
+        url: logUrl,
         status: response.status,
       });
 
@@ -396,8 +426,8 @@ export class WorkerController {
         res.images = await reduceUrls(res.images);
 
         this.logger.debug('Processed response with HTMLRewriter', {
-          origin,
-          url: response.url,
+          origin: logOrigin,
+          url: safeLogUrl(response.url),
         });
       }
 
@@ -423,8 +453,8 @@ export class WorkerController {
 
       const json = JSON.stringify(res);
       this.logger.debug('Sending response', {
-        origin,
-        url: res.url,
+        origin: logOrigin,
+        url: safeLogUrl(res.url),
         responseSize: json.length,
       });
 
@@ -440,25 +470,25 @@ export class WorkerController {
       if (error instanceof SsrfBlockedError) {
         const reason = error.data?.reason as SSRFBlockReason | undefined;
         this.logger.warn('Blocked link preview target', {
-          origin,
-          url: requestBody?.url,
+          origin: logOrigin,
+          url: safeLogUrl(requestBody?.url),
           reason,
         });
         throw new BadRequest(toBadRequestReason(reason ?? 'invalid_url'));
       }
       if (error instanceof ResponseTooLargeError) {
         this.logger.warn('Link preview response too large', {
-          origin,
-          url: requestBody?.url,
+          origin: logOrigin,
+          url: safeLogUrl(requestBody?.url),
           limitBytes: error.data?.limitBytes,
           receivedBytes: error.data?.receivedBytes,
         });
         throw new BadRequest('Response too large');
       }
       this.logger.error('Error fetching URL', {
-        origin,
-        url: targetURL,
-        error,
+        origin: logOrigin,
+        url: logUrl,
+        error: safeLogError(error),
       });
       throw new BadRequest('Error fetching URL');
     }

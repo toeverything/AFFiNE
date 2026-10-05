@@ -60,3 +60,10 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Render the server runtime configuration shared by the Secret and Pod checksums.
+*/}}
+{{- define "affine.serverConfig" -}}
+{{- dict "deployment" (dict "type" (ternary "selfhosted" "cloud" (eq .Values.global.deployment.type "selfhosted"))) "indexer" (dict "enabled" .Values.global.indexer.enabled "provider" (dict "type" .Values.global.indexer.provider "endpoint" .Values.global.indexer.endpoint "apiKey" .Values.global.indexer.apiKey "username" .Values.global.indexer.username "password" .Values.global.indexer.password)) | toJson -}}
+{{- end }}

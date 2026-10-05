@@ -30,6 +30,7 @@ export const CustomIconPicker = ({ onSelect }: CustomIconPickerProps) => {
 
   useEffect(() => {
     return () => {
+      requestIdRef.current += 1;
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
   }, []);

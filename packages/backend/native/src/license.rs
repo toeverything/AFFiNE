@@ -1,12 +1,11 @@
+use std::collections::HashMap;
+#[cfg(not(test))]
 use std::{
-  collections::HashMap,
   sync::{Mutex, OnceLock},
-  time::{Duration, SystemTime},
+  time::Duration,
 };
 
 use anyhow::{Context, Result as AnyResult, bail};
-use napi::{Env, Error, Result, Status, Task, bindgen_prelude::AsyncTask};
-use napi_derive::napi;
 use serde::de::DeserializeOwned;
 use url::Url;
 
@@ -14,280 +13,166 @@ const AFFINE_PRO_ENDPOINT: &str = "https://app.affine.pro";
 const AFFINE_PRO_HOST: &str = "app.affine.pro";
 const AFFINE_PRO_REQUEST_TIMEOUT_MS: u32 = 10_000;
 const AFFINE_PRO_MAX_BYTES: u32 = 1024 * 1024;
+#[cfg(not(test))]
 const ECH_DNS_QUERY_TIMEOUT_MS: u32 = 5_000;
 
+#[cfg(not(test))]
 static AFFINE_PRO_ECH_CONFIG: OnceLock<Mutex<Option<Vec<u8>>>> = OnceLock::new();
 
-#[napi(object)]
-pub struct LicenseKeyRequest {
+pub(crate) struct LicenseKeyRequest {
   pub license_key: String,
+  pub workspace_id: Option<String>,
+  pub validate_key: Option<String>,
 }
 
-#[napi(object)]
-pub struct LicenseHealthRequest {
+pub(crate) struct LicenseHealthRequest {
   pub license_key: String,
   pub validate_key: String,
+  pub workspace_id: String,
 }
 
-#[napi(object)]
-pub struct LicenseRecurringRequest {
+pub(crate) struct LicenseRecurringRequest {
   pub license_key: String,
+  pub validate_key: String,
   pub recurring: String,
 }
 
-#[napi(object)]
-pub struct LicenseSeatsRequest {
+pub(crate) struct LicenseSeatsRequest {
   pub license_key: String,
+  pub validate_key: String,
   pub seats: u32,
 }
 
-#[napi(object)]
-pub struct LicenseInfo {
-  pub plan: String,
+pub(crate) struct LicenseInfo {
   pub recurring: String,
-  pub quantity: u32,
-  pub expires_at: f64,
   pub validate_key: String,
+  pub envelope: napi::bindgen_prelude::Buffer,
 }
 
-#[napi(object)]
-pub struct LicenseError {
+pub(crate) struct LicenseError {
   pub status: u16,
   pub body: String,
 }
 
-#[napi(object)]
-pub struct LicenseResponse {
+pub(crate) struct LicenseResponse {
   pub license: Option<LicenseInfo>,
   pub error: Option<LicenseError>,
 }
 
-#[napi(object)]
-pub struct CommandResponse {
+pub(crate) struct CommandResponse {
   pub error: Option<LicenseError>,
 }
 
-#[napi(object)]
-pub struct PortalResponse {
+pub(crate) struct PortalResponse {
   pub url: Option<String>,
   pub error: Option<LicenseError>,
 }
 
-pub struct AsyncActivateLicenseTask {
-  request: LicenseKeyRequest,
+pub(crate) fn activate_license_request(request: &LicenseKeyRequest) -> AnyResult<LicenseResponse> {
+  let workspace_id = request.workspace_id.as_deref().context("workspaceId is required")?;
+  let body = serde_json::to_vec(&serde_json::json!({
+    "workspaceId": workspace_id,
+    "operationId": request.validate_key.as_deref().context("validateKey is required")?,
+  }))?;
+  license_info(
+    &format!("/api/team/v1/licenses/{}/activate", request.license_key),
+    safefetch::SafeFetchMethod::Post,
+    None,
+    Some(body),
+  )
 }
 
-pub struct AsyncDeactivateLicenseTask {
-  request: LicenseKeyRequest,
+pub(crate) fn deactivate_license_request(request: &LicenseKeyRequest) -> AnyResult<CommandResponse> {
+  let validate_key = request.validate_key.clone().context("validateKey is required")?;
+  command(
+    &format!("/api/team/v1/licenses/{}/deactivate", request.license_key),
+    safefetch::SafeFetchMethod::Post,
+    Some(HashMap::from([("x-validate-key".to_string(), validate_key)])),
+    None,
+  )
 }
 
-pub struct AsyncCheckLicenseHealthTask {
-  request: LicenseHealthRequest,
+pub(crate) fn check_license_health_request(request: &LicenseHealthRequest) -> AnyResult<LicenseResponse> {
+  license_info(
+    &format!("/api/team/v1/licenses/{}/health", request.license_key),
+    safefetch::SafeFetchMethod::Post,
+    Some(HashMap::from([(
+      "x-validate-key".to_string(),
+      request.validate_key.clone(),
+    )])),
+    Some(serde_json::to_vec(
+      &serde_json::json!({ "workspaceId": request.workspace_id }),
+    )?),
+  )
 }
 
-pub struct AsyncUpdateLicenseRecurringTask {
-  request: LicenseRecurringRequest,
+pub(crate) fn update_license_recurring_request(request: &LicenseRecurringRequest) -> AnyResult<CommandResponse> {
+  let body = serde_json::to_vec(&serde_json::json!({ "recurring": request.recurring }))?;
+  command(
+    &format!("/api/team/v1/licenses/{}/recurring", request.license_key),
+    safefetch::SafeFetchMethod::Post,
+    Some(HashMap::from([(
+      "x-validate-key".to_string(),
+      request.validate_key.clone(),
+    )])),
+    Some(body),
+  )
 }
 
-pub struct AsyncUpdateLicenseSeatsTask {
-  request: LicenseSeatsRequest,
+pub(crate) fn update_license_seats_request(request: &LicenseSeatsRequest) -> AnyResult<CommandResponse> {
+  let body = serde_json::to_vec(&serde_json::json!({ "seats": request.seats }))?;
+  command(
+    &format!("/api/team/v1/licenses/{}/seats", request.license_key),
+    safefetch::SafeFetchMethod::Post,
+    Some(HashMap::from([(
+      "x-validate-key".to_string(),
+      request.validate_key.clone(),
+    )])),
+    Some(body),
+  )
 }
 
-pub struct AsyncCreateCustomerPortalTask {
-  request: LicenseKeyRequest,
-}
-
-#[napi]
-impl Task for AsyncActivateLicenseTask {
-  type Output = LicenseResponse;
-  type JsValue = LicenseResponse;
-
-  fn compute(&mut self) -> Result<Self::Output> {
-    license_info(
-      &format!("/api/team/licenses/{}/activate", self.request.license_key),
-      safefetch::SafeFetchMethod::Post,
-      None,
-      None,
-    )
-    .map_err(invalid_arg)
-  }
-
-  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
-    Ok(output)
-  }
-}
-
-#[napi]
-pub fn activate_license(request: LicenseKeyRequest) -> AsyncTask<AsyncActivateLicenseTask> {
-  AsyncTask::new(AsyncActivateLicenseTask { request })
-}
-
-#[napi]
-impl Task for AsyncDeactivateLicenseTask {
-  type Output = CommandResponse;
-  type JsValue = CommandResponse;
-
-  fn compute(&mut self) -> Result<Self::Output> {
-    command(
-      &format!("/api/team/licenses/{}/deactivate", self.request.license_key),
-      safefetch::SafeFetchMethod::Post,
-      None,
-      None,
-    )
-    .map_err(invalid_arg)
-  }
-
-  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
-    Ok(output)
-  }
-}
-
-#[napi]
-pub fn deactivate_license(request: LicenseKeyRequest) -> AsyncTask<AsyncDeactivateLicenseTask> {
-  AsyncTask::new(AsyncDeactivateLicenseTask { request })
-}
-
-#[napi]
-impl Task for AsyncCheckLicenseHealthTask {
-  type Output = LicenseResponse;
-  type JsValue = LicenseResponse;
-
-  fn compute(&mut self) -> Result<Self::Output> {
-    license_info(
-      &format!("/api/team/licenses/{}/health", self.request.license_key),
-      safefetch::SafeFetchMethod::Get,
-      Some(HashMap::from([(
-        "x-validate-key".to_string(),
-        self.request.validate_key.clone(),
-      )])),
-      None,
-    )
-    .map_err(invalid_arg)
-  }
-
-  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
-    Ok(output)
-  }
-}
-
-#[napi]
-pub fn check_license_health(request: LicenseHealthRequest) -> AsyncTask<AsyncCheckLicenseHealthTask> {
-  AsyncTask::new(AsyncCheckLicenseHealthTask { request })
-}
-
-#[napi]
-impl Task for AsyncUpdateLicenseRecurringTask {
-  type Output = CommandResponse;
-  type JsValue = CommandResponse;
-
-  fn compute(&mut self) -> Result<Self::Output> {
-    let body = serde_json::to_vec(&serde_json::json!({
-      "recurring": self.request.recurring,
-    }))
-    .map_err(invalid_arg)?;
-    command(
-      &format!("/api/team/licenses/{}/recurring", self.request.license_key),
-      safefetch::SafeFetchMethod::Post,
-      None,
-      Some(body),
-    )
-    .map_err(invalid_arg)
-  }
-
-  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
-    Ok(output)
-  }
-}
-
-#[napi]
-pub fn update_license_recurring(request: LicenseRecurringRequest) -> AsyncTask<AsyncUpdateLicenseRecurringTask> {
-  AsyncTask::new(AsyncUpdateLicenseRecurringTask { request })
-}
-
-#[napi]
-impl Task for AsyncUpdateLicenseSeatsTask {
-  type Output = CommandResponse;
-  type JsValue = CommandResponse;
-
-  fn compute(&mut self) -> Result<Self::Output> {
-    let body = serde_json::to_vec(&serde_json::json!({
-      "seats": self.request.seats,
-    }))
-    .map_err(invalid_arg)?;
-    command(
-      &format!("/api/team/licenses/{}/seats", self.request.license_key),
-      safefetch::SafeFetchMethod::Post,
-      None,
-      Some(body),
-    )
-    .map_err(invalid_arg)
-  }
-
-  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
-    Ok(output)
-  }
-}
-
-#[napi]
-pub fn update_license_seats(request: LicenseSeatsRequest) -> AsyncTask<AsyncUpdateLicenseSeatsTask> {
-  AsyncTask::new(AsyncUpdateLicenseSeatsTask { request })
-}
-
-#[napi]
-impl Task for AsyncCreateCustomerPortalTask {
-  type Output = PortalResponse;
-  type JsValue = PortalResponse;
-
-  fn compute(&mut self) -> Result<Self::Output> {
-    let response = match affine_pro_request(
-      &format!("/api/team/licenses/{}/create-customer-portal", self.request.license_key),
-      safefetch::SafeFetchMethod::Post,
-      None,
-      None,
-    ) {
-      Ok(response) => response,
-      Err(_) => {
-        return Ok(PortalResponse {
-          url: None,
-          error: Some(internal_affine_pro_error()),
-        });
-      }
-    };
-    if let Some(error) = affine_pro_error(&response) {
-      return Ok(PortalResponse {
-        url: None,
-        error: Some(error),
-      });
-    }
-    let body: PortalPayload = match parse_body(&response) {
-      Ok(body) => body,
-      Err(_) => {
-        return Ok(PortalResponse {
-          url: None,
-          error: Some(internal_affine_pro_error()),
-        });
-      }
-    };
-    if body.url.is_empty() {
+pub(crate) fn create_license_customer_portal_request(request: &LicenseKeyRequest) -> AnyResult<PortalResponse> {
+  let validate_key = request.validate_key.clone().context("validateKey is required")?;
+  let response = match affine_pro_request(
+    &format!("/api/team/v1/licenses/{}/create-customer-portal", request.license_key),
+    safefetch::SafeFetchMethod::Post,
+    Some(HashMap::from([("x-validate-key".to_string(), validate_key)])),
+    None,
+  ) {
+    Ok(response) => response,
+    Err(_) => {
       return Ok(PortalResponse {
         url: None,
         error: Some(internal_affine_pro_error()),
       });
     }
-    Ok(PortalResponse {
-      url: Some(body.url),
-      error: None,
-    })
+  };
+  if let Some(error) = affine_pro_error(&response) {
+    return Ok(PortalResponse {
+      url: None,
+      error: Some(error),
+    });
   }
-
-  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
-    Ok(output)
+  let body: PortalPayload = match parse_body(&response) {
+    Ok(body) => body,
+    Err(_) => {
+      return Ok(PortalResponse {
+        url: None,
+        error: Some(internal_affine_pro_error()),
+      });
+    }
+  };
+  if body.url.is_empty() {
+    return Ok(PortalResponse {
+      url: None,
+      error: Some(internal_affine_pro_error()),
+    });
   }
-}
-
-#[napi]
-pub fn create_license_customer_portal(request: LicenseKeyRequest) -> AsyncTask<AsyncCreateCustomerPortalTask> {
-  AsyncTask::new(AsyncCreateCustomerPortalTask { request })
+  Ok(PortalResponse {
+    url: Some(body.url),
+    error: None,
+  })
 }
 
 fn license_info(
@@ -313,12 +198,6 @@ fn license_info(
   }
   let license = match parse_license_info(&response) {
     Ok(license) => license,
-    Err(error) if error.to_string() == "license_expired" => {
-      return Ok(LicenseResponse {
-        license: None,
-        error: Some(license_expired_error()),
-      });
-    }
     Err(_) => {
       return Ok(LicenseResponse {
         license: None,
@@ -364,7 +243,7 @@ fn affine_pro_request(
   let mut headers = headers.unwrap_or_default();
   headers.insert("Content-Type".to_string(), "application/json".to_string());
 
-  safefetch::safe_fetch(&safefetch::SafeFetchRequest {
+  let request = safefetch::SafeFetchRequest {
     url: url.to_string(),
     method: Some(method),
     headers: Some(headers),
@@ -380,19 +259,39 @@ fn affine_pro_request(
     allowed_hosts: Some(vec![AFFINE_PRO_HOST.to_string()]),
     allow_http: Some(false),
     allow_private_target_origin: None,
-    ech_config_list: Some(affine_pro_ech_config()?),
-  })
+    ech_config_list: None,
+  };
+  #[cfg(test)]
+  {
+    tests::respond(request)
+  }
+  #[cfg(not(test))]
+  {
+    let mut request = request;
+    request.ech_config_list = Some(affine_pro_ech_config()?);
+    safefetch::safe_fetch(&request)
+  }
 }
 
 fn parse_license_info(response: &safefetch::SafeFetchResponse) -> AnyResult<LicenseInfo> {
-  let body: LicensePayload = parse_body(response)?;
-  let expires_at = parse_future_end_at(&body.end_at)?;
+  let envelope: LicenseEnvelope = parse_body(response)?;
+  if !envelope.claims.is_object() || envelope.signature.is_empty() {
+    bail!("invalid license envelope");
+  }
   Ok(LicenseInfo {
-    plan: body.plan,
-    recurring: body.recurring,
-    quantity: body.quantity,
-    expires_at,
-    validate_key: response.headers.get("x-next-validate-key").cloned().unwrap_or_default(),
+    recurring: response
+      .headers
+      .get("x-license-recurring")
+      .filter(|value| matches!(value.as_str(), "monthly" | "yearly" | "lifetime"))
+      .cloned()
+      .context("invalid license recurring")?,
+    validate_key: response
+      .headers
+      .get("x-next-validate-key")
+      .filter(|value| uuid::Uuid::parse_str(value).is_ok())
+      .cloned()
+      .context("invalid license generation")?,
+    envelope: response.body.clone().into(),
   })
 }
 
@@ -424,43 +323,11 @@ fn internal_affine_pro_error() -> LicenseError {
   }
 }
 
-fn license_expired_error() -> LicenseError {
-  LicenseError {
-    status: 400,
-    body: serde_json::json!({
-      "status": 400,
-      "type": "bad_request",
-      "name": "license_expired",
-      "message": "License has expired.",
-      "data": null,
-    })
-    .to_string(),
-  }
-}
-
 fn parse_body<T: DeserializeOwned>(response: &safefetch::SafeFetchResponse) -> AnyResult<T> {
   serde_json::from_slice(&response.body).context("invalid affine pro response")
 }
 
-fn parse_future_end_at(value: &serde_json::Value) -> AnyResult<f64> {
-  let millis = match value {
-    serde_json::Value::Number(number) => number.as_f64().context("invalid license expiration")?,
-    serde_json::Value::String(value) => value
-      .parse::<f64>()
-      .or_else(|_| chrono::DateTime::parse_from_rfc3339(value).map(|date| date.timestamp_millis() as f64))
-      .context("invalid license expiration")?,
-    _ => bail!("invalid license expiration"),
-  };
-  if !millis.is_finite() || millis <= now_millis() {
-    bail!("license_expired");
-  }
-  Ok(millis)
-}
-
-fn now_millis() -> f64 {
-  crate::utils::system_time_millis(SystemTime::now()).unwrap_or_default() as f64
-}
-
+#[cfg(not(test))]
 fn affine_pro_ech_config() -> AnyResult<Vec<u8>> {
   let cache = AFFINE_PRO_ECH_CONFIG.get_or_init(|| Mutex::new(None));
   {
@@ -479,20 +346,17 @@ fn affine_pro_ech_config() -> AnyResult<Vec<u8>> {
   Ok(config)
 }
 
-fn invalid_arg(error: impl ToString) -> Error {
-  Error::new(Status::InvalidArg, error.to_string())
-}
-
 #[derive(serde::Deserialize)]
-struct LicensePayload {
-  plan: String,
-  recurring: String,
-  quantity: u32,
-  #[serde(rename = "endAt")]
-  end_at: serde_json::Value,
+struct LicenseEnvelope {
+  claims: serde_json::Value,
+  signature: String,
 }
 
 #[derive(serde::Deserialize)]
 struct PortalPayload {
   url: String,
 }
+
+#[cfg(test)]
+#[path = "license_tests.rs"]
+pub(crate) mod tests;

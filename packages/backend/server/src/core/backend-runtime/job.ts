@@ -6,13 +6,14 @@ import {
   CopilotSelectedSourcesLimitExceeded,
   CopilotSelectedSourcesProcessing,
   CopilotSelectedSourcesUnavailable,
-  JobQueue,
-  OnEvent,
-  OnJob,
+  metrics,
 } from '../../base';
 import { Models } from '../../models';
 import { projectDocSearch } from '../utils/blocksuite';
 import { BackendRuntimeProvider } from './provider';
+
+const HOUSEKEEPING_BATCH_SIZE = 1000;
+const HOUSEKEEPING_MAX_BATCHES = 100;
 
 const SELECTED_DOCUMENT_LIMIT = 64;
 const SELECTED_DOCUMENT_UNIT_LIMIT = 20_000;
@@ -20,68 +21,14 @@ const SELECTED_DOCUMENT_TEXT_BYTE_LIMIT = 16 * 1024 * 1024;
 const SELECTED_DOCUMENT_PRIORITY = 1000;
 const SELECTED_DOCUMENT_WAIT_MS = 90_000;
 
-declare global {
-  interface Jobs {
-    'nightly.cleanExpiredBackendRuntimeHousekeeping': {};
-    'backendRuntime.syncDocumentEmbedding': {
-      workspaceId: string;
-      docId: string;
-    };
-    'backendRuntime.reconcileDocumentEmbeddings': {
-      workspaceId: string;
-    };
-  }
-}
-
 @Injectable()
-export class BackendRuntimeEmbeddingJob {
+export class BackendRuntimeEmbeddingService {
   constructor(
     private readonly rt: BackendRuntimeProvider,
-    private readonly queue: JobQueue,
     private readonly models: Models
   ) {}
 
-  @OnEvent('doc.updated')
-  async onDocUpdated({ workspaceId, docId }: Events['doc.updated']) {
-    await this.queueDocument(workspaceId, docId);
-  }
-
-  @OnEvent('doc.snapshot.updated')
-  async onDocSnapshotUpdated({
-    workspaceId,
-    docId,
-  }: Events['doc.snapshot.updated']) {
-    if (workspaceId === docId) {
-      await this.queue.add(
-        'backendRuntime.reconcileDocumentEmbeddings',
-        { workspaceId },
-        { jobId: `reconcileDocumentEmbeddings/${workspaceId}` }
-      );
-      return;
-    }
-    await this.queueDocument(workspaceId, docId);
-  }
-
-  private async queueDocument(workspaceId: string, docId: string) {
-    if (
-      workspaceId === docId ||
-      docId.startsWith('db$') ||
-      docId.startsWith('userdata$')
-    ) {
-      return;
-    }
-    await this.queue.add(
-      'backendRuntime.syncDocumentEmbedding',
-      { workspaceId, docId },
-      { jobId: `syncDocumentEmbedding/${workspaceId}/${docId}` }
-    );
-  }
-
-  @OnJob('backendRuntime.syncDocumentEmbedding')
-  async syncDocument({
-    workspaceId,
-    docId,
-  }: Jobs['backendRuntime.syncDocumentEmbedding']) {
+  async syncDocument(workspaceId: string, docId: string) {
     await this.syncDocuments(workspaceId, [docId], true);
   }
 
@@ -174,10 +121,7 @@ export class BackendRuntimeEmbeddingJob {
     });
   }
 
-  @OnJob('backendRuntime.reconcileDocumentEmbeddings')
-  async reconcileDocuments({
-    workspaceId,
-  }: Jobs['backendRuntime.reconcileDocumentEmbeddings']) {
+  async reconcileDocuments(workspaceId: string) {
     if (!(await this.rt.embeddingHealth()).enabled) return;
     await this.rt.syncEmbeddingState({
       workspaceId,
@@ -191,52 +135,116 @@ export class BackendRuntimeEmbeddingJob {
 export class BackendRuntimeHousekeepingJob {
   private readonly logger = new Logger(BackendRuntimeHousekeepingJob.name);
 
-  constructor(
-    private readonly rt: BackendRuntimeProvider,
-    private readonly queue: JobQueue
-  ) {}
+  constructor(private readonly rt: BackendRuntimeProvider) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async nightlyJob() {
-    await this.queue.add(
-      'nightly.cleanExpiredBackendRuntimeHousekeeping',
-      {},
-      {
-        jobId: 'nightly-backend-runtime-housekeeping',
-      }
-    );
-  }
-
-  @OnJob('nightly.cleanExpiredBackendRuntimeHousekeeping')
   async cleanExpiredRuntimeHousekeeping() {
     const states = await this.cleanBatches(() =>
-      this.rt.cleanupExpiredRuntimeStates(1000)
+      this.rt.cleanupExpiredRuntimeStates(HOUSEKEEPING_BATCH_SIZE)
     );
     const gates = await this.cleanBatches(() =>
-      this.rt.cleanupExpiredRuntimeGates(1000)
+      this.rt.cleanupExpiredRuntimeGates(HOUSEKEEPING_BATCH_SIZE)
     );
     const rollingQuota = await this.cleanBatches(() =>
-      this.rt.cleanupExpiredRollingQuota(1000)
+      this.rt.cleanupExpiredRollingQuota(HOUSEKEEPING_BATCH_SIZE)
     );
     const artifacts = await this.cleanBatches(() =>
-      this.rt.cleanupUnreferencedArtifacts(1000)
+      this.rt.cleanupUnreferencedArtifacts(HOUSEKEEPING_BATCH_SIZE)
     );
-    const embeddingWorkspaces = await this.rt.reconcileEmbeddingWorkspaces();
 
     this.logger.log(
-      `cleaned runtime housekeeping states=${states} gates=${gates} rollingQuota=${rollingQuota} artifacts=${artifacts} embeddingWorkspaces=${embeddingWorkspaces}`
+      `cleaned runtime housekeeping states=${states} gates=${gates} rollingQuota=${rollingQuota} artifacts=${artifacts}`
     );
   }
 
   private async cleanBatches(fn: () => Promise<number>) {
     let total = 0;
-    for (;;) {
+    for (let batch = 0; batch < HOUSEKEEPING_MAX_BATCHES; batch++) {
       const count = Number(await fn());
       total += count;
-      if (count < 1000) {
+      if (count < HOUSEKEEPING_BATCH_SIZE) {
         break;
       }
     }
     return total;
+  }
+}
+
+@Injectable()
+export class BackendRuntimeSearchJob {
+  constructor(private readonly rt: BackendRuntimeProvider) {}
+
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async reconcileProjection(limit = 100) {
+    if (!this.rt.searchEnabled()) return 0;
+    const startedAt = performance.now();
+    try {
+      const reconciled = await this.rt.reconcileSearchProjection(limit);
+      const status = (await this.rt.searchStatus()) as {
+        ready?: boolean;
+        state?: string;
+        metrics?: {
+          scanCursor?: number;
+          scanHighWater?: number;
+          pendingPublications?: number;
+          gcBacklog?: number;
+          providerRequests?: number;
+          providerLatencyMicrosAvg?: number;
+          generationGcFailures?: number;
+          filterDrops?: {
+            missingPublished?: number;
+            projectionMismatch?: number;
+            canonicalPermission?: number;
+          };
+        };
+      };
+      metrics.search.counter('reconcile_runs').add(1);
+      metrics.search.gauge('reconciled_workspaces').record(reconciled);
+      metrics.search.gauge('generation_ready').record(status.ready ? 1 : 0, {
+        state: status.state ?? 'unknown',
+      });
+      metrics.search
+        .histogram('reconcile_latency_ms')
+        .record(performance.now() - startedAt);
+      const projection = status.metrics;
+      if (projection) {
+        metrics.search.gauge('scan_cursor').record(projection.scanCursor ?? 0);
+        metrics.search
+          .gauge('scan_high_water')
+          .record(projection.scanHighWater ?? 0);
+        metrics.search
+          .gauge('pending_publications')
+          .record(projection.pendingPublications ?? 0);
+        metrics.search.gauge('gc_backlog').record(projection.gcBacklog ?? 0);
+        metrics.search
+          .gauge('provider_requests')
+          .record(projection.providerRequests ?? 0);
+        metrics.search
+          .gauge('provider_latency_micros_avg')
+          .record(projection.providerLatencyMicrosAvg ?? 0);
+        metrics.search
+          .gauge('generation_gc_failures')
+          .record(projection.generationGcFailures ?? 0);
+        metrics.search
+          .gauge('filter_drops')
+          .record(projection.filterDrops?.missingPublished ?? 0, {
+            reason: 'missing_published',
+          });
+        metrics.search
+          .gauge('filter_drops')
+          .record(projection.filterDrops?.projectionMismatch ?? 0, {
+            reason: 'projection_mismatch',
+          });
+        metrics.search
+          .gauge('filter_drops')
+          .record(projection.filterDrops?.canonicalPermission ?? 0, {
+            reason: 'canonical_permission',
+          });
+      }
+      return reconciled;
+    } catch (error) {
+      metrics.search.counter('reconcile_failures').add(1);
+      throw error;
+    }
   }
 }

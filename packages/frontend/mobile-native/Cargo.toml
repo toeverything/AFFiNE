@@ -22,19 +22,13 @@ affine_nbstore = { workspace = true }
 anyhow         = { workspace = true }
 base64-simd    = { workspace = true }
 chrono         = { workspace = true }
+serde_json     = { workspace = true }
 thiserror      = { workspace = true }
 tokio          = { workspace = true, features = ["rt-multi-thread"] }
 uniffi         = { workspace = true, features = ["cli", "tokio"] }
 
 [target.'cfg(any(target_os = "ios", target_os = "macos"))'.dependencies]
 objc2 = { workspace = true }
-objc2-foundation = { workspace = true, features = [
-  "NSArray",
-  "NSFileManager",
-  "NSPathUtilities",
-  "NSString",
-  "NSURL",
-] }
 
 [target.'cfg(not(any(target_os = "ios", target_os = "macos")))'.dependencies]
 homedir = { workspace = true }

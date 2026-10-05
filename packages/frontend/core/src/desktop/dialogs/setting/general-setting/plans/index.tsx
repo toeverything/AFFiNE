@@ -1,3 +1,4 @@
+import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
@@ -24,6 +25,13 @@ const Settings = () => {
     return <PlansSkeleton />;
   }
 
+  if (
+    !prices.some(price => price.plan === SubscriptionPlan.Pro) ||
+    !prices.some(price => price.plan === SubscriptionPlan.Team)
+  ) {
+    return <PlansError retry={() => subscriptionService.prices.revalidate()} />;
+  }
+
   return <PlanLayout cloud={<CloudPlans />} ai={<AIPlan />} />;
 };
 
@@ -36,12 +44,16 @@ export const AFFiNEPricingPlans = () => {
 };
 
 const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
+  return <PlansError retry={resetErrorBoundary} />;
+};
+
+const PlansError = ({ retry }: { retry: () => void }) => {
   const t = useI18n();
 
   const scroll = (
     <div className={styles.errorTip}>
       <span>{t['com.affine.payment.plans-error-tip']()}</span>
-      <a onClick={resetErrorBoundary} className={styles.errorTipRetry}>
+      <a onClick={retry} className={styles.errorTipRetry}>
         {t['com.affine.payment.plans-error-retry']()}
       </a>
     </div>

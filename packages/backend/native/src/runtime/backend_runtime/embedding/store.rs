@@ -106,6 +106,34 @@ pub(super) async fn claim_index_probe(pool: &PgPool, owner: &str) -> RuntimeResu
   .map_err(|error| RuntimeError::database("claim embedding index probe failed", error))
 }
 
+#[cfg(test)]
+pub(super) async fn claim_index_probe_for_workspace(
+  pool: &PgPool,
+  owner: &str,
+  workspace_id: &str,
+) -> RuntimeResult<Option<IndexProbeClaim>> {
+  sqlx::query_as(
+    r#"WITH candidate AS(
+      SELECT index_fact.id FROM embedding_indexes index_fact
+      JOIN embedding_workspace_states state ON state.active_index_id=index_fact.id
+      WHERE state.workspace_id=$2 AND state.runtime_state='active' AND(
+        index_fact.health_status='pending'
+        OR index_fact.health_status='retry_wait' AND index_fact.next_probe_at<=clock_timestamp()
+        OR index_fact.probe_lease_until<=clock_timestamp())
+      ORDER BY index_fact.next_probe_at NULLS FIRST,index_fact.updated_at
+      FOR UPDATE OF index_fact SKIP LOCKED LIMIT 1
+    ) UPDATE embedding_indexes index_fact SET probe_lease_owner=$1,
+      probe_lease_until=clock_timestamp()+interval '2 minutes',updated_at=now()
+    FROM candidate WHERE index_fact.id=candidate.id
+    RETURNING index_fact.id,index_fact.workspace_id,index_fact.fingerprint,index_fact.probe_lease_owner"#,
+  )
+  .bind(owner)
+  .bind(workspace_id)
+  .fetch_optional(pool)
+  .await
+  .map_err(|error| RuntimeError::database("claim embedding index probe for workspace failed", error))
+}
+
 pub(super) async fn complete_index_probe(pool: &PgPool, claim: &IndexProbeClaim) -> RuntimeResult<()> {
   sqlx::query(
     "UPDATE embedding_indexes SET \

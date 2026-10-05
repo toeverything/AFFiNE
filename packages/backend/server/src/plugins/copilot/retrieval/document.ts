@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { Config, SearchProviderNotFound } from '../../../base';
+import { SearchProviderUnavailable } from '../../../base';
+import { DocReader } from '../../../core/doc';
 import { PermissionAccess } from '../../../core/permission';
 import type { DocVisibility } from '../../../core/utils/blocksuite';
 import { type DocChunkSimilarity, Models } from '../../../models';
@@ -70,12 +71,12 @@ function hasVectorProjectionMetadata(hit: DocChunkSimilarity) {
 @Injectable()
 export class DocumentRetrievalService {
   constructor(
-    private readonly config: Config,
     private readonly ac: PermissionAccess,
     private readonly indexer: IndexerService,
     @Inject(DOCUMENT_VECTOR_SEARCH)
     private readonly context: DocumentVectorSearch,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly docReader: DocReader
   ) {}
 
   async search(
@@ -96,17 +97,15 @@ export class DocumentRetrievalService {
       byokLeaseId: options.byokLeaseId,
     };
     const [lexicalAttempt, vectorAttempt] = await Promise.allSettled([
-      this.config.indexer.enabled
-        ? this.indexer
-            .searchDocsByKeyword(workspaceId, query, {
-              limit: Math.max(limit * 3, 20),
-              docIds,
-            })
-            .catch(error => {
-              if (error instanceof SearchProviderNotFound) return null;
-              throw error;
-            })
-        : null,
+      this.indexer
+        .searchDocsByKeyword(userId, workspaceId, query, {
+          limit: Math.max(limit * 3, 20),
+          docIds,
+        })
+        .catch(error => {
+          if (error instanceof SearchProviderUnavailable) return null;
+          throw error;
+        }),
       this.context.canEmbedding
         ? this.context.matchWorkspaceDocCandidates(
             workspaceId,
@@ -202,7 +201,38 @@ export class DocumentRetrievalService {
       );
     });
     if (lexicalResult === null && vector === null) {
-      throw new Error('SEARCH_UNAVAILABLE');
+      if (!docIds?.length) throw new Error('SEARCH_UNAVAILABLE');
+      const readable = await this.readable(
+        userId,
+        workspaceId,
+        [...new Set(docIds)].map(docId => ({ docId }))
+      );
+      const documents = readable.slice(0, limit);
+      const maxChars = Math.floor(20_000 / Math.max(documents.length, 1));
+      const hits: DocumentSearchHit[] = await Promise.all(
+        documents.map(async ({ docId }) => {
+          const content = await this.docReader.getDocMarkdown(
+            workspaceId,
+            docId,
+            true
+          );
+          if (!content) throw new Error('SEARCH_UNAVAILABLE');
+          return {
+            docId,
+            title: content.title,
+            excerpt: content.markdown.slice(0, maxChars),
+            visibility: 'page' as const,
+            score: 0,
+            unitId: `document:${docId}`,
+          };
+        })
+      );
+      if (signal?.aborted) throw new Error('SEARCH_ABORTED');
+      return {
+        retrievalMode: 'scoped',
+        degradedReason: 'SEARCH_UNAVAILABLE',
+        hits,
+      } as const;
     }
 
     const perDoc = new Map<string, number>();

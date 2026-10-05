@@ -1,5 +1,8 @@
 {
   "$schema": "https://github.com/toeverything/affine/releases/latest/download/config.schema.json",
+  "deployment": {
+    "type": "selfhosted"
+  },
   "server": {
     "name": "AFFiNE Self-hosted",
     "externalUrl": "http://localhost:3010"
@@ -10,5 +13,9 @@
       "enabled": true,
       "allowCustomEndpoint": true
     }
+  },
+  "indexer": {
+    "enabled": true,
+    "provider.type": "embedded"
   }
 }

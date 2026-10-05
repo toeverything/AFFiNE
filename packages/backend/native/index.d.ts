@@ -5,79 +5,13 @@ declare const _default: typeof import('./index')
 export default _default
 
 export declare class BackendRuntime {
-  acquireCoordinationLease(key: string, owner: string, ttlMs: number): Promise<CoordinationLeaseGrant | null>
-  releaseCoordinationLease(key: string, owner: string, fencingToken: bigint | number): Promise<boolean>
-  renewCoordinationLease(key: string, owner: string, fencingToken: bigint | number, ttlMs: number): Promise<boolean>
-  executeCopilotStream(input: CopilotExecuteInput, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): Promise<CopilotStreamHandle>
-  executeCopilot(input: CopilotExecuteInput): Promise<string>
-  assertCopilotRoute(input: CopilotRouteCheckInput): Promise<void>
-  /**
-   * Merge pending doc updates with y-octo and persist the merged snapshot.
-   *
-   * Do not use this for snapshots that will be sent back to yjs clients until
-   * the y-octo/yjs round-trip compatibility issue is resolved.
-   *
-   * The caller owns quota reconciliation and must pass a fresh
-   * history_max_age_seconds value. The compactor intentionally does not read
-   * effective_workspace_quota_states; if a future caller cannot provide a
-   * fresh quota state, fail and retry after Node reconciles it.
-   */
-  compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number, owner: string, leaseTtlMs: number): Promise<RuntimeDocCompactionResult>
-  upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>
-  createDocHistory(input: RuntimeDocHistoryInput): Promise<boolean>
-  putRuntimeGateIfAbsent(key: string, ttlMs: number): Promise<boolean>
-  cleanupExpiredRuntimeGates(limit: number): Promise<number>
-  cleanupExpiredUserSessions(limit: number): Promise<number>
-  cleanupExpiredSnapshotHistories(limit: number): Promise<number>
-  isInviteAbuseUserQuarantinedOrBanned(userId: string): Promise<boolean>
-  isInviteAbuseWorkspaceQuarantined(workspaceId: string): Promise<boolean>
-  claimInviteAbuseAction(actionId: string, workerId: string): Promise<boolean>
-  claimRetryableInviteAbuseActions(workerId: string, limit: number): Promise<Array<RuntimeInviteAbuseClaimedAction>>
-  markInviteAbuseAction(actionId: string, workerId: string, status: string, error?: string | undefined | null): Promise<boolean>
-  assertWorkspaceInviteQuotaV1(input: RuntimeWorkspaceInviteQuotaInput): Promise<RuntimeWorkspaceInviteQuotaDecision>
-  commitWorkspaceInviteQuotaV1(reservationId: string, usage: RuntimeWorkspaceInviteQuotaUsage): Promise<boolean>
-  releaseWorkspaceInviteQuotaV1(reservationId: string): Promise<boolean>
-  assertMailDeliveryQuotaV1(input: RuntimeMailDeliveryQuotaInput): Promise<RuntimeMailDeliveryQuotaDecision>
-  commitMailDeliveryQuotaV1(reservationId: string): Promise<boolean>
-  releaseMailDeliveryQuotaV1(reservationId: string): Promise<boolean>
-  cleanupExpiredRollingQuota(limit: number): Promise<number>
-  createAuthChallenge(purpose: string, token: string, payload: any, ttlMs: number): Promise<boolean>
-  getAuthChallenge(purpose: string, token: string): Promise<any | null>
-  consumeAuthChallenge(purpose: string, token: string): Promise<any | null>
-  createVerificationToken(tokenType: number, credential: string | undefined | null, ttlMs: number): Promise<string>
-  getVerificationToken(tokenType: number, token: string, keep?: boolean | undefined | null): Promise<RuntimeVerificationTokenRecord | null>
-  verifyVerificationToken(tokenType: number, token: string, credential?: string | undefined | null, keep?: boolean | undefined | null): Promise<RuntimeVerificationTokenRecord | null>
-  cleanupExpiredVerificationTokens(limit: number): Promise<number>
-  upsertMagicLinkOtp(email: string, otpHash: string, token: string, clientNonce: string | undefined | null, ttlMs: number): Promise<void>
-  consumeMagicLinkOtp(email: string, otpHash: string, clientNonce?: string | undefined | null): Promise<RuntimeMagicLinkOtpConsumeResult>
-  createWorkspaceInviteLink(workspaceId: string, inviteId: string, inviterUserId: string, ttlMs: number): Promise<RuntimeWorkspaceInviteLinkRecord>
-  getWorkspaceInviteLink(workspaceId: string): Promise<RuntimeWorkspaceInviteLinkRecord | null>
-  getWorkspaceInviteLinkById(inviteId: string): Promise<RuntimeWorkspaceInviteLinkRecord | null>
-  revokeWorkspaceInviteLink(workspaceId: string): Promise<boolean>
-  cleanupExpiredRuntimeStates(limit: number): Promise<number>
-  refreshWorkspaceAdminStatsDirty(batchLimit: number, owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsRefreshResult>
-  recalibrateWorkspaceAdminStats(lastSid: number, batchLimit: number, owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsRecalibrationResult>
-  writeWorkspaceAdminStatsDailySnapshot(owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsSnapshotResult>
-  recalibrateWorkspaceAdminStatsDaily(batchLimit: number, owner: string, leaseTtlMs: number, lockRetryTimes: number, lockRetryDelayMs: number): Promise<RuntimeWorkspaceStatsDailyRecalibrationResult>
-  constructor(privateKey?: string | undefined | null, configPaths?: Array<string> | undefined | null)
-  start(): Promise<void>
-  stop(): Promise<void>
-  reloadConfig(privateKey?: string | undefined | null): Promise<void>
-  health(): Promise<BackendRuntimeHealth>
-  runMigrations(): Promise<void>
-  embeddingHealth(): Promise<EmbeddingHealth>
-  syncEmbeddingState(input: SyncEmbeddingStateInput): Promise<RuntimeEmbeddingWorkspaceState>
-  embeddingQueueCounts(): Promise<RuntimeEmbeddingQueueCounts>
-  embeddingWorkspaceProgress(workspaceId: string): Promise<RuntimeEmbeddingProgress>
-  reconcileEmbeddingWorkspaces(): Promise<number>
-  putWorkspaceArtifact(input: PutWorkspaceArtifactInput, body: Buffer): Promise<RuntimeWorkspaceArtifact>
-  ensureWorkspaceBlobArtifact(input: EnsureWorkspaceBlobArtifactInput): Promise<RuntimeWorkspaceArtifact>
-  cleanupUnreferencedArtifacts(limit: number): Promise<number>
-  setArtifactLibraryOwned(workspaceId: string, artifactId: string, libraryOwned: boolean, displayName?: string | undefined | null): Promise<RuntimeWorkspaceArtifact>
-  compileTurnScope(input: CompileScopeInput): Promise<RuntimeTurnScopeSnapshot>
-  readEmbeddingSourceContent(input: ReadEmbeddingSourceContentInput): Promise<RuntimeEmbeddingSourceContent>
-  matchEmbeddingCandidates(input: MatchEmbeddingCandidatesInput): Promise<Array<RuntimeEmbeddingCandidate>>
-  cancelEmbeddingCandidateRequest(requestId: string): Promise<void>
+  executeAuthSessionCommandV1(input: any): Promise<any>
+  resolveAuthPrincipalV1(input: any): Promise<any>
+  getDocBlobManifestV1(input: any): Promise<any>
+  getReadableWorkspaceBlobManifestV1(input: any): Promise<any>
+  getBlobV1(input: any): Promise<RuntimeAuthorizedBlobV1>
+  readBlobStreamChunkV1(streamId: string): Promise<RuntimeBlobChunkV1>
+  closeBlobStreamV1(streamId: string): Promise<void>
   listByokProfiles(workspaceId: string): Promise<Array<ByokProfileOutput>>
   getByokPolicy(): ByokPolicyOutput
   createByokProfile(input: CreateByokProfileInput): Promise<ByokProfileOutput>
@@ -88,34 +22,153 @@ export declare class BackendRuntime {
   deleteByokProfile(workspaceId: string, profileId: string): Promise<boolean>
   reorderByokProfiles(input: ReorderByokProfilesInput): Promise<Array<ByokProfileOutput>>
   createByokLocalLease(input: CreateByokLocalLeaseInput): Promise<ByokLocalLeaseOutput>
+  saveAppConfig(actor: string | undefined | null, commands: Array<AppConfigCommand>): Promise<Array<string>>
+  getUserQuotaStateV1(userId: string): Promise<RuntimeUserQuotaState>
+  getWorkspaceQuotaStateV1(workspaceId: string): Promise<RuntimeWorkspaceQuotaState>
+  getSyncPermissionGenerationV1(workspaceId: string): Promise<number>
+  quotaSeatUsageTransitionV1(workspaceIds: Array<string>): Promise<void>
+  runMigrations(): Promise<void>
+  searchAuthorized(actorUserId: string, workspaceId: string, request: RuntimeSearchRequest): Promise<SearchOperationOutput>
+  aggregateAuthorized(actorUserId: string, workspaceId: string, request: RuntimeAggregateRequest): Promise<SearchOperationOutput>
+  searchEnabled(): boolean
+  copilotEnabled(): boolean
+  nodeCryptoPrivateKey(): string
+  reconcileSearchProjection(limit?: number | undefined | null): Promise<number>
+  authorizePermissionV1(input: any): Promise<any>
+  executeDomainCommandV1(input: any): Promise<any>
+  searchStatus(): Promise<any>
+  executeCopilotStream(input: CopilotExecuteInput, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): Promise<CopilotStreamHandle>
+  executeCopilot(input: CopilotExecuteInput): Promise<string>
+  assertCopilotRoute(input: CopilotRouteCheckInput): Promise<void>
+  /**
+   * Merge pending doc updates with y-octo and persist the merged snapshot.
+   *
+   * Do not use this for snapshots that will be sent back to yjs clients until
+   * the y-octo/yjs round-trip compatibility issue is resolved.
+   *
+   * The caller must pass the canonical history retention period resolved for
+   * this workspace. The compactor does not make quota decisions.
+   */
+  compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number): Promise<RuntimeDocCompactionResult>
+  upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>
+  createDocHistory(input: RuntimeDocHistoryInput): Promise<boolean>
+  appendWorkspaceDocUpdatesV1(input: AppendWorkspaceDocUpdatesInputV1): Promise<number>
+  appendWorkspaceDocUpdatesTrustedV1(input: AppendWorkspaceDocUpdatesTrustedInputV1): Promise<number>
+  embeddingHealth(): Promise<EmbeddingHealth>
+  syncEmbeddingState(input: SyncEmbeddingStateInput): Promise<RuntimeEmbeddingWorkspaceState>
+  embeddingQueueCounts(): Promise<RuntimeEmbeddingQueueCounts>
+  embeddingWorkspaceProgress(workspaceId: string): Promise<RuntimeEmbeddingProgress>
+  putWorkspaceArtifact(input: PutWorkspaceArtifactInput, body: Buffer): Promise<RuntimeWorkspaceArtifact>
+  ensureWorkspaceBlobArtifact(input: EnsureWorkspaceBlobArtifactInput): Promise<RuntimeWorkspaceArtifact>
+  cleanupUnreferencedArtifacts(limit: number): Promise<number>
+  setArtifactLibraryOwned(workspaceId: string, artifactId: string, libraryOwned: boolean, displayName?: string | undefined | null): Promise<RuntimeWorkspaceArtifact>
+  compileTurnScope(input: CompileScopeInput): Promise<RuntimeTurnScopeSnapshot>
+  readEmbeddingSourceContent(input: ReadEmbeddingSourceContentInput): Promise<RuntimeEmbeddingSourceContent>
+  matchEmbeddingCandidates(input: MatchEmbeddingCandidatesInput): Promise<Array<RuntimeEmbeddingCandidate>>
+  cancelEmbeddingCandidateRequest(requestId: string): Promise<void>
+  hasAiEntitlementV1(userId: string): Promise<boolean>
+  hasWorkspaceCommercialEntitlementV1(workspaceId: string): Promise<boolean>
+  getByokEntitlementV1(workspaceId: string, actorId?: string | undefined | null): Promise<RuntimeByokEntitlement>
+  getInstalledLicenseV1(workspaceId: string): Promise<RuntimeInstalledLicense | null>
+  installTeamLicenseFileV1(workspaceId: string, license: Buffer): Promise<RuntimeInstalledLicense>
+  activateTeamLicenseV1(workspaceId: string, licenseKey: string): Promise<RuntimeInstalledLicense>
+  removeTeamLicenseV1(workspaceId: string): Promise<RuntimeLicenseChange | null>
+  updateTeamLicenseRecurringV1(key: string, recurring: string): Promise<void>
+  createTeamLicensePortalV1(workspaceId: string): Promise<string>
+  updateTeamLicenseSeatsV1(workspaceId: string): Promise<RuntimeLicenseSeatUpdateResult>
+  checkLicensesV1(): Promise<RuntimeLicenseHealthResult>
+  upsertAdminGrantV1(input: RuntimeAdminGrantInput): Promise<void>
+  revokeAdminGrantV1(targetType: string, targetId: string): Promise<void>
+  putRuntimeGateIfAbsent(key: string, ttlMs: number): Promise<boolean>
+  cleanupExpiredRuntimeGates(limit: number): Promise<number>
+  cleanupExpiredUserSessions(limit: number): Promise<number>
+  cleanupExpiredSnapshotHistories(limit: number): Promise<number>
+  start(): Promise<void>
+  stop(): Promise<void>
+  reloadConfig(): Promise<void>
+  health(): Promise<BackendRuntimeHealth>
+  paymentEnabled(): boolean
+  stripeEnabled(): boolean
+  executePaymentCommandV1(input: any): Promise<any>
+  createPaymentCustomerPortalV1(actorUserId: string): Promise<string>
+  createLicenseCustomerPortalV1(licenseKey: string, validateKey?: string | undefined | null): Promise<string>
+  capturePaymentWebhookV1(provider: string, rawBody: Buffer, authorization: string): Promise<any>
+  paymentProviderNamespacesV1(): Promise<any>
+  isInviteAbuseUserQuarantinedOrBanned(userId: string): Promise<boolean>
+  isInviteAbuseWorkspaceQuarantined(workspaceId: string): Promise<boolean>
+  claimInviteAbuseAction(actionId: string, workerId: string): Promise<boolean>
+  claimRetryableInviteAbuseActions(workerId: string, limit: number): Promise<Array<RuntimeInviteAbuseClaimedAction>>
+  markInviteAbuseAction(actionId: string, workerId: string, status: string, error?: string | undefined | null): Promise<boolean>
+  evaluateWorkspaceInviteLinkV1(actorUserId: string, workspaceId: string): Promise<RuntimeWorkspaceActionDecision>
+  assertWorkspaceInviteQuotaV1(input: RuntimeWorkspaceInviteQuotaInput): Promise<RuntimeWorkspaceInviteQuotaDecision>
+  commitWorkspaceInviteQuotaV1(reservationId: string, usage: RuntimeWorkspaceInviteQuotaUsage): Promise<boolean>
+  releaseWorkspaceInviteQuotaV1(reservationId: string): Promise<boolean>
+  assertMailDeliveryQuotaV1(input: RuntimeMailDeliveryQuotaInput): Promise<RuntimeMailDeliveryQuotaDecision>
+  commitMailDeliveryQuotaV1(reservationId: string): Promise<boolean>
+  releaseMailDeliveryQuotaV1(reservationId: string): Promise<boolean>
+  cleanupExpiredRollingQuota(limit: number): Promise<number>
+  createAuthCaptchaChallengeV1(): Promise<CaptchaChallenge>
+  verifyAuthCaptchaV1(input: CaptchaVerificationInput): Promise<boolean>
+  createWorkspaceInviteLink(workspaceId: string, inviteId: string, inviterUserId: string, ttlMs: number): Promise<RuntimeWorkspaceInviteLinkRecord>
+  getWorkspaceInviteLink(workspaceId: string): Promise<RuntimeWorkspaceInviteLinkRecord | null>
+  getWorkspaceInviteLinkById(inviteId: string): Promise<RuntimeWorkspaceInviteLinkRecord | null>
+  revokeWorkspaceInviteLink(workspaceId: string): Promise<boolean>
+  cleanupExpiredRuntimeStates(limit: number): Promise<number>
+  cleanupExpiredStorageReservationsV1(limit: number): Promise<number>
+  listManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string): Promise<Array<RuntimeManagedBlob>>
+  manageWorkspaceBlobV1(input: RuntimeBlobManagementInput): Promise<boolean>
+  releaseManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string, limit: number): Promise<number>
+  finalizeStorageReservationV1(input: RuntimeStorageReservationMutation): Promise<boolean>
+  abortStorageReservationV1(input: RuntimeStorageReservationMutation): Promise<boolean>
+  reserveWorkspaceReviewSeatV1(input: RuntimeSeatReviewInput): Promise<boolean>
+  activateWorkspaceSeatV1(input: RuntimeSeatActivationInput): Promise<boolean>
+  reserveWorkspaceSeatsV1(input: RuntimeSeatReservationInput): Promise<RuntimeSeatReservationDecision>
+  reserveStorageQuotaV1(input: RuntimeStorageReservationInput): Promise<RuntimeStorageReservationDecision>
+  constructor(serverConfig: ServerConfigHandle, privateKey?: string | undefined | null, permissionTelemetry?: (((err: Error | null, arg: string) => void)) | undefined | null, invalidationEvents?: (((err: Error | null, arg: string) => void)) | undefined | null)
 }
 
 export declare class CopilotStreamHandle {
   abort(): void
 }
 
+export declare class ServerConfigHandle {
+  constructor(path: string, legacyDeploymentType?: string | undefined | null)
+  get path(): string
+  get deploymentType(): string
+  nodeOwnedJson(): string
+  publicNativeBaselineJson(): string
+  hasBaselineConfigKey(key: string): boolean
+  baselineConfigKeyConfigured(key: string): boolean
+  nativeAppConfigKeys(): Array<string>
+  nativeSecretAppConfigKeys(): Array<string>
+  staticAppConfigKeys(): Array<string>
+  redisUrl(): string | null
+  redisNodeOptionsJson(): string
+}
+
 export declare class StorageRuntime {
-  planUnreferencedWorkspaceBlobs(workspaceId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupPlanResult>
-  executeBlobCleanupCandidates(runId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupExecuteResult>
-  cleanupExpiredPendingBlobs(cutoffMs: number, limit: number): Promise<RuntimeBlobCleanupResult>
-  releaseDeletedBlobs(workspaceId: string, limit: number): Promise<RuntimeBlobCleanupResult>
+  cleanupUnreferencedWorkspaceBlobs(workspaceId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupResult>
   backfillMissingBlobMetadata(workspaceId: string | undefined | null, limit: number): Promise<RuntimeBlobMetadataBackfillResult>
-  rebuildDocBlobRefs(workspaceId: string, docId: string): Promise<RuntimeDocBlobRefsResult>
+  rebuildDocBlobRefs(workspaceId: string, docId: string, sourceRevision: number): Promise<RuntimeDocBlobRefsResult>
   rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
   reconcileWorkspaceDocuments(workspaceId: string): Promise<RuntimeDocumentCleanupReconcileResult>
   executeDocumentCleanupCandidates(workspaceId: string | undefined | null, gracePeriodDays: number, limit: number): Promise<RuntimeDocumentCleanupExecuteResult>
-  ackDocumentCleanupEffect(workspaceId: string, docId: string, cleanupVersion: string, effect: string): Promise<RuntimeDocumentCleanupAckResult>
-  constructor()
+  deleteWorkspaceObjects(workspaceId: string, userIds?: Array<string> | undefined | null): Promise<number>
+  reconcileWorkspaceStorage(limit: number): Promise<RuntimeWorkspaceStorageReconcileResult>
+  constructor(serverConfig: ServerConfigHandle)
   start(): Promise<void>
-  configure(configJson: string): void
+  reloadConfig(): Promise<void>
   stop(): Promise<void>
   runMigrations(): Promise<void>
   health(): Promise<StorageRuntimeHealth>
   providerCapabilities(scope: string): Promise<StorageProviderCapabilities>
+  isLocalStorage(scope: string): boolean
+  uploadUrlConfig(scope: string): StorageUploadUrlConfig | null
+  signUploadToken(scope: string, path: string, fields: Array<any>, expiresAt: number): string | null
+  verifyUploadToken(scope: string, path: string, fields: Array<any>, expiresAt: number, token: string): boolean
   putObject(scope: string, key: string, body: Buffer, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimeObjectMetadata>
   headObject(scope: string, key: string): Promise<RuntimeObjectMetadata | null>
   getObject(scope: string, key: string): Promise<RuntimeObjectGetResult | null>
-  listObjects(scope: string, prefix?: string | undefined | null): Promise<Array<RuntimeObjectListEntry>>
   deleteObject(scope: string, key: string): Promise<void>
   presignPut(scope: string, key: string, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimePresignedObjectRequest | null>
   presignGet(scope: string, key: string): Promise<RuntimePresignedObjectRequest | null>
@@ -125,14 +178,11 @@ export declare class StorageRuntime {
   listMultipartUploadParts(scope: string, key: string, uploadId: string): Promise<Array<RuntimeMultipartUploadPart> | null>
   completeMultipartUpload(scope: string, key: string, uploadId: string, parts: Array<RuntimeMultipartUploadPart>): Promise<boolean>
   abortMultipartUpload(scope: string, key: string, uploadId: string): Promise<boolean>
-  completeWorkspaceBlobUpload(workspaceId: string, key: string, expectedSize: number, expectedMime: string): Promise<RuntimeBlobCompleteResult>
 }
 
 export declare class Tokenizer {
   count(content: string, allowedSpecial?: Array<string> | undefined | null): number
 }
-
-export declare function activateLicense(request: LicenseKeyRequest): Promise<LicenseResponse>
 
 /**
  * Adds a document ID to the workspace root doc's meta.pages array.
@@ -148,9 +198,25 @@ export declare function activateLicense(request: LicenseKeyRequest): Promise<Lic
  */
 export declare function addDocToRootDoc(rootDocBin: Buffer, docId: string, title?: string | undefined | null): Buffer
 
-export const AFFINE_PRO_LICENSE_AES_KEY: string | undefined | null
-
 export const AFFINE_PRO_PUBLIC_KEY: string | undefined | null
+
+export interface AggregateHitsOptions {
+  fields: Array<string>
+  highlights: Array<SearchHighlight>
+  pagination: SearchPagination
+}
+
+export interface AggregateOptions {
+  hits: AggregateHitsOptions
+  pagination: SearchPagination
+}
+
+export interface AppConfigCommand {
+  key: string
+  owner: string
+  operation: string
+  valueJson?: string
+}
 
 export interface AppConfigDescriptor {
   key: string
@@ -158,9 +224,29 @@ export interface AppConfigDescriptor {
   defaultValue: any
   schema: any
   internal: boolean
+  envName?: string
+  envType?: string
+  link?: string
 }
 
 export declare function appConfigDescriptors(module: string): Array<AppConfigDescriptor>
+
+export interface AppendWorkspaceDocUpdatesInputV1 {
+  workspaceId: string
+  docId: string
+  updates: Array<Buffer>
+  actorUserId: string
+  writeIntent: WorkspaceDocWriteIntentV1
+  permissionDocId?: string
+  expectedPermissionGeneration?: number
+}
+
+export interface AppendWorkspaceDocUpdatesTrustedInputV1 {
+  workspaceId: string
+  docId: string
+  updates: Array<Buffer>
+  editorId?: string
+}
 
 export declare function assertSafeUrl(request: AssertSafeUrlRequest): void
 
@@ -168,29 +254,18 @@ export interface AssertSafeUrlRequest {
   url: string
 }
 
-export declare function authorizeUserdataDocSubject(userId: string, workspaceId: string, docId: string): boolean
-
-export declare function authSessionAccessTokenKeyId(token: string): string | null
-
-export interface AuthSessionAccessTokenVerification {
-  status: string
-  userId?: string
-  authSessionId?: string
-}
-
-export interface AuthSessionRefreshToken {
-  token: string
-  id: string
-  secretHash: string
-}
+export declare function authorizeReservedDocSubject(userId: string, workspaceId: string, docId: string): boolean
 
 export interface BackendRuntimeHealth {
   started: boolean
   databaseConnected: boolean
   embedding: EmbeddingHealth
+  invalidation: InvalidationHealth
 }
 
 export declare function buildPublicRootDoc(rootDocBin: Buffer, docMetas: Array<PublicDocMetaInput>): Buffer
+
+export declare function buildSafeCallbackUrl(input: string, baseUrl: string, allowedOrigins: Array<string>, queryPairs: Array<UrlQueryPair>): string
 
 export interface BuiltInManagedTarget {
   id: string
@@ -348,6 +423,15 @@ export interface CanonicalChatRequestContract {
   middleware?: any
 }
 
+export interface CanonicalDocumentIdentity {
+  workspaceId: string
+  docId: string
+  variant: string
+  isWorkspace: boolean
+}
+
+export declare function canonicalizeDocumentIdentity(rawId: string, workspaceHint?: string | undefined | null): CanonicalDocumentIdentity
+
 export interface CanonicalStructuredRequestContract {
   model: string
   messages: Array<PromptMessageContract>
@@ -389,15 +473,26 @@ export interface CapabilityModelContract {
   capabilities: Array<CapabilityModelCapability>
 }
 
-export declare function checkLicenseHealth(request: LicenseHealthRequest): Promise<LicenseResponse>
+export interface CaptchaChallenge {
+  challenge: string
+  resource: string
+}
+
+export interface CaptchaVerificationInput {
+  provider: string
+  token: string
+  challenge?: string
+  bits?: number
+  secret?: string
+  action?: string
+  ip?: string
+  hosts?: Array<string>
+  dev?: boolean
+}
 
 export interface Chunk {
   index: number
   content: string
-}
-
-export interface CommandResponse {
-  error?: LicenseError
 }
 
 export interface CompileScopeInput {
@@ -432,12 +527,6 @@ export interface ContentPolicyScanResult {
   matched: boolean
   matches: Array<ContentPolicyMatch>
   flags: Array<string>
-}
-
-export interface CoordinationLeaseGrant {
-  key: string
-  owner: string
-  fencingToken: bigint | number
 }
 
 export interface CopilotAccessProjection {
@@ -480,8 +569,6 @@ export interface CopilotTargetOverrideInput {
   modelId: string
 }
 
-export declare function createAuthSessionRefreshToken(): AuthSessionRefreshToken
-
 export interface CreateByokLocalLeaseInput {
   workspaceId: string
   userId: string
@@ -521,10 +608,6 @@ export interface CreateByokProfileInput {
  */
 export declare function createDocWithMarkdown(title: string, markdown: string, docId: string): Buffer
 
-export declare function createLicenseCustomerPortal(request: LicenseKeyRequest): Promise<PortalResponse>
-
-export declare function deactivateLicense(request: LicenseKeyRequest): Promise<CommandResponse>
-
 export interface DocumentEmbeddingProjectionInput {
   docId: string
   revision: string
@@ -560,7 +643,9 @@ export interface EnsureWorkspaceBlobArtifactInput {
   libraryOwned?: boolean
 }
 
-export declare function evaluatePermissionV1(input: any): any
+export declare function evaluateLocalRedirect(input: string, baseUrl: string, allowedBases: Array<string>): string
+
+export declare function evaluateRedirectUri(input: string, baseUrl: string, allowedOrigins: Array<string>, trustedDomains: Array<string>, queryPairs: Array<UrlQueryPair>): string
 
 export declare function fetchRemoteAttachment(request: RemoteAttachmentFetchRequest): Promise<RemoteAttachmentFetchResponse>
 
@@ -586,42 +671,25 @@ export declare function inferRemoteMimeType(request: RemoteMimeTypeRequest): Pro
 
 export declare function inspectImageForProxy(input: Buffer, options?: ImageInspectionOptions | undefined | null): ImageInspection
 
-export interface LicenseError {
-  status: number
-  body: string
+export interface InvalidationHealth {
+  state: string
+  reconnects: number
+  decodeFailures: number
+  received: number
+  published: number
+  publishFailures: number
 }
 
-export interface LicenseHealthRequest {
-  licenseKey: string
-  validateKey: string
+export interface IssueLicenseInput {
+  licenseId: string
+  workspaceId: string
+  seatQuantity: number
+  subscriptionEnd?: string
+  privateKey: string
+  now: string
 }
 
-export interface LicenseInfo {
-  plan: string
-  recurring: string
-  quantity: number
-  expiresAt: number
-  validateKey: string
-}
-
-export interface LicenseKeyRequest {
-  licenseKey: string
-}
-
-export interface LicenseRecurringRequest {
-  licenseKey: string
-  recurring: string
-}
-
-export interface LicenseResponse {
-  license?: LicenseInfo
-  error?: LicenseError
-}
-
-export interface LicenseSeatsRequest {
-  licenseKey: string
-  seats: number
-}
+export declare function issueLicenseV1(input: IssueLicenseInput): Buffer
 
 export declare function llmBuildCanonicalRequest(request: CanonicalChatRequestContract): LlmRequestContract
 
@@ -921,13 +989,6 @@ export interface NativeWorkspaceDocContent {
   avatarKey: string
 }
 
-export declare function parseAuthSessionRefreshToken(token: string): ParsedAuthSessionRefreshToken | null
-
-export interface ParsedAuthSessionRefreshToken {
-  id: string
-  secretHash: string
-}
-
 export interface ParsedDoc {
   name: string
   chunks: Array<Chunk>
@@ -941,13 +1002,11 @@ export declare function parsePageDoc(docBin: Buffer, maxSummaryLength?: number |
 
 export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocContent | null
 
-export declare function permissionActionRoleMatrixV1(): any
+export declare function permissionActionCatalogV1(): PermissionActionCatalogV1
 
-export declare function permissionActionRoleMatrixV1Json(): string
-
-export interface PortalResponse {
-  url?: string
-  error?: LicenseError
+export interface PermissionActionCatalogV1 {
+  workspace: Array<string>
+  doc: Array<string>
 }
 
 export interface ProbeByokDraftInput {
@@ -1145,7 +1204,6 @@ export interface ResolveEntitlementInput {
   quantity?: number
   signedPayload?: Buffer
   publicKey?: string
-  licenseAesKey?: string
   now: string
 }
 
@@ -1159,38 +1217,50 @@ export interface RotateByokCredentialInput {
   actorUserId: string
 }
 
-export interface RuntimeBlobCleanupExecuteResult {
-  scannedCandidates: number
-  deletedObjects: number
-  deletedMetadata: number
-  skippedStillReferenced: number
-  failed: number
-  workspaceIds: Array<string>
+export interface RuntimeAdminGrantInput {
+  targetType: string
+  targetId: string
+  plan: string
+  quantity?: number
 }
 
-export interface RuntimeBlobCleanupPlanResult {
-  runId?: string
-  scannedBlobs: number
-  candidatesMarked: number
-  protectedByDocRefs: number
-  protectedByMetadata: number
-  protectedByOtherRefs: number
-  nextCursor?: string
+export interface RuntimeAggregateRequest {
+  table: SearchTable
+  queries: Array<RuntimeSearchQuery>
+  rootQuery: number
+  field: string
+  options: AggregateOptions
+}
+
+export interface RuntimeAuthorizedBlobV1 {
+  streamId: string
+  mime: string
+  size: number
+  lastModifiedMs: number
+}
+
+export interface RuntimeBlobChunkV1 {
+  body: Buffer
+  done: boolean
 }
 
 export interface RuntimeBlobCleanupResult {
-  scanned: number
-  deleted: number
-  abortedMultipart: number
+  scannedBlobs: number
+  deletedObjects: number
+  deletedMetadata: number
+  protectedByDocRefs: number
+  protectedByMetadata: number
+  protectedByOtherRefs: number
+  failed: number
+  nextCursor?: string
   workspaceIds: Array<string>
 }
 
-export interface RuntimeBlobCompleteResult {
-  ok: boolean
-  reason?: string
-  contentType?: string
-  contentLength?: number
-  lastModifiedMs?: number
+export interface RuntimeBlobManagementInput {
+  workspaceId: string
+  actorUserId: string
+  key: string
+  permanently: boolean
 }
 
 export interface RuntimeBlobMetadataBackfillResult {
@@ -1204,6 +1274,11 @@ export interface RuntimeBlobMetadataBackfillResult {
   workspaceIds: Array<string>
 }
 
+export interface RuntimeByokEntitlement {
+  server: boolean
+  local: boolean
+}
+
 export interface RuntimeDocBlobRefsResult {
   scannedDocs: number
   parsedDocs: number
@@ -1214,7 +1289,7 @@ export interface RuntimeDocBlobRefsResult {
 }
 
 export interface RuntimeDocCompactionResult {
-  leaseAcquired: boolean
+  lockAcquired: boolean
   merged: boolean
   workspaceId: string
   docId: string
@@ -1233,18 +1308,6 @@ export interface RuntimeDocHistoryInput {
   historyMaxAgeMs: number
 }
 
-export interface RuntimeDocumentCleanupAckResult {
-  completed: boolean
-}
-
-export interface RuntimeDocumentCleanupEffect {
-  workspaceId: string
-  docId: string
-  cleanupVersion: string
-  commentObjectsDone: boolean
-  searchDone: boolean
-}
-
 export interface RuntimeDocumentCleanupExecuteResult {
   scannedCandidates: number
   serializationRetries: number
@@ -1253,7 +1316,6 @@ export interface RuntimeDocumentCleanupExecuteResult {
   reset: number
   failed: number
   deletedRows: number
-  effects: Array<RuntimeDocumentCleanupEffect>
 }
 
 export interface RuntimeDocumentCleanupReconcileResult {
@@ -1319,6 +1381,19 @@ export interface RuntimeEmbeddingWorkspaceState {
   reasonCode?: string
 }
 
+export interface RuntimeInstalledLicense {
+  key: string
+  workspaceId: string
+  quantity: number
+  recurring: string
+  variant?: string
+  validateKey: string
+  validatedAt: string
+  expiredAt?: string
+  installedAt: string
+  license?: Buffer
+}
+
 export interface RuntimeInviteAbuseActionRequired {
   action: string
   subjectKey: string
@@ -1335,10 +1410,21 @@ export interface RuntimeInviteAbuseClaimedAction {
   workspaceId: string
 }
 
-export interface RuntimeMagicLinkOtpConsumeResult {
-  ok: boolean
-  token?: string
-  reason?: string
+export interface RuntimeLicenseChange {
+  workspaceId: string
+  recurring: string
+  quantity?: number
+  canceled: boolean
+}
+
+export interface RuntimeLicenseHealthResult {
+  changes: Array<RuntimeLicenseChange>
+  transientFailure: boolean
+}
+
+export interface RuntimeLicenseSeatUpdateResult {
+  status: string
+  license?: RuntimeInstalledLicense
 }
 
 export interface RuntimeMailDeliveryQuotaDecision {
@@ -1371,8 +1457,14 @@ export interface RuntimeMailDeliveryQuotaMetadataInput {
 
 export interface RuntimeMailDeliveryQuotaRecipientInput {
   email: string
-  domain: string
   userId?: string
+}
+
+export interface RuntimeManagedBlob {
+  key: string
+  mime: string
+  size: number
+  createdAt: string
 }
 
 export interface RuntimeMultipartUploadInit {
@@ -1388,12 +1480,6 @@ export interface RuntimeMultipartUploadPart {
 export interface RuntimeObjectGetResult {
   body: Buffer
   metadata: RuntimeObjectMetadata
-}
-
-export interface RuntimeObjectListEntry {
-  key: string
-  contentLength: number
-  lastModifiedMs: number
 }
 
 export interface RuntimeObjectMetadata {
@@ -1435,6 +1521,94 @@ export interface RuntimeRetrievalScope {
   preferredSourceIds: Array<string>
 }
 
+export interface RuntimeSearchQuery {
+  queryType: string
+  field?: string
+  matchValue?: string
+  query?: number
+  queries?: Array<number>
+  occur?: string
+  boost?: number
+}
+
+export interface RuntimeSearchRequest {
+  table: SearchTable
+  queries: Array<RuntimeSearchQuery>
+  rootQuery: number
+  options: SearchOptions
+}
+
+export interface RuntimeSeatActivationInput {
+  workspaceId: string
+  actorUserId: string
+  targetUserId: string
+  requireManagePermission: boolean
+}
+
+export interface RuntimeSeatReservation {
+  invitationId: string
+  userId: string
+  email: string
+  status: string
+}
+
+export interface RuntimeSeatReservationDecision {
+  allowed: boolean
+  reason?: string
+  limit: number
+  current: number
+  reservations: Array<RuntimeSeatReservation>
+}
+
+export interface RuntimeSeatReservationInput {
+  workspaceId: string
+  actorUserId: string
+  targets: Array<RuntimeSeatReservationTarget>
+}
+
+export interface RuntimeSeatReservationTarget {
+  email: string
+}
+
+export interface RuntimeSeatReviewInput {
+  workspaceId: string
+  targetUserId: string
+  inviterUserId: string
+}
+
+export interface RuntimeStorageReservationDecision {
+  allowed: boolean
+  reservationId?: string
+  alreadyUploaded: boolean
+  reason?: string
+  limit?: number
+  current?: number
+  requested: number
+}
+
+export interface RuntimeStorageReservationInput {
+  workspaceId: string
+  userId: string
+  key: string
+  size: number
+  mime: string
+  kind: string
+  docId?: string
+  name?: string
+  uploadId?: string
+}
+
+export interface RuntimeStorageReservationMutation {
+  workspaceId: string
+  userId: string
+  key: string
+  reservationId: string
+  kind: string
+  docId?: string
+  size?: number
+  mime?: string
+}
+
 export interface RuntimeTurnScopeSnapshot {
   version: number
   resolvedAt: string
@@ -1445,11 +1619,21 @@ export interface RuntimeTurnScopeSnapshot {
   retrieval: RuntimeRetrievalScope
 }
 
-export interface RuntimeVerificationTokenRecord {
-  tokenType: number
-  token: string
-  credential?: string
-  expiresAtMs: number
+export interface RuntimeUserQuotaState {
+  plan: string
+  seatLimit: number
+  blobLimit: number
+  storageQuota: number
+  usedStorageQuota: number
+  historyPeriodSeconds: number
+  copilotActionLimit?: number
+  unlimitedCopilot: boolean
+}
+
+export interface RuntimeWorkspaceActionDecision {
+  allowed: boolean
+  retryAfterSeconds?: number
+  reason?: string
 }
 
 export interface RuntimeWorkspaceArtifact {
@@ -1500,28 +1684,32 @@ export interface RuntimeWorkspaceInviteQuotaUsage {
   targetDomains: Array<RuntimeQuotaTargetDomainInput>
 }
 
-export interface RuntimeWorkspaceStatsDailyRecalibrationResult {
-  processed: number
-  lastSid: number
-  snapshotted: number
-  skipped: boolean
+export interface RuntimeWorkspaceQuotaState {
+  plan: string
+  ownerUserId: string
+  usesOwnerQuota: boolean
+  seatLimit: number
+  memberCount: number
+  overcapacityMemberCount: number
+  blobLimit: number
+  storageQuota: number
+  usedStorageQuota: number
+  historyPeriodSeconds: number
+  readonly: boolean
+  readonlyReasons: Array<string>
+  unlimitedCopilot: boolean
 }
 
-export interface RuntimeWorkspaceStatsRecalibrationResult {
-  processed: number
-  lastSid: number
-  skipped: boolean
-}
-
-export interface RuntimeWorkspaceStatsRefreshResult {
-  processed: number
-  backlog: number
-  skipped: boolean
-}
-
-export interface RuntimeWorkspaceStatsSnapshotResult {
-  snapshotted: number
-  skipped: boolean
+export interface RuntimeWorkspaceStorageReconcileResult {
+  scannedWorkspaces: bigint | number
+  deletedWorkspaces: bigint | number
+  scannedObjects: bigint | number
+  deletedObjects: bigint | number
+  deletedOrphanRows: bigint | number
+  unknownPrefixes: bigint | number
+  failedShards: bigint | number
+  failedScopes: Array<string>
+  unknownPrefixSamples: Array<string>
 }
 
 export declare function safeFetch(request: SafeFetchRequest): Promise<SafeFetchResponse>
@@ -1565,7 +1753,32 @@ export interface ScopeSelectorInput {
   source: string
 }
 
-export declare function signAuthSessionAccessToken(userId: string, authSessionId: string, keyId: string, secret: Buffer, issuedAt: number, expiresAt: number): string
+export interface SearchHighlight {
+  field: string
+  before: string
+  end: string
+}
+
+export interface SearchOperationOutput {
+  ok: boolean
+  value?: any
+  errorCode?: string
+}
+
+export interface SearchOptions {
+  fields: Array<string>
+  highlights: Array<SearchHighlight>
+  pagination: SearchPagination
+}
+
+export interface SearchPagination {
+  limit?: number
+  skip?: number
+  cursor?: string
+}
+
+export type SearchTable =  'doc'|
+'block';
 
 export interface StorageProviderCapabilities {
   put: boolean
@@ -1587,6 +1800,11 @@ export interface StorageRuntimeHealth {
   providerConfigured: boolean
   provider?: string
   bucket?: string
+}
+
+export interface StorageUploadUrlConfig {
+  proxyUpload: boolean
+  urlPrefix?: string
 }
 
 export interface SyncEmbeddingStateInput {
@@ -1647,10 +1865,6 @@ export declare function updateDocTitle(existingBinary: Buffer, title: string, do
  */
 export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string): Buffer
 
-export declare function updateLicenseRecurring(request: LicenseRecurringRequest): Promise<CommandResponse>
-
-export declare function updateLicenseSeats(request: LicenseSeatsRequest): Promise<CommandResponse>
-
 /**
  * Updates a document title in the workspace root doc's meta.pages array.
  *
@@ -1664,6 +1878,11 @@ export declare function updateLicenseSeats(request: LicenseSeatsRequest): Promis
  */
 export declare function updateRootDocMetaTitle(rootDocBin: Buffer, docId: string, title: string): Buffer
 
+export interface UrlQueryPair {
+  name: string
+  value: string
+}
+
 export declare function validateAppConfigValue(module: string, key: string, value: any): Array<string>
 
 /**
@@ -1672,6 +1891,9 @@ export declare function validateAppConfigValue(module: string, key: string, valu
  */
 export declare function validateDocUpdate(update: Buffer): Promise<boolean>
 
-export declare function verifyAuthSessionAccessToken(token: string, expectedKeyId: string, secret: Buffer, now: number): AuthSessionAccessTokenVerification
+export declare function validateLicenseSeatQuantityV1(seatQuantity: number): void
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>
+
+export type WorkspaceDocWriteIntentV1 =  'update_doc'|
+'create_doc';

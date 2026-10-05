@@ -1,33 +1,37 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { JobQueue } from '../../base';
 import { Models } from '../../models';
+import { CalendarService } from './service';
 
-const CALENDAR_POLL_BATCH_SIZE = 200;
+const CALENDAR_SYNC_CONCURRENCY = 8;
+const CALENDAR_POLL_BATCHES = 25;
 
 @Injectable()
 export class CalendarCronJobs {
   constructor(
     private readonly models: Models,
-    private readonly queue: JobQueue
+    private readonly calendar: CalendarService
   ) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_MINUTE, { waitForCompletion: true })
   async pollAccounts() {
-    const subscriptions = await this.models.calendarSubscription.listDueForSync(
-      new Date(),
-      CALENDAR_POLL_BATCH_SIZE
-    );
+    for (let batch = 0; batch < CALENDAR_POLL_BATCHES; batch++) {
+      const subscriptions =
+        await this.models.calendarSubscription.claimDueForSync(
+          new Date(),
+          CALENDAR_SYNC_CONCURRENCY
+        );
 
-    await Promise.allSettled(
-      subscriptions.map(({ id }) =>
-        this.queue.add(
-          'calendar.syncSubscription',
-          { subscriptionId: id, reason: 'polling' },
-          { jobId: id }
+      await Promise.allSettled(
+        subscriptions.map(({ id, claimedUntil }) =>
+          this.calendar.syncSubscription(id, {
+            reason: 'polling',
+            claimedUntil,
+          })
         )
-      )
-    );
+      );
+      if (subscriptions.length < CALENDAR_SYNC_CONCURRENCY) break;
+    }
   }
 }

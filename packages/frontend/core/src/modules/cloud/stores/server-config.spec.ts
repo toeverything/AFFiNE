@@ -3,27 +3,36 @@ import { describe, expect, test } from 'vitest';
 
 import {
   assertSupportedServerVersion,
+  isBatchSyncServerVersion,
   MIN_SUPPORTED_SERVER_VERSION,
 } from './server-config';
 
 describe('server config version guard', () => {
-  test('accepts supported server versions', () => {
-    expect(() => assertSupportedServerVersion('0.27.0')).not.toThrow();
-    expect(() => assertSupportedServerVersion('0.27.0-beta.5')).not.toThrow();
-    expect(() => assertSupportedServerVersion('0.27.0-rc.1')).not.toThrow();
-    expect(() => assertSupportedServerVersion('0.28.0')).not.toThrow();
+  test.each([
+    ['0.26.9', false],
+    ['0.27.0', true],
+    ['0.27.0-beta.1', true],
+    ['2026.8.20-canary.15', true],
+    ['0.28.0', true],
+  ])('selects batch sync for %s', (version, expected) => {
+    expect(isBatchSyncServerVersion(version)).toBe(expected);
   });
 
-  test('rejects old server versions', () => {
-    for (const version of ['0.26.9', '0.26.9-beta.5']) {
-      expect(() => assertSupportedServerVersion(version)).toThrow(
-        UserFriendlyError
-      );
-    }
-  });
-
-  test('rejects missing or invalid server versions', () => {
-    for (const version of [undefined, null, '', 'not-a-version']) {
+  test.each([
+    ['0.27.0', true],
+    ['0.27.0-beta.5', true],
+    ['0.27.0-rc.1', true],
+    ['0.28.0', true],
+    ['0.26.9', false],
+    ['0.26.9-beta.5', false],
+    [undefined, false],
+    [null, false],
+    ['', false],
+    ['not-a-version', false],
+  ])('validates server version %s', (version, supported) => {
+    if (supported) {
+      expect(() => assertSupportedServerVersion(version)).not.toThrow();
+    } else {
       expect(() => assertSupportedServerVersion(version)).toThrow(
         UserFriendlyError
       );

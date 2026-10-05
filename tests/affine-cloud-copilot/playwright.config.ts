@@ -15,7 +15,6 @@ const config: PlaywrightTestConfig = {
   fullyParallel: true,
   timeout: 120_000,
   outputDir: testResultDir,
-  globalSetup: './global-setup.ts',
   use: {
     baseURL: 'http://localhost:8080/',
     browserName:

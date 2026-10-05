@@ -1,5 +1,6 @@
 import { generateSubscriptionCallbackLink } from '@affine/core/components/hooks/affine/use-subscription-notify';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
+import { NativePaywallService } from '@affine/core/modules/paywall';
 import { UrlService } from '@affine/core/modules/url';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { useFramework } from '@toeverything/infra';
@@ -21,6 +22,14 @@ export const useAISubscribe = () => {
 
       const account = authService.session.account$.value;
       if (!account) {
+        return;
+      }
+
+      const nativePaywallProvider = framework
+        .get(NativePaywallService)
+        .getNativePaywallProvider();
+      if (nativePaywallProvider) {
+        await nativePaywallProvider.showPaywall('AI');
         return;
       }
 

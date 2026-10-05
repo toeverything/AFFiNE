@@ -3,25 +3,26 @@ import { type Container, createIdentifier } from '@blocksuite/global/di';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { Extension } from '@blocksuite/store';
 
-import { DEFAULT_LINK_PREVIEW_ENDPOINT } from '../../consts';
 import { isAbortError } from '../../utils/is-abort-error';
 import {
   LinkPreviewCacheIdentifier,
   type LinkPreviewCacheProvider,
 } from './link-preview-cache';
+import {
+  type LinkPreviewResponseData,
+  readLinkPreviewResponse,
+} from './response';
 
-export type LinkPreviewResponseData = {
-  url: string;
-  title?: string;
-  siteName?: string;
-  description?: string;
-  images?: string[];
-  mediaType?: string;
-  contentType?: string;
-  charset?: string;
-  videos?: string[];
-  favicons?: string[];
-};
+export type LinkPreviewResult = Partial<LinkPreviewData> &
+  Pick<
+    LinkPreviewResponseData,
+    | 'siteName'
+    | 'provider'
+    | 'author'
+    | 'publishedAt'
+    | 'durationSeconds'
+    | 'transcript'
+  >;
 
 export interface LinkPreviewProvider {
   /**
@@ -29,17 +30,18 @@ export interface LinkPreviewProvider {
    */
   query: (
     url: string,
-    signal?: AbortSignal
-  ) => Promise<Partial<LinkPreviewData>>;
+    signal?: AbortSignal,
+    include?: Array<'transcript'>
+  ) => Promise<LinkPreviewResult>;
   /**
    * Set the endpoint for link preview
    */
-  setEndpoint: (endpoint: string) => void;
+  setEndpoint: (endpoint: string | null) => void;
 
   /**
    * Get the endpoint for link preview
    */
-  endpoint: string;
+  endpoint: string | null;
 }
 
 export const LinkPreviewServiceIdentifier =
@@ -55,9 +57,12 @@ export class LinkPreviewService
     ]);
   }
 
-  private _endpoint: string = DEFAULT_LINK_PREVIEW_ENDPOINT;
+  private _endpoint: string | null = null;
 
-  constructor(private readonly _cache: LinkPreviewCacheProvider) {
+  constructor(
+    private readonly _cache: LinkPreviewCacheProvider,
+    private readonly _fetch: typeof globalThis.fetch = globalThis.fetch
+  ) {
     super();
   }
 
@@ -65,57 +70,22 @@ export class LinkPreviewService
     return this._endpoint;
   }
 
-  setEndpoint = (endpoint: string) => {
+  setEndpoint = (endpoint: string | null) => {
     this._endpoint = endpoint;
-  };
-
-  private readonly _fetchTwitterPreview = async (
-    url: string,
-    signal?: AbortSignal
-  ): Promise<Partial<LinkPreviewData>> => {
-    try {
-      const match = /\/status\/(\d+)/.exec(url);
-      if (!match) {
-        throw new BlockSuiteError(
-          ErrorCode.DefaultRuntimeError,
-          `Invalid tweet URL: ${url}`
-        );
-      }
-      const apiUrl = `https://api.fxtwitter.com/status/${match[1]}`;
-
-      const response = await fetch(apiUrl, { signal }).then(res => res.json());
-      const tweet = response?.tweet;
-      if (!tweet) {
-        throw new BlockSuiteError(
-          ErrorCode.DefaultRuntimeError,
-          `Invalid tweet response: ${url}`
-        );
-      }
-
-      return {
-        title: tweet.author?.name ?? null,
-        icon: tweet.author?.avatar_url ?? null,
-        description: tweet.text ?? null,
-        image:
-          tweet.media?.photos?.[0]?.url || tweet.author?.banner_url || null,
-      };
-    } catch (e) {
-      console.error(`Failed to fetch tweet: ${url}`);
-      console.error(e);
-      return {};
-    }
   };
 
   private readonly _fetchStandardPreview = async (
     url: string,
-    signal?: AbortSignal
-  ): Promise<Partial<LinkPreviewData>> => {
-    const response = await fetch(this.endpoint, {
+    signal?: AbortSignal,
+    include?: Array<'transcript'>
+  ): Promise<LinkPreviewResult> => {
+    if (!this.endpoint) return {};
+    const response = await this._fetch(this.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, ...(include?.length ? { include } : {}) }),
       signal,
     })
       .then(r => {
@@ -136,8 +106,16 @@ export class LinkPreviewService
 
     if (!response) return {};
 
-    const data: LinkPreviewResponseData = await response.json();
+    const data = await readLinkPreviewResponse(response);
     return {
+      siteName: data.siteName,
+      provider: data.provider,
+      author: data.author,
+      publishedAt: data.publishedAt,
+      durationSeconds: data.durationSeconds,
+      ...(include?.includes('transcript')
+        ? { transcript: data.transcript }
+        : {}),
       title: data.title ?? null,
       description: data.description ?? null,
       icon: data.favicons?.[0],
@@ -145,44 +123,28 @@ export class LinkPreviewService
     };
   };
 
-  private readonly _isTwitterUrl = (url: string): boolean => {
-    const twitterDomains = [
-      'https://x.com/',
-      'https://www.x.com/',
-      'https://www.twitter.com/',
-      'https://twitter.com/',
-    ];
-    return (
-      twitterDomains.some(domain => url.startsWith(domain)) &&
-      url.includes('/status/')
-    );
-  };
-
-  private readonly _fetchPreview = async (
-    url: string,
-    signal?: AbortSignal
-  ): Promise<Partial<LinkPreviewData>> => {
-    if (this._isTwitterUrl(url)) {
-      return this._fetchTwitterPreview(url, signal);
-    }
-    return this._fetchStandardPreview(url, signal);
-  };
-
   /**
    * Fetch link preview data for a given URL
    */
   query = async (
     url: string,
-    signal?: AbortSignal
-  ): Promise<Partial<LinkPreviewData>> => {
-    // Check memory cache, if hit, return the cached data
-    const cached = this._cache.get(url);
+    signal?: AbortSignal,
+    include?: Array<'transcript'>
+  ): Promise<LinkPreviewResult> => {
+    if (!this.endpoint) return {};
+    const sourceKey = JSON.stringify([this.endpoint, url]);
+    const key = include?.includes('transcript')
+      ? `transcript:${sourceKey}`
+      : sourceKey;
+    const cached = this._cache.get(key);
     if (cached) {
       return cached;
     }
 
     // Check pending requests, if there is a pending request, return the promise
-    const pendingRequest = this._cache.getPendingRequest(url);
+    const pendingRequest = signal
+      ? undefined
+      : this._cache.getPendingRequest(key);
     if (pendingRequest) {
       return pendingRequest;
     }
@@ -191,20 +153,20 @@ export class LinkPreviewService
     const promise = (async () => {
       try {
         // Fetch new data
-        const data = await this._fetchPreview(url, signal);
+        const data = await this._fetchStandardPreview(url, signal, include);
         // If the data is not empty, set the data to the cache
         if (data && Object.keys(data).length > 0) {
-          this._cache.set(url, data);
+          this._cache.set(key, data);
         }
         return data;
       } finally {
         // Delete the pending request regardless of success or failure
-        this._cache.deletePendingRequest(url);
+        if (!signal) this._cache.deletePendingRequest(key);
       }
     })();
 
     // Set the promise to the cache
-    this._cache.setPendingRequest(url, promise);
+    if (!signal) this._cache.setPendingRequest(key, promise);
     return promise;
   };
 }

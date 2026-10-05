@@ -1,4 +1,5 @@
 export interface AuthPlugin {
+  showNativeSignIn(): Promise<{ success: boolean }>;
   signInMagicLink(options: {
     endpoint: string;
     email: string;

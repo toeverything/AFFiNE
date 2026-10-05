@@ -1,160 +1,39 @@
+use affine_core::access_control::Deployment as CoreDeployment;
 use chrono::{DateTime, Utc};
 use napi::Result;
 use serde_json::json;
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 
 use super::{
-  ActorFacts, BackendRuntime, InviteAbuseDecision, InviteActivityFacts, InviteQuotaConfig, QuotaFacts, QuotaViolation,
-  RuntimeError, RuntimeInviteAbuseActionRequired, RuntimeResult, RuntimeWorkspaceInviteQuotaDecision,
-  RuntimeWorkspaceInviteQuotaInput, RuntimeWorkspaceInviteQuotaUsage, WorkspaceFacts, build_invite_scopes,
-  commit_reservation, evaluate_projection, high_confidence_invite_abuse, invite_commit_usage_for_scope, napi_error,
-  normalize_domain, release_reservation, reserve_scopes, short_hash, source_cohort_subject_key, source_prefix,
-  subject_hash, sum_domains, workspace_subject_key,
+  BackendRuntime, InviteAbusePersistencePlan, InviteCommitUsage, InviteInput, InviteOperation, InvitePolicyDecision,
+  QuotaViolation, RateLimitDenialReason, RuntimeError, RuntimeInviteAbuseActionRequired, RuntimeResult,
+  RuntimeWorkspaceActionDecision, RuntimeWorkspaceInviteQuotaDecision, RuntimeWorkspaceInviteQuotaInput,
+  RuntimeWorkspaceInviteQuotaUsage, TargetDomain, commit_reservation, invite_input, invite_policy_config,
+  load_active_abuse_subjects, load_actor, load_invite_activity, load_quota, load_workspace, napi_error, plan_invite,
+  plan_invite_commit, release_reservation, reserve_scopes,
 };
-
-async fn load_actor(pool: &PgPool, user_id: &str) -> RuntimeResult<ActorFacts> {
-  let row = sqlx::query(
-    r#"
-    SELECT email, created_at, registered, email_verified IS NOT NULL AS email_verified, disabled
-    FROM users
-    WHERE id = $1
-    "#,
-  )
-  .bind(user_id)
-  .fetch_optional(pool)
-  .await
-  .map_err(|err| RuntimeError::database("failed to load invite actor", err))?
-  .ok_or_else(|| RuntimeError::invalid_input("invite actor not found"))?;
-
-  Ok(ActorFacts {
-    email: row.get("email"),
-    created_at: row.get("created_at"),
-    registered: row.get("registered"),
-    email_verified: row.get("email_verified"),
-    disabled: row.get("disabled"),
-  })
-}
-
-async fn load_workspace(pool: &PgPool, workspace_id: &str) -> RuntimeResult<WorkspaceFacts> {
-  let row = sqlx::query("SELECT created_at FROM workspaces WHERE id = $1")
-    .bind(workspace_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|err| RuntimeError::database("failed to load workspace", err))?
-    .ok_or_else(|| RuntimeError::invalid_input("workspace not found"))?;
-
-  Ok(WorkspaceFacts {
-    created_at: row.get("created_at"),
-  })
-}
-
-async fn load_invite_activity(
-  pool: &PgPool,
-  actor_user_id: &str,
-  workspace_id: &str,
-) -> RuntimeResult<InviteActivityFacts> {
-  let row = sqlx::query(
-    r#"
-    SELECT
-      COUNT(*) FILTER (
-        WHERE inviter_user_id = $1 AND created_at >= clock_timestamp() - interval '7 days'
-      )::int AS actor_created_7d,
-      COUNT(*) FILTER (
-        WHERE inviter_user_id = $1 AND accepted_at >= clock_timestamp() - interval '7 days'
-      )::int AS actor_accepted_7d,
-      COUNT(*) FILTER (
-        WHERE workspace_id = $2 AND status IN ('pending', 'waiting_review', 'waiting_seat')
-      )::int AS workspace_pending,
-      COUNT(*) FILTER (
-        WHERE workspace_id = $2 AND created_at >= clock_timestamp() - interval '7 days'
-      )::int AS workspace_created_7d,
-      COUNT(*) FILTER (
-        WHERE workspace_id = $2 AND accepted_at >= clock_timestamp() - interval '7 days'
-      )::int AS workspace_accepted_7d
-    FROM workspace_invitations
-    WHERE inviter_user_id = $1 OR workspace_id = $2
-    "#,
-  )
-  .bind(actor_user_id)
-  .bind(workspace_id)
-  .fetch_one(pool)
-  .await
-  .map_err(|err| RuntimeError::database("failed to load invite activity facts", err))?;
-
-  Ok(InviteActivityFacts {
-    actor_created_7d: row.get("actor_created_7d"),
-    actor_accepted_7d: row.get("actor_accepted_7d"),
-    workspace_pending: row.get("workspace_pending"),
-    workspace_created_7d: row.get("workspace_created_7d"),
-    workspace_accepted_7d: row.get("workspace_accepted_7d"),
-  })
-}
-
-async fn load_quota(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Option<QuotaFacts>> {
-  let row = sqlx::query(
-    r#"
-    SELECT plan, owner_user_id, uses_owner_quota, seat_limit, member_count, known, stale, stale_after
-    FROM effective_workspace_quota_states
-    WHERE workspace_id = $1
-    "#,
-  )
-  .bind(workspace_id)
-  .fetch_optional(pool)
-  .await
-  .map_err(|err| RuntimeError::database("failed to load workspace quota state", err))?;
-
-  Ok(row.map(|row| QuotaFacts {
-    plan: row.get("plan"),
-    owner_user_id: row.get("owner_user_id"),
-    uses_owner_quota: row.get("uses_owner_quota"),
-    seat_limit: row.get("seat_limit"),
-    member_count: row.get("member_count"),
-    known: row.get("known"),
-    stale: row.get("stale"),
-    stale_after: row.get("stale_after"),
-  }))
-}
-
-async fn active_subject_status(pool: &PgPool, subject_key: &str) -> RuntimeResult<Option<String>> {
-  let row = sqlx::query("SELECT status FROM runtime_invite_abuse_subjects WHERE subject_key = $1")
-    .bind(subject_key)
-    .fetch_optional(pool)
-    .await
-    .map_err(|err| RuntimeError::database("failed to load invite abuse subject", err))?;
-  Ok(row.map(|row| row.get("status")))
-}
+use crate::runtime::Deployment;
 
 async fn record_invite_abuse_action(
   pool: &PgPool,
   input: &RuntimeWorkspaceInviteQuotaInput,
-  actor: &ActorFacts,
-  decision: InviteAbuseDecision,
-  config: &InviteQuotaConfig,
+  plan: InviteAbusePersistencePlan,
 ) -> RuntimeResult<RuntimeInviteAbuseActionRequired> {
-  let action = decision.action;
-  let status = if action == "ban_actor" { "banned" } else { "quarantined" };
-  let source_prefix_hash = source_prefix(input.source.as_ref()).map(|prefix| short_hash(&prefix));
+  let action = plan.action.as_str();
   let target_domains = json!(
-    input
+    plan
+      .evidence
       .target_domains
       .iter()
       .map(|target| json!({
-        "domain": normalize_domain(&target.domain),
+        "domain": target.domain,
         "count": target.count,
       }))
       .collect::<Vec<_>>()
   );
   let counters = json!({
-    "requested": input.target_count,
+    "requested": plan.evidence.requested,
   });
-  let actor_email_hash = subject_hash(&actor.email, config);
-  let actor_domain = actor.email.split('@').next_back().map(normalize_domain);
-  let source_asn = input.source.as_ref().and_then(|source| source.asn).map(i64::from);
-  let subject_user_id = if decision.subject_kind == "actor_email" {
-    Some(input.actor_user_id.as_str())
-  } else {
-    None
-  };
 
   let mut tx = pool
     .begin()
@@ -190,14 +69,14 @@ async fn record_invite_abuse_action(
       updated_at = now()
     "#,
   )
-  .bind(&decision.subject_key)
-  .bind(decision.subject_kind)
-  .bind(subject_user_id)
-  .bind(actor_email_hash)
-  .bind(actor_domain)
-  .bind(status)
+  .bind(&plan.subject.key)
+  .bind(plan.subject.kind.as_str())
+  .bind(&plan.subject_user_id)
+  .bind(&plan.evidence.actor_email_hash)
+  .bind(&plan.evidence.actor_domain)
+  .bind(plan.subject.status.as_str())
   .bind(action)
-  .bind(decision.reason)
+  .bind(plan.reason.as_str())
   .execute(&mut *tx)
   .await
   .map_err(|err| RuntimeError::database("failed to upsert invite abuse subject", err))?;
@@ -221,17 +100,17 @@ async fn record_invite_abuse_action(
     RETURNING id
     "#,
   )
-  .bind(&decision.subject_key)
+  .bind(&plan.subject.key)
   .bind(&input.request_id)
   .bind(&input.workspace_id)
   .bind(&input.actor_user_id)
-  .bind(subject_hash(&actor.email, config))
-  .bind(source_prefix_hash)
-  .bind(source_asn)
+  .bind(&plan.evidence.actor_email_hash)
+  .bind(&plan.evidence.source_prefix_hash)
+  .bind(plan.evidence.source_asn)
   .bind(target_domains)
   .bind(counters)
   .bind(action)
-  .bind(decision.reason)
+  .bind(plan.reason.as_str())
   .fetch_one(&mut *tx)
   .await
   .map_err(|err| RuntimeError::database("failed to insert invite abuse evidence", err))?;
@@ -249,7 +128,7 @@ async fn record_invite_abuse_action(
     RETURNING id
     "#,
   )
-  .bind(&decision.subject_key)
+  .bind(&plan.subject.key)
   .bind(evidence_id)
   .bind(action)
   .fetch_one(&mut *tx)
@@ -262,18 +141,21 @@ async fn record_invite_abuse_action(
 
   Ok(RuntimeInviteAbuseActionRequired {
     action: action.to_string(),
-    subject_key: decision.subject_key,
+    subject_key: plan.subject.key,
     evidence_id: evidence_id.to_string(),
     action_id: action_id.to_string(),
   })
 }
 
-fn decision_from_violation(violation: QuotaViolation, reason: &str) -> RuntimeWorkspaceInviteQuotaDecision {
+fn decision_from_violation(
+  violation: QuotaViolation,
+  reason: affine_core::rate_limit::RateLimitDenialReason,
+) -> RuntimeWorkspaceInviteQuotaDecision {
   RuntimeWorkspaceInviteQuotaDecision {
     allowed: false,
     reservation_id: None,
     retry_after_seconds: Some(60),
-    reason: Some(reason.to_string()),
+    reason: Some(reason.as_str().to_string()),
     scope_key: Some(violation.scope_key),
     window_seconds: Some(violation.window_seconds),
     limit: Some(violation.limit),
@@ -286,139 +168,114 @@ fn decision_from_violation(violation: QuotaViolation, reason: &str) -> RuntimeWo
 #[napi_derive::napi]
 impl BackendRuntime {
   #[napi]
-  pub async fn assert_workspace_invite_quota_v1(
+  pub async fn evaluate_workspace_invite_link_v1(
     &self,
-    input: RuntimeWorkspaceInviteQuotaInput,
-  ) -> Result<RuntimeWorkspaceInviteQuotaDecision> {
-    if input.target_count <= 0 {
-      return Err(napi_error("target_count must be positive"));
-    }
+    actor_user_id: String,
+    workspace_id: String,
+  ) -> Result<RuntimeWorkspaceActionDecision> {
     let runtime_config = self.config()?;
-    let config = &runtime_config.invite_quota;
     let pool = self.pool().await?;
     let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
       .fetch_one(&pool)
       .await
       .map_err(|err| RuntimeError::database("failed to read database clock", err))?;
-    let actor = load_actor(&pool, &input.actor_user_id).await?;
-    let actor_subject = subject_hash(&actor.email, config);
-    if let Some(status) = active_subject_status(&pool, &actor_subject).await?
-      && matches!(status.as_str(), "banned" | "quarantined")
-    {
-      return Ok(RuntimeWorkspaceInviteQuotaDecision {
-        allowed: false,
-        reservation_id: None,
-        retry_after_seconds: None,
-        reason: Some("abuse_subject".to_string()),
-        scope_key: Some(format!("invite:actor_subject:{actor_subject}")),
-        window_seconds: None,
-        limit: None,
-        current: None,
-        requested: Some(input.target_count),
-        action_required: None,
-      });
-    }
-    let workspace_subject = workspace_subject_key(&input.workspace_id);
-    if let Some(status) = active_subject_status(&pool, &workspace_subject).await?
-      && status == "quarantined"
-    {
-      return Ok(RuntimeWorkspaceInviteQuotaDecision {
-        allowed: false,
-        reservation_id: None,
-        retry_after_seconds: None,
-        reason: Some("abuse_workspace".to_string()),
-        scope_key: Some(format!("invite:workspace_subject:{workspace_subject}")),
-        window_seconds: None,
-        limit: None,
-        current: None,
-        requested: Some(input.target_count),
-        action_required: None,
-      });
-    }
-    if let Some(prefix) = source_prefix(input.source.as_ref()) {
-      for target in &input.target_domains {
-        let source_subject = source_cohort_subject_key(&prefix, &target.domain);
-        if let Some(status) = active_subject_status(&pool, &source_subject).await?
-          && status == "quarantined"
-        {
-          return Ok(RuntimeWorkspaceInviteQuotaDecision {
-            allowed: false,
-            reservation_id: None,
-            retry_after_seconds: None,
-            reason: Some("abuse_source_cohort".to_string()),
-            scope_key: Some(format!("invite:source_cohort_subject:{source_subject}")),
-            window_seconds: None,
-            limit: None,
-            current: None,
-            requested: Some(input.target_count),
-            action_required: None,
-          });
-        }
-      }
-    }
-
-    let quota = match load_quota(&pool, &input.workspace_id).await? {
-      Some(quota) => quota,
-      None => {
-        return Ok(RuntimeWorkspaceInviteQuotaDecision {
-          allowed: false,
-          reservation_id: None,
-          retry_after_seconds: None,
-          reason: Some("quota_state_unavailable".to_string()),
-          scope_key: None,
-          window_seconds: None,
-          limit: None,
-          current: None,
-          requested: Some(input.target_count),
-          action_required: None,
-        });
-      }
-    };
-    if let Some(reason) = evaluate_projection(&quota, now) {
-      return Ok(RuntimeWorkspaceInviteQuotaDecision {
-        allowed: false,
-        reservation_id: None,
-        retry_after_seconds: None,
-        reason: Some(reason.to_string()),
-        scope_key: None,
-        window_seconds: None,
-        limit: None,
-        current: None,
-        requested: Some(input.target_count),
-        action_required: None,
-      });
-    }
-    if let Some(abuse_decision) = high_confidence_invite_abuse(&input, &actor, config) {
-      let reason = abuse_decision.reason;
-      let scope_key = match abuse_decision.subject_kind {
-        "workspace" => format!("invite:workspace_subject:{}", abuse_decision.subject_key),
-        "source_prefix_domain" => format!("invite:source_cohort_subject:{}", abuse_decision.subject_key),
-        _ => format!("invite:actor_subject:{}", abuse_decision.subject_key),
-      };
-      let action_required = record_invite_abuse_action(&pool, &input, &actor, abuse_decision, config).await?;
-      return Ok(RuntimeWorkspaceInviteQuotaDecision {
-        allowed: false,
-        reservation_id: None,
-        retry_after_seconds: None,
-        reason: Some(reason.to_string()),
-        scope_key: Some(scope_key),
-        window_seconds: None,
-        limit: None,
-        current: None,
-        requested: Some(input.target_count),
-        action_required: Some(action_required),
-      });
-    }
-
-    let workspace = load_workspace(&pool, &input.workspace_id).await?;
-    let activity = load_invite_activity(&pool, &input.actor_user_id, &input.workspace_id).await?;
-    let scopes = build_invite_scopes(&input, &actor, &workspace, &quota, &activity, config, now)?;
-    match reserve_scopes(&pool, "workspace_invite", input.request_id.as_deref(), scopes).await? {
-      Ok(reservation) => Ok(RuntimeWorkspaceInviteQuotaDecision {
+    let actor = load_actor(&pool, &actor_user_id, &workspace_id, runtime_config.deployment, now).await?;
+    let quota = load_quota(&pool, &workspace_id, runtime_config.deployment, now).await?;
+    let workspace = load_workspace(&pool, &workspace_id).await?;
+    let activity = load_invite_activity(&pool, &actor_user_id, &workspace_id).await?;
+    let abuse = load_active_abuse_subjects(&pool).await?;
+    let plan = plan_invite(
+      match runtime_config.deployment {
+        Deployment::Cloud => CoreDeployment::Cloud,
+        Deployment::SelfHosted => CoreDeployment::SelfHosted,
+      },
+      &InviteInput {
+        operation: InviteOperation::CreateInviteLink,
+        actor_user_id,
+        workspace_id,
+        target_count: 0,
+        target_domains: Vec::new(),
+        source: None,
+      },
+      &actor,
+      &workspace,
+      quota.as_ref(),
+      &activity,
+      &abuse,
+      &invite_policy_config(&runtime_config.invite_quota, &runtime_config.private_key),
+      now,
+    )
+    .map_err(|error| napi_error(error.to_string()))?;
+    match plan.decision {
+      InvitePolicyDecision::Allow => Ok(RuntimeWorkspaceActionDecision {
         allowed: true,
-        reservation_id: Some(reservation.reservation_id),
         retry_after_seconds: None,
         reason: None,
+      }),
+      InvitePolicyDecision::Deny {
+        reason,
+        retry_after_seconds,
+        ..
+      } => Ok(RuntimeWorkspaceActionDecision {
+        allowed: false,
+        retry_after_seconds,
+        reason: Some(reason.as_str().to_string()),
+      }),
+      InvitePolicyDecision::Reserve => Ok(RuntimeWorkspaceActionDecision {
+        allowed: false,
+        retry_after_seconds: None,
+        reason: Some(RateLimitDenialReason::PolicyStateInvalid.as_str().to_string()),
+      }),
+    }
+  }
+
+  #[napi]
+  pub async fn assert_workspace_invite_quota_v1(
+    &self,
+    input: RuntimeWorkspaceInviteQuotaInput,
+  ) -> Result<RuntimeWorkspaceInviteQuotaDecision> {
+    let runtime_config = self.config()?;
+    let config = &runtime_config.invite_quota;
+    let policy_config = invite_policy_config(config, &runtime_config.private_key);
+    let pool = self.pool().await?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&pool)
+      .await
+      .map_err(|err| RuntimeError::database("failed to read database clock", err))?;
+    let actor = load_actor(
+      &pool,
+      &input.actor_user_id,
+      &input.workspace_id,
+      runtime_config.deployment,
+      now,
+    )
+    .await?;
+    let policy_input = invite_input(&input);
+    let quota = load_quota(&pool, &input.workspace_id, runtime_config.deployment, now).await?;
+    let workspace = load_workspace(&pool, &input.workspace_id).await?;
+    let activity = load_invite_activity(&pool, &input.actor_user_id, &input.workspace_id).await?;
+    let abuse = load_active_abuse_subjects(&pool).await?;
+    let plan = plan_invite(
+      match runtime_config.deployment {
+        Deployment::Cloud => CoreDeployment::Cloud,
+        Deployment::SelfHosted => CoreDeployment::SelfHosted,
+      },
+      &policy_input,
+      &actor,
+      &workspace,
+      quota.as_ref(),
+      &activity,
+      &abuse,
+      &policy_config,
+      now,
+    )
+    .map_err(|err| napi_error(err.to_string()))?;
+    match plan.decision {
+      InvitePolicyDecision::Allow => Ok(RuntimeWorkspaceInviteQuotaDecision {
+        allowed: false,
+        reservation_id: None,
+        retry_after_seconds: None,
+        reason: Some(RateLimitDenialReason::PolicyStateInvalid.as_str().to_string()),
         scope_key: None,
         window_seconds: None,
         limit: None,
@@ -426,7 +283,45 @@ impl BackendRuntime {
         requested: Some(input.target_count),
         action_required: None,
       }),
-      Err(violation) => Ok(decision_from_violation(violation, "quota_subject")),
+      InvitePolicyDecision::Deny {
+        reason,
+        scope_key,
+        retry_after_seconds,
+      } => {
+        let action_required = match plan.persistence {
+          Some(persistence) => Some(record_invite_abuse_action(&pool, &input, persistence).await?),
+          None => None,
+        };
+        Ok(RuntimeWorkspaceInviteQuotaDecision {
+          allowed: false,
+          reservation_id: None,
+          retry_after_seconds,
+          reason: Some(reason.as_str().to_string()),
+          scope_key,
+          window_seconds: None,
+          limit: None,
+          current: None,
+          requested: Some(input.target_count),
+          action_required,
+        })
+      }
+      InvitePolicyDecision::Reserve => {
+        match reserve_scopes(&pool, plan.purpose, input.request_id.as_deref(), plan.scopes).await? {
+          Ok(reservation) => Ok(RuntimeWorkspaceInviteQuotaDecision {
+            allowed: true,
+            reservation_id: Some(reservation.reservation_id),
+            retry_after_seconds: None,
+            reason: None,
+            scope_key: None,
+            window_seconds: None,
+            limit: None,
+            current: None,
+            requested: Some(input.target_count),
+            action_required: None,
+          }),
+          Err(violation) => Ok(decision_from_violation(violation, RateLimitDenialReason::QuotaSubject)),
+        }
+      }
     }
   }
 
@@ -436,10 +331,25 @@ impl BackendRuntime {
     reservation_id: String,
     usage: RuntimeWorkspaceInviteQuotaUsage,
   ) -> Result<bool> {
-    let domain_usage = sum_domains(&usage.target_domains);
+    let settle_usage = usage.target_count;
     let pool = self.pool().await?;
-    commit_reservation(&pool, &reservation_id, usage.target_count, |scope_key, _| {
-      invite_commit_usage_for_scope(scope_key, usage.target_count, &domain_usage)
+    commit_reservation(&pool, &reservation_id, settle_usage, move |scope_keys| {
+      plan_invite_commit(
+        scope_keys,
+        InviteCommitUsage {
+          target_count: usage.target_count,
+          target_domains: usage
+            .target_domains
+            .into_iter()
+            .map(|target| TargetDomain {
+              domain: target.domain,
+              count: target.count,
+            })
+            .collect(),
+        },
+      )
+      .map(|plan| plan.scope_usage)
+      .map_err(|error| RuntimeError::invalid_input(error.to_string()))
     })
     .await
     .map_err(Into::into)

@@ -14,9 +14,9 @@ export class HttpConnection extends DummyConnection {
     }
 
     const abortController = new AbortController();
-    externalSignal?.addEventListener('abort', reason => {
-      abortController.abort(reason);
-    });
+    const signal = externalSignal
+      ? AbortSignal.any([externalSignal, abortController.signal])
+      : abortController.signal;
 
     const timeout = init?.timeout ?? 15000;
     const timeoutId =
@@ -26,47 +26,49 @@ export class HttpConnection extends DummyConnection {
           }, timeout)
         : undefined;
 
-    const res = await globalThis
-      .fetch(new URL(input, this.serverBaseUrl), {
-        ...init,
-        signal: abortController.signal,
-        headers: {
-          ...this.requestHeaders,
-          ...init?.headers,
-          'x-affine-version': BUILD_CONFIG.appVersion,
-        },
-      })
-      .catch(err => {
-        throw new UserFriendlyError({
-          status: 504,
-          code: 'NETWORK_ERROR',
-          type: 'NETWORK_ERROR',
-          name: 'NETWORK_ERROR',
-          message: `Network error: ${err.message}`,
-          stacktrace: err.stack,
+    try {
+      const res = await globalThis
+        .fetch(new URL(input, this.serverBaseUrl), {
+          ...init,
+          signal,
+          headers: {
+            ...this.requestHeaders,
+            ...init?.headers,
+            'x-affine-version': BUILD_CONFIG.appVersion,
+          },
+        })
+        .catch(err => {
+          externalSignal?.throwIfAborted();
+          throw new UserFriendlyError({
+            status: 504,
+            code: 'NETWORK_ERROR',
+            type: 'NETWORK_ERROR',
+            name: 'NETWORK_ERROR',
+            message: `Network error: ${err.message}`,
+            stacktrace: err.stack,
+          });
         });
-      });
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-    if (!res.ok && res.status !== 404) {
-      if (res.status === 413) {
-        throw new UserFriendlyError({
-          status: 413,
-          code: 'CONTENT_TOO_LARGE',
-          type: 'CONTENT_TOO_LARGE',
-          name: 'CONTENT_TOO_LARGE',
-          message: 'Content too large',
-        });
-      } else if (
-        res.headers.get('Content-Type')?.startsWith('application/json')
-      ) {
-        throw UserFriendlyError.fromAny(await res.json());
-      } else {
-        throw UserFriendlyError.fromAny(await res.text());
+      if (!res.ok && res.status !== 404) {
+        if (res.status === 413) {
+          throw new UserFriendlyError({
+            status: 413,
+            code: 'CONTENT_TOO_LARGE',
+            type: 'CONTENT_TOO_LARGE',
+            name: 'CONTENT_TOO_LARGE',
+            message: 'Content too large',
+          });
+        } else if (
+          res.headers.get('Content-Type')?.startsWith('application/json')
+        ) {
+          throw UserFriendlyError.fromAny(await res.json());
+        } else {
+          throw UserFriendlyError.fromAny(await res.text());
+        }
       }
+      return res;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
     }
-    return res;
   };
 
   readonly fetchArrayBuffer = async (input: string, init?: RequestInit) => {

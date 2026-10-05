@@ -12,10 +12,7 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     CAPPluginMethod(name: "disconnect", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "setSpaceId", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "pushUpdate", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "getDocSnapshot", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "setDocSnapshot", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "getDocUpdates", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "markUpdatesMerged", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "getDoc", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "deleteDoc", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getDocClocks", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getDocClock", returnType: CAPPluginReturnPromise),
@@ -37,13 +34,17 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     CAPPluginMethod(name: "getBlobUploadedAt", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "setBlobUploadedAt", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "crawlDocData", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "ftsAddDocument", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "ftsDeleteDocument", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "ftsSearch", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "ftsGetDocument", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "ftsGetMatches", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "ftsFlushIndex", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "ftsIndexVersion", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "getDocIndexedClock", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "setDocIndexedClock", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "setDocIndexedClocks", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "clearDocIndexedClock", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "indexUpsert", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "indexDelete", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "indexSearch", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "indexAggregate", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "indexDeleteByQuery", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "indexFlush", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "indexVersion", returnType: CAPPluginReturnPromise),
   ]
 
   @objc func connect(_ call: CAPPluginCall) {
@@ -113,13 +114,12 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     }
   }
 
-  @objc func getDocSnapshot(_ call: CAPPluginCall) {
+  @objc func getDoc(_ call: CAPPluginCall) {
     Task {
       do {
         let id = try call.getStringEnsure("id")
         let docId = try call.getStringEnsure("docId")
-
-        if let record = try await docStoragePool.getDocSnapshot(universalId: id, docId: docId) {
+        if let record = try await docStoragePool.getDoc(universalId: id, docId: docId) {
           call.resolve([
             "docId": record.docId,
             "bin": record.bin,
@@ -129,58 +129,7 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
           call.resolve()
         }
       } catch {
-        call.reject("Failed to get doc snapshot, \(error)", nil, error)
-      }
-    }
-  }
-
-  @objc func setDocSnapshot(_ call: CAPPluginCall) {
-    Task {
-      do {
-        let id = try call.getStringEnsure("id")
-        let docId = try call.getStringEnsure("docId")
-        let bin = try call.getStringEnsure("bin")
-        let timestamp = try call.getIntEnsure("timestamp")
-        let success = try await docStoragePool.setDocSnapshot(
-          universalId: id,
-          snapshot: DocRecord(docId: docId, bin: bin, timestamp: Int64(timestamp))
-        )
-        call.resolve(["success": success])
-      } catch {
-        call.reject("Failed to set doc snapshot, \(error)", nil, error)
-      }
-    }
-  }
-
-  @objc func getDocUpdates(_ call: CAPPluginCall) {
-    Task {
-      do {
-        let id = try call.getStringEnsure("id")
-        let docId = try call.getStringEnsure("docId")
-        let updates = try await docStoragePool.getDocUpdates(universalId: id, docId: docId)
-        let mapped = updates.map { [
-          "docId": $0.docId,
-          "timestamp": $0.timestamp,
-          "bin": $0.bin,
-        ] }
-        call.resolve(["updates": mapped])
-      } catch {
-        call.reject("Failed to get doc updates, \(error)", nil, error)
-      }
-    }
-  }
-
-  @objc func markUpdatesMerged(_ call: CAPPluginCall) {
-    Task {
-      do {
-        let id = try call.getStringEnsure("id")
-        let docId = try call.getStringEnsure("docId")
-        let times = try call.getArrayEnsure("timestamps", Int64.self)
-
-        let count = try await docStoragePool.markUpdatesMerged(universalId: id, docId: docId, updates: times)
-        call.resolve(["count": count])
-      } catch {
-        call.reject("Failed to mark updates merged, \(error)", nil, error)
+        call.reject("Failed to get doc, \(error)", nil, error)
       }
     }
   }
@@ -585,138 +534,225 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     }
   }
 
-  @objc func ftsAddDocument(_ call: CAPPluginCall) {
+  @objc func getDocIndexedClock(_ call: CAPPluginCall) {
     Task {
       do {
-        let id = try call.getStringEnsure("id")
-        let indexName = try call.getStringEnsure("indexName")
-        let docId = try call.getStringEnsure("docId")
-        let text = try call.getStringEnsure("text")
-        guard let index = call.getBool("index") else {
-          call.reject("index is required", nil, nil)
+        let clock = try await docStoragePool.getDocIndexedClock(
+          universalId: try call.getStringEnsure("id"),
+          docId: try call.getStringEnsure("docId")
+        )
+        guard let clock else {
+          call.resolve()
           return
         }
-        try await docStoragePool.ftsAddDocument(
-          universalId: id,
-          indexName: indexName,
-          docId: docId,
-          text: text,
-          index: index
-        )
-        call.resolve()
+        call.resolve(indexedClockJson(clock))
       } catch {
-        call.reject("Failed to add document to fts, \(error)", nil, error)
+        call.reject("Failed to get indexed clock, \(error)", nil, error)
       }
     }
   }
 
-  @objc func ftsDeleteDocument(_ call: CAPPluginCall) {
+  @objc func setDocIndexedClock(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let clock = DocIndexedClock(
+          docId: try call.getStringEnsure("docId"),
+          timestamp: try call.getInt64Ensure("indexedClock"),
+          indexerVersion: try call.getInt64Ensure("indexerVersion")
+        )
+        try await docStoragePool.setDocIndexedClock(universalId: try call.getStringEnsure("id"), clock: clock)
+        call.resolve()
+      } catch {
+        call.reject("Failed to set indexed clock, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func setDocIndexedClocks(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let clocks = try call.getArrayEnsure("clocks", JSObject.self).map { value in
+          guard
+            let docId = value["docId"] as? String,
+            let timestamp = value["timestamp"] as? Double,
+            let timestamp = Int64(exactly: timestamp),
+            let indexerVersion = value["indexerVersion"] as? Double,
+            let indexerVersion = Int64(exactly: indexerVersion)
+          else {
+            throw RequestParamError.request(key: "clocks")
+          }
+          return DocIndexedClock(
+            docId: docId,
+            timestamp: timestamp,
+            indexerVersion: indexerVersion
+          )
+        }
+        try await docStoragePool.setDocIndexedClocks(universalId: try call.getStringEnsure("id"), clocks: clocks)
+        call.resolve()
+      } catch {
+        call.reject("Failed to commit indexed clocks, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func clearDocIndexedClock(_ call: CAPPluginCall) {
+    Task {
+      do {
+        try await docStoragePool.clearDocIndexedClock(
+          universalId: try call.getStringEnsure("id"),
+          docId: try call.getStringEnsure("docId")
+        )
+        call.resolve()
+      } catch {
+        call.reject("Failed to clear indexed clock, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func indexUpsert(_ call: CAPPluginCall) {
     Task {
       do {
         let id = try call.getStringEnsure("id")
-        let indexName = try call.getStringEnsure("indexName")
-        let docId = try call.getStringEnsure("docId")
-        try await docStoragePool.ftsDeleteDocument(
+        let table = try call.getStringEnsure("table")
+        let document = try jsonString(call, "document")
+        try await docStoragePool.indexUpsert(
           universalId: id,
-          indexName: indexName,
+          table: table,
+          document: document
+        )
+        call.resolve()
+      } catch {
+        call.reject("Failed to upsert index document, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func indexDelete(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let table = try call.getStringEnsure("table")
+        let docId = try call.getStringEnsure("docId")
+        try await docStoragePool.indexDelete(
+          universalId: id,
+          table: table,
           docId: docId
         )
         call.resolve()
       } catch {
-        call.reject("Failed to delete document from fts, \(error)", nil, error)
+        call.reject("Failed to delete index document, \(error)", nil, error)
       }
     }
   }
 
-  @objc func ftsSearch(_ call: CAPPluginCall) {
+  @objc func indexSearch(_ call: CAPPluginCall) {
     Task {
       do {
         let id = try call.getStringEnsure("id")
-        let indexName = try call.getStringEnsure("indexName")
-        let query = try call.getStringEnsure("query")
-        let results = try await docStoragePool.ftsSearch(
+        let table = try call.getStringEnsure("table")
+        let result = try await docStoragePool.indexSearch(
           universalId: id,
-          indexName: indexName,
-          query: query
+          table: table,
+          query: try jsonString(call, "query"),
+          options: try jsonString(call, "options")
         )
-        let mapped = results.map {
-          [
-            "id": $0.id,
-            "score": $0.score,
-            "terms": $0.terms,
-          ] as [String: Any]
+        call.resolve(["total": result.total, "hits": result.hits.map(indexHitJson)])
+      } catch {
+        call.reject("Failed to search index, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func indexAggregate(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let table = try call.getStringEnsure("table")
+        let result = try await docStoragePool.indexAggregate(
+          universalId: id,
+          table: table,
+          query: try jsonString(call, "query"),
+          field: try call.getStringEnsure("field"),
+          limit: try call.getUInt32Ensure("limit"),
+          offset: try call.getUInt32Ensure("offset"),
+          hits: try optionalJsonString(call, "hits")
+        )
+        let buckets = result.buckets.map { bucket in
+          ["key": bucket.key, "count": bucket.count, "score": bucket.score, "hits": bucket.hits.map(indexHitJson)]
         }
-        call.resolve(["results": mapped])
+        call.resolve(["total": result.total, "buckets": buckets])
       } catch {
-        call.reject("Failed to search fts, \(error)", nil, error)
+        call.reject("Failed to aggregate index, \(error)", nil, error)
       }
     }
   }
 
-  @objc func ftsGetDocument(_ call: CAPPluginCall) {
+  @objc func indexDeleteByQuery(_ call: CAPPluginCall) {
     Task {
       do {
         let id = try call.getStringEnsure("id")
-        let indexName = try call.getStringEnsure("indexName")
-        let docId = try call.getStringEnsure("docId")
-        let text = try await docStoragePool.ftsGetDocument(
+        let deleted = try await docStoragePool.indexDeleteByQuery(
           universalId: id,
-          indexName: indexName,
-          docId: docId
+          table: try call.getStringEnsure("table"),
+          query: try jsonString(call, "query")
         )
-        call.resolve(["text": text ?? NSNull()])
+        call.resolve(["deleted": deleted])
       } catch {
-        call.reject("Failed to get fts document, \(error)", nil, error)
+        call.reject("Failed to delete index documents, \(error)", nil, error)
       }
     }
   }
 
-  @objc func ftsGetMatches(_ call: CAPPluginCall) {
+  @objc func indexFlush(_ call: CAPPluginCall) {
     Task {
       do {
         let id = try call.getStringEnsure("id")
-        let indexName = try call.getStringEnsure("indexName")
-        let docId = try call.getStringEnsure("docId")
-        let query = try call.getStringEnsure("query")
-        let matches = try await docStoragePool.ftsGetMatches(
-          universalId: id,
-          indexName: indexName,
-          docId: docId,
-          query: query
-        )
-        let mapped = matches.map {
-          [
-            "start": $0.start,
-            "end": $0.end,
-          ]
-        }
-        call.resolve(["matches": mapped])
-      } catch {
-        call.reject("Failed to get fts matches, \(error)", nil, error)
-      }
-    }
-  }
-
-  @objc func ftsFlushIndex(_ call: CAPPluginCall) {
-    Task {
-      do {
-        let id = try call.getStringEnsure("id")
-        try await docStoragePool.ftsFlushIndex(universalId: id)
+        try await docStoragePool.indexFlush(universalId: id)
         call.resolve()
       } catch {
-        call.reject("Failed to flush fts index, \(error)", nil, error)
+        call.reject("Failed to flush index, \(error)", nil, error)
       }
     }
   }
 
-  @objc func ftsIndexVersion(_ call: CAPPluginCall) {
+  @objc func indexVersion(_ call: CAPPluginCall) {
     Task {
       do {
-        let version = try await docStoragePool.ftsIndexVersion()
+        let version = try await docStoragePool.indexVersion()
         call.resolve(["indexVersion": version])
       } catch {
-        call.reject("Failed to get fts index version, \(error)", nil, error)
+        call.reject("Failed to get index version, \(error)", nil, error)
       }
     }
   }
+}
+
+private func jsonString(_ call: CAPPluginCall, _ key: String) throws -> String {
+  guard let value = call.getObject(key) else { throw RequestParamError.request(key: key) }
+  return String(data: try JSONSerialization.data(withJSONObject: value), encoding: .utf8)!
+}
+
+private func optionalJsonString(_ call: CAPPluginCall, _ key: String) throws -> String? {
+  guard call.getObject(key) != nil else { return nil }
+  return try jsonString(call, key)
+}
+
+private func indexHitJson(_ hit: IndexHit) -> [String: Any] {
+  [
+    "id": hit.id,
+    "score": hit.score,
+    "fields": hit.fields.map { ["field": $0.field, "values": $0.values] },
+    "highlights": hit.highlights.map { highlight in
+      [
+        "field": highlight.field,
+        "values": highlight.values.map { value in
+          ["valueIndex": value.valueIndex, "spans": value.spans.map { ["start": $0.start, "end": $0.end] }]
+        },
+      ]
+    },
+  ]
+}
+
+private func indexedClockJson(_ clock: DocIndexedClock) -> [String: Any] {
+  ["docId": clock.docId, "timestamp": clock.timestamp, "indexerVersion": clock.indexerVersion]
 }

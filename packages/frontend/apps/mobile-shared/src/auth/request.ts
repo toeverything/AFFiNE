@@ -19,6 +19,30 @@ function authEndpointForUrl(url: string | URL) {
   }
 }
 
+function shouldSkipStoredAuthToken(url: string | URL) {
+  try {
+    const { pathname } = new URL(
+      url,
+      globalThis.location?.origin ?? 'http://localhost'
+    );
+    if (pathname === '/socket.io' || pathname.startsWith('/socket.io/')) {
+      return true;
+    }
+    return [
+      '/api/auth/captcha',
+      '/api/auth/magic-link',
+      '/api/auth/open-app/sign-in',
+      '/api/auth/preflight',
+      '/api/auth/session/exchange',
+      '/api/auth/sign-in',
+      '/api/oauth/callback',
+      '/api/oauth/preflight',
+    ].includes(pathname);
+  } catch {
+    return false;
+  }
+}
+
 export function createAuthFetch(
   provider: AuthRequestProvider,
   rawFetch: typeof globalThis.fetch
@@ -26,7 +50,8 @@ export function createAuthFetch(
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const request = new Request(input, init);
     const retry = request.clone();
-    const endpoint = authEndpointForUrl(request.url);
+    const skipStoredAuth = shouldSkipStoredAuthToken(request.url);
+    const endpoint = skipStoredAuth ? null : authEndpointForUrl(request.url);
     const token = endpoint
       ? await provider.getValidAccessToken(endpoint)
       : null;
@@ -70,6 +95,7 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
     private requestBody?: Document | XMLHttpRequestBodyInit | null;
     private replaying = false;
     private hasReplayed = false;
+    private skipStoredAuth = false;
     private sendVersion = 0;
 
     constructor() {
@@ -87,6 +113,7 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
             this.status !== 401 ||
             this.replaying ||
             this.hasReplayed ||
+            this.skipStoredAuth ||
             !this.request?.async
           ) {
             return;
@@ -123,6 +150,7 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
       this.requestBody = undefined;
       this.replaying = false;
       this.hasReplayed = false;
+      this.skipStoredAuth = shouldSkipStoredAuthToken(url.toString());
       xhrRequestUrls.set(this, url.toString());
       return super.open(
         method,
@@ -141,9 +169,11 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
     override send(body?: Document | XMLHttpRequestBodyInit | null): void {
       this.requestBody = body;
       const requestUrl = xhrRequestUrls.get(this);
-      const endpoint = authEndpointForUrl(
-        requestUrl ?? globalThis.location.href
-      );
+      const targetUrl = requestUrl ?? globalThis.location.href;
+      this.skipStoredAuth = shouldSkipStoredAuthToken(targetUrl);
+      const endpoint = this.skipStoredAuth
+        ? null
+        : authEndpointForUrl(targetUrl);
       const sendVersion = this.sendVersion;
 
       const sendWithToken = (token: string | null) => {
@@ -168,7 +198,7 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
 
     private async replayWithFreshToken() {
       const request = this.request;
-      if (!request) return this.failReplay();
+      if (!request || this.skipStoredAuth) return this.failReplay();
       const endpoint = authEndpointForUrl(request.url);
       if (!endpoint) return this.failReplay();
       const sendVersion = this.sendVersion;

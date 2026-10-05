@@ -1,4 +1,4 @@
-import { loadDBFile, saveDBFileAs, selectDBFileLocation } from './dialog';
+import { loadDBFile, saveDBFileAs, selectMarkdownSyncFolder } from './dialog';
 
 export const dialogHandlers = {
   loadDBFile: async () => {
@@ -7,7 +7,7 @@ export const dialogHandlers = {
   saveDBFileAs: async (universalId: string, name: string) => {
     return saveDBFileAs(universalId, name);
   },
-  selectDBFileLocation: async () => {
-    return selectDBFileLocation();
+  selectMarkdownSyncFolder: async () => {
+    return selectMarkdownSyncFolder();
   },
 };

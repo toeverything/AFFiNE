@@ -16,14 +16,12 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(path: "../AffineResources"),
     .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.83.0"),
   ],
   targets: [
     .target(
       name: "AffinePaywall",
       dependencies: [
-        "AffineResources",
         .product(name: "RevenueCat", package: "purchases-ios-spm"),
       ]
     ),

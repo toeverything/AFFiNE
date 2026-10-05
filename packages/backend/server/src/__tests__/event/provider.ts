@@ -7,6 +7,7 @@ declare global {
   interface Events {
     '__test__.event': { count: number };
     '__test__.event2': { count: number };
+    '__test__.encodedBinary': { updates: string[] };
     '__test__.throw': { count: number };
     '__test__.suppressThrow': {};
     '__test__.requestId': {};
@@ -25,6 +26,11 @@ export class Listeners {
   onTestEventAndEvent2(
     payload: Events['__test__.event'] | Events['__test__.event2']
   ) {
+    return payload;
+  }
+
+  @OnEvent('__test__.encodedBinary')
+  onEncodedBinaryEvent(payload: Events['__test__.encodedBinary']) {
     return payload;
   }
 

@@ -92,9 +92,51 @@ export class Sync {
     this.indexer?.start();
   }
 
-  stop() {
-    this.doc?.stop();
-    this.blob?.stop();
-    this.indexer?.stop();
+  async reconfigure(remotes: Record<string, SpaceStorage>) {
+    try {
+      await Promise.all([
+        this.doc.stop(),
+        this.blob.reconfigure(
+          Object.fromEntries(
+            Object.entries(remotes).map(([id, storage]) => [
+              id,
+              storage.get('blob'),
+            ])
+          )
+        ),
+      ]);
+      this.doc.setRemotes(
+        Object.fromEntries(
+          Object.entries(remotes).map(([id, storage]) => [
+            id,
+            storage.get('doc'),
+          ])
+        )
+      );
+      this.awareness.setRemotes(
+        Object.fromEntries(
+          Object.entries(remotes).map(([id, storage]) => [
+            id,
+            storage.get('awareness'),
+          ])
+        )
+      );
+      this.indexer.setRemotes(
+        Object.fromEntries(
+          Object.entries(remotes).map(([id, storage]) => [
+            id,
+            storage.get('indexer'),
+          ])
+        )
+      );
+      this.storages.remotes = remotes;
+    } finally {
+      this.doc.start();
+      this.blob.start();
+    }
+  }
+
+  async stop() {
+    await Promise.all([this.doc.stop(), this.blob.stop(), this.indexer.stop()]);
   }
 }

@@ -7,7 +7,11 @@ import {
   UndoManager,
 } from 'yjs';
 
-import { type DocRecord, DocStorageBase, type DocStorageOptions } from './doc';
+import {
+  type DocRecord,
+  type DocStorageOptions,
+  SnapshotDocStorageBase,
+} from './doc';
 
 export interface HistoryFilter {
   before?: Date;
@@ -21,7 +25,7 @@ export interface ListedHistory {
 
 export abstract class HistoricalDocStorage<
   Options extends DocStorageOptions = DocStorageOptions,
-> extends DocStorageBase<Options> {
+> extends SnapshotDocStorageBase<Options> {
   constructor(opts: Options) {
     super(opts);
 

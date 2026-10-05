@@ -10,17 +10,16 @@ import {
 import type {
   BlobOutputType,
   GetObjectMetadata,
-  ListObjectsMetadata,
   PresignedUpload,
   PutObjectMetadata,
 } from '../../base';
-import { Config, OnEvent } from '../../base';
+import { OnEvent } from '../../base';
 import { wrapCallMetric } from '../../base/metrics';
 import {
   type RuntimeObjectGetResult,
-  type RuntimeObjectListEntry,
   type RuntimeObjectMetadata,
   type RuntimePresignedObjectRequest,
+  ServerConfigHandle,
   type StorageProviderCapabilities,
   StorageRuntime,
   type StorageRuntimeHealth,
@@ -33,10 +32,12 @@ export class StorageRuntimeProvider
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
   private readonly logger = new Logger(StorageRuntimeProvider.name);
-  private readonly runtime: RuntimeInstance = new StorageRuntime();
+  private readonly runtime: RuntimeInstance;
   private migrationsStarted = false;
 
-  constructor(private readonly config: Config) {}
+  constructor(serverConfig: ServerConfigHandle) {
+    this.runtime = new StorageRuntime(serverConfig);
+  }
 
   async onApplicationBootstrap() {
     await this.start();
@@ -47,9 +48,7 @@ export class StorageRuntimeProvider
   }
 
   async start() {
-    this.configureRuntime();
     await this.runtime.start();
-    await this.runMigrationsOnce();
     const health = await this.runtime.health();
     this.logger.log(
       `storage runtime started: db=${health.databaseConnected} provider=${health.provider ?? 'none'}`
@@ -68,18 +67,24 @@ export class StorageRuntimeProvider
 
   @OnEvent('config.changed')
   async onConfigChanged({ updates }: Events['config.changed']) {
-    if (
-      !('storages' in updates) &&
-      !('db' in updates) &&
-      !updates.copilot?.storage
-    ) {
+    if (!('storages' in updates) && !('storage' in (updates.copilot ?? {}))) {
       return;
     }
-    await this.restart();
+    try {
+      await this.runtime.reloadConfig();
+    } catch (error) {
+      this.logger.error(
+        `Failed to apply committed storage config: ${error instanceof Error ? error.name : 'unknown'}`
+      );
+    }
   }
 
   async health(): Promise<StorageRuntimeHealth> {
     return await this.runtime.health();
+  }
+
+  async runMigrations() {
+    await this.runMigrationsOnce();
   }
 
   async providerCapabilities(
@@ -87,6 +92,39 @@ export class StorageRuntimeProvider
   ): Promise<StorageProviderCapabilities> {
     return await this.measured('providerCapabilities', rt =>
       rt.providerCapabilities(scope)
+    );
+  }
+
+  isLocalStorage(scope: string) {
+    return this.runtime.isLocalStorage(scope);
+  }
+
+  uploadUrlConfig(scope: string) {
+    return this.runtime.uploadUrlConfig(scope);
+  }
+
+  signUploadToken(
+    scope: string,
+    path: string,
+    fields: (string | number)[],
+    expiresAt: number
+  ) {
+    return this.runtime.signUploadToken(scope, path, fields, expiresAt);
+  }
+
+  verifyUploadToken(
+    scope: string,
+    path: string,
+    fields: (string | number)[],
+    expiresAt: number,
+    token: string
+  ) {
+    return this.runtime.verifyUploadToken(
+      scope,
+      path,
+      fields,
+      expiresAt,
+      token
     );
   }
 
@@ -119,15 +157,20 @@ export class StorageRuntimeProvider
     return result ? fromRuntimeGetResult(result) : {};
   }
 
-  async listObjects(scope: string, prefix?: string) {
-    const entries = await this.measured('listObjects', rt =>
-      rt.listObjects(scope, prefix)
-    );
-    return entries.map(fromRuntimeListEntry);
-  }
-
   async deleteObject(scope: string, key: string) {
     await this.measured('deleteObject', rt => rt.deleteObject(scope, key));
+  }
+
+  async deleteWorkspaceObjects(workspaceId: string, userIds?: string[]) {
+    return await this.measured('deleteWorkspaceObjects', rt =>
+      rt.deleteWorkspaceObjects(workspaceId, userIds)
+    );
+  }
+
+  async reconcileWorkspaceStorage(limit = 250) {
+    return await this.measured('reconcileWorkspaceStorage', rt =>
+      rt.reconcileWorkspaceStorage(limit)
+    );
   }
 
   async presignPut(scope: string, key: string, metadata?: PutObjectMetadata) {
@@ -216,33 +259,6 @@ export class StorageRuntimeProvider
     );
   }
 
-  async completeWorkspaceBlobUpload(
-    workspaceId: string,
-    key: string,
-    expected: { size: number; mime: string }
-  ) {
-    return await this.measured('completeWorkspaceBlobUpload', rt =>
-      rt.completeWorkspaceBlobUpload(
-        workspaceId,
-        key,
-        expected.size,
-        expected.mime
-      )
-    );
-  }
-
-  async cleanupExpiredPendingBlobs(cutoffMs: number, limit: number) {
-    return await this.measured('cleanupExpiredPendingBlobs', rt =>
-      rt.cleanupExpiredPendingBlobs(cutoffMs, limit)
-    );
-  }
-
-  async releaseDeletedBlobs(workspaceId: string, limit: number) {
-    return await this.measured('releaseDeletedBlobs', rt =>
-      rt.releaseDeletedBlobs(workspaceId, limit)
-    );
-  }
-
   async backfillMissingBlobMetadata(
     workspaceId: string | null | undefined,
     limit: number
@@ -255,6 +271,16 @@ export class StorageRuntimeProvider
   async rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number) {
     return await this.measured('rebuildWorkspaceDocBlobRefs', rt =>
       rt.rebuildWorkspaceDocBlobRefs(workspaceId, limit)
+    );
+  }
+
+  async rebuildDocBlobRefs(
+    workspaceId: string,
+    docId: string,
+    sourceRevision: number
+  ) {
+    return await this.measured('rebuildDocBlobRefs', rt =>
+      rt.rebuildDocBlobRefs(workspaceId, docId, sourceRevision)
     );
   }
 
@@ -274,34 +300,13 @@ export class StorageRuntimeProvider
     );
   }
 
-  async ackDocumentCleanupEffect(
-    workspaceId: string,
-    docId: string,
-    cleanupVersion: string,
-    effect: 'search' | 'copilot'
-  ) {
-    return await this.measured('ackDocumentCleanupEffect', rt =>
-      rt.ackDocumentCleanupEffect(workspaceId, docId, cleanupVersion, effect)
-    );
-  }
-
-  async planUnreferencedWorkspaceBlobs(
+  async cleanupUnreferencedWorkspaceBlobs(
     workspaceId: string,
     gracePeriodDays: number,
     limit: number
   ) {
-    return await this.measured('planUnreferencedWorkspaceBlobs', rt =>
-      rt.planUnreferencedWorkspaceBlobs(workspaceId, gracePeriodDays, limit)
-    );
-  }
-
-  async executeBlobCleanupCandidates(
-    runId: string,
-    gracePeriodDays: number,
-    limit: number
-  ) {
-    return await this.measured('executeBlobCleanupCandidates', rt =>
-      rt.executeBlobCleanupCandidates(runId, gracePeriodDays, limit)
+    return await this.measured('cleanupUnreferencedWorkspaceBlobs', rt =>
+      rt.cleanupUnreferencedWorkspaceBlobs(workspaceId, gracePeriodDays, limit)
     );
   }
 
@@ -320,29 +325,6 @@ export class StorageRuntimeProvider
     }
     await this.runtime.runMigrations();
     this.migrationsStarted = true;
-  }
-
-  private async restart() {
-    await this.runtime.stop();
-    this.migrationsStarted = false;
-    await this.start();
-  }
-
-  private configureRuntime() {
-    this.runtime.configure(
-      JSON.stringify({
-        db: {
-          datasourceUrl: this.config.db.datasourceUrl,
-        },
-        storages: {
-          'blob.storage': this.config.storages.blob.storage,
-          'avatar.storage': this.config.storages.avatar.storage,
-        },
-        copilot: {
-          storage: this.config.copilot.storage,
-        },
-      })
-    );
   }
 }
 
@@ -371,16 +353,6 @@ function fromRuntimeGetResult(result: RuntimeObjectGetResult) {
   return {
     body: Readable.from(result.body),
     metadata: fromRuntimeMetadata(result.metadata),
-  };
-}
-
-function fromRuntimeListEntry(
-  entry: RuntimeObjectListEntry
-): ListObjectsMetadata {
-  return {
-    key: entry.key,
-    contentLength: entry.contentLength,
-    lastModified: new Date(entry.lastModifiedMs),
   };
 }
 

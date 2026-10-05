@@ -60,18 +60,18 @@ spec:
               secretKeyRef:
                 name: redis
                 key: redis-password
-          - name: AFFINE_INDEXER_SEARCH_PROVIDER
-            value: "{{ .Values.global.indexer.provider }}"
-          - name: AFFINE_INDEXER_SEARCH_ENDPOINT
-            value: "{{ .Values.global.indexer.endpoint }}"
-          - name: AFFINE_INDEXER_SEARCH_API_KEY
-            valueFrom:
-              secretKeyRef:
-                name: indexer
-                key: indexer-apiKey
+        volumeMounts:
+          - name: indexer-config
+            mountPath: /app/config.json
+            subPath: config.json
+            readOnly: true
         resources:
           requests:
             cpu: '100m'
             memory: '200Mi'
+      volumes:
+        - name: indexer-config
+          secret:
+            secretName: indexer
       restartPolicy: Never
   backoffLimit: 1

@@ -177,6 +177,7 @@ private extension ChatManager {
       timeoutInterval: 10
     )
     request.setValue("close", forHTTPHeaderField: "Connection")
+    request = QLService.shared.authorized(request)
 
     let closable = ClosableTask(detachedTask: .detached(operation: {
       let eventSource = EventSource()

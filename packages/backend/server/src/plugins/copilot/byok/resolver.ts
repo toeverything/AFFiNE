@@ -501,8 +501,7 @@ export class WorkspaceByokResolver {
     @CurrentUser() user: CurrentUser,
     @Parent() workspace: WorkspaceType
   ) {
-    await this.assertRead(user.id, workspace.id);
-    await this.entitlement.assertManagementAccess(workspace.id, user.id);
+    await this.assertUpdate(user.id, workspace.id);
     const [serverEntitled, localEntitled] =
       await this.entitlement.hasEntitlement(workspace.id, user.id);
     const profiles = serverEntitled
@@ -544,8 +543,7 @@ export class WorkspaceByokResolver {
     @Args('from', { type: () => Date }) from: Date,
     @Args('to', { type: () => Date }) to: Date
   ) {
-    await this.assertRead(user.id, workspace.id);
-    await this.entitlement.assertManagementAccess(workspace.id, user.id);
+    await this.assertUpdate(user.id, workspace.id);
     return await this.models.copilotUsage.aggregateByDay({
       workspaceId: workspace.id,
       from,
@@ -680,9 +678,11 @@ export class WorkspaceByokResolver {
     await this.ac
       .user(user.id)
       .workspace(input.workspaceId)
-      .allowLocal()
       .assert('Workspace.Copilot');
-    await this.entitlement.assertManagementAccess(input.workspaceId, user.id);
+    await this.ac
+      .user(user.id)
+      .workspace(input.workspaceId)
+      .assert('Workspace.Settings.Update');
     await this.entitlement.assertLocalEntitled(input.workspaceId, user.id);
     input.providers.forEach(requireExplicitDescription);
     const result = await this.runtime.createByokLocalLease({
@@ -700,21 +700,11 @@ export class WorkspaceByokResolver {
     };
   }
 
-  private async assertRead(userId: string, workspaceId: string) {
-    await this.ac
-      .user(userId)
-      .workspace(workspaceId)
-      .allowLocal()
-      .assert('Workspace.Settings.Read');
-  }
-
   private async assertUpdate(userId: string, workspaceId: string) {
     await this.ac
       .user(userId)
       .workspace(workspaceId)
-      .allowLocal()
       .assert('Workspace.Settings.Update');
-    await this.entitlement.assertManagementAccess(workspaceId, userId);
   }
 }
 

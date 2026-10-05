@@ -203,6 +203,7 @@ type AggregateBucketHitsObjectType {
 }
 
 type AggregateBucketObjectType {
+  """Number of returned sample hits in this bucket"""
   count: Int!
 
   """The hits object"""
@@ -255,7 +256,7 @@ type AppConfigValidateResult {
   key: String!
   module: String!
   valid: Boolean!
-  value: JSON!
+  value: JSON
 }
 
 input AudioSliceManifestItemInput {
@@ -847,14 +848,16 @@ type DocPageAnalyticsSummary {
 }
 
 type DocPermissions {
+  Doc_Analytics_Read: Boolean!
+  Doc_Analytics_Viewers_Read: Boolean!
   Doc_Comments_Create: Boolean!
-  Doc_Comments_Delete: Boolean!
+  Doc_Comments_Moderate: Boolean!
   Doc_Comments_Read: Boolean!
-  Doc_Comments_Resolve: Boolean!
-  Doc_Comments_Update: Boolean!
   Doc_Copy: Boolean!
   Doc_Delete: Boolean!
   Doc_Duplicate: Boolean!
+  Doc_History_Read: Boolean!
+  Doc_Preview: Boolean!
   Doc_Properties_Read: Boolean!
   Doc_Properties_Update: Boolean!
   Doc_Publish: Boolean!
@@ -862,6 +865,7 @@ type DocPermissions {
   Doc_Restore: Boolean!
   Doc_TransferOwner: Boolean!
   Doc_Trash: Boolean!
+  Doc_Unpublish: Boolean!
   Doc_Update: Boolean!
   Doc_Users_Manage: Boolean!
   Doc_Users_Read: Boolean!
@@ -925,7 +929,7 @@ type EditorType {
   name: String!
 }
 
-union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarProviderRequestErrorDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceArtifactDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | ImageFormatNotSupportedDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | ResponseTooLargeErrorDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SsrfBlockedErrorDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedServerVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
+union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarProviderRequestErrorDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceArtifactDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | ImageFormatNotSupportedDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | ResponseTooLargeErrorDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SearchIndexFailedDataType | SearchIndexNotReadyDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SsrfBlockedErrorDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | SyncPermissionGenerationChangedDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedServerVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -1020,6 +1024,7 @@ enum ErrorNames {
   INVALID_RUNTIME_CONFIG_TYPE
   INVALID_SEARCH_PROVIDER_REQUEST
   INVALID_SUBSCRIPTION_PARAMETERS
+  INVITATION_ACCOUNT_MISMATCH
   LICENSE_EXPIRED
   LICENSE_NOT_FOUND
   LICENSE_REVEALED
@@ -1050,7 +1055,11 @@ enum ErrorNames {
   RUNTIME_CONFIG_NOT_FOUND
   SAME_EMAIL_PROVIDED
   SAME_SUBSCRIPTION_RECURRING
+  SEARCH_INDEX_FAILED
+  SEARCH_INDEX_NOT_READY
+  SEARCH_PERMISSION_SYNCING
   SEARCH_PROVIDER_NOT_FOUND
+  SEARCH_PROVIDER_UNAVAILABLE
   SIGN_UP_FORBIDDEN
   SPACE_ACCESS_DENIED
   SPACE_NOT_FOUND
@@ -1064,6 +1073,7 @@ enum ErrorNames {
   SUBSCRIPTION_HAS_NOT_BEEN_CANCELED
   SUBSCRIPTION_NOT_EXISTS
   SUBSCRIPTION_PLAN_NOT_FOUND
+  SYNC_PERMISSION_GENERATION_CHANGED
   TOO_MANY_REQUEST
   UNKNOWN_OAUTH_PROVIDER
   UNSPLASH_IS_NOT_CONFIGURED
@@ -1947,8 +1957,11 @@ type Query {
   """Workspaces count for admin"""
   adminWorkspacesCount(filter: ListWorkspaceInput!): Int!
 
-  """get the whole app configuration"""
+  """get visible app configuration values"""
   appConfig: JSONObject!
+
+  """get app configuration value sources and secret status"""
+  appConfigMetadata: JSONObject!
   authSigningKeys: [AuthSigningKeyType!]!
 
   """Get current user"""
@@ -2141,6 +2154,14 @@ input SearchHighlight {
   field: String!
 }
 
+type SearchIndexFailedDataType {
+  diagnosticId: String!
+}
+
+type SearchIndexNotReadyDataType {
+  spaceId: String!
+}
+
 input SearchInput {
   options: SearchOptions!
   query: SearchQuery!
@@ -2199,8 +2220,17 @@ type SearchResultObjectType {
 }
 
 type SearchResultPagination {
+  """Number of results returned in this response, not a global total"""
   count: Int!
+
+  """
+  Whether the provider has more candidates; remaining visible results are not guaranteed
+  """
   hasMore: Boolean!
+
+  """
+  Opaque provider candidate cursor; it does not guarantee complete visible-result pagination
+  """
   nextCursor: String
 }
 
@@ -2377,6 +2407,10 @@ enum SubscriptionVariant {
   Onetime
 }
 
+type SyncPermissionGenerationChangedDataType {
+  spaceId: String!
+}
+
 enum TimeBucket {
   Day
   Hour
@@ -2460,9 +2494,10 @@ type UnsupportedSubscriptionPlanDataType {
 }
 
 input UpdateAppConfigInput {
+  clear: Boolean
   key: String!
   module: String!
-  value: JSON!
+  value: JSON
 }
 
 input UpdateChatSessionInput {
@@ -2828,14 +2863,14 @@ type WorkspacePermissionNotFoundDataType {
 
 type WorkspacePermissions {
   Workspace_Administrators_Manage: Boolean!
-  Workspace_Blobs_List: Boolean!
-  Workspace_Blobs_Read: Boolean!
-  Workspace_Blobs_Write: Boolean!
+  Workspace_Blobs_Manage: Boolean!
+  Workspace_Blobs_Upload: Boolean!
   Workspace_Copilot: Boolean!
   Workspace_CreateDoc: Boolean!
   Workspace_Delete: Boolean!
   Workspace_Organize_Read: Boolean!
   Workspace_Payment_Manage: Boolean!
+  Workspace_Preview: Boolean!
   Workspace_Properties_Create: Boolean!
   Workspace_Properties_Delete: Boolean!
   Workspace_Properties_Read: Boolean!
@@ -2886,9 +2921,6 @@ type WorkspaceType {
 
   """List blobs of workspace"""
   blobs: [ListedBlob!]!
-
-  """Blobs size of workspace"""
-  blobsSize: Int!
   byokSettings: WorkspaceByokSettingsType!
   byokUsage(from: DateTime!, to: DateTime!): [WorkspaceByokUsagePointType!]!
   calendars: [WorkspaceCalendarObjectType!]!

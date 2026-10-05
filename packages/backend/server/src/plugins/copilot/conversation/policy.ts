@@ -59,6 +59,15 @@ export class ConversationPolicy {
   }
 
   buildTitlePromptContent(turns: Turn[]) {
-    return turns.map(turn => `[${turn.role}]: ${turn.content}`).join('\n');
+    const firstUserIndex = turns.findIndex(turn => turn.role === 'user');
+    if (firstUserIndex < 0) return '';
+
+    const firstAssistant = turns
+      .slice(firstUserIndex + 1)
+      .find(turn => turn.role === 'assistant');
+    if (!firstAssistant) return '';
+
+    const firstUser = turns[firstUserIndex];
+    return `[${firstUser.role}]: ${firstUser.content}\n[${firstAssistant.role}]: ${firstAssistant.content}`;
   }
 }

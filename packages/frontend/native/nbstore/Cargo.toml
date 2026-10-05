@@ -10,13 +10,12 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default    = []
 napi       = ["affine_common/napi"]
-use-as-lib = ["napi-derive/noop", "napi/noop"]
+use-as-lib = []
 
 [dependencies]
 affine_common = { workspace = true, features = ["napi"] }
 affine_doc_loader = { workspace = true }
 affine_schema = { path = "../schema" }
-anyhow = { workspace = true }
 bincode = { version = "2.0.1", features = ["serde"] }
 chrono = { workspace = true }
 memory-indexer = { workspace = true }

@@ -13,7 +13,8 @@ import semver from 'semver';
 export type ServerConfigType = ServerConfigQuery['serverConfig'] &
   OauthProvidersQuery['serverConfig'];
 
-export const MIN_SUPPORTED_SERVER_VERSION = '0.27.0';
+export const BATCH_SYNC_SERVER_VERSION = '0.27.0';
+export const MIN_SUPPORTED_SERVER_VERSION = BATCH_SYNC_SERVER_VERSION;
 
 const NETWORK_ERROR_PATTERNS = [
   /failed to fetch/i,
@@ -61,6 +62,16 @@ export function assertSupportedServerVersion(version?: string | null) {
   if (!isSupportedServerVersion(version)) {
     throw createUnsupportedServerVersionError(version);
   }
+}
+
+export function isBatchSyncServerVersion(version?: string | null) {
+  const normalized = version && semver.valid(version, { loose: true });
+  return (
+    !!normalized &&
+    semver.gte(normalized, `${BATCH_SYNC_SERVER_VERSION}-0`, {
+      loose: true,
+    })
+  );
 }
 
 function mapServerConfigError(error: unknown) {
