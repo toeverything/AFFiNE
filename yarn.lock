@@ -3518,11 +3518,11 @@ __metadata:
   linkType: hard
 
 "@capacitor/android@npm:^8.4.2":
-  version: 8.4.2
-  resolution: "@capacitor/android@npm:8.4.2"
+  version: 8.5.2
+  resolution: "@capacitor/android@npm:8.5.2"
   peerDependencies:
-    "@capacitor/core": ^8.4.0
-  checksum: 10/892510a8db66400c8123d6d15538fb4d13db738365dd235109b6deed0390694de2f5466b0343b030a53ca082bb5eb8892f42cc86fdf2dd4c2eff2453b2cfa926
+    "@capacitor/core": ^8.5.0
+  checksum: 10/67dd97e20851e5dfbd468b44681522e1974b3399f3ab882dac287e732a2ac923b405df8a80754da58cdf2c8057dc638e5dee2a0f65cda513e3a7f05d3ce025c8
   languageName: node
   linkType: hard
 
