@@ -5880,8 +5880,8 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "onenote_parser"
-version = "1.1.1"
-source = "git+https://github.com/msiemens/onenote.rs?rev=5138a39a3f4e72b840932f9872fecde52fa9da60#5138a39a3f4e72b840932f9872fecde52fa9da60"
+version = "2.0.0"
+source = "git+https://github.com/msiemens/onenote.rs?rev=fa4d7a044324af3bfe68727704a9789a08b36a3c#fa4d7a044324af3bfe68727704a9789a08b36a3c"
 dependencies = [
  "bytes",
  "cab",
@@ -5902,8 +5902,8 @@ dependencies = [
 
 [[package]]
 name = "onenote_parser-macros"
-version = "1.1.1"
-source = "git+https://github.com/msiemens/onenote.rs?rev=5138a39a3f4e72b840932f9872fecde52fa9da60#5138a39a3f4e72b840932f9872fecde52fa9da60"
+version = "2.0.0"
+source = "git+https://github.com/msiemens/onenote.rs?rev=fa4d7a044324af3bfe68727704a9789a08b36a3c#fa4d7a044324af3bfe68727704a9789a08b36a3c"
 dependencies = [
  "proc-macro2",
  "quote",
