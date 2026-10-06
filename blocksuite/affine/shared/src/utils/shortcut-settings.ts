@@ -40,14 +40,34 @@ const readOverrides = (): EdgelessToolShortcutOverrides => {
     const value = getStorage()?.getItem(EDGELESS_SHORTCUT_STORAGE_KEY);
     if (!value) return {};
     const parsed = JSON.parse(value) as Record<string, unknown>;
-    return Object.fromEntries(
+    const overrides: EdgelessToolShortcutOverrides = Object.fromEntries(
       shortcutIds.flatMap(id => {
         const shortcut = parsed[id];
-        return typeof shortcut === 'string' && /^[a-z0-9]$/i.test(shortcut)
+        return typeof shortcut === 'string' &&
+          /^[a-z0-9]$/i.test(shortcut) &&
+          !reservedEdgelessShortcuts.has(shortcut.toLowerCase())
           ? [[id, shortcut.toLowerCase()]]
           : [];
       })
     );
+    // Validate the complete map so valid swaps survive loading. Repeat after
+    // discarding conflicts because a restored default can invalidate another key.
+    while (true) {
+      const conflicts = shortcutIds.filter(id => {
+        const shortcut = overrides[id];
+        return (
+          shortcut !== undefined &&
+          shortcutIds.some(
+            otherId =>
+              otherId !== id &&
+              (overrides[otherId] ?? edgelessToolShortcutDefaults[otherId]) ===
+                shortcut
+          )
+        );
+      });
+      if (!conflicts.length) return overrides;
+      conflicts.forEach(id => delete overrides[id]);
+    }
   } catch {
     return {};
   }

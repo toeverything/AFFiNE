@@ -40,7 +40,13 @@ export const shortcutRecorder = style({
   color: 'inherit',
   cursor: 'pointer',
   background: 'transparent',
-  outline: 'none',
+  borderRadius: '4px',
+  selectors: {
+    '&:focus-visible': {
+      outline: `2px solid ${cssVar('primaryColor')}`,
+      outlineOffset: '2px',
+    },
+  },
 });
 
 export const shortcutKeyConflict = style({

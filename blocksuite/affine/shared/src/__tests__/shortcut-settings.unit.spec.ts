@@ -16,6 +16,40 @@ describe('edgeless tool shortcut settings', () => {
     resetEdgelessToolShortcuts();
   });
 
+  test.each([
+    [{ pen: 'v' }, {}],
+    [{ pen: 'S', note: 'q' }, { note: 'q' }],
+    [{ pen: 'q', note: 'Q' }, {}],
+    [{ select: 'p', pen: 't' }, {}],
+    [
+      { select: 'p', pen: 'v' },
+      { select: 'p', pen: 'v' },
+    ],
+    [
+      { select: 'p', pen: 'q' },
+      { select: 'p', pen: 'q' },
+    ],
+  ])(
+    'validates stored overrides %j on a fresh load',
+    async (stored, expected) => {
+      localStorage.setItem(
+        EDGELESS_SHORTCUT_STORAGE_KEY,
+        JSON.stringify(stored)
+      );
+      vi.resetModules();
+      const settings = await import('../utils/shortcut-settings.js');
+
+      expect(settings.getEdgelessToolShortcutOverrides()).toEqual(expected);
+      const resolved = Object.keys(settings.edgelessToolShortcutDefaults).map(
+        id =>
+          settings.getEdgelessToolShortcut(
+            id as keyof typeof settings.edgelessToolShortcutDefaults
+          )
+      );
+      expect(new Set(resolved).size).toBe(resolved.length);
+    }
+  );
+
   test('persists a shortcut override and notifies subscribers', () => {
     const listener = vi.fn();
     const unsubscribe = subscribeEdgelessToolShortcuts(listener);
