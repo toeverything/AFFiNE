@@ -55,6 +55,7 @@ const ShortcutRecorder = ({ id }: { id: EdgelessToolShortcutId }) => {
         }}
         onKeyDown={event => {
           if (!recording) return;
+          if (event.key === 'Tab') return;
           event.preventDefault();
           event.stopPropagation();
           if (event.key === 'Escape') {
@@ -62,6 +63,8 @@ const ShortcutRecorder = ({ id }: { id: EdgelessToolShortcutId }) => {
             setConflict(false);
             return;
           }
+          if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
+            return;
           if (!/^[a-z0-9]$/i.test(event.key)) return;
 
           const conflictingId = setEdgelessToolShortcut(id, event.key);

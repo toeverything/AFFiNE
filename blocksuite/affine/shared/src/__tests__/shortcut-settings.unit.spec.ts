@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
   EDGELESS_SHORTCUT_STORAGE_KEY,
@@ -10,6 +10,7 @@ import {
 } from '../utils/shortcut-settings.js';
 
 describe('edgeless tool shortcut settings', () => {
+  afterEach(() => vi.restoreAllMocks());
   beforeEach(() => {
     localStorage.clear();
     resetEdgelessToolShortcuts();
@@ -32,6 +33,19 @@ describe('edgeless tool shortcut settings', () => {
   test('rejects conflicts with another tool shortcut', () => {
     expect(setEdgelessToolShortcut('pen', 'v')).toBe('select');
     expect(getEdgelessToolShortcut('pen')).toBe('p');
+  });
+
+  test('keeps bindings and subscribers working when persistence fails', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage unavailable', 'QuotaExceededError');
+    });
+    const listener = vi.fn();
+    const unsubscribe = subscribeEdgelessToolShortcuts(listener);
+
+    expect(setEdgelessToolShortcut('pen', 'q')).toBeNull();
+    expect(getEdgelessToolShortcut('pen')).toBe('q');
+    expect(listener).toHaveBeenCalledOnce();
+    unsubscribe();
   });
 
   test('rejects shortcuts reserved by fixed edgeless tools', () => {

@@ -36,10 +36,9 @@ const getStorage = () => {
 };
 
 const readOverrides = (): EdgelessToolShortcutOverrides => {
-  const value = getStorage()?.getItem(EDGELESS_SHORTCUT_STORAGE_KEY);
-  if (!value) return {};
-
   try {
+    const value = getStorage()?.getItem(EDGELESS_SHORTCUT_STORAGE_KEY);
+    if (!value) return {};
     const parsed = JSON.parse(value) as Record<string, unknown>;
     return Object.fromEntries(
       shortcutIds.flatMap(id => {
@@ -67,13 +66,20 @@ export const subscribeEdgelessToolShortcuts = (listener: () => void) => {
 
 const publish = (overrides: EdgelessToolShortcutOverrides) => {
   cachedOverrides = overrides;
-  const storage = getStorage();
-  if (storage) {
-    if (Object.keys(overrides).length) {
-      storage.setItem(EDGELESS_SHORTCUT_STORAGE_KEY, JSON.stringify(overrides));
-    } else {
-      storage.removeItem(EDGELESS_SHORTCUT_STORAGE_KEY);
+  try {
+    const storage = getStorage();
+    if (storage) {
+      if (Object.keys(overrides).length) {
+        storage.setItem(
+          EDGELESS_SHORTCUT_STORAGE_KEY,
+          JSON.stringify(overrides)
+        );
+      } else {
+        storage.removeItem(EDGELESS_SHORTCUT_STORAGE_KEY);
+      }
     }
+  } catch {
+    // Keep shortcuts usable for this session when browser storage is unavailable.
   }
   edgelessToolShortcutsVersion$.value++;
   listeners.forEach(listener => listener());

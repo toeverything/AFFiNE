@@ -5,6 +5,7 @@ import {
   getEdgelessToolShortcut,
 } from '@blocksuite/affine-shared/utils';
 import { QuickToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
+import { SignalWatcher } from '@blocksuite/global/lit';
 import { HandIcon, SelectIcon } from '@blocksuite/icons/lit';
 import { effect } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
@@ -12,7 +13,9 @@ import { query } from 'lit/decorators.js';
 
 import { PanTool } from '../tools';
 
-export class EdgelessDefaultToolButton extends QuickToolMixin(LitElement) {
+export class EdgelessDefaultToolButton extends QuickToolMixin(
+  SignalWatcher(LitElement)
+) {
   static override styles = css`
     .current-icon {
       transition: 100ms;
