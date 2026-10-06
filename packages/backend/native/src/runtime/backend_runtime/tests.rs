@@ -204,6 +204,30 @@ async fn migrations_enable_embedding_service_and_health_together() -> AnyResult<
     .map_err(|error| anyhow!(error.to_string()))?;
   assert!(health.enabled);
   assert!(runtime.embedding.lock().await.is_some());
+  let pool = runtime.pool.lock().await.as_ref().unwrap().clone();
+  let mut blocker = pool.begin().await?;
+  sqlx::query("LOCK TABLE embedding_indexes IN ACCESS EXCLUSIVE MODE")
+    .execute(&mut *blocker)
+    .await?;
+  let worker = embedding::EmbeddingWorker::start(runtime.embedding_service().await?);
+  tokio::time::timeout(Duration::from_secs(4), async {
+    loop {
+      let waiting: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND \
+         query LIKE '%SELECT index_fact.id FROM embedding_indexes%')",
+      )
+      .fetch_one(&pool)
+      .await?;
+      if waiting {
+        break;
+      }
+      tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    Ok::<_, sqlx::Error>(())
+  })
+  .await??;
+  tokio::time::timeout(Duration::from_secs(1), worker.stop()).await?;
+  blocker.rollback().await?;
   runtime.stop().await.map_err(|error| anyhow!(error.to_string()))?;
   Ok(())
 }

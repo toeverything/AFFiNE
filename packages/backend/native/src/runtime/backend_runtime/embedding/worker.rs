@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+  sync::Arc,
+  time::{Duration, Instant},
+};
 
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use doc_extractor::Doc;
@@ -7,7 +10,7 @@ use tokio::{sync::watch, task::JoinHandle};
 use uuid::Uuid;
 
 use super::{
-  ChunkLocator, EmbeddingFailure, EmbeddingService, MaterializedChunk, ProjectionClaim, RuntimeError,
+  ChunkLocator, EmbeddingFailure, EmbeddingService, MaterializedChunk, ProjectionClaim, RuntimeError, RuntimeResult,
   extraction_file_name, failure_class,
 };
 use crate::runtime::object_storage::types::{ObjectKey, ObjectLocator, StorageScope};
@@ -34,58 +37,68 @@ pub(super) fn start(service: Arc<EmbeddingService>) -> WorkerHandle {
   let (stop, mut stopping) = watch::channel(false);
   let owner = format!("{}:{}", std::process::id(), Uuid::new_v4());
   let task = tokio::spawn(async move {
+    let mut next_gc = Instant::now();
     loop {
       tokio::select! {
-        _ = stopping.changed() => {
-          if *stopping.borrow() { break; }
-        }
-        _ = service.wake.notified() => {}
-        _ = tokio::time::sleep(Duration::from_secs(2)) => {}
-      }
-      if *stopping.borrow() {
-        break;
-      }
-      if let Ok(Some(probe)) = service.claim_probe(&owner).await {
-        match service
-          .provider
-          .embed(
-            &probe.workspace_id,
-            &probe.fingerprint,
-            vec!["health".to_string()],
-            "RETRIEVAL_DOCUMENT",
-          )
-          .await
-        {
-          Ok(vectors) if vectors.len() == 1 => {
-            let _ = service.complete_probe(&probe).await;
+        biased;
+        _ = stopping.changed() => break,
+        result = async {
+          tokio::select! {
+            _ = service.wake.notified() => {}
+            _ = tokio::time::sleep(Duration::from_secs(2)) => {}
           }
-          _ => {
-            let _ = service.fail_probe(&probe, "provider_unavailable").await;
+          process_next(&service, &owner, &mut next_gc).await
+        } => {
+          if let Err(error) = result {
+            eprintln!("embedding worker failed: {error}");
           }
-        }
-        continue;
-      }
-      let Ok(Some(claim)) = service.claim(&owner).await else {
-        if let Ok(result) = service.gc().await {
-          let _deleted = result.indexes + result.chunks;
-        }
-        continue;
-      };
-      match materialize(&service, &claim).await {
-        Ok(chunks) => {
-          if let Err(error) = service.commit(&claim, &chunks).await {
-            let _ = service
-              .fail(&claim, failure("commit_failed", Some(error.to_string())))
-              .await;
-          }
-        }
-        Err(failure) => {
-          let _ = service.fail(&claim, failure).await;
         }
       }
     }
   });
   WorkerHandle { stop, task }
+}
+
+async fn process_next(service: &EmbeddingService, owner: &str, next_gc: &mut Instant) -> RuntimeResult<()> {
+  if let Some(probe) = service.claim_probe(owner).await? {
+    return match service
+      .provider
+      .embed(
+        &probe.workspace_id,
+        &probe.fingerprint,
+        vec!["health".to_string()],
+        "RETRIEVAL_DOCUMENT",
+      )
+      .await
+    {
+      Ok(vectors) if vectors.len() == 1 => service.complete_probe(&probe).await,
+      _ => service.fail_probe(&probe, "provider_unavailable").await,
+    };
+  }
+  let Some(claim) = service.claim(owner).await? else {
+    if Instant::now() >= *next_gc {
+      *next_gc = Instant::now() + Duration::from_secs(300);
+      let result = service.gc().await?;
+      if result.indexes > 0 || result.chunks > 0 {
+        eprintln!(
+          "embedding garbage collection removed {} indexes and {} chunks",
+          result.indexes, result.chunks
+        );
+      }
+    }
+    return Ok(());
+  };
+  match materialize(service, &claim).await {
+    Ok(chunks) => match service.commit(&claim, &chunks).await {
+      Ok(_) => Ok(()),
+      Err(error) => {
+        service
+          .fail(&claim, failure("commit_failed", Some(error.to_string())))
+          .await
+      }
+    },
+    Err(failure) => service.fail(&claim, failure).await,
+  }
 }
 
 async fn materialize(

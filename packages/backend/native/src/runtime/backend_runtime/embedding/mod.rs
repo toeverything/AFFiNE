@@ -1,4 +1,5 @@
 mod candidate;
+mod claim;
 mod index;
 mod read;
 mod source;
@@ -11,6 +12,7 @@ use std::{
   sync::{Arc, Mutex as StdMutex, RwLock},
 };
 
+use claim::{claim_index_probe, claim_projection};
 use sqlx::PgPool;
 use tokio::sync::Notify;
 pub(super) use types::EmbeddingTarget;
@@ -206,11 +208,11 @@ impl EmbeddingService {
   }
 
   async fn claim(&self, owner: &str) -> RuntimeResult<Option<ProjectionClaim>> {
-    store::claim_projection(&self.pool, owner).await
+    claim_projection(&self.pool, owner).await
   }
 
   async fn claim_probe(&self, owner: &str) -> RuntimeResult<Option<IndexProbeClaim>> {
-    store::claim_index_probe(&self.pool, owner).await
+    claim_index_probe(&self.pool, owner).await
   }
 
   async fn complete_probe(&self, claim: &IndexProbeClaim) -> RuntimeResult<()> {

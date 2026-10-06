@@ -39,101 +39,6 @@ pub(super) async fn queue_counts(pool: &PgPool) -> RuntimeResult<EmbeddingQueueC
   .map_err(|error| RuntimeError::database("load embedding queue counts failed", error))
 }
 
-pub(super) async fn claim_projection(pool: &PgPool, owner: &str) -> RuntimeResult<Option<ProjectionClaim>> {
-  sqlx::query_as(
-    r#"WITH candidate AS(
-      SELECT projection.source_id,projection.index_id
-      FROM embedding_projections projection
-      JOIN embedding_sources source ON source.id=projection.source_id
-      JOIN embedding_workspace_states state ON state.workspace_id=source.workspace_id
-        AND state.active_index_id=projection.index_id
-      JOIN embedding_indexes index_fact ON index_fact.id=projection.index_id AND index_fact.health_status='ready'
-      WHERE state.runtime_state='active' AND source.deleted_at IS NULL AND(
-        projection.status='pending'
-        OR projection.status='retry_wait' AND projection.next_attempt_at<=clock_timestamp()
-        OR projection.status='running' AND projection.lease_until<=clock_timestamp()
-        OR projection.status='ready' AND(
-          projection.applied_content_revision IS DISTINCT FROM source.content_revision
-          OR projection.applied_descriptor_revision IS DISTINCT FROM source.descriptor_revision
-          OR projection.applied_recipe_revision IS DISTINCT FROM source.recipe_revision))
-      AND NOT EXISTS(
-        SELECT 1 FROM embedding_projections running
-        JOIN embedding_sources running_source ON running_source.id=running.source_id
-        WHERE running.status='running' AND running.lease_until>clock_timestamp()
-          AND running_source.workspace_id=source.workspace_id)
-      ORDER BY projection.priority DESC,projection.next_attempt_at NULLS FIRST,projection.updated_at
-      FOR UPDATE OF projection SKIP LOCKED LIMIT 1
-    ),claimed AS(
-      UPDATE embedding_projections projection SET
-        status='running',lease_owner=$1,lease_token=projection.lease_token+1,
-        lease_until=clock_timestamp()+interval '5 minutes',updated_at=now()
-      FROM candidate WHERE projection.source_id=candidate.source_id AND projection.index_id=candidate.index_id
-      RETURNING projection.*
-    ) SELECT claimed.source_id,claimed.index_id,source.workspace_id,state.index_epoch,
-      source.source_kind,source.source_key,source.content_revision,source.descriptor_revision,source.recipe_revision,
-      source.storage_scope,source.storage_key,source.file_name,source.mime_type,
-      source.document_projection::text AS document_projection,
-      claimed.lease_token,claimed.lease_until,index_fact.fingerprint AS index_fingerprint
-    FROM claimed JOIN embedding_sources source ON source.id=claimed.source_id
-    JOIN embedding_workspace_states state ON state.workspace_id=source.workspace_id
-    JOIN embedding_indexes index_fact ON index_fact.id=claimed.index_id"#,
-  )
-  .bind(owner)
-  .fetch_optional(pool)
-  .await
-  .map_err(|error| RuntimeError::database("claim embedding projection failed", error))
-}
-
-pub(super) async fn claim_index_probe(pool: &PgPool, owner: &str) -> RuntimeResult<Option<IndexProbeClaim>> {
-  sqlx::query_as(
-    r#"WITH candidate AS(
-      SELECT index_fact.id FROM embedding_indexes index_fact
-      JOIN embedding_workspace_states state ON state.active_index_id=index_fact.id
-      WHERE state.runtime_state='active' AND(
-        index_fact.health_status='pending'
-        OR index_fact.health_status='retry_wait' AND index_fact.next_probe_at<=clock_timestamp()
-        OR index_fact.probe_lease_until<=clock_timestamp())
-      ORDER BY index_fact.next_probe_at NULLS FIRST,index_fact.updated_at
-      FOR UPDATE OF index_fact SKIP LOCKED LIMIT 1
-    ) UPDATE embedding_indexes index_fact SET probe_lease_owner=$1,
-      probe_lease_until=clock_timestamp()+interval '2 minutes',updated_at=now()
-    FROM candidate WHERE index_fact.id=candidate.id
-    RETURNING index_fact.id,index_fact.workspace_id,index_fact.fingerprint,index_fact.probe_lease_owner"#,
-  )
-  .bind(owner)
-  .fetch_optional(pool)
-  .await
-  .map_err(|error| RuntimeError::database("claim embedding index probe failed", error))
-}
-
-#[cfg(test)]
-pub(super) async fn claim_index_probe_for_workspace(
-  pool: &PgPool,
-  owner: &str,
-  workspace_id: &str,
-) -> RuntimeResult<Option<IndexProbeClaim>> {
-  sqlx::query_as(
-    r#"WITH candidate AS(
-      SELECT index_fact.id FROM embedding_indexes index_fact
-      JOIN embedding_workspace_states state ON state.active_index_id=index_fact.id
-      WHERE state.workspace_id=$2 AND state.runtime_state='active' AND(
-        index_fact.health_status='pending'
-        OR index_fact.health_status='retry_wait' AND index_fact.next_probe_at<=clock_timestamp()
-        OR index_fact.probe_lease_until<=clock_timestamp())
-      ORDER BY index_fact.next_probe_at NULLS FIRST,index_fact.updated_at
-      FOR UPDATE OF index_fact SKIP LOCKED LIMIT 1
-    ) UPDATE embedding_indexes index_fact SET probe_lease_owner=$1,
-      probe_lease_until=clock_timestamp()+interval '2 minutes',updated_at=now()
-    FROM candidate WHERE index_fact.id=candidate.id
-    RETURNING index_fact.id,index_fact.workspace_id,index_fact.fingerprint,index_fact.probe_lease_owner"#,
-  )
-  .bind(owner)
-  .bind(workspace_id)
-  .fetch_optional(pool)
-  .await
-  .map_err(|error| RuntimeError::database("claim embedding index probe for workspace failed", error))
-}
-
 pub(super) async fn complete_index_probe(pool: &PgPool, claim: &IndexProbeClaim) -> RuntimeResult<()> {
   sqlx::query(
     "UPDATE embedding_indexes SET \
@@ -408,7 +313,7 @@ fn vector_literal(vector: &[f32]) -> String {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+  use super::{super::claim_projection, *};
 
   #[tokio::test]
   async fn leases_fence_stale_commits_and_gc_old_tokens_and_indexes() {
@@ -422,6 +327,31 @@ mod tests {
         .await
         .enabled
     );
+    for table in ["embedding_projections", "embedding_indexes"] {
+      let mut blocker = pool.begin().await.unwrap();
+      sqlx::query(&format!("LOCK TABLE {table} IN ACCESS EXCLUSIVE MODE"))
+        .execute(&mut *blocker)
+        .await
+        .unwrap();
+      let result = tokio::time::timeout(std::time::Duration::from_secs(8), async {
+        if table == "embedding_projections" {
+          claim_projection(&pool, "blocked-worker").await.map(|_| ())
+        } else {
+          super::super::claim_index_probe(&pool, "blocked-worker")
+            .await
+            .map(|_| ())
+        }
+      })
+      .await
+      .expect("claim must be bounded by a database timeout");
+      assert!(result.unwrap_err().to_string().contains("statement timeout"));
+      blocker.rollback().await.unwrap();
+    }
+    let timeout: String = sqlx::query_scalar("SHOW statement_timeout")
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(timeout, "0");
     sqlx::query("DELETE FROM embedding_workspace_states WHERE workspace_id LIKE 'rust-test-store-%'")
       .execute(&pool)
       .await
@@ -575,14 +505,51 @@ mod tests {
       (0, 0)
     );
 
+    sqlx::query("UPDATE embedding_sources SET content_revision=content_revision WHERE id=$1")
+      .bind(source_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let status: String = sqlx::query_scalar("SELECT status FROM embedding_projections WHERE source_id=$1")
+      .bind(source_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(status, "ready");
     sqlx::query("UPDATE embedding_sources SET content_revision='content-2' WHERE id=$1")
       .bind(source_id)
       .execute(&pool)
       .await
       .unwrap();
+    let status: String = sqlx::query_scalar("SELECT status FROM embedding_projections WHERE source_id=$1")
+      .bind(source_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(status, "pending");
     let refreshed = claim_projection(&pool, "worker-c").await.unwrap().unwrap();
     let second_token = commit_token(&pool, &refreshed, &[chunk("second")]).await.unwrap();
     assert_ne!(first_token, second_token);
+    let updated = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      revision: "content-2".to_string(),
+      ..requested[0].clone()
+    }];
+    super::super::source::sync_documents(&pool, &workspace_id, &updated, false, i32::MAX)
+      .await
+      .unwrap();
+    let recipe_changed = claim_projection(&pool, "worker-d").await.unwrap().unwrap();
+    commit_token(&pool, &recipe_changed, &[chunk("updated recipe")])
+      .await
+      .unwrap();
+    super::super::source::sync_documents(&pool, &workspace_id, &updated, false, i32::MAX)
+      .await
+      .unwrap();
+    let status: String = sqlx::query_scalar("SELECT status FROM embedding_projections WHERE source_id=$1")
+      .bind(source_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(status, "ready");
     sqlx::query("UPDATE embedding_chunks SET created_at=now()-interval '2 hours' WHERE generation_token=$1")
       .bind(Uuid::parse_str(&first_token).unwrap())
       .execute(&pool)
