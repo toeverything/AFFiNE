@@ -10,8 +10,8 @@ use tokio::{sync::watch, task::JoinHandle};
 use uuid::Uuid;
 
 use super::{
-  ChunkLocator, EmbeddingFailure, EmbeddingService, MaterializedChunk, ProjectionClaim, RuntimeError, RuntimeResult,
-  extraction_file_name, failure_class,
+  ChunkLocator, EmbeddingFailure, EmbeddingService, IndexProbeClaim, MaterializedChunk, ProjectionClaim, RuntimeError,
+  RuntimeResult, extraction_file_name, failure_class, release_index_probe, release_projection,
 };
 use crate::runtime::object_storage::types::{ObjectKey, ObjectLocator, StorageScope};
 
@@ -38,6 +38,8 @@ pub(super) fn start(service: Arc<EmbeddingService>) -> WorkerHandle {
   let owner = format!("{}:{}", std::process::id(), Uuid::new_v4());
   let task = tokio::spawn(async move {
     let mut next_gc = Instant::now();
+    let mut probe = None;
+    let mut claim = None;
     loop {
       tokio::select! {
         biased;
@@ -47,20 +49,44 @@ pub(super) fn start(service: Arc<EmbeddingService>) -> WorkerHandle {
             _ = service.wake.notified() => {}
             _ = tokio::time::sleep(Duration::from_secs(2)) => {}
           }
-          process_next(&service, &owner, &mut next_gc).await
+          process_next(&service, &owner, &mut next_gc, &mut probe, &mut claim).await
         } => {
+          probe = None;
+          claim = None;
           if let Err(error) = result {
             eprintln!("embedding worker failed: {error}");
           }
         }
       }
     }
+    let released = tokio::time::timeout(Duration::from_secs(1), async {
+      if let Some(probe) = probe {
+        release_index_probe(&service.pool, &probe).await?;
+      }
+      if let Some(claim) = claim {
+        release_projection(&service.pool, &claim).await?;
+      }
+      Ok::<_, RuntimeError>(())
+    })
+    .await;
+    match released {
+      Ok(Ok(())) => {}
+      Ok(Err(error)) => eprintln!("release embedding claim on shutdown failed: {error}"),
+      Err(_) => eprintln!("release embedding claim on shutdown timed out"),
+    }
   });
   WorkerHandle { stop, task }
 }
 
-async fn process_next(service: &EmbeddingService, owner: &str, next_gc: &mut Instant) -> RuntimeResult<()> {
-  if let Some(probe) = service.claim_probe(owner).await? {
+async fn process_next(
+  service: &EmbeddingService,
+  owner: &str,
+  next_gc: &mut Instant,
+  active_probe: &mut Option<IndexProbeClaim>,
+  active_claim: &mut Option<ProjectionClaim>,
+) -> RuntimeResult<()> {
+  *active_probe = service.claim_probe(owner).await?;
+  if let Some(probe) = active_probe.as_ref() {
     return match service
       .provider
       .embed(
@@ -71,11 +97,12 @@ async fn process_next(service: &EmbeddingService, owner: &str, next_gc: &mut Ins
       )
       .await
     {
-      Ok(vectors) if vectors.len() == 1 => service.complete_probe(&probe).await,
-      _ => service.fail_probe(&probe, "provider_unavailable").await,
+      Ok(vectors) if vectors.len() == 1 => service.complete_probe(probe).await,
+      _ => service.fail_probe(probe, "provider_unavailable").await,
     };
   }
-  let Some(claim) = service.claim(owner).await? else {
+  *active_claim = service.claim(owner).await?;
+  let Some(claim) = active_claim.as_ref() else {
     if Instant::now() >= *next_gc {
       *next_gc = Instant::now() + Duration::from_secs(300);
       let result = service.gc().await?;
@@ -88,16 +115,16 @@ async fn process_next(service: &EmbeddingService, owner: &str, next_gc: &mut Ins
     }
     return Ok(());
   };
-  match materialize(service, &claim).await {
-    Ok(chunks) => match service.commit(&claim, &chunks).await {
+  match materialize(service, claim).await {
+    Ok(chunks) => match service.commit(claim, &chunks).await {
       Ok(_) => Ok(()),
       Err(error) => {
         service
-          .fail(&claim, failure("commit_failed", Some(error.to_string())))
+          .fail(claim, failure("commit_failed", Some(error.to_string())))
           .await
       }
     },
-    Err(failure) => service.fail(&claim, failure).await,
+    Err(failure) => service.fail(claim, failure).await,
   }
 }
 

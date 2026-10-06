@@ -12,7 +12,7 @@ use std::{
   sync::{Arc, Mutex as StdMutex, RwLock},
 };
 
-use claim::{claim_index_probe, claim_projection};
+use claim::{claim_index_probe, claim_projection, release_index_probe, release_projection};
 use sqlx::PgPool;
 use tokio::sync::Notify;
 pub(super) use types::EmbeddingTarget;

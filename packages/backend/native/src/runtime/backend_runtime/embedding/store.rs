@@ -406,7 +406,16 @@ mod tests {
     .await
     .unwrap();
 
+    let cancelled = claim_projection(&pool, "cancelled-worker").await.unwrap().unwrap();
+    super::super::release_projection(&pool, &cancelled).await.unwrap();
+    let attempts: i32 = sqlx::query_scalar("SELECT attempt_count FROM embedding_projections WHERE source_id=$1")
+      .bind(source_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(attempts, 0);
     let stale = claim_projection(&pool, "worker-a").await.unwrap().unwrap();
+    super::super::release_projection(&pool, &cancelled).await.unwrap();
     let lease_owner: Option<String> =
       sqlx::query_scalar("SELECT lease_owner FROM embedding_projections WHERE source_id=$1 AND index_id=$2")
         .bind(source_id)

@@ -89,3 +89,37 @@ pub(super) async fn claim_index_probe(pool: &PgPool, owner: &str) -> RuntimeResu
     .map_err(|error| RuntimeError::database("commit embedding claim failed", error))?;
   Ok(claim)
 }
+
+pub(super) async fn release_index_probe(pool: &PgPool, claim: &IndexProbeClaim) -> RuntimeResult<()> {
+  let mut transaction = begin_claim(pool).await?;
+  sqlx::query(
+    "UPDATE embedding_indexes SET probe_lease_owner=NULL,probe_lease_until=now() WHERE id=$1 AND probe_lease_owner=$2",
+  )
+  .bind(claim.id)
+  .bind(&claim.probe_lease_owner)
+  .execute(&mut *transaction)
+  .await
+  .map_err(|error| RuntimeError::database("release embedding probe failed", error))?;
+  transaction
+    .commit()
+    .await
+    .map_err(|error| RuntimeError::database("commit embedding probe release failed", error))
+}
+
+pub(super) async fn release_projection(pool: &PgPool, claim: &ProjectionClaim) -> RuntimeResult<()> {
+  let mut transaction = begin_claim(pool).await?;
+  sqlx::query(
+    "UPDATE embedding_projections SET status='pending',lease_owner=NULL,lease_until=NULL,next_attempt_at=NULL WHERE \
+     source_id=$1 AND index_id=$2 AND lease_token=$3 AND status='running'",
+  )
+  .bind(claim.source_id)
+  .bind(claim.index_id)
+  .bind(claim.lease_token)
+  .execute(&mut *transaction)
+  .await
+  .map_err(|error| RuntimeError::database("release embedding projection failed", error))?;
+  transaction
+    .commit()
+    .await
+    .map_err(|error| RuntimeError::database("commit embedding projection release failed", error))
+}

@@ -186,9 +186,25 @@ mod tests {
     .await
     .unwrap();
     assert_eq!(versions, repeated_versions);
+    let cancelled_probe = super::super::claim_index_probe(&pool, "cancelled-probe")
+      .await
+      .unwrap()
+      .unwrap();
+    super::super::release_index_probe(&pool, &cancelled_probe)
+      .await
+      .unwrap();
+    let failures: i32 = sqlx::query_scalar("SELECT failure_count FROM embedding_indexes WHERE id=$1")
+      .bind(cancelled_probe.id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(failures, 0);
     let failed_probe = super::super::claim_index_probe(&pool, "probe-a")
       .await
       .unwrap()
+      .unwrap();
+    super::super::release_index_probe(&pool, &cancelled_probe)
+      .await
       .unwrap();
     assert!(
       super::super::claim_index_probe(&pool, "duplicate-probe")

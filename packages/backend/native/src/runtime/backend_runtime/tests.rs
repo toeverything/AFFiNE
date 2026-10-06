@@ -193,42 +193,64 @@ async fn migrations_enable_embedding_service_and_health_together() -> AnyResult<
   };
   runtime.role = ServerRole::Frontend;
 
-  runtime
-    .run_migrations()
-    .await
-    .map_err(|error| anyhow!(error.to_string()))?;
-
-  let health = runtime
-    .embedding_health()
-    .await
-    .map_err(|error| anyhow!(error.to_string()))?;
-  assert!(health.enabled);
-  assert!(runtime.embedding.lock().await.is_some());
   let pool = runtime.pool.lock().await.as_ref().unwrap().clone();
-  let mut blocker = pool.begin().await?;
-  sqlx::query("LOCK TABLE embedding_indexes IN ACCESS EXCLUSIVE MODE")
-    .execute(&mut *blocker)
-    .await?;
-  let worker = embedding::EmbeddingWorker::start(runtime.embedding_service().await?);
-  tokio::time::timeout(Duration::from_secs(4), async {
-    loop {
-      let waiting: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND \
-         query LIKE '%SELECT index_fact.id FROM embedding_indexes%')",
-      )
-      .fetch_one(&pool)
+  let mut blocker = None;
+  let mut worker = None;
+  let result: AnyResult<()> = async {
+    runtime
+      .run_migrations()
+      .await
+      .map_err(|error| anyhow!(error.to_string()))?;
+    let health = runtime
+      .embedding_health()
+      .await
+      .map_err(|error| anyhow!(error.to_string()))?;
+    ensure!(health.enabled);
+    ensure!(runtime.embedding.lock().await.is_some());
+    let transaction = blocker.insert(pool.begin().await?);
+    sqlx::query("LOCK TABLE embedding_indexes IN ACCESS EXCLUSIVE MODE")
+      .execute(&mut **transaction)
       .await?;
-      if waiting {
-        break;
+    worker = Some(embedding::EmbeddingWorker::start(runtime.embedding_service().await?));
+    tokio::time::timeout(Duration::from_secs(4), async {
+      loop {
+        let waiting: bool = sqlx::query_scalar(
+          "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' \
+           AND query LIKE '%SELECT index_fact.id FROM embedding_indexes%')",
+        )
+        .fetch_one(&pool)
+        .await?;
+        if waiting {
+          break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
       }
-      tokio::time::sleep(Duration::from_millis(10)).await;
+      Ok::<_, sqlx::Error>(())
+    })
+    .await??;
+    Ok(())
+  }
+  .await;
+  let stop = async {
+    if let Some(worker) = worker {
+      worker.stop().await;
     }
-    Ok::<_, sqlx::Error>(())
-  })
-  .await??;
-  tokio::time::timeout(Duration::from_secs(1), worker.stop()).await?;
-  blocker.rollback().await?;
-  runtime.stop().await.map_err(|error| anyhow!(error.to_string()))?;
+  };
+  tokio::pin!(stop);
+  let stopped = tokio::time::timeout(Duration::from_secs(1), &mut stop).await;
+  let rollback = if let Some(blocker) = blocker {
+    blocker.rollback().await
+  } else {
+    Ok(())
+  };
+  if stopped.is_err() {
+    stop.await;
+  }
+  let runtime_stop = runtime.stop().await;
+  result?;
+  stopped?;
+  rollback?;
+  runtime_stop.map_err(|error| anyhow!(error.to_string()))?;
   Ok(())
 }
 
