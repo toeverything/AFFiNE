@@ -446,7 +446,7 @@ __metadata:
     is-svg: "npm:^6.1.0"
     jotai: "npm:^2.10.3"
     jotai-scope: "npm:^0.7.2"
-    katex: "npm:^0.16.27"
+    katex: "npm:^0.18.0"
     lit: "npm:^3.2.1"
     lodash-es: "npm:^4.17.23"
     lottie-react: "npm:^2.4.0"
@@ -2121,7 +2121,7 @@ __metadata:
     "@blocksuite/store": "workspace:*"
     "@floating-ui/dom": "npm:^1.6.13"
     "@preact/signals-core": "npm:^1.8.0"
-    katex: "npm:^0.16.27"
+    katex: "npm:^0.18.0"
     lit: "npm:^3.2.0"
     remark-math: "npm:^6.0.0"
   languageName: unknown
@@ -2730,7 +2730,7 @@ __metadata:
     "@blocksuite/std": "workspace:*"
     "@blocksuite/store": "workspace:*"
     "@preact/signals-core": "npm:^1.8.0"
-    katex: "npm:^0.16.27"
+    katex: "npm:^0.18.0"
     lit: "npm:^3.2.0"
     remark-math: "npm:^6.0.0"
     shiki: "npm:^3.19.0"
@@ -3418,7 +3418,7 @@ __metadata:
     "@tweakpane/core": "npm:^2.0.4"
     "@types/micromatch": "npm:^4.0.9"
     "@vanilla-extract/vite-plugin": "npm:~5.1.5"
-    katex: "npm:^0.16.27"
+    katex: "npm:^0.18.0"
     lit: "npm:^3.2.0"
     lz-string: "npm:^1.5.0"
     magic-string: "npm:^0.30.21"
@@ -18314,6 +18314,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"commander@npm:^15.0.0":
+  version: 15.0.0
+  resolution: "commander@npm:15.0.0"
+  checksum: 10/a5dab1f5c3f1bf2ea19e8089f650f7fb65c3ed88e13ddde62e490d34b20057bcb2cd3de5b6ddc8aae93286083f8256ca0b812df842f574cbebe0e40f5b2f98f7
+  languageName: node
+  linkType: hard
+
 "commander@npm:^2.20.0, commander@npm:^2.20.3":
   version: 2.20.3
   resolution: "commander@npm:2.20.3"
@@ -24123,7 +24130,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"katex@npm:^0.16.0, katex@npm:^0.16.27, katex@npm:^0.16.45":
+"katex@npm:^0.16.0, katex@npm:^0.16.45":
   version: 0.16.47
   resolution: "katex@npm:0.16.47"
   dependencies:
@@ -24131,6 +24138,17 @@ __metadata:
   bin:
     katex: cli.js
   checksum: 10/e0286b45d9e0c8443cf0381205619ecbab3919ea5fb6616408f46f0cb471ce2222e83f46aef52cdaacdcbfd4485e00fcfbcf36bd85a8a9a81e22b45827c27ced
+  languageName: node
+  linkType: hard
+
+"katex@npm:^0.18.0":
+  version: 0.18.10
+  resolution: "katex@npm:0.18.10"
+  dependencies:
+    commander: "npm:^15.0.0"
+  bin:
+    katex: cli.js
+  checksum: 10/cf3349b390754b588a64739e8518400fd5050742af14413c85057144a815021b395bb1e163ff307d3fc0e072a9561da79710cc8e2cff51d964fee8879cc17c7a
   languageName: node
   linkType: hard
 
