@@ -3591,11 +3591,11 @@ __metadata:
   linkType: hard
 
 "@capacitor/ios@npm:^8.4.2":
-  version: 8.4.2
-  resolution: "@capacitor/ios@npm:8.4.2"
+  version: 8.5.2
+  resolution: "@capacitor/ios@npm:8.5.2"
   peerDependencies:
-    "@capacitor/core": ^8.4.0
-  checksum: 10/afecf7636eef0949a772663274098c2cddf973bbf16abd63105a495cc816369cfd1e79cf3a99f4022944a34d9cac0c4231845a2f9494fb11b00c0b779f637b4c
+    "@capacitor/core": ^8.5.0
+  checksum: 10/6e4b458c83817bffcea291d38a631fb313e1efc6ac3434b1ae1a7a0778455ec0a5ff832224f54207ffb541c6ca97e61d8a295b273f306a04c994e62302f53eef
   languageName: node
   linkType: hard
 
