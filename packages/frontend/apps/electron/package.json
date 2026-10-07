@@ -39,7 +39,7 @@
     "@affine/native": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@electron-forge/cli": "^7.11.1",
-    "@electron-forge/core": "^7.11.1",
+    "@electron-forge/core": "patch:@electron-forge/core@npm%3A7.11.1#~/.yarn/patches/@electron-forge-core-npm-7.11.1-b6ae130da1.patch",
     "@electron-forge/maker-deb": "^7.11.1",
     "@electron-forge/maker-dmg": "^7.11.1",
     "@electron-forge/maker-flatpak": "^7.11.1",
