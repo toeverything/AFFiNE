@@ -107,7 +107,7 @@ CREATE TABLE embedding_chunks (
 );
 
 CREATE INDEX embedding_projection_claim_idx
-  ON embedding_projections (priority DESC, next_attempt_at, updated_at)
+  ON embedding_projections (priority DESC, next_attempt_at NULLS FIRST, updated_at)
   WHERE status IN ('pending', 'retry_wait', 'running');
 CREATE INDEX embedding_sources_workspace_idx
   ON embedding_sources (workspace_id, source_kind) WHERE deleted_at IS NULL;
@@ -120,3 +120,21 @@ CREATE INDEX embedding_chunks_scope_idx
   ON embedding_chunks (workspace_id, index_id, source_id);
 CREATE INDEX embedding_chunks_artifact_idx
   ON embedding_chunks (workspace_id, artifact_id) WHERE artifact_id IS NOT NULL;
+
+CREATE FUNCTION enqueue_changed_embedding_source() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE embedding_projections SET status='pending', next_attempt_at=NULL, updated_at=now()
+  WHERE source_id=NEW.id AND status='ready';
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER embedding_source_revision_changed
+AFTER UPDATE OF content_revision, descriptor_revision, recipe_revision ON embedding_sources
+FOR EACH ROW WHEN (
+  OLD.content_revision IS DISTINCT FROM NEW.content_revision
+  OR OLD.descriptor_revision IS DISTINCT FROM NEW.descriptor_revision
+  OR OLD.recipe_revision IS DISTINCT FROM NEW.recipe_revision
+)
+EXECUTE FUNCTION enqueue_changed_embedding_source();

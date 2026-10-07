@@ -243,7 +243,8 @@ async fn queue_active_projection(
     ON CONFLICT(source_id,index_id) DO UPDATE SET
       status=CASE WHEN embedding_projections.status='running' THEN 'running' ELSE 'pending' END,
       priority=excluded.priority,
-      updated_at=now()"#,
+      updated_at=now()
+    WHERE embedding_projections.status<>'ready'"#,
   )
   .bind(workspace_id)
   .bind(source_id)
