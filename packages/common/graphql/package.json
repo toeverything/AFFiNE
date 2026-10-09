@@ -16,7 +16,7 @@
     "@graphql-codegen/typescript": "^5.0.9",
     "@graphql-codegen/typescript-operations": "^5.0.9",
     "@types/lodash-es": "^4.17.12",
-    "oxfmt": "0.63.0",
+    "oxfmt": "0.72.0",
     "vitest": "^4.1.11"
   },
   "scripts": {

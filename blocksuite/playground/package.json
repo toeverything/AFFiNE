@@ -19,7 +19,7 @@
     "@shoelace-style/shoelace": "2.20.1",
     "@toeverything/pdf-viewer": "^0.1.1",
     "@toeverything/pdfium": "^0.1.1",
-    "katex": "^0.18.0",
+    "katex": "^0.19.0",
     "lit": "^3.2.0",
     "lz-string": "^1.5.0",
     "rxjs": "^7.8.2",
@@ -32,7 +32,7 @@
   "devDependencies": {
     "@tweakpane/core": "^2.0.4",
     "@types/micromatch": "^4.0.9",
-    "@vanilla-extract/vite-plugin": "~5.1.5",
+    "@vanilla-extract/vite-plugin": "~5.2.0",
     "magic-string": "^0.30.21",
     "vite": "^7.3.6",
     "vite-plugin-istanbul": "^7.2.1",

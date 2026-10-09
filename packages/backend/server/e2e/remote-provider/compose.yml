@@ -15,7 +15,7 @@ services:
       start_period: 5s
 
   opensearch:
-    image: opensearchproject/opensearch:2.19.1
+    image: opensearchproject/opensearch:2.19.6
     environment:
       discovery.type: single-node
       DISABLE_INSTALL_DEMO_CONFIG: 'true'
@@ -46,7 +46,7 @@ services:
       - '8666:8666'
 
   proxy-init:
-    image: curlimages/curl:8.12.1
+    image: curlimages/curl:8.22.0
     depends_on:
       opensearch:
         condition: service_healthy
