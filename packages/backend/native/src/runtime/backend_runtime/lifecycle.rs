@@ -71,7 +71,7 @@ impl BackendRuntime {
         .object_storage
         .write()
         .map_err(|_| RuntimeError::invalid_state("object storage service lock poisoned"))? = Arc::new(object_storage);
-      let blob_access = self.role.owns_read_cache().then(|| {
+      let blob_access = self.role.owns_blob_access().then(|| {
         Arc::new(blob_access::BlobAccessService::new(
           pool.clone(),
           self.object_storage().expect("object storage initialized"),
@@ -83,28 +83,23 @@ impl BackendRuntime {
         service.start_stream_cleanup();
       }
       *self.blob_access.lock().await = blob_access.clone();
-      let quota_read_cache = self.role.owns_read_cache().then(|| {
-        Arc::new(quota_read_cache::QuotaReadCache::new(
-          pool.clone(),
-          deployment,
-          self.permission_telemetry.clone(),
-        ))
-      });
-      *self.quota_read_cache.lock().await = quota_read_cache.clone();
+      let quota_read_cache = Arc::new(quota_read_cache::QuotaReadCache::new(
+        pool.clone(),
+        deployment,
+        self.permission_telemetry.clone(),
+      ));
+      *self.quota_read_cache.lock().await = Some(quota_read_cache.clone());
       if !self.script_mode {
         let mut targets: Vec<Arc<dyn invalidation::InvalidationTarget>> = Vec::with_capacity(3);
         if let Some(service) = blob_access {
           targets.push(service);
         }
-        if let Some(cache) = quota_read_cache {
-          targets.push(cache);
-        }
+        targets.push(quota_read_cache);
         targets.push(Arc::new(invalidation::EventInvalidationTarget(
           self.invalidation_events.clone(),
         )));
         let target = Arc::new(invalidation::CompositeInvalidationTarget(targets));
-        *self.invalidation.lock().await =
-          Some(invalidation::InvalidationRuntime::start(&redis, self.role.owns_read_cache(), target).await);
+        *self.invalidation.lock().await = Some(invalidation::InvalidationRuntime::start(&redis, true, target).await);
       }
       if !self.script_mode && deployment == crate::runtime::Deployment::SelfHosted {
         self.admit_offline_licenses(&pool).await?;
@@ -262,7 +257,7 @@ impl BackendRuntime {
       None
     };
     let object_storage = Arc::new(object_storage);
-    let blob_access = self.role.owns_read_cache().then(|| {
+    let blob_access = self.role.owns_blob_access().then(|| {
       Arc::new(blob_access::BlobAccessService::new(
         pool.clone(),
         object_storage.clone(),
@@ -270,13 +265,11 @@ impl BackendRuntime {
         self.permission_telemetry.clone(),
       ))
     });
-    let quota_read_cache = self.role.owns_read_cache().then(|| {
-      Arc::new(quota_read_cache::QuotaReadCache::new(
-        pool.clone(),
-        config.deployment,
-        self.permission_telemetry.clone(),
-      ))
-    });
+    let quota_read_cache = Arc::new(quota_read_cache::QuotaReadCache::new(
+      pool.clone(),
+      config.deployment,
+      self.permission_telemetry.clone(),
+    ));
     let payment = if config.payment.enabled || config.payment.revenuecat.is_some() {
       Some(Arc::new(
         PaymentRuntime::new(
@@ -327,7 +320,7 @@ impl BackendRuntime {
       }
       *blob_access_guard = blob_access;
       (
-        std::mem::replace(&mut *quota_cache_guard, quota_read_cache),
+        quota_cache_guard.replace(quota_read_cache),
         std::mem::replace(&mut *payment_guard, payment),
       )
     };
@@ -336,14 +329,12 @@ impl BackendRuntime {
       if let Some(service) = invalidation_blob_access {
         targets.push(service);
       }
-      if let Some(cache) = invalidation_quota_cache {
-        targets.push(cache);
-      }
+      targets.push(invalidation_quota_cache);
       targets.push(Arc::new(invalidation::EventInvalidationTarget(
         self.invalidation_events.clone(),
       )));
       let target = Arc::new(invalidation::CompositeInvalidationTarget(targets));
-      Some(invalidation::InvalidationRuntime::start(&redis_config, self.role.owns_read_cache(), target).await)
+      Some(invalidation::InvalidationRuntime::start(&redis_config, true, target).await)
     } else {
       None
     };
