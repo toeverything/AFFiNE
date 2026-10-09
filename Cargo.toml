@@ -7,6 +7,7 @@ members = [
   "./packages/frontend/native/nbstore",
   "./packages/frontend/native/schema",
   "./packages/frontend/native/sqlite_v1",
+  "./packages/frontend/native/vendor/affine_merge",
 ]
 resolver = "3"
 
@@ -75,6 +76,7 @@ resolver = "3"
     "onepkg",
   ] }
   p256 = { version = "0.13", features = ["ecdsa", "pem"] }
+  pulldown-cmark = "0.13"
   rand = "0.9"
   rayon = "1.10"
   redis = { version = "1.6", features = ["tokio-comp", "tokio-rustls-comp"] }
@@ -139,6 +141,8 @@ strip         = "symbols"
   [profile.release.package.affine_mobile_native]
   strip = "none"
 
-  # [patch.crates-io]
-  # llm_adapter = { path = "../llm_adapter/crates/llm_adapter" }
-  # llm_runtime = { path = "../llm_adapter/crates/llm_runtime" }
+[patch.crates-io]
+affine_merge = { path = "./packages/frontend/native/vendor/affine_merge" }
+
+# llm_adapter = { path = "../llm_adapter/crates/llm_adapter" }
+# llm_runtime = { path = "../llm_adapter/crates/llm_runtime" }

@@ -21,6 +21,7 @@ napi = { workspace = true }
 napi-derive = { workspace = true }
 once_cell = { workspace = true }
 onenote_parser = { workspace = true }
+pulldown-cmark = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
 sha3 = { workspace = true }

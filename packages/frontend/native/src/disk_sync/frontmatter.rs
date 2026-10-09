@@ -7,12 +7,17 @@ pub(crate) fn parse_frontmatter(markdown: &str) -> (FrontmatterMeta, String) {
   }
 
   let rest = &normalized[4..];
-  let Some(end) = rest.find("\n---\n") else {
+  let (frontmatter_block, body) = if let Some(body) = rest.strip_prefix("---\n") {
+    ("", body.to_string())
+  } else if rest == "---" {
+    ("", String::new())
+  } else if let Some(end) = rest.find("\n---\n") {
+    (&rest[..end], rest[(end + 5)..].to_string())
+  } else if let Some(frontmatter_block) = rest.strip_suffix("\n---") {
+    (frontmatter_block, String::new())
+  } else {
     return (FrontmatterMeta::default(), normalized);
   };
-
-  let frontmatter_block = &rest[..end];
-  let body = rest[(end + 5)..].to_string();
 
   let mut meta = FrontmatterMeta::default();
   let mut in_tags_block = false;
@@ -23,6 +28,11 @@ pub(crate) fn parse_frontmatter(markdown: &str) -> (FrontmatterMeta, String) {
       continue;
     }
 
+    let indented = raw_line
+      .chars()
+      .next()
+      .is_some_and(|character| character.is_whitespace());
+
     if in_tags_block && line.starts_with('-') {
       let value = normalize_scalar(line.trim_start_matches('-').trim());
       if !value.is_empty() {
@@ -31,9 +41,15 @@ pub(crate) fn parse_frontmatter(markdown: &str) -> (FrontmatterMeta, String) {
       continue;
     }
 
+    if indented {
+      meta.extra.push(raw_line.to_string());
+      continue;
+    }
+
     in_tags_block = false;
 
     let Some((key, value)) = line.split_once(':') else {
+      meta.extra.push(raw_line.to_string());
       continue;
     };
 
@@ -69,7 +85,7 @@ pub(crate) fn parse_frontmatter(markdown: &str) -> (FrontmatterMeta, String) {
           }
         }
       }
-      _ => {}
+      _ => meta.extra.push(raw_line.to_string()),
     }
   }
 
@@ -107,6 +123,8 @@ pub(crate) fn render_frontmatter(meta: &FrontmatterMeta, body: &str) -> String {
     lines.push(format!("trash: {}", trash));
   }
 
+  lines.extend(meta.extra.iter().cloned());
+
   lines.push("---".to_string());
   lines.push(String::new());
 
@@ -123,32 +141,64 @@ pub(crate) fn render_frontmatter(meta: &FrontmatterMeta, body: &str) -> String {
 fn normalize_scalar(value: &str) -> String {
   let value = value.trim();
   if let Some(inner) = value.strip_prefix('"').and_then(|value| value.strip_suffix('"')) {
-    let mut normalized = String::with_capacity(inner.len());
-    let mut chars = inner.chars();
-    while let Some(ch) = chars.next() {
-      if ch != '\\' {
-        normalized.push(ch);
-        continue;
-      }
-      match chars.next() {
-        Some('n') => normalized.push('\n'),
-        Some('r') => normalized.push('\r'),
-        Some('t') => normalized.push('\t'),
-        Some('"') => normalized.push('"'),
-        Some('\\') => normalized.push('\\'),
-        Some(other) => {
-          normalized.push('\\');
-          normalized.push(other);
-        }
-        None => normalized.push('\\'),
-      }
-    }
-    return normalized;
+    return unescape_double_quoted_scalar(inner);
   }
   if let Some(inner) = value.strip_prefix('\'').and_then(|value| value.strip_suffix('\'')) {
     return inner.replace("''", "'");
   }
   value.to_string()
+}
+
+fn unescape_double_quoted_scalar(value: &str) -> String {
+  let mut unescaped = String::with_capacity(value.len());
+  let mut chars = value.chars();
+
+  while let Some(ch) = chars.next() {
+    if ch != '\\' {
+      unescaped.push(ch);
+      continue;
+    }
+
+    match chars.next() {
+      Some('0') => unescaped.push('\0'),
+      Some('a') => unescaped.push('\x07'),
+      Some('b') => unescaped.push('\x08'),
+      Some('t') => unescaped.push('\t'),
+      Some('n') => unescaped.push('\n'),
+      Some('v') => unescaped.push('\x0b'),
+      Some('f') => unescaped.push('\x0c'),
+      Some('r') => unescaped.push('\r'),
+      Some('e') => unescaped.push('\x1b'),
+      Some('"') => unescaped.push('"'),
+      Some('\\') => unescaped.push('\\'),
+      Some('x') => push_hex_escape(&mut chars, 2, 'x', &mut unescaped),
+      Some('u') => push_hex_escape(&mut chars, 4, 'u', &mut unescaped),
+      Some('U') => push_hex_escape(&mut chars, 8, 'U', &mut unescaped),
+      Some(other) => {
+        unescaped.push('\\');
+        unescaped.push(other);
+      }
+      None => unescaped.push('\\'),
+    }
+  }
+
+  unescaped
+}
+
+fn push_hex_escape(chars: &mut impl Iterator<Item = char>, width: usize, marker: char, output: &mut String) {
+  let digits: String = chars.take(width).collect();
+  let decoded = (digits.len() == width)
+    .then(|| u32::from_str_radix(&digits, 16).ok())
+    .flatten()
+    .and_then(char::from_u32);
+
+  if let Some(decoded) = decoded {
+    output.push(decoded);
+  } else {
+    output.push('\\');
+    output.push(marker);
+    output.push_str(&digits);
+  }
 }
 
 pub(crate) fn parse_bool(value: &str) -> Option<bool> {
@@ -196,11 +246,28 @@ fn quote_yaml_scalar(value: &str) -> String {
     return value.to_string();
   }
 
-  let escaped = value
-    .replace('\\', "\\\\")
-    .replace('"', "\\\"")
-    .replace('\n', "\\n")
-    .replace('\r', "\\r")
-    .replace('\t', "\\t");
+  let mut escaped = String::with_capacity(value.len());
+  for ch in value.chars() {
+    match ch {
+      '\0' => escaped.push_str("\\0"),
+      '\x07' => escaped.push_str("\\a"),
+      '\x08' => escaped.push_str("\\b"),
+      '\t' => escaped.push_str("\\t"),
+      '\n' => escaped.push_str("\\n"),
+      '\x0b' => escaped.push_str("\\v"),
+      '\x0c' => escaped.push_str("\\f"),
+      '\r' => escaped.push_str("\\r"),
+      '\x1b' => escaped.push_str("\\e"),
+      '"' => escaped.push_str("\\\""),
+      '\\' => escaped.push_str("\\\\"),
+      other if other.is_control() && (other as u32) <= 0xffff => {
+        escaped.push_str(&format!("\\u{:04X}", other as u32));
+      }
+      other if other.is_control() => {
+        escaped.push_str(&format!("\\U{:08X}", other as u32));
+      }
+      other => escaped.push(other),
+    }
+  }
   format!("\"{}\"", escaped)
 }

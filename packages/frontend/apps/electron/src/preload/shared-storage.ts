@@ -9,8 +9,14 @@ import {
 // Unique id for this renderer instance, used to ignore self-originated broadcasts
 const CLIENT_ID: string = Math.random().toString(36).slice(2);
 
+function invoke(key: string, ...args: any[]) {
+  return ipcRenderer
+    .invoke(AFFINE_API_CHANNEL_NAME, key, ...args)
+    .then(() => undefined);
+}
+
 function invokeWithCatch(key: string, ...args: any[]) {
-  ipcRenderer.invoke(AFFINE_API_CHANNEL_NAME, key, ...args).catch(err => {
+  return invoke(key, ...args).catch(err => {
     console.error(`Failed to invoke ${key}`, err);
   });
 }
@@ -114,12 +120,12 @@ function createSharedStorageApi(
     ready: initPromise,
     del(key: string) {
       memory.del(key);
-      invokeWithCatch(`sharedStorage:${api.del}`, key, CLIENT_ID);
+      return invokeWithCatch(`sharedStorage:${api.del}`, key, CLIENT_ID);
     },
     clear() {
       memory.clear();
       revisions.clear();
-      invokeWithCatch(`sharedStorage:${api.clear}`, CLIENT_ID);
+      return invokeWithCatch(`sharedStorage:${api.clear}`, CLIENT_ID);
     },
     get<T>(key: string): T | undefined {
       return memory.get(key);
@@ -129,7 +135,12 @@ function createSharedStorageApi(
     },
     set(key: string, value: unknown) {
       memory.set(key, value);
-      invokeWithCatch(`sharedStorage:${api.set}`, key, value, CLIENT_ID);
+      return invokeWithCatch(`sharedStorage:${api.set}`, key, value, CLIENT_ID);
+    },
+    setOrThrow(key: string, value: unknown) {
+      return invoke(`sharedStorage:${api.set}`, key, value, CLIENT_ID).then(
+        () => memory.set(key, value)
+      );
     },
     watch<T>(key: string, cb: (i: T | undefined) => void): () => void {
       const subscription = memory.watch(key).subscribe(i => cb(i as T));

@@ -11,6 +11,7 @@ import { setupDeepLink } from './deep-link';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { logger } from './logger';
+import { setupMarkdownOpen } from './markdown-open';
 import { registerProtocol } from './protocol';
 import { setupRecordingFeature } from './recording/feature';
 import { registerSecurityRestrictions } from './security-restrictions';
@@ -104,6 +105,7 @@ app.on('activate', () => {
 });
 
 setupDeepLink(app);
+setupMarkdownOpen(app);
 registerSecurityRestrictions();
 
 /**

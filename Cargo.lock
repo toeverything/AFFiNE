@@ -158,8 +158,6 @@ dependencies = [
 [[package]]
 name = "affine_merge"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97115a1f834d5aa6f1fa7ea1e5e4e17f9bbdc1078b529c0a909db8f392edbedb"
 dependencies = [
  "serde",
  "thiserror 2.0.18",
@@ -206,6 +204,7 @@ dependencies = [
  "napi-derive",
  "once_cell",
  "onenote_parser",
+ "pulldown-cmark 0.13.1",
  "serde_json",
  "sha2 0.11.0",
  "sha3 0.12.0",

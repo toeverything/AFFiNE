@@ -13,6 +13,7 @@ export interface DiskDocStorageOptions {
   readonly type: SpaceType;
   readonly id: string;
   readonly syncFolder: string;
+  readonly sourceFile?: string;
 }
 
 export class DiskDocStorage extends SnapshotDocStorageBase<DiskDocStorageOptions> {
@@ -96,6 +97,10 @@ export class DiskDocStorage extends SnapshotDocStorageBase<DiskDocStorageOptions
         timestamp: new Date(),
       });
     }
+  }
+
+  async shouldReplaceLocalDoc(docId: string) {
+    return this.connection.shouldReplaceSourceDoc(docId);
   }
 
   override async getDocTimestamp(docId: string): Promise<DocClock | null> {

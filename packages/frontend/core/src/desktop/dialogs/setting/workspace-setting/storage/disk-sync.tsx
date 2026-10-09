@@ -5,9 +5,10 @@ import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hoo
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import {
-  DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY,
   getDiskSyncFolderPath,
   setDiskSyncFolderPath,
+  setDiskSyncSourceFilePath,
+  watchDiskSyncFolderPath,
 } from '@affine/core/modules/workspace-engine/impls/disk-config';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
@@ -22,16 +23,11 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
 
   useEffect(() => {
     setFolder(getDiskSyncFolderPath(workspaceId));
-    const unwatch = desktopApi.sharedStorage.globalState.watch<
-      Record<string, string>
-    >(DISK_SYNC_FOLDERS_GLOBAL_STATE_KEY, folders => {
-      const next = folders?.[workspaceId];
-      setFolder(typeof next === 'string' && next.length > 0 ? next : null);
-    });
+    const unwatch = watchDiskSyncFolderPath(workspaceId, setFolder);
     return () => {
       unwatch();
     };
-  }, [desktopApi.sharedStorage.globalState, workspaceId]);
+  }, [workspaceId]);
 
   const onToggle = useCallback(
     (checked: boolean) => {
@@ -45,10 +41,10 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
     if (result?.canceled || !result?.filePath) {
       return;
     }
-    if (result.filePath === folder) {
-      return;
-    }
-    setDiskSyncFolderPath(workspaceId, result.filePath);
+    await Promise.all([
+      setDiskSyncFolderPath(workspaceId, result.filePath),
+      setDiskSyncSourceFilePath(workspaceId, null),
+    ]);
     setFolder(result.filePath);
     if (enabled) {
       window.location.reload();
@@ -57,13 +53,16 @@ export const DiskSyncPanel = ({ workspaceId }: { workspaceId: string }) => {
     notify.success({
       title: 'Disk sync folder updated',
     });
-  }, [desktopApi.handler.dialog, enabled, folder, workspaceId]);
+  }, [desktopApi.handler.dialog, enabled, workspaceId]);
 
-  const onClearFolder = useCallback(() => {
+  const onClearFolder = useAsyncCallback(async () => {
     if (!folder) {
       return;
     }
-    setDiskSyncFolderPath(workspaceId, null);
+    await Promise.all([
+      setDiskSyncFolderPath(workspaceId, null),
+      setDiskSyncSourceFilePath(workspaceId, null),
+    ]);
     setFolder(null);
     if (enabled) {
       window.location.reload();

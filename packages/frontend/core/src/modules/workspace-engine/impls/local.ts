@@ -506,6 +506,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
                     type: 'workspace',
                     id: workspaceId,
                     syncFolder: disk.syncFolder,
+                    sourceFile: disk.sourceFile,
                   },
                 },
               },

@@ -24,6 +24,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-router-dom": "^7.18.4",
+    "rxjs": "^7.8.2",
     "uuid": "^14.0.0"
   },
   "devDependencies": {

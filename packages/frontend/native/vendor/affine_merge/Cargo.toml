@@ -1,0 +1,11 @@
+[package]
+description       = "Identity-aware semantic merging for editable document projections"
+edition.workspace = true
+license           = "AGPL-3.0-only"
+name              = "affine_merge"
+version           = "0.1.0"
+
+[dependencies]
+serde     = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+y-octo    = { workspace = true }

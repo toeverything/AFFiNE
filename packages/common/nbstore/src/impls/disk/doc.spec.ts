@@ -43,6 +43,7 @@ describe('DiskDocStorage', () => {
   const sessionId = JSON.stringify([
     universalId({ peer: 'local', type: 'workspace', id: 'workspace-test' }),
     '/tmp/sync',
+    '/tmp/sync/A.md',
   ]);
   const listeners = new Map<string, Set<(event: DiskSyncEvent) => void>>();
 
@@ -95,6 +96,7 @@ describe('DiskDocStorage', () => {
       type: 'workspace',
       id: 'workspace-test',
       syncFolder: '/tmp/sync',
+      sourceFile: '/tmp/sync/A.md',
     });
   }
 
@@ -119,6 +121,7 @@ describe('DiskDocStorage', () => {
     expect(startSession).toHaveBeenCalledWith(sessionId, {
       workspaceId: 'workspace-test',
       syncFolder: '/tmp/sync',
+      sourceFile: '/tmp/sync/A.md',
     });
 
     expect((await storage.getDocTimestamp('doc-on-disk'))?.docId).toBe(
