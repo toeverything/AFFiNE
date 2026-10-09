@@ -20,7 +20,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-collections.git", from: "1.6.0"),
     .package(url: "https://github.com/SnapKit/SnapKit.git", from: "5.7.1"),
     .package(url: "https://github.com/SwifterSwift/SwifterSwift.git", from: "6.2.0"),
-    .package(url: "https://github.com/Recouse/EventSource.git", from: "0.1.8"),
+    .package(url: "https://github.com/Recouse/EventSource.git", from: "0.1.9"),
     .package(url: "https://github.com/Lakr233/ListViewKit.git", .upToNextMinor(from: "1.1.6")),
     .package(url: "https://github.com/Lakr233/MarkdownView.git", from: "3.9.1"),
   ],
