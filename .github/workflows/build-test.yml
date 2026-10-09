@@ -1103,7 +1103,7 @@ jobs:
           - 1025:1025
           - 8025:8025
       manticore:
-        image: manticoresearch/manticore:29.0.2
+        image: manticoresearch/manticore:29.9.0
         env:
           'searchd.listen': 'http:9308'
           'searchd.network_timeout': '30'
