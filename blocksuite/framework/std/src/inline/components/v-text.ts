@@ -14,7 +14,8 @@ export class VText extends LitElement {
     // cause the sync problem about the cursor position
     return html`<span
       style=${styleMap({
-        'word-break': 'break-word',
+        'word-break': 'normal',
+        'overflow-wrap': 'break-word',
         'text-wrap': 'wrap',
         'white-space-collapse': 'break-spaces',
       })}
