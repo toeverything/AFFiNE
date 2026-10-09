@@ -16,11 +16,7 @@ use once_cell::sync::Lazy;
 
 static IMPORT_SESSIONS: Lazy<Mutex<HashMap<String, ImportSession>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 static NEXT_SESSION_ID: AtomicU64 = AtomicU64::new(1);
-static IMPORT_REGISTRY: Lazy<Arc<ImportRegistry>> = Lazy::new(|| {
-  let mut registry = ImportRegistry::with_builtin();
-  registry.register(super::OneNoteImportProvider::new());
-  Arc::new(registry)
-});
+static IMPORT_REGISTRY: Lazy<Arc<ImportRegistry>> = Lazy::new(|| Arc::new(ImportRegistry::with_builtin()));
 
 #[napi(object)]
 pub struct CreateImportSessionOptions {
@@ -222,7 +218,10 @@ mod tests {
 
   #[test]
   fn import_session_accepts_directory_source() {
-    let path = directory_path(&[("entry.md", b"entry")]);
+    let path = directory_path(&[(
+      "entry.md",
+      "# 中文\u{a0}Кириллица 📝\n\n正文\u{2003}内容\n\nText\u{202f}^anchor\n\n[[entry#^anchor]]".as_bytes(),
+    )]);
     let id = create_import_session(CreateImportSessionOptions {
       format: "obsidian".to_string(),
       source: CreateImportSessionSource {
@@ -257,23 +256,6 @@ mod tests {
     });
 
     assert!(result.is_err());
-    let _ = std::fs::remove_file(path);
-  }
-
-  #[test]
-  fn import_session_routes_onenote_format_to_provider() {
-    let path = archive_path(&[("entry.md", b"entry")]);
-    let result = create_import_session(CreateImportSessionOptions {
-      format: "oneNote".to_string(),
-      source: CreateImportSessionSource {
-        kind: "filePath".to_string(),
-        path: path.to_string_lossy().to_string(),
-      },
-      batch_limits: None,
-    });
-
-    let error = result.unwrap_err().to_string();
-    assert!(error.contains("unsupported OneNote source"));
     let _ = std::fs::remove_file(path);
   }
 }
