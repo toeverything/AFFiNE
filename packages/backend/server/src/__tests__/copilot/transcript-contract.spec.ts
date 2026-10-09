@@ -371,233 +371,317 @@ for (const status of ['ready', 'settled']) {
   });
 }
 
-test('transcriptTask transcribes each audio slice and merges absolute timestamps', async t => {
-  const payload = TranscriptPayloadSchema.parse({
-    sourceAudio: { blobId: 'blob-1', mimeType: 'audio/opus' },
-    sliceManifest: [
-      {
-        index: 0,
-        fileName: 'audio-0.opus',
-        mimeType: 'audio/opus',
-        startSec: 12,
-        durationSec: 30,
-      },
-      {
-        index: 1,
-        fileName: 'audio-1.opus',
-        mimeType: 'audio/opus',
-        startSec: 42,
-        durationSec: 300,
-      },
-    ],
-    infos: [
-      {
-        key: 'blob-1-0',
-        url: 'https://affine.fail/api/copilot/blob/user-1/workspace-1/blob-1-0',
-        mimeType: 'audio/opus',
-        index: 0,
-      },
-      {
-        key: 'blob-1-1',
-        url: 'https://affine.fail/api/copilot/blob/user-1/workspace-1/blob-1-1',
-        mimeType: 'audio/opus',
-        index: 1,
-      },
-    ],
-  });
-  const bridgeInputs: unknown[] = [];
-  const clock = Sinon.useFakeTimers();
-  t.teardown(() => clock.restore());
-  const structuredCalls: {
-    messages: { content?: string; attachments?: unknown[] }[];
-    options: { builtInRouteId?: string };
-    slot?: string;
-  }[] = [];
-  let transientFailure = true;
-  const generateStructuredValue = Sinon.stub().callsFake(
-    async (
-      _conditions: unknown,
-      messages: { content?: string; attachments?: unknown[] }[],
-      options: { builtInRouteId?: string },
-      _contract: unknown,
-      _filter: unknown,
-      slot?: string
-    ) => {
-      structuredCalls.push({ messages, options, slot });
-      if (options.builtInRouteId === 'Summarize the meeting structured') {
-        return {
-          value: {
-            title: 'Weekly Sync',
-            durationMinutes: 1,
-            attendees: ['A', 'B'],
-            keyPoints: ['Kickoff', 'Follow-up'],
-            actionItems: [],
-            decisions: [],
-            openQuestions: [],
-            blockers: [],
+for (const scenario of [
+  {
+    name: '503 recovery',
+    message: 'upstream returned status 503: UNAVAILABLE',
+    failures: 1,
+    attempts: 2,
+    failed: false,
+    summary: false,
+  },
+  {
+    name: 'empty candidates recovery',
+    message:
+      'invalid response field `gemini.candidates[0]`: no candidates returned',
+    failures: 2,
+    attempts: 3,
+    failed: false,
+    summary: false,
+  },
+  {
+    name: 'empty candidates exhausted',
+    message:
+      'invalid response field `gemini.candidates[0]`: no candidates returned',
+    failures: 3,
+    attempts: 3,
+    failed: true,
+    summary: false,
+  },
+  {
+    name: 'prompt blocked',
+    message:
+      'invalid response field `gemini.promptFeedback.blockReason`: prompt blocked: SAFETY',
+    failures: 3,
+    attempts: 1,
+    failed: true,
+    summary: false,
+  },
+  {
+    name: 'invalid structured output',
+    message: 'structured output schema validation failed',
+    failures: 3,
+    attempts: 1,
+    failed: true,
+    summary: false,
+  },
+  {
+    name: 'summary blocked',
+    message:
+      'invalid response field `gemini.promptFeedback.blockReason`: prompt blocked: BLOCKLIST',
+    failures: 3,
+    attempts: 1,
+    failed: true,
+    summary: true,
+  },
+  {
+    name: 'summary empty candidates recovery',
+    message:
+      'invalid response field `gemini.candidates[0]`: no candidates returned',
+    failures: 2,
+    attempts: 3,
+    failed: false,
+    summary: true,
+  },
+]) {
+  test.serial(
+    `transcriptTask transcribes slices and handles ${scenario.name}`,
+    async t => {
+      const payload = TranscriptPayloadSchema.parse({
+        sourceAudio: { blobId: 'blob-1', mimeType: 'audio/opus' },
+        sliceManifest: [
+          {
+            index: 0,
+            fileName: 'audio-0.opus',
+            mimeType: 'audio/opus',
+            startSec: 12,
+            durationSec: 30,
           },
-        };
-      }
+          {
+            index: 1,
+            fileName: 'audio-1.opus',
+            mimeType: 'audio/opus',
+            startSec: 42,
+            durationSec: 300,
+          },
+        ],
+        infos: [
+          {
+            key: 'blob-1-0',
+            url: 'https://affine.fail/api/copilot/blob/user-1/workspace-1/blob-1-0',
+            mimeType: 'audio/opus',
+            index: 0,
+          },
+          {
+            key: 'blob-1-1',
+            url: 'https://affine.fail/api/copilot/blob/user-1/workspace-1/blob-1-1',
+            mimeType: 'audio/opus',
+            index: 1,
+          },
+        ],
+      });
+      const bridgeInputs: unknown[] = [];
+      const clock = Sinon.useFakeTimers();
+      t.teardown(() => clock.restore());
+      const structuredCalls: {
+        messages: { content?: string; attachments?: unknown[] }[];
+        options: { builtInRouteId?: string };
+        slot?: string;
+      }[] = [];
+      let failures = 0;
+      const generateStructuredValue = Sinon.stub().callsFake(
+        async (
+          _conditions: unknown,
+          messages: { content?: string; attachments?: unknown[] }[],
+          options: { builtInRouteId?: string },
+          _contract: unknown,
+          _filter: unknown,
+          slot?: string
+        ) => {
+          structuredCalls.push({ messages, options, slot });
+          if (options.builtInRouteId === 'Summarize the meeting structured') {
+            if (scenario.summary && failures++ < scenario.failures) {
+              throw new Error(scenario.message);
+            }
+            return {
+              value: {
+                title: 'Weekly Sync',
+                durationMinutes: 1,
+                attendees: ['A', 'B'],
+                keyPoints: ['Kickoff', 'Follow-up'],
+                actionItems: [],
+                decisions: [],
+                openQuestions: [],
+                blockers: [],
+              },
+            };
+          }
 
-      const attachment = messages
-        .flatMap(message => message.attachments ?? [])
-        .at(0) as { attachment: string };
-      if (attachment.attachment.includes('blob-1-1') && transientFailure) {
-        transientFailure = false;
-        throw new Error('upstream returned status 503: UNAVAILABLE');
+          const attachment = messages
+            .flatMap(message => message.attachments ?? [])
+            .at(0) as { attachment: string };
+          if (
+            !scenario.summary &&
+            attachment.attachment.includes('blob-1-1') &&
+            failures++ < scenario.failures
+          ) {
+            throw new Error(scenario.message);
+          }
+          return {
+            value: attachment.attachment.includes('blob-1-0')
+              ? [{ a: 'A', s: 5, e: 9, t: 'Kickoff' }]
+              : [{ a: 'B', s: 100, e: 500, t: 'Follow-up' }],
+          };
+        }
+      );
+      const claimDispatch = Sinon.stub();
+      claimDispatch.onFirstCall().resolves(true);
+      claimDispatch.onSecondCall().resolves(false);
+      const attachActionRun = Sinon.stub().resolves(true);
+      const completeDispatch = Sinon.stub().resolves(true);
+      const service = createCopilotTranscriptionService(
+        {
+          copilotTranscriptTask: {
+            get: Sinon.stub().resolves({
+              id: 'task-1',
+              userId: 'user-1',
+              workspaceId: 'workspace-1',
+              blobId: 'blob-1',
+              status: 'pending',
+              actionRunId: null,
+            }),
+            claimDispatch,
+            attachActionRun,
+            completeDispatch,
+          },
+        } as never,
+        {} as never,
+        {
+          presignGet: Sinon.stub().callsFake(
+            async (_userId, _workspaceId, key) =>
+              `https://canary.copilotcontent.affine.pro/${key}?sig=test`
+          ),
+        } as never,
+        {} as never,
+        createTranscriptPromptService() as never,
+        createSuccessfulTranscriptBridge('run-bridge', bridgeInputs) as never,
+        { generateStructuredValue } as never
+      );
+
+      const run = service.transcriptTask({
+        taskId: 'task-1',
+        payload,
+        generation: 'generation-1',
+        scopeMode: 'canonical',
+      });
+      const outcome = run.then(
+        () => null,
+        (error: Error) => error
+      );
+      await clock.tickAsync(20_000);
+      const error = await outcome;
+      if (scenario.failed) {
+        t.is(
+          error?.message,
+          `Transcript ${scenario.summary ? 'summary' : 'slice 1'} failed after ${scenario.attempts} attempt(s): ${scenario.message}`
+        );
+        t.like(completeDispatch.firstCall.args[5], {
+          status: 'failed',
+          errorCode: error?.message,
+        });
+        t.is(
+          structuredCalls.length,
+          scenario.attempts + (scenario.summary ? 2 : 1)
+        );
+        t.is(bridgeInputs.length, 0);
+        return;
       }
-      return {
-        value: attachment.attachment.includes('blob-1-0')
-          ? [{ a: 'A', s: 5, e: 9, t: 'Kickoff' }]
-          : [{ a: 'B', s: 100, e: 500, t: 'Follow-up' }],
-      };
-    }
-  );
-  const claimDispatch = Sinon.stub();
-  claimDispatch.onFirstCall().resolves(true);
-  claimDispatch.onSecondCall().resolves(false);
-  const attachActionRun = Sinon.stub().resolves(true);
-  const completeDispatch = Sinon.stub().resolves(true);
-  const service = createCopilotTranscriptionService(
-    {
-      copilotTranscriptTask: {
-        get: Sinon.stub().resolves({
-          id: 'task-1',
-          userId: 'user-1',
-          workspaceId: 'workspace-1',
-          blobId: 'blob-1',
-          status: 'pending',
-          actionRunId: null,
-        }),
-        claimDispatch,
+      t.is(error, null);
+      await service.transcriptTask({
+        taskId: 'task-1',
+        payload,
+        generation: 'generation-1',
+        scopeMode: 'canonical',
+      });
+      t.is(bridgeInputs.length, 1);
+
+      t.like(bridgeInputs[0] as Record<string, unknown>, {
+        actionId: 'transcript.audio',
+        actionVersion: 'v1',
+      });
+      t.like((bridgeInputs[0] as { step: Record<string, unknown> }).step, {
+        slot: 'transcript.audio',
+        builtInRouteId: 'Transcript audio',
+      });
+      t.deepEqual(
+        (
+          bridgeInputs[0] as {
+            inputSnapshot: { infos: unknown[] };
+          }
+        ).inputSnapshot.infos,
+        [
+          {
+            url: 'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test',
+            mimeType: 'audio/opus',
+            index: 0,
+          },
+          {
+            url: 'https://canary.copilotcontent.affine.pro/blob-1-1?sig=test',
+            mimeType: 'audio/opus',
+            index: 1,
+          },
+        ]
+      );
+      t.is(structuredCalls.length, scenario.attempts + 2);
+      const transcriptCalls = structuredCalls.filter(
+        call => call.options.builtInRouteId === 'Transcript audio'
+      );
+      t.is(
+        transcriptCalls.length,
+        scenario.summary ? 2 : scenario.attempts + 1
+      );
+      t.true(transcriptCalls.every(call => call.slot === 'transcript.audio'));
+      t.is(
+        transcriptCalls.filter(call =>
+          JSON.stringify(call.messages).includes('blob-1-0')
+        ).length,
+        1
+      );
+      t.is(
+        transcriptCalls.filter(call =>
+          JSON.stringify(call.messages).includes('blob-1-1')
+        ).length,
+        scenario.summary ? 1 : scenario.attempts
+      );
+      t.is(
+        structuredCalls.at(-1)?.messages.at(-1)?.content,
+        '00:00:17 A: Kickoff\n00:01:42 B: Follow-up'
+      );
+      t.like(completeDispatch.firstCall.args[5], {
+        status: 'ready',
+        errorCode: null,
+      });
+      Sinon.assert.calledWith(
         attachActionRun,
-        completeDispatch,
-      },
-    } as never,
-    {} as never,
-    {
-      presignGet: Sinon.stub().callsFake(
-        async (_userId, _workspaceId, key) =>
-          `https://canary.copilotcontent.affine.pro/${key}?sig=test`
-      ),
-    } as never,
-    {} as never,
-    createTranscriptPromptService() as never,
-    createSuccessfulTranscriptBridge('run-bridge', bridgeInputs) as never,
-    { generateStructuredValue } as never
-  );
-
-  const run = service.transcriptTask({
-    taskId: 'task-1',
-    payload,
-    generation: 'generation-1',
-    scopeMode: 'canonical',
-  });
-  await clock.tickAsync(5_000);
-  await run;
-  await service.transcriptTask({
-    taskId: 'task-1',
-    payload,
-    generation: 'generation-1',
-    scopeMode: 'canonical',
-  });
-  t.is(bridgeInputs.length, 1);
-
-  t.like(bridgeInputs[0] as Record<string, unknown>, {
-    actionId: 'transcript.audio',
-    actionVersion: 'v1',
-  });
-  t.like((bridgeInputs[0] as { step: Record<string, unknown> }).step, {
-    slot: 'transcript.audio',
-    builtInRouteId: 'Transcript audio',
-  });
-  t.deepEqual(
-    (
-      bridgeInputs[0] as {
-        inputSnapshot: { infos: unknown[] };
-      }
-    ).inputSnapshot.infos,
-    [
-      {
-        url: 'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test',
-        mimeType: 'audio/opus',
-        index: 0,
-      },
-      {
-        url: 'https://canary.copilotcontent.affine.pro/blob-1-1?sig=test',
-        mimeType: 'audio/opus',
-        index: 1,
-      },
-    ]
-  );
-  t.is(structuredCalls.length, 4);
-  const transcriptCalls = structuredCalls.filter(
-    call => call.options.builtInRouteId === 'Transcript audio'
-  );
-  t.is(transcriptCalls.length, 3);
-  t.true(transcriptCalls.every(call => call.slot === 'transcript.audio'));
-  t.deepEqual(
-    transcriptCalls.map(call => call.messages.at(-1)?.attachments),
-    [
-      [
+        'task-1',
+        'user-1',
+        'workspace-1',
+        'generation-1',
+        null,
+        'run-bridge',
+        false
+      );
+      t.is(
+        completeDispatch.firstCall.args[5].protectedResult.normalizedTranscript,
+        '00:00:17 A: Kickoff\n00:01:42 B: Follow-up'
+      );
+      t.like(
+        completeDispatch.firstCall.args[5].protectedResult
+          .normalizedSegments[1],
         {
-          attachment:
-            'https://canary.copilotcontent.affine.pro/blob-1-0?sig=test',
-          mimeType: 'audio/opus',
-        },
-      ],
-      [
-        {
-          attachment:
-            'https://canary.copilotcontent.affine.pro/blob-1-1?sig=test',
-          mimeType: 'audio/opus',
-        },
-      ],
-      [
-        {
-          attachment:
-            'https://canary.copilotcontent.affine.pro/blob-1-1?sig=test',
-          mimeType: 'audio/opus',
-        },
-      ],
-    ]
-  );
-  t.is(
-    structuredCalls.at(-1)?.messages.at(-1)?.content,
-    '00:00:17 A: Kickoff\n00:01:42 B: Follow-up'
-  );
-  t.like(completeDispatch.firstCall.args[5], {
-    status: 'ready',
-    errorCode: null,
-  });
-  Sinon.assert.calledWith(
-    attachActionRun,
-    'task-1',
-    'user-1',
-    'workspace-1',
-    'generation-1',
-    null,
-    'run-bridge',
-    false
-  );
-  t.is(
-    completeDispatch.firstCall.args[5].protectedResult.normalizedTranscript,
-    '00:00:17 A: Kickoff\n00:01:42 B: Follow-up'
-  );
-  t.like(
-    completeDispatch.firstCall.args[5].protectedResult.normalizedSegments[1],
-    {
-      startSec: 102,
-      endSec: 342,
-      start: '00:01:42',
-      end: '00:05:42',
+          startSec: 102,
+          endSec: 342,
+          start: '00:01:42',
+          end: '00:05:42',
+        }
+      );
+      t.deepEqual(
+        completeDispatch.firstCall.args[5].protectedResult.infos,
+        payload.infos
+      );
     }
   );
-  t.deepEqual(
-    completeDispatch.firstCall.args[5].protectedResult.infos,
-    payload.infos
-  );
-});
+}
 
 test('transcriptTask fails task when native action bridge reports an error event', async t => {
   const payload = TranscriptPayloadSchema.parse({
