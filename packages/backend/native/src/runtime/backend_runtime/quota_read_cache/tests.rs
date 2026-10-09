@@ -6,8 +6,8 @@ use super::QuotaReadCache;
 use crate::runtime::{
   Deployment,
   backend_runtime::{
-    RedisRuntimeConfig, entitlement::RuntimeAdminGrantInput, invalidation::InvalidationRuntime,
-    tests::runtime_from_database_url,
+    RedisRuntimeConfig, ServerConfig, ServerRole, entitlement::RuntimeAdminGrantInput,
+    invalidation::InvalidationRuntime, tests::runtime_from_database_url,
   },
   migrations::DATABASE_TEST_LOCK,
 };
@@ -267,16 +267,44 @@ async fn redis_commit_hints_refresh_a_warm_cache_on_another_pod() {
   insert_user(&pool, &member_id).await;
   insert_workspace(&pool, &workspace_id, &owner_id).await;
 
-  let pod_b = Arc::new(cache(&pool, Deployment::Cloud));
-  let initial = pod_b.workspace_state(&workspace_id).await.unwrap();
-  assert_eq!(initial.plan, "free");
-  assert_eq!(initial.member_count, 1);
-  assert_eq!(initial.used_storage_quota, 0);
-
+  let redis = url::Url::parse(&redis_url).unwrap();
+  let directory = tempfile::tempdir().unwrap();
+  let config_path = directory.path().join("config.json");
+  std::fs::write(
+    &config_path,
+    serde_json::json!({
+      "deployment": { "type": "cloud" },
+      "redis": {
+        "host": redis.host_str().unwrap(),
+        "port": redis.port().unwrap_or(6379),
+        "username": redis.username(),
+        "password": redis.password().unwrap_or_default()
+      }
+    })
+    .to_string(),
+  )
+  .unwrap();
+  let mut worker = runtime_from_database_url().await.unwrap().unwrap();
+  worker.pool.lock().await.take().unwrap().close().await;
+  worker.role = ServerRole::Worker;
+  worker.server_config = Arc::new(ServerConfig::open(&config_path, None).unwrap());
+  worker.start().await.unwrap();
+  for reload in [false, true] {
+    if reload {
+      worker.reload_config().await.unwrap();
+    }
+    assert!(worker.blob_access.lock().await.is_none());
+    let user = worker.get_user_quota_state_v1(owner_id.clone()).await.unwrap();
+    assert_eq!(user.plan, "free");
+    let initial = worker.get_workspace_quota_state_v1(workspace_id.clone()).await.unwrap();
+    assert_eq!(initial.plan, "free");
+    assert_eq!(initial.member_count, 1);
+    assert_eq!(initial.used_storage_quota, 0);
+  }
+  let subscriber = worker.invalidation.lock().await.as_ref().unwrap().clone();
   let config = RedisRuntimeConfig {
     url: Some(redis_url.clone()),
   };
-  let subscriber = InvalidationRuntime::start(&config, true, pod_b.clone()).await;
   let pod_a = Arc::new(cache(&pool, Deployment::Cloud));
   assert_eq!(pod_a.workspace_state(&workspace_id).await.unwrap().plan, "free");
   let publisher = InvalidationRuntime::start(&config, false, pod_a.clone()).await;
@@ -339,11 +367,11 @@ async fn redis_commit_hints_refresh_a_warm_cache_on_another_pod() {
   .await
   .expect("pod B must receive all quota invalidations");
 
-  let refreshed = pod_b.workspace_state(&workspace_id).await.unwrap();
+  let refreshed = worker.get_workspace_quota_state_v1(workspace_id.clone()).await.unwrap();
   assert_eq!(refreshed.plan, "team");
   assert!(!refreshed.uses_owner_quota);
   assert_eq!(refreshed.member_count, 2);
   assert_eq!(refreshed.used_storage_quota, 42);
-  subscriber.stop().await;
+  worker.stop().await.unwrap();
   publisher.stop().await;
 }
