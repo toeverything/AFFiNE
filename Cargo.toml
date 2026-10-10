@@ -71,9 +71,6 @@ resolver = "3"
   objc2-foundation = "0.3"
   ogg = "0.9"
   once_cell = "1"
-  onenote_parser = { git = "https://github.com/msiemens/onenote.rs", rev = "fa4d7a044324af3bfe68727704a9789a08b36a3c", package = "onenote_parser", features = [
-    "onepkg",
-  ] }
   p256 = { version = "0.13", features = ["ecdsa", "pem"] }
   rand = "0.9"
   rayon = "1.10"
@@ -97,7 +94,6 @@ resolver = "3"
   thiserror = "2"
   tiktoken-rs = "0.7"
   tokio = "1.45"
-  typed-path = "0.12.3"
   uniffi = "0.29"
   url = { version = "2.5" }
   uuid = "1.8"
