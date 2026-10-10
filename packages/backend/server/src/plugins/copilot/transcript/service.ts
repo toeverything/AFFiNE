@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { setTimeout } from 'node:timers/promises';
 
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { AiJobStatus } from '@prisma/client';
@@ -17,16 +16,11 @@ import {
 import { Models } from '../../../models';
 import { CopilotAccessService, type CopilotScopeMode } from '../access';
 import { PromptService } from '../prompt';
-import type {
-  CopilotStructuredOptions,
-  PromptMessage,
-} from '../providers/types';
 import {
   ActionRuntimeBridge,
   type ActionRuntimeBridgeInput,
 } from '../runtime/action-runtime-bridge';
 import { CapabilityRuntime } from '../runtime/capability-runtime';
-import type { RequiredStructuredOutputContract } from '../runtime/contracts';
 import { CopilotStorage } from '../storage';
 import {
   TRANSCRIPT_ACTION_ID,
@@ -57,7 +51,6 @@ import type {
 import { readStream } from './utils';
 
 const TRANSCRIPT_SLICE_CONCURRENCY = 2;
-const TRANSCRIPT_RETRY_DELAYS = [5_000, 15_000];
 const MAX_RECOVERABLE_TIMESTAMP_RATIO = 2;
 const MIN_MILLISECOND_TIMESTAMP_RATIO = 100;
 
@@ -252,11 +245,12 @@ export class CopilotTranscriptionService {
     durationSec?: number
   ): Promise<RawTranscriptSegment[]> {
     const messages = await this.buildTranscriptSliceMessages(info);
-    const output = await this.generateStructuredValue(
+    const output = await this.retry.generateStructuredValue(
       input,
       messages,
       TRANSCRIPT_PROMPT_REF,
       TranscriptionResponseContract,
+      `slice ${info.index ?? fallbackIndex}`,
       'transcript.audio'
     );
     const sliceIndex = info.index ?? fallbackIndex;
@@ -328,44 +322,6 @@ export class CopilotTranscriptionService {
     return segments;
   }
 
-  private async generateStructuredValue(
-    input: ActionRuntimeBridgeInput,
-    messages: PromptMessage[],
-    builtInRouteId: string,
-    contract: RequiredStructuredOutputContract,
-    slot = 'prompt.structured'
-  ) {
-    for (let attempt = 0; ; attempt++) {
-      try {
-        return await this.runtime.generateStructuredValue(
-          {
-            profileId: input.step.profileId,
-            modelId: input.step.modelId,
-          },
-          messages,
-          {
-            ...(input.step.options as CopilotStructuredOptions | undefined),
-            builtInRouteId,
-          },
-          contract,
-          undefined,
-          slot
-        );
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        const retryable =
-          /upstream returned status (?:429|5\d\d)|RESOURCE_EXHAUSTED|UNAVAILABLE|llm_timeout|timed? out|fetch failed/i.test(
-            message
-          );
-        const delay = TRANSCRIPT_RETRY_DELAYS[attempt];
-        if (!retryable || delay === undefined || input.signal?.aborted) {
-          throw error;
-        }
-        await setTimeout(delay, undefined, { signal: input.signal });
-      }
-    }
-  }
-
   private async executeTranscriptAction(
     input: ActionRuntimeBridgeInput,
     payload: TranscriptionPayloadV2
@@ -412,11 +368,12 @@ export class CopilotTranscriptionService {
     if (normalizedTranscript) {
       const messages =
         await this.buildMeetingSummaryMessages(normalizedTranscript);
-      const output = await this.generateStructuredValue(
+      const output = await this.retry.generateStructuredValue(
         input,
         messages,
         TRANSCRIPT_SUMMARY_PROMPT_REF,
-        MeetingSummaryV2Contract
+        MeetingSummaryV2Contract,
+        'summary'
       );
       summaryJson = MeetingSummaryV2Schema.parse(output.value);
     }
