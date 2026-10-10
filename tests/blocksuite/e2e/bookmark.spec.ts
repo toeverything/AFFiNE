@@ -56,6 +56,12 @@ const YOUTUBE_URL = 'https://www.youtube.com/watch?v=fakeid';
 const FIGMA_URL = 'https://www.figma.com/design/JuXs6uOAICwf4I4tps0xKZ123';
 
 test.beforeEach(async ({ page }) => {
+  await page.route('https://www.youtube.com/embed/**', route =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><title>YouTube embed</title>',
+    })
+  );
   await page.route(
     'https://affine-worker.toeverything.workers.dev/api/worker/link-preview',
     async route => {
