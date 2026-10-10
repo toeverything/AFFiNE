@@ -1780,6 +1780,8 @@ export interface SearchPagination {
 export type SearchTable =  'doc'|
 'block';
 
+export declare function splitTranscriptAudio(data: Buffer): Promise<Array<TranscriptAudioSlice>>
+
 export interface StorageProviderCapabilities {
   put: boolean
   get: boolean
@@ -1820,6 +1822,12 @@ export interface ToolContract {
   name: string
   description?: string
   parameters: any
+}
+
+export interface TranscriptAudioSlice {
+  data: Buffer
+  startSec: number
+  durationSec: number
 }
 
 /**

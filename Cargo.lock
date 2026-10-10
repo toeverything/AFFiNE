@@ -304,6 +304,7 @@ dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
+ "ogg",
  "p256 0.13.2",
  "rand 0.9.4",
  "rayon",

@@ -1,8 +1,13 @@
+import { readFile } from 'node:fs/promises';
+import { Readable } from 'node:stream';
+
 import { AiJobStatus } from '@prisma/client';
 import test from 'ava';
 import Sinon from 'sinon';
 
 import { AccessDenied } from '../../base';
+import { llmValidateContract } from '../../native';
+import { CopilotTranscriptionProcessor } from '../../plugins/copilot/transcript/processor';
 import { buildLegacyProjection } from '../../plugins/copilot/transcript/projection';
 import { CopilotTranscriptionRetryService } from '../../plugins/copilot/transcript/retry';
 import { TranscriptPayloadSchema } from '../../plugins/copilot/transcript/schema';
@@ -76,13 +81,22 @@ function createTranscriptPromptService() {
 
 function createSuccessfulTranscriptBridge(
   runId: string,
-  bridgeInputs: unknown[]
+  bridgeInputs: unknown[],
+  signal?: AbortSignal
 ) {
   return {
     runStream: (input: any, executor: (input: any) => Promise<any>) =>
       (async function* () {
+        const { sourceAudio, quality, infos, sliceManifest } =
+          input.inputSnapshot;
+        llmValidateContract('transcriptInput', {
+          sourceAudio,
+          quality,
+          infos,
+          sliceManifest,
+        });
         await input.onRunCreated?.({ runId, attempt: 1 });
-        const { result } = await executor(input);
+        const { result } = await executor({ ...input, signal });
         bridgeInputs.push(input);
         yield {
           type: 'action_done' as const,
@@ -105,7 +119,11 @@ function createCopilotTranscriptionService(...deps: unknown[]) {
   return new CopilotTranscriptionService(
     deps[0] as never,
     deps[2] as never,
-    deps[4] as never,
+    new CopilotTranscriptionProcessor(
+      deps[2] as never,
+      deps[4] as never,
+      retry
+    ),
     deps[5] as never,
     (deps[6] ?? { assertRoute: Sinon.stub().resolves() }) as never,
     (deps[7] ?? { publish: Sinon.stub() }) as never,
@@ -372,6 +390,24 @@ for (const status of ['ready', 'settled']) {
 }
 
 for (const scenario of [
+  ...(
+    [
+      'partial',
+      'partial manifestless',
+      'all blocked',
+      'transport error',
+      'cancelled',
+    ] as const
+  ).map(recovery => ({
+    name: `blocked audio recovery: ${recovery}`,
+    message:
+      'invalid response field `gemini.promptFeedback.blockReason`: prompt blocked: OTHER',
+    failures: 1,
+    attempts: 1,
+    failed: recovery === 'transport error' || recovery === 'cancelled',
+    summary: false,
+    recovery,
+  })),
   {
     name: '503 recovery',
     message: 'upstream returned status 503: UNAVAILABLE',
@@ -398,15 +434,21 @@ for (const scenario of [
     failed: true,
     summary: false,
   },
-  {
-    name: 'prompt blocked',
+  ...[
+    { mimeType: 'audio/m4a', mode: 'unsupported' },
+    { mimeType: 'audio/mpeg', mode: 'unsupported' },
+    { mimeType: 'audio/ogg', mode: 'invalid bytes' },
+    { mimeType: 'audio/opus', mode: 'storage error' },
+  ].map(blockedAudio => ({
+    name: `prompt blocked: ${blockedAudio.mimeType} ${blockedAudio.mode}`,
     message:
       'invalid response field `gemini.promptFeedback.blockReason`: prompt blocked: SAFETY',
     failures: 3,
     attempts: 1,
     failed: true,
     summary: false,
-  },
+    blockedAudio,
+  })),
   {
     name: 'invalid structured output',
     message: 'structured output schema validation failed',
@@ -437,6 +479,9 @@ for (const scenario of [
   test.serial(
     `transcriptTask transcribes slices and handles ${scenario.name}`,
     async t => {
+      const recovery = 'recovery' in scenario ? scenario.recovery : undefined;
+      const blockedAudio =
+        'blockedAudio' in scenario ? scenario.blockedAudio : undefined;
       const payload = TranscriptPayloadSchema.parse({
         sourceAudio: { blobId: 'blob-1', mimeType: 'audio/opus' },
         sliceManifest: [
@@ -470,8 +515,24 @@ for (const scenario of [
           },
         ],
       });
+      for (const info of payload.infos ?? []) {
+        if (info.index === 1)
+          info.mimeType =
+            blockedAudio?.mimeType ??
+            (recovery ? 'Audio/Ogg; codecs=opus' : info.mimeType);
+      }
+      if (recovery === 'partial manifestless') {
+        payload.sliceManifest = undefined;
+        payload.infos?.push({
+          key: 'blob-1-2',
+          url: 'https://affine.fail/blob-1-2',
+          mimeType: 'audio/opus',
+          index: 2,
+        });
+      }
+      const controller = new AbortController();
       const bridgeInputs: unknown[] = [];
-      const clock = Sinon.useFakeTimers();
+      const clock = Sinon.useFakeTimers({ toFake: ['Date'] });
       t.teardown(() => clock.restore());
       const structuredCalls: {
         messages: { content?: string; attachments?: unknown[] }[];
@@ -479,6 +540,7 @@ for (const scenario of [
         slot?: string;
       }[] = [];
       let failures = 0;
+      let recoveryCalls = 0;
       const generateStructuredValue = Sinon.stub().callsFake(
         async (
           _conditions: unknown,
@@ -510,6 +572,22 @@ for (const scenario of [
           const attachment = messages
             .flatMap(message => message.attachments ?? [])
             .at(0) as { attachment: string };
+          if (attachment.attachment.startsWith('data:audio/ogg;')) {
+            recoveryCalls++;
+            if (recovery === 'transport error' && recoveryCalls === 2) {
+              throw new Error('upstream returned status 401');
+            }
+            if (recovery === 'cancelled' && recoveryCalls === 2)
+              controller.abort();
+            if (recovery === 'all blocked' || recoveryCalls === 2) {
+              throw new Error(scenario.message);
+            }
+            return {
+              value: [
+                { a: 'B', s: 0, e: 1, t: `Recovered part ${recoveryCalls}` },
+              ],
+            };
+          }
           if (
             !scenario.summary &&
             attachment.attachment.includes('blob-1-1') &&
@@ -517,6 +595,8 @@ for (const scenario of [
           ) {
             throw new Error(scenario.message);
           }
+          if (attachment.attachment.includes('blob-1-2'))
+            return { value: [{ a: 'C', s: 1, e: 2, t: 'Next slice' }] };
           return {
             value: attachment.attachment.includes('blob-1-0')
               ? [{ a: 'A', s: 5, e: 9, t: 'Kickoff' }]
@@ -529,6 +609,17 @@ for (const scenario of [
       claimDispatch.onSecondCall().resolves(false);
       const attachActionRun = Sinon.stub().resolves(true);
       const completeDispatch = Sinon.stub().resolves(true);
+      const getSessionAttachment = Sinon.stub().callsFake(async () => {
+        if (blockedAudio?.mode === 'storage error')
+          throw new Error('storage unavailable');
+        return {
+          body: Readable.from(
+            blockedAudio
+              ? Buffer.from('not an Ogg stream')
+              : await readFile('../native/fixtures/transcript.opus')
+          ),
+        };
+      });
       const service = createCopilotTranscriptionService(
         {
           copilotTranscriptTask: {
@@ -547,6 +638,7 @@ for (const scenario of [
         } as never,
         {} as never,
         {
+          getSessionAttachment,
           presignGet: Sinon.stub().callsFake(
             async (_userId, _workspaceId, key) =>
               `https://canary.copilotcontent.affine.pro/${key}?sig=test`
@@ -554,7 +646,11 @@ for (const scenario of [
         } as never,
         {} as never,
         createTranscriptPromptService() as never,
-        createSuccessfulTranscriptBridge('run-bridge', bridgeInputs) as never,
+        createSuccessfulTranscriptBridge(
+          'run-bridge',
+          bridgeInputs,
+          controller.signal
+        ) as never,
         { generateStructuredValue } as never
       );
 
@@ -570,11 +666,85 @@ for (const scenario of [
       );
       await clock.tickAsync(20_000);
       const error = await outcome;
-      if (scenario.failed) {
-        t.is(
-          error?.message,
-          `Transcript ${scenario.summary ? 'summary' : 'slice 1'} failed after ${scenario.attempts} attempt(s): ${scenario.message}`
+      if (recovery) {
+        if (recovery === 'cancelled') {
+          t.is(error?.name, 'AbortError');
+          t.is(recoveryCalls, 2);
+          t.is(completeDispatch.firstCall.args[5].status, 'failed');
+          return;
+        }
+        if (recovery === 'transport error') {
+          t.is(
+            error?.message,
+            'Transcript slice 1 part 2/3 failed after 1 attempt(s): upstream returned status 401'
+          );
+          t.is(recoveryCalls, 2);
+          t.is(completeDispatch.firstCall.args[5].status, 'failed');
+          return;
+        }
+        t.is(error, null);
+        t.is(recoveryCalls, 3);
+        const completed = completeDispatch.firstCall.args[5];
+        t.is(completed.status, 'ready');
+        const segments = completed.protectedResult.normalizedSegments;
+        if (recovery === 'partial manifestless') {
+          t.deepEqual(
+            segments.map((segment: { startSec: number }) => segment.startSec),
+            [5, 9, 39, 69, 72]
+          );
+          t.is(segments[4].text, 'Next slice');
+          return;
+        }
+        t.deepEqual(
+          segments.map((segment: { startSec: number }) => segment.startSec),
+          [17, 42, 72, 102]
         );
+        if (recovery === 'partial') {
+          t.is(segments[1].text, 'Recovered part 1');
+          t.is(
+            segments[2].text,
+            '[Transcription unavailable: this audio interval was blocked by the provider.]'
+          );
+          t.is(segments[2].endSec, 102);
+          t.is(segments[3].text, 'Recovered part 3');
+        } else {
+          t.true(
+            segments
+              .slice(1)
+              .every((segment: { text: string }) =>
+                segment.text.includes('[Transcription unavailable:')
+              )
+          );
+        }
+        t.true(
+          structuredCalls
+            .at(-1)
+            ?.messages.at(-1)
+            ?.content?.includes('do not infer missing content')
+        );
+        return;
+      }
+      if (scenario.failed) {
+        const originalMessage = `Transcript ${scenario.summary ? 'summary' : 'slice 1'} failed after ${scenario.attempts} attempt(s): ${scenario.message}`;
+        if (blockedAudio && blockedAudio.mode !== 'unsupported') {
+          t.true(
+            error?.message.startsWith(
+              `${originalMessage}; audio recovery failed: `
+            )
+          );
+          t.like(error?.cause, { message: originalMessage });
+          t.true(
+            error?.message.includes(
+              blockedAudio.mode === 'storage error'
+                ? 'storage unavailable'
+                : 'Cannot split transcript audio:'
+            )
+          );
+          Sinon.assert.calledOnce(getSessionAttachment);
+        } else {
+          t.is(error?.message, originalMessage);
+          Sinon.assert.notCalled(getSessionAttachment);
+        }
         t.like(completeDispatch.firstCall.args[5], {
           status: 'failed',
           errorCode: error?.message,

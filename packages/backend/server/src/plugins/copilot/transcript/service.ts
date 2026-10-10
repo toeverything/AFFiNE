@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { AiJobStatus } from '@prisma/client';
 
 import {
@@ -15,53 +15,31 @@ import {
 } from '../../../core/realtime';
 import { Models } from '../../../models';
 import { CopilotAccessService, type CopilotScopeMode } from '../access';
-import { PromptService } from '../prompt';
-import {
-  ActionRuntimeBridge,
-  type ActionRuntimeBridgeInput,
-} from '../runtime/action-runtime-bridge';
+import { ActionRuntimeBridge } from '../runtime/action-runtime-bridge';
 import { CapabilityRuntime } from '../runtime/capability-runtime';
 import { CopilotStorage } from '../storage';
 import {
   TRANSCRIPT_ACTION_ID,
   TRANSCRIPT_ACTION_VERSION,
   TRANSCRIPT_PROMPT_REF,
-  TRANSCRIPT_SUMMARY_PROMPT_REF,
 } from './constants';
 import { taskToJob, type TranscriptionJob } from './job';
-import {
-  buildNormalizedTranscript,
-  normalizeTranscriptSegments,
-  type RawTranscriptSegment,
-} from './projection';
+import { CopilotTranscriptionProcessor } from './processor';
 import { CopilotTranscriptionRetryService } from './retry';
-import {
-  MeetingSummaryV2Contract,
-  MeetingSummaryV2Schema,
-  TranscriptionResponseContract,
-  TranscriptionResponseSchema,
-  TranscriptPayloadSchema,
-} from './schema';
+import { TranscriptPayloadSchema } from './schema';
 import type {
-  AudioBlobInfo,
   AudioBlobInfos,
   TranscriptionPayloadV2,
   TranscriptionSubmitInput,
 } from './types';
 import { readStream } from './utils';
 
-const TRANSCRIPT_SLICE_CONCURRENCY = 2;
-const MAX_RECOVERABLE_TIMESTAMP_RATIO = 2;
-const MIN_MILLISECOND_TIMESTAMP_RATIO = 100;
-
 @Injectable()
 export class CopilotTranscriptionService {
-  private readonly logger = new Logger(CopilotTranscriptionService.name);
-
   constructor(
     private readonly models: Models,
     private readonly storage: CopilotStorage,
-    private readonly prompts: PromptService,
+    private readonly processor: CopilotTranscriptionProcessor,
     private readonly actionBridge: ActionRuntimeBridge,
     private readonly runtime: CapabilityRuntime,
     private readonly realtime: RealtimePublisher,
@@ -172,6 +150,11 @@ export class CopilotTranscriptionService {
       infos: payload.infos
         ? await Promise.all(
             payload.infos.map(async info => ({
+              key:
+                info.key ??
+                (info.url.startsWith('data:')
+                  ? undefined
+                  : this.storage.keyFromUrl(userId, workspaceId, info.url)),
               url: await this.resolveAttachmentUrl(userId, workspaceId, info),
               mimeType: info.mimeType,
               index: info.index,
@@ -179,216 +162,6 @@ export class CopilotTranscriptionService {
           )
         : payload.infos,
     } satisfies TranscriptionPayloadV2;
-  }
-
-  private async buildTranscriptSliceMessages(info: AudioBlobInfo) {
-    const prompt = await this.prompts.get(TRANSCRIPT_PROMPT_REF);
-    if (!prompt) {
-      throw new Error('Transcript prompt not found');
-    }
-
-    return [
-      ...this.prompts.finish(prompt, {}),
-      {
-        role: 'user' as const,
-        content:
-          'Transcribe this audio slice. Return start and end timestamps as elapsed seconds relative to this slice; never encode MM:SS as a number.',
-        attachments: [{ attachment: info.url, mimeType: info.mimeType }],
-        params: { mimetype: info.mimeType },
-      },
-    ];
-  }
-
-  private async buildMeetingSummaryMessages(normalizedTranscript: string) {
-    const prompt = await this.prompts.get(TRANSCRIPT_SUMMARY_PROMPT_REF);
-    if (!prompt) {
-      throw new Error('Transcript summary prompt not found');
-    }
-    return this.prompts.finish(prompt, { content: normalizedTranscript });
-  }
-
-  private rebaseManifestlessSlices(
-    infos: AudioBlobInfos,
-    slices: RawTranscriptSegment[][]
-  ) {
-    let accumulatedOffset = 0;
-    return slices
-      .map((segments, fallbackIndex) => ({
-        fallbackIndex,
-        sliceIndex: infos[fallbackIndex]?.index ?? fallbackIndex,
-        segments,
-      }))
-      .sort(
-        (left, right) =>
-          left.sliceIndex - right.sliceIndex ||
-          left.fallbackIndex - right.fallbackIndex
-      )
-      .flatMap(({ segments }) => {
-        const rebased = segments.map(segment => ({
-          ...segment,
-          startSec: segment.startSec + accumulatedOffset,
-          endSec: segment.endSec + accumulatedOffset,
-        }));
-        accumulatedOffset += Math.max(
-          0,
-          ...segments.map(segment => segment.endSec)
-        );
-        return rebased;
-      });
-  }
-
-  private async transcribeSlice(
-    input: ActionRuntimeBridgeInput,
-    info: AudioBlobInfo,
-    fallbackIndex: number,
-    offset: number,
-    durationSec?: number
-  ): Promise<RawTranscriptSegment[]> {
-    const messages = await this.buildTranscriptSliceMessages(info);
-    const output = await this.retry.generateStructuredValue(
-      input,
-      messages,
-      TRANSCRIPT_PROMPT_REF,
-      TranscriptionResponseContract,
-      `slice ${info.index ?? fallbackIndex}`,
-      'transcript.audio'
-    );
-    const sliceIndex = info.index ?? fallbackIndex;
-    const response = TranscriptionResponseSchema.parse(output.value);
-    const timestamps = response.flatMap(segment => [segment.s, segment.e]);
-    const maxTs = Math.max(0, ...timestamps);
-    const maxAllowed = durationSec === undefined ? Infinity : durationSec + 5;
-    let scale = 1;
-    let convertMmss = false;
-    if (durationSec !== undefined && maxTs > maxAllowed) {
-      const mmssTimestamps = timestamps.map(timestamp => {
-        const minutes = Math.floor(timestamp / 100);
-        const seconds = timestamp - minutes * 100;
-        return seconds < 60 ? minutes * 60 + seconds : null;
-      });
-      if (mmssTimestamps.every(ts => ts !== null && ts <= maxAllowed)) {
-        convertMmss = true;
-      } else if (
-        durationSec > 0 &&
-        maxTs >= durationSec * MIN_MILLISECOND_TIMESTAMP_RATIO &&
-        maxTs / 1000 <= maxAllowed
-      ) {
-        scale = 0.001;
-      } else if (maxTs <= durationSec * MAX_RECOVERABLE_TIMESTAMP_RATIO) {
-        scale = durationSec / maxTs;
-      } else {
-        scale = 1;
-      }
-    }
-
-    let correctedTimestamps = 0;
-    const normalizeTimestamp = (timestamp: number, index: number) => {
-      const minutes = Math.floor(timestamp / 100);
-      const seconds = timestamp - minutes * 100;
-      const converted = convertMmss
-        ? minutes * 60 + seconds
-        : timestamp * scale;
-      const bounded =
-        durationSec === undefined
-          ? Math.max(0, converted)
-          : Math.min(Math.max(converted, 0), durationSec);
-      if (bounded !== timestamp) correctedTimestamps += 1;
-      if (!Number.isFinite(bounded)) {
-        this.logger.warn(
-          `Invalid timestamp at position ${index} in transcript slice ${sliceIndex}`
-        );
-        return 0;
-      }
-      return bounded;
-    };
-
-    const segments = response.map((segment, index) => {
-      const startSec = normalizeTimestamp(segment.s, index * 2);
-      const endSec = normalizeTimestamp(segment.e, index * 2 + 1);
-      return {
-        sliceIndex,
-        speaker: segment.a,
-        startSec: startSec + offset,
-        endSec: endSec + offset,
-        text: segment.t,
-      };
-    });
-
-    if (correctedTimestamps > 0) {
-      this.logger.warn(
-        `Normalized ${correctedTimestamps} out-of-range transcript timestamps for slice ${sliceIndex} (duration=${durationSec ?? 'unknown'}s, scale=${scale}, mmss=${convertMmss})`
-      );
-    }
-    return segments;
-  }
-
-  private async executeTranscriptAction(
-    input: ActionRuntimeBridgeInput,
-    payload: TranscriptionPayloadV2
-  ) {
-    const infos = payload.infos ?? [];
-    const slices: RawTranscriptSegment[][] = [];
-    const manifestProvided = !!payload.sliceManifest?.length;
-
-    for (
-      let batchStart = 0;
-      batchStart < infos.length;
-      batchStart += TRANSCRIPT_SLICE_CONCURRENCY
-    ) {
-      const batch = infos.slice(
-        batchStart,
-        batchStart + TRANSCRIPT_SLICE_CONCURRENCY
-      );
-      await Promise.all(
-        batch.map(async (info, batchIndex) => {
-          const index = batchStart + batchIndex;
-          const manifestItem = manifestProvided
-            ? payload.sliceManifest?.find(
-                item => item.index === (info.index ?? index)
-              )
-            : undefined;
-          slices[index] = await this.transcribeSlice(
-            input,
-            info,
-            index,
-            manifestItem?.startSec ?? 0,
-            manifestItem?.durationSec
-          );
-        })
-      );
-    }
-
-    const rawSegments = manifestProvided
-      ? slices.flat()
-      : this.rebaseManifestlessSlices(infos, slices);
-    const normalizedSegments = normalizeTranscriptSegments(rawSegments);
-    const normalizedTranscript = buildNormalizedTranscript(normalizedSegments);
-    let summaryJson = null;
-
-    if (normalizedTranscript) {
-      const messages =
-        await this.buildMeetingSummaryMessages(normalizedTranscript);
-      const output = await this.retry.generateStructuredValue(
-        input,
-        messages,
-        TRANSCRIPT_SUMMARY_PROMPT_REF,
-        MeetingSummaryV2Contract,
-        'summary'
-      );
-      summaryJson = MeetingSummaryV2Schema.parse(output.value);
-    }
-
-    return {
-      result: {
-        sourceAudio: payload.sourceAudio,
-        quality: payload.quality,
-        sliceManifest: payload.sliceManifest,
-        normalizedSegments,
-        normalizedTranscript,
-        summaryJson,
-        version: 'transcript-result-v1',
-      } satisfies TranscriptionPayloadV2,
-    };
   }
 
   async submitTask(
@@ -564,7 +337,14 @@ export class CopilotTranscriptionService {
           actionId: TRANSCRIPT_ACTION_ID,
           actionVersion: TRANSCRIPT_ACTION_VERSION,
           retryOf: retryOf ?? null,
-          inputSnapshot: runtimePayload,
+          inputSnapshot: {
+            ...runtimePayload,
+            infos: runtimePayload.infos?.map(({ url, mimeType, index }) => ({
+              url,
+              mimeType,
+              index,
+            })),
+          },
           onRunCreated: async ({ runId }) => {
             await this.assertTaskScope(task, scopeMode);
             const attached =
@@ -600,7 +380,7 @@ export class CopilotTranscriptionService {
             },
           },
         },
-        input => this.executeTranscriptAction(input, runtimePayload)
+        input => this.processor.execute(input, runtimePayload)
       )) {
         if (event.type === 'error' || event.status === 'failed') {
           bridgeFailed = true;
