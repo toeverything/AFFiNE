@@ -26,6 +26,7 @@ import {
   OpenInNewIcon,
   PlusIcon,
   SplitViewIcon,
+  UnlinkIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useCallback, useMemo, useState } from 'react';
@@ -37,6 +38,7 @@ export const useNavigationPanelDocNodeOperations = (
   options: {
     openInfoModal: () => void;
     openNodeCollapsed: () => void;
+    parentDocId?: string;
   }
 ): NodeOperation[] => {
   const t = useI18n();
@@ -142,6 +144,22 @@ export const useNavigationPanelDocNodeOperations = (
     }
   }, [createPage, guardService, docId, docsService, options, t]);
 
+  const handleUnlink = useAsyncCallback(async () => {
+    const parentDocId = options.parentDocId;
+    if (!parentDocId) {
+      return;
+    }
+    const canEdit = await guardService.can('Doc_Update', parentDocId);
+    if (!canEdit) {
+      toast(t['com.affine.no-permission']());
+      return;
+    }
+    const removed = await docsService.removeLinkedDoc(parentDocId, docId);
+    if (removed > 0) {
+      toast(t['com.affine.rootAppSidebar.doc.unlinked']());
+    }
+  }, [guardService, options.parentDocId, docsService, docId, t]);
+
   const handleToggleFavoriteDoc = useCallback(() => {
     compatibleFavoriteItemsAdapter.toggle(docId, 'doc');
     track.$.navigationPanel.organize.toggleFavorite({
@@ -198,6 +216,26 @@ export const useNavigationPanelDocNodeOperations = (
           </Guard>
         ),
       },
+      ...(options.parentDocId
+        ? [
+            {
+              index: 99,
+              view: (
+                <Guard docId={options.parentDocId} permission="Doc_Update">
+                  {canEdit => (
+                    <MenuItem
+                      prefixIcon={<UnlinkIcon />}
+                      onClick={handleUnlink}
+                      disabled={!canEdit}
+                    >
+                      {t['com.affine.rootAppSidebar.doc.unlink']()}
+                    </MenuItem>
+                  )}
+                </Guard>
+              ),
+            },
+          ]
+        : []),
       {
         index: 99,
         view: (
@@ -276,6 +314,8 @@ export const useNavigationPanelDocNodeOperations = (
       handleOpenInSplitView,
       handleOpenInfoModal,
       handleToggleFavoriteDoc,
+      handleUnlink,
+      options.parentDocId,
       t,
     ]
   );
