@@ -1,5 +1,12 @@
 import { useI18n } from '@affine/i18n';
-import { useCallback, useMemo } from 'react';
+import {
+  edgelessToolShortcutDefaults,
+  type EdgelessToolShortcutId,
+  formatEdgelessToolShortcut,
+  getEdgelessToolShortcutOverrides,
+  subscribeEdgelessToolShortcuts,
+} from '@blocksuite/affine-shared/utils';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 type KeyboardShortcutsI18NKeys =
   | 'cancel'
@@ -72,6 +79,7 @@ interface ShortcutMap {
 export interface ShortcutsInfo {
   title: string;
   shortcuts: ShortcutMap;
+  editableShortcuts?: Record<string, EdgelessToolShortcutId>;
 }
 
 export const useWinGeneralKeyboardShortcuts = (): ShortcutMap => {
@@ -318,11 +326,39 @@ export const usePageShortcuts = (): ShortcutsInfo => {
 
 export const useEdgelessShortcuts = (): ShortcutsInfo => {
   const t = useI18n();
-  const shortcuts = shortcutsMap.useEdgelessShortcuts();
+  const defaultShortcuts = shortcutsMap.useEdgelessShortcuts();
+  const overrides = useSyncExternalStore(
+    subscribeEdgelessToolShortcuts,
+    getEdgelessToolShortcutOverrides,
+    getEdgelessToolShortcutOverrides
+  );
+  const editableShortcuts = useMemo(
+    () => ({
+      [t['com.affine.keyboardShortcuts.select']()]: 'select',
+      [t['com.affine.keyboardShortcuts.text']()]: 'text',
+      [t['com.affine.keyboardShortcuts.connector']()]: 'connector',
+      [t['com.affine.keyboardShortcuts.pen']()]: 'pen',
+      [t['com.affine.keyboardShortcuts.hand']()]: 'hand',
+      [t['com.affine.keyboardShortcuts.note']()]: 'note',
+    }),
+    [t]
+  ) satisfies Record<string, EdgelessToolShortcutId>;
+  const shortcuts = useMemo(() => {
+    const resolved = { ...defaultShortcuts };
+    Object.entries(editableShortcuts).forEach(([title, id]) => {
+      resolved[title] = [
+        formatEdgelessToolShortcut(
+          overrides[id] ?? edgelessToolShortcutDefaults[id]
+        ),
+      ];
+    });
+    return resolved;
+  }, [defaultShortcuts, editableShortcuts, overrides]);
 
   return {
     title: t['com.affine.shortcutsTitle.edgeless'](),
     shortcuts,
+    editableShortcuts,
   };
 };
 
