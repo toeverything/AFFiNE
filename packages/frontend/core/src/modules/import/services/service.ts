@@ -98,9 +98,7 @@ export class ImportService extends Service {
     if (!BUILD_CONFIG.isElectron) {
       await preflightWebFilesImport(files);
     }
-    if (BUILD_CONFIG.isElectron) {
-      return commitNativeImport('obsidian', files, commitService, context);
-    }
+
     const { files: snapshots, warnings } = await snapshotReadableFiles(files);
     if (!snapshots.length) {
       throw new Error('No readable files were found in the selected folder.');
