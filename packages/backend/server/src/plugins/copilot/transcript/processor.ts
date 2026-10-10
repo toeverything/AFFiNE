@@ -32,7 +32,7 @@ const TRANSCRIPT_SLICE_CONCURRENCY = 2;
 const MAX_RECOVERABLE_TIMESTAMP_RATIO = 2;
 const MIN_MILLISECOND_TIMESTAMP_RATIO = 100;
 
-function isContentBlocked(error: unknown) {
+function isContentBlocked(error: unknown): error is Error {
   return (
     error instanceof Error &&
     /invalid response field `gemini\.promptFeedback\.blockReason`: prompt blocked: (?!BLOCK_REASON_UNSPECIFIED\b)[A-Z_]+/.test(
@@ -289,27 +289,44 @@ export class CopilotTranscriptionProcessor {
     } catch (error) {
       if (!isContentBlocked(error)) throw error;
       signal?.throwIfAborted();
-      let data: Buffer;
-      if (info.key) {
-        const object = await this.storage.getSessionAttachment(
-          input.userId,
-          input.workspaceId,
-          info.key
-        );
-        if (!object.body)
-          throw new Error('Transcript recovery audio not found', {
-            cause: error,
-          });
-        data = await readBufferWithLimit(object.body, MAX_TRANSCRIPTION_SIZE);
-      } else if (
-        info.url.startsWith('data:') &&
-        info.url.includes(';base64,')
-      ) {
-        data = Buffer.from(info.url.slice(info.url.indexOf(',') + 1), 'base64');
-      } else {
+      const mimeType = info.mimeType.split(';', 1)[0].trim().toLowerCase();
+      if (!['audio/ogg', 'audio/opus', 'application/ogg'].includes(mimeType)) {
         throw error;
       }
-      const parts = await splitTranscriptAudio(data);
+      let parts: Awaited<ReturnType<typeof splitTranscriptAudio>>;
+      try {
+        let data: Buffer;
+        if (info.key) {
+          const object = await this.storage.getSessionAttachment(
+            input.userId,
+            input.workspaceId,
+            info.key
+          );
+          if (!object.body)
+            throw new Error('Transcript recovery audio not found');
+          data = await readBufferWithLimit(object.body, MAX_TRANSCRIPTION_SIZE);
+        } else if (
+          info.url.startsWith('data:') &&
+          info.url.includes(';base64,')
+        ) {
+          data = Buffer.from(
+            info.url.slice(info.url.indexOf(',') + 1),
+            'base64'
+          );
+        } else {
+          throw new Error('Transcript recovery audio cannot be resolved');
+        }
+        parts = await splitTranscriptAudio(data);
+      } catch (recoveryError) {
+        signal?.throwIfAborted();
+        const reason =
+          recoveryError instanceof Error
+            ? recoveryError.message
+            : String(recoveryError);
+        throw new Error(`${error.message}; audio recovery failed: ${reason}`, {
+          cause: error,
+        });
+      }
       const sliceIndex = info.index ?? fallbackIndex;
       this.logger.warn(
         `Recovering blocked transcript slice ${sliceIndex} using ${parts.length} audio parts`

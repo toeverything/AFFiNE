@@ -434,15 +434,21 @@ for (const scenario of [
     failed: true,
     summary: false,
   },
-  {
-    name: 'prompt blocked',
+  ...[
+    { mimeType: 'audio/m4a', mode: 'unsupported' },
+    { mimeType: 'audio/mpeg', mode: 'unsupported' },
+    { mimeType: 'audio/ogg', mode: 'invalid bytes' },
+    { mimeType: 'audio/opus', mode: 'storage error' },
+  ].map(blockedAudio => ({
+    name: `prompt blocked: ${blockedAudio.mimeType} ${blockedAudio.mode}`,
     message:
       'invalid response field `gemini.promptFeedback.blockReason`: prompt blocked: SAFETY',
     failures: 3,
     attempts: 1,
     failed: true,
     summary: false,
-  },
+    blockedAudio,
+  })),
   {
     name: 'invalid structured output',
     message: 'structured output schema validation failed',
@@ -474,6 +480,8 @@ for (const scenario of [
     `transcriptTask transcribes slices and handles ${scenario.name}`,
     async t => {
       const recovery = 'recovery' in scenario ? scenario.recovery : undefined;
+      const blockedAudio =
+        'blockedAudio' in scenario ? scenario.blockedAudio : undefined;
       const payload = TranscriptPayloadSchema.parse({
         sourceAudio: { blobId: 'blob-1', mimeType: 'audio/opus' },
         sliceManifest: [
@@ -507,6 +515,12 @@ for (const scenario of [
           },
         ],
       });
+      for (const info of payload.infos ?? []) {
+        if (info.index === 1)
+          info.mimeType =
+            blockedAudio?.mimeType ??
+            (recovery ? 'Audio/Ogg; codecs=opus' : info.mimeType);
+      }
       if (recovery === 'partial manifestless') {
         payload.sliceManifest = undefined;
         payload.infos?.push({
@@ -595,6 +609,17 @@ for (const scenario of [
       claimDispatch.onSecondCall().resolves(false);
       const attachActionRun = Sinon.stub().resolves(true);
       const completeDispatch = Sinon.stub().resolves(true);
+      const getSessionAttachment = Sinon.stub().callsFake(async () => {
+        if (blockedAudio?.mode === 'storage error')
+          throw new Error('storage unavailable');
+        return {
+          body: Readable.from(
+            blockedAudio
+              ? Buffer.from('not an Ogg stream')
+              : await readFile('../native/fixtures/transcript.opus')
+          ),
+        };
+      });
       const service = createCopilotTranscriptionService(
         {
           copilotTranscriptTask: {
@@ -613,17 +638,7 @@ for (const scenario of [
         } as never,
         {} as never,
         {
-          getSessionAttachment: Sinon.stub().callsFake(async () => {
-            if (!recovery)
-              throw new Error(
-                `Transcript slice 1 failed after 1 attempt(s): ${scenario.message}`
-              );
-            return {
-              body: Readable.from(
-                await readFile('../native/fixtures/transcript.opus')
-              ),
-            };
-          }),
+          getSessionAttachment,
           presignGet: Sinon.stub().callsFake(
             async (_userId, _workspaceId, key) =>
               `https://canary.copilotcontent.affine.pro/${key}?sig=test`
@@ -710,10 +725,26 @@ for (const scenario of [
         return;
       }
       if (scenario.failed) {
-        t.is(
-          error?.message,
-          `Transcript ${scenario.summary ? 'summary' : 'slice 1'} failed after ${scenario.attempts} attempt(s): ${scenario.message}`
-        );
+        const originalMessage = `Transcript ${scenario.summary ? 'summary' : 'slice 1'} failed after ${scenario.attempts} attempt(s): ${scenario.message}`;
+        if (blockedAudio && blockedAudio.mode !== 'unsupported') {
+          t.true(
+            error?.message.startsWith(
+              `${originalMessage}; audio recovery failed: `
+            )
+          );
+          t.like(error?.cause, { message: originalMessage });
+          t.true(
+            error?.message.includes(
+              blockedAudio.mode === 'storage error'
+                ? 'storage unavailable'
+                : 'Cannot split transcript audio:'
+            )
+          );
+          Sinon.assert.calledOnce(getSessionAttachment);
+        } else {
+          t.is(error?.message, originalMessage);
+          Sinon.assert.notCalled(getSessionAttachment);
+        }
         t.like(completeDispatch.firstCall.args[5], {
           status: 'failed',
           errorCode: error?.message,

@@ -9595,6 +9595,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.audio.transcribing"](): string;
     /**
+      * `Transcription failed`
+      */
+    ["com.affine.audio.transcription-failed"](): string;
+    /**
       * `Unable to retrieve AI results for others`
       */
     ["com.affine.audio.transcribe.non-owner.confirm.title"](): string;

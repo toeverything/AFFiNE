@@ -18,7 +18,8 @@ pub struct TranscriptAudioSlice {
   pub duration_sec: f64,
 }
 
-// RFC 6716 section 3: packet duration is encoded in the TOC, without decoding audio.
+// RFC 6716 section 3: packet duration is encoded in the TOC, without decoding
+// audio.
 fn packet_samples(packet: &[u8]) -> Result<u64> {
   let toc = *packet.first().context("Empty Opus packet")?;
   let frame_samples = if toc & 0x80 != 0 {
