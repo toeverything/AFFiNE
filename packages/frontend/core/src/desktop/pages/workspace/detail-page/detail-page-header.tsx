@@ -5,6 +5,7 @@ import {
   observeResize,
   useDraggable,
 } from '@affine/component';
+import { DocBreadcrumb } from '@affine/core/blocksuite/block-suite-header/breadcrumb';
 import { FavoriteButton } from '@affine/core/blocksuite/block-suite-header/favorite';
 import { InfoButton } from '@affine/core/blocksuite/block-suite-header/info';
 import { JournalWeekDatePicker } from '@affine/core/blocksuite/block-suite-header/journal/date-picker';
@@ -156,6 +157,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
       <ViewTitle title={title} />
       <ViewIcon icon={currentMode ?? 'page'} />
       <EditorModeSwitch />
+      <DocBreadcrumb docId={page.id} />
       <BlocksuiteHeaderTitle inputHandleRef={titleInputHandleRef} />
       <TemplateMark />
       <div className={styles.iconButtonContainer}>
