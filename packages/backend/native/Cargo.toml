@@ -43,6 +43,7 @@ memory-indexer = { workspace = true }
 mp4parse = { workspace = true }
 napi = { workspace = true, features = ["async", "serde-json"] }
 napi-derive = { workspace = true }
+ogg = { workspace = true }
 p256 = { workspace = true }
 rand = { workspace = true }
 redis = { workspace = true }

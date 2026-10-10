@@ -301,6 +301,7 @@ export function getTokenEncoder(model?: string | null): Tokenizer | null {
   }
 }
 
+export const splitTranscriptAudio = serverNativeModule.splitTranscriptAudio;
 export const getMime = serverNativeModule.getMime;
 export const inspectImageForProxy = serverNativeModule.inspectImageForProxy;
 export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
