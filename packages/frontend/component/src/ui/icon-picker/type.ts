@@ -16,5 +16,6 @@ export type IconData =
     }
   | {
       type: IconType.Blob;
-      blob: Blob;
+      /** key of the image stored in the workspace blob engine */
+      blobId: string;
     };

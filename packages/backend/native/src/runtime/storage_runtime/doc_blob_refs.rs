@@ -1,14 +1,26 @@
 use affine_doc_loader as doc_loader;
 use chrono::{DateTime, Utc};
-use sqlx::{Executor, FromRow, PgPool, Postgres};
+use sqlx::{Executor, FromRow, PgConnection, PgPool, Postgres};
+use y_octo::{ReadDoc, ReadError, ReadValue};
 
 use super::{
   CurrentDoc, RuntimeDocBlobRefsResult, RuntimeError, RuntimeResult, StorageRuntime, load_canonical_doc,
   load_workspace_canonical_doc_ids, napi_error,
 };
 
-pub(super) const PARSER_VERSION: i32 = 1;
+// v2 includes custom callout icons and the explorerIcon table.
+pub(super) const PARSER_VERSION: i32 = 2;
+const EXPLORER_ICON_FLAVOUR: &str = "affine:explorer-icon";
+const CALLOUT_FLAVOUR: &str = "affine:callout";
+// Match affine_doc_loader::blob_refs limits for the additional icon references.
+const MAX_ICON_RECORDS: usize = 100_000;
+const MAX_SOURCE_REFS: usize = 10_000;
+const MAX_BLOB_KEY_BYTES: usize = 1_024;
 const ERROR_SUMMARY_LIMIT: usize = 512;
+
+fn explorer_icon_doc_id(workspace_id: &str) -> String {
+  format!("db${workspace_id}$explorerIcon")
+}
 
 type ExtractedRef = doc_loader::BlobRef;
 
@@ -45,22 +57,35 @@ enum ProjectionOutcome {
   Missing,
 }
 
-async fn load_workspace_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  let mut connection = pool
-    .acquire()
-    .await
-    .map_err(|error| RuntimeError::database("acquire retained document connection", error))?;
-  let mut ids = load_workspace_canonical_doc_ids(&mut connection, workspace_id).await?;
+// Use the same source set for rebuilding projections and checking cleanup freshness.
+pub(super) async fn load_workspace_doc_ids(
+  connection: &mut PgConnection,
+  workspace_id: &str,
+) -> RuntimeResult<Vec<String>> {
+  let mut ids = load_workspace_canonical_doc_ids(connection, workspace_id).await?;
   ids.push(workspace_id.to_string());
-  let retained = sqlx::query_scalar::<_, String>(
-    "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 AND status IN ('marked', 'failed') ORDER \
-     BY doc_id",
-  )
-  .bind(workspace_id)
-  .fetch_all(&mut *connection)
-  .await
-  .map_err(|err| RuntimeError::database("Doc blob refs candidate load failed", err))?;
-  ids.extend(retained);
+  // This table is outside meta.pages and exists only after an icon is set.
+  // Include pending-only tables so cleanup waits for their canonical snapshot.
+  ids.extend(
+    sqlx::query_scalar::<_, String>(
+      "SELECT guid FROM snapshots WHERE workspace_id = $1 AND guid = $2 \
+       UNION SELECT guid FROM updates WHERE workspace_id = $1 AND guid = $2",
+    )
+    .bind(workspace_id)
+    .bind(explorer_icon_doc_id(workspace_id))
+    .fetch_all(&mut *connection)
+    .await
+    .map_err(|err| RuntimeError::database("Explorer icon document load failed", err))?,
+  );
+  ids.extend(
+    sqlx::query_scalar::<_, String>(
+      "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 AND status IN ('marked', 'failed')",
+    )
+    .bind(workspace_id)
+    .fetch_all(&mut *connection)
+    .await
+    .map_err(|err| RuntimeError::database("Doc blob refs candidate load failed", err))?,
+  );
   ids.sort();
   ids.dedup();
   Ok(ids)
@@ -299,8 +324,103 @@ async fn purge_removed_doc_projections(
   Ok(refs)
 }
 
-fn extract_refs(blob: Vec<u8>) -> std::result::Result<Vec<ExtractedRef>, super::BlobRefProjectionError> {
-  super::extract_blob_refs(blob).map(|extraction| extraction.refs)
+fn read_icon_doc(blob: Vec<u8>) -> Result<ReadDoc, super::BlobRefProjectionError> {
+  use super::BlobRefProjectionError as Error;
+  if blob.len() > doc_loader::blob_refs::MAX_SOURCE_BINARY_BYTES {
+    return Err(Error::SourceTooLarge);
+  }
+  ReadDoc::from_full_update_v1(blob).map_err(|error| match error {
+    ReadError::IncompleteSnapshot("client clock gap") => Error::ClientClockGap,
+    ReadError::IncompleteSnapshot(_) => Error::PendingDependency,
+    ReadError::InvalidUpdate(_) => Error::InvalidBinary,
+    ReadError::ResourceLimit(_) => Error::Unsupported,
+  })
+}
+
+fn append_icon_ref(
+  refs: &mut Vec<ExtractedRef>,
+  blob_key: String,
+  block_id: String,
+  flavour: &str,
+) -> Result<(), super::BlobRefProjectionError> {
+  if blob_key.len() > MAX_BLOB_KEY_BYTES {
+    return Err(super::BlobRefProjectionError::KeyTooLarge);
+  }
+  if refs.len() >= MAX_SOURCE_REFS {
+    return Err(super::BlobRefProjectionError::RefCountTooLarge);
+  }
+  refs.push(ExtractedRef {
+    blob_key,
+    block_id,
+    flavour: flavour.to_string(),
+  });
+  Ok(())
+}
+
+fn extract_refs(blob: Vec<u8>) -> Result<Vec<ExtractedRef>, super::BlobRefProjectionError> {
+  // Keep the upstream extractor and its validation/fallback behavior for content.
+  let mut refs = super::extract_blob_refs(blob.clone())?.refs;
+  let doc = read_icon_doc(blob)?;
+  if let Some(blocks) = doc.map("blocks") {
+    for (block_key, value) in blocks.iter() {
+      let Some(block) = value.as_map() else { continue };
+      if read_string(block.get("sys:flavour")).as_deref() != Some(CALLOUT_FLAVOUR) {
+        continue;
+      }
+      if let Some(blob_key) = block.get("prop:icon").and_then(blob_icon_key) {
+        let block_id = read_string(block.get("sys:id")).unwrap_or_else(|| block_key.to_string());
+        append_icon_ref(&mut refs, blob_key, block_id, CALLOUT_FLAVOUR)?;
+      }
+    }
+  }
+  Ok(refs)
+}
+
+fn extract_explorer_icon_refs(blob: Vec<u8>) -> Result<Vec<ExtractedRef>, super::BlobRefProjectionError> {
+  let doc = read_icon_doc(blob)?;
+  let mut refs = Vec::new();
+  for (index, name) in doc.root_names().enumerate() {
+    if index >= MAX_ICON_RECORDS {
+      return Err(super::BlobRefProjectionError::TreeTooLarge);
+    }
+    let Some(record) = doc.map(name) else { continue };
+    if record
+      .get("$$DELETED")
+      .and_then(ReadValue::as_any)
+      .and_then(|v| v.as_bool())
+      == Some(true)
+    {
+      continue;
+    }
+    if let Some(blob_key) = record.get("icon").and_then(blob_icon_key) {
+      let block_id = read_string(record.get("id")).unwrap_or_else(|| blob_key.clone());
+      append_icon_ref(&mut refs, blob_key, block_id, EXPLORER_ICON_FLAVOUR)?;
+    }
+  }
+  Ok(refs)
+}
+
+// BlockSuite may store icons as either plain JSON or a nested Y.Map.
+fn blob_icon_key(icon: ReadValue<'_>) -> Option<String> {
+  if let Some(object) = icon.as_any() {
+    if object.get("type")?.as_str()? != "blob" {
+      return None;
+    }
+    return object.get("blobId")?.as_str().map(str::to_string);
+  }
+  let map = icon.as_map()?;
+  if read_string(map.get("type")).as_deref() != Some("blob") {
+    return None;
+  }
+  read_string(map.get("blobId"))
+}
+
+fn read_string(value: Option<ReadValue<'_>>) -> Option<String> {
+  match value? {
+    ReadValue::Any(value) => value.as_str().map(str::to_string),
+    ReadValue::Text(value) => Some(value.to_string()),
+    _ => None,
+  }
 }
 
 async fn replace_doc_refs_if_current(
@@ -547,7 +667,12 @@ async fn rebuild_doc_blob_refs_inner(
     return Ok(stats);
   };
   let CurrentDoc { blob, updated_at, .. } = snapshot;
-  let refs = match extract_refs(blob) {
+  let extracted = if doc_id == explorer_icon_doc_id(workspace_id) {
+    extract_explorer_icon_refs(blob)
+  } else {
+    extract_refs(blob)
+  };
+  let refs = match extracted {
     Ok(refs) => refs,
     Err(error) => {
       let error_code = super::blob_ref_projection_error_code(error);
@@ -583,12 +708,232 @@ async fn rebuild_doc_blob_refs_inner(
 
 #[cfg(test)]
 mod tests {
+  use chrono::Utc;
+  use y_octo::{Any, Doc, Value};
+
   use super::*;
 
   #[test]
   fn error_summary_is_bounded() {
     let error = "x".repeat(ERROR_SUMMARY_LIMIT + 20);
     assert_eq!(truncate_error_summary(&error).len(), ERROR_SUMMARY_LIMIT);
+  }
+
+  #[test]
+  fn doc_blob_refs_projection_semantics() {
+    let doc_id = "doc-blob-ref-test".to_string();
+    let blob =
+      doc_loader::build_full_doc("Doc", "![Alt](blob://image-blob-key)", &doc_id).expect("doc fixture should build");
+    let snapshot = CurrentDoc {
+      blob,
+      updated_at: Utc::now(),
+    };
+
+    // Image and attachment extraction stays in parity with the upstream loader.
+    let loader_refs = doc_loader::get_blob_refs_from_binary(snapshot.blob.clone()).expect("loader refs should parse");
+    let refs = extract_refs(snapshot.blob).expect("refs should parse");
+
+    assert!(
+      refs
+        .iter()
+        .any(|reference| { reference.blob_key == "image-blob-key" && reference.flavour == "affine:image" })
+    );
+    let key = |reference: &ExtractedRef| {
+      (
+        reference.blob_key.clone(),
+        reference.block_id.clone(),
+        reference.flavour.clone(),
+      )
+    };
+    let mut ours = refs.iter().map(key).collect::<Vec<_>>();
+    let mut theirs = loader_refs.iter().map(key).collect::<Vec<_>>();
+    ours.sort();
+    theirs.sort();
+    assert_eq!(ours, theirs);
+
+    let root = Doc::default();
+    let mut meta = root.get_or_create_map("meta").expect("root meta should build");
+    let mut pages = root.create_array().expect("root pages should build");
+    let mut active = root.create_map().expect("active doc meta should build");
+    active
+      .insert("id".to_string(), "active-doc")
+      .expect("active doc id should insert");
+    pages.push(active).expect("active doc should insert");
+    let mut trashed = root.create_map().expect("trashed doc meta should build");
+    trashed
+      .insert("id".to_string(), "trashed-doc")
+      .expect("trashed doc id should insert");
+    trashed
+      .insert("trash".to_string(), true)
+      .expect("trash flag should insert");
+    pages.push(trashed).expect("trashed doc should insert");
+    meta
+      .insert("pages".to_string(), pages)
+      .expect("root pages should insert");
+
+    let root = root.encode_update_v1().expect("root doc should encode");
+    let ids = doc_loader::get_doc_ids_from_binary(root, true).expect("root doc ids should parse");
+    assert_eq!(ids, vec!["active-doc", "trashed-doc"]);
+  }
+
+  #[test]
+  fn doc_blob_refs_rejects_corrupt_docs() {
+    let snapshot = CurrentDoc {
+      blob: vec![0xff],
+      updated_at: Utc::now(),
+    };
+
+    assert!(extract_refs(snapshot.blob).is_err());
+    assert!(extract_explorer_icon_refs(vec![0xff]).is_err());
+  }
+
+  #[test]
+  fn explorer_icon_doc_id_is_workspace_scoped() {
+    assert_eq!(explorer_icon_doc_id("ws-1"), "db$ws-1$explorerIcon");
+  }
+
+  fn icon_object(entries: [(&str, &str); 2]) -> Value {
+    let object = entries
+      .into_iter()
+      .map(|(key, value)| (key.to_string(), Any::String(value.to_string())))
+      .collect();
+    Value::Any(Any::Object(Box::new(object)))
+  }
+
+  fn blob_icon_object(blob_key: &str) -> Value {
+    icon_object([("type", "blob"), ("blobId", blob_key)])
+  }
+
+  #[test]
+  fn explorer_icon_refs_enforce_blob_key_limit() {
+    let doc = Doc::default();
+    let mut record = doc.get_or_create_map("doc:icon").unwrap();
+    record
+      .insert(
+        "icon".to_string(),
+        blob_icon_object(&"x".repeat(MAX_BLOB_KEY_BYTES + 1)),
+      )
+      .unwrap();
+    assert_eq!(
+      extract_explorer_icon_refs(doc.encode_update_v1().unwrap()),
+      Err(super::super::BlobRefProjectionError::KeyTooLarge)
+    );
+  }
+
+  #[test]
+  fn explorer_icon_refs_project_blob_icons_only() {
+    let doc = Doc::default();
+    let mut blob_row = doc.get_or_create_map("doc:with-icon").expect("row should build");
+    blob_row
+      .insert("id".to_string(), "doc:with-icon")
+      .expect("id should insert");
+    blob_row
+      .insert("icon".to_string(), blob_icon_object("icon-blob-key"))
+      .expect("icon should insert");
+    let mut emoji_row = doc.get_or_create_map("folder:emoji").expect("row should build");
+    emoji_row
+      .insert("id".to_string(), "folder:emoji")
+      .expect("id should insert");
+    emoji_row
+      .insert("icon".to_string(), icon_object([("type", "emoji"), ("unicode", "📁")]))
+      .expect("icon should insert");
+    let mut deleted_row = doc.get_or_create_map("tag:deleted").expect("row should build");
+    deleted_row
+      .insert("id".to_string(), "tag:deleted")
+      .expect("id should insert");
+    deleted_row
+      .insert("icon".to_string(), blob_icon_object("deleted-blob-key"))
+      .expect("icon should insert");
+    deleted_row
+      .insert("$$DELETED".to_string(), true)
+      .expect("delete flag should insert");
+
+    let refs = extract_explorer_icon_refs(doc.encode_update_v1().expect("doc should encode")).expect("refs parse");
+
+    assert_eq!(refs.len(), 1);
+    assert_eq!(refs[0].blob_key, "icon-blob-key");
+    assert_eq!(refs[0].block_id, "doc:with-icon");
+    assert_eq!(refs[0].flavour, EXPLORER_ICON_FLAVOUR);
+  }
+
+  #[test]
+  fn callout_icon_refs_read_nested_and_plain_icons() {
+    let doc = Doc::default();
+    let mut blocks = doc.get_or_create_map("blocks").expect("blocks should build");
+
+    let mut nested = doc.create_map().expect("block should build");
+    nested.insert("sys:id".to_string(), "block-nested").expect("id");
+    nested
+      .insert("sys:flavour".to_string(), "affine:callout")
+      .expect("flavour");
+    let mut nested_icon = doc.create_map().expect("icon should build");
+    nested_icon.insert("type".to_string(), "blob").expect("type");
+    nested_icon
+      .insert("blobId".to_string(), "callout-nested-key")
+      .expect("blobId");
+    nested.insert("prop:icon".to_string(), nested_icon).expect("icon");
+    blocks.insert("block-nested".to_string(), nested).expect("block");
+
+    let mut plain = doc.create_map().expect("block should build");
+    plain.insert("sys:id".to_string(), "block-plain").expect("id");
+    plain
+      .insert("sys:flavour".to_string(), "affine:callout")
+      .expect("flavour");
+    plain
+      .insert("prop:icon".to_string(), blob_icon_object("callout-plain-key"))
+      .expect("icon");
+    blocks.insert("block-plain".to_string(), plain).expect("block");
+
+    let mut emoji = doc.create_map().expect("block should build");
+    emoji.insert("sys:id".to_string(), "block-emoji").expect("id");
+    emoji
+      .insert("sys:flavour".to_string(), "affine:callout")
+      .expect("flavour");
+    let mut emoji_icon = doc.create_map().expect("icon should build");
+    emoji_icon.insert("type".to_string(), "emoji").expect("type");
+    emoji_icon.insert("unicode".to_string(), "💡").expect("unicode");
+    emoji.insert("prop:icon".to_string(), emoji_icon).expect("icon");
+    blocks.insert("block-emoji".to_string(), emoji).expect("block");
+
+    let mut image = doc.create_map().expect("block should build");
+    image.insert("sys:id".to_string(), "block-image").expect("id");
+    image
+      .insert("sys:flavour".to_string(), "affine:image")
+      .expect("flavour");
+    image
+      .insert("prop:sourceId".to_string(), "image-blob-key")
+      .expect("sourceId");
+    blocks.insert("block-image".to_string(), image).expect("block");
+
+    let blob = doc.encode_update_v1().expect("doc should encode");
+
+    // Callout icon refs and the image ref are projected together; emoji is ignored.
+    let mut refs = extract_refs(blob).expect("refs parse");
+    refs.sort_by(|left, right| left.blob_key.cmp(&right.blob_key));
+    assert_eq!(
+      refs
+        .iter()
+        .map(|reference| {
+          (
+            reference.blob_key.as_str(),
+            reference.block_id.as_str(),
+            reference.flavour.as_str(),
+          )
+        })
+        .collect::<Vec<_>>(),
+      vec![
+        ("callout-nested-key", "block-nested", CALLOUT_FLAVOUR),
+        ("callout-plain-key", "block-plain", CALLOUT_FLAVOUR),
+        ("image-blob-key", "block-image", "affine:image"),
+      ]
+    );
+
+    // Preserve upstream handling of an unsupported content document.
+    let empty = Doc::default().encode_update_v1().expect("doc should encode");
+    assert_eq!(
+      extract_refs(empty),
+      Err(super::super::BlobRefProjectionError::Unsupported)
+    );
   }
 }
 
@@ -618,7 +963,14 @@ impl StorageRuntime {
       return Err(napi_error("doc blob refs rebuild limit must be positive"));
     }
     let pool = self.pool().await?;
-    let doc_ids = match load_workspace_doc_ids(&pool, &workspace_id).await {
+    let source_ids = {
+      let mut connection = pool
+        .acquire()
+        .await
+        .map_err(|err| RuntimeError::database("acquire retained document connection", err))?;
+      load_workspace_doc_ids(&mut connection, &workspace_id).await
+    };
+    let doc_ids = match source_ids {
       Ok(doc_ids) => doc_ids,
       Err(err) => {
         upsert_projection_failure_checkpoint(&pool, &workspace_id).await?;

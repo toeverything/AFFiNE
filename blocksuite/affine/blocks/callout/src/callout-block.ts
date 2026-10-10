@@ -17,6 +17,7 @@ import {
   IconType,
 } from '@blocksuite/affine-shared/services';
 import type { UniComponent } from '@blocksuite/affine-shared/types';
+import { getBlobIconUrl } from '@blocksuite/affine-shared/utils';
 import * as icons from '@blocksuite/icons/lit';
 import type { BlockComponent } from '@blocksuite/std';
 import { type Signal } from '@preact/signals-core';
@@ -24,6 +25,7 @@ import { cssVarV2 } from '@toeverything/theme/v2';
 import type { TemplateResult } from 'lit';
 import { html } from 'lit';
 import { type StyleInfo, styleMap } from 'lit/directives/style-map.js';
+import { until } from 'lit/directives/until.js';
 
 import {
   calloutBlockContainerStyles,
@@ -33,6 +35,7 @@ import {
   calloutHostStyles,
 } from './callout-block-styles.js';
 import { IconPickerWrapper } from './icon-picker-wrapper.js';
+import { beginIconSelection, isLatestIconSelection } from './icon-selection.js';
 // Copy of renderUniLit and UniLit from affine-data-view
 export const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
   uni: UniComponent<Props, Expose> | undefined,
@@ -50,7 +53,10 @@ export const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
     style=${options?.style ? styleMap(options?.style) : ''}
   ></uni-lit>`;
 };
-const getIcon = (icon?: IconData) => {
+const getIcon = (
+  icon: IconData | undefined,
+  getBlob: (blobId: string) => Promise<Blob | null>
+) => {
   if (!icon) {
     return null;
   }
@@ -61,6 +67,20 @@ const getIcon = (icon?: IconData) => {
     return (
       icons as Record<string, (props: { style: string }) => TemplateResult>
     )[`${icon.name}Icon`]?.({ style: `color:${icon.color}` });
+  }
+  if (icon.type === IconType.Blob && icon.blobId) {
+    return until(
+      getBlobIconUrl(icon.blobId, getBlob).then(url =>
+        url
+          ? html`<img
+              src=${url}
+              alt=""
+              style="width: 1em; height: 1em; object-fit: cover; border-radius: 4px;"
+            />`
+          : html``
+      ),
+      html``
+    );
   }
   return null;
 };
@@ -127,7 +147,22 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
 
     // Create props for the icon picker
     const props = {
-      onSelect: (iconData?: IconData) => {
+      onSelect: (iconData?: IconData | Blob) => {
+        const generation = beginIconSelection(this.model);
+        if (iconData instanceof Blob) {
+          this.model.store.blobSync
+            .set(iconData)
+            .then(blobId => {
+              if (!isLatestIconSelection(this.model, generation)) return;
+              this.model.props.icon$.value = {
+                type: IconType.Blob,
+                blobId,
+              };
+              this._closeIconPicker();
+            })
+            .catch(console.error);
+          return;
+        }
         this.model.props.icon$.value = iconData;
         this._closeIconPicker(); // Close the picker after selection
       },
@@ -224,7 +259,7 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       cssVarV2.block.callout.background as Record<string, string>
     )[normalizedBackgroundName ?? 'grey'];
 
-    const iconContent = getIcon(icon);
+    const iconContent = getIcon(icon, id => this.model.store.blobSync.get(id));
 
     return html`
       <div

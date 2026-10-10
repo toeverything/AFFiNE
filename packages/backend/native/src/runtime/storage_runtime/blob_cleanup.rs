@@ -4,7 +4,8 @@ use uuid::Uuid;
 
 use super::{
   RuntimeBlobCleanupResult, RuntimeError, RuntimeResult, StorageOperation, StorageRuntime,
-  doc_blob_refs::PARSER_VERSION, load_workspace_canonical_doc_ids, napi_error,
+  doc_blob_refs::{PARSER_VERSION, load_workspace_doc_ids},
+  napi_error,
 };
 
 #[derive(FromRow)]
@@ -70,22 +71,10 @@ async fn projection_is_stale(connection: &mut PgConnection, workspace_id: &str) 
     return Ok(true);
   }
 
-  let mut current_doc_ids = match load_workspace_canonical_doc_ids(&mut *connection, workspace_id).await {
+  let current_doc_ids = match load_workspace_doc_ids(&mut *connection, workspace_id).await {
     Ok(ids) => ids,
     Err(_) => return Ok(true),
   };
-  current_doc_ids.push(workspace_id.to_string());
-  current_doc_ids.extend(
-    sqlx::query_scalar::<_, String>(
-      "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 AND status IN ('marked', 'failed')",
-    )
-    .bind(workspace_id)
-    .fetch_all(&mut *connection)
-    .await
-    .map_err(|error| RuntimeError::database("Blob cleanup retained document load failed", error))?,
-  );
-  current_doc_ids.sort();
-  current_doc_ids.dedup();
   let projection_invalid = sqlx::query_scalar::<_, bool>(
     r#"
     SELECT EXISTS(
@@ -610,6 +599,7 @@ mod tests {
       "doc_blob_refs",
       "doc_blob_ref_projections",
       "snapshots",
+      "updates",
       "blobs",
     ] {
       sqlx::query(&format!("DELETE FROM {table} WHERE workspace_id = $1"))
@@ -685,6 +675,109 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
+  }
+
+  #[tokio::test]
+  #[ignore = "requires DATABASE_URL and a migrated PostgreSQL database"]
+  async fn blob_cleanup_projection_tracks_explorer_icons() -> AnyResult<()> {
+    let _guard = EMBEDDING_TEST_LOCK.lock().await;
+    let fixture = blob_cleanup_fixture(false).await?;
+    let icon_doc_id = format!("db${}$explorerIcon", fixture.workspace_id);
+    let initial = fixture
+      .runtime
+      .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    // Workspaces without an icon table must not acquire a missing projection.
+    assert_eq!((initial.scanned_docs, initial.failed_docs), (2, 0));
+
+    let icon_doc = Doc::default();
+    let mut record = icon_doc.get_or_create_map("doc:icon")?;
+    record.insert("id".to_string(), "doc:icon")?;
+    let mut icon = icon_doc.create_map()?;
+    icon.insert("type".to_string(), "blob")?;
+    icon.insert("blobId".to_string(), fixture.blob_key.as_str())?;
+    record.insert("icon".to_string(), icon)?;
+    let binary = icon_doc.encode_update_v1()?;
+    sqlx::query("INSERT INTO updates (workspace_id, guid, blob, created_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)")
+      .bind(&fixture.workspace_id)
+      .bind(&icon_doc_id)
+      .bind(&binary)
+      .execute(&fixture.pool)
+      .await?;
+    let pending = fixture
+      .runtime
+      .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((pending.scanned_docs, pending.failed_docs), (3, 1));
+    sqlx::query("INSERT INTO snapshots (workspace_id, guid, blob, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)")
+      .bind(&fixture.workspace_id)
+      .bind(&icon_doc_id)
+      .bind(binary)
+      .execute(&fixture.pool)
+      .await?;
+    sqlx::query("DELETE FROM updates WHERE workspace_id = $1 AND guid = $2")
+      .bind(&fixture.workspace_id)
+      .bind(&icon_doc_id)
+      .execute(&fixture.pool)
+      .await?;
+    // Even with completed checkpoints, an unprojected icon table blocks cleanup.
+    complete_cleanup_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+    let stale = fixture
+      .runtime
+      .cleanup_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((stale.deleted_objects, stale.protected_by_metadata), (0, 1));
+
+    let projected = fixture
+      .runtime
+      .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(
+      (projected.parsed_docs, projected.refs_written, projected.failed_docs),
+      (1, 1, 0)
+    );
+    complete_cleanup_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+    let retained = fixture
+      .runtime
+      .cleanup_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((retained.deleted_objects, retained.protected_by_doc_refs), (0, 1));
+
+    record.insert("$$DELETED".to_string(), true)?;
+    sqlx::query("UPDATE snapshots SET blob = $3, updated_at = clock_timestamp() WHERE workspace_id = $1 AND guid = $2")
+      .bind(&fixture.workspace_id)
+      .bind(&icon_doc_id)
+      .bind(icon_doc.encode_update_v1()?)
+      .execute(&fixture.pool)
+      .await?;
+    let stale = fixture
+      .runtime
+      .cleanup_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((stale.deleted_objects, stale.protected_by_metadata), (0, 1));
+    fixture
+      .runtime
+      .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    complete_cleanup_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+    let removed = fixture
+      .runtime
+      .cleanup_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(
+      (removed.deleted_objects, removed.deleted_metadata, removed.failed),
+      (1, 1, 0)
+    );
+    cleanup_blob_fixture(&fixture).await?;
+    Ok(())
   }
 
   #[tokio::test]

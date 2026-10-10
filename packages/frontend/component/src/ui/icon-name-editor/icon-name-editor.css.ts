@@ -41,6 +41,15 @@ export const iconNamePickerIcon = style({
   },
 });
 
+export const iconImage = style({
+  width: '1em',
+  height: '1em',
+  objectFit: 'cover',
+  borderRadius: '4px',
+  display: 'inline-block',
+  verticalAlign: 'middle',
+});
+
 export const input = style({
   height: 32,
   borderRadius: 4,
