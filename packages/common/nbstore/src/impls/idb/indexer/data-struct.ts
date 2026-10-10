@@ -518,15 +518,17 @@ export class DataStruct {
 
   async measure(name: string) {
     const count = debugMarkCount++;
-    performance.mark(`${name}Start(${count})`);
+    performance.mark(`[idb-indexer]${name}Start(${count})`);
     return {
       [Symbol.dispose]: () => {
-        performance.mark(`${name}End(${count})`);
-        performance.measure(
-          `${name}`,
-          `${name}Start(${count})`,
-          `${name}End(${count})`
-        );
+        performance.measure(`${name}`, {
+          start: `[idb-indexer]${name}Start(${count})`,
+          detail: {
+            devtools: {
+              track: '[idb-indexer]',
+            },
+          },
+        });
       },
     };
   }
