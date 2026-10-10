@@ -142,8 +142,8 @@ pub async fn split_transcript_audio(data: Buffer) -> napi::Result<Vec<Transcript
 mod tests {
   use super::*;
 
-  #[test]
-  fn splits_opus_with_preskip_preroll_and_trimmed_tail() {
+  #[tokio::test]
+  async fn splits_opus_with_preskip_preroll_and_trimmed_tail() {
     let mut writer = PacketWriter::new(Vec::new());
     let mut header = b"OpusHead\x01\x01\x38\x01\x80\xbb\0\0\0\0\0".to_vec();
     writer
@@ -169,7 +169,7 @@ mod tests {
         .unwrap();
     }
     let data = writer.into_inner();
-    let slices = split(&data).unwrap();
+    let slices = split_transcript_audio(data.clone().into()).await.unwrap();
     assert_eq!(slices.len(), 3);
     assert_eq!(
       slices.iter().map(|slice| slice.start_sec).collect::<Vec<_>>(),
@@ -198,7 +198,11 @@ mod tests {
     assert!((short[0].duration_sec + short[1].duration_sec - slices[2].duration_sec).abs() < 1e-9);
     assert_eq!(short[1].start_sec, short[0].duration_sec);
     assert!(split(&data[..data.len() - 10]).is_err());
-    assert!(split(b"not audio").is_err());
+    let error = split_transcript_audio(b"not audio".to_vec().into())
+      .await
+      .err()
+      .unwrap();
+    assert!(error.reason.starts_with("Cannot split transcript audio:"));
     assert!(packet_samples(&[]).is_err());
     assert!(packet_samples(&[3, 0]).is_err());
     assert_eq!(packet_samples(&[0xf8]).unwrap(), 960);
