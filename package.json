@@ -107,7 +107,7 @@
     "@vitest/browser": "^4.1.11",
     "@vitest/coverage-istanbul": "^4.1.11",
     "@vitest/ui": "^4.1.11",
-    "electron": "^39.0.0",
+    "electron": "^41.10.7",
     "eslint": "10.12.0",
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-lit": "^2.2.1",
@@ -224,6 +224,15 @@
     "decode-named-character-reference@npm:^1.0.0": "patch:decode-named-character-reference@npm%3A1.0.2#~/.yarn/patches/decode-named-character-reference-npm-1.0.2-db17a755fd.patch",
     "@atlaskit/pragmatic-drag-and-drop": "patch:@atlaskit/pragmatic-drag-and-drop@npm%3A1.4.0#~/.yarn/patches/@atlaskit-pragmatic-drag-and-drop-npm-1.4.0-75c45f52d3.patch",
     "yjs": "patch:yjs@npm%3A13.6.21#~/.yarn/patches/yjs-npm-13.6.21-c9f1f3397c.patch",
-    "@electron-forge/core@npm:7.11.1": "patch:@electron-forge/core@npm%3A7.11.1#~/.yarn/patches/@electron-forge-core-npm-7.11.1-b6ae130da1.patch"
+    "@electron-forge/core@npm:7.11.1": "patch:@electron-forge/core@npm%3A7.11.1#~/.yarn/patches/@electron-forge-core-npm-7.11.1-b6ae130da1.patch",
+    "serve/compression": "^1.8.2",
+    "oxfmt/tinypool": "^2.1.2",
+    "mermaid/katex": "^0.18.10",
+    "micromark-extension-math/katex": "^0.18.10",
+    "extract-zip": "npm:@electron-internal/extract-zip@^1.0.5",
+    "appdmg/image-size": "^2.0.4",
+    "appdmg@npm:^0.6.4": "patch:appdmg@npm%3A0.6.6#~/.yarn/patches/appdmg-npm-0.6.6-4054c7e0c9.patch",
+    "@graphql-tools/utils@npm:^11.0.0": "^12.0.3",
+    "@graphql-tools/utils@npm:12.0.0": "^12.0.3"
   }
 }

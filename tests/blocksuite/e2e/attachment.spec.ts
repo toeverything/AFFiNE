@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { sleep } from '@blocksuite/global/utils';
 import { expect, type Page } from '@playwright/test';
 
 import { dragBlockToPoint, popImageMoreMenu } from './utils/actions/drag.js';
@@ -70,10 +69,11 @@ function getAttachment(page: Page) {
     await type(page, 'file', 100);
     await expect(slashMenu).toBeVisible();
 
-    const fileChooser = page.waitForEvent('filechooser');
-    await pressEnter(page);
-    await sleep(100);
-    await (await fileChooser).setFiles(FILE_PATH);
+    const [fileChooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      slashMenu.getByTestId('Attachment').click(),
+    ]);
+    await fileChooser.setFiles(FILE_PATH);
 
     // Try to break the undo redo test
     await captureHistory(page);
