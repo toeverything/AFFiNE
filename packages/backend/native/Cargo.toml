@@ -25,7 +25,7 @@ file-format = { workspace = true }
 futures-util = { workspace = true }
 gcp_auth = { version = "0.12.7", features = ["webpki-roots"] }
 hex = { workspace = true }
-hickory-resolver = "0.26.1"
+hickory-resolver = "0.26.2"
 hkdf = { workspace = true }
 hmac = "0.13"
 homedir = { workspace = true }
