@@ -108,7 +108,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
         ?.showLineNumbers ?? true;
     if (!featureEnabled) return false;
     // Per-block prop overrides the global default; global defaults to true.
-    return this.model.props.lineNumber ?? this._showLineNumbersGlobal$.value;
+    return this.model.props.lineNumber$.value ?? this._showLineNumbersGlobal$.value;
   }
   override get topContenteditableElement() {
     if (this.std.get(DocModeProvider).getEditorMode() === 'edgeless') {
