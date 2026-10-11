@@ -43,11 +43,18 @@ function createStorage() {
   });
 }
 
-test('uses graphql upload when server returns GRAPHQL method', async () => {
+test('refreshes the blob limit after upgrading and uses graphql upload', async () => {
   const storage = createStorage();
+  let upgraded = false;
   const gqlMock = vi.fn(async ({ query }) => {
     if (query === workspaceBlobQuotaQuery) {
-      return quotaResponse;
+      return upgraded
+        ? quotaResponse
+        : {
+            workspace: {
+              quota: { blobLimit: 2, humanReadable: { blobLimit: '2 B' } },
+            },
+          };
     }
     if (query === createBlobUploadMutation) {
       return {
@@ -68,6 +75,17 @@ test('uses graphql upload when server returns GRAPHQL method', async () => {
     gqlMock as typeof storage.connection.gql
   );
 
+  await expect(
+    storage.set({
+      key: 'blob-key',
+      data: new Uint8Array([1, 2, 3]),
+      mime: 'text/plain',
+    })
+  ).rejects.toBeInstanceOf(OverSizeError);
+  expect(gqlMock.mock.calls.map(call => call[0].query)).not.toContain(
+    createBlobUploadMutation
+  );
+  upgraded = true;
   await storage.set({
     key: 'blob-key',
     data: new Uint8Array([1, 2, 3]),
@@ -89,6 +107,7 @@ test.each(
   'handles $method upload failure $failure without retrying terminal errors',
   async ({ method, failure }) => {
     const storage = createStorage();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const controller = new AbortController();
     const reason =
       failure === 'abort-string'
@@ -166,6 +185,24 @@ test.each(
       await expect(uploading).rejects.toBe(reason);
     }
 
+    if (failure === '500') {
+      expect(warn).toHaveBeenCalledWith(
+        '[blob] direct upload failed',
+        expect.objectContaining({
+          workspaceId: 'workspace-1',
+          key: 'blob-key',
+          method,
+        }),
+        expect.any(Error)
+      );
+    }
+    if (failure === '413' && method === BlobUploadMethod.MULTIPART) {
+      expect(warn).toHaveBeenCalledWith(
+        '[blob] failed to abort multipart upload',
+        expect.objectContaining({ uploadId: 'upload-1' }),
+        expect.any(Error)
+      );
+    }
     const queries = new Set(gqlMock.mock.calls.map(call => call[0].query));
     expect(queries.has(setBlobMutation)).toBe(failure === '500');
     expect(queries.has(abortBlobUploadMutation)).toBe(
