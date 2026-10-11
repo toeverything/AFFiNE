@@ -1,4 +1,5 @@
 export * from './auto-scroll';
+export * from './blob-icon-url';
 export * from './button-popper';
 export * from './collapsed';
 export * from './computing';
