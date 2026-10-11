@@ -66,7 +66,12 @@ export class NotionHtmlDeltaConverter extends DeltaASTConverter<
 
     const result =
       'children' in ast
-        ? ast.children.flatMap(child => this._spreadAstToDelta(child, options))
+        ? // Filter out null/undefined children from Notion HTML import
+          ast.children
+            .filter(
+              (child): child is NonNullable<typeof child> => child != null
+            )
+            .flatMap(child => this._spreadAstToDelta(child, options))
         : [];
 
     if (options.removeLastBr && result.length > 0) {
