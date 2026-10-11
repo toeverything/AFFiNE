@@ -1,5 +1,10 @@
 import { DefaultTool } from '@blocksuite/affine-block-surface';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
+import {
+  formatEdgelessToolShortcut,
+  getEdgelessToolShortcut,
+  subscribeEdgelessToolShortcuts,
+} from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { css, html, LitElement } from 'lit';
 
@@ -51,6 +56,13 @@ export class EdgelessEraserToolButton extends EdgelessToolbarToolMixin(
     );
   }
 
+  override connectedCallback() {
+    super.connectedCallback();
+    this.disposables.add(
+      subscribeEdgelessToolShortcuts(() => this.requestUpdate())
+    );
+  }
+
   override render() {
     const type = this.edgelessTool?.toolType;
     const appTheme = this.edgeless.std.get(ThemeProvider).app$.value;
@@ -62,7 +74,9 @@ export class EdgelessEraserToolButton extends EdgelessToolbarToolMixin(
         class="edgeless-eraser-button"
         .tooltip=${html`<affine-tooltip-content-with-shortcut
           data-tip="${'Eraser'}"
-          data-shortcut="${'E'}"
+          data-shortcut="${formatEdgelessToolShortcut(
+            getEdgelessToolShortcut('eraser')
+          )}"
         ></affine-tooltip-content-with-shortcut>`}
         .tooltipOffset=${4}
         .active=${type === EraserTool}
