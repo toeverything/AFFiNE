@@ -95,7 +95,8 @@ pub(super) fn read(data: &[u8]) -> Result<OpusAudio> {
     ensure!(scale > 0, "Invalid MP4 timescale");
     Ok(time.checked_mul(RATE).context("MP4 duration overflow")? / scale)
   };
-  // MP4 uses the edit list for playback trimming; dOps pre-skip is informational.
+  // MP4 uses the edit list for playback trimming; dOps pre-skip is
+  // informational.
   let start = to_samples(track.media_time.as_ref().map_or(0, |time| time.0), timescale)?;
   let end = if let Some(duration) = &track.edited_duration {
     let movie_scale = context.timescale.as_ref().context("Missing MP4 movie timescale")?.0;
