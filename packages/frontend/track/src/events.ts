@@ -435,6 +435,7 @@ interface PageEvents extends PageDivision {
       ];
       history: ['open'];
       pageInfo: ['open'];
+      breadcrumb: ['openDoc'];
       importModal: ['open'];
       snapshot: ['import', 'export'];
     };
