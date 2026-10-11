@@ -29,6 +29,7 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
       cursor: pointer;
       opacity: 0;
       transition: opacity 0.2s ease-in-out;
+      vertical-align: middle;
     }
 
     .toggle-icon:hover {
@@ -59,6 +60,17 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
       svg {
         color: ${unsafeCSSVarV2('icon/primary', '#77757D')};
       }
+    }
+
+    .toggle-icon svg {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 24px;
+      height: 24px;
+      transform: translate(-50%, -50%);
+      transform-box: fill-box;
+      transform-origin: center;
     }
   `;
 
