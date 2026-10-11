@@ -10,6 +10,7 @@ export const GeneralSettingSchema = z
   .object({
     edgelessScrollZoom: z.boolean().default(false),
     edgelessDisableScheduleUpdate: z.boolean().default(false),
+    enableRightButtonPanning: z.boolean().default(false),
     docCanvasPreferView: z
       .enum(['affine:embed-linked-doc', 'affine:embed-synced-doc'])
       .default('affine:embed-synced-doc'),

@@ -85,6 +85,13 @@ export const GeneralEdgelessSetting = () => {
     [editorSetting]
   );
 
+  const handleRightButtonPanningChange = useCallback(
+    (checked: boolean) => {
+      editorSetting.set('enableRightButtonPanning', checked);
+    },
+    [editorSetting]
+  );
+
   return (
     <>
       <SettingRow
@@ -122,6 +129,19 @@ export const GeneralEdgelessSetting = () => {
           checked={editorSetting.edgelessScrollZoom.$.value}
           onChange={handleScrollZoomChange}
         ></Switch>
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.page.edgeless-right-mouse-button-panning.title'
+        ]()}
+        desc={t[
+          'com.affine.settings.editorSettings.page.edgeless-right-mouse-button-panning.description'
+        ]()}
+      >
+        <Switch
+          checked={editorSetting.enableRightButtonPanning.$.value}
+          onChange={handleRightButtonPanningChange}
+        />
       </SettingRow>
     </>
   );
