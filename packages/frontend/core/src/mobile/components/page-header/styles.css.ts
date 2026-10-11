@@ -1,12 +1,15 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { createVar, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 
 export const root = style({
   width: '100%',
   position: 'fixed',
   top: 0,
-  zIndex: 1,
+  // Above editor chrome; keep taps on header chrome from falling through to
+  // contenteditable (which would open the iOS keyboard instead of menus).
+  zIndex: 100,
   backgroundColor: cssVarV2('layer/background/secondary'),
+  pointerEvents: 'auto',
 });
 export const headerSpacer = style({
   height: 44,
@@ -17,30 +20,25 @@ export const inner = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
+  gap: 6,
+  // Solid hit target for the whole bar — even if the title ignores pointers,
+  // events must land here rather than the editor underneath.
+  pointerEvents: 'auto',
+  position: 'relative',
 });
-const contentMaxWidth = createVar('contentMaxWidth');
 export const content = style({
-  vars: {
-    [contentMaxWidth]: 'unset',
-  },
-  maxWidth: contentMaxWidth,
+  // Flex middle slot (not absolute) so the title can never overlap/steal or
+  // punch pointer-events holes over the more/share buttons on WKWebView.
+  flex: 1,
+  minWidth: 0,
+  overflow: 'hidden',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  pointerEvents: 'none',
   selectors: {
-    '&.center': {
-      vars: {
-        // gap(6 * 2) + button(44 * 2) + padding(8 * 2)
-        [contentMaxWidth]: 'calc(100% - 12px - 88px - 16px)',
-      },
-      position: 'absolute',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: 'fit-content',
-      display: 'flex',
-      justifyContent: 'center',
-      pointerEvents: 'none',
-    },
     '&:not(.center)': {
-      width: 0,
-      flex: 1,
+      justifyContent: 'flex-start',
     },
   },
 });
@@ -52,9 +50,17 @@ export const prefix = style({
   display: 'flex',
   alignItems: 'center',
   gap: 0,
+  flexShrink: 0,
+  position: 'relative',
+  zIndex: 1,
+  pointerEvents: 'auto',
 });
 export const suffix = style({
   display: 'flex',
   alignItems: 'center',
   gap: 6,
+  flexShrink: 0,
+  position: 'relative',
+  zIndex: 1,
+  pointerEvents: 'auto',
 });
