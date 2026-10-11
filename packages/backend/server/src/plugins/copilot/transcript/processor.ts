@@ -290,7 +290,16 @@ export class CopilotTranscriptionProcessor {
       if (!isContentBlocked(error)) throw error;
       signal?.throwIfAborted();
       const mimeType = info.mimeType.split(';', 1)[0].trim().toLowerCase();
-      if (!['audio/ogg', 'audio/opus', 'application/ogg'].includes(mimeType)) {
+      if (
+        ![
+          'audio/ogg',
+          'audio/opus',
+          'application/ogg',
+          'audio/mp4',
+          'audio/m4a',
+          'audio/x-m4a',
+        ].includes(mimeType)
+      ) {
         throw error;
       }
       let parts: Awaited<ReturnType<typeof splitTranscriptAudio>>;

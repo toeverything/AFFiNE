@@ -394,6 +394,7 @@ for (const scenario of [
     [
       'partial',
       'partial manifestless',
+      'partial mp4',
       'all blocked',
       'transport error',
       'cancelled',
@@ -435,7 +436,7 @@ for (const scenario of [
     summary: false,
   },
   ...[
-    { mimeType: 'audio/m4a', mode: 'unsupported' },
+    { mimeType: 'audio/m4a', mode: 'invalid bytes' },
     { mimeType: 'audio/mpeg', mode: 'unsupported' },
     { mimeType: 'audio/ogg', mode: 'invalid bytes' },
     { mimeType: 'audio/opus', mode: 'storage error' },
@@ -449,6 +450,15 @@ for (const scenario of [
     summary: false,
     blockedAudio,
   })),
+  {
+    name: 'unsupported audio input',
+    message:
+      'invalid request field `messages[].content.audio`: audio input is unsupported by the OpenAI Responses encoder',
+    failures: 1,
+    attempts: 1,
+    failed: true,
+    summary: false,
+  },
   {
     name: 'invalid structured output',
     message: 'structured output schema validation failed',
@@ -519,7 +529,11 @@ for (const scenario of [
         if (info.index === 1)
           info.mimeType =
             blockedAudio?.mimeType ??
-            (recovery ? 'Audio/Ogg; codecs=opus' : info.mimeType);
+            (recovery === 'partial mp4'
+              ? 'audio/m4a'
+              : recovery
+                ? 'Audio/Ogg; codecs=opus'
+                : info.mimeType);
       }
       if (recovery === 'partial manifestless') {
         payload.sliceManifest = undefined;
@@ -616,7 +630,11 @@ for (const scenario of [
           body: Readable.from(
             blockedAudio
               ? Buffer.from('not an Ogg stream')
-              : await readFile('../native/fixtures/transcript.opus')
+              : await readFile(
+                  recovery === 'partial mp4'
+                    ? '../native/fixtures/transcript.m4a'
+                    : '../native/fixtures/transcript.opus'
+                )
           ),
         };
       });
@@ -699,7 +717,7 @@ for (const scenario of [
           segments.map((segment: { startSec: number }) => segment.startSec),
           [17, 42, 72, 102]
         );
-        if (recovery === 'partial') {
+        if (recovery === 'partial' || recovery === 'partial mp4') {
           t.is(segments[1].text, 'Recovered part 1');
           t.is(
             segments[2].text,

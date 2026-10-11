@@ -1,11 +1,21 @@
 use std::io::Cursor;
 
-use anyhow::{Context, Result, ensure};
-use napi::bindgen_prelude::Buffer;
-use ogg::{
+use ::ogg::{
   PacketReader,
   writing::{PacketWriteEndInfo, PacketWriter},
 };
+use anyhow::{Context, Result, ensure};
+use napi::bindgen_prelude::Buffer;
+
+mod mp4;
+mod ogg;
+
+struct OpusAudio {
+  header: Vec<u8>,
+  packets: Vec<(u64, u64, Vec<u8>)>,
+  start: u64,
+  end: u64,
+}
 
 const RATE: u64 = 48_000;
 const SLICE_SAMPLES: u64 = 30 * RATE;
@@ -41,51 +51,26 @@ fn packet_samples(packet: &[u8]) -> Result<u64> {
 
 fn split(data: &[u8]) -> Result<Vec<TranscriptAudioSlice>> {
   ensure!(data.len() <= 50 * 1024 * 1024, "Transcript audio exceeds size limit");
-  let mut reader = PacketReader::new(Cursor::new(data));
-  let head = reader.read_packet_expected()?;
+  let audio = if data.starts_with(b"OggS") {
+    ogg::read(data)?
+  } else {
+    mp4::read(data)?
+  };
+  let OpusAudio {
+    header,
+    packets,
+    start: pre_skip,
+    end,
+  } = audio;
   ensure!(
-    head.first_in_stream()
-      && head.data.len() == 19
-      && head.data.starts_with(b"OpusHead")
-      && head.data[8] == 1
-      && matches!(head.data[9], 1 | 2)
-      && head.data[18] == 0,
-    "Transcript recovery requires mono/stereo Ogg Opus"
+    header.len() == 19 && matches!(header[9], 1 | 2) && header[18] == 0,
+    "Transcript recovery requires mono/stereo Opus"
   );
-  let serial = head.stream_serial();
-  let pre_skip = u64::from(u16::from_le_bytes([head.data[10], head.data[11]]));
-  let tags = reader.read_packet_expected()?;
   ensure!(
-    tags.stream_serial() == serial && tags.data.starts_with(b"OpusTags"),
-    "Missing Opus tags"
+    end > pre_skip && end <= packets.last().context("Empty Opus stream")?.1,
+    "Invalid Opus duration"
   );
-  let mut packets = Vec::new();
-  let mut decoded = 0;
-  let mut origin = None;
-  let mut end = None;
-  while let Some(packet) = reader.read_packet()? {
-    ensure!(
-      packet.stream_serial() == serial && end.is_none(),
-      "Chained or multiplexed Opus is unsupported"
-    );
-    let start = decoded;
-    decoded += packet_samples(&packet.data)?;
-    if packet.last_in_page() && origin.is_none() {
-      origin = Some(packet.absgp_page().saturating_sub(decoded));
-    }
-    if packet.last_in_stream() {
-      end = Some(
-        packet
-          .absgp_page()
-          .checked_sub(origin.unwrap_or(0))
-          .context("Invalid Opus end position")?,
-      );
-    }
-    packets.push((start, decoded, packet.data));
-    ensure!(decoded <= 3600 * RATE, "Transcript recovery slice exceeds one hour");
-  }
-  let end = end.context("Incomplete Ogg Opus stream")?.min(decoded);
-  ensure!(end > pre_skip, "Empty Ogg Opus stream");
+  let serial = 1;
   let mut slices = Vec::new();
   let chunk_samples = SLICE_SAMPLES.min((end - pre_skip).div_ceil(2));
   let mut start = pre_skip;
@@ -95,7 +80,7 @@ fn split(data: &[u8]) -> Result<Vec<TranscriptAudioSlice>> {
     let first = packets.partition_point(|(_, packet_end, _)| *packet_end <= seek);
     let last = packets.partition_point(|(packet_start, _, _)| *packet_start < stop);
     let base = packets[first].0;
-    let mut header = head.data.clone();
+    let mut header = header.clone();
     let skip = u16::try_from(start - base).context("Opus pre-roll exceeds header limit")?;
     header[10..12].copy_from_slice(&skip.to_le_bytes());
     let mut writer = PacketWriter::new(Vec::new());
@@ -203,6 +188,64 @@ mod tests {
       .err()
       .unwrap();
     assert!(error.reason.starts_with("Cannot split transcript audio:"));
+    // Generated with the same mp4-muxer settings as frontend muxToMp4:
+    // 3100 mono Opus silence packets, each lasting 20 ms.
+    let mp4 = include_bytes!("../../fixtures/transcript.m4a");
+    let mp4_slices = split_transcript_audio(mp4.to_vec().into()).await.unwrap();
+    assert_eq!(
+      mp4_slices
+        .iter()
+        .map(|slice| (slice.start_sec, slice.duration_sec))
+        .collect::<Vec<_>>(),
+      [(0.0, 30.0), (30.0, 30.0), (60.0, 2.0)]
+    );
+    for slice in &mp4_slices {
+      let audio = ogg::read(&slice.data).unwrap();
+      assert!(audio.packets.iter().all(|(_, _, packet)| packet == &[0xf8, 0xff, 0xfe]));
+      assert_eq!((audio.end - audio.start) as f64 / RATE as f64, slice.duration_sec);
+    }
+    assert!(split(&mp4[..mp4.len() - 1]).is_err());
+    let mut wrong_codec = mp4.to_vec();
+    let dops = wrong_codec.windows(4).position(|bytes| bytes == b"dOps").unwrap();
+    wrong_codec[dops..dops + 4].copy_from_slice(b"free");
+    assert!(split(&wrong_codec).is_err());
+
+    // Exercise MP4 edit-list trimming independently of dOps pre-skip.
+    let mut edited = mp4.to_vec();
+    let moov = edited.windows(4).position(|bytes| bytes == b"moov").unwrap() - 4;
+    let trak = edited.windows(4).position(|bytes| bytes == b"trak").unwrap() - 4;
+    let trak_size = u32::from_be_bytes(edited[trak..trak + 4].try_into().unwrap());
+    let movie = mp4parse::read_mp4(&mut Cursor::new(mp4)).unwrap();
+    let movie_scale = movie.timescale.unwrap().0;
+    let mut edit = Vec::new();
+    edit.extend_from_slice(&36u32.to_be_bytes());
+    edit.extend_from_slice(b"edts");
+    edit.extend_from_slice(&28u32.to_be_bytes());
+    edit.extend_from_slice(b"elst");
+    edit.extend_from_slice(&0u32.to_be_bytes());
+    edit.extend_from_slice(&1u32.to_be_bytes());
+    edit.extend_from_slice(&(movie_scale as u32).to_be_bytes());
+    edit.extend_from_slice(&312u32.to_be_bytes());
+    edit.extend_from_slice(&65536u32.to_be_bytes());
+    // Put the edit at the end of moov and move mdat offsets with the insertion.
+    for offset in [moov, trak] {
+      let size = u32::from_be_bytes(edited[offset..offset + 4].try_into().unwrap());
+      edited[offset..offset + 4].copy_from_slice(&(size + 36).to_be_bytes());
+    }
+    let stco = edited.windows(4).position(|bytes| bytes == b"stco").unwrap();
+    let entries = u32::from_be_bytes(edited[stco + 8..stco + 12].try_into().unwrap());
+    for index in 0..entries as usize {
+      let offset = stco + 12 + index * 4;
+      let value = u32::from_be_bytes(edited[offset..offset + 4].try_into().unwrap());
+      edited[offset..offset + 4].copy_from_slice(&(value + 36).to_be_bytes());
+    }
+    edited.splice(trak + trak_size as usize..trak + trak_size as usize, edit);
+    let trimmed = split(&edited).unwrap();
+    assert_eq!(trimmed.len(), 2);
+    assert_eq!(trimmed[0].duration_sec, 0.5);
+    assert_eq!(trimmed[1].start_sec, 0.5);
+    assert_eq!(trimmed[1].duration_sec, 0.5);
+    assert_eq!(ogg::read(&trimmed[0].data).unwrap().start, 312);
     assert!(packet_samples(&[]).is_err());
     assert!(packet_samples(&[3, 0]).is_err());
     assert_eq!(packet_samples(&[0xf8]).unwrap(), 960);
