@@ -2,6 +2,8 @@ import type { Config } from 'dompurify';
 import DOMPurify from 'dompurify';
 import { parse } from 'tldts';
 
+import { sanitizeSvgCss } from './svg-css.js';
+
 type SanitizeSvgOptions = {
   svg?: Config;
   foreignObjectHtml?: Config;
@@ -24,14 +26,13 @@ const SVG_DATA_URL_PATTERN =
   /^data:image\/svg\+xml(?:;charset=[^;,]+)?(?<base64>;base64)?,(?<data>[\s\S]*)$/i;
 const SAFE_IMAGE_DATA_URL_PATTERN =
   /^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i;
-const UNSAFE_CSS_PATTERN =
-  /(?:url\s*\(|@import|javascript\s*:|expression\s*\(|-moz-binding)/i;
 
 const SVG_ROOT_ATTRIBUTES = [
   'class',
   'data-height',
   'data-width',
   'height',
+  'id',
   'preserveAspectRatio',
   'viewBox',
   'width',
@@ -120,6 +121,17 @@ function getOriginalSvgRoot(svg: string, parser: DOMParser) {
   return parser.parseFromString(svg, 'text/html').querySelector('svg');
 }
 
+function extractRootStyleSheets(root: Element) {
+  const styleSheets: string[] = [];
+  Array.from(root.children).forEach(element => {
+    if (element.tagName.toLowerCase() === 'style') {
+      styleSheets.push(element.textContent ?? '');
+      element.remove();
+    }
+  });
+  return styleSheets;
+}
+
 function ensureSvgRoot(
   originalRoot: Element | null,
   sanitized: string,
@@ -178,13 +190,16 @@ function isSafeLinkUrl(value: string) {
   }
 }
 
-function isSafeHref(element: Element, value: string) {
+function isSafeHrefValue(tagName: string, value: string): boolean {
   if (value.startsWith('#')) return true;
-  const tagName = element.tagName.toLowerCase();
   if (tagName === 'use') return false;
   if (tagName === 'image') return SAFE_IMAGE_DATA_URL_PATTERN.test(value);
   if (tagName === 'a') return isSafeLinkUrl(value);
   return false;
+}
+
+function isSafeHref(element: Element, value: string) {
+  return isSafeHrefValue(element.tagName.toLowerCase(), value);
 }
 
 function decodeSvgDataUrl(value: string) {
@@ -216,6 +231,10 @@ function getHrefAttributes(element: Element) {
   );
 }
 
+function generateScopeClass() {
+  return `svg-scope-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function tightenSvgTree(
   root: ParentNode,
   options: SanitizeSvgOptions | undefined,
@@ -242,18 +261,6 @@ function tightenSvgTree(
         element.removeAttribute(attribute.name);
       }
     });
-
-    const style = element.getAttribute('style');
-    if (style && UNSAFE_CSS_PATTERN.test(style)) {
-      element.removeAttribute('style');
-    }
-
-    if (
-      element.tagName.toLowerCase() === 'style' &&
-      UNSAFE_CSS_PATTERN.test(element.textContent ?? '')
-    ) {
-      element.remove();
-    }
   });
 }
 
@@ -267,28 +274,30 @@ function sanitizeSvgWithDepth(
   depth: number
 ): string {
   const svgConfig = getSvgSanitizeConfig(options);
+  const scopeClass = generateScopeClass();
 
   if (
     typeof DOMParser === 'undefined' ||
     typeof XMLSerializer === 'undefined'
   ) {
-    const sanitized = DOMPurify.sanitize(svg, svgConfig);
-
-    if (typeof sanitized !== 'string' || !hasSvgRoot(sanitized)) {
-      return '';
-    }
-    return sanitized.trim();
+    return '';
   }
 
   const parser = new DOMParser();
   const originalRoot = getOriginalSvgRoot(svg, parser);
   if (!originalRoot) return '';
+  const styleSheets = extractRootStyleSheets(originalRoot);
 
-  const sanitized = DOMPurify.sanitize(svg, svgConfig);
+  const sanitized = DOMPurify.sanitize(
+    new XMLSerializer().serializeToString(originalRoot),
+    svgConfig
+  );
   if (typeof sanitized !== 'string') return '';
   const sanitizedRoot = ensureSvgRoot(originalRoot, sanitized, parser);
   if (!sanitizedRoot) return '';
   sanitizeForeignObjects(sanitizedRoot, options);
+  sanitizeSvgCss(sanitizedRoot, styleSheets, scopeClass);
+  sanitizedRoot.classList.add(scopeClass);
   tightenSvgTree(sanitizedRoot, options, depth);
   return new XMLSerializer().serializeToString(sanitizedRoot).trim();
 }
