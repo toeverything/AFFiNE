@@ -51,8 +51,8 @@ resolver = "3"
   infer = { version = "0.19.0" }
   libc = "0.2"
   little_exif = "0.6.23"
-  llm_adapter = { version = "0.2", default-features = false }
-  llm_runtime = { version = "0.2", default-features = false }
+  llm_adapter = { version = "0.3", default-features = false }
+  llm_runtime = { version = "0.3", default-features = false }
   lru = "0.16"
   matroska = "0.30"
   memory-indexer = "0.4.0"
