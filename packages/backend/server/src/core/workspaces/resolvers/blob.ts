@@ -1,17 +1,12 @@
 import { Logger, UseGuards } from '@nestjs/common';
 import {
   Args,
-  Field,
-  InputType,
   Int,
   Mutation,
-  ObjectType,
   Parent,
-  registerEnumType,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { GraphQLJSONObject } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import type { FileUpload } from '../../../base';
@@ -33,92 +28,13 @@ import {
   MULTIPART_THRESHOLD,
 } from '../../storage/constants';
 import { WorkspaceType } from '../types';
-
-enum BlobUploadMethod {
-  GRAPHQL = 'GRAPHQL',
-  PRESIGNED = 'PRESIGNED',
-  MULTIPART = 'MULTIPART',
-}
-
-registerEnumType(BlobUploadMethod, {
-  name: 'BlobUploadMethod',
-  description: 'Blob upload method',
-});
-
-@ObjectType()
-class BlobUploadedPart {
-  @Field(() => Int)
-  partNumber!: number;
-
-  @Field()
-  etag!: string;
-}
-
-@ObjectType()
-class BlobUploadInit {
-  @Field(() => BlobUploadMethod)
-  method!: BlobUploadMethod;
-
-  @Field()
-  blobKey!: string;
-
-  @Field(() => Boolean, { nullable: true })
-  alreadyUploaded?: boolean;
-
-  @Field(() => String, { nullable: true })
-  uploadUrl?: string;
-
-  @Field(() => GraphQLJSONObject, { nullable: true })
-  headers?: Record<string, string>;
-
-  @Field(() => Date, { nullable: true })
-  expiresAt?: Date;
-
-  @Field(() => String, { nullable: true })
-  uploadId?: string;
-
-  @Field(() => Int, { nullable: true })
-  partSize?: number;
-
-  @Field(() => [BlobUploadedPart], { nullable: true })
-  uploadedParts?: BlobUploadedPart[];
-}
-
-@ObjectType()
-class BlobUploadPart {
-  @Field()
-  uploadUrl!: string;
-
-  @Field(() => GraphQLJSONObject, { nullable: true })
-  headers?: Record<string, string>;
-
-  @Field(() => Date, { nullable: true })
-  expiresAt?: Date;
-}
-
-@InputType()
-class BlobUploadPartInput {
-  @Field(() => Int)
-  partNumber!: number;
-
-  @Field()
-  etag!: string;
-}
-
-@ObjectType()
-class ListedBlob {
-  @Field()
-  key!: string;
-
-  @Field()
-  mime!: string;
-
-  @Field()
-  size!: number;
-
-  @Field()
-  createdAt!: string;
-}
+import {
+  BlobUploadInit,
+  BlobUploadMethod,
+  BlobUploadPart,
+  BlobUploadPartInput,
+  ListedBlob,
+} from './blob-types';
 
 @UseGuards(CloudThrottlerGuard)
 @Resolver(() => WorkspaceType)
@@ -168,7 +84,7 @@ export class WorkspaceBlobResolver {
       .assert('Workspace.Blobs.Upload');
 
     const buffer = await readBuffer(blob.createReadStream(), () => undefined);
-    const reservation = await this.runtime.reserveStorageQuotaV1({
+    const reservation = await this.reserveStorage({
       workspaceId,
       userId: user.id,
       key: blob.filename,
@@ -176,7 +92,6 @@ export class WorkspaceBlobResolver {
       mime: blob.mimetype || 'application/octet-stream',
       kind: 'blob',
     });
-    this.assertStorageReservation(reservation);
     if (reservation.alreadyUploaded) return blob.filename;
     if (!reservation.reservationId)
       throw new BlobInvalid('Missing blob reservation');
@@ -193,6 +108,17 @@ export class WorkspaceBlobResolver {
         }
       );
     } catch (error) {
+      this.logger.error(
+        {
+          message: 'Failed to write blob upload',
+          workspaceId,
+          key: blob.filename,
+          size: buffer.byteLength,
+          mime: blob.mimetype,
+          reservationId: reservation.reservationId,
+        },
+        error
+      );
       try {
         await this.runtime.abortStorageReservationV1({
           workspaceId,
@@ -202,7 +128,15 @@ export class WorkspaceBlobResolver {
           kind: 'blob',
         });
       } catch (cleanupError) {
-        this.logger.warn('Failed to abort blob reservation', cleanupError);
+        this.logger.warn(
+          {
+            message: 'Failed to abort blob reservation',
+            workspaceId,
+            key: blob.filename,
+            reservationId: reservation.reservationId,
+          },
+          cleanupError
+        );
       }
       throw error;
     }
@@ -232,7 +166,7 @@ export class WorkspaceBlobResolver {
       .workspace(workspaceId)
       .assert('Workspace.Blobs.Upload');
 
-    const reservation = await this.runtime.reserveStorageQuotaV1({
+    const reservation = await this.reserveStorage({
       workspaceId,
       userId: user.id,
       key,
@@ -240,7 +174,6 @@ export class WorkspaceBlobResolver {
       mime: mime || 'application/octet-stream',
       kind: 'blob',
     });
-    this.assertStorageReservation(reservation);
     if (reservation.alreadyUploaded) {
       return {
         method: BlobUploadMethod.GRAPHQL,
@@ -341,7 +274,17 @@ export class WorkspaceBlobResolver {
         }
       }
     } catch (error) {
-      this.logger.warn('Failed to initialize direct blob upload', error);
+      this.logger.warn(
+        {
+          message: 'Failed to initialize direct blob upload',
+          workspaceId,
+          key,
+          size,
+          mime,
+          reservationId: reservation.reservationId,
+        },
+        error
+      );
       init = null;
       uploadIdForRecord = null;
     }
@@ -451,7 +394,8 @@ export class WorkspaceBlobResolver {
       !record ||
       record.status !== 'pending' ||
       record.deletedAt ||
-      !record.reservationId
+      !record.reservationId ||
+      record.uploadId !== uploadId
     ) {
       return false;
     }
@@ -471,13 +415,30 @@ export class WorkspaceBlobResolver {
     return aborted;
   }
 
-  private assertStorageReservation(reservation: {
-    allowed: boolean;
-    reason?: string;
-  }) {
-    if (reservation.allowed) return;
-    if (reservation.reason === 'blob_limit') throw new BlobQuotaExceeded();
-    throw new StorageQuotaExceeded();
+  private async reserveStorage(
+    input: Parameters<BackendRuntimeProvider['reserveStorageQuotaV1']>[0]
+  ) {
+    const reservation = await this.runtime
+      .reserveStorageQuotaV1(input)
+      .catch(error => {
+        this.logger.error(
+          { message: 'Failed to reserve blob upload', ...input },
+          error
+        );
+        throw error;
+      });
+    if (!reservation.allowed) {
+      this.logger.warn({
+        message: 'Blob upload quota denied',
+        ...input,
+        reason: reservation.reason,
+        limit: reservation.limit,
+        current: reservation.current,
+      });
+      if (reservation.reason === 'blob_limit') throw new BlobQuotaExceeded();
+      throw new StorageQuotaExceeded();
+    }
+    return reservation;
   }
 
   private async finalizeReservation(
@@ -486,6 +447,10 @@ export class WorkspaceBlobResolver {
     try {
       return await this.runtime.finalizeStorageReservationV1(input);
     } catch (error) {
+      this.logger.error(
+        { message: 'Failed to finalize blob upload', ...input },
+        error
+      );
       const message = error instanceof Error ? error.message : String(error);
       if (message.includes('checksum'))
         throw new BlobInvalid('Blob key mismatch');

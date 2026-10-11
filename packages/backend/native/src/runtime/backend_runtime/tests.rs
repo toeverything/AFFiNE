@@ -1052,6 +1052,52 @@ async fn strict_storage_reservation_serializes_last_bytes_and_recovers_ledger_ro
   assert_eq!(oversized.reason.as_deref(), Some("blob_limit"));
   assert_eq!(oversized.limit, Some(limits.blob_limit));
 
+  assert!(
+    !sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM blobs WHERE workspace_id=$1 AND key='oversized')")
+      .bind(workspace_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap()
+  );
+  let entitlement_id = uuid::Uuid::new_v4().to_string();
+  sqlx::query(
+    "INSERT INTO entitlements(id,target_type,target_id,source,plan,status) \
+     VALUES($1,'user',$2,'cloud_subscription','pro','active')",
+  )
+  .bind(&entitlement_id)
+  .bind(user_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  let upgraded = runtime
+    .reserve_storage_quota_v1(types::RuntimeStorageReservationInput {
+      workspace_id: workspace_id.to_string(),
+      user_id: user_id.to_string(),
+      key: "oversized".to_string(),
+      size: limits.blob_limit + 1,
+      mime: "application/octet-stream".to_string(),
+      kind: "blob".to_string(),
+      doc_id: None,
+      name: None,
+      upload_id: None,
+    })
+    .await
+    .unwrap();
+  assert!(
+    upgraded.allowed,
+    "reservation must read the current entitlement after upgrade"
+  );
+  sqlx::query("DELETE FROM blobs WHERE workspace_id=$1 AND key='oversized'")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query("DELETE FROM entitlements WHERE id=$1")
+    .bind(entitlement_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
   for index in 0..3 {
     sqlx::query(
       "INSERT INTO workspace_invitations \
@@ -1141,7 +1187,7 @@ async fn strict_storage_reservation_serializes_last_bytes_and_recovers_ledger_ro
         workspace_id: workspace_id.to_string(),
         user_id: user_id.to_string(),
         key: "pending-resume".to_string(),
-        reservation_id: pending.reservation_id.unwrap(),
+        reservation_id: pending.reservation_id.clone().unwrap(),
         kind: "blob".to_string(),
         doc_id: None,
         size: None,
@@ -1150,6 +1196,91 @@ async fn strict_storage_reservation_serializes_last_bytes_and_recovers_ledger_ro
       .await
       .unwrap()
   );
+
+  let old_id = pending.reservation_id.unwrap();
+  let stale_mutation = || types::RuntimeStorageReservationMutation {
+    workspace_id: workspace_id.to_string(),
+    user_id: user_id.to_string(),
+    key: "pending-resume".to_string(),
+    reservation_id: old_id.clone(),
+    kind: "blob".to_string(),
+    doc_id: None,
+    size: Some(4),
+    mime: Some("text/plain".to_string()),
+  };
+  let storage = runtime.object_storage().unwrap();
+  let orphan_locators: Vec<_> = [
+    format!("{workspace_id}/pending-resume"),
+    format!("{workspace_id}/.reservations/{old_id}/pending-resume"),
+  ]
+  .into_iter()
+  .map(|key| {
+    crate::runtime::object_storage::types::ObjectLocator::new(
+      crate::runtime::object_storage::types::StorageScope::Blob,
+      crate::runtime::object_storage::types::ObjectKey::new(key).unwrap(),
+    )
+  })
+  .collect();
+  for locator in &orphan_locators {
+    storage
+      .put(
+        locator,
+        b"test".to_vec(),
+        crate::runtime::object_storage::types::ObjectPutMetadata {
+          content_type: Some("text/plain".to_string()),
+          content_length: Some(4),
+          checksum_crc32: None,
+        },
+      )
+      .await
+      .unwrap();
+  }
+  let failed_metadata = temp
+    .path()
+    .join("strict-storage")
+    .join(workspace_id)
+    .join("pending-resume.metadata.json");
+  std::fs::remove_file(&failed_metadata).unwrap();
+  std::fs::create_dir(&failed_metadata).unwrap();
+  assert!(
+    runtime
+      .reserve_storage_quota_v1(pending_input("text/plain"))
+      .await
+      .is_err()
+  );
+  assert!(
+    sqlx::query_scalar::<_, bool>(
+      "SELECT deleted_at IS NOT NULL AND reservation_id=$2::uuid FROM blobs WHERE workspace_id=$1 AND \
+       key='pending-resume'"
+    )
+    .bind(workspace_id)
+    .bind(&old_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap()
+  );
+  std::fs::remove_dir(&failed_metadata).unwrap();
+  let retried = runtime
+    .reserve_storage_quota_v1(pending_input("text/plain"))
+    .await
+    .unwrap();
+  assert_ne!(retried.reservation_id.as_deref(), Some(old_id.as_str()));
+  for locator in &orphan_locators {
+    assert!(storage.head(locator).await.unwrap().is_none());
+  }
+  assert!(!runtime.abort_storage_reservation_v1(stale_mutation()).await.unwrap());
+  assert!(!runtime.finalize_storage_reservation_v1(stale_mutation()).await.unwrap());
+  assert_eq!(
+    runtime
+      .reserve_storage_quota_v1(pending_input("text/plain"))
+      .await
+      .unwrap()
+      .reservation_id,
+    retried.reservation_id
+  );
+  let mut current = stale_mutation();
+  current.reservation_id = retried.reservation_id.unwrap();
+  assert!(runtime.abort_storage_reservation_v1(current).await.unwrap());
 
   let quota = limits.storage_quota;
   let chunk = i32::MAX;
@@ -1365,6 +1496,34 @@ async fn strict_storage_reservation_serializes_last_bytes_and_recovers_ledger_ro
       .is_some(),
     "a stale abort must not delete the completed final object"
   );
+
+  sqlx::query("UPDATE blobs SET deleted_at=now() WHERE workspace_id=$1 AND key='duplicate-object'")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  let deleted = runtime
+    .reserve_storage_quota_v1(types::RuntimeStorageReservationInput {
+      workspace_id: workspace_id.to_string(),
+      user_id: user_id.to_string(),
+      key: "duplicate-object".to_string(),
+      size: 50,
+      mime: "application/octet-stream".to_string(),
+      kind: "blob".to_string(),
+      doc_id: None,
+      name: None,
+      upload_id: None,
+    })
+    .await
+    .err()
+    .unwrap();
+  assert!(deleted.to_string().contains("storage key is deleted"));
+  assert!(storage.head(&duplicate_locator).await.unwrap().is_some());
+  sqlx::query("UPDATE blobs SET deleted_at=NULL WHERE workspace_id=$1 AND key='duplicate-object'")
+    .bind(workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
 
   sqlx::query(
     r#"CREATE OR REPLACE FUNCTION rust_test_strict_storage_block_expired_update()
@@ -1812,6 +1971,37 @@ async fn strict_comment_reservation_rejects_hijack_and_cleans_expired_generation
     )
     .await
     .unwrap();
+  sqlx::query(
+    "UPDATE comment_attachments SET deleted_at=now(),reservation_expires_at=NULL WHERE workspace_id=$1 AND doc_id=$2 \
+     AND key='attachment-key'",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  assert!(runtime.reserve_storage_quota_v1(input(member_id)).await.is_err());
+  assert!(
+    runtime
+      .object_storage()
+      .unwrap()
+      .head(&locator)
+      .await
+      .unwrap()
+      .is_some(),
+    "another member cannot reclaim an aborted attachment"
+  );
+  let recovered = runtime.reserve_storage_quota_v1(input(owner_id)).await.unwrap();
+  assert_ne!(recovered.reservation_id.as_deref(), Some(reservation_id.as_str()));
+  assert!(
+    runtime
+      .object_storage()
+      .unwrap()
+      .head(&locator)
+      .await
+      .unwrap()
+      .is_none()
+  );
   sqlx::query(
     "UPDATE comment_attachments SET reservation_expires_at=clock_timestamp()-interval '1 minute' WHERE \
      workspace_id=$1 AND doc_id=$2 AND key='attachment-key'",

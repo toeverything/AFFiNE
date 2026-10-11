@@ -53,8 +53,6 @@ function toStrictArrayBuffer(
 
 export class CloudBlobWriter {
   private humanReadableBlobSizeLimit: string | null = null;
-  private blobSizeLimit: number | null = null;
-  private blobSizeLimitTime = 0;
 
   constructor(
     private readonly connection: HttpConnection,
@@ -118,6 +116,20 @@ export class CloudBlobWriter {
           return;
         }
       } catch (error) {
+        if (!signal?.aborted) {
+          console.warn(
+            '[blob] direct upload failed',
+            {
+              workspaceId: this.workspaceId,
+              key: blob.key,
+              size: blob.data.byteLength,
+              mime: blob.mime,
+              method: upload.method,
+              uploadId: upload.uploadId,
+            },
+            error
+          );
+        }
         if (upload.method === BlobUploadMethod.MULTIPART && upload.uploadId) {
           await this.tryAbortMultipartUpload(blob.key, upload.uploadId);
         }
@@ -284,7 +296,17 @@ export class CloudBlobWriter {
         query: abortBlobUploadMutation,
         variables: { workspaceId: this.workspaceId, key, uploadId },
       });
-    } catch {}
+    } catch (error) {
+      console.warn(
+        '[blob] failed to abort multipart upload',
+        {
+          workspaceId: this.workspaceId,
+          key,
+          uploadId,
+        },
+        error
+      );
+    }
   }
 
   private async fetchUpload(input: string, init: RequestInit) {
@@ -305,12 +327,6 @@ export class CloudBlobWriter {
   }
 
   private async getBlobSizeLimit(signal?: AbortSignal) {
-    if (
-      this.blobSizeLimit !== null &&
-      Date.now() - this.blobSizeLimitTime < 120 * 1000
-    ) {
-      return this.blobSizeLimit;
-    }
     const res = await this.connection.gql({
       query: workspaceBlobQuotaQuery,
       variables: { id: this.workspaceId },
@@ -318,8 +334,6 @@ export class CloudBlobWriter {
     });
     this.humanReadableBlobSizeLimit =
       res.workspace.quota.humanReadable.blobLimit;
-    this.blobSizeLimit = res.workspace.quota.blobLimit;
-    this.blobSizeLimitTime = Date.now();
-    return this.blobSizeLimit;
+    return res.workspace.quota.blobLimit;
   }
 }
