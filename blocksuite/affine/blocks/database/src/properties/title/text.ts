@@ -16,8 +16,11 @@ import { html } from 'lit/static-html.js';
 
 import { EditorHostKey } from '../../context/host-context.js';
 import type { DatabaseBlockComponent } from '../../database-block.js';
+import { addProperty } from '../../utils/block-utils.js';
 import { getSingleDocIdFromText } from '../../utils/title-doc.js';
+import { openIconPicker } from '../icon/open-picker.js';
 import { analyzeTextForUrlPaste, insertUrlTextSegments } from '../paste-url.js';
+import { findDatabaseContainingRow } from '../../utils/database-lookup.js';
 import {
   headerAreaIconStyle,
   titleCellStyle,
@@ -281,6 +284,37 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
     if (!icon) return;
     return icon;
   });
+  /**
+   * Gives this row an icon without a column for it: the icon property is
+   * created on first use and hidden, so the emoji lives in the title cell the
+   * way a page icon does rather than in a column of its own.
+   */
+  private readonly pickIcon = (event: MouseEvent) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (this.readonly) return;
+    const std = this.view.serviceGet(EditorHostKey)?.std;
+    const store = std?.store;
+    if (!store) return;
+    const db = findDatabaseContainingRow(store, this.cell.rowId);
+    if (!db) return;
+
+    let propertyId = db.props.columns$.value.find(c => c.type === 'icon')?.id;
+    if (!propertyId) {
+      propertyId = addProperty(db, 'end', {
+        type: 'icon',
+        name: 'Icon',
+        data: {},
+      });
+      this.view.propertyGetOrCreate(propertyId).hideSet(true);
+    }
+    const cell = this.view.cellGetOrCreate(this.cell.rowId, propertyId);
+
+    openIconPicker(std, event.currentTarget as HTMLElement, icon =>
+      cell.valueSet(icon ?? null)
+    );
+  };
+
   renderIcon() {
     if (!this.showIcon) {
       return;
@@ -293,7 +327,13 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
     const icon = this.icon$.value;
     if (!icon) return;
 
-    return html` <div class="${headerAreaIconStyle}">${icon}</div>`;
+    return html` <div
+      class="${headerAreaIconStyle}"
+      @pointerdown="${this.pickIcon}"
+      style="cursor:pointer"
+    >
+      ${icon}
+    </div>`;
   }
 
   private readonly richText = createRef<RichText>();
