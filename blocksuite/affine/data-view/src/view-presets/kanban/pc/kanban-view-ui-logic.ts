@@ -227,6 +227,7 @@ export class KanbanViewUI extends DataViewUIBase<KanbanViewUILogic> {
     this.style.userSelect = 'none';
     this.style.display = 'flex';
     this.style.flexDirection = 'column';
+    this.style.contain = 'inline-size';
   }
 
   override render(): TemplateResult {
@@ -244,8 +245,6 @@ export class KanbanViewUI extends DataViewUIBase<KanbanViewUILogic> {
     const wrapperStyle = styleMap({
       marginLeft: `-${vPadding}px`,
       marginRight: `-${vPadding}px`,
-      paddingLeft: `${vPadding}px`,
-      paddingRight: `${vPadding}px`,
     });
 
     const groupTrait = this.logic.groupTrait$.value;
@@ -260,8 +259,10 @@ export class KanbanViewUI extends DataViewUIBase<KanbanViewUILogic> {
         style="${wrapperStyle}"
         @wheel="${this.logic.onWheel}"
       >
+        <div style="flex-shrink:0;width:${Math.max(36, vPadding)}px;"></div>
         ${this.renderGroups()}
         ${groupTrait ? this.logic.renderAddGroup(groupTrait) : ''}
+        <div style="flex-shrink:0;width:${Math.max(36, vPadding)}px;"></div>
       </div>
     `;
   }
