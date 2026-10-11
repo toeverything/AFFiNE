@@ -57,7 +57,8 @@ type DocEvents =
   | 'editDisplayMenu'
   | 'navigateAllDocsRouter'
   | 'navigatePinedCollectionRouter'
-  | 'htmlBlockPreviewFailed';
+  | 'htmlBlockPreviewFailed'
+  | 'toggleReadOnlyMode';
 type EditorEvents =
   | 'bold'
   | 'italic'
@@ -422,6 +423,7 @@ interface PageEvents extends PageDivision {
         'toggleFavorite',
         'openDocInfo',
         'renameDoc',
+        'toggleReadOnlyMode',
       ];
       docOptions: [
         'open',
@@ -704,6 +706,7 @@ export type EventArgs = {
   createDoc: { mode?: 'edgeless' | 'page' };
   quickStart: { with: 'page' | 'edgeless' | 'template' | 'ai' };
   switchPageMode: { mode: 'edgeless' | 'page' };
+  toggleReadOnlyMode: { on: boolean };
   createShareLink: { mode: 'edgeless' | 'page' };
   copyShareLink: {
     type: 'default' | 'doc' | 'whiteboard' | 'block' | 'element';
