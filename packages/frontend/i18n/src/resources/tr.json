@@ -233,7 +233,7 @@
   "com.affine.ai.chat-panel.scope.sources": "{{count}} kaynak",
   "com.affine.ai.chat-panel.tool-group.running": "Çalışıyor… · {{count}} işlem",
   "com.affine.ai.chat-panel.tool-group.completed": "{{count}} işlem tamamlandı",
-  "com.affine.ai.chat-panel.tool-group.failed": "{{count}} işlem tamamlandı · {{failed}} başarısız",
+  "com.affine.ai.chat-panel.tool-group.failed": "Toplam {{count}} işlemden {{failed}} tanesi başarısız oldu",
   "com.affine.ai.chat-panel.session.delete.confirm.title": "Bu geçmiş silinsin mi?",
   "com.affine.ai.chat-panel.session.delete.confirm.message": "Bu AI konuşma geçmişini silmek istiyor musunuz? Bir kere silindikten sonra geri getirilemez.",
   "com.affine.ai.chat-panel.session.delete.toast.success": "Geçmiş silindi",
