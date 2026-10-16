@@ -96,6 +96,9 @@ export class DrawioViewer extends SignalWatcher(
 
   private timeout: ReturnType<typeof setTimeout> | null = null;
 
+  // Incremented by every load(), so a superseded load can tell it's stale.
+  private loadId = 0;
+
   private get viewerUrl() {
     return buildDrawioViewerUrl(this.embedUrl);
   }
@@ -148,6 +151,7 @@ export class DrawioViewer extends SignalWatcher(
     this.clearLoadTimeout();
     this.xml$.value = null;
     this.state$.value = { kind: 'loading' };
+    const loadId = ++this.loadId;
     const blobUrl = this.blobUrl;
     if (!blobUrl) return;
 
@@ -156,7 +160,7 @@ export class DrawioViewer extends SignalWatcher(
       content = await (await fetch(blobUrl)).text();
     } catch (error) {
       console.error(error);
-      if (blobUrl !== this.blobUrl) return;
+      if (loadId !== this.loadId) return;
       this.state$.value = {
         kind: 'error',
         message: 'Failed to read the diagram file.',
@@ -164,8 +168,8 @@ export class DrawioViewer extends SignalWatcher(
       };
       return;
     }
-    // A newer blob may have started loading in the meantime.
-    if (blobUrl !== this.blobUrl) return;
+    // A newer load may have started in the meantime.
+    if (loadId !== this.loadId) return;
 
     if (!isDrawioXml(content)) {
       this.state$.value = {
