@@ -26,6 +26,9 @@
     "lit": "^3.2.0",
     "rxjs": "^7.8.2"
   },
+  "devDependencies": {
+    "vitest": "^4.1.11"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./store": "./src/store.ts",
