@@ -156,6 +156,7 @@ export class DrawioViewer extends SignalWatcher(
       content = await (await fetch(blobUrl)).text();
     } catch (error) {
       console.error(error);
+      if (blobUrl !== this.blobUrl) return;
       this.state$.value = {
         kind: 'error',
         message: 'Failed to read the diagram file.',
