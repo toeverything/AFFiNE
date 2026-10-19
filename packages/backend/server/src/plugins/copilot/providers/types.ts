@@ -290,6 +290,8 @@ const CopilotProviderOptionsSchema = z.object({
     ])
     .optional(),
   retrievalScope: RetrievalScopeSchema.optional(),
+  // Host-only turn metadata; never part of the model-visible tool arguments.
+  editorSelectionSnapshot: z.unknown().optional(),
 });
 
 export const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(
