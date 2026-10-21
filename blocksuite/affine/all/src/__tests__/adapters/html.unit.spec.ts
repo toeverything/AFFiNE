@@ -703,6 +703,77 @@ describe('snapshot to html', () => {
     expect(target.file).toBe(html);
   });
 
+  test('numbered list not starting at 1', async () => {
+    const listBlock = (id: string, insert: string, order: number) => ({
+      type: 'block' as const,
+      id,
+      flavour: 'affine:list',
+      props: {
+        type: 'numbered',
+        text: {
+          '$blocksuite:internal:text$': true,
+          delta: [{ insert }],
+        },
+        checked: false,
+        collapsed: false,
+        order,
+      },
+      children: [],
+    });
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'block:vu6SK6WJpW',
+      flavour: 'affine:page',
+      props: {
+        title: {
+          '$blocksuite:internal:text$': true,
+          delta: [],
+        },
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'block:WfnS5ZDCJT',
+          flavour: 'affine:note',
+          props: {
+            xywh: '[0,0,800,95]',
+            background: DefaultTheme.noteBackgrounColor,
+            index: 'a0',
+            hidden: false,
+            displayMode: NoteDisplayMode.DocAndEdgeless,
+          },
+          children: [
+            listBlock('block:imiLDMKSkx', 'aaa', 1),
+            {
+              type: 'block',
+              id: 'block:Tk4gSPocAt',
+              flavour: 'affine:paragraph',
+              props: {
+                type: 'text',
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [{ insert: 'bbb' }],
+                },
+              },
+              children: [],
+            },
+            listBlock('block:8nXd6Y4nVh', 'ccc', 3),
+            listBlock('block:fZ5vJ3Zl6K', 'ddd', 4),
+          ],
+        },
+      ],
+    };
+    const html = template(
+      `<ol class="numbered-list"><li class="affine-list-block-container">aaa</li></ol>${paragraphTemplate('<p>bbb</p>')}<ol class="numbered-list" start="3"><li class="affine-list-block-container">ccc</li><li class="affine-list-block-container">ddd</li></ol>`
+    );
+
+    const htmlAdapter = new HtmlAdapter(createJob(), provider);
+    const target = await htmlAdapter.fromBlockSnapshot({
+      snapshot: blockSnapshot,
+    });
+    expect(target.file).toBe(html);
+  });
+
   test('code inline', async () => {
     const blockSnapshot: BlockSnapshot = {
       type: 'block',
