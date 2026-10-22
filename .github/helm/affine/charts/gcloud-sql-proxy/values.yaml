@@ -1,11 +1,14 @@
 replicaCount: 2
-enabled: false
+global:
+  database:
+    gcloud:
+      enabled: false
 database: 
   connectionName: ""
 
 image:
-  # the tag is defined as chart appVersion.
-  repository: gcr.io/cloud-sql-connectors/cloud-sql-proxy
+  repository: ghcr.io/toeverything/affine
+  tag: cloud-sql-proxy-2.26.2
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -23,9 +26,16 @@ podLabels: {}
 
 podSecurityContext:
   fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
 
 securityContext:
   runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
 
 service:
   type: ClusterIP

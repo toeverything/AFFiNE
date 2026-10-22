@@ -3,4 +3,4 @@ name: cloud-sql-proxy
 description: Google Cloud SQL Proxy
 type: application
 version: 0.0.0
-appVersion: "2.8.1"
+appVersion: "2.26.2"

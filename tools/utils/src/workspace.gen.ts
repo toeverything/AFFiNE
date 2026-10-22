@@ -1209,6 +1209,7 @@ export const PackageList = [
     location: 'packages/frontend/apps/electron',
     name: '@affine/electron',
     workspaceDependencies: [
+      'tools/cli',
       'tools/utils',
       'packages/common/auth',
       'packages/frontend/i18n',

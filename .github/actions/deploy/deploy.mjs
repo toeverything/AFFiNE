@@ -57,7 +57,7 @@ const createHelmCommand = ({ isDryRun }) => {
   const redisAndPostgres =
     isProduction || isBeta || isInternal
       ? [
-          `--set        cloud-sql-proxy.enabled=true`,
+          `--set        global.database.gcloud.enabled=true`,
           `--set-string cloud-sql-proxy.database.connectionName="${GCLOUD_CONNECTION_NAME}"`,
           `--set-string global.database.host=${DATABASE_URL}`,
           `--set-string global.database.user=${DATABASE_USERNAME}`,
