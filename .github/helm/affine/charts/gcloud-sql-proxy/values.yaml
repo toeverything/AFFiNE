@@ -1,5 +1,8 @@
 replicaCount: 2
-enabled: false
+global:
+  database:
+    gcloud:
+      enabled: false
 database: 
   connectionName: ""
 

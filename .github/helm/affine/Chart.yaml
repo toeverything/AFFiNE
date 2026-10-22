@@ -14,4 +14,4 @@ dependencies:
   - name: cloud-sql-proxy
     version: 0.0.0
     repository: "file://charts/gcloud-sql-proxy"
-    condition: cloud-sql-proxy.enabled
+    condition: global.database.gcloud.enabled

@@ -20,6 +20,8 @@ global:
     licenseSecretName: ''
     licensePrivateKeyKey: 'license-private-key'
   database:
+    gcloud:
+      enabled: false
     user: 'postgres'
     host: 'pg-postgresql'
     port: '5432'

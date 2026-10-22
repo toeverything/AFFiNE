@@ -1,4 +1,4 @@
-{{- if .Values.enabled -}}
+{{- if .Values.global.database.gcloud.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
