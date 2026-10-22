@@ -172,7 +172,8 @@ pub(super) async fn lock_subscription_rows(
               iap_store::text AS iap_store,external_ref,external_product_id
        FROM provider_subscriptions
        WHERE (provider_namespace=$1 AND (source_identity=ANY($2) OR ($3::text IS NOT NULL AND external_customer_id=$3)))
-          OR (provider=$4::"Provider" AND external_subscription_id=ANY($5))
+          OR (provider=$4::"Provider" AND (external_subscription_id=ANY($5)
+              OR (provider='revenuecat' AND (external_ref=ANY($6) OR id=ANY($7)))))
        ORDER BY provider_namespace NULLS FIRST,source_identity NULLS FIRST,id
        FOR UPDATE"#,
   )
@@ -181,6 +182,26 @@ pub(super) async fn lock_subscription_rows(
   .bind(scan_customer)
   .bind(snapshot.provider().as_str())
   .bind(&external_ids)
+  .bind(
+    snapshot
+      .subscriptions
+      .iter()
+      .flat_map(|subscription| {
+        [
+          subscription.external_ref.as_deref(),
+          subscription.store_subscription_identifier.as_deref(),
+        ]
+      })
+      .flatten()
+      .collect::<Vec<_>>(),
+  )
+  .bind(
+    snapshot
+      .subscriptions
+      .iter()
+      .filter_map(|subscription| subscription.provider_subscription_id.as_deref())
+      .collect::<Vec<_>>(),
+  )
   .fetch_all(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("lock payment subscription rows", error))?;
@@ -194,12 +215,16 @@ pub(super) async fn lock_subscription_rows(
           let external_ref = row.get::<Option<String>, _>("external_ref");
           let external_product_id = row.get::<Option<String>, _>("external_product_id");
           snapshot.subscriptions.iter().find_map(|subscription| {
+            let matches_verified_id =
+              subscription.provider_subscription_id.as_deref() == Some(row.get::<String, _>("id").as_str());
             let matches_external_id = external_id.is_some() && subscription.external_subscription_id == external_id;
             let matches_revenuecat_legacy = snapshot.provider() == affine_core::payment::Provider::RevenueCat
               && subscription.iap_store == iap_store
-              && subscription.external_ref == external_ref
+              && (subscription.external_ref == external_ref
+                || subscription.store_subscription_identifier == external_ref)
               && subscription.external_product_id == external_product_id;
-            (matches_external_id || matches_revenuecat_legacy).then(|| subscription.source_id.clone())
+            (matches_verified_id || matches_external_id || matches_revenuecat_legacy)
+              .then(|| subscription.source_id.clone())
           })
         });
         source_id.map(|source_id| StoredSubscription {

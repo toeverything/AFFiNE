@@ -3,11 +3,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 
 interface CutoverValidationResult {
   normalizedUnsignedSelfhostEntitlements: number;
-  normalizedMalformedBlobReservations: number;
-  normalizedMalformedCommentAttachmentReservations: number;
   ownerlessWorkspaces: number;
-  malformedBlobReservations: number;
-  malformedCommentAttachmentReservations: number;
   activeUnsignedSelfhostEntitlements: number;
 }
 
@@ -41,29 +37,11 @@ export class CutoverCommand {
                   AND status IN ('active', 'grace')
               `
             : 0;
-        const normalizedMalformedBlobReservations = await tx.$executeRaw`
-          UPDATE blobs
-          SET deleted_at = clock_timestamp()
-          WHERE status = 'pending'
-            AND reservation_expires_at IS NULL
-            AND deleted_at IS NULL
-        `;
-        const normalizedMalformedCommentAttachmentReservations =
-          await tx.$executeRaw`
-            UPDATE comment_attachments
-            SET deleted_at = clock_timestamp()
-            WHERE status = 'pending'
-              AND reservation_expires_at IS NULL
-              AND deleted_at IS NULL
-          `;
-
         const [validation] = await tx.$queryRaw<
           Array<
             Omit<
               CutoverValidationResult,
-              | 'normalizedUnsignedSelfhostEntitlements'
-              | 'normalizedMalformedBlobReservations'
-              | 'normalizedMalformedCommentAttachmentReservations'
+              'normalizedUnsignedSelfhostEntitlements'
             >
           >
         >`
@@ -81,20 +59,6 @@ export class CutoverCommand {
             ) AS "ownerlessWorkspaces",
             (
               SELECT count(*)::int
-              FROM blobs
-              WHERE status = 'pending'
-                AND reservation_expires_at IS NULL
-                AND deleted_at IS NULL
-            ) AS "malformedBlobReservations",
-            (
-              SELECT count(*)::int
-              FROM comment_attachments
-              WHERE status = 'pending'
-                AND reservation_expires_at IS NULL
-                AND deleted_at IS NULL
-            ) AS "malformedCommentAttachmentReservations",
-            (
-              SELECT count(*)::int
               FROM entitlements
               WHERE ${deployment} = 'selfhosted'
                 AND source = 'selfhost_license'
@@ -109,8 +73,6 @@ export class CutoverCommand {
 
         const result = {
           normalizedUnsignedSelfhostEntitlements,
-          normalizedMalformedBlobReservations,
-          normalizedMalformedCommentAttachmentReservations,
           ...validation,
         };
         const failures = Object.entries(result).filter(
@@ -134,7 +96,7 @@ export class CutoverCommand {
     );
 
     this.logger.log(
-      `Canonical cutover validation passed for ${deployment}; normalized ${result.normalizedUnsignedSelfhostEntitlements} unsigned self-hosted entitlements, ${result.normalizedMalformedBlobReservations} blob reservations, and ${result.normalizedMalformedCommentAttachmentReservations} comment attachment reservations.`
+      `Canonical cutover validation passed for ${deployment}; normalized ${result.normalizedUnsignedSelfhostEntitlements} unsigned self-hosted entitlements.`
     );
     return result;
   }

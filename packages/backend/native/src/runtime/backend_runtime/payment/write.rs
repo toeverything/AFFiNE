@@ -106,7 +106,7 @@ pub(super) async fn upsert_subscription(
        WHERE (provider_namespace=$1 AND source_identity=$2)
           OR (provider=$3::"Provider" AND $4::text IS NOT NULL AND external_subscription_id=$4)
           OR (provider='revenuecat' AND $5::text IS NOT NULL AND iap_store::text=$5
-              AND external_ref=$6 AND external_product_id=$7 AND external_customer_id=$8)
+              AND ((external_ref=ANY($6) AND external_product_id=$7) OR id=$8))
        ORDER BY (provider_namespace=$1) DESC,id FOR UPDATE"#,
   )
   .bind(namespace)
@@ -114,9 +114,12 @@ pub(super) async fn upsert_subscription(
   .bind(snapshot.provider().as_str())
   .bind(&subscription.external_subscription_id)
   .bind(&subscription.iap_store)
-  .bind(&subscription.external_ref)
+  .bind([
+    subscription.external_ref.as_deref(),
+    subscription.store_subscription_identifier.as_deref(),
+  ])
   .bind(&subscription.external_product_id)
-  .bind(&subscription.external_customer_id)
+  .bind(&subscription.provider_subscription_id)
   .fetch_all(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("find canonical payment subscription", error))?;
@@ -137,8 +140,8 @@ pub(super) async fn upsert_subscription(
          id,provider,provider_namespace,source_identity,target_type,target_id,plan,recurring,status,
          external_customer_id,external_subscription_id,external_product_id,external_price_id,iap_store,
          external_ref,currency,amount,quantity,period_start,period_end,trial_start,trial_end,canceled_at,
-         gives_access,will_renew,metadata,updated_at)
-       VALUES($1,$2::"Provider",$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::"IapStore",$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
+         gives_access,will_renew,metadata,updated_at,store_subscription_identifier)
+       VALUES($1,$2::"Provider",$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::"IapStore",$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
        ON CONFLICT(id) DO UPDATE SET provider=EXCLUDED.provider,provider_namespace=EXCLUDED.provider_namespace,
          source_identity=EXCLUDED.source_identity,target_type=EXCLUDED.target_type,target_id=EXCLUDED.target_id,
          plan=EXCLUDED.plan,recurring=EXCLUDED.recurring,status=EXCLUDED.status,
@@ -148,7 +151,8 @@ pub(super) async fn upsert_subscription(
          amount=EXCLUDED.amount,quantity=EXCLUDED.quantity,period_start=EXCLUDED.period_start,
          period_end=EXCLUDED.period_end,trial_start=EXCLUDED.trial_start,trial_end=EXCLUDED.trial_end,
          canceled_at=EXCLUDED.canceled_at,gives_access=EXCLUDED.gives_access,will_renew=EXCLUDED.will_renew,
-         metadata=EXCLUDED.metadata,updated_at=EXCLUDED.updated_at"#,
+         metadata=EXCLUDED.metadata,updated_at=EXCLUDED.updated_at,
+         store_subscription_identifier=EXCLUDED.store_subscription_identifier"#,
   )
   .bind(&id)
   .bind(snapshot.provider().as_str())
@@ -177,57 +181,16 @@ pub(super) async fn upsert_subscription(
   .bind(subscription.will_renew)
   .bind(&subscription.metadata)
   .bind(now)
+  .bind(&subscription.store_subscription_identifier)
   .execute(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("upsert canonical payment subscription", error))?;
   Ok(id)
 }
 
-pub(super) async fn adopt_legacy_entitlement(
-  tx: &mut Transaction<'_, Postgres>,
-  legacy_subject: &str,
-  canonical_subject: &str,
-  namespace: &str,
-  target: &super::super::entitlement::RuntimeEntitlementTarget,
-  now: chrono::DateTime<chrono::Utc>,
-) -> RuntimeResult<()> {
-  let rows = sqlx::query(
-    "SELECT id,subject_id,target_type,target_id,metadata FROM entitlements WHERE source='cloud_subscription' AND \
-     subject_id=ANY($1) ORDER BY id FOR UPDATE",
-  )
-  .bind([legacy_subject, canonical_subject])
-  .fetch_all(&mut **tx)
-  .await
-  .map_err(|error| RuntimeError::database("lock legacy payment entitlement", error))?;
-  if rows.len() > 1 {
-    return Err(RuntimeError::invalid_state("conflicting payment entitlement subject"));
-  }
-  if let Some(row) = rows
-    .first()
-    .filter(|row| row.get::<Option<String>, _>("subject_id").as_deref() == Some(legacy_subject))
-  {
-    let metadata: serde_json::Value = row.get("metadata");
-    if row.get::<String, _>("target_type") != target.target_type
-      || row.get::<String, _>("target_id") != target.target_id
-      || metadata.get("providerNamespace").and_then(|value| value.as_str()) != Some(namespace)
-    {
-      return Err(RuntimeError::invalid_state("ambiguous legacy payment entitlement"));
-    }
-    sqlx::query("UPDATE entitlements SET subject_id=$2,updated_at=$3 WHERE id=$1")
-      .bind(row.get::<String, _>("id"))
-      .bind(canonical_subject)
-      .bind(now)
-      .execute(&mut **tx)
-      .await
-      .map_err(|error| RuntimeError::database("adopt legacy payment entitlement", error))?;
-  }
-  Ok(())
-}
-
 pub(super) async fn expire_missing_sources(
   tx: &mut Transaction<'_, Postgres>,
   snapshot: &PaymentSnapshot,
-  namespace: &str,
   stored: &[StoredSubscription],
   now: chrono::DateTime<chrono::Utc>,
 ) -> RuntimeResult<()> {
@@ -264,14 +227,6 @@ pub(super) async fn expire_missing_sources(
       .execute(&mut **tx)
       .await
       .map_err(|error| RuntimeError::database("expire missing payment subscription", error))?;
-    sqlx::query(
-      "UPDATE entitlements SET status='expired',updated_at=$2 WHERE source='cloud_subscription' AND subject_id=$1",
-    )
-    .bind(entitlement_subject(namespace, &missing.source_id))
-    .bind(now)
-    .execute(&mut **tx)
-    .await
-    .map_err(|error| RuntimeError::database("expire missing payment entitlement", error))?;
   }
   Ok(())
 }
@@ -471,8 +426,4 @@ pub(super) async fn complete_receipts_and_operation(
     }
   }
   Ok(())
-}
-
-pub(super) fn entitlement_subject(namespace: &str, source_id: &str) -> String {
-  format!("{namespace}:source:{}:{source_id}", source_id.len())
 }

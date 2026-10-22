@@ -17,14 +17,16 @@ use super::{
     entitlement::{EntitlementWrite, RuntimeEntitlementTarget, upsert},
   },
   apply::restriction_name,
-  entitlement_subject,
 };
 
 struct ProjectedSource {
   id: String,
   namespace: String,
+  subject_id: String,
   target: RuntimeEntitlementTarget,
   starts_at: Option<chrono::DateTime<chrono::Utc>>,
+  recurring: SubscriptionRecurring,
+  variant: serde_json::Value,
   candidate: CloudSourceCandidate,
 }
 
@@ -45,7 +47,7 @@ pub(super) async fn reconcile_cloud_winners(
     .collect::<Vec<_>>();
   let rows = sqlx::query(
     r#"SELECT id,provider::text AS provider,provider_namespace,source_identity,target_type,target_id,
-              plan,recurring,status,gives_access,quantity,trial_end,period_start,period_end,will_renew
+              plan,recurring,status,gives_access,quantity,trial_end,period_start,period_end,will_renew,external_subscription_id,metadata->'variant' AS variant
        FROM provider_subscriptions
        WHERE provider_namespace IS NOT NULL AND source_identity IS NOT NULL
          AND ((target_type='user' AND target_id=ANY($1) AND plan IN ('pro','lifetime_pro','ai'))
@@ -91,6 +93,9 @@ pub(super) async fn reconcile_cloud_winners(
   for row in rows {
     let provider = Provider::parse(row.get::<String, _>("provider").as_str())
       .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment provider"))?;
+    let id: String = row.get("id");
+    let external_subscription_id: Option<String> = row.get("external_subscription_id");
+    let subject_id = entitlement_subject(provider, &id, external_subscription_id.as_deref())?.to_string();
     let plan = Plan::parse(row.get::<String, _>("plan").as_str())
       .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment plan"))?;
     let recurring = SubscriptionRecurring::parse(row.get::<String, _>("recurring").as_str())
@@ -138,10 +143,15 @@ pub(super) async fn reconcile_cloud_winners(
       .entry((target.target_type.clone(), target.target_id.clone(), family))
       .or_default()
       .push(ProjectedSource {
-        id: row.get("id"),
+        id,
         namespace: namespace.clone(),
+        subject_id,
         target: target.clone(),
         starts_at: row.get("period_start"),
+        recurring,
+        variant: row
+          .get::<Option<serde_json::Value>, _>("variant")
+          .unwrap_or(serde_json::Value::Null),
         candidate: CloudSourceCandidate {
           provider_namespace: namespace,
           target_id: target.target_id.clone(),
@@ -178,12 +188,21 @@ pub(super) async fn reconcile_cloud_winners(
       } else {
         EntitlementStatus::Expired
       };
+      validate_entitlement_subject(
+        tx,
+        &source.id,
+        &source.namespace,
+        &source.subject_id,
+        &source.target,
+        targets,
+      )
+      .await?;
       upsert(
         tx,
         EntitlementWrite {
           target: &source.target,
           source: "cloud_subscription",
-          subject_id: &entitlement_subject(&source.namespace, &subscription.source_id),
+          subject_id: &source.subject_id,
           plan: subscription.access.plan.as_str(),
           status: status.as_str(),
           quantity: subscription.access.quantity,
@@ -191,6 +210,11 @@ pub(super) async fn reconcile_cloud_winners(
           metadata: json!({
             "providerNamespace": source.namespace,
             "providerSubscriptionId": source.id,
+            "provider": subscription.provider.as_str(),
+            "subscriptionId": source.id,
+            "stripeSubscriptionId": (subscription.provider == Provider::Stripe).then_some(&source.subject_id),
+            "recurring": source.recurring.as_str(),
+            "variant": source.variant,
             "financialRestriction": restriction_name(source.candidate.restriction),
             "selected": selected,
           }),
@@ -201,6 +225,72 @@ pub(super) async fn reconcile_cloud_winners(
         now,
       )
       .await?;
+    }
+  }
+  Ok(())
+}
+
+fn entitlement_subject<'a>(
+  provider: Provider,
+  subscription_id: &'a str,
+  external_subscription_id: Option<&'a str>,
+) -> RuntimeResult<&'a str> {
+  match provider {
+    Provider::Stripe => external_subscription_id
+      .ok_or_else(|| RuntimeError::invalid_state("Stripe entitlement has no subscription identity")),
+    Provider::RevenueCat => Ok(subscription_id),
+  }
+}
+
+async fn validate_entitlement_subject(
+  tx: &mut Transaction<'_, Postgres>,
+  subscription_id: &str,
+  namespace: &str,
+  subject_id: &str,
+  target: &RuntimeEntitlementTarget,
+  locked_targets: &[RuntimeEntitlementTarget],
+) -> RuntimeResult<()> {
+  let bindings: Vec<String> = sqlx::query_scalar(
+    "SELECT id FROM provider_subscriptions WHERE (provider='stripe' AND external_subscription_id=$1) OR \
+     (provider='revenuecat' AND id=$1) ORDER BY id FOR UPDATE",
+  )
+  .bind(subject_id)
+  .fetch_all(&mut **tx)
+  .await
+  .map_err(|error| RuntimeError::database("lock payment entitlement ownership", error))?;
+  if bindings != [subscription_id] {
+    return Err(RuntimeError::invalid_state("conflicting payment entitlement ownership"));
+  }
+  let rows = sqlx::query(
+    "SELECT target_type,target_id,metadata FROM entitlements WHERE source='cloud_subscription' AND subject_id=$1 \
+     ORDER BY id FOR UPDATE",
+  )
+  .bind(subject_id)
+  .fetch_all(&mut **tx)
+  .await
+  .map_err(|error| RuntimeError::database("lock payment entitlement subject", error))?;
+  if rows.len() > 1 {
+    return Err(RuntimeError::invalid_state("conflicting payment entitlement subject"));
+  }
+  if let Some(row) = rows.first() {
+    let metadata: serde_json::Value = row.get("metadata");
+    let existing_target = RuntimeEntitlementTarget {
+      target_type: row.get("target_type"),
+      target_id: row.get("target_id"),
+    };
+    if (existing_target != *target && !locked_targets.contains(&existing_target))
+      || metadata
+        .get("providerNamespace")
+        .and_then(|value| value.as_str())
+        .is_some_and(|stored| stored != namespace)
+      || ["providerSubscriptionId", "subscriptionId"].into_iter().any(|key| {
+        metadata
+          .get(key)
+          .and_then(|value| value.as_str())
+          .is_some_and(|stored| stored != subscription_id)
+      })
+    {
+      return Err(RuntimeError::invalid_state("conflicting payment entitlement ownership"));
     }
   }
   Ok(())

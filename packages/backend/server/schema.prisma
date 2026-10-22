@@ -1011,34 +1011,35 @@ model UserStripeCustomer {
 }
 
 model ProviderSubscription {
-  id                     String    @id @default(uuid()) @db.VarChar
-  provider               Provider
-  providerNamespace      String?   @map("provider_namespace") @db.Text
-  sourceIdentity         String?   @map("source_identity") @db.Text
-  targetType             String    @map("target_type") @db.Text
-  targetId               String    @map("target_id") @db.VarChar
-  plan                   String    @db.VarChar(20)
-  recurring              String?   @db.VarChar(20)
-  status                 String    @db.VarChar(20)
-  externalCustomerId     String?   @map("external_customer_id") @db.VarChar
-  externalSubscriptionId String?   @map("external_subscription_id") @db.VarChar
-  externalProductId      String?   @map("external_product_id") @db.VarChar
-  externalPriceId        String?   @map("external_price_id") @db.VarChar
-  iapStore               IapStore? @map("iap_store")
-  externalRef            String?   @map("external_ref") @db.VarChar
-  currency               String?   @db.VarChar(3)
-  amount                 Int?      @db.Integer
-  quantity               Int?      @db.Integer
-  periodStart            DateTime? @map("period_start") @db.Timestamptz(3)
-  periodEnd              DateTime? @map("period_end") @db.Timestamptz(3)
-  trialStart             DateTime? @map("trial_start") @db.Timestamptz(3)
-  trialEnd               DateTime? @map("trial_end") @db.Timestamptz(3)
-  canceledAt             DateTime? @map("canceled_at") @db.Timestamptz(3)
-  givesAccess            Boolean?  @map("gives_access")
-  willRenew              Boolean?  @map("will_renew")
-  metadata               Json      @default("{}") @db.JsonB
-  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                          String    @id @default(uuid()) @db.VarChar
+  provider                    Provider
+  providerNamespace           String?   @map("provider_namespace") @db.Text
+  sourceIdentity              String?   @map("source_identity") @db.Text
+  targetType                  String    @map("target_type") @db.Text
+  targetId                    String    @map("target_id") @db.VarChar
+  plan                        String    @db.VarChar(20)
+  recurring                   String?   @db.VarChar(20)
+  status                      String    @db.VarChar(20)
+  externalCustomerId          String?   @map("external_customer_id") @db.VarChar
+  externalSubscriptionId      String?   @map("external_subscription_id") @db.VarChar
+  storeSubscriptionIdentifier String?   @map("store_subscription_identifier") @db.Text
+  externalProductId           String?   @map("external_product_id") @db.VarChar
+  externalPriceId             String?   @map("external_price_id") @db.VarChar
+  iapStore                    IapStore? @map("iap_store")
+  externalRef                 String?   @map("external_ref") @db.VarChar
+  currency                    String?   @db.VarChar(3)
+  amount                      Int?      @db.Integer
+  quantity                    Int?      @db.Integer
+  periodStart                 DateTime? @map("period_start") @db.Timestamptz(3)
+  periodEnd                   DateTime? @map("period_end") @db.Timestamptz(3)
+  trialStart                  DateTime? @map("trial_start") @db.Timestamptz(3)
+  trialEnd                    DateTime? @map("trial_end") @db.Timestamptz(3)
+  canceledAt                  DateTime? @map("canceled_at") @db.Timestamptz(3)
+  givesAccess                 Boolean?  @map("gives_access")
+  willRenew                   Boolean?  @map("will_renew")
+  metadata                    Json      @default("{}") @db.JsonB
+  createdAt                   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@unique([provider, externalSubscriptionId])
   @@unique([providerNamespace, sourceIdentity])

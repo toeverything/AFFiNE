@@ -185,6 +185,8 @@ async fn lifetime_invoice_snapshot(
   let subscriptions = active
     .then(|| SubscriptionSnapshot {
       source_id: source_id.clone(),
+      provider_subscription_id: None,
+      store_subscription_identifier: None,
       target_type: "user".to_string(),
       target_id: user_id.clone(),
       plan: *plan,

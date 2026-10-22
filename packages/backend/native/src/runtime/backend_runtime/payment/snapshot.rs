@@ -105,6 +105,8 @@ pub(super) async fn stripe_subscription_snapshot(
   let quantity = item.quantity.unwrap_or(1) as f64;
   let source = SubscriptionSnapshot {
     source_id: subscription.id.clone(),
+    provider_subscription_id: None,
+    store_subscription_identifier: None,
     target_type,
     target_id: target_id.clone(),
     plan,
@@ -254,9 +256,6 @@ pub(super) async fn revenuecat_customer_snapshot(
     return Err(RuntimeError::invalid_state("RevenueCat customer target does not exist"));
   }
   let namespace = client.namespace().clone();
-  let namespace_key = namespace
-    .canonical_key()
-    .map_err(|_| RuntimeError::invalid_state("invalid RevenueCat provider namespace"))?;
   let mut alias_ids = None;
   let mut snapshots = Vec::with_capacity(subscriptions.len());
   let mut transfers = Vec::new();
@@ -274,15 +273,8 @@ pub(super) async fn revenuecat_customer_snapshot(
       .get(&product.store_identifier)
       .ok_or_else(|| RuntimeError::invalid_input("RevenueCat product is not mapped"))?;
     let (plan, recurring) = parse_product_mapping(mapping)?;
-    let existing = sqlx::query(
-      "SELECT target_type,target_id FROM provider_subscriptions WHERE provider_namespace=$1 AND source_identity=$2",
-    )
-    .bind(&namespace_key)
-    .bind(&subscription.id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|error| RuntimeError::database("load RevenueCat subscription target", error))?;
-    if let Some(existing) = existing {
+    let existing = super::resolve_revenuecat_identity(pool, client, &subscription, &product.store_identifier).await?;
+    if let Some(existing) = existing.as_ref() {
       let old_type: String = existing.get("target_type");
       let old_id: String = existing.get("target_id");
       if old_type != "user" || old_id != customer_id {
@@ -315,6 +307,8 @@ pub(super) async fn revenuecat_customer_snapshot(
     }
     snapshots.push(SubscriptionSnapshot {
       source_id: subscription.id.clone(),
+      provider_subscription_id: existing.as_ref().map(|row| row.get("id")),
+      store_subscription_identifier: Some(subscription.store_subscription_identifier.clone()),
       target_type: "user".to_string(),
       target_id: customer_id.to_string(),
       plan,
@@ -329,7 +323,7 @@ pub(super) async fn revenuecat_customer_snapshot(
       external_product_id: Some(product.store_identifier.clone()),
       external_price_id: None,
       iap_store: Some(subscription.store.clone()),
-      external_ref: Some(subscription.store_subscription_identifier.clone()),
+      external_ref: Some(subscription.id.clone()),
       currency: None,
       amount: None,
       period_start: Some(timestamp_millis(subscription.starts_at, "RevenueCat period start")?),

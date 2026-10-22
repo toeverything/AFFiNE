@@ -10,11 +10,11 @@ use super::{
     RuntimeError, RuntimeResult,
     entitlement::{RuntimeEntitlementTarget, apply_transitions, load_decision_time, lock_targets, transition_before},
   },
-  PaymentConnection, PaymentScope, PaymentSnapshot, ReceiptDisposition, SnapshotCoverage, adopt_legacy_entitlement,
-  complete_receipts_and_operation, discover_payment_scopes, entitlement_subject, expire_missing_sources,
-  load_financial_restrictions, lock_receipts_and_operation, lock_subscription_rows, required_scope_expansion,
-  reserve_snapshot_mails, reserve_workspace_upgrade_mails, upsert_customers, upsert_financial_facts, upsert_invoices,
-  upsert_licenses, upsert_subscription, upsert_trials,
+  PaymentConnection, PaymentScope, PaymentSnapshot, ReceiptDisposition, SnapshotCoverage,
+  complete_receipts_and_operation, discover_payment_scopes, expire_missing_sources, load_financial_restrictions,
+  lock_receipts_and_operation, lock_subscription_rows, required_scope_expansion, reserve_snapshot_mails,
+  reserve_workspace_upgrade_mails, upsert_customers, upsert_financial_facts, upsert_invoices, upsert_licenses,
+  upsert_subscription, upsert_trials,
 };
 use crate::runtime::Deployment;
 
@@ -155,23 +155,9 @@ pub(super) async fn apply_payment_snapshot(
         now,
       )
       .await?;
-      let entitlement_subject = entitlement_subject(&namespace, &subscription.source_id);
-      let target = RuntimeEntitlementTarget {
-        target_type: subscription.target_type.clone(),
-        target_id: subscription.target_id.clone(),
-      };
-      adopt_legacy_entitlement(
-        &mut tx,
-        &subscription.source_id,
-        &entitlement_subject,
-        &namespace,
-        &target,
-        now,
-      )
-      .await?;
     }
 
-    expire_missing_sources(&mut tx, &snapshot, &namespace, &stored, now).await?;
+    expire_missing_sources(&mut tx, &snapshot, &stored, now).await?;
     upsert_trials(&mut tx, &snapshot, &namespace, now).await?;
     upsert_invoices(&mut tx, &snapshot, &namespace, now).await?;
     upsert_licenses(&mut tx, &snapshot, now).await?;
@@ -237,6 +223,8 @@ fn validate_snapshot(snapshot: &PaymentSnapshot) -> RuntimeResult<()> {
       subscription.external_product_id.as_deref(),
       subscription.external_price_id.as_deref(),
       subscription.external_ref.as_deref(),
+      subscription.store_subscription_identifier.as_deref(),
+      subscription.provider_subscription_id.as_deref(),
     ]
     .into_iter()
     .flatten()
@@ -275,7 +263,10 @@ fn validate_snapshot(snapshot: &PaymentSnapshot) -> RuntimeResult<()> {
           || subscription.external_ref.is_none()
           || subscription.external_product_id.is_none()
           || subscription.external_customer_id.is_none()
-          || subscription.external_ref.as_deref() == Some(subscription.source_id.as_str()) =>
+          || subscription.external_ref.as_deref() != Some(subscription.source_id.as_str())
+          || subscription.external_subscription_id.as_deref() != Some(subscription.source_id.as_str())
+          || subscription.store_subscription_identifier.is_none()
+          || subscription.store_subscription_identifier.as_deref() == Some(subscription.source_id.as_str()) =>
       {
         return Err(RuntimeError::invalid_input(
           "RevenueCat subscription and store identities must be distinct",

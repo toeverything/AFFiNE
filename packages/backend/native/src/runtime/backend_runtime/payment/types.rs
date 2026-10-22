@@ -30,6 +30,8 @@ pub(super) enum SnapshotCoverage {
 #[derive(Clone, Debug)]
 pub(super) struct SubscriptionSnapshot {
   pub source_id: String,
+  pub provider_subscription_id: Option<String>,
+  pub store_subscription_identifier: Option<String>,
   pub target_type: String,
   pub target_id: String,
   pub plan: Plan,
