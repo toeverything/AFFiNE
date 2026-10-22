@@ -336,8 +336,9 @@ mod tests {
     assert_eq!(versions, vec![1]);
     let unchanged_schema: (bool, bool) = sqlx::query_as(
       "SELECT pg_get_indexdef('embedding_projection_claim_idx'::regclass) NOT LIKE '%NULLS FIRST%', \
-       to_regprocedure('enqueue_changed_embedding_source()') IS NULL",
+       to_regprocedure(format('%I.enqueue_changed_embedding_source()', $1::text)) IS NULL",
     )
+    .bind(&schema)
     .fetch_one(&pool)
     .await
     .unwrap();
