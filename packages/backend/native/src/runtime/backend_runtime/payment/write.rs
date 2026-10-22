@@ -8,48 +8,32 @@ use super::{
   PaymentSnapshot, SnapshotCoverage, StoredSubscription, SubscriptionSnapshot,
 };
 
-pub(super) async fn load_or_adopt_stripe_customer(
+pub(super) async fn load_stripe_customer(
   pool: &PgPool,
   user_id: &str,
   namespace: &str,
 ) -> RuntimeResult<Option<String>> {
-  let mut tx = pool
-    .begin()
-    .await
-    .map_err(|error| RuntimeError::database("begin Stripe customer lookup", error))?;
   let customer =
-    sqlx::query("SELECT stripe_customer_id,provider_namespace FROM user_stripe_customers WHERE user_id=$1 FOR UPDATE")
+    sqlx::query("SELECT stripe_customer_id,provider_namespace FROM user_stripe_customers WHERE user_id=$1")
       .bind(user_id)
-      .fetch_optional(&mut *tx)
+      .fetch_optional(pool)
       .await
       .map_err(|error| RuntimeError::database("load Stripe customer", error))?;
   let Some(customer) = customer else {
-    tx.commit()
-      .await
-      .map_err(|error| RuntimeError::database("commit empty Stripe customer lookup", error))?;
     return Ok(None);
   };
-  let customer_id: String = customer.get("stripe_customer_id");
-  match customer.get::<Option<String>, _>("provider_namespace") {
-    Some(stored) if stored != namespace => {
-      return Err(RuntimeError::invalid_state(
-        "Stripe user customer belongs to another provider namespace",
-      ));
-    }
-    None => {
-      sqlx::query("UPDATE user_stripe_customers SET provider_namespace=$2 WHERE user_id=$1")
-        .bind(user_id)
-        .bind(namespace)
-        .execute(&mut *tx)
-        .await
-        .map_err(|error| RuntimeError::database("adopt legacy Stripe customer", error))?;
-    }
-    Some(_) => {}
+  let stored: Option<String> = customer.get("provider_namespace");
+  if stored.is_none() {
+    return Err(RuntimeError::invalid_state(
+      "legacy Stripe customer requires pre-repair",
+    ));
   }
-  tx.commit()
-    .await
-    .map_err(|error| RuntimeError::database("commit Stripe customer lookup", error))?;
-  Ok(Some(customer_id))
+  if stored.as_deref() != Some(namespace) {
+    return Err(RuntimeError::invalid_state(
+      "Stripe user customer belongs to another provider namespace",
+    ));
+  }
+  Ok(Some(customer.get("stripe_customer_id")))
 }
 
 pub(super) async fn upsert_customers(
@@ -78,7 +62,7 @@ pub(super) async fn upsert_customers(
            stripe_customer_id=EXCLUDED.stripe_customer_id,
            provider_namespace=EXCLUDED.provider_namespace
          WHERE user_stripe_customers.stripe_customer_id=EXCLUDED.stripe_customer_id
-           AND (user_stripe_customers.provider_namespace IS NULL OR user_stripe_customers.provider_namespace=EXCLUDED.provider_namespace)"#,
+           AND user_stripe_customers.provider_namespace=EXCLUDED.provider_namespace"#,
     )
     .bind(&customer.user_id)
     .bind(&customer.external_customer_id)
@@ -102,24 +86,15 @@ pub(super) async fn upsert_subscription(
   now: chrono::DateTime<chrono::Utc>,
 ) -> RuntimeResult<String> {
   let rows = sqlx::query(
-    r#"SELECT id,provider_namespace FROM provider_subscriptions
+    r#"SELECT id,provider_namespace,source_identity FROM provider_subscriptions
        WHERE (provider_namespace=$1 AND source_identity=$2)
           OR (provider=$3::"Provider" AND $4::text IS NOT NULL AND external_subscription_id=$4)
-          OR (provider='revenuecat' AND $5::text IS NOT NULL AND iap_store::text=$5
-              AND ((external_ref=ANY($6) AND external_product_id=$7) OR id=$8))
        ORDER BY (provider_namespace=$1) DESC,id FOR UPDATE"#,
   )
   .bind(namespace)
   .bind(&subscription.source_id)
   .bind(snapshot.provider().as_str())
   .bind(&subscription.external_subscription_id)
-  .bind(&subscription.iap_store)
-  .bind([
-    subscription.external_ref.as_deref(),
-    subscription.store_subscription_identifier.as_deref(),
-  ])
-  .bind(&subscription.external_product_id)
-  .bind(&subscription.provider_subscription_id)
   .fetch_all(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("find canonical payment subscription", error))?;
@@ -128,6 +103,18 @@ pub(super) async fn upsert_subscription(
       .first()
       .and_then(|row| row.get::<Option<String>, _>("provider_namespace"))
       .is_some_and(|stored| stored != namespace)
+  {
+    return Err(RuntimeError::invalid_state("conflicting payment source identity"));
+  }
+  if rows.first().is_some_and(|row| {
+    row.get::<Option<String>, _>("provider_namespace").is_none()
+      || row.get::<Option<String>, _>("source_identity").is_none()
+  }) {
+    return Err(RuntimeError::invalid_state("legacy payment source requires pre-repair"));
+  }
+  if rows
+    .first()
+    .is_some_and(|row| row.get::<String, _>("source_identity") != subscription.source_id)
   {
     return Err(RuntimeError::invalid_state("conflicting payment source identity"));
   }
@@ -140,8 +127,8 @@ pub(super) async fn upsert_subscription(
          id,provider,provider_namespace,source_identity,target_type,target_id,plan,recurring,status,
          external_customer_id,external_subscription_id,external_product_id,external_price_id,iap_store,
          external_ref,currency,amount,quantity,period_start,period_end,trial_start,trial_end,canceled_at,
-         gives_access,will_renew,metadata,updated_at,store_subscription_identifier)
-       VALUES($1,$2::"Provider",$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::"IapStore",$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
+         gives_access,will_renew,metadata,updated_at)
+       VALUES($1,$2::"Provider",$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::"IapStore",$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
        ON CONFLICT(id) DO UPDATE SET provider=EXCLUDED.provider,provider_namespace=EXCLUDED.provider_namespace,
          source_identity=EXCLUDED.source_identity,target_type=EXCLUDED.target_type,target_id=EXCLUDED.target_id,
          plan=EXCLUDED.plan,recurring=EXCLUDED.recurring,status=EXCLUDED.status,
@@ -151,8 +138,7 @@ pub(super) async fn upsert_subscription(
          amount=EXCLUDED.amount,quantity=EXCLUDED.quantity,period_start=EXCLUDED.period_start,
          period_end=EXCLUDED.period_end,trial_start=EXCLUDED.trial_start,trial_end=EXCLUDED.trial_end,
          canceled_at=EXCLUDED.canceled_at,gives_access=EXCLUDED.gives_access,will_renew=EXCLUDED.will_renew,
-         metadata=EXCLUDED.metadata,updated_at=EXCLUDED.updated_at,
-         store_subscription_identifier=EXCLUDED.store_subscription_identifier"#,
+         metadata=EXCLUDED.metadata,updated_at=EXCLUDED.updated_at"#,
   )
   .bind(&id)
   .bind(snapshot.provider().as_str())
@@ -181,7 +167,6 @@ pub(super) async fn upsert_subscription(
   .bind(subscription.will_renew)
   .bind(&subscription.metadata)
   .bind(now)
-  .bind(&subscription.store_subscription_identifier)
   .execute(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("upsert canonical payment subscription", error))?;

@@ -168,12 +168,10 @@ pub(super) async fn lock_subscription_rows(
     .then_some(snapshot.customer_id.as_deref())
     .flatten();
   let rows = sqlx::query(
-    r#"SELECT id,provider_namespace,source_identity,external_subscription_id,target_type,target_id,external_customer_id,
-              iap_store::text AS iap_store,external_ref,external_product_id
+    r#"SELECT id,provider_namespace,source_identity,target_type,target_id,external_customer_id
        FROM provider_subscriptions
        WHERE (provider_namespace=$1 AND (source_identity=ANY($2) OR ($3::text IS NOT NULL AND external_customer_id=$3)))
-          OR (provider=$4::"Provider" AND (external_subscription_id=ANY($5)
-              OR (provider='revenuecat' AND (external_ref=ANY($6) OR id=ANY($7)))))
+          OR (provider=$4::"Provider" AND external_subscription_id=ANY($5))
        ORDER BY provider_namespace NULLS FIRST,source_identity NULLS FIRST,id
        FOR UPDATE"#,
   )
@@ -182,66 +180,30 @@ pub(super) async fn lock_subscription_rows(
   .bind(scan_customer)
   .bind(snapshot.provider().as_str())
   .bind(&external_ids)
-  .bind(
-    snapshot
-      .subscriptions
-      .iter()
-      .flat_map(|subscription| {
-        [
-          subscription.external_ref.as_deref(),
-          subscription.store_subscription_identifier.as_deref(),
-        ]
-      })
-      .flatten()
-      .collect::<Vec<_>>(),
-  )
-  .bind(
-    snapshot
-      .subscriptions
-      .iter()
-      .filter_map(|subscription| subscription.provider_subscription_id.as_deref())
-      .collect::<Vec<_>>(),
-  )
   .fetch_all(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("lock payment subscription rows", error))?;
-  Ok(
-    rows
-      .into_iter()
-      .filter_map(|row| {
-        let source_id: Option<String> = row.get::<Option<String>, _>("source_identity").or_else(|| {
-          let external_id = row.get::<Option<String>, _>("external_subscription_id");
-          let iap_store = row.get::<Option<String>, _>("iap_store");
-          let external_ref = row.get::<Option<String>, _>("external_ref");
-          let external_product_id = row.get::<Option<String>, _>("external_product_id");
-          snapshot.subscriptions.iter().find_map(|subscription| {
-            let matches_verified_id =
-              subscription.provider_subscription_id.as_deref() == Some(row.get::<String, _>("id").as_str());
-            let matches_external_id = external_id.is_some() && subscription.external_subscription_id == external_id;
-            let matches_revenuecat_legacy = snapshot.provider() == affine_core::payment::Provider::RevenueCat
-              && subscription.iap_store == iap_store
-              && (subscription.external_ref == external_ref
-                || subscription.store_subscription_identifier == external_ref)
-              && subscription.external_product_id == external_product_id;
-            (matches_verified_id || matches_external_id || matches_revenuecat_legacy)
-              .then(|| subscription.source_id.clone())
-          })
-        });
-        source_id.map(|source_id| StoredSubscription {
-          id: row.get("id"),
-          namespace: row
-            .get::<Option<String>, _>("provider_namespace")
-            .unwrap_or_else(|| namespace.to_string()),
-          source_id,
-          target: RuntimeEntitlementTarget {
-            target_type: row.get("target_type"),
-            target_id: row.get("target_id"),
-          },
-          customer_id: row.get("external_customer_id"),
-        })
+  rows
+    .into_iter()
+    .map(|row| {
+      let namespace = row
+        .get::<Option<String>, _>("provider_namespace")
+        .ok_or_else(|| RuntimeError::invalid_state("legacy payment source requires pre-repair"))?;
+      let source_id = row
+        .get::<Option<String>, _>("source_identity")
+        .ok_or_else(|| RuntimeError::invalid_state("legacy payment source requires pre-repair"))?;
+      Ok(StoredSubscription {
+        id: row.get("id"),
+        namespace,
+        source_id,
+        target: RuntimeEntitlementTarget {
+          target_type: row.get("target_type"),
+          target_id: row.get("target_id"),
+        },
+        customer_id: row.get("external_customer_id"),
       })
-      .collect(),
-  )
+    })
+    .collect()
 }
 
 pub(super) async fn lock_receipts_and_operation(

@@ -223,8 +223,6 @@ fn validate_snapshot(snapshot: &PaymentSnapshot) -> RuntimeResult<()> {
       subscription.external_product_id.as_deref(),
       subscription.external_price_id.as_deref(),
       subscription.external_ref.as_deref(),
-      subscription.store_subscription_identifier.as_deref(),
-      subscription.provider_subscription_id.as_deref(),
     ]
     .into_iter()
     .flatten()
@@ -263,10 +261,8 @@ fn validate_snapshot(snapshot: &PaymentSnapshot) -> RuntimeResult<()> {
           || subscription.external_ref.is_none()
           || subscription.external_product_id.is_none()
           || subscription.external_customer_id.is_none()
-          || subscription.external_ref.as_deref() != Some(subscription.source_id.as_str())
           || subscription.external_subscription_id.as_deref() != Some(subscription.source_id.as_str())
-          || subscription.store_subscription_identifier.is_none()
-          || subscription.store_subscription_identifier.as_deref() == Some(subscription.source_id.as_str()) =>
+          || subscription.external_ref.as_deref() == Some(subscription.source_id.as_str()) =>
       {
         return Err(RuntimeError::invalid_input(
           "RevenueCat subscription and store identities must be distinct",

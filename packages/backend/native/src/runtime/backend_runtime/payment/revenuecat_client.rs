@@ -154,22 +154,6 @@ impl RevenueCatClient {
       .await
   }
 
-  pub(super) async fn subscription_by_id(
-    &self,
-    subscription_id: &str,
-  ) -> Result<Option<RevenueCatSubscription>, PaymentProviderError> {
-    let url = self.url(&format!(
-      "{}subscriptions/{}",
-      self.project_path,
-      encode_segment(subscription_id)
-    ))?;
-    match self.send(self.request(Method::GET, url), false).await {
-      Ok(subscription) => Ok(Some(subscription)),
-      Err(error) if error.status == Some(404) => Ok(None),
-      Err(error) => Err(error),
-    }
-  }
-
   pub(super) async fn subscriptions_by_store_id(
     &self,
     store_subscription_identifier: &str,

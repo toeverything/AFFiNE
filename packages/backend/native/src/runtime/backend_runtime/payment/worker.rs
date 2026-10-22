@@ -354,7 +354,7 @@ pub(super) async fn verified_missing_revenuecat_sources(
     .map(|item| item.id.as_str())
     .collect::<BTreeSet<_>>();
   let rows = sqlx::query(
-    "SELECT source_identity,store_subscription_identifier FROM provider_subscriptions WHERE provider_namespace=$1 AND \
+    "SELECT source_identity,external_ref FROM provider_subscriptions WHERE provider_namespace=$1 AND \
      target_type='user' AND target_id=$2 AND source_identity IS NOT NULL",
   )
   .bind(&namespace)
@@ -369,7 +369,7 @@ pub(super) async fn verified_missing_revenuecat_sources(
       continue;
     }
     let store_id = row
-      .get::<Option<String>, _>("store_subscription_identifier")
+      .get::<Option<String>, _>("external_ref")
       .ok_or_else(|| RuntimeError::invalid_state("RevenueCat source has no store identity"))?;
     let matches = client
       .subscriptions_by_store_id(&store_id)
