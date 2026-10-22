@@ -68,9 +68,6 @@
     "core-js": {
       "built": false
     },
-    "electron": {
-      "built": true
-    },
     "electron-winstaller": {
       "built": true
     },
@@ -107,7 +104,7 @@
     "@vitest/browser": "^4.1.11",
     "@vitest/coverage-istanbul": "^4.1.11",
     "@vitest/ui": "^4.1.11",
-    "electron": "^41.10.7",
+    "electron": "^43.8.3",
     "eslint": "10.12.0",
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-lit": "^2.2.1",
@@ -125,7 +122,7 @@
     "semver": "^7.7.3",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "unplugin-swc": "^1.5.9",
-    "vite": "^7.3.6",
+    "vite": "^7.3.7",
     "vitest": "^4.1.11"
   },
   "packageManager": "yarn@4.18.0",

@@ -260,6 +260,17 @@ jobs:
         with:
           app-version: ${{ inputs.app-version }}
 
+      - name: Build Cloud SQL Proxy with patched Go
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          pull: true
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          file: .github/deployment/cloud-sql-proxy/Dockerfile
+          tags: ghcr.io/toeverything/affine:cloud-sql-proxy-2.26.2
+
       - name: Build backend Dockerfile
         uses: docker/build-push-action@v6
         with:

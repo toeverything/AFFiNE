@@ -195,6 +195,7 @@ jobs:
           nmHoistingLimits: workspaces
         env:
           npm_config_arch: ${{ matrix.spec.arch }}
+          ELECTRON_INSTALL_ARCH: ${{ matrix.spec.arch }}
 
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
@@ -409,7 +410,7 @@ jobs:
           path: ./release
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
       - name: Copy Selfhost Release Files
         run: |
           cp ./.docker/selfhost/compose.yml ./release/docker-compose.yml
