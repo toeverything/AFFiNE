@@ -80,10 +80,12 @@ pub(super) async fn stripe_subscription_snapshot(
             .map_err(|error| RuntimeError::database("load Stripe customer target", error))?
             .ok_or_else(|| RuntimeError::invalid_state("Stripe customer has no canonical user mapping"))?;
         let stored_namespace: Option<String> = customer.get("provider_namespace");
-        if stored_namespace
-          .as_deref()
-          .is_some_and(|stored| stored != namespace_key)
-        {
+        if stored_namespace.is_none() {
+          return Err(RuntimeError::invalid_state(
+            "legacy Stripe customer requires pre-repair",
+          ));
+        }
+        if stored_namespace.as_deref() != Some(namespace_key.as_str()) {
           return Err(RuntimeError::invalid_state(
             "Stripe customer belongs to another provider namespace",
           ));

@@ -8,48 +8,32 @@ use super::{
   PaymentSnapshot, SnapshotCoverage, StoredSubscription, SubscriptionSnapshot,
 };
 
-pub(super) async fn load_or_adopt_stripe_customer(
+pub(super) async fn load_stripe_customer(
   pool: &PgPool,
   user_id: &str,
   namespace: &str,
 ) -> RuntimeResult<Option<String>> {
-  let mut tx = pool
-    .begin()
-    .await
-    .map_err(|error| RuntimeError::database("begin Stripe customer lookup", error))?;
   let customer =
-    sqlx::query("SELECT stripe_customer_id,provider_namespace FROM user_stripe_customers WHERE user_id=$1 FOR UPDATE")
+    sqlx::query("SELECT stripe_customer_id,provider_namespace FROM user_stripe_customers WHERE user_id=$1")
       .bind(user_id)
-      .fetch_optional(&mut *tx)
+      .fetch_optional(pool)
       .await
       .map_err(|error| RuntimeError::database("load Stripe customer", error))?;
   let Some(customer) = customer else {
-    tx.commit()
-      .await
-      .map_err(|error| RuntimeError::database("commit empty Stripe customer lookup", error))?;
     return Ok(None);
   };
-  let customer_id: String = customer.get("stripe_customer_id");
-  match customer.get::<Option<String>, _>("provider_namespace") {
-    Some(stored) if stored != namespace => {
-      return Err(RuntimeError::invalid_state(
-        "Stripe user customer belongs to another provider namespace",
-      ));
-    }
-    None => {
-      sqlx::query("UPDATE user_stripe_customers SET provider_namespace=$2 WHERE user_id=$1")
-        .bind(user_id)
-        .bind(namespace)
-        .execute(&mut *tx)
-        .await
-        .map_err(|error| RuntimeError::database("adopt legacy Stripe customer", error))?;
-    }
-    Some(_) => {}
+  let stored: Option<String> = customer.get("provider_namespace");
+  if stored.is_none() {
+    return Err(RuntimeError::invalid_state(
+      "legacy Stripe customer requires pre-repair",
+    ));
   }
-  tx.commit()
-    .await
-    .map_err(|error| RuntimeError::database("commit Stripe customer lookup", error))?;
-  Ok(Some(customer_id))
+  if stored.as_deref() != Some(namespace) {
+    return Err(RuntimeError::invalid_state(
+      "Stripe user customer belongs to another provider namespace",
+    ));
+  }
+  Ok(Some(customer.get("stripe_customer_id")))
 }
 
 pub(super) async fn upsert_customers(
@@ -78,7 +62,7 @@ pub(super) async fn upsert_customers(
            stripe_customer_id=EXCLUDED.stripe_customer_id,
            provider_namespace=EXCLUDED.provider_namespace
          WHERE user_stripe_customers.stripe_customer_id=EXCLUDED.stripe_customer_id
-           AND (user_stripe_customers.provider_namespace IS NULL OR user_stripe_customers.provider_namespace=EXCLUDED.provider_namespace)"#,
+           AND user_stripe_customers.provider_namespace=EXCLUDED.provider_namespace"#,
     )
     .bind(&customer.user_id)
     .bind(&customer.external_customer_id)
@@ -102,21 +86,15 @@ pub(super) async fn upsert_subscription(
   now: chrono::DateTime<chrono::Utc>,
 ) -> RuntimeResult<String> {
   let rows = sqlx::query(
-    r#"SELECT id,provider_namespace FROM provider_subscriptions
+    r#"SELECT id,provider_namespace,source_identity FROM provider_subscriptions
        WHERE (provider_namespace=$1 AND source_identity=$2)
           OR (provider=$3::"Provider" AND $4::text IS NOT NULL AND external_subscription_id=$4)
-          OR (provider='revenuecat' AND $5::text IS NOT NULL AND iap_store::text=$5
-              AND external_ref=$6 AND external_product_id=$7 AND external_customer_id=$8)
        ORDER BY (provider_namespace=$1) DESC,id FOR UPDATE"#,
   )
   .bind(namespace)
   .bind(&subscription.source_id)
   .bind(snapshot.provider().as_str())
   .bind(&subscription.external_subscription_id)
-  .bind(&subscription.iap_store)
-  .bind(&subscription.external_ref)
-  .bind(&subscription.external_product_id)
-  .bind(&subscription.external_customer_id)
   .fetch_all(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("find canonical payment subscription", error))?;
@@ -125,6 +103,18 @@ pub(super) async fn upsert_subscription(
       .first()
       .and_then(|row| row.get::<Option<String>, _>("provider_namespace"))
       .is_some_and(|stored| stored != namespace)
+  {
+    return Err(RuntimeError::invalid_state("conflicting payment source identity"));
+  }
+  if rows.first().is_some_and(|row| {
+    row.get::<Option<String>, _>("provider_namespace").is_none()
+      || row.get::<Option<String>, _>("source_identity").is_none()
+  }) {
+    return Err(RuntimeError::invalid_state("legacy payment source requires pre-repair"));
+  }
+  if rows
+    .first()
+    .is_some_and(|row| row.get::<String, _>("source_identity") != subscription.source_id)
   {
     return Err(RuntimeError::invalid_state("conflicting payment source identity"));
   }
@@ -183,51 +173,9 @@ pub(super) async fn upsert_subscription(
   Ok(id)
 }
 
-pub(super) async fn adopt_legacy_entitlement(
-  tx: &mut Transaction<'_, Postgres>,
-  legacy_subject: &str,
-  canonical_subject: &str,
-  namespace: &str,
-  target: &super::super::entitlement::RuntimeEntitlementTarget,
-  now: chrono::DateTime<chrono::Utc>,
-) -> RuntimeResult<()> {
-  let rows = sqlx::query(
-    "SELECT id,subject_id,target_type,target_id,metadata FROM entitlements WHERE source='cloud_subscription' AND \
-     subject_id=ANY($1) ORDER BY id FOR UPDATE",
-  )
-  .bind([legacy_subject, canonical_subject])
-  .fetch_all(&mut **tx)
-  .await
-  .map_err(|error| RuntimeError::database("lock legacy payment entitlement", error))?;
-  if rows.len() > 1 {
-    return Err(RuntimeError::invalid_state("conflicting payment entitlement subject"));
-  }
-  if let Some(row) = rows
-    .first()
-    .filter(|row| row.get::<Option<String>, _>("subject_id").as_deref() == Some(legacy_subject))
-  {
-    let metadata: serde_json::Value = row.get("metadata");
-    if row.get::<String, _>("target_type") != target.target_type
-      || row.get::<String, _>("target_id") != target.target_id
-      || metadata.get("providerNamespace").and_then(|value| value.as_str()) != Some(namespace)
-    {
-      return Err(RuntimeError::invalid_state("ambiguous legacy payment entitlement"));
-    }
-    sqlx::query("UPDATE entitlements SET subject_id=$2,updated_at=$3 WHERE id=$1")
-      .bind(row.get::<String, _>("id"))
-      .bind(canonical_subject)
-      .bind(now)
-      .execute(&mut **tx)
-      .await
-      .map_err(|error| RuntimeError::database("adopt legacy payment entitlement", error))?;
-  }
-  Ok(())
-}
-
 pub(super) async fn expire_missing_sources(
   tx: &mut Transaction<'_, Postgres>,
   snapshot: &PaymentSnapshot,
-  namespace: &str,
   stored: &[StoredSubscription],
   now: chrono::DateTime<chrono::Utc>,
 ) -> RuntimeResult<()> {
@@ -264,14 +212,6 @@ pub(super) async fn expire_missing_sources(
       .execute(&mut **tx)
       .await
       .map_err(|error| RuntimeError::database("expire missing payment subscription", error))?;
-    sqlx::query(
-      "UPDATE entitlements SET status='expired',updated_at=$2 WHERE source='cloud_subscription' AND subject_id=$1",
-    )
-    .bind(entitlement_subject(namespace, &missing.source_id))
-    .bind(now)
-    .execute(&mut **tx)
-    .await
-    .map_err(|error| RuntimeError::database("expire missing payment entitlement", error))?;
   }
   Ok(())
 }
@@ -471,8 +411,4 @@ pub(super) async fn complete_receipts_and_operation(
     }
   }
   Ok(())
-}
-
-pub(super) fn entitlement_subject(namespace: &str, source_id: &str) -> String {
-  format!("{namespace}:source:{}:{source_id}", source_id.len())
 }

@@ -1136,20 +1136,20 @@ async fn operation_intent_is_frozen_before_send_and_blocks_overlapping_work() {
     .execute(&pool)
     .await
     .unwrap();
-  assert_eq!(
-    load_or_adopt_stripe_customer(&pool, &legacy_user, &account_namespace_key)
+  assert!(
+    load_stripe_customer(&pool, &legacy_user, &account_namespace_key)
       .await
-      .unwrap(),
-    Some(legacy_customer)
+      .unwrap_err()
+      .to_string()
+      .contains("requires pre-repair")
   );
-  assert_eq!(
-    sqlx::query_scalar::<_, String>("SELECT provider_namespace FROM user_stripe_customers WHERE user_id=$1")
+  let stored: Option<String> =
+    sqlx::query_scalar("SELECT provider_namespace FROM user_stripe_customers WHERE user_id=$1")
       .bind(&legacy_user)
       .fetch_one(&pool)
       .await
-      .unwrap(),
-    account_namespace_key
-  );
+      .unwrap();
+  assert!(stored.is_none());
   cleanup(&pool, &account_namespace_key, &account_marker).await;
 }
 
@@ -2364,74 +2364,7 @@ async fn failed_atomic_batch_rolls_back_and_incomplete_snapshot_writes_nothing()
   .unwrap();
   assert_eq!(counts, (0, 0, 0));
 
-  let canonical_subject = entitlement_subject(&namespace, &source_id);
-  sqlx::query(
-    "INSERT INTO entitlements(id,target_type,target_id,source,subject_id,plan,status,metadata) \
-     VALUES($1,'user',$2,'cloud_subscription',$3,'pro','active',$4)",
-  )
-  .bind(uuid::Uuid::new_v4().to_string())
-  .bind(&user)
-  .bind(&source_id)
-  .bind(json!({"providerNamespace": "payment:v1:revenuecat:sandbox:5:other"}))
-  .execute(&pool)
-  .await
-  .unwrap();
-  let cross_provider_legacy = apply_payment_snapshot(
-    &mut connection,
-    snapshot(
-      provider_namespace.clone(),
-      SnapshotCoverage::Single,
-      &customer_id,
-      vec![subscription(&user, &customer_id, &source_id)],
-    ),
-    Deployment::Cloud,
-  )
-  .await
-  .unwrap_err();
-  assert!(cross_provider_legacy.to_string().contains("ambiguous legacy"));
-  sqlx::query("DELETE FROM entitlements WHERE source='cloud_subscription' AND subject_id=$1")
-    .bind(&source_id)
-    .execute(&pool)
-    .await
-    .unwrap();
-  for subject in [&source_id, &canonical_subject] {
-    sqlx::query(
-      "INSERT INTO entitlements(id,target_type,target_id,source,subject_id,plan,status,metadata) \
-       VALUES($1,'user',$2,'cloud_subscription',$3,'pro','active','{}')",
-    )
-    .bind(uuid::Uuid::new_v4().to_string())
-    .bind(&user)
-    .bind(subject)
-    .execute(&pool)
-    .await
-    .unwrap();
-  }
-  let duplicate_entitlement = match apply_payment_snapshot(
-    &mut connection,
-    snapshot(
-      provider_namespace,
-      SnapshotCoverage::Single,
-      &customer_id,
-      vec![subscription(&user, &customer_id, &source_id)],
-    ),
-    Deployment::Cloud,
-  )
-  .await
-  {
-    Ok(_) => panic!("duplicate legacy and canonical entitlements were accepted"),
-    Err(error) => error,
-  };
-  assert!(
-    duplicate_entitlement
-      .to_string()
-      .contains("conflicting payment entitlement subject")
-  );
   drop(connection);
-  sqlx::query("DELETE FROM entitlements WHERE source='cloud_subscription' AND subject_id=ANY($1)")
-    .bind([source_id.as_str(), canonical_subject.as_str()])
-    .execute(&pool)
-    .await
-    .unwrap();
   cleanup(&pool, &namespace, &marker).await;
 }
 
@@ -2846,7 +2779,7 @@ async fn canonical_source_identity_conflict_cannot_be_adopted_across_namespaces(
   let error = match apply_payment_snapshot(
     &mut connection,
     snapshot(
-      primary_namespace,
+      primary_namespace.clone(),
       SnapshotCoverage::Single,
       &customer_id,
       vec![subscription(&user, &customer_id, &source_id)],
@@ -2871,6 +2804,48 @@ async fn canonical_source_identity_conflict_cannot_be_adopted_across_namespaces(
   .await
   .unwrap();
   assert_eq!(stored, (conflicting_namespace.clone(), conflicting_customer));
+  for missing_namespace in [true, false] {
+    let stored_namespace = (!missing_namespace).then_some(namespace.as_str());
+    let stored_source = missing_namespace.then_some(source_id.as_str());
+    sqlx::query(
+      "UPDATE provider_subscriptions SET provider_namespace=$2,source_identity=$3 WHERE external_subscription_id=$1",
+    )
+    .bind(&source_id)
+    .bind(stored_namespace)
+    .bind(stored_source)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let error = apply_payment_snapshot(
+      &mut connection,
+      snapshot(
+        primary_namespace.clone(),
+        SnapshotCoverage::Single,
+        &customer_id,
+        vec![subscription(&user, &customer_id, &source_id)],
+      ),
+      Deployment::Cloud,
+    )
+    .await
+    .unwrap_err();
+    assert!(error.to_string().contains("requires pre-repair"), "{error}");
+    let unchanged: (Option<String>, Option<String>) = sqlx::query_as(
+      "SELECT provider_namespace,source_identity FROM provider_subscriptions WHERE external_subscription_id=$1",
+    )
+    .bind(&source_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+      unchanged,
+      (stored_namespace.map(str::to_string), stored_source.map(str::to_string))
+    );
+  }
+  sqlx::query("DELETE FROM provider_subscriptions WHERE external_subscription_id=$1")
+    .bind(&source_id)
+    .execute(&pool)
+    .await
+    .unwrap();
   drop(connection);
   cleanup(&pool, &namespace, &marker).await;
   cleanup(&pool, &conflicting_namespace, &marker).await;
@@ -2913,32 +2888,15 @@ async fn revenuecat_access_and_missing_source_rules_fail_closed() {
   .await
   .unwrap()
   .unwrap();
-  let legacy_id = uuid::Uuid::new_v4().to_string();
+  let canonical_id = uuid::Uuid::new_v4().to_string();
   sqlx::query(
     r#"INSERT INTO provider_subscriptions(
-         id,provider,target_type,target_id,plan,recurring,status,external_customer_id,
-         external_product_id,iap_store,external_ref,metadata)
-       VALUES($1,'revenuecat','user',$2,'ai','yearly','active',$3,'rc-product','app_store',$4,$5)"#,
+         id,provider,provider_namespace,source_identity,target_type,target_id,plan,recurring,status,external_customer_id,
+         external_subscription_id,external_product_id,iap_store,external_ref,metadata)
+       VALUES($1,'revenuecat',$2,$3,'user',$4,'ai','yearly','active',$5,$3,'rc-product','app_store',$6,'{}')"#,
   )
-  .bind(&legacy_id)
-  .bind(&user)
-  .bind(&customer_id)
-  .bind(format!("store-{source_id}"))
-  .bind(json!({"providerNamespace": namespace}))
-  .execute(&pool)
-  .await
-  .unwrap();
-  sqlx::query(
-    "INSERT INTO entitlements(id,target_type,target_id,source,subject_id,plan,status,metadata) \
-     VALUES($1,'user',$2,'cloud_subscription',$3,'ai','active',$4)",
-  )
-  .bind(uuid::Uuid::new_v4().to_string())
-  .bind(&user)
-  .bind(&source_id)
-  .bind(json!({"providerNamespace": namespace}))
-  .execute(&pool)
-  .await
-  .unwrap();
+  .bind(&canonical_id).bind(&namespace).bind(&source_id).bind(&user).bind(&customer_id)
+  .bind(format!("store-{source_id}")).execute(&pool).await.unwrap();
   apply_payment_snapshot(
     &mut connection,
     snapshot(
@@ -2961,7 +2919,7 @@ async fn revenuecat_access_and_missing_source_rules_fail_closed() {
   .fetch_one(&pool)
   .await
   .unwrap();
-  assert_eq!(identities.0, legacy_id);
+  assert_eq!(identities.0, canonical_id);
   assert_eq!(identities.1, source_id);
   assert_ne!(identities.1, identities.2);
   assert_eq!(identities.3, "expired");
@@ -3050,6 +3008,33 @@ async fn revenuecat_access_and_missing_source_rules_fail_closed() {
     ]
   );
 
+  let mut grace = revenuecat_subscription(&user, &customer_id, &source_id);
+  grace.gives_access = Some(true);
+  grace.lifecycle = ProviderLifecycle::InGracePeriod;
+  apply_payment_snapshot(
+    &mut connection,
+    snapshot(
+      provider_namespace.clone(),
+      SnapshotCoverage::Single,
+      &customer_id,
+      vec![grace],
+    ),
+    Deployment::Cloud,
+  )
+  .await
+  .unwrap();
+  let display: (String, serde_json::Value) =
+    sqlx::query_as("SELECT status,metadata FROM entitlements WHERE source='cloud_subscription' AND subject_id=$1")
+      .bind(entitlement_subject(&namespace, &source_id))
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  assert_eq!(display.0, "grace");
+  assert_eq!(display.1["provider"], "revenuecat");
+  assert_eq!(display.1["recurring"], "yearly");
+  assert!(display.1["variant"].is_null());
+  assert!(display.1["stripeSubscriptionId"].is_null());
+
   let mut transfer = snapshot(
     provider_namespace.clone(),
     SnapshotCoverage::Single,
@@ -3114,13 +3099,81 @@ async fn revenuecat_access_and_missing_source_rules_fail_closed() {
   cleanup(&pool, &namespace, &marker).await;
   cleanup(&pool, &stripe_namespace_key, &marker).await;
 
+  let multi_marker = format!("{marker}-multi");
+  let multi_user = insert_user(&pool, &multi_marker).await;
+  let multi_namespace = ProviderNamespace {
+    provider: Provider::RevenueCat,
+    environment: ProviderEnvironment::Sandbox,
+    account: multi_marker.clone(),
+  };
+  let multi_key = multi_namespace.canonical_key().unwrap();
+  let shared_store = format!("store-{multi_marker}");
+  let mut multi_sources = (0..2)
+    .map(|index| {
+      let mut source = revenuecat_subscription(&multi_user, &multi_user, &format!("rc-{multi_marker}-{index}"));
+      source.gives_access = Some(true);
+      source.external_ref = Some(shared_store.clone());
+      source.external_product_id = Some(format!("rc-product-{index}"));
+      source
+    })
+    .collect::<Vec<_>>();
+  let mut scopes = vec![
+    PaymentScope::customer(&multi_key, &multi_user).unwrap(),
+    PaymentScope::cloud_target("user", &multi_user, Plan::Ai).unwrap(),
+  ];
+  scopes.extend(
+    multi_sources
+      .iter()
+      .map(|source| PaymentScope::source(&multi_key, &source.source_id).unwrap()),
+  );
+  let mut multi_connection = PaymentConnection::try_acquire(&pool, scopes).await.unwrap().unwrap();
+  apply_payment_snapshot(
+    &mut multi_connection,
+    snapshot(
+      multi_namespace,
+      SnapshotCoverage::Single,
+      &multi_user,
+      std::mem::take(&mut multi_sources),
+    ),
+    Deployment::Cloud,
+  )
+  .await
+  .unwrap();
+  let counts: (i64, i64, i64) = sqlx::query_as(
+    "SELECT count(*),count(DISTINCT source_identity),count(DISTINCT external_ref) FROM provider_subscriptions WHERE \
+     provider_namespace=$1",
+  )
+  .bind(&multi_key)
+  .fetch_one(&pool)
+  .await
+  .unwrap();
+  assert_eq!(counts, (2, 2, 1));
+  let entitlement_counts: (i64, i64) = sqlx::query_as(
+    "SELECT count(*),count(*) FILTER (WHERE status='active') FROM entitlements WHERE subject_id LIKE $1",
+  )
+  .bind(format!("{multi_key}%"))
+  .fetch_one(&pool)
+  .await
+  .unwrap();
+  assert_eq!(entitlement_counts, (2, 1));
+  drop(multi_connection);
+  cleanup(&pool, &multi_key, &multi_marker).await;
+
   let provisional_marker = format!("{marker}-provisional");
   let provisional_user = insert_user(&pool, &provisional_marker).await;
   let provisional_source = format!("rc-source-{provisional_marker}");
   let transaction_id = format!("store-{provisional_marker}");
   let anonymous_customer = format!("$RCAnonymousID:{provisional_marker}");
-  let anonymous_item = revenuecat_item(&anonymous_customer, &provisional_source, &transaction_id);
-  let confirmed_item = revenuecat_item(&provisional_user, &provisional_source, &transaction_id);
+  let anonymous_item = revenuecat_item(
+    &anonymous_customer,
+    &provisional_source,
+    &format!("current-{transaction_id}"),
+  );
+  let confirmed_item = revenuecat_item(
+    &provisional_user,
+    &provisional_source,
+    &format!("renewed-{transaction_id}"),
+  );
   let page = |items: Vec<serde_json::Value>| json!({ "items": items, "next_page": null }).to_string();
   let (endpoint, mut requests) = mock_http(vec![
     MockResponse {

@@ -17,7 +17,6 @@ use super::{
     entitlement::{EntitlementWrite, RuntimeEntitlementTarget, upsert},
   },
   apply::restriction_name,
-  entitlement_subject,
 };
 
 struct ProjectedSource {
@@ -25,6 +24,9 @@ struct ProjectedSource {
   namespace: String,
   target: RuntimeEntitlementTarget,
   starts_at: Option<chrono::DateTime<chrono::Utc>>,
+  recurring: SubscriptionRecurring,
+  variant: serde_json::Value,
+  external_subscription_id: Option<String>,
   candidate: CloudSourceCandidate,
 }
 
@@ -45,7 +47,7 @@ pub(super) async fn reconcile_cloud_winners(
     .collect::<Vec<_>>();
   let rows = sqlx::query(
     r#"SELECT id,provider::text AS provider,provider_namespace,source_identity,target_type,target_id,
-              plan,recurring,status,gives_access,quantity,trial_end,period_start,period_end,will_renew
+              plan,recurring,status,gives_access,quantity,trial_end,period_start,period_end,will_renew,external_subscription_id,metadata->'variant' AS variant
        FROM provider_subscriptions
        WHERE provider_namespace IS NOT NULL AND source_identity IS NOT NULL
          AND ((target_type='user' AND target_id=ANY($1) AND plan IN ('pro','lifetime_pro','ai'))
@@ -142,6 +144,11 @@ pub(super) async fn reconcile_cloud_winners(
         namespace: namespace.clone(),
         target: target.clone(),
         starts_at: row.get("period_start"),
+        recurring,
+        variant: row
+          .get::<Option<serde_json::Value>, _>("variant")
+          .unwrap_or(serde_json::Value::Null),
+        external_subscription_id: row.get("external_subscription_id"),
         candidate: CloudSourceCandidate {
           provider_namespace: namespace,
           target_id: target.target_id.clone(),
@@ -191,6 +198,10 @@ pub(super) async fn reconcile_cloud_winners(
           metadata: json!({
             "providerNamespace": source.namespace,
             "providerSubscriptionId": source.id,
+            "provider": subscription.provider.as_str(),
+            "recurring": source.recurring.as_str(),
+            "variant": source.variant,
+            "stripeSubscriptionId": (subscription.provider == Provider::Stripe).then_some(source.external_subscription_id).flatten(),
             "financialRestriction": restriction_name(source.candidate.restriction),
             "selected": selected,
           }),
@@ -204,4 +215,8 @@ pub(super) async fn reconcile_cloud_winners(
     }
   }
   Ok(())
+}
+
+pub(super) fn entitlement_subject(namespace: &str, source_id: &str) -> String {
+  format!("{namespace}:source:{}:{source_id}", source_id.len())
 }

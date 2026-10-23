@@ -197,7 +197,7 @@ impl PaymentRuntime {
   ) -> RuntimeResult<String> {
     validate_identity(user_id, "payment user")?;
     let namespace_key = canonical_namespace(namespace)?;
-    if let Some(customer_id) = load_or_adopt_stripe_customer(&self.pool, user_id, &namespace_key).await? {
+    if let Some(customer_id) = load_stripe_customer(&self.pool, user_id, &namespace_key).await? {
       return Ok(customer_id);
     }
     let email = email

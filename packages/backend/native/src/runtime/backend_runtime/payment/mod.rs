@@ -27,6 +27,8 @@ use operation::FrozenOperation;
 use operation::{
   PaymentSendDecision, freeze_operation, mark_operation_step_sent, record_operation_error, record_operation_step_result,
 };
+#[cfg(test)]
+use projection::entitlement_subject;
 use projection::reconcile_cloud_winners;
 use read::{
   ReceiptDisposition, StoredSubscription, discover_payment_scopes, load_financial_restrictions,
@@ -41,9 +43,8 @@ use stripe_snapshot::{push_stripe_dispute, push_stripe_refund, stripe_invoice_sn
 use types::*;
 use worker::PaymentWorker;
 use write::{
-  adopt_legacy_entitlement, complete_receipts_and_operation, entitlement_subject, expire_missing_sources,
-  load_or_adopt_stripe_customer, upsert_customers, upsert_financial_facts, upsert_invoices, upsert_licenses,
-  upsert_subscription, upsert_trials,
+  complete_receipts_and_operation, expire_missing_sources, load_stripe_customer, upsert_customers,
+  upsert_financial_facts, upsert_invoices, upsert_licenses, upsert_subscription, upsert_trials,
 };
 
 #[cfg(test)]
