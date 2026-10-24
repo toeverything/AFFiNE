@@ -28,6 +28,9 @@ import { type BlockModel } from '@blocksuite/store';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 
 import { getIcon } from './block-icons.js';
+import { getRowIcon } from './properties/icon/read.js';
+import { resolveLinkedRows } from './properties/relation/resolve.js';
+import { renderIconValue } from './properties/icon/render.js';
 import {
   databaseBlockProperties,
   databasePropertyConverts,
@@ -82,6 +85,9 @@ export class DatabaseBlockDataSource extends DataSourceBase {
         return model ? model.props['meta:createdBy'] : null;
       },
     },
+    // What the title cell shows before the text. A row that has been given its
+    // own icon shows that; everything else falls back to the block's glyph, so
+    // a table nobody has decorated looks exactly as it did before.
     type: {
       valueSet: () => {},
       valueGet: (rowId: string) => {
@@ -89,7 +95,8 @@ export class DatabaseBlockDataSource extends DataSourceBase {
         if (!model) {
           return;
         }
-        return getIcon(model);
+        const own = renderIconValue(getRowIcon(this._model, rowId));
+        return own ?? getIcon(model);
       },
     },
     title: {
@@ -101,6 +108,16 @@ export class DatabaseBlockDataSource extends DataSourceBase {
         }
         return model.text;
       },
+    },
+    // A reverse relation is derived, never stored. Routing it through here
+    // rather than through the cell renderer means filters, sorts and the
+    // column footer see the same value the cell shows, and the signals read
+    // while resolving make `cellValueGet` re-run on their own.
+    'relation-reverse': {
+      valueSet: () => {},
+      valueGet: (rowId: string, propertyId: string) =>
+        resolveLinkedRows(this._model.store, this._model, rowId, propertyId)
+          ?.rowIds ?? [],
     },
   };
 
