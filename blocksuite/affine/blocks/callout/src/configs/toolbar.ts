@@ -8,6 +8,7 @@ import {
   ActionPlacement,
   type IconData,
   IconPickerServiceIdentifier,
+  IconType,
   type ToolbarAction,
   type ToolbarActionGroup,
   type ToolbarModuleConfig,
@@ -22,6 +23,10 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { IconPickerWrapper } from '../icon-picker-wrapper.js';
+import {
+  beginIconSelection,
+  isLatestIconSelection,
+} from '../icon-selection.js';
 
 const colors = [
   'default',
@@ -120,7 +125,21 @@ const iconPickerAction = {
 
       // Create props for the icon picker
       const props = {
-        onSelect: (iconData?: IconData) => {
+        onSelect: (iconData?: IconData | Blob) => {
+          const generation = beginIconSelection(model);
+          if (iconData instanceof Blob) {
+            ctx.store.blobSync
+              .set(iconData)
+              .then(blobId => {
+                if (!isLatestIconSelection(model, generation)) return;
+                ctx.store.updateBlock(model, {
+                  icon: { type: IconType.Blob, blobId },
+                });
+                closeHandler();
+              })
+              .catch(console.error);
+            return;
+          }
           // When iconData is undefined (delete icon), set icon to undefined
           ctx.store.updateBlock(model, { icon: iconData });
           closeHandler(); // Close the picker after selection
