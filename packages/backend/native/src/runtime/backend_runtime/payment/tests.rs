@@ -1289,7 +1289,9 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     metadata: json!({}),
   });
   first.financial_facts.push(FinancialSnapshot {
+    observed_at: Utc::now(),
     fact: FinancialFact {
+      invoice: None,
       kind: FinancialKind::Refund,
       status: FinancialStatus::Pending,
     },
@@ -1447,7 +1449,9 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
       vec![subscription(&user_a, &customer_id, &source_id)],
     );
     next.financial_facts.push(FinancialSnapshot {
+      observed_at: occurred_at,
       fact: FinancialFact {
+        invoice: None,
         kind: FinancialKind::Dispute,
         status,
       },
@@ -1517,7 +1521,9 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
       vec![subscription(&user_a, &customer_id, &source_id)],
     );
     next.financial_facts.push(FinancialSnapshot {
+      observed_at: occurred_at,
       fact: FinancialFact {
+        invoice: None,
         kind: FinancialKind::Dispute,
         status: FinancialStatus::Won,
       },
@@ -1574,7 +1580,9 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
       vec![subscription(&user_a, &customer_id, &source_id)],
     );
     next.financial_facts.push(FinancialSnapshot {
+      observed_at: refund_time,
       fact: FinancialFact {
+        invoice: None,
         kind: FinancialKind::Refund,
         status,
       },
@@ -1700,11 +1708,11 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
         "quantity": 1,
         "price": {
           "id": format!("price-{marker}"),
-          "active": true,
-          "lookup_key": "pro_monthly",
+          "active": false,
+          "lookup_key": "pro_yearly_old_tax_inclusive",
           "unit_amount": 1000,
           "currency": "usd",
-          "recurring": { "interval": "month", "interval_count": 1 },
+          "recurring": { "interval": "year", "interval_count": 1 },
           "product": format!("prod-{marker}")
         }
       }],
@@ -1729,15 +1737,48 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     "last_finalization_error": null,
     "status_transitions": { "finalized_at": now }
   });
+  let mut canceled_unmapped = stripe_subscription.clone();
+  canceled_unmapped["id"] = json!(format!("unmapped-{source_id}"));
+  canceled_unmapped["status"] = json!("canceled");
+  canceled_unmapped["items"]["data"][0]["price"]["lookup_key"] = serde_json::Value::Null;
+  canceled_unmapped["items"]["data"][0]["price"]["unit_amount"] = json!(0);
+  let mut canceled_orphan = stripe_subscription.clone();
+  canceled_orphan["id"] = json!(format!("orphan-{source_id}"));
+  canceled_orphan["status"] = json!("canceled");
+  canceled_orphan["items"]["data"][0]["price"]["lookup_key"] = json!("team_yearly");
+  canceled_orphan["metadata"] = json!({"workspaceId": "deleted-workspace"});
+  let mut expired_orphan = canceled_orphan.clone();
+  expired_orphan["id"] = json!(format!("expired-orphan-{source_id}"));
+  expired_orphan["status"] = json!("incomplete_expired");
   let (reconcile_endpoint, mut reconcile_requests) = mock_http(vec![
     MockResponse {
-      status: 200,
-      body: json!({ "data": [stripe_subscription.clone()], "has_more": false }).to_string(),
+      status: 400,
+      body: json!({"error":{"type":"invalid_request_error","code":"resource_missing"}}).to_string(),
+      delay: Duration::ZERO,
+    },
+    MockResponse {
+      status: 400,
+      body: json!({"error":{"type":"invalid_request_error","code":"resource_missing"}}).to_string(),
       delay: Duration::ZERO,
     },
     MockResponse {
       status: 200,
-      body: json!({ "data": [stripe_subscription.clone()], "has_more": false }).to_string(),
+      body: json!({ "data": [stripe_subscription.clone(), canceled_unmapped.clone(), canceled_orphan.clone(), expired_orphan.clone()], "has_more": false }).to_string(),
+      delay: Duration::ZERO,
+    },
+    MockResponse {
+      status: 200,
+      body: json!({ "data": [stripe_subscription.clone(), canceled_unmapped.clone(), canceled_orphan.clone(), expired_orphan.clone()], "has_more": false }).to_string(),
+      delay: Duration::ZERO,
+    },
+    MockResponse {
+      status: 400,
+      body: json!({"error":{"type":"invalid_request_error","code":"resource_missing"}}).to_string(),
+      delay: Duration::ZERO,
+    },
+    MockResponse {
+      status: 400,
+      body: json!({"error":{"type":"invalid_request_error","code":"resource_missing"}}).to_string(),
       delay: Duration::ZERO,
     },
     MockResponse {
@@ -1781,6 +1822,29 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     license_issuer_private_key: None,
     worker: tokio::sync::Mutex::new(None),
   };
+  for _ in 0..2 {
+    assert!(
+      super::reconcile::reconcile_one_source(&reconcile_runtime)
+        .await
+        .unwrap()
+        .is_none()
+    );
+    let error: Option<String> = sqlx::query_scalar(
+      "SELECT payload->>'lastError' FROM runtime_states WHERE purpose='payment_reconcile_cursor:source' AND \
+       lookup_key=$1",
+    )
+    .bind(&namespace)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(error.is_some());
+  }
+  assert!(
+    super::reconcile::reconcile_one_source(&reconcile_runtime)
+      .await
+      .unwrap()
+      .is_none()
+  );
   assert!(
     super::reconcile::reconcile_one_source(&reconcile_runtime)
       .await
@@ -1810,7 +1874,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
   sqlx::query(
     r#"INSERT INTO payment_financial_facts(
          id,provider,provider_namespace,object_kind,external_id,source_identity,status,occurred_at,metadata)
-       VALUES($1,'stripe',$2,'invoice',$3,$4,'open',clock_timestamp(),'{}')"#,
+       VALUES($1,'stripe',$2,'invoice',$3,$4,'open',clock_timestamp(),jsonb_build_object('observedAt',clock_timestamp()-INTERVAL '1 day'))"#,
   )
   .bind(uuid::Uuid::new_v4().to_string())
   .bind(&namespace)
@@ -1819,6 +1883,28 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
   .execute(&pool)
   .await
   .unwrap();
+  for _ in 0..2 {
+    assert!(
+      super::financial_reconcile::reconcile_one_financial(&reconcile_runtime)
+        .await
+        .is_err()
+    );
+    let error: Option<String> = sqlx::query_scalar(
+      "SELECT payload->>'lastError' FROM runtime_states WHERE purpose='payment_reconcile_cursor:financial' AND \
+       lookup_key=$1",
+    )
+    .bind(&namespace)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(error.is_some());
+  }
+  assert!(
+    super::financial_reconcile::reconcile_one_financial(&reconcile_runtime)
+      .await
+      .unwrap()
+      .is_none()
+  );
   assert!(
     super::financial_reconcile::reconcile_one_financial(&reconcile_runtime)
       .await
@@ -1845,13 +1931,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
   .fetch_all(&pool)
   .await
   .unwrap();
-  assert_eq!(
-    reconcile_operations,
-    vec![
-      ("reconcile_financial".to_string(), 2),
-      ("reconcile_source".to_string(), 2)
-    ]
-  );
+  assert!(reconcile_operations.is_empty());
   let cursor_generations: Vec<i64> = sqlx::query_scalar(
     "SELECT (payload->>'generation')::bigint FROM runtime_states WHERE purpose LIKE 'payment_reconcile_cursor:%' AND \
      lookup_key=$1 ORDER BY purpose",
@@ -1860,8 +1940,8 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
   .fetch_all(&pool)
   .await
   .unwrap();
-  assert_eq!(cursor_generations, vec![1, 1]);
-  let requests = (0..6)
+  assert_eq!(cursor_generations, vec![2, 2]);
+  let requests = (0..10)
     .map(|_| reconcile_requests.try_recv().unwrap())
     .collect::<Vec<_>>();
   assert_eq!(
@@ -1869,14 +1949,14 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
       .iter()
       .filter(|request| request.starts_with("GET /v1/subscriptions?"))
       .count(),
-    2
+    4
   );
   assert_eq!(
     requests
       .iter()
       .filter(|request| request.starts_with(&format!("GET /v1/invoices/{invoice_id}?")))
       .count(),
-    2
+    4
   );
   assert_eq!(
     requests
@@ -2020,6 +2100,40 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     .execute(&pool)
     .await
     .unwrap();
+    let snapshot = super::snapshot::stripe_subscription_snapshot(
+      &pool,
+      license_runtime.stripe.as_deref().unwrap(),
+      serde_json::from_value(json!({
+        "id": license_source,
+        "created": now - 3600,
+        "customer": license_customer,
+        "status": "active",
+        "cancel_at_period_end": false,
+        "current_period_start": now - 3600,
+        "current_period_end": now + 86400,
+        "items": {"data": [{
+          "id": format!("si-{license_marker}-{legacy}"),
+          "quantity": 5,
+          "price": {
+            "id": format!("price-{license_marker}"),
+            "active": false,
+            "lookup_key": "selfhostedteam_yearly",
+            "unit_amount": 12000,
+            "currency": "usd",
+            "recurring": {"interval": "year", "interval_count": 1},
+            "product": format!("prod-{license_marker}")
+          }
+        }], "has_more": false},
+        "metadata": {}
+      }))
+      .unwrap(),
+      Vec::new(),
+      None,
+    )
+    .await
+    .unwrap();
+    assert_eq!(snapshot.subscriptions[0].target_id, license_key);
+    assert_eq!(snapshot.subscriptions[0].quantity, Some(5.0));
     let operation_id = uuid::Uuid::new_v4().to_string();
     let activated = license_runtime.execute(if legacy {
       json!({"action":"activate_legacy_license","licenseKey":license_key})
@@ -2027,6 +2141,30 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
       json!({"action":"activate_license","licenseKey":license_key,"workspaceId":"remote-workspace","operationId":operation_id})
     }).await.unwrap().value;
     let generation = activated["validateKey"].as_str().unwrap().to_string();
+    sqlx::query(
+      "INSERT INTO \
+       payment_financial_facts(id,provider,provider_namespace,object_kind,external_id,source_identity,status,amount,\
+       metadata) VALUES($1,'stripe',$2,'refund',$1,$3,'succeeded',1,'{}')",
+    )
+    .bind(format!("re-{license_source}"))
+    .bind(&license_namespace_key)
+    .bind(&license_source)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let refunded = license_runtime.execute(if legacy {
+      json!({"action":"check_legacy_license_health","licenseKey":license_key,"validateKey":generation})
+    } else {
+      json!({"action":"check_license_health","licenseKey":license_key,"validateKey":generation,"workspaceId":"remote-workspace"})
+    }).await.err().unwrap();
+    assert_eq!(refunded.to_string(), "license_expired");
+    sqlx::query("DELETE FROM payment_financial_facts WHERE provider_namespace=$1 AND source_identity=$2")
+      .bind(&license_namespace_key)
+      .bind(&license_source)
+      .execute(&pool)
+      .await
+      .unwrap();
+
     if legacy {
       assert_eq!(activated["license"]["plan"], "selfhostedteam");
       assert_eq!(activated["license"]["quantity"], 5);
@@ -2198,6 +2336,354 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     assert_eq!(binding, (Some("new-workspace".into()), Some(new_generation)));
   }
   cleanup(&pool, &license_namespace_key, &license_marker).await;
+  let lifetime_marker = format!("{marker}-lifetime");
+  let lifetime_user = insert_user(&pool, &lifetime_marker).await;
+  let lifetime_customer = format!("cus-{lifetime_marker}");
+  let lifetime_invoice_id = format!("in-{lifetime_marker}");
+  let lifetime_source = format!("stripe_invoice:{lifetime_invoice_id}");
+  let lifetime_namespace = self::provider_namespace(&lifetime_marker);
+  let lifetime_namespace_key = lifetime_namespace.canonical_key().unwrap();
+  sqlx::query("INSERT INTO user_stripe_customers(user_id,stripe_customer_id,provider_namespace) VALUES($1,$2,$3)")
+    .bind(&lifetime_user)
+    .bind(&lifetime_customer)
+    .bind(&lifetime_namespace_key)
+    .execute(&pool)
+    .await
+    .unwrap();
+  let mut lifetime = subscription(&lifetime_user, &lifetime_customer, &lifetime_source);
+  lifetime.recurring = SubscriptionRecurring::Lifetime;
+  lifetime.period_end = None;
+  let mut connection = PaymentConnection::try_acquire(
+    &pool,
+    vec![
+      PaymentScope::customer(&lifetime_namespace_key, &lifetime_customer).unwrap(),
+      PaymentScope::source(&lifetime_namespace_key, &lifetime_source).unwrap(),
+      PaymentScope::cloud_target("user", &lifetime_user, Plan::Pro).unwrap(),
+    ],
+  )
+  .await
+  .unwrap()
+  .unwrap();
+  apply_payment_snapshot(
+    &mut connection,
+    snapshot(
+      lifetime_namespace.clone(),
+      SnapshotCoverage::Single,
+      &lifetime_customer,
+      vec![lifetime],
+    ),
+    Deployment::Cloud,
+  )
+  .await
+  .unwrap();
+  apply_payment_snapshot(
+    &mut connection,
+    snapshot(
+      lifetime_namespace,
+      SnapshotCoverage::Complete {
+        verified_missing_revenuecat_sources: Default::default(),
+      },
+      &lifetime_customer,
+      Vec::new(),
+    ),
+    Deployment::Cloud,
+  )
+  .await
+  .unwrap();
+  let lifecycle: String = sqlx::query_scalar("SELECT status FROM provider_subscriptions WHERE provider_namespace=$1")
+    .bind(&lifetime_namespace_key)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+  assert_eq!(lifecycle, "active");
+  drop(connection);
+  let mut lifetime_invoice = stripe_invoice.clone();
+  lifetime_invoice["id"] = json!(lifetime_invoice_id);
+  lifetime_invoice["customer"] = json!(lifetime_customer);
+  lifetime_invoice["status"] = json!("paid");
+  lifetime_invoice["total"] = json!(49999);
+  lifetime_invoice["subscription"] = serde_json::Value::Null;
+  lifetime_invoice["status_transitions"] = json!({"paid_at": now});
+  let mut lifetime_price = stripe_subscription["items"]["data"][0]["price"].clone();
+  lifetime_price["lookup_key"] = json!("pro_lifetime_legacy499");
+  lifetime_price["recurring"] = serde_json::Value::Null;
+  lifetime_price["unit_amount"] = json!(49999);
+  lifetime_invoice["lines"] = json!({"data": [{"price": lifetime_price}], "has_more": false});
+  let (endpoint, mut requests) = mock_http(vec![MockResponse {
+    status: 200,
+    body: lifetime_invoice.to_string(),
+    delay: Duration::ZERO,
+  }])
+  .await;
+  let runtime = PaymentRuntime {
+    stripe: Some(Arc::new(
+      StripeClient::with_endpoint(
+        &StripeRuntimeConfig {
+          account_id: lifetime_marker.clone(),
+          ..reconcile_config
+        },
+        &endpoint,
+      )
+      .unwrap(),
+    )),
+    ..reconcile_runtime
+  };
+  super::reconcile::reconcile_one_source(&runtime).await.unwrap().unwrap();
+  assert!(
+    requests
+      .recv()
+      .await
+      .unwrap()
+      .starts_with(&format!("GET /v1/invoices/{lifetime_invoice_id}?"))
+  );
+  let entitlement: (String, Option<chrono::DateTime<Utc>>) =
+    sqlx::query_as("SELECT status,expires_at FROM entitlements WHERE target_id=$1 AND source='cloud_subscription'")
+      .bind(&lifetime_user)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  assert_eq!(entitlement, ("active".into(), None));
+  lifetime_invoice["total"] = json!(0);
+  lifetime_invoice["status_transitions"] = json!({"paid_at": now + 1});
+  for (discounts, granted) in [
+    (json!([]), false),
+    (json!([{"amount": 100, "discount": "di-unexpanded"}]), false),
+    (
+      json!([{"amount": 0, "discount": {"coupon": {"id": "grant", "metadata": {"affine_policy": "grant_v1"}}}}]),
+      false,
+    ),
+    (
+      json!([{"amount": 100, "discount": {"coupon": {"id": "grant", "metadata": {"affine_policy": "grant_v1"}}}}]),
+      true,
+    ),
+    (
+      json!([{"amount": 100, "discount": {"coupon": {"id": "grant", "metadata": {"affine_policy": "grant_v1"}}}}, {"amount": 1, "discount": {"coupon": {"id": "unmarked", "metadata": {}}}}]),
+      false,
+    ),
+    (
+      json!([{"amount": 100, "discount": {"coupon": {"id": "wrong", "metadata": {"affine_policy": "true"}}}}]),
+      false,
+    ),
+  ] {
+    let mut invoice = lifetime_invoice.clone();
+    invoice["total_discount_amounts"] = discounts;
+    let fact =
+      super::stripe_snapshot::stripe_invoice_fact(&serde_json::from_value(invoice).unwrap(), None, Utc::now()).unwrap();
+    assert_eq!(fact.fact.invoice.unwrap().promotional_grant, granted);
+    assert_eq!(fact.metadata.get("couponGrant").is_some(), granted);
+  }
+  for (official, grant, refund_status, dispute_status, expected) in [
+    (false, false, None, None, "revoked"),
+    (false, true, None, None, "active"),
+    (false, false, None, None, "active"),
+    (true, false, None, None, "active"),
+    (true, false, None, Some("warning_closed"), "active"),
+    (true, false, None, Some("prevented"), "active"),
+    (true, false, Some("pending"), None, "active"),
+    (true, false, Some("succeeded"), Some("prevented"), "revoked"),
+  ] {
+    lifetime_invoice["total_discount_amounts"] = if grant {
+      json!([{"amount": 49999, "discount": {"coupon": {"id": "approved", "metadata": {"affine_policy": "grant_v1"}}}}])
+    } else {
+      json!([])
+    };
+    if official {
+      sqlx::query("UPDATE users SET email=$2 WHERE id=$1")
+        .bind(&lifetime_user)
+        .bind(format!("{lifetime_marker}@toeverything.info"))
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    let mut zero_snapshot = super::stripe_invoice_snapshot(
+      &pool,
+      runtime.stripe.as_deref().unwrap(),
+      serde_json::from_value(lifetime_invoice.clone()).unwrap(),
+      Vec::new(),
+      Utc::now(),
+    )
+    .await
+    .unwrap();
+    assert_eq!(zero_snapshot.subscriptions[0].lifecycle, ProviderLifecycle::Active);
+    if let Some(dispute_status) = dispute_status {
+      super::push_stripe_dispute(
+        &mut zero_snapshot,
+        serde_json::from_value(json!({
+          "id": format!("du-{lifetime_marker}"), "charge": format!("ch-{lifetime_marker}"),
+          "amount": 1, "currency": "usd", "status": dispute_status, "created": now + 2,
+          "payment_method_details": {"card": {"case_type": "block"}},
+        }))
+        .unwrap(),
+        Utc::now(),
+      )
+      .unwrap();
+    }
+    if let Some(refund_status) = refund_status {
+      super::push_stripe_refund(
+        &mut zero_snapshot,
+        serde_json::from_value(json!({
+          "id": format!("re-{lifetime_marker}"), "amount": 1, "currency": "usd",
+          "status": refund_status, "created": now + 2,
+        }))
+        .unwrap(),
+        Utc::now(),
+      )
+      .unwrap();
+    }
+    let connection = PaymentConnection::try_acquire(
+      &pool,
+      vec![
+        PaymentScope::customer(&lifetime_namespace_key, &lifetime_customer).unwrap(),
+        PaymentScope::source(&lifetime_namespace_key, &lifetime_source).unwrap(),
+        PaymentScope::cloud_target("user", &lifetime_user, Plan::Pro).unwrap(),
+      ],
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    runtime.apply_with_connection(connection, zero_snapshot).await.unwrap();
+    let status: String =
+      sqlx::query_scalar("SELECT status FROM entitlements WHERE target_id=$1 AND source='cloud_subscription'")
+        .bind(&lifetime_user)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(status, expected);
+  }
+  let mut recurring = stripe_subscription.clone();
+  let recurring_source = format!("sub-{lifetime_marker}");
+  recurring["id"] = json!(recurring_source);
+  recurring["customer"] = json!(lifetime_customer);
+  let recurring_invoice_id = format!("in-recurring-{lifetime_marker}");
+  recurring["latest_invoice"] = json!(recurring_invoice_id);
+  lifetime_invoice["id"] = json!(recurring_invoice_id);
+  lifetime_invoice["status"] = json!("uncollectible");
+  recurring["pause_collection"] = json!({"behavior":"mark_uncollectible","resumes_at":null});
+  lifetime_invoice["subscription"] = json!(recurring_source);
+  let (endpoint, mut requests) = mock_http(vec![MockResponse {
+    status: 200,
+    body: lifetime_invoice.to_string(),
+    delay: Duration::ZERO,
+  }])
+  .await;
+  let client = StripeClient::with_endpoint(
+    &StripeRuntimeConfig {
+      account_id: lifetime_marker.clone(),
+      ..webhook_config
+    },
+    &endpoint,
+  )
+  .unwrap();
+  let mut complete = super::snapshot::stripe_customer_snapshot(
+    &pool,
+    &client,
+    &lifetime_customer,
+    vec![serde_json::from_value(recurring).unwrap()],
+    None,
+  )
+  .await
+  .unwrap();
+  assert_eq!(complete.financial_facts.len(), 1);
+  assert_eq!(complete.financial_facts[0].amount, Some(0));
+  assert_eq!(
+    complete.financial_facts[0].fact.invoice.unwrap().reason,
+    affine_core::payment::InvoiceReason::SubscriptionCycle
+  );
+  assert!(
+    requests
+      .recv()
+      .await
+      .unwrap()
+      .starts_with(&format!("GET /v1/invoices/{recurring_invoice_id}?"))
+  );
+  complete.coverage = SnapshotCoverage::Single;
+  for (change, expected) in [(None, "revoked"), (Some(true), "active"), (Some(false), "active")] {
+    if let Some(paused) = change {
+      let pause = if paused {
+        json!({"behavior":"mark_uncollectible","resumes_at":null})
+      } else {
+        serde_json::Value::Null
+      };
+      sqlx::query("INSERT INTO payment_events(id,provider,provider_namespace,event_type,external_event_id,occurred_at,metadata) VALUES($1,'stripe',$2,'customer.subscription.updated',$1,$3,$4)")
+        .bind(format!("evt-{lifetime_marker}-{paused}"))
+        .bind(&lifetime_namespace_key)
+        .bind(chrono::DateTime::from_timestamp(now + if paused { -10 } else { 10 }, 0).unwrap())
+        .bind(json!({"data":{"object":{"id":recurring_source,"pause_collection":pause},"previous_attributes":{"pause_collection":if paused { serde_json::Value::Null } else { json!({"behavior":"mark_uncollectible","resumes_at":null}) }}}}))
+        .execute(&pool).await.unwrap();
+    }
+    runtime.apply_snapshot(complete.clone()).await.unwrap();
+    let entitlement: String =
+      sqlx::query_scalar("SELECT status FROM entitlements WHERE target_id=$1 AND metadata->>'stripeSubscriptionId'=$2")
+        .bind(&lifetime_user)
+        .bind(&recurring_source)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(entitlement, expected);
+  }
+  sqlx::query("DELETE FROM payment_events WHERE provider_namespace=$1")
+    .bind(&lifetime_namespace_key)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query(
+    "UPDATE payment_financial_facts SET metadata=jsonb_set(metadata,'{invoice,collectionAdjustment}','true') WHERE \
+     provider_namespace=$1 AND external_id=$2",
+  )
+  .bind(&lifetime_namespace_key)
+  .bind(&recurring_invoice_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  for (official, expected) in [(true, "active"), (true, "active"), (false, "revoked")] {
+    sqlx::query("UPDATE users SET email=$2 WHERE id=$1")
+      .bind(&lifetime_user)
+      .bind(format!(
+        "{lifetime_marker}@{}",
+        if official { "affine.pro" } else { "example.com" }
+      ))
+      .execute(&pool)
+      .await
+      .unwrap();
+    complete.financial_facts[0].observed_at = Utc::now();
+    assert!(!complete.financial_facts[0].fact.invoice.unwrap().collection_adjustment);
+    runtime.apply_snapshot(complete.clone()).await.unwrap();
+    let status: String =
+      sqlx::query_scalar("SELECT status FROM entitlements WHERE target_id=$1 AND metadata->>'stripeSubscriptionId'=$2")
+        .bind(&lifetime_user)
+        .bind(&recurring_source)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(status, expected);
+    let stored: serde_json::Value =
+      sqlx::query_scalar("SELECT metadata FROM payment_financial_facts WHERE provider_namespace=$1 AND external_id=$2")
+        .bind(&lifetime_namespace_key)
+        .bind(&recurring_invoice_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(stored["invoice"]["collectionAdjustment"], true);
+  }
+  sqlx::query("UPDATE users SET email=$2 WHERE id=$1")
+    .bind(&lifetime_user)
+    .bind(format!("{lifetime_marker}@affine.pro"))
+    .execute(&pool)
+    .await
+    .unwrap();
+  complete.financial_facts[0].external_id = format!("in-new-{lifetime_marker}");
+  complete.financial_facts[0].external_invoice_id = Some(complete.financial_facts[0].external_id.clone());
+  complete.financial_facts[0].observed_at = Utc::now();
+  runtime.apply_snapshot(complete).await.unwrap();
+  let status: String =
+    sqlx::query_scalar("SELECT status FROM entitlements WHERE target_id=$1 AND metadata->>'stripeSubscriptionId'=$2")
+      .bind(&lifetime_user)
+      .bind(&recurring_source)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  assert_eq!(status, "revoked");
+  cleanup(&pool, &lifetime_namespace_key, &lifetime_marker).await;
 }
 
 #[tokio::test]
@@ -2976,7 +3462,9 @@ async fn revenuecat_access_and_missing_source_rules_fail_closed() {
     vec![stripe_ai],
   );
   restricted_stripe.financial_facts.push(FinancialSnapshot {
+    observed_at: Utc::now(),
     fact: FinancialFact {
+      invoice: None,
       kind: FinancialKind::Refund,
       status: FinancialStatus::Succeeded,
     },
@@ -3203,7 +3691,12 @@ async fn revenuecat_access_and_missing_source_rules_fail_closed() {
     },
     MockResponse {
       status: 200,
-      body: page(vec![confirmed_item]),
+      body: page(vec![confirmed_item.clone()]),
+      delay: Duration::ZERO,
+    },
+    MockResponse {
+      status: 200,
+      body: confirmed_item["entitlements"]["items"][0]["products"]["items"][0].to_string(),
       delay: Duration::ZERO,
     },
   ])
@@ -3333,8 +3826,31 @@ async fn revenuecat_access_and_missing_source_rules_fail_closed() {
   assert!(confirmed_state.0 > Utc::now() + chrono::Duration::days(300));
   assert_eq!(confirmed_state.1, provisional_user);
   assert_eq!(confirmed_state.2, "completed");
+  let mut expired = confirmed_item;
+  expired["status"] = json!("expired");
+  expired["gives_access"] = json!(false);
+  expired["entitlements"]["items"] = json!([]);
+  let expired = super::snapshot::revenuecat_customer_snapshot(
+    &pool,
+    &revenuecat_client,
+    runtime.revenuecat_config.as_ref().unwrap(),
+    &provisional_user,
+    vec![serde_json::from_value(expired).unwrap()],
+    SnapshotCoverage::Single,
+    Vec::new(),
+  )
+  .await
+  .unwrap();
+  runtime.apply_snapshot(expired).await.unwrap();
+  let active: i64 =
+    sqlx::query_scalar("SELECT count(*) FROM entitlements WHERE target_id=$1 AND status IN ('active','grace')")
+      .bind(&provisional_user)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  assert_eq!(active, 0);
   let mut sent = Vec::new();
-  for _ in 0..6 {
+  for _ in 0..7 {
     sent.push(requests.recv().await.unwrap());
   }
   assert_eq!(

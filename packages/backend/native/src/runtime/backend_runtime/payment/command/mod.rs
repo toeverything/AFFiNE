@@ -30,6 +30,7 @@ use super::{
   TrialSnapshot, freeze_operation, load_stripe_customer, mark_operation_step_sent, record_operation_error,
   record_operation_step_result,
   snapshot::parse_lookup_key,
+  stored_subscription_decision,
   stripe_client::{
     StripeCheckoutSession, StripeCustomer, StripeForm, StripeFormValue, StripePortalSession, StripePrice,
     StripePromotionCode, StripeSubscription,
