@@ -17,6 +17,7 @@
     "@affine/i18n": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@affine/reader": "workspace:*",
+    "@affine/realtime": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/track": "workspace:*",
     "@atlaskit/pragmatic-drag-and-drop": "^2.0.0",
