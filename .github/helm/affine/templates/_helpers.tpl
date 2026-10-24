@@ -65,5 +65,13 @@ Create the name of the service account to use
 Render the server runtime configuration shared by the Secret and Pod checksums.
 */}}
 {{- define "affine.serverConfig" -}}
-{{- dict "deployment" (dict "type" (ternary "selfhosted" "cloud" (eq .Values.global.deployment.type "selfhosted"))) "indexer" (dict "enabled" .Values.global.indexer.enabled "provider" (dict "type" .Values.global.indexer.provider "endpoint" .Values.global.indexer.endpoint "apiKey" .Values.global.indexer.apiKey "username" .Values.global.indexer.username "password" .Values.global.indexer.password)) | toJson -}}
+{{- $config := deepCopy (required "global.serverConfig is required" .root.Values.global.serverConfig) -}}
+{{- if ne (dig "deployment" "type" "" $config) "cloud" -}}
+{{- fail "This chart requires deployment.type=cloud" -}}
+{{- end -}}
+{{- if not (hasKey $config "server") -}}
+{{- $_ := set $config "server" dict -}}
+{{- end -}}
+{{- $_ := set $config.server "port" .port -}}
+{{- $config | toJson -}}
 {{- end }}

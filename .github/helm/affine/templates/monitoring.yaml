@@ -1,4 +1,3 @@
-{{- if eq .Values.global.deployment.platform "gcp" -}}
 apiVersion: monitoring.googleapis.com/v1
 kind: PodMonitoring
 metadata:
@@ -10,4 +9,3 @@ spec:
   endpoints:
     - port: 9464
       interval: 30s
-{{- end }}

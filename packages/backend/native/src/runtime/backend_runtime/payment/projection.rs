@@ -1,11 +1,9 @@
 use std::collections::BTreeMap;
 
 use affine_core::{
-  access_control::{EntitlementStatus, Plan},
+  access_control::EntitlementStatus,
   payment::{
-    CloudSourceCandidate, FinancialFact, FinancialKind, FinancialRestriction, FinancialStatus, Provider,
-    ProviderLifecycle, ProviderSubscriptionFacts, SubscriptionRecurring, cloud_plan_family,
-    effective_financial_restriction, normalize_provider_subscription, select_cloud_source,
+    CloudSourceCandidate, FinancialRestriction, Provider, SubscriptionRecurring, cloud_plan_family, select_cloud_source,
   },
 };
 use serde_json::json;
@@ -47,7 +45,9 @@ pub(super) async fn reconcile_cloud_winners(
     .collect::<Vec<_>>();
   let rows = sqlx::query(
     r#"SELECT id,provider::text AS provider,provider_namespace,source_identity,target_type,target_id,
-              plan,recurring,status,gives_access,quantity,trial_end,period_start,period_end,will_renew,external_subscription_id,metadata->'variant' AS variant
+              plan,recurring,status,gives_access,quantity,trial_end,period_start,period_end,will_renew,external_subscription_id,metadata,metadata->'variant' AS variant,(SELECT u.email FROM user_stripe_customers c JOIN users u ON u.id=c.user_id
+                WHERE c.provider_namespace=provider_subscriptions.provider_namespace
+                  AND c.stripe_customer_id=provider_subscriptions.external_customer_id) AS billing_email
        FROM provider_subscriptions
        WHERE provider_namespace IS NOT NULL AND source_identity IS NOT NULL
          AND ((target_type='user' AND target_id=ANY($1) AND plan IN ('pro','lifetime_pro','ai'))
@@ -68,7 +68,7 @@ pub(super) async fn reconcile_cloud_winners(
     .map(|row| row.get::<String, _>("source_identity"))
     .collect::<Vec<_>>();
   let fact_rows = sqlx::query(
-    "SELECT provider_namespace,source_identity,object_kind,status FROM payment_financial_facts WHERE \
+    "SELECT provider_namespace,source_identity,object_kind,status,amount,metadata FROM payment_financial_facts WHERE \
      provider_namespace=ANY($1) AND source_identity=ANY($2) ORDER BY \
      provider_namespace,source_identity,object_kind,external_id FOR UPDATE",
   )
@@ -77,47 +77,34 @@ pub(super) async fn reconcile_cloud_winners(
   .fetch_all(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("lock cloud payment financial facts", error))?;
-  let mut facts = BTreeMap::<(String, String), Vec<FinancialFact>>::new();
+  let mut facts = BTreeMap::<(String, String), Vec<sqlx::postgres::PgRow>>::new();
   for row in fact_rows {
-    let kind = FinancialKind::parse(row.get::<String, _>("object_kind").as_str())
-      .ok_or_else(|| RuntimeError::invalid_state("unknown stored financial object kind"))?;
-    let status = FinancialStatus::parse(row.get::<String, _>("status").as_str())
-      .ok_or_else(|| RuntimeError::invalid_state("unknown stored financial status"))?;
     facts
       .entry((row.get("provider_namespace"), row.get("source_identity")))
       .or_default()
-      .push(FinancialFact { kind, status });
+      .push(row);
   }
 
   let mut groups = BTreeMap::<(String, String, &'static str), Vec<ProjectedSource>>::new();
   for row in rows {
-    let provider = Provider::parse(row.get::<String, _>("provider").as_str())
-      .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment provider"))?;
-    let plan = Plan::parse(row.get::<String, _>("plan").as_str())
-      .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment plan"))?;
-    let recurring = SubscriptionRecurring::parse(row.get::<String, _>("recurring").as_str())
-      .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment recurring"))?;
-    let lifecycle = ProviderLifecycle::parse(row.get::<String, _>("status").as_str())
-      .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment lifecycle"))?;
     let namespace: String = row.get("provider_namespace");
     let source_id: String = row.get("source_identity");
     let target = RuntimeEntitlementTarget {
       target_type: row.get("target_type"),
       target_id: row.get("target_id"),
     };
-    let subscription = normalize_provider_subscription(ProviderSubscriptionFacts {
-      provider,
-      source_id: source_id.clone(),
-      plan,
-      recurring,
-      lifecycle,
-      gives_access: row.get("gives_access"),
-      quantity: row.get::<Option<i32>, _>("quantity").map(f64::from),
-      trial_end: row.get("trial_end"),
-      end: row.get("period_end"),
-      will_renew: row.get("will_renew"),
-    })
-    .map_err(|error| RuntimeError::invalid_state(format!("invalid stored payment source: {error:?}")))?;
+    let (subscription, restriction) = super::stored_subscription_decision(
+      tx,
+      &row,
+      facts
+        .get(&(namespace.clone(), source_id))
+        .map(Vec::as_slice)
+        .unwrap_or_default(),
+      now,
+    )
+    .await?;
+    let recurring = SubscriptionRecurring::parse(row.get::<String, _>("recurring").as_str())
+      .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment recurring"))?;
     let expected_target = match subscription.target_type {
       affine_core::access_control::TargetType::User => "user",
       affine_core::access_control::TargetType::Workspace => "workspace",
@@ -128,12 +115,6 @@ pub(super) async fn reconcile_cloud_winners(
     if target.target_type != expected_target {
       return Err(RuntimeError::invalid_state("stored payment target does not match plan"));
     }
-    let restriction = effective_financial_restriction(
-      facts
-        .get(&(namespace.clone(), source_id.clone()))
-        .map(Vec::as_slice)
-        .unwrap_or_default(),
-    );
     let family = cloud_plan_family(subscription.access.plan)
       .ok_or_else(|| RuntimeError::invalid_state("invalid stored cloud payment plan"))?;
     groups
@@ -163,7 +144,7 @@ pub(super) async fn reconcile_cloud_winners(
       .iter()
       .map(|source| source.candidate.clone())
       .collect::<Vec<_>>();
-    let winner = select_cloud_source(&candidates).map(|winner| {
+    let winner = select_cloud_source(&candidates, now).map(|winner| {
       (
         winner.provider_namespace.as_str(),
         winner.subscription.source_id.as_str(),

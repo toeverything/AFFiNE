@@ -11,13 +11,7 @@ fullnameOverride: ''
 env: 'production'
 nodeOptions: '--max-old-space-size=3072'
 app:
-  # AFFINE_SERVER_PORT
   port: 3010
-  # AFFINE_SERVER_SUB_PATH
-  path: ''
-  # AFFINE_SERVER_HOST
-  host: '0.0.0.0'
-  https: true
 serviceAccount:
   create: true
   annotations: {}

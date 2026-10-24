@@ -13,8 +13,6 @@ global:
       - affine.pro
     tls: []
   secret:
-    secretName: 'server-private-key'
-    privateKey: ''
     # Name of an externally managed Secret containing the license signing key.
     # The chart never generates this key. Leave empty to disable license issuance.
     licenseSecretName: ''
@@ -22,28 +20,10 @@ global:
   database:
     gcloud:
       enabled: false
-    user: 'postgres'
-    host: 'pg-postgresql'
+    host: 'affine-cloud-sql-proxy'
     port: '5432'
-    name: 'affine'
-    password: ''
-  redis:
-    host: 'redis-master'
-    port: '6379'
-    username: ''
-    password: ''
-    database: 0
-  indexer:
-    enabled: false
-    provider: embedded
-    endpoint: ''
-    apiKey: ''
-    username: ''
-    password: ''
-  deployment:
-    # change to 'selfhosted' and 'unknown' if this chart is ready to be used for selfhosted deployment
-    type: 'affine'
-    platform: 'gcp'
+  # Complete server configuration, supplied by the deployment environment.
+  serverConfig: {}
 
 graphql:
   service:
@@ -82,8 +62,6 @@ worker:
   nodeOptions: '--max-old-space-size=3072'
   app:
     port: 3002
-    host: '0.0.0.0'
-    https: true
   podAnnotations: {}
   podSecurityContext:
     fsGroup: 2000

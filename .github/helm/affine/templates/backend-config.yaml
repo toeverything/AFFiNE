@@ -1,4 +1,3 @@
-{{- if eq .Values.global.deployment.platform "gcp" }}
 apiVersion: cloud.google.com/v1
 kind: BackendConfig
 metadata:
@@ -29,4 +28,3 @@ spec:
     timeoutSec: 1
     type: HTTP
     requestPath: /info
-{{- end }}

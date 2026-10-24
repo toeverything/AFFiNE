@@ -136,7 +136,7 @@ async fn recover_stripe(runtime: &PaymentRuntime, receipt: &Receipt) -> RuntimeR
     .and_then(Value::as_object)
     .ok_or_else(|| RuntimeError::invalid_input("Stripe receipt object is invalid"))?;
   let object_kind = object.get("object").and_then(Value::as_str).unwrap_or_default();
-  let observed_at = receipt_observed_at(receipt)?;
+  let observed_at = chrono::Utc::now();
   match object_kind {
     "invoice" => {
       let invoice_id = object
@@ -281,20 +281,6 @@ async fn recover_stripe(runtime: &PaymentRuntime, receipt: &Receipt) -> RuntimeR
       .await;
   }
   Err(RuntimeError::invalid_state("unsupported Stripe payment receipt"))
-}
-
-fn receipt_observed_at(receipt: &Receipt) -> RuntimeResult<chrono::DateTime<chrono::Utc>> {
-  use chrono::TimeZone;
-
-  let created = receipt
-    .payload
-    .get("created")
-    .and_then(Value::as_i64)
-    .ok_or_else(|| RuntimeError::invalid_input("Stripe receipt has no creation time"))?;
-  chrono::Utc
-    .timestamp_opt(created, 0)
-    .single()
-    .ok_or_else(|| RuntimeError::invalid_input("Stripe receipt has invalid creation time"))
 }
 
 async fn recover_revenuecat(runtime: &PaymentRuntime, receipt: &Receipt) -> RuntimeResult<PaymentApplyResult> {

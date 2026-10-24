@@ -2,11 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::Row;
 
-use super::{
-  OperationCompletion, OperationIntent, PaymentApplyResult, PaymentConnection, PaymentRuntime, PaymentScope,
-  PaymentSendDecision, PaymentSnapshot, PaymentStep, PaymentStepState, freeze_operation, mark_operation_step_sent,
-  record_operation_error, record_operation_step_result,
-};
+use super::{PaymentApplyResult, PaymentConnection, PaymentRuntime, PaymentScope, PaymentSnapshot};
 use crate::runtime::{RuntimeError, RuntimeResult};
 
 const CURSOR_PURPOSE: &str = "payment_reconcile_cursor:financial";
@@ -17,6 +13,8 @@ struct FinancialCursor {
   after: Option<String>,
   overlap_pending: bool,
   generation: u64,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  last_error: Option<String>,
 }
 
 struct FinancialCandidate {
@@ -36,9 +34,20 @@ pub(super) async fn reconcile_one_financial(runtime: &PaymentRuntime) -> Runtime
     .namespace()
     .canonical_key()
     .map_err(|_| RuntimeError::invalid_state("invalid Stripe provider namespace"))?;
-  let Some(candidate) = financial_candidate(runtime, &namespace).await? else {
+  let Some(mut candidate) = financial_candidate(runtime, &namespace).await? else {
     return Ok(None);
   };
+  let result = reconcile_financial(runtime, &candidate).await;
+  candidate.next_cursor.last_error = result.as_ref().err().map(ToString::to_string);
+  advance_cursor(runtime, &candidate).await?;
+  result.map(Some)
+}
+
+async fn reconcile_financial(
+  runtime: &PaymentRuntime,
+  candidate: &FinancialCandidate,
+) -> RuntimeResult<PaymentApplyResult> {
+  let namespace = &candidate.namespace;
   let mut resources = vec![PaymentScope::financial(
     &namespace,
     &candidate.object_kind,
@@ -47,88 +56,20 @@ pub(super) async fn reconcile_one_financial(runtime: &PaymentRuntime) -> Runtime
   if let Some(source_id) = candidate.source_id.as_deref() {
     resources.push(PaymentScope::source(&namespace, source_id)?);
   }
-  let intent_id = format!(
-    "reconcile:financial:{}:{}:{}:{}",
-    candidate.cursor.generation,
-    u8::from(candidate.cursor.overlap_pending),
-    candidate.object_kind,
-    candidate.external_id
-  );
-  let step_key = format!("payment:{intent_id}:verify");
-  let mut connection = PaymentConnection::try_acquire(&runtime.pool, resources.clone())
+  let connection = PaymentConnection::try_acquire(&runtime.pool, resources)
     .await?
     .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-  let frozen = freeze_operation(
-    &mut connection,
-    &OperationIntent {
-      namespace: client.namespace().clone(),
-      operation_type: "reconcile_financial".to_string(),
-      intent_id,
-      resources,
-      target_type: None,
-      target_id: None,
-      steps: vec![PaymentStepState {
-        key: step_key.clone(),
-        request: PaymentStep::VerifySource {
-          source_id: candidate.external_id.clone(),
-        },
-        first_sent_at: None,
-        result: None,
-      }],
-    },
-  )
-  .await?;
-  if frozen.status == "completed" {
-    advance_cursor(runtime, &candidate).await?;
-    return Ok(None);
-  }
-  if frozen.status != "pending" {
-    return Err(RuntimeError::invalid_state("payment financial reconcile is blocked"));
-  }
-  if frozen.steps[0].result.is_none()
-    && mark_operation_step_sent(&mut connection, &frozen.id, &step_key, chrono::Duration::days(3650)).await?
-      == PaymentSendDecision::Blocked
-  {
-    return Err(RuntimeError::invalid_state("payment financial reconcile is blocked"));
-  }
-  let snapshot = recover_financial(runtime, &candidate, &frozen.id).await;
-  let snapshot = match snapshot {
-    Ok(snapshot) => snapshot,
-    Err(error) => {
-      record_operation_error(
-        &mut connection,
-        &frozen.id,
-        "payment_financial_reconcile_failed",
-        true,
-        false,
-      )
-      .await?;
-      return Err(error);
-    }
-  };
-  record_operation_step_result(
-    &mut connection,
-    &frozen.id,
-    &step_key,
-    json!({ "objectKind": candidate.object_kind, "externalId": candidate.external_id }),
-  )
-  .await?;
-  let changes = runtime.apply_with_connection(connection, snapshot).await?;
-  advance_cursor(runtime, &candidate).await?;
-  Ok(Some(changes))
+  let snapshot = recover_financial(runtime, candidate).await?;
+  runtime.apply_with_connection(connection, snapshot).await
 }
 
-async fn recover_financial(
-  runtime: &PaymentRuntime,
-  candidate: &FinancialCandidate,
-  operation_id: &str,
-) -> RuntimeResult<PaymentSnapshot> {
+async fn recover_financial(runtime: &PaymentRuntime, candidate: &FinancialCandidate) -> RuntimeResult<PaymentSnapshot> {
   let client = runtime
     .stripe
     .as_ref()
     .ok_or_else(|| RuntimeError::invalid_state("Stripe payment provider is not configured"))?;
   let observed_at = chrono::Utc::now();
-  let mut snapshot = match candidate.object_kind.as_str() {
+  let snapshot = match candidate.object_kind.as_str() {
     "invoice" => {
       let invoice = client
         .invoice(&candidate.external_id)
@@ -180,10 +121,6 @@ async fn recover_financial(
     }
     _ => return Err(RuntimeError::invalid_state("unknown stored payment financial object")),
   };
-  snapshot.operation = Some(OperationCompletion {
-    operation_id: operation_id.to_string(),
-    result: json!({ "status": "completed" }),
-  });
   Ok(snapshot)
 }
 
@@ -193,6 +130,7 @@ async fn financial_candidate(runtime: &PaymentRuntime, namespace: &str) -> Runti
     after: None,
     overlap_pending: false,
     generation: 0,
+    last_error: None,
   };
   sqlx::query(
     r#"INSERT INTO runtime_states(purpose,token_hash,lookup_key,payload,expires_at)
@@ -261,6 +199,7 @@ async fn financial_candidate(runtime: &PaymentRuntime, namespace: &str) -> Runti
       after: None,
       overlap_pending: false,
       generation: cursor.generation + 1,
+      last_error: cursor.last_error.clone(),
     };
     write_cursor(&mut tx, &token_hash, &wrapped).await?;
     tx.commit()
@@ -274,6 +213,7 @@ async fn financial_candidate(runtime: &PaymentRuntime, namespace: &str) -> Runti
     after: Some(format!("{object_kind}:{external_id}")),
     overlap_pending: !overlap_pass,
     generation: cursor.generation,
+    last_error: None,
   };
   tx.commit()
     .await

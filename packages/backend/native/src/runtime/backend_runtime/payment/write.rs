@@ -193,6 +193,7 @@ pub(super) async fn expire_missing_sources(
   for missing in stored
     .iter()
     .filter(|stored| !present.contains(stored.source_id.as_str()))
+    .filter(|stored| snapshot.provider() != Provider::Stripe || !stored.source_id.starts_with("stripe_invoice:"))
   {
     if snapshot.provider() == Provider::RevenueCat && !verified_missing_revenuecat_sources.contains(&missing.source_id)
     {
@@ -327,12 +328,70 @@ pub(super) async fn upsert_financial_facts(
   namespace: &str,
   now: chrono::DateTime<chrono::Utc>,
 ) -> RuntimeResult<()> {
-  for financial in &snapshot.financial_facts {
+  let mut financials = snapshot.financial_facts.iter().collect::<Vec<_>>();
+  financials.sort_by_key(|fact| (fact.fact.kind.as_str(), fact.external_id.as_str()));
+  for financial in financials {
+    let stored = sqlx::query(
+      "SELECT source_identity,status,metadata FROM payment_financial_facts WHERE provider_namespace=$1 AND \
+       object_kind=$2 AND external_id=$3 FOR UPDATE",
+    )
+    .bind(namespace)
+    .bind(financial.fact.kind.as_str())
+    .bind(&financial.external_id)
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(|error| RuntimeError::database("lock financial fact", error))?;
+    let mut fact = financial.fact;
+    let mut metadata = financial.metadata.clone();
+    if let Some(stored) = stored {
+      if stored
+        .get::<Option<String>, _>("source_identity")
+        .as_ref()
+        .zip(financial.source_id.as_ref())
+        .is_some_and(|(old, new)| old != new)
+      {
+        return Err(RuntimeError::invalid_state(
+          "conflicting payment financial source identity",
+        ));
+      }
+      let stored_metadata: serde_json::Value = stored.get("metadata");
+      if let Some(evidence) = stored_metadata.get("couponGrant") {
+        metadata["couponGrant"] = evidence.clone();
+      }
+      let previous = affine_core::payment::FinancialFact {
+        kind: financial.fact.kind,
+        status: affine_core::payment::FinancialStatus::parse(stored.get::<String, _>("status").as_str())
+          .ok_or_else(|| RuntimeError::invalid_state("unknown financial status"))?,
+        invoice: stored_metadata
+          .get("invoice")
+          .cloned()
+          .map(serde_json::from_value)
+          .transpose()
+          .map_err(|_| RuntimeError::invalid_state("invalid invoice financial facts"))?,
+      };
+      let observed_at = serde_json::from_value(
+        stored_metadata
+          .get("observedAt")
+          .cloned()
+          .ok_or_else(|| RuntimeError::invalid_state("financial fact requires pre-repair"))?,
+      )
+      .map_err(|_| RuntimeError::invalid_state("invalid financial observation time"))?;
+      let Some(merged) = affine_core::payment::merge_financial_fact(previous, observed_at, fact, financial.observed_at)
+        .map_err(|_| RuntimeError::invalid_state("conflicting payment financial fact at equal timestamp"))?
+      else {
+        continue;
+      };
+      fact = merged;
+    }
+    metadata["observedAt"] = serde_json::json!(financial.observed_at);
+    if let Some(invoice) = fact.invoice {
+      metadata["invoice"] = serde_json::json!(invoice);
+    }
+
     sqlx::query(
       r#"INSERT INTO payment_financial_facts(id,provider,provider_namespace,object_kind,external_id,source_identity,external_invoice_id,external_payment_id,status,amount,currency,occurred_at,metadata,updated_at)
          VALUES($1,$2::"Provider",$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-         ON CONFLICT(provider_namespace,object_kind,external_id) DO UPDATE SET source_identity=COALESCE(payment_financial_facts.source_identity,EXCLUDED.source_identity),external_invoice_id=COALESCE(payment_financial_facts.external_invoice_id,EXCLUDED.external_invoice_id),external_payment_id=COALESCE(payment_financial_facts.external_payment_id,EXCLUDED.external_payment_id),status=EXCLUDED.status,amount=EXCLUDED.amount,currency=EXCLUDED.currency,occurred_at=EXCLUDED.occurred_at,metadata=EXCLUDED.metadata,updated_at=EXCLUDED.updated_at
-         WHERE (payment_financial_facts.occurred_at IS NULL OR EXCLUDED.occurred_at > payment_financial_facts.occurred_at)"#,
+         ON CONFLICT(provider_namespace,object_kind,external_id) DO UPDATE SET source_identity=COALESCE(payment_financial_facts.source_identity,EXCLUDED.source_identity),external_invoice_id=COALESCE(payment_financial_facts.external_invoice_id,EXCLUDED.external_invoice_id),external_payment_id=COALESCE(payment_financial_facts.external_payment_id,EXCLUDED.external_payment_id),status=EXCLUDED.status,amount=EXCLUDED.amount,currency=EXCLUDED.currency,occurred_at=EXCLUDED.occurred_at,metadata=EXCLUDED.metadata,updated_at=EXCLUDED.updated_at"#,
     )
     .bind(uuid::Uuid::new_v4().to_string())
     .bind(snapshot.provider().as_str())
@@ -342,11 +401,11 @@ pub(super) async fn upsert_financial_facts(
     .bind(&financial.source_id)
     .bind(&financial.external_invoice_id)
     .bind(&financial.external_payment_id)
-    .bind(financial.fact.status.as_str())
+    .bind(fact.status.as_str())
     .bind(financial.amount)
     .bind(&financial.currency)
     .bind(financial.occurred_at)
-    .bind(&financial.metadata)
+    .bind(metadata)
     .bind(now)
     .execute(&mut **tx)
     .await

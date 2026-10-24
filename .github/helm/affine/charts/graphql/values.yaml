@@ -9,13 +9,6 @@ nameOverride: ''
 fullnameOverride: ''
 # map to NODE_ENV environment variable
 env: 'production'
-app:
-  # AFFINE_SERVER_SUB_PATH
-  path: ''
-  # AFFINE_SERVER_HOST
-  host: '0.0.0.0'
-  https: true
-  
 serviceAccount:
   create: true
   annotations: {}
