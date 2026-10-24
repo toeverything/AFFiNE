@@ -122,6 +122,15 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: true,
   },
+  enable_doc_breadcrumb: {
+    category: 'affine',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-doc-breadcrumb.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-doc-breadcrumb.description',
+    configurable: !isMobile,
+    defaultState: true,
+  },
   enable_editor_settings: {
     category: 'affine',
     displayName:
