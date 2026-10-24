@@ -47,7 +47,11 @@ import {
   EditPropsStore,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import { matchModels } from '@blocksuite/affine-shared/utils';
+import {
+  getEdgelessToolShortcut,
+  matchModels,
+  subscribeEdgelessToolShortcuts,
+} from '@blocksuite/affine-shared/utils';
 import { IS_MAC } from '@blocksuite/global/env';
 import { Bound, getCommonBound } from '@blocksuite/global/gfx';
 import { SurfaceSelection, TextSelection } from '@blocksuite/std';
@@ -86,15 +90,29 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
 
   constructor(override rootComponent: EdgelessRootBlockComponent) {
     super(rootComponent);
-    this.rootComponent.bindHotKey(
+    let disposeHotkeys = this._bindEdgelessHotkeys();
+    this.rootComponent.disposables.add(() => disposeHotkeys());
+    this.rootComponent.disposables.add(
+      subscribeEdgelessToolShortcuts(() => {
+        disposeHotkeys();
+        disposeHotkeys = this._bindEdgelessHotkeys();
+      })
+    );
+
+    this._bindToggleHand();
+  }
+
+  private _bindEdgelessHotkeys() {
+    const { rootComponent } = this;
+    return this.rootComponent.bindHotKey(
       {
-        v: () => {
+        [getEdgelessToolShortcut('select')]: () => {
           this._setEdgelessTool(DefaultTool);
         },
-        t: () => {
+        [getEdgelessToolShortcut('text')]: () => {
           this._setEdgelessTool(TextTool);
         },
-        c: () => {
+        [getEdgelessToolShortcut('connector')]: () => {
           const editPropsStore = this.std.get(EditPropsStore);
 
           let mode: ConnectorMode;
@@ -109,25 +127,25 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
 
           this._setEdgelessTool(ConnectorTool, { mode });
         },
-        h: () => {
+        [getEdgelessToolShortcut('hand')]: () => {
           this._setEdgelessTool(PanTool, {
             panning: false,
           });
         },
-        n: () => {
+        [getEdgelessToolShortcut('note')]: () => {
           this._setEdgelessTool(NoteTool, {
             childFlavour: DEFAULT_NOTE_CHILD_FLAVOUR,
             childType: DEFAULT_NOTE_CHILD_TYPE,
             tip: DEFAULT_NOTE_TIP,
           });
         },
-        p: () => {
+        [getEdgelessToolShortcut('pen')]: () => {
           this._setEdgelessTool(BrushTool);
         },
-        'Shift-p': () => {
+        [`Shift-${getEdgelessToolShortcut('pen')}`]: () => {
           this._setEdgelessTool(HighlighterTool);
         },
-        e: () => {
+        [getEdgelessToolShortcut('eraser')]: () => {
           this._setEdgelessTool(EraserTool);
         },
         k: () => {
@@ -462,8 +480,6 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
         global: true,
       }
     );
-
-    this._bindToggleHand();
   }
 
   private _bindToggleHand() {
