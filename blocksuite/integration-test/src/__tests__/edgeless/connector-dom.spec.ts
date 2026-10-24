@@ -1,4 +1,5 @@
 import { DomRenderer } from '@blocksuite/affine-block-surface';
+import { type MindmapElementModel } from '@blocksuite/affine-model';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { wait } from '../utils/common.js';
@@ -116,6 +117,36 @@ describe('Connector rendering with DOM renderer', () => {
     // Check if SVG element is present for connector rendering
     const svgElement = connectorElement?.querySelector('svg');
     expect(svgElement).not.toBeNull();
+  });
+
+  test('should regenerate a missing mindmap connector path on redraw', async () => {
+    const surfaceView = getSurface(window.doc, window.editor);
+    const surfaceModel = surfaceView.model;
+    const mindmapId = surfaceModel.addElement({
+      type: 'mindmap',
+      children: { text: 'root', children: [{ text: 'child' }] },
+    });
+    const mindmap = surfaceModel.getElementById(
+      mindmapId
+    ) as MindmapElementModel;
+
+    await wait();
+
+    const [result] = mindmap.getConnectors(mindmap.tree)!;
+    expect(result.connector.path.length).toBeGreaterThanOrEqual(2);
+
+    // Simulate a path lost during an early render while the geometry cache is current.
+    result.connector.path = [];
+    (surfaceView.renderer as DomRenderer).forceFullRender();
+    await wait();
+
+    expect(result.connector.path.length).toBeGreaterThanOrEqual(2);
+    const mindmapElement = surfaceView.renderRoot.querySelector<HTMLElement>(
+      `[data-element-id="${mindmapId}"]`
+    );
+    expect(
+      mindmapElement?.querySelector('svg path[d]')?.getAttribute('d')
+    ).toBeTruthy();
   });
 
   test('should render connector with different stroke styles', async () => {
