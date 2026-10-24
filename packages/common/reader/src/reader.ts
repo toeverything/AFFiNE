@@ -845,17 +845,32 @@ export async function readAllBlocksFromDoc({
         content: block.get('prop:latex')?.toString() ?? '',
       });
     } else if (flavour === 'affine:table') {
-      const contents = Array.from<string>(block.keys())
-        .map(key => {
-          if (key.startsWith('prop:cells.') && key.endsWith('.text')) {
-            return block.get(key)?.toString() ?? '';
-          }
-          return '';
-        })
-        .filter(Boolean);
+      const contents: string[] = [];
+      const tableRefs: { refDocId: string; ref: string }[] = [];
+      for (const key of block.keys()) {
+        if (!key.startsWith('prop:cells.') || !key.endsWith('.text')) {
+          continue;
+        }
+        const cellText = block.get(key);
+        const text = cellText?.toString() ?? '';
+        if (text) {
+          contents.push(text);
+        }
+        const deltas = getTextDeltasFromCellValue(cellText);
+        if (deltas?.length) {
+          tableRefs.push(...collectInlineReferences(deltas));
+        }
+      }
+      const refs = uniqBy(tableRefs, item => item.ref);
       blockDocuments.push({
         ...commonBlockProps,
         content: contents,
+        ...(refs.length
+          ? {
+              refDocId: refs.map(item => item.refDocId),
+              ref: refs.map(item => item.ref),
+            }
+          : {}),
       });
     } else if (bookmarkFlavours.has(flavour)) {
       blockDocuments.push({ ...commonBlockProps });
