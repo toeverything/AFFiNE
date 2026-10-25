@@ -1232,6 +1232,8 @@
   "com.affine.rootAppSidebar.collections": "Collections",
   "com.affine.rootAppSidebar.notifications": "Notifications",
   "com.affine.rootAppSidebar.doc.link-doc-only": "Only doc can be placed on here",
+  "com.affine.rootAppSidebar.doc.unlink": "Unlink",
+  "com.affine.rootAppSidebar.doc.unlinked": "Unlinked",
   "com.affine.rootAppSidebar.docs.no-subdoc": "No linked docs",
   "com.affine.rootAppSidebar.docs.references-loading": "Loading linked docs...",
   "com.affine.rootAppSidebar.explorer.collection-add-tooltip": "New doc",
