@@ -4,8 +4,10 @@ import {
   autoPlacement,
   autoUpdate,
   computePosition,
+  flip,
   type Middleware,
   offset,
+  type Placement,
   shift,
 } from '@floating-ui/dom';
 import { css, html, nothing, type TemplateResult } from 'lit';
@@ -27,15 +29,20 @@ export type MenuSubMenuData = {
   middleware?: Middleware[];
   autoHeight?: boolean;
   closeOnSelect?: boolean;
+  placement?: Placement;
 };
 export const subMenuOffset = offset({
-  mainAxis: 16,
-  crossAxis: 0,
+  mainAxis: 4,
+  crossAxis: -4,
 });
-export const subMenuPlacements = autoPlacement({
-  allowedPlacements: ['bottom-end'],
+export const subMenuPlacements = flip({
+  fallbackPlacements: ['right-end', 'left-start', 'left-end'],
 });
-export const subMenuMiddleware = [subMenuOffset, subMenuPlacements];
+export const subMenuMiddleware = [
+  subMenuPlacements,
+  subMenuOffset,
+  shift({ padding: 8 }),
+];
 
 export const dropdownSubMenuMiddleware = [
   autoPlacement({ allowedPlacements: ['bottom-end'] }),
@@ -52,6 +59,9 @@ export class MenuSubMenu extends MenuFocusable {
       }
       affine-menu-sub-menu.active .affine-menu-button svg:last-child {
         transform: rotate(90deg);
+      }
+      affine-menu-sub-menu.active .affine-menu-button {
+        background-color: var(--affine-hover-color);
       }
     `,
   ];
@@ -103,7 +113,8 @@ export class MenuSubMenu extends MenuFocusable {
             this.data.options.onClose?.();
           },
         },
-        middleware: this.data.middleware,
+        placement: this.data.placement ?? 'right-start',
+        middleware: this.data.middleware ?? subMenuMiddleware,
       });
       if (this.data.autoHeight) {
         menu.menuElement.style.minHeight = 'fit-content';
@@ -114,6 +125,7 @@ export class MenuSubMenu extends MenuFocusable {
       return;
     }
 
+    this.classList.add('active');
     const focus = this.menu.currentFocused$.value;
     const menu = new Menu({
       ...this.data.options,
@@ -123,6 +135,7 @@ export class MenuSubMenu extends MenuFocusable {
         }
       },
       onClose: () => {
+        this.classList.remove('active');
         menu.menuElement.remove();
         this.menu.focusTo(focus);
         this.data.options.onClose?.();
@@ -137,6 +150,7 @@ export class MenuSubMenu extends MenuFocusable {
     menu.menuElement.style.minWidth = '200px';
     const unsub = autoUpdate(this, menu.menuElement, () => {
       computePosition(this, menu.menuElement, {
+        placement: this.data.placement ?? 'right-start',
         middleware: this.data.middleware ?? subMenuMiddleware,
       })
         .then(({ x, y }) => {
@@ -147,7 +161,10 @@ export class MenuSubMenu extends MenuFocusable {
     });
     this.menu.openSubMenu(menu);
     // in case that the menu is not closed, but the component is removed,
-    this.disposables.add(unsub);
+    this.disposables.add(() => {
+      this.classList.remove('active');
+      unsub();
+    });
   }
 
   protected override render(): unknown {
@@ -248,6 +265,7 @@ export const subMenuItems = {
       middleware?: Middleware[];
       autoHeight?: boolean;
       closeOnSelect?: boolean;
+      placement?: Placement;
     }) =>
     menu => {
       if (config.hide?.() || !menu.search(config.name)) {
@@ -267,6 +285,7 @@ export const subMenuItems = {
         middleware: config.middleware,
         autoHeight: config.autoHeight,
         closeOnSelect: config.closeOnSelect,
+        placement: config.placement,
       };
       return renderSubMenu(data, menu);
     },
