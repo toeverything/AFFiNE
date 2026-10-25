@@ -66,7 +66,7 @@
     "react-transition-state": "^2.2.0",
     "sonner": "^2.0.7",
     "swr": "^2.3.7",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@affine-tools/utils": "workspace:*",
