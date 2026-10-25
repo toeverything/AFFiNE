@@ -12,7 +12,7 @@ export const listPrefix = css`
   .affine-list-block__numbered {
     min-width: 22px;
     height: 24px;
-    margin-left: 2px;
+    margin-inline-start: 2px;
   }
 
   .affine-list-block__todo-prefix {
