@@ -15,7 +15,7 @@ services:
       start_period: 5s
 
   manticore:
-    image: manticoresearch/manticore:29.0.2
+    image: manticoresearch/manticore:29.9.0
     environment:
       searchd.listen: 'http:9308'
       searchd.network_timeout: '30'
