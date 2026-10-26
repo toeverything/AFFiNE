@@ -49,12 +49,12 @@ async fn reconcile_financial(
 ) -> RuntimeResult<PaymentApplyResult> {
   let namespace = &candidate.namespace;
   let mut resources = vec![PaymentScope::financial(
-    &namespace,
+    namespace,
     &candidate.object_kind,
     &candidate.external_id,
   )?];
   if let Some(source_id) = candidate.source_id.as_deref() {
-    resources.push(PaymentScope::source(&namespace, source_id)?);
+    resources.push(PaymentScope::source(namespace, source_id)?);
   }
   let connection = PaymentConnection::try_acquire(&runtime.pool, resources)
     .await?

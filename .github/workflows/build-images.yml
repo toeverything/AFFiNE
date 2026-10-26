@@ -1,6 +1,5 @@
-name: Build Images
-
-on:
+name: Build Server Candidates
+'on':
   workflow_call:
     inputs:
       build-type:
@@ -12,17 +11,17 @@ on:
       git-short-hash:
         type: string
         required: true
-
+    outputs:
+      image:
+        description: Immutable candidate image
+        value: ${{ jobs.build-images.outputs.image }}
 permissions:
-  contents: 'write'
-  id-token: 'write'
-  packages: 'write'
-
+  contents: read
+  packages: write
 jobs:
   build-web:
     name: Build @affine/web
     runs-on: ubuntu-latest
-    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v7
       - name: Setup Version
@@ -34,12 +33,10 @@ jobs:
       - name: Build Core
         run: yarn affine @affine/web build
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           BUILD_TYPE: ${{ inputs.build-type }}
+          RELEASE_ASSET_PREFIX: releases/${{ inputs.app-version }}/
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: 'affine-web'
+          SENTRY_PROJECT: affine-web
           SENTRY_RELEASE: ${{ inputs.app-version }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
@@ -47,14 +44,13 @@ jobs:
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: web
           path: ./packages/frontend/apps/web/dist
           if-no-files-found: error
-
   build-admin:
     name: Build @affine/admin
     runs-on: ubuntu-latest
-    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v7
       - name: Setup Version
@@ -66,26 +62,23 @@ jobs:
       - name: Build Admin
         run: yarn affine @affine/admin build
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           BUILD_TYPE: ${{ inputs.build-type }}
+          RELEASE_ASSET_PREFIX: releases/${{ inputs.app-version }}/
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: 'affine-admin'
+          SENTRY_PROJECT: affine-admin
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
       - name: Upload admin artifact
         uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: admin
           path: ./packages/frontend/admin/dist
           if-no-files-found: error
-
   build-mobile:
     name: Build @affine/mobile
     runs-on: ubuntu-latest
-    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v7
       - name: Setup Version
@@ -97,26 +90,23 @@ jobs:
       - name: Build Mobile
         run: yarn affine @affine/mobile build
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           BUILD_TYPE: ${{ inputs.build-type }}
+          RELEASE_ASSET_PREFIX: releases/${{ inputs.app-version }}/
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: 'affine-mobile'
+          SENTRY_PROJECT: affine-mobile
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
       - name: Upload mobile artifact
         uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: mobile
           path: ./packages/frontend/apps/mobile/dist
           if-no-files-found: error
-
   build-server-native:
     name: Build Server native - ${{ matrix.targets.name }}
     runs-on: ubuntu-22.04
-    environment: ${{ inputs.build-type }}
     strategy:
       fail-fast: false
       matrix:
@@ -127,7 +117,6 @@ jobs:
             file: server-native.arm64.node
           - name: armv7-unknown-linux-gnueabihf
             file: server-native.armv7.node
-
     steps:
       - uses: actions/checkout@v7
       - name: Setup Version
@@ -148,15 +137,14 @@ jobs:
           target: ${{ matrix.targets.name }}
           package: '@affine/server-native'
       - name: Rename ${{ matrix.targets.file }}
-        run: |
-          mv ./packages/backend/native/server-native.node ./packages/backend/native/${{ matrix.targets.file }}
+        run: mv ./packages/backend/native/server-native.node ./packages/backend/native/${{ matrix.targets.file }}
       - name: Upload ${{ matrix.targets.file }}
         uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: server-native-${{ matrix.targets.file }}
           path: ./packages/backend/native/${{ matrix.targets.file }}
           if-no-files-found: error
-
   build-server:
     name: Build Server
     runs-on: ubuntu-latest
@@ -186,10 +174,10 @@ jobs:
       - name: Upload server dist
         uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: server-dist
           path: ./packages/backend/server/dist
           if-no-files-found: error
-
   build-images:
     name: Build Images
     runs-on: ubuntu-latest
@@ -216,61 +204,40 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      # setup node without cache configuration
-      # Prisma cache is not compatible with docker build cache
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: .nvmrc
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
-
       - name: Download web artifact
         uses: actions/download-artifact@v4
         with:
           name: web
           path: ./packages/frontend/apps/web/dist
-
       - name: Download mobile artifact
         uses: actions/download-artifact@v4
         with:
           name: mobile
           path: ./packages/frontend/apps/mobile/dist
-
       - name: Download admin artifact
         uses: actions/download-artifact@v4
         with:
           name: admin
           path: ./packages/frontend/admin/dist
-
       - name: Install Node.js dependencies
         run: |
           yarn config set --json supportedArchitectures.cpu '["x64", "arm64", "arm"]'
           yarn config set --json supportedArchitectures.libc '["glibc"]'
           yarn workspaces focus @affine/server --production
-
       - name: Generate Prisma client
         run: yarn workspace @affine/server prisma generate
-
       - name: Mv node_modules
         run: mv ./node_modules ./packages/backend/server
-
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
           app-version: ${{ inputs.app-version }}
-
-      - name: Build Cloud SQL Proxy with patched Go
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          pull: true
-          platforms: linux/amd64,linux/arm64
-          provenance: true
-          file: .github/deployment/cloud-sql-proxy/Dockerfile
-          tags: ghcr.io/toeverything/affine:cloud-sql-proxy-2.26.2
-
       - name: Build backend Dockerfile
         uses: docker/build-push-action@v6
         with:
@@ -280,4 +247,7 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine:${{inputs.build-type}}-${{ inputs.git-short-hash }}
+          tags: ghcr.io/toeverything/affine:candidate-${{ github.run_id }}-${{ github.run_attempt }}
+        id: image
+    outputs:
+      image: ghcr.io/toeverything/affine@${{ steps.image.outputs.digest }}

@@ -51,14 +51,13 @@ export const getPublicPath = (BUILD_CONFIG: BUILD_CONFIG_TYPE) => {
     return '/';
   }
 
-  switch (BUILD_TYPE) {
-    case 'stable':
-      return 'https://prod.affineassets.com/';
-    case 'beta':
-      return 'https://beta.affineassets.com/';
-    default:
-      return 'https://dev.affineassets.com/';
-  }
+  const domain =
+    BUILD_TYPE === 'stable'
+      ? 'prod.affineassets.com'
+      : BUILD_TYPE === 'beta'
+        ? 'beta.affineassets.com'
+        : 'dev.affineassets.com';
+  return `https://${domain}/${process.env.RELEASE_ASSET_PREFIX ?? ''}`;
 };
 
 const DESCRIPTION = `There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together.`;

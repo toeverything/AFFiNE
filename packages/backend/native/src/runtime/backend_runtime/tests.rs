@@ -1663,12 +1663,12 @@ async fn strict_blob_management_authorizes_inventory_and_denies_before_object_cl
 
   assert!(
     runtime
-      .list_managed_workspace_blobs_v1(member_id.into(), workspace_id.into())
+      .list_managed_workspace_blobs_v1(member_id.into(), workspace_id.into(), 1000, None)
       .await
       .is_err()
   );
   let inventory = runtime
-    .list_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into())
+    .list_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into(), 1000, None)
     .await
     .unwrap();
   assert_eq!(inventory.len(), 1);
@@ -1681,12 +1681,28 @@ async fn strict_blob_management_authorizes_inventory_and_denies_before_object_cl
   .execute(&pool)
   .await
   .unwrap();
-  assert!(
-    runtime
-      .list_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into())
-      .await
-      .is_err()
-  );
+  let first_page = runtime
+    .list_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into(), 1000, None)
+    .await
+    .unwrap();
+  let last_page = runtime
+    .list_managed_workspace_blobs_v1(
+      owner_id.into(),
+      workspace_id.into(),
+      1000,
+      Some(first_page.last().unwrap().key.clone()),
+    )
+    .await
+    .unwrap();
+  assert_eq!(first_page.len(), 1000);
+  assert_eq!(last_page.len(), 1);
+  assert_eq!(last_page[0].key, "managed-key");
+  let keys = first_page
+    .iter()
+    .chain(last_page.iter())
+    .map(|blob| &blob.key)
+    .collect::<std::collections::BTreeSet<_>>();
+  assert_eq!(keys.len(), 1001);
   sqlx::query("DELETE FROM blobs WHERE workspace_id=$1 AND key LIKE 'managed-cap-%'")
     .bind(workspace_id)
     .execute(&pool)
@@ -1705,7 +1721,7 @@ async fn strict_blob_management_authorizes_inventory_and_denies_before_object_cl
   );
   assert!(
     runtime
-      .list_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into())
+      .list_managed_workspace_blobs_v1(owner_id.into(), workspace_id.into(), 1000, None)
       .await
       .unwrap()
       .is_empty()

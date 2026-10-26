@@ -14,6 +14,7 @@ import {
 
 import {
   type BlobRecord,
+  type ListedBlobRecord,
   OverCapacityError,
   OverSizeError,
 } from '../../storage';
@@ -173,14 +174,24 @@ export class CloudBlobWriter {
   }
 
   async listManageable() {
-    const result = await this.connection.gql({
-      query: listBlobsQuery,
-      variables: { workspaceId: this.workspaceId },
-    });
-    return result.workspace.blobs.map(blob => ({
-      ...blob,
-      createdAt: blob.createdAt ? new Date(blob.createdAt) : undefined,
-    }));
+    const blobs: ListedBlobRecord[] = [];
+    const first = 1000;
+    let after: string | undefined;
+    while (true) {
+      const result = await this.connection.gql({
+        query: listBlobsQuery,
+        variables: { workspaceId: this.workspaceId, first, after },
+      });
+      const page = result.workspace.blobs;
+      blobs.push(
+        ...page.map(blob => ({
+          ...blob,
+          createdAt: blob.createdAt ? new Date(blob.createdAt) : undefined,
+        }))
+      );
+      if (page.length < first) return blobs;
+      after = page[page.length - 1].key;
+    }
   }
 
   private async uploadViaGraphql(blob: BlobRecord, signal?: AbortSignal) {

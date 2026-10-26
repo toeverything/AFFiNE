@@ -1423,7 +1423,7 @@ export const PackageList = [
   {
     location: 'tools/cli',
     name: '@affine-tools/cli',
-    workspaceDependencies: ['tools/utils', 'packages/common/s3-compat'],
+    workspaceDependencies: ['tools/utils'],
   },
   {
     location: 'tools/commitlint',
