@@ -1,18 +1,21 @@
 import clsx from 'clsx';
-import { type ReactNode, useCallback, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 
 import { Button, type ButtonProps } from '../button';
-import { type IconData, IconPicker } from '../icon-picker';
+import { type IconData, IconPicker, IconType } from '../icon-picker';
 import { IconRenderer } from '../icon-picker/renderer';
 import Input from '../input';
 import { Menu, type MenuProps } from '../menu';
 import * as styles from './icon-name-editor.css';
 
 export interface IconEditorProps {
-  icon?: IconData;
+  icon?: IconData | Blob;
+  /** Resolved object URL for a persisted blob icon (provided by @affine/core). */
+  iconUrl?: string;
   closeAfterSelect?: boolean;
   iconPlaceholder?: ReactNode;
-  onIconChange?: (data?: IconData) => void;
+  /** A raw `Blob` means a custom image to upload to the blob engine. */
+  onIconChange?: (data?: IconData | Blob) => void;
   triggerClassName?: string;
 }
 
@@ -33,8 +36,24 @@ export interface IconAndNameEditorMenuProps
   skipIfNotChanged?: boolean;
 }
 
+/** Create an object URL for an in-memory blob (pending-selection preview). */
+function useBlobPreviewUrl(blob?: Blob): string | undefined {
+  const [url, setUrl] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (!blob) {
+      setUrl(undefined);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [blob]);
+  return url;
+}
+
 export const IconEditor = ({
   icon,
+  iconUrl,
   closeAfterSelect,
   iconPlaceholder,
   triggerClassName,
@@ -48,9 +67,12 @@ export const IconEditor = ({
   triggerVariant?: ButtonProps['variant'];
 }) => {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const pendingPreviewUrl = useBlobPreviewUrl(
+    icon instanceof Blob ? icon : undefined
+  );
 
   const handleSelect = useCallback(
-    (data?: IconData) => {
+    (data?: IconData | Blob) => {
       onIconChange?.(data);
       if (closeAfterSelect) {
         setIsPickerOpen(false);
@@ -58,6 +80,8 @@ export const IconEditor = ({
     },
     [closeAfterSelect, onIconChange]
   );
+
+  const iconType = icon instanceof Blob ? IconType.Blob : icon?.type;
 
   return (
     <Menu
@@ -82,12 +106,20 @@ export const IconEditor = ({
       <Button
         variant={triggerVariant}
         className={clsx(styles.iconPicker, triggerClassName)}
-        data-icon-type={icon?.type}
+        data-icon-type={iconType}
         aria-label={icon ? 'Change Icon' : 'Select Icon'}
         title={icon ? 'Change Icon' : 'Select Icon'}
         contentClassName={styles.iconContent}
       >
-        <IconRenderer data={icon} fallback={iconPlaceholder} />
+        {icon instanceof Blob ? (
+          pendingPreviewUrl ? (
+            <img src={pendingPreviewUrl} alt="" className={styles.iconImage} />
+          ) : null
+        ) : icon?.type === IconType.Blob && iconUrl ? (
+          <img src={iconUrl} alt="" className={styles.iconImage} />
+        ) : (
+          <IconRenderer data={icon} fallback={iconPlaceholder} />
+        )}
       </Button>
     </Menu>
   );
@@ -133,12 +165,13 @@ export const IconAndNameEditorMenu = ({
   onNameChange,
   contentOptions,
   iconPlaceholder,
+  iconUrl,
   skipIfNotChanged = true,
   inputTestId,
   closeAfterSelect,
   ...menuProps
 }: IconAndNameEditorMenuProps) => {
-  const [icon, setIcon] = useState(initialIcon);
+  const [icon, setIcon] = useState<IconData | Blob | undefined>(initialIcon);
   const [name, setName] = useState(initialName);
 
   const commit = useCallback(() => {
@@ -159,16 +192,20 @@ export const IconAndNameEditorMenu = ({
     onNameChange,
     skipIfNotChanged,
   ]);
+
   const abort = useCallback(() => {
     setIcon(initialIcon);
     setName(initialName);
   }, [initialIcon, initialName]);
-  const handleIconChange = useCallback((data?: IconData) => {
+
+  const handleIconChange = useCallback((data?: IconData | Blob) => {
     setIcon(data);
   }, []);
+
   const handleNameChange = useCallback((name: string) => {
     setName(name);
   }, []);
+
   const handleMenuOpenChange = useCallback(
     (open: boolean) => {
       if (open) {
@@ -211,6 +248,7 @@ export const IconAndNameEditorMenu = ({
           onIconChange={handleIconChange}
           onNameChange={handleNameChange}
           inputTestId={inputTestId}
+          iconUrl={iconUrl}
           onEnter={() => {
             commit();
             onOpenChange?.(false);

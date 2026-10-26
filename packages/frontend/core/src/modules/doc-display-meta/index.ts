@@ -4,7 +4,7 @@ import { DocsService } from '../doc';
 import { ExplorerIconService } from '../explorer-icon/services/explorer-icon';
 import { I18nService } from '../i18n';
 import { JournalService } from '../journal';
-import { WorkspaceScope } from '../workspace';
+import { WorkspaceScope, WorkspaceService } from '../workspace';
 import { DocDisplayMetaService } from './services/doc-display-meta';
 
 export { DocDisplayMetaService };
@@ -17,5 +17,6 @@ export function configureDocDisplayMetaModule(framework: Framework) {
       DocsService,
       I18nService,
       ExplorerIconService,
+      WorkspaceService,
     ]);
 }
