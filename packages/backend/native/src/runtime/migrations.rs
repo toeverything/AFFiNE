@@ -777,10 +777,14 @@ mod tests {
         .unwrap();
       let id = uuid::Uuid::new_v4().to_string();
       let result = sqlx::query(
-        "INSERT INTO entitlements(id,target_type,target_id,source,plan,status) VALUES($1,$2,$3,'cloud_subscription','pro','active')",
+        "INSERT INTO entitlements(id,target_type,target_id,source,plan,status) \
+         VALUES($1,$2,$3,'cloud_subscription','pro','active')",
       )
-      .bind(&id).bind(target_type).bind(&workspace_id)
-      .execute(&mut *writer).await;
+      .bind(&id)
+      .bind(target_type)
+      .bind(&workspace_id)
+      .execute(&mut *writer)
+      .await;
       if target_type == "workspace" {
         assert_eq!(
           result.unwrap_err().as_database_error().unwrap().code().as_deref(),
@@ -804,8 +808,15 @@ mod tests {
     blocker.rollback().await.unwrap();
 
     let id = uuid::Uuid::new_v4().to_string();
-    sqlx::query("INSERT INTO entitlements(id,target_type,target_id,source,plan,status) VALUES($1,'workspace',$2,'cloud_subscription','team','active')")
-      .bind(&id).bind(&workspace_id).execute(&pool).await.unwrap();
+    sqlx::query(
+      "INSERT INTO entitlements(id,target_type,target_id,source,plan,status) \
+       VALUES($1,'workspace',$2,'cloud_subscription','team','active')",
+    )
+    .bind(&id)
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
     for target_type in ["user", "workspace"] {
       sqlx::query(
         "UPDATE search_projection.workspace_states SET pending_scope='none' WHERE generation_id=$1 AND workspace_id=$2",
