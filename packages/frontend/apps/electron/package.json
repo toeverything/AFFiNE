@@ -30,7 +30,9 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "make-squirrel": "r ./scripts/make-squirrel.ts",
-    "make-nsis": "r ./scripts/make-nsis.ts"
+    "make-nsis": "r ./scripts/make-nsis.ts",
+    "sign-macos": "r ./scripts/sign-macos.ts",
+    "sign-windows": "r ./scripts/sign-windows.ts"
   },
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
@@ -49,6 +51,8 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron-forge/shared-types": "^7.11.1",
+    "@electron/notarize": "2.5.0",
+    "@electron/osx-sign": "1.3.3",
     "@reforged/maker-appimage": "^5.2.0",
     "@sentry/electron": "^7.20.1",
     "@sentry/esbuild-plugin": "^5.3.0",

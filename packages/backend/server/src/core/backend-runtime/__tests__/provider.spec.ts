@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import test from 'ava';
 import Sinon from 'sinon';
 
-import type { EventBus } from '../../../base';
+import { AccessDenied, type EventBus, NotFound } from '../../../base';
 import { ServerConfigHandle } from '../../../native';
 import { BackendRuntimeProvider } from '../provider';
 
@@ -111,6 +111,36 @@ test('backend-runtime provider measures explicit typed methods', async t => {
   t.is(result, 3);
   t.true(runtime.cleanupExpiredRuntimeStates.calledOnceWithExactly(1000));
   t.true(runtime.assertCopilotRoute.calledOnceWithExactly(routeInput));
+});
+
+test('blob authorization and missing sources retain HTTP error statuses', async t => {
+  const provider = new BackendRuntimeProvider(serverConfig);
+  const runtime = {
+    getDocBlobManifestV1: Sinon.stub(),
+    getBlobV1: Sinon.stub(),
+  };
+  (provider as unknown as { runtime: typeof runtime }).runtime = runtime;
+  const source = {
+    type: 'currentDoc' as const,
+    workspaceId: 'workspace',
+    docId: 'doc',
+  };
+  for (const [code, errorClass, status] of [
+    ['blob_source_access_denied', AccessDenied, 403],
+    ['blob_source_not_found', NotFound, 404],
+  ] as const) {
+    runtime.getDocBlobManifestV1.rejects(
+      new Error(`[affine-runtime:${code}] ${code}`)
+    );
+    runtime.getBlobV1.rejects(new Error(`[affine-runtime:${code}] ${code}`));
+    for (const request of [
+      () => provider.getDocBlobManifestV1(undefined, source),
+      () => provider.openBlobV1(undefined, source, 'blob'),
+    ]) {
+      const error = await t.throwsAsync(request, { instanceOf: errorClass });
+      t.is(error?.status, status);
+    }
+  }
 });
 
 test('backend-runtime provider encodes recursive search contracts at the native boundary', async t => {

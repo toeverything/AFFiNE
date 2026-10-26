@@ -592,9 +592,9 @@ export const deleteBlobMutation = {
 export const listBlobsQuery = {
   id: 'listBlobsQuery' as const,
   op: 'listBlobs',
-  query: `query listBlobs($workspaceId: String!) {
+  query: `query listBlobs($workspaceId: String!, $first: Int!, $after: String) {
   workspace(id: $workspaceId) {
-    blobs {
+    blobs(first: $first, after: $after) {
       key
       size
       mime
