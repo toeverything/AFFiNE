@@ -43,11 +43,18 @@ function createStorage() {
   });
 }
 
-test('uses graphql upload when server returns GRAPHQL method', async () => {
+test('refreshes the blob limit after upgrading and uses graphql upload', async () => {
   const storage = createStorage();
+  let upgraded = false;
   const gqlMock = vi.fn(async ({ query }) => {
     if (query === workspaceBlobQuotaQuery) {
-      return quotaResponse;
+      return upgraded
+        ? quotaResponse
+        : {
+            workspace: {
+              quota: { blobLimit: 2, humanReadable: { blobLimit: '2 B' } },
+            },
+          };
     }
     if (query === createBlobUploadMutation) {
       return {
@@ -68,6 +75,17 @@ test('uses graphql upload when server returns GRAPHQL method', async () => {
     gqlMock as typeof storage.connection.gql
   );
 
+  await expect(
+    storage.set({
+      key: 'blob-key',
+      data: new Uint8Array([1, 2, 3]),
+      mime: 'text/plain',
+    })
+  ).rejects.toBeInstanceOf(OverSizeError);
+  expect(gqlMock.mock.calls.map(call => call[0].query)).not.toContain(
+    createBlobUploadMutation
+  );
+  upgraded = true;
   await storage.set({
     key: 'blob-key',
     data: new Uint8Array([1, 2, 3]),
@@ -89,6 +107,7 @@ test.each(
   'handles $method upload failure $failure without retrying terminal errors',
   async ({ method, failure }) => {
     const storage = createStorage();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const controller = new AbortController();
     const reason =
       failure === 'abort-string'
@@ -166,6 +185,24 @@ test.each(
       await expect(uploading).rejects.toBe(reason);
     }
 
+    if (failure === '500') {
+      expect(warn).toHaveBeenCalledWith(
+        '[blob] direct upload failed',
+        expect.objectContaining({
+          workspaceId: 'workspace-1',
+          key: 'blob-key',
+          method,
+        }),
+        expect.any(Error)
+      );
+    }
+    if (failure === '413' && method === BlobUploadMethod.MULTIPART) {
+      expect(warn).toHaveBeenCalledWith(
+        '[blob] failed to abort multipart upload',
+        expect.objectContaining({ uploadId: 'upload-1' }),
+        expect.any(Error)
+      );
+    }
     const queries = new Set(gqlMock.mock.calls.map(call => call[0].query));
     expect(queries.has(setBlobMutation)).toBe(failure === '500');
     expect(queries.has(abortBlobUploadMutation)).toBe(
@@ -688,38 +725,33 @@ test('pages readable workspace sources without workspace inventory fallback', as
   );
 });
 
-test('uses the managed workspace inventory only through its typed query', async () => {
+test('paginates the managed workspace inventory', async () => {
   const storage = createStorage();
-  const gqlMock = vi.fn(async ({ query }) => {
+  const records = Array.from({ length: 1001 }, (_, index) => ({
+    key: `managed-${index.toString().padStart(4, '0')}`,
+    mime: 'text/plain',
+    size: 7,
+    createdAt: '2026-08-29T00:00:00.000Z',
+  }));
+  const gqlMock = vi.fn(async ({ query, variables }) => {
     expect(query).toBe(listBlobsQuery);
+    const start = variables.after
+      ? records.findIndex(row => row.key === variables.after) + 1
+      : 0;
     return {
-      workspace: {
-        blobs: [
-          {
-            key: 'managed',
-            mime: 'text/plain',
-            size: 7,
-            createdAt: '2026-08-29T00:00:00.000Z',
-          },
-        ],
-      },
+      workspace: { blobs: records.slice(start, start + variables.first) },
     };
   });
   vi.spyOn(storage.connection, 'gql').mockImplementation(
     gqlMock as typeof storage.connection.gql
   );
-
-  expect(await storage.listManageable()).toEqual([
-    {
-      key: 'managed',
-      mime: 'text/plain',
-      size: 7,
-      createdAt: new Date('2026-08-29T00:00:00.000Z'),
-    },
-  ]);
-  await expect(storage.list()).rejects.toThrow(
-    'Workspace blob inventory is unavailable'
+  expect(await storage.listManageable()).toEqual(
+    records.map(row => ({ ...row, createdAt: new Date(row.createdAt) }))
   );
+  expect(gqlMock.mock.calls.map(([{ variables }]) => variables)).toEqual([
+    { workspaceId: 'workspace-1', first: 1000, after: undefined },
+    { workspaceId: 'workspace-1', first: 1000, after: 'managed-0999' },
+  ]);
 });
 
 test('releases transient workspace sources and preserves owned registrations', async () => {

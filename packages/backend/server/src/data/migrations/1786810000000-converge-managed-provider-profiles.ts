@@ -1,6 +1,8 @@
 import serverNativeModule from '@affine/server-native';
 import { type Prisma, PrismaClient } from '@prisma/client';
 
+import { disableIncompleteManagedProfiles } from './utils/managed-profiles';
+
 const PROFILE_KEY = 'copilot.providers.profiles';
 const PROVIDERS = [
   'openai',
@@ -69,7 +71,12 @@ export class ConvergeManagedProviderProfiles1786810000000 {
           typeof profile.id === 'string' &&
           !DEFAULT_PROFILE_IDS.has(profile.id) &&
           profile.enabled !== false &&
-          Array.isArray(profile.models)
+          Array.isArray(profile.models) &&
+          serverNativeModule.validateAppConfigValue(
+            'copilot',
+            'providers.profiles',
+            [profile]
+          ).length === 0
             ? profile.models.filter(
                 (model): model is string => typeof model === 'string'
               )
@@ -139,6 +146,7 @@ export class ConvergeManagedProviderProfiles1786810000000 {
       }
 
       if (converged) {
+        disableIncompleteManagedProfiles(profiles);
         validateProfiles(profiles);
         await tx.appConfig.upsert({
           where: { id: PROFILE_KEY },

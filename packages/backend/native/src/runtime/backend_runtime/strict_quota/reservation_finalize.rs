@@ -3,9 +3,9 @@ use uuid::Uuid;
 
 use super::{
   super::{BackendRuntime, RuntimeError, RuntimeResult, permission::PermissionAuthorizer},
-  StorageOperation, invalidate_storage_usage,
+  StorageOperation, invalidate_storage_usage, lock_subject,
   promotion::{final_storage_locator, promote_storage_object, temporary_storage_locator},
-  storage::{lock_subject, storage_resource},
+  storage::storage_resource,
 };
 use crate::runtime::types::RuntimeStorageReservationMutation;
 

@@ -6,7 +6,7 @@ on:
 jobs:
   build-server-native:
     name: Build Server native
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
@@ -32,7 +32,7 @@ jobs:
 
   copilot-api-test:
     name: Server Copilot Api Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - build-server-native
     env:
@@ -98,7 +98,7 @@ jobs:
 
   copilot-e2e-test:
     name: Frontend Copilot E2E Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine

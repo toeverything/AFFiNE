@@ -3,24 +3,13 @@
   "title": "AFFiNE Application Configuration",
   "type": "object",
   "properties": {
-    "metrics": {
-      "type": "object",
-      "description": "Configuration for metrics module",
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "description": "Enable metric and tracing collection\n@default false",
-          "default": false
-        }
-      }
-    },
     "crypto": {
       "type": "object",
       "description": "Configuration for crypto module",
       "properties": {
         "privateKey": {
           "type": "string",
-          "description": "The private key for used by the crypto module to create signed tokens or encrypt data.\n@default \"\"\n@environment `AFFINE_PRIVATE_KEY`",
+          "description": "Private key for Node signing and encryption plus native runtime identity.\n@default \"\"\n@environment `AFFINE_PRIVATE_KEY`",
           "default": ""
         }
       }
@@ -56,36 +45,6 @@
       "type": "object",
       "description": "Configuration for auth module",
       "properties": {
-        "allowSignup": {
-          "type": "boolean",
-          "description": "Whether allow new registrations.\n@default true",
-          "default": true
-        },
-        "allowSignupForOauth": {
-          "type": "boolean",
-          "description": "Whether allow new registrations via configured oauth.\n@default true",
-          "default": true
-        },
-        "requireEmailDomainVerification": {
-          "type": "boolean",
-          "description": "Whether require email domain record verification before accessing restricted resources.\n@default false",
-          "default": false
-        },
-        "requireEmailVerification": {
-          "type": "boolean",
-          "description": "Whether require email verification before accessing restricted resources(not implemented).\n@default true",
-          "default": true
-        },
-        "newAccountActionDelay": {
-          "type": "number",
-          "description": "Minimum account age in seconds before new accounts can invite members, create invite links, or publish documents. Set to 0 to disable.\n@default 86400",
-          "default": 86400
-        },
-        "trustedCloudflareHeaders": {
-          "type": "boolean",
-          "description": "Whether request abuse source facts should trust Cloudflare headers from the origin edge.\n@default false",
-          "default": false
-        },
         "signInRateLimit": {
           "type": "object",
           "description": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds.\n@default {\"ttl\":60000,\"ipLimit\":20,\"emailLimit\":5}",
@@ -111,40 +70,596 @@
             "max": 32
           }
         },
+        "allowSignup": {
+          "type": "boolean",
+          "description": "Allow new registrations.\n@default true",
+          "default": true,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "allowSignupForOauth": {
+          "type": "boolean",
+          "description": "Allow new registrations through configured OAuth providers.\n@default true",
+          "default": true,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "requireEmailDomainVerification": {
+          "type": "boolean",
+          "description": "Require email domain verification for restricted resources.\n@default false",
+          "default": false,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "newAccountActionDelay": {
+          "type": "integer",
+          "description": "Minimum account age in seconds for invites and document publishing.\n@default 86400",
+          "default": 86400,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "minimum": 0
+        },
         "session.ttl": {
-          "type": "number",
-          "description": "Application auth expiration time in seconds.\n@default 1296000",
-          "default": 1296000
+          "type": "integer",
+          "description": "Application auth expiration in seconds.\n@default 1296000",
+          "default": 1296000,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64"
         },
         "session.ttr": {
-          "type": "number",
-          "description": "Application auth time to refresh in seconds.\n@default 604800",
-          "default": 604800
+          "type": "integer",
+          "description": "Application auth refresh interval in seconds.\n@default 604800",
+          "default": 604800,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64"
         },
         "token.accessTokenTtl": {
-          "type": "number",
-          "description": "Access JWT expiration time in seconds.\n@default 900",
-          "default": 900
+          "type": "integer",
+          "description": "Access JWT expiration in seconds.\n@default 900",
+          "default": 900,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "maximum": 3600,
+          "minimum": 60
         },
         "token.refreshIdleTtl": {
-          "type": "number",
-          "description": "Auth refresh session inactivity expiration in seconds.\n@default 2592000",
-          "default": 2592000
+          "type": "integer",
+          "description": "Refresh session inactivity expiration in seconds.\n@default 2592000",
+          "default": 2592000,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "maximum": 31536000,
+          "minimum": 3600
         },
         "token.refreshAbsoluteTtl": {
-          "type": "number",
-          "description": "Auth refresh session absolute expiration in seconds.\n@default 15552000",
-          "default": 15552000
+          "type": "integer",
+          "description": "Refresh session absolute expiration in seconds.\n@default 15552000",
+          "default": 15552000,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "maximum": 63072000,
+          "minimum": 3600
         },
         "token.refreshGracePeriod": {
-          "type": "number",
-          "description": "One-use refresh rotation concurrency grace period in seconds.\n@default 30",
-          "default": 30
+          "type": "integer",
+          "description": "Refresh rotation concurrency grace period in seconds.\n@default 30",
+          "default": 30,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "maximum": 60,
+          "minimum": 0
         },
         "token.refreshRetention": {
-          "type": "number",
-          "description": "Retention for expired auth refresh generations in seconds.\n@default 2592000",
-          "default": 2592000
+          "type": "integer",
+          "description": "Expired refresh generation retention in seconds.\n@default 2592000",
+          "default": 2592000,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "maximum": 31536000,
+          "minimum": 3600
         }
       }
     },
@@ -271,226 +786,14 @@
         },
         "avatar.storage": {
           "type": "object",
-          "description": "The config of storage for user avatars.\n@default {\"provider\":\"fs\",\"bucket\":\"avatars\",\"config\":{\"path\":\"~/.affine/storage\"}}",
+          "description": "The config of storage for user avatars.\n@default {\"bucket\":\"avatars\",\"config\":{\"path\":\"~/.affine/storage\"},\"provider\":\"fs\"}",
           "oneOf": [
             {
-              "type": "object",
               "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "fs"
-                  ]
-                },
                 "bucket": {
                   "type": "string"
                 },
                 "config": {
-                  "type": "object",
-                  "properties": {
-                    "path": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "type": "object",
-              "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "aws-s3"
-                  ]
-                },
-                "bucket": {
-                  "type": "string"
-                },
-                "config": {
-                  "type": "object",
-                  "description": "The config for the S3 compatible storage provider.",
-                  "properties": {
-                    "endpoint": {
-                      "type": "string",
-                      "description": "The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region."
-                    },
-                    "region": {
-                      "type": "string",
-                      "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
-                    },
-                    "forcePathStyle": {
-                      "type": "boolean",
-                      "description": "Whether to use path-style bucket addressing."
-                    },
-                    "requestTimeoutMs": {
-                      "type": "number",
-                      "description": "Request timeout in milliseconds."
-                    },
-                    "minPartSize": {
-                      "type": "number",
-                      "description": "Minimum multipart part size in bytes."
-                    },
-                    "presign": {
-                      "type": "object",
-                      "description": "Presigned URL behavior configuration.",
-                      "properties": {
-                        "expiresInSeconds": {
-                          "type": "number",
-                          "description": "Expiration time in seconds for presigned URLs."
-                        },
-                        "signContentTypeForPut": {
-                          "type": "boolean",
-                          "description": "Whether to sign Content-Type for presigned PUT."
-                        }
-                      }
-                    },
-                    "credentials": {
-                      "type": "object",
-                      "description": "The credentials for the s3 compatible storage provider.",
-                      "properties": {
-                        "accessKeyId": {
-                          "type": "string"
-                        },
-                        "secretAccessKey": {
-                          "type": "string"
-                        },
-                        "sessionToken": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether browser upload URLs are enabled."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "type": "object",
-              "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "cloudflare-r2"
-                  ]
-                },
-                "bucket": {
-                  "type": "string"
-                },
-                "config": {
-                  "type": "object",
-                  "description": "The config for the S3 compatible storage provider.",
-                  "properties": {
-                    "region": {
-                      "type": "string",
-                      "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
-                    },
-                    "forcePathStyle": {
-                      "type": "boolean",
-                      "description": "Whether to use path-style bucket addressing."
-                    },
-                    "requestTimeoutMs": {
-                      "type": "number",
-                      "description": "Request timeout in milliseconds."
-                    },
-                    "minPartSize": {
-                      "type": "number",
-                      "description": "Minimum multipart part size in bytes."
-                    },
-                    "presign": {
-                      "type": "object",
-                      "description": "Presigned URL behavior configuration.",
-                      "properties": {
-                        "expiresInSeconds": {
-                          "type": "number",
-                          "description": "Expiration time in seconds for presigned URLs."
-                        },
-                        "signContentTypeForPut": {
-                          "type": "boolean",
-                          "description": "Whether to sign Content-Type for presigned PUT."
-                        }
-                      }
-                    },
-                    "credentials": {
-                      "type": "object",
-                      "description": "The credentials for the s3 compatible storage provider.",
-                      "properties": {
-                        "accessKeyId": {
-                          "type": "string"
-                        },
-                        "secretAccessKey": {
-                          "type": "string"
-                        },
-                        "sessionToken": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether browser upload URLs are enabled."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
-                        }
-                      }
-                    },
-                    "accountId": {
-                      "type": "string",
-                      "description": "The account id for the cloudflare r2 storage provider."
-                    },
-                    "jurisdiction": {
-                      "type": "string",
-                      "enum": [
-                        "default",
-                        "eu"
-                      ],
-                      "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "type": "object",
-              "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "assetpack"
-                  ]
-                },
-                "bucket": {
-                  "type": "string"
-                },
-                "config": {
-                  "type": "object",
                   "properties": {
                     "path": {
                       "type": "string"
@@ -498,246 +801,333 @@
                   },
                   "required": [
                     "path"
-                  ]
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "fs"
                 }
               },
               "required": [
                 "provider",
                 "bucket",
                 "config"
-              ]
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "assetpack"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "endpoint": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "forcePathStyle": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": "string"
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "region"
+                  ],
+                  "title": "S3ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "aws-s3"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "jurisdiction": {
+                      "enum": [
+                        "default",
+                        "eu",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "accountId"
+                  ],
+                  "title": "R2ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "cloudflare-r2"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
             }
           ],
           "default": {
-            "provider": "fs",
             "bucket": "avatars",
             "config": {
               "path": "~/.affine/storage"
-            }
+            },
+            "provider": "fs"
           }
         },
         "blob.storage": {
           "type": "object",
-          "description": "The config of storage for all uploaded blobs(images, videos, etc.).\n@default {\"provider\":\"fs\",\"bucket\":\"blobs\",\"config\":{\"path\":\"~/.affine/storage\"}}",
+          "description": "The config of storage for all uploaded blobs(images, videos, etc.).\n@default {\"bucket\":\"blobs\",\"config\":{\"path\":\"~/.affine/storage\"},\"provider\":\"fs\"}",
           "oneOf": [
             {
-              "type": "object",
               "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "fs"
-                  ]
-                },
                 "bucket": {
                   "type": "string"
                 },
                 "config": {
-                  "type": "object",
-                  "properties": {
-                    "path": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "type": "object",
-              "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "aws-s3"
-                  ]
-                },
-                "bucket": {
-                  "type": "string"
-                },
-                "config": {
-                  "type": "object",
-                  "description": "The config for the S3 compatible storage provider.",
-                  "properties": {
-                    "endpoint": {
-                      "type": "string",
-                      "description": "The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region."
-                    },
-                    "region": {
-                      "type": "string",
-                      "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
-                    },
-                    "forcePathStyle": {
-                      "type": "boolean",
-                      "description": "Whether to use path-style bucket addressing."
-                    },
-                    "requestTimeoutMs": {
-                      "type": "number",
-                      "description": "Request timeout in milliseconds."
-                    },
-                    "minPartSize": {
-                      "type": "number",
-                      "description": "Minimum multipart part size in bytes."
-                    },
-                    "presign": {
-                      "type": "object",
-                      "description": "Presigned URL behavior configuration.",
-                      "properties": {
-                        "expiresInSeconds": {
-                          "type": "number",
-                          "description": "Expiration time in seconds for presigned URLs."
-                        },
-                        "signContentTypeForPut": {
-                          "type": "boolean",
-                          "description": "Whether to sign Content-Type for presigned PUT."
-                        }
-                      }
-                    },
-                    "credentials": {
-                      "type": "object",
-                      "description": "The credentials for the s3 compatible storage provider.",
-                      "properties": {
-                        "accessKeyId": {
-                          "type": "string"
-                        },
-                        "secretAccessKey": {
-                          "type": "string"
-                        },
-                        "sessionToken": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether browser upload URLs are enabled."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "type": "object",
-              "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "cloudflare-r2"
-                  ]
-                },
-                "bucket": {
-                  "type": "string"
-                },
-                "config": {
-                  "type": "object",
-                  "description": "The config for the S3 compatible storage provider.",
-                  "properties": {
-                    "region": {
-                      "type": "string",
-                      "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
-                    },
-                    "forcePathStyle": {
-                      "type": "boolean",
-                      "description": "Whether to use path-style bucket addressing."
-                    },
-                    "requestTimeoutMs": {
-                      "type": "number",
-                      "description": "Request timeout in milliseconds."
-                    },
-                    "minPartSize": {
-                      "type": "number",
-                      "description": "Minimum multipart part size in bytes."
-                    },
-                    "presign": {
-                      "type": "object",
-                      "description": "Presigned URL behavior configuration.",
-                      "properties": {
-                        "expiresInSeconds": {
-                          "type": "number",
-                          "description": "Expiration time in seconds for presigned URLs."
-                        },
-                        "signContentTypeForPut": {
-                          "type": "boolean",
-                          "description": "Whether to sign Content-Type for presigned PUT."
-                        }
-                      }
-                    },
-                    "credentials": {
-                      "type": "object",
-                      "description": "The credentials for the s3 compatible storage provider.",
-                      "properties": {
-                        "accessKeyId": {
-                          "type": "string"
-                        },
-                        "secretAccessKey": {
-                          "type": "string"
-                        },
-                        "sessionToken": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether browser upload URLs are enabled."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
-                        }
-                      }
-                    },
-                    "accountId": {
-                      "type": "string",
-                      "description": "The account id for the cloudflare r2 storage provider."
-                    },
-                    "jurisdiction": {
-                      "type": "string",
-                      "enum": [
-                        "default",
-                        "eu"
-                      ],
-                      "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "type": "object",
-              "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "assetpack"
-                  ]
-                },
-                "bucket": {
-                  "type": "string"
-                },
-                "config": {
-                  "type": "object",
                   "properties": {
                     "path": {
                       "type": "string"
@@ -745,22 +1135,321 @@
                   },
                   "required": [
                     "path"
-                  ]
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "fs"
                 }
               },
               "required": [
                 "provider",
                 "bucket",
                 "config"
-              ]
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "assetpack"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "endpoint": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "forcePathStyle": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": "string"
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "region"
+                  ],
+                  "title": "S3ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "aws-s3"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "jurisdiction": {
+                      "enum": [
+                        "default",
+                        "eu",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "accountId"
+                  ],
+                  "title": "R2ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "cloudflare-r2"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
             }
           ],
           "default": {
-            "provider": "fs",
             "bucket": "blobs",
             "config": {
               "path": "~/.affine/storage"
-            }
+            },
+            "provider": "fs"
           }
         }
       }
@@ -844,45 +1533,6 @@
           "type": "boolean",
           "description": "Whether allow guest users to create demo workspaces.\n@default true",
           "default": true
-        }
-      }
-    },
-    "telemetry": {
-      "type": "object",
-      "description": "Configuration for telemetry module",
-      "properties": {
-        "allowedOrigin": {
-          "type": "array",
-          "description": "Allowed origins for telemetry collection.\n@default [\"localhost\",\"127.0.0.1\"]",
-          "default": [
-            "localhost",
-            "127.0.0.1"
-          ]
-        },
-        "ga4.measurementId": {
-          "type": "string",
-          "description": "GA4 Measurement ID for Measurement Protocol.\n@default \"\"\n@environment `GA4_MEASUREMENT_ID`",
-          "default": ""
-        },
-        "ga4.apiSecret": {
-          "type": "string",
-          "description": "GA4 API secret for Measurement Protocol.\n@default \"\"\n@environment `GA4_API_SECRET`",
-          "default": ""
-        },
-        "dedupe.ttlHours": {
-          "type": "number",
-          "description": "Telemetry dedupe TTL in hours.\n@default 24",
-          "default": 24
-        },
-        "dedupe.maxEntries": {
-          "type": "number",
-          "description": "Telemetry dedupe max entries.\n@default 100000",
-          "default": 100000
-        },
-        "batch.maxEvents": {
-          "type": "number",
-          "description": "Max events per telemetry batch.\n@default 25",
-          "default": 25
         }
       }
     },
@@ -1010,40 +1660,10 @@
         }
       }
     },
-    "captcha": {
-      "type": "object",
-      "description": "Configuration for captcha module",
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "description": "Check captcha challenge when user authenticating the app.\n@default false",
-          "default": false
-        },
-        "config": {
-          "type": "object",
-          "description": "The config for the captcha plugin.\n@default {\"turnstile\":{\"secret\":\"\",\"siteKey\":\"\",\"action\":\"auth-sign-in\"},\"challenge\":{\"bits\":20}}",
-          "default": {
-            "turnstile": {
-              "secret": "",
-              "siteKey": "",
-              "action": "auth-sign-in"
-            },
-            "challenge": {
-              "bits": 20
-            }
-          }
-        }
-      }
-    },
     "copilot": {
       "type": "object",
       "description": "Configuration for copilot module",
       "properties": {
-        "enabled": {
-          "type": "boolean",
-          "description": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.\n@default false",
-          "default": false
-        },
         "unsplash": {
           "type": "object",
           "description": "The config for the unsplash key.\n@default {\"key\":\"\"}",
@@ -1058,264 +1678,859 @@
             "key": ""
           }
         },
-        "storage": {
-          "type": "object",
-          "description": "The config for the storage provider.\n@default {\"provider\":\"fs\",\"bucket\":\"copilot\",\"config\":{\"path\":\"~/.affine/storage\"}}",
-          "oneOf": [
-            {
-              "type": "object",
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.\n@default false",
+          "default": false,
+          "definitions": {
+            "CopilotByokRuntimeConfig": {
               "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "fs"
-                  ]
+                "allowCustomEndpoint": {
+                  "default": false,
+                  "type": "boolean"
                 },
-                "bucket": {
-                  "type": "string"
+                "allowPrivateEndpoint": {
+                  "default": false,
+                  "type": "boolean"
                 },
-                "config": {
-                  "type": "object",
-                  "properties": {
-                    "path": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "type": "object",
-              "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "aws-s3"
-                  ]
-                },
-                "bucket": {
-                  "type": "string"
-                },
-                "config": {
-                  "type": "object",
-                  "description": "The config for the S3 compatible storage provider.",
-                  "properties": {
-                    "endpoint": {
-                      "type": "string",
-                      "description": "The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region."
-                    },
-                    "region": {
-                      "type": "string",
-                      "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
-                    },
-                    "forcePathStyle": {
-                      "type": "boolean",
-                      "description": "Whether to use path-style bucket addressing."
-                    },
-                    "requestTimeoutMs": {
-                      "type": "number",
-                      "description": "Request timeout in milliseconds."
-                    },
-                    "minPartSize": {
-                      "type": "number",
-                      "description": "Minimum multipart part size in bytes."
-                    },
-                    "presign": {
-                      "type": "object",
-                      "description": "Presigned URL behavior configuration.",
-                      "properties": {
-                        "expiresInSeconds": {
-                          "type": "number",
-                          "description": "Expiration time in seconds for presigned URLs."
-                        },
-                        "signContentTypeForPut": {
-                          "type": "boolean",
-                          "description": "Whether to sign Content-Type for presigned PUT."
-                        }
-                      }
-                    },
-                    "credentials": {
-                      "type": "object",
-                      "description": "The credentials for the s3 compatible storage provider.",
-                      "properties": {
-                        "accessKeyId": {
-                          "type": "string"
-                        },
-                        "secretAccessKey": {
-                          "type": "string"
-                        },
-                        "sessionToken": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether browser upload URLs are enabled."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "type": "object",
-              "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "cloudflare-r2"
-                  ]
-                },
-                "bucket": {
-                  "type": "string"
-                },
-                "config": {
-                  "type": "object",
-                  "description": "The config for the S3 compatible storage provider.",
-                  "properties": {
-                    "region": {
-                      "type": "string",
-                      "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
-                    },
-                    "forcePathStyle": {
-                      "type": "boolean",
-                      "description": "Whether to use path-style bucket addressing."
-                    },
-                    "requestTimeoutMs": {
-                      "type": "number",
-                      "description": "Request timeout in milliseconds."
-                    },
-                    "minPartSize": {
-                      "type": "number",
-                      "description": "Minimum multipart part size in bytes."
-                    },
-                    "presign": {
-                      "type": "object",
-                      "description": "Presigned URL behavior configuration.",
-                      "properties": {
-                        "expiresInSeconds": {
-                          "type": "number",
-                          "description": "Expiration time in seconds for presigned URLs."
-                        },
-                        "signContentTypeForPut": {
-                          "type": "boolean",
-                          "description": "Whether to sign Content-Type for presigned PUT."
-                        }
-                      }
-                    },
-                    "credentials": {
-                      "type": "object",
-                      "description": "The credentials for the s3 compatible storage provider.",
-                      "properties": {
-                        "accessKeyId": {
-                          "type": "string"
-                        },
-                        "secretAccessKey": {
-                          "type": "string"
-                        },
-                        "sessionToken": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether browser upload URLs are enabled."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "Optional base URL for proxied uploads and signed custom GET URLs. Provider presigned uploads require an origin-only value when signKey is not configured."
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "Optional HMAC key for signed upload and custom GET URLs. Custom GET URLs require both signKey and urlPrefix."
-                        }
-                      }
-                    },
-                    "accountId": {
-                      "type": "string",
-                      "description": "The account id for the cloudflare r2 storage provider."
-                    },
-                    "jurisdiction": {
-                      "type": "string",
-                      "enum": [
-                        "default",
-                        "eu"
-                      ],
-                      "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "type": "object",
-              "properties": {
-                "provider": {
-                  "type": "string",
-                  "enum": [
-                    "assetpack"
-                  ]
-                },
-                "bucket": {
-                  "type": "string"
-                },
-                "config": {
-                  "type": "object",
-                  "properties": {
-                    "path": {
-                      "type": "string"
-                    }
+                "allowedProviders": {
+                  "default": [
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "fal"
+                  ],
+                  "items": {
+                    "type": "string"
                   },
-                  "required": [
-                    "path"
+                  "type": "array"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotGoogleAuthOptionsFile": {
+              "properties": {
+                "credentials": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotGoogleCredentialsFile"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 }
               },
+              "type": "object"
+            },
+            "CopilotGoogleCredentialsFile": {
+              "additionalProperties": true,
+              "properties": {
+                "client_email": {
+                  "type": "string"
+                },
+                "private_key": {
+                  "type": "string"
+                }
+              },
               "required": [
-                "provider",
-                "bucket",
+                "client_email",
+                "private_key"
+              ],
+              "type": "object"
+            },
+            "CopilotManagedProfileConfigFile": {
+              "properties": {
+                "config": {
+                  "$ref": "#/definitions/CopilotManagedProviderSettingsFile"
+                },
+                "displayName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "middleware": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotProviderMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "models": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "priority": {
+                  "format": "double",
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "type": {
+                  "$ref": "#/definitions/CopilotManagedProvider"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "models",
                 "config"
-              ]
-            }
-          ],
-          "default": {
-            "provider": "fs",
-            "bucket": "copilot",
-            "config": {
-              "path": "~/.affine/storage"
+              ],
+              "type": "object"
+            },
+            "CopilotManagedProvider": {
+              "enum": [
+                "anthropic",
+                "anthropicVertex",
+                "cloudflareWorkersAi",
+                "fal",
+                "gemini",
+                "geminiVertex",
+                "openai"
+              ],
+              "type": "string"
+            },
+            "CopilotManagedProviderSettingsFile": {
+              "additionalProperties": true,
+              "properties": {
+                "accountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apiKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apiToken": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "baseURL": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "googleAuthOptions": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotGoogleAuthOptionsFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "project": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotNodeMiddlewareConfigFile": {
+              "properties": {
+                "text": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotNodeTextMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotNodeTextMiddleware": {
+              "enum": [
+                "citation_footnote",
+                "callout",
+                "thinking_format"
+              ],
+              "type": "string"
+            },
+            "CopilotProviderMiddlewareConfigFile": {
+              "properties": {
+                "node": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotNodeMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rust": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotRustMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotProvidersRuntimeConfigFile": {
+              "properties": {
+                "profiles": {
+                  "default": [],
+                  "items": {
+                    "$ref": "#/definitions/CopilotManagedProfileConfigFile"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotRustMiddlewareConfigFile": {
+              "properties": {
+                "request": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotRustRequestMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "stream": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotRustStreamMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotRustRequestMiddleware": {
+              "enum": [
+                "normalize_messages",
+                "clamp_max_tokens",
+                "tool_schema_rewrite",
+                "openai_request_compat",
+                "omit_tool_choice"
+              ],
+              "type": "string"
+            },
+            "CopilotRustStreamMiddleware": {
+              "enum": [
+                "stream_event_normalize",
+                "citation_indexing"
+              ],
+              "type": "string"
             }
           }
         },
         "byok.enabled": {
           "type": "boolean",
           "description": "Allow workspace owners and admins to configure AI provider keys through AI BYOK.\n@default true",
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "title": "boolean",
-          "default": true
+          "default": true,
+          "definitions": {
+            "CopilotByokRuntimeConfig": {
+              "properties": {
+                "allowCustomEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowPrivateEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowedProviders": {
+                  "default": [
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "fal"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotGoogleAuthOptionsFile": {
+              "properties": {
+                "credentials": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotGoogleCredentialsFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotGoogleCredentialsFile": {
+              "additionalProperties": true,
+              "properties": {
+                "client_email": {
+                  "type": "string"
+                },
+                "private_key": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "client_email",
+                "private_key"
+              ],
+              "type": "object"
+            },
+            "CopilotManagedProfileConfigFile": {
+              "properties": {
+                "config": {
+                  "$ref": "#/definitions/CopilotManagedProviderSettingsFile"
+                },
+                "displayName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "middleware": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotProviderMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "models": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "priority": {
+                  "format": "double",
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "type": {
+                  "$ref": "#/definitions/CopilotManagedProvider"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "models",
+                "config"
+              ],
+              "type": "object"
+            },
+            "CopilotManagedProvider": {
+              "enum": [
+                "anthropic",
+                "anthropicVertex",
+                "cloudflareWorkersAi",
+                "fal",
+                "gemini",
+                "geminiVertex",
+                "openai"
+              ],
+              "type": "string"
+            },
+            "CopilotManagedProviderSettingsFile": {
+              "additionalProperties": true,
+              "properties": {
+                "accountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apiKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apiToken": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "baseURL": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "googleAuthOptions": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotGoogleAuthOptionsFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "project": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotNodeMiddlewareConfigFile": {
+              "properties": {
+                "text": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotNodeTextMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotNodeTextMiddleware": {
+              "enum": [
+                "citation_footnote",
+                "callout",
+                "thinking_format"
+              ],
+              "type": "string"
+            },
+            "CopilotProviderMiddlewareConfigFile": {
+              "properties": {
+                "node": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotNodeMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rust": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotRustMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotProvidersRuntimeConfigFile": {
+              "properties": {
+                "profiles": {
+                  "default": [],
+                  "items": {
+                    "$ref": "#/definitions/CopilotManagedProfileConfigFile"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotRustMiddlewareConfigFile": {
+              "properties": {
+                "request": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotRustRequestMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "stream": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotRustStreamMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotRustRequestMiddleware": {
+              "enum": [
+                "normalize_messages",
+                "clamp_max_tokens",
+                "tool_schema_rewrite",
+                "openai_request_compat",
+                "omit_tool_choice"
+              ],
+              "type": "string"
+            },
+            "CopilotRustStreamMiddleware": {
+              "enum": [
+                "stream_event_normalize",
+                "citation_indexing"
+              ],
+              "type": "string"
+            }
+          }
         },
         "byok.allowedProviders": {
           "type": "array",
           "description": "AI providers that workspace owners and admins may add through AI BYOK.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
-          "$schema": "http://json-schema.org/draft-07/schema#",
+          "default": [
+            "openai",
+            "anthropic",
+            "gemini",
+            "fal"
+          ],
+          "definitions": {
+            "CopilotByokRuntimeConfig": {
+              "properties": {
+                "allowCustomEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowPrivateEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowedProviders": {
+                  "default": [
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "fal"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotGoogleAuthOptionsFile": {
+              "properties": {
+                "credentials": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotGoogleCredentialsFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotGoogleCredentialsFile": {
+              "additionalProperties": true,
+              "properties": {
+                "client_email": {
+                  "type": "string"
+                },
+                "private_key": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "client_email",
+                "private_key"
+              ],
+              "type": "object"
+            },
+            "CopilotManagedProfileConfigFile": {
+              "properties": {
+                "config": {
+                  "$ref": "#/definitions/CopilotManagedProviderSettingsFile"
+                },
+                "displayName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "middleware": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotProviderMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "models": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "priority": {
+                  "format": "double",
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "type": {
+                  "$ref": "#/definitions/CopilotManagedProvider"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "models",
+                "config"
+              ],
+              "type": "object"
+            },
+            "CopilotManagedProvider": {
+              "enum": [
+                "anthropic",
+                "anthropicVertex",
+                "cloudflareWorkersAi",
+                "fal",
+                "gemini",
+                "geminiVertex",
+                "openai"
+              ],
+              "type": "string"
+            },
+            "CopilotManagedProviderSettingsFile": {
+              "additionalProperties": true,
+              "properties": {
+                "accountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apiKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apiToken": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "baseURL": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "googleAuthOptions": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotGoogleAuthOptionsFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "project": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotNodeMiddlewareConfigFile": {
+              "properties": {
+                "text": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotNodeTextMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotNodeTextMiddleware": {
+              "enum": [
+                "citation_footnote",
+                "callout",
+                "thinking_format"
+              ],
+              "type": "string"
+            },
+            "CopilotProviderMiddlewareConfigFile": {
+              "properties": {
+                "node": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotNodeMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rust": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotRustMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotProvidersRuntimeConfigFile": {
+              "properties": {
+                "profiles": {
+                  "default": [],
+                  "items": {
+                    "$ref": "#/definitions/CopilotManagedProfileConfigFile"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotRustMiddlewareConfigFile": {
+              "properties": {
+                "request": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotRustRequestMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "stream": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotRustStreamMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotRustRequestMiddleware": {
+              "enum": [
+                "normalize_messages",
+                "clamp_max_tokens",
+                "tool_schema_rewrite",
+                "openai_request_compat",
+                "omit_tool_choice"
+              ],
+              "type": "string"
+            },
+            "CopilotRustStreamMiddleware": {
+              "enum": [
+                "stream_event_normalize",
+                "citation_indexing"
+              ],
+              "type": "string"
+            }
+          },
           "items": {
             "enum": [
               "openai",
@@ -1324,28 +2539,907 @@
               "fal"
             ],
             "type": "string"
-          },
-          "title": "Array_of_string",
-          "default": [
-            "openai",
-            "anthropic",
-            "gemini",
-            "fal"
-          ]
+          }
         },
         "byok.allowCustomEndpoint": {
           "type": "boolean",
           "description": "Allow AI BYOK keys to use a custom provider endpoint.\n@default false",
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "title": "boolean",
-          "default": false
+          "default": false,
+          "definitions": {
+            "CopilotByokRuntimeConfig": {
+              "properties": {
+                "allowCustomEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowPrivateEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowedProviders": {
+                  "default": [
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "fal"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotGoogleAuthOptionsFile": {
+              "properties": {
+                "credentials": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotGoogleCredentialsFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotGoogleCredentialsFile": {
+              "additionalProperties": true,
+              "properties": {
+                "client_email": {
+                  "type": "string"
+                },
+                "private_key": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "client_email",
+                "private_key"
+              ],
+              "type": "object"
+            },
+            "CopilotManagedProfileConfigFile": {
+              "properties": {
+                "config": {
+                  "$ref": "#/definitions/CopilotManagedProviderSettingsFile"
+                },
+                "displayName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "middleware": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotProviderMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "models": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "priority": {
+                  "format": "double",
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "type": {
+                  "$ref": "#/definitions/CopilotManagedProvider"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "models",
+                "config"
+              ],
+              "type": "object"
+            },
+            "CopilotManagedProvider": {
+              "enum": [
+                "anthropic",
+                "anthropicVertex",
+                "cloudflareWorkersAi",
+                "fal",
+                "gemini",
+                "geminiVertex",
+                "openai"
+              ],
+              "type": "string"
+            },
+            "CopilotManagedProviderSettingsFile": {
+              "additionalProperties": true,
+              "properties": {
+                "accountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apiKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apiToken": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "baseURL": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "googleAuthOptions": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotGoogleAuthOptionsFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "project": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotNodeMiddlewareConfigFile": {
+              "properties": {
+                "text": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotNodeTextMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotNodeTextMiddleware": {
+              "enum": [
+                "citation_footnote",
+                "callout",
+                "thinking_format"
+              ],
+              "type": "string"
+            },
+            "CopilotProviderMiddlewareConfigFile": {
+              "properties": {
+                "node": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotNodeMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rust": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotRustMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotProvidersRuntimeConfigFile": {
+              "properties": {
+                "profiles": {
+                  "default": [],
+                  "items": {
+                    "$ref": "#/definitions/CopilotManagedProfileConfigFile"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotRustMiddlewareConfigFile": {
+              "properties": {
+                "request": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotRustRequestMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "stream": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotRustStreamMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotRustRequestMiddleware": {
+              "enum": [
+                "normalize_messages",
+                "clamp_max_tokens",
+                "tool_schema_rewrite",
+                "openai_request_compat",
+                "omit_tool_choice"
+              ],
+              "type": "string"
+            },
+            "CopilotRustStreamMiddleware": {
+              "enum": [
+                "stream_event_normalize",
+                "citation_indexing"
+              ],
+              "type": "string"
+            }
+          }
         },
         "byok.allowPrivateEndpoint": {
           "type": "boolean",
           "description": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network.\n@default false",
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "title": "boolean",
-          "default": false
+          "default": false,
+          "definitions": {
+            "CopilotByokRuntimeConfig": {
+              "properties": {
+                "allowCustomEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowPrivateEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowedProviders": {
+                  "default": [
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "fal"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotGoogleAuthOptionsFile": {
+              "properties": {
+                "credentials": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotGoogleCredentialsFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotGoogleCredentialsFile": {
+              "additionalProperties": true,
+              "properties": {
+                "client_email": {
+                  "type": "string"
+                },
+                "private_key": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "client_email",
+                "private_key"
+              ],
+              "type": "object"
+            },
+            "CopilotManagedProfileConfigFile": {
+              "properties": {
+                "config": {
+                  "$ref": "#/definitions/CopilotManagedProviderSettingsFile"
+                },
+                "displayName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "middleware": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotProviderMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "models": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "priority": {
+                  "format": "double",
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "type": {
+                  "$ref": "#/definitions/CopilotManagedProvider"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "models",
+                "config"
+              ],
+              "type": "object"
+            },
+            "CopilotManagedProvider": {
+              "enum": [
+                "anthropic",
+                "anthropicVertex",
+                "cloudflareWorkersAi",
+                "fal",
+                "gemini",
+                "geminiVertex",
+                "openai"
+              ],
+              "type": "string"
+            },
+            "CopilotManagedProviderSettingsFile": {
+              "additionalProperties": true,
+              "properties": {
+                "accountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apiKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apiToken": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "baseURL": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "googleAuthOptions": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotGoogleAuthOptionsFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "project": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotNodeMiddlewareConfigFile": {
+              "properties": {
+                "text": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotNodeTextMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotNodeTextMiddleware": {
+              "enum": [
+                "citation_footnote",
+                "callout",
+                "thinking_format"
+              ],
+              "type": "string"
+            },
+            "CopilotProviderMiddlewareConfigFile": {
+              "properties": {
+                "node": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotNodeMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rust": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/CopilotRustMiddlewareConfigFile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotProvidersRuntimeConfigFile": {
+              "properties": {
+                "profiles": {
+                  "default": [],
+                  "items": {
+                    "$ref": "#/definitions/CopilotManagedProfileConfigFile"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotRustMiddlewareConfigFile": {
+              "properties": {
+                "request": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotRustRequestMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "stream": {
+                  "items": {
+                    "$ref": "#/definitions/CopilotRustStreamMiddleware"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "CopilotRustRequestMiddleware": {
+              "enum": [
+                "normalize_messages",
+                "clamp_max_tokens",
+                "tool_schema_rewrite",
+                "openai_request_compat",
+                "omit_tool_choice"
+              ],
+              "type": "string"
+            },
+            "CopilotRustStreamMiddleware": {
+              "enum": [
+                "stream_event_normalize",
+                "citation_indexing"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        "storage": {
+          "type": "object",
+          "description": "The config for the storage provider.\n@default {\"bucket\":\"copilot\",\"config\":{\"path\":\"~/.affine/storage\"},\"provider\":\"fs\"}",
+          "oneOf": [
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "fs"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "assetpack"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "endpoint": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "forcePathStyle": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": "string"
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "region"
+                  ],
+                  "title": "S3ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "aws-s3"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "jurisdiction": {
+                      "enum": [
+                        "default",
+                        "eu",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "accountId"
+                  ],
+                  "title": "R2ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "cloudflare-r2"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            }
+          ],
+          "default": {
+            "bucket": "copilot",
+            "config": {
+              "path": "~/.affine/storage"
+            },
+            "provider": "fs"
+          }
         }
       }
     },
@@ -1355,33 +3449,272 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Enable indexer plugin\n@default false",
-          "default": false
+          "description": "Enable the indexer.\n@default false",
+          "default": false,
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
         },
         "provider.type": {
           "type": "string",
-          "description": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint.\n@default \"embedded\"",
-          "default": "embedded"
+          "description": "Search provider type.\n@default \"embedded\"",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SearchProviderType"
+            }
+          ],
+          "default": "embedded",
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
         },
         "provider.endpoint": {
           "type": "string",
-          "description": "Remote indexer endpoint. Not used by the embedded provider.\n@default \"\"",
-          "default": ""
+          "description": "Remote search provider endpoint.\n@default \"\"",
+          "default": "",
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
         },
         "provider.apiKey": {
           "type": "string",
-          "description": "Indexer search service api key. Optional for remote providers\n@default \"\"\n@link https://www.elastic.co/guide/server/current/api-key.html",
-          "default": ""
+          "description": "Remote search provider API key.\n@default \"\"",
+          "default": "",
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
         },
         "provider.username": {
           "type": "string",
-          "description": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for remote providers\n@default \"\"\n@link https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
-          "default": ""
+          "description": "Remote search provider username.\n@default \"\"",
+          "default": "",
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
         },
         "provider.password": {
           "type": "string",
-          "description": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for remote providers\n@default \"\"",
-          "default": ""
+          "description": "Remote search provider password.\n@default \"\"",
+          "default": "",
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
         }
       }
     },
@@ -1391,127 +3724,126 @@
       "properties": {
         "providers.google": {
           "type": "object",
-          "description": "Google OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://developers.google.com/identity/protocols/oauth2/web-server",
+          "description": "Google OAuth provider config\n@default {\"args\":{},\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://developers.google.com/identity/protocols/oauth2/web-server",
+          "$schema": "http://json-schema.org/draft-07/schema#",
           "properties": {
+            "args": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {},
+              "type": "object"
+            },
             "clientId": {
+              "default": "",
               "type": "string"
             },
             "clientSecret": {
+              "default": "",
               "type": "string"
-            },
-            "args": {
-              "type": "object"
             }
           },
+          "title": "OAuthProviderConfigFile",
           "default": {
+            "args": {},
             "clientId": "",
             "clientSecret": ""
           }
         },
         "providers.github": {
           "type": "object",
-          "description": "GitHub OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://docs.github.com/en/apps/oauth-apps",
+          "description": "GitHub OAuth provider config\n@default {\"args\":{},\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://docs.github.com/en/apps/oauth-apps",
+          "$schema": "http://json-schema.org/draft-07/schema#",
           "properties": {
+            "args": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {},
+              "type": "object"
+            },
             "clientId": {
+              "default": "",
               "type": "string"
             },
             "clientSecret": {
+              "default": "",
               "type": "string"
-            },
-            "args": {
-              "type": "object"
             }
           },
+          "title": "OAuthProviderConfigFile",
           "default": {
+            "args": {},
             "clientId": "",
             "clientSecret": ""
           }
         },
         "providers.oidc": {
           "type": "object",
-          "description": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true\n@default {\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\",\"allowPrivateNetwork\":false,\"args\":{}}\n@link https://openid.net/specs/openid-connect-core-1_0.html",
+          "description": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true\n@default {\"allowPrivateNetwork\":false,\"args\":{},\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\"}\n@link https://openid.net/specs/openid-connect-core-1_0.html",
+          "$schema": "http://json-schema.org/draft-07/schema#",
           "properties": {
+            "allowPrivateNetwork": {
+              "default": false,
+              "description": "Allow the OIDC issuer origin to resolve to private network addresses",
+              "type": "boolean"
+            },
+            "args": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {},
+              "type": "object"
+            },
             "clientId": {
+              "default": "",
               "type": "string"
             },
             "clientSecret": {
+              "default": "",
               "type": "string"
             },
-            "args": {
-              "type": "object"
-            },
             "issuer": {
-              "type": "string",
-              "description": "OIDC issuer URL"
-            },
-            "allowPrivateNetwork": {
-              "type": "boolean",
-              "description": "Allow the OIDC issuer origin to resolve to private network addresses"
+              "default": "",
+              "description": "OIDC issuer HTTP(S) URL",
+              "type": "string"
             }
           },
+          "title": "OAuthProviderConfigFile",
           "default": {
+            "allowPrivateNetwork": false,
+            "args": {},
             "clientId": "",
             "clientSecret": "",
-            "issuer": "",
-            "allowPrivateNetwork": false,
-            "args": {}
+            "issuer": ""
           }
         },
         "providers.apple": {
           "type": "object",
-          "description": "Apple OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app",
+          "description": "Apple OAuth provider config\n@default {\"args\":{},\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app",
+          "$schema": "http://json-schema.org/draft-07/schema#",
           "properties": {
+            "args": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {},
+              "type": "object"
+            },
             "clientId": {
+              "default": "",
               "type": "string"
             },
             "clientSecret": {
+              "default": "",
               "type": "string"
-            },
-            "args": {
-              "type": "object"
             }
           },
+          "title": "OAuthProviderConfigFile",
           "default": {
+            "args": {},
             "clientId": "",
             "clientSecret": ""
-          }
-        }
-      }
-    },
-    "payment": {
-      "type": "object",
-      "description": "Configuration for payment module",
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "description": "Whether enable payment plugin\n@default false",
-          "default": false
-        },
-        "showLifetimePrice": {
-          "type": "boolean",
-          "description": "Whether enable lifetime price and allow user to pay for it.\n@default true",
-          "default": true
-        },
-        "stripe": {
-          "type": "object",
-          "description": "Stripe sdk options and credentials\n@default {\"apiKey\":\"\",\"webhookKey\":\"\",\"accountId\":\"\",\"environment\":\"test\"}\n@link https://docs.stripe.com/api",
-          "default": {
-            "apiKey": "",
-            "webhookKey": "",
-            "accountId": "",
-            "environment": "test"
-          }
-        },
-        "revenuecat": {
-          "type": "object",
-          "description": "RevenueCat integration configs\n@default {\"enabled\":false,\"apiKey\":\"\",\"projectId\":\"\",\"webhookAuth\":\"\",\"environment\":\"production\",\"productMap\":{}}\n@link https://www.revenuecat.com/docs/",
-          "default": {
-            "enabled": false,
-            "apiKey": "",
-            "projectId": "",
-            "webhookAuth": "",
-            "environment": "production",
-            "productMap": {}
           }
         }
       }

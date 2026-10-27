@@ -189,7 +189,10 @@ export class Transformer {
     }
   };
 
-  snapshotToDoc = async (snapshot: DocSnapshot): Promise<Store | undefined> => {
+  snapshotToDoc = async (
+    snapshot: DocSnapshot,
+    options: { replaceExisting?: boolean } = {}
+  ): Promise<Store | undefined> => {
     try {
       this._slots.beforeImport.next({
         type: 'page',
@@ -199,7 +202,13 @@ export class Transformer {
       const { meta, blocks } = snapshot;
       const doc = this.docCRUD.create(meta.id);
       doc.load();
-      await this.snapshotToBlock(blocks, doc);
+      await this._snapshotToBlock(
+        blocks,
+        doc,
+        undefined,
+        undefined,
+        options.replaceExisting
+      );
       this._slots.afterImport.next({
         type: 'page',
         snapshot,
@@ -410,12 +419,21 @@ export class Transformer {
     return snapshot;
   }
 
-  private async _convertFlatSnapshots(flatSnapshots: FlatSnapshot[]) {
+  private async _convertFlatSnapshots(
+    flatSnapshots: FlatSnapshot[],
+    requireComplete = false
+  ) {
     // Phase 1: Convert snapshots to draft models in series
     // This is not time-consuming, this is faster than Promise.all
     const draftModels = [];
     for (const flat of flatSnapshots) {
       const draft = await this._convertSnapshotToDraftModel(flat);
+      if (!draft && requireComplete) {
+        throw new BlockSuiteError(
+          ErrorCode.TransformerError,
+          `Cannot replace document: failed to convert block ${flat.snapshot.id}`
+        );
+      }
       if (draft) {
         draft.id = flat.snapshot.id;
       }
@@ -607,15 +625,37 @@ export class Transformer {
     snapshot: BlockSnapshot,
     doc: Store,
     parent?: string,
-    index?: number
+    index?: number,
+    replaceExisting = false
   ): Promise<BlockModel | null> {
     this._triggerBeforeImportEvent(snapshot, parent, index);
 
     const flatSnapshots: FlatSnapshot[] = [];
     this._flattenSnapshot(snapshot, flatSnapshots, parent, index);
 
-    const blockTree = await this._convertFlatSnapshots(flatSnapshots);
+    const blockTree = await this._convertFlatSnapshots(
+      flatSnapshots,
+      replaceExisting
+    );
 
+    if (replaceExisting) {
+      const flavours = new Map(
+        flatSnapshots.map(({ snapshot }) => [snapshot.id, snapshot.flavour])
+      );
+      if (flavours.size !== flatSnapshots.length) {
+        throw new BlockSuiteError(
+          ErrorCode.TransformerError,
+          'Cannot replace document: duplicate block IDs'
+        );
+      }
+      for (const { snapshot, parentId } of flatSnapshots) {
+        this.schema.validate(
+          snapshot.flavour,
+          parentId ? flavours.get(parentId) : undefined
+        );
+      }
+      doc.transact(() => doc.doc.clear());
+    }
     await this._insertBlockTree([blockTree], doc, parent, index);
 
     return doc.getBlock(snapshot.id)?.model ?? null;

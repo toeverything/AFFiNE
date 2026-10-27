@@ -174,7 +174,20 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
         });
       }
     } catch (e) {
-      this.logger.error('Failed to insert doc updates', e);
+      this.logger.error('Failed to insert doc updates', {
+        workspaceId,
+        docId,
+        actorUserId: editorId,
+        writeIntent: 'trusted' in contract ? 'trusted' : contract.writeIntent,
+        permissionDocId:
+          'trusted' in contract ? docId : (contract.permissionDocId ?? docId),
+        expectedPermissionGeneration:
+          'trusted' in contract
+            ? undefined
+            : contract.expectedPermissionGeneration,
+        updateCount: updates.length,
+        error: e,
+      });
       metrics.doc.counter('doc_update_insert_failed').add(1);
       throw new FailedToSaveUpdates();
     }

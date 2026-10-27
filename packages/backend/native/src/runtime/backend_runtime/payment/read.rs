@@ -1,13 +1,11 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
-use affine_core::payment::{
-  FinancialFact, FinancialKind, FinancialRestriction, FinancialStatus, effective_financial_restriction,
-};
+use affine_core::payment::{FinancialFact, FinancialKind, FinancialStatus};
 use sqlx::{Postgres, Row, Transaction};
 
 use super::{
   super::{RuntimeError, RuntimeResult, entitlement::RuntimeEntitlementTarget},
-  FinancialSnapshot, PaymentConnection, PaymentScope, PaymentSnapshot, SnapshotCoverage,
+  PaymentConnection, PaymentScope, PaymentSnapshot, SnapshotCoverage,
 };
 
 pub(super) struct StoredSubscription {
@@ -168,8 +166,7 @@ pub(super) async fn lock_subscription_rows(
     .then_some(snapshot.customer_id.as_deref())
     .flatten();
   let rows = sqlx::query(
-    r#"SELECT id,provider_namespace,source_identity,external_subscription_id,target_type,target_id,external_customer_id,
-              iap_store::text AS iap_store,external_ref,external_product_id
+    r#"SELECT id,provider_namespace,source_identity,target_type,target_id,external_customer_id
        FROM provider_subscriptions
        WHERE (provider_namespace=$1 AND (source_identity=ANY($2) OR ($3::text IS NOT NULL AND external_customer_id=$3)))
           OR (provider=$4::"Provider" AND external_subscription_id=ANY($5))
@@ -184,39 +181,27 @@ pub(super) async fn lock_subscription_rows(
   .fetch_all(&mut **tx)
   .await
   .map_err(|error| RuntimeError::database("lock payment subscription rows", error))?;
-  Ok(
-    rows
-      .into_iter()
-      .filter_map(|row| {
-        let source_id: Option<String> = row.get::<Option<String>, _>("source_identity").or_else(|| {
-          let external_id = row.get::<Option<String>, _>("external_subscription_id");
-          let iap_store = row.get::<Option<String>, _>("iap_store");
-          let external_ref = row.get::<Option<String>, _>("external_ref");
-          let external_product_id = row.get::<Option<String>, _>("external_product_id");
-          snapshot.subscriptions.iter().find_map(|subscription| {
-            let matches_external_id = external_id.is_some() && subscription.external_subscription_id == external_id;
-            let matches_revenuecat_legacy = snapshot.provider() == affine_core::payment::Provider::RevenueCat
-              && subscription.iap_store == iap_store
-              && subscription.external_ref == external_ref
-              && subscription.external_product_id == external_product_id;
-            (matches_external_id || matches_revenuecat_legacy).then(|| subscription.source_id.clone())
-          })
-        });
-        source_id.map(|source_id| StoredSubscription {
-          id: row.get("id"),
-          namespace: row
-            .get::<Option<String>, _>("provider_namespace")
-            .unwrap_or_else(|| namespace.to_string()),
-          source_id,
-          target: RuntimeEntitlementTarget {
-            target_type: row.get("target_type"),
-            target_id: row.get("target_id"),
-          },
-          customer_id: row.get("external_customer_id"),
-        })
+  rows
+    .into_iter()
+    .map(|row| {
+      let namespace = row
+        .get::<Option<String>, _>("provider_namespace")
+        .ok_or_else(|| RuntimeError::invalid_state("legacy payment source requires pre-repair"))?;
+      let source_id = row
+        .get::<Option<String>, _>("source_identity")
+        .ok_or_else(|| RuntimeError::invalid_state("legacy payment source requires pre-repair"))?;
+      Ok(StoredSubscription {
+        id: row.get("id"),
+        namespace,
+        source_id,
+        target: RuntimeEntitlementTarget {
+          target_type: row.get("target_type"),
+          target_id: row.get("target_id"),
+        },
+        customer_id: row.get("external_customer_id"),
       })
-      .collect(),
-  )
+    })
+    .collect()
 }
 
 pub(super) async fn lock_receipts_and_operation(
@@ -289,126 +274,105 @@ pub(super) async fn lock_receipts_and_operation(
   })
 }
 
-pub(super) async fn load_financial_restrictions(
+pub(super) async fn stored_subscription_decision(
   tx: &mut Transaction<'_, Postgres>,
-  snapshot: &PaymentSnapshot,
-  namespace: &str,
-) -> RuntimeResult<BTreeMap<String, FinancialRestriction>> {
-  let source_ids = snapshot
-    .subscriptions
+  row: &sqlx::postgres::PgRow,
+  financial_rows: &[sqlx::postgres::PgRow],
+  now: chrono::DateTime<chrono::Utc>,
+) -> RuntimeResult<(
+  affine_core::payment::NormalizedSubscription,
+  affine_core::payment::FinancialRestriction,
+)> {
+  use affine_core::{
+    access_control::Plan,
+    payment::{Provider, ProviderLifecycle, ProviderSubscriptionFacts, SubscriptionRecurring, decide_subscription},
+  };
+  let facts = financial_rows
     .iter()
-    .map(|subscription| subscription.source_id.as_str())
-    .chain(
-      snapshot
-        .financial_facts
-        .iter()
-        .filter_map(|fact| fact.source_id.as_deref()),
-    )
-    .collect::<BTreeSet<_>>()
-    .into_iter()
-    .collect::<Vec<_>>();
-  let external_ids = snapshot
-    .financial_facts
-    .iter()
-    .map(|fact| fact.external_id.as_str())
-    .collect::<Vec<_>>();
-  let rows = sqlx::query(
-    "SELECT source_identity,object_kind,external_id,status,occurred_at FROM payment_financial_facts WHERE \
-     provider_namespace=$1 AND (source_identity=ANY($2) OR external_id=ANY($3)) ORDER BY object_kind,external_id FOR \
-     UPDATE",
+    .map(|row| {
+      let kind = FinancialKind::parse(row.get::<String, _>("object_kind").as_str())
+        .ok_or_else(|| RuntimeError::invalid_state("unknown financial kind"))?;
+      let status = FinancialStatus::parse(row.get::<String, _>("status").as_str())
+        .ok_or_else(|| RuntimeError::invalid_state("unknown financial status"))?;
+      let metadata: serde_json::Value = row.get("metadata");
+      let invoice = metadata
+        .get("invoice")
+        .cloned()
+        .map(serde_json::from_value)
+        .transpose()
+        .map_err(|_| RuntimeError::invalid_state("invalid invoice financial facts"))?;
+      Ok(FinancialFact { kind, status, invoice })
+    })
+    .collect::<RuntimeResult<Vec<_>>>()?;
+  let events = sqlx::query(
+    "SELECT occurred_at,metadata FROM payment_events WHERE provider_namespace=$1 AND \
+     event_type='customer.subscription.updated' AND metadata #>> '{data,object,id}'=$2 AND (metadata #> \
+     '{data,previous_attributes}') ? 'pause_collection' ORDER BY occurred_at",
   )
-  .bind(namespace)
-  .bind(&source_ids)
-  .bind(&external_ids)
+  .bind(row.get::<String, _>("provider_namespace"))
+  .bind(row.get::<String, _>("source_identity"))
   .fetch_all(&mut **tx)
   .await
-  .map_err(|error| RuntimeError::database("read payment financial restrictions", error))?;
-  let mut facts = FinancialFacts::new();
-  for row in rows {
-    let object_kind: String = row.get("object_kind");
-    let status: String = row.get("status");
-    facts.insert(
-      (object_kind.clone(), row.get("external_id")),
-      (
-        row.get("source_identity"),
-        FinancialFact {
-          kind: FinancialKind::parse(&object_kind)
-            .ok_or_else(|| RuntimeError::invalid_state("unknown stored financial object kind"))?,
-          status: FinancialStatus::parse(&status)
-            .ok_or_else(|| RuntimeError::invalid_state("unknown stored financial status"))?,
-        },
-        row.get("occurred_at"),
-      ),
-    );
-  }
-  for incoming in &snapshot.financial_facts {
-    merge_incoming_fact(&mut facts, incoming)?;
-  }
-  let mut by_source = BTreeMap::<String, Vec<FinancialFact>>::new();
-  for (_, (source, fact, _)) in facts {
-    if let Some(source) = source {
-      by_source.entry(source).or_default().push(fact);
-    }
-  }
-  Ok(
-    by_source
-      .into_iter()
-      .map(|(source, facts)| (source, effective_financial_restriction(&facts)))
-      .collect(),
-  )
-}
-
-type FinancialFacts =
-  BTreeMap<(String, String), (Option<String>, FinancialFact, Option<chrono::DateTime<chrono::Utc>>)>;
-
-fn merge_incoming_fact(facts: &mut FinancialFacts, incoming: &FinancialSnapshot) -> RuntimeResult<()> {
-  let key = (incoming.fact.kind.as_str().to_string(), incoming.external_id.clone());
-  let existing = facts.get(&key);
-  if existing
-    .and_then(|(source, _, _)| source.as_ref())
-    .zip(incoming.source_id.as_ref())
-    .is_some_and(|(stored, incoming)| stored != incoming)
-  {
-    return Err(RuntimeError::invalid_state(
-      "conflicting payment financial source identity",
-    ));
-  }
-  let source = incoming
-    .source_id
-    .clone()
-    .or_else(|| existing.and_then(|(source, _, _)| source.clone()));
-  let replaces_stored = if let Some((_, stored_fact, stored_at)) = facts.get(&key) {
-    match (incoming.occurred_at, *stored_at) {
-      (Some(incoming_at), Some(stored_at))
-        if incoming_at
-          .signed_duration_since(stored_at)
-          .num_microseconds()
-          .is_some_and(|difference| difference.abs() < 1_000) =>
+  .map_err(|error| RuntimeError::database("read collection pause facts", error))?;
+  let collection_pauses = events
+    .iter()
+    .map(|event| {
+      let metadata: serde_json::Value = event.get("metadata");
+      let pause = metadata
+        .pointer("/data/object/pause_collection")
+        .ok_or_else(|| RuntimeError::invalid_state("missing collection pause change"))?;
+      if !pause.is_null()
+        && !matches!(
+          pause.get("behavior").and_then(serde_json::Value::as_str),
+          Some("void" | "keep_as_draft" | "mark_uncollectible")
+        )
       {
-        if incoming.fact != *stored_fact {
-          return Err(RuntimeError::invalid_state(
-            "conflicting payment financial fact at equal timestamp",
-          ));
-        }
-        false
+        return Err(RuntimeError::invalid_state("invalid collection pause behavior"));
       }
-      (Some(incoming_at), Some(stored_at)) => incoming_at > stored_at,
-      (None, Some(_)) => false,
-      (Some(_), None) => true,
-      (None, None) => {
-        if incoming.fact != *stored_fact {
-          return Err(RuntimeError::invalid_state(
-            "conflicting payment financial fact without timestamp",
-          ));
-        }
-        false
-      }
-    }
-  } else {
-    true
+      let resumes_at = pause
+        .get("resumes_at")
+        .filter(|value| !value.is_null())
+        .map(|value| {
+          chrono::DateTime::from_timestamp(
+            value
+              .as_i64()
+              .ok_or_else(|| RuntimeError::invalid_state("invalid collection resume time"))?,
+            0,
+          )
+          .ok_or_else(|| RuntimeError::invalid_state("invalid collection resume time"))
+        })
+        .transpose()?;
+      Ok(affine_core::payment::CollectionPauseChange {
+        occurred_at: event
+          .get::<Option<chrono::DateTime<chrono::Utc>>, _>("occurred_at")
+          .ok_or_else(|| RuntimeError::invalid_state("missing collection change time"))?,
+        paused: !pause.is_null(),
+        resumes_at,
+      })
+    })
+    .collect::<RuntimeResult<Vec<_>>>()?;
+  let source = ProviderSubscriptionFacts {
+    collection_pauses,
+    provider: Provider::parse(row.get::<String, _>("provider").as_str())
+      .ok_or_else(|| RuntimeError::invalid_state("unknown provider"))?,
+    source_id: row.get("source_identity"),
+    plan: Plan::parse(row.get::<String, _>("plan").as_str())
+      .ok_or_else(|| RuntimeError::invalid_state("unknown plan"))?,
+    recurring: SubscriptionRecurring::parse(row.get::<String, _>("recurring").as_str())
+      .ok_or_else(|| RuntimeError::invalid_state("unknown recurring"))?,
+    lifecycle: ProviderLifecycle::parse(row.get::<String, _>("status").as_str())
+      .ok_or_else(|| RuntimeError::invalid_state("unknown lifecycle"))?,
+    gives_access: row.get("gives_access"),
+    quantity: row.get::<Option<i32>, _>("quantity").map(f64::from),
+    trial_end: row.get("trial_end"),
+    end: row.get("period_end"),
+    will_renew: row.get("will_renew"),
   };
-  if replaces_stored {
-    facts.insert(key, (source, incoming.fact, incoming.occurred_at));
-  }
-  Ok(())
+  decide_subscription(
+    source,
+    &facts,
+    row.get::<Option<String>, _>("billing_email").as_deref(),
+    now,
+  )
+  .map_err(|error| RuntimeError::invalid_state(format!("invalid payment source: {error:?}")))
 }

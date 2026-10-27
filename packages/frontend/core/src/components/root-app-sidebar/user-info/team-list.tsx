@@ -1,4 +1,4 @@
-import { Divider, Tooltip } from '@affine/component';
+import { Divider, startViewTransition, Tooltip } from '@affine/component';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import {
   type WorkspaceMetadata,
@@ -45,18 +45,13 @@ const TeamItem = memo(({ workspaces, badgeText }: TeamItemProps) => {
       return;
     }
 
-    if (document.startViewTransition) {
-      document.startViewTransition(() => {
-        closeInactiveViews();
-        jumpToPage(workspaces[0].profile.id, 'all');
-        return new Promise(resolve =>
-          setTimeout(resolve, 150)
-        ); /* start transition after 150ms */
-      });
-    } else {
+    startViewTransition(() => {
       closeInactiveViews();
       jumpToPage(workspaces[0].profile.id, 'all');
-    }
+      return new Promise(resolve =>
+        setTimeout(resolve, 150)
+      ); /* start transition after 150ms */
+    }).catch(console.error);
   }, [jumpToPage, workbench, workspaces]);
 
   const handleClick = useCallback(() => {
