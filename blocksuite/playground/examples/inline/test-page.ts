@@ -128,6 +128,11 @@ export class TestRichText extends ShadowlessElement {
   override firstUpdated() {
     this.contentEditable = 'true';
     this.style.outline = 'none';
+
+    // Disable macOS text replacement to prevent aggressive autocorrect
+    this.setAttribute('autocorrect', 'off');
+    this.setAttribute('autocapitalize', 'off');
+
     this.inlineEditor.mount(this._container, this);
 
     this.inlineEditor.slots.textChange.subscribe(() => {
