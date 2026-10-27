@@ -115,7 +115,7 @@ export declare class BackendRuntime {
   revokeWorkspaceInviteLink(workspaceId: string): Promise<boolean>
   cleanupExpiredRuntimeStates(limit: number): Promise<number>
   cleanupExpiredStorageReservationsV1(limit: number): Promise<number>
-  listManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string): Promise<Array<RuntimeManagedBlob>>
+  listManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string, limit: number, after?: string | undefined | null): Promise<Array<RuntimeManagedBlob>>
   manageWorkspaceBlobV1(input: RuntimeBlobManagementInput): Promise<boolean>
   releaseManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string, limit: number): Promise<number>
   finalizeStorageReservationV1(input: RuntimeStorageReservationMutation): Promise<boolean>
@@ -612,6 +612,8 @@ export interface DocumentEmbeddingProjectionInput {
   docId: string
   revision: string
   sourceHash: string
+  skipReason?: string
+  rootRevision?: string
   units: Array<DocumentEmbeddingUnitInput>
   deleted?: boolean
 }
@@ -989,6 +991,11 @@ export interface NativeWorkspaceDocContent {
   avatarKey: string
 }
 
+export interface NativeWorkspaceRootProjection {
+  complete: boolean
+  docIds: Array<string>
+}
+
 export interface ParsedDoc {
   name: string
   chunks: Array<Chunk>
@@ -1030,6 +1037,8 @@ export declare function processImage(input: Buffer, maxEdge: number, keepExif: b
 export declare function projectDocCanvasFromBinary(docBin: Buffer, docId: string, revision: string): NativeCanvasProjection
 
 export declare function projectDocSearchFromBinary(docBin: Buffer, docId: string, revision: string): NativeDocumentSearchProjection
+
+export declare function projectWorkspaceRootFromBinary(docBin: Buffer): NativeWorkspaceRootProjection
 
 export type PromptBuiltin =  'Date'|
 'Language'|

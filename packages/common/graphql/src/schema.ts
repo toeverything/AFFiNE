@@ -3730,6 +3730,11 @@ export interface WorkspaceTypeBlobUploadPartUrlArgs {
   uploadId: Scalars['String']['input'];
 }
 
+export interface WorkspaceTypeBlobsArgs {
+  after?: InputMaybe<Scalars['String']['input']>;
+  first?: Scalars['Int']['input'];
+}
+
 export interface WorkspaceTypeByokUsageArgs {
   from: Scalars['DateTime']['input'];
   to: Scalars['DateTime']['input'];
@@ -4390,6 +4395,8 @@ export type DeleteBlobMutation = {
 
 export type ListBlobsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  first: Scalars['Int']['input'];
+  after?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 export type ListBlobsQuery = {

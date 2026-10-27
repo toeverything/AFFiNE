@@ -488,7 +488,7 @@ jobs:
 
   e2e-blocksuite-test:
     name: E2E BlockSuite Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -520,7 +520,7 @@ jobs:
 
   e2e-blocksuite-cross-browser-test:
     name: E2E BlockSuite Cross Browser Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - name: Setup Node.js
@@ -586,7 +586,7 @@ jobs:
 
   e2e-mobile-test:
     name: E2E Mobile Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       DISTRIBUTION: mobile
       IN_CI_TEST: true
@@ -617,7 +617,7 @@ jobs:
 
   unit-test:
     name: Unit Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - build-native-linux
     env:
@@ -656,7 +656,7 @@ jobs:
 
   build-native-linux:
     name: Build AFFiNE native (x86_64-unknown-linux-gnu)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
@@ -782,7 +782,7 @@ jobs:
 
   build-server-native:
     name: Build Server native
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       AFFINE_PRO_PUBLIC_KEY: |
         -----BEGIN PUBLIC KEY-----
@@ -1381,7 +1381,7 @@ jobs:
   copilot-e2e-test:
     name: Frontend Copilot E2E Test
     if: ${{ needs.copilot-test-filter.outputs.run-e2e == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -1442,7 +1442,7 @@ jobs:
 
   cloud-e2e-test:
     name: ${{ matrix.tests.name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - build-server-native
       - build-native-linux
@@ -1559,7 +1559,7 @@ jobs:
               test: true,
             }
           - {
-              os: ubuntu-latest,
+              os: ubuntu-24.04,
               platform: linux,
               arch: x64,
               target: x86_64-unknown-linux-gnu,
@@ -1611,7 +1611,7 @@ jobs:
         run: yarn affine @affine/electron build
 
       - name: Run desktop tests
-        if: ${{ matrix.spec.os == 'ubuntu-latest' }}
+        if: ${{ matrix.spec.os == 'ubuntu-24.04' }}
         run: |
           # Workaround for Electron apps failing to initialize on Ubuntu 24.04 due to AppArmor restrictions
           # Disables unprivileged user namespaces restriction to allow Electron apps to run
@@ -1620,7 +1620,7 @@ jobs:
           xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn affine @affine-test/affine-desktop e2e
 
       - name: Run desktop tests
-        if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
+        if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-24.04' }}
         run: yarn affine @affine-test/affine-desktop e2e
 
       - name: Make bundle (macOS)

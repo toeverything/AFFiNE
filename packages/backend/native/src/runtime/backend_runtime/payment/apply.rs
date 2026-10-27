@@ -11,10 +11,9 @@ use super::{
     entitlement::{RuntimeEntitlementTarget, apply_transitions, load_decision_time, lock_targets, transition_before},
   },
   PaymentConnection, PaymentScope, PaymentSnapshot, ReceiptDisposition, SnapshotCoverage,
-  complete_receipts_and_operation, discover_payment_scopes, expire_missing_sources, load_financial_restrictions,
-  lock_receipts_and_operation, lock_subscription_rows, required_scope_expansion, reserve_snapshot_mails,
-  reserve_workspace_upgrade_mails, upsert_customers, upsert_financial_facts, upsert_invoices, upsert_licenses,
-  upsert_subscription, upsert_trials,
+  complete_receipts_and_operation, discover_payment_scopes, expire_missing_sources, lock_receipts_and_operation,
+  lock_subscription_rows, required_scope_expansion, reserve_snapshot_mails, reserve_workspace_upgrade_mails,
+  upsert_customers, upsert_financial_facts, upsert_invoices, upsert_licenses, upsert_subscription, upsert_trials,
 };
 use crate::runtime::Deployment;
 
@@ -124,16 +123,8 @@ pub(super) async fn apply_payment_snapshot(
     let before = transition_before(&mut tx, &targets, deployment, now).await?;
     upsert_customers(&mut tx, &snapshot, &namespace).await?;
     for subscription in &snapshot.subscriptions {
-      if subscription.plan == affine_core::access_control::Plan::SelfHostedTeam {
-        let quantity = subscription
-          .quantity
-          .filter(|quantity| quantity.is_finite() && *quantity > 0.0 && quantity.fract() == 0.0)
-          .and_then(|quantity| i32::try_from(quantity as i64).ok())
-          .ok_or_else(|| RuntimeError::invalid_input("invalid self-hosted payment quantity"))?;
-        upsert_subscription(&mut tx, &snapshot, &namespace, subscription, Some(quantity), now).await?;
-        continue;
-      }
       let normalized = normalize_provider_subscription(ProviderSubscriptionFacts {
+        collection_pauses: Vec::new(),
         provider: snapshot.provider(),
         source_id: subscription.source_id.clone(),
         plan: subscription.plan,
@@ -161,7 +152,6 @@ pub(super) async fn apply_payment_snapshot(
     upsert_trials(&mut tx, &snapshot, &namespace, now).await?;
     upsert_invoices(&mut tx, &snapshot, &namespace, now).await?;
     upsert_licenses(&mut tx, &snapshot, now).await?;
-    load_financial_restrictions(&mut tx, &snapshot, &namespace).await?;
     upsert_financial_facts(&mut tx, &snapshot, &namespace, now).await?;
     super::reconcile_cloud_winners(&mut tx, &targets, now).await?;
     apply_transitions(&mut tx, &before, deployment, now).await?;

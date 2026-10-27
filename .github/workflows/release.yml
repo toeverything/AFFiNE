@@ -1,211 +1,211 @@
-name: Release
+name: Release Candidates
 
 on:
   schedule:
     - cron: '0 9 * * *'
-
   workflow_dispatch:
     inputs:
-      web:
-        description: 'Release Web?'
+      targets:
+        description: 'Targets (comma-separated; append ? for optional platforms)'
         required: true
-        type: boolean
-        default: false
-      desktop_macos:
-        description: 'Desktop - macOS'
-        required: true
-        type: boolean
-        default: false
-      desktop_windows:
-        description: 'Desktop - Windows'
-        required: true
-        type: boolean
-        default: false
-      desktop_linux:
-        description: 'Desktop - Linux'
-        required: true
-        type: boolean
-        default: false
-      mobile:
-        description: 'Release Mobile?'
-        required: true
-        type: boolean
-        default: false
-      ios-app-version:
-        description: 'iOS App Store Version (Optional, use tag version if empty)'
-        required: false
+        default: 'server,desktop-macos,desktop-windows,desktop-linux?'
         type: string
 
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
-  id-token: write
+  contents: read
+  actions: read
   packages: write
-  security-events: write
-  attestations: write
-  issues: write
 
 jobs:
   prepare:
-    name: Prepare
+    permissions:
+      contents: read
+      actions: read
+      packages: read
     runs-on: ubuntu-latest
     outputs:
-      APP_VERSION: ${{ steps.prepare.outputs.APP_VERSION }}
-      GIT_SHORT_HASH: ${{ steps.prepare.outputs.GIT_SHORT_HASH }}
-      BUILD_TYPE: ${{ steps.prepare.outputs.BUILD_TYPE }}
+      version: ${{ steps.plan.outputs.APP_VERSION }}
+      sha: ${{ steps.plan.outputs.GIT_SHORT_HASH }}
+      channel: ${{ steps.plan.outputs.BUILD_TYPE }}
+      server: ${{ steps.plan.outputs.SERVER }}
+      skip: ${{ steps.plan.outputs.SKIP }}
+      desktop: ${{ steps.plan.outputs.DESKTOP_MATRIX }}
+      mobile: ${{ steps.plan.outputs.MOBILE_MATRIX }}
     steps:
       - uses: actions/checkout@v7
-      - name: Prepare Release
-        id: prepare
-        uses: ./.github/actions/prepare-release
-
-  canary-gate:
-    name: Canary Gate
-    runs-on: ubuntu-latest
-    needs:
-      - prepare
-    outputs:
-      SHOULD_RELEASE: ${{ steps.decide.outputs.SHOULD_RELEASE }}
-      LAST_CANARY_TAG: ${{ steps.decide.outputs.LAST_CANARY_TAG }}
-      LAST_CANARY_SHA: ${{ steps.decide.outputs.LAST_CANARY_SHA }}
-    steps:
-      - name: Decide whether to release
-        id: decide
+      - name: Preserve request creation time
+        id: run
         uses: actions/github-script@v9
         with:
           script: |
-            const buildType = '${{ needs.prepare.outputs.BUILD_TYPE }}'
-            if (buildType !== 'canary') {
-              core.setOutput('SHOULD_RELEASE', 'true')
-              return
-            }
-
-            const owner = context.repo.owner
-            const repo = context.repo.repo
-            const currentSha = context.sha
-            const canaryTagRe = /^v\d+\.\d+\.\d+-canary\.[0-9a-f]+$/i
-
-            let page = 1
-            const perPage = 100
-            let lastCanary = null
-
-            while (!lastCanary && page <= 10) {
-              const { data } = await github.rest.repos.listTags({
-                owner,
-                repo,
-                per_page: perPage,
-                page,
-              })
-
-              for (const tag of data) {
-                if (canaryTagRe.test(tag.name)) {
-                  lastCanary = tag
-                  break
-                }
+            const run = await github.rest.actions.getWorkflowRun({...context.repo, run_id: context.runId});
+            core.setOutput('created-at', run.data.created_at);
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts,{...context.repo,run_id:context.runId});
+            if (artifacts.some(a => a.name === 'release-candidate')) {
+              for (let attempt = 1; attempt < Number(process.env.GITHUB_RUN_ATTEMPT); attempt++) {
+                const previous = await github.rest.actions.getWorkflowRunAttempt({...context.repo,run_id:context.runId,attempt_number:attempt});
+                if (previous.data.conclusion === 'success') throw new Error('This run already submitted an immutable candidate. Recover its native request or start a new release run.');
               }
-
-              if (data.length < perPage) break
-              page++
             }
-
-            if (!lastCanary) {
-              core.warning('No canary tags found; proceeding with canary release.')
-              core.setOutput('SHOULD_RELEASE', 'true')
-              return
+      - name: Read completed release evidence
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs');
+            const releases = await github.paginate(github.rest.repos.listReleases, {...context.repo, per_page: 100});
+            for (const release of releases) {
+              const asset = release.assets.find(asset => asset.name === 'affine-release-completed.json');
+              if (!asset) continue;
+              const response = await github.rest.repos.getReleaseAsset({...context.repo, asset_id: asset.id, headers: {accept:'application/octet-stream'}});
+              const previous = JSON.parse(Buffer.from(response.data).toString('utf8'));
+              if (previous.request.channel !== 'canary') continue;
+              fs.writeFileSync('release-previous.json', JSON.stringify(previous));
+              break;
             }
+      - uses: ./.github/actions/prepare-release
+        id: plan
+        with:
+          targets: ${{ inputs.targets || 'server,desktop-macos,desktop-windows,desktop-linux?' }}
+          tool-image: ${{ vars.AFFINE_RELEASE_TOOL_IMAGE || 'ghcr.io/toeverything/affine-release:latest' }}
+          created-at: ${{ steps.run.outputs.created-at }}
+      - uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: release-plan
+          path: release-plan.json
+          if-no-files-found: error
 
-            core.setOutput('LAST_CANARY_TAG', lastCanary.name)
-            core.setOutput('LAST_CANARY_SHA', lastCanary.commit.sha)
-
-            const shouldRelease = lastCanary.commit.sha !== currentSha
-            core.info(`Latest canary tag ${lastCanary.name} -> ${lastCanary.commit.sha}; current ${currentSha}; should_release=${shouldRelease}`)
-            core.setOutput('SHOULD_RELEASE', shouldRelease ? 'true' : 'false')
-
-  cloud:
-    name: Release Cloud
-    if: ${{ inputs.web || github.event_name != 'workflow_dispatch' }}
-    needs:
-      - prepare
-    uses: ./.github/workflows/release-cloud.yml
+  server:
+    needs: prepare
+    if: ${{ needs.prepare.outputs.skip != 'true' && needs.prepare.outputs.server == 'true' }}
+    uses: ./.github/workflows/build-images.yml
     secrets: inherit
     with:
-      build-type: ${{ needs.prepare.outputs.BUILD_TYPE }}
-      app-version: ${{ needs.prepare.outputs.APP_VERSION }}
-      git-short-hash: ${{ needs.prepare.outputs.GIT_SHORT_HASH }}
-
-  image:
-    name: Release Docker Image
-    if: ${{ needs.canary-gate.outputs.SHOULD_RELEASE == 'true' }}
-    runs-on: ubuntu-latest
-    needs:
-      - prepare
-      - canary-gate
-      - cloud
-    steps:
-      - uses: trstringer/manual-approval@v1
-        if: ${{ needs.prepare.outputs.BUILD_TYPE == 'stable' }}
-        name: Wait for approval
-        with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: darkskygit
-          minimum-approvals: 1
-          fail-on-denial: true
-          issue-title: Please confirm to release docker image
-          issue-body: |
-            Env: ${{ needs.prepare.outputs.BUILD_TYPE }}
-            Candidate: ghcr.io/toeverything/affine:${{ needs.prepare.outputs.BUILD_TYPE }}-${{ needs.prepare.outputs.GIT_SHORT_HASH }}
-            Tag: ghcr.io/toeverything/affine:${{ needs.prepare.outputs.BUILD_TYPE }}
-
-            > comment with "approve", "approved", "lgtm", "yes" to approve
-            > comment with "deny", "denied", "no" to deny
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          logout: false
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Tag Image
-        run: |
-          docker buildx imagetools create --tag ghcr.io/toeverything/affine:${{needs.prepare.outputs.BUILD_TYPE}} ghcr.io/toeverything/affine:${{needs.prepare.outputs.BUILD_TYPE}}-${{needs.prepare.outputs.GIT_SHORT_HASH}}
-          docker buildx imagetools create --tag ghcr.io/toeverything/affine:${{needs.prepare.outputs.APP_VERSION}} ghcr.io/toeverything/affine:${{needs.prepare.outputs.BUILD_TYPE}}-${{needs.prepare.outputs.GIT_SHORT_HASH}}
+      app-version: ${{ needs.prepare.outputs.version }}
+      git-short-hash: ${{ needs.prepare.outputs.sha }}
+      build-type: ${{ needs.prepare.outputs.channel }}
 
   desktop:
-    name: Release Desktop
-    if: >-
-      ${{
-        (github.event_name != 'workflow_dispatch' && needs.canary-gate.outputs.SHOULD_RELEASE == 'true') ||
-        inputs.desktop_macos ||
-        inputs.desktop_windows ||
-        inputs.desktop_linux
-      }}
-    needs:
-      - prepare
-      - canary-gate
+    needs: prepare
+    if: ${{ needs.prepare.outputs.skip != 'true' && fromJSON(needs.prepare.outputs.desktop).include[0] != null }}
     uses: ./.github/workflows/release-desktop.yml
     secrets: inherit
     with:
-      build-type: ${{ needs.prepare.outputs.BUILD_TYPE }}
-      app-version: ${{ needs.prepare.outputs.APP_VERSION }}
-      git-short-hash: ${{ needs.prepare.outputs.GIT_SHORT_HASH }}
-      desktop_macos: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_macos }}
-      desktop_windows: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_windows }}
-      desktop_linux: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_linux }}
-      require-windows-signing: ${{ needs.prepare.outputs.BUILD_TYPE == 'stable' || (github.event_name == 'workflow_dispatch' && inputs.desktop_windows) }}
+      app-version: ${{ needs.prepare.outputs.version }}
+      git-short-hash: ${{ needs.prepare.outputs.sha }}
+      build-type: ${{ needs.prepare.outputs.channel }}
+      matrix: ${{ needs.prepare.outputs.desktop }}
 
   mobile:
-    name: Release Mobile
-    if: ${{ inputs.mobile }}
-    needs:
-      - prepare
+    needs: prepare
+    if: ${{ needs.prepare.outputs.skip != 'true' && fromJSON(needs.prepare.outputs.mobile).include[0] != null }}
     uses: ./.github/workflows/release-mobile.yml
     secrets: inherit
     with:
-      build-type: ${{ needs.prepare.outputs.BUILD_TYPE }}
-      app-version: ${{ needs.prepare.outputs.APP_VERSION }}
-      git-short-hash: ${{ needs.prepare.outputs.GIT_SHORT_HASH }}
-      ios-app-version: ${{ inputs.ios-app-version }}
+      app-version: ${{ needs.prepare.outputs.version }}
+      git-short-hash: ${{ needs.prepare.outputs.sha }}
+      build-type: ${{ needs.prepare.outputs.channel }}
+      matrix: ${{ needs.prepare.outputs.mobile }}
+
+  candidate:
+    permissions:
+      contents: read
+      actions: write
+    needs: [prepare, server, desktop, mobile]
+    if: ${{ always() && needs.prepare.result == 'success' && needs.prepare.outputs.skip != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare candidate rerun artifacts
+        uses: actions/github-script@v9
+        with:
+          script: |
+            if (Number(process.env.GITHUB_RUN_ATTEMPT) === 1) return;
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts,{...context.repo,run_id:context.runId});
+            if (artifacts.some(a => a.name === 'release-candidate')) {
+              for (let attempt = 1; attempt < Number(process.env.GITHUB_RUN_ATTEMPT); attempt++) {
+                const previous = await github.rest.actions.getWorkflowRunAttempt({...context.repo,run_id:context.runId,attempt_number:attempt});
+                if (previous.data.conclusion === 'success') throw new Error('Submitted candidates are immutable. Recover the native request or start a new run.');
+              }
+            }
+            for (const artifact of artifacts.filter(a => ['candidate-desktop-macos','candidate-desktop-windows','candidate-desktop-linux'].includes(a.name))) {
+              await github.rest.actions.deleteArtifact({...context.repo,artifact_id:artifact.id});
+            }
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-plan
+      - name: Combine desktop architecture candidates
+        uses: actions/upload-artifact/merge@v4
+        continue-on-error: true
+        with:
+          name: candidate-desktop-macos
+          pattern: candidate-desktop-darwin-*
+        if: ${{ contains(needs.prepare.outputs.desktop, 'desktop-macos') }}
+      - name: Combine Windows architecture candidates
+        uses: actions/upload-artifact/merge@v4
+        continue-on-error: true
+        with:
+          name: candidate-desktop-windows
+          pattern: candidate-desktop-win32-*
+        if: ${{ contains(needs.prepare.outputs.desktop, 'desktop-windows') }}
+      - name: Combine Linux architecture candidates
+        uses: actions/upload-artifact/merge@v4
+        continue-on-error: true
+        with:
+          name: candidate-desktop-linux
+          pattern: candidate-desktop-linux-*
+        if: ${{ contains(needs.prepare.outputs.desktop, 'desktop-linux') }}
+      - name: Collect static assets
+        if: ${{ needs.server.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '{web,admin,mobile}'
+          merge-multiple: true
+          path: static-assets
+      - name: Save static assets candidate
+        if: ${{ needs.server.result == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: static-assets
+          path: |
+            static-assets/**
+            !static-assets/**/*.html
+          if-no-files-found: error
+      - name: Record candidate identities
+        uses: actions/github-script@v9
+        env:
+          IMAGE: ${{ needs.server.outputs.image }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const plan = JSON.parse(fs.readFileSync('release-plan.json', 'utf8'));
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+              ...context.repo, run_id: context.runId,
+            });
+            const candidate = {
+              repository: `${context.repo.owner}/${context.repo.repo}`,
+              runId: context.runId, workflow: '.github/workflows/release.yml',
+              event: context.eventName, ref: context.ref, sha: context.sha,
+              image: process.env.IMAGE || '', artifacts: {},
+            };
+            for (const target of plan.targets) {
+              if (target.name === 'server') continue;
+              const artifact = artifacts.find(a => a.name === `candidate-${target.name}` && !a.expired);
+              if (artifact) candidate.artifacts[target.name] = {
+                id: artifact.id, runId: context.runId, repository: candidate.repository,
+                name: artifact.name, stage: 'unsigned',
+              };
+            }
+            const statics = artifacts.find(a => a.name === 'static-assets' && !a.expired);
+            if (statics) candidate.artifacts['static-assets'] = {
+              id: statics.id, runId: context.runId, repository: candidate.repository,
+              name: statics.name, stage: 'ready',
+            };
+            plan.candidate = candidate;
+            fs.writeFileSync('request.json', JSON.stringify(plan, null, 2));
+      - uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: release-candidate
+          path: request.json
+          if-no-files-found: error

@@ -32,7 +32,7 @@ pub(super) async fn stripe_subscription_snapshot(
     .data
     .first()
     .ok_or_else(|| RuntimeError::invalid_input("Stripe subscription has no item"))?;
-  if subscription.items.data.len() != 1 || !item.price.active {
+  if subscription.items.data.len() != 1 {
     return Err(RuntimeError::invalid_input("Stripe subscription item is not canonical"));
   }
   let (plan, recurring, variant) = parse_lookup_key(
@@ -143,6 +143,20 @@ pub(super) async fn stripe_subscription_snapshot(
       "nextBillAt": (!subscription.cancel_at_period_end).then(|| period_end.to_rfc3339()),
     }),
   };
+  let mut financial_facts = Vec::new();
+  if let Some(latest_invoice) = subscription.latest_invoice.as_ref() {
+    let observed_at = Utc::now();
+    let invoice = client
+      .invoice(latest_invoice.id())
+      .await
+      .map_err(|error| RuntimeError::invalid_state(error.code))?;
+    if invoice.customer.id() != customer_id || invoice.subscription_id() != Some(subscription.id.as_str()) {
+      return Err(RuntimeError::invalid_state(
+        "Stripe subscription invoice ownership mismatch",
+      ));
+    }
+    financial_facts.push(super::stripe_invoice_fact(&invoice, Some(&source), observed_at)?);
+  }
   let licenses = (plan == Plan::SelfHostedTeam)
     .then(|| LicenseSnapshot {
       key: target_id.clone(),
@@ -182,7 +196,7 @@ pub(super) async fn stripe_subscription_snapshot(
     customers,
     subscriptions: vec![source],
     ownership_transfers: Vec::new(),
-    financial_facts: Vec::new(),
+    financial_facts,
     trials: Vec::new(),
     invoices: Vec::new(),
     licenses,
@@ -222,9 +236,13 @@ pub(super) async fn stripe_customer_snapshot(
         "Stripe customer subscription result changed ownership",
       ));
     }
+    if matches!(subscription.status.as_str(), "canceled" | "incomplete_expired") {
+      continue;
+    }
     let item = stripe_subscription_snapshot(pool, client, subscription, Vec::new(), None).await?;
     snapshot.customers.extend(item.customers);
     snapshot.subscriptions.extend(item.subscriptions);
+    snapshot.financial_facts.extend(item.financial_facts);
     snapshot.licenses.extend(item.licenses);
     snapshot.mails.extend(item.mails);
   }
@@ -403,11 +421,18 @@ async fn resolve_revenuecat_product(
       products.insert(product.id.clone(), product);
     }
   }
-  subscription
+  let product_id = subscription
     .product_id
     .as_deref()
-    .and_then(|id| products.remove(id))
-    .ok_or_else(|| RuntimeError::invalid_state("RevenueCat subscription product is incomplete"))
+    .ok_or_else(|| RuntimeError::invalid_state("RevenueCat subscription product is incomplete"))?;
+  let product = match products.remove(product_id) {
+    Some(product) => product,
+    None => client.product(product_id).await.map_err(provider_runtime_error)?,
+  };
+  if product.id != product_id {
+    return Err(RuntimeError::invalid_state("RevenueCat product identity mismatch"));
+  }
+  Ok(product)
 }
 
 pub(super) fn parse_lookup_key(value: &str) -> RuntimeResult<(Plan, SubscriptionRecurring, Option<String>)> {
@@ -425,15 +450,11 @@ pub(super) fn parse_lookup_key(value: &str) -> RuntimeResult<(Plan, Subscription
     "selfhostedteam" | "selfhost_team" => Plan::SelfHostedTeam,
     _ => return Err(RuntimeError::invalid_input("unknown Stripe price plan")),
   };
-  let mut parts = suffix.split('_');
-  let recurring = parts
-    .next()
-    .and_then(SubscriptionRecurring::parse)
+  let (recurring, variant) = suffix.split_once('_').map_or((suffix, None), |(recurring, variant)| {
+    (recurring, Some(variant.to_string()))
+  });
+  let recurring = SubscriptionRecurring::parse(recurring)
     .ok_or_else(|| RuntimeError::invalid_input("unknown Stripe price recurring"))?;
-  let variant = parts.next().map(str::to_string);
-  if parts.next().is_some() {
-    return Err(RuntimeError::invalid_input("invalid Stripe lookup key"));
-  }
   Ok((plan, recurring, variant))
 }
 

@@ -473,6 +473,8 @@ mod tests {
     );
     let first_token = commit_token(&pool, &current, &[chunk("first")]).await.unwrap();
     let requested = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      skip_reason: None,
+      root_revision: None,
       doc_id: "doc".to_string(),
       revision: "content-1".to_string(),
       source_hash: "descriptor".to_string(),
@@ -579,6 +581,42 @@ mod tests {
     let result = gc(&pool).await.unwrap();
     assert_eq!(result.chunks, 1);
     assert_eq!(result.indexes, 1);
+
+    let skipped = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      revision: "content-3".to_string(),
+      skip_reason: Some("document_contains_nul".to_string()),
+      ..updated[0].clone()
+    }];
+    super::super::source::sync_documents(&pool, &workspace_id, &skipped, false, i32::MAX)
+      .await
+      .unwrap();
+    let skipped_state: (String, Option<String>, String) = sqlx::query_as(
+      "SELECT projection.status,projection.last_error_code,source.content_revision FROM embedding_projections \
+       projection JOIN embedding_sources source ON source.id=projection.source_id WHERE source.id=$1",
+    )
+    .bind(source_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+      skipped_state,
+      (
+        "failed".into(),
+        Some("document_contains_nul".into()),
+        "content-3".into()
+      )
+    );
+    assert!(claim_projection(&pool, "skip-check").await.unwrap().is_none());
+    let repaired = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      revision: "content-4".to_string(),
+      ..updated[0].clone()
+    }];
+    super::super::source::sync_documents(&pool, &workspace_id, &repaired, false, i32::MAX)
+      .await
+      .unwrap();
+    let repaired_claim = claim_projection(&pool, "repaired-worker").await.unwrap().unwrap();
+    assert_eq!(repaired_claim.content_revision, "content-4");
+    assert_eq!(repaired_claim.source_id, source_id);
 
     sqlx::query("DELETE FROM embedding_workspace_states WHERE workspace_id=$1")
       .bind(&workspace_id)

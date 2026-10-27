@@ -2920,7 +2920,7 @@ type WorkspaceType {
   blobUploadPartUrl(key: String!, partNumber: Int!, uploadId: String!): BlobUploadPart!
 
   """List blobs of workspace"""
-  blobs: [ListedBlob!]!
+  blobs(after: String, first: Int! = 1000): [ListedBlob!]!
   byokSettings: WorkspaceByokSettingsType!
   byokUsage(from: DateTime!, to: DateTime!): [WorkspaceByokUsagePointType!]!
   calendars: [WorkspaceCalendarObjectType!]!
