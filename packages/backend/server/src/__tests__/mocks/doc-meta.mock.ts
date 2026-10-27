@@ -21,8 +21,9 @@ export class MockDocMeta extends Mocker<MockDocMetaInput, MockedDocMeta> {
       defaultRole = DocRole.Manager,
       ...meta
     } = input;
+    const publishedAt = isPublic ? (meta.publishedAt ?? new Date()) : null;
     const doc = await this.db.workspaceDoc.create({
-      data: meta,
+      data: { ...meta, publishedAt },
     });
     await this.db.docAccessPolicy.create({
       data: {
@@ -30,6 +31,7 @@ export class MockDocMeta extends Mocker<MockDocMetaInput, MockedDocMeta> {
         docId: input.docId,
         visibility: isPublic ? 'public' : 'private',
         publicRole: isPublic ? 'external' : null,
+        publishedAt,
         memberDefaultRole:
           defaultRole === DocRole.None
             ? 'none'

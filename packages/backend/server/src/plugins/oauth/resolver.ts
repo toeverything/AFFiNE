@@ -2,16 +2,16 @@ import { registerEnumType, ResolveField, Resolver } from '@nestjs/graphql';
 
 import { ServerConfigType } from '../../core/config/types';
 import { OAuthProviderName } from './config';
-import { OAuthProviderFactory } from './factory';
+import { OAuthService } from './service';
 
 registerEnumType(OAuthProviderName, { name: 'OAuthProviderType' });
 
 @Resolver(() => ServerConfigType)
 export class OAuthResolver {
-  constructor(private readonly factory: OAuthProviderFactory) {}
+  constructor(private readonly oauth: OAuthService) {}
 
   @ResolveField(() => [OAuthProviderName])
   oauthProviders() {
-    return this.factory.providers;
+    return this.oauth.providers;
   }
 }

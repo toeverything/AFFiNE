@@ -1,4 +1,22 @@
 import type { CrawlResult, DocIndexedClock } from '@affine/nbstore';
+import type {
+  NativeIndexField,
+  NativeIndexHit,
+  NativeIndexQuery,
+  NativeIndexSearchOptions,
+  NativeIndexSearchResult,
+} from '@affine/nbstore/sqlite';
+
+type NativeIndexDocument = { id: string; fields: NativeIndexField[] };
+type NativeIndexAggregateResult = {
+  total: number;
+  buckets: {
+    key: string;
+    count: number;
+    score: number;
+    hits: NativeIndexHit[];
+  }[];
+};
 
 export interface Blob {
   key: string;
@@ -44,35 +62,10 @@ export interface NbStorePlugin {
     // base64 encoded data
     data: string;
   }) => Promise<{ timestamp: number }>;
-  getDocSnapshot: (options: { id: string; docId: string }) => Promise<
-    | {
-        docId: string;
-        // base64 encoded data
-        bin: string;
-        timestamp: number;
-      }
-    | undefined
-  >;
-  setDocSnapshot: (options: {
+  getDoc: (options: {
     id: string;
     docId: string;
-    // base64 encoded data
-    bin: string;
-    timestamp: number;
-  }) => Promise<{ success: boolean }>;
-  getDocUpdates: (options: { id: string; docId: string }) => Promise<{
-    updates: {
-      docId: string;
-      timestamp: number;
-      // base64 encoded data
-      bin: string;
-    }[];
-  }>;
-  markUpdatesMerged: (options: {
-    id: string;
-    docId: string;
-    timestamps: number[];
-  }) => Promise<{ count: number }>;
+  }) => Promise<{ docId: string; bin: string; timestamp: number } | undefined>;
   deleteDoc: (options: { id: string; docId: string }) => Promise<void>;
   getDocClocks: (options: { id: string; after?: number | null }) => Promise<{
     clocks: {
@@ -157,38 +150,38 @@ export interface NbStorePlugin {
     id: string;
     docId: string;
   }) => Promise<CrawlResult>;
-  ftsAddDocument: (options: {
+  indexUpsert: (options: {
     id: string;
-    indexName: string;
-    docId: string;
-    text: string;
-    index: boolean;
+    table: string;
+    document: NativeIndexDocument;
   }) => Promise<void>;
-  ftsDeleteDocument: (options: {
+  indexDelete: (options: {
     id: string;
-    indexName: string;
+    table: string;
     docId: string;
   }) => Promise<void>;
-  ftsSearch: (options: {
+  indexSearch: (options: {
     id: string;
-    indexName: string;
-    query: string;
-  }) => Promise<{
-    results: { id: string; score: number; terms: Array<string> }[];
-  }>;
-  ftsGetDocument: (options: {
+    table: string;
+    query: NativeIndexQuery;
+    options: NativeIndexSearchOptions;
+  }) => Promise<NativeIndexSearchResult>;
+  indexAggregate: (options: {
     id: string;
-    indexName: string;
-    docId: string;
-  }) => Promise<{ text?: string | null }>;
-  ftsGetMatches: (options: {
+    table: string;
+    query: NativeIndexQuery;
+    field: string;
+    limit: number;
+    offset: number;
+    hits?: NativeIndexSearchOptions;
+  }) => Promise<NativeIndexAggregateResult>;
+  indexDeleteByQuery: (options: {
     id: string;
-    indexName: string;
-    docId: string;
-    query: string;
-  }) => Promise<{ matches: { start: number; end: number }[] }>;
-  ftsFlushIndex: (options: { id: string }) => Promise<void>;
-  ftsIndexVersion: () => Promise<{ indexVersion: number }>;
+    table: string;
+    query: NativeIndexQuery;
+  }) => Promise<{ deleted: number }>;
+  indexFlush: (options: { id: string }) => Promise<void>;
+  indexVersion: () => Promise<{ indexVersion: number }>;
   getDocIndexedClock: (options: {
     id: string;
     docId: string;
@@ -198,6 +191,10 @@ export interface NbStorePlugin {
     docId: string;
     indexedClock: number;
     indexerVersion: number;
+  }) => Promise<void>;
+  setDocIndexedClocks: (options: {
+    id: string;
+    clocks: Array<{ docId: string; timestamp: number; indexerVersion: number }>;
   }) => Promise<void>;
   clearDocIndexedClock: (options: {
     id: string;

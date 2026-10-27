@@ -1,6 +1,7 @@
 export type LinkPreviewRequest = {
   url: string;
   head?: boolean;
+  include?: Array<'transcript'>;
 };
 
 export type LinkPreviewResponse = {

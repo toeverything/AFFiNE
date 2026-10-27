@@ -128,6 +128,9 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
     ...args: OpInputWithSignal<Ops, Op>
   ): CancelablePromise<OpOutput<Ops, Op>> {
     const promiseWithResolvers = Promise.withResolvers<any>();
+    if (args.length > 1 && args[args.length - 1] === undefined) {
+      args.pop();
+    }
     const abortSignal =
       args[args.length - 1] instanceof AbortSignal
         ? (args.pop() as AbortSignal)

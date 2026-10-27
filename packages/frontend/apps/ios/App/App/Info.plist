@@ -39,6 +39,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>AFFiNE requires access to the camera to capture images and insert them into your documents</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>AFFiNE needs local network access to connect to your self-hosted workspace on this device's Wi-Fi network.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>AFFiNE requires access to select photos from your photo library and insert them into your documents</string>
 	<key>NSUserTrackingUsageDescription</key>

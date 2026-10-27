@@ -113,6 +113,28 @@ CREATE INDEX IF NOT EXISTS doc_blob_refs_workspace_blob_idx
 CREATE INDEX IF NOT EXISTS doc_blob_refs_workspace_status_idx
   ON doc_blob_refs (workspace_id, status);
 
+CREATE TABLE IF NOT EXISTS doc_blob_ref_projections (
+  workspace_id TEXT NOT NULL,
+  doc_id TEXT NOT NULL,
+  source_revision TIMESTAMPTZ(3),
+  parser_version INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'running', 'fresh', 'failed', 'missing')),
+  indexed_at TIMESTAMPTZ(3),
+  error_code TEXT,
+  error_summary TEXT,
+  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (workspace_id, doc_id),
+  CHECK (status <> 'fresh' OR (source_revision IS NOT NULL AND indexed_at IS NOT NULL)),
+  CHECK (error_summary IS NULL OR octet_length(error_summary) <= 512)
+);
+
+CREATE INDEX IF NOT EXISTS doc_blob_ref_projections_workspace_status_idx
+  ON doc_blob_ref_projections (workspace_id, status, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS doc_blob_ref_projections_workspace_revision_idx
+  ON doc_blob_ref_projections (workspace_id, source_revision);
+
 CREATE TABLE IF NOT EXISTS blob_cleanup_candidates (
   workspace_id TEXT NOT NULL,
   blob_key TEXT NOT NULL,

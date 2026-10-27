@@ -36,6 +36,41 @@ test.before(async t => {
 let user: User;
 let workspace: Workspace;
 
+async function uploadWorkspaceBlob(
+  t: { context: Context },
+  body: Buffer,
+  mime: string
+) {
+  const key = createHash('sha256').update(body).digest('base64url');
+  const reservation = await t.context.runtime.reserveStorageQuotaV1({
+    workspaceId: workspace.id,
+    userId: user.id,
+    key,
+    size: body.byteLength,
+    mime,
+    kind: 'blob',
+  });
+  if (!reservation.reservationId) throw new Error('blob reservation failed');
+  const metadata = await t.context.storage.putReservation(
+    workspace.id,
+    key,
+    reservation.reservationId,
+    body,
+    { contentType: mime, contentLength: body.byteLength }
+  );
+  const finalized = await t.context.runtime.finalizeStorageReservationV1({
+    workspaceId: workspace.id,
+    userId: user.id,
+    key,
+    reservationId: reservation.reservationId,
+    kind: 'blob',
+    size: metadata.contentLength,
+    mime: metadata.contentType,
+  });
+  if (!finalized) throw new Error('blob finalize failed');
+  return key;
+}
+
 test.beforeEach(async t => {
   await t.context.module.initTestingDB();
   user = await t.context.user.create({ email: 'test@affine.pro' });
@@ -133,8 +168,7 @@ test('workspace artifacts deduplicate bytes and remain workspace isolated', asyn
     { message: 'artifact_not_found' }
   );
 
-  const blobId = createHash('sha256').update(body).digest('base64url');
-  await t.context.storage.put(workspace.id, blobId, body);
+  const blobId = await uploadWorkspaceBlob(t, body, 'text/plain');
   await t.throwsAsync(
     t.context.runtime.ensureWorkspaceBlobArtifact({
       workspaceId: workspace.id,
@@ -266,10 +300,11 @@ test('workspace artifacts deduplicate bytes and remain workspace isolated', asyn
   );
 
   const deletingBody = Buffer.from('cleanup retry');
-  const deletingBlobId = createHash('sha256')
-    .update(deletingBody)
-    .digest('base64url');
-  await t.context.storage.put(workspace.id, deletingBlobId, deletingBody);
+  const deletingBlobId = await uploadWorkspaceBlob(
+    t,
+    deletingBody,
+    'text/plain'
+  );
   const deleting = await t.context.runtime.ensureWorkspaceBlobArtifact({
     workspaceId: workspace.id,
     blobId: deletingBlobId,
@@ -281,7 +316,12 @@ test('workspace artifacts deduplicate bytes and remain workspace isolated', asyn
     where: { id: deleting.id },
     data: { status: 'deleting' },
   });
-  await t.context.storage.delete(workspace.id, deletingBlobId, true);
+  await t.context.runtime.manageWorkspaceBlobV1({
+    workspaceId: workspace.id,
+    actorUserId: user.id,
+    key: deletingBlobId,
+    permanently: true,
+  });
   t.is(await t.context.runtime.cleanupUnreferencedArtifacts(1), 1);
   t.is(
     await t.context.db.workspaceArtifact.count({ where: { id: deleting.id } }),

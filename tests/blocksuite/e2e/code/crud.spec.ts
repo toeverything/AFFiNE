@@ -1,3 +1,4 @@
+import type { CodeBlockComponent } from '@blocksuite/affine/blocks/code';
 import { expect } from '@playwright/test';
 
 import { updateBlockType } from '../utils/actions/block.js';
@@ -160,7 +161,18 @@ test('change code language can work', async ({ page }, testInfo) => {
   const locator = codeBlockController.langList;
   await expect(locator).toBeVisible();
 
-  await type(page, 'rust');
+  for (const [query, label] of [
+    ['AsSeMbLy', 'Assembly'],
+    ['TS-TAGS', 'TypeScript with Tags'],
+    ['rS', 'Rust'],
+  ]) {
+    await codeBlockController.langFilterInput.fill(query);
+    await expect(
+      locator.getByRole('button', { name: label, exact: true })
+    ).toBeVisible();
+  }
+
+  await codeBlockController.langFilterInput.fill('rust');
   await page.click(
     '.affine-filterable-list > .items-container > icon-button:nth-child(1)'
   );
@@ -183,6 +195,68 @@ test('change code language can work', async ({ page }, testInfo) => {
   await pressEnter(page);
   await expect(locator).toBeHidden();
   await expect(codeBlockController.languageButton).toHaveText('TypeScript');
+
+  await codeBlockController.clickLanguageButton();
+  await locator.getByRole('button', { name: 'Plain Text' }).click();
+  await expect(codeBlockController.languageButton).toHaveText('Plain Text');
+});
+
+test('ignore a pending highlight after switching to plain text', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyCodeBlockState(page);
+  await focusRichText(page);
+  await type(page, 'const answer = 42;');
+
+  const code = getCodeBlock(page).codeBlock;
+  await expect
+    .poll(() =>
+      code.evaluate(
+        (block: CodeBlockComponent) => !!block.highlighter.highlighter$.value
+      )
+    )
+    .toBe(true);
+
+  const result = await code.evaluate(async (block: CodeBlockComponent) => {
+    const highlighter = block.highlighter.highlighter$.value!;
+    const rust = block.langs.find(lang => lang.id === 'rust')!;
+    await highlighter.loadLanguage(rust.import);
+
+    const originalGetLoadedLanguages = highlighter.getLoadedLanguages;
+    const originalLoadLanguage = highlighter.loadLanguage;
+    let finishLoading!: () => void;
+    let loadRequests = 0;
+    const pendingLoad = new Promise<void>(resolve => {
+      finishLoading = resolve;
+    });
+    try {
+      highlighter.getLoadedLanguages = () => [];
+      highlighter.loadLanguage = () => {
+        loadRequests++;
+        return pendingLoad;
+      };
+      block.model.props.language$.value = 'rust';
+      block.model.props.language$.value = null;
+      finishLoading();
+      await pendingLoad;
+      await Promise.resolve();
+
+      return {
+        loadRequests,
+        language: block.model.props.language,
+        tokens: block.highlightTokens$.value,
+      };
+    } finally {
+      highlighter.getLoadedLanguages = originalGetLoadedLanguages;
+      highlighter.loadLanguage = originalLoadLanguage;
+    }
+  });
+  expect(result).toEqual({
+    loadRequests: 1,
+    language: null,
+    tokens: [],
+  });
 });
 
 test('duplicate code block', async ({ page }, testInfo) => {

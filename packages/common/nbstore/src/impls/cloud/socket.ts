@@ -28,14 +28,6 @@ type WebsocketResponse<T> =
     };
 
 interface ServerEvents {
-  'space:broadcast-doc-update': {
-    spaceType: string;
-    spaceId: string;
-    docId: string;
-    update: string;
-    timestamp: number;
-    editor: string;
-  };
   'space:broadcast-doc-updates': {
     spaceType: string;
     spaceId: string;
@@ -44,6 +36,11 @@ interface ServerEvents {
     timestamp: number;
     editor?: string;
     compressed?: boolean;
+  };
+  'space:broadcast-doc-invalidation': {
+    spaceType: string;
+    spaceId: string;
+    timestamp: number;
   };
 
   'space:collect-awareness': {
@@ -63,26 +60,22 @@ interface ServerEvents {
 }
 
 interface ClientEvents {
-  'space:join': [
-    { spaceType: string; spaceId: string; clientVersion: string },
-    { clientId: string },
-  ];
-  'space:leave': { spaceType: string; spaceId: string };
-  'space:join-awareness': [
+  'space:join-batch': [
     {
-      spaceType: string;
-      spaceId: string;
-      docId: string;
+      spaces: Array<{
+        spaceType: string;
+        spaceId: string;
+        docId?: string;
+      }>;
       clientVersion: string;
     },
-    { clientId: string },
+    { clientId: string; success: boolean },
   ];
-  'space:leave-awareness': {
+  'space:leave-batch': {
     spaceType: string;
     spaceId: string;
-    docId: string;
+    docIds: string[];
   };
-
   'space:update-awareness': {
     spaceType: string;
     spaceId: string;
@@ -125,6 +118,15 @@ interface ClientEvents {
     { spaceType: string; spaceId: string; docId: string },
     { success?: true },
   ];
+  'space:doc-lifecycle': [
+    {
+      spaceType: string;
+      spaceId: string;
+      docId: string;
+      lifecycle: 'trash' | 'restore' | 'delete';
+    },
+    { rootUpdate: string; timestamp: number },
+  ];
 
   'telemetry:batch': [TelemetryBatch, TelemetryAck];
 
@@ -132,6 +134,8 @@ interface ClientEvents {
   'realtime:subscribe': [RealtimeSubscribeEnvelope, { subscriptionId: string }];
   'realtime:unsubscribe': [RealtimeUnsubscribeEnvelope, { ok: true }];
 }
+
+export const SPACE_JOIN_BATCH_LIMIT = 100;
 
 export type ServerEventsMap = {
   [Key in keyof ServerEvents]: (data: ServerEvents[Key]) => void;

@@ -1,6 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
 use napi::bindgen_prelude::Buffer;
-use sqlx::{PgPool, Row};
+use sqlx::{Postgres, Row, Transaction};
 
 use super::{BackendRuntime, RuntimeError, RuntimeResult, napi_error, types::RuntimeDocHistoryInput};
 
@@ -9,7 +9,7 @@ fn is_empty_doc(bin: &[u8]) -> bool {
 }
 
 async fn latest_history_timestamp(
-  pool: &PgPool,
+  transaction: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<Option<DateTime<Utc>>> {
@@ -24,7 +24,7 @@ async fn latest_history_timestamp(
   )
   .bind(workspace_id)
   .bind(doc_id)
-  .fetch_optional(pool)
+  .fetch_optional(&mut **transaction)
   .await
   .map(|row| row.map(|row| row.get("timestamp")))
   .map_err(|err| RuntimeError::database("DocStorage load latest history failed", err))
@@ -48,6 +48,12 @@ impl BackendRuntime {
     let timestamp = DateTime::<Utc>::from_timestamp_millis(timestamp_ms)
       .ok_or_else(|| RuntimeError::invalid_input(format!("Invalid doc snapshot timestamp: {timestamp_ms}")))?;
     let pool = self.pool().await?;
+    let mut transaction = pool
+      .begin()
+      .await
+      .map_err(|err| RuntimeError::database("DocStorage begin snapshot transaction failed", err))?;
+    super::domain_command::lock_workspace_storage_shared(&mut transaction, &workspace_id).await?;
+    super::domain_command::lock_workspace_doc_update(&mut transaction, &workspace_id, &doc_id).await?;
     let row = sqlx::query(
       r#"
       INSERT INTO snapshots
@@ -72,9 +78,22 @@ impl BackendRuntime {
     .bind(blob.len() as i64)
     .bind(timestamp)
     .bind(editor_id.as_deref())
-    .fetch_optional(&pool)
+    .fetch_optional(&mut *transaction)
     .await
     .map_err(|err| RuntimeError::database("DocStorage upsert snapshot failed", err))?;
+    if row.is_some() {
+      super::domain_command::invalidate_doc_blob_projection(
+        &mut transaction,
+        &workspace_id,
+        &doc_id,
+        self.embedding_schema_ready()?,
+      )
+      .await?;
+    }
+    transaction
+      .commit()
+      .await
+      .map_err(|err| RuntimeError::database("DocStorage commit snapshot transaction failed", err))?;
 
     Ok(row.is_some())
   }
@@ -91,7 +110,20 @@ impl BackendRuntime {
     let timestamp = DateTime::<Utc>::from_timestamp_millis(input.timestamp_ms)
       .ok_or_else(|| RuntimeError::invalid_input(format!("Invalid doc history timestamp: {}", input.timestamp_ms)))?;
     let pool = self.pool().await?;
-    let should_create = match latest_history_timestamp(&pool, &input.workspace_id, &input.doc_id).await? {
+    let mut transaction = pool
+      .begin()
+      .await
+      .map_err(|err| RuntimeError::database("DocStorage begin history transaction failed", err))?;
+    super::domain_command::lock_workspace_storage_shared(&mut transaction, &input.workspace_id).await?;
+    super::domain_command::lock_workspace_doc_update(&mut transaction, &input.workspace_id, &input.doc_id).await?;
+    super::domain_command::invalidate_doc_blob_projection(
+      &mut transaction,
+      &input.workspace_id,
+      &input.doc_id,
+      self.embedding_schema_ready()?,
+    )
+    .await?;
+    let should_create = match latest_history_timestamp(&mut transaction, &input.workspace_id, &input.doc_id).await? {
       None => true,
       Some(last_timestamp) if last_timestamp == timestamp => false,
       Some(last_timestamp) => {
@@ -120,10 +152,95 @@ impl BackendRuntime {
     .bind(input.blob.as_ref())
     .bind(expired_at)
     .bind(input.editor_id.as_deref())
-    .execute(&pool)
+    .execute(&mut *transaction)
     .await
     .map_err(|err| RuntimeError::database("DocStorage create history failed", err))?;
+    transaction
+      .commit()
+      .await
+      .map_err(|err| RuntimeError::database("DocStorage commit history transaction failed", err))?;
 
     Ok(true)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::runtime::{backend_runtime::tests::runtime_from_database_url, migrations::DATABASE_TEST_LOCK};
+
+  #[tokio::test]
+  async fn snapshot_writes_invalidate_only_committed_sources() -> anyhow::Result<()> {
+    let _guard = DATABASE_TEST_LOCK.lock().await;
+    let Some(runtime) = runtime_from_database_url().await? else {
+      return Ok(());
+    };
+    let pool = runtime.pool().await?;
+    let workspace_id = format!("snapshot-writer-{}", uuid::Uuid::new_v4());
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    let timestamp = Utc::now().timestamp_millis();
+    let blob = affine_doc_loader::add_doc_to_root_doc(vec![0, 0], "live", None)?;
+    assert!(
+      runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          workspace_id.clone(),
+          blob.clone().into(),
+          timestamp,
+          None
+        )
+        .await?
+    );
+    for delta in [-1, 0, 1] {
+      sqlx::query(
+        "INSERT INTO doc_blob_ref_projections(workspace_id,doc_id,source_revision,parser_version,status,indexed_at) \
+         VALUES($1,$1,to_timestamp($2::bigint::double precision/1000),1,'fresh',now()) ON \
+         CONFLICT(workspace_id,doc_id) DO UPDATE SET status='fresh',indexed_at=now()",
+      )
+      .bind(&workspace_id)
+      .bind(timestamp)
+      .execute(&pool)
+      .await?;
+      sqlx::query(
+        "UPDATE workspaces SET last_check_embeddings=to_timestamp($2::bigint::double precision/1000) WHERE id=$1",
+      )
+      .bind(&workspace_id)
+      .bind(timestamp)
+      .execute(&pool)
+      .await?;
+      let accepted = runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          workspace_id.clone(),
+          blob.clone().into(),
+          timestamp + delta,
+          None,
+        )
+        .await?;
+      assert_eq!(accepted, delta >= 0);
+      let status: String =
+        sqlx::query_scalar("SELECT status FROM doc_blob_ref_projections WHERE workspace_id=$1 AND doc_id=$1")
+          .bind(&workspace_id)
+          .fetch_one(&pool)
+          .await?;
+      assert_eq!(status, if accepted { "pending" } else { "fresh" });
+      let checked_at: DateTime<Utc> = sqlx::query_scalar("SELECT last_check_embeddings FROM workspaces WHERE id=$1")
+        .bind(&workspace_id)
+        .fetch_one(&pool)
+        .await?;
+      assert_eq!(checked_at.timestamp_millis(), if accepted { 0 } else { timestamp });
+    }
+    sqlx::query("DELETE FROM doc_blob_ref_projections WHERE workspace_id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    Ok(())
   }
 }

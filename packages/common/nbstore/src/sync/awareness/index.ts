@@ -1,3 +1,5 @@
+import { BehaviorSubject, Observable, switchMap } from 'rxjs';
+
 import type {
   AwarenessRecord,
   AwarenessStorage,
@@ -14,7 +16,13 @@ export interface AwarenessSync {
 }
 
 export class AwarenessSyncImpl implements AwarenessSync {
+  private readonly remotes$ = new BehaviorSubject(this.storages.remotes);
   constructor(readonly storages: PeerStorageOptions<AwarenessStorage>) {}
+
+  setRemotes(remotes: Record<string, AwarenessStorage>) {
+    this.storages.remotes = remotes;
+    this.remotes$.next(remotes);
+  }
 
   async update(record: AwarenessRecord, origin?: string) {
     await Promise.all(
@@ -32,12 +40,20 @@ export class AwarenessSyncImpl implements AwarenessSync {
     onUpdate: (update: AwarenessRecord, origin?: string) => void,
     onCollect: () => Promise<AwarenessRecord | null>
   ): () => void {
-    const unsubscribes = [
-      this.storages.local,
-      ...Object.values(this.storages.remotes),
-    ].map(peer => peer.subscribeUpdate(id, onUpdate, onCollect));
-    return () => {
-      unsubscribes.forEach(unsubscribe => unsubscribe());
-    };
+    const subscription = this.remotes$
+      .pipe(
+        switchMap(
+          remotes =>
+            new Observable(() => {
+              const unsubscribes = [
+                this.storages.local,
+                ...Object.values(remotes),
+              ].map(peer => peer.subscribeUpdate(id, onUpdate, onCollect));
+              return () => unsubscribes.forEach(unsubscribe => unsubscribe());
+            })
+        )
+      )
+      .subscribe();
+    return () => subscription.unsubscribe();
   }
 }

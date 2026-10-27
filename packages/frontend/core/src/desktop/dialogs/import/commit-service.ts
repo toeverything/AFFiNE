@@ -46,7 +46,6 @@ function errorMessage(error: unknown) {
 
 export class ImportCommitService {
   private readonly folderIdByPath = new Map<string, string>();
-  private readonly linkedDocsByFolder = new Set<string>();
   private readonly pendingFolders: ImportFolder[] = [];
 
   constructor(private readonly options: CommitServiceOptions) {}
@@ -68,7 +67,10 @@ export class ImportCommitService {
       blobCRUD: this.options.collection.blobSync,
       docCRUD: {
         create: (id: string) =>
-          this.options.collection.createDoc(id).getStore({ id }),
+          (
+            this.options.collection.getDoc(id) ??
+            this.options.collection.createDoc(id)
+          ).getStore({ id, extensions: this.options.extensions }),
         get: (id: string) =>
           this.options.collection.getDoc(id)?.getStore({ id }) ?? null,
         delete: (id: string) => this.options.collection.removeDoc(id),
@@ -81,7 +83,9 @@ export class ImportCommitService {
     for (const doc of batch.docs) {
       let store: Awaited<ReturnType<Transformer['snapshotToDoc']>>;
       try {
-        store = await transformer.snapshotToDoc(doc.snapshot);
+        store = await transformer.snapshotToDoc(doc.snapshot, {
+          replaceExisting: true,
+        });
       } catch (error) {
         warnings.push({
           code: 'skipped_doc',
@@ -186,10 +190,14 @@ export class ImportCommitService {
               nextPending.push(folder);
               continue;
             }
-            const folderId = parent.createFolder(
-              folder.name,
-              parent.indexAt('after')
+            const existing = parent.children$.value.find(
+              child =>
+                child.type$.value === 'folder' &&
+                child.name$.value === folder.name
             );
+            const folderId =
+              existing?.id ??
+              parent.createFolder(folder.name, parent.indexAt('after'));
             this.folderIdByPath.set(folder.path, folderId);
             rootFolderId ??= folderId;
             progressed = true;
@@ -239,13 +247,14 @@ export class ImportCommitService {
     if (!organizeService) return true;
     const parentFolderId = this.folderIdByPath.get(folder.parentPath);
     if (!parentFolderId) return false;
-    const linkKey = `${parentFolderId}:${folder.pageId}`;
-    if (!this.linkedDocsByFolder.has(linkKey)) {
-      const parent =
-        organizeService.folderTree.folderNode$(parentFolderId).value;
-      if (!parent) return false;
+    const parent = organizeService.folderTree.folderNode$(parentFolderId).value;
+    if (!parent) return false;
+    const exists = parent.children$.value.some(
+      child =>
+        child.type$.value === 'doc' && child.data$.value === folder.pageId
+    );
+    if (!exists) {
       parent.createLink('doc', folder.pageId, parent.indexAt('after'));
-      this.linkedDocsByFolder.add(linkKey);
     }
     this.applyIcon(folder.pageId, folder.icon);
     return true;

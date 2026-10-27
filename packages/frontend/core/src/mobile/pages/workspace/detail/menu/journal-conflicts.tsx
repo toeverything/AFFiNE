@@ -43,8 +43,8 @@ export const ResolveConflictOperations = ({
         confirmButtonOptions: {
           variant: 'error',
         },
-        onConfirm: () => {
-          docRecord.moveToTrash();
+        onConfirm: async () => {
+          await docRecord.moveToTrash();
         },
       });
     },

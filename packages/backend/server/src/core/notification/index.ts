@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { BackendRuntimeModule } from '../backend-runtime';
 import { DocStorageModule } from '../doc';
 import { MailModule } from '../mail';
 import { PermissionModule } from '../permission';
@@ -10,14 +11,25 @@ import { NotificationResolver, UserNotificationResolver } from './resolver';
 import { NotificationService } from './service';
 
 @Module({
-  imports: [PermissionModule, DocStorageModule, StorageModule, MailModule],
+  imports: [BackendRuntimeModule, DocStorageModule, MailModule],
+  providers: [NotificationService],
+  exports: [NotificationService],
+})
+class NotificationCoreModule {}
+
+@Module({
+  imports: [PermissionModule, StorageModule, NotificationCoreModule],
   providers: [
     UserNotificationResolver,
     NotificationResolver,
-    NotificationService,
-    NotificationJob,
     NotificationRealtimeProvider,
   ],
-  exports: [NotificationService],
+  exports: [NotificationCoreModule],
 })
 export class NotificationModule {}
+
+@Module({
+  imports: [NotificationCoreModule],
+  providers: [NotificationJob],
+})
+export class NotificationWorkerModule {}

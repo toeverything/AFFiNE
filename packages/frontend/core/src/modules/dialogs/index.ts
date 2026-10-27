@@ -10,8 +10,6 @@ export { WorkspaceDialogService } from './services/workspace-dialog';
 export type { DialogComponentProps } from './types';
 
 export function configureDialogModule(framework: Framework) {
-  framework
-    .service(GlobalDialogService)
-    .scope(WorkspaceScope)
-    .service(WorkspaceDialogService);
+  framework.service(GlobalDialogService);
+  framework.scope(WorkspaceScope).service(WorkspaceDialogService);
 }

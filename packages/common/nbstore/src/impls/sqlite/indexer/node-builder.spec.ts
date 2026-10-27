@@ -1,70 +1,35 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import type { NativeDBConnection } from '../db';
-import { SqliteIndexerStorage } from '.';
+import type { NativeIndexHit } from '../db';
 import { createNode } from './node-builder';
-import { getText } from './utils';
 
-const query = { type: 'match', field: 'title', match: 'query' } as const;
+function hit(fields: NativeIndexHit['fields']): NativeIndexHit {
+  return { id: 'doc-id', score: 1, fields, highlights: [] };
+}
 
-const connectionWith = (value: unknown) =>
-  ({
-    apis: {
-      ftsGetDocument: vi.fn().mockResolvedValue(value),
-      ftsGetMatches: vi.fn().mockResolvedValue([]),
-    },
-  }) as unknown as NativeDBConnection;
-
-describe('sqlite indexer node fields', () => {
+describe('sqlite indexer native result mapping', () => {
   it.each([
-    ['string', 'summary', 'summary'],
-    ['singleton array', ['one'], 'one'],
+    ['string', ['summary'], 'summary'],
     ['array', ['one', 'two'], ['one', 'two']],
-    ['serialized array', '["one","two"]', ['one', 'two']],
-    ['malformed array', '[not-json]', '[not-json]'],
-    ['null', null, ''],
-    ['missing', undefined, ''],
-    ['wrong type', 42, ''],
-  ])('isolates %s values', async (_, value, expected) => {
-    const node = await createNode(
-      connectionWith(Array.isArray(value) ? getText(value) : value),
-      'doc',
-      'doc-id',
-      1,
-      { fields: ['title'] },
-      query
-    );
-
+    ['missing', [], ''],
+  ])('maps %s stored values', (_, values, expected) => {
+    const node = createNode(hit([{ field: 'title', values }]), {
+      fields: ['title'],
+    });
     expect(node.fields.title).toEqual(expected);
   });
 
-  it('does not highlight non-string values', async () => {
-    const connection = connectionWith({ invalid: true });
-    const node = await createNode(
-      connection,
-      'doc',
-      'doc-id',
-      1,
-      { highlights: [{ field: 'title', before: '<b>', end: '</b>' }] },
-      query
-    );
-
-    expect(node.highlights.title).toEqual([]);
-    expect(connection.apis.ftsGetMatches).not.toHaveBeenCalled();
-  });
-
-  it('isolates wrong aggregate field types', async () => {
-    const connection = connectionWith(42);
-    connection.apis.ftsSearch = vi
-      .fn()
-      .mockResolvedValue([{ id: 'doc-id', score: 1, terms: [] }]);
-    const storage = Object.create(
-      SqliteIndexerStorage.prototype
-    ) as SqliteIndexerStorage;
-    Object.defineProperty(storage, 'connection', { value: connection });
-
-    await expect(
-      storage.aggregate('doc', query, 'title')
-    ).resolves.toMatchObject({ buckets: [] });
+  it('formats native highlight spans', () => {
+    const native = hit([{ field: 'title', values: ['hello search'] }]);
+    native.highlights = [
+      {
+        field: 'title',
+        values: [{ valueIndex: 0, spans: [{ start: 6, end: 12 }] }],
+      },
+    ];
+    const node = createNode(native, {
+      highlights: [{ field: 'title', before: '<b>', end: '</b>' }],
+    });
+    expect(node.highlights.title).toEqual(['hello <b>search</b>']);
   });
 });

@@ -263,7 +263,7 @@ export class WorkspaceResolver {
   ) {
     await this.ac.user(user.id).workspace(id).assert('Workspace.Delete');
 
-    await this.models.workspace.delete(id);
+    await this.workspaceService.delete(id);
 
     return true;
   }

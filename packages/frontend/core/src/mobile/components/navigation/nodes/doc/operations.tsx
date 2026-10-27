@@ -91,8 +91,8 @@ export const useNavigationPanelDocNodeOperations = (docId: string) => {
       confirmButtonOptions: {
         variant: 'error',
       },
-      onConfirm() {
-        docRecord.moveToTrash();
+      async onConfirm() {
+        await docRecord.moveToTrash();
         track.$.navigationPanel.docs.deleteDoc({
           control: 'button',
         });

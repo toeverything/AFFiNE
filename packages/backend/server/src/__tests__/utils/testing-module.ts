@@ -9,19 +9,24 @@ import {
 import { PrismaClient } from '@prisma/client';
 
 import { buildAppModule, FunctionalityModules } from '../../app.module';
-import { AFFiNELogger, ConfigFactory, JobModule, JobQueue } from '../../base';
+import { AFFiNELogger, ConfigFactory } from '../../base';
+import { OVERRIDE_CONFIG_TOKEN } from '../../base/config/factory';
+import { getDefaultConfig } from '../../base/config/register';
 import { GqlModule } from '../../base/graphql';
 import { ServerConfigModule } from '../../core';
 import { AuthGuard, AuthModule } from '../../core/auth';
-import { BACKEND_RUNTIME_CONFIG_PATHS } from '../../core/backend-runtime';
 import { Mailer, MailModule } from '../../core/mail';
 import { ModelsModule } from '../../models';
+import { ServerConfigHandle } from '../../native';
 // for jsdoc inference
 // oxlint-disable-next-line no-unused-vars
 import type { createModule } from '../create-module';
-import { createFactory, MockJobModule, MockJobQueue } from '../mocks';
+import { createFactory } from '../mocks';
 import { MockMailer } from '../mocks/mailer.mock';
-import { createTestRuntimeConfig } from './runtime-config';
+import {
+  applyTestConfigOverrides,
+  createTestRuntimeConfig,
+} from './runtime-config';
 import { initTestingDB, TEST_LOG_LEVEL } from './utils';
 
 interface TestingModuleMetadata extends ModuleMetadata {
@@ -32,7 +37,6 @@ export interface TestingModule extends BaseTestingModule {
   initTestingDB(): Promise<void>;
   create: ReturnType<typeof createFactory>;
   mails: MockMailer;
-  queue: MockJobQueue;
   [Symbol.asyncDispose](): Promise<void>;
 }
 
@@ -51,13 +55,7 @@ function dedupeModules(modules: NonNullable<ModuleMetadata['imports']>) {
 }
 
 function testingFunctionalityModules() {
-  return [
-    ...FunctionalityModules.filter(module => {
-      const moduleType = 'module' in module ? module.module : module;
-      return moduleType !== JobModule;
-    }),
-    MockJobModule,
-  ];
+  return [...FunctionalityModules];
 }
 
 @Resolver(() => String)
@@ -75,8 +73,10 @@ export async function createTestingModule(
   moduleDef: TestingModuleMetadata = {},
   autoInitialize = true
 ): Promise<TestingModule> {
+  const config = getDefaultConfig();
   const runtimeConfig = await createTestRuntimeConfig(
-    new ConfigFactory().config.db.datasourceUrl
+    config.db.datasourceUrl,
+    config.indexer
   );
   // setting up
   let imports = moduleDef.imports ?? [buildAppModule(globalThis.env)];
@@ -108,10 +108,13 @@ export async function createTestingModule(
   });
 
   builder.overrideProvider(Mailer).useClass(MockMailer);
-  builder.overrideProvider(JobQueue).useClass(MockJobQueue);
-  builder
-    .overrideProvider(BACKEND_RUNTIME_CONFIG_PATHS)
-    .useValue([runtimeConfig.configPath]);
+  builder.overrideProvider(ServerConfigHandle).useFactory({
+    factory: (overrides?: DeepPartial<AppConfig>) => {
+      applyTestConfigOverrides(runtimeConfig.configPath, overrides);
+      return new ServerConfigHandle(runtimeConfig.configPath);
+    },
+    inject: [{ token: OVERRIDE_CONFIG_TOKEN, optional: true }],
+  });
   if (moduleDef.tapModule) {
     moduleDef.tapModule(builder);
   }
@@ -174,7 +177,6 @@ export async function createTestingModule(
   testingModule[Symbol.asyncDispose] = () => testingModule.close();
 
   testingModule.mails = module.get(Mailer, { strict: false }) as MockMailer;
-  testingModule.queue = module.get(JobQueue, { strict: false }) as MockJobQueue;
 
   const logger = new AFFiNELogger();
   // we got a lot smoking tests try to break nestjs

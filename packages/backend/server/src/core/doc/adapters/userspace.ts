@@ -49,7 +49,10 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
     userId: string,
     docId: string,
     updates: Uint8Array[],
-    editorId?: string
+    editorId = userId,
+    _expectedPermissionGeneration?: number,
+    _writeIntent?: 'update_doc' | 'create_doc',
+    _permissionDocId?: string
   ) {
     if (!updates.length) {
       return 0;
@@ -79,6 +82,15 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
     });
 
     return timestamp;
+  }
+
+  async pushDocUpdatesTrusted(
+    userId: string,
+    docId: string,
+    updates: Uint8Array[],
+    editorId = userId
+  ) {
+    return await this.pushDocUpdates(userId, docId, updates, editorId);
   }
 
   async deleteDoc(userId: string, docId: string) {

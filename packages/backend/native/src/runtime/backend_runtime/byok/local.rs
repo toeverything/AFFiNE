@@ -191,3 +191,104 @@ pub(in super::super) async fn create(
     expires_at_ms,
   })
 }
+
+#[cfg(test)]
+mod tests {
+  use p256::{SecretKey, pkcs8::EncodePrivateKey};
+
+  use super::*;
+  use crate::{
+    llm::{
+      ByokCapabilityInput, ByokEndpointInput, ByokModelDeclarationInput, ByokProfileDefinitionInput,
+      CreateByokLocalLeaseProviderInput,
+    },
+    runtime::{Deployment, config::CopilotByokRuntimeConfig},
+  };
+
+  fn definition() -> ByokProfileDefinitionInput {
+    ByokProfileDefinitionInput {
+      endpoint: ByokEndpointInput {
+        kind: "provider_default".to_string(),
+        url: None,
+        dialect: None,
+      },
+      models: vec![ByokModelDeclarationInput {
+        model_id: "gpt-4o-mini".to_string(),
+        enabled: true,
+        capabilities: vec![ByokCapabilityInput {
+          input: vec!["text".to_string()],
+          output: vec!["text".to_string()],
+          features: Vec::new(),
+          attachment_kinds: Vec::new(),
+          attachment_sources: Vec::new(),
+        }],
+      }],
+    }
+  }
+
+  #[tokio::test]
+  async fn local_lease_requires_declared_models_and_encrypts_credentials() {
+    let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      return;
+    };
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
+    let secret = SecretKey::from_slice(&[9; 32])
+      .unwrap()
+      .to_pkcs8_pem(Default::default())
+      .unwrap();
+    let policy = ByokPolicy::from(Deployment::Cloud, &CopilotByokRuntimeConfig::default());
+    let suffix = Uuid::new_v4().simple().to_string();
+    let workspace_id = format!("local-byok-workspace-{suffix}");
+    let user_id = format!("local-byok-user-{suffix}");
+
+    let missing = create(
+      &pool,
+      secret.as_bytes(),
+      &policy,
+      CreateByokLocalLeaseInput {
+        workspace_id: workspace_id.clone(),
+        user_id: user_id.clone(),
+        providers: Vec::new(),
+      },
+    )
+    .await
+    .err()
+    .unwrap();
+    assert!(missing.to_string().contains("providers is required"));
+
+    let lease = create(
+      &pool,
+      secret.as_bytes(),
+      &policy,
+      CreateByokLocalLeaseInput {
+        workspace_id,
+        user_id,
+        providers: vec![CreateByokLocalLeaseProviderInput {
+          provider: "openai".to_string(),
+          name: "Local OpenAI".to_string(),
+          description: None,
+          credential: "local-secret".to_string(),
+          definition: definition(),
+          enabled: true,
+        }],
+      },
+    )
+    .await
+    .unwrap();
+    assert!(lease.expires_at_ms > chrono::Utc::now().timestamp_millis());
+    let payload: serde_json::Value =
+      sqlx::query_scalar("SELECT payload FROM runtime_states WHERE purpose = $1 AND token_hash = $2")
+        .bind(LOCAL_LEASE_PURPOSE)
+        .bind(token_hash(&lease.lease_id))
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(!payload.to_string().contains("local-secret"));
+    assert_eq!(
+      payload["providers"][0]["definition"]["models"][0]["modelId"],
+      "gpt-4o-mini"
+    );
+  }
+}

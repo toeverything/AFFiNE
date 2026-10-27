@@ -145,12 +145,6 @@ globalStyle(`${blobGridItemCheckbox} path`, {
   backgroundColor: cssVarV2('layer/background/primary'),
 });
 
-export const blobImagePreview = style({
-  width: '100%',
-  height: '100%',
-  objectFit: 'contain',
-});
-
 export const unknownBlobIcon = style({});
 
 export const blobPreviewFooter = style({

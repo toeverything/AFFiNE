@@ -121,8 +121,11 @@ public class IndexerSearchQuery: GraphQLQuery {
             IndexerSearchQuery.Data.Workspace.Search.Pagination.self
           ] }
 
+          /// Number of results returned in this response, not a global total
           public var count: Int { __data["count"] }
+          /// Whether the provider has more candidates; remaining visible results are not guaranteed
           public var hasMore: Bool { __data["hasMore"] }
+          /// Opaque provider candidate cursor; it does not guarantee complete visible-result pagination
           public var nextCursor: String? { __data["nextCursor"] }
         }
       }

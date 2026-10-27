@@ -54,7 +54,10 @@ import {
   ActionPlacement,
   blockCommentToolbarButton,
 } from '@blocksuite/affine-shared/services';
-import { getMostCommonValue } from '@blocksuite/affine-shared/utils';
+import {
+  getMostCommonValue,
+  isInsideBlockByFlavour,
+} from '@blocksuite/affine-shared/utils';
 import { tableViewMeta } from '@blocksuite/data-view/view-presets';
 import {
   CopyIcon,
@@ -106,6 +109,10 @@ const conversionsActionGroup = {
         .run();
     };
 
+    const hasModelInsideCallout = selectedModels.some(model =>
+      isInsideBlockByFlavour(model.store, model, 'affine:callout')
+    );
+
     return {
       content: html`
         <editor-menu-button
@@ -121,7 +128,11 @@ const conversionsActionGroup = {
         >
           <div data-size="large" data-orientation="vertical">
             ${repeat(
-              textConversionConfigs.filter(c => c.flavour !== 'affine:divider'),
+              textConversionConfigs.filter(
+                c =>
+                  c.flavour !== 'affine:divider' &&
+                  !(hasModelInsideCallout && c.flavour === 'affine:callout')
+              ),
               item => item.name,
               ({ flavour, type, name, icon }) => html`
                 <editor-menu-action

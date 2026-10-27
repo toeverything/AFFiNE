@@ -127,38 +127,32 @@ e2e('should filter recently updated docs by doc read permission', async t => {
   );
 });
 
-e2e(
-  'should get doc with public attribute when doc snapshot not exists',
-  async t => {
-    const owner = await app.signup();
+e2e('should reject publishing when doc snapshot does not exist', async t => {
+  const owner = await app.signup();
 
-    const workspace = await app.create(Mockers.Workspace, {
-      owner: { id: owner.id },
-    });
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
 
-    const docId = randomUUID();
+  const docId = randomUUID();
 
-    // default public is false
-    const result1 = await app.gql({
-      query: getWorkspacePageByIdQuery,
-      variables: { workspaceId: workspace.id, pageId: docId },
-    });
+  const result1 = await app.gql({
+    query: getWorkspacePageByIdQuery,
+    variables: { workspaceId: workspace.id, pageId: docId },
+  });
 
-    t.is(result1.workspace.doc.public, false);
+  t.is(result1.workspace.doc.public, false);
 
-    await app.gql({
+  await t.throwsAsync(
+    app.gql({
       query: publishPageMutation,
       variables: { workspaceId: workspace.id, pageId: docId },
-    });
-
-    const result2 = await app.gql({
-      query: getWorkspacePageByIdQuery,
-      variables: { workspaceId: workspace.id, pageId: docId },
-    });
-
-    t.is(result2.workspace.doc.public, true);
-  }
-);
+    }),
+    {
+      message: `Doc ${docId} under Space ${workspace.id} not found.`,
+    }
+  );
+});
 
 e2e('should get doc with title and summary', async t => {
   const owner = await app.signup();
@@ -342,7 +336,7 @@ e2e('should require Doc.Read to query doc histories', async t => {
         query: `
           query {
             workspace(id: "${workspace.id}") {
-              histories(guid: "${doc.docId}") {
+              histories(guid: "space:${doc.docId}") {
                 timestamp
               }
             }

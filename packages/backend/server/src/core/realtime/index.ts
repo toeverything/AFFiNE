@@ -7,15 +7,16 @@ import { RealtimeRegistry } from './registry';
 
 @Global()
 @Module({
-  providers: [
-    RealtimeRegistry,
-    RealtimePublisher,
-    RealtimeGateway,
-    RealtimeRegistryCompletenessChecker,
-  ],
+  providers: [RealtimeRegistry, RealtimePublisher],
   exports: [RealtimeRegistry, RealtimePublisher],
 })
 export class RealtimeModule {}
+
+@Module({
+  imports: [RealtimeModule],
+  providers: [RealtimeGateway, RealtimeRegistryCompletenessChecker],
+})
+export class RealtimeGatewayModule {}
 
 export { RealtimeRegistryCompletenessChecker } from './completeness';
 export { registerRealtimeLiveQuery } from './provider';

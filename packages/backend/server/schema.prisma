@@ -24,6 +24,7 @@ model User {
   /// for example, the value will be false if user never registered and invited into a workspace by others.
   registered      Boolean   @default(true)
   disabled        Boolean   @default(false)
+  authEpoch       Int       @default(0) @map("auth_epoch")
 
   features                    UserFeature[]
   userStripeCustomer          UserStripeCustomer?
@@ -62,6 +63,7 @@ model ConnectedAccount {
   id                String    @id @default(uuid()) @db.VarChar
   userId            String    @map("user_id") @db.VarChar
   provider          String    @db.VarChar
+  providerNamespace String?   @map("provider_namespace") @db.Text
   providerAccountId String    @map("provider_account_id") @db.VarChar
   scope             String?   @db.Text
   accessToken       String?   @map("access_token") @db.Text
@@ -128,16 +130,18 @@ model AuthSession {
 }
 
 model AuthRefreshToken {
-  id            String    @id @db.VarChar
-  authSessionId String    @map("auth_session_id") @db.VarChar
-  generation    Int
-  secretHash    String    @map("secret_hash") @db.VarChar
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(3)
-  usedAt        DateTime? @map("used_at") @db.Timestamptz(3)
-  replacedById  String?   @unique @map("replaced_by_id") @db.VarChar
-  graceUsedAt   DateTime? @map("grace_used_at") @db.Timestamptz(3)
-  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(3)
+  id                  String    @id @db.VarChar
+  authSessionId       String    @map("auth_session_id") @db.VarChar
+  generation          Int
+  secretHash          String    @map("secret_hash") @db.VarChar
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt           DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt              DateTime? @map("used_at") @db.Timestamptz(3)
+  replacedById        String?   @unique @map("replaced_by_id") @db.VarChar
+  graceUsedAt         DateTime? @map("grace_used_at") @db.Timestamptz(3)
+  revokedAt           DateTime? @map("revoked_at") @db.Timestamptz(3)
+  successorCiphertext String?   @map("successor_ciphertext") @db.Text
+  successorExpiresAt  DateTime? @map("successor_expires_at") @db.Timestamptz(3)
 
   authSession AuthSession       @relation(fields: [authSessionId], references: [id], onDelete: Cascade)
   replacedBy  AuthRefreshToken? @relation("AuthRefreshRotation", fields: [replacedById], references: [id], onDelete: SetNull)
@@ -244,6 +248,7 @@ model Entitlement {
   @@map("entitlements")
 }
 
+// TODO(gc-convergence): drop this v0.27.4 projection after old readers and predeploy retire; current quota reads use canonical facts and bounded memory cache.
 model EffectiveUserQuotaState {
   userId               String    @id @map("user_id") @db.VarChar
   plan                 String    @db.Text
@@ -269,6 +274,7 @@ model EffectiveUserQuotaState {
   @@map("effective_user_quota_states")
 }
 
+// TODO(gc-convergence): drop this v0.27.4 projection after old readers and predeploy retire; current quota reads use canonical facts and bounded memory cache.
 model EffectiveWorkspaceQuotaState {
   workspaceId             String    @id @map("workspace_id") @db.VarChar
   plan                    String    @db.Text
@@ -994,9 +1000,10 @@ model AppConfig {
 }
 
 model UserStripeCustomer {
-  userId           String   @id @map("user_id") @db.VarChar
-  stripeCustomerId String   @unique @map("stripe_customer_id") @db.VarChar
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  userId            String   @id @map("user_id") @db.VarChar
+  stripeCustomerId  String   @unique @map("stripe_customer_id") @db.VarChar
+  providerNamespace String?  @map("provider_namespace") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1006,6 +1013,8 @@ model UserStripeCustomer {
 model ProviderSubscription {
   id                     String    @id @default(uuid()) @db.VarChar
   provider               Provider
+  providerNamespace      String?   @map("provider_namespace") @db.Text
+  sourceIdentity         String?   @map("source_identity") @db.Text
   targetType             String    @map("target_type") @db.Text
   targetId               String    @map("target_id") @db.VarChar
   plan                   String    @db.VarChar(20)
@@ -1025,11 +1034,14 @@ model ProviderSubscription {
   trialStart             DateTime? @map("trial_start") @db.Timestamptz(3)
   trialEnd               DateTime? @map("trial_end") @db.Timestamptz(3)
   canceledAt             DateTime? @map("canceled_at") @db.Timestamptz(3)
+  givesAccess            Boolean?  @map("gives_access")
+  willRenew              Boolean?  @map("will_renew")
   metadata               Json      @default("{}") @db.JsonB
   createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@unique([provider, externalSubscriptionId])
+  @@unique([providerNamespace, sourceIdentity])
   @@unique([provider, iapStore, externalRef, externalProductId, externalCustomerId])
   @@index([targetType, targetId, plan, status])
   @@index([provider, externalCustomerId])
@@ -1048,6 +1060,7 @@ enum IapStore {
 
 model Invoice {
   stripeInvoiceId             String   @id @map("stripe_invoice_id")
+  providerNamespace           String?  @map("provider_namespace") @db.Text
   targetId                    String   @map("target_id") @db.VarChar
   currency                    String   @db.VarChar(3)
   // CNY 12.50 stored as 1250
@@ -1070,6 +1083,7 @@ model Invoice {
 model PaymentEvent {
   id                 String    @id @default(uuid()) @db.VarChar
   provider           Provider
+  providerNamespace  String?   @map("provider_namespace") @db.Text
   eventType          String    @map("event_type") @db.VarChar
   externalEventId    String    @map("external_event_id") @db.VarChar
   targetType         String?   @map("target_type") @db.Text
@@ -1083,36 +1097,91 @@ model PaymentEvent {
   processingStatus   String    @default("pending") @map("processing_status") @db.VarChar(20)
   processingAttempts Int       @default(0) @map("processing_attempts") @db.Integer
   processedAt        DateTime? @map("processed_at") @db.Timestamptz(3)
+  nextAttemptAt      DateTime? @map("next_attempt_at") @db.Timestamptz(3)
   lastError          String?   @map("last_error") @db.Text
   metadata           Json      @default("{}") @db.JsonB
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@unique([provider, externalEventId])
+  @@unique([providerNamespace, externalEventId])
   @@index([processingStatus, updatedAt])
   @@index([targetType, targetId])
   @@map("payment_events")
 }
 
 model SubscriptionTrialUsage {
-  id          String   @id @default(uuid()) @db.VarChar
-  targetType  String   @map("target_type") @db.Text
-  targetId    String   @map("target_id") @db.VarChar
-  plan        String   @db.VarChar(20)
-  provider    Provider
-  externalRef String?  @map("external_ref") @db.VarChar
-  firstUsedAt DateTime @default(now()) @map("first_used_at") @db.Timestamptz(3)
-  metadata    Json     @default("{}") @db.JsonB
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                String   @id @default(uuid()) @db.VarChar
+  targetType        String   @map("target_type") @db.Text
+  targetId          String   @map("target_id") @db.VarChar
+  plan              String   @db.VarChar(20)
+  provider          Provider
+  providerNamespace String?  @map("provider_namespace") @db.Text
+  externalRef       String?  @map("external_ref") @db.VarChar
+  firstUsedAt       DateTime @default(now()) @map("first_used_at") @db.Timestamptz(3)
+  metadata          Json     @default("{}") @db.JsonB
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@unique([targetType, targetId, plan])
   @@index([provider, externalRef])
   @@map("subscription_trial_usages")
 }
 
+model PaymentFinancialFact {
+  id                String    @id @default(uuid()) @db.VarChar
+  provider          Provider
+  providerNamespace String    @map("provider_namespace") @db.Text
+  objectKind        String    @map("object_kind") @db.Text
+  externalId        String    @map("external_id") @db.Text
+  sourceIdentity    String?   @map("source_identity") @db.Text
+  externalInvoiceId String?   @map("external_invoice_id") @db.Text
+  externalPaymentId String?   @map("external_payment_id") @db.Text
+  status            String    @db.Text
+  amount            Int?      @db.Integer
+  currency          String?   @db.VarChar(3)
+  occurredAt        DateTime? @map("occurred_at") @db.Timestamptz(3)
+  metadata          Json      @default("{}") @db.JsonB
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([providerNamespace, objectKind, externalId], map: "payment_financial_facts_namespace_kind_external_key")
+  @@index([providerNamespace, sourceIdentity])
+  @@index([providerNamespace, externalInvoiceId], map: "payment_financial_facts_namespace_invoice_idx")
+  @@map("payment_financial_facts")
+}
+
+model PaymentOperation {
+  id                 String    @id @default(uuid()) @db.VarChar
+  provider           Provider
+  providerNamespace  String    @map("provider_namespace") @db.Text
+  operationType      String    @map("operation_type") @db.Text
+  intentId           String    @map("intent_id") @db.Text
+  primaryResourceKey String    @map("primary_resource_key") @db.Text
+  resourceKeys       String[]  @default([]) @map("resource_keys") @db.Text
+  targetType         String?   @map("target_type") @db.Text
+  targetId           String?   @map("target_id") @db.VarChar
+  status             String    @default("pending") @db.Text
+  steps              Json      @default("[]") @db.JsonB
+  result             Json?     @db.JsonB
+  firstSentAt        DateTime? @map("first_sent_at") @db.Timestamptz(3)
+  replayDeadline     DateTime? @map("replay_deadline") @db.Timestamptz(3)
+  nextAttemptAt      DateTime? @map("next_attempt_at") @db.Timestamptz(3)
+  attemptCount       Int       @default(0) @map("attempt_count") @db.Integer
+  lastErrorCode      String?   @map("last_error_code") @db.Text
+  lastError          String?   @map("last_error") @db.Text
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([providerNamespace, intentId])
+  @@index([status, nextAttemptAt])
+  @@index([providerNamespace, primaryResourceKey])
+  @@map("payment_operations")
+}
+
 model License {
   key         String    @id @map("key") @db.VarChar
+  workspaceId String?   @map("workspace_id") @db.VarChar
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   revealedAt  DateTime? @map("revealed_at") @db.Timestamptz(3)
   installedAt DateTime? @map("installed_at") @db.Timestamptz(3)
@@ -1145,19 +1214,22 @@ enum BlobStatus {
 // like, total size of blobs in a workspace, or blob list for sync service.
 // it should only be a map of metadata of blobs stored anywhere else
 model Blob {
-  workspaceId String     @map("workspace_id") @db.VarChar
-  key         String     @db.VarChar
-  size        Int        @db.Integer
-  mime        String     @db.VarChar
-  status      BlobStatus @default(completed)
-  uploadId    String?    @map("upload_id") @db.VarChar
-  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  deletedAt   DateTime?  @map("deleted_at") @db.Timestamptz(3)
+  workspaceId          String     @map("workspace_id") @db.VarChar
+  key                  String     @db.VarChar
+  size                 Int        @db.Integer
+  mime                 String     @db.VarChar
+  status               BlobStatus @default(completed)
+  reservationId        String?    @default(dbgenerated("gen_random_uuid()")) @map("reservation_id") @db.Uuid
+  reservationExpiresAt DateTime?  @map("reservation_expires_at") @db.Timestamptz(3)
+  uploadId             String?    @map("upload_id") @db.VarChar
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt            DateTime?  @map("deleted_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, key])
   @@index([workspaceId, status, deletedAt])
+  @@index([workspaceId, status, deletedAt, reservationExpiresAt])
   @@map("blobs")
 }
 
@@ -1262,21 +1334,26 @@ model Reply {
 
 model CommentAttachment {
   // NOTE: manually set this column type to identity in migration file
-  sid         Int      @unique @default(autoincrement())
-  workspaceId String   @map("workspace_id") @db.VarChar
-  docId       String   @map("doc_id") @db.VarChar
-  key         String   @db.VarChar
-  size        Int      @db.Integer
-  mime        String   @db.VarChar
-  name        String   @db.VarChar
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  createdBy   String?  @map("created_by") @db.VarChar
+  sid                  Int        @unique @default(autoincrement())
+  workspaceId          String     @map("workspace_id") @db.VarChar
+  docId                String     @map("doc_id") @db.VarChar
+  key                  String     @db.VarChar
+  size                 Int        @db.Integer
+  mime                 String     @db.VarChar
+  name                 String     @db.VarChar
+  status               BlobStatus @default(completed)
+  reservationId        String?    @default(dbgenerated("gen_random_uuid()")) @map("reservation_id") @db.Uuid
+  reservationExpiresAt DateTime?  @map("reservation_expires_at") @db.Timestamptz(3)
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy            String?    @map("created_by") @db.VarChar
+  deletedAt            DateTime?  @map("deleted_at") @db.Timestamptz(3)
 
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   // will delete creator record if creator's account is deleted
   createdByUser User?     @relation(name: "createdCommentAttachments", fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@id([workspaceId, docId, key])
+  @@index([workspaceId, status, deletedAt, reservationExpiresAt])
   @@map("comment_attachments")
 }
 
@@ -1356,6 +1433,7 @@ model CalendarSubscription {
   lastSyncAt         DateTime? @map("last_sync_at") @db.Timestamptz(3)
   nextSyncAt         DateTime  @default(now()) @map("next_sync_at") @db.Timestamptz(3)
   syncRetryCount     Int       @default(0) @map("sync_retry_count")
+  syncClaimedUntil   DateTime? @map("sync_claimed_until") @db.Timestamptz(3)
   customChannelId    String?   @map("custom_channel_id") @db.VarChar
   customResourceId   String?   @map("custom_resource_id") @db.VarChar
   channelExpiration  DateTime? @map("channel_expiration") @db.Timestamptz(3)

@@ -2,12 +2,15 @@ import { createHash } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 
-import { OneMB } from '../../../../base';
+import { OneMB, readBuffer } from '../../../../base';
+import { applyPromptAttachmentMimeTypeHintForNative } from '../../providers/attachments';
 import type {
   PromptAttachment,
   PromptAttachmentSourceKind,
+  PromptMessage,
 } from '../../providers/types';
 import { promptAttachmentMimeType } from '../../providers/utils';
+import { CopilotStorage } from '../../storage';
 import { AttachmentMaterializer } from './attachment-materializer';
 
 type AttachmentProviderHint = NonNullable<
@@ -156,7 +159,45 @@ function admittedBytesSource(input: {
 
 @Injectable()
 export class AttachmentAdmissionHost {
-  constructor(private readonly materializer: AttachmentMaterializer) {}
+  constructor(
+    private readonly materializer: AttachmentMaterializer,
+    private readonly storage: CopilotStorage
+  ) {}
+
+  async preparePromptMessages(
+    messages: PromptMessage[],
+    context: AttachmentAdmissionContext
+  ): Promise<PromptMessage[]> {
+    context.signal?.throwIfAborted();
+    return await Promise.all(
+      messages.map(async message => ({
+        ...message,
+        attachments: message.attachments
+          ? await Promise.all(
+              message.attachments.map(async attachment => {
+                const source = parsePromptAttachment(attachment);
+                if (
+                  source.kind === 'file_handle' ||
+                  source.kind === 'data' ||
+                  source.kind === 'bytes' ||
+                  source.url?.startsWith('data:')
+                )
+                  return attachment;
+                return admittedAttachmentToPromptAttachment(
+                  await this.admitPromptAttachment(
+                    applyPromptAttachmentMimeTypeHintForNative(
+                      attachment,
+                      message
+                    ),
+                    context
+                  )
+                );
+              })
+            )
+          : message.attachments,
+      }))
+    );
+  }
 
   async admitPromptAttachment(
     attachment: PromptAttachment,
@@ -199,6 +240,32 @@ export class AttachmentAdmissionHost {
           ? normalizeMimeType(parsed.mimeType)
           : dataUrl.mimeType,
         fileName: parsed.fileName,
+        providerHint: parsed.providerHint,
+      });
+    }
+
+    const stored = this.storage.sessionAttachmentFromUrl(parsed.url, context);
+    if (stored) {
+      const object = await this.storage.getSessionAttachment(
+        context.userId,
+        context.workspaceId,
+        stored.key
+      );
+      if (!object.body || !object.metadata) {
+        throw new Error('Copilot attachment not found');
+      }
+      const maxBytes = context.maxBytes ?? DEFAULT_MAX_BYTES;
+      const buffer = await readBuffer(object.body, size =>
+        size > maxBytes
+          ? { blobQuotaExceeded: true, storageQuotaExceeded: false }
+          : undefined
+      );
+      return admittedBytesSource({
+        data: buffer.toString('base64'),
+        mimeType: parsed.mimeType
+          ? normalizeMimeType(parsed.mimeType)
+          : normalizeMimeType(object.metadata.contentType),
+        fileName: parsed.fileName ?? stored.fileName,
         providerHint: parsed.providerHint,
       });
     }

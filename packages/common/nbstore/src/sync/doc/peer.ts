@@ -4,6 +4,7 @@ import { Observable, ReplaySubject, share, Subject } from 'rxjs';
 import { diffUpdate, encodeStateVectorFromUpdate, mergeUpdates } from 'yjs';
 
 import type { DocStorage, DocSyncStorage } from '../../storage';
+import { DummyDocSyncStorage } from '../../storage/dummy/doc-sync';
 import { AsyncPriorityQueue } from '../../utils/async-priority-queue';
 import { ClockMap } from '../../utils/clock';
 import { isEmptyUpdate } from '../../utils/is-empty-update';
@@ -39,6 +40,7 @@ interface Status {
   docs: Set<string>;
   connectedDocs: Set<string>;
   docErrors: Map<string, string>;
+  retryOnLocalUpdate: Set<string>;
   jobDocQueue: AsyncPriorityQueue;
   jobMap: Map<string, Job[]>;
   remoteClocks: ClockMap;
@@ -103,6 +105,15 @@ function isRemotePermissionError(error: unknown) {
   return name === 'DOC_ACTION_DENIED' || name === 'SPACE_ACCESS_DENIED';
 }
 
+function isDocScopedError(error: unknown) {
+  return (
+    isRemotePermissionError(error) ||
+    (error instanceof Error &&
+      (error.name === 'DISK_SOURCE_EXPORT_FAILED' ||
+        error.name === 'DISK_SOURCE_REVIEW_REQUIRED'))
+  );
+}
+
 function isEqualUint8Arrays(a: Uint8Array, b: Uint8Array) {
   if (a.length !== b.length) {
     return false;
@@ -156,18 +167,26 @@ export class DocSyncPeer {
   private readonly uniqueId = `sync:${this.peerId}:${nanoid()}`;
   private readonly prioritySettings = new Map<string, number>();
 
+  readonly syncMetadata: DocSyncStorage;
+
   constructor(
     readonly peerId: string,
     readonly local: DocStorage,
-    readonly syncMetadata: DocSyncStorage,
+    syncMetadata: DocSyncStorage,
     readonly remote: DocStorage,
     readonly options: DocSyncPeerOptions = {}
-  ) {}
+  ) {
+    this.syncMetadata =
+      remote.syncMetadataScope === 'connection'
+        ? new DummyDocSyncStorage()
+        : syncMetadata;
+  }
 
   private status: Status = {
     docs: new Set<string>(),
     connectedDocs: new Set<string>(),
     docErrors: new Map<string, string>(),
+    retryOnLocalUpdate: new Set<string>(),
     jobDocQueue: new AsyncPriorityQueue(),
     jobMap: new Map(),
     remoteClocks: new ClockMap(new Map()),
@@ -177,6 +196,29 @@ export class DocSyncPeer {
     errorMessage: null,
   };
   private readonly statusUpdatedSubject$ = new Subject<string | true>();
+
+  private async acknowledgeRemoteSourceUpdate(docId: string) {
+    if (!this.remote.acknowledgeDocUpdate) {
+      return;
+    }
+    const local = await this.local.getDoc(docId);
+    if (local) {
+      await this.remote.acknowledgeDocUpdate(docId, local.bin);
+    }
+  }
+
+  private async prepareRemoteDoc(docId: string) {
+    if (!this.remote.prepareDocImport) {
+      return;
+    }
+    const local = await this.local.getDoc(docId);
+    const root = await this.local.getDoc(this.local.spaceId);
+    await this.remote.prepareDocImport(
+      docId,
+      local?.bin ?? null,
+      root?.bin ?? null
+    );
+  }
 
   private get currentErrorMessage() {
     return (
@@ -247,7 +289,10 @@ export class DocSyncPeer {
             !docErrorMessage &&
             (!this.status.connectedDocs.has(docId) ||
               this.status.jobMap.has(docId)),
-          synced: !docErrorMessage && !this.status.jobMap.has(docId),
+          synced:
+            !docErrorMessage &&
+            this.status.connectedDocs.has(docId) &&
+            !this.status.jobMap.has(docId),
           retrying: this.status.retrying,
           errorMessage: docErrorMessage ?? this.status.errorMessage,
         });
@@ -261,10 +306,12 @@ export class DocSyncPeer {
 
   private readonly jobs = createJobErrorCatcher({
     connect: async (docId: string, signal?: AbortSignal) => {
+      await this.prepareRemoteDoc(docId);
       const pushedClock =
         (await this.syncMetadata.getPeerPushedClock(this.peerId, docId))
           ?.timestamp ?? null;
       const clock = await this.local.getDocTimestamp(docId);
+      const remoteClock = this.status.remoteClocks.get(docId);
 
       throwIfAborted(signal);
       if (
@@ -279,10 +326,14 @@ export class DocSyncPeer {
         const pulled =
           (await this.syncMetadata.getPeerPulledRemoteClock(this.peerId, docId))
             ?.timestamp ?? null;
-        const remoteClock = this.status.remoteClocks.get(docId);
+        const hasRemoteClock = remoteClock.getTime() > 0;
+        const hasPulled = pulled !== null && pulled.getTime() > 0;
         if (
-          remoteClock &&
-          (pulled === null || pulled.getTime() < remoteClock.getTime())
+          hasRemoteClock
+            ? !hasPulled ||
+              (pulled !== null && pulled.getTime() < remoteClock.getTime())
+            : (this.prioritySettings.get(docId) ?? 0) > 0 &&
+              (!clock || !hasPulled)
         ) {
           await this.jobs.pull(docId, signal);
         }
@@ -351,6 +402,7 @@ export class DocSyncPeer {
           },
           this.uniqueId
         );
+        await this.acknowledgeRemoteSourceUpdate(docId);
         throwIfAborted(signal);
         await this.syncMetadata.setPeerPulledRemoteClock(this.peerId, {
           docId,
@@ -388,6 +440,7 @@ export class DocSyncPeer {
         });
       } else {
         if (localDocRecord) {
+          await this.acknowledgeRemoteSourceUpdate(docId);
           if (!isEmptyUpdate(localDocRecord.bin)) {
             throwIfAborted(signal);
             const { timestamp: remoteClock } = await this.remote.pushDocUpdate(
@@ -416,6 +469,7 @@ export class DocSyncPeer {
       }
     },
     pull: async (docId: string, signal?: AbortSignal) => {
+      await this.prepareRemoteDoc(docId);
       const docRecord = await this.local.getDoc(docId);
 
       const stateVector =
@@ -424,6 +478,7 @@ export class DocSyncPeer {
           : new Uint8Array();
       const serverDoc = await this.remote.getDocDiff(docId, stateVector);
       if (!serverDoc) {
+        await this.acknowledgeRemoteSourceUpdate(docId);
         return;
       }
       const { missing: newData, timestamp: remoteClock } = serverDoc;
@@ -435,6 +490,7 @@ export class DocSyncPeer {
         },
         this.uniqueId
       );
+      await this.acknowledgeRemoteSourceUpdate(docId);
       throwIfAborted(signal);
       await this.syncMetadata.setPeerPulledRemoteClock(this.peerId, {
         docId,
@@ -473,6 +529,7 @@ export class DocSyncPeer {
             },
             this.uniqueId
           );
+          await this.acknowledgeRemoteSourceUpdate(docId);
 
           // schedule push job to mark the timestamp as pushed timestamp
           this.schedule({
@@ -503,10 +560,7 @@ export class DocSyncPeer {
       if (!this.status.docs.has(docId)) {
         this.status.docs.add(docId);
         this.statusUpdatedSubject$.next(docId);
-        this.schedule({
-          type: 'connect',
-          docId,
-        });
+        this.schedule({ type: 'connect', docId });
       }
     },
   };
@@ -521,6 +575,11 @@ export class DocSyncPeer {
       update: Uint8Array;
       clock: Date;
     }) => {
+      if (this.status.retryOnLocalUpdate.delete(docId)) {
+        this.status.docErrors.delete(docId);
+        this.schedule({ type: 'connect', docId });
+        return;
+      }
       if (this.status.docErrors.has(docId)) {
         return;
       }
@@ -540,11 +599,21 @@ export class DocSyncPeer {
       docId,
       update,
       remoteClock,
+      origin,
     }: {
       docId: string;
       update: Uint8Array;
       remoteClock: Date;
+      origin?: string;
     }) => {
+      if (
+        origin === 'disk:source-discovered' &&
+        this.status.retryOnLocalUpdate.delete(docId)
+      ) {
+        this.status.docErrors.delete(docId);
+        this.schedule({ type: 'connect', docId });
+        return;
+      }
       if (this.status.docErrors.has(docId)) {
         return;
       }
@@ -553,13 +622,16 @@ export class DocSyncPeer {
       this.actions.addDoc(docId);
       this.actions.updateRemoteClock(docId, remoteClock);
 
-      // schedule push job
-      this.schedule({
-        type: 'save',
-        docId,
-        remoteClock: remoteClock,
-        update,
-      });
+      if (isEmptyUpdate(update)) {
+        this.schedule({ type: 'pull', docId });
+      } else {
+        this.schedule({
+          type: 'save',
+          docId,
+          remoteClock: remoteClock,
+          update,
+        });
+      }
     },
   };
 
@@ -589,6 +661,7 @@ export class DocSyncPeer {
           docs: new Set(),
           connectedDocs: new Set(),
           docErrors: new Map(),
+          retryOnLocalUpdate: new Set(),
           jobDocQueue: new AsyncPriorityQueue(),
           jobMap: new Map(),
           remoteClocks: new ClockMap(new Map()),
@@ -712,6 +785,7 @@ export class DocSyncPeer {
             docId,
             update: bin,
             remoteClock: timestamp,
+            origin,
           });
         })
       );
@@ -723,7 +797,6 @@ export class DocSyncPeer {
         this.actions.addDoc(docId);
       }
 
-      // get cached clocks from metadata
       const cachedClocks = await this.syncMetadata.getPeerRemoteClocks(
         this.peerId
       );
@@ -734,11 +807,13 @@ export class DocSyncPeer {
       }
       this.statusUpdatedSubject$.next(true);
 
-      // get new clocks from server
-      const maxClockValue = this.status.remoteClocks.max;
-      const newClocks = await this.remote.getDocTimestamps(maxClockValue);
+      const newClocks = await this.remote.getDocTimestamps(
+        this.remote.syncMetadataScope === 'connection'
+          ? undefined
+          : this.status.remoteClocks.max
+      );
       for (const [id, v] of Object.entries(newClocks)) {
-        this.status.remoteClocks.set(id, v);
+        this.status.remoteClocks.setIfBigger(id, v);
       }
       this.statusUpdatedSubject$.next(true);
 
@@ -752,6 +827,11 @@ export class DocSyncPeer {
       // add all docs from remote
       for (const docId of this.status.remoteClocks.keys()) {
         this.actions.addDoc(docId);
+      }
+      for (const [docId, priority] of this.prioritySettings) {
+        if (priority > 0) {
+          this.actions.addDoc(docId);
+        }
       }
 
       // begin to process jobs
@@ -847,16 +927,23 @@ export class DocSyncPeer {
       await job();
       return true;
     } catch (error) {
-      if (!isRemotePermissionError(error)) {
+      if (!isDocScopedError(error)) {
         throw error;
       }
 
       const message = error instanceof Error ? error.message : String(error);
-      console.warn('Sync skipped for doc due to remote permission error', {
+      console.warn('Sync paused for doc', {
         docId,
         error,
       });
       this.status.docErrors.set(docId, message);
+      if (
+        error instanceof Error &&
+        (error.name === 'DISK_SOURCE_EXPORT_FAILED' ||
+          error.name === 'DISK_SOURCE_REVIEW_REQUIRED')
+      ) {
+        this.status.retryOnLocalUpdate.add(docId);
+      }
       this.status.connectedDocs.delete(docId);
       this.status.jobMap.delete(docId);
       this.statusUpdatedSubject$.next(docId);
@@ -876,7 +963,7 @@ export class DocSyncPeer {
       return;
     }
 
-    const priority = this.prioritySettings.get(job.docId) ?? 0;
+    const priority = this.getJobPriority(job.docId);
     this.status.jobDocQueue.push(job.docId, priority);
 
     const existingJobs = this.status.jobMap.get(job.docId) ?? [];
@@ -885,15 +972,31 @@ export class DocSyncPeer {
     this.statusUpdatedSubject$.next(job.docId);
   }
 
+  private getJobPriority(docId: string) {
+    // New document uploads require their root membership to be synced first.
+    return docId === this.local.spaceId
+      ? Infinity
+      : (this.prioritySettings.get(docId) ?? 0);
+  }
+
   addPriority(id: string, priority: number) {
     const oldPriority = this.prioritySettings.get(id) ?? 0;
-    this.prioritySettings.set(id, priority);
-    this.status.jobDocQueue.setPriority(id, oldPriority + priority);
+    const newPriority = oldPriority + priority;
+    this.prioritySettings.set(id, newPriority);
+    this.status.jobDocQueue.setPriority(id, this.getJobPriority(id));
+    if (oldPriority <= 0 && newPriority > 0 && this.status.syncing) {
+      if (!this.status.docs.has(id)) {
+        this.actions.addDoc(id);
+      } else {
+        this.schedule({ type: 'connect', docId: id });
+      }
+    }
 
     return () => {
       const currentPriority = this.prioritySettings.get(id) ?? 0;
-      this.prioritySettings.set(id, currentPriority - priority);
-      this.status.jobDocQueue.setPriority(id, currentPriority - priority);
+      const restoredPriority = currentPriority - priority;
+      this.prioritySettings.set(id, restoredPriority);
+      this.status.jobDocQueue.setPriority(id, this.getJobPriority(id));
     };
   }
 

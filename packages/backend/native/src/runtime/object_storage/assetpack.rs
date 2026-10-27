@@ -15,7 +15,7 @@ use super::types::checksum_crc32_base64;
 use super::{
   FsStorageConfig, MAX_BLOB_SIZE,
   fs::{fs_bucket_path, normalize_storage_key, normalize_storage_prefix, system_time_ms},
-  types::{ObjectGetResult, ObjectListEntry, ObjectMetadata, ObjectPutMetadata},
+  types::{ObjectGetResult, ObjectListEntry, ObjectListPage, ObjectMetadata, ObjectPutMetadata},
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
 
@@ -207,6 +207,7 @@ pub(super) async fn get(config: &FsStorageConfig, scope: &str, key: &str) -> Run
   }))
 }
 
+#[cfg(test)]
 pub(super) async fn list(
   config: &FsStorageConfig,
   scope: &str,
@@ -241,6 +242,81 @@ pub(super) async fn list(
       })
     })
     .collect()
+}
+
+pub(super) async fn list_page(
+  config: &FsStorageConfig,
+  scope: &str,
+  prefix: Option<String>,
+  continuation_token: Option<String>,
+  start_after: Option<String>,
+  delimiter: Option<String>,
+  max_keys: i32,
+) -> RuntimeResult<ObjectListPage> {
+  let prefix = prefix
+    .map(|prefix| normalize_storage_prefix(&prefix))
+    .transpose()?
+    .unwrap_or_default();
+  let marker = match continuation_token {
+    Some(token) => token
+      .strip_prefix("local:")
+      .ok_or_else(|| RuntimeError::invalid_input("invalid local object list continuation token"))?
+      .to_string(),
+    None => start_after.unwrap_or_default(),
+  };
+  let store = open_store(config).await?;
+  let rows = sqlx::query(
+    r#"
+    WITH candidates AS (
+      SELECT key, content_length, last_modified_ms,
+        CASE
+          WHEN ?3 IS NOT NULL AND instr(substr(key, length(?2) + 1), ?3) > 0
+          THEN substr(key, 1, length(?2) + instr(substr(key, length(?2) + 1), ?3) + length(?3) - 1)
+          ELSE key
+        END AS item_key
+      FROM storage_assetpack_blobs
+      WHERE scope = ?1 AND key LIKE ?4 ESCAPE '\'
+    )
+    SELECT item_key,
+      MAX(CASE WHEN key = item_key THEN content_length END) AS content_length,
+      MAX(CASE WHEN key = item_key THEN last_modified_ms END) AS last_modified_ms
+    FROM candidates
+    WHERE item_key > ?5
+    GROUP BY item_key
+    ORDER BY item_key
+    LIMIT ?6
+    "#,
+  )
+  .bind(scope)
+  .bind(&prefix)
+  .bind(delimiter.as_deref())
+  .bind(format!("{}%", escape_sqlite_like(&prefix)))
+  .bind(marker)
+  .bind(max_keys + 1)
+  .fetch_all(store.pool())
+  .await
+  .map_err(|err| RuntimeError::database("Assetpack manifest page failed", err))?;
+  let has_more = rows.len() > max_keys as usize;
+  let mut page = ObjectListPage {
+    entries: Vec::new(),
+    common_prefixes: Vec::new(),
+    next_continuation_token: None,
+  };
+  for row in rows.into_iter().take(max_keys as usize) {
+    let key: String = row.get("item_key");
+    match row.get::<Option<i64>, _>("content_length") {
+      Some(content_length) => page.entries.push(ObjectListEntry {
+        key: key.clone(),
+        content_length,
+        last_modified_ms: row.get::<Option<i64>, _>("last_modified_ms").unwrap_or(0),
+      }),
+      None => page.common_prefixes.push(key.clone()),
+    }
+    if has_more {
+      page.next_continuation_token = Some(format!("local:{key}"));
+    }
+  }
+  Ok(page)
 }
 
 fn escape_sqlite_like(value: &str) -> String {
@@ -426,6 +502,23 @@ mod tests {
     let percent_matches = list(&config, &scope, Some("workspace/%".to_string())).await?;
     assert_eq!(percent_matches.len(), 1);
     assert_eq!(percent_matches[0].key, percent_key);
+
+    let first_page = list_page(&config, &scope, Some("workspace/".to_string()), None, None, None, 1).await?;
+    assert_eq!(first_page.entries.len(), 1);
+    let second_page = list_page(
+      &config,
+      &scope,
+      Some("workspace/".to_string()),
+      first_page.next_continuation_token,
+      None,
+      None,
+      2,
+    )
+    .await?;
+    assert_eq!(second_page.entries.len(), 2);
+    assert!(second_page.next_continuation_token.is_none());
+    let root_page = list_page(&config, &scope, None, None, None, Some("/".to_string()), 1).await?;
+    assert_eq!(root_page.common_prefixes, ["workspace/"]);
 
     delete(&config, &scope, key).await?;
     assert!(head(&config, &scope, key).await?.is_none());

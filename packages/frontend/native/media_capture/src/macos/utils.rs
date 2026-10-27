@@ -152,8 +152,9 @@ pub fn process_audio_frame(
   // Check the channel count and data format
   let channel_count = m_number_channels as usize;
 
-  // If the audio has two or more channels, keep (at most) the first two channels
-  // and return them in interleaved stereo format. Otherwise keep mono as-is.
+  // If the audio has two or more channels, keep (at most) the first two
+  // channels and return them in interleaved stereo format. Otherwise keep
+  // mono as-is.
 
   let interleaved_samples: Vec<f32> = if channel_count >= 2 {
     // Split interleaved input into the first two channels (L, R)

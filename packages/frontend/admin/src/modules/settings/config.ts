@@ -58,9 +58,9 @@ export const KNOWN_CONFIG_GROUPS = [
       'allowSignup',
       'allowSignupForOauth',
       {
-        key: 'newAccountShareActionDelay',
+        key: 'newAccountActionDelay',
         type: 'Number',
-        desc: 'Minimum account age in seconds before new accounts can invite members or create share links.',
+        desc: 'Minimum account age in seconds before accounts can invite members, create invite links, or publish documents. Set to 0 to disable.',
       },
       // nested json object
       {
@@ -98,41 +98,13 @@ export const KNOWN_CONFIG_GROUPS = [
     fields: [
       {
         key: 'blob.storage',
-        desc: 'The storage provider for user uploaded blobs',
-        sub: 'provider',
-        type: 'Enum',
-        options: ['fs', 'aws-s3', 'cloudflare-r2'],
-      },
-      {
-        key: 'blob.storage',
-        sub: 'bucket',
-        type: 'String',
-        desc: 'The bucket name for user uploaded blobs storage',
-      },
-      {
-        key: 'blob.storage',
-        sub: 'config',
+        desc: 'Complete storage configuration for user uploaded blobs',
         type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
       },
       {
         key: 'avatar.storage',
-        desc: 'The storage provider for user avatars',
-        sub: 'provider',
-        type: 'Enum',
-        options: ['fs', 'aws-s3', 'cloudflare-r2'],
-      },
-      {
-        key: 'avatar.storage',
-        sub: 'bucket',
-        type: 'String',
-        desc: 'The bucket name for user avatars storage',
-      },
-      {
-        key: 'avatar.storage',
-        sub: 'config',
+        desc: 'Complete storage configuration for user avatars',
         type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
       },
       {
         key: 'avatar.publicPath',
@@ -163,6 +135,22 @@ export const KNOWN_CONFIG_GROUPS = [
       },
     ],
   } as ConfigGroup<'copilot'>,
+  {
+    name: 'Indexer',
+    module: 'indexer',
+    fields: [
+      {
+        key: 'provider.type',
+        type: 'Enum',
+        options: ['embedded', 'elasticsearch', 'manticoresearch'],
+        desc: 'Search provider. Embedded and Elasticsearch provide full search semantics; Manticore Search provides basic search semantics.',
+      },
+      'provider.endpoint',
+      'provider.apiKey',
+      'provider.username',
+      'provider.password',
+    ],
+  } as ConfigGroup<'indexer'>,
 ];
 
 export const UNKNOWN_CONFIG_GROUPS = ALL_CONFIGURABLE_MODULES.filter(

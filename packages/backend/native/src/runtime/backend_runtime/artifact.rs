@@ -16,6 +16,7 @@ const MAX_ARTIFACT_BYTES: usize = 50 * 1024 * 1024;
 pub(super) struct ArtifactService {
   pool: PgPool,
   storage: Arc<ObjectStorageService>,
+  embedding_schema_ready: bool,
 }
 
 #[derive(FromRow)]
@@ -45,8 +46,12 @@ struct ArtifactReservation<'a> {
 }
 
 impl ArtifactService {
-  pub(super) fn new(pool: PgPool, storage: Arc<ObjectStorageService>) -> Self {
-    Self { pool, storage }
+  pub(super) fn new(pool: PgPool, storage: Arc<ObjectStorageService>, embedding_schema_ready: bool) -> Self {
+    Self {
+      pool,
+      storage,
+      embedding_schema_ready,
+    }
   }
 
   pub(super) async fn put(
@@ -94,7 +99,7 @@ impl ArtifactService {
         .await?;
     }
     let artifact = self.get(&input.workspace_id, &content_hash).await?;
-    register_artifact_source(&self.pool, &artifact).await?;
+    register_artifact_source(&self.pool, &artifact, self.embedding_schema_ready).await?;
     Ok(artifact)
   }
 
@@ -147,7 +152,7 @@ impl ArtifactService {
         .await?;
     }
     let artifact = self.get(&input.workspace_id, &content_hash).await?;
-    register_artifact_source(&self.pool, &artifact).await?;
+    register_artifact_source(&self.pool, &artifact, self.embedding_schema_ready).await?;
     Ok(artifact)
   }
 
@@ -191,15 +196,17 @@ impl ArtifactService {
       else {
         continue;
       };
-      sqlx::query(
-        r#"UPDATE embedding_sources SET deleted_at=now(),updated_at=now()
-        WHERE workspace_id=$1 AND source_kind='artifact' AND source_key=$2 AND deleted_at IS NULL"#,
-      )
-      .bind(&row.workspace_id)
-      .bind(row.id.to_string())
-      .execute(&mut *transaction)
-      .await
-      .map_err(|error| RuntimeError::database("tombstone artifact embedding source failed", error))?;
+      if self.embedding_schema_ready {
+        sqlx::query(
+          r#"UPDATE embedding_sources SET deleted_at=now(),updated_at=now()
+          WHERE workspace_id=$1 AND source_kind='artifact' AND source_key=$2 AND deleted_at IS NULL"#,
+        )
+        .bind(&row.workspace_id)
+        .bind(row.id.to_string())
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| RuntimeError::database("tombstone artifact embedding source failed", error))?;
+      }
       transaction
         .commit()
         .await
@@ -323,7 +330,11 @@ impl ArtifactService {
     .await
     .map_err(|error| RuntimeError::database("complete workspace artifact failed", error))?;
     if updated.rows_affected() != 1 {
-      return Err(RuntimeError::invalid_state("artifact_reservation_changed"));
+      let row = self.get(workspace_id, content_hash).await?;
+      if row.status != "ready" || row.storage_scope != locator.scope.as_str() || row.storage_key != locator.key.as_str()
+      {
+        return Err(RuntimeError::invalid_state("artifact_reservation_changed"));
+      }
     }
     Ok(())
   }

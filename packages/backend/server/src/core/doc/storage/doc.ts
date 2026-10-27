@@ -129,6 +129,13 @@ export abstract class DocStorageAdapter extends Connection {
   async getDoc(spaceId: string, docId: string): Promise<DocRecord | null> {
     await using _lock = await this.lockDocForUpdate(spaceId, docId);
 
+    return (await this.getDocUnderLock(spaceId, docId)).doc;
+  }
+
+  protected async getDocUnderLock(
+    spaceId: string,
+    docId: string
+  ): Promise<{ doc: DocRecord | null; snapshotUpdated: boolean }> {
     const snapshot = await this.getDocSnapshot(spaceId, docId);
     const updates = await this.getDocUpdates(spaceId, docId);
 
@@ -145,7 +152,7 @@ export abstract class DocStorageAdapter extends Connection {
       );
     }
 
-    return snapshot;
+    return { doc: snapshot, snapshotUpdated: false };
   }
 
   /// get final binary only but not updating the snapshot in database
@@ -170,7 +177,7 @@ export abstract class DocStorageAdapter extends Connection {
   }
 
   @Transactional<TransactionalAdapterPrisma>({ timeout: 60000 })
-  private async squashUpdatesToSnapshot(
+  protected async squashUpdatesToSnapshot(
     spaceId: string,
     docId: string,
     updates: DocUpdate[],
@@ -181,7 +188,10 @@ export abstract class DocStorageAdapter extends Connection {
       `Squashing updates, spaceId: ${spaceId}, docId: ${docId}, updates: ${updates.length}`
     );
 
-    const { bin, timestamp, editor } = finalUpdate;
+    const { bin, editor } = finalUpdate;
+    const timestamp = snapshot
+      ? Math.max(finalUpdate.timestamp, snapshot.timestamp + 1)
+      : finalUpdate.timestamp;
     const newSnapshot: DocRecord = {
       spaceId,
       docId,
@@ -197,13 +207,14 @@ export abstract class DocStorageAdapter extends Connection {
       await this.createDocHistory(snapshot);
     }
 
-    // always mark updates as merged unless throws
-    const count = await this.markUpdatesMerged(spaceId, docId, updates);
-    this.logger.verbose(
-      `Marked ${count} updates as merged, spaceId: ${spaceId}, docId: ${docId}, timestamp: ${timestamp}`
-    );
+    if (success) {
+      const count = await this.markUpdatesMerged(spaceId, docId, updates);
+      this.logger.verbose(
+        `Marked ${count} updates as merged, spaceId: ${spaceId}, docId: ${docId}, timestamp: ${timestamp}`
+      );
+    }
 
-    return newSnapshot;
+    return { doc: newSnapshot, snapshotUpdated: success };
   }
 
   async getDocDiff(
@@ -231,6 +242,16 @@ export abstract class DocStorageAdapter extends Connection {
     spaceId: string,
     docId: string,
     updates: Uint8Array[],
+    editorId: string,
+    expectedPermissionGeneration?: number,
+    writeIntent?: 'update_doc' | 'create_doc',
+    permissionDocId?: string
+  ): Promise<number>;
+
+  abstract pushDocUpdatesTrusted(
+    spaceId: string,
+    docId: string,
+    updates: Uint8Array[],
     editorId?: string
   ): Promise<number>;
 
@@ -240,7 +261,7 @@ export abstract class DocStorageAdapter extends Connection {
     spaceId: string,
     docId: string,
     timestamp: number,
-    editorId?: string
+    editorId: string
   ): Promise<void> {
     await using _lock = await this.lockDocForUpdate(spaceId, docId);
     const toSnapshot = await this.getDocHistory(spaceId, docId, timestamp);

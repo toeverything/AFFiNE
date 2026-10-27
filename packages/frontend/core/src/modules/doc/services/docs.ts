@@ -177,6 +177,18 @@ export class DocsService extends Service {
     return docRecord;
   }
 
+  getCustomPropertyById(docId: string, propertyId: string) {
+    return this.docPropertiesStore.getDocProperties(docId)?.[
+      'custom:' + propertyId
+    ] as string | undefined;
+  }
+
+  setCustomPropertyById(docId: string, propertyId: string, value: string) {
+    return this.docPropertiesStore.updateDocProperties(docId, {
+      ['custom:' + propertyId]: value,
+    });
+  }
+
   async addLinkedDoc(targetDocId: string, linkedDocId: string) {
     const { doc, release } = this.open(targetDocId);
     const disposePriorityLoad = doc.addPriorityLoad(10);

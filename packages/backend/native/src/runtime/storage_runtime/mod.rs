@@ -1,42 +1,64 @@
-use std::sync::RwLock;
-
-use napi::bindgen_prelude::Buffer;
-use sqlx::{PgPool, Row, postgres::PgPoolOptions};
-use tokio::sync::Mutex;
-
 mod blob_cleanup;
-mod blob_completion;
-mod blob_reclaimer;
 mod blob_reconciliation;
 mod capabilities;
 mod config;
 mod current_doc;
 mod doc_blob_refs;
 mod document_cleanup;
+mod document_cleanup_execution;
+mod workspace_cleanup;
+mod workspace_cleanup_checkpoint;
+mod workspace_cleanup_namespace;
+use std::sync::{Arc, RwLock};
+
 pub use capabilities::StorageProviderCapabilities;
 use capabilities::storage_provider_capabilities;
-use config::StorageRuntimeConfig;
+pub(in crate::runtime) use config::StorageRuntimeConfig;
 pub(super) use current_doc::load_current_doc;
-use current_doc::{CurrentDoc, CurrentDocUpdate, load_workspace_live_doc_ids, merge_current_doc};
+pub(in crate::runtime) use current_doc::{CurrentDoc, CurrentDocUpdate, merge_current_doc};
+use current_doc::{load_canonical_doc, load_workspace_canonical_doc_ids, load_workspace_live_doc_ids};
+use napi::bindgen_prelude::Buffer;
+use serde_json::Value;
+use sqlx::{PgPool, Row, postgres::PgPoolOptions};
+use tokio::sync::Mutex;
 
-use super::object_storage::{
-  self, ObjectStorageService, StorageBackendConfig,
-  types::{ObjectDeleteOutcome, ObjectKey, ObjectLocator, ObjectPrefix, StorageScope},
-};
 pub(super) use super::{
-  RuntimeError, RuntimeResult,
+  BlobRefProjectionError, RuntimeError, RuntimeResult, blob_ref_projection_error_code, extract_blob_refs,
   migrations::migrate_runtime_tables,
   napi_error, to_napi_error,
   types::{
-    RuntimeBlobCleanupExecuteResult, RuntimeBlobCleanupPlanResult, RuntimeBlobCleanupResult, RuntimeBlobCompleteResult,
-    RuntimeBlobMetadataBackfillResult, RuntimeDocBlobRefsResult, RuntimeDocumentCleanupAckResult,
-    RuntimeDocumentCleanupEffect, RuntimeDocumentCleanupExecuteResult, RuntimeDocumentCleanupReconcileResult,
-    RuntimeMultipartUploadInit, RuntimeMultipartUploadPart, RuntimeObjectGetResult, RuntimeObjectListEntry,
-    RuntimeObjectMetadata, RuntimeObjectStoragePutOptions, RuntimePresignedObjectRequest,
+    RuntimeBlobCleanupResult, RuntimeBlobMetadataBackfillResult, RuntimeDocBlobRefsResult,
+    RuntimeDocumentCleanupExecuteResult, RuntimeDocumentCleanupReconcileResult, RuntimeMultipartUploadInit,
+    RuntimeMultipartUploadPart, RuntimeObjectGetResult, RuntimeObjectMetadata, RuntimeObjectStoragePutOptions,
+    RuntimePresignedObjectRequest, RuntimeWorkspaceStorageReconcileResult,
   },
 };
+use super::{
+  StorageOperation,
+  object_storage::{
+    self, ObjectStorageService, StorageBackendConfig,
+    types::{ObjectDeleteOutcome, ObjectKey, ObjectLocator, ObjectPrefix, StorageScope},
+  },
+};
+use crate::runtime::config::{ServerConfig, ServerConfigHandle};
 
 type Result<T> = RuntimeResult<T>;
+
+#[derive(sqlx::FromRow)]
+pub(super) struct DocumentCleanupCandidate {
+  pub(super) workspace_id: String,
+  pub(super) doc_id: String,
+  pub(super) last_doc_activity_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+use document_cleanup_execution::{DocumentCleanupOutcome, execute_document_cleanup_candidate};
+use workspace_cleanup_checkpoint::{
+  delete_orphan_storage_rows, load_integer_cursor, load_object_cursor, mark_checkpoint_failed,
+  reconcile_orphan_storage_rows, save_integer_cursor, save_object_cursor,
+};
+use workspace_cleanup_namespace::{
+  NAMESPACE_SHARDS, NamespaceKind, NamespaceShard, comment_object_identity, workspace_id_from_prefix,
+};
 
 #[napi_derive::napi(object)]
 pub struct StorageRuntimeHealth {
@@ -47,18 +69,27 @@ pub struct StorageRuntimeHealth {
   pub bucket: Option<String>,
 }
 
+#[napi_derive::napi(object)]
+pub struct StorageUploadUrlConfig {
+  pub proxy_upload: bool,
+  pub url_prefix: Option<String>,
+}
+
 #[napi_derive::napi]
 pub struct StorageRuntime {
   config: RwLock<StorageRuntimeConfig>,
+  server_config: Arc<ServerConfig>,
   pool: Mutex<Option<PgPool>>,
 }
 
 #[napi_derive::napi]
 impl StorageRuntime {
   #[napi(constructor)]
-  pub fn new() -> napi::Result<Self> {
+  pub fn new(server_config: &ServerConfigHandle) -> napi::Result<Self> {
+    let config = StorageRuntimeConfig::from_server_config(&server_config.inner).map_err(to_napi_error)?;
     Ok(Self {
-      config: RwLock::new(StorageRuntimeConfig::from_config_files().map_err(to_napi_error)?),
+      config: RwLock::new(config),
+      server_config: Arc::clone(&server_config.inner),
       pool: Mutex::new(None),
     })
   }
@@ -66,12 +97,6 @@ impl StorageRuntime {
   #[napi]
   pub async fn start(&self) -> napi::Result<()> {
     self.start_inner().await.map_err(to_napi_error)
-  }
-
-  #[napi]
-  pub fn configure(&self, config_json: String) -> napi::Result<()> {
-    let config = StorageRuntimeConfig::from_config_json(&config_json).map_err(to_napi_error)?;
-    self.update_config(config).map_err(to_napi_error)
   }
 
   async fn start_inner(&self) -> RuntimeResult<()> {
@@ -93,10 +118,19 @@ impl StorageRuntime {
       .await
       .map_err(|err| RuntimeError::database("StorageRuntime postgres health check failed", err))?;
 
-    let config = self.config()?.with_db_overrides(&pool).await?;
+    let baseline = StorageRuntimeConfig::from_server_config(&self.server_config)?;
+    let config = baseline.with_db_overrides(&pool).await?;
     self.update_config(config)?;
     *guard = Some(pool);
     Ok(())
+  }
+
+  #[napi]
+  pub async fn reload_config(&self) -> napi::Result<()> {
+    let pool = self.pool().await.map_err(to_napi_error)?;
+    let baseline = StorageRuntimeConfig::from_server_config(&self.server_config).map_err(to_napi_error)?;
+    let config = baseline.with_db_overrides(&pool).await.map_err(to_napi_error)?;
+    self.update_config(config).map_err(to_napi_error)
   }
 
   #[napi]
@@ -150,6 +184,63 @@ impl StorageRuntime {
   }
 
   #[napi]
+  pub fn is_local_storage(&self, scope: String) -> napi::Result<bool> {
+    self
+      .backend_for_scope(&scope)
+      .map(|backend| {
+        matches!(
+          backend,
+          StorageBackendConfig::Fs(_) | StorageBackendConfig::Assetpack(_)
+        )
+      })
+      .map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub fn upload_url_config(&self, scope: String) -> napi::Result<Option<StorageUploadUrlConfig>> {
+    match self.backend_for_scope(&scope).map_err(to_napi_error)? {
+      StorageBackendConfig::S3(config) if config.use_presigned_url => Ok(Some(StorageUploadUrlConfig {
+        proxy_upload: config.proxy_upload,
+        url_prefix: config.upload_url_prefix,
+      })),
+      _ => Ok(None),
+    }
+  }
+
+  #[napi]
+  pub fn sign_upload_token(
+    &self,
+    scope: String,
+    path: String,
+    fields: Vec<Value>,
+    expires_at: i64,
+  ) -> napi::Result<Option<String>> {
+    match self.backend_for_scope(&scope).map_err(to_napi_error)? {
+      StorageBackendConfig::S3(config) => config
+        .proxy_upload_token(&path, &fields, expires_at)
+        .map_err(|err| to_napi_error(err.into())),
+      _ => Ok(None),
+    }
+  }
+
+  #[napi]
+  pub fn verify_upload_token(
+    &self,
+    scope: String,
+    path: String,
+    fields: Vec<Value>,
+    expires_at: i64,
+    token: String,
+  ) -> napi::Result<bool> {
+    match self.backend_for_scope(&scope).map_err(to_napi_error)? {
+      StorageBackendConfig::S3(config) => config
+        .verify_proxy_upload_token(&path, &fields, expires_at, &token)
+        .map_err(|err| to_napi_error(err.into())),
+      _ => Ok(false),
+    }
+  }
+
+  #[napi]
   pub async fn put_object(
     &self,
     scope: String,
@@ -158,12 +249,13 @@ impl StorageRuntime {
     metadata: Option<RuntimeObjectStoragePutOptions>,
   ) -> napi::Result<RuntimeObjectMetadata> {
     let locator = ObjectLocator::new_writer(&scope, key)?;
-    self
+    let operation = self.acquire_object_operation(&locator, true).await?;
+    let result = self
       .object_storage()?
       .put(&locator, body.to_vec(), metadata.map(Into::into).unwrap_or_default())
-      .await
-      .map(Into::into)
-      .map_err(to_napi_error)
+      .await;
+    operation.release().await?;
+    result.map(Into::into).map_err(to_napi_error)
   }
 
   #[napi]
@@ -181,21 +273,12 @@ impl StorageRuntime {
   }
 
   #[napi]
-  pub async fn list_objects(&self, scope: String, prefix: Option<String>) -> napi::Result<Vec<RuntimeObjectListEntry>> {
-    let scope = StorageScope::parse(&scope)?;
-    let prefix = prefix.map(ObjectPrefix::new).transpose()?;
-    let entries = self
-      .object_storage()?
-      .list(scope, prefix)
-      .await
-      .map_err(to_napi_error)?;
-    Ok(entries.into_iter().map(Into::into).collect())
-  }
-
-  #[napi]
   pub async fn delete_object(&self, scope: String, key: String) -> napi::Result<()> {
     let locator = ObjectLocator::new(StorageScope::parse(&scope)?, ObjectKey::new(key)?);
-    self.object_storage()?.delete(&locator).await.map_err(to_napi_error)
+    let operation = self.acquire_object_operation(&locator, false).await?;
+    let result = self.object_storage()?.delete(&locator).await;
+    operation.release().await?;
+    result.map_err(to_napi_error)
   }
 
   #[napi]
@@ -206,10 +289,13 @@ impl StorageRuntime {
     metadata: Option<RuntimeObjectStoragePutOptions>,
   ) -> napi::Result<Option<RuntimePresignedObjectRequest>> {
     let locator = ObjectLocator::new_writer(&scope, key)?;
-    self
+    let operation = self.acquire_object_operation(&locator, true).await?;
+    let result = self
       .object_storage()?
       .presign_put(&locator, metadata.map(Into::into).unwrap_or_default())
-      .await
+      .await;
+    operation.release().await?;
+    result
       .map_err(to_napi_error)?
       .map(TryInto::try_into)
       .transpose()
@@ -237,12 +323,13 @@ impl StorageRuntime {
     metadata: Option<RuntimeObjectStoragePutOptions>,
   ) -> napi::Result<Option<RuntimeMultipartUploadInit>> {
     let locator = ObjectLocator::new_writer(&scope, key)?;
-    self
+    let operation = self.acquire_object_operation(&locator, true).await?;
+    let result = self
       .object_storage()?
       .create_multipart_upload(&locator, metadata.map(Into::into).unwrap_or_default())
-      .await
-      .map(|upload| upload.map(Into::into))
-      .map_err(to_napi_error)
+      .await;
+    operation.release().await?;
+    result.map(|upload| upload.map(Into::into)).map_err(to_napi_error)
   }
 
   #[napi]
@@ -254,10 +341,13 @@ impl StorageRuntime {
     part_number: i32,
   ) -> napi::Result<Option<RuntimePresignedObjectRequest>> {
     let locator = ObjectLocator::new_writer(&scope, key)?;
-    self
+    let operation = self.acquire_object_operation(&locator, true).await?;
+    let result = self
       .object_storage()?
       .presign_upload_part(&locator, &upload_id, part_number)
-      .await
+      .await;
+    operation.release().await?;
+    result
       .map_err(to_napi_error)?
       .map(TryInto::try_into)
       .transpose()
@@ -275,11 +365,13 @@ impl StorageRuntime {
     content_length: Option<i64>,
   ) -> napi::Result<Option<String>> {
     let locator = ObjectLocator::new_writer(&scope, key)?;
-    self
+    let operation = self.acquire_object_operation(&locator, true).await?;
+    let result = self
       .object_storage()?
       .upload_part(&locator, &upload_id, part_number, body.to_vec(), content_length)
-      .await
-      .map_err(to_napi_error)
+      .await;
+    operation.release().await?;
+    result.map_err(to_napi_error)
   }
 
   #[napi]
@@ -307,35 +399,25 @@ impl StorageRuntime {
     parts: Vec<RuntimeMultipartUploadPart>,
   ) -> napi::Result<bool> {
     let locator = ObjectLocator::new(StorageScope::parse(&scope)?, ObjectKey::new(key)?);
-    self
+    let operation = self.acquire_object_operation(&locator, true).await?;
+    let result = self
       .object_storage()?
       .complete_multipart_upload(&locator, &upload_id, parts.into_iter().map(Into::into).collect())
-      .await
-      .map_err(to_napi_error)
+      .await;
+    operation.release().await?;
+    result.map_err(to_napi_error)
   }
 
   #[napi]
   pub async fn abort_multipart_upload(&self, scope: String, key: String, upload_id: String) -> napi::Result<bool> {
     let locator = ObjectLocator::new(StorageScope::parse(&scope)?, ObjectKey::new(key)?);
-    self
+    let operation = self.acquire_object_operation(&locator, false).await?;
+    let result = self
       .object_storage()?
       .abort_multipart_upload(&locator, &upload_id)
-      .await
-      .map_err(to_napi_error)
-  }
-
-  #[napi]
-  pub async fn complete_workspace_blob_upload(
-    &self,
-    workspace_id: String,
-    key: String,
-    expected_size: i64,
-    expected_mime: String,
-  ) -> napi::Result<RuntimeBlobCompleteResult> {
-    self
-      .complete_workspace_blob(workspace_id, key, expected_size, expected_mime)
-      .await
-      .map_err(napi::Error::from)
+      .await;
+    operation.release().await?;
+    result.map_err(to_napi_error)
   }
 
   fn config(&self) -> Result<StorageRuntimeConfig> {
@@ -363,40 +445,61 @@ impl StorageRuntime {
     self.config()?.object_storage.backend_for_scope(scope)
   }
 
-  pub(crate) async fn object_storage_delete_object(&self, key: &str) -> Result<()> {
-    let locator = ObjectLocator::new(StorageScope::Blob, ObjectKey::new(key)?);
-    self.object_storage()?.delete(&locator).await
+  async fn acquire_object_operation(&self, locator: &ObjectLocator, require_owner: bool) -> Result<StorageOperation> {
+    let owner = locator.lifecycle_owner()?;
+    let pool = self.pool().await?;
+    let mut operation = StorageOperation::acquire(&pool, &owner, Some(locator.key.as_str())).await?;
+    if require_owner {
+      let exists = match locator.scope {
+        StorageScope::Avatar => {
+          let user_id = owner.strip_prefix("avatar:").unwrap_or(&owner);
+          sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM users WHERE id=$1)")
+            .bind(user_id)
+            .fetch_one(operation.connection())
+            .await
+        }
+        StorageScope::Blob | StorageScope::Copilot => {
+          sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM workspaces WHERE id=$1)")
+            .bind(&owner)
+            .fetch_one(operation.connection())
+            .await
+        }
+      }
+      .map_err(|error| RuntimeError::database("check storage lifecycle owner", error))?;
+      if !exists {
+        operation.release().await?;
+        return Err(RuntimeError::invalid_state("storage lifecycle owner does not exist"));
+      }
+    }
+    Ok(operation)
   }
 
-  pub(crate) async fn object_storage_delete_many(&self, keys: Vec<String>) -> Result<Vec<ObjectDeleteOutcome>> {
+  pub(crate) async fn object_storage_delete_many(
+    &self,
+    scope: StorageScope,
+    keys: Vec<String>,
+  ) -> Result<Vec<ObjectDeleteOutcome>> {
     let keys = keys
       .into_iter()
       .map(ObjectKey::new)
       .collect::<object_storage::error::ObjectStorageResult<Vec<_>>>()?;
-    self.object_storage()?.delete_many(StorageScope::Blob, keys).await
-  }
-
-  pub(crate) async fn object_storage_abort_upload(&self, key: &str, upload_id: &str) -> Result<()> {
-    let locator = ObjectLocator::new(StorageScope::Blob, ObjectKey::new(key)?);
-    self
-      .object_storage()?
-      .abort_multipart_upload(&locator, upload_id)
-      .await?;
-    Ok(())
+    self.object_storage()?.delete_many(scope, keys).await
   }
 
   pub(crate) async fn object_storage_list_page(
     &self,
+    scope: StorageScope,
     prefix: Option<String>,
     continuation_token: Option<String>,
     start_after: Option<String>,
+    delimiter: Option<String>,
     max_keys: i32,
   ) -> Result<object_storage::types::ObjectListPage> {
     let prefix = prefix.map(ObjectPrefix::new).transpose()?;
     let start_after = start_after.map(ObjectKey::new).transpose()?;
     self
       .object_storage()?
-      .list_page(StorageScope::Blob, prefix, continuation_token, start_after, max_keys)
+      .list_page(scope, prefix, continuation_token, start_after, delimiter, max_keys)
       .await
   }
 

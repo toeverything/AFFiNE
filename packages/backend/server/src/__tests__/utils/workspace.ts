@@ -1,30 +1,26 @@
+import {
+  createWorkspaceMutation,
+  publishPageMutation,
+  revokePublicPageMutation,
+} from '@affine/graphql';
+import { PrismaClient } from '@prisma/client';
+
 import { WorkspaceRole } from '../../core/permission/types';
 import type { WorkspaceType } from '../../core/workspaces';
 import { TestingApp } from './testing-app';
 
-export async function createWorkspace(app: TestingApp): Promise<WorkspaceType> {
-  const res = await app
-    .POST('/graphql')
-    .set({
-      'x-request-id': 'test',
-      'x-operation-name': 'test',
-    })
-    .field(
-      'operations',
-      JSON.stringify({
-        name: 'createWorkspace',
-        query: `mutation createWorkspace($init: Upload!) {
-              createWorkspace(init: $init) {
-                id
-              }
-            }`,
-        variables: { init: null },
-      })
-    )
-    .field('map', JSON.stringify({ '0': ['variables.init'] }))
-    .attach('0', Buffer.from([0, 0]), 'init.data');
-
-  return res.body.data.createWorkspace;
+export async function createWorkspace(app: TestingApp) {
+  const { createWorkspace } = await app.gql({ query: createWorkspaceMutation });
+  await app.get(PrismaClient).snapshot.create({
+    data: {
+      workspaceId: createWorkspace.id,
+      id: createWorkspace.id,
+      blob: Buffer.from([0, 0]),
+      state: Buffer.from([0, 0]),
+      updatedAt: new Date(),
+    },
+  });
+  return createWorkspace;
 }
 
 export async function getWorkspacePublicDocs(
@@ -125,18 +121,11 @@ export async function publishDoc(
   workspaceId: string,
   docId: string
 ) {
-  const res = await app.gql(
-    `
-      mutation {
-        publishDoc(workspaceId: "${workspaceId}", docId: "${docId}") {
-          id
-          mode
-        }
-      }
-    `
-  );
-
-  return res.publishDoc;
+  const { publishDoc } = await app.gql({
+    query: publishPageMutation,
+    variables: { workspaceId, pageId: docId },
+  });
+  return publishDoc;
 }
 
 export async function revokePublicDoc(
@@ -144,19 +133,11 @@ export async function revokePublicDoc(
   workspaceId: string,
   docId: string
 ) {
-  const res = await app.gql(
-    `
-      mutation {
-        revokePublicDoc(workspaceId: "${workspaceId}", docId: "${docId}") {
-          id
-          mode
-          public
-        }
-      }
-    `
-  );
-
-  return res.revokePublicDoc;
+  const { revokePublicDoc } = await app.gql({
+    query: revokePublicPageMutation,
+    variables: { workspaceId, pageId: docId },
+  });
+  return revokePublicDoc;
 }
 
 export async function grantMember(

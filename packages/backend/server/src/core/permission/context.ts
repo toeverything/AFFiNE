@@ -1,40 +1,14 @@
-import { WorkspaceMemberStatus } from '@prisma/client';
-
 import type {
   PermissionDocRole,
-  PermissionEvaluationInputV1,
   PermissionEvaluationOutputV1,
   PermissionWorkspaceRole,
 } from '../../native';
 import { DocRole, WorkspaceRole } from './types';
 
-export type PermissionRuntimeState = NonNullable<
-  PermissionEvaluationInputV1['runtime']
->;
-
-export type PermissionWorkspaceContext = NonNullable<
-  PermissionEvaluationInputV1['workspace']
->;
-
-export type PermissionDocContext = NonNullable<
-  NonNullable<PermissionEvaluationInputV1['docs']>[number]
->;
-
 export type PermissionLegacyRoleBoundary = {
-  resourceOwnerRole: PermissionDocRole | PermissionWorkspaceRole | null;
   effectiveRole: PermissionDocRole | PermissionWorkspaceRole | null;
   legacyApiRole: DocRole | WorkspaceRole | null;
 };
-
-const WORKSPACE_ROLE_TO_NATIVE = new Map<
-  WorkspaceRole,
-  PermissionWorkspaceRole
->([
-  [WorkspaceRole.External, 'external'],
-  [WorkspaceRole.Collaborator, 'member'],
-  [WorkspaceRole.Admin, 'admin'],
-  [WorkspaceRole.Owner, 'owner'],
-]);
 
 const DOC_ROLE_TO_NATIVE = new Map<DocRole, PermissionDocRole>([
   [DocRole.None, 'none'],
@@ -66,10 +40,6 @@ const NATIVE_DOC_ROLE_TO_LEGACY = new Map<PermissionDocRole, DocRole>([
   ['owner', DocRole.Owner],
 ]);
 
-export function toNativeWorkspaceRole(role: WorkspaceRole | null | undefined) {
-  return role == null ? undefined : WORKSPACE_ROLE_TO_NATIVE.get(role);
-}
-
 export function toNativeDocRole(role: DocRole | null | undefined) {
   return role == null ? undefined : DOC_ROLE_TO_NATIVE.get(role);
 }
@@ -81,29 +51,13 @@ export function toNativeExplicitDocGrantRole(role: DocRole | null | undefined) {
   return toNativeDocRole(role);
 }
 
-export function toNativeMemberState(status?: WorkspaceMemberStatus | null) {
-  switch (status) {
-    case WorkspaceMemberStatus.Accepted:
-      return 'active';
-    case WorkspaceMemberStatus.UnderReview:
-      return 'waiting_review';
-    case WorkspaceMemberStatus.AllocatingSeat:
-    case WorkspaceMemberStatus.NeedMoreSeat:
-    case WorkspaceMemberStatus.NeedMoreSeatAndReview:
-      return 'waiting_seat';
-    case WorkspaceMemberStatus.Pending:
-      return 'pending';
-    default:
-      return undefined;
-  }
-}
-
 export function workspaceLegacyBoundary(
   workspace: PermissionEvaluationOutputV1['workspace']
-): PermissionLegacyRoleBoundary {
+): PermissionLegacyRoleBoundary & {
+  effectiveRole: PermissionWorkspaceRole | null;
+} {
   const effectiveRole = workspace.effectiveRole ?? null;
   return {
-    resourceOwnerRole: workspace.resourceOwnerRole ?? null,
     effectiveRole,
     legacyApiRole: effectiveRole
       ? (NATIVE_WORKSPACE_ROLE_TO_LEGACY.get(effectiveRole) ?? null)
@@ -113,10 +67,9 @@ export function workspaceLegacyBoundary(
 
 export function docLegacyBoundary(
   doc: PermissionEvaluationOutputV1['docs'][number]
-): PermissionLegacyRoleBoundary {
+): PermissionLegacyRoleBoundary & { effectiveRole: PermissionDocRole | null } {
   const effectiveRole = doc.effectiveRole ?? null;
   return {
-    resourceOwnerRole: doc.resourceOwnerRole ?? null,
     effectiveRole,
     legacyApiRole: effectiveRole
       ? (NATIVE_DOC_ROLE_TO_LEGACY.get(effectiveRole) ?? null)

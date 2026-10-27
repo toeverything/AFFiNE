@@ -7,7 +7,6 @@ import { PermissionModule } from '../../core/permission';
 import { WorkspaceModule } from '../../core/workspaces';
 import { CalendarController } from './controller';
 import { CalendarCronJobs } from './cron';
-import { CalendarJob } from './job';
 import { CalendarOAuthService } from './oauth';
 import { CalendarProviderFactory, CalendarProviders } from './providers';
 import {
@@ -21,14 +20,15 @@ import {
 import { CalendarService } from './service';
 
 @Module({
-  imports: [AuthModule, PermissionModule, WorkspaceModule],
+  providers: [...CalendarProviders, CalendarProviderFactory, CalendarService],
+  exports: [CalendarProviderFactory, CalendarService],
+})
+class CalendarCoreModule {}
+
+@Module({
+  imports: [AuthModule, PermissionModule, WorkspaceModule, CalendarCoreModule],
   providers: [
-    ...CalendarProviders,
-    CalendarProviderFactory,
-    CalendarService,
-    CalendarJob,
     CalendarOAuthService,
-    CalendarCronJobs,
     CalendarServerConfigResolver,
     UserCalendarResolver,
     CalendarAccountResolver,
@@ -39,3 +39,9 @@ import { CalendarService } from './service';
   controllers: [CalendarController],
 })
 export class CalendarModule {}
+
+@Module({
+  imports: [CalendarCoreModule],
+  providers: [CalendarCronJobs],
+})
+export class CalendarWorkerModule {}

@@ -41,15 +41,18 @@ export function useBindWorkbenchToBrowserRouter(
 
       const newBrowserLocation = viewLocationToBrowserLocation(
         update.location,
-        basename
+        basename,
+        browserLocation.search
       );
 
-      navigate(newBrowserLocation, {
-        state: 'fromView,' + newBrowserLocation.key,
-        replace:
-          update.action === 'REPLACE' ||
-          newBrowserLocation.state === 'fromBrowser',
-      });
+      Promise.resolve(
+        navigate(newBrowserLocation, {
+          state: 'fromView,' + newBrowserLocation.key,
+          replace:
+            update.action === 'REPLACE' ||
+            newBrowserLocation.state === 'fromBrowser',
+        })
+      ).catch(console.error);
     });
   }, [basename, browserLocation, navigate, view]);
 
@@ -97,12 +100,44 @@ function browserLocationToViewLocation(
   };
 }
 
+function preserveWorkspaceContextSearch(
+  nextSearch: string,
+  currentSearch: string
+) {
+  const nextParams = new URLSearchParams(nextSearch);
+  const currentParams = new URLSearchParams(currentSearch);
+  const currentFlavour = currentParams.get('flavour');
+  const nextFlavour = nextParams.get('flavour');
+
+  if (
+    !nextParams.has('flavour') &&
+    !nextParams.has('server') &&
+    currentFlavour
+  ) {
+    nextParams.set('flavour', currentFlavour);
+  }
+
+  const resolvedNextFlavour = nextParams.get('flavour');
+  const shouldPreserveServer =
+    resolvedNextFlavour !== 'local' &&
+    (!nextFlavour || !currentFlavour || nextFlavour === currentFlavour);
+  const currentServer = currentParams.get('server');
+  if (!nextParams.has('server') && currentServer && shouldPreserveServer) {
+    nextParams.set('server', currentServer);
+  }
+
+  const search = nextParams.toString();
+  return search ? `?${search}` : '';
+}
+
 function viewLocationToBrowserLocation(
   location: Location,
-  basename: string
+  basename: string,
+  currentSearch: string
 ): Location {
   return {
     ...location,
     pathname: `${basename}${location.pathname}`,
+    search: preserveWorkspaceContextSearch(location.search, currentSearch),
   };
 }

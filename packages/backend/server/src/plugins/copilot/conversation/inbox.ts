@@ -7,12 +7,11 @@ import {
   ImageFormatNotSupported,
   sniffMime,
 } from '../../../base';
-import { PermissionAccess } from '../../../core/permission';
-import { Models } from '../../../models';
 import { processImage } from '../../../native';
+import { CopilotAccessService, type CopilotScopeMode } from '../access';
 import { CompatSubmissionStore } from '../compat/submission-store';
 import type { PromptMessage } from '../providers/types';
-import { ChatSessionService } from '../session';
+import type { ChatSessionService } from '../session';
 import { CopilotStorage } from '../storage';
 
 const COPILOT_IMAGE_MAX_EDGE = 1536;
@@ -29,31 +28,28 @@ type CreateInboxMessage = {
 @Injectable()
 export class ConversationInboxService {
   constructor(
-    private readonly chatSession: ChatSessionService,
-    private readonly ac: PermissionAccess,
-    private readonly models: Models,
+    private readonly access: CopilotAccessService,
     private readonly storage: CopilotStorage,
     private readonly submissions: CompatSubmissionStore
   ) {}
 
   async createMessage(
     userId: string,
-    options: CreateInboxMessage
+    options: CreateInboxMessage,
+    resolvedSession: NonNullable<
+      Awaited<ReturnType<ChatSessionService['get']>>
+    >,
+    mode: CopilotScopeMode
   ): Promise<string> {
-    const session = await this.chatSession.get(options.sessionId);
-    if (!session || session.config.userId !== userId) {
-      throw new BadRequestException('Session not found');
-    }
+    const session = resolvedSession;
 
     const attachments: PromptMessage['attachments'] = options.attachments || [];
-    const blobs = await Promise.all(
-      options.blob ? [options.blob] : options.blobs || []
-    );
+    const blobInputs = options.blob ? [options.blob] : options.blobs || [];
 
     const focusSelectors = options.params?.focusSelectors;
     const hasWorkspaceContext =
       attachments.length > 0 ||
-      blobs.length > 0 ||
+      blobInputs.length > 0 ||
       (Array.isArray(options.params?.scopeSelectors) &&
         options.params.scopeSelectors.length > 0) ||
       (Array.isArray(options.params?.preferredSourceIds) &&
@@ -61,25 +57,16 @@ export class ConversationInboxService {
       (focusSelectors === undefined
         ? session.config.focus.selectors.length > 0
         : Array.isArray(focusSelectors) && focusSelectors.length > 0);
-    if (
-      hasWorkspaceContext &&
-      !(await this.models.workspace.get(session.config.workspaceId))
-    ) {
+    if (hasWorkspaceContext && mode !== 'canonical') {
       throw new BadRequestException(
         "Local workspaces don't support attachments or references."
       );
     }
 
-    if (blobs.length) {
-      await this.ac
-        .user(userId)
-        .workspace(session.config.workspaceId)
-        .allowLocal()
-        .assert('Workspace.Blobs.Write');
-    }
+    const blobs = await Promise.all(blobInputs);
 
     for (const blob of blobs) {
-      const uploaded = await this.storage.handleUpload(userId, blob);
+      const uploaded = await this.storage.handleUpload(blob);
       const detectedMime =
         sniffMime(uploaded.buffer, blob.mimetype)?.toLowerCase() ||
         blob.mimetype;
@@ -102,21 +89,43 @@ export class ConversationInboxService {
       const filename = createHash('sha256')
         .update(attachmentBuffer)
         .digest('base64url');
-      const attachment = await this.storage.put(
+      const terminalMode = await this.access.sessionResource(
+        {
+          userId,
+          workspaceId: session.config.workspaceId,
+          docId: session.config.docId,
+          action: session.config.docId ? 'Doc.Update' : 'Workspace.Copilot',
+        },
+        [options.sessionId]
+      );
+      if (terminalMode !== 'canonical') {
+        throw new BadRequestException(
+          "Local workspaces don't support attachments or references."
+        );
+      }
+      await this.storage.putSessionAttachment(
         userId,
         session.config.workspaceId,
         filename,
-        attachmentBuffer
+        attachmentBuffer,
+        attachmentMimeType
       );
       attachments.push({
         kind: 'url',
-        url: attachment,
+        url: this.storage.sessionAttachmentUrl(
+          options.sessionId,
+          session.config.workspaceId,
+          filename,
+          blob.filename
+        ),
         mimeType: attachmentMimeType,
         fileName: blob.filename,
       });
     }
 
     return await this.submissions.create({
+      userId,
+      workspaceId: session.config.workspaceId,
       sessionId: options.sessionId,
       content: options.content,
       attachments,

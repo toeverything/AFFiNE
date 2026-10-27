@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import {
   getCopilotActionRecipe,
   type LlmImageResponse,
 } from '../../../../native';
+import type { CopilotScopeMode } from '../../access';
 import { PromptService } from '../../prompt';
 import type { PromptMessage } from '../../providers/types';
 import type { ChatSession } from '../../session';
@@ -73,6 +74,11 @@ export class ActionStreamHost {
         )
       : undefined;
     const producesImage = recipe.outputProjection === 'first_image';
+    if (producesImage && prepared.scopeMode !== 'canonical') {
+      throw new BadRequestException(
+        "Local workspaces don't support generated images."
+      );
+    }
     const runStream = this.bridge.runStream({
       userId,
       workspaceId: prepared.session.config.workspaceId,
@@ -92,7 +98,8 @@ export class ActionStreamHost {
             this.persistImageAttachment(
               userId,
               prepared.session.config.workspaceId,
-              attachment
+              attachment,
+              prepared.scopeMode
             )
         : undefined,
       step: {
@@ -144,7 +151,8 @@ export class ActionStreamHost {
   private async persistImageAttachment(
     userId: string,
     workspaceId: string,
-    attachment: unknown
+    attachment: unknown,
+    scopeMode: CopilotScopeMode
   ) {
     if (!attachment || typeof attachment !== 'object') {
       return attachment;
@@ -161,7 +169,8 @@ export class ActionStreamHost {
     const persisted = await this.imageResults.persistNativeArtifact(
       userId,
       workspaceId,
-      artifact
+      artifact,
+      scopeMode
     );
     if (!persisted) {
       return attachment;

@@ -70,7 +70,10 @@ public class IntelligentContext {
 
   private init() {}
 
-  public func preparePresent(_ completion: @escaping (Result<Void, Error>) -> Void) {
+  public func preparePresent(
+    createSession shouldCreateSession: Bool = true,
+    _ completion: @escaping (Result<Void, Error>) -> Void
+  ) {
     assert(webView != nil)
     DispatchQueue.global(qos: .userInitiated).async { [self] in
       prepareTemporaryDirectory()
@@ -130,6 +133,10 @@ public class IntelligentContext {
       let currentDocumentId: String? = webViewMetadata[.currentDocId] as? String
 
       dumpMetadataContents()
+      guard shouldCreateSession else {
+        completion(.success(()))
+        return
+      }
 
       createSession(
         workspaceId: workspaceId,

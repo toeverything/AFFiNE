@@ -14,6 +14,7 @@ export type UserFriendlyErrorBaseType =
   | 'no_permission'
   | 'quota_exceeded'
   | 'authentication_required'
+  | 'service_unavailable'
   | 'internal_server_error';
 
 type ErrorArgType = 'string' | 'number' | 'boolean';
@@ -36,6 +37,7 @@ const BaseTypeToHttpStatusMap: Record<UserFriendlyErrorBaseType, HttpStatus> = {
   no_permission: HttpStatus.FORBIDDEN,
   quota_exceeded: HttpStatus.PAYMENT_REQUIRED,
   authentication_required: HttpStatus.UNAUTHORIZED,
+  service_unavailable: HttpStatus.SERVICE_UNAVAILABLE,
   internal_server_error: HttpStatus.INTERNAL_SERVER_ERROR,
 };
 
@@ -507,6 +509,12 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ spaceId }) =>
       `You do not have permission to access Space ${spaceId}.`,
   },
+  sync_permission_generation_changed: {
+    type: 'service_unavailable',
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) =>
+      `Permissions for Space ${spaceId} changed during synchronization.`,
+  },
   space_owner_not_found: {
     type: 'internal_server_error',
     args: { spaceId: 'string' },
@@ -627,6 +635,10 @@ export const USER_FRIENDLY_ERRORS = {
   invalid_invitation: {
     type: 'invalid_input',
     message: 'Invalid invitation provided.',
+  },
+  invitation_account_mismatch: {
+    type: 'action_forbidden',
+    message: 'This invitation belongs to another account.',
   },
   no_more_seat: {
     type: 'bad_request',
@@ -969,6 +981,25 @@ export const USER_FRIENDLY_ERRORS = {
   },
 
   // indexer errors
+  search_index_not_ready: {
+    type: 'service_unavailable',
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) =>
+      `Search index for Space ${spaceId} is not ready yet.`,
+  },
+  search_permission_syncing: {
+    type: 'service_unavailable',
+    message: 'Search permissions are still syncing. Please try again shortly.',
+  },
+  search_provider_unavailable: {
+    type: 'service_unavailable',
+    message: 'Search provider is temporarily unavailable.',
+  },
+  search_index_failed: {
+    type: 'service_unavailable',
+    args: { diagnosticId: 'string' },
+    message: 'Search index is temporarily unavailable.',
+  },
   search_provider_not_found: {
     type: 'resource_not_found',
     message: 'Search provider not found.',

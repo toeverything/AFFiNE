@@ -12,24 +12,16 @@ import {
 
 import {
   ActionForbidden,
-  Config,
-  EmailAlreadyUsed,
   EmailTokenNotFound,
-  EmailVerificationRequired,
-  InvalidEmailToken,
   LinkExpired,
-  SameEmailProvided,
   SkipThrottle,
   Throttle,
   URLHelper,
 } from '../../base';
 import type { GraphqlContext } from '../../base/graphql';
-import { Models, TokenType } from '../../models';
 import { Admin } from '../common';
-import type { MailDeliveryMetadata } from '../mail/types';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
-import { getAbuseRequestSource } from '../workspaces/abuse';
 import { Public } from './guard';
 import { AuthService } from './service';
 import { CurrentUser } from './session';
@@ -51,20 +43,8 @@ export class ClientTokenType {
 export class AuthResolver {
   constructor(
     private readonly url: URLHelper,
-    private readonly auth: AuthService,
-    private readonly models: Models,
-    private readonly config: Config
+    private readonly auth: AuthService
   ) {}
-
-  private mailMetadata(
-    context: GraphqlContext,
-    expiresAt?: Date
-  ): MailDeliveryMetadata {
-    return {
-      source: getAbuseRequestSource(context.req, this.config),
-      expiresAt,
-    };
-  }
 
   @SkipThrottle()
   @Public()
@@ -89,11 +69,12 @@ export class AuthResolver {
       throw new ActionForbidden();
     }
 
-    const userSession = await this.auth.createUserSession(user.id);
+    const issued = await this.auth.issueUser(user.id, { type: 'cookie' });
+    if (!issued.sessionId) throw new Error('Cookie session was not issued.');
 
     return {
-      sessionToken: userSession.sessionId,
-      token: userSession.sessionId,
+      sessionToken: issued.sessionId,
+      token: issued.sessionId,
       refresh: '',
     };
   }
@@ -109,22 +90,11 @@ export class AuthResolver {
       throw new LinkExpired();
     }
 
-    // NOTE: Set & Change password are using the same token type.
-    const valid = await this.models.verificationToken.verify(
-      TokenType.ChangePassword,
+    return await this.auth.completePasswordChallenge(
+      userId,
       token,
-      {
-        credential: userId,
-      }
+      newPassword
     );
-
-    if (!valid) {
-      throw new InvalidEmailToken();
-    }
-
-    await this.auth.changePasswordAndRevokeSessions(userId, newPassword);
-
-    return true;
   }
 
   @Mutation(() => UserType)
@@ -133,24 +103,9 @@ export class AuthResolver {
     @Args('token') token: string,
     @Args('email') email: string
   ) {
-    // @see [sendChangeEmail]
-    const valid = await this.models.verificationToken.verify(
-      TokenType.VerifyEmail,
-      token,
-      {
-        credential: user.id,
-      }
-    );
-
-    if (!valid) {
-      throw new InvalidEmailToken();
-    }
-
     email = decodeURIComponent(email);
-
-    await this.auth.changeEmailAndRevokeSessions(user.id, email);
-    await this.auth.sendNotificationChangeEmail(email);
-
+    validators.assertValidEmail(email);
+    await this.auth.completeEmailChallenge(user.id, token, email);
     return user;
   }
 
@@ -166,22 +121,11 @@ export class AuthResolver {
     _email: string | undefined,
     @Context() context: GraphqlContext
   ) {
-    if (!user.emailVerified) {
-      throw new EmailVerificationRequired();
-    }
-
-    const { token, expiresAt } =
-      await this.models.verificationToken.createWithExpiresAt(
-        TokenType.ChangePassword,
-        user.id
-      );
-
-    const url = this.url.safeLink(callbackUrl, { userId: user.id, token });
-
-    return await this.auth.sendChangePasswordEmail(
-      user.email,
-      url,
-      this.mailMetadata(context, expiresAt)
+    return await this.auth.prepareSecurityChallenge(
+      'change_password',
+      user.id,
+      this.url.safeLink(callbackUrl),
+      this.auth.requestSource(context.req)
     );
   }
 
@@ -197,18 +141,11 @@ export class AuthResolver {
     _email: string | undefined,
     @Context() context: GraphqlContext
   ) {
-    const { token, expiresAt } =
-      await this.models.verificationToken.createWithExpiresAt(
-        TokenType.ChangePassword,
-        user.id
-      );
-
-    const url = this.url.safeLink(callbackUrl, { userId: user.id, token });
-
-    return await this.auth.sendSetPasswordEmail(
-      user.email,
-      url,
-      this.mailMetadata(context, expiresAt)
+    return await this.auth.prepareSecurityChallenge(
+      'set_password',
+      user.id,
+      this.url.safeLink(callbackUrl),
+      this.auth.requestSource(context.req)
     );
   }
 
@@ -225,22 +162,11 @@ export class AuthResolver {
     @Args('callbackUrl') callbackUrl: string,
     @Context() context: GraphqlContext
   ) {
-    if (!user.emailVerified) {
-      throw new EmailVerificationRequired();
-    }
-
-    const { token, expiresAt } =
-      await this.models.verificationToken.createWithExpiresAt(
-        TokenType.ChangeEmail,
-        user.id
-      );
-
-    const url = this.url.safeLink(callbackUrl, { token });
-
-    return await this.auth.sendChangeEmail(
-      user.email,
-      url,
-      this.mailMetadata(context, expiresAt)
+    return await this.auth.prepareSecurityChallenge(
+      'change_email',
+      user.id,
+      this.url.safeLink(callbackUrl),
+      this.auth.requestSource(context.req)
     );
   }
 
@@ -257,42 +183,12 @@ export class AuthResolver {
     }
 
     validators.assertValidEmail(email);
-    const valid = await this.models.verificationToken.verify(
-      TokenType.ChangeEmail,
+    return await this.auth.prepareVerifyChangeEmail(
+      user.id,
       token,
-      {
-        credential: user.id,
-      }
-    );
-
-    if (!valid) {
-      throw new InvalidEmailToken();
-    }
-
-    const hasRegistered = await this.models.user.getUserByEmail(email);
-
-    if (hasRegistered) {
-      if (hasRegistered.id !== user.id) {
-        throw new EmailAlreadyUsed();
-      } else {
-        throw new SameEmailProvided();
-      }
-    }
-
-    const { token: verifyEmailToken, expiresAt } =
-      await this.models.verificationToken.createWithExpiresAt(
-        TokenType.VerifyEmail,
-        user.id
-      );
-
-    const url = this.url.safeLink(callbackUrl, {
-      token: verifyEmailToken,
       email,
-    });
-    return await this.auth.sendVerifyChangeEmail(
-      email,
-      url,
-      this.mailMetadata(context, expiresAt)
+      this.url.safeLink(callbackUrl),
+      this.auth.requestSource(context.req)
     );
   }
 
@@ -302,18 +198,11 @@ export class AuthResolver {
     @Args('callbackUrl') callbackUrl: string,
     @Context() context: GraphqlContext
   ) {
-    const { token, expiresAt } =
-      await this.models.verificationToken.createWithExpiresAt(
-        TokenType.VerifyEmail,
-        user.id
-      );
-
-    const url = this.url.safeLink(callbackUrl, { token });
-
-    return await this.auth.sendVerifyEmail(
-      user.email,
-      url,
-      this.mailMetadata(context, expiresAt)
+    return await this.auth.prepareSecurityChallenge(
+      'verify_email',
+      user.id,
+      this.url.safeLink(callbackUrl),
+      this.auth.requestSource(context.req)
     );
   }
 
@@ -326,21 +215,7 @@ export class AuthResolver {
       throw new EmailTokenNotFound();
     }
 
-    const valid = await this.models.verificationToken.verify(
-      TokenType.VerifyEmail,
-      token,
-      {
-        credential: user.id,
-      }
-    );
-
-    if (!valid) {
-      throw new InvalidEmailToken();
-    }
-
-    const { emailVerifiedAt } = await this.auth.setEmailVerified(user.id);
-
-    return emailVerifiedAt !== null;
+    return await this.auth.completeVerifyEmailChallenge(user.id, token);
   }
 
   @Admin()
@@ -351,11 +226,10 @@ export class AuthResolver {
     @Args('userId') userId: string,
     @Args('callbackUrl') callbackUrl: string
   ): Promise<string> {
-    const token = await this.models.verificationToken.create(
-      TokenType.ChangePassword,
-      userId
+    return await this.auth.createSecurityUrl(
+      'change_password',
+      userId,
+      this.url.safeLink(callbackUrl)
     );
-
-    return this.url.safeLink(callbackUrl, { userId, token });
   }
 }

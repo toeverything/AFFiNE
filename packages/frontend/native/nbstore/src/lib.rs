@@ -12,12 +12,12 @@ pub mod storage;
 use affine_common::napi_utils::to_napi_error;
 use chrono::NaiveDateTime;
 use napi::bindgen_prelude::*;
+#[cfg(not(feature = "use-as-lib"))]
 use napi_derive::napi;
+#[cfg(not(feature = "use-as-lib"))]
 use pool::{Ref, SqliteDocStoragePool};
+#[cfg(not(feature = "use-as-lib"))]
 use storage::SqliteDocStorage;
-
-#[cfg(feature = "use-as-lib")]
-type Result<T> = anyhow::Result<T>;
 
 #[cfg(not(feature = "use-as-lib"))]
 type Result<T> = napi::Result<T>;
@@ -29,62 +29,64 @@ impl From<error::Error> for napi::Error {
   }
 }
 
-#[cfg(feature = "use-as-lib")]
-pub type Data = Vec<u8>;
-
-#[cfg(not(feature = "use-as-lib"))]
 pub type Data = Uint8Array;
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocUpdate {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub bin: Data,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocRecord {
   pub doc_id: String,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub bin: Data,
   pub timestamp: NaiveDateTime,
 }
 
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
+pub struct ReadonlyDocRecords {
+  pub snapshot: Option<DocRecord>,
+  pub updates: Vec<DocUpdate>,
+}
+
 #[derive(Debug)]
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocClock {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
 }
 
 #[derive(Debug)]
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocIndexedClock {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
   pub indexer_version: i64,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct SetBlob {
   pub key: String,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub data: Data,
   pub mime: String,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct Blob {
   pub key: String,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub data: Data,
   pub mime: String,
   pub size: i64,
   pub created_at: NaiveDateTime,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct ListedBlob {
   pub key: String,
   pub size: i64,
@@ -92,11 +94,13 @@ pub struct ListedBlob {
   pub created_at: NaiveDateTime,
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 pub struct DocStoragePool {
   pool: SqliteDocStoragePool,
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 impl DocStoragePool {
   #[napi(constructor)]
@@ -153,34 +157,18 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn get_doc_snapshot(&self, universal_id: String, doc_id: String) -> Result<Option<DocRecord>> {
-    Ok(self.get(universal_id).await?.get_doc_snapshot(doc_id).await?)
+  pub async fn get_doc(&self, universal_id: String, doc_id: String) -> Result<Option<DocRecord>> {
+    Ok(self.get(universal_id).await?.get_doc(doc_id).await?)
   }
 
   #[napi]
-  pub async fn set_doc_snapshot(&self, universal_id: String, snapshot: DocRecord) -> Result<bool> {
-    Ok(self.get(universal_id).await?.set_doc_snapshot(snapshot).await?)
+  pub async fn read_doc_records_readonly(&self, path: String, doc_id: String) -> Result<ReadonlyDocRecords> {
+    Ok(SqliteDocStorage::read_doc_records_readonly(&path, &doc_id).await?)
   }
 
   #[napi]
-  pub async fn get_doc_updates(&self, universal_id: String, doc_id: String) -> Result<Vec<DocUpdate>> {
-    Ok(self.get(universal_id).await?.get_doc_updates(doc_id).await?)
-  }
-
-  #[napi]
-  pub async fn mark_updates_merged(
-    &self,
-    universal_id: String,
-    doc_id: String,
-    updates: Vec<NaiveDateTime>,
-  ) -> Result<u32> {
-    Ok(
-      self
-        .get(universal_id)
-        .await?
-        .mark_updates_merged(doc_id, updates)
-        .await?,
-    )
+  pub async fn read_blob_readonly(&self, path: String, key: String) -> Result<Option<Blob>> {
+    Ok(SqliteDocStorage::read_blob_readonly(&path, &key).await?)
   }
 
   #[napi]
@@ -217,6 +205,12 @@ impl DocStoragePool {
       .await?
       .set_doc_indexed_clock(doc_id, indexed_clock, indexer_version)
       .await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn set_doc_indexed_clocks(&self, universal_id: String, clocks: Vec<DocIndexedClock>) -> Result<()> {
+    self.get(universal_id).await?.commit_indexed_clocks(&clocks).await?;
     Ok(())
   }
 
@@ -410,73 +404,82 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn fts_add_document(
-    &self,
-    id: String,
-    index_name: String,
-    doc_id: String,
-    text: String,
-    index: bool,
-  ) -> Result<()> {
+  pub async fn index_upsert(&self, id: String, table: String, document: indexer::NativeIndexDocument) -> Result<()> {
     let storage = self.pool.get(id).await?;
-    storage.fts_add(&index_name, &doc_id, &text, index).await?;
+    storage.index_upsert(&table, document).await?;
     Ok(())
   }
 
   #[napi]
-  pub async fn fts_flush_index(&self, id: String) -> Result<()> {
+  pub async fn index_flush(&self, id: String) -> Result<()> {
     let storage = self.pool.get(id).await?;
     storage.flush_index().await?;
     Ok(())
   }
 
   #[napi]
-  pub async fn fts_index_version(&self) -> Result<u32> {
+  pub async fn index_version(&self) -> Result<u32> {
     Ok(SqliteDocStorage::index_version())
   }
 
   #[napi]
-  pub async fn fts_delete_document(&self, id: String, index_name: String, doc_id: String) -> Result<()> {
+  pub async fn index_delete(&self, id: String, table: String, doc_id: String) -> Result<()> {
     let storage = self.pool.get(id).await?;
-    storage.fts_delete(&index_name, &doc_id).await?;
+    storage.index_delete(&table, &doc_id).await?;
     Ok(())
   }
 
   #[napi]
-  pub async fn fts_get_document(&self, id: String, index_name: String, doc_id: String) -> Result<Option<String>> {
+  pub async fn index_search(
+    &self,
+    id: String,
+    table: String,
+    query: indexer::NativeIndexQuery,
+    options: indexer::NativeIndexSearchOptions,
+  ) -> Result<indexer::NativeIndexSearchResult> {
     let storage = self.pool.get(id).await?;
-    Ok(storage.fts_get(&index_name, &doc_id).await?)
+    Ok(storage.index_search(&table, query, options).await?)
   }
 
   #[napi]
-  pub async fn fts_search(
+  #[allow(clippy::too_many_arguments)]
+  pub async fn index_aggregate(
     &self,
     id: String,
-    index_name: String,
-    query: String,
-  ) -> Result<Vec<indexer::NativeSearchHit>> {
+    table: String,
+    query: indexer::NativeIndexQuery,
+    field: String,
+    limit: u32,
+    offset: u32,
+    hits: Option<indexer::NativeIndexSearchOptions>,
+  ) -> Result<indexer::NativeIndexAggregateResult> {
     let storage = self.pool.get(id).await?;
-    Ok(storage.fts_search(&index_name, &query).await?)
+    Ok(
+      storage
+        .index_aggregate(&table, query, &field, limit, offset, hits)
+        .await?,
+    )
   }
 
   #[napi]
-  pub async fn fts_get_matches(
+  pub async fn index_delete_by_query(
     &self,
     id: String,
-    index_name: String,
-    doc_id: String,
-    query: String,
-  ) -> Result<Vec<indexer::NativeMatch>> {
+    table: String,
+    query: indexer::NativeIndexQuery,
+  ) -> Result<u32> {
     let storage = self.pool.get(id).await?;
-    Ok(storage.fts_get_matches(&index_name, &doc_id, &query).await?)
+    Ok(storage.index_delete_by_query(&table, query).await?)
   }
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 pub struct DocStorage {
   storage: SqliteDocStorage,
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 impl DocStorage {
   #[napi(constructor, async_runtime)]

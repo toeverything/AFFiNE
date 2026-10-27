@@ -87,51 +87,55 @@ test('can create link', t => {
   );
 });
 
-test('addSimpleQuery should not double encode', t => {
-  t.is(
-    t.context.url.addSimpleQuery(
-      'https://app.affine.local/path',
-      'redirect_uri',
-      '/path'
-    ),
-    'https://app.affine.local/path?redirect_uri=%2Fpath'
-  );
-});
-
-test('addSimpleQuery should allow unescaped value when escape=false', t => {
-  t.is(
-    t.context.url.addSimpleQuery(
-      'https://app.affine.local/path',
-      'session_id',
-      '{CHECKOUT_SESSION_ID}',
-      false
-    ),
-    'https://app.affine.local/path?session_id={CHECKOUT_SESSION_ID}'
-  );
-});
-
-test('can validate callbackUrl allowlist', t => {
-  t.true(t.context.url.isAllowedCallbackUrl('/magic-link'));
-  t.true(
-    t.context.url.isAllowedCallbackUrl('https://app.affine.local/magic-link')
-  );
-  t.false(
-    t.context.url.isAllowedCallbackUrl('https://evil.example/magic-link')
-  );
-});
-
-test('can validate redirect_uri allowlist', t => {
-  t.true(t.context.url.isAllowedRedirectUri('/redirect-proxy'));
-  t.true(t.context.url.isAllowedRedirectUri('https://github.com'));
-  t.false(t.context.url.isAllowedRedirectUri('javascript:alert(1)'));
-  t.false(t.context.url.isAllowedRedirectUri('https://evilgithub.com'));
-});
-
 test('can create safe link', t => {
-  t.is(t.context.url.safeLink('/path'), 'https://app.affine.local/path');
-  t.throws(() => t.context.url.safeLink('https://evil.example/magic-link'), {
-    instanceOf: ActionForbidden,
-  });
+  t.is(
+    t.context.url.safeLink('/path?existing=1&token=old', {
+      redirect_uri: '/next?a=1',
+      token: 'a b',
+    }),
+    'https://app.affine.local/path?existing=1&redirect_uri=%2Fnext%3Fa%3D1&token=a+b'
+  );
+  t.is(t.context.url.safeLink('/%5Cevil'), 'https://app.affine.local/%5Cevil');
+  for (const input of [
+    '/\\\\evil.example/path',
+    '\\\\evil.example/path',
+    'https://user@app.affine.local/path',
+    'javascript:alert(1)',
+    'https://evil.example/path',
+  ]) {
+    t.throws(() => t.context.url.safeLink(input), {
+      instanceOf: ActionForbidden,
+    });
+  }
+  t.is(
+    t.context.url.canonicalRedirectUri('https://github.com/path?existing=1', {
+      error: 'a b',
+    }),
+    'https://github.com/path?existing=1&error=a+b'
+  );
+});
+
+test('can canonicalize redirect_uri', t => {
+  for (const [input, expected] of [
+    ['/redirect-proxy', 'https://app.affine.local/redirect-proxy'],
+    ['https://github.com', 'https://github.com/'],
+    ['https://sub.github.com/path', 'https://sub.github.com/path'],
+    ['https://github.com.:8443/path', 'https://github.com.:8443/path'],
+  ]) {
+    t.is(t.context.url.canonicalRedirectUri(input), expected);
+  }
+  for (const input of [
+    '/\\\\evil.example/path',
+    'https://app.affine.local:444/path',
+    'https://evilgithub.com',
+    'https://github.com.evil.example',
+    'https://user@github.com',
+    'javascript:alert(1)',
+  ]) {
+    t.throws(() => t.context.url.canonicalRedirectUri(input), {
+      instanceOf: ActionForbidden,
+    });
+  }
 });
 
 test('can safe redirect', t => {
@@ -140,9 +144,9 @@ test('can safe redirect', t => {
   } as any;
 
   const spy = Sinon.spy(res, 'redirect');
-  function allow(to: string) {
+  function allow(to: string, canonical: string) {
     t.context.url.safeRedirect(res, to);
-    t.true(spy.calledOnceWith(to));
+    t.true(spy.calledOnceWith(canonical));
     spy.resetHistory();
   }
 
@@ -152,12 +156,18 @@ test('can safe redirect', t => {
     spy.resetHistory();
   }
 
+  allow('https://app.affine.local', 'https://app.affine.local/');
+  allow('/path?query=1', 'https://app.affine.local/path?query=1');
+  allow('/%5Cevil', 'https://app.affine.local/%5Cevil');
   [
-    'https://app.affine.local',
-    'https://app.affine.local/path',
-    'https://app.affine.local/path?query=1',
-  ].forEach(allow);
-  ['https://other.domain.com', 'a://invalid.uri'].forEach(deny);
+    'https://other.domain.com',
+    'a://invalid.uri',
+    '/\\\\other.domain.com',
+  ].forEach(deny);
+
+  t.context.url.redirectAllowHosts = ['https://app.affine.local/base'];
+  allow('/base/child', 'https://app.affine.local/base/child');
+  ['/base-sibling', '/other'].forEach(deny);
 });
 
 test('can get request origin', t => {

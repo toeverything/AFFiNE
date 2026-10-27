@@ -23,7 +23,7 @@ export class WorkspaceStatsJob {
     const started = Date.now();
 
     try {
-      const result = await this.withAdvisoryLock(REFRESH_LOCK_KEY, async tx => {
+      const result = await this.withRefreshLockRetry(async tx => {
         const backlog = await this.countDirty(tx);
         metrics.workspace
           .gauge('admin_stats_dirty_backlog')
@@ -40,7 +40,9 @@ export class WorkspaceStatsJob {
       });
 
       if (!result) {
-        this.logger.debug('skip admin stats refresh, lock not acquired');
+        this.logger.warn(
+          'Skipped incremental admin stats refresh after retrying lock acquisition'
+        );
         return;
       }
 
@@ -63,6 +65,9 @@ export class WorkspaceStatsJob {
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async recalibrate() {
+    const scanHighWater =
+      (await this.prisma.workspace.aggregate({ _max: { sid: true } }))._max
+        .sid ?? 0;
     let lastSid = 0;
     let processed = 0;
     let completed = true;
@@ -74,6 +79,7 @@ export class WorkspaceStatsJob {
           const workspaces = await this.fetchWorkspaceBatch(
             tx,
             lastSid,
+            scanHighWater,
             FULL_REFRESH_BATCH_SIZE
           );
           if (!workspaces.length) {
@@ -166,18 +172,14 @@ export class WorkspaceStatsJob {
     return await this.prisma.$transaction(
       async tx => {
         const [lock] = await tx.$queryRaw<{ locked: boolean }[]>`
-          SELECT pg_try_advisory_lock(${lockIdSql}) AS locked
+          SELECT pg_try_advisory_xact_lock(${lockIdSql}) AS locked
         `;
 
         if (!lock?.locked) {
           return null;
         }
 
-        try {
-          return await callback(tx);
-        } finally {
-          await tx.$executeRaw`SELECT pg_advisory_unlock(${lockIdSql})`;
-        }
+        return await callback(tx);
       },
       {
         maxWait: 5_000,
@@ -337,12 +339,13 @@ export class WorkspaceStatsJob {
   private async fetchWorkspaceBatch(
     tx: Prisma.TransactionClient,
     lastSid: number,
+    scanHighWater: number,
     limit: number
   ) {
     return tx.$queryRaw<{ id: string; sid: number }[]>`
       SELECT id, sid
       FROM workspaces
-      WHERE sid > ${lastSid}
+      WHERE sid > ${lastSid} AND sid <= ${scanHighWater}
       ORDER BY sid
       LIMIT ${limit}
     `;

@@ -1,4 +1,17 @@
-import { Args, ID, Mutation, ResolveField, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  ID,
+  Info,
+  Mutation,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
+import {
+  type FragmentDefinitionNode,
+  type GraphQLResolveInfo,
+  Kind,
+  type SelectionNode,
+} from 'graphql';
 
 import {
   MentionUserDocAccessDenied,
@@ -17,6 +30,39 @@ import {
   UnionNotificationBodyType,
 } from './types';
 
+function hasSelectedField(
+  selections: readonly SelectionNode[],
+  fieldName: string,
+  fragments: Record<string, FragmentDefinitionNode>
+): boolean {
+  for (const selection of selections) {
+    if (selection.kind === Kind.FIELD) {
+      if (selection.name.value === fieldName) return true;
+      continue;
+    }
+    if (selection.kind === Kind.INLINE_FRAGMENT) {
+      if (
+        hasSelectedField(
+          selection.selectionSet.selections,
+          fieldName,
+          fragments
+        )
+      ) {
+        return true;
+      }
+      continue;
+    }
+    const fragment = fragments[selection.name.value];
+    if (
+      fragment &&
+      hasSelectedField(fragment.selectionSet.selections, fieldName, fragments)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 @Resolver(() => UserType)
 export class UserNotificationResolver {
   constructor(
@@ -29,8 +75,21 @@ export class UserNotificationResolver {
   })
   async notifications(
     @CurrentUser() me: UserType,
-    @Args('pagination', PaginationInput.decode) pagination: PaginationInput
+    @Args('pagination', PaginationInput.decode) pagination: PaginationInput,
+    @Info() info: GraphQLResolveInfo
   ): Promise<PaginatedNotificationObjectType> {
+    const selections = info.fieldNodes.flatMap(node =>
+      node.selectionSet ? [...node.selectionSet.selections] : []
+    );
+    const includesList =
+      hasSelectedField(selections, 'edges', info.fragments) ||
+      hasSelectedField(selections, 'pageInfo', info.fragments);
+
+    if (!includesList) {
+      const totalCount = await this.service.countByUserId(me.id);
+      return paginate([], 'createdAt', pagination, totalCount);
+    }
+
     const [notifications, totalCount] = await Promise.all([
       this.service.findManyByUserId(me.id, pagination),
       this.service.countByUserId(me.id),

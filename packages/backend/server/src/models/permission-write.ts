@@ -341,26 +341,24 @@ export class WorkspaceInvitationModel extends BaseModel {
 
   @Transactional()
   async cancelPendingByActor(actorUserId: string) {
-    return await this.db.workspaceInvitation.deleteMany({
-      where: {
-        inviterUserId: actorUserId,
-        status: {
-          in: ['pending', 'waiting_review', 'waiting_seat'],
-        },
-      },
-    });
+    const rows = await this.db.$queryRaw<Array<{ workspaceId: string }>>`
+      DELETE FROM workspace_invitations
+      WHERE inviter_user_id = ${actorUserId}
+        AND status IN ('pending', 'waiting_review', 'waiting_seat')
+      RETURNING workspace_id AS "workspaceId"
+    `;
+    return [...new Set(rows.map(row => row.workspaceId))];
   }
 
   @Transactional()
   async cancelPendingByWorkspace(workspaceId: string) {
-    return await this.db.workspaceInvitation.deleteMany({
-      where: {
-        workspaceId,
-        status: {
-          in: ['pending', 'waiting_review', 'waiting_seat'],
-        },
-      },
-    });
+    const rows = await this.db.$queryRaw<Array<{ workspaceId: string }>>`
+      DELETE FROM workspace_invitations
+      WHERE workspace_id = ${workspaceId}
+        AND status IN ('pending', 'waiting_review', 'waiting_seat')
+      RETURNING workspace_id AS "workspaceId"
+    `;
+    return [...new Set(rows.map(row => row.workspaceId))];
   }
 
   private async upsertInvitation(input: {

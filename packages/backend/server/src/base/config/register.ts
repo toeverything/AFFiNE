@@ -1,7 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-
 import { mergeWith, once, set } from 'lodash-es';
 import { z } from 'zod';
 
@@ -242,6 +238,9 @@ export type NativeAppConfigDescriptor = {
   defaultValue: unknown;
   schema: JSONSchema;
   internal: boolean;
+  envName?: string | null;
+  envType?: string | null;
+  link?: string | null;
 };
 
 export function defineNativeModuleConfig<T extends keyof AppConfigSchema>(
@@ -260,6 +259,13 @@ export function defineNativeModuleConfig<T extends keyof AppConfigSchema>(
           default: descriptor.defaultValue,
           schema: descriptor.schema,
           internal: descriptor.internal,
+          link: descriptor.link ?? undefined,
+          env:
+            descriptor.envName &&
+            (descriptor.envType === 'string' ||
+              descriptor.envType === 'integer')
+              ? [descriptor.envName, descriptor.envType]
+              : undefined,
           validate: (value: unknown) => {
             const errors = validate(module, descriptor.key, value);
             return errors.length
@@ -279,33 +285,6 @@ export function defineNativeModuleConfig<T extends keyof AppConfigSchema>(
       ])
     ),
   } as Record<string, ConfigDefineDescriptor<unknown>>);
-}
-
-export const CONFIG_JSON_PATHS = [
-  join(env.projectRoot, 'config.json'),
-  `${homedir()}/.affine/config/config.json`,
-];
-function readConfigJSONOverrides(path: string) {
-  const overrides: DeepPartial<AppConfig> = {};
-  if (existsSync(path)) {
-    try {
-      const config = JSON.parse(readFileSync(path, 'utf-8')) as AppConfig;
-
-      Object.entries(config).forEach(([key, value]) => {
-        if (key === '$schema') {
-          return;
-        }
-
-        Object.entries(value).forEach(([k, v]) => {
-          set(overrides, `${key}.${k}`, v);
-        });
-      });
-    } catch (e) {
-      console.error('Invalid json config file', e);
-    }
-  }
-
-  return overrides;
 }
 
 export function override(config: AppConfig, update: DeepPartial<AppConfig>) {
@@ -346,7 +325,9 @@ export function override(config: AppConfig, update: DeepPartial<AppConfig>) {
   });
 }
 
-export function getDefaultConfig(): AppConfig {
+export function getDefaultConfig(
+  excludedKeys: ReadonlySet<string> = new Set()
+): AppConfig {
   const config = {} as AppConfig;
   const envs = process.env;
 
@@ -354,6 +335,9 @@ export function getDefaultConfig(): AppConfig {
     const modulizedConfig = {};
 
     for (const [key, desc] of Object.entries(defs)) {
+      if (excludedKeys.has(`${module}.${key}`)) {
+        continue;
+      }
       let defaultValue = desc.default;
 
       if (desc.env) {
@@ -384,11 +368,6 @@ Error: ${issue.message}`;
     // @ts-expect-error all keys are known
     config[module] = modulizedConfig;
   }
-
-  CONFIG_JSON_PATHS.forEach(path => {
-    const overrides = readConfigJSONOverrides(path);
-    override(config, overrides);
-  });
 
   return config as AppConfigSchema;
 }

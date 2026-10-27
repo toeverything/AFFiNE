@@ -1,4 +1,5 @@
 mod candidate;
+mod claim;
 mod index;
 mod read;
 mod source;
@@ -11,8 +12,9 @@ use std::{
   sync::{Arc, Mutex as StdMutex, RwLock},
 };
 
+use claim::{claim_index_probe, claim_projection, release_index_probe, release_projection};
 use sqlx::PgPool;
-use tokio::sync::{Mutex, Notify};
+use tokio::sync::Notify;
 pub(super) use types::EmbeddingTarget;
 use types::*;
 
@@ -36,8 +38,29 @@ pub(super) struct EmbeddingService {
   object_storage: RwLock<Arc<ObjectStorageService>>,
   provider: BackgroundEmbeddingProvider,
   wake: Notify,
-  worker: Mutex<Option<worker::WorkerHandle>>,
   candidate_cancellations: StdMutex<HashMap<String, Option<tokio::sync::watch::Sender<bool>>>>,
+}
+
+pub(super) struct EmbeddingWorker {
+  handle: Option<worker::WorkerHandle>,
+}
+
+impl EmbeddingWorker {
+  pub(super) fn start(service: Arc<EmbeddingService>) -> Self {
+    Self {
+      handle: Some(worker::start(service)),
+    }
+  }
+
+  pub(super) async fn stop(mut self) {
+    if let Some(handle) = self.handle.take() {
+      handle.stop().await;
+    }
+  }
+
+  pub(super) fn is_running(&self) -> bool {
+    self.handle.is_some()
+  }
 }
 
 impl EmbeddingService {
@@ -51,26 +74,8 @@ impl EmbeddingService {
       object_storage: RwLock::new(object_storage),
       provider,
       wake: Notify::new(),
-      worker: Mutex::new(None),
       candidate_cancellations: StdMutex::new(HashMap::new()),
     })
-  }
-
-  pub(super) async fn start(self: &Arc<Self>) {
-    let mut worker = self.worker.lock().await;
-    if worker.is_none() {
-      *worker = Some(worker::start(Arc::clone(self)));
-    }
-  }
-
-  pub(super) async fn stop(&self) {
-    if let Some(worker) = self.worker.lock().await.take() {
-      worker.stop().await;
-    }
-  }
-
-  pub(super) async fn is_running(&self) -> bool {
-    self.worker.lock().await.is_some()
   }
 
   fn wake(&self) {
@@ -203,11 +208,11 @@ impl EmbeddingService {
   }
 
   async fn claim(&self, owner: &str) -> RuntimeResult<Option<ProjectionClaim>> {
-    store::claim_projection(&self.pool, owner).await
+    claim_projection(&self.pool, owner).await
   }
 
   async fn claim_probe(&self, owner: &str) -> RuntimeResult<Option<IndexProbeClaim>> {
-    store::claim_index_probe(&self.pool, owner).await
+    claim_index_probe(&self.pool, owner).await
   }
 
   async fn complete_probe(&self, claim: &IndexProbeClaim) -> RuntimeResult<()> {
@@ -236,7 +241,11 @@ impl EmbeddingService {
 pub(in crate::runtime::backend_runtime) async fn register_artifact_source(
   pool: &PgPool,
   artifact: &crate::runtime::types::RuntimeWorkspaceArtifact,
+  schema_ready: bool,
 ) -> RuntimeResult<()> {
+  if !schema_ready {
+    return Ok(());
+  }
   uuid::Uuid::parse_str(&artifact.id).map_err(|_| RuntimeError::invalid_input("artifact_id_invalid"))?;
   source::register_artifact(pool, artifact).await
 }

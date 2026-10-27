@@ -1,22 +1,27 @@
 import { randomUUID } from 'node:crypto';
+import { setTimeout } from 'node:timers/promises';
 
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { AiJobStatus } from '@prisma/client';
 
-import {
-  CopilotTranscriptionJobNotFound,
-  JobQueue,
-  OneHour,
-  OneMinute,
-} from '../../../base';
+import { CopilotTranscriptionJobNotFound, OneHour } from '../../../base';
 import {
   RealtimePublisher,
   realtimeTranscriptTaskRoom,
 } from '../../../core/realtime';
 import { Models } from '../../../models';
+import type {
+  CopilotStructuredOptions,
+  PromptMessage,
+} from '../providers/types';
+import type { ActionRuntimeBridgeInput } from '../runtime/action-runtime-bridge';
 import { CapabilityRuntime } from '../runtime/capability-runtime';
+import type { RequiredStructuredOutputContract } from '../runtime/contracts';
 import { TRANSCRIPT_PROMPT_REF } from './constants';
 import { TranscriptPayloadSchema } from './schema';
+import type { TranscriptionPayloadV2 } from './types';
+
+const TRANSCRIPT_RETRY_DELAYS = [5_000, 15_000];
 
 @Injectable()
 export class CopilotTranscriptionRetryService {
@@ -24,16 +29,69 @@ export class CopilotTranscriptionRetryService {
 
   constructor(
     private readonly models: Models,
-    private readonly job: JobQueue,
     private readonly runtime: CapabilityRuntime,
     private readonly realtime: RealtimePublisher
   ) {}
 
-  async retryTask(userId: string, workspaceId: string, taskId: string) {
+  async generateStructuredValue(
+    input: ActionRuntimeBridgeInput,
+    messages: PromptMessage[],
+    builtInRouteId: string,
+    contract: RequiredStructuredOutputContract,
+    stage: string,
+    slot = 'prompt.structured'
+  ) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        input.signal?.throwIfAborted();
+        return await this.runtime.generateStructuredValue(
+          {
+            profileId: input.step.profileId,
+            modelId: input.step.modelId,
+          },
+          messages,
+          {
+            ...(input.step.options as CopilotStructuredOptions | undefined),
+            builtInRouteId,
+            signal: input.signal ?? input.step.options?.signal,
+          },
+          contract,
+          undefined,
+          slot
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const retryable =
+          /upstream returned status (?:429|5\d\d)|RESOURCE_EXHAUSTED|UNAVAILABLE|llm_timeout|timed? out|fetch failed|invalid response field `gemini\.candidates\[0\]`: no candidates returned/i.test(
+            message
+          );
+        const delay = TRANSCRIPT_RETRY_DELAYS[attempt];
+        if (!retryable || delay === undefined || input.signal?.aborted) {
+          throw new Error(
+            `Transcript ${stage} failed after ${attempt + 1} attempt(s): ${message}`,
+            { cause: error }
+          );
+        }
+        this.logger.warn(
+          `Transcript ${stage} retry ${attempt + 1} in ${delay}ms: ${message}`
+        );
+        await setTimeout(delay, undefined, { signal: input.signal });
+      }
+    }
+  }
+
+  async retryTask(
+    userId: string,
+    workspaceId: string,
+    taskId: string,
+    personal?: boolean
+  ) {
     const task = await this.models.copilotTranscriptTask.getWithUser(
       userId,
       workspaceId,
-      taskId
+      taskId,
+      undefined,
+      personal
     );
     if (!task) {
       throw new CopilotTranscriptionJobNotFound();
@@ -67,14 +125,14 @@ export class CopilotTranscriptionRetryService {
       userId,
       workspaceId,
       retryOf,
-      generation
+      generation,
+      personal
     );
     if (!claimed) {
       throw new BadRequestException(
         'Only failed transcript tasks can be retried'
       );
     }
-    await this.enqueuePendingTask(taskId, payload, generation, retryOf);
     this.realtime.publish(
       'copilot.transcript.task.changed',
       { workspaceId, taskId },
@@ -88,44 +146,17 @@ export class CopilotTranscriptionRetryService {
     };
   }
 
-  async enqueuePendingTask(
-    taskId: string,
-    payload: Jobs['copilot.transcript.task.submit']['payload'],
-    generation: string,
-    retryOf: string | null,
-    rollbackOnError = true
-  ) {
-    try {
-      await this.job.add(
-        'copilot.transcript.task.submit',
-        {
-          taskId,
-          payload,
-          generation,
-          retryOf: retryOf ?? undefined,
-        },
-        {
-          jobId: `copilot-transcript-task/${taskId}/${generation}`,
-          attempts: 1,
-          removeOnFail: true,
-        }
-      );
-    } catch (error) {
-      if (rollbackOnError) {
-        await this.models.copilotTranscriptTask.failPendingDispatch(
-          taskId,
-          generation,
-          error instanceof Error ? error.message : 'transcript_enqueue_failed'
-        );
-      }
-      throw error;
-    }
-  }
-
-  async reconcileDispatches() {
+  async collectPendingDispatches() {
     const pending = await this.models.copilotTranscriptTask.pendingDispatches(
-      new Date(Date.now() - OneMinute)
+      new Date()
     );
+    const dispatches: {
+      taskId: string;
+      payload: TranscriptionPayloadV2;
+      generation: string;
+      scopeMode: 'personal' | 'canonical';
+      retryOf?: string;
+    }[] = [];
     for (const task of pending) {
       const generation = task.dispatchGeneration;
       if (!generation) continue;
@@ -140,20 +171,17 @@ export class CopilotTranscriptionRetryService {
         );
         continue;
       }
-      try {
-        await this.enqueuePendingTask(
-          task.id,
-          parsed.data,
-          generation,
-          task.actionRunId,
-          false
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Failed to recover pending transcript task ${task.id}`,
-          error
-        );
-      }
+      dispatches.push({
+        taskId: task.id,
+        payload: parsed.data,
+        generation,
+        retryOf: task.actionRunId ?? undefined,
+        scopeMode:
+          (task.inputSnapshot as Record<string, unknown> | null)?.scopeMode ===
+          'personal'
+            ? 'personal'
+            : 'canonical',
+      });
     }
 
     const running =
@@ -182,5 +210,6 @@ export class CopilotTranscriptionRetryService {
         );
       }
     }
+    return dispatches;
   }
 }

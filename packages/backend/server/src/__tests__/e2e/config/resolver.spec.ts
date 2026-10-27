@@ -1,13 +1,15 @@
 import { serverConfigQuery, ServerFeature } from '@affine/graphql';
 
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { app, e2e } from '../test';
 
-e2e('should indexer feature enabled by default', async t => {
+e2e('should expose the indexer feature when it is enabled', async t => {
+  const enabled = app.get(BackendRuntimeProvider).searchEnabled();
   const { serverConfig } = await app.gql({ query: serverConfigQuery });
 
   t.is(
     serverConfig.features.includes(ServerFeature.Indexer),
-    true,
+    enabled,
     JSON.stringify(serverConfig, null, 2)
   );
 });

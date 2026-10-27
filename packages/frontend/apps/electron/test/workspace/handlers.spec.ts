@@ -4,6 +4,7 @@ import { universalId } from '@affine/nbstore';
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
 import { afterAll, afterEach, describe, expect, test, vi } from 'vitest';
+import { Doc as YDoc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 const tmpDir = path.join(__dirname, 'tmp');
 const appDataPath = path.join(tmpDir, 'app-data');
@@ -33,6 +34,49 @@ afterAll(() => {
 });
 
 describe('workspace db management', () => {
+  test('deleted workspace metadata includes pending root updates without compacting', async () => {
+    const { getDeletedWorkspaces } =
+      await import('@affine/electron/helper/workspace/handlers');
+    const { getDocStoragePool } =
+      await import('@affine/electron/helper/nbstore');
+    const workspaceId = v4();
+    const dbPath = path.join(
+      appDataPath,
+      'deleted-workspaces',
+      workspaceId,
+      'storage.db'
+    );
+    await fs.ensureDir(path.dirname(dbPath));
+    const pool = getDocStoragePool();
+    await pool.connect(workspaceId, dbPath);
+    const root = new YDoc();
+    const meta = root.getMap('meta');
+    meta.set('name', 'Before');
+    meta.set('pages', [{ id: 'page-a' }]);
+    const first = encodeStateAsUpdate(root);
+    await pool.pushUpdate(workspaceId, workspaceId, first);
+    await pool.getDoc(workspaceId, workspaceId);
+    const state = encodeStateVector(root);
+    meta.set('name', 'After');
+    await pool.pushUpdate(
+      workspaceId,
+      workspaceId,
+      encodeStateAsUpdate(root, state)
+    );
+    const before = await fs.stat(dbPath);
+
+    const deleted = await getDeletedWorkspaces();
+    expect(deleted.items.find(item => item.id === workspaceId)).toMatchObject({
+      name: 'After',
+      docCount: 1,
+    });
+    expect((await fs.stat(dbPath)).mtimeMs).toBe(before.mtimeMs);
+    expect(
+      (await pool.readDocRecordsReadonly(dbPath, workspaceId)).updates
+    ).toHaveLength(1);
+    await pool.disconnect(workspaceId);
+  });
+
   test('list local workspace ids', async () => {
     const { listLocalWorkspaceIds } =
       await import('@affine/electron/helper/workspace/handlers');

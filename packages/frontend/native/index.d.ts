@@ -66,6 +66,20 @@ export interface RecordingStartOptions {
 export declare function startRecording(opts: RecordingStartOptions): Promise<RecordingSessionMeta>
 
 export declare function stopRecording(id: string): Promise<RecordingArtifact>
+export declare class DiskSync {
+  constructor()
+  startSession(sessionId: string, options: DiskSessionOptions): Promise<void>
+  stopSession(sessionId: string): Promise<void>
+  applyLocalUpdate(sessionId: string, update: DiskDocUpdateInput): Promise<DiskDocClock>
+  acknowledgeSourceUpdate(sessionId: string, docId: string, snapshot: Uint8Array): Promise<void>
+  prepareSourceDoc(sessionId: string, docId: string, localSnapshot?: Uint8Array | undefined | null, localRoot?: Uint8Array | undefined | null): Promise<Uint8Array | null>
+  subscribeEvents(sessionId: string, callback: ((err: Error | null, arg: DiskSyncEvent) => void)): Promise<DiskSyncSubscriber>
+}
+
+export declare class DiskSyncSubscriber {
+  unsubscribe(): Promise<void>
+}
+
 export declare function cancelImportSession(sessionId: string): void
 
 export interface CreateImportBatchLimits {
@@ -85,6 +99,40 @@ export interface CreateImportSessionOptions {
 export interface CreateImportSessionSource {
   kind: string
   path: string
+}
+
+export interface DiskDocClock {
+  docId: string
+  timestamp: Date
+  reviewRequired?: string
+  exportError?: string
+}
+
+export interface DiskDocUpdateInput {
+  docId: string
+  bin: Uint8Array
+  editor?: string
+}
+
+export interface DiskSessionOptions {
+  workspaceId: string
+  syncFolder: string
+}
+
+export interface DiskSyncDocUpdateEvent {
+  docId: string
+  bin: Uint8Array
+  timestamp: Date
+  editor?: string
+}
+
+export interface DiskSyncEvent {
+  type: string
+  update?: DiskSyncDocUpdateEvent
+  docId?: string
+  timestamp?: Date
+  origin?: string
+  message?: string
 }
 
 export declare function disposeImportSession(sessionId: string): void
@@ -145,15 +193,15 @@ export declare class DocStoragePool {
   crawlDocData(universalId: string, docId: string): Promise<NativeCrawlResult>
   setSpaceId(universalId: string, spaceId: string): Promise<void>
   pushUpdate(universalId: string, docId: string, update: Uint8Array): Promise<Date>
-  getDocSnapshot(universalId: string, docId: string): Promise<DocRecord | null>
-  setDocSnapshot(universalId: string, snapshot: DocRecord): Promise<boolean>
-  getDocUpdates(universalId: string, docId: string): Promise<Array<DocUpdate>>
-  markUpdatesMerged(universalId: string, docId: string, updates: Array<Date>): Promise<number>
+  getDoc(universalId: string, docId: string): Promise<DocRecord | null>
+  readDocRecordsReadonly(path: string, docId: string): Promise<ReadonlyDocRecords>
+  readBlobReadonly(path: string, key: string): Promise<Blob | null>
   deleteDoc(universalId: string, docId: string): Promise<void>
   getDocClocks(universalId: string, after?: Date | undefined | null): Promise<Array<DocClock>>
   getDocClock(universalId: string, docId: string): Promise<DocClock | null>
   getDocIndexedClock(universalId: string, docId: string): Promise<DocIndexedClock | null>
   setDocIndexedClock(universalId: string, docId: string, indexedClock: Date, indexerVersion: number): Promise<void>
+  setDocIndexedClocks(universalId: string, clocks: Array<DocIndexedClock>): Promise<void>
   clearDocIndexedClock(universalId: string, docId: string): Promise<void>
   getBlob(universalId: string, key: string): Promise<Blob | null>
   setBlob(universalId: string, blob: SetBlob): Promise<void>
@@ -172,13 +220,13 @@ export declare class DocStoragePool {
   clearClocks(universalId: string): Promise<void>
   setBlobUploadedAt(universalId: string, peer: string, blobId: string, uploadedAt?: Date | undefined | null): Promise<void>
   getBlobUploadedAt(universalId: string, peer: string, blobId: string): Promise<Date | null>
-  ftsAddDocument(id: string, indexName: string, docId: string, text: string, index: boolean): Promise<void>
-  ftsFlushIndex(id: string): Promise<void>
-  ftsIndexVersion(): Promise<number>
-  ftsDeleteDocument(id: string, indexName: string, docId: string): Promise<void>
-  ftsGetDocument(id: string, indexName: string, docId: string): Promise<string | null>
-  ftsSearch(id: string, indexName: string, query: string): Promise<Array<NativeSearchHit>>
-  ftsGetMatches(id: string, indexName: string, docId: string, query: string): Promise<Array<NativeMatch>>
+  indexUpsert(id: string, table: string, document: NativeIndexDocument): Promise<void>
+  indexFlush(id: string): Promise<void>
+  indexVersion(): Promise<number>
+  indexDelete(id: string, table: string, docId: string): Promise<void>
+  indexSearch(id: string, table: string, query: NativeIndexQuery, options: NativeIndexSearchOptions): Promise<NativeIndexSearchResult>
+  indexAggregate(id: string, table: string, query: NativeIndexQuery, field: string, limit: number, offset: number, hits?: NativeIndexSearchOptions | undefined | null): Promise<NativeIndexAggregateResult>
+  indexDeleteByQuery(id: string, table: string, query: NativeIndexQuery): Promise<number>
 }
 
 export interface Blob {
@@ -237,15 +285,74 @@ export interface NativeCrawlResult {
   summary: string
 }
 
-export interface NativeMatch {
+export interface NativeIndexAggregateResult {
+  total: number
+  buckets: Array<NativeIndexBucket>
+}
+
+export interface NativeIndexBucket {
+  key: string
+  count: number
+  score: number
+  hits: Array<NativeIndexHit>
+}
+
+export interface NativeIndexDocument {
+  id: string
+  fields: Array<NativeIndexField>
+}
+
+export interface NativeIndexField {
+  field: string
+  values: Array<string>
+}
+
+export interface NativeIndexHighlight {
+  field: string
+  values: Array<NativeIndexHighlightValue>
+}
+
+export interface NativeIndexHighlightValue {
+  valueIndex: number
+  spans: Array<NativeIndexSpan>
+}
+
+export interface NativeIndexHit {
+  id: string
+  score: number
+  fields: Array<NativeIndexField>
+  highlights: Array<NativeIndexHighlight>
+}
+
+export interface NativeIndexQuery {
+  kind: string
+  field?: string
+  value?: string
+  occur?: string
+  clauses?: Array<NativeIndexQuery>
+  boost?: number
+}
+
+export interface NativeIndexSearchOptions {
+  limit: number
+  offset: number
+  fields: Array<string>
+  highlights: Array<string>
+}
+
+export interface NativeIndexSearchResult {
+  total: number
+  hits: Array<NativeIndexHit>
+}
+
+export interface NativeIndexSpan {
   start: number
   end: number
 }
 
-export interface NativeSearchHit {
-  id: string
-  score: number
-  terms: Array<string>
+export interface ReadonlyDocRecords {
+  snapshot?: DocRecord
+  updates: Array<DocUpdate>
 }
 
 export interface SetBlob {

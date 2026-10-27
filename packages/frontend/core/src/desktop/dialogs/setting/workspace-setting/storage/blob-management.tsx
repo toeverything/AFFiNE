@@ -4,7 +4,6 @@ import {
   Loading,
   templateToString,
   useConfirmModal,
-  useDisposable,
 } from '@affine/component';
 import { Pagination } from '@affine/component/setting-components';
 import { BlobManagementService } from '@affine/core/modules/blob-management/services';
@@ -28,60 +27,24 @@ const Empty = () => {
   );
 };
 
-const useBlob = (blobRecord: ListedBlobRecord) => {
-  const unusedBlobsEntity = useService(BlobManagementService).unusedBlobs;
-  return useDisposable(
-    (abortSignal?: AbortSignal) =>
-      unusedBlobsEntity.hydrateBlob(blobRecord, abortSignal),
-    [blobRecord]
-  );
-};
-
 const BlobPreview = ({ blobRecord }: { blobRecord: ListedBlobRecord }) => {
-  const { data, loading, error } = useBlob(blobRecord);
-
-  const element = useMemo(() => {
-    if (loading) return <Loading size={24} />;
-    if (!data?.url || !data.type) return null;
-
-    const { url, type, mime } = data;
-
-    const icon = templateToString(getAttachmentFileIcon(type));
-
-    if (error) {
-      return (
-        <div
-          className={styles.unknownBlobIcon}
-          dangerouslySetInnerHTML={{ __html: icon }}
-        />
-      );
-    }
-
-    if (mime?.startsWith('image/')) {
-      return (
-        <img
-          className={styles.blobImagePreview}
-          src={url}
-          alt={blobRecord.key}
-        />
-      );
-    } else {
-      return (
-        <div
-          className={styles.unknownBlobIcon}
-          dangerouslySetInnerHTML={{ __html: icon }}
-        />
-      );
-    }
-  }, [loading, data, error, blobRecord.key]);
+  const type = blobRecord.mime?.startsWith('text/')
+    ? 'txt'
+    : blobRecord.mime?.split('/')[1] || 'unknown';
+  const icon = templateToString(getAttachmentFileIcon(type));
 
   return (
     <div className={styles.blobPreviewContainer}>
-      <div className={styles.blobPreview}>{element}</div>
+      <div className={styles.blobPreview}>
+        <div
+          className={styles.unknownBlobIcon}
+          dangerouslySetInnerHTML={{ __html: icon }}
+        />
+      </div>
       <div className={styles.blobPreviewFooter}>
         <div className={styles.blobPreviewName}>{blobRecord.key}</div>
         <div className={styles.blobPreviewInfo}>
-          {data?.type ? `${data.type} · ` : ''}
+          {type !== 'unknown' ? `${type} · ` : ''}
           {bytes(blobRecord.size)}
         </div>
       </div>

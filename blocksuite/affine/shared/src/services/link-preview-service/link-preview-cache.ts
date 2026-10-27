@@ -1,10 +1,10 @@
-import type { LinkPreviewData } from '@blocksuite/affine-model';
 import { type Container, createIdentifier } from '@blocksuite/global/di';
 import { Extension, type ExtensionType } from '@blocksuite/store';
 import debounce from 'lodash-es/debounce';
 import QuickLRU from 'quick-lru';
 import { z } from 'zod';
 
+import type { LinkPreviewResult } from './link-preview-service';
 import { LinkPreviewStorage } from './link-preview-storage';
 
 export const LinkPreviewCacheConfigSchema = z.object({
@@ -46,28 +46,25 @@ export interface LinkPreviewCacheProvider {
    * @param url The URL to get the link preview data for
    * @returns The link preview data for the given URL
    */
-  get(url: string): Partial<LinkPreviewData> | undefined;
+  get(url: string): LinkPreviewResult | undefined;
   /**
    * Set the link preview data for a given URL
    * @param url The URL to set the link preview data for
    * @param data The link preview data to set
    */
-  set(url: string, data: Partial<LinkPreviewData>): void;
+  set(url: string, data: LinkPreviewResult): void;
   /**
    * Get the pending request for a given URL
    * @param url The URL to get the pending request for
    * @returns The pending request for the given URL
    */
-  getPendingRequest(url: string): Promise<Partial<LinkPreviewData>> | undefined;
+  getPendingRequest(url: string): Promise<LinkPreviewResult> | undefined;
   /**
    * Set the pending request for a given URL
    * @param url The URL to set the pending request for
    * @param promise The promise to set for the given URL
    */
-  setPendingRequest(
-    url: string,
-    promise: Promise<Partial<LinkPreviewData>>
-  ): void;
+  setPendingRequest(url: string, promise: Promise<LinkPreviewResult>): void;
   /**
    * Delete the pending request for a given URL
    * @param url The URL to delete the pending request for
@@ -97,15 +94,12 @@ export class LinkPreviewCache
   /**
    * The memory cache for the link preview
    */
-  private readonly memoryCache: QuickLRU<string, Partial<LinkPreviewData>>;
+  private readonly memoryCache: QuickLRU<string, LinkPreviewResult>;
   /**
    * The pending requests for the link preview
    * The promise will be resolved when the data is fetched
    */
-  private readonly pendingRequests: Map<
-    string,
-    Promise<Partial<LinkPreviewData>>
-  >;
+  private readonly pendingRequests: Map<string, Promise<LinkPreviewResult>>;
   /**
    * The local storage manager for the link preview
    */
@@ -134,25 +128,20 @@ export class LinkPreviewCache
     return LinkPreviewCache.instance;
   }
 
-  get(url: string): Partial<LinkPreviewData> | undefined {
+  get(url: string): LinkPreviewResult | undefined {
     return this.memoryCache.get(url);
   }
 
-  set(url: string, data: Partial<LinkPreviewData>): void {
+  set(url: string, data: LinkPreviewResult): void {
     this.memoryCache.set(url, data);
     this._saveToStorage();
   }
 
-  getPendingRequest(
-    url: string
-  ): Promise<Partial<LinkPreviewData>> | undefined {
+  getPendingRequest(url: string): Promise<LinkPreviewResult> | undefined {
     return this.pendingRequests.get(url);
   }
 
-  setPendingRequest(
-    url: string,
-    promise: Promise<Partial<LinkPreviewData>>
-  ): void {
+  setPendingRequest(url: string, promise: Promise<LinkPreviewResult>): void {
     this.pendingRequests.set(url, promise);
   }
 
@@ -187,7 +176,10 @@ export class LinkPreviewCache
   private readonly _saveToStorage = debounce(() => {
     const entries = Array.from(this.memoryCache.entriesDescending());
     const linkPreviewData = Object.fromEntries(
-      entries.slice(0, this.memoryCache.size).map(([url, data]) => [url, data])
+      entries
+        .slice(0, this.memoryCache.size)
+        .filter(([url]) => !url.startsWith('transcript:'))
+        .map(([url, data]) => [url, data])
     );
     const data = {
       data: linkPreviewData,

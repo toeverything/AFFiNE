@@ -1,30 +1,47 @@
 use std::collections::BTreeSet;
 
+use affine_core::access_control::{
+  ReservedDocumentClassification, UserdataTable, WorkspaceDatabaseTable, classify_reserved_document,
+  userdata_document_id,
+};
 use affine_doc_loader::{
   apply_favorites, apply_workspace_db, evaluate_collection, project_orm_records, project_workspace_root_facts,
 };
 use chrono::Utc;
 use sqlx::{PgPool, Row};
 
-use super::{RuntimeError, RuntimeResult, types};
-use crate::{runtime::storage_runtime::load_current_doc, userdata_acl};
+use super::{
+  RuntimeError, RuntimeResult,
+  permission::{PermissionAuthorizer, PermissionTelemetry},
+  types,
+};
+use crate::runtime::{Deployment, storage_runtime::load_current_doc};
 
 const REQUIRED_DOCUMENT_LIMIT: usize = 64;
 
 pub(super) struct ScopeCompiler {
   pool: PgPool,
+  authorizer: PermissionAuthorizer,
 }
 
 impl ScopeCompiler {
-  pub(super) fn new(pool: PgPool) -> Self {
-    Self { pool }
+  #[cfg(test)]
+  pub(super) fn new(pool: PgPool, deployment: Deployment) -> Self {
+    Self::with_telemetry(pool, deployment, PermissionTelemetry::default())
+  }
+
+  pub(super) fn with_telemetry(pool: PgPool, deployment: Deployment, telemetry: PermissionTelemetry) -> Self {
+    Self {
+      authorizer: PermissionAuthorizer::with_telemetry(pool.clone(), deployment, telemetry),
+      pool,
+    }
   }
 
   pub(super) async fn compile(
     &self,
     input: types::CompileScopeInput,
   ) -> RuntimeResult<types::RuntimeTurnScopeSnapshot> {
-    validate_selectors(&input.selectors)?;
+    validate_selectors(&input.workspace_id, &input.selectors)?;
     if input.selectors.is_empty() {
       return Ok(snapshot(
         input.selectors,
@@ -43,16 +60,20 @@ impl ScopeCompiler {
     }
 
     let properties_id = format!("db${}$docProperties", input.workspace_id);
+    if classify_reserved_document(&input.workspace_id, &properties_id)
+      != (ReservedDocumentClassification::WorkspaceDatabase {
+        table: WorkspaceDatabaseTable::DocProperties,
+      })
+    {
+      return Err(RuntimeError::invalid_state("workspace properties subject is invalid"));
+    }
     if let Some(properties) = load_current_doc(&self.pool, &input.workspace_id, &properties_id).await? {
       let records = project_orm_records(&properties.blob)
         .map_err(|error| RuntimeError::invalid_state(format!("workspace properties projection failed: {error}")))?;
       apply_workspace_db(&mut facts.documents, &records);
     }
-    let favorite_id = userdata_acl::doc_id(&input.user_id, &input.workspace_id, "favorite")
-      .ok_or_else(|| RuntimeError::invalid_state("favorite userdata table is unsupported"))?;
-    if !userdata_acl::authorize(&input.user_id, &input.workspace_id, &favorite_id) {
-      return Err(RuntimeError::invalid_input("userdata_subject_denied"));
-    }
+    let favorite_id = userdata_document_id(&input.user_id, &input.workspace_id, UserdataTable::Favorite)
+      .map_err(|_| RuntimeError::invalid_input("userdata_subject_denied"))?;
     if let Some(favorite) = load_current_doc(&self.pool, &input.workspace_id, &favorite_id).await? {
       let records = project_orm_records(&favorite.blob)
         .map_err(|error| RuntimeError::invalid_state(format!("favorite projection failed: {error}")))?;
@@ -63,10 +84,11 @@ impl ScopeCompiler {
       .await?;
 
     let readable = self
-      .readable_doc_ids(
+      .authorizer
+      .filter_readable_docs(
         &input.workspace_id,
         &input.user_id,
-        facts.documents.iter().map(|doc| doc.id.as_str()),
+        facts.documents.iter().map(|doc| doc.id.clone()).collect(),
       )
       .await?;
     let mut required_docs = BTreeSet::new();
@@ -154,46 +176,6 @@ impl ScopeCompiler {
     Ok(())
   }
 
-  async fn readable_doc_ids<'a>(
-    &self,
-    workspace_id: &str,
-    user_id: &str,
-    doc_ids: impl Iterator<Item = &'a str>,
-  ) -> RuntimeResult<BTreeSet<String>> {
-    let doc_ids = doc_ids.map(str::to_string).collect::<Vec<_>>();
-    let rows = sqlx::query(
-      r#"SELECT candidate.doc_id FROM unnest($3::text[]) candidate(doc_id)
-      WHERE EXISTS (
-        SELECT 1 FROM workspace_access_policies workspace_policy
-        LEFT JOIN doc_access_policies doc_policy
-          ON doc_policy.workspace_id=workspace_policy.workspace_id AND doc_policy.doc_id=candidate.doc_id
-        LEFT JOIN workspace_members member
-          ON member.workspace_id=workspace_policy.workspace_id AND member.user_id=$2 AND member.state='active'
-        LEFT JOIN doc_grants grant_fact
-          ON grant_fact.workspace_id=workspace_policy.workspace_id AND grant_fact.doc_id=candidate.doc_id
-            AND grant_fact.principal_type='user' AND grant_fact.principal_id=$2
-        WHERE workspace_policy.workspace_id=$1 AND (
-          member.id IS NOT NULL AND grant_fact.role=ANY(ARRAY['owner','manager','editor','commenter','reader']::text[])
-          OR member.id IS NULL AND workspace_policy.sharing_enabled
-            AND grant_fact.role=ANY(ARRAY['owner','manager','editor','commenter','reader']::text[])
-          OR member.role=ANY(ARRAY['owner','admin']::text[])
-          OR member.id IS NOT NULL AND grant_fact.principal_id IS NULL
-            AND coalesce(doc_policy.member_default_role,workspace_policy.member_default_doc_role)
-              =ANY(ARRAY['owner','manager','editor','commenter','reader']::text[])
-          OR workspace_policy.sharing_enabled AND doc_policy.visibility='public'
-            AND doc_policy.public_role=ANY(ARRAY['owner','manager','editor','commenter','reader','external']::text[])
-        )
-      )"#,
-    )
-    .bind(workspace_id)
-    .bind(user_id)
-    .bind(doc_ids)
-    .fetch_all(&self.pool)
-    .await
-    .map_err(|error| RuntimeError::database("filter scope document permissions failed", error))?;
-    Ok(rows.into_iter().map(|row| row.get("doc_id")).collect())
-  }
-
   async fn artifact_is_readable(&self, workspace_id: &str, user_id: &str, artifact_id: &str) -> RuntimeResult<bool> {
     let id = artifact_id
       .parse::<uuid::Uuid>()
@@ -238,13 +220,16 @@ fn snapshot(
   }
 }
 
-fn validate_selectors(selectors: &[types::ScopeSelectorInput]) -> RuntimeResult<()> {
+fn validate_selectors(workspace_id: &str, selectors: &[types::ScopeSelectorInput]) -> RuntimeResult<()> {
   if selectors.len() > 100 {
     return Err(RuntimeError::invalid_input("scope_selector_limit_exceeded"));
   }
   for selector in selectors {
     if selector.id.is_empty()
-      || selector.id.starts_with("userdata$")
+      || !matches!(
+        classify_reserved_document(workspace_id, &selector.id),
+        ReservedDocumentClassification::Ordinary
+      )
       || !matches!(selector.source.as_str(), "draft" | "focus" | "message")
     {
       return Err(RuntimeError::invalid_input("scope_selector_invalid"));
@@ -262,35 +247,51 @@ mod tests {
   #[tokio::test]
   async fn selector_contract_rejects_invalid_inputs_and_compiles_current_facts() {
     assert!(
-      validate_selectors(&[types::ScopeSelectorInput {
-        kind: "favorite".to_string(),
-        id: "userdata$user$workspace$favorite".to_string(),
-        name: None,
-        source: "draft".to_string(),
-      }])
+      validate_selectors(
+        "workspace",
+        &[types::ScopeSelectorInput {
+          kind: "favorite".to_string(),
+          id: "userdata$user$workspace$favorite".to_string(),
+          name: None,
+          source: "draft".to_string(),
+        }]
+      )
       .is_err()
     );
     assert!(
-      validate_selectors(&[types::ScopeSelectorInput {
-        kind: "favorite".to_string(),
-        id: "favorite".to_string(),
-        name: None,
-        source: "client-expanded".to_string(),
-      }])
+      validate_selectors(
+        "workspace",
+        &[types::ScopeSelectorInput {
+          kind: "favorite".to_string(),
+          id: "favorite".to_string(),
+          name: None,
+          source: "client-expanded".to_string(),
+        }]
+      )
       .is_err()
     );
 
     let Ok(database_url) = std::env::var("DATABASE_URL") else {
       return;
     };
-    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
+    let _guard = crate::runtime::backend_runtime::SEARCH_TEST_LOCK.lock().await;
     let pool = PgPool::connect(&database_url).await.unwrap();
+    crate::runtime::migrations::migrate_search_tables(&pool).await.unwrap();
+    let legacy_relations: Vec<Option<String>> = sqlx::query_scalar(
+      "SELECT to_regclass(name) FROM \
+       unnest(ARRAY['workspace_permission_revisions','workspace_permission_changes','search_runtime_generations']) \
+       name",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert!(legacy_relations.into_iter().all(|relation| relation.is_none()));
     let suffix = uuid::Uuid::new_v4().simple().to_string();
     let user_id = format!("scope-user-{suffix}");
     let collaborator_id = format!("scope-collaborator-{suffix}");
     let workspace_id = format!("scope-workspace-{suffix}");
     let doc_id = format!("scope-doc-{suffix}");
-    let favorite_doc_id = userdata_acl::doc_id(&user_id, &workspace_id, "favorite").unwrap();
+    let favorite_doc_id = userdata_document_id(&user_id, &workspace_id, UserdataTable::Favorite).unwrap();
     let root = affine_doc_loader::add_doc_to_root_doc(Vec::new(), &doc_id, None).unwrap();
     let favorite = DocOptions::new().build();
     let mut record = favorite.get_or_create_map("favorite-record").unwrap();
@@ -345,7 +346,7 @@ mod tests {
         .unwrap();
     }
 
-    let compiler = ScopeCompiler::new(pool.clone());
+    let compiler = ScopeCompiler::new(pool.clone(), Deployment::Cloud);
     let input = types::CompileScopeInput {
       workspace_id: workspace_id.clone(),
       user_id: user_id.clone(),

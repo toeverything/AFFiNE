@@ -47,6 +47,7 @@ export class InvitationService extends Service {
           this.inviteId$.setValue(inviteId);
           this.loading$.setValue(true);
           this.inviteInfo$.setValue(undefined);
+          this.error$.setValue(null);
         }),
         onComplete(() => {
           this.loading$.setValue(false);
@@ -59,6 +60,9 @@ export class InvitationService extends Service {
     this.getInviteInfo({ inviteId });
     await this.loading$.waitFor(f => !f);
     if (!this.inviteInfo$.value) {
+      if (this.error$.value) {
+        throw this.error$.value;
+      }
       throw new Error('Invalid invite id');
     }
     return await this.acceptInviteStore.acceptInvite(

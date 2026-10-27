@@ -1,4 +1,8 @@
-import { bodyEmphasized, bodyRegular } from '@toeverything/theme/typography';
+import {
+  bodyEmphasized,
+  bodyRegular,
+  footnoteRegular,
+} from '@toeverything/theme/typography';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
@@ -58,6 +62,40 @@ export const baseSettingItemName = style([
   },
 ]);
 
+export const emphasizedSettingItemName = style([bodyEmphasized]);
+
+export const rowText = style({
+  minWidth: 0,
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 2,
+});
+
+export const rowDescription = style([
+  footnoteRegular,
+  {
+    color: cssVarV2('text/secondary'),
+    display: '-webkit-box',
+    overflow: 'hidden',
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: 2,
+  },
+]);
+
+export const rowPrefix = style({
+  width: 32,
+  height: 32,
+  flex: '0 0 auto',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 8,
+  fontSize: 18,
+  color: cssVarV2('icon/primary'),
+  background: cssVarV2('layer/background/secondary'),
+});
+
 export const baseSettingItemAction = style([
   bodyRegular,
   {
@@ -96,94 +134,6 @@ export const linkRowContent = style({
 export const linkIcon = style({
   fontSize: 17,
   color: cssVarV2('icon/secondary'),
-});
-
-export const promoCard = style({
-  position: 'relative',
-  overflow: 'hidden',
-  border: '0.5px solid rgba(255,255,255,0.14)',
-  borderRadius: 30,
-  padding: '16px 20px 14px',
-  width: '100%',
-  minHeight: 116,
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'flex-start',
-  boxSizing: 'border-box',
-  textAlign: 'left',
-  backgroundColor: cssVarV2('button/primary'),
-  backgroundImage:
-    'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 34%, rgba(255,255,255,0.02) 100%)',
-  color: cssVarV2('button/pureWhiteText'),
-  cursor: 'pointer',
-  isolation: 'isolate',
-  transition: 'transform 180ms ease, box-shadow 180ms ease',
-  boxShadow:
-    '0 10px 20px rgba(13, 40, 99, 0.12), inset 0 1px 0 rgba(255,255,255,0.12)',
-  selectors: {
-    '&::before': {
-      content: '""',
-      position: 'absolute',
-      inset: 0,
-      background:
-        'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 48%)',
-      pointerEvents: 'none',
-      zIndex: 0,
-    },
-    '&:active': {
-      transform: 'scale(0.995)',
-      boxShadow:
-        '0 6px 12px rgba(13, 40, 99, 0.1), inset 0 1px 0 rgba(255,255,255,0.1)',
-    },
-  },
-});
-
-export const promoCardContent = style({
-  position: 'relative',
-  zIndex: 2,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 6,
-  width: '100%',
-  maxWidth: 'none',
-  paddingRight: 0,
-});
-
-export const promoCardTitle = style({
-  display: 'block',
-  paddingRight: 72,
-  fontSize: 20,
-  lineHeight: '26px',
-  fontWeight: 600,
-  color: cssVarV2('button/pureWhiteText'),
-  whiteSpace: 'nowrap',
-  textShadow: '0 0.5px 1px rgba(7, 48, 121, 0.12)',
-});
-
-export const promoCardDescription = style({
-  display: 'block',
-  width: '100%',
-  boxSizing: 'border-box',
-  maxWidth: 'none',
-  paddingRight: 96,
-  fontSize: 16,
-  lineHeight: '21px',
-  color: cssVarV2('button/pureWhiteText'),
-  opacity: 0.94,
-  textShadow: '0 0.5px 1px rgba(7, 48, 121, 0.08)',
-});
-
-export const promoCardArt = style({
-  position: 'absolute',
-  right: 14,
-  bottom: 8,
-  width: 80,
-  height: 'auto',
-  objectFit: 'contain',
-  pointerEvents: 'none',
-  zIndex: 1,
-  filter: 'drop-shadow(0 6px 12px rgba(7, 48, 121, 0.12))',
-  opacity: 0.9,
 });
 
 export const dangerZoneTitle = style({

@@ -40,6 +40,8 @@ import { codeBlockStyles } from './styles.js';
 export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> {
   static override styles = codeBlockStyles;
 
+  private _highlightRequestId = 0;
+
   private _inlineRangeProvider: InlineRangeProvider | null = null;
 
   private readonly _localPreview$ = signal<boolean | null>(null);
@@ -118,6 +120,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   }
 
   private _updateHighlightTokens() {
+    const requestId = ++this._highlightRequestId;
     const modelLang = this.model.props.language$.value;
     if (modelLang === null) {
       this.highlightTokens$.value = [];
@@ -148,9 +151,10 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
 
       const loadedLanguages = highlighter.getLoadedLanguages();
       if (!loadedLanguages.includes(lang)) {
-        highlighter
-          .loadLanguage(langImport)
+        this.highlighter
+          .loadLanguage(lang, langImport)
           .then(() => {
+            if (requestId !== this._highlightRequestId) return;
             this.highlightTokens$.value = highlighter.codeToTokensBase(code, {
               lang,
               theme,

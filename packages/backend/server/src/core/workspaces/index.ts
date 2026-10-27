@@ -11,6 +11,7 @@ import { StorageModule } from '../storage';
 import { UserModule } from '../user';
 import {
   InviteAbuseDispositionService,
+  InviteAbuseWorker,
   InviteQuotaAssertService,
 } from './abuse';
 import { WorkspacesController } from './controller';
@@ -29,6 +30,12 @@ import { WorkspaceService } from './service';
 import { WorkspaceStatsJob } from './stats.job';
 
 @Module({
+  providers: [InviteAbuseDispositionService],
+  exports: [InviteAbuseDispositionService],
+})
+class WorkspaceAbuseModule {}
+
+@Module({
   imports: [
     DocStorageModule,
     DocRendererModule,
@@ -40,6 +47,7 @@ import { WorkspaceStatsJob } from './stats.job';
     NotificationModule,
     MailModule,
     WorkspaceRealtimeModule,
+    WorkspaceAbuseModule,
   ],
   controllers: [WorkspacesController],
   providers: [
@@ -50,15 +58,19 @@ import { WorkspaceStatsJob } from './stats.job';
     DocHistoryResolver,
     WorkspaceBlobResolver,
     WorkspaceService,
-    InviteAbuseDispositionService,
     InviteQuotaAssertService,
     WorkspaceEvents,
     AdminWorkspaceResolver,
-    WorkspaceStatsJob,
   ],
   exports: [WorkspaceService],
 })
 export class WorkspaceModule {}
+
+@Module({
+  imports: [WorkspaceAbuseModule],
+  providers: [InviteAbuseWorker, WorkspaceStatsJob],
+})
+export class WorkspaceWorkerModule {}
 
 export {
   getAbuseRequestSource,

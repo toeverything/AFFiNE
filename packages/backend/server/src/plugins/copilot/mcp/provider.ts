@@ -236,9 +236,8 @@ export class WorkspaceMcpProvider {
               .user(userId)
               .workspace(workspaceId)
               .assert('Workspace.CreateDoc');
-
-            const abortedAfterPermission = abortIfNeeded(options.signal);
-            if (abortedAfterPermission) return abortedAfterPermission;
+            const abortedBeforeWrite = abortIfNeeded(options.signal);
+            if (abortedBeforeWrite) return abortedBeforeWrite;
 
             const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
             if (!sanitizedTitle) throw new Error('Title cannot be empty');
@@ -296,13 +295,12 @@ export class WorkspaceMcpProvider {
         execute: async ({ docId, content }, options) => {
           const notFoundError = toolError(`Doc with id ${docId} not found.`);
 
-          const accessible = await this.ac
+          const canUpdate = await this.ac
             .user(userId)
             .workspace(workspaceId)
             .doc(docId)
             .can('Doc.Update');
-          if (!accessible) return notFoundError;
-
+          if (!canUpdate) return notFoundError;
           const abortedBeforeWrite = abortIfNeeded(options.signal);
           if (abortedBeforeWrite) return abortedBeforeWrite;
 
@@ -315,10 +313,8 @@ export class WorkspaceMcpProvider {
                 message: 'Document updated successfully',
               })
             );
-          } catch (error) {
-            return toolError(
-              `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
+          } catch {
+            return notFoundError;
           }
         },
       });
@@ -348,16 +344,14 @@ export class WorkspaceMcpProvider {
         },
         execute: async ({ docId, title }, options) => {
           const notFoundError = toolError(`Doc with id ${docId} not found.`);
-
-          const accessible = await this.ac
+          const canUpdate = await this.ac
             .user(userId)
             .workspace(workspaceId)
             .doc(docId)
             .can('Doc.Update');
-          if (!accessible) return notFoundError;
-
-          const abortedAfterPermission = abortIfNeeded(options.signal);
-          if (abortedAfterPermission) return abortedAfterPermission;
+          if (!canUpdate) return notFoundError;
+          const abortedBeforeWrite = abortIfNeeded(options.signal);
+          if (abortedBeforeWrite) return abortedBeforeWrite;
 
           try {
             const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
@@ -377,10 +371,8 @@ export class WorkspaceMcpProvider {
                 message: 'Document title updated successfully',
               })
             );
-          } catch (error) {
-            return toolError(
-              `Failed to update document metadata: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
+          } catch {
+            return notFoundError;
           }
         },
       });

@@ -2,9 +2,9 @@ import {
   type DocClock,
   type DocClocks,
   type DocRecord,
-  DocStorageBase,
   type DocStorageOptions,
   type DocUpdate,
+  SnapshotDocStorageBase,
 } from '../../storage';
 import { HttpConnection } from './http';
 
@@ -16,7 +16,7 @@ interface CloudDocStorageOptions extends DocStorageOptions {
 const isShareModePrivateSystemDoc = (docId: string) =>
   docId.startsWith('db$') || docId.startsWith('userdata$');
 
-export class StaticCloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
+export class StaticCloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptions> {
   static readonly identifier = 'StaticCloudDocStorage';
 
   constructor(options: CloudDocStorageOptions) {

@@ -5,6 +5,10 @@ protocol AffineThemeConfigurable: AnyObject {
   var appThemeUserInterfaceStyle: UIUserInterfaceStyle { get set }
 }
 
+enum AffineThemeStorage {
+  static let modeKey = "affine.theme.mode"
+}
+
 private enum AffineThemeMode: String {
   case dark
   case light
@@ -27,6 +31,9 @@ public final class AffineThemePlugin: CAPPlugin, CAPBridgedPlugin {
   init(associatedController: UIViewController?) {
     controller = associatedController
     super.init()
+
+    let cachedMode = AffineThemeMode(rawValue: UserDefaults.standard.string(forKey: AffineThemeStorage.modeKey) ?? "") ?? .system
+    (associatedController as? AffineThemeConfigurable)?.appThemeUserInterfaceStyle = cachedMode.userInterfaceStyle
   }
 
   weak var controller: UIViewController?
@@ -40,6 +47,7 @@ public final class AffineThemePlugin: CAPPlugin, CAPBridgedPlugin {
   @objc func onThemeChanged(_ call: CAPPluginCall) {
     DispatchQueue.main.async {
       let themeMode = AffineThemeMode(rawValue: call.getString("themeMode") ?? "") ?? .system
+      UserDefaults.standard.set(themeMode.rawValue, forKey: AffineThemeStorage.modeKey)
       (self.controller as? AffineThemeConfigurable)?.appThemeUserInterfaceStyle = themeMode.userInterfaceStyle
       call.resolve()
     }

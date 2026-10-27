@@ -6,5 +6,11 @@ import { MobileSignInPanel } from '../components/sign-in';
 export const Component = () => {
   const navigate = useNavigate();
 
-  return <MobileSignInPanel onClose={() => navigate('/')} />;
+  return (
+    <MobileSignInPanel
+      onClose={() => {
+        Promise.resolve(navigate('/')).catch(console.error);
+      }}
+    />
+  );
 };

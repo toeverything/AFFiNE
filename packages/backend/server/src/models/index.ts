@@ -7,7 +7,6 @@ import {
 import { ModuleRef } from '@nestjs/core';
 
 import { ApplyType } from '../base';
-import { AuthSessionModel } from './auth-session';
 import { BlobModel } from './blob';
 import { CalendarAccountModel } from './calendar-account';
 import { CalendarEventModel } from './calendar-event';
@@ -27,7 +26,6 @@ import { DocModel } from './doc';
 import { DocUserModel } from './doc-user';
 import { FeatureModel } from './feature';
 import { HistoryModel } from './history';
-import { MagicLinkOtpModel } from './magic-link-otp';
 import { MailDeliveryModel } from './mail-delivery';
 import { McpCredentialModel } from './mcp-credential';
 import { NotificationModel } from './notification';
@@ -39,12 +37,10 @@ import {
   WorkspaceMemberModel,
 } from './permission-write';
 import { MODELS_SYMBOL } from './provider';
-import { SessionModel } from './session';
 import { UserModel } from './user';
 import { UserDocModel } from './user-doc';
 import { UserFeatureModel } from './user-feature';
 import { UserSettingsModel } from './user-settings';
-import { VerificationTokenModel } from './verification-token';
 import { WorkspaceModel } from './workspace';
 import { WorkspaceAnalyticsModel } from './workspace-analytics';
 import { WorkspaceCalendarModel } from './workspace-calendar';
@@ -52,11 +48,7 @@ import { WorkspaceUserModel } from './workspace-user';
 
 const MODELS = {
   user: UserModel,
-  session: SessionModel,
-  verificationToken: VerificationTokenModel,
-  magicLinkOtp: MagicLinkOtpModel,
   mailDelivery: MailDeliveryModel,
-  authSession: AuthSessionModel,
   feature: FeatureModel,
   workspace: WorkspaceModel,
   userFeature: UserFeatureModel,
@@ -141,7 +133,6 @@ const ModelsSymbolProvider: ExistingProvider = {
 })
 export class ModelsModule {}
 
-export * from './auth-session';
 export * from './blob';
 export * from './calendar-account';
 export * from './calendar-event';
@@ -160,16 +151,13 @@ export * from './doc';
 export * from './doc-user';
 export * from './feature';
 export * from './history';
-export * from './magic-link-otp';
 export * from './mail-delivery';
 export * from './notification';
 export * from './permission-write';
-export * from './session';
 export * from './user';
 export * from './user-doc';
 export * from './user-feature';
 export * from './user-settings';
-export * from './verification-token';
 export * from './workspace';
 export * from './workspace-analytics';
 export * from './workspace-calendar';

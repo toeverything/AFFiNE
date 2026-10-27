@@ -1,6 +1,6 @@
 {
   "name": "@affine-tools/cli",
-  "version": "0.27.0",
+  "version": "0.27.5",
   "type": "module",
   "private": true,
   "bin": {
@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@affine-tools/utils": "workspace:*",
-    "@affine/s3-compat": "workspace:*",
     "@napi-rs/simple-git": "^1.0.0",
     "@rspack/core": "^2.0.8",
     "@rspack/dev-server": "^2.1.0",
@@ -31,11 +30,10 @@
     "inquirer": "^12.3.0",
     "jsonc-parser": "^3.3.1",
     "lodash-es": "^4.17.23",
-    "mime-types": "^3.0.0",
     "oxfmt": "0.63.0",
     "postcss": "^8.5.18",
     "postcss-loader": "^8.2.1",
-    "postcss-selector-parser": "^7.1.0",
+    "postcss-selector-parser": "^7.1.3",
     "source-map-loader": "^5.0.0",
     "style-loader": "^4.0.0",
     "swc-loader": "^0.2.6",
@@ -46,7 +44,6 @@
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
-    "@types/mime-types": "^3.0.0",
     "@types/node": "^22.0.0"
   }
 }

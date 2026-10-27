@@ -2,6 +2,7 @@ import { LinkExtension } from '@blocksuite/affine-inline-link';
 import { textKeymap } from '@blocksuite/affine-inline-preset';
 import type { AffineReference } from '@blocksuite/affine-inline-reference';
 import type {
+  EmbedYoutubeModel,
   ListBlockModel,
   ParagraphBlockModel,
 } from '@blocksuite/affine-model';
@@ -159,6 +160,26 @@ beforeEach(async () => {
   const cleanup = await setupEditor('page', [LinkExtension]);
   return cleanup;
 });
+
+test.each([false, true])(
+  'normalizes YouTube IDs without a mounted view (readonly: %s)',
+  readonly => {
+    const detached = createDefaultDoc(collection, { title: 'YouTube import' });
+    const note = detached.getModelsByFlavour('affine:note')[0];
+    const id = detached.addBlock(
+      'affine:embed-youtube',
+      { url: 'https://youtu.be/first' },
+      note.id
+    );
+    const model = detached.getModelById(id) as EmbedYoutubeModel;
+    expect(model.props.videoId).toBe('first');
+    expect(model.yBlock.get('prop:videoId')).toBe('first');
+    detached.readonly = readonly;
+    model.yBlock.set('prop:url', 'https://www.youtube.com/watch?v=second');
+    expect(model.props.videoId).toBe(readonly ? 'first' : 'second');
+    detached.readonly = false;
+  }
+);
 
 describe('markdown/list/paragraph/quote/code/link', () => {
   test('markdown list shortcut converts to todo list and keeps checked state', async () => {

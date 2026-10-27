@@ -100,6 +100,7 @@ test('should update a comment', async t => {
     userId: owner.id,
   });
 
+  await waitNextMillisecond();
   const comment2 = await models.comment.update({
     id: comment1.id,
     content: {
