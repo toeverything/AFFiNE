@@ -196,40 +196,60 @@ export class TableDataManager {
 
   updateRowOrder(rowId: string, newOrder: string) {
     this.model.store.transact(() => {
-      if (this.model.props.rows[rowId]) {
-        this.model.props.rows[rowId].order = newOrder;
+      const row = this.model.props.rows[rowId];
+      if (row) {
+        this.model.props.rows[rowId] = {
+          ...row,
+          order: newOrder,
+        };
       }
     });
   }
 
   updateColumnOrder(columnId: string, newOrder: string) {
     this.model.store.transact(() => {
-      if (this.model.props.columns[columnId]) {
-        this.model.props.columns[columnId].order = newOrder;
+      const column = this.model.props.columns[columnId];
+      if (column) {
+        this.model.props.columns[columnId] = {
+          ...column,
+          order: newOrder,
+        };
       }
     });
   }
 
   setRowBackgroundColor(rowId: string, color?: string) {
     this.model.store.transact(() => {
-      if (this.model.props.rows[rowId]) {
-        this.model.props.rows[rowId].backgroundColor = color;
+      const row = this.model.props.rows[rowId];
+      if (row) {
+        this.model.props.rows[rowId] = {
+          ...row,
+          backgroundColor: color,
+        };
       }
     });
   }
 
   setColumnBackgroundColor(columnId: string, color?: string) {
     this.model.store.transact(() => {
-      if (this.model.props.columns[columnId]) {
-        this.model.props.columns[columnId].backgroundColor = color;
+      const column = this.model.props.columns[columnId];
+      if (column) {
+        this.model.props.columns[columnId] = {
+          ...column,
+          backgroundColor: color,
+        };
       }
     });
   }
 
   setColumnWidth(columnId: string, width: number) {
     this.model.store.transact(() => {
-      if (this.model.props.columns[columnId]) {
-        this.model.props.columns[columnId].width = width;
+      const column = this.model.props.columns[columnId];
+      if (column) {
+        this.model.props.columns[columnId] = {
+          ...column,
+          width,
+        };
       }
     });
   }
