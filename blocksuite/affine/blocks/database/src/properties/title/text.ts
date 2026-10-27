@@ -1,4 +1,5 @@
 import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
+import type { DatabaseBlockModel } from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
 import {
   ParseDocUrlProvider,
@@ -288,14 +289,14 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
 
   /**
    * Gives this row an icon without a column for it: the icon property is
-   * created on first use and hidden, so the emoji lives in the title cell the
-   * way a page icon does rather than in a column of its own.
+   * created on the first pick and hidden, so the emoji lives in the title cell
+   * the way a page icon does rather than in a column of its own.
    *
    * Bound to `pointerdown` so the press never reaches the title's own editor
    * underneath. The `click` that ends the same press lands on the icon, which
    * the picker treats as its anchor and leaves alone.
    */
-  private readonly pickIcon = (event: MouseEvent) => {
+  private readonly pickIcon = (event: Event) => {
     event.stopPropagation();
     event.preventDefault();
     if (this.readonly) return;
@@ -309,21 +310,18 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
     const db = findDatabaseContainingRow(store, this.cell.rowId);
     if (!db) return;
 
-    let propertyId = db.props.columns$.value.find(c => c.type === 'icon')?.id;
-    if (!propertyId) {
-      propertyId = addProperty(db, 'end', {
-        type: 'icon',
-        name: 'Icon',
-        data: {},
-      });
-      this.view.propertyGetOrCreate(propertyId).hideSet(true);
-    }
-    const cell = this.view.cellGetOrCreate(this.cell.rowId, propertyId);
-
     const close = openIconPicker(
       std,
       event.currentTarget as HTMLElement,
-      icon => cell.valueSet(icon ?? null),
+      icon => {
+        // Created here rather than up front, so opening the picker and
+        // walking away leaves the database exactly as it was.
+        const propertyId = this.iconPropertyFor(db, icon != null);
+        if (!propertyId) return;
+        this.view
+          .cellGetOrCreate(this.cell.rowId, propertyId)
+          .valueSet(icon ?? null);
+      },
       () => {
         this.closeIconPicker = undefined;
       }
@@ -333,6 +331,34 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
     // Close it with the cell, so the wrapper and its document listener do not
     // outlive the row they belong to.
     this.disposables.add(close);
+  };
+
+  /**
+   * The database's icon property, created when `create` is set and there is
+   * none yet. A new one is hidden in every view, not only this one -- it backs
+   * the title icon and is not meant to appear as a column anywhere.
+   */
+  private iconPropertyFor(
+    db: DatabaseBlockModel,
+    create: boolean
+  ): string | undefined {
+    const existing = db.props.columns$.value.find(c => c.type === 'icon')?.id;
+    if (existing || !create) return existing;
+    const propertyId = addProperty(db, 'end', {
+      type: 'icon',
+      name: 'Icon',
+      data: {},
+    });
+    const manager = this.view.manager;
+    for (const viewId of manager.views$.value) {
+      manager.viewGet(viewId)?.propertyGetOrCreate(propertyId).hideSet(true);
+    }
+    return propertyId;
+  }
+
+  private readonly onIconKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    this.pickIcon(event);
   };
 
   renderIcon() {
@@ -349,7 +375,11 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
 
     return html` <div
       class="${headerAreaIconStyle}"
+      role="button"
+      tabindex="0"
+      aria-label="Change icon"
       @pointerdown="${this.pickIcon}"
+      @keydown="${this.onIconKeyDown}"
       style="cursor:pointer"
     >
       ${icon}

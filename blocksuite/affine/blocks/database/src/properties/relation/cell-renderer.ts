@@ -58,7 +58,24 @@ abstract class RelationCellBase<
     return findDatabaseContainingRow(store, this.cell.row.rowId);
   });
 
-  protected abstract linkedRows$: ReturnType<typeof computed<RelationRow[]>>;
+  /** The rows this cell links to, in either direction. */
+  protected readonly linkedRows$ = computed<RelationRow[]>(() => {
+    const store = this.std?.store;
+    const own = this.ownDatabase$.value;
+    if (!store || !own) return [];
+    const linked = resolveLinkedRows(
+      store,
+      own,
+      this.cell.row.rowId,
+      this.cell.propertyId
+    );
+    if (!linked) return [];
+    const byId = new Map(linked.target.children.map(row => [row.id, row]));
+    return linked.rowIds
+      .map(id => byId.get(id))
+      .filter((model): model is BlockModel => model != null)
+      .map(model => toRelationRow(linked.target, model));
+  });
 
   override connectedCallback() {
     super.connectedCallback();
@@ -98,24 +115,6 @@ export class RelationCell extends RelationCellBase<RelationPropertyData> {
     const target = getDatabase(store, this.targetDatabaseId$.value);
     if (!target) return [];
     return target.children.map(model => toRelationRow(target, model));
-  });
-
-  protected override linkedRows$ = computed<RelationRow[]>(() => {
-    const store = this.std?.store;
-    const own = this.ownDatabase$.value;
-    if (!store || !own) return [];
-    const linked = resolveLinkedRows(
-      store,
-      own,
-      this.cell.row.rowId,
-      this.cell.propertyId
-    );
-    if (!linked) return [];
-    const byId = new Map(linked.target.children.map(row => [row.id, row]));
-    return linked.rowIds
-      .map(id => byId.get(id))
-      .filter((model): model is BlockModel => model != null)
-      .map(model => toRelationRow(linked.target, model));
   });
 
   private readonly setTargetDatabase = (e: Event) => {
@@ -243,24 +242,6 @@ export class RelationCell extends RelationCellBase<RelationPropertyData> {
 
 /** Read-only: the rows are whoever points at this one. */
 export class ReverseRelationCell extends RelationCellBase<ReverseRelationPropertyData> {
-  protected override linkedRows$ = computed<RelationRow[]>(() => {
-    const store = this.std?.store;
-    const own = this.ownDatabase$.value;
-    if (!store || !own) return [];
-    const linked = resolveLinkedRows(
-      store,
-      own,
-      this.cell.row.rowId,
-      this.cell.propertyId
-    );
-    if (!linked) return [];
-    const byId = new Map(linked.target.children.map(row => [row.id, row]));
-    return linked.rowIds
-      .map(id => byId.get(id))
-      .filter((model): model is BlockModel => model != null)
-      .map(model => toRelationRow(linked.target, model));
-  });
-
   override render() {
     return this.renderChips();
   }
