@@ -2,6 +2,7 @@
  * @vitest-environment happy-dom
  */
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
+import type { EditorSelectionSnapshot } from '@affine/realtime';
 import { describe, expect, test, vi } from 'vitest';
 
 import { SelectedSourcesProcessingError } from '../../provider/error';
@@ -19,6 +20,29 @@ const docScope: AIChatScope = {
   workspaceId: 'workspace-1',
   docId: 'doc-1',
 };
+
+function selectionSnapshot(content: string): EditorSelectionSnapshot {
+  const view = {
+    editor_state_id: `captured-${content}`,
+    mode: 'page' as const,
+    content,
+    truncated: false,
+    block_ids: ['block-1'],
+    block_ids_truncated: false,
+    neighborhood: [],
+  };
+  return {
+    version: 1,
+    workspaceId: 'workspace-1',
+    docId: 'doc-1',
+    readonly: false,
+    views: {
+      text: { ...view },
+      markdown: { ...view },
+      structure: { ...view, blocks: [] },
+    },
+  };
+}
 
 function session(
   overrides: Partial<CopilotChatHistoryFragment> = {}
@@ -86,6 +110,114 @@ function createRuntime(request = createRequest()) {
 }
 
 describe('AIChatRuntime', () => {
+  test('captures before session/network awaits and submits the original selection', async () => {
+    let selected = 'A';
+    let finishCapture!: () => void;
+    let finishSession!: () => void;
+    const gate = new Promise<void>(resolve => {
+      finishCapture = resolve;
+    });
+    const request = createRequest({
+      captureEditorSelection: vi.fn(() => {
+        const content = selected;
+        return gate.then(() => selectionSnapshot(content));
+      }),
+      createSessionWithHistory: vi.fn(
+        () =>
+          new Promise<CopilotChatHistoryFragment>(resolve => {
+            finishSession = () => resolve(session());
+          })
+      ),
+      getActiveEditorContext: vi
+        .fn()
+        .mockReturnValue('{"editor_state_id":"current-B"}'),
+    });
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+    const pending = runtime.dispatch({
+      type: 'send',
+      input: 'Explain selection',
+    });
+    expect(request.captureEditorSelection).toHaveBeenCalledOnce();
+    expect(request.createSessionWithHistory).not.toHaveBeenCalled();
+    selected = 'B';
+    finishCapture();
+    await waitUntil(() =>
+      expect(request.createSessionWithHistory).toHaveBeenCalledOnce()
+    );
+    selected = 'C';
+    finishSession();
+    await pending;
+    expect(request.executeAction).toHaveBeenCalledWith(
+      'chat',
+      expect.objectContaining({
+        editorSelectionSnapshot: selectionSnapshot('A'),
+      })
+    );
+    const params = vi.mocked(request.executeAction).mock.calls[0][1];
+    expect(JSON.parse(params.liveEditorContext as string).editor_state_id).toBe(
+      'captured-A'
+    );
+  });
+
+  test('failed capture fails closed without submitting or silently reading current selection', async () => {
+    const request = createRequest({
+      captureEditorSelection: vi
+        .fn()
+        .mockRejectedValue(new Error('snapshot failed')),
+    });
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+    await runtime.dispatch({ type: 'send', input: 'Explain selection' });
+    expect(request.executeAction).not.toHaveBeenCalled();
+    expect(request.createSessionWithHistory).not.toHaveBeenCalled();
+    expect(runtime.getSnapshot().status).toBe('error');
+  });
+
+  test('retry after failed session creation reuses the submitted selection', async () => {
+    const request = createRequest({
+      captureEditorSelection: vi.fn().mockResolvedValue(selectionSnapshot('A')),
+      createSessionWithHistory: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('offline'))
+        .mockResolvedValueOnce(session()),
+    });
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+    await runtime.dispatch({ type: 'send', input: 'Explain selection' });
+    await runtime.dispatch({ type: 'retry', messageId: 'unused' });
+    expect(request.captureEditorSelection).toHaveBeenCalledOnce();
+    expect(request.executeAction).toHaveBeenCalledWith(
+      'chat',
+      expect.objectContaining({
+        editorSelectionSnapshot: selectionSnapshot('A'),
+      })
+    );
+  });
+
+  test('retry after failed capture attempts a fresh capture', async () => {
+    const request = createRequest({
+      captureEditorSelection: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('capture failed'))
+        .mockResolvedValueOnce(selectionSnapshot('B')),
+      createSessionWithHistory: vi.fn().mockResolvedValue(session()),
+    });
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+    await runtime.dispatch({ type: 'send', input: 'Explain selection' });
+    expect(runtime.getSnapshot().status).toBe('error');
+
+    await runtime.dispatch({ type: 'retry', messageId: 'unused' });
+    expect(request.captureEditorSelection).toHaveBeenCalledTimes(2);
+    expect(request.executeAction).toHaveBeenCalledWith(
+      'chat',
+      expect.objectContaining({
+        editorSelectionSnapshot: selectionSnapshot('B'),
+      })
+    );
+  });
+
   test('initializes doc scope with a draft tab when no session exists', async () => {
     const runtime = createRuntime();
 
