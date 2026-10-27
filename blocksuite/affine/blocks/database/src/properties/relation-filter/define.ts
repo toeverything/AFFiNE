@@ -58,5 +58,7 @@ export const relationFilterPropertyModelConfig =
       fromString: () => ({ value: [] }),
       toJson: ({ value }) => value,
       fromJson: ({ value }) => value,
+      // Nor can anything else: there is no stored value to write.
+      setValue: () => {},
     },
   });

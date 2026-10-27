@@ -68,11 +68,10 @@ export class RelationFilterCell extends BaseCellRenderer<
       .map(c => ({ id: c.id, name: c.name }));
   });
 
-  /** The database the chosen relation lands in, rows or not. */
-  private readonly target$ = computed(() => {
+  /** The database a relation property on this one lands in, rows or not. */
+  private targetDatabaseOf(relationPropertyId: string | undefined) {
     const store = this.std?.store;
     const own = this.ownDatabase$.value;
-    const relationPropertyId = this.property.data$.value?.relationPropertyId;
     if (!store || !own || !relationPropertyId) return undefined;
     const linked = resolveLinkedRows(
       store,
@@ -89,7 +88,11 @@ export class RelationFilterCell extends BaseCellRenderer<
       (column?.data as { targetDatabaseId?: string } | undefined)
         ?.targetDatabaseId
     );
-  });
+  }
+
+  private readonly target$ = computed(() =>
+    this.targetDatabaseOf(this.property.data$.value?.relationPropertyId)
+  );
 
   private readonly targetProperties$ = computed(() =>
     (this.target$.value?.props.columns$.value ?? []).map(c => ({
@@ -113,7 +116,19 @@ export class RelationFilterCell extends BaseCellRenderer<
     (key: keyof RelationFilterPropertyData) => (e: Event) => {
       const raw = (e.target as HTMLInputElement | HTMLSelectElement).value;
       const value = key === 'threshold' ? Number(raw) || 0 : raw;
-      this.property.dataUpdate(data => ({ ...data, [key]: value }));
+      this.property.dataUpdate(data => ({
+        ...data,
+        [key]: value,
+        // The tested property belongs to the old relation's database. Left in
+        // place it reads as empty on every row, so `empty` and `unchecked`
+        // would pass rows that were never tested.
+        ...(key === 'relationPropertyId' &&
+        !this.targetDatabaseOf(String(value))?.props.columns$.value.some(
+          column => column.id === data.targetPropertyId
+        )
+          ? { targetPropertyId: '' }
+          : {}),
+      }));
     };
 
   private renderSelect(
