@@ -43,6 +43,16 @@
                     android:pathPattern=".*"
                     android:scheme="affine" />
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- doc links, e.g. affine://app.affine.pro/workspace/<id>/<docId> -->
+                <data android:scheme="affine" />
+            </intent-filter>
         </activity>
 
         <activity

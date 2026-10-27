@@ -1,4 +1,4 @@
-import { channelToScheme } from '@affine/core/utils/channel';
+import { appSchemes, channelToScheme } from '@affine/core/utils/channel';
 import { DebugLogger } from '@affine/debug';
 
 const logger = new DebugLogger('open-in-app');
@@ -107,4 +107,43 @@ export const getOpenUrlInDesktopAppLink = (
     logger.error('Failed to get open url in desktop app link', e);
     return null;
   }
+};
+
+// params only meaningful to the desktop app's window manager
+const desktopOnlyDeepLinkParams = ['new-tab', 'hidden'];
+
+// the inverse of `getOpenUrlInDesktopAppLink`:
+// resolve an `affine://<host>/workspace/...` deep link into an in-app route
+export const resolveDeepLinkRoute = (url: string) => {
+  const schemeEnd = url.indexOf('://');
+  if (
+    schemeEnd <= 0 ||
+    !appSchemes.safeParse(url.slice(0, schemeEnd)).success
+  ) {
+    return;
+  }
+
+  let urlObject: URL;
+  try {
+    // parse as a special url so that host and path are split the same way
+    // regardless of the runtime's support for custom schemes
+    urlObject = new URL(`https${url.slice(schemeEnd)}`);
+  } catch {
+    return;
+  }
+
+  if (urlObject.hostname === 'authentication') {
+    return;
+  }
+
+  for (const param of desktopOnlyDeepLinkParams) {
+    urlObject.searchParams.delete(param);
+  }
+
+  const route = `${urlObject.pathname}${urlObject.search}${urlObject.hash}`;
+  if (route === '/' || !isAllowedOpenAppSignInNext(route)) {
+    return;
+  }
+
+  return route;
 };
