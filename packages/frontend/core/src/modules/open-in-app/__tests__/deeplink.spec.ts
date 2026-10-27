@@ -1,9 +1,11 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
 import {
   buildAuthenticationDeepLink,
   buildOpenAppUrlRoute,
+  getOpenUrlInDesktopAppLink,
   normalizeOpenAppSignInNextParam,
+  resolveDeepLinkRoute,
 } from '../utils';
 
 test('buildAuthenticationDeepLink', () => {
@@ -68,4 +70,62 @@ test('normalizeOpenAppSignInNextParam', () => {
       'https://app.affine.local'
     )
   ).toBeUndefined();
+});
+
+test('resolveDeepLinkRoute', () => {
+  expect(
+    resolveDeepLinkRoute(
+      'affine://app.affine.pro/workspace/ws/doc?new-tab=1&mode=edgeless#'
+    )
+  ).toBe('/workspace/ws/doc?mode=edgeless');
+
+  expect(
+    resolveDeepLinkRoute(
+      'affine://notes.example.com/workspace/ws/doc?new-tab=1&server=https%3A%2F%2Fnotes.example.com#blockId'
+    )
+  ).toBe('/workspace/ws/doc?server=https%3A%2F%2Fnotes.example.com#blockId');
+
+  expect(resolveDeepLinkRoute('affine://app.affine.pro/share/ws/doc')).toBe(
+    '/share/ws/doc'
+  );
+
+  expect(
+    resolveDeepLinkRoute('affine://authentication?method=oauth&payload=%7B%7D')
+  ).toBeUndefined();
+  expect(resolveDeepLinkRoute('affine://app.affine.pro/')).toBeUndefined();
+  expect(resolveDeepLinkRoute('affine://share-inbox')).toBeUndefined();
+  expect(
+    resolveDeepLinkRoute('affine-canary://affine.fail/workspace/ws/doc')
+  ).toBeUndefined();
+  expect(
+    resolveDeepLinkRoute('affine://app.affine.pro/settings')
+  ).toBeUndefined();
+  expect(
+    resolveDeepLinkRoute('affine://app.affine.pro/workspaces')
+  ).toBeUndefined();
+  expect(
+    resolveDeepLinkRoute('https://app.affine.pro/workspace/ws/doc')
+  ).toBeUndefined();
+  expect(resolveDeepLinkRoute('affine://[invalid/workspace')).toBeUndefined();
+  expect(resolveDeepLinkRoute('not a url')).toBeUndefined();
+});
+
+test('getOpenUrlInDesktopAppLink round-trips through resolveDeepLinkRoute', () => {
+  vi.stubGlobal('location', new URL('https://app.affine.pro'));
+  try {
+    const link = getOpenUrlInDesktopAppLink(
+      'https://app.affine.pro/workspace/ws/doc?mode=page#blockId',
+      true,
+      'affine'
+    );
+
+    expect(link).toBe(
+      'affine://app.affine.pro/workspace/ws/doc?mode=page&new-tab=1#blockId'
+    );
+    expect(resolveDeepLinkRoute(link!)).toBe(
+      '/workspace/ws/doc?mode=page#blockId'
+    );
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });

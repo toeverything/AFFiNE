@@ -28,6 +28,7 @@ import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
+import { resolveDeepLinkRoute } from '@affine/core/modules/open-in-app/utils';
 import { NativePaywallProvider } from '@affine/core/modules/paywall';
 import {
   configureLocalStorageStateStorageImpls,
@@ -778,6 +779,15 @@ const handleAuthenticationCallback = async (url: string) => {
 CapacitorApp.addListener('appUrlOpen', ({ url }) => {
   // try to close browser if it's open
   Browser.close().catch(e => console.error('Failed to close browser', e));
+
+  const route = resolveDeepLinkRoute(url);
+  if (route) {
+    router.navigate(route).catch(e => {
+      console.error('Failed to open deep link', e);
+    });
+    return;
+  }
+
   handleAuthenticationCallback(url).catch(error =>
     notifyAuthenticationError(error, 'Failed to handle authentication callback')
   );

@@ -101,10 +101,46 @@ export const getOpenUrlInDesktopAppLink = (
       params.set('server', location.origin);
     }
     return new URL(
-      `${scheme}://${urlObject.host}${urlObject.pathname}?${params.toString()}#${urlObject.hash}`
+      `${scheme}://${urlObject.host}${urlObject.pathname}?${params.toString()}${urlObject.hash}`
     ).toString();
   } catch (e) {
     logger.error('Failed to get open url in desktop app link', e);
     return null;
   }
+};
+
+// params only meaningful to the desktop app's window manager
+const desktopOnlyDeepLinkParams = ['new-tab', 'hidden'];
+
+// the inverse of `getOpenUrlInDesktopAppLink`:
+// resolve an `affine://<host>/workspace/...` deep link into an in-app route.
+// mobile apps of every channel only register the `affine` scheme.
+export const resolveDeepLinkRoute = (url: string, scheme = 'affine') => {
+  if (!url.startsWith(`${scheme}://`)) {
+    return;
+  }
+
+  let urlObject: URL;
+  try {
+    // parse as a special url so that host and path are split the same way
+    // regardless of the runtime's support for custom schemes
+    urlObject = new URL(`https${url.slice(scheme.length)}`);
+  } catch {
+    return;
+  }
+
+  if (urlObject.hostname === 'authentication') {
+    return;
+  }
+
+  for (const param of desktopOnlyDeepLinkParams) {
+    urlObject.searchParams.delete(param);
+  }
+
+  const route = `${urlObject.pathname}${urlObject.search}${urlObject.hash}`;
+  if (route === '/' || !isAllowedOpenAppSignInNext(route)) {
+    return;
+  }
+
+  return route;
 };
