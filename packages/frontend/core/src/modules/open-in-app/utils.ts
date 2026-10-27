@@ -101,7 +101,7 @@ export const getOpenUrlInDesktopAppLink = (
       params.set('server', location.origin);
     }
     return new URL(
-      `${scheme}://${urlObject.host}${urlObject.pathname}?${params.toString()}#${urlObject.hash}`
+      `${scheme}://${urlObject.host}${urlObject.pathname}?${params.toString()}${urlObject.hash}`
     ).toString();
   } catch (e) {
     logger.error('Failed to get open url in desktop app link', e);

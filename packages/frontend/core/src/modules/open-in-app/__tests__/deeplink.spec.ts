@@ -1,8 +1,9 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
 import {
   buildAuthenticationDeepLink,
   buildOpenAppUrlRoute,
+  getOpenUrlInDesktopAppLink,
   normalizeOpenAppSignInNextParam,
   resolveDeepLinkRoute,
 } from '../utils';
@@ -107,4 +108,24 @@ test('resolveDeepLinkRoute', () => {
   ).toBeUndefined();
   expect(resolveDeepLinkRoute('affine://[invalid/workspace')).toBeUndefined();
   expect(resolveDeepLinkRoute('not a url')).toBeUndefined();
+});
+
+test('getOpenUrlInDesktopAppLink round-trips through resolveDeepLinkRoute', () => {
+  vi.stubGlobal('location', new URL('https://app.affine.pro'));
+  try {
+    const link = getOpenUrlInDesktopAppLink(
+      'https://app.affine.pro/workspace/ws/doc?mode=page#blockId',
+      true,
+      'affine'
+    );
+
+    expect(link).toBe(
+      'affine://app.affine.pro/workspace/ws/doc?mode=page&new-tab=1#blockId'
+    );
+    expect(resolveDeepLinkRoute(link!)).toBe(
+      '/workspace/ws/doc?mode=page#blockId'
+    );
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
