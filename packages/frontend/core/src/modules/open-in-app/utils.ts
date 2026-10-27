@@ -1,4 +1,4 @@
-import { appSchemes, channelToScheme } from '@affine/core/utils/channel';
+import { channelToScheme } from '@affine/core/utils/channel';
 import { DebugLogger } from '@affine/debug';
 
 const logger = new DebugLogger('open-in-app');
@@ -113,13 +113,10 @@ export const getOpenUrlInDesktopAppLink = (
 const desktopOnlyDeepLinkParams = ['new-tab', 'hidden'];
 
 // the inverse of `getOpenUrlInDesktopAppLink`:
-// resolve an `affine://<host>/workspace/...` deep link into an in-app route
-export const resolveDeepLinkRoute = (url: string) => {
-  const schemeEnd = url.indexOf('://');
-  if (
-    schemeEnd <= 0 ||
-    !appSchemes.safeParse(url.slice(0, schemeEnd)).success
-  ) {
+// resolve an `affine://<host>/workspace/...` deep link into an in-app route.
+// mobile apps of every channel only register the `affine` scheme.
+export const resolveDeepLinkRoute = (url: string, scheme = 'affine') => {
+  if (!url.startsWith(`${scheme}://`)) {
     return;
   }
 
@@ -127,7 +124,7 @@ export const resolveDeepLinkRoute = (url: string) => {
   try {
     // parse as a special url so that host and path are split the same way
     // regardless of the runtime's support for custom schemes
-    urlObject = new URL(`https${url.slice(schemeEnd)}`);
+    urlObject = new URL(`https${url.slice(scheme.length)}`);
   } catch {
     return;
   }
