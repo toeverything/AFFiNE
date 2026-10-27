@@ -30,5 +30,9 @@ export const reverseRelationPropertyModelConfig =
       fromString: () => ({ value: [] }),
       toJson: ({ value }) => value,
       fromJson: ({ value }) => value,
+      // Derived from the owning side, so there is nothing to write. Without
+      // this a paste or a direct update would store an array that nothing
+      // ever reads.
+      setValue: () => {},
     },
   });

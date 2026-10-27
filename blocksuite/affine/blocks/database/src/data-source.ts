@@ -34,7 +34,12 @@ import {
   databaseBlockProperties,
   databasePropertyConverts,
 } from './properties/index.js';
-import { resolveLinkedRows } from './properties/relation/resolve.js';
+import {
+  RELATION_TYPE,
+  type RelationPropertyData,
+  removeReverseProperty,
+  resolveLinkedRows,
+} from './properties/relation/resolve.js';
 import { computeRelationFilter } from './properties/relation-filter/compute.js';
 import { computeRollup } from './properties/rollup/compute.js';
 import {
@@ -51,6 +56,7 @@ import {
   updateProperty,
   updateView,
 } from './utils/block-utils.js';
+import { getDatabase } from './utils/database-lookup.js';
 import {
   databaseBlockViewConverts,
   databaseBlockViewMap,
@@ -456,8 +462,18 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     this.doc.captureSync();
     const index = this._model.props.columns.findIndex(v => v.id === id);
     if (index < 0) return;
+    const column = this._model.props.columns[index];
 
     this.doc.transact(() => {
+      // A relation takes its other half with it, rather than leaving the
+      // target database a reverse column for a pairing that is gone.
+      if (column?.type === RELATION_TYPE) {
+        const target = getDatabase(
+          this._model.store,
+          (column.data as Partial<RelationPropertyData>).targetDatabaseId
+        );
+        if (target) removeReverseProperty(this._model, id, target);
+      }
       this._model.props.columns = this._model.props.columns.filter(
         (_, i) => i !== index
       );

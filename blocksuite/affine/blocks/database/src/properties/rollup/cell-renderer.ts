@@ -72,12 +72,11 @@ export class RollupCell extends BaseCellRenderer<
       .map(column => ({ id: column.id, name: column.name }));
   });
 
-  /** Properties of whatever database the chosen relation lands in. */
-  private readonly targetProperties$ = computed(() => {
+  /** The database a relation property on this one lands in. */
+  private targetDatabaseOf(relationPropertyId: string | undefined) {
     const store = this.std?.store;
     const own = this.ownDatabase$.value;
-    const relationPropertyId = this.property.data$.value?.relationPropertyId;
-    if (!store || !own || !relationPropertyId) return [];
+    if (!store || !own || !relationPropertyId) return undefined;
     const linked = resolveLinkedRows(
       store,
       own,
@@ -85,7 +84,7 @@ export class RollupCell extends BaseCellRenderer<
       relationPropertyId
     );
     // With no linked rows yet there is still a target database to read from.
-    const target =
+    return (
       linked?.target ??
       getDatabase(
         store,
@@ -93,7 +92,15 @@ export class RollupCell extends BaseCellRenderer<
           own.props.columns$.value.find(c => c.id === relationPropertyId)
             ?.data as { targetDatabaseId?: string } | undefined
         )?.targetDatabaseId
-      );
+      )
+    );
+  }
+
+  /** Properties of whatever database the chosen relation lands in. */
+  private readonly targetProperties$ = computed(() => {
+    const target = this.targetDatabaseOf(
+      this.property.data$.value?.relationPropertyId
+    );
     if (!target) return [];
     return target.props.columns$.value.map(column => ({
       id: column.id,
@@ -104,7 +111,19 @@ export class RollupCell extends BaseCellRenderer<
   private readonly updateConfig =
     (key: keyof RollupPropertyData) => (e: Event) => {
       const value = (e.target as HTMLSelectElement).value;
-      this.property.dataUpdate(data => ({ ...data, [key]: value }));
+      this.property.dataUpdate(data => ({
+        ...data,
+        [key]: value,
+        // The rolled-up property belongs to the old relation's database. If
+        // the new relation lands somewhere without it, keeping it would
+        // quietly read nothing and show 0, so it is cleared instead.
+        ...(key === 'relationPropertyId' &&
+        !this.targetDatabaseOf(value)?.props.columns$.value.some(
+          column => column.id === data.targetPropertyId
+        )
+          ? { targetPropertyId: '' }
+          : {}),
+      }));
     };
 
   private renderSelect(
