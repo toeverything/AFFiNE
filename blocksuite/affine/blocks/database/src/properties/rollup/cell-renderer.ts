@@ -10,15 +10,15 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import { EditorHostKey } from '../../context/host-context.js';
 import {
+  findDatabaseContainingRow,
+  getDatabase,
+} from '../../utils/database-lookup.js';
+import {
   relationEmptyStyle,
   relationPickerHeaderStyle,
   relationPickerStyle,
   relationSelectStyle,
 } from '../relation/cell-renderer-css.js';
-import {
-  findDatabaseContainingRow,
-  getDatabase,
-} from '../../utils/database-lookup.js';
 import {
   RELATION_TYPE,
   resolveLinkedRows,
@@ -184,6 +184,8 @@ export class RollupCell extends BaseCellRenderer<
     if (this.isEditing$.value) return this.renderConfig();
     const value = this.value$.value;
     const data = this.property.data$.value;
+    // Only a percentage is one; a sum of 5 is not 5%.
+    const suffix = data?.calc === 'percentChecked' ? '%' : '';
     if (data?.display === 'bar') {
       // Percentages already run 0-100; other aggregates are clamped so the
       // bar stays a bar rather than overflowing its track.
@@ -193,11 +195,10 @@ export class RollupCell extends BaseCellRenderer<
           <div class="${rollupBarFillStyle}" style="width:${pct}%"></div>
         </div>
         <span class="${rollupBarLabelStyle}"
-          >${value == null ? '' : `${Math.round(value)}%`}</span
+          >${value == null ? '' : `${value}${suffix}`}</span
         >
       </div>`;
     }
-    const suffix = data?.calc === 'percentChecked' ? '%' : '';
     return html`<span class="${rollupValueStyle}"
       >${value == null ? '' : `${value}${suffix}`}</span
     >`;

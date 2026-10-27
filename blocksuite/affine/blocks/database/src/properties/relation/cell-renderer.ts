@@ -10,11 +10,12 @@ import { html, nothing } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { EditorHostKey } from '../../context/host-context.js';
-import { addProperty } from '../../utils/block-utils.js';
+import { addProperty, updateCells } from '../../utils/block-utils.js';
 import {
   findDatabaseContainingRow,
   getDatabase,
   getDatabases,
+  readStoredCell,
 } from '../../utils/database-lookup.js';
 import {
   relationCellStyle,
@@ -35,6 +36,7 @@ import {
   ensureReverseProperty,
   findOrphanIds,
   type RelationPropertyData,
+  removeReverseProperty,
   resolveLinkedRows,
   REVERSE_RELATION_TYPE,
   type ReverseRelationPropertyData,
@@ -118,28 +120,47 @@ export class RelationCell extends RelationCellBase<RelationPropertyData> {
 
   private readonly setTargetDatabase = (e: Event) => {
     const targetDatabaseId = (e.target as HTMLSelectElement).value;
-    this.property.dataUpdate(() => ({ targetDatabaseId }));
-    // Rows of the old target mean nothing under the new one.
-    this.valueSetImmediate([]);
-
-    // Give the other database its half straight away. A relation people have
-    // to wire twice is one they will wire inconsistently.
+    const previousId = this.targetDatabaseId$.value ?? '';
+    if (targetDatabaseId === previousId) return;
     const store = this.std?.store;
     const own = this.ownDatabase$.value;
-    if (!store || !own) return;
-    const target = getDatabase(store, targetDatabaseId);
-    if (!target) return;
-    ensureReverseProperty(
-      own,
-      this.cell.propertyId,
-      target,
-      (db, name, data) => {
+    if (!store || !own) {
+      this.property.dataUpdate(() => ({ targetDatabaseId }));
+      return;
+    }
+    const propertyId = this.cell.propertyId;
+
+    store.captureSync();
+    // One transaction, so a single undo puts the old pairing back whole.
+    store.transact(() => {
+      this.property.dataUpdate(() => ({ targetDatabaseId }));
+
+      // Rows of the old target mean nothing under the new one -- in every
+      // row, not just this one, or the old ids linger in the other cells.
+      const stale = Object.fromEntries(
+        own.children
+          .filter(row => {
+            const stored = readStoredCell(own, row.id, propertyId);
+            return Array.isArray(stored) && stored.length > 0;
+          })
+          .map(row => [row.id, []])
+      );
+      updateCells(own, propertyId, stale);
+
+      const previous = getDatabase(store, previousId);
+      if (previous) removeReverseProperty(own, propertyId, previous);
+
+      // Give the other database its half straight away. A relation people
+      // have to wire twice is one they will wire inconsistently.
+      const target = getDatabase(store, targetDatabaseId);
+      if (!target) return;
+      ensureReverseProperty(own, propertyId, target, (db, name, data) => {
         const dataSource = this.view.manager.dataSource;
         const meta = dataSource.propertyMetaGet(REVERSE_RELATION_TYPE);
         if (!meta) return;
         addProperty(db, 'end', { ...meta.create(name), data });
-      }
-    );
+      });
+    });
   };
 
   private readonly toggle = (rowId: string) => (e: Event) => {
