@@ -839,14 +839,17 @@ test('should return methods unavailable for disabled users', async t => {
 });
 
 test('should return magic link unavailable for unknown users when signup is disabled', async t => {
-  const { app, config } = t.context;
+  const { app, runtime } = t.context;
 
-  config.override({
-    auth: {
-      allowSignup: false,
+  await runtime.saveAppConfig(null, [
+    {
+      key: 'auth.allowSignup',
+      owner: 'native',
+      operation: 'set',
+      valueJson: 'false',
     },
-  });
-  await t.context.runtime.onConfigChanged({
+  ]);
+  await runtime.onConfigChanged({
     updates: { auth: { allowSignup: false } },
   });
 
@@ -860,14 +863,17 @@ test('should return magic link unavailable for unknown users when signup is disa
 });
 
 test('should return magic link unavailable when domain verification rejects signup email', async t => {
-  const { app, config } = t.context;
+  const { app, runtime } = t.context;
 
-  config.override({
-    auth: {
-      requireEmailDomainVerification: true,
+  await runtime.saveAppConfig(null, [
+    {
+      key: 'auth.requireEmailDomainVerification',
+      owner: 'native',
+      operation: 'set',
+      valueJson: 'true',
     },
-  });
-  await t.context.runtime.onConfigChanged({
+  ]);
+  await runtime.onConfigChanged({
     updates: { auth: { requireEmailDomainVerification: true } },
   });
 

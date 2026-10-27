@@ -55,14 +55,7 @@ export interface NativeDBApis {
   connect: (id: string) => Promise<void>;
   disconnect: (id: string) => Promise<void>;
   pushUpdate: (id: string, docId: string, update: Uint8Array) => Promise<Date>;
-  getDocSnapshot: (id: string, docId: string) => Promise<DocRecord | null>;
-  setDocSnapshot: (id: string, snapshot: DocRecord) => Promise<boolean>;
-  getDocUpdates: (id: string, docId: string) => Promise<DocRecord[]>;
-  markUpdatesMerged: (
-    id: string,
-    docId: string,
-    updates: Date[]
-  ) => Promise<number>;
+  getDoc: (id: string, docId: string) => Promise<DocRecord | null>;
   deleteDoc: (id: string, docId: string) => Promise<void>;
   getDocClocks: (id: string, after?: Date | null) => Promise<DocClock[]>;
   getDocClock: (id: string, docId: string) => Promise<DocClock | null>;

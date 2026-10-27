@@ -1,0 +1,28 @@
+diff --git a/dist/api/package.js b/dist/api/package.js
+index 8fb0bea8296b4426389441e2ade33d976262f865..f07b2f38725ffe53661b3a2d8d00df88283b576c 100644
+--- a/dist/api/package.js
++++ b/dist/api/package.js
+@@ -163,7 +163,7 @@ const listrPackage = (childTrace, { dir: providedDir = process.cwd(), interactiv
+                         done();
+                     }),
+                     hidePromiseFromPromisify(async (buildPath, electronVersion, pPlatform, pArch, done) => {
+-                        const bins = await (0, fast_glob_1.default)(node_path_1.default.join(buildPath, '**/.bin/**/*'));
++                        const bins = await (0, fast_glob_1.default)(node_path_1.default.join(buildPath, '**/.bin/**/*').replaceAll('\\', '/'));
+                         for (const bin of bins) {
+                             await fs_extra_1.default.remove(bin);
+                         }
+diff --git a/src/api/package.ts b/src/api/package.ts
+index 0dd30927c17c8c1c95557dc8e951016b0004e51f..2274e5bc45157821c11ccc2c5f3abab44ac54735 100644
+--- a/src/api/package.ts
++++ b/src/api/package.ts
+@@ -347,7 +347,9 @@ export const listrPackage = (
+               ),
+               hidePromiseFromPromisify(
+                 async (buildPath, electronVersion, pPlatform, pArch, done) => {
+-                  const bins = await glob(path.join(buildPath, '**/.bin/**/*'));
++                  const bins = await glob(
++                    path.join(buildPath, '**/.bin/**/*').replaceAll('\\', '/')
++                  );
+                   for (const bin of bins) {
+                     await fs.remove(bin);
+                   }

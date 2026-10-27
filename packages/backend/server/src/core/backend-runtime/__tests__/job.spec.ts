@@ -4,6 +4,15 @@ import { join } from 'node:path';
 import { ScheduleModule } from '@nestjs/schedule';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc,
+  encodeStateAsUpdate,
+  encodeStateVector,
+  Map as YMap,
+  Text as YText,
+} from 'yjs';
 
 import {
   createTestingModule,
@@ -24,15 +33,18 @@ import {
 import {
   BackendRuntimeEmbeddingService,
   BackendRuntimeHousekeepingJob,
+  BackendRuntimeSearchJob,
 } from '../job';
 
 interface Context {
   module: TestingModule;
   embeddingService: BackendRuntimeEmbeddingService;
   job: BackendRuntimeHousekeepingJob;
+  searchJob: BackendRuntimeSearchJob;
   getSnapshot: Sinon.SinonStub;
   allowEmbedding: Sinon.SinonStub;
   runtime: {
+    nodeCryptoPrivateKey: Sinon.SinonStub;
     cleanupExpiredRuntimeStates: Sinon.SinonStub;
     cleanupExpiredRuntimeGates: Sinon.SinonStub;
     cleanupExpiredRollingQuota: Sinon.SinonStub;
@@ -40,6 +52,9 @@ interface Context {
     embeddingHealth: Sinon.SinonStub;
     syncEmbeddingState: Sinon.SinonStub;
     executeAuthSessionCommandV1: Sinon.SinonStub;
+    searchEnabled: Sinon.SinonStub;
+    reconcileSearchProjection: Sinon.SinonStub;
+    searchStatus: Sinon.SinonStub;
   };
 }
 
@@ -50,6 +65,7 @@ test.before(async t => {
     join(process.cwd(), 'src/__tests__/__fixtures__/test-doc.snapshot.bin')
   );
   t.context.runtime = {
+    nodeCryptoPrivateKey: Sinon.stub().returns(''),
     cleanupExpiredRuntimeStates: Sinon.stub(),
     cleanupExpiredRuntimeGates: Sinon.stub(),
     cleanupExpiredRollingQuota: Sinon.stub(),
@@ -57,6 +73,9 @@ test.before(async t => {
     embeddingHealth: Sinon.stub().resolves({ enabled: true }),
     syncEmbeddingState: Sinon.stub(),
     executeAuthSessionCommandV1: Sinon.stub().resolves({}),
+    searchEnabled: Sinon.stub().returns(false),
+    reconcileSearchProjection: Sinon.stub().resolves(2),
+    searchStatus: Sinon.stub().resolves({ ready: true, state: 'active' }),
   };
   t.context.module = await createTestingModule({
     imports: [
@@ -84,6 +103,15 @@ test.before(async t => {
     createdByUser: null,
     updatedByUser: null,
   });
+  const root = new Doc();
+  const pages = new YArray<YMap<unknown>>();
+  root.getMap('meta').set('pages', pages);
+  pages.push([new YMap([['id', 'doc-1']])]);
+  t.context.getSnapshot.withArgs('workspace-1', 'workspace-1').resolves({
+    blob: Buffer.from(encodeStateAsUpdate(root)),
+    updatedAt: new Date('2026-01-02T00:00:00Z'),
+  });
+  root.destroy();
   t.context.allowEmbedding = Sinon.stub(
     models.workspace,
     'allowEmbedding'
@@ -92,6 +120,7 @@ test.before(async t => {
     BackendRuntimeEmbeddingService
   );
   t.context.job = t.context.module.get(BackendRuntimeHousekeepingJob);
+  t.context.searchJob = t.context.module.get(BackendRuntimeSearchJob);
 });
 
 test.beforeEach(t => {
@@ -101,6 +130,9 @@ test.beforeEach(t => {
   t.context.runtime.cleanupUnreferencedArtifacts.reset();
   t.context.runtime.embeddingHealth.resetHistory();
   t.context.runtime.syncEmbeddingState.reset();
+  t.context.runtime.searchEnabled.resetHistory();
+  t.context.runtime.reconcileSearchProjection.resetHistory();
+  t.context.runtime.searchStatus.resetHistory();
   t.context.getSnapshot.resetHistory();
   t.context.allowEmbedding.resetHistory();
 });
@@ -112,12 +144,12 @@ test.after.always(async t => {
 
 test('backend-runtime jobs ingest documents and clean runtime state', async t => {
   await t.context.embeddingService.syncDocument('workspace-1', 'doc-1');
-  t.is(t.context.getSnapshot.callCount, 1);
+  t.is(t.context.getSnapshot.callCount, 2);
   t.is(t.context.runtime.syncEmbeddingState.callCount, 1);
   t.like(t.context.runtime.syncEmbeddingState.firstCall.args[0], {
     workspaceId: 'workspace-1',
     enabled: true,
-    reconcileDocuments: true,
+    reconcileDocuments: false,
   });
   t.is(
     t.context.runtime.syncEmbeddingState.firstCall.args[0].documents[0].docId,
@@ -177,6 +209,88 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
       ),
     { instanceOf: CopilotSelectedSourcesLimitExceeded }
   );
+  const healthyRoot = await t.context.getSnapshot('workspace-1', 'workspace-1');
+  const partialRoot = new Doc();
+  partialRoot.getMap('meta').set('version', 1);
+  const priorState = encodeStateVector(partialRoot);
+  const rootPages = new YArray<YMap<unknown>>();
+  partialRoot.getMap('meta').set('pages', rootPages);
+  rootPages.push([
+    new YMap<unknown>([
+      ['id', 'doc-1'],
+      ['trash', true],
+    ]),
+  ]);
+  t.context.getSnapshot.withArgs('workspace-1', 'workspace-1').resolves({
+    ...healthyRoot,
+    blob: Buffer.from(encodeStateAsUpdate(partialRoot, priorState)),
+  });
+  t.false(
+    (await t.context.embeddingService.inspectWorkspaceRoot('workspace-1'))
+      .complete
+  );
+  t.context.getSnapshot.withArgs('workspace-1', 'workspace-1').resolves({
+    ...healthyRoot,
+    blob: Buffer.from(encodeStateAsUpdate(partialRoot)),
+  });
+  const repairedRoot =
+    await t.context.embeddingService.inspectWorkspaceRoot('workspace-1');
+  t.true(repairedRoot.complete);
+  t.true(repairedRoot.docIds.has('doc-1'));
+  partialRoot.destroy();
+  t.context.getSnapshot
+    .withArgs('workspace-1', 'workspace-1')
+    .resolves(healthyRoot);
+  const healthySnapshot = await t.context.getSnapshot('workspace-1', 'doc-1');
+  const viewOnly = new Doc();
+  viewOnly.getMap('view').set('mode', 'page');
+  const nulDoc = new Doc();
+  applyUpdate(nulDoc, healthySnapshot.blob);
+  const text = [...nulDoc.getMap<YMap<unknown>>('blocks').values()]
+    .map(block => block.get('prop:text'))
+    .find((value): value is YText => value instanceof YText)!;
+  text.insert(0, '\0');
+  for (const [blob, reason] of [
+    [Buffer.from([0, 0]), 'empty_document'],
+    [Buffer.from([255]), 'invalid_document'],
+    [Buffer.from(encodeStateAsUpdate(viewOnly)), 'document_blocks_missing'],
+    [Buffer.from(encodeStateAsUpdate(nulDoc)), 'document_contains_nul'],
+  ] as const) {
+    t.context.getSnapshot
+      .withArgs('workspace-1', 'doc-1')
+      .resolves({ ...healthySnapshot, blob });
+    await t.context.embeddingService.syncDocument('workspace-1', 'doc-1');
+    t.like(t.context.runtime.syncEmbeddingState.lastCall.args[0].documents[0], {
+      docId: 'doc-1',
+      revision: healthySnapshot.updatedAt.getTime().toString(),
+      skipReason: reason,
+      units: [],
+    });
+  }
+  viewOnly.destroy();
+  nulDoc.destroy();
+  t.context.getSnapshot
+    .withArgs('workspace-1', 'doc-1')
+    .resolves(healthySnapshot);
+  await t.context.embeddingService.syncDocument('workspace-1', 'doc-1', {
+    complete: false,
+    revision: 'root-1',
+    docIds: new Set(),
+  });
+  t.like(t.context.runtime.syncEmbeddingState.lastCall.args[0].documents[0], {
+    skipReason: 'workspace_root_incomplete',
+    rootRevision: 'root-1',
+    units: [],
+  });
+  await t.context.embeddingService.syncDocument('workspace-1', 'doc-1', {
+    complete: true,
+    revision: 'root-2',
+    docIds: new Set(['doc-1']),
+  });
+  t.true(
+    t.context.runtime.syncEmbeddingState.lastCall.args[0].documents[0].units
+      .length > 0
+  );
   t.context.getSnapshot.resolves(null);
   await t.throwsAsync(
     () =>
@@ -190,11 +304,7 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   await t.context.embeddingService.syncDocument('workspace-1', 'missing-doc');
   t.is(
     t.context.runtime.syncEmbeddingState.callCount,
-    callsBeforeMissingBackgroundDoc + 1
-  );
-  t.deepEqual(
-    t.context.runtime.syncEmbeddingState.lastCall.args[0].documents,
-    []
+    callsBeforeMissingBackgroundDoc
   );
 
   t.context.runtime.cleanupExpiredRuntimeStates.onCall(0).resolves(1000);
@@ -209,4 +319,10 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   t.is(t.context.runtime.cleanupExpiredRuntimeGates.callCount, 1);
   t.is(t.context.runtime.cleanupExpiredRollingQuota.callCount, 1);
   t.is(t.context.runtime.cleanupUnreferencedArtifacts.callCount, 1);
+
+  t.is(await t.context.searchJob.reconcileProjection(7), 0);
+  t.false(t.context.runtime.reconcileSearchProjection.called);
+  t.context.runtime.searchEnabled.returns(true);
+  t.is(await t.context.searchJob.reconcileProjection(7), 2);
+  t.true(t.context.runtime.reconcileSearchProjection.calledOnceWithExactly(7));
 });

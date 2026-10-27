@@ -114,7 +114,11 @@ fn to_adapter_prompt_messages<T: Serialize>(messages: Vec<T>) -> Result<Vec<adap
 
 #[cfg(test)]
 mod tests {
-  use llm_adapter::core::{EmbeddingRequest, ImageRequest, RerankCandidate};
+  use base64::{Engine, engine::general_purpose::STANDARD};
+  use llm_adapter::{
+    core::{EmbeddingRequest, ImageRequest, RerankCandidate},
+    protocol::openai::{chat, responses},
+  };
   use serde_json::json;
 
   use super::{
@@ -238,6 +242,28 @@ mod tests {
         "responseMimeType": "application/json"
       }),
     );
+    let data = STANDARD.encode(include_bytes!("../../../../fixtures/transcript.m4a"));
+    let input = serde_json::from_value::<CanonicalStructuredRequestContract>(json!({
+      "model": "custom-audio",
+      "messages": [{
+        "role": "user", "content": "Transcribe this audio slice.",
+        "attachments": [{ "kind": "data", "data": data, "mimeType": "audio/m4a", "encoding": "base64" }]
+      }],
+      "schema": { "type": "array", "items": { "type": "object" } }
+    }))
+    .unwrap();
+    let request = super::build_canonical_structured_request(input.try_into().unwrap())
+      .unwrap()
+      .request
+      .as_core_request();
+    let wire = chat::request::encode(&request, false).unwrap();
+    assert_eq!(
+      wire["messages"][0]["content"][1],
+      json!({
+        "type": "input_audio", "input_audio": { "data": data, "format": "m4a" }
+      })
+    );
+    assert!(responses::request::encode(&request, false).is_err());
   }
 
   #[test]

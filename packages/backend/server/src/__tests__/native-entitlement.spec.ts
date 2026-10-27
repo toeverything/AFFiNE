@@ -1,13 +1,19 @@
+import { resolve } from 'node:path';
+
 import test from 'ava';
 
-import { BackendRuntime, resolveEntitlementV1 } from '../native';
+import {
+  BackendRuntime,
+  resolveEntitlementV1,
+  ServerConfigHandle,
+} from '../native';
 
 test('native entitlement boundary maps invalid input to InvalidArg', async t => {
   const runtime = new BackendRuntime(
-    'test-private-key',
-    [],
-    undefined,
-    undefined
+    new ServerConfigHandle(
+      resolve(env.projectRoot, '../../../.docker/selfhost/config.json.example')
+    ),
+    'test-private-key'
   );
   t.teardown(() => runtime.stop());
   const schemaError = t.throws(() =>

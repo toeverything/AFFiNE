@@ -8,7 +8,7 @@
   "crypto": {
     "privateKey": {
       "type": "String",
-      "desc": "The private key for used by the crypto module to create signed tokens or encrypt data.",
+      "desc": "Private key for Node signing and encryption plus native runtime identity.",
       "env": "AFFINE_PRIVATE_KEY"
     }
   },
@@ -27,26 +27,6 @@
     }
   },
   "auth": {
-    "allowSignup": {
-      "type": "Boolean",
-      "desc": "Whether allow new registrations."
-    },
-    "allowSignupForOauth": {
-      "type": "Boolean",
-      "desc": "Whether allow new registrations via configured oauth."
-    },
-    "requireEmailDomainVerification": {
-      "type": "Boolean",
-      "desc": "Whether require email domain record verification before accessing restricted resources."
-    },
-    "requireEmailVerification": {
-      "type": "Boolean",
-      "desc": "Whether require email verification before accessing restricted resources(not implemented)."
-    },
-    "newAccountActionDelay": {
-      "type": "Number",
-      "desc": "Minimum account age in seconds before new accounts can invite members, create invite links, or publish documents. Set to 0 to disable."
-    },
     "trustedCloudflareHeaders": {
       "type": "Boolean",
       "desc": "Whether request abuse source facts should trust Cloudflare headers from the origin edge."
@@ -59,33 +39,49 @@
       "type": "Object",
       "desc": "The password strength requirements when set new password."
     },
+    "allowSignup": {
+      "type": "Boolean",
+      "desc": "Allow new registrations."
+    },
+    "allowSignupForOauth": {
+      "type": "Boolean",
+      "desc": "Allow new registrations through configured OAuth providers."
+    },
+    "requireEmailDomainVerification": {
+      "type": "Boolean",
+      "desc": "Require email domain verification for restricted resources."
+    },
+    "newAccountActionDelay": {
+      "type": "Number",
+      "desc": "Minimum account age in seconds for invites and document publishing."
+    },
     "session.ttl": {
       "type": "Number",
-      "desc": "Application auth expiration time in seconds."
+      "desc": "Application auth expiration in seconds."
     },
     "session.ttr": {
       "type": "Number",
-      "desc": "Application auth time to refresh in seconds."
+      "desc": "Application auth refresh interval in seconds."
     },
     "token.accessTokenTtl": {
       "type": "Number",
-      "desc": "Access JWT expiration time in seconds."
+      "desc": "Access JWT expiration in seconds."
     },
     "token.refreshIdleTtl": {
       "type": "Number",
-      "desc": "Auth refresh session inactivity expiration in seconds."
+      "desc": "Refresh session inactivity expiration in seconds."
     },
     "token.refreshAbsoluteTtl": {
       "type": "Number",
-      "desc": "Auth refresh session absolute expiration in seconds."
+      "desc": "Refresh session absolute expiration in seconds."
     },
     "token.refreshGracePeriod": {
       "type": "Number",
-      "desc": "One-use refresh rotation concurrency grace period in seconds."
+      "desc": "Refresh rotation concurrency grace period in seconds."
     },
     "token.refreshRetention": {
       "type": "Number",
-      "desc": "Retention for expired auth refresh generations in seconds."
+      "desc": "Expired refresh generation retention in seconds."
     }
   },
   "mailer": {
@@ -310,10 +306,6 @@
     }
   },
   "copilot": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK."
-    },
     "unsplash": {
       "type": "Object",
       "desc": "The config for the unsplash key."
@@ -322,9 +314,9 @@
       "type": "Object",
       "desc": "The config for the exa web search key."
     },
-    "storage": {
-      "type": "Object",
-      "desc": "The config for the storage provider."
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK."
     },
     "byok.enabled": {
       "type": "Boolean",
@@ -341,34 +333,36 @@
     "byok.allowPrivateEndpoint": {
       "type": "Boolean",
       "desc": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
+    },
+    "storage": {
+      "type": "Object",
+      "desc": "The config for the storage provider."
     }
   },
   "indexer": {
     "enabled": {
       "type": "Boolean",
-      "desc": "Enable indexer plugin"
+      "desc": "Enable the indexer."
     },
     "provider.type": {
       "type": "String",
-      "desc": "Indexer search provider. Self-hosted uses the embedded provider by default; remote providers require an endpoint."
+      "desc": "Search provider type."
     },
     "provider.endpoint": {
       "type": "String",
-      "desc": "Remote indexer endpoint. Not used by the embedded provider."
+      "desc": "Remote search provider endpoint."
     },
     "provider.apiKey": {
       "type": "String",
-      "desc": "Indexer search service api key. Optional for remote providers",
-      "link": "https://www.elastic.co/guide/server/current/api-key.html"
+      "desc": "Remote search provider API key."
     },
     "provider.username": {
       "type": "String",
-      "desc": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for remote providers",
-      "link": "https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html"
+      "desc": "Remote search provider username."
     },
     "provider.password": {
       "type": "String",
-      "desc": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for remote providers"
+      "desc": "Remote search provider password."
     }
   },
   "oauth": {
@@ -394,23 +388,21 @@
     }
   },
   "payment": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Whether enable payment plugin"
-    },
     "showLifetimePrice": {
       "type": "Boolean",
       "desc": "Whether enable lifetime price and allow user to pay for it."
     },
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Whether to enable payment integration."
+    },
     "stripe": {
       "type": "Object",
-      "desc": "Stripe sdk options and credentials",
-      "link": "https://docs.stripe.com/api"
+      "desc": "Stripe SDK options and credentials."
     },
     "revenuecat": {
       "type": "Object",
-      "desc": "RevenueCat integration configs",
-      "link": "https://www.revenuecat.com/docs/"
+      "desc": "RevenueCat integration configuration."
     }
   },
   "worker": {

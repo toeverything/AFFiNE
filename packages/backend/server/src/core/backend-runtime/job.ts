@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import {
-  ConfigFactory,
   CopilotSelectedSourcesFailed,
   CopilotSelectedSourcesLimitExceeded,
   CopilotSelectedSourcesProcessing,
@@ -10,6 +9,10 @@ import {
   metrics,
 } from '../../base';
 import { Models } from '../../models';
+import {
+  type DocumentEmbeddingProjectionInput,
+  projectWorkspaceRootFromBinary,
+} from '../../native';
 import { projectDocSearch } from '../utils/blocksuite';
 import { BackendRuntimeProvider } from './provider';
 
@@ -29,8 +32,44 @@ export class BackendRuntimeEmbeddingService {
     private readonly models: Models
   ) {}
 
-  async syncDocument(workspaceId: string, docId: string) {
-    await this.syncDocuments(workspaceId, [docId], true);
+  async inspectWorkspaceRoot(workspaceId: string) {
+    const snapshot = await this.models.doc.getSnapshot(
+      workspaceId,
+      workspaceId
+    );
+    const revision = snapshot?.updatedAt.getTime().toString() ?? 'missing';
+    if (!snapshot)
+      return { revision, complete: false, docIds: new Set<string>() };
+    try {
+      const projection = projectWorkspaceRootFromBinary(
+        Buffer.from(snapshot.blob)
+      );
+      return {
+        revision,
+        complete: projection.complete,
+        docIds: new Set(projection.docIds),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message !== 'invalid_binary') throw error;
+      return { revision, complete: false, docIds: new Set<string>() };
+    }
+  }
+
+  async syncDocument(
+    workspaceId: string,
+    docId: string,
+    root?: Awaited<
+      ReturnType<BackendRuntimeEmbeddingService['inspectWorkspaceRoot']>
+    >
+  ) {
+    await this.syncDocuments(
+      workspaceId,
+      [docId],
+      false,
+      undefined,
+      root ?? (await this.inspectWorkspaceRoot(workspaceId))
+    );
   }
 
   async prepareSelectedDocuments(workspaceId: string, docIds: string[]) {
@@ -66,7 +105,10 @@ export class BackendRuntimeEmbeddingService {
     workspaceId: string,
     docIds: string[],
     reconcileDocuments: boolean,
-    scheduling?: { priority: number; waitForReadyMs: number }
+    scheduling?: { priority: number; waitForReadyMs: number },
+    root?: Awaited<
+      ReturnType<BackendRuntimeEmbeddingService['inspectWorkspaceRoot']>
+    >
   ) {
     if (!(await this.rt.embeddingHealth()).enabled) {
       if (scheduling) throw new CopilotSelectedSourcesUnavailable();
@@ -77,7 +119,7 @@ export class BackendRuntimeEmbeddingService {
       if (scheduling) throw new CopilotSelectedSourcesUnavailable();
       return;
     }
-    const documents = [];
+    const documents: DocumentEmbeddingProjectionInput[] = [];
     let unitCount = 0;
     let textBytes = 0;
     for (const docId of docIds) {
@@ -87,7 +129,64 @@ export class BackendRuntimeEmbeddingService {
         continue;
       }
       const revision = snapshot.updatedAt.getTime().toString();
-      const projection = projectDocSearch(snapshot.blob, docId, revision);
+      const skipped: DocumentEmbeddingProjectionInput = {
+        docId,
+        revision,
+        sourceHash: revision,
+        units: [],
+      };
+      if (root && (!root.complete || !root.docIds.has(docId))) {
+        documents.push({
+          ...skipped,
+          skipReason: root.complete
+            ? 'document_not_in_root'
+            : 'workspace_root_incomplete',
+          rootRevision: root.revision,
+        });
+        continue;
+      }
+      if (
+        !snapshot.blob.length ||
+        (snapshot.blob.length === 2 &&
+          snapshot.blob[0] === 0 &&
+          snapshot.blob[1] === 0)
+      ) {
+        if (scheduling) throw new CopilotSelectedSourcesUnavailable();
+        documents.push({ ...skipped, skipReason: 'empty_document' });
+        continue;
+      }
+      let projection;
+      try {
+        projection = projectDocSearch(snapshot.blob, docId, revision);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (
+          scheduling ||
+          !['invalid_binary', 'parser_error: blocks map not found'].includes(
+            message
+          )
+        )
+          throw error;
+        documents.push({
+          ...skipped,
+          skipReason:
+            message === 'invalid_binary'
+              ? 'invalid_document'
+              : 'document_blocks_missing',
+        });
+        continue;
+      }
+      if (
+        projection.units.some(unit =>
+          Object.values(unit).some(
+            value => typeof value === 'string' && value.includes('\0')
+          )
+        )
+      ) {
+        if (scheduling) throw new CopilotSelectedSourcesFailed();
+        documents.push({ ...skipped, skipReason: 'document_contains_nul' });
+        continue;
+      }
       unitCount += projection.units.length;
       for (const unit of projection.units) {
         textBytes += Buffer.byteLength(unit.text);
@@ -96,7 +195,12 @@ export class BackendRuntimeEmbeddingService {
         unitCount > SELECTED_DOCUMENT_UNIT_LIMIT ||
         textBytes > SELECTED_DOCUMENT_TEXT_BYTE_LIMIT
       ) {
-        throw new CopilotSelectedSourcesLimitExceeded();
+        if (scheduling) throw new CopilotSelectedSourcesLimitExceeded();
+        documents.push({
+          ...skipped,
+          skipReason: 'document_projection_too_large',
+        });
+        continue;
       }
       documents.push({
         docId,
@@ -173,14 +277,11 @@ export class BackendRuntimeHousekeepingJob {
 
 @Injectable()
 export class BackendRuntimeSearchJob {
-  constructor(
-    private readonly rt: BackendRuntimeProvider,
-    private readonly config: ConfigFactory
-  ) {}
+  constructor(private readonly rt: BackendRuntimeProvider) {}
 
   @Cron(CronExpression.EVERY_30_SECONDS)
   async reconcileProjection(limit = 100) {
-    if (!this.config.config.indexer.enabled) return 0;
+    if (!this.rt.searchEnabled()) return 0;
     const startedAt = performance.now();
     try {
       const reconciled = await this.rt.reconcileSearchProjection(limit);

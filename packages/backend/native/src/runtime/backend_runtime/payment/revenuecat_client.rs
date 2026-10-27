@@ -176,6 +176,11 @@ impl RevenueCatClient {
       .await
   }
 
+  pub(super) async fn product(&self, product_id: &str) -> Result<RevenueCatProduct, PaymentProviderError> {
+    let url = self.url(&format!("{}products/{}", self.project_path, encode_segment(product_id)))?;
+    self.send(self.request(Method::GET, url), false).await
+  }
+
   pub(super) async fn entitlement(&self, entitlement_id: &str) -> Result<RevenueCatEntitlement, PaymentProviderError> {
     let mut url = self.url(&format!(
       "{}entitlements/{}",

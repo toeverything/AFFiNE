@@ -29,13 +29,6 @@ uniffi         = { workspace = true, features = ["cli", "tokio"] }
 
 [target.'cfg(any(target_os = "ios", target_os = "macos"))'.dependencies]
 objc2 = { workspace = true }
-objc2-foundation = { workspace = true, features = [
-  "NSArray",
-  "NSFileManager",
-  "NSPathUtilities",
-  "NSString",
-  "NSURL",
-] }
 
 [target.'cfg(not(any(target_os = "ios", target_os = "macos")))'.dependencies]
 homedir = { workspace = true }

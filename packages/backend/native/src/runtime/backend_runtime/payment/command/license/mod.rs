@@ -48,6 +48,7 @@ impl PaymentRuntime {
       .get::<Option<String>, _>("validate_key")
       .unwrap_or_else(|| operation_id.to_string());
     let envelope = issue_license(
+      self.license_issuer_private_key.as_ref().map(|key| key.as_str()),
       license_key,
       workspace_id,
       subscription.quantity,
@@ -145,6 +146,7 @@ impl PaymentRuntime {
     }
     let subscription = active_license_subscription(&mut tx, license_key, &namespace).await?;
     let envelope = issue_license(
+      self.license_issuer_private_key.as_ref().map(|key| key.as_str()),
       license_key,
       workspace_id,
       subscription.quantity,
@@ -270,7 +272,9 @@ async fn active_license_subscription(
   namespace: &str,
 ) -> RuntimeResult<ActiveLicenseSubscription> {
   let row = sqlx::query(
-    r#"SELECT quantity,recurring,period_end,status,COALESCE(gives_access,true) AS gives_access,clock_timestamp() AS now
+    r#"SELECT provider_namespace,provider::text AS provider,plan,trial_end,will_renew,source_identity,metadata,quantity,recurring,period_end,status,gives_access,clock_timestamp() AS now,(SELECT u.email FROM user_stripe_customers c JOIN users u ON u.id=c.user_id
+                WHERE c.provider_namespace=provider_subscriptions.provider_namespace
+                  AND c.stripe_customer_id=provider_subscriptions.external_customer_id) AS billing_email
        FROM provider_subscriptions
        WHERE provider_namespace=$2 AND target_type='instance' AND target_id=$1 AND plan='selfhost_team'
        ORDER BY updated_at DESC LIMIT 1 FOR SHARE"#,
@@ -281,37 +285,38 @@ async fn active_license_subscription(
   .await
   .map_err(|error| RuntimeError::database("read license subscription", error))?
   .ok_or_else(|| RuntimeError::invalid_state("license_not_found"))?;
-  decode_subscription(row)
-}
-
-fn decode_subscription(row: sqlx::postgres::PgRow) -> RuntimeResult<ActiveLicenseSubscription> {
-  let period_end: Option<DateTime<Utc>> = row.get("period_end");
-  if row.get::<String, _>("status") != "active"
-    || !row.get::<bool, _>("gives_access")
-    || period_end.is_some_and(|end| end <= row.get::<DateTime<Utc>, _>("now"))
-  {
+  let facts = sqlx::query(
+    "SELECT object_kind,status,amount,metadata FROM payment_financial_facts WHERE provider_namespace=$1 AND \
+     source_identity=$2",
+  )
+  .bind(namespace)
+  .bind(row.get::<String, _>("source_identity"))
+  .fetch_all(&mut **tx)
+  .await
+  .map_err(|error| RuntimeError::database("read license financial facts", error))?;
+  let (subscription, _) = stored_subscription_decision(tx, &row, &facts, row.get("now")).await?;
+  if subscription.status != affine_core::access_control::EntitlementStatus::Active {
     return Err(RuntimeError::invalid_state("license_expired"));
   }
-  let quantity = row
-    .get::<Option<i32>, _>("quantity")
-    .filter(|quantity| *quantity > 0)
-    .ok_or_else(|| RuntimeError::invalid_state("invalid_license"))?;
   Ok(ActiveLicenseSubscription {
-    quantity,
+    quantity: subscription
+      .access
+      .quantity
+      .ok_or_else(|| RuntimeError::invalid_state("invalid_license"))?,
     recurring: required_column(&row, "recurring", "license recurring is missing")?,
-    period_end,
+    period_end: subscription.end,
   })
 }
 
 fn issue_license(
+  private_key: Option<&str>,
   license_id: &str,
   workspace_id: &str,
   seat_quantity: i32,
   subscription_end: Option<DateTime<Utc>>,
   now: DateTime<Utc>,
 ) -> RuntimeResult<Vec<u8>> {
-  let private_key = std::env::var("AFFINE_PRO_LICENSE_PRIVATE_KEY")
-    .map_err(|_| RuntimeError::invalid_state("license_private_key_missing"))?;
+  let private_key = private_key.ok_or_else(|| RuntimeError::invalid_state("license_private_key_missing"))?;
   LicenseIssuer::issue(
     LicenseIssuance {
       license_id,
@@ -320,7 +325,7 @@ fn issue_license(
       subscription_end,
       now,
     },
-    &private_key,
+    private_key,
   )
   .map_err(|_| RuntimeError::invalid_state("license_issue_failed"))
 }

@@ -1,4 +1,4 @@
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::{EmbeddingTarget, RuntimeError, RuntimeResult, WorkspaceEmbeddingState};
@@ -24,17 +24,15 @@ pub(super) async fn sync_workspace(
   .execute(&mut *transaction)
   .await
   .map_err(|error| RuntimeError::database("create embedding workspace state failed", error))?;
-  let current = sqlx::query(
-    "SELECT active_index_id, index_epoch, runtime_state FROM embedding_workspace_states WHERE workspace_id = $1 FOR \
-     UPDATE",
+  let current = sqlx::query_as::<_, WorkspaceEmbeddingState>(
+    "SELECT workspace_id, active_index_id, index_epoch, runtime_state, reason_code FROM embedding_workspace_states \
+     WHERE workspace_id=$1 FOR UPDATE",
   )
   .bind(workspace_id)
   .fetch_one(&mut *transaction)
   .await
   .map_err(|error| RuntimeError::database("lock embedding workspace state failed", error))?;
-  let old_index: Option<Uuid> = current
-    .try_get("active_index_id")
-    .map_err(|error| RuntimeError::database("decode embedding active index failed", error))?;
+  let old_index = current.active_index_id;
 
   let (active_index, runtime_state, reason_code) = if !enabled {
     (None, "disabled", Some("workspace_embedding_disabled"))
@@ -48,19 +46,30 @@ pub(super) async fn sync_workspace(
       VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 'pending')
       ON CONFLICT (workspace_id, fingerprint) DO UPDATE
       SET inactive_at = NULL, activated_at = now(), updated_at = now()
+      WHERE embedding_indexes.inactive_at IS NOT NULL
       RETURNING id
       "#,
     )
     .bind(Uuid::new_v4())
     .bind(workspace_id)
-    .bind(target.fingerprint)
+    .bind(&target.fingerprint)
     .bind(target.route_source)
     .bind(target.provider)
     .bind(target.model_id)
     .bind(target.endpoint_fingerprint)
-    .fetch_one(&mut *transaction)
+    .fetch_optional(&mut *transaction)
     .await
     .map_err(|error| RuntimeError::database("upsert embedding index failed", error))?;
+    let id = if let Some(id) = id {
+      id
+    } else {
+      sqlx::query_scalar("SELECT id FROM embedding_indexes WHERE workspace_id=$1 AND fingerprint=$2")
+        .bind(workspace_id)
+        .bind(&target.fingerprint)
+        .fetch_one(&mut *transaction)
+        .await
+        .map_err(|error| RuntimeError::database("load embedding index failed", error))?
+    };
     (Some(id), "active", None)
   } else {
     (None, "unavailable", Some("embedding_route_unavailable"))
@@ -75,13 +84,6 @@ pub(super) async fn sync_workspace(
         .map_err(|error| RuntimeError::database("deactivate embedding index failed", error))?;
     }
     if let Some(active_index) = active_index {
-      sqlx::query(
-        "UPDATE embedding_indexes SET inactive_at = NULL, activated_at = now(), updated_at = now() WHERE id = $1",
-      )
-      .bind(active_index)
-      .execute(&mut *transaction)
-      .await
-      .map_err(|error| RuntimeError::database("activate embedding index failed", error))?;
       sqlx::query(
         r#"
         INSERT INTO embedding_projections (source_id, index_id, status, priority)
@@ -99,25 +101,32 @@ pub(super) async fn sync_workspace(
     }
   }
 
-  let state = sqlx::query_as::<_, WorkspaceEmbeddingState>(
-    r#"
-    UPDATE embedding_workspace_states
-    SET active_index_id = $2,
-        index_epoch = index_epoch + CASE WHEN active_index_id IS DISTINCT FROM $2 THEN 1 ELSE 0 END,
-        runtime_state = $3,
-        reason_code = $4,
-        changed_at = now()
-    WHERE workspace_id = $1
-    RETURNING workspace_id, active_index_id, index_epoch, runtime_state, reason_code
-    "#,
-  )
-  .bind(workspace_id)
-  .bind(active_index)
-  .bind(runtime_state)
-  .bind(reason_code)
-  .fetch_one(&mut *transaction)
-  .await
-  .map_err(|error| RuntimeError::database("update embedding workspace state failed", error))?;
+  let state = if old_index == active_index
+    && current.runtime_state == runtime_state
+    && current.reason_code.as_deref() == reason_code
+  {
+    current
+  } else {
+    sqlx::query_as::<_, WorkspaceEmbeddingState>(
+      r#"
+      UPDATE embedding_workspace_states
+      SET active_index_id = $2,
+          index_epoch = index_epoch + CASE WHEN active_index_id IS DISTINCT FROM $2 THEN 1 ELSE 0 END,
+          runtime_state = $3,
+          reason_code = $4,
+          changed_at = now()
+      WHERE workspace_id = $1
+      RETURNING workspace_id, active_index_id, index_epoch, runtime_state, reason_code
+      "#,
+    )
+    .bind(workspace_id)
+    .bind(active_index)
+    .bind(runtime_state)
+    .bind(reason_code)
+    .fetch_one(&mut *transaction)
+    .await
+    .map_err(|error| RuntimeError::database("update embedding workspace state failed", error))?
+  };
   transaction
     .commit()
     .await
@@ -155,15 +164,54 @@ mod tests {
     let first = sync_workspace(&pool, &workspace_id, true, Some(target("a")))
       .await
       .unwrap();
+    let versions: (String, String) = sqlx::query_as(
+      "SELECT state.xmin::text, index.xmin::text FROM embedding_workspace_states state JOIN embedding_indexes index \
+       ON index.id=state.active_index_id WHERE state.workspace_id=$1",
+    )
+    .bind(&workspace_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
     let repeated = sync_workspace(&pool, &workspace_id, true, Some(target("a")))
       .await
       .unwrap();
     assert_eq!(first.active_index_id, repeated.active_index_id);
     assert_eq!(first.index_epoch, repeated.index_epoch);
-    let failed_probe = super::super::store::claim_index_probe_for_workspace(&pool, "probe-a", &workspace_id)
+    let repeated_versions: (String, String) = sqlx::query_as(
+      "SELECT state.xmin::text, index.xmin::text FROM embedding_workspace_states state JOIN embedding_indexes index \
+       ON index.id=state.active_index_id WHERE state.workspace_id=$1",
+    )
+    .bind(&workspace_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(versions, repeated_versions);
+    let cancelled_probe = super::super::claim_index_probe(&pool, "cancelled-probe")
       .await
       .unwrap()
       .unwrap();
+    super::super::release_index_probe(&pool, &cancelled_probe)
+      .await
+      .unwrap();
+    let failures: i32 = sqlx::query_scalar("SELECT failure_count FROM embedding_indexes WHERE id=$1")
+      .bind(cancelled_probe.id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(failures, 0);
+    let failed_probe = super::super::claim_index_probe(&pool, "probe-a")
+      .await
+      .unwrap()
+      .unwrap();
+    super::super::release_index_probe(&pool, &cancelled_probe)
+      .await
+      .unwrap();
+    assert!(
+      super::super::claim_index_probe(&pool, "duplicate-probe")
+        .await
+        .unwrap()
+        .is_none()
+    );
     super::super::store::fail_index_probe(&pool, &failed_probe, "provider_unavailable")
       .await
       .unwrap();
@@ -178,7 +226,7 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
-    let recovered_probe = super::super::store::claim_index_probe_for_workspace(&pool, "probe-b", &workspace_id)
+    let recovered_probe = super::super::claim_index_probe(&pool, "probe-b")
       .await
       .unwrap()
       .unwrap();

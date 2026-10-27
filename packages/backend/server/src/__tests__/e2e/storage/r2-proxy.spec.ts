@@ -1,9 +1,7 @@
-import { createHash } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import { mock } from 'node:test';
 
 import {
-  Config,
-  ConfigFactory,
   PROXY_MULTIPART_PATH,
   PROXY_UPLOAD_PATH,
   type R2StorageConfig,
@@ -37,8 +35,54 @@ class MockStorageRuntime {
     contentLength?: number;
   }[] = [];
 
+  uploadUrlConfig() {
+    const storage = currentBlobStorage;
+    if (storage.provider !== 'cloudflare-r2' && storage.provider !== 'aws-s3') {
+      return null;
+    }
+    const value = (storage.config as R2StorageConfig).usePresignedURL;
+    if (!value?.enabled) return null;
+    return {
+      proxyUpload: !!value.signKey,
+      urlPrefix: value.urlPrefix,
+    };
+  }
+
+  signUploadToken(
+    _scope: string,
+    path: string,
+    fields: (string | number)[],
+    expiresAt: number
+  ) {
+    const storage = currentBlobStorage;
+    const key = (storage.config as R2StorageConfig).usePresignedURL?.signKey;
+    if (!key) return null;
+    return createHmac('sha256', key)
+      .update(
+        JSON.stringify([
+          'affine-storage-upload',
+          1,
+          'PUT',
+          path,
+          ...fields,
+          expiresAt,
+        ])
+      )
+      .digest('base64url');
+  }
+
+  verifyUploadToken(
+    scope: string,
+    path: string,
+    fields: (string | number)[],
+    expiresAt: number,
+    token: string
+  ) {
+    return this.signUploadToken(scope, path, fields, expiresAt) === token;
+  }
+
   async providerCapabilities() {
-    const storage = app.get(Config).storages.blob.storage;
+    const storage = currentBlobStorage;
     if (storage.provider !== 'cloudflare-r2') {
       return {
         put: true,
@@ -187,17 +231,16 @@ const baseR2Storage: StorageProviderConfig = {
   },
 };
 
-let defaultBlobStorage: StorageProviderConfig;
+let currentBlobStorage: StorageProviderConfig;
 let runtime: MockStorageRuntime;
-
-e2e.before(() => {
-  defaultBlobStorage = structuredClone(app.get(Config).storages.blob.storage);
-});
 
 e2e.beforeEach(async () => {
   runtime = new MockStorageRuntime();
   const rt = app.get(StorageRuntimeProvider);
   for (const method of [
+    'uploadUrlConfig',
+    'signUploadToken',
+    'verifyUploadToken',
     'providerCapabilities',
     'presignPut',
     'createMultipartUpload',
@@ -215,13 +258,11 @@ e2e.beforeEach(async () => {
 });
 
 e2e.afterEach.always(async () => {
-  await setBlobStorage(defaultBlobStorage);
   mock.reset();
 });
 
 async function setBlobStorage(storage: StorageProviderConfig) {
-  const configFactory = app.get(ConfigFactory);
-  configFactory.override({ storages: { blob: { storage } } });
+  currentBlobStorage = storage;
 }
 
 async function useR2Storage(
