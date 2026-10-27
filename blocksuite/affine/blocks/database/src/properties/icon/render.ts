@@ -1,7 +1,7 @@
 import * as icons from '@blocksuite/icons/lit';
 import type { TemplateResult } from 'lit';
 
-import type { IconValue } from './define.js';
+import { type IconValue, safeIconColor } from './value.js';
 
 /** Same shape the callout block renders, so an icon looks the same anywhere. */
 export const renderIconValue = (
@@ -14,7 +14,7 @@ export const renderIconValue = (
       (icons as Record<string, (props: { style: string }) => TemplateResult>)[
         `${icon.name}Icon`
       ]?.({
-        style: `color:${icon.color ?? 'currentColor'}`,
+        style: `color:${safeIconColor(icon.color)}`,
       }) ?? null
     );
   }

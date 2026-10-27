@@ -36,15 +36,23 @@ export const openIconPicker = (
 
   const wrapper = document.createElement(WRAPPER_TAG) as Wrapper;
   let closed = false;
+  let listenTimer: ReturnType<typeof setTimeout> | undefined;
   const close = () => {
     if (closed) return;
     closed = true;
+    // Closed before the deferred listener went on: make sure it never does,
+    // or it stays on the document with nothing left to remove it.
+    clearTimeout(listenTimer);
     document.removeEventListener('click', onOutside, true);
     wrapper.remove();
     onClosed?.();
   };
   const onOutside = (e: MouseEvent) => {
-    if (!wrapper.contains(e.target as Node)) close();
+    const target = e.target as Node;
+    // A click on the anchor is the caller's to handle -- it toggles the picker
+    // closed. Closing here first would let that same click open a new one.
+    if (wrapper.contains(target) || anchor.contains(target)) return;
+    close();
   };
 
   wrapper.iconPickerComponent = service.iconPickerComponent;
@@ -69,6 +77,9 @@ export const openIconPicker = (
     borderRadius: '8px',
   });
   document.body.append(wrapper);
-  setTimeout(() => document.addEventListener('click', onOutside, true), 0);
+  listenTimer = setTimeout(() => {
+    listenTimer = undefined;
+    if (!closed) document.addEventListener('click', onOutside, true);
+  }, 0);
   return close;
 };
