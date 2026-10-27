@@ -27,6 +27,7 @@ import {
 import type { KanbanCard } from '../view-presets/kanban/pc/card.js';
 import { KanbanDragController } from '../view-presets/kanban/pc/controller/drag.js';
 import type { KanbanGroup } from '../view-presets/kanban/pc/group.js';
+import { KanbanViewUI } from '../view-presets/kanban/pc/kanban-view-ui-logic.js';
 
 type Column = {
   id: string;
@@ -745,6 +746,36 @@ describe('kanban', () => {
       expect(next?.columnId).toBe('checkbox');
       expect(next?.name).toBe('boolean');
       expect(next?.hideEmpty).toBe(true);
+    });
+  });
+
+  describe('scroll containment', () => {
+    it('sets inline-size containment so the board scrolls horizontally', () => {
+      if (!customElements.get('dv-kanban-view-ui')) {
+        customElements.define('dv-kanban-view-ui', KanbanViewUI);
+      }
+      const el = document.createElement('dv-kanban-view-ui') as KanbanViewUI;
+
+      const noopController = {
+        hostConnected: () => {},
+      };
+
+      el.logic = {
+        ui$: signal(undefined),
+        clipboardController: noopController,
+        dragController: noopController,
+        hotkeysController: noopController,
+        selectionController: noopController,
+      } as any;
+
+      document.body.append(el);
+      try {
+        expect(el.style.contain).toBe('inline-size');
+        expect(el.style.display).toBe('flex');
+        expect(el.style.flexDirection).toBe('column');
+      } finally {
+        el.remove();
+      }
     });
   });
 
