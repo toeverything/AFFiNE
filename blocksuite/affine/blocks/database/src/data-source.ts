@@ -29,13 +29,13 @@ import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 
 import { getIcon } from './block-icons.js';
 import { getRowIcon } from './properties/icon/read.js';
-import { resolveLinkedRows } from './properties/relation/resolve.js';
-import { computeRollup } from './properties/rollup/compute.js';
 import { renderIconValue } from './properties/icon/render.js';
 import {
   databaseBlockProperties,
   databasePropertyConverts,
 } from './properties/index.js';
+import { resolveLinkedRows } from './properties/relation/resolve.js';
+import { computeRollup } from './properties/rollup/compute.js';
 import {
   addProperty,
   copyCellsByProperty,

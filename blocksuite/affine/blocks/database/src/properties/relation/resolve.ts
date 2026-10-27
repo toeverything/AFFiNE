@@ -1,6 +1,7 @@
 import type { DatabaseBlockModel } from '@blocksuite/affine-model';
 import type { Store } from '@blocksuite/store';
 
+import { deleteColumn } from '../../utils/block-utils.js';
 import {
   getColumn,
   getDatabase,
@@ -57,6 +58,17 @@ export const resolveLinkedRows = (
     const source = getDatabase(store, data.sourceDatabaseId);
     const sourcePropertyId = data.sourcePropertyId;
     if (!source || !sourcePropertyId) return undefined;
+    // Only answer while the pairing still holds. If the owning relation was
+    // deleted or now points somewhere else, the ids it stores are not rows of
+    // this database, and listing them would show links that no longer exist.
+    const sourceColumn = getColumn(source, sourcePropertyId);
+    if (
+      sourceColumn?.type !== RELATION_TYPE ||
+      (sourceColumn.data as Partial<RelationPropertyData>).targetDatabaseId !==
+        db.id
+    ) {
+      return undefined;
+    }
     const rowIds = source.children
       .filter(row => {
         const stored = readStoredCell(source, row.id, sourcePropertyId);
@@ -89,6 +101,19 @@ export const findOrphanIds = (
   return ids.filter(id => !live.has(id));
 };
 
+const isReverseOf = (
+  column: { type: string; data: unknown },
+  source: DatabaseBlockModel,
+  sourcePropertyId: string
+) => {
+  if (column.type !== REVERSE_RELATION_TYPE) return false;
+  const data = column.data as Partial<ReverseRelationPropertyData>;
+  return (
+    data?.sourcePropertyId === sourcePropertyId &&
+    data.sourceDatabaseId === source.id
+  );
+};
+
 /**
  * Adds the matching reverse property on the target database, so linking two
  * databases gives both sides at once instead of leaving the other half to be
@@ -104,11 +129,8 @@ export const ensureReverseProperty = (
     data: ReverseRelationPropertyData
   ) => void
 ): void => {
-  const already = target.props.columns$.value.some(
-    column =>
-      column.type === REVERSE_RELATION_TYPE &&
-      (column.data as Partial<ReverseRelationPropertyData>)
-        ?.sourcePropertyId === sourcePropertyId
+  const already = target.props.columns$.value.some(column =>
+    isReverseOf(column, source, sourcePropertyId)
   );
   if (already) return;
   const name = source.props.title$.value.toString() || 'Related';
@@ -116,4 +138,19 @@ export const ensureReverseProperty = (
     sourceDatabaseId: source.id,
     sourcePropertyId,
   });
+};
+
+/**
+ * Removes the reverse property a relation left on a database it no longer
+ * points at. Without this, retargeting a relation leaves the old database
+ * with a column for a pairing that is gone.
+ */
+export const removeReverseProperty = (
+  source: DatabaseBlockModel,
+  sourcePropertyId: string,
+  target: DatabaseBlockModel
+): void => {
+  target.props.columns$.value
+    .filter(column => isReverseOf(column, source, sourcePropertyId))
+    .forEach(column => deleteColumn(target, column.id));
 };
