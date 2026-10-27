@@ -5,8 +5,10 @@ use super::{RuntimeError, RuntimeResult, types::EmbeddingHealth};
 
 pub(crate) const RUNTIME_MIGRATIONS: &str = include_str!("sql/runtime_migrations.sql");
 const EMBEDDING_MIGRATION: &str = include_str!("sql/embedding.sql");
+const EMBEDDING_V2_MIGRATION: &str = include_str!("sql/embedding_v2.sql");
 const SEARCH_PROJECTION_MIGRATION: &str = include_str!("sql/search_projection.sql");
 const SEARCH_PROJECTION_V2_MIGRATION: &str = include_str!("sql/search_projection_v2.sql");
+const SEARCH_PROJECTION_V3_MIGRATION: &str = include_str!("sql/search_projection_v3.sql");
 const EMBEDDING_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0046;
 const SEARCH_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0053;
 #[cfg(test)]
@@ -50,12 +52,25 @@ pub(crate) async fn embedding_schema_health(pool: &PgPool) -> RuntimeResult<Embe
       AND to_regclass('embedding_indexes') IS NOT NULL
       AND to_regclass('embedding_sources') IS NOT NULL
       AND to_regclass('embedding_projections') IS NOT NULL
-      AND to_regclass('embedding_chunks') IS NOT NULL",
+      AND to_regclass('embedding_chunks') IS NOT NULL
+      AND to_regclass('native_schema_migrations') IS NOT NULL",
   )
   .fetch_one(pool)
   .await
   .map_err(|error| RuntimeError::database("Embedding schema health check failed", error))?;
   if !schema_ready {
+    return Ok(EmbeddingHealth::disabled("schema_not_migrated", Some(version)));
+  }
+  let migrations_ready: bool = sqlx::query_scalar(
+    "SELECT count(*)=2 FROM native_schema_migrations WHERE component='embedding' AND ((version=1 AND checksum=$1) OR \
+     (version=2 AND checksum=$2))",
+  )
+  .bind(migration_checksum(&[EMBEDDING_MIGRATION]))
+  .bind(migration_checksum(&[EMBEDDING_V2_MIGRATION]))
+  .fetch_one(pool)
+  .await
+  .map_err(|error| RuntimeError::database("Embedding migration health check failed", error))?;
+  if !migrations_ready {
     return Ok(EmbeddingHealth::disabled("schema_not_migrated", Some(version)));
   }
 
@@ -64,7 +79,7 @@ pub(crate) async fn embedding_schema_health(pool: &PgPool) -> RuntimeResult<Embe
     state: "ready".to_string(),
     reason: None,
     pgvector_version: Some(version),
-    schema_version: Some(1),
+    schema_version: Some(2),
     worker_running: false,
   })
 }
@@ -77,6 +92,7 @@ pub(crate) async fn migrate_search_tables(pool: &PgPool) -> RuntimeResult<()> {
     &[
       (1, &[SEARCH_PROJECTION_MIGRATION]),
       (2, &[SEARCH_PROJECTION_V2_MIGRATION]),
+      (3, &[SEARCH_PROJECTION_V3_MIGRATION]),
     ],
   )
   .await?;
@@ -95,7 +111,7 @@ async fn migrate_embedding_tables_inner(pool: &PgPool) -> RuntimeResult<Embeddin
     pool,
     "embedding",
     EMBEDDING_ADVISORY_LOCK,
-    &[(1, &[EMBEDDING_MIGRATION])],
+    &[(1, &[EMBEDDING_MIGRATION]), (2, &[EMBEDDING_V2_MIGRATION])],
   )
   .await?;
 
@@ -104,7 +120,7 @@ async fn migrate_embedding_tables_inner(pool: &PgPool) -> RuntimeResult<Embeddin
     state: "ready".to_string(),
     reason: None,
     pgvector_version: Some(version),
-    schema_version: Some(1),
+    schema_version: Some(2),
     worker_running: false,
   })
 }
@@ -225,6 +241,10 @@ mod tests {
 
   #[test]
   fn embedding_schema_has_five_live_tables() {
+    assert_eq!(
+      migration_checksum(&[EMBEDDING_MIGRATION]),
+      "a1d7227c214420d4e53556378188343595df0a01796d40b736fb8bf22554744a"
+    );
     let live_tables = [
       "embedding_workspace_states",
       "embedding_indexes",
@@ -245,12 +265,203 @@ mod tests {
       return;
     };
     let _guard = EMBEDDING_TEST_LOCK.lock().await;
-    let pool = PgPool::connect(&database_url).await.unwrap();
-    let health = migrate_embedding_tables_inner(&pool).await.unwrap();
-    assert_eq!(health.schema_version, Some(1));
-    let tables: Vec<String> = sqlx::query_scalar(
-      "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'embedding_%' ORDER BY tablename",
+    let admin_pool = PgPool::connect(&database_url).await.unwrap();
+    let schema = format!("embedding_migration_{}", uuid::Uuid::new_v4().simple());
+    admin_pool
+      .execute(format!("CREATE SCHEMA {schema}").as_str())
+      .await
+      .unwrap();
+    let options = database_url
+      .parse::<sqlx::postgres::PgConnectOptions>()
+      .unwrap()
+      .options([("search_path", format!("{schema},public"))]);
+    let pool = PgPool::connect_with(options.clone()).await.unwrap();
+    migrate_component(
+      &pool,
+      "embedding",
+      EMBEDDING_ADVISORY_LOCK,
+      &[(1, &[EMBEDDING_MIGRATION])],
     )
+    .await
+    .unwrap();
+
+    let health = embedding_schema_health(&pool).await.unwrap();
+    assert!(!health.enabled);
+    assert_eq!(health.reason.as_deref(), Some("schema_not_migrated"));
+    assert_eq!(health.schema_version, None);
+
+    let index_id = uuid::Uuid::new_v4();
+    let source_id = uuid::Uuid::new_v4();
+    let generation_token = uuid::Uuid::new_v4();
+    sqlx::query(
+      "INSERT INTO \
+       embedding_indexes(id,workspace_id,fingerprint,route_source,provider,model_id,endpoint_fingerprint,\
+       contract_version,health_status) \
+       VALUES($1,'migration-workspace','fingerprint','managed','openai','model','endpoint',1,'ready')",
+    )
+    .bind(index_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO \
+       embedding_sources(id,workspace_id,source_kind,source_key,content_revision,descriptor_revision,recipe_revision,\
+       document_projection) VALUES($1,'migration-workspace','document','doc','content','descriptor','recipe','{}')",
+    )
+    .bind(source_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO embedding_projections(source_id,index_id,status,active_generation_token,next_attempt_at) \
+       VALUES($1,$2,'ready',$3,now() + interval '1 day')",
+    )
+    .bind(source_id)
+    .bind(index_id)
+    .bind(generation_token)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let mut projection_reader = pool.begin().await.unwrap();
+    sqlx::query("SELECT source_id FROM embedding_projections LIMIT 1")
+      .fetch_one(&mut *projection_reader)
+      .await
+      .unwrap();
+    let error = migrate_embedding_tables_inner(&pool).await.unwrap_err();
+    assert!(error.to_string().contains("lock timeout"), "{error}");
+    let versions: Vec<i32> =
+      sqlx::query_scalar("SELECT version FROM native_schema_migrations WHERE component='embedding' ORDER BY version")
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+    assert_eq!(versions, vec![1]);
+    let unchanged_schema: (bool, bool) = sqlx::query_as(
+      "SELECT pg_get_indexdef('embedding_projection_claim_idx'::regclass) NOT LIKE '%NULLS FIRST%', \
+       to_regprocedure(format('%I.enqueue_changed_embedding_source()', $1::text)) IS NULL",
+    )
+    .bind(&schema)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(unchanged_schema, (true, true));
+    let health = embedding_schema_health(&pool).await.unwrap();
+    assert!(!health.enabled);
+    assert_eq!(health.reason.as_deref(), Some("schema_not_migrated"));
+    assert_eq!(health.schema_version, None);
+    projection_reader.rollback().await.unwrap();
+
+    let mut writer = pool.begin().await.unwrap();
+    sqlx::query("UPDATE embedding_sources SET content_revision=content_revision || '-before-upgrade' WHERE id=$1")
+      .bind(source_id)
+      .execute(&mut *writer)
+      .await
+      .unwrap();
+    let migration_pool = sqlx::postgres::PgPoolOptions::new()
+      .max_connections(1)
+      .connect_with(options)
+      .await
+      .unwrap();
+    let migration_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+      .fetch_one(&migration_pool)
+      .await
+      .unwrap();
+    let migration = tokio::spawn(async move {
+      let health = migrate_embedding_tables_inner(&migration_pool).await;
+      migration_pool.close().await;
+      health
+    });
+    tokio::time::timeout(std::time::Duration::from_secs(2), async {
+      loop {
+        let waiting: bool = sqlx::query_scalar(
+          "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE pid=$1 AND relation='embedding_sources'::regclass AND \
+           mode='ShareRowExclusiveLock' AND NOT granted)",
+        )
+        .bind(migration_pid)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        if waiting {
+          break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+      }
+    })
+    .await
+    .expect("embedding v2 must wait for source writers before locking projections");
+    tokio::time::timeout(
+      std::time::Duration::from_secs(2),
+      sqlx::query("UPDATE embedding_projections SET priority=1 WHERE source_id=$1")
+        .bind(source_id)
+        .execute(&mut *writer),
+    )
+    .await
+    .expect("source writer must finish projection work while migration waits")
+    .unwrap();
+    writer.commit().await.unwrap();
+    let health = migration.await.unwrap().unwrap();
+    assert_eq!(health.schema_version, Some(2));
+    assert_eq!(embedding_schema_health(&pool).await.unwrap().schema_version, Some(2));
+    for version in [1, 2] {
+      sqlx::query(
+        "UPDATE native_schema_migrations SET checksum=repeat('0',64) WHERE component='embedding' AND version=$1",
+      )
+      .bind(version)
+      .execute(&pool)
+      .await
+      .unwrap();
+      let health = embedding_schema_health(&pool).await.unwrap();
+      assert!(!health.enabled);
+      assert_eq!(health.reason.as_deref(), Some("schema_not_migrated"));
+      assert_eq!(health.schema_version, None);
+      let sql = if version == 1 {
+        EMBEDDING_MIGRATION
+      } else {
+        EMBEDDING_V2_MIGRATION
+      };
+      sqlx::query("UPDATE native_schema_migrations SET checksum=$2 WHERE component='embedding' AND version=$1")
+        .bind(version)
+        .bind(migration_checksum(&[sql]))
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    assert_eq!(embedding_schema_health(&pool).await.unwrap().schema_version, Some(2));
+    let applied: Vec<(i32, String, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
+      "SELECT version,checksum,applied_at FROM native_schema_migrations WHERE component='embedding' ORDER BY version",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(applied.len(), 2);
+    for (row, (version, sql)) in applied
+      .iter()
+      .zip([(1, EMBEDDING_MIGRATION), (2, EMBEDDING_V2_MIGRATION)])
+    {
+      assert_eq!(row.0, version);
+      assert_eq!(row.1, migration_checksum(&[sql]));
+    }
+    migrate_embedding_tables_inner(&pool).await.unwrap();
+    migrate_component(
+      &pool,
+      "embedding",
+      EMBEDDING_ADVISORY_LOCK,
+      &[(1, &[EMBEDDING_MIGRATION])],
+    )
+    .await
+    .unwrap();
+    let repeated: Vec<(i32, String, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
+      "SELECT version,checksum,applied_at FROM native_schema_migrations WHERE component='embedding' ORDER BY version",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(applied, repeated);
+
+    let tables: Vec<String> = sqlx::query_scalar(
+      "SELECT tablename FROM pg_tables WHERE schemaname=$1 AND tablename LIKE 'embedding_%' ORDER BY tablename",
+    )
+    .bind(&schema)
     .fetch_all(&pool)
     .await
     .unwrap();
@@ -271,6 +482,80 @@ mod tests {
     .await
     .unwrap();
     assert_eq!(dimensions, 1024);
+    let claim_index: String = sqlx::query_scalar(
+      "SELECT indexdef FROM pg_indexes WHERE schemaname=$1 AND indexname='embedding_projection_claim_idx'",
+    )
+    .bind(&schema)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(claim_index.contains("next_attempt_at NULLS FIRST"));
+
+    sqlx::query("UPDATE embedding_sources SET content_revision=content_revision WHERE id=$1")
+      .bind(source_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let unchanged: (String, uuid::Uuid, bool) = sqlx::query_as(
+      "SELECT status,active_generation_token,next_attempt_at IS NOT NULL FROM embedding_projections WHERE source_id=$1",
+    )
+    .bind(source_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(unchanged, ("ready".to_string(), generation_token, true));
+    for field in ["content_revision", "descriptor_revision", "recipe_revision"] {
+      sqlx::query(
+        "UPDATE embedding_projections SET status='ready',next_attempt_at=now() + interval '1 day' WHERE source_id=$1",
+      )
+      .bind(source_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+      sqlx::query(&format!(
+        "UPDATE embedding_sources SET {field}={field} || '-changed' WHERE id=$1"
+      ))
+      .bind(source_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+      let requeued: (String, uuid::Uuid, bool) = sqlx::query_as(
+        "SELECT status,active_generation_token,next_attempt_at IS NULL FROM embedding_projections WHERE source_id=$1",
+      )
+      .bind(source_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+      assert_eq!(requeued, ("pending".to_string(), generation_token, true), "{field}");
+    }
+    for status in ["pending", "running", "retry_wait", "failed"] {
+      sqlx::query(
+        "UPDATE embedding_projections SET status=$2,next_attempt_at=now() + interval '1 day' WHERE source_id=$1",
+      )
+      .bind(source_id)
+      .bind(status)
+      .execute(&pool)
+      .await
+      .unwrap();
+      sqlx::query("UPDATE embedding_sources SET content_revision=content_revision || '-changed' WHERE id=$1")
+        .bind(source_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+      let unchanged: (String, bool) =
+        sqlx::query_as("SELECT status,next_attempt_at IS NOT NULL FROM embedding_projections WHERE source_id=$1")
+          .bind(source_id)
+          .fetch_one(&pool)
+          .await
+          .unwrap();
+      assert_eq!(unchanged, (status.to_string(), true));
+    }
+
+    pool.close().await;
+    admin_pool
+      .execute(format!("DROP SCHEMA {schema} CASCADE").as_str())
+      .await
+      .unwrap();
   }
 
   #[test]
@@ -325,7 +610,7 @@ mod tests {
     .fetch_all(&pool)
     .await
     .unwrap();
-    assert_eq!(versions, vec![1, 2]);
+    assert_eq!(versions, vec![1, 2, 3]);
   }
 
   #[tokio::test]
@@ -478,6 +763,90 @@ mod tests {
     .await
     .unwrap();
     assert_eq!(pending_scope, "workspace");
+
+    let mut blocker = pool.begin().await.unwrap();
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('search-projection-generation', 0))")
+      .execute(&mut *blocker)
+      .await
+      .unwrap();
+    for target_type in ["user", "instance", "workspace"] {
+      let mut writer = pool.begin().await.unwrap();
+      sqlx::query("SET LOCAL statement_timeout='200ms'")
+        .execute(&mut *writer)
+        .await
+        .unwrap();
+      let id = uuid::Uuid::new_v4().to_string();
+      let result = sqlx::query(
+        "INSERT INTO entitlements(id,target_type,target_id,source,plan,status) \
+         VALUES($1,$2,$3,'cloud_subscription','pro','active')",
+      )
+      .bind(&id)
+      .bind(target_type)
+      .bind(&workspace_id)
+      .execute(&mut *writer)
+      .await;
+      if target_type == "workspace" {
+        assert_eq!(
+          result.unwrap_err().as_database_error().unwrap().code().as_deref(),
+          Some("57014")
+        );
+      } else {
+        result.unwrap();
+        sqlx::query("UPDATE entitlements SET validated_at=now() WHERE id=$1")
+          .bind(&id)
+          .execute(&mut *writer)
+          .await
+          .unwrap();
+        sqlx::query("DELETE FROM entitlements WHERE id=$1")
+          .bind(&id)
+          .execute(&mut *writer)
+          .await
+          .unwrap();
+      }
+      writer.rollback().await.unwrap();
+    }
+    blocker.rollback().await.unwrap();
+
+    let id = uuid::Uuid::new_v4().to_string();
+    sqlx::query(
+      "INSERT INTO entitlements(id,target_type,target_id,source,plan,status) \
+       VALUES($1,'workspace',$2,'cloud_subscription','team','active')",
+    )
+    .bind(&id)
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    for target_type in ["user", "workspace"] {
+      sqlx::query(
+        "UPDATE search_projection.workspace_states SET pending_scope='none' WHERE generation_id=$1 AND workspace_id=$2",
+      )
+      .bind(generation_id)
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+      sqlx::query("UPDATE entitlements SET target_type=$2 WHERE id=$1")
+        .bind(&id)
+        .bind(target_type)
+        .execute(&pool)
+        .await
+        .unwrap();
+      let scope: String = sqlx::query_scalar(
+        "SELECT pending_scope FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2",
+      )
+      .bind(generation_id)
+      .bind(&workspace_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+      assert_eq!(scope, "permission");
+    }
+    sqlx::query("DELETE FROM entitlements WHERE id=$1")
+      .bind(&id)
+      .execute(&pool)
+      .await
+      .unwrap();
 
     sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
       .bind(generation_id)

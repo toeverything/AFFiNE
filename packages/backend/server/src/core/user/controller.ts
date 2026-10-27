@@ -16,8 +16,7 @@ export class UserAvatarController {
 
   @Get('/:id')
   async getAvatar(@Res() res: Response, @Param('id') id: string) {
-    const provider = this.storage.config.storage.provider;
-    if (!['assetpack', 'fs'].includes(provider)) {
+    if (!this.storage.isLocalStorage()) {
       throw new ActionForbidden(
         'Only available when avatar storage provider is fs or assetpack.'
       );

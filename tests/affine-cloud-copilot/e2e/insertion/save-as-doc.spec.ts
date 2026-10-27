@@ -34,8 +34,9 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     await page.getByText('New doc created').waitFor({ state: 'visible' });
 
     // Verify the ai block is created
-    const editorContent = await utils.editor.getEditorContent(page);
-    expect(editorContent).toBe(content);
+    await expect
+      .poll(() => utils.editor.getEditorContent(page), { timeout: 15_000 })
+      .toBe(content);
   });
 
   test('should save content as a doc in edgeless mode', async ({
@@ -69,7 +70,8 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     await utils.editor.isPageMode(page);
 
     // Verify the ai block is created
-    const editorContent = await utils.editor.getEditorContent(page);
-    expect(editorContent).toBe(content);
+    await expect
+      .poll(() => utils.editor.getEditorContent(page), { timeout: 15_000 })
+      .toBe(content);
   });
 });

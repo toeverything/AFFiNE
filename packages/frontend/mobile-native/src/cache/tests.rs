@@ -29,11 +29,12 @@ fn unique_id(prefix: &str) -> String {
 }
 
 fn build_blob(key: &str, data: Vec<u8>) -> NbBlob {
+  let size = data.len() as i64;
   NbBlob {
     key: key.to_string(),
-    data: data.clone(),
+    data: data.into(),
     mime: "application/octet-stream".to_string(),
-    size: data.len() as i64,
+    size,
     created_at: DateTime::<Utc>::from_timestamp_millis(0)
       .expect("valid timestamp")
       .naive_utc(),

@@ -103,15 +103,15 @@ export class SubscriptionService {
     this.syncServerFeature();
   }
 
-  @OnEvent('config.changed')
-  onConfigChanged(event: Events['config.changed']) {
+  @OnEvent('backendRuntime.configApplied')
+  onConfigApplied(event: Events['backendRuntime.configApplied']) {
     if ('payment' in event.updates) {
       this.syncServerFeature();
     }
   }
 
   private syncServerFeature() {
-    if (this.config.payment.enabled) {
+    if (this.runtime.paymentEnabled()) {
       this.server.enableFeature(ServerFeature.Payment);
     } else {
       this.server.disableFeature(ServerFeature.Payment);

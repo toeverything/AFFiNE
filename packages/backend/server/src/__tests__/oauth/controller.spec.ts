@@ -117,6 +117,22 @@ test('oauth endpoints retain validation and callback error shapes', async t => {
 
 test('configured oauth providers remain visible through the reader', async t => {
   const { app } = t.context;
-  t.deepEqual(app.get(OAuthService).providers.sort(), ['github', 'google']);
-  t.true(app.get(ServerService).features.includes(ServerFeature.OAuth));
+  const oauth = app.get(OAuthService);
+  const server = app.get(ServerService);
+  t.deepEqual(oauth.providers.sort(), ['github', 'google']);
+  t.true(server.features.includes(ServerFeature.OAuth));
+
+  await server.updateConfig(null, [
+    {
+      module: 'oauth',
+      key: 'providers.github',
+      value: { clientId: '', clientSecret: '' },
+    },
+  ]);
+  t.deepEqual(oauth.providers, ['google']);
+
+  await server.updateConfig(null, [
+    { module: 'oauth', key: 'providers.github', clear: true },
+  ]);
+  t.deepEqual(oauth.providers.sort(), ['github', 'google']);
 });

@@ -12,6 +12,7 @@ import { BackfillPermissionProjection1765500000000 } from '../migrations/1765500
 import { BackfillTranscriptStorageKeys1786805802350 } from '../migrations/1786805802350-backfill-transcript-storage-keys';
 import { ConvergeManagedProviderProfiles1786810000000 } from '../migrations/1786810000000-converge-managed-provider-profiles';
 import { MigrateLegacyContextBlobArtifacts1786820000000 } from '../migrations/1786820000000-migrate-legacy-context-blob-artifacts';
+import { DisableIncompleteManagedProfiles1790300000000 } from '../migrations/1790300000000-disable-incomplete-managed-profiles';
 
 interface Context {
   module: TestingModule;
@@ -208,7 +209,7 @@ test('managed provider migration preserves explicit profiles and converts legacy
     where: { id: 'copilot.providers.profiles' },
   });
   t.deepEqual(migrated.value, [
-    profiles[0],
+    { ...profiles[0], enabled: false },
     {
       ...profiles[1],
       models: ['lora/image-to-image', 'workflowutils/teed'],
@@ -308,6 +309,43 @@ test('managed provider migration preserves explicit profiles and converts legacy
       },
     ]
   );
+
+  const migratedDefaults = (
+    await t.context.db.appConfig.findUniqueOrThrow({
+      where: { id: 'copilot.providers.profiles' },
+    })
+  ).value;
+  if (!Array.isArray(migratedDefaults))
+    throw new Error('profiles must be an array');
+  await t.context.db.appConfig.update({
+    where: { id: 'copilot.providers.profiles' },
+    data: {
+      value: [
+        ...migratedDefaults,
+        {
+          id: 'already-migrated-incomplete',
+          type: 'openai',
+          models: ['gpt-4o-mini'],
+          config: {},
+        },
+      ],
+    },
+  });
+  await DisableIncompleteManagedProfiles1790300000000.up(t.context.db);
+  await DisableIncompleteManagedProfiles1790300000000.up(t.context.db);
+  const repaired = await t.context.db.appConfig.findUniqueOrThrow({
+    where: { id: 'copilot.providers.profiles' },
+  });
+  t.deepEqual(repaired.value, [
+    ...migratedDefaults,
+    {
+      id: 'already-migrated-incomplete',
+      type: 'openai',
+      models: ['gpt-4o-mini'],
+      config: {},
+      enabled: false,
+    },
+  ]);
 
   await t.context.db.appConfig.update({
     where: { id: 'copilot.providers.profiles' },
@@ -433,7 +471,7 @@ test('legacy context blob migration admits each blob once through the artifact r
   ]);
 });
 
-test('mixed-version cutover keeps legacy writes readable and rejects malformed canonical rows', async t => {
+test('mixed-version cutover preserves legacy pending uploads and rejects ownerless workspaces', async t => {
   const owner = await t.context.models.user.create({
     email: `${randomUUID()}@affine.pro`,
   });
@@ -503,14 +541,6 @@ test('mixed-version cutover keeps legacy writes readable and rejects malformed c
     WHERE workspace_id = ${workspace.id}
     ORDER BY key
   `;
-  const newReaderBlobs = await t.context.db.blob.findMany({
-    where: { workspaceId: workspace.id },
-    orderBy: { key: 'asc' },
-  });
-  const newReaderAttachments = await t.context.db.commentAttachment.findMany({
-    where: { workspaceId: workspace.id },
-    orderBy: { key: 'asc' },
-  });
   const typeRows = await t.context.db.$queryRaw<Array<{ name: string }>>`
     SELECT typname AS name
     FROM pg_type
@@ -666,13 +696,13 @@ test('mixed-version cutover keeps legacy writes readable and rejects malformed c
     },
   });
   const command = new CutoverCommand(t.context.db);
-  const malformedKey = `malformed-${randomUUID()}`;
-  const malformedAttachmentKey = `malformed-attachment-${randomUUID()}`;
+  const legacyPendingKey = `legacy-pending-${randomUUID()}`;
+  const legacyPendingAttachmentKey = `legacy-pending-attachment-${randomUUID()}`;
   await t.context.db.$executeRaw`
     INSERT INTO blobs (
       workspace_id, key, size, mime, status, reservation_expires_at
     ) VALUES (
-      ${workspace.id}, ${malformedKey}, 1, 'application/octet-stream',
+      ${workspace.id}, ${legacyPendingKey}, 1, 'application/octet-stream',
       'pending'::"BlobStatus", NULL
     )
   `;
@@ -681,38 +711,73 @@ test('mixed-version cutover keeps legacy writes readable and rejects malformed c
       workspace_id, doc_id, key, size, mime, name, status,
       reservation_expires_at
     ) VALUES (
-      ${workspace.id}, 'doc', ${malformedAttachmentKey}, 1, 'text/plain',
-      'malformed.txt', 'pending'::"BlobStatus", NULL
+      ${workspace.id}, 'doc', ${legacyPendingAttachmentKey}, 1, 'text/plain',
+      'legacy-pending.txt', 'pending'::"BlobStatus", NULL
     )
   `;
 
+  const cloudPassed = await command.execute('cloud');
   const passed = await command.execute('selfhosted');
-  const normalizedBlob = await t.context.db.blob.findFirstOrThrow({
-    where: { workspaceId: workspace.id, key: malformedKey },
-    select: { status: true, deletedAt: true },
+  const pendingBlob = await t.context.db.blob.findFirstOrThrow({
+    where: { workspaceId: workspace.id, key: legacyPendingKey },
+    select: { status: true, deletedAt: true, reservationExpiresAt: true },
   });
-  const normalizedAttachment =
+  const pendingAttachment =
     await t.context.db.commentAttachment.findFirstOrThrow({
       where: {
         workspaceId: workspace.id,
         docId: 'doc',
-        key: malformedAttachmentKey,
+        key: legacyPendingAttachmentKey,
+      },
+      select: { status: true, deletedAt: true, reservationExpiresAt: true },
+    });
+  t.deepEqual(pendingBlob, {
+    status: 'pending',
+    deletedAt: null,
+    reservationExpiresAt: null,
+  });
+  t.deepEqual(pendingAttachment, pendingBlob);
+
+  await t.context.db.$executeRaw`
+    UPDATE blobs SET status = 'completed'::"BlobStatus"
+    WHERE workspace_id = ${workspace.id} AND key = ${legacyPendingKey}
+  `;
+  await t.context.db.$executeRaw`
+    UPDATE comment_attachments SET status = 'completed'::"BlobStatus"
+    WHERE workspace_id = ${workspace.id} AND doc_id = 'doc'
+      AND key = ${legacyPendingAttachmentKey}
+  `;
+  const completedBlob = await t.context.db.blob.findFirstOrThrow({
+    where: { workspaceId: workspace.id, key: legacyPendingKey },
+    select: { status: true, deletedAt: true },
+  });
+  const completedAttachment =
+    await t.context.db.commentAttachment.findFirstOrThrow({
+      where: {
+        workspaceId: workspace.id,
+        docId: 'doc',
+        key: legacyPendingAttachmentKey,
       },
       select: { status: true, deletedAt: true },
     });
+  t.deepEqual(completedBlob, { status: 'completed', deletedAt: null });
+  t.deepEqual(completedAttachment, completedBlob);
+  const newReaderBlobs = await t.context.db.blob.findMany({
+    where: { workspaceId: workspace.id, key: { in: [oldBlobKey, newBlobKey] } },
+    orderBy: { key: 'asc' },
+  });
+  const newReaderAttachments = await t.context.db.commentAttachment.findMany({
+    where: {
+      workspaceId: workspace.id,
+      key: { in: [oldAttachmentKey, newAttachmentKey] },
+    },
+    orderBy: { key: 'asc' },
+  });
   const normalized = {
     entitlement: await t.context.db.entitlement.findUniqueOrThrow({
       where: { id: unsigned.id },
       select: { status: true },
     }),
-    blob: {
-      status: normalizedBlob.status,
-      deleted: normalizedBlob.deletedAt !== null,
-    },
-    attachment: {
-      status: normalizedAttachment.status,
-      deleted: normalizedAttachment.deletedAt !== null,
-    },
   };
 
   await t.context.db.workspace.create({
@@ -768,6 +833,7 @@ test('mixed-version cutover keeps legacy writes readable and rejects malformed c
       })),
     },
     cutover: {
+      cloudPassed,
       passed,
       normalized,
       failure: failure?.message,

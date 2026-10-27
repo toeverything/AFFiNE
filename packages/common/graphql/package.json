@@ -12,9 +12,9 @@
   },
   "sideEffects": false,
   "devDependencies": {
-    "@graphql-codegen/cli": "^6.2.1",
-    "@graphql-codegen/typescript": "^5.0.9",
-    "@graphql-codegen/typescript-operations": "^5.0.9",
+    "@graphql-codegen/cli": "^6.3.1",
+    "@graphql-codegen/typescript": "^5.0.10",
+    "@graphql-codegen/typescript-operations": "^5.1.0",
     "@types/lodash-es": "^4.17.12",
     "oxfmt": "0.63.0",
     "vitest": "^4.1.11"

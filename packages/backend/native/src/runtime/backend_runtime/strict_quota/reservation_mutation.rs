@@ -3,10 +3,11 @@ use sqlx::Connection;
 use uuid::Uuid;
 
 use super::{
-  super::{BackendRuntime, RuntimeError, RuntimeResult, permission::PermissionAuthorizer},
-  StorageOperation, finalize_reservation, invalidate_storage_usage,
-  promotion::{final_storage_locator, temporary_storage_locator},
-  storage::{lock_subject, storage_resource},
+  super::{BackendRuntime, RuntimeError, RuntimeResult},
+  PermissionAuthorizer, StorageOperation, final_storage_locator, finalize_reservation, invalidate_storage_usage,
+  lock_subject,
+  storage::storage_resource,
+  temporary_storage_locator,
 };
 use crate::runtime::types::RuntimeStorageReservationMutation;
 

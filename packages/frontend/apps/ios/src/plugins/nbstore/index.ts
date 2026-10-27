@@ -44,53 +44,18 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     });
     return new Date(timestamp);
   },
-  getDocSnapshot: async function (
+  getDoc: async function (
     id: string,
     docId: string
   ): Promise<DocRecord | null> {
-    const snapshot = await NbStore.getDocSnapshot({ id, docId });
-    return snapshot
+    const record = await NbStore.getDoc({ id, docId });
+    return record
       ? {
-          bin: base64ToUint8Array(snapshot.bin),
-          docId: snapshot.docId,
-          timestamp: new Date(snapshot.timestamp),
+          bin: base64ToUint8Array(record.bin),
+          docId: record.docId,
+          timestamp: new Date(record.timestamp),
         }
       : null;
-  },
-  setDocSnapshot: async function (
-    id: string,
-    snapshot: DocRecord
-  ): Promise<boolean> {
-    const { success } = await NbStore.setDocSnapshot({
-      id,
-      docId: snapshot.docId,
-      bin: await uint8ArrayToBase64(snapshot.bin),
-      timestamp: snapshot.timestamp.getTime(),
-    });
-    return success;
-  },
-  getDocUpdates: async function (
-    id: string,
-    docId: string
-  ): Promise<DocRecord[]> {
-    const { updates } = await NbStore.getDocUpdates({ id, docId });
-    return updates.map(update => ({
-      bin: base64ToUint8Array(update.bin),
-      docId: update.docId,
-      timestamp: new Date(update.timestamp),
-    }));
-  },
-  markUpdatesMerged: async function (
-    id: string,
-    docId: string,
-    updates: Date[]
-  ): Promise<number> {
-    const { count } = await NbStore.markUpdatesMerged({
-      id,
-      docId,
-      timestamps: updates.map(t => t.getTime()),
-    });
-    return count;
   },
   deleteDoc: async function (id: string, docId: string): Promise<void> {
     await NbStore.deleteDoc({

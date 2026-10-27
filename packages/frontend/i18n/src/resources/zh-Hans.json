@@ -2268,6 +2268,7 @@
   "com.affine.integration.mcp-server.capabilities.write": "创建和更新文档",
   "com.affine.audio.notes": "笔记",
   "com.affine.audio.transcribing": "转录",
+  "com.affine.audio.transcription-failed": "转录失败",
   "com.affine.audio.transcribe.non-owner.confirm.title": "无法检索他人的 AI 结果",
   "com.affine.audio.transcribe.non-owner.confirm.message": "请联系 <1>{{user}}</1> 提升 AI 权限或重新发送附件。",
   "com.affine.recording.new": "音频活动中",
