@@ -84,10 +84,6 @@ test('resolveDeepLinkRoute', () => {
     )
   ).toBe('/workspace/ws/doc?server=https%3A%2F%2Fnotes.example.com#blockId');
 
-  expect(
-    resolveDeepLinkRoute('affine-canary://affine.fail/workspace/ws/doc')
-  ).toBe('/workspace/ws/doc');
-
   expect(resolveDeepLinkRoute('affine://app.affine.pro/share/ws/doc')).toBe(
     '/share/ws/doc'
   );
@@ -97,6 +93,9 @@ test('resolveDeepLinkRoute', () => {
   ).toBeUndefined();
   expect(resolveDeepLinkRoute('affine://app.affine.pro/')).toBeUndefined();
   expect(resolveDeepLinkRoute('affine://share-inbox')).toBeUndefined();
+  expect(
+    resolveDeepLinkRoute('affine-canary://affine.fail/workspace/ws/doc')
+  ).toBeUndefined();
   expect(
     resolveDeepLinkRoute('affine://app.affine.pro/settings')
   ).toBeUndefined();
