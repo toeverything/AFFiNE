@@ -39,5 +39,7 @@ export const rollupPropertyModelConfig = rollupColumnType.modelConfig({
     fromString: () => ({ value: undefined }),
     toJson: ({ value }) => value,
     fromJson: ({ value }) => value,
+    // Nor can anything else: there is no stored value to write.
+    setValue: () => {},
   },
 });
