@@ -43,11 +43,23 @@ test.describe('Code Block Preview', () => {
     ).toBeVisible();
   });
 
-  test('enable mermaid preview', async ({ page }) => {
+  test('enable mermaid preview and update its theme', async ({ page }) => {
+    test.setTimeout(90_000);
     const code = page.locator('affine-code');
     const mermaidSvg = page.locator('mermaid-preview .mermaid-preview-svg svg');
+    const node = mermaidSvg.locator('g.node rect').first();
+    const text = mermaidSvg.locator('text').first();
+
+    const selectTheme = async (theme: 'light' | 'dark') => {
+      await page.getByTestId('settings-modal-trigger').click();
+      await page.getByTestId('appearance-panel-trigger').click();
+      await page.getByTestId(`${theme}-theme-trigger`).click();
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('Escape');
+    };
 
     await openHomePage(page);
+    await selectTheme('light');
     await createNewPage(page);
     await waitForEditorLoad(page);
     await gotoContentFromTitle(page);
@@ -60,6 +72,17 @@ test.describe('Code Block Preview', () => {
     });
     await page.getByText('Preview').click();
     await expect(mermaidSvg).toBeVisible();
+
+    const lightFill = await node.evaluate(
+      element => getComputedStyle(element).fill
+    );
+    await selectTheme('dark');
+    await expect
+      .poll(() => node.evaluate(element => getComputedStyle(element).fill))
+      .not.toBe(lightFill);
+    expect(
+      await node.evaluate(element => getComputedStyle(element).fill)
+    ).not.toBe(await text.evaluate(element => getComputedStyle(element).fill));
   });
 
   test('enable typst preview', async ({ page }) => {
