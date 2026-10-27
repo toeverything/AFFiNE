@@ -51,6 +51,7 @@ jobs:
         with:
           target: ${{ matrix.rustTarget }}
           package: '@affine/native'
+          cache-key: desktop-${{ matrix.runner }}
       - uses: actions/download-artifact@v4
         with:
           name: desktop-web
@@ -82,6 +83,12 @@ jobs:
           SKIP_WEB_BUILD: '1'
           HOIST_NODE_MODULES: '1'
           NODE_OPTIONS: --max-old-space-size=14384
+      - name: Verify packaged Linux native modules
+        if: ${{ matrix.platform == 'linux' }}
+        shell: bash
+        run: |
+          native_modules=(packages/frontend/apps/electron/out/"$BUILD_TYPE"/*-linux-${{ matrix.arch }}/resources/app.asar.unpacked/dist/*.node)
+          node -e 'for (const file of process.argv.slice(1)) { require(require("node:path").resolve(file)); console.log("Loaded", file); }' "${native_modules[@]}"
       - name: Archive packaged application
         shell: bash
         run:
