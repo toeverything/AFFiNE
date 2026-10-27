@@ -311,6 +311,11 @@ const makers = [
           '--share=network',
           // System notifications with libnotify
           '--talk-name=org.freedesktop.Notifications',
+          // Encrypted login sessions and API keys
+          '--talk-name=org.freedesktop.secrets',
+          '--talk-name=org.kde.kwalletd',
+          '--talk-name=org.kde.kwalletd5',
+          '--talk-name=org.kde.kwalletd6',
         ],
       },
     },
