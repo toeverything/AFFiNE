@@ -26,10 +26,10 @@ export const iconPropertyModelConfig = iconColumnType.modelConfig({
   rawValue: {
     schema: IconValueSchema,
     default: () => null,
-    // toString stays human-readable: it is what lands in a text clipboard,
-    // and a glyph has no character to put there.
-    toString: ({ value }) =>
-      value?.type === 'emoji' ? (value.unicode ?? '') : '',
+    // The database clipboard copies `toString` and pastes through
+    // `fromString`, so this has to round-trip too. An emoji is still copied
+    // as itself; a glyph has no character, so it goes out encoded.
+    toString: ({ value }) => encodeIconValue(value),
     fromString: ({ value }) => ({ value: decodeIconValue(value) }),
     toJson: ({ value }) => encodeIconValue(value),
     fromJson: ({ value }) => decodeIconValue(value),
