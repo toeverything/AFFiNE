@@ -96,6 +96,7 @@ test('resolveDeepLinkRoute', () => {
     resolveDeepLinkRoute('affine://authentication?method=oauth&payload=%7B%7D')
   ).toBeUndefined();
   expect(resolveDeepLinkRoute('affine://app.affine.pro/')).toBeUndefined();
+  expect(resolveDeepLinkRoute('affine://share-inbox')).toBeUndefined();
   expect(
     resolveDeepLinkRoute('affine://app.affine.pro/settings')
   ).toBeUndefined();
