@@ -8,7 +8,11 @@ import {
   resolveLinkedRows,
   REVERSE_RELATION_TYPE,
 } from '../relation/resolve.js';
-import { computeRollup, ROLLUP_TYPE } from '../rollup/compute.js';
+import {
+  computeRollup,
+  createRollupWalk,
+  ROLLUP_TYPE,
+} from '../rollup/compute.js';
 import type { RelationFilterPropertyData } from './define.js';
 
 const toNumber = (value: unknown): number | undefined => {
@@ -32,12 +36,13 @@ const readValue = (
   db: DatabaseBlockModel,
   rowId: string,
   propertyId: string,
-  depth: number
+  depth: number,
+  walk: ReturnType<typeof createRollupWalk>
 ): unknown => {
   const column = getColumn(db, propertyId);
   if (!column) return undefined;
   if (column.type === ROLLUP_TYPE) {
-    return computeRollup(store, db, rowId, propertyId, depth);
+    return computeRollup(store, db, rowId, propertyId, depth, walk);
   }
   if (column.type === REVERSE_RELATION_TYPE) {
     return resolveLinkedRows(store, db, rowId, propertyId)?.rowIds ?? [];
@@ -64,8 +69,18 @@ export const computeRelationFilter = (
   const { target, rowIds } = linked;
   if (!targetPropertyId) return rowIds;
 
+  // One walk for every row tested, so rows the rollups share are worked out
+  // once rather than once per row.
+  const walk = createRollupWalk();
   return rowIds.filter(id => {
-    const value = readValue(store, target, id, targetPropertyId, depth + 1);
+    const value = readValue(
+      store,
+      target,
+      id,
+      targetPropertyId,
+      depth + 1,
+      walk
+    );
     switch (condition) {
       case 'checked':
         return value === true || value === 1;

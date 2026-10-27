@@ -11,6 +11,10 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import { EditorHostKey } from '../../context/host-context.js';
 import {
+  findDatabaseContainingRow,
+  getDatabase,
+} from '../../utils/database-lookup.js';
+import {
   relationEmptyStyle,
   relationPickerHeaderStyle,
   relationPickerStyle,
@@ -21,10 +25,6 @@ import {
   renderRelationChip,
   toRelationRow,
 } from '../relation/chips.js';
-import {
-  findDatabaseContainingRow,
-  getDatabase,
-} from '../../utils/database-lookup.js';
 import {
   RELATION_TYPE,
   resolveLinkedRows,
