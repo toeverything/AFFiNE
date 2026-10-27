@@ -8,6 +8,7 @@ const EMBEDDING_MIGRATION: &str = include_str!("sql/embedding.sql");
 const EMBEDDING_V2_MIGRATION: &str = include_str!("sql/embedding_v2.sql");
 const SEARCH_PROJECTION_MIGRATION: &str = include_str!("sql/search_projection.sql");
 const SEARCH_PROJECTION_V2_MIGRATION: &str = include_str!("sql/search_projection_v2.sql");
+const SEARCH_PROJECTION_V3_MIGRATION: &str = include_str!("sql/search_projection_v3.sql");
 const EMBEDDING_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0046;
 const SEARCH_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0053;
 #[cfg(test)]
@@ -91,6 +92,7 @@ pub(crate) async fn migrate_search_tables(pool: &PgPool) -> RuntimeResult<()> {
     &[
       (1, &[SEARCH_PROJECTION_MIGRATION]),
       (2, &[SEARCH_PROJECTION_V2_MIGRATION]),
+      (3, &[SEARCH_PROJECTION_V3_MIGRATION]),
     ],
   )
   .await?;
@@ -608,7 +610,7 @@ mod tests {
     .fetch_all(&pool)
     .await
     .unwrap();
-    assert_eq!(versions, vec![1, 2]);
+    assert_eq!(versions, vec![1, 2, 3]);
   }
 
   #[tokio::test]
@@ -761,6 +763,90 @@ mod tests {
     .await
     .unwrap();
     assert_eq!(pending_scope, "workspace");
+
+    let mut blocker = pool.begin().await.unwrap();
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('search-projection-generation', 0))")
+      .execute(&mut *blocker)
+      .await
+      .unwrap();
+    for target_type in ["user", "instance", "workspace"] {
+      let mut writer = pool.begin().await.unwrap();
+      sqlx::query("SET LOCAL statement_timeout='200ms'")
+        .execute(&mut *writer)
+        .await
+        .unwrap();
+      let id = uuid::Uuid::new_v4().to_string();
+      let result = sqlx::query(
+        "INSERT INTO entitlements(id,target_type,target_id,source,plan,status) \
+         VALUES($1,$2,$3,'cloud_subscription','pro','active')",
+      )
+      .bind(&id)
+      .bind(target_type)
+      .bind(&workspace_id)
+      .execute(&mut *writer)
+      .await;
+      if target_type == "workspace" {
+        assert_eq!(
+          result.unwrap_err().as_database_error().unwrap().code().as_deref(),
+          Some("57014")
+        );
+      } else {
+        result.unwrap();
+        sqlx::query("UPDATE entitlements SET validated_at=now() WHERE id=$1")
+          .bind(&id)
+          .execute(&mut *writer)
+          .await
+          .unwrap();
+        sqlx::query("DELETE FROM entitlements WHERE id=$1")
+          .bind(&id)
+          .execute(&mut *writer)
+          .await
+          .unwrap();
+      }
+      writer.rollback().await.unwrap();
+    }
+    blocker.rollback().await.unwrap();
+
+    let id = uuid::Uuid::new_v4().to_string();
+    sqlx::query(
+      "INSERT INTO entitlements(id,target_type,target_id,source,plan,status) \
+       VALUES($1,'workspace',$2,'cloud_subscription','team','active')",
+    )
+    .bind(&id)
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    for target_type in ["user", "workspace"] {
+      sqlx::query(
+        "UPDATE search_projection.workspace_states SET pending_scope='none' WHERE generation_id=$1 AND workspace_id=$2",
+      )
+      .bind(generation_id)
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+      sqlx::query("UPDATE entitlements SET target_type=$2 WHERE id=$1")
+        .bind(&id)
+        .bind(target_type)
+        .execute(&pool)
+        .await
+        .unwrap();
+      let scope: String = sqlx::query_scalar(
+        "SELECT pending_scope FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2",
+      )
+      .bind(generation_id)
+      .bind(&workspace_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+      assert_eq!(scope, "permission");
+    }
+    sqlx::query("DELETE FROM entitlements WHERE id=$1")
+      .bind(&id)
+      .execute(&pool)
+      .await
+      .unwrap();
 
     sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
       .bind(generation_id)

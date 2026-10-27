@@ -1440,6 +1440,72 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
   .unwrap();
   assert_eq!(receipt_states, ("blocked".to_string(), "processing".to_string()));
 
+  let mut timeout_tx = pool.begin().await.unwrap();
+  sqlx::query("SET LOCAL statement_timeout='10ms'")
+    .execute(&mut *timeout_tx)
+    .await
+    .unwrap();
+  let timeout = sqlx::query("SELECT pg_sleep(0.1)")
+    .execute(&mut *timeout_tx)
+    .await
+    .unwrap_err();
+  timeout_tx.rollback().await.unwrap();
+  let timeout = crate::runtime::RuntimeError::database("upsert entitlement", timeout);
+  for (attempts, delay) in [(5, 80.0), (12, 300.0)] {
+    sqlx::query(
+      "UPDATE payment_events SET processing_status='processing',processing_attempts=$3 WHERE provider_namespace=$1 \
+       AND external_event_id=$2",
+    )
+    .bind(&namespace)
+    .bind(&healthy_event)
+    .bind(attempts)
+    .execute(&pool)
+    .await
+    .unwrap();
+    super::worker::fail_receipt(&webhook_runtime, &healthy_event, &namespace, &timeout).await;
+    let retry: (String, f64) = sqlx::query_as(
+      "SELECT processing_status,extract(epoch FROM next_attempt_at-updated_at)::float8 FROM payment_events WHERE \
+       provider_namespace=$1 AND external_event_id=$2",
+    )
+    .bind(&namespace)
+    .bind(&healthy_event)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(retry.0, "failed");
+    assert!((retry.1 - delay).abs() < 1.0);
+    assert!(super::worker::claim_receipt(&webhook_runtime).await.unwrap().is_none());
+    sqlx::query(
+      "UPDATE payment_events SET next_attempt_at=clock_timestamp() WHERE provider_namespace=$1 AND \
+       external_event_id=$2",
+    )
+    .bind(&namespace)
+    .bind(&healthy_event)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert!(super::worker::claim_receipt(&webhook_runtime).await.unwrap().is_some());
+  }
+
+  let permanent = sqlx::query("SELECT 1/0").execute(&pool).await.unwrap_err();
+  super::worker::fail_receipt(
+    &webhook_runtime,
+    &healthy_event,
+    &namespace,
+    &crate::runtime::RuntimeError::database("invalid payment query", permanent),
+  )
+  .await;
+  let blocked: (String, bool) = sqlx::query_as(
+    "SELECT processing_status,next_attempt_at IS NULL FROM payment_events WHERE provider_namespace=$1 AND \
+     external_event_id=$2",
+  )
+  .bind(&namespace)
+  .bind(&healthy_event)
+  .fetch_one(&pool)
+  .await
+  .unwrap();
+  assert_eq!(blocked, ("blocked".to_string(), true));
+
   let dispute_time = Utc::now();
   let financial_snapshot = |status, occurred_at| {
     let mut next = snapshot(
