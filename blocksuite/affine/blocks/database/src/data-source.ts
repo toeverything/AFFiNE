@@ -28,10 +28,20 @@ import { type BlockModel } from '@blocksuite/store';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 
 import { getIcon } from './block-icons.js';
+import { getRowIcon } from './properties/icon/read.js';
+import { renderIconValue } from './properties/icon/render.js';
 import {
   databaseBlockProperties,
   databasePropertyConverts,
 } from './properties/index.js';
+import {
+  RELATION_TYPE,
+  type RelationPropertyData,
+  removeReverseProperty,
+  resolveLinkedRows,
+} from './properties/relation/resolve.js';
+import { computeRelationFilter } from './properties/relation-filter/compute.js';
+import { computeRollup } from './properties/rollup/compute.js';
 import {
   addProperty,
   copyCellsByProperty,
@@ -46,6 +56,7 @@ import {
   updateProperty,
   updateView,
 } from './utils/block-utils.js';
+import { getDatabase } from './utils/database-lookup.js';
 import {
   databaseBlockViewConverts,
   databaseBlockViewMap,
@@ -82,6 +93,9 @@ export class DatabaseBlockDataSource extends DataSourceBase {
         return model ? model.props['meta:createdBy'] : null;
       },
     },
+    // What the title cell shows before the text. A row that has been given its
+    // own icon shows that; everything else falls back to the block's glyph, so
+    // a table nobody has decorated looks exactly as it did before.
     type: {
       valueSet: () => {},
       valueGet: (rowId: string) => {
@@ -89,7 +103,8 @@ export class DatabaseBlockDataSource extends DataSourceBase {
         if (!model) {
           return;
         }
-        return getIcon(model);
+        const own = renderIconValue(getRowIcon(this._model, rowId));
+        return own ?? getIcon(model);
       },
     },
     title: {
@@ -101,6 +116,31 @@ export class DatabaseBlockDataSource extends DataSourceBase {
         }
         return model.text;
       },
+    },
+    // Rollups and reverse relations are derived, never stored. Routing it through here
+    // rather than through the cell renderer means filters, sorts and the
+    // column footer see the same value the cell shows, and the signals read
+    // while resolving make `cellValueGet` re-run on their own.
+    rollup: {
+      valueSet: () => {},
+      valueGet: (rowId: string, propertyId: string) =>
+        computeRollup(this._model.store, this._model, rowId, propertyId),
+    },
+    'relation-filter': {
+      valueSet: () => {},
+      valueGet: (rowId: string, propertyId: string) =>
+        computeRelationFilter(
+          this._model.store,
+          this._model,
+          rowId,
+          propertyId
+        ),
+    },
+    'relation-reverse': {
+      valueSet: () => {},
+      valueGet: (rowId: string, propertyId: string) =>
+        resolveLinkedRows(this._model.store, this._model, rowId, propertyId)
+          ?.rowIds ?? [],
     },
   };
 
@@ -422,8 +462,18 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     this.doc.captureSync();
     const index = this._model.props.columns.findIndex(v => v.id === id);
     if (index < 0) return;
+    const column = this._model.props.columns[index];
 
     this.doc.transact(() => {
+      // A relation takes its other half with it, rather than leaving the
+      // target database a reverse column for a pairing that is gone.
+      if (column?.type === RELATION_TYPE) {
+        const target = getDatabase(
+          this._model.store,
+          (column.data as Partial<RelationPropertyData>).targetDatabaseId
+        );
+        if (target) removeReverseProperty(this._model, id, target);
+      }
       this._model.props.columns = this._model.props.columns.filter(
         (_, i) => i !== index
       );
