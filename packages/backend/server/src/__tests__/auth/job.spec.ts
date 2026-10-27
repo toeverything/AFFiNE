@@ -13,6 +13,7 @@ import { createTestingModule } from '../utils';
 let m: TestingModule;
 let db: PrismaClient;
 const runtime = {
+  nodeCryptoPrivateKey: Sinon.stub().returns(''),
   cleanupExpiredUserSessions: Sinon.stub(),
   executeAuthSessionCommandV1: Sinon.stub(),
 };

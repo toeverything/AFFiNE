@@ -314,7 +314,7 @@ export interface AppConfigValidateResult {
   key: Scalars['String']['output'];
   module: Scalars['String']['output'];
   valid: Scalars['Boolean']['output'];
-  value: Scalars['JSON']['output'];
+  value: Maybe<Scalars['JSON']['output']>;
 }
 
 export interface AudioSliceManifestItemInput {
@@ -2589,8 +2589,10 @@ export interface Query {
   adminWorkspaces: Array<AdminWorkspace>;
   /** Workspaces count for admin */
   adminWorkspacesCount: Scalars['Int']['output'];
-  /** get the whole app configuration */
+  /** get visible app configuration values */
   appConfig: Scalars['JSONObject']['output'];
+  /** get app configuration value sources and secret status */
+  appConfigMetadata: Scalars['JSONObject']['output'];
   authSigningKeys: Array<AuthSigningKeyType>;
   /** Get current user */
   currentUser: Maybe<UserType>;
@@ -3195,9 +3197,10 @@ export interface UnsupportedSubscriptionPlanDataType {
 }
 
 export interface UpdateAppConfigInput {
+  clear?: InputMaybe<Scalars['Boolean']['input']>;
   key: Scalars['String']['input'];
   module: Scalars['String']['input'];
-  value: Scalars['JSON']['input'];
+  value?: InputMaybe<Scalars['JSON']['input']>;
 }
 
 export interface UpdateChatSessionInput {
@@ -3727,6 +3730,11 @@ export interface WorkspaceTypeBlobUploadPartUrlArgs {
   uploadId: Scalars['String']['input'];
 }
 
+export interface WorkspaceTypeBlobsArgs {
+  after?: InputMaybe<Scalars['String']['input']>;
+  first?: Scalars['Int']['input'];
+}
+
 export interface WorkspaceTypeByokUsageArgs {
   from: Scalars['DateTime']['input'];
   to: Scalars['DateTime']['input'];
@@ -4180,7 +4188,11 @@ export type CreateChangePasswordUrlMutation = {
 
 export type AppConfigQueryVariables = Exact<{ [key: string]: never }>;
 
-export type AppConfigQuery = { __typename?: 'Query'; appConfig: any };
+export type AppConfigQuery = {
+  __typename?: 'Query';
+  appConfig: any;
+  appConfigMetadata: any;
+};
 
 export type CreateUserMutationVariables = Exact<{
   input: CreateUserInput;
@@ -4364,7 +4376,7 @@ export type ValidateConfigQuery = {
     __typename?: 'AppConfigValidateResult';
     module: string;
     key: string;
-    value: Record<string, string>;
+    value: Record<string, string> | null;
     valid: boolean;
     error: string | null;
   }>;
@@ -4383,6 +4395,8 @@ export type DeleteBlobMutation = {
 
 export type ListBlobsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  first: Scalars['Int']['input'];
+  after?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 export type ListBlobsQuery = {

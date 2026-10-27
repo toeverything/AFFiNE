@@ -256,27 +256,18 @@ test('delete at start of list block', async ({ page }) => {
 
 test('nested list blocks', async ({ page }, testInfo) => {
   await enterPlaygroundWithList(page);
-  const focusListItem = async (blockId: string) => {
-    await page
-      .locator(`[data-block-id="${blockId}"]`)
-      .locator('rich-text')
-      .first()
-      .click({
-        force: true,
-      });
-  };
 
-  await focusListItem('2');
+  await focusRichText(page, 0);
   await type(page, '123');
 
-  await focusListItem('3');
+  await focusRichText(page, 1);
   await pressTab(page);
   await type(page, '456');
 
-  await focusListItem('4');
+  await focusRichText(page, 2);
   await pressTab(page);
   await waitNextFrame(page, 200);
-  await focusListItem('4');
+  await focusRichText(page, 2);
   await pressTab(page);
   await waitNextFrame(page, 200);
   await type(page, '789');
@@ -287,7 +278,7 @@ test('nested list blocks', async ({ page }, testInfo) => {
     `${testInfo.title}_init.json`
   );
 
-  await focusListItem('3');
+  await focusRichText(page, 1);
   await pressShiftTab(page);
   await waitNextFrame(page, 200);
   await assertRichTexts(page, ['123', '456', '789']);

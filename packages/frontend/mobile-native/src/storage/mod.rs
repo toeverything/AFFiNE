@@ -7,16 +7,14 @@ mod peers;
 #[cfg(any(target_os = "android", target_os = "ios", test))]
 use std::sync::Arc;
 
-use affine_nbstore::{
-  Data, DocRecord as NbDocRecord, SetBlob as NbSetBlob, pool::SqliteDocStoragePool, storage::SqliteDocStorage,
-};
+use affine_nbstore::{Data, SetBlob as NbSetBlob, pool::SqliteDocStoragePool, storage::SqliteDocStorage};
 use chrono::{DateTime, NaiveDateTime, Utc};
 
 #[cfg(any(target_os = "android", target_os = "ios", test))]
 use crate::cache::{MobileBlobCache, is_mobile_binary_file_token, should_cache_payload_as_file};
 use crate::{
-  Blob, CrawlResult, DocClock, DocIndexedClock, DocRecord, DocUpdate, IndexAggregateResult, IndexSearchResult,
-  ListedBlob, Result, SetBlob, UniffiError,
+  Blob, CrawlResult, DocClock, DocIndexedClock, DocRecord, IndexAggregateResult, IndexSearchResult, ListedBlob, Result,
+  SetBlob, UniffiError,
   payload_codec::{decode_base64_data, encode_base64_data},
 };
 

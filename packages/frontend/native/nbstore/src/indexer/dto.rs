@@ -1,8 +1,9 @@
 use affine_doc_loader::{BlockInfo, CrawlResult};
+#[cfg(not(feature = "use-as-lib"))]
 use napi_derive::napi;
 use serde::{Deserialize, Serialize};
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Serialize)]
 pub struct NativeBlockInfo {
   pub block_id: String,
@@ -32,7 +33,7 @@ impl From<BlockInfo> for NativeBlockInfo {
   }
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Serialize)]
 pub struct NativeCrawlResult {
   pub blocks: Vec<NativeBlockInfo>,
@@ -50,7 +51,7 @@ impl From<CrawlResult> for NativeCrawlResult {
   }
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeIndexField {
@@ -58,7 +59,7 @@ pub struct NativeIndexField {
   pub values: Vec<String>,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeIndexDocument {
@@ -66,7 +67,7 @@ pub struct NativeIndexDocument {
   pub fields: Vec<NativeIndexField>,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeIndexQuery {
@@ -78,7 +79,7 @@ pub struct NativeIndexQuery {
   pub boost: Option<f64>,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeIndexSearchOptions {
@@ -88,28 +89,28 @@ pub struct NativeIndexSearchOptions {
   pub highlights: Vec<String>,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Serialize)]
 pub struct NativeIndexSpan {
   pub start: u32,
   pub end: u32,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Serialize)]
 pub struct NativeIndexHighlightValue {
   pub value_index: u32,
   pub spans: Vec<NativeIndexSpan>,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Serialize)]
 pub struct NativeIndexHighlight {
   pub field: String,
   pub values: Vec<NativeIndexHighlightValue>,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Serialize)]
 pub struct NativeIndexHit {
   pub id: String,
@@ -118,14 +119,14 @@ pub struct NativeIndexHit {
   pub highlights: Vec<NativeIndexHighlight>,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Serialize)]
 pub struct NativeIndexSearchResult {
   pub total: u32,
   pub hits: Vec<NativeIndexHit>,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Serialize)]
 pub struct NativeIndexBucket {
   pub key: String,
@@ -134,7 +135,7 @@ pub struct NativeIndexBucket {
   pub hits: Vec<NativeIndexHit>,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 #[derive(Debug, Serialize)]
 pub struct NativeIndexAggregateResult {
   pub total: u32,

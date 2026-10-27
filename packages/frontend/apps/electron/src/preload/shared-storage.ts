@@ -82,30 +82,33 @@ function createSharedStorageApi(
     }
   });
 
-  const initPromise = (async () => {
-    try {
-      memory.setAll(init);
-      const latest = await ipcRenderer.invoke(
-        AFFINE_API_CHANNEL_NAME,
-        event === 'onGlobalStateChanged'
-          ? 'sharedStorage:getAllGlobalState'
-          : 'sharedStorage:getAllGlobalCache'
-      );
-      if (latest && typeof latest === 'object') {
-        memory.setAll(latest);
-      }
-    } catch (err) {
-      console.error('Failed to load initial shared storage', err);
-    } finally {
-      loaded = true;
-      while (updateQueue.length) {
-        const updates = updateQueue.shift();
-        if (updates) {
-          applyUpdates(updates);
-        }
+  // Load initial state synchronously so consumers can read values during early
+  // bootstrap without awaiting `ready`. This prevents feature config races
+  // (e.g. folder sync remote options) on first app load.
+  try {
+    memory.setAll(init);
+    const latest = ipcRenderer.sendSync(
+      AFFINE_API_CHANNEL_NAME,
+      event === 'onGlobalStateChanged'
+        ? 'sharedStorage:getAllGlobalState'
+        : 'sharedStorage:getAllGlobalCache'
+    );
+    if (latest && typeof latest === 'object') {
+      memory.setAll(latest);
+    }
+  } catch (err) {
+    console.error('Failed to load initial shared storage (sync)', err);
+  } finally {
+    loaded = true;
+    while (updateQueue.length) {
+      const updates = updateQueue.shift();
+      if (updates) {
+        applyUpdates(updates);
       }
     }
-  })();
+  }
+
+  const initPromise = Promise.resolve();
 
   return {
     ready: initPromise,

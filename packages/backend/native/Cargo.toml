@@ -11,21 +11,21 @@ crate-type = ["cdylib"]
 [dependencies]
 aes-gcm = { workspace = true }
 affine_common = { workspace = true, features = ["hashcash", "napi"] }
-affine_core = "0.0.4"
+affine_core = "0.0.8"
 affine_doc_loader = { workspace = true }
 anyhow = { workspace = true }
-argon2 = "0.5"
+argon2 = "0.6"
 assetpack-core = "0.1.0"
 assetpack-transform-precomp2 = "0.1.0"
 base64 = { workspace = true }
 chrono = { workspace = true }
-crc32fast = "1.5.0"
+crc32fast = "1.5.2"
 doc_extractor = { workspace = true }
 file-format = { workspace = true }
 futures-util = { workspace = true }
 gcp_auth = { version = "0.12.7", features = ["webpki-roots"] }
 hex = { workspace = true }
-hickory-resolver = "0.26.1"
+hickory-resolver = "0.26.2"
 hkdf = { workspace = true }
 hmac = "0.13"
 homedir = { workspace = true }
@@ -43,6 +43,7 @@ memory-indexer = { workspace = true }
 mp4parse = { workspace = true }
 napi = { workspace = true, features = ["async", "serde-json"] }
 napi-derive = { workspace = true }
+ogg = { workspace = true }
 p256 = { workspace = true }
 rand = { workspace = true }
 redis = { workspace = true }

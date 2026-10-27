@@ -27,23 +27,24 @@ use operation::FrozenOperation;
 use operation::{
   PaymentSendDecision, freeze_operation, mark_operation_step_sent, record_operation_error, record_operation_step_result,
 };
+#[cfg(test)]
+use projection::entitlement_subject;
 use projection::reconcile_cloud_winners;
 use read::{
-  ReceiptDisposition, StoredSubscription, discover_payment_scopes, load_financial_restrictions,
-  lock_receipts_and_operation, lock_subscription_rows,
+  ReceiptDisposition, StoredSubscription, discover_payment_scopes, lock_receipts_and_operation, lock_subscription_rows,
+  stored_subscription_decision,
 };
 use reconcile::reconcile_one_source;
 use revenuecat_client::RevenueCatClient;
 pub(super) use runtime::PaymentRuntime;
 use stripe_client::StripeClient;
 use stripe_finance::{StripeDispute, StripeInvoice, StripeRefund};
-use stripe_snapshot::{push_stripe_dispute, push_stripe_refund, stripe_invoice_snapshot};
+use stripe_snapshot::{push_stripe_dispute, push_stripe_refund, stripe_invoice_fact, stripe_invoice_snapshot};
 use types::*;
 use worker::PaymentWorker;
 use write::{
-  adopt_legacy_entitlement, complete_receipts_and_operation, entitlement_subject, expire_missing_sources,
-  load_or_adopt_stripe_customer, upsert_customers, upsert_financial_facts, upsert_invoices, upsert_licenses,
-  upsert_subscription, upsert_trials,
+  complete_receipts_and_operation, expire_missing_sources, load_stripe_customer, upsert_customers,
+  upsert_financial_facts, upsert_invoices, upsert_licenses, upsert_subscription, upsert_trials,
 };
 
 #[cfg(test)]

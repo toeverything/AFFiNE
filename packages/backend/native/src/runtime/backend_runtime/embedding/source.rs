@@ -66,6 +66,18 @@ pub(super) async fn sync_documents(
     .await
     .map_err(|error| RuntimeError::database("upsert document embedding source failed", error))?;
     queue_active_projection(&mut transaction, workspace_id, source_id, priority).await?;
+    if let Some(reason) = &document.skip_reason {
+      sqlx::query(
+        "UPDATE embedding_projections SET \
+         status='failed',last_error_code=$2,last_error_detail=NULL,lease_owner=NULL,lease_until=NULL,\
+         lease_token=lease_token+1,updated_at=now() WHERE source_id=$1",
+      )
+      .bind(source_id)
+      .bind(reason)
+      .execute(&mut *transaction)
+      .await
+      .map_err(|error| RuntimeError::database("record skipped document projection failed", error))?;
+    }
   }
   if let Some(live_doc_ids) = live_doc_ids {
     reconcile_document_sources(&mut transaction, workspace_id, &live_doc_ids).await?;
@@ -243,7 +255,8 @@ async fn queue_active_projection(
     ON CONFLICT(source_id,index_id) DO UPDATE SET
       status=CASE WHEN embedding_projections.status='running' THEN 'running' ELSE 'pending' END,
       priority=excluded.priority,
-      updated_at=now()"#,
+      updated_at=now()
+    WHERE embedding_projections.status<>'ready'"#,
   )
   .bind(workspace_id)
   .bind(source_id)

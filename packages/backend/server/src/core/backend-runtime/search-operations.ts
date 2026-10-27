@@ -22,6 +22,10 @@ import {
 } from './search';
 
 export class BackendRuntimeSearchOperations extends BackendRuntimeCoreOperations {
+  searchEnabled() {
+    return this.runtime.searchEnabled();
+  }
+
   async embeddingHealth(): Promise<EmbeddingHealth> {
     return await this.measured('embeddingHealth', runtime =>
       runtime.embeddingHealth()

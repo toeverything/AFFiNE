@@ -531,18 +531,25 @@ fn record_failure(result: &mut RuntimeWorkspaceStorageReconcileResult, scope: &s
 
 #[cfg(test)]
 mod tests {
+  use std::{fs::write, sync::Arc};
+
   use super::*;
   use crate::runtime::object_storage::types::{ObjectKey, ObjectLocator, ObjectPutMetadata};
 
   fn runtime(root: &std::path::Path) -> StorageRuntime {
-    let runtime = StorageRuntime::new().unwrap();
     let root = serde_json::to_string(root).unwrap();
-    runtime
-      .configure(format!(
+    let config = super::super::StorageRuntimeConfig::from_config_json(&format!(
         r#"{{"storages":{{"blob.storage":{{"provider":"fs","bucket":"workspace-cleanup","config":{{"path":{root}}}}},"avatar.storage":{{"provider":"fs","bucket":"workspace-cleanup-avatar","config":{{"path":{root}}}}}}},"copilot":{{"storage":{{"provider":"fs","bucket":"workspace-cleanup-copilot","config":{{"path":{root}}}}}}}}}"#,
       ))
-      .unwrap();
-    runtime
+    .unwrap();
+    let config_dir = tempfile::tempdir().unwrap();
+    let config_path = config_dir.path().join("config.json");
+    write(&config_path, r#"{"deployment":{"type":"cloud"}}"#).unwrap();
+    StorageRuntime {
+      config: std::sync::RwLock::new(config),
+      server_config: Arc::new(crate::runtime::config::ServerConfig::open(&config_path, None).unwrap()),
+      pool: tokio::sync::Mutex::new(None),
+    }
   }
 
   async fn put(runtime: &StorageRuntime, key: String) {

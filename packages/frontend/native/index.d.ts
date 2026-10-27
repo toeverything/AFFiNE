@@ -66,6 +66,20 @@ export interface RecordingStartOptions {
 export declare function startRecording(opts: RecordingStartOptions): Promise<RecordingSessionMeta>
 
 export declare function stopRecording(id: string): Promise<RecordingArtifact>
+export declare class DiskSync {
+  constructor()
+  startSession(sessionId: string, options: DiskSessionOptions): Promise<void>
+  stopSession(sessionId: string): Promise<void>
+  applyLocalUpdate(sessionId: string, update: DiskDocUpdateInput): Promise<DiskDocClock>
+  acknowledgeSourceUpdate(sessionId: string, docId: string, snapshot: Uint8Array): Promise<void>
+  prepareSourceDoc(sessionId: string, docId: string, localSnapshot?: Uint8Array | undefined | null, localRoot?: Uint8Array | undefined | null): Promise<Uint8Array | null>
+  subscribeEvents(sessionId: string, callback: ((err: Error | null, arg: DiskSyncEvent) => void)): Promise<DiskSyncSubscriber>
+}
+
+export declare class DiskSyncSubscriber {
+  unsubscribe(): Promise<void>
+}
+
 export declare function cancelImportSession(sessionId: string): void
 
 export interface CreateImportBatchLimits {
@@ -85,6 +99,40 @@ export interface CreateImportSessionOptions {
 export interface CreateImportSessionSource {
   kind: string
   path: string
+}
+
+export interface DiskDocClock {
+  docId: string
+  timestamp: Date
+  reviewRequired?: string
+  exportError?: string
+}
+
+export interface DiskDocUpdateInput {
+  docId: string
+  bin: Uint8Array
+  editor?: string
+}
+
+export interface DiskSessionOptions {
+  workspaceId: string
+  syncFolder: string
+}
+
+export interface DiskSyncDocUpdateEvent {
+  docId: string
+  bin: Uint8Array
+  timestamp: Date
+  editor?: string
+}
+
+export interface DiskSyncEvent {
+  type: string
+  update?: DiskSyncDocUpdateEvent
+  docId?: string
+  timestamp?: Date
+  origin?: string
+  message?: string
 }
 
 export declare function disposeImportSession(sessionId: string): void
@@ -145,10 +193,9 @@ export declare class DocStoragePool {
   crawlDocData(universalId: string, docId: string): Promise<NativeCrawlResult>
   setSpaceId(universalId: string, spaceId: string): Promise<void>
   pushUpdate(universalId: string, docId: string, update: Uint8Array): Promise<Date>
-  getDocSnapshot(universalId: string, docId: string): Promise<DocRecord | null>
-  setDocSnapshot(universalId: string, snapshot: DocRecord): Promise<boolean>
-  getDocUpdates(universalId: string, docId: string): Promise<Array<DocUpdate>>
-  markUpdatesMerged(universalId: string, docId: string, updates: Array<Date>): Promise<number>
+  getDoc(universalId: string, docId: string): Promise<DocRecord | null>
+  readDocRecordsReadonly(path: string, docId: string): Promise<ReadonlyDocRecords>
+  readBlobReadonly(path: string, key: string): Promise<Blob | null>
   deleteDoc(universalId: string, docId: string): Promise<void>
   getDocClocks(universalId: string, after?: Date | undefined | null): Promise<Array<DocClock>>
   getDocClock(universalId: string, docId: string): Promise<DocClock | null>
@@ -301,6 +348,11 @@ export interface NativeIndexSearchResult {
 export interface NativeIndexSpan {
   start: number
   end: number
+}
+
+export interface ReadonlyDocRecords {
+  snapshot?: DocRecord
+  updates: Array<DocUpdate>
 }
 
 export interface SetBlob {

@@ -63,19 +63,39 @@ function createFolderTree() {
   class FolderNode {
     readonly children: string[] = [];
 
-    constructor(readonly id: string) {
+    constructor(
+      readonly id: string,
+      readonly type = 'folder',
+      readonly data = ''
+    ) {
       folders.set(id, this);
     }
 
-    createFolder() {
+    get type$() {
+      return { value: this.type };
+    }
+    get data$() {
+      return { value: this.data };
+    }
+    get name$() {
+      return { value: this.type === 'folder' ? this.data : '' };
+    }
+    get children$() {
+      return { value: this.children.map(id => folders.get(id)!) };
+    }
+
+    createFolder(name: string) {
       const id = `folder-${++nextId}`;
       this.children.push(id);
-      new FolderNode(id);
+      new FolderNode(id, 'folder', name);
       return id;
     }
 
     createLink(...[, docId]: ['doc', string]) {
       links.push({ parentId: this.id, docId });
+      const id = `link-${links.length}`;
+      this.children.push(id);
+      new FolderNode(id, 'doc', docId);
     }
 
     indexAt() {
@@ -224,7 +244,7 @@ describe('ImportCommitService', () => {
     const originalSetDocMeta = collection.meta.setDocMeta.bind(collection.meta);
     const setDocMeta = vi.spyOn(collection.meta, 'setDocMeta');
     setDocMeta.mockImplementation((id, meta) => {
-      if (id === 'doc-meta') {
+      if (id === 'doc-meta' && meta.favorite === true) {
         throw new Error('meta failed');
       }
       return originalSetDocMeta(id, meta);
@@ -238,7 +258,7 @@ describe('ImportCommitService', () => {
             id: 'doc-meta',
             sourcePath: 'docs/meta.md',
             snapshot: docSnapshot('doc-meta', 'Meta'),
-            meta: { title: 'Meta' },
+            meta: { title: 'Meta', favorite: true },
           },
           {
             id: 'doc-ok',
@@ -375,38 +395,105 @@ describe('ImportCommitService', () => {
     expect(collection.meta.getDocMeta('doc-2')?.tags).toEqual(['tag-1']);
   });
 
-  test('keeps folder and doc links idempotent across repeated commits', async () => {
-    const collection = new TestWorkspace({ id: 'test' });
-    collection.meta.initialize();
-    collection.createDoc('doc-1');
-    const folderTree = createFolderTree();
-    const service = createCommitService(collection, {
-      organizeService: folderTree.service,
-    });
-    const batch: ImportBatch = {
-      docs: [],
-      blobs: [],
-      folders: [
-        { path: 'Root', name: 'Root' },
-        {
-          path: 'Root/Doc',
-          name: 'Doc',
-          parentPath: 'Root',
-          pageId: 'doc-1',
-        },
-      ],
-      done: true,
-    };
+  test.each([false, true])(
+    'keeps docs and folders idempotent with a new service: %s',
+    async newService => {
+      const collection = new TestWorkspace({ id: 'test' });
+      collection.meta.initialize();
+      const createDoc = vi.spyOn(collection, 'createDoc');
+      const folderTree = createFolderTree();
+      const service = createCommitService(collection, {
+        organizeService: folderTree.service,
+      });
+      const batch: ImportBatch = {
+        docs: [{ id: 'doc-1', snapshot: docSnapshot('doc-1', 'Imported') }],
+        blobs: [],
+        folders: [
+          { path: 'Root', name: 'Root' },
+          {
+            path: 'Root/Doc',
+            name: 'Doc',
+            parentPath: 'Root',
+            pageId: 'doc-1',
+          },
+        ],
+        done: true,
+      };
 
-    const first = await service.commitBatch(batch);
-    const second = await service.commitBatch(batch);
+      const first = await service.commitBatch(batch);
+      expect(collection.getDoc('doc-1')?.yBlocks.size).toBe(3);
+      const previousSnapshot = structuredClone(batch.docs[0].snapshot);
+      previousSnapshot.blocks.children![0].children!.push({
+        ...docSnapshot('doc-1', 'Removed').blocks.children![0].children![0],
+        id: 'block:doc-1:removed',
+      });
+      await service.commitBatch({
+        ...batch,
+        docs: [{ id: 'doc-1', snapshot: previousSnapshot }],
+      });
+      expect(collection.getDoc('doc-1')?.yBlocks.size).toBe(4);
+      collection.meta.setDocMeta('doc-1', {
+        createDate: 123,
+        updatedDate: 456,
+      });
+      const secondService = newService
+        ? createCommitService(collection, {
+            organizeService: folderTree.service,
+          })
+        : service;
+      const second = await secondService.commitBatch({
+        ...batch,
+        docs: [{ id: 'doc-1', snapshot: docSnapshot('doc-1', 'Updated') }],
+      });
+      expect(
+        String(
+          collection
+            .getDoc('doc-1')
+            ?.yBlocks.get('block:doc-1:paragraph')
+            ?.get('prop:text')
+        )
+      ).toBe('Updated');
+      expect(collection.getDoc('doc-1')?.yBlocks.size).toBe(3);
+      expect(
+        collection.getDoc('doc-1')?.yBlocks.has('block:doc-1:removed')
+      ).toBe(false);
+      expect(first.docIds).toEqual(['doc-1']);
+      expect(second.docIds).toEqual(['doc-1']);
+      expect(second.warnings).toEqual([]);
+      expect(createDoc).toHaveBeenCalledTimes(1);
+      expect(
+        collection.meta.docMetas.filter(meta => meta.id === 'doc-1')
+      ).toHaveLength(1);
+      expect(collection.meta.getDocMeta('doc-1')).toMatchObject({
+        createDate: 123,
+        updatedDate: 456,
+      });
 
-    expect(first.rootFolderId).toBe('folder-1');
-    expect(second.rootFolderId).toBe('folder-1');
-    expect(folderTree.links).toEqual([
-      { parentId: 'folder-1', docId: 'doc-1' },
-    ]);
-  });
+      expect(first.rootFolderId).toBe('folder-1');
+      expect(second.rootFolderId).toBe('folder-1');
+      expect(folderTree.links).toEqual([
+        { parentId: 'folder-1', docId: 'doc-1' },
+      ]);
+      const invalidSnapshot = docSnapshot('doc-1', 'Invalid');
+      invalidSnapshot.blocks.children![0].flavour = 'unknown:flavour';
+      const rejected = await secondService.commitBatch({
+        docs: [{ id: 'doc-1', snapshot: invalidSnapshot }],
+        blobs: [],
+        done: true,
+      });
+      expect(rejected.docIds).toEqual([]);
+      expect(rejected.warnings).toMatchObject([{ code: 'skipped_doc' }]);
+      expect(collection.getDoc('doc-1')?.yBlocks.size).toBe(3);
+      expect(
+        String(
+          collection
+            .getDoc('doc-1')
+            ?.yBlocks.get('block:doc-1:paragraph')
+            ?.get('prop:text')
+        )
+      ).toBe('Updated');
+    }
+  );
 
   test('resolves partial batch folder links when parent arrives later', async () => {
     const collection = new TestWorkspace({ id: 'test' });

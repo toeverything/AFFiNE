@@ -978,13 +978,14 @@ test('copilot embedding realtime provider uses native health and progress', asyn
     health: async () => ({ enabled: true }),
     progress: async () => ({ total: 5, embedded: 3 }),
   };
-  const config = { copilot: { enabled: true } };
+  let enabled = true;
+  const runtime = { copilotEnabled: () => enabled };
 
   const provider = new CopilotEmbeddingRealtimeProvider(
     ac,
     embedding as never,
     registry,
-    config as never
+    runtime as never
   );
   provider.onModuleInit();
 
@@ -997,7 +998,7 @@ test('copilot embedding realtime provider uses native health and progress', asyn
       embedded: 3,
     }
   );
-  config.copilot.enabled = false;
+  enabled = false;
   await t.throwsAsync(
     registry
       .getRequest('workspace.embedding.progress.get')
@@ -1064,7 +1065,7 @@ test('copilot transcript realtime provider registers task live query handlers', 
     },
   } as unknown as CopilotTranscriptionRetryService;
   new CopilotTranscriptRealtimeProvider(access, transcript, retry, registry, {
-    copilot: { enabled: true },
+    copilotEnabled: () => true,
   } as never).onModuleInit();
 
   t.deepEqual(

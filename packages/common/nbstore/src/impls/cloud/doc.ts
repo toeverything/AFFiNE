@@ -3,9 +3,9 @@ import type { Socket } from 'socket.io-client';
 import {
   type DocClock,
   type DocClocks,
-  DocStorageBase,
   type DocStorageOptions,
   type DocUpdate,
+  SnapshotDocStorageBase,
 } from '../../storage';
 import { getIdConverter, type IdConverter } from '../../utils/id-converter';
 import type { SpaceType } from '../../utils/universal-id';
@@ -29,7 +29,7 @@ function createWebsocketError(error: { name: string; message: string }) {
   return err;
 }
 
-export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
+export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptions> {
   static readonly identifier = 'CloudDocStorage';
 
   get socket() {

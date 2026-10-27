@@ -108,10 +108,6 @@ describe('testing for client update', () => {
 
     for (const platform of platforms) {
       for (const arch of arches) {
-        if (platform === 'linux' && arch === 'arm64') {
-          // not support arm64 on linux yet
-          continue;
-        }
         const data = await fs.readFile(
           path.join(__dirname, 'fixtures', 'releases', '0.18.0', `latest.yml`),
           'utf-8'
@@ -122,6 +118,12 @@ describe('testing for client update', () => {
           '',
           new URL('https://affine.pro')
         ).files.map(file => file.url);
+
+        files.push(
+          ...files
+            .filter(file => file.includes('-linux-x64.'))
+            .map(file => file.replace('-linux-x64.', '-linux-arm64.'))
+        );
 
         it(`filter for platform [${platform}] arch [${arch}]`, () => {
           expect(

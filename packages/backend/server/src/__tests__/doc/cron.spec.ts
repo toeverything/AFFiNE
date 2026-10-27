@@ -13,6 +13,7 @@ interface Context {
   db: PrismaClient;
   cronJob: DocStorageCronJob;
   runtime: {
+    nodeCryptoPrivateKey: Sinon.SinonStub;
     cleanupExpiredSnapshotHistories: Sinon.SinonStub;
     executeAuthSessionCommandV1: Sinon.SinonStub;
   };
@@ -23,6 +24,7 @@ const test = ava as TestFn<Context>;
 // cleanup database before each test
 test.before(async t => {
   t.context.runtime = {
+    nodeCryptoPrivateKey: Sinon.stub().returns(''),
     cleanupExpiredSnapshotHistories: Sinon.stub(),
     executeAuthSessionCommandV1: Sinon.stub().resolves({}),
   };

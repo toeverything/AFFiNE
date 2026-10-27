@@ -33,9 +33,9 @@ export interface SaveDBFileResult {
   error?: ErrorMessage;
 }
 
-export interface SelectDBFileLocationResult {
+export interface SelectMarkdownSyncFolderResult {
   filePath?: string;
-  error?: ErrorMessage;
+  error?: string;
   canceled?: boolean;
 }
 
@@ -166,14 +166,14 @@ export async function saveDBFileAs(
   }
 }
 
-export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult> {
+export async function selectMarkdownSyncFolder(): Promise<SelectMarkdownSyncFolderResult> {
   try {
     const ret = await mainRPC.showOpenDialog({
       properties: ['openDirectory'],
-      title: 'Set Workspace Storage Location',
+      title: 'Select Markdown Sync Folder',
       buttonLabel: 'Select',
       defaultPath: await mainRPC.getPath('documents'),
-      message: "Select a location to store the workspace's database file",
+      message: 'Select a folder to sync with this workspace',
     });
     const dir = ret.filePaths?.[0];
     if (ret.canceled || !dir) {
@@ -183,9 +183,9 @@ export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult
     }
     return { filePath: dir };
   } catch (err) {
-    logger.error('selectDBFileLocation', err);
+    logger.error('selectMarkdownSyncFolder', err);
     return {
-      error: (err as any).message,
+      error: err instanceof Error ? err.message : String(err),
     };
   }
 }

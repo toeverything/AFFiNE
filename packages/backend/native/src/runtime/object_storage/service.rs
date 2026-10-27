@@ -1,18 +1,19 @@
 use std::collections::HashMap;
 
+use serde_json::Value;
 use sqlx::PgPool;
 use tokio::task::JoinSet;
 
 use super::{
   StorageBackendConfig, assetpack,
-  backend::{backends_from_config_files, backends_from_config_json, backends_from_config_source, backends_from_db},
+  backend::{backends_from_config_value, backends_from_db},
   fs::{delete_many_fs, fs_delete, fs_get, fs_get_range, fs_head, fs_list_page, fs_put},
   types::{
     MultipartUploadInitResult, MultipartUploadPart, ObjectDeleteOutcome, ObjectGetResult, ObjectKey, ObjectListPage,
     ObjectLocator, ObjectMetadata, ObjectPrefix, ObjectPutMetadata, PresignedObjectRequest, StorageScope,
   },
 };
-use crate::runtime::{ConfigSource, RuntimeError, RuntimeResult};
+use crate::runtime::{RuntimeError, RuntimeResult};
 
 const DELETE_MANY_CHUNK_SIZE: usize = 500;
 const DELETE_MANY_CONCURRENCY: usize = 3;
@@ -23,21 +24,16 @@ pub(crate) struct ObjectStorageService {
 }
 
 impl ObjectStorageService {
-  pub(crate) fn from_config_files() -> RuntimeResult<Self> {
-    Ok(Self {
-      backends: backends_from_config_files()?,
-    })
-  }
-
-  pub(crate) fn from_config_source(source: &ConfigSource) -> RuntimeResult<Self> {
-    Ok(Self {
-      backends: backends_from_config_source(source)?,
-    })
-  }
-
+  #[cfg(test)]
   pub(in crate::runtime) fn from_config_json(config_json: &str) -> RuntimeResult<Self> {
     Ok(Self {
-      backends: backends_from_config_json(config_json)?,
+      backends: super::backend::backends_from_config_json(config_json)?,
+    })
+  }
+
+  pub(crate) fn from_config_value(value: &Value) -> RuntimeResult<Self> {
+    Ok(Self {
+      backends: backends_from_config_value(value)?,
     })
   }
 

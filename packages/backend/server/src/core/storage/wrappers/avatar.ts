@@ -16,6 +16,10 @@ export class AvatarStorage {
     private readonly rt: StorageRuntimeProvider
   ) {}
 
+  isLocalStorage() {
+    return this.rt.isLocalStorage('avatar');
+  }
+
   async put(key: string, blob: BlobInputType, metadata?: PutObjectMetadata) {
     await this.rt.putObject('avatar', key, await toBuffer(blob), metadata);
     let link = this.config.publicPath + key;
