@@ -17,10 +17,10 @@ import { html } from 'lit/static-html.js';
 import { EditorHostKey } from '../../context/host-context.js';
 import type { DatabaseBlockComponent } from '../../database-block.js';
 import { addProperty } from '../../utils/block-utils.js';
+import { findDatabaseContainingRow } from '../../utils/database-lookup.js';
 import { getSingleDocIdFromText } from '../../utils/title-doc.js';
 import { openIconPicker } from '../icon/open-picker.js';
 import { analyzeTextForUrlPaste, insertUrlTextSegments } from '../paste-url.js';
-import { findDatabaseContainingRow } from '../../utils/database-lookup.js';
 import {
   headerAreaIconStyle,
   titleCellStyle,
@@ -284,15 +284,25 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
     if (!icon) return;
     return icon;
   });
+  private closeIconPicker?: () => void;
+
   /**
    * Gives this row an icon without a column for it: the icon property is
    * created on first use and hidden, so the emoji lives in the title cell the
    * way a page icon does rather than in a column of its own.
+   *
+   * Bound to `pointerdown` so the press never reaches the title's own editor
+   * underneath. The `click` that ends the same press lands on the icon, which
+   * the picker treats as its anchor and leaves alone.
    */
   private readonly pickIcon = (event: MouseEvent) => {
     event.stopPropagation();
     event.preventDefault();
     if (this.readonly) return;
+    if (this.closeIconPicker) {
+      this.closeIconPicker();
+      return;
+    }
     const std = this.view.serviceGet(EditorHostKey)?.std;
     const store = std?.store;
     if (!store) return;
@@ -310,9 +320,19 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
     }
     const cell = this.view.cellGetOrCreate(this.cell.rowId, propertyId);
 
-    openIconPicker(std, event.currentTarget as HTMLElement, icon =>
-      cell.valueSet(icon ?? null)
+    const close = openIconPicker(
+      std,
+      event.currentTarget as HTMLElement,
+      icon => cell.valueSet(icon ?? null),
+      () => {
+        this.closeIconPicker = undefined;
+      }
     );
+    if (!close) return;
+    this.closeIconPicker = close;
+    // Close it with the cell, so the wrapper and its document listener do not
+    // outlive the row they belong to.
+    this.disposables.add(close);
   };
 
   renderIcon() {

@@ -1,7 +1,7 @@
 import type { DatabaseBlockModel } from '@blocksuite/affine-model';
 
 import { getCell } from '../../utils/block-utils.js';
-import type { IconValue } from './define.js';
+import { type IconValue, toIconValue } from './value.js';
 
 /**
  * The property type string. Kept beside the reader rather than imported from
@@ -17,9 +17,11 @@ export const findIconProperty = (db: DatabaseBlockModel) =>
  * A row's own icon, or null when the table has no icon column or this row has
  * not been given one. Callers fall back to the block's glyph.
  */
-export const getRowIcon = (db: DatabaseBlockModel, rowId: string): IconValue => {
+export const getRowIcon = (
+  db: DatabaseBlockModel,
+  rowId: string
+): IconValue => {
   const iconColumn = findIconProperty(db);
   if (!iconColumn) return null;
-  const value = getCell(db, rowId, iconColumn.id)?.value;
-  return value && typeof value === 'object' ? (value as IconValue) : null;
+  return toIconValue(getCell(db, rowId, iconColumn.id)?.value);
 };

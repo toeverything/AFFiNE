@@ -23,17 +23,10 @@ export class IconCell extends BaseCellRenderer<IconValue, string> {
     return this.view.serviceGet(EditorHostKey)?.std;
   }
 
-  private readonly openPicker = (event: MouseEvent) => {
-    event.stopPropagation();
-    if (this.readonly) return;
-    if (this.closePicker) {
-      this.closePicker();
-      this.closePicker = undefined;
-      return;
-    }
+  private showPicker(anchor: HTMLElement) {
     this.closePicker = openIconPicker(
       this.std,
-      (event.currentTarget as HTMLElement) ?? this,
+      anchor,
       icon => {
         this.valueSetImmediate(icon ? (icon as unknown as IconValue) : null);
         this.selectCurrentCell(false);
@@ -42,7 +35,27 @@ export class IconCell extends BaseCellRenderer<IconValue, string> {
         this.closePicker = undefined;
       }
     );
+  }
+
+  private readonly openPicker = (event: MouseEvent) => {
+    event.stopPropagation();
+    if (this.readonly) return;
+    if (this.closePicker) {
+      this.closePicker();
+      this.closePicker = undefined;
+      return;
+    }
+    this.showPicker((event.currentTarget as HTMLElement) ?? this);
   };
+
+  /**
+   * The keyboard route: Enter on a selected cell puts it in editing mode, and
+   * that opens the picker, the same way a select cell opens its tag menu.
+   */
+  override afterEnterEditingMode() {
+    if (this.readonly || this.closePicker) return;
+    this.showPicker(this.querySelector<HTMLElement>('span') ?? this);
+  }
 
   override beforeExitEditingMode() {
     this.closePicker?.();
@@ -64,6 +77,8 @@ export class IconCell extends BaseCellRenderer<IconValue, string> {
     const glyph = renderIconValue(this.value$.value);
     return html`<span
       class="${glyph ? iconGlyphStyle : iconEmptyStyle}"
+      role="button"
+      aria-label="${glyph ? 'Change icon' : 'Add icon'}"
       @click="${this.openPicker}"
       >${glyph ?? '+'}</span
     >`;
