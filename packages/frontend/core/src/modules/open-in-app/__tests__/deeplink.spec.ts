@@ -4,6 +4,7 @@ import {
   buildAuthenticationDeepLink,
   buildOpenAppUrlRoute,
   normalizeOpenAppSignInNextParam,
+  resolveDeepLinkRoute,
 } from '../utils';
 
 test('buildAuthenticationDeepLink', () => {
@@ -68,4 +69,42 @@ test('normalizeOpenAppSignInNextParam', () => {
       'https://app.affine.local'
     )
   ).toBeUndefined();
+});
+
+test('resolveDeepLinkRoute', () => {
+  expect(
+    resolveDeepLinkRoute(
+      'affine://app.affine.pro/workspace/ws/doc?new-tab=1&mode=edgeless#'
+    )
+  ).toBe('/workspace/ws/doc?mode=edgeless');
+
+  expect(
+    resolveDeepLinkRoute(
+      'affine://notes.example.com/workspace/ws/doc?new-tab=1&server=https%3A%2F%2Fnotes.example.com#blockId'
+    )
+  ).toBe('/workspace/ws/doc?server=https%3A%2F%2Fnotes.example.com#blockId');
+
+  expect(
+    resolveDeepLinkRoute('affine-canary://affine.fail/workspace/ws/doc')
+  ).toBe('/workspace/ws/doc');
+
+  expect(resolveDeepLinkRoute('affine://app.affine.pro/share/ws/doc')).toBe(
+    '/share/ws/doc'
+  );
+
+  expect(
+    resolveDeepLinkRoute('affine://authentication?method=oauth&payload=%7B%7D')
+  ).toBeUndefined();
+  expect(resolveDeepLinkRoute('affine://app.affine.pro/')).toBeUndefined();
+  expect(
+    resolveDeepLinkRoute('affine://app.affine.pro/settings')
+  ).toBeUndefined();
+  expect(
+    resolveDeepLinkRoute('affine://app.affine.pro/workspaces')
+  ).toBeUndefined();
+  expect(
+    resolveDeepLinkRoute('https://app.affine.pro/workspace/ws/doc')
+  ).toBeUndefined();
+  expect(resolveDeepLinkRoute('affine://[invalid/workspace')).toBeUndefined();
+  expect(resolveDeepLinkRoute('not a url')).toBeUndefined();
 });
