@@ -109,7 +109,7 @@
     "tldts": "^7.0.19",
     "winston": "^3.17.0",
     "yjs": "^13.6.27",
-    "zod": "^3.25.76",
+    "zod": "^4.0.0",
     "zod-to-json-schema": "^3.20.0"
   },
   "devDependencies": {

@@ -18,7 +18,7 @@
     "fractional-indexing": "^3.2.0",
     "lodash-es": "^4.17.23",
     "yjs": "^13.6.27",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   },
   "exports": {
     ".": "./src/index.ts"

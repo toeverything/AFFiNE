@@ -17,7 +17,7 @@
     "@blocksuite/data-view": "workspace:*",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   },
   "exports": {
     ".": "./src/index.ts",
