@@ -72,3 +72,13 @@ test('edge cases', () => {
     expect(d < b).toBeTruthy();
   }
 });
+
+test('repeatedly inserting right after the first key', () => {
+  for (let i = 0; i < 100; i++) {
+    const keys = [generateFractionalIndexingKeyBetween(null, null)];
+    keys.unshift(gen(null, keys[0]));
+    for (let j = 0; j < 50; j++) {
+      keys.splice(1, 0, gen(keys[0], keys[1]));
+    }
+  }
+});
