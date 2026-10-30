@@ -183,6 +183,25 @@ describe('suggestJournalDate', () => {
     });
   });
 
+  test('month wins over a loose weekday match', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 16, 12, 0, 0));
+
+    expect(suggestJournalDate('no')).toEqual({
+      dateString: '2026-11-16',
+    });
+  });
+
+  test('a tie keeps the weekday', () => {
+    expect(suggestJournalDate('n')).toEqual({
+      dateString: dayjs()
+        .add(1, 'week')
+        .startOf('week')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Next Sunday',
+    });
+  });
+
   test.each([
     {
       now: new Date(2026, 8, 16, 12, 0, 0),

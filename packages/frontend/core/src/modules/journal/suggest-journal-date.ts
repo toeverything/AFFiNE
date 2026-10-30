@@ -125,11 +125,8 @@ export function suggestJournalDate(
     }
   }
 
-  if (bestMatch) {
-    return bestMatch;
-  }
-
-  // if query is a string that starts with alphabet letters and/or numbers
+  // month names can beat a loose weekday match: "no" is closer to "november"
+  // than to the n...o inside "next monday"
   const regex = new RegExp(`^([a-z]+)(\\d*)$`, 'i');
   const matched = query.match(regex);
 
@@ -138,20 +135,24 @@ export function suggestJournalDate(
     const now = dayjs();
 
     for (const [monthIndex, month] of monthNames.entries()) {
-      const monthMatched = fuzzyMatch(month, letters, true);
-      if (monthMatched) {
-        const targetMonth = now.month(monthIndex);
-        const daysInMonth = targetMonth.daysInMonth();
-        const fallbackDay = Math.min(now.date(), daysInMonth);
-        const parsedDay = numbers ? parseInt(numbers) : fallbackDay;
-        const day =
-          parsedDay < 1 || parsedDay > daysInMonth ? fallbackDay : parsedDay;
-        return {
-          dateString: targetMonth.date(day).format(JOURNAL_DATE_FORMAT),
-        };
+      const score = matchScore(month, letters);
+      if (score <= bestScore) {
+        continue;
       }
+
+      const targetMonth = now.month(monthIndex);
+      const daysInMonth = targetMonth.daysInMonth();
+      const fallbackDay = Math.min(now.date(), daysInMonth);
+      const parsedDay = numbers ? parseInt(numbers) : fallbackDay;
+      const day =
+        parsedDay < 1 || parsedDay > daysInMonth ? fallbackDay : parsedDay;
+
+      bestScore = score;
+      bestMatch = {
+        dateString: targetMonth.date(day).format(JOURNAL_DATE_FORMAT),
+      };
     }
   }
 
-  return null;
+  return bestMatch;
 }
