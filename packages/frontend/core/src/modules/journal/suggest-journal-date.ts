@@ -32,9 +32,11 @@ function normalizeQuery(value: string) {
   return value.trim().toLowerCase().split(' ').join('');
 }
 
-// rank the candidates instead of taking the first hit: a contiguous run beats a
-// scattered subsequence, so "nextsa" reaches "next saturday" instead of stopping
-// at the s and the a inside "sunday"
+/**
+ * Scores how closely an alias answers the query. A prefix beats a contiguous run,
+ * a contiguous run beats a scattered subsequence, so "nextsa" reaches "next
+ * saturday" instead of stopping at the s and the a inside "sunday".
+ */
 function matchScore(alias: string, query: string) {
   if (!fuzzyMatch(alias, query, true)) {
     return MATCH_NONE;
@@ -48,6 +50,9 @@ function matchScore(alias: string, query: string) {
   return index > 0 ? MATCH_CONTAINS : MATCH_SUBSEQUENCE;
 }
 
+/**
+ * Suggests a journal date for a fuzzy query such as "next sa" or "dec 10".
+ */
 export function suggestJournalDate(
   query: string
 ): JournalDateSuggestion | null {
