@@ -96,6 +96,17 @@ describe('suggestJournalDate', () => {
     });
   });
 
+  test('last week - saturday', () => {
+    expect(suggestJournalDate('last sa')).toEqual({
+      dateString: dayjs()
+        .subtract(1, 'week')
+        .startOf('week')
+        .add(6, 'day')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Last Saturday',
+    });
+  });
+
   test('next week - monday', () => {
     expect(suggestJournalDate('nm')).toEqual({
       dateString: dayjs()
@@ -148,6 +159,27 @@ describe('suggestJournalDate', () => {
         .add(5, 'day')
         .format(JOURNAL_DATE_FORMAT),
       alias: 'Next Friday',
+    });
+  });
+
+  test('next week - saturday', () => {
+    expect(suggestJournalDate('next sa')).toEqual({
+      dateString: dayjs()
+        .add(1, 'week')
+        .startOf('week')
+        .add(6, 'day')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Next Saturday',
+    });
+  });
+
+  test('next week - sunday', () => {
+    expect(suggestJournalDate('next su')).toEqual({
+      dateString: dayjs()
+        .add(1, 'week')
+        .startOf('week')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Next Sunday',
     });
   });
 
