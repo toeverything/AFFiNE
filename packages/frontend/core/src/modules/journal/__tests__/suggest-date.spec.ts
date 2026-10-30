@@ -96,6 +96,17 @@ describe('suggestJournalDate', () => {
     });
   });
 
+  test('last week - saturday', () => {
+    expect(suggestJournalDate('last sa')).toEqual({
+      dateString: dayjs()
+        .subtract(1, 'week')
+        .startOf('week')
+        .add(6, 'day')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Last Saturday',
+    });
+  });
+
   test('next week - monday', () => {
     expect(suggestJournalDate('nm')).toEqual({
       dateString: dayjs()
@@ -148,6 +159,46 @@ describe('suggestJournalDate', () => {
         .add(5, 'day')
         .format(JOURNAL_DATE_FORMAT),
       alias: 'Next Friday',
+    });
+  });
+
+  test('next week - saturday', () => {
+    expect(suggestJournalDate('next sa')).toEqual({
+      dateString: dayjs()
+        .add(1, 'week')
+        .startOf('week')
+        .add(6, 'day')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Next Saturday',
+    });
+  });
+
+  test('next week - sunday', () => {
+    expect(suggestJournalDate('next su')).toEqual({
+      dateString: dayjs()
+        .add(1, 'week')
+        .startOf('week')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Next Sunday',
+    });
+  });
+
+  test('month wins over a loose weekday match', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 16, 12, 0, 0));
+
+    expect(suggestJournalDate('no')).toEqual({
+      dateString: '2026-11-16',
+    });
+  });
+
+  test('a tie keeps the weekday', () => {
+    expect(suggestJournalDate('n')).toEqual({
+      dateString: dayjs()
+        .add(1, 'week')
+        .startOf('week')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Next Sunday',
     });
   });
 
