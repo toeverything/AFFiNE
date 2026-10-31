@@ -4,6 +4,7 @@ import {
   RadioGroup,
   type RadioItem,
   Slider,
+  Switch,
 } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
@@ -469,6 +470,16 @@ export const ConnectorSettings = () => {
     [editorSetting]
   );
 
+  const hoverToInitiate = settings.connector.hoverToInitiate;
+  const setHoverToInitiate = useCallback(
+    (value: boolean) => {
+      editorSetting.set('connector', {
+        hoverToInitiate: value,
+      });
+    },
+    [editorSetting]
+  );
+
   const fontFamilyItems = useMemo(() => {
     const { fontFamily } = settings.connector.labelStyle;
     return Object.entries(FontFamily).map(([name, value]) => {
@@ -829,6 +840,13 @@ export const ConnectorSettings = () => {
           width={250}
           className={settingWrapper}
           onChange={setTextAlignment}
+        />
+      </SettingRow>
+      <SettingRow name="Hover to initiate" desc={''}>
+        <Switch
+          data-testid="connector-hover-to-initiate-trigger"
+          checked={hoverToInitiate}
+          onChange={setHoverToInitiate}
         />
       </SettingRow>
     </>
