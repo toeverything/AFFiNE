@@ -119,6 +119,8 @@ const DEFAULT_SHAPE = {
   fillColor: DefaultTheme.shapeFillColor,
   gradientFinal: undefined,
   gradientDirection: undefined,
+  flipX: false,
+  flipY: false,
   strokeColor: DefaultTheme.shapeStrokeColor,
   strokeStyle: StrokeStyle.Solid,
   strokeWidth: LineWidth.Two,

@@ -197,9 +197,22 @@ function applyBorderStyles(
 }
 
 function applyTransformStyles(model: ShapeElementModel, element: HTMLElement) {
-  if (model.rotate && model.rotate !== 0) {
+  const rotate = model.rotate ?? 0;
+  const hasFlip = model.flipX || model.flipY;
+
+  if (rotate !== 0 || hasFlip) {
+    const transforms: string[] = [];
+    if (rotate !== 0) {
+      transforms.push(`rotate(${rotate}deg)`);
+    }
+    if (hasFlip) {
+      transforms.push(
+        `scale(${model.flipX ? -1 : 1}, ${model.flipY ? -1 : 1})`
+      );
+    }
+
     setStyles(element, {
-      transform: `rotate(${model.rotate}deg)`,
+      transform: transforms.join(' '),
       transformOrigin: 'center',
     });
   } else {
@@ -382,6 +395,7 @@ export const shapeDomRenderer = (
       DefaultTheme.shapeTextColor,
       true
     );
+    textElement.style.transform = `scale(${model.flipX ? -1 : 1}, ${model.flipY ? -1 : 1})`;
     textElement.textContent = str;
   } else {
     removeText(retained);

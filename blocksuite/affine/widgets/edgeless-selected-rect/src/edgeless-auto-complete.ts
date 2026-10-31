@@ -32,7 +32,7 @@ import type { SelectedRect } from '@blocksuite/affine-shared/types';
 import { handleNativeRangeAtPoint } from '@blocksuite/affine-shared/utils';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { Bound, IVec } from '@blocksuite/global/gfx';
-import { Vec } from '@blocksuite/global/gfx';
+import { PointLocation, Vec } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
 import {
   ArrowUpBigIcon,
@@ -194,10 +194,14 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
         if (!this.canShowAutoComplete) return;
         this._isMoving = true;
         const { startPosition } = getPosition(type);
+        const sourcePosition = this._mapPositionByFlip(
+          startPosition,
+          this.current
+        );
         connector = this._addConnector(
           {
             id: this.current.id,
-            position: startPosition,
+            position: sourcePosition,
           },
           {
             position: point,
@@ -306,15 +310,39 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
   ) {
     const startBound = this.current.elementBound;
     const { startPosition, endPosition } = getPosition(type);
+    const startConnectionPosition = this._mapPositionByFlip(
+      startPosition,
+      curShape
+    );
     const nextShape = {
       xywh: nextBound.serialize(),
       rotate: curShape.rotate,
+      flipX: curShape.flipX,
+      flipY: curShape.flipY,
       shapeType: curShape.shapeType,
-    };
-    const startPoint = curShape.getRelativePointLocation(startPosition);
-    const endPoint = curShape.getRelativePointLocation.call(
-      nextShape,
-      endPosition
+      getLineIntersections(start: IVec, end: IVec) {
+        return shapeMethods[this.shapeType].getLineIntersections(
+          start,
+          end,
+          this
+        );
+      },
+      getRelativePointLocation(point: IVec) {
+        return shapeMethods[this.shapeType].getRelativePointLocation(
+          point,
+          this
+        );
+      },
+    } as ShapeElementModel;
+    const endConnectionPosition = this._mapPositionByFlip(
+      endPosition,
+      nextShape
+    );
+    const startPoint = PointLocation.fromVec(
+      startBound.getRelativePoint(startConnectionPosition)
+    );
+    const endPoint = PointLocation.fromVec(
+      nextBound.getRelativePoint(endConnectionPosition)
     );
 
     return this._pathGenerator.generateOrthogonalConnectorPath({
@@ -323,6 +351,16 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
       startPoint,
       endPoint,
     });
+  }
+
+  private _mapPositionByFlip(
+    position: Connection['position'],
+    shape: { flipX?: boolean; flipY?: boolean }
+  ): Connection['position'] {
+    return [
+      shape.flipX ? 1 - position[0] : position[0],
+      shape.flipY ? 1 - position[1] : position[1],
+    ];
   }
 
   private _computeNextBound(type: Direction) {
@@ -381,14 +419,20 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
     if (!id) return;
     if (isShape(this.current)) {
       const { startPosition, endPosition } = getPosition(type);
+      const sourcePosition = this._mapPositionByFlip(
+        startPosition,
+        this.current
+      );
+      const targetShape = this.crud.getElementById(id) as ShapeElementModel;
+      const targetPosition = this._mapPositionByFlip(endPosition, targetShape);
       this._addConnector(
         {
           id: this.current.id,
-          position: startPosition,
+          position: sourcePosition,
         },
         {
           id,
-          position: endPosition,
+          position: targetPosition,
         }
       );
 

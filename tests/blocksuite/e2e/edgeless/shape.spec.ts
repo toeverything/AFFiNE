@@ -19,6 +19,7 @@ import {
   openComponentToolbarMoreMenu,
   pickColorAtPoints,
   resizeElementByHandle,
+  rotateElementByHandle,
   setEdgelessTool,
   switchEditorMode,
   triggerComponentToolbarAction,
@@ -158,6 +159,411 @@ test('delete shape by component-toolbar', async ({ page }) => {
   await openComponentToolbarMoreMenu(page);
   await clickComponentToolbarMoreMenuButton(page, 'delete');
   await assertEdgelessNonSelectedRect(page);
+});
+
+test('flip shape horizontally and vertically via more menu', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  const start = { x: 100, y: 100 };
+  const end = { x: 240, y: 220 };
+  await addBasicRectShapeElement(page, start, end);
+
+  await page.mouse.click(120, 120);
+  await openComponentToolbarMoreMenu(page);
+  await page
+    .locator('editor-menu-action')
+    .filter({ hasText: 'Flip Horizontal' })
+    .click();
+
+  const flipX = await page.evaluate(() => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    const [selected] = root.service.selection.selectedElements;
+    const shape = root.service.crud.getElementById(selected?.id);
+    return Boolean(shape?.flipX);
+  });
+  expect(flipX).toBe(true);
+
+  await openComponentToolbarMoreMenu(page);
+  await page
+    .locator('editor-menu-action')
+    .filter({ hasText: 'Flip Vertical' })
+    .click();
+
+  const flipY = await page.evaluate(() => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    const [selected] = root.service.selection.selectedElements;
+    const shape = root.service.crud.getElementById(selected?.id);
+    return Boolean(shape?.flipY);
+  });
+  expect(flipY).toBe(true);
+});
+
+test('rotation direction reverses when flip parity is odd', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  const shapeId = await page.evaluate(() => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    return root.service.crud.addElement('shape', {
+      shapeType: 'triangle',
+      xywh: JSON.stringify([220, 180, 220, 160]),
+      filled: true,
+      fillColor: '#22aa55',
+      strokeStyle: 'solid',
+      strokeWidth: 2,
+    });
+  });
+
+  await page.evaluate(id => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    root.service.selection.set({ elements: [id], editing: false });
+  }, shapeId);
+
+  const toSignedAngle = (deg: number) => {
+    const normalized = ((deg % 360) + 360) % 360;
+    return normalized > 180 ? normalized - 360 : normalized;
+  };
+
+  await rotateElementByHandle(page, 20, 'top-right', 8);
+  const beforeFlip = await page.evaluate(id => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    return Number(root.service.crud.getElementById(id)?.rotate ?? 0);
+  }, shapeId);
+
+  await page.evaluate(id => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    root.service.crud.updateElement(id, {
+      rotate: 0,
+      flipX: true,
+      flipY: false,
+    });
+    root.service.selection.set({ elements: [id], editing: false });
+  }, shapeId);
+
+  await rotateElementByHandle(page, 20, 'top-right', 8);
+  const afterFlipX = await page.evaluate(id => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    return Number(root.service.crud.getElementById(id)?.rotate ?? 0);
+  }, shapeId);
+
+  expect(Math.sign(toSignedAngle(afterFlipX))).toBe(
+    -Math.sign(toSignedAngle(beforeFlip))
+  );
+  expect(
+    Math.abs(
+      Math.abs(toSignedAngle(afterFlipX)) - Math.abs(toSignedAngle(beforeFlip))
+    )
+  ).toBeLessThanOrEqual(8);
+
+  await page.evaluate(id => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    root.service.crud.updateElement(id, {
+      rotate: 0,
+      flipX: true,
+      flipY: true,
+    });
+    root.service.selection.set({ elements: [id], editing: false });
+  }, shapeId);
+
+  await rotateElementByHandle(page, 20, 'top-right', 8);
+  const afterFlipXY = await page.evaluate(id => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    return Number(root.service.crud.getElementById(id)?.rotate ?? 0);
+  }, shapeId);
+
+  expect(Math.sign(toSignedAngle(afterFlipXY))).toBe(
+    Math.sign(toSignedAngle(beforeFlip))
+  );
+  expect(
+    Math.abs(
+      Math.abs(toSignedAngle(afterFlipXY)) - Math.abs(toSignedAngle(beforeFlip))
+    )
+  ).toBeLessThanOrEqual(8);
+});
+
+test('vertical flip reflects rotated triangle rendering (10deg)', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  const shapeId = await page.evaluate(() => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    return root.service.crud.addElement('shape', {
+      shapeType: 'triangle',
+      xywh: JSON.stringify([180, 160, 220, 160]),
+      rotate: 10,
+      filled: true,
+      fillColor: '#22aa55',
+      strokeStyle: 'none',
+      strokeWidth: 2,
+    });
+  });
+
+  const samplePair = async () => {
+    const pickAtModelPoints = async (points: number[][]) => {
+      return page.evaluate(modelPoints => {
+        const root = document.querySelector('affine-edgeless-root') as any;
+        const viewport = root.service.viewport;
+        const canvases = Array.from(
+          document.querySelectorAll(
+            '.affine-edgeless-surface-block-container canvas'
+          )
+        ) as HTMLCanvasElement[];
+        const sorted = canvases.sort((a, b) => {
+          const za = Number(getComputedStyle(a).zIndex || 0);
+          const zb = Number(getComputedStyle(b).zIndex || 0);
+          return zb - za;
+        });
+
+        const pick = (mx: number, my: number) => {
+          const [vx, vy] = viewport.toViewCoord(mx, my);
+          for (const canvas of sorted) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const px = Math.round((vx - rect.left) * scaleX);
+            const py = Math.round((vy - rect.top) * scaleY);
+            if (px < 0 || py < 0 || px >= canvas.width || py >= canvas.height) {
+              continue;
+            }
+            const data = canvas
+              .getContext('2d', { willReadFrequently: true })
+              ?.getImageData(px, py, 1, 1).data;
+            if (!data) continue;
+            if (data[3] > 0) {
+              return {
+                color:
+                  '#' +
+                  ((1 << 24) + (data[0] << 16) + (data[1] << 8) + data[2])
+                    .toString(16)
+                    .slice(1),
+                alpha: data[3],
+              };
+            }
+          }
+          return { color: '#000000', alpha: 0 };
+        };
+
+        return modelPoints.map(([mx, my]) => pick(mx, my));
+      }, points) as Promise<{ color: string; alpha: number }[]>;
+    };
+
+    const xValues = [0.18, 0.24, 0.3, 0.36];
+    const yValues = [0.2, 0.25, 0.3, 0.35, 0.4];
+
+    for (const xFactor of xValues) {
+      for (const yFactor of yValues) {
+        const topPoint: [number, number] = [
+          Math.round(180 + 220 * xFactor),
+          Math.round(160 + 160 * yFactor),
+        ];
+        const bottomPoint: [number, number] = [
+          Math.round(180 + 220 * xFactor),
+          Math.round(160 + 160 * (1 - yFactor)),
+        ];
+        const samples = await pickAtModelPoints([topPoint, bottomPoint]);
+        if (
+          Math.abs(samples[0].alpha - samples[1].alpha) > 40 ||
+          !close(samples[0].color, samples[1].color)
+        ) {
+          return {
+            topPoint,
+            bottomPoint,
+            topColor: samples[0].color,
+            bottomColor: samples[1].color,
+          };
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const close = (a: string, b: string) => {
+    const parse = (value: string) =>
+      value
+        .replace('#', '')
+        .match(/.{2}/g)
+        ?.map(v => parseInt(v, 16)) ?? [0, 0, 0];
+    const [ar, ag, ab] = parse(a);
+    const [br, bg, bb] = parse(b);
+    return Math.abs(ar - br) + Math.abs(ag - bg) + Math.abs(ab - bb) < 36;
+  };
+
+  const before = await samplePair();
+  expect(before).not.toBeNull();
+  if (!before) return;
+
+  await page.evaluate(id => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    root.service.crud.updateElement(id, { flipY: true });
+  }, shapeId);
+
+  await page.waitForTimeout(100);
+
+  const afterSamples = await page.evaluate(
+    modelPoints => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      const viewport = root.service.viewport;
+      const canvases = Array.from(
+        document.querySelectorAll(
+          '.affine-edgeless-surface-block-container canvas'
+        )
+      ) as HTMLCanvasElement[];
+      const sorted = canvases.sort((a, b) => {
+        const za = Number(getComputedStyle(a).zIndex || 0);
+        const zb = Number(getComputedStyle(b).zIndex || 0);
+        return zb - za;
+      });
+      const pick = (mx: number, my: number) => {
+        const [vx, vy] = viewport.toViewCoord(mx, my);
+        for (const canvas of sorted) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const px = Math.round((vx - rect.left) * scaleX);
+          const py = Math.round((vy - rect.top) * scaleY);
+          if (px < 0 || py < 0 || px >= canvas.width || py >= canvas.height) {
+            continue;
+          }
+          const data = canvas
+            .getContext('2d', { willReadFrequently: true })
+            ?.getImageData(px, py, 1, 1).data;
+          if (!data) continue;
+          if (data[3] > 0) {
+            return (
+              '#' +
+              ((1 << 24) + (data[0] << 16) + (data[1] << 8) + data[2])
+                .toString(16)
+                .slice(1)
+            );
+          }
+        }
+        return '#000000';
+      };
+      return modelPoints.map(([mx, my]) => pick(mx, my));
+    },
+    [before.topPoint, before.bottomPoint]
+  );
+
+  expect(close(before.topColor, afterSamples[1])).toBe(true);
+  expect(close(before.bottomColor, afterSamples[0])).toBe(true);
+});
+
+test('flip horizontal on rotated diamond keeps connector attached and mirrored', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  const { shapeId, connectorId } = await page.evaluate(() => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    const shapeId = root.service.crud.addElement('shape', {
+      shapeType: 'diamond',
+      xywh: JSON.stringify([220, 180, 180, 140]),
+      rotate: 10,
+      filled: true,
+      fillColor: '#1f6feb',
+      strokeStyle: 'solid',
+      strokeWidth: 2,
+    });
+    const connectorId = root.service.crud.addElement('connector', {
+      source: { id: shapeId, position: [1, 0.5] },
+      target: { position: [520, 250] },
+    });
+    return { shapeId, connectorId };
+  });
+
+  const before = await page.evaluate(
+    ([sid, cid]) => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      const shape = root.service.crud.getElementById(sid);
+      const connector = root.service.crud.getElementById(cid);
+      const [x, y, w, h] = JSON.parse(shape.xywh);
+      const center = [x + w / 2, y + h / 2];
+      const start = connector.absolutePath?.[0] ?? [0, 0];
+      const rad = (shape.rotate * Math.PI) / 180;
+      const localX = [Math.cos(rad), Math.sin(rad)];
+      const projection =
+        (start[0] - center[0]) * localX[0] + (start[1] - center[1]) * localX[1];
+
+      return {
+        flipX: Boolean(shape?.flipX),
+        projection,
+      };
+    },
+    [shapeId, connectorId]
+  );
+
+  await page.evaluate(id => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    root.service.selection.set({ elements: [id], editing: false });
+  }, shapeId);
+  await openComponentToolbarMoreMenu(page);
+  await page
+    .locator('editor-menu-action')
+    .filter({ hasText: 'Flip Horizontal' })
+    .click();
+
+  const after = await page.evaluate(
+    ([sid, cid]) => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      const shape = root.service.crud.getElementById(sid);
+      const connector = root.service.crud.getElementById(cid);
+      const [x, y, w, h] = JSON.parse(shape.xywh);
+      const center = [x + w / 2, y + h / 2];
+      const start = connector.absolutePath?.[0] ?? [0, 0];
+      const rad = (shape.rotate * Math.PI) / 180;
+      const localX = [Math.cos(rad), Math.sin(rad)];
+      const projection =
+        (start[0] - center[0]) * localX[0] + (start[1] - center[1]) * localX[1];
+
+      return {
+        shapeType: shape?.shapeType,
+        flipX: Boolean(shape?.flipX),
+        rotate: Number(shape?.rotate ?? 0),
+        source: connector?.source,
+        projection,
+      };
+    },
+    [shapeId, connectorId]
+  );
+
+  expect(after.shapeType).toBe('diamond');
+  expect(before.flipX).toBe(false);
+  expect(after.flipX).toBe(true);
+  expect(Math.abs(after.rotate - 10)).toBeLessThan(0.01);
+  expect(after.source?.id).toBe(shapeId);
+  expect(after.source?.position).toEqual([1, 0.5]);
+  expect(Math.sign(after.projection)).toBe(-Math.sign(before.projection));
+
+  const selectionMatrix = await page.evaluate(() => {
+    const host = document.querySelector(
+      'edgeless-selected-rect'
+    ) as HTMLElement | null;
+    const rect = host?.shadowRoot?.querySelector(
+      '.affine-edgeless-selected-rect'
+    ) as HTMLElement | null;
+    if (!rect) return null;
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(rect).transform);
+    return {
+      determinant: matrix.a * matrix.d - matrix.b * matrix.c,
+    };
+  });
+  expect(selectionMatrix).not.toBeNull();
+  expect((selectionMatrix as { determinant: number }).determinant).toBeLessThan(
+    0
+  );
 });
 
 //FIXME: need a way to test hand-drawn-like style
