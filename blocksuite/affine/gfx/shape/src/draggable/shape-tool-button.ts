@@ -1,4 +1,4 @@
-import type { ShapeName } from '@blocksuite/affine-model';
+import { type ShapeName, ShapeType } from '@blocksuite/affine-model';
 import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import { once } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
@@ -101,9 +101,7 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
       this._menuElement.browserOpen = true;
     }
 
-    const panel = document.createElement(
-      'edgeless-shape-browser-panel'
-    ) as EdgelessShapeBrowserPanel;
+    const panel = document.createElement('edgeless-shape-browser-panel');
     panel.edgeless = this.edgeless;
 
     this._cleanup = once(panel, 'closepanel', () => {
@@ -122,9 +120,9 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
 
     // Handle shape selection
     panel.addEventListener('shapeselect', ((e: CustomEvent) => {
-      const shapeName = e.detail.shapeName;
-      this._syncShapeColors(shapeName);
-      this.setEdgelessTool(this.type, { shapeName });
+      const { shapeName, stencilName, stencilData } = e.detail;
+      this._syncShapeColors(shapeName, stencilName);
+      this.setEdgelessTool(this.type, { shapeName, stencilName, stencilData });
       this._updateOverlay();
       this._closeBrowser();
     }) as EventListener);
@@ -134,24 +132,17 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
 
     requestAnimationFrame(() => {
       // Find the More button in the shape menu as the positioning reference
-      const moreButton = this._menuElement?.renderRoot?.querySelector(
+      const moreButton = this._menuElement?.renderRoot.querySelector(
         '.more-shapes-button'
       ) as HTMLElement | null;
       const referenceEl = moreButton ?? this._menuElement ?? this;
 
-      const arrowEl = panel.renderRoot?.querySelector(
-        '.arrow'
-      ) as HTMLElement | null;
+      const arrowEl = panel.renderRoot.querySelector('.arrow') as HTMLElement;
       this._autoUpdateCleanup?.();
       this._autoUpdateCleanup = autoUpdate(referenceEl, panel, () => {
-        const middleware = [offset(20), shift()];
-        if (arrowEl) {
-          middleware.splice(1, 0, arrow({ element: arrowEl }));
-        }
-
         computePosition(referenceEl, panel, {
           placement: 'top',
-          middleware,
+          middleware: [offset(20), arrow({ element: arrowEl }), shift()],
         })
           .then(({ x, y, middlewareData }) => {
             panel.style.left = `${x}px`;
@@ -195,13 +186,13 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     }
   }
 
-  private _syncShapeColors(nextShapeName: ShapeName) {
+  private _syncShapeColors(nextShapeName: ShapeName, stencilName?: string) {
     const propsStore = this.edgeless.std.get(EditPropsStore);
     const currentProps = propsStore.lastProps$.value['shape:rect'];
     if (!currentProps) {
       return;
     }
-    propsStore.recordLastProps(`shape:${nextShapeName}`, {
+    const nextProps = {
       fillColor: currentProps.fillColor,
       strokeColor: currentProps.strokeColor,
       filled: currentProps.filled,
@@ -214,7 +205,11 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
       fontFamily: currentProps.fontFamily,
       flipX: false,
       flipY: false,
-    });
+    };
+    if (nextShapeName === ShapeType.DrawioStencil && stencilName) {
+      nextProps.filled = true;
+    }
+    propsStore.recordLastProps(`shape:${nextShapeName}`, nextProps);
   }
 
   override render() {

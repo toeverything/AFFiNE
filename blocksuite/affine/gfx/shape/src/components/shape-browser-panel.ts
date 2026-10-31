@@ -2,19 +2,32 @@ import {
   darkToolbarStyles,
   lightToolbarStyles,
 } from '@blocksuite/affine-components/toolbar';
-import { type ShapeName, type ShapeStyle } from '@blocksuite/affine-model';
-import { ThemeProvider } from '@blocksuite/affine-shared/services';
+import {
+  type ShapeName,
+  type ShapeStyle,
+  ShapeType,
+} from '@blocksuite/affine-model';
+import {
+  EditorSettingProvider,
+  ThemeProvider,
+} from '@blocksuite/affine-shared/services';
 import {
   requestConnectedFrame,
   stopPropagation,
 } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import type { BlockComponent } from '@blocksuite/std';
-import { css, html, LitElement, unsafeCSS } from 'lit';
+import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { drawioLibraryCatalog } from '../drawio/library-catalog';
+import {
+  buildPathFromStencil,
+  getStencilShapeData,
+  loadAllLibraryStencilPartitions,
+} from '../drawio/stencil-utils';
 import { AllShapeConfig } from '../toolbar/shape-menu-config';
 
 export type ShapeCategory = string;
@@ -24,10 +37,18 @@ const BASE_CATEGORY_LABELS: Record<string, string> = {
   basic: 'Basic',
   flowchart: 'Flowchart',
   arrows: 'Arrows',
+  advanced: 'Advanced',
   misc: 'Misc',
 };
 
-const BASE_CATEGORY_ORDER = ['general', 'flowchart', 'arrows', 'basic', 'misc'];
+const BASE_CATEGORY_ORDER = [
+  'general',
+  'flowchart',
+  'arrows',
+  'advanced',
+  'basic',
+  'misc',
+];
 
 // Map shapes to categories
 const SHAPE_CATEGORY_MAP: Record<string, ShapeCategory> = {
@@ -96,6 +117,13 @@ const SHAPE_CATEGORY_MAP: Record<string, ShapeCategory> = {
   arrowCalloutUp: 'arrows',
   arrowCalloutDouble: 'arrows',
   arrowCalloutQuad: 'arrows',
+  container: 'advanced',
+  verticalContainer: 'advanced',
+  horizontalContainer: 'advanced',
+  mindmapCentralIdea: 'advanced',
+  mindmapBranch: 'advanced',
+  mindmapSubTopic: 'advanced',
+  mindmapSquare: 'advanced',
 };
 
 type ShapeBrowserItem = {
@@ -107,6 +135,7 @@ type ShapeBrowserItem = {
   generalIcon?: (typeof AllShapeConfig)[number]['generalIcon'];
   scribbledIcon?: (typeof AllShapeConfig)[number]['scribbledIcon'];
   disabled?: boolean;
+  stencilName?: string;
 };
 
 const SHAPE_CONFIG_BY_NAME = AllShapeConfig.reduce(
@@ -170,6 +199,14 @@ const SHAPE_BROWSER_ITEMS: ShapeBrowserItem[] = [
     category: SHAPE_CATEGORY_MAP[item.name],
     categoryLabel: BASE_CATEGORY_LABELS[SHAPE_CATEGORY_MAP[item.name]],
   })),
+  ...drawioLibraryCatalog.map(entry => ({
+    id: `lib:${entry.id}`,
+    name: ShapeType.DrawioStencil,
+    tooltip: entry.label,
+    category: entry.categoryId,
+    categoryLabel: entry.categoryLabel,
+    stencilName: entry.stencilName,
+  })),
 ];
 
 // Triangle arrow pointing down (same as templates panel)
@@ -186,6 +223,7 @@ const Triangle = html`<svg
   />
 </svg>`;
 
+const ICON_SIZE = 32;
 const SHAPE_CARD_WIDTH = 100;
 const SHAPE_CARD_GAP_X = 20;
 const SHAPE_CARD_GAP_Y = 10;
@@ -218,22 +256,102 @@ function getShapeBrowserLayout(viewportWidth: number, itemCount: number) {
   return { columns, panelWidth };
 }
 
+const renderStencilIcon = (stencilName?: string, isLibraryShape = false) => {
+  if (!stencilName) return html``;
+  // Only drawio-library shapes are lazily loaded (see stencil-utils.ts) —
+  // built-in stencils (DRAWIO_STENCIL_SHAPE_MAP) are always resolved
+  // synchronously, so they never show a spinner.
+  const pending = isLibraryShape && !getStencilShapeData(stencilName);
+  return html`<span class="stencil-icon-wrapper">
+    <canvas
+      class="stencil-icon-canvas"
+      width="${ICON_SIZE}"
+      height="${ICON_SIZE}"
+      data-stencil="${stencilName}"
+      style="${pending ? 'visibility: hidden' : ''}"
+    ></canvas>
+    ${pending ? html`<span class="stencil-icon-spinner"></span>` : nothing}
+  </span>`;
+};
+
+const buildIconPaths = (stencilName: string) => {
+  const stencil = getStencilShapeData(stencilName);
+  if (!stencil) return null;
+  const basePaths = stencil.paths.length > 0 ? stencil.paths : stencil.strokes;
+  const iconSize = 100;
+  const isFiniteNumber = (value?: number) =>
+    typeof value === 'number' && Number.isFinite(value);
+  const sanitizeCommands = (commands: (typeof basePaths)[number]) =>
+    commands.filter(command => {
+      switch (command.cmd) {
+        case 'M':
+        case 'L':
+          return isFiniteNumber(command.x) && isFiniteNumber(command.y);
+        case 'C':
+          return (
+            isFiniteNumber(command.x1) &&
+            isFiniteNumber(command.y1) &&
+            isFiniteNumber(command.x2) &&
+            isFiniteNumber(command.y2) &&
+            isFiniteNumber(command.x) &&
+            isFiniteNumber(command.y)
+          );
+        case 'Q':
+          return (
+            isFiniteNumber(command.x1) &&
+            isFiniteNumber(command.y1) &&
+            isFiniteNumber(command.x) &&
+            isFiniteNumber(command.y)
+          );
+        case 'A':
+          return (
+            isFiniteNumber(command.rx) &&
+            isFiniteNumber(command.ry) &&
+            isFiniteNumber(command.x) &&
+            isFiniteNumber(command.y)
+          );
+        case 'Z':
+          return true;
+        default:
+          return false;
+      }
+    });
+  const sanitizedPaths = basePaths
+    .map(commands => sanitizeCommands(commands))
+    .filter(commands => commands.length > 0);
+  const fillCommands = sanitizedPaths.filter(commands =>
+    commands.some(cmd => cmd.cmd === 'Z')
+  );
+  const strokeSource = stencil.strokes.length > 0 ? stencil.strokes : basePaths;
+  const strokeCommands = strokeSource
+    .map(commands => sanitizeCommands(commands))
+    .filter(commands => commands.length > 0);
+  const backgroundPaths = fillCommands.map(commands =>
+    buildPathFromStencil(commands, iconSize, iconSize)
+  );
+  const strokePaths = strokeCommands.map(commands =>
+    buildPathFromStencil(commands, iconSize, iconSize)
+  );
+  return {
+    backgroundPaths,
+    strokePaths,
+    iconSize,
+  };
+};
+
 export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
   // Matching template-panel.ts styling exactly
   static override styles = css`
     :host {
       position: absolute;
       font-family: var(--affine-font-family);
-      z-index: 2147483647;
-      isolation: isolate;
+      z-index: var(--affine-z-index-popover);
       pointer-events: auto;
     }
 
     .edgeless-shapes-panel {
       width: var(--shape-browser-panel-width, 467px);
       height: 400px;
-      position: relative;
-      z-index: 1;
       border-radius: 12px;
       background-color: var(--affine-background-overlay-panel-color);
       box-shadow: 0px 10px 80px 0px rgba(0, 0, 0, 0.2);
@@ -285,6 +403,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
       background-color: inherit;
       outline: none;
       width: 100%;
+      caret-color: var(--affine-text-primary-color);
     }
 
     .search-input::placeholder {
@@ -378,6 +497,33 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
       z-index: 1;
     }
 
+    .stencil-icon-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: ${ICON_SIZE}px;
+      height: ${ICON_SIZE}px;
+    }
+
+    .stencil-icon-spinner {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--affine-black-10);
+      border-top-color: var(--affine-icon-color);
+      animation: affine-stencil-icon-spin 0.8s linear infinite;
+    }
+
+    @keyframes affine-stencil-icon-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .shape-item:hover::after {
       content: '';
       position: absolute;
@@ -429,11 +575,18 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
   private accessor _searchKeyword = '';
 
   @state()
-  private accessor _captureSearchKeys = false;
+  private accessor _captureSearchKeys = true;
 
   @state()
   private accessor _viewportWidth =
     typeof window === 'undefined' ? 1440 : window.innerWidth;
+
+  // The drawio library is loaded lazily (see stencil-utils.ts) — it isn't
+  // guaranteed to be resolved yet when this panel first renders. This flips
+  // once loaded purely to force Lit to re-render with the now-available
+  // data (getStencilShapeData itself doesn't push updates).
+  @state()
+  private accessor _libraryStencilsLoaded = false;
 
   @property({ attribute: false })
   accessor edgeless!: BlockComponent;
@@ -442,17 +595,28 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
   accessor selectedShape: ShapeName | null | undefined = undefined;
 
   @property({ attribute: false })
+  accessor selectedStencilName: string | null | undefined = undefined;
+
+  @property({ attribute: false })
   accessor shapeStyle: ShapeStyle | undefined = undefined;
 
   private _closePanel() {
     this.dispatchEvent(new CustomEvent('closepanel'));
   }
 
-  private _onSelect(value: ShapeName) {
+  private _onSelect(value: ShapeName, stencilName?: string) {
     this.selectedShape = value;
+    this.selectedStencilName = stencilName;
+    // Resolved synchronously from cache: by the time a shape is selectable
+    // here, its icon thumbnail has already rendered via the same lookup, so
+    // this is a cache hit, not a fresh load. Embedding it now means the
+    // placed shape never needs the drawio library to render itself.
+    const stencilData = stencilName
+      ? (getStencilShapeData(stencilName) ?? undefined)
+      : undefined;
     this.dispatchEvent(
       new CustomEvent('shapeselect', {
-        detail: { shapeName: value },
+        detail: { shapeName: value, stencilName, stencilData },
       })
     );
   }
@@ -492,9 +656,27 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     setTimeout(focusNow, 0);
   }
 
-  private _getFilteredItems(includeSearchableLibraries = true) {
-    void includeSearchableLibraries;
+  private _getShapeBrowserItems(): ShapeBrowserItem[] {
     return SHAPE_BROWSER_ITEMS;
+  }
+
+  private _getFilteredItems(includeSearchableLibraries = true) {
+    const items = this._getShapeBrowserItems();
+    const visibility = this.edgeless?.std
+      ?.getOptional(EditorSettingProvider)
+      ?.setting$.peek().edgelessLibraryShapesVisibility;
+    const mode = visibility ?? 'show';
+    const hasSearch =
+      includeSearchableLibraries && this._searchKeyword.trim().length > 0;
+
+    if (mode === 'show') return items;
+
+    return items.filter(shape => {
+      const isLibraryShape = shape.name === ShapeType.DrawioStencil;
+      if (!isLibraryShape) return true;
+      if (mode === 'disable') return false;
+      return hasSearch;
+    });
   }
   private _getShapesForCategory(category: ShapeCategory) {
     let shapes = this._getFilteredItems().filter(
@@ -506,8 +688,9 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
       const keyword = this._searchKeyword.toLowerCase();
       shapes = shapes.filter(
         shape =>
-          String(shape.name).toLowerCase().includes(keyword) ||
-          (shape.tooltip ?? '').toLowerCase().includes(keyword)
+          shape.name.toLowerCase().includes(keyword) ||
+          shape.tooltip.toLowerCase().includes(keyword) ||
+          shape.stencilName?.toLowerCase().includes(keyword)
       );
     }
 
@@ -522,8 +705,9 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
       ? this._getFilteredItems().filter(shape => {
           const keyword = this._searchKeyword.toLowerCase();
           return (
-            String(shape.name).toLowerCase().includes(keyword) ||
-            (shape.tooltip ?? '').toLowerCase().includes(keyword)
+            shape.name.toLowerCase().includes(keyword) ||
+            shape.tooltip.toLowerCase().includes(keyword) ||
+            shape.stencilName?.toLowerCase().includes(keyword)
           );
         })
       : this._getFilteredItems();
@@ -555,6 +739,14 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
 
   override connectedCallback(): void {
     super.connectedCallback();
+    loadAllLibraryStencilPartitions()
+      .then(() => {
+        this._libraryStencilsLoaded = true;
+      })
+      .catch(() => {
+        // best-effort — built-in shapes and any already-cached library
+        // shapes still work; browsing the drawio library just stays empty
+      });
     this.addEventListener('keydown', this._stopNonEscapeKeydown, true);
     this.addEventListener('keydown', this._stopNonEscapeKeydown, false);
     this._disposables.addFromEvent(this, 'click', stopPropagation);
@@ -631,6 +823,41 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     }, this);
   }
 
+  override updated() {
+    const canvases = this.renderRoot.querySelectorAll(
+      'canvas.stencil-icon-canvas'
+    ) as NodeListOf<HTMLCanvasElement>;
+    canvases.forEach(canvas => {
+      if (canvas.dataset.drawn === 'true') return;
+      const stencilName = canvas.dataset.stencil;
+      if (!stencilName) return;
+      const result = buildIconPaths(stencilName);
+      if (!result) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const color =
+        getComputedStyle(canvas)
+          .getPropertyValue('--affine-icon-color')
+          .trim() || '#1f2937';
+      const { backgroundPaths, strokePaths, iconSize } = result;
+      const scale = canvas.width / iconSize;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.scale(scale, scale);
+      ctx.fillStyle = color;
+      backgroundPaths.forEach(path => {
+        ctx.fill(new Path2D(path));
+      });
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      strokePaths.forEach(path => {
+        ctx.stroke(new Path2D(path));
+      });
+      ctx.restore();
+      canvas.dataset.drawn = 'true';
+    });
+  }
+
   override render() {
     const availableCategories = this._getAvailableCategories();
     const selectedCategory = availableCategories.find(
@@ -675,13 +902,11 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
             placeholder="Search shapes..."
             @input=${this._updateSearchKeyword}
             @pointerdown=${(event: PointerEvent) => {
-              event.preventDefault();
               stopPropagation(event);
               this._captureSearchKeys = true;
               this._forceFocusSearchInput();
             }}
             @click=${(event: MouseEvent) => {
-              event.preventDefault();
               stopPropagation(event);
               this._captureSearchKeys = true;
               this._forceFocusSearchInput();
@@ -718,17 +943,23 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
                 ? repeat(
                     shapesInCategory,
                     item => item.id,
-                    ({ name, generalIcon, tooltip }) => html`
+                    ({ name, generalIcon, tooltip, stencilName }) => html`
                       <div
-                        class="shape-item ${this.selectedShape === name
+                        class="shape-item ${this.selectedShape === name &&
+                        this.selectedStencilName === stencilName
                           ? 'active'
                           : ''}"
-                        @click=${() => this._onSelect(name)}
+                        @click=${() => this._onSelect(name, stencilName)}
                         @pointerdown=${() => {
                           this._captureSearchKeys = false;
                         }}
                       >
-                        ${generalIcon}
+                        ${stencilName
+                          ? renderStencilIcon(
+                              stencilName,
+                              name === ShapeType.DrawioStencil
+                            )
+                          : generalIcon}
                         <span class="shape-name">${tooltip}</span>
                       </div>
                     `

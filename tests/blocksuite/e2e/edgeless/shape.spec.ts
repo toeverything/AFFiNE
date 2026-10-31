@@ -664,7 +664,6 @@ test('flip horizontal mirrors extended asymmetric shapes', async ({ page }) => {
     expect(after[1]).toBe(before[0]);
   }
 });
-
 //FIXME: need a way to test hand-drawn-like style
 test.skip('change shape fill color', async ({ page }) => {
   await enterPlaygroundRoom(page);

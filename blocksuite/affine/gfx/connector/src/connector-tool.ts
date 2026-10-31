@@ -42,6 +42,7 @@ import {
   ConnectorEndpointLocationsOnTrapezoid,
   ConnectorEndpointLocationsOnTriangle,
   ConnectorEndpointLocationsOnTriangleRight,
+  getConnectionLocationsForElement,
 } from './connector-manager';
 
 enum ConnectorToolMode {
@@ -272,6 +273,8 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
           return ConnectorEndpointLocationsOnLogicAnd;
         case ShapeType.LogicOr:
           return ConnectorEndpointLocationsOnLogicOr;
+        case ShapeType.DrawioStencil:
+          return getConnectionLocationsForElement(element).locations;
         default:
           return ConnectorEndpointLocations;
       }

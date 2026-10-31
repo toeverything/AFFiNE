@@ -345,12 +345,16 @@ const addStencilExtras = (shapeType: ShapeType, locations: IVec[]): IVec[] => {
 };
 
 const getStencilConstraintLocations = (
-  shapeType: string
+  ele: GfxModel,
+  shapeType: ShapeType
 ): ConnectionLocationResult | null => {
   if (shapeType === ShapeType.DataStorage || shapeType === ShapeType.Tape) {
     return null;
   }
-  const name = DRAWIO_STENCIL_SHAPE_MAP[shapeType as ShapeType];
+  const name =
+    shapeType === ShapeType.DrawioStencil
+      ? ((ele as { stencilName?: string }).stencilName ?? null)
+      : DRAWIO_STENCIL_SHAPE_MAP[shapeType as ShapeType];
   if (!name) return null;
   const stencil = getStencilShapeData(name);
   if (!stencil || stencil.constraints.length === 0) return null;
@@ -413,7 +417,7 @@ export function getConnectionLocationsForElement(
 ): ConnectionLocationResult {
   if ('shapeType' in ele) {
     const shapeType = (ele as { shapeType: ShapeType }).shapeType;
-    const stencilLocations = getStencilConstraintLocations(shapeType);
+    const stencilLocations = getStencilConstraintLocations(ele, shapeType);
     if (stencilLocations) return stencilLocations;
 
     switch (shapeType) {

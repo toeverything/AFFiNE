@@ -16,13 +16,22 @@ import type {
   LocalShapeElementModel,
   ShapeElementModel,
 } from '@blocksuite/affine-model';
-import { DefaultTheme, ShapeType, TextAlign } from '@blocksuite/affine-model';
+import {
+  CONTAINER_TITLE_SIZE,
+  DefaultTheme,
+  ShapeType,
+  TextAlign,
+  TextVerticalAlign,
+} from '@blocksuite/affine-model';
 import type { IBound } from '@blocksuite/global/gfx';
 import { Bound } from '@blocksuite/global/gfx';
 import { deltaInsertsToChunks } from '@blocksuite/std/inline';
 
 import { DRAWIO_STENCIL_SHAPE_MAP } from '../../drawio/stencil-map.js';
-import { getStencilShapeData } from '../../drawio/stencil-utils.js';
+import {
+  getStencilShapeData,
+  loadStencilShapeData,
+} from '../../drawio/stencil-utils.js';
 import { actor } from './actor.js';
 import { cloud } from './cloud.js';
 import { cube } from './cube.js';
@@ -56,6 +65,41 @@ const shapeRenderers: Record<
       const name = DRAWIO_STENCIL_SHAPE_MAP[shapeType];
       const stencil = name ? getStencilShapeData(name) : null;
       return stencil ? createStencilShapeRenderer(stencil) : rect;
+    };
+
+    const drawioStencil = (
+      model: ShapeElementModel | LocalShapeElementModel,
+      ctx: CanvasRenderingContext2D,
+      matrix: DOMMatrix,
+      renderer: CanvasRenderer,
+      rc: RoughCanvas,
+      colors: Colors
+    ) => {
+      const shapeModel = model as ShapeElementModel;
+      const stencilName = shapeModel.stencilName;
+      // Fast path: embedded geometry, no drawio library dependency at all.
+      const stencil =
+        shapeModel.stencilData ??
+        (stencilName ? getStencilShapeData(stencilName) : null);
+      if (!stencil && stencilName) {
+        // Legacy shape (created before stencilData existed) with nothing
+        // resolved yet: draw a fallback this frame, and kick off a load.
+        // Setting stencilData on resolve triggers a repaint via the
+        // existing elementUpdated -> refresh({type:'element'}) pipeline
+        // (CanvasRenderer._watchSurface) and backfills so every render
+        // after this one is a fast-path hit, for this shape specifically.
+        loadStencilShapeData(stencilName)
+          .then(data => {
+            if (data && !shapeModel.stencilData) {
+              shapeModel.stencilData = data;
+            }
+          })
+          .catch(() => {
+            // best-effort — shape keeps rendering as the plain fallback
+          });
+      }
+      const render = stencil ? createStencilShapeRenderer(stencil) : rect;
+      render(model, ctx, matrix, renderer, rc, colors);
     };
 
     return {
@@ -121,6 +165,17 @@ const shapeRenderers: Record<
       arrowCalloutUp: resolveStencil(ShapeType.ArrowCalloutUp),
       arrowCalloutDouble: resolveStencil(ShapeType.ArrowCalloutDouble),
       arrowCalloutQuad: resolveStencil(ShapeType.ArrowCalloutQuad),
+      container: rect,
+      verticalContainer: rect,
+      horizontalContainer: rect,
+      list: rect,
+      mindmapCentralIdea: ellipse,
+      mindmapBranch: rect,
+      mindmapSubTopic: rect,
+      mindmapSquare: rect,
+      mindmapOrganization: rect,
+      mindmapDivision: rect,
+      drawioStencil,
     };
   })(),
   diamond,
@@ -162,7 +217,6 @@ export const shape: ElementRenderer<ShapeElementModel> = (
     true
   );
   const colors = { color, fillColor, strokeColor };
-
   shapeRenderers[model.shapeType](model, ctx, matrix, renderer, rc, colors);
 
   if (model.textDisplay) {
@@ -176,6 +230,28 @@ export const ShapeElementRendererExtension = ElementRendererExtension(
 );
 
 export * from './utils';
+
+export const shouldCompensateShapeFlipForText = (_shapeType: string) => true;
+
+export const getTextFlipCompensation = (
+  shapeType: string,
+  flipX: boolean,
+  flipY: boolean
+) => {
+  if (!shouldCompensateShapeFlipForText(shapeType)) {
+    return { x: 1, y: 1, rotate: 0 };
+  }
+  const inheritedX = flipX ? -1 : 1;
+  const inheritedY = flipY ? -1 : 1;
+  if (shapeType === ShapeType.HorizontalContainer) {
+    return {
+      x: flipX ? -1 : 1,
+      y: flipX ? -1 : 1,
+      rotate: 0,
+    };
+  }
+  return { x: inheritedX, y: inheritedY, rotate: 0 };
+};
 
 function renderText(
   model: ShapeElementModel | LocalShapeElementModel,
@@ -194,44 +270,173 @@ function renderText(
     h,
     textVerticalAlign,
     padding,
+    textRotate,
+    textFlipX,
+    textFlipY,
   } = model;
   if (!text) return;
 
-  const [verticalPadding, horPadding] = padding;
   const flipX = 'flipX' in model ? model.flipX : false;
   const flipY = 'flipY' in model ? model.flipY : false;
+
+  let textAreaWidth = w;
+  let textAreaHeight = h;
+  let textOffsetX = 0;
+  let textOffsetY = 0;
+  let effectiveVerticalAlign = textVerticalAlign;
+
+  if (model.shapeType === ShapeType.VerticalContainer) {
+    textAreaHeight = Math.min(CONTAINER_TITLE_SIZE, h);
+    effectiveVerticalAlign = TextVerticalAlign.Center;
+  }
+
+  if (model.shapeType === ShapeType.Container) {
+    effectiveVerticalAlign = TextVerticalAlign.Top;
+  }
+
+  if (model.shapeType === ShapeType.MindmapBranch) {
+    textAreaHeight = h;
+    effectiveVerticalAlign = TextVerticalAlign.Top;
+  }
+
+  if (model.shapeType === ShapeType.HorizontalContainer) {
+    textAreaWidth = Math.min(CONTAINER_TITLE_SIZE, w);
+    textAreaHeight = h;
+    effectiveVerticalAlign = TextVerticalAlign.Center;
+  }
+
+  const inherited = getTextFlipCompensation(model.shapeType, flipX, flipY);
+  const scaleX = inherited.x * (textFlipX ? -1 : 1);
+  const scaleY = inherited.y * (textFlipY ? -1 : 1);
+  const rotation = (textRotate ?? 0) + inherited.rotate;
+
+  let [verticalPadding, horPadding] = padding;
+  if (model.shapeType === ShapeType.MindmapBranch) {
+    verticalPadding = Math.min(verticalPadding, 4);
+    horPadding = Math.min(horPadding, 8);
+  }
   const font = getFontString(model);
   const { lineGap, lineHeight } = measureTextInDOM(
     fontFamily,
     fontSize,
     fontWeight
   );
+  if (model.shapeType === ShapeType.MindmapBranch) {
+    textOffsetY = -Math.min(lineHeight * 0.35, 6);
+    textOffsetX = 6;
+  }
   const metrics = getFontMetrics(fontFamily, fontSize, fontWeight);
   const lines =
     typeof text === 'string'
       ? [text.split('\n').map(line => ({ insert: line }))]
-      : deltaInsertsToChunks(wrapTextDeltas(text, font, w - horPadding * 2));
-  const horOffset = horizontalOffset(model.w, model.textAlign, horPadding);
+      : deltaInsertsToChunks(
+          wrapTextDeltas(text, font, textAreaWidth - horPadding * 2)
+        );
+  const horOffset = horizontalOffset(
+    textAreaWidth,
+    model.textAlign,
+    horPadding
+  );
   const vertOffset =
     verticalOffset(
       lines,
       lineHeight + lineGap,
-      h,
-      textVerticalAlign,
+      textAreaHeight,
+      effectiveVerticalAlign,
       verticalPadding
     ) +
     metrics.fontBoundingBoxAscent +
     lineGap / 2;
   let maxLineWidth = 0;
 
-  ctx.save();
+  if (model.shapeType === ShapeType.HorizontalContainer) {
+    const titleWidth = Math.min(CONTAINER_TITLE_SIZE, w);
+    const rotatedWidth = h;
+    const rotatedHeight = titleWidth;
+    const rotatedHorOffset = horizontalOffset(
+      rotatedWidth,
+      model.textAlign,
+      horPadding
+    );
+    const rotatedVertOffset =
+      verticalOffset(
+        lines,
+        lineHeight + lineGap,
+        rotatedHeight,
+        TextVerticalAlign.Center,
+        verticalPadding
+      ) +
+      metrics.fontBoundingBoxAscent +
+      lineGap / 2;
+    const baseX = -rotatedWidth / 2;
+    const baseY = -rotatedHeight / 2;
+    const centerX = titleWidth / 2;
+    const centerY = h / 2;
 
-  if (flipX || flipY) {
-    ctx.translate(w / 2, h / 2);
-    ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
-    ctx.translate(-w / 2, -h / 2);
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.scale(scaleX, scaleY);
+    if (rotation) {
+      ctx.rotate((rotation * Math.PI) / 180);
+    }
+    ctx.rotate(-Math.PI / 2);
+    // Text flip tweak helpers (uncomment to experiment):
+    if (flipX) {
+      ctx.scale(-1, 1); // horizontal flip
+      ctx.rotate(Math.PI);
+    }
+    if (flipY) {
+      ctx.scale(1, -1); // vertical flip
+      ctx.rotate(Math.PI); // 180deg rotation
+    }
+    ctx.font = font;
+    ctx.fillStyle = color;
+    ctx.textAlign = textAlign;
+    ctx.textBaseline = 'alphabetic';
+
+    for (const [lineIndex, line] of lines.entries()) {
+      for (const delta of line) {
+        const str = delta.insert;
+        const rtl = isRTL(str);
+        const shouldTemporarilyAttach = rtl && !ctx.canvas.isConnected;
+        if (shouldTemporarilyAttach) {
+          document.body.append(ctx.canvas);
+        }
+
+        if (ctx.canvas.dir !== (rtl ? 'rtl' : 'ltr')) {
+          ctx.canvas.setAttribute('dir', rtl ? 'rtl' : 'ltr');
+        }
+
+        ctx.fillText(
+          str,
+          baseX + rotatedHorOffset + 0.5,
+          baseY + lineIndex * lineHeight + rotatedVertOffset
+        );
+
+        maxLineWidth = Math.max(maxLineWidth, getLineWidth(str, font));
+
+        if (shouldTemporarilyAttach) {
+          ctx.canvas.remove();
+        }
+      }
+    }
+
+    const bound = new Bound(x, y, titleWidth, h) as IBound;
+    bound.rotate = model.rotate ?? 0;
+    model.textBound = bound;
+    ctx.restore();
+    return;
   }
 
+  ctx.save();
+  if (scaleX !== 1 || scaleY !== 1 || rotation) {
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(scaleX, scaleY);
+    if (rotation) {
+      ctx.rotate((rotation * Math.PI) / 180);
+    }
+    ctx.translate(-w / 2, -h / 2);
+  }
   ctx.font = font;
   ctx.fillStyle = color;
   ctx.textAlign = textAlign;
@@ -255,8 +460,8 @@ function renderText(
       ctx.fillText(
         str,
         // 0.5 is the dom editor padding to make the text align with the DOM text
-        horOffset + 0.5,
-        lineIndex * lineHeight + vertOffset
+        horOffset + 0.5 + textOffsetX,
+        lineIndex * lineHeight + vertOffset + textOffsetY
       );
 
       maxLineWidth = Math.max(maxLineWidth, getLineWidth(str, font));
@@ -284,7 +489,6 @@ function renderText(
     lineHeight * lines.length
   ) as IBound;
 
-  bound.rotate = model.rotate ?? 0;
+  bound.rotate = (model.rotate ?? 0) + (model.textRotate ?? 0);
   model.textBound = bound;
-  ctx.restore();
 }

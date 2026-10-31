@@ -124,9 +124,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
   private readonly _props$ = computed(() => {
     const shapeName: ShapeName = this._shapeName$.value;
     const propsStore = this.edgeless.std.get(EditPropsStore);
-    const shapeProps =
-      propsStore.lastProps$.value[this._getShapeLastPropsKey(shapeName)] ??
-      propsStore.lastProps$.value['shape:rect'];
+    const shapeProps = propsStore.lastProps$.value['shape:rect'];
     const { shapeStyle, fillColor, strokeColor, radius } = shapeProps;
     return {
       shapeStyle,
@@ -191,18 +189,26 @@ export class EdgelessShapeMenu extends SignalWatcher(
     props: Parameters<EditPropsStore['recordLastProps']>[1]
   ) {
     const propsStore = this.edgeless.std.get(EditPropsStore);
-    propsStore.recordLastProps(this._getShapeLastPropsKey(shapeName), props);
+    const normalizedProps = {
+      ...props,
+      flipX: false,
+      flipY: false,
+    };
+    const shapeKey = this._getShapeLastPropsKey(shapeName);
+
+    propsStore.recordLastProps(shapeKey, normalizedProps);
+
+    // Keep rect defaults in sync so toolbar previews and newly-selected shapes
+    // inherit the latest palette style.
+    if (shapeKey !== 'shape:rect') {
+      propsStore.recordLastProps('shape:rect', normalizedProps);
+    }
   }
 
   private _getShapeLastPropsKey(shapeName: ShapeName) {
-    const normalized =
-      shapeName === ShapeType.Rect ||
-      shapeName === ShapeType.Ellipse ||
-      shapeName === 'roundedRect'
-        ? shapeName
-        : ShapeType.Triangle;
-
-    return `shape:${normalized}` as const;
+    return shapeName === ShapeType.Rect
+      ? 'shape:rect'
+      : (`shape:${shapeName}` as const);
   }
 
   private _getActiveShapeName() {
@@ -224,11 +230,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
 
   private readonly _setShapeStyle = (shapeStyle: ShapeStyle) => {
     const shapeName = this._getActiveShapeName();
-    this.edgeless.std
-      .get(EditPropsStore)
-      .recordLastProps(this._getShapeLastPropsKey(shapeName), {
-        shapeStyle,
-      });
+    this._recordShapeProps(shapeName, { shapeStyle });
     this.onChange(shapeName);
   };
 

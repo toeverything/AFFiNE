@@ -2626,6 +2626,7 @@ __metadata:
     lit: "npm:^3.2.0"
     lodash-es: "npm:^4.17.23"
     rxjs: "npm:^7.8.2"
+    vitest: "npm:^4.1.11"
     yjs: "npm:^13.6.27"
   languageName: unknown
   linkType: soft
@@ -32975,7 +32976,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vitest@npm:^4.1.11":
+"vitest@npm:^4.1.11, vitest@npm:^4.1.8":
   version: 4.1.12
   resolution: "vitest@npm:4.1.12"
   dependencies:

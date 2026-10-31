@@ -25,6 +25,36 @@ import type { ShapeTool } from '../shape-tool';
 import { ShapeFactory } from './factory';
 import type { Shape } from './shape';
 
+const getOverlaySize = (shapeName: string) => {
+  switch (shapeName) {
+    case 'roundedRect':
+    case 'rect':
+      return {
+        width: SHAPE_OVERLAY_WIDTH + 40,
+        height: SHAPE_OVERLAY_HEIGHT,
+        offsetX: SHAPE_OVERLAY_OFFSET_X,
+        offsetY: SHAPE_OVERLAY_OFFSET_Y,
+      };
+    case 'container':
+    case 'verticalContainer':
+    case 'horizontalContainer':
+      return { width: 400, height: 400, offsetX: 0, offsetY: 0 };
+    case 'mindmapBranch':
+      return { width: 200, height: 32, offsetX: 0, offsetY: 0 };
+    case 'mindmapCentralIdea':
+    case 'mindmapSubTopic':
+    case 'mindmapSquare':
+      return { width: 200, height: 80, offsetX: 0, offsetY: 0 };
+    default:
+      return {
+        width: SHAPE_OVERLAY_WIDTH,
+        height: SHAPE_OVERLAY_HEIGHT,
+        offsetX: 0,
+        offsetY: 0,
+      };
+  }
+};
+
 export class ShapeOverlay extends ToolOverlay {
   shape: Shape;
 
@@ -36,15 +66,10 @@ export class ShapeOverlay extends ToolOverlay {
       shapeStyle: ShapeStyle;
       fillColor: Color;
       strokeColor: Color;
-    }
+    },
+    stencilName?: string
   ) {
     super(gfx);
-    const xywh = [
-      this.x,
-      this.y,
-      SHAPE_OVERLAY_WIDTH,
-      SHAPE_OVERLAY_HEIGHT,
-    ] as XYWH;
     const { shapeStyle, fillColor, strokeColor } = style;
     const fill = this.gfx.std
       .get(ThemeProvider)
@@ -56,7 +81,25 @@ export class ShapeOverlay extends ToolOverlay {
     options.fill = fill;
     options.stroke = stroke;
 
-    this.shape = ShapeFactory.createShape(xywh, type, options, shapeStyle);
+    const initialSize = getOverlaySize(type);
+    const initialXYWH = [
+      this.x + initialSize.offsetX,
+      this.y + initialSize.offsetY,
+      initialSize.width,
+      initialSize.height,
+    ] as XYWH;
+    const initialOptions = {
+      ...options,
+      fill: type === 'mindmapBranch' ? 'transparent' : options.fill,
+    };
+
+    this.shape = ShapeFactory.createShape(
+      initialXYWH,
+      type,
+      initialOptions,
+      shapeStyle,
+      stencilName
+    );
     this.disposables.add(
       effect(() => {
         const currentTool = this.gfx.tool.currentTool$.value;
@@ -65,26 +108,26 @@ export class ShapeOverlay extends ToolOverlay {
 
         assertType<ShapeTool>(currentTool);
 
-        const { shapeName } = currentTool.activatedOption;
+        const { shapeName, stencilName: nextStencilName } =
+          currentTool.activatedOption;
         const newOptions = {
           ...options,
+          fill: shapeName === 'mindmapBranch' ? 'transparent' : options.fill,
         };
 
-        let { x, y } = this;
-        if (shapeName === 'roundedRect' || shapeName === 'rect') {
-          x += SHAPE_OVERLAY_OFFSET_X;
-          y += SHAPE_OVERLAY_OFFSET_Y;
-        }
-        const w =
-          shapeName === 'roundedRect' || shapeName === 'rect'
-            ? SHAPE_OVERLAY_WIDTH + 40
-            : SHAPE_OVERLAY_WIDTH;
-        const xywh = [x, y, w, SHAPE_OVERLAY_HEIGHT] as XYWH;
+        const size = getOverlaySize(shapeName);
+        const xywh = [
+          this.x + size.offsetX,
+          this.y + size.offsetY,
+          size.width,
+          size.height,
+        ] as XYWH;
         this.shape = ShapeFactory.createShape(
           xywh,
           shapeName,
           newOptions,
-          shapeStyle
+          shapeStyle,
+          nextStencilName
         );
 
         const surface = getSurfaceComponent(this.gfx.std);
@@ -95,17 +138,14 @@ export class ShapeOverlay extends ToolOverlay {
 
   override render(ctx: CanvasRenderingContext2D, rc: RoughCanvas): void {
     ctx.globalAlpha = this.globalAlpha;
-    let { x, y } = this;
     const { type } = this.shape;
-    if (type === 'roundedRect' || type === 'rect') {
-      x += SHAPE_OVERLAY_OFFSET_X;
-      y += SHAPE_OVERLAY_OFFSET_Y;
-    }
-    const w =
-      type === 'roundedRect' || type === 'rect'
-        ? SHAPE_OVERLAY_WIDTH + 40
-        : SHAPE_OVERLAY_WIDTH;
-    const xywh = [x, y, w, SHAPE_OVERLAY_HEIGHT] as XYWH;
+    const size = getOverlaySize(type);
+    const xywh = [
+      this.x + size.offsetX,
+      this.y + size.offsetY,
+      size.width,
+      size.height,
+    ] as XYWH;
     this.shape.xywh = xywh;
     this.shape.draw(ctx, rc);
   }
