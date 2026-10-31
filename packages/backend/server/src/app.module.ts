@@ -38,6 +38,8 @@ import { DocJobsModule } from './core/doc-jobs';
 import { DocRendererModule } from './core/doc-renderer';
 import { FeatureModule } from './core/features';
 import { MailModule, MailWorkerModule } from './core/mail';
+import { MobileDebugEvalModule } from './core/mobile-debug-eval';
+import { MobileDebugLogModule } from './core/mobile-debug-log';
 import { MonitorModule } from './core/monitor';
 import {
   NotificationModule,
@@ -196,7 +198,9 @@ export function buildAppModule(env: Env) {
     .useIf(
       () => env.flavors.sync || env.flavors.front,
       SyncModule,
-      TelemetryModule
+      TelemetryModule,
+      MobileDebugLogModule,
+      MobileDebugEvalModule
     )
     .useIf(
       () => !env.flavors.graphql && (env.flavors.sync || env.flavors.front),
@@ -217,6 +221,8 @@ export function buildAppModule(env: Env) {
       OAuthModule,
       CalendarModule,
       TelemetryModule,
+      MobileDebugLogModule,
+      MobileDebugEvalModule,
       CommentModule
     )
     // worker for and self-hosted API only for self-host and local development only

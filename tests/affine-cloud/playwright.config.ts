@@ -46,7 +46,16 @@ const config: PlaywrightTestConfig = {
       url: 'http://localhost:8080',
     },
     {
-      command: 'yarn run -T affine dev -p @affine/server',
+      // Pipe stdout+stderr to a log file under testResultDir so the
+      // mobile-debug-log E2E test can assert on emitted [MobileDebugLog]
+      // server log lines. `stdbuf -oL` line-buffers tee's own output so
+      // lines land in the file promptly rather than sitting in tee's
+      // default block-buffer for a regular-file destination. NOTE: when
+      // reuseExistingServer (the local, non-CI default) reuses an
+      // already-running out-of-band dev server, this redirection does not
+      // apply — the E2E test handles that by failing loudly (not silently
+      // passing) if the expected log line never appears.
+      command: `mkdir -p ${testResultDir} && yarn run -T affine dev -p @affine/server 2>&1 | stdbuf -oL tee -a ${testResultDir}/mobile-debug-log-server.log`,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
