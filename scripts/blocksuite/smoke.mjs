@@ -8,6 +8,10 @@
  * Usage:
  *   node scripts/blocksuite/smoke.mjs [--packs <dir>] [--app <dir>]
  *     [--skip-install] [--skip-browser] [--typescript <range>] [--vite <range>]
+ *     [--registry <url>]
+ *
+ * The app ignores the host's npm user config (CI maps some scopes to GitHub
+ * Packages) and installs third-party dependencies from `--registry`.
  */
 import fs from 'node:fs';
 import http from 'node:http';
@@ -20,6 +24,7 @@ import {
   loadManifest,
   logStep,
   mdTable,
+  npmRegistry,
   releaseDir,
   rootDir,
   writeReport,
@@ -33,6 +38,7 @@ const { values } = parseArgs({
     'skip-browser': { type: 'boolean', default: false },
     typescript: { type: 'string', default: '^6.0.0' },
     vite: { type: 'string', default: '^8.0.0' },
+    registry: { type: 'string', default: npmRegistry },
   },
 });
 
@@ -48,8 +54,13 @@ const localBin = name =>
   );
 
 const smokeText = 'Hello from the packed tarballs';
+const emptyUserConfig = path.join(appDir, '.npmrc-userconfig');
 
 const files = {
+  '.npmrc': `registry=${values.registry}\n`,
+  // Passed as NPM_CONFIG_USERCONFIG so nothing from ~/.npmrc or the CI
+  // runner's npm config leaks into the clean app.
+  '.npmrc-userconfig': '; intentionally empty\n',
   'package.json': `${JSON.stringify(
     {
       name: 'blocksuite-smoke-app',
@@ -208,13 +219,24 @@ const installed =
   (values['skip-install']
     ? true
     : await stage('npm install the packed tarballs', () => {
-        exec('npm install', 'npm', [
-          'install',
-          '--no-audit',
-          '--no-fund',
-          '--no-package-lock',
-          '--loglevel=error',
-        ]);
+        exec(
+          'npm install',
+          'npm',
+          [
+            'install',
+            '--no-audit',
+            '--no-fund',
+            '--no-package-lock',
+            '--loglevel=error',
+          ],
+          {
+            env: {
+              NO_COLOR: '1',
+              FORCE_COLOR: '0',
+              NPM_CONFIG_USERCONFIG: emptyUserConfig,
+            },
+          }
+        );
         const installedTs = JSON.parse(
           fs.readFileSync(
             path.join(appDir, 'node_modules/typescript/package.json'),
