@@ -2495,7 +2495,7 @@
       },
       "journal": {
         "placeholder": {
-          "description": "创建一个以开始写作。"
+          "description": "创建日记以开始写作。"
         }
       },
       "mobile": {
@@ -2661,7 +2661,7 @@
           "confirm-all": "要登出所有设备吗？",
           "load-failed": "加载设备失败",
           "sign-out-failed": "登出设备失败",
-          "sign-out-all-failed": "登出设备失败"
+          "sign-out-all-failed": "登出所有设备失败。"
         }
       },
       "m": {
