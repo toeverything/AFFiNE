@@ -416,6 +416,87 @@ export function createHTMLTargetConfig(
   return config;
 }
 
+/**
+ * Compiles the service worker to a fixed, unhashed filename at the dist
+ * root (not `js/<name>-<version>.worker.js` like createWorkerTargetConfig's
+ * other workers) — a service worker must be registered by a stable URL, and
+ * living at the dist root gives it the broadest default scope without
+ * needing a `Service-Worker-Allowed` response header from the server.
+ * `workbox-build`'s `injectManifest` runs against this compiled output as a
+ * separate post-build step (see bundle.ts) to inject the actual precache
+ * manifest — this function only produces the compiled-but-unfilled source.
+ */
+export function createServiceWorkerTargetConfig(
+  pkg: Package,
+  entry: string
+): Omit<RspackConfiguration, 'name'> & { name: string } {
+  const buildConfig = getBuildConfigFromEnv(pkg);
+
+  return {
+    name: entry,
+    context: ProjectRoot.value,
+    entry: { 'service-worker': entry },
+    output: {
+      filename: 'service-worker.js',
+      path: pkg.distPath.value,
+      clean: false,
+      globalObject: 'globalThis',
+      publicPath: '/',
+    },
+    target: ['webworker', 'es2022'],
+    mode: buildConfig.debug ? 'development' : 'production',
+    devtool: buildConfig.debug ? 'cheap-module-source-map' : 'source-map',
+    resolve: {
+      extensions: ['.js', '.ts'],
+    },
+    module: {
+      rules: [
+        {
+          test: /\.ts$/,
+          loader: 'swc-loader',
+          options: {
+            jsc: {
+              parser: { syntax: 'typescript' },
+              target: 'es2022',
+            },
+            sourceMaps: true,
+          },
+        },
+      ],
+    },
+    plugins: [
+      new rspack.DefinePlugin(
+        Object.entries(buildConfig).reduce(
+          (def, [k, v]) => {
+            def[`BUILD_CONFIG.${k}`] = JSON.stringify(v);
+            return def;
+          },
+          {} as Record<string, string>
+        )
+      ),
+      new rspack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+    ],
+    stats: { errorDetails: true },
+    optimization: {
+      minimize: !buildConfig.debug,
+      minimizer: [
+        new rspack.SwcJsMinimizerRspackPlugin({
+          extractComments: true,
+          minimizerOptions: {
+            ecma: 2020,
+            compress: { unused: true },
+            mangle: { keep_classnames: true },
+          },
+        }),
+      ],
+      removeEmptyChunks: true,
+      runtimeChunk: false,
+      splitChunks: false,
+    },
+    performance: { hints: false },
+  };
+}
+
 export function createWorkerTargetConfig(
   pkg: Package,
   entry: string

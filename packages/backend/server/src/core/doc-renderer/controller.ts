@@ -254,7 +254,7 @@ export class DocRendererController {
     <meta name="theme-color" content="#fafafa" />
     ${assets.publicPath.startsWith('/') ? '' : `<link rel="preconnect" href="${assets.publicPath}" />`}
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-v2.png" />
     <link rel="icon" sizes="192x192" href="/favicon-192.png" />
     <link rel="shortcut icon" href="/favicon.ico?v=2" />
     <meta name="emotion-insertion-point" content="" />

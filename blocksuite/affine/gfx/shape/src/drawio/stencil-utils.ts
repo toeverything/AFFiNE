@@ -114,15 +114,21 @@ const partitionLoaders: Record<
   () => Promise<Record<string, StencilShapeData>>
 > = {
   a: () =>
-    import('./library-stencils-a.js').then(
+    import(
+      /* webpackChunkName: "library-stencils-a" */ './library-stencils-a.js'
+    ).then(
       m => m.drawioLibraryStencilShapesA as unknown as Record<string, StencilShapeData>
     ),
   bm: () =>
-    import('./library-stencils-bm.js').then(
+    import(
+      /* webpackChunkName: "library-stencils-bm" */ './library-stencils-bm.js'
+    ).then(
       m => m.drawioLibraryStencilShapesBM as unknown as Record<string, StencilShapeData>
     ),
   nz: () =>
-    import('./library-stencils-nz.js').then(
+    import(
+      /* webpackChunkName: "library-stencils-nz" */ './library-stencils-nz.js'
+    ).then(
       m => m.drawioLibraryStencilShapesNZ as unknown as Record<string, StencilShapeData>
     ),
 };
