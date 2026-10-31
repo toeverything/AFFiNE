@@ -58,7 +58,11 @@ jobs:
 
       - name: Smoke-install the packed tarballs
         continue-on-error: true
-        run: yarn blocksuite:smoke
+        # The tsc problem matcher would turn every expected type error in the
+        # clean app into a PR annotation; the report has the details.
+        run: |
+          echo "::remove-matcher owner=tsc::"
+          yarn blocksuite:smoke
 
       - name: Upload reports
         if: always()
