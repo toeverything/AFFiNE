@@ -7,6 +7,7 @@ import {
 import type { ShapeElementModel, ShapeName } from '@blocksuite/affine-model';
 import {
   DefaultTheme,
+  getShapeRadius,
   getShapeType,
   ShapeType,
 } from '@blocksuite/affine-model';
@@ -65,10 +66,9 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
   ): string {
     const { viewport } = this.gfx;
     const { shapeName } = this.activatedOption;
-    const attributes =
-      this.std.get(EditPropsStore).lastProps$.value[`shape:${shapeName}`];
+    const attributes = this._getShapeAttributes(shapeName);
 
-    if (shapeName === 'roundedRect') {
+    if (shapeName === 'roundedRect' || shapeName === ShapeType.Rect) {
       width += 40;
     }
     // create a shape block when drag start
@@ -80,8 +80,17 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
       shapeType: getShapeType(shapeName),
       xywh: bound.serialize(),
       radius: attributes.radius,
+      flipX: false,
+      flipY: false,
+      filled: attributes.filled,
+      fillColor: attributes.fillColor,
       gradientFinal: attributes.gradientFinal,
       gradientDirection: attributes.gradientDirection,
+      strokeColor: attributes.strokeColor,
+      strokeWidth: attributes.strokeWidth,
+      strokeStyle: attributes.strokeStyle,
+      shapeStyle: attributes.shapeStyle,
+      roughness: attributes.roughness,
     });
 
     this.std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {
@@ -210,8 +219,7 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
     if (this._disableOverlay) return;
     const options = SHAPE_OVERLAY_OPTIONS;
     const { shapeName } = this.activatedOption;
-    const attributes =
-      this.std.get(EditPropsStore).lastProps$.value[`shape:${shapeName}`];
+    const attributes = this._getShapeAttributes(shapeName);
 
     options.stroke = this.std
       .get(ThemeProvider)
@@ -245,6 +253,23 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
 
   override deactivate() {
     this.clearOverlay();
+  }
+
+  private _getShapeAttributes(shapeName: ShapeName) {
+    const propsStore = this.std.get(EditPropsStore);
+    const rectProps = propsStore.lastProps$.value['shape:rect'];
+    return {
+      radius: getShapeRadius(shapeName),
+      filled: rectProps?.filled ?? true,
+      strokeColor: rectProps?.strokeColor ?? DefaultTheme.shapeStrokeColor,
+      fillColor: rectProps?.fillColor ?? DefaultTheme.shapeFillColor,
+      strokeStyle: rectProps?.strokeStyle ?? 'solid',
+      strokeWidth: rectProps?.strokeWidth ?? 4,
+      gradientFinal: rectProps?.gradientFinal,
+      gradientDirection: rectProps?.gradientDirection,
+      shapeStyle: rectProps?.shapeStyle,
+      roughness: rectProps?.roughness,
+    };
   }
 
   override dragEnd() {

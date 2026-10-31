@@ -15,17 +15,29 @@ import {
 import type {
   LocalShapeElementModel,
   ShapeElementModel,
-  ShapeType,
 } from '@blocksuite/affine-model';
-import { DefaultTheme, TextAlign } from '@blocksuite/affine-model';
+import { DefaultTheme, ShapeType, TextAlign } from '@blocksuite/affine-model';
 import type { IBound } from '@blocksuite/global/gfx';
 import { Bound } from '@blocksuite/global/gfx';
 import { deltaInsertsToChunks } from '@blocksuite/std/inline';
 
+import { DRAWIO_STENCIL_SHAPE_MAP } from '../../drawio/stencil-map.js';
+import { getStencilShapeData } from '../../drawio/stencil-utils.js';
+import { actor } from './actor.js';
+import { cloud } from './cloud.js';
+import { cube } from './cube.js';
 import { diamond } from './diamond.js';
+import { document as documentShape } from './document.js';
 import { ellipse } from './ellipse.js';
+import { hexagon } from './hexagon.js';
+import { note } from './note.js';
+import { parallelogram } from './parallelogram.js';
 import { rect } from './rect.js';
+import { createStencilShapeRenderer } from './stencil-shape.js';
+import { step } from './step.js';
+import { trapezoid } from './trapezoid.js';
 import { triangle } from './triangle.js';
+import { triangleRight } from './triangle-right.js';
 import { type Colors, horizontalOffset, verticalOffset } from './utils.js';
 
 const shapeRenderers: Record<
@@ -39,10 +51,92 @@ const shapeRenderers: Record<
     colors: Colors
   ) => void
 > = {
+  ...(() => {
+    const resolveStencil = (shapeType: ShapeType) => {
+      const name = DRAWIO_STENCIL_SHAPE_MAP[shapeType];
+      const stencil = name ? getStencilShapeData(name) : null;
+      return stencil ? createStencilShapeRenderer(stencil) : rect;
+    };
+
+    return {
+      callout: resolveStencil(ShapeType.Callout),
+      cylinder: resolveStencil(ShapeType.Cylinder),
+      dataStorage: resolveStencil(ShapeType.DataStorage),
+      internalStorage: resolveStencil(ShapeType.InternalStorage),
+      tape: resolveStencil(ShapeType.Tape),
+      logicAnd: resolveStencil(ShapeType.LogicAnd),
+      logicOr: resolveStencil(ShapeType.LogicOr),
+      flowchartProcess: resolveStencil(ShapeType.FlowchartProcess),
+      flowchartDecision: resolveStencil(ShapeType.FlowchartDecision),
+      flowchartData: resolveStencil(ShapeType.FlowchartData),
+      flowchartDocument: resolveStencil(ShapeType.FlowchartDocument),
+      flowchartManualInput: resolveStencil(ShapeType.FlowchartManualInput),
+      flowchartDelay: resolveStencil(ShapeType.FlowchartDelay),
+      flowchartPredefinedProcess: resolveStencil(
+        ShapeType.FlowchartPredefinedProcess
+      ),
+      flowchartStoredData: resolveStencil(ShapeType.FlowchartStoredData),
+      flowchartInternalStorage: resolveStencil(
+        ShapeType.FlowchartInternalStorage
+      ),
+      flowchartDatabase: resolveStencil(ShapeType.FlowchartDatabase),
+      flowchartSequentialData: resolveStencil(
+        ShapeType.FlowchartSequentialData
+      ),
+      flowchartTerminator: resolveStencil(ShapeType.FlowchartTerminator),
+      flowchartPreparation: resolveStencil(ShapeType.FlowchartPreparation),
+      flowchartMerge: resolveStencil(ShapeType.FlowchartMerge),
+      flowchartPaperTape: resolveStencil(ShapeType.FlowchartPaperTape),
+      flowchartAnnotation1: resolveStencil(ShapeType.FlowchartAnnotation1),
+      flowchartAnnotation2: resolveStencil(ShapeType.FlowchartAnnotation2),
+      flowchartCard: resolveStencil(ShapeType.FlowchartCard),
+      flowchartCollate: resolveStencil(ShapeType.FlowchartCollate),
+      flowchartDirectData: resolveStencil(ShapeType.FlowchartDirectData),
+      flowchartDisplay: resolveStencil(ShapeType.FlowchartDisplay),
+      flowchartLoopLimit: resolveStencil(ShapeType.FlowchartLoopLimit),
+      flowchartManualOperation: resolveStencil(
+        ShapeType.FlowchartManualOperation
+      ),
+      flowchartMultiDocument: resolveStencil(ShapeType.FlowchartMultiDocument),
+      flowchartOffPageReference: resolveStencil(
+        ShapeType.FlowchartOffPageReference
+      ),
+      flowchartOr: resolveStencil(ShapeType.FlowchartOr),
+      flowchartSort: resolveStencil(ShapeType.FlowchartSort),
+      flowchartSummingFunction: resolveStencil(
+        ShapeType.FlowchartSummingFunction
+      ),
+      arrowUp: resolveStencil(ShapeType.ArrowUp),
+      arrowDown: resolveStencil(ShapeType.ArrowDown),
+      arrowLeft: resolveStencil(ShapeType.ArrowLeft),
+      arrowRight: resolveStencil(ShapeType.ArrowRight),
+      arrowTwoWayHorizontal: resolveStencil(ShapeType.ArrowTwoWayHorizontal),
+      arrowTwoWayVertical: resolveStencil(ShapeType.ArrowTwoWayVertical),
+      arrowBentLeft: resolveStencil(ShapeType.ArrowBentLeft),
+      arrowBentRight: resolveStencil(ShapeType.ArrowBentRight),
+      arrowBentUp: resolveStencil(ShapeType.ArrowBentUp),
+      arrowNotchedSignalIn: resolveStencil(ShapeType.ArrowNotchedSignalIn),
+      arrowNotchedRight: resolveStencil(ShapeType.ArrowNotchedRight),
+      arrowNotchedStylised: resolveStencil(ShapeType.ArrowNotchedStylised),
+      arrowCalloutUp: resolveStencil(ShapeType.ArrowCalloutUp),
+      arrowCalloutDouble: resolveStencil(ShapeType.ArrowCalloutDouble),
+      arrowCalloutQuad: resolveStencil(ShapeType.ArrowCalloutQuad),
+    };
+  })(),
   diamond,
   rect,
   triangle,
   ellipse,
+  triangleRight,
+  hexagon,
+  parallelogram,
+  trapezoid,
+  step,
+  cloud,
+  document: documentShape,
+  note,
+  cube,
+  actor,
 };
 
 export const shape: ElementRenderer<ShapeElementModel> = (
@@ -104,6 +198,8 @@ function renderText(
   if (!text) return;
 
   const [verticalPadding, horPadding] = padding;
+  const flipX = 'flipX' in model ? model.flipX : false;
+  const flipY = 'flipY' in model ? model.flipY : false;
   const font = getFontString(model);
   const { lineGap, lineHeight } = measureTextInDOM(
     fontFamily,
@@ -130,11 +226,9 @@ function renderText(
 
   ctx.save();
 
-  // Shape renderers apply flip transforms to the whole element. Apply the same
-  // flip again for text to cancel mirroring so labels stay readable.
-  if (model.flipX || model.flipY) {
+  if (flipX || flipY) {
     ctx.translate(w / 2, h / 2);
-    ctx.scale(model.flipX ? -1 : 1, model.flipY ? -1 : 1);
+    ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
     ctx.translate(-w / 2, -h / 2);
   }
 
@@ -192,4 +286,5 @@ function renderText(
 
   bound.rotate = model.rotate ?? 0;
   model.textBound = bound;
+  ctx.restore();
 }

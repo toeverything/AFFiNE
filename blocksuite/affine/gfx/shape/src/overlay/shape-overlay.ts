@@ -76,7 +76,7 @@ export class ShapeOverlay extends ToolOverlay {
           y += SHAPE_OVERLAY_OFFSET_Y;
         }
         const w =
-          shapeName === 'roundedRect'
+          shapeName === 'roundedRect' || shapeName === 'rect'
             ? SHAPE_OVERLAY_WIDTH + 40
             : SHAPE_OVERLAY_WIDTH;
         const xywh = [x, y, w, SHAPE_OVERLAY_HEIGHT] as XYWH;
@@ -102,7 +102,9 @@ export class ShapeOverlay extends ToolOverlay {
       y += SHAPE_OVERLAY_OFFSET_Y;
     }
     const w =
-      type === 'roundedRect' ? SHAPE_OVERLAY_WIDTH + 40 : SHAPE_OVERLAY_WIDTH;
+      type === 'roundedRect' || type === 'rect'
+        ? SHAPE_OVERLAY_WIDTH + 40
+        : SHAPE_OVERLAY_WIDTH;
     const xywh = [x, y, w, SHAPE_OVERLAY_HEIGHT] as XYWH;
     this.shape.xywh = xywh;
     this.shape.draw(ctx, rc);

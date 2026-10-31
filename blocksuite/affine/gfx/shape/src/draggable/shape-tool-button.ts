@@ -1,8 +1,19 @@
 import type { ShapeName } from '@blocksuite/affine-model';
+import { EditPropsStore } from '@blocksuite/affine-shared/services';
+import { once } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
+import {
+  arrow,
+  autoUpdate,
+  computePosition,
+  offset,
+  shift,
+} from '@floating-ui/dom';
 import { css, html, LitElement } from 'lit';
+import { state } from 'lit/decorators.js';
 
+import type { EdgelessShapeBrowserPanel } from '../components/shape-browser-panel.js';
 import { ShapeTool } from '../shape-tool.js';
 import type { EdgelessShapeMenu } from './shape-menu.js';
 import type { DraggableShape } from './utils.js';
@@ -23,7 +34,21 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     }
   `;
 
+  private _cleanup: (() => void) | null = null;
+  private _autoUpdateCleanup: (() => void) | null = null;
+  private _menuElement: EdgelessShapeMenu | null = null;
+  private _escapeCleanup: (() => void) | null = null;
+
+  @state()
+  private accessor _browserOpen = false;
+
+  @state()
+  private accessor _openedBrowserPanel: EdgelessShapeBrowserPanel | null = null;
+
+  override type = ShapeTool;
+
   private readonly _handleShapeClick = (shape: DraggableShape) => {
+    this._syncShapeColors(shape.name);
     this.setEdgelessTool(this.type, {
       shapeName: shape.name,
     });
@@ -32,25 +57,135 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
 
   private readonly _handleWrapperClick = () => {
     if (this.tryDisposePopper()) return;
-
     if (!this.popper) this._toggleMenu();
   };
 
-  override type = ShapeTool;
+  override connectedCallback() {
+    super.connectedCallback();
+    this.disposables.add(() => this._autoUpdateCleanup?.());
+  }
+
+  override disconnectedCallback() {
+    this._closeBrowser();
+    super.disconnectedCallback();
+  }
 
   private _toggleMenu() {
-    this.createPopper('edgeless-shape-menu' as any, this, {
+    this.createPopper('edgeless-shape-menu', this, {
       setProps: ele => {
-        const menu = ele as EdgelessShapeMenu;
-        menu.edgeless = this.edgeless;
-        menu.onChange = (shapeName: ShapeName) => {
+        this._menuElement = ele;
+        ele.edgeless = this.edgeless;
+        ele.browserOpen = this._browserOpen;
+        ele.onChange = (shapeName: ShapeName) => {
+          this._syncShapeColors(shapeName);
           this.setEdgelessTool(this.type, {
             shapeName,
           });
           this._updateOverlay();
         };
+        ele.onMoreClick = () => {
+          this._toggleShapeBrowser();
+        };
       },
     });
+  }
+
+  private _toggleShapeBrowser() {
+    if (this._openedBrowserPanel) {
+      this._closeBrowser();
+      return;
+    }
+
+    this._browserOpen = true;
+    if (this._menuElement) {
+      this._menuElement.browserOpen = true;
+    }
+
+    const panel = document.createElement(
+      'edgeless-shape-browser-panel'
+    ) as EdgelessShapeBrowserPanel;
+    panel.edgeless = this.edgeless;
+
+    this._cleanup = once(panel, 'closepanel', () => {
+      this._closeBrowser();
+    });
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        this._closeBrowser();
+      }
+    };
+    document.addEventListener('keydown', onEscape);
+    this._escapeCleanup = () => {
+      document.removeEventListener('keydown', onEscape);
+    };
+
+    // Handle shape selection
+    panel.addEventListener('shapeselect', ((e: CustomEvent) => {
+      const shapeName = e.detail.shapeName;
+      this._syncShapeColors(shapeName);
+      this.setEdgelessTool(this.type, { shapeName });
+      this._updateOverlay();
+      this._closeBrowser();
+    }) as EventListener);
+
+    this._openedBrowserPanel = panel;
+    document.body.append(panel);
+
+    requestAnimationFrame(() => {
+      // Find the More button in the shape menu as the positioning reference
+      const moreButton = this._menuElement?.renderRoot?.querySelector(
+        '.more-shapes-button'
+      ) as HTMLElement | null;
+      const referenceEl = moreButton ?? this._menuElement ?? this;
+
+      const arrowEl = panel.renderRoot?.querySelector(
+        '.arrow'
+      ) as HTMLElement | null;
+      this._autoUpdateCleanup?.();
+      this._autoUpdateCleanup = autoUpdate(referenceEl, panel, () => {
+        const middleware = [offset(20), shift()];
+        if (arrowEl) {
+          middleware.splice(1, 0, arrow({ element: arrowEl }));
+        }
+
+        computePosition(referenceEl, panel, {
+          placement: 'top',
+          middleware,
+        })
+          .then(({ x, y, middlewareData }) => {
+            panel.style.left = `${x}px`;
+            panel.style.top = `${y}px`;
+
+            if (arrowEl) {
+              arrowEl.style.left = `${
+                (middlewareData.arrow?.x ?? 0) - (middlewareData.shift?.x ?? 0)
+              }px`;
+            }
+          })
+          .catch(e => {
+            console.warn("Can't compute position", e);
+          });
+      });
+    });
+  }
+
+  private _closeBrowser() {
+    if (this._openedBrowserPanel) {
+      this._openedBrowserPanel.remove();
+      this._openedBrowserPanel = null;
+      this._cleanup?.();
+      this._cleanup = null;
+      this._escapeCleanup?.();
+      this._escapeCleanup = null;
+      this._autoUpdateCleanup?.();
+      this._autoUpdateCleanup = null;
+      this._browserOpen = false;
+      if (this._menuElement) {
+        this._menuElement.browserOpen = false;
+      }
+      this.requestUpdate();
+    }
   }
 
   private _updateOverlay() {
@@ -58,6 +193,28 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     if (controller instanceof ShapeTool) {
       controller.createOverlay();
     }
+  }
+
+  private _syncShapeColors(nextShapeName: ShapeName) {
+    const propsStore = this.edgeless.std.get(EditPropsStore);
+    const currentProps = propsStore.lastProps$.value['shape:rect'];
+    if (!currentProps) {
+      return;
+    }
+    propsStore.recordLastProps(`shape:${nextShapeName}`, {
+      fillColor: currentProps.fillColor,
+      strokeColor: currentProps.strokeColor,
+      filled: currentProps.filled,
+      strokeStyle: currentProps.strokeStyle,
+      strokeWidth: currentProps.strokeWidth,
+      gradientFinal: currentProps.gradientFinal,
+      gradientDirection: currentProps.gradientDirection,
+      shapeStyle: currentProps.shapeStyle,
+      roughness: currentProps.roughness,
+      fontFamily: currentProps.fontFamily,
+      flipX: false,
+      flipY: false,
+    });
   }
 
   override render() {

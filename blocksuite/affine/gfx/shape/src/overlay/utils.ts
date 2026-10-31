@@ -29,6 +29,57 @@ export const drawGeneralShape = (
     case 'ellipse':
       shapeMethods.ellipse.draw(ctx, bound);
       break;
+    case 'triangleRight':
+      shapeMethods.triangleRight.draw(ctx, bound);
+      break;
+    case 'hexagon':
+      shapeMethods.hexagon.draw(ctx, bound);
+      break;
+    case 'parallelogram':
+      shapeMethods.parallelogram.draw(ctx, bound);
+      break;
+    case 'trapezoid':
+      shapeMethods.trapezoid.draw(ctx, bound);
+      break;
+    case 'step':
+      shapeMethods.step.draw(ctx, bound);
+      break;
+    case 'cylinder':
+      shapeMethods.cylinder.draw(ctx, bound);
+      break;
+    case 'cloud':
+      shapeMethods.cloud.draw(ctx, bound);
+      break;
+    case 'document':
+      shapeMethods.document.draw(ctx, bound);
+      break;
+    case 'note':
+      shapeMethods.note.draw(ctx, bound);
+      break;
+    case 'cube':
+      shapeMethods.cube.draw(ctx, bound);
+      break;
+    case 'callout':
+      shapeMethods.callout.draw(ctx, bound);
+      break;
+    case 'actor':
+      shapeMethods.actor.draw(ctx, bound);
+      break;
+    case 'dataStorage':
+      shapeMethods.dataStorage.draw(ctx, bound);
+      break;
+    case 'tape':
+      shapeMethods.tape.draw(ctx, bound);
+      break;
+    case 'internalStorage':
+      shapeMethods.internalStorage.draw(ctx, bound);
+      break;
+    case 'logicAnd':
+      shapeMethods.logicAnd.draw(ctx, bound);
+      break;
+    case 'logicOr':
+      shapeMethods.logicOr.draw(ctx, bound);
+      break;
     case 'roundedRect':
       drawRoundedRect(ctx, xywh);
       break;
