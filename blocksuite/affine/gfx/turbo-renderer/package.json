@@ -9,6 +9,11 @@
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git",
+    "directory": "blocksuite/affine/gfx/turbo-renderer"
+  },
   "dependencies": {
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/global": "workspace:*",

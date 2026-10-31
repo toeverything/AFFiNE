@@ -1,0 +1,72 @@
+name: BlockSuite Package Check
+
+# Runs the release gates (pack → publint/attw → smoke-install) on pull requests
+# that touch the published packages, so packaging regressions show up before
+# release time rather than at it.
+
+on:
+  pull_request:
+    paths:
+      - 'blocksuite/**'
+      - 'scripts/blocksuite/**'
+      - '.changeset/**'
+      - '.github/workflows/blocksuite-*.yml'
+      - '.github/actions/setup-node/**'
+      - 'package.json'
+      - 'yarn.lock'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  package-check:
+    name: Pack, validate and smoke-install
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo @blocksuite/affine @blocksuite/integration-test
+          playwright-install: true
+          playwright-platform: chromium
+          electron-install: false
+          full-cache: true
+
+      - name: Check package manifests
+        run: yarn blocksuite:manifests --check
+
+      - name: Build
+        run: yarn blocksuite:build
+
+      - name: Pack
+        run: yarn blocksuite:pack
+
+      # TODO(blocksuite-release): drop `continue-on-error` once the published
+      # exports point at dist (ESM + d.ts) instead of TypeScript source. Until
+      # then both gates are expected to report problems and are advisory.
+      - name: Validate packages (publint + arethetypeswrong)
+        continue-on-error: true
+        run: yarn blocksuite:validate
+
+      - name: Smoke-install the packed tarballs
+        continue-on-error: true
+        run: yarn blocksuite:smoke
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blocksuite-package-check-${{ github.run_id }}
+          path: |
+            tmp/blocksuite-release/packs/manifest.json
+            tmp/blocksuite-release/*.md
+          retention-days: 7
+          if-no-files-found: ignore

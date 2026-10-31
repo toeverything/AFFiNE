@@ -9,6 +9,11 @@
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git",
+    "directory": "blocksuite/framework/sync"
+  },
   "dependencies": {
     "@blocksuite/global": "workspace:*",
     "@types/lodash-es": "^4.17.12",
