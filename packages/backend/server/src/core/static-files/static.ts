@@ -2,6 +2,7 @@ import { join } from 'node:path';
 
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
+import compression from 'compression';
 import type { Application, Request, Response } from 'express';
 import { static as serveStatic } from 'express';
 
@@ -33,6 +34,17 @@ export class StaticFilesResolver implements OnModuleInit {
     }
 
     const app = this.adapterHost.httpAdapter.getInstance<Application>();
+
+    // Registered here, not in server.ts's post-NestFactory.create() setup:
+    // this module's own onModuleInit already runs during NestFactory.create()
+    // (as part of Nest's module-init lifecycle), which is *before* server.ts's
+    // subsequent app.use() calls execute. A compression call added there would
+    // land after these static routes in the Express middleware stack and would
+    // silently never wrap them. Registering it as literally the first thing
+    // here guarantees it wraps everything this module serves, including the
+    // large static JS/asset bundles this exists to compress.
+    app.use(compression());
+
     const basePath = this.config.server.path;
     const rootPath = basePath || '/';
     const staticPath = join(env.projectRoot, 'static');

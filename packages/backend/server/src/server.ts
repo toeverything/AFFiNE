@@ -3,6 +3,7 @@ import type { IncomingMessage } from 'node:http';
 import type { RawBodyRequest } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { raw } from 'express';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
@@ -59,6 +60,12 @@ export async function run() {
     bodyParser: true,
     bufferLogs: true,
   });
+
+  // Covers GraphQL/REST JSON responses. The large static asset bundles are
+  // covered separately in StaticFilesResolver.onModuleInit, since that
+  // module's own middleware registration already happened by this point
+  // (see the comment there) and adding it here wouldn't reach those routes.
+  app.use(compression());
 
   const config = app.get(Config);
   configureBodyParsers(app, config.server.path);
