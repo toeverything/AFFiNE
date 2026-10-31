@@ -42,6 +42,44 @@ import {
 const SIZE = 12;
 const HALF_SIZE = SIZE / 2;
 
+type ConnectorEndpointTarget = { id?: string; position?: IVec };
+
+/**
+ * Resolves where a dragged connector endpoint should land. Tries the raw
+ * cursor position first so a nearby connectable anchor always wins, even
+ * when it doesn't sit on a grid line — grid-snapping the point before
+ * searching for anchors can carry it more than the anchor's hit radius
+ * away, silently dropping an otherwise-valid connection. Only falls back
+ * to a grid-snapped point when nothing was found near the raw position.
+ */
+export function resolveConnectorEndpointTarget(
+  point: IVec,
+  origin: IVec,
+  snapToGrid: boolean,
+  gridSize: number,
+  excludedIds: string[],
+  renderConnector: (
+    point: IVec,
+    excludedIds: string[]
+  ) => ConnectorEndpointTarget
+): ConnectorEndpointTarget {
+  const result = renderConnector(point, excludedIds);
+  if (result.id || !snapToGrid || gridSize <= 0) {
+    return result;
+  }
+
+  const rawTotal: IVec = [point[0] - origin[0], point[1] - origin[1]];
+  const snappedTotal: IVec = [
+    Math.round((origin[0] + rawTotal[0]) / gridSize) * gridSize - origin[0],
+    Math.round((origin[1] + rawTotal[1]) / gridSize) * gridSize - origin[1],
+  ];
+  const snappedPoint: IVec = [
+    origin[0] + snappedTotal[0],
+    origin[1] + snappedTotal[1],
+  ];
+  return renderConnector(snappedPoint, excludedIds);
+}
+
 export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
   // If a perpendicular segment shrinks below this length, merge the lines.
   // Units are in model coordinates (px at 100% zoom).
@@ -490,23 +528,18 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
     const origin = gfx.viewport.toModelCoordFromClientCoord([e.x, e.y]);
 
     _disposables.addFromEvent(document, 'pointermove', e => {
-      let point = gfx.viewport.toModelCoordFromClientCoord([e.x, e.y]);
-      if (snapToGrid && gridSize > 0) {
-        const rawTotal: IVec = [point[0] - origin[0], point[1] - origin[1]];
-        const snappedTotal: IVec = [
-          Math.round((origin[0] + rawTotal[0]) / gridSize) * gridSize -
-            origin[0],
-          Math.round((origin[1] + rawTotal[1]) / gridSize) * gridSize -
-            origin[1],
-        ];
-        point = [origin[0] + snappedTotal[0], origin[1] + snappedTotal[1]];
-      }
+      const point = gfx.viewport.toModelCoordFromClientCoord([e.x, e.y]);
       const isStartPointer = connection === 'source';
       const otherSideId = connector[isStartPointer ? 'target' : 'source'].id;
+      const excludedIds = otherSideId ? [otherSideId] : [];
 
-      connector[connection] = this.connectionOverlay.renderConnector(
+      connector[connection] = resolveConnectorEndpointTarget(
         point,
-        otherSideId ? [otherSideId] : []
+        origin,
+        snapToGrid,
+        gridSize,
+        excludedIds,
+        (p, ids) => this.connectionOverlay.renderConnector(p, ids)
       );
       this.requestUpdate();
     });

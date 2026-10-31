@@ -6,6 +6,7 @@ import {
   FontFamilyList,
   FontStyle,
   FontWeight,
+  FrameBlockModel,
   getConnectorModeName,
   isTransparent,
   LineWidth,
@@ -210,6 +211,22 @@ function isColorString(value: unknown): value is string {
     typeof value === 'string' &&
     /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value)
   );
+}
+
+function parseAspectRatio(value: string) {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+  if (!match) return null;
+  const x = Number(match[1]);
+  const y = Number(match[2]);
+  if (!Number.isFinite(x) || !Number.isFinite(y) || x <= 0 || y <= 0) {
+    return null;
+  }
+  return `${roundToTwoDecimals(x)}:${roundToTwoDecimals(y)}`;
+}
+
+function roundToTwoDecimals(value: number) {
+  return Math.round(value * 100) / 100;
 }
 
 export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
@@ -1590,6 +1607,98 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
     `;
   }
 
+  private _renderFrameProperties(model: FrameBlockModel) {
+    const [x, y, w, h] = deserializeXYWH(model.xywh);
+    const derivedRatio =
+      w > 0 && h > 0 ? `${roundToTwoDecimals(w / h)}:1` : '16:9';
+    const aspectRatio = model.props.frameAspectRatio ?? derivedRatio;
+    const renderOptions = model.props.frameRenderOptions ?? {};
+    const knownKeys = new Set([
+      'title',
+      'background',
+      'xywh',
+      'index',
+      'lockedBySelf',
+      'frameScaleMode',
+      'frameZoomScale',
+      'frameWidthMode',
+      'frameWidthScale',
+      'frameAspectLock',
+      'frameAspectRatio',
+      'frameRenderOptions',
+      'childElementIds',
+      'presentationIndex',
+      'comments',
+    ]);
+
+    return html`
+      ${this._renderSection(
+        'Frame',
+        html`
+          ${this._renderTextRow('Aspect ratio', aspectRatio, value => {
+            const next = parseAspectRatio(value);
+            if (!next) return;
+            this._updateProperty('frameAspectRatio', next);
+          })}
+          ${this._renderCheckboxRow(
+            'Aspect lock',
+            Boolean(model.props.frameAspectLock),
+            value => this._updateProperty('frameAspectLock', value)
+          )}
+          ${this._renderCheckboxRow(
+            'Render inner frames',
+            Boolean(renderOptions.showInnerFrames),
+            value =>
+              this._updateProperty('frameRenderOptions', {
+                ...renderOptions,
+                showInnerFrames: value,
+              })
+          )}
+          ${this._renderCheckboxRow(
+            'Render grid',
+            Boolean(renderOptions.showGrid),
+            value =>
+              this._updateProperty('frameRenderOptions', {
+                ...renderOptions,
+                showGrid: value,
+              })
+          )}
+          ${this._renderCheckboxRow(
+            'Render notes',
+            renderOptions.showNotes ?? true,
+            value =>
+              this._updateProperty('frameRenderOptions', {
+                ...renderOptions,
+                showNotes: value,
+              })
+          )}
+          ${this._renderNumberRow('X', x, value =>
+            this._updateProperty('xywh', serializeXYWH(value, y, w, h))
+          )}
+          ${this._renderNumberRow('Y', y, value =>
+            this._updateProperty('xywh', serializeXYWH(x, value, w, h))
+          )}
+          ${this._renderNumberRow('Width', w, value =>
+            this._updateProperty('xywh', serializeXYWH(x, y, value, h))
+          )}
+          ${this._renderNumberRow('Height', h, value =>
+            this._updateProperty('xywh', serializeXYWH(x, y, w, value))
+          )}
+          ${this._renderTextRow('Z index', model.index, value =>
+            this._updateProperty('index', value)
+          )}
+          ${this._renderCheckboxRow('Movable', !model.lockedBySelf, value =>
+            this._updateProperty('lockedBySelf', !value)
+          )}
+        `
+      )}
+      ${this._renderSection(
+        'Other properties',
+        this._renderAutoProperties(model, knownKeys)
+      )}
+    `;
+  }
+
   override connectedCallback() {
     super.connectedCallback();
 
@@ -1650,11 +1759,14 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
 
     const isShape = this.model instanceof ShapeElementModel;
     const isConnector = this.model instanceof ConnectorElementModel;
+    const isFrame = this.model instanceof FrameBlockModel;
     const elementType = isShape
       ? 'Shape'
       : isConnector
         ? 'Connector'
-        : 'Element';
+        : isFrame
+          ? 'Frame'
+          : 'Element';
 
     const content = html`
       <div class="header">
@@ -1665,6 +1777,9 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
         : null}
       ${isConnector
         ? this._renderConnectorProperties(this.model as ConnectorElementModel)
+        : null}
+      ${isFrame
+        ? this._renderFrameProperties(this.model as FrameBlockModel)
         : null}
     `;
 
