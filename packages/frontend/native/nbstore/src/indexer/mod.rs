@@ -16,7 +16,12 @@ pub(super) use table::{TableIndex, string_values};
 
 pub(super) use super::{DocIndexedClock, error, storage::SqliteDocStorage};
 
-const NBSTORE_INDEXER_VERSION: u32 = 7;
+// Bumped again (alongside the JS indexer, `impls/idb/indexer/index.ts`): a
+// doc whose page title was missing could throw during crawling and get
+// silently marked "indexed" with zero blocks, permanently hiding it from
+// search with no retry. Fixed in `reader.ts`, but already-affected docs need
+// a real version bump to get another attempt.
+const NBSTORE_INDEXER_VERSION: u32 = 9;
 
 pub struct IndexManager {
   pub(super) doc: TableIndex,

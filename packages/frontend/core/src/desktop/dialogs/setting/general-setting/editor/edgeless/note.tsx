@@ -4,6 +4,7 @@ import {
   RadioGroup,
   type RadioItem,
   Slider,
+  Switch,
 } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
@@ -130,6 +131,59 @@ export const NoteSettings = () => {
       );
     });
   }, [editorSetting, settings, palettes]);
+
+  // Workspace-level defaults applied to freshly created notes — distinct
+  // from the per-note override reachable from the note's own edgeless
+  // toolbar ("Note Style" panel's "In-page background color" row /
+  // border-toggle action), which always wins once set on a specific note.
+  const { pageBorder } = settings['affine:note'];
+  const setPageBorder = useCallback(
+    (checked: boolean) => {
+      editorSetting.set('affine:note', { pageBorder: checked });
+    },
+    [editorSetting]
+  );
+
+  const pageBackgroundItems = useMemo(() => {
+    const { pageBackgroundOverride } = settings['affine:note'];
+    const noneItem = (
+      <MenuItem
+        key="None"
+        onSelect={() =>
+          editorSetting.set('affine:note', {
+            pageBackgroundOverride: undefined,
+          })
+        }
+        selected={!pageBackgroundOverride}
+      >
+        None (white)
+      </MenuItem>
+    );
+    const colorItems = palettes.map(({ key, value, resolvedValue }) => {
+      const handler = () => {
+        editorSetting.set('affine:note', { pageBackgroundOverride: value });
+      };
+      const isSelected = isEqual(pageBackgroundOverride, value);
+      return (
+        <MenuItem
+          key={key}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={<Point color={resolvedValue} />}
+        >
+          {key}
+        </MenuItem>
+      );
+    });
+    return [noneItem, ...colorItems];
+  }, [editorSetting, settings, palettes]);
+
+  const currentPageBackgroundColor = useMemo(() => {
+    const { pageBackgroundOverride } = settings['affine:note'];
+    return pageBackgroundOverride
+      ? getCurrentColor(pageBackgroundOverride)
+      : null;
+  }, [getCurrentColor, settings]);
 
   const cornerItems = useMemo(() => {
     const { borderRadius } = settings['affine:note'].edgeless.style;
@@ -269,6 +323,43 @@ export const NoteSettings = () => {
           nodes={[2, 4, 6, 8, 10, 12]}
           disabled={borderStyle === StrokeStyle.None}
         />
+      </SettingRow>
+      <SettingRow
+        name="In-page border"
+        desc="Show a border by default when this note is shown in page flow"
+      >
+        <Switch
+          data-testid="note-page-border-trigger"
+          checked={pageBorder}
+          onChange={setPageBorder}
+        />
+      </SettingRow>
+      <SettingRow
+        name="In-page background color"
+        desc="Default background color when this note is shown in page flow"
+      >
+        {currentPageBackgroundColor ? (
+          <DropdownMenu
+            items={pageBackgroundItems}
+            trigger={
+              <MenuTrigger
+                className={menuTrigger}
+                prefix={
+                  <Point color={currentPageBackgroundColor.resolvedValue} />
+                }
+              >
+                {currentPageBackgroundColor.key}
+              </MenuTrigger>
+            }
+          />
+        ) : (
+          <DropdownMenu
+            items={pageBackgroundItems}
+            trigger={
+              <MenuTrigger className={menuTrigger}>None (white)</MenuTrigger>
+            }
+          />
+        )}
       </SettingRow>
     </>
   );

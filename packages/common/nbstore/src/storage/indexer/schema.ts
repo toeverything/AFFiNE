@@ -24,7 +24,7 @@ export const IndexerSchema = {
     // parent block id
     parentBlockId: 'String',
     // additional info
-    // { "databaseName": "xxx", "displayMode": "page/edgeless", "noteBlockId": "xxx" }
+    // { "databaseName": "xxx", "frameTitle": "xxx", "noteTitle": "xxx", "displayMode": "page/edgeless", "noteBlockId": "xxx" }
     additional: { type: 'String', index: false },
     markdownPreview: { type: 'String', index: false },
   },

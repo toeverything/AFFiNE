@@ -30,7 +30,18 @@ export class ReactiveYArray extends BaseReactiveYData<
         if (change.insert) {
           const _arr = [change.insert].flat();
 
-          const proxyList = _arr.map(value => createYProxy(value));
+          // Must pass `this._options` (not the no-args default `{}`) — a
+          // freshly-inserted element that's *already cached* (e.g. another
+          // `SyncController` discovered this same nested structure first —
+          // exactly what happens once a block is rendered through 2+
+          // simultaneous `Store`s) needs `createYProxy`'s cache-hit branch
+          // to register *this* wrapper's `onChange` via `addChangeListener`;
+          // omitting options entirely meant that registration always
+          // silently no-op'd, and a brand-new (non-cached) element never
+          // got this wrapper's `onChange` baked in as its baseline either.
+          const proxyList = _arr.map(value =>
+            createYProxy(value, this._options)
+          );
 
           this._updateWithSkip(() => {
             this._source.splice(retain, 0, ...proxyList);
@@ -231,10 +242,23 @@ export class ReactiveYMap extends BaseReactiveYData<UnRecord, YMap<unknown>> {
           });
         } else if (type.action === 'add' || type.action === 'update') {
           const current = this._ySource.get(key);
+          // Always route through `createYProxy` rather than
+          // `proxies.has(current) ? proxies.get(current) : ...` — that
+          // hand-rolled cache check reimplements `createYProxy`'s own
+          // cache-hit branch but skips the one thing that branch does
+          // beyond returning the cached wrapper: registering *this*
+          // wrapper's `onChange` via `addChangeListener`. A nested
+          // structure discovered here that's already cached (because
+          // another `SyncController` reached it first — exactly what
+          // happens once a block renders through 2+ simultaneous `Store`s)
+          // would otherwise never notify *this* reference's own reactive
+          // graph of future changes — confirmed live: a Kanban card's
+          // select-column write landed correctly in Yjs, but the
+          // referenced database's own `groupDataMap$` never picked it up,
+          // because this exact branch silently skipped this reference's
+          // listener registration on the row's own cell-map.
           this._updateWithSkip(() => {
-            this._source[key] = proxies.has(current)
-              ? proxies.get(current)
-              : createYProxy(current, this._options);
+            this._source[key] = createYProxy(current, this._options);
           });
         }
       });
@@ -354,7 +378,15 @@ export function createYProxy<Data>(
   options: ProxyOptions<Data> = {}
 ): Data {
   if (proxies.has(yAbstract)) {
-    return proxies.get(yAbstract)!.proxy as Data;
+    const reactive = proxies.get(yAbstract)!;
+    // See `BaseReactiveYData.addChangeListener` — a second (or third, ...)
+    // caller wrapping the same underlying Y structure still needs *its
+    // own* `onChange` to fire on future changes, not just the first
+    // caller's.
+    reactive.addChangeListener(
+      options.onChange as (data: unknown, isLocal: boolean) => void
+    );
+    return reactive.proxy as Data;
   }
 
   const transform: TransformOptions['transform'] = (value, origin) => {

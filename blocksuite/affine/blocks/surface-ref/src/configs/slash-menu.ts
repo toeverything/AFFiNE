@@ -33,12 +33,17 @@ const surfaceRefSlashMenuConfig: SlashMenuConfig = {
       return bound;
     };
 
-    const insertSurfaceRefAndSelect = (reference: string) => {
+    const insertSurfaceRefAndSelect = (
+      reference: string,
+      crossDoc?: { refDocId: string; refFlavour: string }
+    ) => {
       const [_, result] = std.command.exec(insertSurfaceRefBlockCommand, {
         reference,
         place: 'after',
         removeEmptyLine: true,
         selectedModels: [model],
+        refDocId: crossDoc?.refDocId,
+        refFlavour: crossDoc?.refFlavour,
       });
       if (!result.insertedSurfaceRefBlockId) return;
 
@@ -134,6 +139,11 @@ const surfaceRefSlashMenuConfig: SlashMenuConfig = {
         insertSurfaceRefAndSelect(frameModel.id);
       },
     }));
+
+    // Cross-doc Frame referencing is handled by database-ref's unified
+    // "Reference" slash-menu item (see
+    // `database-ref/src/configs/slash-menu.ts`), which covers every
+    // cross-doc-referenceable flavour in one place — not duplicated here.
 
     const groupElements = crud.getElementsByType('group');
     const groupItems = groupElements.map<SlashMenuActionItem>(group => ({

@@ -17,7 +17,7 @@ import { KeyboardControl } from './control/keyboard.js';
 import { PointerControl } from './control/pointer.js';
 import { RangeControl } from './control/range.js';
 import { EventScopeSourceType, EventSourceState } from './state/source.js';
-import { toLowerCase } from './utils.js';
+import { isEventOwnedByNestedHost, toLowerCase } from './utils.js';
 
 const bypassEventNames = [
   'beforeInput',
@@ -161,17 +161,21 @@ export class UIEventDispatcher extends LifeCycleWatcher {
     this._clipboardControl.listen();
 
     let _dragging = false;
-    this.disposables.addFromEvent(this.host, 'pointerdown', () => {
+    this.disposables.addFromEvent(this.host, 'pointerdown', e => {
       _dragging = true;
+      // A nested editor host owns its own events (isEventOwnedByNestedHost).
+      if (isEventOwnedByNestedHost(this.host, e.target)) return;
       this._setActive(true);
     });
     this.disposables.addFromEvent(this.host, 'pointerup', () => {
       _dragging = false;
     });
-    this.disposables.addFromEvent(this.host, 'click', () => {
+    this.disposables.addFromEvent(this.host, 'click', e => {
+      if (isEventOwnedByNestedHost(this.host, e.target)) return;
       this._setActive(true);
     });
-    this.disposables.addFromEvent(this.host, 'focusin', () => {
+    this.disposables.addFromEvent(this.host, 'focusin', e => {
+      if (isEventOwnedByNestedHost(this.host, e.target)) return;
       this._setActive(true);
     });
     this.disposables.addFromEvent(document, 'focusout', e => {
@@ -210,7 +214,14 @@ export class UIEventDispatcher extends LifeCycleWatcher {
       _dragging = false;
       this._setActive(true);
     });
-    this.disposables.addFromEvent(this.host, 'pointerenter', () => {
+    this.disposables.addFromEvent(this.host, 'pointerenter', e => {
+      // Touch has no hover: every tap fires pointerenter on every enclosing
+      // editor host, and activating each in turn re-created the inner
+      // editor's widgets before pointerdown (see isEventOwnedByNestedHost).
+      // The pointerdown that follows activates the right host.
+      if (e.pointerType === 'touch') {
+        return;
+      }
       if (this._isActiveElementOutsideHost()) {
         return;
       }

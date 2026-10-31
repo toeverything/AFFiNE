@@ -17,6 +17,9 @@ export type DatabaseBlockProps = {
   cells: SerializedCells;
   columns: Array<ColumnDataType>;
   comments?: Record<string, boolean>;
+  // Which view (by id, into `views`) was last displayed, so a reload shows
+  // the same tab instead of always falling back to `views[0]`.
+  currentViewId?: string;
 };
 
 export class DatabaseBlockModel extends BlockModel<DatabaseBlockProps> {}
@@ -29,6 +32,7 @@ export const DatabaseBlockSchema = defineBlockSchema({
     cells: Object.create(null),
     columns: [],
     comments: undefined,
+    currentViewId: undefined,
   }),
   metadata: {
     role: 'hub',

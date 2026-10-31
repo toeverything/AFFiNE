@@ -1,7 +1,17 @@
 import { DebugLogger } from '@affine/debug';
 import { Unreachable } from '@affine/env/constant';
+import type {
+  DatabaseRefBlockModel,
+  NoteBlockModel,
+  NoteRefBlockModel,
+} from '@blocksuite/affine/model';
+import { NoteDisplayMode } from '@blocksuite/affine/model';
 import { replaceIdMiddleware } from '@blocksuite/affine/shared/adapters';
 import type { AffineTextAttributes } from '@blocksuite/affine/shared/types';
+import {
+  ensureDocLoaded,
+  waitForDocSettled,
+} from '@blocksuite/affine/shared/utils';
 import type { DeltaInsert } from '@blocksuite/affine/store';
 import { Slice, Text, Transformer } from '@blocksuite/affine/store';
 import { ObjectPool, Service } from '@toeverything/infra';
@@ -310,6 +320,359 @@ export class DocsService extends Service {
     targetDoc.updateProperties(properties);
 
     return targetDocId;
+  }
+
+  /**
+   * Before a doc is *permanently* deleted, rescue any `affine:database` it
+   * hosts that's still referenced by a live `affine:database-ref` block in
+   * some *other*, surviving doc — whether or not it was ever
+   * same-page-promoted into a hidden `EdgelessOnly` note (see
+   * `ensurePromoted`/`moveIntoHiddenNote` in
+   * `@blocksuite/affine-block-database-ref`; a database referenced ONLY
+   * cross-doc never goes through that and stays a perfectly ordinary,
+   * visible block the whole time).
+   *
+   * Ordinary trash (`moveToTrash`) never touches block content at all, so
+   * this only matters for the permanent-delete path (`removeDoc`) — that
+   * path has no reference-awareness whatsoever otherwise, and would
+   * silently destroy data another page still visibly displays.
+   *
+   * Frame is deliberately NOT covered here: a Frame's content *is* the
+   * edgeless surface of its own doc, so there's no independent "Frame data"
+   * to relocate the way a database's self-contained block/row data can be —
+   * a cross-doc Frame reference into a permanently-deleted doc is expected
+   * to break, not a bug to work around.
+   */
+  async rescueReferencedDatabasesBeforeDelete(docId: string): Promise<void> {
+    const collection = this.store.getBlocksuiteCollection();
+
+    // Permanent delete is normally triggered from the Trash list view, not
+    // from having the doc open — meaning the doc being deleted itself very
+    // likely isn't loaded either. Without this, scanning it below for
+    // promoted databases would silently find nothing (empty store) and
+    // return before ever attempting a rescue.
+    const sourceDoc = collection.getDoc(docId);
+    if (!sourceDoc) return;
+    await waitForDocSettled(sourceDoc);
+
+    const sourceBsDoc = this.store.getBlockSuiteDoc(docId);
+    if (!sourceBsDoc) return;
+
+    // Every `affine:database` in this doc is a rescue candidate — NOT just
+    // ones already sitting in a hidden `EdgelessOnly` note. That hidden-note
+    // shape only exists for a database that was ALSO same-page-promoted
+    // (Story 0.2's "second local reference" flow, via `ensurePromoted`).
+    // Cross-doc referencing alone deliberately never promotes the source
+    // (`insertDatabaseRefBlockCommand`'s cross-doc branch skips
+    // `ensurePromoted` entirely — the target already has a legitimate home
+    // in its own doc) — so a database referenced ONLY cross-doc, never
+    // locally, stays a perfectly ordinary, visible database the whole
+    // time. What actually matters for rescue purposes is just "does any
+    // `database-ref` anywhere point at this id," not its own parent shape.
+    const allDatabases = sourceBsDoc
+      .getBlocksByFlavour('affine:database')
+      .map(b => b.model);
+
+    if (allDatabases.length === 0) return;
+
+    // Every other doc's content needs to have actually arrived before
+    // scanning it below — `otherDoc.load()` only *starts* loading, it
+    // doesn't wait for the doc's Yjs content to stream in from local
+    // storage, so a doc that hasn't been opened this session would
+    // otherwise scan as empty (no references found) even though it
+    // genuinely has one, silently skipping the rescue entirely.
+    await Promise.all(
+      Array.from(collection.docs.values())
+        .filter(otherDoc => otherDoc.id !== docId)
+        .map(otherDoc => waitForDocSettled(otherDoc))
+    );
+
+    for (const databaseModel of allDatabases) {
+      const parent = sourceBsDoc.getParent(databaseModel);
+      const isHiddenNoteParent =
+        parent?.flavour === 'affine:note' &&
+        (parent as NoteBlockModel).props.displayMode ===
+          NoteDisplayMode.EdgelessOnly;
+
+      // Find a surviving reference to this canonical elsewhere in the
+      // workspace — if none exists, this data has no live reader and it's
+      // fine to let it be destroyed along with the rest of the doc.
+      let destinationDocId: string | null = null;
+      for (const [otherDocId, otherDoc] of collection.docs) {
+        if (otherDocId === docId) continue;
+        const otherStore = otherDoc.getStore({ id: otherDocId });
+        const hasRef = otherStore
+          .getBlocksByFlavour('affine:database-ref')
+          .some(
+            b =>
+              (b.model as DatabaseRefBlockModel).props.refBlockId ===
+              databaseModel.id
+          );
+        if (hasRef) {
+          destinationDocId = otherDocId;
+          break;
+        }
+      }
+      if (!destinationDocId) continue;
+
+      const destinationBsDoc = collection
+        .getDoc(destinationDocId)
+        ?.getStore({ id: destinationDocId });
+      if (!destinationBsDoc) continue;
+
+      try {
+        const transformer = new Transformer({
+          schema: getAFFiNEWorkspaceSchema(),
+          blobCRUD: collection.blobSync,
+          docCRUD: {
+            create: (id: string) => {
+              this.createDoc({ id });
+              const store = collection.getDoc(id)?.getStore({ id });
+              if (!store) {
+                throw new Error('Failed to create doc');
+              }
+              return store;
+            },
+            get: (id: string) =>
+              collection.getDoc(id)?.getStore({ id }) ?? null,
+            delete: (id: string) => collection.removeDoc(id),
+          },
+          // Deliberately no `replaceIdMiddleware` — the whole point is that
+          // `refBlockId` on every existing `database-ref` keeps resolving
+          // after the move, so ids must be preserved, not regenerated.
+          middlewares: [],
+        });
+
+        // If it was already sitting in a dedicated hidden note (the
+        // same-page-promoted case), move that whole note — it exists
+        // solely to host this database, nothing else is lost. Otherwise
+        // (a database that was only ever cross-doc referenced, never
+        // promoted) it's a bare, ordinary database block with no note of
+        // its own dedicated to it — move just the block, into a freshly
+        // created hidden note in the destination, mirroring what
+        // `ensurePromoted` itself would have done.
+        const modelsToMove =
+          isHiddenNoteParent && parent ? [parent] : [databaseModel];
+        const slice = Slice.fromModels(sourceBsDoc, modelsToMove);
+        const snapshot = transformer.sliceToSnapshot(slice);
+        if (!snapshot) {
+          throw new Error('Failed to snapshot canonical database for rescue');
+        }
+
+        let insertionParentId = destinationBsDoc.root?.id;
+        if (!isHiddenNoteParent) {
+          if (!destinationBsDoc.root) {
+            throw new Error('Destination doc has no root block');
+          }
+          insertionParentId = destinationBsDoc.addBlock(
+            'affine:note',
+            {
+              displayMode: NoteDisplayMode.EdgelessOnly,
+              xywh: '[-10000, -10000, 800, 480]',
+            },
+            destinationBsDoc.root.id
+          );
+        }
+
+        await transformer.snapshotToSlice(
+          snapshot,
+          destinationBsDoc,
+          insertionParentId
+        );
+
+        // Repoint every database-ref across the workspace (including the
+        // one in `destinationDocId` itself, which is now a same-doc
+        // reference) that pointed at this canonical in the doc being
+        // deleted, to its new home.
+        for (const [otherDocId, otherDoc] of collection.docs) {
+          ensureDocLoaded(otherDoc);
+          const otherStore = otherDoc.getStore({ id: otherDocId });
+          for (const ref of otherStore.getBlocksByFlavour(
+            'affine:database-ref'
+          )) {
+            const refModel = ref.model as DatabaseRefBlockModel;
+            if (
+              refModel.props.refBlockId === databaseModel.id &&
+              refModel.props.refDocId === docId
+            ) {
+              otherStore.updateBlock(refModel, {
+                refDocId: destinationDocId,
+              });
+            }
+          }
+        }
+      } catch (e) {
+        logger.error(
+          'Failed to rescue promoted database before permanent delete',
+          { docId, databaseId: databaseModel.id, error: e }
+        );
+      }
+    }
+  }
+
+  /**
+   * Before a doc is *permanently* deleted, rescue any `affine:note` it
+   * hosts that's still referenced by a live `affine:note-ref` block in some
+   * *other*, surviving doc (Story 0.6).
+   *
+   * Unlike `rescueReferencedDatabasesBeforeDelete`, there is no
+   * hidden-note-vs-bare-block branch to consider: `affine:note`'s own
+   * schema already permits `parent: ['@root']`, so the canonical Note is
+   * always independently valid the moment it's moved — it never needed a
+   * dedicated host note to begin with (see `note-ref-model.ts`'s own
+   * doc comment). The whole canonical Note block is simply relocated
+   * directly into the destination doc's root.
+   *
+   * The referenced doc's own primary/page note (`isPageBlock()`) is
+   * excluded — the slash-menu picker never offers it as a reference target
+   * in the first place (see `noteRefSlashMenuConfig`), so it should never
+   * have a live `note-ref` pointing at it in practice, but the guard is kept
+   * here too since relocating a doc's actual page content on delete would
+   * be a much larger behavior change than rescuing a purpose-made reusable
+   * note.
+   */
+  async rescueReferencedNotesBeforeDelete(docId: string): Promise<void> {
+    const collection = this.store.getBlocksuiteCollection();
+
+    const sourceDoc = collection.getDoc(docId);
+    if (!sourceDoc) return;
+    await waitForDocSettled(sourceDoc);
+
+    const sourceBsDoc = this.store.getBlockSuiteDoc(docId);
+    if (!sourceBsDoc) return;
+
+    const allNotes = sourceBsDoc
+      .getBlocksByFlavour('affine:note')
+      .map(b => b.model as NoteBlockModel)
+      .filter(note => !note.isPageBlock());
+
+    if (allNotes.length === 0) return;
+
+    await Promise.all(
+      Array.from(collection.docs.values())
+        .filter(otherDoc => otherDoc.id !== docId)
+        .map(otherDoc => waitForDocSettled(otherDoc))
+    );
+
+    for (const noteModel of allNotes) {
+      let destinationDocId: string | null = null;
+      for (const [otherDocId, otherDoc] of collection.docs) {
+        if (otherDocId === docId) continue;
+        const otherStore = otherDoc.getStore({ id: otherDocId });
+        const hasRef = otherStore
+          .getBlocksByFlavour('affine:note-ref')
+          .some(
+            b =>
+              (b.model as NoteRefBlockModel).props.refBlockId === noteModel.id
+          );
+        if (hasRef) {
+          destinationDocId = otherDocId;
+          break;
+        }
+      }
+      if (!destinationDocId) continue;
+
+      await this.relocateNoteToAnotherDoc(
+        docId,
+        noteModel.id,
+        destinationDocId
+      );
+    }
+  }
+
+  /**
+   * Moves a single `affine:note` block from `sourceDocId` into
+   * `destinationDocId`'s root, repointing every existing `affine:note-ref`
+   * (in any doc) that points at it to the new location. Shared by
+   * `rescueReferencedNotesBeforeDelete` (automatic, on permanent delete —
+   * Story 0.6) and the user-triggered "Move to another page" toolbar action
+   * (Story 0.5) — both are the exact same underlying operation, one
+   * automatic and one explicit, so this extracts the single implementation
+   * rather than duplicating the `Transformer`/`Slice` setup a second time.
+   *
+   * Deliberately no `replaceIdMiddleware` in the `Transformer` config: every
+   * existing `note-ref`'s `refBlockId` must keep resolving after the move,
+   * so the note's own id (and its children's ids) must survive unchanged.
+   */
+  async relocateNoteToAnotherDoc(
+    sourceDocId: string,
+    noteId: string,
+    destinationDocId: string
+  ): Promise<boolean> {
+    const collection = this.store.getBlocksuiteCollection();
+
+    const sourceBsDoc = this.store.getBlockSuiteDoc(sourceDocId);
+    if (!sourceBsDoc) return false;
+
+    const noteModel = sourceBsDoc.getBlock(noteId)?.model as
+      | NoteBlockModel
+      | undefined;
+    if (!noteModel) return false;
+
+    const destinationBsDoc = collection
+      .getDoc(destinationDocId)
+      ?.getStore({ id: destinationDocId });
+    if (!destinationBsDoc) return false;
+
+    try {
+      const transformer = new Transformer({
+        schema: getAFFiNEWorkspaceSchema(),
+        blobCRUD: collection.blobSync,
+        docCRUD: {
+          create: (id: string) => {
+            this.createDoc({ id });
+            const store = collection.getDoc(id)?.getStore({ id });
+            if (!store) {
+              throw new Error('Failed to create doc');
+            }
+            return store;
+          },
+          get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
+          delete: (id: string) => collection.removeDoc(id),
+        },
+        middlewares: [],
+      });
+
+      const slice = Slice.fromModels(sourceBsDoc, [noteModel]);
+      const snapshot = transformer.sliceToSnapshot(slice);
+      if (!snapshot) {
+        throw new Error('Failed to snapshot note for relocation');
+      }
+
+      await transformer.snapshotToSlice(
+        snapshot,
+        destinationBsDoc,
+        destinationBsDoc.root?.id
+      );
+
+      for (const [otherDocId, otherDoc] of collection.docs) {
+        ensureDocLoaded(otherDoc);
+        const otherStore = otherDoc.getStore({ id: otherDocId });
+        for (const ref of otherStore.getBlocksByFlavour('affine:note-ref')) {
+          const refModel = ref.model as NoteRefBlockModel;
+          if (
+            refModel.props.refBlockId === noteId &&
+            refModel.props.refDocId === sourceDocId
+          ) {
+            otherStore.updateBlock(refModel, {
+              refDocId: destinationDocId,
+            });
+          }
+        }
+      }
+
+      sourceBsDoc.deleteBlock(noteModel);
+
+      return true;
+    } catch (e) {
+      logger.error('Failed to relocate note to another doc', {
+        sourceDocId,
+        noteId,
+        destinationDocId,
+        error: e,
+      });
+      return false;
+    }
   }
 
   /**

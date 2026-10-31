@@ -1,3 +1,4 @@
+import { suppressingRichTextAutoScroll } from '@blocksuite/affine-rich-text';
 import {
   DocModeProvider,
   TelemetryProvider,
@@ -63,6 +64,20 @@ export const insertInlineLatex: Command<{
         inlineRange.index,
         inlineRange.index + inlineRange.length
       );
+
+  // Inserting the new inline node changes `inlineRange`'s identity, which
+  // re-triggers `rich-text.ts`'s own "keep caret in view" auto-scroll —
+  // and since the new node's own layout hasn't stabilized by the time
+  // that effect measures its position, the measurement can be transiently
+  // wrong enough to produce a visible page jump, even though the caret
+  // never actually left the viewport (confirmed live: happens on
+  // initiating an inline equation specifically, not the block-level
+  // `/equation`, which doesn't touch an already-focused rich text's own
+  // `inlineRange` the same way). Suppressed for the whole insert-and-
+  // open-editor window below; see `suppressingRichTextAutoScroll`'s own
+  // doc comment.
+  suppressingRichTextAutoScroll.add(richText);
+  setTimeout(() => suppressingRichTextAutoScroll.delete(richText), 500);
 
   inlineEditor.insertText(inlineRange, ' ', { latex });
   inlineEditor.setInlineRange({

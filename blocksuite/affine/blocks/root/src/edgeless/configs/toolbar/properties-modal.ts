@@ -10,6 +10,8 @@ import {
   getConnectorModeName,
   isTransparent,
   LineWidth,
+  NOTE_SHADOWS,
+  NoteBlockModel,
   ShapeElementModel,
   ShapeStyle,
   ShapeType,
@@ -43,6 +45,18 @@ const GRADIENT_DIRECTIONS = [
 const SHAPE_TYPE_OPTIONS = Object.values(ShapeType);
 const SHAPE_STYLE_OPTIONS = Object.values(ShapeStyle);
 const STROKE_STYLE_OPTIONS = Object.values(StrokeStyle);
+const NOTE_SHADOW_LABELS: Record<string, string> = {
+  [NOTE_SHADOWS[0]]: 'None',
+  [NOTE_SHADOWS[1]]: 'Box shadow',
+  [NOTE_SHADOWS[2]]: 'Sticker shadow',
+  [NOTE_SHADOWS[3]]: 'Paper shadow',
+  [NOTE_SHADOWS[4]]: 'Floating shadow',
+  [NOTE_SHADOWS[5]]: 'Film shadow',
+};
+const NOTE_SHADOW_OPTIONS = NOTE_SHADOWS.map(value => ({
+  value,
+  label: NOTE_SHADOW_LABELS[value] ?? labelize(value || 'none'),
+}));
 const LINE_WIDTH_OPTIONS = Object.values(LineWidth).filter(
   value => typeof value === 'number'
 ) as LineWidth[];
@@ -1699,6 +1713,96 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
     `;
   }
 
+  /**
+   * Unlike the `<edgeless-note-style-panel>` dropdown (Story 0.6, still
+   * reachable from the toolbar's standalone "Note Style" button), this
+   * Properties panel shows every field as an always-visible row — the same
+   * flat-list convention `_renderShapeProperties` above already establishes
+   * for Shape, not a second nested dropdown-of-dropdowns.
+   */
+  private _renderNoteProperties(model: NoteBlockModel) {
+    const pageBackgroundEnabled = Boolean(model.props.pageBackgroundOverride);
+    const pageBorderEnabled = model.props.pageBorder ?? !model.isPageBlock();
+
+    return html`
+      ${this._renderSection(
+        'Note',
+        html`
+          ${this._renderTextRow('Name', model.props.name ?? '', value =>
+            this._updateProperty('name', value || undefined)
+          )}
+          ${this._renderColorRow('Fill color', model.props.background, value =>
+            this._updateProperty('background', value)
+          )}
+          ${this._renderCheckboxRow(
+            'In-page background override',
+            pageBackgroundEnabled,
+            enabled =>
+              this._updateProperty(
+                'pageBackgroundOverride',
+                enabled ? model.props.background : undefined
+              )
+          )}
+          ${pageBackgroundEnabled
+            ? this._renderColorRow(
+                'In-page background color',
+                model.props.pageBackgroundOverride ?? model.props.background,
+                value => this._updateProperty('pageBackgroundOverride', value)
+              )
+            : null}
+          ${this._renderCheckboxRow(
+            'In-page border',
+            pageBorderEnabled,
+            value => this._updateProperty('pageBorder', value)
+          )}
+          ${this._renderSelectRow(
+            'Shadow',
+            model.props.edgeless.style.shadowType,
+            NOTE_SHADOW_OPTIONS,
+            value =>
+              this._updateProperty('edgeless', {
+                ...model.props.edgeless,
+                style: { ...model.props.edgeless.style, shadowType: value },
+              })
+          )}
+          ${this._renderSelectRow(
+            'Border style',
+            model.props.edgeless.style.borderStyle,
+            STROKE_STYLE_OPTIONS.map(value => ({
+              value,
+              label: labelize(value),
+            })),
+            value =>
+              this._updateProperty('edgeless', {
+                ...model.props.edgeless,
+                style: { ...model.props.edgeless.style, borderStyle: value },
+              })
+          )}
+          ${this._renderNumberRow(
+            'Border width',
+            model.props.edgeless.style.borderSize,
+            value =>
+              this._updateProperty('edgeless', {
+                ...model.props.edgeless,
+                style: { ...model.props.edgeless.style, borderSize: value },
+              }),
+            { min: 0, max: 24, step: 1 }
+          )}
+          ${this._renderNumberRow(
+            'Corner radius',
+            model.props.edgeless.style.borderRadius,
+            value =>
+              this._updateProperty('edgeless', {
+                ...model.props.edgeless,
+                style: { ...model.props.edgeless.style, borderRadius: value },
+              }),
+            { min: 0, max: 32, step: 1 }
+          )}
+        `
+      )}
+    `;
+  }
+
   override connectedCallback() {
     super.connectedCallback();
 
@@ -1760,13 +1864,16 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
     const isShape = this.model instanceof ShapeElementModel;
     const isConnector = this.model instanceof ConnectorElementModel;
     const isFrame = this.model instanceof FrameBlockModel;
+    const isNote = this.model instanceof NoteBlockModel;
     const elementType = isShape
       ? 'Shape'
       : isConnector
         ? 'Connector'
         : isFrame
           ? 'Frame'
-          : 'Element';
+          : isNote
+            ? 'Note'
+            : 'Element';
 
     const content = html`
       <div class="header">
@@ -1780,6 +1887,9 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
         : null}
       ${isFrame
         ? this._renderFrameProperties(this.model as FrameBlockModel)
+        : null}
+      ${isNote
+        ? this._renderNoteProperties(this.model as NoteBlockModel)
         : null}
     `;
 

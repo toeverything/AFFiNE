@@ -43,6 +43,8 @@ export interface BlockDocumentInfo {
   parentBlockId?: string;
   additional?: {
     databaseName?: string;
+    frameTitle?: string;
+    noteTitle?: string;
     displayMode?: string;
     noteBlockId?: string;
   };
@@ -648,7 +650,16 @@ export async function readAllBlocksFromDoc({
     };
 
     if (flavour === 'affine:page') {
-      docTitle = block.get('prop:title').toString();
+      // Some docs (older imports/migrations, or otherwise malformed data)
+      // can lack a `prop:title` Y.Text entirely — `.get(...)` then returns
+      // `undefined`, and calling `.toString()` on it unconditionally used
+      // to throw here, aborting the crawl for the *entire* doc (caught one
+      // layer up in the indexer sync loop, which then still marks the doc
+      // "indexed" at the current version despite having indexed nothing —
+      // permanently hiding every block in that doc from search, not just
+      // the page title). Matches the already-defensive `?.toString()`
+      // pattern this same field uses elsewhere in this file.
+      docTitle = block.get('prop:title')?.toString() ?? '';
       blockDocuments.push({ ...commonBlockProps, content: docTitle });
     } else if (
       flavour === 'affine:paragraph' ||
@@ -838,6 +849,103 @@ export async function readAllBlocksFromDoc({
               { refDocId: [], ref: [] }
             )
           : {}),
+      });
+    } else if (flavour === 'affine:frame') {
+      const frameTitle = block.get('prop:title');
+      const frameTitleText =
+        frameTitle instanceof YText ? frameTitle.toString() : undefined;
+      blockDocuments.push({
+        ...commonBlockProps,
+        // Frame titles live under `additional` (not indexed) like a
+        // database's title does — mirror how `affine:database` also folds
+        // its title into `content` so the picker's cross-doc search (which
+        // only full-text-matches against `content`) can find frames by name.
+        content: frameTitleText ?? '',
+        additional: {
+          ...commonBlockProps.additional,
+          frameTitle: frameTitleText,
+        },
+      });
+    } else if (flavour === 'affine:note') {
+      // Mirrors the `affine:frame` branch above exactly, folding
+      // `props.name` (Story 0.6) into both `content` (so the cross-doc
+      // picker's full-text search can find a Note by name) and
+      // `additional.noteTitle` (for picker labeling, exactly like
+      // `additional.frameTitle`/`additional.databaseName`).
+      //
+      // The doc's own primary/page note is now indexed too (previously
+      // excluded entirely — referencing "the page itself" is a real,
+      // intentional use case, not a mistake to guard against). Mirrors
+      // `NoteBlockModel.isPageBlock()`'s own logic (the first
+      // non-`EdgelessOnly` note among the root's children, in
+      // `sys:children` order) — replicated here in raw Yjs terms since
+      // this reader operates on raw blocks, not `BlockModel`s.
+      const parentChildren = parentBlock?.get('sys:children');
+      const siblingIds =
+        parentChildren instanceof YArray
+          ? (parentChildren as YArray<string>).toArray()
+          : [];
+      const pageBlockId = siblingIds.find(siblingId => {
+        const sibling = blocks.get(siblingId);
+        if (!sibling || sibling.get('sys:flavour') !== 'affine:note') {
+          return false;
+        }
+        return sibling.get('prop:displayMode') !== 'edgeless';
+      });
+      const isPageBlock = pageBlockId === blockId;
+
+      const noteName = block.get('prop:name');
+      const noteNameText = typeof noteName === 'string' ? noteName : undefined;
+
+      // Mirrors the same-doc note-ref picker's own fallback
+      // (`noteRefSlashMenuConfig` in
+      // `blocksuite/affine/blocks/note-ref/src/configs/slash-menu.ts`):
+      // `props.name || snippet || '(empty note)'`. Without this, an
+      // unnamed note indexes with `content: ''` and becomes findable only
+      // by exact-empty-string match — i.e. not findable at all — breaking
+      // "find notes by search by page" for any note the author hasn't
+      // explicitly named. The page/root note has no independent "name" of
+      // its own anywhere in the UI — its identity already IS the page — so
+      // it uses the doc's own title instead of scanning for a child-text
+      // snippet.
+      let snippet: string | undefined;
+      if (!noteNameText && !isPageBlock) {
+        const noteChildren = block.get('sys:children');
+        const childIds =
+          noteChildren instanceof YArray
+            ? noteChildren.toArray()
+            : ([] as string[]);
+        for (const childId of childIds) {
+          const child = blocks.get(childId);
+          if (!child) continue;
+          const childFlavour = child.get('sys:flavour')?.toString();
+          if (
+            childFlavour !== 'affine:paragraph' &&
+            childFlavour !== 'affine:list' &&
+            childFlavour !== 'affine:code'
+          ) {
+            continue;
+          }
+          const childText = child.get('prop:text');
+          const childTextStr =
+            childText instanceof YText ? childText.toString() : '';
+          if (childTextStr.trim().length > 0) {
+            snippet = childTextStr.slice(0, 40);
+            break;
+          }
+        }
+      }
+
+      const label =
+        noteNameText ?? (isPageBlock ? docTitle : undefined) ?? snippet;
+
+      blockDocuments.push({
+        ...commonBlockProps,
+        content: label ?? '',
+        additional: {
+          ...commonBlockProps.additional,
+          noteTitle: label,
+        },
       });
     } else if (flavour === 'affine:latex') {
       blockDocuments.push({

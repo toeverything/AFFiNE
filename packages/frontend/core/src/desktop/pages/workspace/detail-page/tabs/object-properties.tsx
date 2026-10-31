@@ -1,5 +1,6 @@
 import {
   ConnectorElementModel,
+  NoteBlockModel,
   ShapeElementModel,
 } from '@blocksuite/affine/model';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -35,7 +36,8 @@ export const EditorObjectPropertiesPanel = ({
     const model = selected[0];
     if (
       !(model instanceof ShapeElementModel) &&
-      !(model instanceof ConnectorElementModel)
+      !(model instanceof ConnectorElementModel) &&
+      !(model instanceof NoteBlockModel)
     ) {
       return null;
     }

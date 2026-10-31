@@ -15,12 +15,11 @@ import * as styles from './styles.css';
 
 export const TrashPageFooter = () => {
   const workspace = useService(WorkspaceService).workspace;
-  const docCollection = workspace.docCollection;
   const doc = useService(DocService).doc;
   const t = useI18n();
   const { appSettings } = useAppSettingHelper();
   const { jumpToPage } = useNavigateHelper();
-  const { restoreFromTrash } = useBlockSuiteMetaHelper();
+  const { restoreFromTrash, permanentlyDeletePage } = useBlockSuiteMetaHelper();
   const [open, setOpen] = useState(false);
   const hintText = t['com.affine.cmdk.affine.editor.trash-footer-hint']();
 
@@ -38,9 +37,9 @@ export const TrashPageFooter = () => {
 
   const onConfirmDelete = useCallback(() => {
     jumpToPage(workspace.id, 'all');
-    docCollection.removeDoc(doc.id);
+    permanentlyDeletePage(doc.id).catch(error => console.error(error));
     toast(t['com.affine.toastMessage.permanentlyDeleted']());
-  }, [jumpToPage, workspace.id, docCollection, doc.id, t]);
+  }, [jumpToPage, workspace.id, permanentlyDeletePage, doc.id, t]);
 
   const onDelete = useCallback(() => {
     setOpen(true);

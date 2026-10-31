@@ -337,7 +337,14 @@ export const moreActions = [
         when(ctx) {
           const models = ctx.getSurfaceModels();
           if (models.length !== 1) return false;
-          return ctx.matchModel(models[0], NoteBlockModel);
+          if (!ctx.matchModel(models[0], NoteBlockModel)) return false;
+          // A doc's own primary/page note can't be turned into a linked
+          // doc — deleting it (this action's last step) would leave the
+          // doc with no page content at all, a much larger and riskier
+          // change than this action is meant to make. Root notes can now
+          // be referenced like any other note (root-note referencing), but
+          // converting one away is a different, unrequested operation.
+          return !(models[0] as NoteBlockModel).isPageBlock();
         },
         run(ctx) {
           const model = ctx.getCurrentModelByType(NoteBlockModel);
