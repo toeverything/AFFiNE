@@ -115,6 +115,14 @@ export function drawGeneralShape(
     case 'dash':
       ctx.setLineDash([12, 12]);
       break;
+    case 'dot':
+      // Use a short dash with round caps to render dots.
+      ctx.lineCap = 'round';
+      ctx.setLineDash([
+        Math.max(1, shapeModel.strokeWidth),
+        shapeModel.strokeWidth * 2.5,
+      ]);
+      break;
   }
 
   if (shapeModel.shadow) {

@@ -182,8 +182,18 @@ function applyBorderStyles(
 ) {
   element.style.border =
     model.strokeStyle !== 'none'
-      ? `${model.strokeWidth * zoom}px ${model.strokeStyle === 'dash' ? 'dashed' : 'solid'} ${strokeColor}`
+      ? `${model.strokeWidth * zoom}px ${
+          model.strokeStyle === 'dash'
+            ? 'dashed'
+            : model.strokeStyle === 'dot'
+              ? 'dotted'
+              : 'solid'
+        } ${strokeColor}`
       : 'none';
+  if (model.strokeStyle === 'dot') {
+    element.style.borderStyle = 'dotted';
+    element.style.borderColor = strokeColor;
+  }
 }
 
 function applyTransformStyles(model: ShapeElementModel, element: HTMLElement) {
@@ -290,7 +300,9 @@ export const shapeDomRenderer = (
     const finalStrokeDasharray =
       model.strokeStyle === 'dash' && finalStrokeColor !== 'transparent'
         ? '12, 12'
-        : 'none';
+        : model.strokeStyle === 'dot' && finalStrokeColor !== 'transparent'
+          ? `${Math.max(1, strokeW)}, ${strokeW * 2.5}`
+          : 'none';
     // Determine fill color
     const finalFillColor = model.filled
       ? hasGradient
@@ -323,6 +335,10 @@ export const shapeDomRenderer = (
     } else {
       polygon.removeAttribute('stroke-dasharray');
     }
+    polygon.setAttribute(
+      'stroke-linecap',
+      model.strokeStyle === 'dot' ? 'round' : 'butt'
+    );
   } else {
     // Standard rendering for other shapes (e.g., rect, ellipse)
     removeSvg(retained);
