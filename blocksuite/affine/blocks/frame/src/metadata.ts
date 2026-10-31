@@ -168,7 +168,6 @@ async function buildMetadataPayload(
   const transformer = std.store.getTransformer();
   const ids = new Set(sortedElements.map(element => element.id));
   const snapshot: (SerializedElement | BlockSnapshot)[] = [];
-  const assetIds = new Set<string>();
 
   for (const element of sortedElements) {
     const data = serializeFrameElement(element, ids, transformer);
@@ -183,22 +182,15 @@ async function buildMetadataPayload(
         | undefined;
       if (sourceId) {
         await transformer.assetsManager.readFromBlob(sourceId);
-        assetIds.add(sourceId);
       }
     }
     snapshot.push(data);
   }
-  const assets = transformer.assetsManager.getAssets();
-  const filteredAssets = new Map<string, Blob>();
-  for (const id of assetIds) {
-    const blob = assets.get(id);
-    if (blob) {
-      filteredAssets.set(id, blob);
-    }
-  }
-  const blobs = filteredAssets.size
-    ? await encodeClipboardBlobs(filteredAssets, onError)
-    : {};
+
+  const blobs = await encodeClipboardBlobs(
+    transformer.assetsManager.getAssets(),
+    onError
+  );
   const frameBound = Bound.deserialize(frame.xywh);
   const elementsBound = getCommonBoundWithRotation(sortedElements);
   const payload = {
@@ -607,11 +599,28 @@ export async function createFrameFromMetadata(
     ? options.bound
     : new Bound(center.x - width / 2, center.y - height / 2, width, height);
 
-  const placedBound = findNonOverlappingBound(
-    frameManager,
-    initialBound,
-    gfx.elementsBound
-  );
+  // Prefer placing the first imported frame to the right of existing canvas
+  // content (e.g. page note block in edgeless) to avoid overlap.
+  const noExistingFrames = frameManager.frames.length === 0;
+  const canvasBound = gfx.elementsBound;
+  const hasCanvasBound =
+    Number.isFinite(canvasBound.x) &&
+    Number.isFinite(canvasBound.y) &&
+    Number.isFinite(canvasBound.w) &&
+    Number.isFinite(canvasBound.h) &&
+    canvasBound.w > 0 &&
+    canvasBound.h > 0;
+  const firstFrameBound =
+    !options?.bound && noExistingFrames && hasCanvasBound
+      ? new Bound(
+          canvasBound.x + canvasBound.w + 80,
+          canvasBound.y,
+          width,
+          height
+        )
+      : initialBound;
+
+  const placedBound = findNonOverlappingBound(frameManager, firstFrameBound);
 
   const frame = frameManager.createFrameOnBound(placedBound);
   await applyFrameMetadata({ std, store: std.store }, frame, metadata, true);
@@ -620,33 +629,18 @@ export async function createFrameFromMetadata(
 
 function findNonOverlappingBound(
   frameManager: EdgelessFrameManager,
-  bound: Bound,
-  existingBound?: Bound
+  bound: Bound
 ) {
   const gap = 80;
   const frames = frameManager.frames.map(frame =>
     Bound.deserialize(frame.xywh)
   );
   if (frames.length === 0) {
-    if (existingBound) {
-      return new Bound(
-        existingBound.x + existingBound.w + gap,
-        existingBound.y,
-        bound.w,
-        bound.h
-      );
-    }
     return bound;
   }
   const minY = Math.min(...frames.map(frame => frame.y));
   const maxRight = Math.max(...frames.map(frame => frame.x + frame.w));
-  const fallbackBase = existingBound ?? new Bound(maxRight, minY, 0, 0);
-  const fallback = new Bound(
-    fallbackBase.x + fallbackBase.w + gap,
-    fallbackBase.y,
-    bound.w,
-    bound.h
-  );
+  const fallback = new Bound(maxRight + gap, minY, bound.w, bound.h);
   if (!frames.some(frame => frame.isOverlapWithBound(fallback))) {
     return fallback;
   }

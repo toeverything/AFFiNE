@@ -304,7 +304,7 @@ async function offerFrameConversion(
       await convert();
     }
   } else {
-    toast(std.host, 'Frame metadata detected for this image.');
+    await convert();
   }
 }
 

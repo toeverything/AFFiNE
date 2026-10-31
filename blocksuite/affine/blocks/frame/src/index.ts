@@ -7,4 +7,9 @@ export * from './frame-spec';
 export * from './frame-tool';
 export * from './frame-toolbar';
 export * from './metadata';
+export {
+  buildFramePngPayload,
+  createFrameFromMetadata,
+  extractFrameMetadataFromImage,
+} from './metadata';
 export * from './present-tool';

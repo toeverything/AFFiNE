@@ -5,6 +5,7 @@ import {
   startViewTransition,
 } from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
+import { createBlockStdScope } from '@affine/core/blocksuite/manager/view';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import {
@@ -25,7 +26,20 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import { openDirectory, openFilesWith } from '@blocksuite/affine/shared/utils';
+import {
+  createFrameFromMetadata,
+  extractFrameMetadataFromImage,
+} from '@blocksuite/affine/blocks/frame';
+import {
+  FrameBlockSchema,
+  ImageBlockModel,
+  SurfaceRefBlockSchema,
+} from '@blocksuite/affine/model';
+import {
+  openDirectory,
+  openFilesWith,
+  transformModel,
+} from '@blocksuite/affine/shared/utils';
 import type { Workspace } from '@blocksuite/affine/store';
 import {
   DocxTransformer,
@@ -63,6 +77,52 @@ const logger = new DebugLogger('import');
 function shouldSnapshotPickedFiles(type: ImportType, acceptType: AcceptType) {
   if (acceptType === 'Directory' || acceptType === 'Skip') return false;
   return !['markdownZip', 'notion', 'bear', 'oneNote'].includes(type);
+}
+
+async function autoConvertMarkdownFrameImages(
+  docCollection: Workspace,
+  docIds: string[]
+) {
+  await Promise.all(
+    docIds.map(async docId => {
+      const doc = docCollection.getDoc(docId)?.getStore();
+      if (!doc) return;
+
+      const std = createBlockStdScope(doc);
+      const imageBlocks = doc
+        .getBlocksByFlavour('affine:image')
+        .map(block => block.model)
+        .filter(
+          (model): model is ImageBlockModel => model instanceof ImageBlockModel
+        );
+
+      for (const image of imageBlocks) {
+        const sourceId = image.props.sourceId;
+        if (!sourceId) continue;
+        const blob = await doc.blobSync.get(sourceId);
+        if (!blob) continue;
+        if (blob.type && !blob.type.startsWith('image/')) continue;
+
+        const file = new File(
+          [await blob.arrayBuffer()],
+          (blob as File).name ?? 'frame.png',
+          {
+            type: blob.type || 'image/png',
+          }
+        );
+        const metadata = await extractFrameMetadataFromImage(file);
+        if (!metadata) continue;
+
+        const frame = await createFrameFromMetadata(std, metadata);
+        if (!frame) continue;
+
+        transformModel(image, SurfaceRefBlockSchema.model.flavour, {
+          reference: frame.id,
+          refFlavour: FrameBlockSchema.model.flavour,
+        });
+      }
+    })
+  );
 }
 
 type ImportType =
@@ -312,15 +372,17 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   },
   markdownZip: {
     fileOptions: { acceptType: 'Zip', multiple: false },
-    importFunction: async ({ files, importService, context }) => {
+    importFunction: async ({ files, importService, context, docCollection }) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
         throw new Error('Expected a single zip file for markdownZip import');
       }
-      return requireImportService(importService).importMarkdownZip(
+      const result = await requireImportService(importService).importMarkdownZip(
         file,
         context
       );
+      await autoConvertMarkdownFrameImages(docCollection, result.docIds);
+      return result;
     },
   },
   html: {
