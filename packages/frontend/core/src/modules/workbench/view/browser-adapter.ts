@@ -2,7 +2,7 @@ import { useLiveData } from '@toeverything/infra';
 import type { Location } from 'history';
 import { useEffect } from 'react';
 // oxlint-disable-next-line no-restricted-imports
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 
 import type { Workbench } from '../entities/workbench';
 
@@ -28,6 +28,7 @@ export function useBindWorkbenchToBrowserRouter(
 ) {
   const navigate = useNavigate();
   const browserLocation = useLocation();
+  const navigationType = useNavigationType();
 
   const view = useLiveData(workbench.activeView$);
 
@@ -69,7 +70,14 @@ export function useBindWorkbenchToBrowserRouter(
       newLocation.state.startsWith('fromView')
     ) {
       const fromViewKey = newLocation.state.substring('fromView,'.length);
-      if (fromViewKey === view.location$.value.key) {
+      // A PUSH/REPLACE tagged fromView is the echo of our own navigate above.
+      // It can be stale: two view updates in one tick (e.g. /journals then a
+      // redirect to the journal doc) echo the first one after the view has
+      // already moved on, and re-applying it would undo the redirect.
+      if (
+        navigationType !== 'POP' ||
+        fromViewKey === view.location$.value.key
+      ) {
         return;
       } else {
         const target = view.history.entries.findIndex(
@@ -84,7 +92,7 @@ export function useBindWorkbenchToBrowserRouter(
       }
     }
     view.history.push(newLocation, 'fromBrowser');
-  }, [basename, browserLocation, view]);
+  }, [basename, browserLocation, navigationType, view]);
 }
 
 function browserLocationToViewLocation(

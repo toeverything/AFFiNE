@@ -18,7 +18,10 @@ export const toast = (
   message: string,
   duration = 2500
 ) => {
-  if (!ToastContainer) {
+  // The container is attached next to the editor that first showed a toast;
+  // once that editor is gone (navigating to another doc, a re-mount) it is
+  // detached, and appending to it silently showed nothing. Recreate it.
+  if (!ToastContainer || !ToastContainer.isConnected) {
     ToastContainer = createToastContainer(editorHost);
   }
 
