@@ -20,6 +20,7 @@ import {
 } from 'react';
 
 import { useGeneralSettingList } from '../general-setting';
+import { isTabShownOnMobile } from '../mobile-tabs';
 import { useWorkspaceSettingList } from '../workspace-setting';
 import * as style from './style.css';
 
@@ -161,9 +162,19 @@ const SettingSidebarGroup = ({
 export const SettingSidebar = ({
   activeTab,
   onTabChange,
+  className,
+  mobile = false,
 }: {
   activeTab: SettingTab;
   onTabChange: (key: SettingTab) => void;
+  /** 999.14: mobile renders the sidebar full-width as its section list. */
+  className?: string;
+  /**
+   * 999.14: embedded in the mobile settings screen -- no title or account
+   * card (the screen has both) and sections it already shows are hidden
+   * (see mobile-tabs.ts).
+   */
+  mobile?: boolean;
 }) => {
   const t = useI18n();
   const loginStatus = useLiveData(useService(AuthService).session.status$);
@@ -196,27 +207,34 @@ export const SettingSidebar = ({
     ].map(group => {
       return {
         ...group,
-        items: group.items.map(item => {
-          return {
-            ...item,
-            isActive: item.key === activeTab,
-            'data-event-arg': item.key,
-            onClick: () => gotoTab(item.key),
-          };
-        }),
+        items: group.items
+          .filter(item => !mobile || isTabShownOnMobile(item.key))
+          .map(item => {
+            return {
+              ...item,
+              isActive: item.key === activeTab,
+              'data-event-arg': item.key,
+              onClick: () => gotoTab(item.key),
+            };
+          }),
       };
     });
     return res;
-  }, [activeTab, generalList, gotoTab, t, workspaceSettingList]);
+  }, [activeTab, generalList, gotoTab, mobile, t, workspaceSettingList]);
 
   return (
-    <div className={style.settingSlideBar} data-testid="settings-sidebar">
-      <div className={style.sidebarTitle}>
-        {t['com.affine.settingSidebar.title']()}
-      </div>
+    <div
+      className={clsx(style.settingSlideBar, className)}
+      data-testid="settings-sidebar"
+    >
+      {mobile ? null : (
+        <div className={style.sidebarTitle}>
+          {t['com.affine.settingSidebar.title']()}
+        </div>
+      )}
 
-      {loginStatus === 'unauthenticated' ? <SignInButton /> : null}
-      {loginStatus === 'authenticated' ? (
+      {!mobile && loginStatus === 'unauthenticated' ? <SignInButton /> : null}
+      {!mobile && loginStatus === 'authenticated' ? (
         <Suspense>
           <UserInfo
             onAccountSettingClick={onAccountSettingClick}

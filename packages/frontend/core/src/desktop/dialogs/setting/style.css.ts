@@ -56,3 +56,43 @@ export const centeredLoading = style({
   height: '100%',
   width: '100%',
 });
+
+// 999.14: mobile layout of the full settings menu (section list, then a
+// full-screen panel with a back bar).
+export const mobileRoot = style({
+  display: 'flex',
+  flexDirection: 'column',
+  width: '100%',
+  height: '100%',
+  overflow: 'hidden',
+});
+export const mobileSidebar = style({
+  // `&&` doubles the specificity: the sidebar's own `settingSlideBar` rule
+  // (width 25%, maxWidth 242px) is also a single class and its stylesheet
+  // loads later, so a plain class lost (recorded: 94px wide on a 375px phone).
+  selectors: {
+    '&&': {
+      width: '100%',
+      maxWidth: 'none',
+      padding: '12px 12px 0 12px',
+    },
+  },
+});
+export const mobileBackBar = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: '8px 12px',
+  flexShrink: 0,
+  cursor: 'pointer',
+  fontSize: cssVar('fontBase'),
+  color: cssVar('textSecondaryColor'),
+});
+export const mobileWrapper = style({
+  // desktop panels start with 40px top padding sized for a wide modal
+  selectors: {
+    '&&': {
+      padding: '8px 12px 20px 12px',
+    },
+  },
+});

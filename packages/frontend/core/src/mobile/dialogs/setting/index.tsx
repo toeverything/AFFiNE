@@ -14,6 +14,7 @@ import { AboutGroup } from './about';
 import { AppearanceGroup } from './appearance';
 import { DevicesGroup } from './devices';
 import { ExperimentalFeatureSetting } from './experimental';
+import { FullSettingsGroup } from './full-settings';
 import { SettingGroup } from './group';
 import { OthersGroup } from './others';
 import { DeleteAccount } from './others/delete-account';
@@ -122,6 +123,7 @@ const MobileSetting = ({
       <UserUsage />
       <PlansGroup />
       {status === 'authenticated' ? <DevicesGroup /> : null}
+      <FullSettingsGroup />
       <AppearanceGroup />
       <AboutGroup />
       <ExperimentalFeatureSetting />
