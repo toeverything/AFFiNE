@@ -12,11 +12,14 @@
   "dependencies": {
     "@blocksuite/affine-block-attachment": "workspace:*",
     "@blocksuite/affine-block-database": "workspace:*",
+    "@blocksuite/affine-block-database-ref": "workspace:*",
+    "@blocksuite/affine-block-database-view-ref": "workspace:*",
     "@blocksuite/affine-block-embed": "workspace:*",
     "@blocksuite/affine-block-image": "workspace:*",
     "@blocksuite/affine-block-latex": "workspace:*",
     "@blocksuite/affine-block-list": "workspace:*",
     "@blocksuite/affine-block-note": "workspace:*",
+    "@blocksuite/affine-block-note-ref": "workspace:*",
     "@blocksuite/affine-block-paragraph": "workspace:*",
     "@blocksuite/affine-block-surface": "workspace:*",
     "@blocksuite/affine-block-surface-ref": "workspace:*",
@@ -37,6 +40,9 @@
     "@preact/signals-core": "^1.8.0",
     "@toeverything/theme": "^1.1.23",
     "lit": "^3.2.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.8"
   },
   "exports": {
     ".": "./src/index.ts",

@@ -1,4 +1,8 @@
 import {
+  type ViewExtensionContext,
+  ViewExtensionProvider,
+} from '@blocksuite/affine/ext-loader';
+import {
   FeatureFlagService,
   VirtualKeyboardProvider,
 } from '@blocksuite/affine/shared/services';
@@ -6,6 +10,8 @@ import type { Container } from '@blocksuite/global/di';
 import { LifeCycleWatcher } from '@blocksuite/std';
 import type { ExtensionType, Store } from '@blocksuite/store';
 import { signal } from '@preact/signals-core';
+
+import { getTestViewManager } from '../../view.js';
 
 // Story 2.12: this package's own `setupEditor` harness never previously
 // exercised any `IS_MOBILE`-true render path (RESEARCH.md Wave 0 Gaps --
@@ -40,6 +46,78 @@ export function createStubVirtualKeyboardExtension(): ExtensionType {
   }
 
   return StubVirtualKeyboardService as unknown as ExtensionType;
+}
+
+// Phase 4 (MOBILE-12): `KeyboardToolbarViewExtension` now also registers its
+// widget for the 'preview-page' scope — the scope `database-ref`/
+// `database-view-ref` (and every other 'preview-page' consumer) use to build
+// their own *nested* `BlockStdScope`. That nested scope always resolves
+// `ViewExtensionManagerIdentifier` back to this package's own shared
+// `getTestViewManager()` singleton (`ViewExtensionManager.get()`'s own
+// `selfExtension`) and reruns every *registered provider*'s `setup()` fresh
+// for that scope (`ext-loader/src/manager.ts`'s `_build`) — completely
+// decoupled from whatever extra items `createEditor` (`setup.ts`) appended
+// directly into one specific editor's own `pageSpecs`/`edgelessSpecs` array.
+// `createStubVirtualKeyboardExtension()` alone is therefore invisible to a
+// nested preview scope: the widget's `connectedCallback` unconditionally
+// resolves `VirtualKeyboardProvider` via a throwing `std.get` (not
+// `getOptional`) before its own `render()` gate ever runs, so any spec that
+// mounts real referenced content and doesn't also register this would throw
+// "Service [VirtualKeyboardProvider] not found" the moment focus (or just
+// mounting, depending on the consumer) reaches the nested scope.
+//
+// The fix: register a real, scope-agnostic `ViewExtensionProvider` directly
+// with the shared manager — mirroring how the real app's own
+// `MobileViewExtension` (`packages/frontend/core`) registers
+// `KeyboardToolbarExtension` with no scope filter at all, rather than
+// per-scope. `ExtensionManager` (`ext-loader/src/manager.ts`) has no public
+// "add a provider after construction" API (only `.get(scope)`/
+// `.configure(...)`), so this reaches into the singleton's private
+// `_providers` Set — the only way to extend it from a test file without
+// editing `view.ts` itself (a stable, minimal shim every other test in this
+// suite also depends on).
+//
+// Registration is paired with `unregisterStubVirtualKeyboardProviderForAllScopes`
+// rather than left permanently active: `vitest.mobile.config.ts` sets
+// `isolate: false`, so this module's state is shared by every spec file in
+// the process, and `_providers` belongs to one shared manager singleton too
+// — if this stayed registered forever, a *later* spec file that manually
+// passes `createStubVirtualKeyboardExtension()` into `setupEditor`'s own
+// `extensions` array (the pre-existing, non-nested-scope pattern every other
+// file in this suite uses) would double-register `VirtualKeyboardProvider`
+// for the outer 'page'/'mobile-page' scope and throw
+// `DuplicateServiceDefinitionError`. Callers register in their own
+// `beforeEach` and unregister in the matching per-test teardown, so no other
+// spec file in this shared process ever observes this provider active.
+let virtualKeyboardProviderRegisteredForAllScopes = false;
+
+class StubVirtualKeyboardViewExtension extends ViewExtensionProvider {
+  override name = 'stub-virtual-keyboard-provider-all-scopes';
+
+  override setup(context: ViewExtensionContext) {
+    super.setup(context);
+    context.register(createStubVirtualKeyboardExtension());
+  }
+}
+
+function getViewManagerProviders() {
+  return (
+    getTestViewManager() as unknown as {
+      _providers: Set<typeof ViewExtensionProvider>;
+    }
+  )._providers;
+}
+
+export function registerStubVirtualKeyboardProviderForAllScopes() {
+  if (virtualKeyboardProviderRegisteredForAllScopes) return;
+  virtualKeyboardProviderRegisteredForAllScopes = true;
+  getViewManagerProviders().add(StubVirtualKeyboardViewExtension);
+}
+
+export function unregisterStubVirtualKeyboardProviderForAllScopes() {
+  if (!virtualKeyboardProviderRegisteredForAllScopes) return;
+  virtualKeyboardProviderRegisteredForAllScopes = false;
+  getViewManagerProviders().delete(StubVirtualKeyboardViewExtension);
 }
 
 export function touchTap(target: HTMLElement) {

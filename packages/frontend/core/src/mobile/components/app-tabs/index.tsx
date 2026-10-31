@@ -12,6 +12,7 @@ import { createPortal } from 'react-dom';
 import { VirtualKeyboardService } from '../../modules/virtual-keyboard/services/virtual-keyboard';
 import { cacheKey } from './constants';
 import { tabs } from './data';
+import { computeAppTabsBottomOffset } from './keyboard-offset';
 import * as styles from './styles.css';
 import { TabItem } from './tab-item';
 import type { AppTabLink } from './type';
@@ -27,6 +28,7 @@ export const AppTabs = ({
 }) => {
   const virtualKeyboardService = useService(VirtualKeyboardService);
   const virtualKeyboardVisible = useLiveData(virtualKeyboardService.visible$);
+  const keyboardHeight = useLiveData(virtualKeyboardService.height$);
   const workbench = useService(WorkbenchService).workbench;
   const location = useLiveData(workbench.location$);
   const globalCache = useService(GlobalCacheService).globalCache;
@@ -49,6 +51,7 @@ export const AppTabs = ({
         ...assignInlineVars({
           [styles.appTabsBackground]: background,
         }),
+        bottom: computeAppTabsBottomOffset(keyboardHeight),
         visibility: hidden || virtualKeyboardVisible ? 'hidden' : 'visible',
         pointerEvents: hidden || virtualKeyboardVisible ? 'none' : 'auto',
       }}

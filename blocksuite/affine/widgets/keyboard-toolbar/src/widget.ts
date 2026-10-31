@@ -16,6 +16,7 @@ import {
   defaultKeyboardToolbarConfig,
   KeyboardToolbarConfigExtension,
 } from './config.js';
+import { isRootComponentActive } from './utils.js';
 
 export const AFFINE_KEYBOARD_TOOLBAR_WIDGET = 'affine-keyboard-toolbar-widget';
 
@@ -23,6 +24,18 @@ export class AffineKeyboardToolbarWidget extends WidgetComponent<RootBlockModel>
   private readonly _show$ = signal(false);
 
   private _initialInputMode: string = '';
+
+  // keyboard-toolbar-panel-expand-bug (part 3): `inputMode = 'none'` alone
+  // does not dismiss an *already-visible* iOS keyboard -- WebKit only
+  // consults `inputMode` at the moment an element gains focus, not while
+  // it's already focused. Confirmed directly on-device (mobile-debug-eval):
+  // blurring `document.activeElement` while the keyboard is up reliably
+  // dismisses it (visualViewport.height jumped from 362 -> 628 immediately),
+  // while toggling `inputMode` with focus untouched does nothing visible.
+  // So `hide()` blurs (deferred, see below) in addition to setting
+  // `inputMode`, and `show()` refocuses the same element to bring the
+  // keyboard back, preserving cursor position.
+  private _blurredActiveElement: HTMLElement | null = null;
 
   get keyboard(): VirtualKeyboardProviderWithAction & { fallback?: boolean } {
     const provider = this.std.get(VirtualKeyboardProvider);
@@ -33,15 +46,56 @@ export class AffineKeyboardToolbarWidget extends WidgetComponent<RootBlockModel>
       fallback: true,
       show: () => {
         const rootComponent = this.block?.rootComponent;
-        if (rootComponent && rootComponent === document.activeElement) {
+        const isActive = isRootComponentActive(
+          rootComponent,
+          document.activeElement
+        );
+        const inputModeBefore = rootComponent?.inputMode;
+        if (isActive && rootComponent) {
           rootComponent.inputMode = this._initialInputMode;
         }
+        if (this._blurredActiveElement) {
+          const toFocus = this._blurredActiveElement;
+          this._blurredActiveElement = null;
+          toFocus.focus();
+        }
+        console.debug('[MobileDebugLog] keyboard-toolbar-inputmode-toggle', {
+          timestampMs: Date.now(),
+          action: 'show',
+          isActiveElement: !!isActive,
+          inputModeBefore,
+          inputModeAfter: isActive ? this._initialInputMode : inputModeBefore,
+        });
       },
       hide: () => {
         const rootComponent = this.block?.rootComponent;
-        if (rootComponent && rootComponent === document.activeElement) {
+        const isActive = isRootComponentActive(
+          rootComponent,
+          document.activeElement
+        );
+        const inputModeBefore = rootComponent?.inputMode;
+        if (isActive && rootComponent) {
           rootComponent.inputMode = 'none';
         }
+        // Deferred to a macrotask: blurring synchronously inside the same
+        // prevented pointerdown/click gesture that triggered this `hide()`
+        // updates `document.activeElement` correctly, but iOS Safari does
+        // not play the native keyboard-dismiss animation for it -- it isn't
+        // recognized as a "real" user-initiated blur inside an already
+        // `preventDefault()`-ed gesture. Escaping to a macrotask runs it
+        // outside that gesture entirely, which iOS does recognize.
+        const active = document.activeElement;
+        if (isActive && active instanceof HTMLElement) {
+          this._blurredActiveElement = active;
+          setTimeout(() => active.blur(), 0);
+        }
+        console.debug('[MobileDebugLog] keyboard-toolbar-inputmode-toggle', {
+          timestampMs: Date.now(),
+          action: 'hide',
+          isActiveElement: !!isActive,
+          inputModeBefore,
+          inputModeAfter: isActive ? 'none' : inputModeBefore,
+        });
       },
       ...provider,
     };

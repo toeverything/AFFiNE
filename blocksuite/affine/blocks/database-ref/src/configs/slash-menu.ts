@@ -11,9 +11,76 @@ import {
   type SlashMenuItem,
 } from '@blocksuite/affine-widget-slash-menu';
 import { DatabaseTableViewIcon, LinkIcon } from '@blocksuite/icons/lit';
-import { BlockSelection } from '@blocksuite/std';
+import { BlockSelection, type BlockStdScope } from '@blocksuite/std';
+import type { BlockModel } from '@blocksuite/store';
 
 import { insertDatabaseRefBlockCommand } from '../commands';
+
+/**
+ * Opens the cross-doc reference picker DI seam and inserts the correct
+ * block type per candidate flavour — extracted from `crossDocItem`'s own
+ * action closure (see below) so the keyboard-toolbar's "Reference" item
+ * (mobile) can call the exact same logic as this file's own slash-menu
+ * "Reference" item (desktop), rather than duplicating it.
+ */
+export async function insertCrossDocReference(
+  std: BlockStdScope,
+  model: BlockModel
+): Promise<void> {
+  const crossDocReference = std.getOptional(CrossDocReferenceProvider);
+  if (!crossDocReference) {
+    toast(std.host, 'Cross-doc referencing is not available.');
+    return;
+  }
+
+  const candidate = await crossDocReference.openCrossDocReferencePicker(
+    std.store.id
+  );
+  // A `null` candidate means the user cancelled the picker — not a
+  // failure, so no toast here.
+  if (!candidate) return;
+
+  let insertedBlockId: string | undefined;
+  if (candidate.flavour === 'affine:database') {
+    const [_, result] = std.command.exec(insertDatabaseRefBlockCommand, {
+      refBlockId: candidate.blockId,
+      refDocId: candidate.docId,
+      place: 'after',
+      removeEmptyLine: true,
+      selectedModels: [model],
+    });
+    insertedBlockId = result.insertedDatabaseRefBlockId;
+  } else if (candidate.flavour === 'affine:frame') {
+    const [_, result] = std.command.exec(insertSurfaceRefBlockCommand, {
+      reference: candidate.blockId,
+      refDocId: candidate.docId,
+      refFlavour: candidate.flavour,
+      place: 'after',
+      removeEmptyLine: true,
+      selectedModels: [model],
+    });
+    insertedBlockId = result.insertedSurfaceRefBlockId;
+  } else if (candidate.flavour === 'affine:note') {
+    const [_, result] = std.command.exec(insertNoteRefBlockCommand, {
+      refBlockId: candidate.blockId,
+      refDocId: candidate.docId,
+      place: 'after',
+      removeEmptyLine: true,
+      selectedModels: [model],
+    });
+    insertedBlockId = result.insertedNoteRefBlockId;
+  }
+  if (!insertedBlockId) {
+    toast(std.host, 'Could not insert that reference.');
+    return;
+  }
+
+  std.selection.set([
+    std.selection.create(BlockSelection, {
+      blockId: insertedBlockId,
+    }),
+  ]);
+}
 
 /**
  * Same-doc "insert another view of this Table" items — mirrors how
@@ -72,64 +139,7 @@ export const databaseRefSlashMenuConfig: SlashMenuConfig = {
       icon: LinkIcon(),
       group: `5_Edgeless Element@${index++}`,
       action: () => {
-        (async () => {
-          const crossDocReference = std.getOptional(CrossDocReferenceProvider);
-          if (!crossDocReference) {
-            toast(std.host, 'Cross-doc referencing is not available.');
-            return;
-          }
-
-          const candidate = await crossDocReference.openCrossDocReferencePicker(
-            std.store.id
-          );
-          // A `null` candidate means the user cancelled the picker — not a
-          // failure, so no toast here.
-          if (!candidate) return;
-
-          let insertedBlockId: string | undefined;
-          if (candidate.flavour === 'affine:database') {
-            const [_, result] = std.command.exec(
-              insertDatabaseRefBlockCommand,
-              {
-                refBlockId: candidate.blockId,
-                refDocId: candidate.docId,
-                place: 'after',
-                removeEmptyLine: true,
-                selectedModels: [model],
-              }
-            );
-            insertedBlockId = result.insertedDatabaseRefBlockId;
-          } else if (candidate.flavour === 'affine:frame') {
-            const [_, result] = std.command.exec(insertSurfaceRefBlockCommand, {
-              reference: candidate.blockId,
-              refDocId: candidate.docId,
-              refFlavour: candidate.flavour,
-              place: 'after',
-              removeEmptyLine: true,
-              selectedModels: [model],
-            });
-            insertedBlockId = result.insertedSurfaceRefBlockId;
-          } else if (candidate.flavour === 'affine:note') {
-            const [_, result] = std.command.exec(insertNoteRefBlockCommand, {
-              refBlockId: candidate.blockId,
-              refDocId: candidate.docId,
-              place: 'after',
-              removeEmptyLine: true,
-              selectedModels: [model],
-            });
-            insertedBlockId = result.insertedNoteRefBlockId;
-          }
-          if (!insertedBlockId) {
-            toast(std.host, 'Could not insert that reference.');
-            return;
-          }
-
-          std.selection.set([
-            std.selection.create(BlockSelection, {
-              blockId: insertedBlockId,
-            }),
-          ]);
-        })().catch(console.error);
+        insertCrossDocReference(std, model).catch(console.error);
       },
     };
 

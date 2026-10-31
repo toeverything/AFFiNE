@@ -24,9 +24,14 @@ globalStyle('body:has(>#app-tabs):not(:has(affine-keyboard-toolbar))', {
 globalStyle('body:has(affine-keyboard-toolbar)', {
   paddingBottom: `calc(${globalVars.appTabSafeArea} + 46px)`,
 });
-globalStyle('body:has(affine-keyboard-toolbar[data-keyboard-visible])', {
-  paddingBottom: `calc(${globalVars.appKeyboardHeight} + 46px)`,
-});
+// keyboard-toolbar-window-scroll-bug: this used to ALSO grow by
+// appKeyboardHeight here (300+px), which made `<body>` taller than
+// `<html>`'s fixed `100dvh` (see mobile-detail-page.css.ts's `root`) --
+// reintroducing genuine document-level overflow and undermining the whole
+// point of bounding the page. The equivalent reservation now lives on
+// `.affine-page-viewport` instead (mobile-detail-page.css.ts), where it
+// creates real INTERNAL overflow in the one container that's supposed to
+// scroll, rather than growing the document itself.
 globalStyle('body:has(affine-keyboard-toolbar[data-panel-open])', {
   paddingBottom: `calc(${globalVars.appKeyboardStaticHeight} + 46px)`,
 });

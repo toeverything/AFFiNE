@@ -22,7 +22,11 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { wait } from '../utils/common.js';
 import { addNote } from '../utils/edgeless.js';
 import { setupEditor } from '../utils/setup.js';
-import { createStubVirtualKeyboardExtension, touchTap } from './utils.js';
+import {
+  registerStubVirtualKeyboardProviderForAllScopes,
+  touchTap,
+  unregisterStubVirtualKeyboardProviderForAllScopes,
+} from './utils.js';
 
 // Story 2.12 (MOBILE-04) — header CORRECTED in Phase 2 (MOBILE-10/MOBILE-11):
 // this file was originally framed as proving `/Journal Todo` and its sibling
@@ -70,8 +74,17 @@ describe('slash-menu + cross-doc reference picker touch parity (Story 2.12, MOBI
   ) => Promise.resolve(null);
 
   beforeEach(async () => {
+    // Phase 4 (MOBILE-12): tests 1-4 below call each command's `.action()`
+    // directly, inserting real `affine:database-ref`/`affine:database-view-ref`
+    // blocks, whose nested preview now also builds the keyboard-toolbar
+    // widget's 'preview-page' scope registration (`view.ts`'s Task 1 fix) —
+    // that nested `BlockStdScope` needs its own `VirtualKeyboardProvider`,
+    // invisible to the plain `createStubVirtualKeyboardExtension()` +
+    // `setupEditor` extensions-array pattern this file used previously (see
+    // `mobile/utils.ts`'s own doc comment on
+    // `registerStubVirtualKeyboardProviderForAllScopes`).
+    registerStubVirtualKeyboardProviderForAllScopes();
     const cleanup = await setupEditor('page', [
-      createStubVirtualKeyboardExtension(),
       // A stable extension registered once per test, delegating to a
       // per-test-reassignable `resolvePicker` — lets each test below swap
       // in its own picker behavior without re-registering the extension
@@ -82,7 +95,10 @@ describe('slash-menu + cross-doc reference picker touch parity (Story 2.12, MOBI
       }),
     ]);
     resolvePicker = () => Promise.resolve(null);
-    return cleanup;
+    return async () => {
+      await cleanup();
+      unregisterStubVirtualKeyboardProviderForAllScopes();
+    };
   });
 
   function createSecondDoc() {
