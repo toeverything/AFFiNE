@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 import {
   edgelessCommonSetup,
@@ -7,7 +7,7 @@ import {
 } from '../utils/actions/edgeless.js';
 import { test } from '../utils/playwright.js';
 
-async function createRectShape(page: Parameters<typeof test>[0]['page']) {
+async function createRectShape(page: Page) {
   return page.evaluate(() => {
     const root = document.querySelector('affine-edgeless-root') as any;
     if (!root) throw new Error('edgeless root not found');
@@ -21,7 +21,7 @@ async function createRectShape(page: Parameters<typeof test>[0]['page']) {
 }
 
 async function getAnchorViewPoint(
-  page: Parameters<typeof test>[0]['page'],
+  page: Page,
   shapeId: string,
   position: [number, number]
 ) {
@@ -40,11 +40,7 @@ async function getAnchorViewPoint(
   );
 }
 
-async function getCanvasAlphaAt(
-  page: Parameters<typeof test>[0]['page'],
-  x: number,
-  y: number
-) {
+async function getCanvasAlphaAt(page: Page, x: number, y: number) {
   return page.evaluate(
     ({ x, y }) => {
       const canvases = Array.from(

@@ -421,7 +421,8 @@ export class EdgelessShapeColorPicker extends WithDisposable(
               ${when(enableCustomColor, () => {
                 const isCustomColor = this.#calcCustomButtonState(
                   fillDisplayColor,
-                  theme
+                  theme,
+                  palettes
                 );
                 const styleInfo = this.#calcCustomButtonStyle(
                   fillDisplayColor,
@@ -483,7 +484,8 @@ export class EdgelessShapeColorPicker extends WithDisposable(
               ${when(enableCustomColor, () => {
                 const isCustomColor = this.#calcCustomButtonState(
                   strokeColor,
-                  theme
+                  theme,
+                  palettes
                 );
                 const styleInfo = this.#calcCustomButtonStyle(
                   strokeColor,

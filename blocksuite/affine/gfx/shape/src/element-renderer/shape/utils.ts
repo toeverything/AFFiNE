@@ -25,6 +25,21 @@ export type Colors = {
   strokeColor: string;
 };
 
+export function getStrokeLineDash(
+  strokeStyle: string,
+  strokeWidth: number
+): number[] | undefined {
+  switch (strokeStyle) {
+    case 'dash':
+      return [12, 12];
+    case 'dot':
+      // Use a short dash to render dots, matching drawGeneralShape's dotted style.
+      return [Math.max(1, strokeWidth), strokeWidth * 2.5];
+    default:
+      return undefined;
+  }
+}
+
 const gradientDirectionMap: Record<
   NonNullable<ShapeElementModel['gradientDirection']>,
   [number, number, number, number]

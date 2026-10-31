@@ -117,8 +117,6 @@ export const HighlighterSchema = z
 const DEFAULT_SHAPE = {
   color: DefaultTheme.shapeTextColor,
   fillColor: DefaultTheme.shapeFillColor,
-  gradientFinal: undefined,
-  gradientDirection: undefined,
   flipX: false,
   flipY: false,
   strokeColor: DefaultTheme.shapeStrokeColor,

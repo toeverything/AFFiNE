@@ -354,12 +354,17 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
   }
 
   private _mapPositionByFlip(
-    position: Connection['position'],
-    shape: { flipX?: boolean; flipY?: boolean }
-  ): Connection['position'] {
+    position: IVec,
+    shape:
+      | ShapeElementModel
+      | NoteBlockModel
+      | { flipX?: boolean; flipY?: boolean }
+  ): IVec {
+    const flipX = 'flipX' in shape && Boolean(shape.flipX);
+    const flipY = 'flipY' in shape && Boolean(shape.flipY);
     return [
-      shape.flipX ? 1 - position[0] : position[0],
-      shape.flipY ? 1 - position[1] : position[1],
+      flipX ? 1 - position[0] : position[0],
+      flipY ? 1 - position[1] : position[1],
     ];
   }
 
