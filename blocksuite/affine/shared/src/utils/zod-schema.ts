@@ -174,6 +174,7 @@ const ShapeObject = {
   collapsedSize: z.tuple([z.number(), z.number()]).optional(),
   expandedSize: z.tuple([z.number(), z.number()]).optional(),
   collapseProxyId: z.string().nullable().optional(),
+  mindmapNextPaletteIndex: z.number().int().nonnegative().optional(),
 };
 
 export const ShapeSchema = z.object(ShapeObject).default(DEFAULT_SHAPE);

@@ -1,6 +1,7 @@
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import {
   type Color,
+  CONNECTOR_TREE_SHAPES,
   ConnectorElementModel,
   DefaultTheme,
   isTransparent,
@@ -11,6 +12,7 @@ import {
   ShapeType,
 } from '@blocksuite/affine-model';
 import {
+  EditorSettingProvider,
   EditPropsStore,
   FeatureFlagService,
   ThemeProvider,
@@ -172,6 +174,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
     this._recordShapeProps(shapeName, nextProps);
 
     const applied = this._applyColorToSelection(
+      key,
       fillColor,
       strokeColor,
       strokeWidth,
@@ -246,6 +249,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
   };
 
   private _applyColorToSelection(
+    key: string,
     fillColor: Color,
     strokeColor?: Color,
     strokeWidth?: ShapePaletteStyle['strokeWidth'],
@@ -287,6 +291,28 @@ export class EdgelessShapeMenu extends SignalWatcher(
           gradientFinal,
           gradientDirection,
         };
+        if (CONNECTOR_TREE_SHAPES.has(element.shapeType)) {
+          const mode =
+            this.edgeless.std
+              .getOptional(EditorSettingProvider)
+              ?.setting$.peek().edgelessMindmapNextColor ?? 'children';
+          const wrapSize =
+            this.edgeless.std
+              .getOptional(EditorSettingProvider)
+              ?.setting$.peek().edgelessMindmapPaletteSize ?? '11';
+          const wrapCount = Number(wrapSize);
+          const maxStyles =
+            mode === 'disable'
+              ? 0
+              : Math.min(
+                  Number.isFinite(wrapCount) ? wrapCount : 0,
+                  shapePaletteKeys.length
+                );
+          const selectedIndex = shapePaletteKeys.indexOf(key);
+          if (maxStyles > 0 && selectedIndex >= 0) {
+            shapeUpdates.mindmapNextPaletteIndex = selectedIndex % maxStyles;
+          }
+        }
         if (strokeWidth) shapeUpdates.strokeWidth = strokeWidth;
         if (strokeStyle) shapeUpdates.strokeStyle = strokeStyle;
         crud.updateElement(element.id, shapeUpdates);

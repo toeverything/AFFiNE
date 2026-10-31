@@ -39,6 +39,7 @@ import { diamond } from './diamond.js';
 import { document as documentShape } from './document.js';
 import { ellipse } from './ellipse.js';
 import { hexagon } from './hexagon.js';
+import { mindmapBranch } from './mindmap-branch';
 import { note } from './note.js';
 import { parallelogram } from './parallelogram.js';
 import { rect } from './rect.js';
@@ -170,7 +171,7 @@ const shapeRenderers: Record<
       horizontalContainer: rect,
       list: rect,
       mindmapCentralIdea: ellipse,
-      mindmapBranch: rect,
+      mindmapBranch,
       mindmapSubTopic: rect,
       mindmapSquare: rect,
       mindmapOrganization: rect,

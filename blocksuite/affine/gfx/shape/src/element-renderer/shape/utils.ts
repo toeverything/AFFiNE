@@ -15,7 +15,7 @@ import type {
   TextAlign,
   TextVerticalAlign,
 } from '@blocksuite/affine-model';
-import { ShapeType } from '@blocksuite/affine-model';
+import { CONTAINER_TITLE_SIZE, ShapeType } from '@blocksuite/affine-model';
 import { FeatureFlagService } from '@blocksuite/affine-shared/services';
 import type { Bound, SerializedXYWH } from '@blocksuite/global/gfx';
 import { deltaInsertsToChunks } from '@blocksuite/std/inline';
@@ -65,6 +65,7 @@ export const resolveGradientFill = (
   width: number,
   height: number
 ) => {
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return fillColor;
   const gradientFinal =
     'gradientFinal' in model ? model.gradientFinal : undefined;
   if (!gradientFinal) return fillColor;
@@ -85,12 +86,8 @@ export const resolveGradientFill = (
     x1 * width,
     y1 * height
   );
-  try {
-    gradient.addColorStop(0, fillColor);
-    gradient.addColorStop(1, gradientFinalColor);
-  } catch {
-    return fillColor;
-  }
+  gradient.addColorStop(0, fillColor);
+  gradient.addColorStop(1, gradientFinalColor);
   return gradient;
 };
 
@@ -147,12 +144,22 @@ export function drawGeneralShape(
 
   switch (shapeModel.shapeType) {
     case 'rect':
+    case 'container':
+    case 'verticalContainer':
+    case 'horizontalContainer':
+    case 'list':
+    case 'mindmapBranch':
+    case 'mindmapSubTopic':
+    case 'mindmapSquare':
+    case 'mindmapOrganization':
+    case 'mindmapDivision':
       drawRect(ctx, 0, 0, w, h, shapeModel.radius ?? 0);
       break;
     case 'diamond':
       drawDiamond(ctx, 0, 0, w, h);
       break;
     case 'ellipse':
+    case 'mindmapCentralIdea':
       drawEllipse(ctx, 0, 0, w, h);
       break;
     case 'triangle':
@@ -218,14 +225,6 @@ export function drawGeneralShape(
     case 'dash':
       ctx.setLineDash([12, 12]);
       break;
-    case 'dot':
-      // Use a short dash with round caps to render dots.
-      ctx.lineCap = 'round';
-      ctx.setLineDash([
-        Math.max(1, shapeModel.strokeWidth),
-        shapeModel.strokeWidth * 2.5,
-      ]);
-      break;
   }
 
   if (shapeModel.shadow) {
@@ -258,6 +257,26 @@ export function drawGeneralShape(
 
   ctx.fill();
   ctx.stroke();
+
+  if (shapeModel.shapeType === ShapeType.VerticalContainer) {
+    const titleHeight = Math.min(CONTAINER_TITLE_SIZE, h);
+    if (h > titleHeight + 1) {
+      ctx.beginPath();
+      ctx.moveTo(0, titleHeight);
+      ctx.lineTo(w, titleHeight);
+      ctx.stroke();
+    }
+  }
+
+  if (shapeModel.shapeType === ShapeType.HorizontalContainer) {
+    const titleWidth = Math.min(CONTAINER_TITLE_SIZE, w);
+    if (w > titleWidth + 1) {
+      ctx.beginPath();
+      ctx.moveTo(titleWidth, 0);
+      ctx.lineTo(titleWidth, h);
+      ctx.stroke();
+    }
+  }
 }
 
 function drawRect(
