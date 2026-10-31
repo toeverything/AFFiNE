@@ -32,6 +32,12 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -b tsconfig.json --verbose",
+    "blocksuite:build": "yarn workspace @blocksuite/affine build && yarn workspace @blocksuite/integration-test build",
+    "blocksuite:manifests": "node ./scripts/blocksuite/sync-manifests.mjs",
+    "blocksuite:pack": "node ./scripts/blocksuite/pack.mjs",
+    "blocksuite:validate": "node ./scripts/blocksuite/validate.mjs",
+    "blocksuite:smoke": "node ./scripts/blocksuite/smoke.mjs",
+    "blocksuite:publish": "node ./scripts/blocksuite/publish.mjs",
     "postinstall": "yarn affine init && yarn husky"
   },
   "lint-staged": {
@@ -92,7 +98,10 @@
   },
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
+    "@arethetypeswrong/cli": "^0.18.5",
     "@capacitor/cli": "^8.4.2",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
     "@faker-js/faker": "^10.5.0",
     "@istanbuljs/schema": "^0.1.3",
     "@playwright/test": "=1.58.2",
@@ -119,6 +128,7 @@
     "oxfmt": "0.63.0",
     "oxlint": "1.78.0",
     "oxlint-tsgolint": "7.0.2001",
+    "publint": "^0.3.25",
     "semver": "^7.7.3",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "unplugin-swc": "^1.5.9",

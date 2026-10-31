@@ -9,6 +9,11 @@
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git",
+    "directory": "blocksuite/affine/widgets/edgeless-dragging-area"
+  },
   "dependencies": {
     "@blocksuite/affine-block-surface": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",

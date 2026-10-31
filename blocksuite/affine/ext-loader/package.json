@@ -9,6 +9,11 @@
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git",
+    "directory": "blocksuite/affine/ext-loader"
+  },
   "dependencies": {
     "@blocksuite/global": "workspace:*",
     "@blocksuite/store": "workspace:*",

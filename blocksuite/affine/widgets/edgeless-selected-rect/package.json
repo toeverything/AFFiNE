@@ -9,6 +9,11 @@
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git",
+    "directory": "blocksuite/affine/widgets/edgeless-selected-rect"
+  },
   "dependencies": {
     "@blocksuite/affine-block-frame": "workspace:*",
     "@blocksuite/affine-block-surface": "workspace:*",
