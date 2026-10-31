@@ -309,7 +309,7 @@ export const AFFINE_FLAGS = {
     displayName: 'Enable Mobile Database Editing',
     description: 'Enable mobile database editing',
     configurable: isMobile,
-    defaultState: false,
+    defaultState: true,
   },
   enable_pdfmake_export: {
     category: 'blocksuite',

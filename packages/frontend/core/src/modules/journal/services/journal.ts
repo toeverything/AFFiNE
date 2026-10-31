@@ -65,19 +65,23 @@ export class JournalService extends Service {
       this.templateDocService.setting.pageTemplateDocId$.value;
     const journalTemplateDocId =
       this.templateDocService.setting.journalTemplateDocId$.value;
+    let templatePromise: Promise<unknown> = Promise.resolve();
     // if journal template configured
     if (journalTemplateDocId) {
-      this.docsService
-        .duplicateFromTemplate(journalTemplateDocId, docRecord.id)
-        .catch(console.error);
+      templatePromise = this.docsService.duplicateFromTemplate(
+        journalTemplateDocId,
+        docRecord.id
+      );
     }
     // journal template not configured, use page template
     else if (enablePageTemplate && pageTemplateDocId) {
-      this.docsService
-        .duplicateFromTemplate(pageTemplateDocId, docRecord.id)
-        .catch(console.error);
+      templatePromise = this.docsService.duplicateFromTemplate(
+        pageTemplateDocId,
+        docRecord.id
+      );
     }
     this.setJournalDate(docRecord.id, title);
+    templatePromise.catch(console.error);
     return docRecord;
   }
 

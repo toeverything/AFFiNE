@@ -16,6 +16,13 @@ import {
   materializeTableColumns,
   TableSingleView,
 } from '../view-presets/table/table-view-manager.js';
+import {
+  applyHierarchyMutation,
+  calculateHierarchyIndent,
+  computeIndentMutation,
+  computeUnindentMutation,
+  normalizeHierarchyLevel,
+} from '../view-presets/table/utils.js';
 
 /** @vitest-environment happy-dom */
 
@@ -187,6 +194,71 @@ describe('table filtering', () => {
   });
 });
 
+describe('journal todo "done date" filter semantics', () => {
+  // Mirrors the OR(isNotOneOf(done), after(referenceCreatedAt-1)) filter
+  // built by `journalTodoDatabaseSlashMenuConfig` (Story 2.4/Done-date
+  // follow-up) — a task done *after this specific reference was inserted*
+  // stays visible in it; a task done before the reference existed is
+  // filtered out. Deliberately based on real wall-clock reference-creation
+  // time, not the journal's own (possibly future- or past-dated) date —
+  // see the slash-menu config's own comment for why.
+  const referenceCreatedAt = new Date('2026-07-29T00:00:00').getTime();
+
+  function makeFilter(): FilterGroup {
+    return {
+      type: 'group',
+      op: 'or',
+      conditions: [
+        {
+          type: 'filter',
+          left: { type: 'ref', name: 'status' },
+          function: 'isNotOneOf',
+          args: [{ type: 'literal', value: ['done'] }],
+        },
+        {
+          type: 'filter',
+          left: { type: 'ref', name: 'doneDate' },
+          function: 'after',
+          args: [{ type: 'literal', value: referenceCreatedAt - 1 }],
+        },
+      ],
+    };
+  }
+
+  function makeView(statusValue: unknown, doneDateValue: unknown) {
+    const statusProperty = {
+      id: 'status',
+      cellGetOrCreate: () => ({ jsonValue$: { value: statusValue } }),
+    };
+    const doneDateProperty = {
+      id: 'doneDate',
+      cellGetOrCreate: () => ({ jsonValue$: { value: doneDateValue } }),
+    };
+    return {
+      filter$: { value: makeFilter() },
+      properties$: { value: [statusProperty, doneDateProperty] },
+      propertiesRaw$: { value: [statusProperty, doneDateProperty] },
+    } as unknown as TableSingleView;
+  }
+
+  test('a not-done row stays visible regardless of Done date', () => {
+    const view = makeView('not_done', null);
+    expect(TableSingleView.prototype.isShow.call(view, 'row-1')).toBe(true);
+  });
+
+  test('a row done after this reference was created stays visible', () => {
+    const doneAfter = referenceCreatedAt + 60 * 60 * 1000;
+    const view = makeView('done', doneAfter);
+    expect(TableSingleView.prototype.isShow.call(view, 'row-1')).toBe(true);
+  });
+
+  test('a row done before this reference was created is filtered out', () => {
+    const doneBefore = referenceCreatedAt - 60 * 60 * 1000;
+    const view = makeView('done', doneBefore);
+    expect(TableSingleView.prototype.isShow.call(view, 'row-1')).toBe(false);
+  });
+});
+
 describe('number formatter', () => {
   test('number format menu should expose all schema formats', () => {
     const menuFormats = numberFormats.map(format => format.type);
@@ -243,5 +315,80 @@ describe('number formatter', () => {
 
   test('supports comma as decimal separator in locale-specific input', () => {
     expect(parseNumber('11451,4', ',')).toBe(11451.4);
+  });
+});
+
+describe('table hierarchy helpers', () => {
+  test('normalizes hierarchy level from number and string values', () => {
+    expect(normalizeHierarchyLevel(3)).toBe(3);
+    expect(normalizeHierarchyLevel('2')).toBe(2);
+    expect(normalizeHierarchyLevel(-1)).toBe(0);
+    expect(normalizeHierarchyLevel('not-a-number')).toBe(0);
+  });
+
+  test('calculates bounded indentation by hierarchy level', () => {
+    expect(calculateHierarchyIndent(0)).toBe(0);
+    expect(calculateHierarchyIndent(1)).toBe(12);
+    expect(calculateHierarchyIndent(3)).toBe(36);
+    expect(calculateHierarchyIndent(100)).toBe(96);
+  });
+
+  test('indents and unindents row hierarchy metadata', () => {
+    const values = new Map<string, Map<string, unknown>>();
+    const setCell = (rowId: string, propertyId: string, value: unknown) => {
+      if (!values.has(rowId)) values.set(rowId, new Map());
+      values.get(rowId)?.set(propertyId, value);
+    };
+    const getCell = (rowId: string, propertyId: string) =>
+      values.get(rowId)?.get(propertyId);
+
+    const levelProp = {
+      id: 'level',
+      name$: { value: 'Hierarchy Level' },
+      valueSetFromString: (rowId: string, value: string) =>
+        setCell(rowId, 'level', Number(value)),
+      cellGetOrCreate: (rowId: string) => ({
+        jsonValue$: { value: getCell(rowId, 'level') ?? 0 },
+      }),
+    };
+    const parentProp = {
+      id: 'parent',
+      name$: { value: 'Parent Identifier' },
+      valueSetFromString: (rowId: string, value: string) =>
+        setCell(rowId, 'parent', value),
+      cellGetOrCreate: (rowId: string) => ({
+        jsonValue$: { value: getCell(rowId, 'parent') ?? '' },
+      }),
+    };
+    const ancestorProp = {
+      id: 'ancestors',
+      name$: { value: 'Ancestor Identifiers' },
+      valueSetFromString: (rowId: string, value: string) =>
+        setCell(rowId, 'ancestors', value),
+      cellGetOrCreate: (rowId: string) => ({
+        jsonValue$: { value: getCell(rowId, 'ancestors') ?? '' },
+      }),
+    };
+
+    const rowIds = ['a', 'b', 'c'];
+    setCell('a', 'level', 0);
+    setCell('b', 'level', 0);
+    setCell('c', 'level', 1);
+
+    const context = {
+      rowIds,
+      rowId: 'b',
+      docId: 'doc',
+      properties: [levelProp, parentProp, ancestorProp],
+    };
+
+    const indentResult = computeIndentMutation(context);
+    applyHierarchyMutation(context, indentResult);
+
+    expect(getCell('b', 'level')).toBe(1);
+
+    const unindentResult = computeUnindentMutation(context);
+    expect(unindentResult).not.toBeNull();
+    expect(getCell('b', 'level')).toBe(0);
   });
 });

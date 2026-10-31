@@ -12,6 +12,7 @@ import {
   type ViewportTurboRendererExtension,
   ViewportTurboRendererIdentifier,
 } from '@blocksuite/affine-gfx-turbo-renderer';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import type { ExtensionType, Store, Transformer } from '@blocksuite/store';
 import { Schema, Text } from '@blocksuite/store';
 import {
@@ -79,12 +80,12 @@ async function createEditor(
   editor.doc = doc;
   editor.mode = mode;
   editor.pageSpecs = [
-    ...viewManager.get('page'),
+    ...viewManager.get(IS_MOBILE ? 'mobile-page' : 'page'),
     FontConfigExtension(CommunityCanvasTextFonts),
     ...extensions,
   ];
   editor.edgelessSpecs = [
-    ...viewManager.get('edgeless'),
+    ...viewManager.get(IS_MOBILE ? 'mobile-edgeless' : 'edgeless'),
     FontConfigExtension(CommunityCanvasTextFonts),
     ...extensions,
   ];

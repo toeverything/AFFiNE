@@ -6,7 +6,9 @@
     "dev": "vite",
     "build": "yarn run -T tsc",
     "test:unit": "vitest --browser.headless --run",
-    "test:debug": "PWDEBUG=1 npx vitest --browser.headless=false"
+    "test:debug": "PWDEBUG=1 npx vitest --browser.headless=false",
+    "test:mobile": "vitest --config vitest.mobile.config.ts --browser.headless --run",
+    "test:mobile:webkit": "vitest --config vitest.mobile.webkit.config.ts --browser.headless --run"
   },
   "sideEffects": false,
   "keywords": [],

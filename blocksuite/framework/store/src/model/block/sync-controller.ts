@@ -326,7 +326,33 @@ export class SyncController {
           }
           this.yBlock.set(`prop:${p}`, yValue);
           const proxy = this._getPropsProxy(p, yValue);
-          setValue(target, p, value);
+          // `y2Native(this.yBlock.get(...))`, not the raw `value` argument
+          // — `value` is whatever native object the *caller* passed in,
+          // which can contain not-yet-integrated nested Y-types (e.g. a
+          // bare `new Text('foo')` never attached to any doc, embedded
+          // inside a plain object/array prop written via a single
+          // top-level reassignment, the standard pattern for e.g.
+          // `cells[rowId][columnId] = { value: new Text(...) }`). Passing
+          // that straight into the `${p}$` signal means the signal
+          // forever reflects that pre-integration snapshot — a nested
+          // `Text` with no backing `Item`, so `.toString()` returns ''
+          // permanently, even though `target[p]` (set two lines below,
+          // from `proxy`/`yValue`) and every later Yjs-observer-driven
+          // update (`_syncSiblingSignals`/`_getPropsProxy`'s `onChange`,
+          // both of which already re-derive via `y2Native(this.yBlock.get
+          // (...))`, never the raw value) correctly resolve it. Confirmed
+          // live: `DatabaseBlockDataSource`'s task-parent-identity `Text`
+          // cells read back with empty content through `cells$` (the
+          // signal) immediately after being written, while the plain,
+          // non-signal `cells` prop on the same object had the real
+          // content — silently breaking every parent/ancestor status
+          // computation that depends on reading a just-written identity
+          // cell in the same synchronous pass. Re-reading from `this.
+          // yBlock` here (already just set, two lines up) instead of
+          // reusing `value` matches the same already-established pattern
+          // this file uses everywhere else a signal needs a definitely-
+          // integrated value.
+          setValue(target, p, y2Native(this.yBlock.get(`prop:${p}`)));
           return Reflect.set(target, p, proxy, receiver);
         }
 

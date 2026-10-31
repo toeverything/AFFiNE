@@ -1,12 +1,15 @@
 export * from './adapters';
 export * from './commands';
 export * from './config';
+export * from './configs/slash-menu.js';
 export * from './context';
 export * from './data-source';
 export * from './database-block';
 export * from './detail-panel/block-renderer';
 export * from './detail-panel/note-renderer';
 export * from './properties';
+export type { NoteRefValue } from './properties/note/define';
+export { notePropertyModelConfig } from './properties/note/define';
 export * from './properties/rich-text/cell-renderer';
 export * from './selection.js';
 export * from './service';

@@ -1,4 +1,9 @@
 import { popupTargetFromElement } from '@blocksuite/affine-components/context-menu';
+import {
+  TASK_ANCESTOR_IDENTIFIERS_COLUMN_NAME,
+  TASK_HIERARCHY_LEVEL_COLUMN_NAME,
+  TASK_PARENT_IDENTIFIER_COLUMN_NAME,
+} from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { CenterPeekIcon, MoreHorizontalIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
@@ -10,6 +15,7 @@ import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { html } from 'lit/static-html.js';
 
+import { getKanbanParentContext } from '../hierarchy-context.js';
 import type { KanbanColumn } from '../kanban-view-manager.js';
 import type { KanbanViewUILogic } from './kanban-view-ui-logic.js';
 import { openDetail, popCardMenu } from './menu.js';
@@ -30,11 +36,56 @@ const styles = css`
     background-color: var(--affine-hover-color);
   }
 
+  /* Story 2.7 (AC5, extended to kanban view): overdue-and-undone cards —
+     mirrors the list/table views' own overdue treatment. */
+  affine-data-view-kanban-card[data-overdue='true'] {
+    border-color: var(--affine-error-color);
+  }
+  affine-data-view-kanban-card[data-overdue='true'] .card-header-title {
+    color: var(--affine-error-color);
+    font-weight: 600;
+  }
+
   affine-data-view-kanban-card .card-header {
     padding: 8px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  affine-data-view-kanban-card .card-parent-context {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    color: var(--affine-text-secondary-color);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  affine-data-view-kanban-card .card-parent-title {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+
+  affine-data-view-kanban-card .card-parent-title:hover,
+  affine-data-view-kanban-card .card-parent-title:focus-visible {
+    color: var(--affine-primary-color);
+  }
+
+  affine-data-view-kanban-card .card-parent-level {
+    flex: none;
+    white-space: nowrap;
   }
 
   affine-data-view-kanban-card .card-header-title uni-lit {
@@ -187,6 +238,20 @@ export class KanbanCard extends SignalWatcher(
     return this.kanbanViewLogic.selectionController;
   }
 
+  private getParentContext() {
+    const docId = (this.view.manager.dataSource as { doc?: { id: string } }).doc
+      ?.id;
+    if (!docId) {
+      return;
+    }
+    return getKanbanParentContext({
+      rowId: this.cardId,
+      docId,
+      properties: this.view.propertiesRaw$.value,
+      rowIds: this.view.rowIds$.value,
+    });
+  }
+
   private renderBody(columns: KanbanColumn[]) {
     if (columns.length === 0) {
       return '';
@@ -196,6 +261,22 @@ export class KanbanCard extends SignalWatcher(
         columns,
         v => v.id,
         column => {
+          // These 3 system columns are pure internal bookkeeping (see
+          // `ensureTaskHierarchyColumns` — they're forced-hidden from every
+          // *view's* own column list too) and must never show on a card,
+          // regardless of whether this specific card happens to have a
+          // parent (`getKanbanParentContext` only returns a context for
+          // non-root cards — a root-level card, with no parent, has no
+          // parent context, so gating this filter on `hasParentContext`
+          // left them fully visible on every root-level card while
+          // correctly hiding them everywhere else).
+          if (
+            column.name$.value === TASK_PARENT_IDENTIFIER_COLUMN_NAME ||
+            column.name$.value === TASK_ANCESTOR_IDENTIFIERS_COLUMN_NAME ||
+            column.name$.value === TASK_HIERARCHY_LEVEL_COLUMN_NAME
+          ) {
+            return '';
+          }
           if (this.view.isInHeader(column.id)) {
             return '';
           }
@@ -213,7 +294,8 @@ export class KanbanCard extends SignalWatcher(
   }
 
   private renderHeader(columns: KanbanColumn[]) {
-    if (!this.view.hasHeader(this.cardId)) {
+    const parentContext = this.getParentContext();
+    if (!this.view.hasHeader(this.cardId) && !parentContext) {
       return '';
     }
     const classList = classMap({
@@ -221,8 +303,39 @@ export class KanbanCard extends SignalWatcher(
       'has-divider': columns.length > 0,
     });
     return html`
-      <div class="${classList}">${this.renderTitle()} ${this.renderIcon()}</div>
+      <div class="${classList}">
+        ${this.renderParentContext(parentContext)} ${this.renderTitle()}
+        ${this.renderIcon()}
+      </div>
     `;
+  }
+
+  private renderParentContext(
+    context: ReturnType<typeof getKanbanParentContext> = this.getParentContext()
+  ) {
+    if (!context) {
+      return;
+    }
+    const openParent = (event: MouseEvent) => {
+      event.stopPropagation();
+      const selection = this.getSelection();
+      if (!selection) {
+        return;
+      }
+      openDetail(this.kanbanViewLogic, context.parentId, selection);
+    };
+    return html`<div class="card-parent-context">
+      <button
+        class="card-parent-title"
+        title=${context.parentTitle}
+        @click=${openParent}
+      >
+        Parent: ${context.parentDisplayName}
+      </button>
+      ${context.level == null
+        ? ''
+        : html`<span class="card-parent-level">Level: ${context.level}</span>`}
+    </div>`;
   }
 
   private renderIcon() {

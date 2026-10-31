@@ -1,3 +1,4 @@
+import { TASK_HIERARCHY_LEVEL_COLUMN_NAME } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { computed, effect } from '@preact/signals-core';
@@ -18,6 +19,11 @@ import {
   type TableViewSelection,
   type TableViewSelectionWithType,
 } from '../../selection';
+import {
+  applyHierarchyMutation,
+  computeIndentMutation,
+  computeUnindentMutation,
+} from '../../utils.js';
 import type { TableViewCellContainer } from '../cell.js';
 import type { TableGroup } from '../group.js';
 import type { TableRowView } from '../row/row.js';
@@ -501,7 +507,7 @@ export class TableSelectionController implements ReactiveController {
   }
 
   getRow(groupKey: string | undefined, rowId: string) {
-    return this.getGroup(groupKey)?.querySelector(
+    return this.getGroup(groupKey)?.querySelector<TableRowView>(
       `data-view-table-row[data-row-id='${rowId}']`
     );
   }
@@ -527,6 +533,238 @@ export class TableSelectionController implements ReactiveController {
 
   insertRowBefore(groupKey: string | undefined, rowId: string) {
     this.insertTo(groupKey, rowId, true);
+  }
+
+  private getHierarchyLevelValue(rowId: string) {
+    const levelProperty = this.view.propertiesRaw$.value.find(
+      property => property.name$.value === TASK_HIERARCHY_LEVEL_COLUMN_NAME
+    );
+    if (!levelProperty) {
+      return 0;
+    }
+    const raw = levelProperty.cellGetOrCreate(rowId).jsonValue$.value;
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      return Math.max(0, Math.floor(raw));
+    }
+    if (typeof raw === 'string') {
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed)) {
+        return Math.max(0, Math.floor(parsed));
+      }
+    }
+    return 0;
+  }
+
+  indentHierarchyRow() {
+    const selection = this.selection;
+    if (!selection) {
+      return false;
+    }
+    const groupKey =
+      selection.selectionType === 'row'
+        ? selection.rows[0]?.groupKey
+        : selection.groupKey;
+    const rowIndex =
+      selection.selectionType === 'row'
+        ? this.getRow(groupKey, selection.rows[0]?.id ?? '')?.rowIndex
+        : selection.focus.rowIndex;
+    const rowId =
+      selection.selectionType === 'row'
+        ? selection.rows[0]?.id
+        : this.rows(groupKey)?.item(selection.focus.rowIndex)?.rowId;
+    if (rowIndex == null || !rowId) {
+      return false;
+    }
+    const rows = this.rows(groupKey);
+    if (!rows) {
+      return false;
+    }
+    const docId = this.view.manager.dataSource.doc?.id;
+    if (!docId) {
+      return false;
+    }
+    const rowIds = [...rows].map(row => row.rowId);
+    const result = computeIndentMutation({
+      rowIds,
+      rowId,
+      docId,
+      properties: this.view.propertiesRaw$.value,
+    });
+    if (!result) {
+      return false;
+    }
+    const beforeLevel = this.getHierarchyLevelValue(rowId);
+    const afterLevel = result.updatedLevels.get(rowId) ?? beforeLevel;
+    if (afterLevel === beforeLevel && result.afterId == null) {
+      return false;
+    }
+    const dataSource = this.view.manager.dataSource as {
+      applyTaskHierarchyMutation?: (
+        updatedLevels: Map<string, number>,
+        updatedParents: Map<string, string | undefined>,
+        updatedAncestors: Map<string, string>
+      ) => void;
+    };
+    if (dataSource.applyTaskHierarchyMutation) {
+      dataSource.applyTaskHierarchyMutation(
+        result.updatedLevels,
+        result.updatedParents,
+        result.updatedAncestors
+      );
+    } else {
+      applyHierarchyMutation(
+        {
+          rowIds,
+          rowId,
+          docId,
+          properties: this.view.propertiesRaw$.value,
+        },
+        result
+      );
+    }
+    this.logic.ui$.value?.requestUpdate();
+    return true;
+  }
+
+  indentHierarchyRowByRowId(rowId: string, groupKey?: string) {
+    const row = this.getRow(groupKey, rowId) ?? this.getRow(undefined, rowId);
+    if (!row) {
+      return false;
+    }
+    this.selection = TableViewAreaSelection.create({
+      groupKey,
+      focus: { rowIndex: row.rowIndex, columnIndex: 0 },
+      isEditing: false,
+    });
+    return this.indentHierarchyRow();
+  }
+
+  unindentHierarchyRow() {
+    const selection = this.selection;
+    if (!selection) {
+      return false;
+    }
+    const groupKey =
+      selection.selectionType === 'row'
+        ? selection.rows[0]?.groupKey
+        : selection.groupKey;
+    const rowId =
+      selection.selectionType === 'row'
+        ? selection.rows[0]?.id
+        : this.rows(groupKey)?.item(selection.focus.rowIndex)?.rowId;
+    if (!rowId) {
+      return false;
+    }
+    const rows = this.rows(groupKey);
+    if (!rows) {
+      return false;
+    }
+    const docId = this.view.manager.dataSource.doc?.id;
+    if (!docId) {
+      return false;
+    }
+    const rowIds = [...rows].map(row => row.rowId);
+    const result = computeUnindentMutation({
+      rowIds,
+      rowId,
+      docId,
+      properties: this.view.propertiesRaw$.value,
+    });
+    if (!result) {
+      return false;
+    }
+    const beforeLevel = this.getHierarchyLevelValue(rowId);
+    const afterLevel = result.updatedLevels.get(rowId) ?? beforeLevel;
+    if (afterLevel === beforeLevel) {
+      return false;
+    }
+    const dataSource = this.view.manager.dataSource as {
+      applyTaskHierarchyMutation?: (
+        updatedLevels: Map<string, number>,
+        updatedParents: Map<string, string | undefined>,
+        updatedAncestors: Map<string, string>
+      ) => void;
+    };
+    if (dataSource.applyTaskHierarchyMutation) {
+      dataSource.applyTaskHierarchyMutation(
+        result.updatedLevels,
+        result.updatedParents,
+        result.updatedAncestors
+      );
+    } else {
+      applyHierarchyMutation(
+        {
+          rowIds,
+          rowId,
+          docId,
+          properties: this.view.propertiesRaw$.value,
+        },
+        result
+      );
+    }
+    this.logic.ui$.value?.requestUpdate();
+    return true;
+  }
+
+  unindentHierarchyRowByRowId(rowId: string, groupKey?: string) {
+    const row = this.getRow(groupKey, rowId) ?? this.getRow(undefined, rowId);
+    if (!row) {
+      return false;
+    }
+    this.selection = TableViewAreaSelection.create({
+      groupKey,
+      focus: { rowIndex: row.rowIndex, columnIndex: 0 },
+      isEditing: false,
+    });
+    return this.unindentHierarchyRow();
+  }
+
+  indentHierarchyRowFromActiveCell() {
+    const active = document.activeElement as HTMLElement | null;
+    const cell = active?.closest(
+      'dv-table-view-cell-container'
+    ) as HTMLElement | null;
+    const rowId = cell?.dataset.rowId;
+    if (!rowId) {
+      return false;
+    }
+    const groupKey = (
+      cell?.closest('data-view-table-row') as HTMLElement | null
+    )?.dataset.groupKey;
+    const row = this.getRow(groupKey, rowId) ?? this.getRow(undefined, rowId);
+    if (!row) {
+      return false;
+    }
+    this.selection = TableViewAreaSelection.create({
+      groupKey,
+      focus: { rowIndex: row.rowIndex, columnIndex: 0 },
+      isEditing: false,
+    });
+    return this.indentHierarchyRow();
+  }
+
+  unindentHierarchyRowFromActiveCell() {
+    const active = document.activeElement as HTMLElement | null;
+    const cell = active?.closest(
+      'dv-table-view-cell-container'
+    ) as HTMLElement | null;
+    const rowId = cell?.dataset.rowId;
+    if (!rowId) {
+      return false;
+    }
+    const groupKey = (
+      cell?.closest('data-view-table-row') as HTMLElement | null
+    )?.dataset.groupKey;
+    const row = this.getRow(groupKey, rowId) ?? this.getRow(undefined, rowId);
+    if (!row) {
+      return false;
+    }
+    this.selection = TableViewAreaSelection.create({
+      groupKey,
+      focus: { rowIndex: row.rowIndex, columnIndex: 0 },
+      isEditing: false,
+    });
+    return this.unindentHierarchyRow();
   }
 
   isRowSelection() {

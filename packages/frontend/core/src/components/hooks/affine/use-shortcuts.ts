@@ -84,8 +84,8 @@ export const useWinGeneralKeyboardShortcuts = (): ShortcutMap => {
       // not implement yet
       // [t('appendDailyNote')]: ['Ctrl', 'Alt', 'A'],
       [t('expandOrCollapseSidebar')]: ['Ctrl', '/'],
-      [t('goBack')]: ['Ctrl', '['],
-      [t('goForward')]: ['Ctrl', ']'],
+      [t('goBack')]: ['Ctrl', 'Alt', '['],
+      [t('goForward')]: ['Ctrl', 'Alt', ']'],
       [t('copy-private-link')]: ['Ctrl', 'Shift', 'C'],
     }),
     [t]
@@ -101,8 +101,8 @@ export const useMacGeneralKeyboardShortcuts = (): ShortcutMap => {
       // not implement yet
       // [t('appendDailyNote')]: ['⌘', '⌥', 'A'],
       [t('expandOrCollapseSidebar')]: ['⌘', '/'],
-      [t('goBack')]: ['⌘', '['],
-      [t('goForward')]: ['⌘', ']'],
+      [t('goBack')]: ['⌘', '⌥', '['],
+      [t('goForward')]: ['⌘', '⌥', ']'],
       [t('copy-private-link')]: ['⌘', '⇧', 'C'],
     }),
     [t]
@@ -191,6 +191,8 @@ export const useMacPageKeyboardShortcuts = (): ShortcutMap => {
       [t('alignCenter')]: ['⌘', '⇧', 'E'],
       [t('alignRight')]: ['⌘', '⇧', 'R'],
       [t('groupDatabase')]: ['⌘', 'G'],
+      ['Database indent row']: ['⌘', '⇧', '.'],
+      ['Database unindent row']: ['⌘', '⇧', ','],
       [t('switch')]: ['⌥', 'S'],
       // not implement yet
       // [t('moveUp')]: ['⌘', '⌥', '↑'],
@@ -251,6 +253,8 @@ export const useWinPageKeyboardShortcuts = (): ShortcutMap => {
       [t('alignCenter')]: ['Ctrl', 'Shift', 'E'],
       [t('alignRight')]: ['Ctrl', 'Shift', 'R'],
       [t('groupDatabase')]: ['Ctrl', 'G'],
+      ['Database indent row']: ['Ctrl', 'Shift', '.'],
+      ['Database unindent row']: ['Ctrl', 'Shift', ','],
       [t('switch')]: ['Alt', 'S'],
       // not implement yet
       // [t('moveUp')]: ['Ctrl', 'Alt', '↑'],

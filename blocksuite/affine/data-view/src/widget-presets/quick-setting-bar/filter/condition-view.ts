@@ -5,6 +5,7 @@ import {
   type PopupTarget,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
   ArrowDownSmallIcon,
@@ -28,6 +29,7 @@ import {
   type TypeInstance,
   typeSystem,
 } from '../../../core/index.js';
+import { sizeFilterMenuToContent } from './menu-sizing.js';
 
 export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
   static override styles = css`
@@ -131,9 +133,10 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                     ],
                   });
                   // allow submenu height and width to adjust to content
-                  subHandler.menu.menuElement.style.minHeight = 'fit-content';
-                  subHandler.menu.menuElement.style.maxHeight = 'fit-content';
-                  subHandler.menu.menuElement.style.minWidth = '200px';
+                  sizeFilterMenuToContent(
+                    subHandler.menu.menuElement,
+                    IS_MOBILE
+                  );
                   return false;
                 },
               }),
@@ -158,9 +161,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
       },
     });
     // allow main menu height and width to adjust to calendar size
-    handler.menu.menuElement.style.minHeight = 'fit-content';
-    handler.menu.menuElement.style.maxHeight = 'fit-content';
-    handler.menu.menuElement.style.minWidth = '200px';
+    sizeFilterMenuToContent(handler.menu.menuElement, IS_MOBILE);
   };
 
   @property({ attribute: false })

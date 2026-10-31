@@ -9,6 +9,7 @@
   "references": [
     { "path": "../database" },
     { "path": "../note-ref" },
+    { "path": "../root" },
     { "path": "../surface-ref" },
     { "path": "../../components" },
     { "path": "../../ext-loader" },

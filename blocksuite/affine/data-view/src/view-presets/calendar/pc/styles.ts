@@ -1,4 +1,22 @@
+import { IS_MOBILE } from '@blocksuite/global/env';
 import { css } from 'lit';
+
+// Story 2.12 (MOBILE-02): `.calendar-new-row` (the per-day-cell "New row"
+// button) is hover/focus-visible-gated below (`opacity: 0` by default,
+// `opacity: 1` only on `.calendar-day:hover`/`:focus-visible`) — touch has
+// no `:hover` state, so this button is invisible-by-default and effectively
+// undiscoverable on mobile web, a second instance of List's exact
+// hover-gate problem (RESEARCH.md Pitfall 2). This block reproduces the
+// same `IS_MOBILE`-gated always-visible-override pattern used for List's
+// row actions (`list/pc/renderer.ts`'s `mobileListActionStyles`): only the
+// visibility trigger changes; the `:disabled`/`pointer-events: none`
+// variant (still active whenever `isInteracting` is true) and every other
+// existing desktop rule below are left completely unmodified (MOBILE-05).
+const mobileCalendarStyles = css`
+  .calendar-new-row {
+    opacity: 1;
+  }
+`;
 
 export const calendarViewStyles = css`
   affine-data-view-calendar {
@@ -705,4 +723,6 @@ export const calendarViewStyles = css`
     white-space: pre-wrap;
     word-break: break-word;
   }
+
+  ${IS_MOBILE ? mobileCalendarStyles : css``}
 `;

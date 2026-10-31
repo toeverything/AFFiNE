@@ -16,6 +16,8 @@ import { css, html, nothing, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
+import { EditorHostKey } from '../../../core/context/host-context.js';
+import type { TaskWorkflowCapableDataSource } from '../../../core/data-source/task-workflow-capable.js';
 import { GroupTitle } from '../../../core/group-by/group-title.js';
 import type { Group } from '../../../core/group-by/trait.js';
 import type { Row } from '../../../core/index.js';
@@ -325,7 +327,33 @@ export class TableGroup extends SignalWatcher(
     return this.group?.rows ?? this.view.rows$.value;
   }
 
+  private get taskWorkflowCapableDataSource(): TaskWorkflowCapableDataSource {
+    return this.view.manager
+      .dataSource as unknown as TaskWorkflowCapableDataSource;
+  }
+
+  /**
+   * Story 2.7 (AC5, extended to table view): overdue-and-undone treatment
+   * for this row — `null` if neither highlight nor hide applies. Mirrors
+   * `list/pc/renderer.ts`'s own `getRowDueDateState`.
+   */
+  private getRowDueDateState(rowId: string): 'highlight' | 'hide' | null {
+    const dataSource = this.taskWorkflowCapableDataSource;
+    if (typeof dataSource.getDueDateHighlightState !== 'function') {
+      return null;
+    }
+    const std = this.view.serviceGet(EditorHostKey)?.std;
+    if (!std) return null;
+    return dataSource.getDueDateHighlightState(std, rowId);
+  }
+
   private renderRows(rows: Row[]) {
+    // Story 2.7 (AC5): a row whose resolved overdue-and-undone setting is
+    // `'hide'` is excluded from the table entirely — same rationale as
+    // the list view's own row filter.
+    const visibleRows = rows.filter(
+      row => this.getRowDueDateState(row.rowId) !== 'hide'
+    );
     return html`
       <affine-database-column-header
         .renderGroupHeader=${this.renderGroupHeader}
@@ -333,12 +361,15 @@ export class TableGroup extends SignalWatcher(
       ></affine-database-column-header>
       <div class="affine-database-block-rows">
         ${repeat(
-          rows,
+          visibleRows,
           row => row.rowId,
           (row, idx) => {
             return html` <data-view-table-row
               data-row-index="${idx}"
               data-row-id="${row.rowId}"
+              data-overdue=${this.getRowDueDateState(row.rowId) === 'highlight'
+                ? 'true'
+                : nothing}
               .tableViewLogic="${this.tableViewLogic}"
               .rowId="${row.rowId}"
               .rowIndex="${idx}"

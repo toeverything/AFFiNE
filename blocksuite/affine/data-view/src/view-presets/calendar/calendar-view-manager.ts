@@ -1,10 +1,16 @@
-import { DocDisplayMetaProvider } from '@blocksuite/affine-shared/services';
+import {
+  DocDisplayMetaProvider,
+  EditorSettingProvider,
+  TaskWorkflowDefaultsSchema,
+} from '@blocksuite/affine-shared/services';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
 import { type DeltaInsert, Text } from '@blocksuite/store';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import { Doc } from 'yjs';
 
+import { EditorHostKey } from '../../core/context/host-context.js';
+import type { TaskWorkflowCapableDataSource } from '../../core/data-source/task-workflow-capable.js';
 import { evalFilter } from '../../core/filter/eval.js';
 import { generateDefaultValues } from '../../core/filter/generate-default-values.js';
 import { FilterTrait, filterTraitKey } from '../../core/filter/trait.js';
@@ -250,6 +256,15 @@ export class CalendarSingleView extends SingleViewBase<CalendarStoredViewData> {
         propertyId,
       };
     }
+    const dueDateColumnId = (
+      this.dataSource as unknown as TaskWorkflowCapableDataSource
+    ).getDueDateColumn?.()?.id;
+    if (dueDateColumnId) {
+      return {
+        status: 'ready',
+        propertyId: dueDateColumnId,
+      };
+    }
     return {
       status: 'setup',
       propertyId,
@@ -285,13 +300,44 @@ export class CalendarSingleView extends SingleViewBase<CalendarStoredViewData> {
       .map(propertyId => this.propertyGetOrCreate(propertyId));
   });
 
+  /**
+   * Story 2.7 (AC4): whether a Done row's calendar entry should be
+   * suppressed — global-only setting (no per-table override, per direct
+   * user instruction), read fresh on every access so a live setting change
+   * is reflected immediately. `undefined` `std` (no `EditorHostKey`
+   * forwarded — a generic, non-nested calendar) falls back to the
+   * schema's own default (`true`), same fallback shape as `list-block.ts`'s
+   * own `?? {}` regression fix.
+   */
+  private get hideFromCalendarWhenDone(): boolean {
+    const std = this.manager.dataSource.serviceGet(EditorHostKey)?.std;
+    // `.value`, not `.peek()` — this getter is read from inside `rowEntries$`
+    // (a `computed()`), and only a `.value` read registers as a tracked
+    // dependency of that computation; `.peek()` is invisible to it, so a
+    // setting change elsewhere never invalidated `rowEntries$` (confirmed
+    // live, same regression as `getShowDueDateColumnSetting`'s own fix).
+    const taskWorkflowDefaults = TaskWorkflowDefaultsSchema.parse(
+      std?.getOptional(EditorSettingProvider)?.setting$.value
+        ?.taskWorkflowDefaults ?? {}
+    );
+    return taskWorkflowDefaults.database.hideFromCalendarWhenDone;
+  }
+
   rowEntries$ = computed<CalendarRowEntry[]>(() => {
     const mapping = this.dateMapping$.value;
     if (mapping.status !== 'ready') {
       return [];
     }
+    const dataSource = this.manager
+      .dataSource as unknown as TaskWorkflowCapableDataSource;
+    const hideDone =
+      typeof dataSource.getTaskStatusInfo === 'function' &&
+      this.hideFromCalendarWhenDone;
     const endMapping = this.endDateMapping$.value;
     return this.rows$.value.flatMap(row => {
+      if (hideDone && dataSource.getTaskStatusInfo?.(row.rowId)?.checked) {
+        return [];
+      }
       const startAt = this.cellGetOrCreate(row.rowId, mapping.propertyId)
         .jsonValue$.value;
       if (!isValidTimestamp(startAt)) {

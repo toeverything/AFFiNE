@@ -26,6 +26,7 @@
     { "path": "../../../blocksuite/framework/global" },
     { "path": "../../../blocksuite/framework/std" },
     { "path": "../../common/infra" },
-    { "path": "../../../blocksuite/affine/ext-loader" }
+    { "path": "../../../blocksuite/affine/ext-loader" },
+    { "path": "../../../blocksuite/framework/store" }
   ]
 }

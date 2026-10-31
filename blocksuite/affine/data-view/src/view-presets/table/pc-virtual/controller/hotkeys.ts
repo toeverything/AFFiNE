@@ -10,6 +10,66 @@ import type { VirtualTableViewUILogic } from '../table-view-ui-logic';
 
 export class TableHotkeysController implements ReactiveController {
   disposables = new DisposableGroup();
+
+  private getRowInfoFromEventTarget(target: EventTarget | null) {
+    const eventTargetElement = target instanceof Element ? target : null;
+    const fromTarget = eventTargetElement?.closest(
+      'affine-database-virtual-cell-container'
+    ) as HTMLElement | null;
+    const fromActive = (document.activeElement as HTMLElement | null)?.closest(
+      'affine-database-virtual-cell-container'
+    ) as HTMLElement | null;
+    const cell = fromTarget ?? fromActive;
+    const rowId = cell?.dataset.rowId;
+    if (!rowId) {
+      return null;
+    }
+    const groupKey =
+      cell.closest('data-view-table-row')?.dataset.groupKey ?? undefined;
+    return { rowId, groupKey };
+  }
+
+  private getRowInfoFromKeyboardContext(context: {
+    get: (name: 'keyboardState') => { raw: KeyboardEvent };
+  }) {
+    const raw = context.get('keyboardState').raw;
+    const path = raw.composedPath?.() ?? [];
+    for (const node of path) {
+      if (!(node instanceof Element)) {
+        continue;
+      }
+      const cell = node.closest(
+        'affine-database-virtual-cell-container'
+      ) as HTMLElement | null;
+      const rowId = cell?.dataset.rowId;
+      if (!rowId) {
+        continue;
+      }
+      const groupKey =
+        cell.closest('data-view-table-row')?.dataset.groupKey ?? undefined;
+      return { rowId, groupKey };
+    }
+    const fromEvent = this.getRowInfoFromEventTarget(raw.target);
+    if (fromEvent) {
+      return fromEvent;
+    }
+    const selection = this.selectionController.selection;
+    if (selection?.selectionType === 'row') {
+      const first = selection.rows[0];
+      if (first?.id) {
+        return { rowId: first.id, groupKey: first.groupKey };
+      }
+    }
+    if (selection?.selectionType === 'area') {
+      const row = this.selectionController.rows(selection.groupKey)?.[
+        selection.focus.rowIndex
+      ];
+      if (row?.rowId) {
+        return { rowId: row.rowId, groupKey: selection.groupKey };
+      }
+    }
+    return null;
+  }
   get selectionController() {
     return this.logic.selectionController;
   }
@@ -176,6 +236,74 @@ export class TableHotkeysController implements ReactiveController {
               cell.rowId
             );
           }
+          return true;
+        },
+        'Mod->': context => {
+          const rowInfo = this.getRowInfoFromKeyboardContext(context);
+          const applied =
+            (rowInfo
+              ? this.selectionController.indentHierarchyRowByRowId(
+                  rowInfo.rowId,
+                  rowInfo.groupKey
+                )
+              : false) ||
+            this.selectionController.indentHierarchyRowFromActiveCell() ||
+            this.selectionController.indentHierarchyRow();
+          if (!applied) {
+            return false;
+          }
+          context.get('keyboardState').raw.preventDefault();
+          return true;
+        },
+        'Mod-Shift-Period': context => {
+          const rowInfo = this.getRowInfoFromKeyboardContext(context);
+          const applied =
+            (rowInfo
+              ? this.selectionController.indentHierarchyRowByRowId(
+                  rowInfo.rowId,
+                  rowInfo.groupKey
+                )
+              : false) ||
+            this.selectionController.indentHierarchyRowFromActiveCell() ||
+            this.selectionController.indentHierarchyRow();
+          if (!applied) {
+            return false;
+          }
+          context.get('keyboardState').raw.preventDefault();
+          return true;
+        },
+        'Mod-<': context => {
+          const rowInfo = this.getRowInfoFromKeyboardContext(context);
+          const applied =
+            (rowInfo
+              ? this.selectionController.unindentHierarchyRowByRowId(
+                  rowInfo.rowId,
+                  rowInfo.groupKey
+                )
+              : false) ||
+            this.selectionController.unindentHierarchyRowFromActiveCell() ||
+            this.selectionController.unindentHierarchyRow();
+          if (!applied) {
+            return false;
+          }
+          context.get('keyboardState').raw.preventDefault();
+          return true;
+        },
+        'Mod-Shift-Comma': context => {
+          const rowInfo = this.getRowInfoFromKeyboardContext(context);
+          const applied =
+            (rowInfo
+              ? this.selectionController.unindentHierarchyRowByRowId(
+                  rowInfo.rowId,
+                  rowInfo.groupKey
+                )
+              : false) ||
+            this.selectionController.unindentHierarchyRowFromActiveCell() ||
+            this.selectionController.unindentHierarchyRow();
+          if (!applied) {
+            return false;
+          }
+          context.get('keyboardState').raw.preventDefault();
           return true;
         },
         Tab: ctx => {

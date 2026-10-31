@@ -95,6 +95,102 @@ export const ListKeymapExtension = KeymapExtension(
           .run();
         return true;
       },
+      'Mod->': ctx => {
+        const [_, { selectedModels }] = std.command
+          .chain()
+          .pipe(getSelectedModelsCommand, {
+            types: ['text'],
+          })
+          .run();
+        if (selectedModels?.length !== 1) {
+          return false;
+        }
+        const text = std.selection.find(TextSelection);
+        if (!text) return false;
+
+        ctx.get('keyboardState').raw.preventDefault();
+        std.command
+          .chain()
+          .pipe(canIndentListCommand, {
+            blockId: text.from.blockId,
+            inlineIndex: text.from.index,
+          })
+          .pipe(indentListCommand)
+          .run();
+        return true;
+      },
+      'Mod-Shift-Period': ctx => {
+        const [_, { selectedModels }] = std.command
+          .chain()
+          .pipe(getSelectedModelsCommand, {
+            types: ['text'],
+          })
+          .run();
+        if (selectedModels?.length !== 1) {
+          return false;
+        }
+        const text = std.selection.find(TextSelection);
+        if (!text) return false;
+
+        ctx.get('keyboardState').raw.preventDefault();
+        std.command
+          .chain()
+          .pipe(canIndentListCommand, {
+            blockId: text.from.blockId,
+            inlineIndex: text.from.index,
+          })
+          .pipe(indentListCommand)
+          .run();
+        return true;
+      },
+      'Mod-<': ctx => {
+        const [_, { selectedModels }] = std.command
+          .chain()
+          .pipe(getSelectedModelsCommand, {
+            types: ['text'],
+          })
+          .run();
+        if (selectedModels?.length !== 1) {
+          return false;
+        }
+        const text = std.selection.find(TextSelection);
+        if (!text) return false;
+
+        ctx.get('keyboardState').raw.preventDefault();
+        std.command
+          .chain()
+          .pipe(canDedentListCommand, {
+            blockId: text.from.blockId,
+            inlineIndex: text.from.index,
+          })
+          .pipe(dedentListCommand)
+          .run();
+        return true;
+      },
+      'Mod-Shift-Comma': ctx => {
+        const [_, { selectedModels }] = std.command
+          .chain()
+          .pipe(getSelectedModelsCommand, {
+            types: ['text'],
+          })
+          .run();
+        if (selectedModels?.length !== 1) {
+          return false;
+        }
+        const text = std.selection.find(TextSelection);
+        if (!text) return false;
+
+        ctx.get('keyboardState').raw.preventDefault();
+        std.command
+          .chain()
+          .pipe(canDedentListCommand, {
+            blockId: text.from.blockId,
+            inlineIndex: text.from.index,
+          })
+          .pipe(dedentListCommand)
+          .run();
+        return true;
+      },
       Backspace: ctx => {
         const text = std.selection.find(TextSelection);
         if (!text) return false;

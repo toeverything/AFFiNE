@@ -523,6 +523,10 @@ function flatNote(snapshot: SliceSnapshot) {
   }
 }
 
+export function canCreatePasteTransformer(snapshot: SliceSnapshot) {
+  return Boolean(snapshot.content[0]);
+}
+
 export const pasteMiddleware = (
   std: EditorHost['std']
 ): TransformerMiddleware => {
@@ -530,8 +534,12 @@ export const pasteMiddleware = (
     let tr: PasteTr | undefined;
     const beforeImportSubscription = slots.beforeImport.subscribe(payload => {
       if (payload.type === 'slice') {
+        tr = undefined;
         const { snapshot } = payload;
         flatNote(snapshot);
+        if (!canCreatePasteTransformer(snapshot)) {
+          return;
+        }
 
         const text = std.selection.find(TextSelection);
         if (!text) {

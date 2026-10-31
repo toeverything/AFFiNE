@@ -11,7 +11,9 @@ export const PackageList = [
       'blocksuite/affine/blocks/code',
       'blocksuite/affine/blocks/data-view',
       'blocksuite/affine/blocks/database',
+      'blocksuite/affine/blocks/database-note-property',
       'blocksuite/affine/blocks/database-ref',
+      'blocksuite/affine/blocks/database-view-ref',
       'blocksuite/affine/blocks/divider',
       'blocksuite/affine/blocks/edgeless-text',
       'blocksuite/affine/blocks/embed',
@@ -182,17 +184,52 @@ export const PackageList = [
     ],
   },
   {
+    location: 'blocksuite/affine/blocks/database-note-property',
+    name: '@blocksuite/affine-block-database-note-property',
+    workspaceDependencies: [
+      'blocksuite/affine/blocks/database',
+      'blocksuite/affine/blocks/note-ref',
+      'blocksuite/affine/components',
+      'blocksuite/affine/ext-loader',
+      'blocksuite/affine/model',
+      'blocksuite/affine/shared',
+      'blocksuite/affine/data-view',
+      'blocksuite/framework/global',
+      'blocksuite/framework/std',
+      'blocksuite/framework/store',
+    ],
+  },
+  {
     location: 'blocksuite/affine/blocks/database-ref',
     name: '@blocksuite/affine-block-database-ref',
     workspaceDependencies: [
       'blocksuite/affine/blocks/database',
       'blocksuite/affine/blocks/note-ref',
+      'blocksuite/affine/blocks/root',
       'blocksuite/affine/blocks/surface-ref',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/slash-menu',
+      'blocksuite/framework/global',
+      'blocksuite/framework/std',
+      'blocksuite/framework/store',
+    ],
+  },
+  {
+    location: 'blocksuite/affine/blocks/database-view-ref',
+    name: '@blocksuite/affine-block-database-view-ref',
+    workspaceDependencies: [
+      'blocksuite/affine/blocks/database',
+      'blocksuite/affine/blocks/database-ref',
+      'blocksuite/affine/blocks/root',
+      'blocksuite/affine/components',
+      'blocksuite/affine/ext-loader',
+      'blocksuite/affine/model',
+      'blocksuite/affine/shared',
+      'blocksuite/affine/widgets/slash-menu',
+      'blocksuite/affine/data-view',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
@@ -476,6 +513,8 @@ export const PackageList = [
     location: 'blocksuite/affine/data-view',
     name: '@blocksuite/data-view',
     workspaceDependencies: [
+      'blocksuite/affine/blocks/list',
+      'blocksuite/affine/blocks/paragraph',
       'blocksuite/affine/components',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
@@ -1370,6 +1409,7 @@ export const PackageList = [
       'blocksuite/framework/std',
       'packages/common/infra',
       'blocksuite/affine/ext-loader',
+      'blocksuite/framework/store',
     ],
   },
   {
@@ -1519,7 +1559,9 @@ export type PackageName =
   | '@blocksuite/affine-block-code'
   | '@blocksuite/affine-block-data-view'
   | '@blocksuite/affine-block-database'
+  | '@blocksuite/affine-block-database-note-property'
   | '@blocksuite/affine-block-database-ref'
+  | '@blocksuite/affine-block-database-view-ref'
   | '@blocksuite/affine-block-divider'
   | '@blocksuite/affine-block-edgeless-text'
   | '@blocksuite/affine-block-embed'

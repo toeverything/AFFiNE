@@ -47,6 +47,13 @@ export class TableRowView extends SignalWatcher(
       position: relative;
     }
 
+    /* Story 2.7 (AC5, extended to table view): overdue-and-undone rows —
+       mirrors the list view's own inline \`color\`/\`font-weight\` override. */
+    .affine-database-block-row[data-overdue='true'] {
+      color: var(--affine-error-color);
+      font-weight: 600;
+    }
+
     .affine-database-block-row.selected > .database-cell {
       background: transparent;
     }

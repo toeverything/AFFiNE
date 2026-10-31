@@ -11,6 +11,46 @@ export function ensureDocLoaded(doc: Store['doc']): void {
 }
 
 /**
+ * Resolves once `docId` exists in `workspace`, or `false` if it hasn't shown
+ * up within `timeoutMs`.
+ *
+ * This is one readiness stage EARLIER than `waitForBlockInDoc` below, and the
+ * distinction matters: that function handles "the doc handle exists but its
+ * content is still streaming in", whereas this one handles "the handle does
+ * not exist yet at all". `Workspace.getDoc` resolves against a
+ * `blockCollections` Map that is populated *reactively*, from
+ * `meta.docMetaAdded`, as the workspace root doc's own metadata syncs — so on
+ * the first cross-doc action of a cold session `getDoc` can legitimately
+ * return null for a doc that does exist and is about to appear.
+ *
+ * Polled rather than event-driven on purpose: the workspace only emits
+ * `docListUpdated` from `docMetaUpdated`, not from `docMetaAdded`, so there is
+ * no reliable "a doc was added" signal to subscribe to.
+ */
+export function waitForDocInWorkspace(
+  workspace: Store['workspace'],
+  docId: string,
+  { timeoutMs = 10_000, pollMs = 100 } = {}
+): Promise<boolean> {
+  if (workspace.getDoc(docId)) return Promise.resolve(true);
+
+  return new Promise(resolve => {
+    const deadline = Date.now() + timeoutMs;
+    const interval = setInterval(() => {
+      if (workspace.getDoc(docId)) {
+        clearInterval(interval);
+        resolve(true);
+        return;
+      }
+      if (Date.now() >= deadline) {
+        clearInterval(interval);
+        resolve(false);
+      }
+    }, pollMs);
+  });
+}
+
+/**
  * Resolves once `blockId` appears in `doc` (kicking off `ensureDocLoaded`
  * first), or `false` if it hasn't appeared within `timeoutMs`. Debounces
  * re-checks against the doc's own Yjs `update` event, since a doc still

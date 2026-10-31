@@ -11,10 +11,13 @@ export interface CrossDocReferenceService {
   /**
    * Opens a picker over every Frame/Database/Note block in the workspace
    * except the ones living in `excludeDocId`, resolving to the one the
-   * user picked (or `null` if they cancelled).
+   * user picked (or `null` if they cancelled). Pass `null` for
+   * `excludeDocId` to exclude nothing — every doc's candidates are browsable
+   * (including the current doc's own), for callers that want a single
+   * picker covering both same-doc and cross-doc candidates at once.
    */
   openCrossDocReferencePicker: (
-    excludeDocId: string,
+    excludeDocId: string | null,
     allowedFlavours?: ('affine:frame' | 'affine:database' | 'affine:note')[]
   ) => Promise<CrossDocReferenceCandidate | null>;
 }

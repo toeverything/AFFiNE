@@ -1,4 +1,5 @@
 import { popupTargetFromElement } from '@blocksuite/affine-components/context-menu';
+import { TASK_HIERARCHY_LEVEL_COLUMN_NAME } from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { computed, effect, signal } from '@preact/signals-core';
@@ -15,6 +16,7 @@ import {
   TableViewRowSelection,
   type TableViewSelectionWithType,
 } from '../../selection';
+import { calculateHierarchyIndent, normalizeHierarchyLevel } from '../../utils';
 import type { VirtualTableViewUILogic } from '../table-view-ui-logic';
 import type { TableGridCell } from '../types';
 import { popRowMenu } from './menu';
@@ -38,6 +40,11 @@ export class DatabaseCellContainer extends SignalWatcher(
 
     affine-database-virtual-cell-container uni-lit > *:first-child {
       padding: 6px;
+      padding-inline-start: calc(
+        6px + var(--affine-table-hierarchy-indent, 0px)
+      );
+      border-inline-start: var(--affine-table-hierarchy-cue-width, 0px) solid
+        var(--affine-border-color);
     }
   `;
 
@@ -173,6 +180,30 @@ export class DatabaseCellContainer extends SignalWatcher(
       isEditing$: this.isEditing$,
       selectCurrentCell: this.selectCurrentCell,
     };
+
+    const isTitleColumn = this.column$.value?.type$.value === 'title';
+    if (isTitleColumn) {
+      const hierarchyProperty = this.view.propertiesRaw$.value.find(
+        property => property.name$.value === TASK_HIERARCHY_LEVEL_COLUMN_NAME
+      );
+      const hierarchyValue = hierarchyProperty
+        ? hierarchyProperty.cellGetOrCreate(this.rowId).jsonValue$.value
+        : 0;
+      const level = normalizeHierarchyLevel(hierarchyValue);
+      this.style.setProperty(
+        '--affine-table-hierarchy-indent',
+        `${calculateHierarchyIndent(level)}px`
+      );
+      this.style.setProperty('--affine-table-hierarchy-level', `${level}`);
+      this.style.setProperty(
+        '--affine-table-hierarchy-cue-width',
+        level > 0 ? '1px' : '0px'
+      );
+    } else {
+      this.style.setProperty('--affine-table-hierarchy-indent', '0px');
+      this.style.setProperty('--affine-table-hierarchy-cue-width', '0px');
+      this.style.setProperty('--affine-table-hierarchy-level', '0');
+    }
 
     return renderUniLit(view, props, {
       ref: this._cell,

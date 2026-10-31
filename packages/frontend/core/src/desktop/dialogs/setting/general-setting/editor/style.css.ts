@@ -111,6 +111,7 @@ export const searchIcon = style({
   color: cssVarV2('icon/primary'),
   fontSize: '20px',
 });
+
 export const fontItemContainer = style({
   display: 'flex',
   justifyContent: 'space-between',

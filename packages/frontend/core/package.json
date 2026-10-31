@@ -99,6 +99,7 @@
   },
   "devDependencies": {
     "@blocksuite/affine-ext-loader": "workspace:*",
+    "@blocksuite/store": "workspace:*",
     "@playwright/test": "=1.58.2",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.1.0",

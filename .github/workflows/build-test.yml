@@ -539,6 +539,10 @@ jobs:
         timeout-minutes: 10
         run: yarn workspace @blocksuite/integration-test test:unit
 
+      - name: Run integration mobile touch-emulation tests
+        timeout-minutes: 10
+        run: yarn workspace @blocksuite/integration-test test:mobile
+
       - name: Run cross-platform playwright tests
         timeout-minutes: 10
         run: yarn workspace @affine-test/blocksuite test "cross-platform/" --forbid-only

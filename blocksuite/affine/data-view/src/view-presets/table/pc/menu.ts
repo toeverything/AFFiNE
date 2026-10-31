@@ -37,6 +37,99 @@ export const popRowMenu = (
   ele: PopupTarget,
   selectionController: TableSelectionController
 ) => {
+  const dataSource = tableViewLogic.view.manager.dataSource as {
+    getTaskStatusInheritance?: () => {
+      done: 'require-all-subtasks-complete' | 'disabled';
+      inProgress: 'start-when-any-subtask-starts' | 'disabled';
+      autoDemoteAutoDone: boolean;
+      cascadeManualDoneToDescendants: boolean;
+    };
+    setTaskStatusInheritance?: (next: {
+      done?: 'require-all-subtasks-complete' | 'disabled';
+      inProgress?: 'start-when-any-subtask-starts' | 'disabled';
+      autoDemoteAutoDone?: boolean;
+      cascadeManualDoneToDescendants?: boolean;
+    }) => void;
+  };
+  const inheritance = dataSource.getTaskStatusInheritance?.();
+  const parentStatusBehaviorMenu = menu.subMenu({
+    name: 'Parent status behavior',
+    options: {
+      items: [
+        menu.action({
+          name: 'Require all subtasks complete',
+          isSelected: inheritance?.done === 'require-all-subtasks-complete',
+          select: () => {
+            dataSource.setTaskStatusInheritance?.({
+              done: 'require-all-subtasks-complete',
+            });
+          },
+        }),
+        menu.action({
+          name: 'Disable parent done inheritance',
+          isSelected: inheritance?.done === 'disabled',
+          select: () => {
+            dataSource.setTaskStatusInheritance?.({ done: 'disabled' });
+          },
+        }),
+        menu.action({
+          name: 'Start progress when any subtask starts',
+          isSelected:
+            inheritance?.inProgress === 'start-when-any-subtask-starts',
+          select: () => {
+            dataSource.setTaskStatusInheritance?.({
+              inProgress: 'start-when-any-subtask-starts',
+            });
+          },
+        }),
+        menu.action({
+          name: 'Disable parent progress inheritance',
+          isSelected: inheritance?.inProgress === 'disabled',
+          select: () => {
+            dataSource.setTaskStatusInheritance?.({
+              inProgress: 'disabled',
+            });
+          },
+        }),
+        menu.action({
+          name: 'Auto-demote auto-derived Done',
+          isSelected: inheritance?.autoDemoteAutoDone ?? true,
+          select: () => {
+            dataSource.setTaskStatusInheritance?.({
+              autoDemoteAutoDone: true,
+            });
+          },
+        }),
+        menu.action({
+          name: 'Keep auto-derived Done locked',
+          isSelected: inheritance?.autoDemoteAutoDone === false,
+          select: () => {
+            dataSource.setTaskStatusInheritance?.({
+              autoDemoteAutoDone: false,
+            });
+          },
+        }),
+        menu.action({
+          name: 'Manual Done cascades to descendants',
+          isSelected: inheritance?.cascadeManualDoneToDescendants ?? true,
+          select: () => {
+            dataSource.setTaskStatusInheritance?.({
+              cascadeManualDoneToDescendants: true,
+            });
+          },
+        }),
+        menu.action({
+          name: 'Manual Done does not cascade',
+          isSelected: inheritance?.cascadeManualDoneToDescendants === false,
+          select: () => {
+            dataSource.setTaskStatusInheritance?.({
+              cascadeManualDoneToDescendants: false,
+            });
+          },
+        }),
+      ],
+    },
+  });
   const selection = selectionController.selection;
   if (!TableViewRowSelection.is(selection)) {
     return;
@@ -47,6 +140,7 @@ export const popRowMenu = (
       menu.group({
         name: '',
         items: [
+          parentStatusBehaviorMenu,
           menu.action({
             name: 'Copy',
             prefix: html` <div
@@ -92,6 +186,19 @@ export const popRowMenu = (
     menu.group({
       name: '',
       items: [
+        parentStatusBehaviorMenu,
+        menu.action({
+          name: 'Indent Row',
+          select: () => {
+            selectionController.indentHierarchyRow();
+          },
+        }),
+        menu.action({
+          name: 'Unindent Row',
+          select: () => {
+            selectionController.unindentHierarchyRow();
+          },
+        }),
         menu.action({
           name: 'Insert Before',
           prefix: html` <div

@@ -1,5 +1,6 @@
 export * from './common/index.js';
 export * from './component/index.js';
+export * from './context/host-context.js';
 export { DataSourceBase } from './data-source/base.js';
 export { DataViewRootUILogic } from './data-view.js';
 export * from './filter/index.js';

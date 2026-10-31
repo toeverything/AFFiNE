@@ -27,6 +27,7 @@ const createCalendarView = (options?: {
   linkedDocTitles?: Record<string, string>;
   visiblePropertyIds?: string[];
   externalFactories?: Map<unknown, unknown>;
+  dueDateColumnId?: string;
 }) => {
   const rows = signal(options?.rows ?? ['row-1']);
   const columns = signal(['title', 'date', 'end-date', 'status']);
@@ -179,6 +180,11 @@ const createCalendarView = (options?: {
     propertyCanDelete: () => true,
     propertyCanDuplicate: () => true,
     propertyTypeCanSet: () => true,
+    ...(options?.dueDateColumnId
+      ? {
+          getDueDateColumn: () => ({ id: options.dueDateColumnId }),
+        }
+      : {}),
   } as unknown as DataSource;
   const manager = {
     dataSource,
@@ -213,6 +219,27 @@ describe('CalendarSingleView', () => {
     const { view } = createCalendarView();
 
     expect(view.dateMapping$.value.status).toBe('setup');
+  });
+
+  it("Story 2.7: falls back to the data source's Due date column (task-workflow-aware databases only) instead of 'setup', when no explicit start date column is set", () => {
+    const { view } = createCalendarView({ dueDateColumnId: 'date' });
+
+    expect(view.dateMapping$.value).toEqual({
+      status: 'ready',
+      propertyId: 'date',
+    });
+  });
+
+  it('an explicit start date column still wins over the Due date fallback', () => {
+    const { view } = createCalendarView({
+      startColumnId: 'end-date',
+      dueDateColumnId: 'date',
+    });
+
+    expect(view.dateMapping$.value).toEqual({
+      status: 'ready',
+      propertyId: 'end-date',
+    });
   });
 
   it('enters setup state when start date column is not date', () => {

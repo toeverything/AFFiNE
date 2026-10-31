@@ -14,7 +14,7 @@ import {
   MoveRightIcon,
   PlusIcon,
 } from '@blocksuite/icons/lit';
-import { css, html } from 'lit';
+import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
@@ -251,8 +251,15 @@ export class DataViewHeaderViews extends WidgetBase {
       </div>`;
     }
     return html`
-      <div class="database-view-button dv-hover" @click="${this._showMore}">
-        ${views.length - count} More
+      <div
+        class="database-view-button dv-hover"
+        data-testid="database-views-overflow-button"
+        @click="${this._showMore}"
+      >
+        ${this.readonly
+          ? nothing
+          : html`<span class="icon">${PlusIcon()}</span>`}
+        <span class="name">${views.length - count} more</span>
       </div>
     `;
   };

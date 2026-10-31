@@ -34,6 +34,10 @@ export class DocsStore extends Store {
     return this.workspaceService.workspace.docCollection;
   }
 
+  getWorkspaceRootYDoc() {
+    return this.workspaceService.workspace.rootYDoc;
+  }
+
   createDoc(docId?: string) {
     const id = docId ?? nanoid();
 

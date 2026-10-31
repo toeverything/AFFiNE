@@ -82,6 +82,13 @@ export interface DataSource {
   viewMetas: ViewMeta[];
   viewDataList$: ReadonlySignal<DataViewDataType[]>;
 
+  // Only a concrete `DatabaseBlockDataSource` (`@blocksuite/affine-block-
+  // database`, a downstream package this one can't depend on) actually
+  // provides this — optional here purely so the Journal Todo task-interop
+  // machinery (hierarchy indent/unindent, kanban card menu) can read a
+  // stable `docId` for `createTaskIdentity()` without a circular import.
+  doc?: { id: string };
+
   viewDataGet(viewId: string): DataViewDataType | undefined;
   viewDataGet$(viewId: string): ReadonlySignal<DataViewDataType | undefined>;
 

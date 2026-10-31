@@ -1,4 +1,6 @@
+import { createTaskIdentity } from '@blocksuite/affine-shared/utils';
 import { signal } from '@preact/signals-core';
+import { render } from 'lit';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { GroupBy } from '../core/common/types.js';
@@ -21,10 +23,14 @@ import {
   resolveKanbanGroupBy,
 } from '../view-presets/kanban/group-by-utils.js';
 import {
+  getKanbanParentContext,
+  type KanbanHierarchyProperty,
+} from '../view-presets/kanban/hierarchy-context.js';
+import {
   KanbanSingleView,
   materializeKanbanColumns,
 } from '../view-presets/kanban/kanban-view-manager.js';
-import type { KanbanCard } from '../view-presets/kanban/pc/card.js';
+import { KanbanCard } from '../view-presets/kanban/pc/card.js';
 import { KanbanDragController } from '../view-presets/kanban/pc/controller/drag.js';
 import type { KanbanGroup } from '../view-presets/kanban/pc/group.js';
 
@@ -33,6 +39,34 @@ type Column = {
   type: string;
   data?: Record<string, unknown>;
 };
+
+const taskIdentity = (blockId: string, docId = 'doc') =>
+  createTaskIdentity({ docId, blockId });
+
+const createHierarchyProperties = (options: {
+  titles: Record<string, string>;
+  levels: Record<string, string | number>;
+  parents: Record<string, string>;
+}): KanbanHierarchyProperty[] => [
+  {
+    id: 'title',
+    name$: { value: 'Title' },
+    stringValueGet: rowId => options.titles[rowId],
+    cellGetOrCreate: rowId => ({
+      jsonValue$: { value: options.titles[rowId] },
+    }),
+  },
+  {
+    id: 'level',
+    name$: { value: 'Hierarchy Level' },
+    stringValueGet: rowId => String(options.levels[rowId] ?? ''),
+  },
+  {
+    id: 'parent',
+    name$: { value: 'Parent Identifier' },
+    stringValueGet: rowId => options.parents[rowId],
+  },
+];
 
 type TestPropertyMeta = {
   type: string;
@@ -357,6 +391,235 @@ const createGroupTraitHarness = (options?: {
 };
 
 describe('kanban', () => {
+  describe('hierarchy parent context', () => {
+    it('resolves parent title and hierarchy level for child cards', () => {
+      const context = getKanbanParentContext({
+        rowId: 'child',
+        docId: 'doc',
+        properties: createHierarchyProperties({
+          titles: {
+            parent: 'Launch Plan',
+            child: 'Write QA notes',
+          },
+          levels: {
+            parent: 0,
+            child: 1,
+          },
+          parents: {
+            child: taskIdentity('parent'),
+          },
+        }),
+      });
+
+      expect(context).toEqual({
+        parentId: 'parent',
+        parentIdentifier: taskIdentity('parent'),
+        parentTitle: 'Launch Plan',
+        parentDisplayName: 'Launch Plan',
+        level: 1,
+      });
+    });
+
+    it('returns undefined for root, stale, and cross-doc parent references', () => {
+      const properties = createHierarchyProperties({
+        titles: {
+          root: 'Root',
+          child: 'Child',
+          crossDocChild: 'Cross doc child',
+        },
+        levels: {
+          root: 0,
+          child: 1,
+          crossDocChild: 1,
+        },
+        parents: {
+          child: taskIdentity('missing'),
+          crossDocChild: taskIdentity('parent', 'other-doc'),
+        },
+      });
+
+      expect(
+        getKanbanParentContext({ rowId: 'root', docId: 'doc', properties })
+      ).toBeUndefined();
+      expect(
+        getKanbanParentContext({ rowId: 'child', docId: 'doc', properties })
+      ).toBeUndefined();
+      expect(
+        getKanbanParentContext({
+          rowId: 'crossDocChild',
+          docId: 'doc',
+          properties,
+        })
+      ).toBeUndefined();
+    });
+
+    it('uses reactive title json values before string fallback', () => {
+      const properties = createHierarchyProperties({
+        titles: {
+          parent: 'Old title',
+          child: 'Child',
+        },
+        levels: {
+          child: 1,
+        },
+        parents: {
+          child: taskIdentity('parent'),
+        },
+      });
+      properties[0] = {
+        ...properties[0]!,
+        cellGetOrCreate: rowId => ({
+          jsonValue$: { value: rowId === 'parent' ? 'Updated title' : 'Child' },
+        }),
+      };
+
+      expect(
+        getKanbanParentContext({
+          rowId: 'child',
+          docId: 'doc',
+          properties,
+        })?.parentTitle
+      ).toBe('Updated title');
+    });
+
+    it('ignores malformed, self, and non-row parent references', () => {
+      const properties = createHierarchyProperties({
+        titles: {
+          parent: 'Parent',
+          child: 'Child',
+          orphan: 'Orphan',
+          self: 'Self',
+          malformed: 'Malformed',
+        },
+        levels: {
+          child: 1,
+          orphan: 1,
+          self: 1,
+          malformed: 1,
+        },
+        parents: {
+          child: taskIdentity('parent'),
+          orphan: taskIdentity('external-row'),
+          self: taskIdentity('self'),
+          malformed: '%E0%A4%A',
+        },
+      });
+
+      expect(
+        getKanbanParentContext({
+          rowId: 'child',
+          docId: 'doc',
+          properties,
+          rowIds: ['parent', 'child'],
+        })?.parentId
+      ).toBe('parent');
+      expect(
+        getKanbanParentContext({
+          rowId: 'orphan',
+          docId: 'doc',
+          properties,
+          rowIds: ['parent', 'child', 'orphan'],
+        })
+      ).toBeUndefined();
+      expect(
+        getKanbanParentContext({
+          rowId: 'self',
+          docId: 'doc',
+          properties,
+          rowIds: ['self'],
+        })
+      ).toBeUndefined();
+      expect(
+        getKanbanParentContext({
+          rowId: 'malformed',
+          docId: 'doc',
+          properties,
+          rowIds: ['malformed'],
+        })
+      ).toBeUndefined();
+    });
+
+    it('omits hierarchy level when the level value is missing or invalid', () => {
+      const properties = createHierarchyProperties({
+        titles: {
+          parent: 'Parent',
+          child: 'Child',
+        },
+        levels: {},
+        parents: {
+          child: taskIdentity('parent'),
+        },
+      });
+
+      expect(
+        getKanbanParentContext({
+          rowId: 'child',
+          docId: 'doc',
+          properties,
+          rowIds: ['parent', 'child'],
+        })?.level
+      ).toBeUndefined();
+    });
+
+    it('renders an accessible parent detail trigger without a fallback level', () => {
+      if (!customElements.get('affine-data-view-kanban-card')) {
+        customElements.define('affine-data-view-kanban-card', KanbanCard);
+      }
+      const card = document.createElement(
+        'affine-data-view-kanban-card'
+      ) as KanbanCard;
+      const openDetailPanel = vi.fn();
+      const selection = {
+        selection: { selectionType: 'card', cards: [] },
+        view: undefined,
+      };
+      const view = {
+        manager: { dataSource: { doc: { id: 'doc' } } },
+        propertiesRaw$: {
+          value: createHierarchyProperties({
+            titles: {
+              parent: 'Parent Task',
+              child: 'Child Task',
+            },
+            levels: {},
+            parents: {
+              child: taskIdentity('parent'),
+            },
+          }),
+        },
+        rowIds$: { value: ['parent', 'child'] },
+      };
+      selection.view = view as never;
+      card.cardId = 'child';
+      card.groupKey = 'group';
+      card.kanbanViewLogic = {
+        view,
+        selectionController: selection,
+        root: { openDetailPanel },
+      } as never;
+
+      const host = document.createElement('div');
+      render(
+        (
+          card as never as { renderParentContext: () => unknown }
+        ).renderParentContext(),
+        host
+      );
+      const button =
+        host.querySelector<HTMLButtonElement>('.card-parent-title');
+
+      expect(button?.textContent?.trim()).toBe('Parent: Parent Task');
+      expect(button?.tagName).toBe('BUTTON');
+      expect(host.textContent).not.toContain('Level: 0');
+
+      button?.click();
+
+      expect(openDetailPanel).toHaveBeenCalledWith(
+        expect.objectContaining({ rowId: 'parent' })
+      );
+    });
+  });
+
   describe('group trait', () => {
     it('reapplies manual card order when building grouped rows', () => {
       const { groupTrait } = createGroupTraitHarness({

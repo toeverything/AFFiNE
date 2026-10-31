@@ -8,6 +8,8 @@
   },
   "include": ["./src"],
   "references": [
+    { "path": "../blocks/list" },
+    { "path": "../blocks/paragraph" },
     { "path": "../components" },
     { "path": "../shared" },
     { "path": "../../framework/global" },

@@ -101,3 +101,7 @@ storageState.json
 /.playwright-browsers/
 **/.vitest-attachments/
 /blocksuite/framework/std/src/__tests__/gfx/__screenshots__/
+
+# GSD planning artifacts (local-only, not committed — see .planning/config.json commit_docs=false)
+.planning/
+.claude/

@@ -14,6 +14,19 @@ export type ListType = 'bulleted' | 'numbered' | 'todo' | 'toggle';
 export type ListProps = {
   type: ListType;
   text: Text;
+  todoListTitle?: string;
+  todoFieldDefs?: Array<{
+    key: string;
+    label: string;
+    type: 'text' | 'number' | 'date' | 'select' | 'multi_select' | 'progress';
+  }>;
+  todoFieldLayout?: 'inline' | 'aligned' | 'right';
+  todoFieldValues?: Record<string, string | number>;
+  todoDatabaseStatusMapping?: {
+    statusColumnName: string;
+    doneTagLabel: string;
+    notDoneTagLabel?: string;
+  };
   textAlign?: TextAlign;
   checked: boolean;
   collapsed: boolean;
@@ -27,6 +40,11 @@ export const ListBlockSchema = defineBlockSchema({
     ({
       type: 'bulleted',
       text: internal.Text(),
+      todoListTitle: undefined,
+      todoFieldDefs: undefined,
+      todoFieldLayout: undefined,
+      todoFieldValues: undefined,
+      todoDatabaseStatusMapping: undefined,
       textAlign: undefined,
       checked: false,
       collapsed: false,

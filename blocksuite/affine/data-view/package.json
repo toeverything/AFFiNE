@@ -10,6 +10,8 @@
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
+    "@blocksuite/affine-block-list": "workspace:*",
+    "@blocksuite/affine-block-paragraph": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/global": "workspace:*",

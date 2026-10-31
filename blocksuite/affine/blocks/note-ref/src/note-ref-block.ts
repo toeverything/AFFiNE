@@ -1,6 +1,8 @@
 import { PageClipboard } from '@blocksuite/affine-block-root';
 import { ViewExtensionManagerIdentifier } from '@blocksuite/affine-ext-loader';
 import type { NoteRefBlockModel } from '@blocksuite/affine-model';
+import { resolveColor } from '@blocksuite/affine-model';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { ensureDocLoaded } from '@blocksuite/affine-shared/utils';
 import { BlockComponent, BlockStdScope, TextSelection } from '@blocksuite/std';
 import { RANGE_QUERY_EXCLUDE_ATTR } from '@blocksuite/std/inline';
@@ -1350,7 +1352,16 @@ export class NoteRefBlockComponent extends BlockComponent<NoteRefBlockModel> {
   override updated() {
     const { showBorder, backgroundOverride } = this.model.props;
     this.dataset.showBorder = showBorder ? 'true' : 'false';
-    this.style.backgroundColor = backgroundOverride || '';
+    // `backgroundOverride` is a theme `Color` token (e.g. `{dark, light}`),
+    // never a resolved CSS string — resolving it once at creation time
+    // would bake in whichever scheme was active then, leaving every
+    // note-ref showing the *other* scheme's color after a theme switch.
+    // Resolved here, at render/update time, exactly like `note-block.ts`'s
+    // own `_pageBackgroundOverride`/`resolveColor` call for the canonical
+    // note's own background.
+    this.style.backgroundColor = backgroundOverride
+      ? resolveColor(backgroundOverride, this.std.get(ThemeProvider).appTheme)
+      : '';
 
     // Re-checked after every re-render, not just from the doc-update
     // subscription above: `renderBlock()`'s `canonical.children` read (for

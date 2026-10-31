@@ -46,7 +46,16 @@ export function installNestedDatabaseFullWidthGuard() {
   DatabaseBlockComponent.prototype.listenFullWidthChange = function (
     this: DatabaseBlockComponent
   ) {
-    if (this.closest('affine-database-ref')) {
+    // `affine:database-view-ref` (a sibling reference block with its own
+    // local view/filter config, `@blocksuite/affine-block-database-view-ref`)
+    // nests a real `affine-database` the exact same way this package does,
+    // and drives `virtualPadding$` directly from its own `_syncFullWidthBleed`
+    // for the identical reason — same guard needed here too, or the
+    // original (broken-when-nested) measurement would fight it.
+    if (
+      this.closest('affine-database-ref') ||
+      this.closest('affine-database-view-ref')
+    ) {
       return;
     }
     original.call(this);
