@@ -1,4 +1,11 @@
+import {
+  exportFrameMetadata,
+  exportFramePng,
+  importFrameMetadata,
+  importFramePng,
+} from '@blocksuite/affine-block-frame';
 import { toast } from '@blocksuite/affine-components/toast';
+import { FrameBlockModel } from '@blocksuite/affine-model';
 import {
   copySelectedModelsCommand,
   draftSelectedModelsCommand,
@@ -10,7 +17,13 @@ import {
 } from '@blocksuite/affine-shared/services';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import { Bound } from '@blocksuite/global/gfx';
-import { CaptionIcon, CopyIcon, DeleteIcon } from '@blocksuite/icons/lit';
+import {
+  CaptionIcon,
+  CopyIcon,
+  DeleteIcon,
+  DownloadIcon,
+  UploadIcon,
+} from '@blocksuite/icons/lit';
 import { html } from 'lit';
 
 import { SurfaceRefSizeIcon } from '../icons';
@@ -405,6 +418,71 @@ export const surfaceRefToolbarModuleConfig: ToolbarModuleConfig = {
       ],
     },
     {
+      id: 'b.frame-metadata',
+      placement: ActionPlacement.More,
+      when: ctx =>
+        getReferencedFrame(
+          ctx.getCurrentBlockByType(SurfaceRefBlockComponent)
+        ) !== null,
+      actions: [
+        {
+          id: 'a.export-frame-metadata',
+          label: 'Export Frame Metadata',
+          icon: DownloadIcon(),
+          async run(ctx) {
+            const frame = getReferencedFrame(
+              ctx.getCurrentBlockByType(SurfaceRefBlockComponent)
+            );
+            if (!frame) return;
+            await exportFrameMetadata(ctx, frame);
+          },
+        },
+        {
+          id: 'a.export-frame-png',
+          label: 'Export Frame PNG',
+          icon: DownloadIcon(),
+          async run(ctx) {
+            const surfaceRefBlock = ctx.getCurrentBlockByType(
+              SurfaceRefBlockComponent
+            );
+            const frame = getReferencedFrame(surfaceRefBlock);
+            if (!surfaceRefBlock || !frame) return;
+            // render from the preview editor, which holds the frame's content
+            await exportFramePng(
+              ctx,
+              frame,
+              surfaceRefBlock.previewEditor?.std ?? undefined,
+              { caption: surfaceRefBlock.model.props.caption }
+            );
+          },
+        },
+        {
+          id: 'b.import-frame-metadata',
+          label: 'Import Frame Metadata',
+          icon: UploadIcon(),
+          async run(ctx) {
+            const frame = getReferencedFrame(
+              ctx.getCurrentBlockByType(SurfaceRefBlockComponent)
+            );
+            if (!frame) return;
+            await importFrameMetadata(ctx, frame);
+          },
+        },
+        {
+          id: 'b.import-frame-png',
+          label: 'Import Frame PNG',
+          icon: UploadIcon(),
+          async run(ctx) {
+            const frame = getReferencedFrame(
+              ctx.getCurrentBlockByType(SurfaceRefBlockComponent)
+            );
+            if (!frame) return;
+            await importFramePng(ctx, frame);
+          },
+        },
+      ],
+    },
+    {
       id: 'g.surface-ref-deletion',
       label: 'Delete',
       icon: DeleteIcon(),
@@ -422,6 +500,11 @@ export const surfaceRefToolbarModuleConfig: ToolbarModuleConfig = {
   ],
   placement: 'inner',
 };
+
+function getReferencedFrame(block: SurfaceRefBlockComponent | null) {
+  const model = block?.referenceModel;
+  return model instanceof FrameBlockModel ? model : null;
+}
 
 function normalizePositiveNumber(value: number | undefined, fallback: number) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {

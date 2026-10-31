@@ -2081,10 +2081,16 @@ __metadata:
     "@blocksuite/icons": "npm:^2.2.17"
     "@blocksuite/std": "workspace:*"
     "@blocksuite/store": "workspace:*"
+    "@floating-ui/dom": "npm:^1.6.13"
+    "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
     "@toeverything/theme": "npm:^1.1.23"
+    "@types/mdast": "npm:^4.0.4"
     lit: "npm:^3.2.0"
+    minimatch: "npm:^10.1.1"
+    rxjs: "npm:^7.8.2"
     yjs: "npm:^13.6.27"
+    zod: "npm:^3.25.76"
   languageName: unknown
   linkType: soft
 
@@ -2092,6 +2098,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-block-image@workspace:blocksuite/affine/blocks/image"
   dependencies:
+    "@blocksuite/affine-block-frame": "workspace:*"
     "@blocksuite/affine-block-note": "workspace:*"
     "@blocksuite/affine-block-surface": "workspace:*"
     "@blocksuite/affine-components": "workspace:*"
@@ -2104,10 +2111,15 @@ __metadata:
     "@blocksuite/icons": "npm:^2.2.17"
     "@blocksuite/std": "workspace:*"
     "@blocksuite/store": "workspace:*"
+    "@floating-ui/dom": "npm:^1.6.13"
+    "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
     "@toeverything/theme": "npm:^1.1.23"
     file-type: "npm:^21.0.0"
     lit: "npm:^3.2.0"
+    minimatch: "npm:^10.1.1"
+    rxjs: "npm:^7.8.2"
+    zod: "npm:^3.25.76"
   languageName: unknown
   linkType: soft
 
