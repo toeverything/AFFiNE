@@ -1,8 +1,7 @@
 import { AStarRunner, Overlay } from '@blocksuite/affine-block-surface';
 import {
-  type BrushElementModel,
   type Connection,
-  ConnectorElementModel,
+  type ConnectorElementModel,
   ConnectorMode,
   GroupElementModel,
   type LocalConnectorElementModel,
@@ -24,22 +23,36 @@ import {
   PI2,
   PointLocation,
   sign,
-  toRadian,
   Vec,
 } from '@blocksuite/global/gfx';
 import { assertType } from '@blocksuite/global/utils';
-import type {
-  GfxController,
-  GfxLocalElementModel,
-  GfxModel,
-} from '@blocksuite/std/gfx';
+import type { GfxController, GfxModel } from '@blocksuite/std/gfx';
 import { effect } from '@preact/signals-core';
 import last from 'lodash-es/last';
 
-export type Connectable = Exclude<
-  GfxModel,
-  ConnectorElementModel | BrushElementModel | GroupElementModel
->;
+import {
+  calculateNearestLocation,
+  type Connectable,
+  ConnectorEndpointLocations,
+  ConnectorEndpointLocationsOnTriangle,
+  getAnchors,
+  getConnectableRelativePosition,
+  getNearestConnectableAnchor,
+  isConnectorWithLabel,
+} from './connector-anchor-utils.js';
+
+// Re-export extracted anchor utilities so existing imports from
+// `connector-manager` continue to work during/after branch restacks.
+export {
+  calculateNearestLocation,
+  ConnectorEndpointLocations,
+  ConnectorEndpointLocationsOnTriangle,
+  getAnchors,
+  getConnectableRelativePosition,
+  getNearestConnectableAnchor,
+  isConnectorWithLabel,
+};
+export type { Connectable };
 
 export type OrthogonalConnectorInput = {
   startBound: Bound | null;
@@ -47,57 +60,6 @@ export type OrthogonalConnectorInput = {
   startPoint: PointLocation;
   endPoint: PointLocation;
 };
-
-export const ConnectorEndpointLocations: IVec[] = [
-  // At top
-  [0.5, 0],
-  // At right
-  [1, 0.5],
-  // At bottom
-  [0.5, 1],
-  // At left
-  [0, 0.5],
-];
-
-export const ConnectorEndpointLocationsOnTriangle: IVec[] = [
-  // At top
-  [0.5, 0],
-  // At right
-  [0.75, 0.5],
-  // At bottom
-  [0.5, 1],
-  // At left
-  [0.25, 0.5],
-];
-
-export function isConnectorWithLabel(model: GfxModel | GfxLocalElementModel) {
-  return model instanceof ConnectorElementModel && model.hasLabel();
-}
-
-export function calculateNearestLocation(
-  point: IVec,
-  bounds: IBound,
-  locations = ConnectorEndpointLocations,
-  shortestDistance = Number.POSITIVE_INFINITY
-) {
-  const { x, y, w, h } = bounds;
-  return locations
-    .map<IVec>(offset => [x + offset[0] * w, y + offset[1] * h])
-    .map(point => getPointFromBoundsWithRotation(bounds, point))
-    .reduce(
-      (prev, curr, index) => {
-        const d = Vec.dist(point, curr);
-        if (d < shortestDistance) {
-          const location = locations[index];
-          shortestDistance = d;
-          prev[0] = location[0];
-          prev[1] = location[1];
-        }
-        return prev;
-      },
-      [...locations[0]]
-    );
-}
 
 function rBound(ele: GfxModel, anti = false): IBound {
   const bound = Bound.deserialize(ele.xywh);
@@ -130,65 +92,6 @@ export function isConnectorAndBindingsAllSelected(
   return false;
 }
 
-export function getAnchors(ele: GfxModel) {
-  const bound = Bound.deserialize(ele.xywh);
-  const offset = 10;
-  const anchors: { point: PointLocation; coord: IVec }[] = [];
-  const rotate = ele.rotate;
-
-  (
-    [
-      [bound.center[0], bound.y - offset],
-      [bound.center[0], bound.maxY + offset],
-      [bound.x - offset, bound.center[1]],
-      [bound.maxX + offset, bound.center[1]],
-    ] satisfies IVec[]
-  )
-    .map(vec => getPointFromBoundsWithRotation({ ...bound, rotate }, vec))
-    .forEach(vec => {
-      const rst = ele.getLineIntersections(bound.center, vec);
-      if (!rst) return;
-
-      const originPoint = getPointFromBoundsWithRotation(
-        { ...bound, rotate: -rotate },
-        rst[0]
-      );
-      anchors.push({ point: rst[0], coord: bound.toRelative(originPoint) });
-    });
-  return anchors;
-}
-
-function getConnectableRelativePosition(connectable: GfxModel, position: IVec) {
-  const location = connectable.getRelativePointLocation(position);
-  if (isVecZero(Vec.sub(position, [0, 0.5])))
-    location.tangent = Vec.rot([0, -1], toRadian(connectable.rotate));
-  else if (isVecZero(Vec.sub(position, [1, 0.5])))
-    location.tangent = Vec.rot([0, 1], toRadian(connectable.rotate));
-  else if (isVecZero(Vec.sub(position, [0.5, 0])))
-    location.tangent = Vec.rot([1, 0], toRadian(connectable.rotate));
-  else if (isVecZero(Vec.sub(position, [0.5, 1])))
-    location.tangent = Vec.rot([-1, 0], toRadian(connectable.rotate));
-  return location;
-}
-
-export function getNearestConnectableAnchor(ele: Connectable, point: IVec) {
-  const anchors = getAnchors(ele);
-  return closestPoint(
-    anchors.map(a => a.point),
-    point
-  );
-}
-
-function closestPoint(
-  points: PointLocation[],
-  point: IVec
-): PointLocation | null {
-  if (points.length === 0) return null;
-  const rst = points.map(p => ({ p, d: Vec.dist(p, point) }));
-  rst.sort((a, b) => a.d - b.d);
-  return rst[0].p;
-}
-
 function computePoints(
   startPoint: IVec,
   endPoint: IVec,
@@ -199,6 +102,7 @@ function computePoints(
   expandStartBound: Bound | null,
   expandEndBound: Bound | null
 ): [IVec3[], IVec3, IVec3, IVec3, IVec3] {
+  // Build and filter candidate routing points for orthogonal path solving.
   const startPointVec3 = downscalePrecision(startPoint);
   const endPointVec3 = downscalePrecision(endPoint);
   let nextStartPointVec3 = downscalePrecision(nextStartPoint);
@@ -912,7 +816,7 @@ export class ConnectionOverlay extends Overlay {
     const zoom = this.gfx.viewport.zoom;
     const radius = 5 / zoom;
     const color = this._emphasisColor;
-    ctx.globalAlpha = 0.6;
+    ctx.globalAlpha = 0.3; // Reduced from 0.6 to make lighter
     let lineWidth = 1 / zoom;
     if (this.sourceBounds) {
       renderRect(ctx, this.sourceBounds, color, lineWidth);
@@ -921,13 +825,13 @@ export class ConnectionOverlay extends Overlay {
       renderRect(ctx, this.targetBounds, color, lineWidth);
     }
 
-    lineWidth = 2 / zoom;
+    // Keep lineWidth at 1px instead of 2px for thinner strokes
     this.points.forEach(p => {
       ctx.beginPath();
       ctx.arc(p[0], p[1], radius, 0, PI2);
       ctx.fillStyle = 'white';
       ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth;
+      ctx.lineWidth = lineWidth; // Now using 1/zoom instead of 2/zoom
       ctx.fill();
       ctx.stroke();
       ctx.closePath();
@@ -939,7 +843,7 @@ export class ConnectionOverlay extends Overlay {
       ctx.arc(this.highlightPoint[0], this.highlightPoint[1], radius, 0, PI2);
       ctx.fillStyle = color;
       ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth;
+      ctx.lineWidth = 1 / zoom; // Use 1px stroke for consistency
       ctx.fill();
       ctx.stroke();
       ctx.closePath();
@@ -1123,21 +1027,41 @@ export class PathGenerator {
     expandStartBound && expandBlocks.push(expandStartBound.clone());
     expandEndBound && expandBlocks.push(expandEndBound.clone());
 
-    if (
-      startBound &&
-      endBound &&
-      startBound.isPointInBound(endPoint) &&
-      endBound.isPointInBound(startPoint)
-    ) {
-      return getDirectPath(startPoint, endPoint);
-    }
+    // nextStartPoint/lastEndPoint differ from the raw startPoint/endPoint
+    // exactly when that end is anchored to a specific bound edge and needs
+    // to exit perpendicular to it (see getNextPoint) -- e.g. a connector
+    // pinned to a shape's west-face midpoint. The three shortcuts below
+    // return a bare straight line between the *raw* points, skipping both
+    // anchors entirely: correct when neither end actually needs one, but
+    // wrong once a real anchor exists -- confirmed live: two shapes
+    // connected west-face-to-west-face collapse to a straight vertical
+    // connector instead of keeping the perpendicular "staple" shape once
+    // they're dragged close enough to trigger one of these shortcuts. Only
+    // take the shortcut when both ends are already anchor-free.
+    const noStartAnchor =
+      almostEqual(nextStartPoint[0], startPoint[0], 0.02) &&
+      almostEqual(nextStartPoint[1], startPoint[1], 0.02);
+    const noEndAnchor =
+      almostEqual(lastEndPoint[0], endPoint[0], 0.02) &&
+      almostEqual(lastEndPoint[1], endPoint[1], 0.02);
 
-    if (startBound && expandStartBound?.isPointInBound(endPoint, 0)) {
-      return getDirectPath(startPoint, endPoint);
-    }
+    if (noStartAnchor && noEndAnchor) {
+      if (
+        startBound &&
+        endBound &&
+        startBound.isPointInBound(endPoint) &&
+        endBound.isPointInBound(startPoint)
+      ) {
+        return getDirectPath(startPoint, endPoint);
+      }
 
-    if (endBound && expandEndBound?.isPointInBound(startPoint, 0)) {
-      return getDirectPath(startPoint, endPoint);
+      if (startBound && expandStartBound?.isPointInBound(endPoint, 0)) {
+        return getDirectPath(startPoint, endPoint);
+      }
+
+      if (endBound && expandEndBound?.isPointInBound(startPoint, 0)) {
+        return getDirectPath(startPoint, endPoint);
+      }
     }
 
     const points = computePoints(
@@ -1191,6 +1115,7 @@ export class ConnectorPathGenerator extends PathGenerator {
       getElementById: elementGetter ?? (() => null),
     });
     const points = path ?? instance._generateConnectorPath(connector) ?? [];
+    // Curve mode uses bezier bounding box, others use simple point bounds
     const bound =
       connector.mode === ConnectorMode.Curve
         ? getBezierCurveBoundingBox(getBezierParameters(points))
@@ -1267,7 +1192,12 @@ export class ConnectorPathGenerator extends PathGenerator {
     const { mode } = connector;
     if (mode === ConnectorMode.Straight) {
       return this._generateStraightConnectorPath(connector);
-    } else if (mode === ConnectorMode.Orthogonal) {
+    } else if (
+      mode === ConnectorMode.Orthogonal ||
+      mode === ConnectorMode.Rounded
+    ) {
+      // Rounded uses the same path generation as Orthogonal,
+      // the rounded corners are handled during rendering
       const start = this._getConnectorEndElement(connector, 'source');
       const end = this._getConnectorEndElement(connector, 'target');
 
@@ -1279,6 +1209,22 @@ export class ConnectorPathGenerator extends PathGenerator {
       const endBound = end
         ? Bound.from(getBoundWithRotation(rBound(end)))
         : null;
+
+      // Check for user-defined waypoints (only on ConnectorElementModel, not Local)
+      const waypoints =
+        'waypoints' in connector ? connector.waypoints : undefined;
+
+      if (waypoints && waypoints.length > 0) {
+        // Route through waypoints
+        return this._generatePathThroughWaypoints(
+          startPoint,
+          endPoint,
+          startBound,
+          endBound,
+          waypoints
+        );
+      }
+
       const path = this.generateOrthogonalConnectorPath({
         startPoint,
         endPoint,
@@ -1292,10 +1238,133 @@ export class ConnectorPathGenerator extends PathGenerator {
     throw new Error('unknown connector mode');
   }
 
+  /**
+   * Generate a path that routes through user-defined waypoints.
+   * Waypoints are intermediate turn points that the connector must pass through.
+   */
+  private _generatePathThroughWaypoints(
+    startPoint: PointLocation,
+    endPoint: PointLocation,
+    _startBound: Bound | null,
+    _endBound: Bound | null,
+    waypoints: IVec[]
+  ): PointLocation[] {
+    const [, , nextStartPoint, lastEndPoint] =
+      this._prepareOrthogonalConnectorInfo({
+        startPoint,
+        endPoint,
+        startBound: _startBound,
+        endBound: _endBound,
+      });
+
+    const pointsEqual = (a: IVec | PointLocation, b: IVec | PointLocation) =>
+      Math.abs(a[0] - b[0]) < 0.001 && Math.abs(a[1] - b[1]) < 0.001;
+
+    // Build path by connecting: start -> tail anchor -> wp1 -> ... -> tail anchor -> end
+    // Waypoints represent intermediate turn points; tail anchors preserve orientation.
+
+    const fullPath: PointLocation[] = [startPoint];
+
+    // For orthogonal connectors, waypoints define the turn points.
+    // We build a path through them while keeping tail anchors perpendicular.
+
+    const startAnchor = new PointLocation(nextStartPoint);
+    if (!pointsEqual(startPoint, nextStartPoint)) {
+      fullPath.push(startAnchor);
+    }
+
+    let currentPoint = startAnchor;
+
+    // Small tolerance to avoid creating micro-segments from tiny float drift.
+    const axisEpsilon = 0.5;
+
+    waypoints.forEach((wp, index) => {
+      // Create orthogonal path from current point to waypoint
+      // We need to determine if we should go horizontal-then-vertical
+      // or vertical-then-horizontal based on the direction
+
+      const dx = wp[0] - currentPoint[0];
+      const dy = wp[1] - currentPoint[1];
+
+      const prevWaypoint = index > 0 ? waypoints[index - 1] : null;
+      const isDuplicateWaypoint =
+        prevWaypoint &&
+        Math.abs(prevWaypoint[0] - wp[0]) <= axisEpsilon &&
+        Math.abs(prevWaypoint[1] - wp[1]) <= axisEpsilon;
+
+      // For the first segment from start, prefer to exit based on start bound
+      // For subsequent segments, alternate based on previous direction
+
+      // Preserve explicit duplicate waypoints to create a zero-length segment.
+      if (
+        isDuplicateWaypoint &&
+        Math.abs(dx) <= axisEpsilon &&
+        Math.abs(dy) <= axisEpsilon
+      ) {
+        fullPath.push(new PointLocation([currentPoint[0], currentPoint[1]]));
+        return;
+      }
+
+      // If both axes move beyond tolerance, add an elbow.
+      if (Math.abs(dx) > axisEpsilon && Math.abs(dy) > axisEpsilon) {
+        // Need a turn - add intermediate point
+        // Go horizontal first, then vertical
+        const intermediate = new PointLocation([wp[0], currentPoint[1]]);
+        fullPath.push(intermediate);
+      }
+
+      // Snap near-aligned points to avoid tiny segments.
+      const snappedWp: IVec = [
+        Math.abs(dx) <= axisEpsilon ? currentPoint[0] : wp[0],
+        Math.abs(dy) <= axisEpsilon ? currentPoint[1] : wp[1],
+      ];
+      // If snapping collapses the point, skip it.
+      if (
+        Math.abs(snappedWp[0] - currentPoint[0]) <= axisEpsilon &&
+        Math.abs(snappedWp[1] - currentPoint[1]) <= axisEpsilon
+      ) {
+        return;
+      }
+
+      const wpPoint = new PointLocation(snappedWp);
+      fullPath.push(wpPoint);
+      currentPoint = wpPoint;
+    });
+
+    // Final segment: last waypoint (or start anchor) to end anchor/end
+    const endAnchor = new PointLocation(lastEndPoint);
+    const lastPoint = fullPath[fullPath.length - 1];
+    const dx = endAnchor[0] - lastPoint[0];
+    const dy = endAnchor[1] - lastPoint[1];
+
+    if (Math.abs(dx) > axisEpsilon && Math.abs(dy) > axisEpsilon) {
+      // Need a turn to reach end - add intermediate point
+      // Go horizontal first to align X, then vertical
+      const intermediate = new PointLocation([endAnchor[0], lastPoint[1]]);
+      fullPath.push(intermediate);
+    }
+
+    if (!pointsEqual(lastPoint, endAnchor)) {
+      fullPath.push(endAnchor);
+    }
+
+    if (!pointsEqual(endAnchor, endPoint)) {
+      fullPath.push(endPoint);
+    }
+
+    return fullPath;
+  }
+
   private _generateCurveConnectorPath(
     connector: ConnectorElementModel | LocalConnectorElementModel
   ) {
     const { source, target } = connector;
+    const startElement = source.id
+      ? this._getConnectorEndElement(connector, 'source')
+      : null;
+    const endElement = target.id
+      ? this._getConnectorEndElement(connector, 'target')
+      : null;
     let startPoint: PointLocation | null = null;
     let endPoint: PointLocation | null = null;
 
@@ -1321,7 +1390,10 @@ export class ConnectorPathGenerator extends PathGenerator {
       if (!startPoint || !endPoint) return [];
 
       if (source.id) {
-        const startTangentVertical = Vec.rot(startPoint.tangent, -Math.PI / 2);
+        const startTangentVertical = this._resolveTangentVertical(
+          startPoint,
+          startElement
+        );
         startPoint.out = isVecZero(startTangentVertical)
           ? Vec.mul(Vec.per(Vec.normalize(Vec.sub(startPoint, endPoint))), 20)
           : Vec.mul(
@@ -1335,7 +1407,10 @@ export class ConnectorPathGenerator extends PathGenerator {
             );
       }
       if (target.id) {
-        const endTangentVertical = Vec.rot(endPoint.tangent, -Math.PI / 2);
+        const endTangentVertical = this._resolveTangentVertical(
+          endPoint,
+          endElement
+        );
         endPoint.in = isVecZero(endTangentVertical)
           ? Vec.mul(Vec.per(Vec.normalize(Vec.sub(endPoint, startPoint))), 20)
           : Vec.mul(
@@ -1423,6 +1498,28 @@ export class ConnectorPathGenerator extends PathGenerator {
     }
 
     return point;
+  }
+
+  private _resolveTangentVertical(
+    point: PointLocation,
+    element: Connectable | null
+  ) {
+    let tangentVertical = Vec.rot(point.tangent, -Math.PI / 2);
+    if (!element || isVecZero(tangentVertical)) {
+      return tangentVertical;
+    }
+
+    const center = Bound.deserialize(element.xywh).center;
+    const centerToAnchor = Vec.sub(point, center);
+    if (
+      tangentVertical[0] * centerToAnchor[0] +
+        tangentVertical[1] * centerToAnchor[1] <
+      0
+    ) {
+      tangentVertical = Vec.mul(tangentVertical, -1);
+    }
+
+    return tangentVertical;
   }
 
   private _getConnectorEndElement(

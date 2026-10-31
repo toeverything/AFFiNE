@@ -40,6 +40,8 @@ async function getShapeProps(page: Page, elementId: string) {
     if (!element) throw new Error('shape not found');
     return {
       fillColor: element.fillColor,
+      gradientFinal: element.gradientFinal,
+      gradientDirection: element.gradientDirection,
       strokeColor: element.strokeColor,
       strokeWidth: element.strokeWidth,
       strokeStyle: element.strokeStyle,
@@ -414,7 +416,6 @@ test.describe('shape palettes', () => {
       ) as HTMLElement | null;
       if (!directionButton) throw new Error('gradient direction NE not found');
       directionButton.click();
-
       const strokePanel = root.querySelector(
         'edgeless-color-panel[aria-label="Border color"]'
       );

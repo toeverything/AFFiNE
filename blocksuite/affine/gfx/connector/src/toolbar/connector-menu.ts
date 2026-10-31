@@ -29,6 +29,7 @@ import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { ConnectorTool } from '../connector-tool';
+import { ConnectorRIcon } from './icons';
 
 function ConnectorModeButtonGroup(
   mode: ConnectorMode,
@@ -58,6 +59,15 @@ function ConnectorModeButtonGroup(
         @click=${() => setConnectorMode({ mode: ConnectorMode.Orthogonal })}
       >
         ${ConnectorEIcon()}
+      </edgeless-tool-icon-button>
+      <edgeless-tool-icon-button
+        .active=${mode === ConnectorMode.Rounded}
+        .activeMode=${'background'}
+        .tooltip=${'Rounded'}
+        .iconSize=${'20px'}
+        @click=${() => setConnectorMode({ mode: ConnectorMode.Rounded })}
+      >
+        ${ConnectorRIcon()}
       </edgeless-tool-icon-button>
       <edgeless-tool-icon-button
         .active=${mode === ConnectorMode.Straight}
@@ -107,7 +117,6 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
       background-color: var(--affine-border-color);
       display: inline-block;
     }
-
     .color-panel-container {
       display: flex;
       align-items: center;
@@ -133,6 +142,13 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
 
   private _activeColorKey: string | undefined;
 
+  // Tracks which workspace's palettes are currently loaded into `_palettes`.
+  // Needed because `this.edgeless.store.workspace.id` isn't reliably
+  // available yet at `connectedCallback` time (the edgeless surface/
+  // workspace context can still be wiring up) — without this, the menu can
+  // render with an uninitialized/empty palette (the "empty pill" symptom)
+  // before the workspace becomes available. `_ensureWorkspacePalettesLoaded`
+  // (called from render()) uses this to retry the load once it is.
   private _loadedWorkspaceId: string | undefined;
 
   private _palettes = filterShapePalettes(shapePalettes, 'line');
@@ -151,6 +167,10 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
     super.connectedCallback();
     const memory = getToolPaletteMemory(this._memoryKey);
     this._reloadPalettes();
+    // The workspace id is often not yet available on the same tick as
+    // connectedCallback; retry once microtasks (including whatever sets up
+    // the workspace context) have flushed, so the palette doesn't stay
+    // stuck on the pre-workspace default.
     queueMicrotask(() => this._reloadPalettes());
     this._paletteIndex = memory.index % this._paletteCount;
     this._activeColorKey = memory.activeKey;

@@ -287,11 +287,8 @@ test('Editor border style options are consistent for note, shape, and connector'
   await expect(connectorSolid).toBeVisible();
   await expect(connectorDash).toBeVisible();
   await expect(connectorDot).toBeVisible();
-  await expect(connectorNone).toBeVisible();
+  await expect(connectorNone).toHaveCount(0);
 
   await connectorDot.click();
   await expect(connectorDot).toHaveAttribute('data-state', 'checked');
-
-  await connectorNone.click();
-  await expect(connectorNone).toHaveAttribute('data-state', 'checked');
 });

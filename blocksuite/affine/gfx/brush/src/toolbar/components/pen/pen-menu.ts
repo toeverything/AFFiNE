@@ -48,6 +48,10 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
 
   private _activeColorKey: string | undefined;
 
+  // See the matching field in connector-menu.ts for why this is needed:
+  // this.edgeless.store.workspace.id isn't reliably available at
+  // connectedCallback time, and this tracks whether _palettes reflects the
+  // real workspace yet so render() can retry the load once it is.
   private _loadedWorkspaceId: string | undefined;
 
   static override styles = css`
@@ -137,6 +141,8 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
     super.connectedCallback();
     const memory = getToolPaletteMemory(this._memoryKey);
     this._reloadPalettes();
+    // Retry once microtasks have flushed, in case the workspace id wasn't
+    // available on this same tick — see connector-menu.ts.
     queueMicrotask(() => this._reloadPalettes());
     this._paletteIndex = memory.index % this._paletteCount;
     this._activeColorKey = memory.activeKey;

@@ -76,6 +76,11 @@ function normalizeGradientDirection(direction?: string): GradientDirection {
   return 'none';
 }
 
+const PANEL_MEMORY = new Map<
+  string,
+  { tabType: TabType; colorType: ColorType }
+>();
+
 export class EdgelessShapeColorPicker extends WithDisposable(
   SignalWatcher(LitElement)
 ) {
@@ -166,6 +171,13 @@ export class EdgelessShapeColorPicker extends WithDisposable(
   colorType$ = signal<ColorType>('fillColor');
   fillMode$ = signal<FillMode>('fill');
   gradientDirection$ = signal<GradientDirection>('none');
+
+  private _persistPanelMemory() {
+    PANEL_MEMORY.set(this.memoryKey, {
+      tabType: this.tabType$.peek(),
+      colorType: this.colorType$.peek(),
+    });
+  }
 
   readonly #pickFillColor = (e: ColorEvent) => {
     e.stopPropagation();
@@ -259,8 +271,13 @@ export class EdgelessShapeColorPicker extends WithDisposable(
     return calcCustomButtonStyle(color, isCustomColor, this);
   }
 
-  #calcCustomButtonState(color: string, theme: ColorScheme) {
-    return !this.palettes
+  #calcCustomButtonState(
+    color: string,
+    theme: ColorScheme,
+    palettes: Palette[] | undefined
+  ) {
+    const paletteList = palettes ?? DefaultTheme.Palettes;
+    return !paletteList
       .map(({ value }) => resolveColor(value, theme))
       .includes(color);
   }
@@ -270,6 +287,7 @@ export class EdgelessShapeColorPicker extends WithDisposable(
       this.tabType$.value = 'custom';
       this.colorType$.value = type;
     });
+    this._persistPanelMemory();
   }
 
   get fillColorWithoutAlpha() {
@@ -287,6 +305,19 @@ export class EdgelessShapeColorPicker extends WithDisposable(
   }
 
   override firstUpdated() {
+    const memory = PANEL_MEMORY.get(this.memoryKey);
+    if (memory) {
+      batch(() => {
+        this.tabType$.value = memory.tabType;
+        this.colorType$.value =
+          this.strokeOnly && memory.colorType === 'fillColor'
+            ? 'strokeColor'
+            : memory.colorType;
+      });
+    } else if (this.strokeOnly) {
+      this.colorType$.value = 'strokeColor';
+    }
+
     if (this.inline || !this.menuButton) {
       return;
     }
@@ -295,9 +326,8 @@ export class EdgelessShapeColorPicker extends WithDisposable(
       this.menuButton,
       'toggle',
       (e: CustomEvent<boolean>) => {
-        const opened = e.detail;
-        if (!opened && this.tabType$.peek() === 'custom') {
-          this.tabType$.value = 'normal';
+        if (!e.detail) {
+          this._persistPanelMemory();
         }
       }
     );
@@ -558,6 +588,12 @@ export class EdgelessShapeColorPicker extends WithDisposable(
 
   @property({ type: Boolean })
   accessor inline = false;
+
+  @property({ attribute: false })
+  accessor strokeOnly = false;
+
+  @property({ attribute: false })
+  accessor memoryKey = 'shape';
 
   @query('editor-menu-button')
   accessor menuButton!: EditorMenuButton;
