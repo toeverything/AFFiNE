@@ -374,16 +374,38 @@ test('toggle code block wrap can work in the same more menu', async ({
   await codeBlockController.codeBlock.hover();
   const moreMenu = await codeBlockController.openMore();
 
-  await moreMenu.wrapButton.click();
+  for (const selector of [
+    '.label',
+    'toggle-switch label',
+    'toggle-switch input',
+    ':scope',
+  ]) {
+    const wrap = moreMenu.wrapButton.locator(selector);
+    if (selector.endsWith('input')) {
+      await wrap.evaluate((input: HTMLInputElement) => input.click());
+    } else {
+      await wrap.click(
+        selector === ':scope' ? { position: { x: 1, y: 1 } } : {}
+      );
+    }
 
-  await expect(moreMenu.menu).toBeVisible();
-  await expect(codeBlockContainer).toHaveClass(/wrap/);
-  await expect(moreMenu.cancelWrapButton).toBeVisible();
+    await expect(moreMenu.menu).toBeVisible();
+    await expect(codeBlockContainer).toHaveClass(/wrap/);
+    await expect(moreMenu.cancelWrapButton.locator('input')).toBeChecked();
 
-  await moreMenu.cancelWrapButton.click();
+    const cancelWrap = moreMenu.cancelWrapButton.locator(selector);
+    if (selector.endsWith('input')) {
+      await cancelWrap.evaluate((input: HTMLInputElement) => input.click());
+    } else {
+      await cancelWrap.click(
+        selector === ':scope' ? { position: { x: 1, y: 1 } } : {}
+      );
+    }
 
-  await expect(moreMenu.menu).toBeVisible();
-  await expect(codeBlockContainer).not.toHaveClass(/wrap/);
+    await expect(moreMenu.menu).toBeVisible();
+    await expect(codeBlockContainer).not.toHaveClass(/wrap/);
+    await expect(moreMenu.wrapButton.locator('input')).not.toBeChecked();
+  }
 });
 
 test('add caption works', async ({ page }, testInfo) => {
@@ -471,16 +493,40 @@ test('toggle code block line number can work in the same more menu', async ({
   await codeBlockController.codeBlock.hover();
   const moreMenu = await codeBlockController.openMore();
 
-  await moreMenu.cancelLineNumberButton.click();
+  for (const selector of [
+    '.label',
+    'toggle-switch label',
+    'toggle-switch input',
+    ':scope',
+  ]) {
+    const hide = moreMenu.cancelLineNumberButton.locator(selector);
+    if (selector.endsWith('input')) {
+      await hide.evaluate((input: HTMLInputElement) => input.click());
+    } else {
+      await hide.click(
+        selector === ':scope' ? { position: { x: 1, y: 1 } } : {}
+      );
+    }
 
-  await expect(moreMenu.menu).toBeVisible();
-  await expect(lineNumber).toBeHidden();
-  await expect(moreMenu.lineNumberButton).toBeVisible();
+    await expect(moreMenu.menu).toBeVisible();
+    await expect(lineNumber).toBeHidden();
+    await expect(moreMenu.lineNumberButton.locator('input')).not.toBeChecked();
 
-  await moreMenu.lineNumberButton.click();
+    const show = moreMenu.lineNumberButton.locator(selector);
+    if (selector.endsWith('input')) {
+      await show.evaluate((input: HTMLInputElement) => input.click());
+    } else {
+      await show.click(
+        selector === ':scope' ? { position: { x: 1, y: 1 } } : {}
+      );
+    }
 
-  await expect(moreMenu.menu).toBeVisible();
-  await expect(lineNumber).toBeVisible();
+    await expect(moreMenu.menu).toBeVisible();
+    await expect(lineNumber).toBeVisible();
+    await expect(
+      moreMenu.cancelLineNumberButton.locator('input')
+    ).toBeChecked();
+  }
 });
 
 test('code block toolbar widget can appear and disappear during mousemove', async ({
