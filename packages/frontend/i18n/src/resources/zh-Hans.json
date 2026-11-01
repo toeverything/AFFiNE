@@ -2448,5 +2448,279 @@
   "error.COMMENT_NOT_FOUND": "未找到评论。",
   "error.REPLY_NOT_FOUND": "未找到回复。",
   "error.COMMENT_ATTACHMENT_NOT_FOUND": "未找到评论附件。",
-  "error.COMMENT_ATTACHMENT_QUOTA_EXCEEDED": "您已超出评论附件的大小限制。"
+  "error.COMMENT_ATTACHMENT_QUOTA_EXCEEDED": "您已超出评论附件的大小限制。",
+  "com": {
+    "affine": {
+      "ai": {
+        "chat-panel": {
+          "tool": {
+            "canvas": {
+              "content": "画布内容"
+            },
+            "live": {
+              "current-document": "当前文档",
+              "state-checking": "正在检查编辑器状态",
+              "state-checked": "已检查编辑器状态",
+              "selection-reading": "正在读取选区",
+              "selection-read": "已读取选区",
+              "content-reading": "正在读取编辑器内容",
+              "content-read": "已读取编辑器内容",
+              "outline-reading": "正在读取“{{title}}”的大纲",
+              "outline-read": "已读取“{{title}}”的大纲",
+              "canvas-reading": "正在读取“{{title}}”的画布",
+              "canvas-read": "已读取“{{title}}”的画布",
+              "view-unavailable": "当前编辑器模式下无法使用此视图",
+              "failed": "实时读取编辑器失败",
+              "mode": "{{mode}} 模式",
+              "blocks": "{{count}} 个块",
+              "elements": "{{count}} 个元素"
+            }
+          },
+          "scope": {
+            "document": "文档",
+            "tag": "标签",
+            "collection": "集合",
+            "favorite": "收藏",
+            "artifact": "附件",
+            "sources": "{{count}} 个来源"
+          }
+        },
+        "error": {
+          "selectedSourcesProcessing": "所选来源仍在处理中，请稍后再试。",
+          "selectedSourcesFailed": "部分所选来源无法处理。请重试；若问题持续，请移除这些来源后重新发送。",
+          "selectedSourcesUnavailable": "一个或多个所选来源不可用。请检查来源或工作区的 AI 索引设置后重试。",
+          "selectedSourcesLimitExceeded": "选择的来源或内容过多，请减少来源后重新发送。",
+          "retry": "重试"
+        }
+      },
+      "journal": {
+        "placeholder": {
+          "description": "创建日记以开始写作。"
+        }
+      },
+      "mobile": {
+        "setting": {
+          "account": {
+            "sign-in": "登录 / 注册",
+            "title": "账户与数据"
+          },
+          "experimental": {
+            "features": "实验性功能",
+            "title": "实验性"
+          },
+          "danger-zone": {
+            "title": "危险区域"
+          },
+          "plans": {
+            "title": "订阅方案"
+          },
+          "promo": {
+            "description": "在云端或自托管中协作。",
+            "title": "面向团队的 AFFiNE"
+          },
+          "subscription": {
+            "description": "更多云端存储与高级功能。",
+            "title": "AFFiNE Pro"
+          },
+          "support": {
+            "invite": "邀请好友",
+            "invite-message": "来看看 AFFiNE，笔记、白板、文档和 AI 都有。",
+            "rate": "给 AFFiNE 评分",
+            "title": "支持我们"
+          }
+        }
+      },
+      "setting": {
+        "account": {
+          "delete": {
+            "email-confirm-title": "确认你的邮箱",
+            "email-confirm-description": "输入 <1>{{email}}</1> 以确认删除账户。"
+          }
+        }
+      },
+      "settings": {
+        "editorSettings": {
+          "general": {
+            "default-code-block": {
+              "line-numbers": {
+                "description": "默认在所有代码块中显示行号。",
+                "title": "在代码块中显示行号"
+              }
+            }
+          }
+        },
+        "workspace": {
+          "byok": {
+            "title": "AI BYOK（测试版）",
+            "storage": {
+              "server": {
+                "description": "工作区成员均可使用。"
+              },
+              "local": {
+                "description": "保存在此桌面设备的安全存储中。",
+                "desktop-only": "仅在 AFFiNE 桌面端可用。",
+                "unavailable": "此设备不支持安全本地存储。",
+                "test-disclosure": "测试时会将此密钥发送到工作区服务器，仅用于本次请求，不会保存在服务器上。"
+              }
+            },
+            "modal": {
+              "connect-title": "连接 AI 服务商",
+              "manage-title": "管理服务商",
+              "connect-description": "选择密钥的存储位置，然后选择 AFFiNE 可使用的模型。",
+              "add-model-title": "添加模型",
+              "add-custom-model-title": "添加自定义模型",
+              "edit-model-title": "编辑模型",
+              "catalog-model-description": "选择一个或多个此密钥可使用的模型。",
+              "custom-model-description": "输入接口的模型 ID 并选择其用途。"
+            },
+            "section": {
+              "connection": "连接",
+              "models": "模型",
+              "advanced": "高级详情"
+            },
+            "models": {
+              "description": {
+                "selected": "此密钥可使用的模型。",
+                "order": "在兼容的模型中，已启用的模型会从上到下依次尝试。"
+              },
+              "empty": "尚未添加模型。",
+              "all-added": "所有可用模型均已添加。",
+              "no-search-results": "没有匹配的模型。"
+            },
+            "field": {
+              "provider-enabled": "已启用服务商",
+              "dialect": "API 协议",
+              "model-id": "模型 ID"
+            },
+            "placeholder": {
+              "keep-current-key": "留空则保留当前密钥",
+              "model-id": "模型 ID",
+              "search-models": "搜索模型…",
+              "dialect": "选择 API 协议"
+            },
+            "endpoint": {
+              "use-custom": "使用自定义的 API 兼容接口地址"
+            },
+            "dialect": {
+              "responses": "Responses API",
+              "chat-completions": "Chat Completions API"
+            },
+            "probe": {
+              "include-image": "测试时包含一次图像生成请求（服务商可能收取费用）",
+              "verified": "连接验证通过",
+              "failed": "连接失败"
+            },
+            "model": {
+              "recommended": "推荐",
+              "duplicate-id": "该模型已添加。",
+              "status": {
+                "not-tested": "未测试",
+                "verified": "已验证",
+                "failed": "失败",
+                "partially-verified": "部分验证 · {{verified}}/{{total}}",
+                "disabled": "已禁用"
+              },
+              "use-this-for": "将此模型用于",
+              "use": {
+                "chat": "对话与写作",
+                "actions": "操作",
+                "structured": "结构化输出",
+                "vision": "图像理解",
+                "image": "图像生成",
+                "transcript": "语音转写",
+                "embedding": "工作区索引",
+                "rerank": "搜索结果重排"
+              }
+            },
+            "action": {
+              "test-connection": "测试连接",
+              "connect": "连接",
+              "connecting": "连接中…",
+              "save-changes": "保存更改",
+              "add-model": "添加模型",
+              "add-selected-models": "添加 {{count}} 个模型",
+              "save-model": "保存模型",
+              "enable-model": "启用 {{model}}",
+              "disable-model": "禁用 {{model}}",
+              "model-options": "{{model}} 的选项",
+              "move-up": "上移",
+              "move-down": "下移",
+              "remove": "移除"
+            }
+          }
+        },
+        "devices": {
+          "title": "设备",
+          "description": "处于登录状态的设备",
+          "current": "当前",
+          "last-used": "上次使用：{{time}}",
+          "loading": "加载中…",
+          "sign-out": "登出",
+          "sign-out-all": "登出所有设备",
+          "confirm": "要登出 {{device}} 吗？",
+          "confirm-all": "要登出所有设备吗？",
+          "load-failed": "加载设备失败",
+          "sign-out-failed": "登出设备失败",
+          "sign-out-all-failed": "登出所有设备失败。"
+        }
+      },
+      "m": {
+        "explorer": {
+          "empty": {
+            "docs": {
+              "title": "还没有文档",
+              "description": "创建第一篇文档，开始记录想法、整理知识。",
+              "action": "新建文档"
+            },
+            "collections": {
+              "title": "还没有集合",
+              "description": "创建一个集合，把相关内容整理在一起。",
+              "action": "新建集合"
+            },
+            "tags": {
+              "title": "还没有标签",
+              "description": "给文档添加标签，便于整理和查找。",
+              "action": "新建标签"
+            }
+          }
+        }
+      },
+      "invitation": {
+        "account-mismatch": {
+          "title": "此邀请属于其他账户",
+          "description": "你当前登录的账户不在邀请之列。请用收到邀请的账户登录后继续。",
+          "switch-account": "使用其他账户登录",
+          "back-to-affine": "返回 AFFiNE"
+        }
+      },
+      "realtime": {
+        "connection-error": {
+          "authentication": "实时连接无法验证你的登录状态。若问题持续，请重新登录。",
+          "network": "无法连接服务器。请检查网络连接和服务器代理。",
+          "server": "服务器拒绝了实时请求，请稍后再试。",
+          "timeout": "服务器未及时响应，AFFiNE 会继续尝试重连。"
+        }
+      }
+    }
+  },
+  "error": {
+    "ACCESS_TOKEN_EXPIRED": "访问令牌已过期。",
+    "ACCESS_TOKEN_INVALID": "访问令牌无效。",
+    "AUTH_SESSION_EXPIRED": "登录会话已过期。",
+    "AUTH_SESSION_REVOKED": "登录会话已被撤销。",
+    "REFRESH_TOKEN_INVALID": "刷新令牌无效。",
+    "REFRESH_TOKEN_REUSED": "刷新令牌已被使用过。",
+    "AUTH_SESSION_TEMPORARILY_UNAVAILABLE": "登录会话服务暂时不可用。",
+    "SYNC_PERMISSION_GENERATION_CHANGED": "同步过程中，空间 {{spaceId}} 的权限已变更。",
+    "INVITATION_ACCOUNT_MISMATCH": "此邀请属于其他账户。",
+    "COPILOT_SELECTED_SOURCES_PROCESSING": "所选来源仍在处理中，请稍后再试。",
+    "COPILOT_SELECTED_SOURCES_FAILED": "所选来源无法处理，请移除失败的来源后重试。",
+    "COPILOT_SELECTED_SOURCES_UNAVAILABLE": "所选来源不可用于 AI 检索。",
+    "COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED": "选择的内容过多，请减少来源后重试。",
+    "COPILOT_FAILED_TO_ADD_WORKSPACE_ARTIFACT": "添加工作区附件失败：{{message}}",
+    "SEARCH_INDEX_NOT_READY": "空间 {{spaceId}} 的搜索索引尚未就绪。",
+    "SEARCH_PERMISSION_SYNCING": "搜索权限仍在同步，请稍后再试。",
+    "SEARCH_PROVIDER_UNAVAILABLE": "搜索服务暂时不可用。",
+    "SEARCH_INDEX_FAILED": "搜索索引暂时不可用。"
+  }
 }
