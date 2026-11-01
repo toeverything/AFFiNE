@@ -32,7 +32,7 @@ sqlx = { workspace = true, default-features = false, features = [
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 y-octo = { workspace = true }
-zstd = "0.13"
+zstd = "0.14"
 
 [target.'cfg(any(target_os = "ios", target_os = "android"))'.dependencies]
 uniffi = { workspace = true }
