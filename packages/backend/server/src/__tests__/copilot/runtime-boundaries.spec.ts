@@ -15,6 +15,7 @@ import {
   SearchProviderUnavailable,
 } from '../../base';
 import { ServerFeature, type ServerService } from '../../core';
+import type { BackendRuntimeProvider } from '../../core/backend-runtime';
 import type { DocReader } from '../../core/doc';
 import type { PermissionAccess } from '../../core/permission';
 import { type RealtimePublisher, RealtimeRegistry } from '../../core/realtime';
@@ -958,27 +959,30 @@ test('document tools enforce the user-selected hard scope', async t => {
   );
 });
 
-test('copilot config controls the server feature and request admission', t => {
-  const config = { copilot: { enabled: false } } as Config;
+test('copilot runtime controls the server feature and request admission', t => {
+  let enabled = false;
+  const runtime = {
+    copilotEnabled: () => enabled,
+  } as unknown as BackendRuntimeProvider;
   const features = new Set<ServerFeature>();
   const server = {
     enableFeature: (feature: ServerFeature) => features.add(feature),
     disableFeature: (feature: ServerFeature) => features.delete(feature),
   } as unknown as ServerService;
-  const feature = new CopilotFeatureService(config, server);
+  const feature = new CopilotFeatureService(runtime, server);
   const guard = new CopilotFeatureGuard(feature);
 
   feature.onConfigInit();
   t.false(features.has(ServerFeature.Copilot));
   t.throws(() => guard.canActivate(), { message: 'Copilot is disabled.' });
 
-  config.copilot.enabled = true;
-  feature.onConfigChanged({ updates: { copilot: { enabled: true } } });
+  enabled = true;
+  feature.onConfigApplied({ updates: { copilot: { enabled: true } } });
   t.true(features.has(ServerFeature.Copilot));
   t.true(guard.canActivate());
 
-  config.copilot.enabled = false;
-  feature.onConfigChanged({ updates: { copilot: { enabled: false } } });
+  enabled = false;
+  feature.onConfigApplied({ updates: { copilot: { enabled: false } } });
   t.false(features.has(ServerFeature.Copilot));
 });
 

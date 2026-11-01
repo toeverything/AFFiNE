@@ -13,12 +13,13 @@ import type {
   PresignedUpload,
   PutObjectMetadata,
 } from '../../base';
-import { Config, OnEvent } from '../../base';
+import { OnEvent } from '../../base';
 import { wrapCallMetric } from '../../base/metrics';
 import {
   type RuntimeObjectGetResult,
   type RuntimeObjectMetadata,
   type RuntimePresignedObjectRequest,
+  ServerConfigHandle,
   type StorageProviderCapabilities,
   StorageRuntime,
   type StorageRuntimeHealth,
@@ -31,10 +32,12 @@ export class StorageRuntimeProvider
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
   private readonly logger = new Logger(StorageRuntimeProvider.name);
-  private readonly runtime: RuntimeInstance = new StorageRuntime();
+  private readonly runtime: RuntimeInstance;
   private migrationsStarted = false;
 
-  constructor(private readonly config: Config) {}
+  constructor(serverConfig: ServerConfigHandle) {
+    this.runtime = new StorageRuntime(serverConfig);
+  }
 
   async onApplicationBootstrap() {
     await this.start();
@@ -45,7 +48,6 @@ export class StorageRuntimeProvider
   }
 
   async start() {
-    this.configureRuntime();
     await this.runtime.start();
     const health = await this.runtime.health();
     this.logger.log(
@@ -65,14 +67,16 @@ export class StorageRuntimeProvider
 
   @OnEvent('config.changed')
   async onConfigChanged({ updates }: Events['config.changed']) {
-    if (
-      !('storages' in updates) &&
-      !('db' in updates) &&
-      !updates.copilot?.storage
-    ) {
+    if (!('storages' in updates) && !('storage' in (updates.copilot ?? {}))) {
       return;
     }
-    await this.restart();
+    try {
+      await this.runtime.reloadConfig();
+    } catch (error) {
+      this.logger.error(
+        `Failed to apply committed storage config: ${error instanceof Error ? error.name : 'unknown'}`
+      );
+    }
   }
 
   async health(): Promise<StorageRuntimeHealth> {
@@ -88,6 +92,39 @@ export class StorageRuntimeProvider
   ): Promise<StorageProviderCapabilities> {
     return await this.measured('providerCapabilities', rt =>
       rt.providerCapabilities(scope)
+    );
+  }
+
+  isLocalStorage(scope: string) {
+    return this.runtime.isLocalStorage(scope);
+  }
+
+  uploadUrlConfig(scope: string) {
+    return this.runtime.uploadUrlConfig(scope);
+  }
+
+  signUploadToken(
+    scope: string,
+    path: string,
+    fields: (string | number)[],
+    expiresAt: number
+  ) {
+    return this.runtime.signUploadToken(scope, path, fields, expiresAt);
+  }
+
+  verifyUploadToken(
+    scope: string,
+    path: string,
+    fields: (string | number)[],
+    expiresAt: number,
+    token: string
+  ) {
+    return this.runtime.verifyUploadToken(
+      scope,
+      path,
+      fields,
+      expiresAt,
+      token
     );
   }
 
@@ -288,29 +325,6 @@ export class StorageRuntimeProvider
     }
     await this.runtime.runMigrations();
     this.migrationsStarted = true;
-  }
-
-  private async restart() {
-    await this.runtime.stop();
-    this.migrationsStarted = false;
-    await this.start();
-  }
-
-  private configureRuntime() {
-    this.runtime.configure(
-      JSON.stringify({
-        db: {
-          datasourceUrl: this.config.db.datasourceUrl,
-        },
-        storages: {
-          'blob.storage': this.config.storages.blob.storage,
-          'avatar.storage': this.config.storages.avatar.storage,
-        },
-        copilot: {
-          storage: this.config.copilot.storage,
-        },
-      })
-    );
   }
 }
 

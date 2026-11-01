@@ -7,3 +7,4 @@ export * from './1765600000000-backfill-entitlement-projection';
 export * from './1786805802350-backfill-transcript-storage-keys';
 export * from './1786810000000-converge-managed-provider-profiles';
 export * from './1786820000000-migrate-legacy-context-blob-artifacts';
+export * from './1790300000000-disable-incomplete-managed-profiles';

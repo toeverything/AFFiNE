@@ -273,7 +273,10 @@ impl StorageRuntime {
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashMap, sync::RwLock};
+  use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+  };
 
   use anyhow::{Context, Result as AnyResult};
   use napi::bindgen_prelude::Buffer;
@@ -285,7 +288,9 @@ mod tests {
   use super::*;
   use crate::runtime::{
     backend_runtime::SEARCH_TEST_LOCK,
+    config::ServerConfig,
     migrations::{migrate_runtime_tables, migrate_search_tables},
+    object_storage::{FsStorageConfig, ObjectStorageService, StorageBackendConfig},
     storage_runtime::StorageRuntimeConfig,
   };
 
@@ -301,13 +306,17 @@ mod tests {
     migrate_runtime_tables(&pool)
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    let config_dir = tempfile::tempdir()?;
+    let config_path = config_dir.path().join("config.json");
+    std::fs::write(&config_path, r#"{"deployment":{"type":"cloud"}}"#)?;
     let runtime = StorageRuntime {
       config: RwLock::new(StorageRuntimeConfig {
         database_url,
-        object_storage: crate::runtime::object_storage::ObjectStorageService {
+        object_storage: ObjectStorageService {
           backends: HashMap::new(),
         },
       }),
+      server_config: Arc::new(ServerConfig::open(&config_path, None)?),
       pool: Mutex::new(Some(pool.clone())),
     };
     Ok(Some((runtime, pool)))
@@ -768,7 +777,7 @@ mod tests {
     let object_root = tempfile::tempdir()?;
     runtime.config.write().unwrap().object_storage.backends.insert(
       "blob".to_string(),
-      crate::runtime::object_storage::StorageBackendConfig::Fs(crate::runtime::object_storage::FsStorageConfig {
+      StorageBackendConfig::Fs(FsStorageConfig {
         provider: "fs".to_string(),
         root: object_root.path().to_string_lossy().to_string(),
         bucket: "document-cleanup-test".to_string(),

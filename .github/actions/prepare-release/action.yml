@@ -1,41 +1,70 @@
 name: Prepare Release
-description: 'Prepare Release'
+description: Resolve the application release with the published affine-release tool
+inputs:
+  targets:
+    description: Targets accepted by affine-release plan
+    required: true
+  created-at:
+    description: Original GitHub workflow run creation time
+    required: true
+  tool-image:
+    description: Release tool image tag or digest
+    required: true
 outputs:
   APP_VERSION:
-    description: 'App Version'
-    value: ${{ steps.get-version.outputs.APP_VERSION }}
+    description: Planned application version
+    value: ${{ steps.plan.outputs.APP_VERSION }}
   GIT_SHORT_HASH:
-    description: 'Git Short Hash'
-    value: ${{ steps.get-version.outputs.GIT_SHORT_HASH }}
+    description: Application source short SHA
+    value: ${{ steps.plan.outputs.GIT_SHORT_HASH }}
   BUILD_TYPE:
-    description: 'Build Type'
-    value: ${{ steps.get-version.outputs.BUILD_TYPE }}
+    description: Planned channel
+    value: ${{ steps.plan.outputs.BUILD_TYPE }}
+  SKIP:
+    description: Whether this source and target set is already complete
+    value: ${{ steps.plan.outputs.SKIP }}
+  SERVER:
+    description: Whether the server is selected
+    value: ${{ steps.plan.outputs.SERVER }}
+  DESKTOP_MATRIX:
+    description: Desktop build matrix
+    value: ${{ steps.plan.outputs.DESKTOP_MATRIX }}
+  MOBILE_MATRIX:
+    description: Mobile build matrix
+    value: ${{ steps.plan.outputs.MOBILE_MATRIX }}
 runs:
-  using: 'composite'
+  using: composite
   steps:
-    - name: Get Version
-      id: get-version
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    - name: Pull release tool
       shell: bash
+      env:
+        TOOL_IMAGE: ${{ inputs.tool-image }}
+      run: docker pull "$TOOL_IMAGE"
+    - name: Resolve release plan
+      id: plan
+      shell: bash
+      env:
+        TOOL_IMAGE: ${{ inputs.tool-image }}
+        TARGETS: ${{ inputs.targets }}
+        RUN_CREATED_AT: ${{ inputs.created-at }}
       run: |
-        GIT_SHORT_HASH=$(git rev-parse --short HEAD)
-        if [ "${{ github.ref_type }}" == "tag" ]; then
-          APP_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-        else
-          APP_VERSION=$(date '+%Y.%-m.%-d-canary.%-H%M')
-        fi
-        if [[ "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          BUILD_TYPE=stable
-        elif [[ "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]; then
-          BUILD_TYPE=beta
-        elif [[ "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-canary\.[0-9a-f]+$ ]]; then
-          BUILD_TYPE=canary
-        else
-          echo "Error: unsupported version string: $APP_VERSION" >&2
-          exit 1
-        fi
-        echo $APP_VERSION
-        echo $GIT_SHORT_HASH
-        echo $BUILD_TYPE
-        echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_OUTPUT"
-        echo "GIT_SHORT_HASH=$GIT_SHORT_HASH" >> "$GITHUB_OUTPUT"
-        echo "BUILD_TYPE=$BUILD_TYPE" >> "$GITHUB_OUTPUT"
+        set -euo pipefail
+        previous=()
+        if [ -f release-previous.json ]; then previous=(--previous /work/release-previous.json); fi
+        docker run --rm --user "$(id -u):$(id -g)" -v "$GITHUB_WORKSPACE:/work" "$TOOL_IMAGE" plan \
+          --ref "$GITHUB_REF" --sha "$GITHUB_SHA" --targets "$TARGETS" \
+          --request-id "$GITHUB_REPOSITORY_ID-$GITHUB_RUN_ID" --created-at "$RUN_CREATED_AT" --out /work/release-plan.json "${previous[@]}"
+        {
+          echo "APP_VERSION=$(jq -r .version release-plan.json)"
+          echo "GIT_SHORT_HASH=${GITHUB_SHA:0:9}"
+          echo "BUILD_TYPE=$(jq -r .channel release-plan.json)"
+          echo "SKIP=$(jq -r ' .skip // false' release-plan.json)"
+          echo "SERVER=$(jq 'any(.targets[]; .name == "server")' release-plan.json)"
+          echo "DESKTOP_MATRIX=$(jq -c '{include: [.buildMatrix.include[] | select(.target | startswith("desktop-"))]}' release-plan.json)"
+          echo "MOBILE_MATRIX=$(jq -c '{include: [.buildMatrix.include[] | select(.target | startswith("mobile-"))]}' release-plan.json)"
+        } >> "$GITHUB_OUTPUT"

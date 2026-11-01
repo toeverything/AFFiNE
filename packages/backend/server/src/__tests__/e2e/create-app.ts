@@ -22,17 +22,17 @@ import {
   GlobalExceptionFilter,
   OneMB,
 } from '../../base';
+import { OVERRIDE_CONFIG_TOKEN } from '../../base/config/factory';
+import { getDefaultConfig } from '../../base/config/register';
 import { ThrottlerStorage } from '../../base/throttler';
 import { SocketIoAdapter } from '../../base/websocket';
 import { AuthGuard, AuthService } from '../../core/auth';
-import {
-  BACKEND_RUNTIME_CONFIG_PATHS,
-  BackendRuntimeProvider,
-} from '../../core/backend-runtime';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { Mailer } from '../../core/mail';
 import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import { ServerRole } from '../../env';
 import { Models } from '../../models';
+import { ServerConfigHandle } from '../../native';
 import { IndexerService } from '../../plugins/indexer/service';
 import {
   createFactory,
@@ -42,7 +42,10 @@ import {
   MockUserInput,
 } from '../mocks';
 import { parseCookies, TEST_LOG_LEVEL } from '../utils';
-import { createTestRuntimeConfig } from '../utils/runtime-config';
+import {
+  applyTestConfigOverrides,
+  createTestRuntimeConfig,
+} from '../utils/runtime-config';
 
 interface TestingAppMetadata {
   tapModule?(m: TestingModuleBuilder): void;
@@ -252,7 +255,7 @@ export class TestingApp extends NestApplication {
 export async function createApp(
   metadata: TestingAppMetadata = {}
 ): Promise<TestingApp> {
-  const config = new ConfigFactory().config;
+  const config = getDefaultConfig();
   const runtimeConfig = await createTestRuntimeConfig(
     config.db.datasourceUrl,
     config.indexer
@@ -265,9 +268,13 @@ export async function createApp(
   });
 
   builder.overrideProvider(Mailer).useValue(new MockMailer());
-  builder
-    .overrideProvider(BACKEND_RUNTIME_CONFIG_PATHS)
-    .useValue([runtimeConfig.configPath]);
+  builder.overrideProvider(ServerConfigHandle).useFactory({
+    factory: (overrides?: DeepPartial<AppConfig>) => {
+      applyTestConfigOverrides(runtimeConfig.configPath, overrides);
+      return new ServerConfigHandle(runtimeConfig.configPath);
+    },
+    inject: [{ token: OVERRIDE_CONFIG_TOKEN, optional: true }],
+  });
 
   // when custom override happens
   if (tapModule) {

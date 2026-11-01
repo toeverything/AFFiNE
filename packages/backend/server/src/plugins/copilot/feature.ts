@@ -1,19 +1,19 @@
 import { CanActivate, Injectable, UseGuards } from '@nestjs/common';
 
-import { Config } from '../../base/config';
 import { OnEvent } from '../../base/event';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { ServerFeature, ServerService } from '../../core/config';
 import { assertCopilotEnabled } from './availability';
 
 @Injectable()
 export class CopilotFeatureService {
   constructor(
-    private readonly config: Config,
+    private readonly runtime: BackendRuntimeProvider,
     private readonly server: ServerService
   ) {}
 
   get enabled() {
-    return this.config.copilot.enabled;
+    return this.runtime.copilotEnabled();
   }
 
   @OnEvent('config.init')
@@ -21,15 +21,15 @@ export class CopilotFeatureService {
     this.syncServerFeature();
   }
 
-  @OnEvent('config.changed')
-  onConfigChanged(event: Events['config.changed']) {
+  @OnEvent('backendRuntime.configApplied')
+  onConfigApplied(event: Events['backendRuntime.configApplied']) {
     if ('copilot' in event.updates) {
       this.syncServerFeature();
     }
   }
 
   assertEnabled() {
-    assertCopilotEnabled(this.config);
+    assertCopilotEnabled(this.enabled);
   }
 
   private syncServerFeature() {

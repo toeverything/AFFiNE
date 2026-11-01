@@ -1,37 +1,80 @@
-# This file contains the fastlane.tools configuration
-# You can find the documentation at https://docs.fastlane.tools
-#
-# For a list of all available actions, check out
-#
-#     https://docs.fastlane.tools/actions
-#
-# For a list of all available plugins, check out
-#
-#     https://docs.fastlane.tools/plugins/available-plugins
-#
-
-# Uncomment the line if you want fastlane to automatically update itself
-# update_fastlane
+def release_api_key
+  app_store_connect_api_key(
+    key_id: ENV.fetch('APPLE_STORE_CONNECT_API_KEY_ID'),
+    issuer_id: ENV.fetch('APPLE_STORE_CONNECT_API_ISSUER_ID'),
+    key_content: ENV.fetch('APPLE_STORE_CONNECT_API_KEY'),
+    is_key_content_base64: true,
+    duration: 1200,
+    in_house: false
+  )
+end
 
 default_platform(:ios)
 
 platform :ios do
-  desc "Push a new beta build to TestFlight"
-  lane :beta do
-    api_key = app_store_connect_api_key(
-      key_id: ENV['APPLE_STORE_CONNECT_API_KEY_ID'],
-      issuer_id: ENV['APPLE_STORE_CONNECT_API_ISSUER_ID'],
-      key_content: ENV['APPLE_STORE_CONNECT_API_KEY'],
-      is_key_content_base64: true,
-      duration: 1200, # optional (maximum 1200)
-      in_house: false # optional but may be required if using match/sigh
-    )
-    current_build_number = app_store_build_number(live: false)
-    increment_build_number(xcodeproj: "App.xcodeproj", build_number: current_build_number + 1)
+  desc 'Build a signed candidate without submitting it to TestFlight'
+  lane :archive do
+    provisioning_profiles = {}
+    {
+      'AFFiNE' => ['app.affine.pro', 'BUILD_PROVISION_PROFILE_PATH'],
+      'ShareExtension' => ['app.affine.pro.ShareExtension', 'BUILD_PROVISION_PROFILE_SHARE_EXTENSION_PATH']
+    }.each do |target, (bundle_identifier, profile_env)|
+      profile_path = ENV.fetch(profile_env)
+      profile = FastlaneCore::ProvisioningProfile.parse(profile_path)
+      install_provisioning_profile(path: profile_path)
+      update_code_signing_settings(
+        path: 'App.xcodeproj',
+        targets: [target],
+        build_configurations: ['Release'],
+        use_automatic_signing: false,
+        code_sign_identity: 'Apple Distribution',
+        team_id: profile.fetch('TeamIdentifier').first,
+        profile_name: profile.fetch('UUID')
+      )
+      provisioning_profiles[bundle_identifier] = profile.fetch('UUID')
+    end
+    api_key = release_api_key
+    current_build_number = app_store_build_number(live: false, api_key: api_key)
+    increment_build_number(xcodeproj: 'App.xcodeproj', build_number: current_build_number + 1)
     build_app(
-      workspace: "App.xcworkspace",
-      scheme: "App"
+      workspace: 'App.xcworkspace', scheme: 'App', configuration: 'Release',
+      output_directory: 'release', output_name: 'AFFiNE.ipa',
+      export_method: 'app-store', skip_profile_detection: true,
+      export_options: {signingStyle: 'manual', provisioningProfiles: provisioning_profiles}
     )
-    upload_to_testflight(skip_waiting_for_build_processing: true, api_key: api_key) if ENV['BUILD_TARGET'] == 'distribution'
+    File.write('release/store-build.json', JSON.generate({
+      appIdentifier: CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier),
+      version: get_version_number(xcodeproj: 'App.xcodeproj', target: 'AFFiNE'),
+      buildNumber: (current_build_number + 1).to_s
+    }))
+  end
+
+  desc 'Submit the prepared candidate and reconcile its exact App Store build'
+  lane :submit do
+    operation = {
+      operationRunId: Integer(ENV.fetch('STORE_OPERATION_RUN_ID')),
+      operationAttempt: Integer(ENV.fetch('STORE_OPERATION_ATTEMPT'))
+    }
+    UI.user_error!('A positive store operation run ID and attempt are required') unless operation.values.all?(&:positive?)
+    api_key = release_api_key
+    candidate = JSON.parse(File.read(ENV.fetch('STORE_BUILD_METADATA')))
+    app = Spaceship::ConnectAPI::App.find(candidate.fetch('appIdentifier'))
+    UI.user_error!('App Store application not found') unless app
+    builds = Spaceship::ConnectAPI::Build.all(
+      app_id: app.id, version: candidate.fetch('version'), build_number: candidate.fetch('buildNumber')
+    )
+    if ENV['STORE_QUERY_ONLY'] == '1'
+      UI.user_error!('No visible store result; the previous submission step ran, so its result remains unresolved') if builds.empty? && ENV['STORE_ALLOW_ABSENT'] != '1'
+      File.write(ENV.fetch('STORE_RECEIPT'), JSON.generate(candidate.merge({
+        status: builds.empty? ? 'not-submitted' : 'submitted',
+        store: 'app-store-connect', **operation
+      })))
+      next
+    end
+    if builds.empty?
+      upload_to_testflight(ipa: ENV.fetch('STORE_IPA'), skip_waiting_for_build_processing: true, api_key: api_key)
+    end
+    UI.user_error!('App Store build was rejected') if builds.any? { |build| ['FAILED', 'INVALID'].include?(build.processing_state) }
+    File.write(ENV.fetch('STORE_RECEIPT'), JSON.generate(candidate.merge({status: 'submitted', store: 'app-store-connect', **operation})))
   end
 end

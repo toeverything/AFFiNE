@@ -1,4 +1,5 @@
-use super::StorageOperation;
+use super::{StorageOperation, permission::PermissionAuthorizer};
+mod authorization;
 mod cleanup;
 mod management;
 mod mutation;
@@ -9,7 +10,9 @@ mod seat;
 mod storage;
 
 use affine_core::{access_control::QuotaSubject, invalidation::SubjectId};
+use authorization::lock_subject;
 pub(super) use mutation::load_command_quota_in;
+use promotion::{final_storage_locator, temporary_storage_locator};
 pub(super) use reservation_finalize::finalize_reservation;
 use sqlx::{Postgres, Transaction};
 

@@ -46,8 +46,6 @@ pub(super) async fn stripe_invoice_snapshot(
   } else {
     customer_user(pool, &namespace_key, &customer_id).await?
   };
-  let source_id = snapshot.subscriptions.first().map(|source| source.source_id.clone());
-  let occurred_at = invoice_occurred_at(&invoice, status, observed_at)?;
   snapshot.invoices.push(InvoiceSnapshot {
     external_id: invoice.id.clone(),
     target_id,
@@ -61,27 +59,79 @@ pub(super) async fn stripe_invoice_snapshot(
       .and_then(|error| error.message.clone()),
     link: invoice.hosted_invoice_url.clone(),
   });
-  snapshot.financial_facts.push(FinancialSnapshot {
+  snapshot.financial_facts.push(stripe_invoice_fact(
+    &invoice,
+    snapshot.subscriptions.first(),
+    observed_at,
+  )?);
+  Ok(snapshot)
+}
+
+pub(super) fn stripe_invoice_fact(
+  invoice: &StripeInvoice,
+  source: Option<&SubscriptionSnapshot>,
+  observed_at: chrono::DateTime<Utc>,
+) -> RuntimeResult<FinancialSnapshot> {
+  let status = invoice_status(invoice.status.as_deref())?;
+  let coupons: Vec<_> = invoice
+    .total_discount_amounts
+    .iter()
+    .filter(|discount| discount.amount > 0)
+    .map(|discount| &discount.discount["coupon"])
+    .collect();
+  let promotional_grant = invoice.total == 0
+    && !coupons.is_empty()
+    && coupons.iter().all(|coupon| {
+      coupon["id"].as_str().is_some_and(|id| !id.is_empty()) && coupon["metadata"]["affine_policy"] == "grant_v1"
+    });
+  let mut metadata = json!({ "billingReason": invoice.billing_reason });
+  if promotional_grant {
+    metadata["couponGrant"] = json!({
+      "coupons": coupons.iter().map(|coupon| json!({
+        "id": coupon["id"], "policy": coupon["metadata"]["affine_policy"]
+      })).collect::<Vec<_>>(),
+      "observedAt": observed_at
+    });
+  }
+  let invoice_facts = affine_core::payment::InvoiceFinancialFacts {
+    promotional_grant,
+    collection_adjustment: false,
+    total: Some(invoice.total),
+    reason: match (invoice.subscription_id(), invoice.billing_reason.as_deref()) {
+      (None, _) => affine_core::payment::InvoiceReason::OneTime,
+      (_, Some("subscription_create")) => affine_core::payment::InvoiceReason::SubscriptionCreate,
+      (_, Some("subscription_cycle")) => affine_core::payment::InvoiceReason::SubscriptionCycle,
+      (_, Some("subscription_update" | "subscription_threshold")) => affine_core::payment::InvoiceReason::Adjustment,
+      _ => affine_core::payment::InvoiceReason::Unknown,
+    },
+    created_at: timestamp(invoice.created, "Stripe invoice")?,
+    trial_start: source.and_then(|source| source.trial_start),
+    trial_end: source.and_then(|source| source.trial_end),
+  };
+  Ok(FinancialSnapshot {
+    observed_at,
     fact: FinancialFact {
+      invoice: Some(invoice_facts),
       kind: FinancialKind::Invoice,
       status,
     },
     external_id: invoice.id.clone(),
-    source_id,
+    source_id: source.map(|source| source.source_id.clone()),
     external_invoice_id: Some(invoice.id.clone()),
     external_payment_id: invoice.payment_intent.as_ref().map(|payment| payment.id().to_string()),
-    amount: Some(amount),
+    amount: Some(
+      i32::try_from(invoice.total).map_err(|_| RuntimeError::invalid_input("Stripe invoice amount is out of range"))?,
+    ),
     currency: Some(invoice.currency.clone()),
-    occurred_at: Some(occurred_at),
-    metadata: json!({ "billingReason": invoice.billing_reason }),
-  });
-  Ok(snapshot)
+    occurred_at: Some(invoice_occurred_at(invoice, status, observed_at)?),
+    metadata,
+  })
 }
 
 pub(super) fn push_stripe_refund(
   snapshot: &mut PaymentSnapshot,
   refund: StripeRefund,
-  _observed_at: chrono::DateTime<Utc>,
+  observed_at: chrono::DateTime<Utc>,
 ) -> RuntimeResult<()> {
   let invoice = snapshot
     .invoices
@@ -90,7 +140,9 @@ pub(super) fn push_stripe_refund(
   let amount =
     i32::try_from(refund.amount).map_err(|_| RuntimeError::invalid_input("Stripe refund amount is out of range"))?;
   snapshot.financial_facts.push(FinancialSnapshot {
+    observed_at,
     fact: FinancialFact {
+      invoice: None,
       kind: FinancialKind::Refund,
       status: refund_status(refund.status.as_deref())?,
     },
@@ -109,7 +161,7 @@ pub(super) fn push_stripe_refund(
 pub(super) fn push_stripe_dispute(
   snapshot: &mut PaymentSnapshot,
   dispute: StripeDispute,
-  _observed_at: chrono::DateTime<Utc>,
+  observed_at: chrono::DateTime<Utc>,
 ) -> RuntimeResult<()> {
   let invoice = snapshot
     .invoices
@@ -118,9 +170,11 @@ pub(super) fn push_stripe_dispute(
   let amount =
     i32::try_from(dispute.amount).map_err(|_| RuntimeError::invalid_input("Stripe dispute amount is out of range"))?;
   snapshot.financial_facts.push(FinancialSnapshot {
+    observed_at,
     fact: FinancialFact {
+      invoice: None,
       kind: FinancialKind::Dispute,
-      status: dispute_status(&dispute.status)?,
+      status: dispute_status(&dispute)?,
     },
     external_id: dispute.id,
     source_id: snapshot.subscriptions.first().map(|source| source.source_id.clone()),
@@ -269,12 +323,19 @@ fn refund_status(status: Option<&str>) -> RuntimeResult<FinancialStatus> {
   }
 }
 
-fn dispute_status(status: &str) -> RuntimeResult<FinancialStatus> {
-  match status {
-    "warning_needs_response" | "warning_under_review" | "warning_closed" | "needs_response" | "under_review" => {
-      Ok(FinancialStatus::Open)
+fn dispute_status(dispute: &StripeDispute) -> RuntimeResult<FinancialStatus> {
+  match dispute.status.as_str() {
+    "warning_needs_response" | "warning_under_review" | "needs_response" | "under_review" => Ok(FinancialStatus::Open),
+    "won" | "warning_closed" => Ok(FinancialStatus::Won),
+    "prevented"
+      if dispute
+        .payment_method_details
+        .pointer("/card/case_type")
+        .and_then(serde_json::Value::as_str)
+        == Some("block") =>
+    {
+      Ok(FinancialStatus::Won)
     }
-    "won" => Ok(FinancialStatus::Won),
     "lost" => Ok(FinancialStatus::Lost),
     _ => Err(RuntimeError::invalid_input("unknown Stripe dispute status")),
   }

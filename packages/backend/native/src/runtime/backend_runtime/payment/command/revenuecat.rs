@@ -29,41 +29,12 @@ impl PaymentRuntime {
       .revenuecat_config
       .as_ref()
       .ok_or_else(|| RuntimeError::invalid_state("RevenueCat payment provider is not configured"))?;
-    let namespace = client
-      .namespace()
-      .canonical_key()
-      .map_err(|_| RuntimeError::invalid_state("invalid RevenueCat provider namespace"))?;
-    if let Some(row) = sqlx::query(
-      "SELECT target_id FROM provider_subscriptions WHERE provider='revenuecat' AND provider_namespace=$1 AND \
-       external_ref=$2 ORDER BY id LIMIT 1",
-    )
-    .bind(&namespace)
-    .bind(transaction_id)
-    .fetch_optional(&self.pool)
-    .await
-    .map_err(|error| RuntimeError::database("load RevenueCat store transaction", error))?
-    {
-      if row.get::<String, _>("target_id") != user_id {
-        return Err(RuntimeError::invalid_state(
-          "RevenueCat store transaction belongs to another user",
-        ));
-      }
-      return self.list_subscriptions("user", user_id).await;
-    }
     let subscriptions = client
       .subscriptions_by_store_id(transaction_id)
       .await
       .map_err(provider_runtime_error)?;
     if subscriptions.is_empty() {
       return self.list_subscriptions("user", user_id).await;
-    }
-    if subscriptions
-      .iter()
-      .any(|subscription| subscription.store_subscription_identifier != transaction_id)
-    {
-      return Err(RuntimeError::invalid_state(
-        "RevenueCat store transaction result is not canonical",
-      ));
     }
     let source_customers = subscriptions
       .iter()
@@ -182,7 +153,7 @@ impl PaymentRuntime {
       return Err(RuntimeError::invalid_state("payment_operation_blocked"));
     }
     if let Some(snapshot) = self
-      .confirmed_revenuecat_identify(user_id, transaction_id, &source_ids, &frozen.id)
+      .confirmed_revenuecat_identify(user_id, &source_ids, &frozen.id)
       .await?
     {
       return self
@@ -220,7 +191,7 @@ impl PaymentRuntime {
     )
     .await?;
     let Some(snapshot) = self
-      .confirmed_revenuecat_identify(user_id, transaction_id, &source_ids, &frozen.id)
+      .confirmed_revenuecat_identify(user_id, &source_ids, &frozen.id)
       .await?
     else {
       return Ok(IdentifyOutcome::Pending);
@@ -234,7 +205,6 @@ impl PaymentRuntime {
   async fn confirmed_revenuecat_identify(
     &self,
     user_id: &str,
-    transaction_id: &str,
     expected_source_ids: &[String],
     operation_id: &str,
   ) -> RuntimeResult<Option<PaymentSnapshot>> {
@@ -252,7 +222,6 @@ impl PaymentRuntime {
       .map_err(provider_runtime_error)?;
     let present = subscriptions
       .iter()
-      .filter(|subscription| subscription.store_subscription_identifier == transaction_id)
       .map(|subscription| subscription.id.as_str())
       .collect::<BTreeSet<_>>();
     if expected_source_ids
@@ -322,7 +291,7 @@ pub(in crate::runtime::backend_runtime::payment) async fn recover_one_revenuecat
     source_customer_id: _,
     customer_id,
     source_ids,
-    store_subscription_identifier,
+    store_subscription_identifier: _,
   } = &step.request
   else {
     return Err(RuntimeError::invalid_state("RevenueCat identify operation is invalid"));
@@ -339,7 +308,7 @@ pub(in crate::runtime::backend_runtime::payment) async fn recover_one_revenuecat
     return Ok(None);
   };
   if let Some(snapshot) = runtime
-    .confirmed_revenuecat_identify(customer_id, store_subscription_identifier, source_ids, &operation_id)
+    .confirmed_revenuecat_identify(customer_id, source_ids, &operation_id)
     .await?
   {
     return runtime.apply_with_connection(connection, snapshot).await.map(Some);

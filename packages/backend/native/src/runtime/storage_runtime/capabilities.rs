@@ -81,7 +81,7 @@ mod tests {
 
   #[test]
   fn capabilities_enable_presign_get_for_presigned_s3_provider() {
-    let capabilities = storage_provider_capabilities(&StorageBackendConfig::S3(ObjectStorageConfig {
+    let capabilities = storage_provider_capabilities(&StorageBackendConfig::S3(Box::new(ObjectStorageConfig {
       provider: "cloudflare-r2".to_string(),
       bucket: "blob".to_string(),
       endpoint: Some("https://account.r2.cloudflarestorage.com".to_string()),
@@ -96,9 +96,11 @@ mod tests {
       presign_sign_content_type_for_put: Some(true),
       use_presigned_url: true,
       proxy_upload: false,
+      upload_url_prefix: None,
+      proxy_sign_key: None,
       custom_get_url_prefix: None,
       custom_get_sign_key: None,
-    }));
+    })));
 
     assert!(capabilities.presign_put);
     assert!(capabilities.presign_get);
@@ -108,7 +110,7 @@ mod tests {
 
   #[test]
   fn capabilities_expose_r2_proxy_upload() {
-    let capabilities = storage_provider_capabilities(&StorageBackendConfig::S3(ObjectStorageConfig {
+    let capabilities = storage_provider_capabilities(&StorageBackendConfig::S3(Box::new(ObjectStorageConfig {
       provider: "cloudflare-r2".to_string(),
       bucket: "blob".to_string(),
       endpoint: Some("https://account.r2.cloudflarestorage.com".to_string()),
@@ -123,9 +125,11 @@ mod tests {
       presign_sign_content_type_for_put: Some(true),
       use_presigned_url: true,
       proxy_upload: true,
+      upload_url_prefix: None,
+      proxy_sign_key: Some("key".to_string()),
       custom_get_url_prefix: None,
       custom_get_sign_key: None,
-    }));
+    })));
 
     assert!(capabilities.proxy_upload);
     assert!(capabilities.presign_put);

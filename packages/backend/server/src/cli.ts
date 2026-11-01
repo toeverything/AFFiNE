@@ -100,10 +100,15 @@ function buildProgram(logger: Logger) {
 
   program
     .command('import-config [path]')
-    .description('import config from a file')
+    .description(
+      'import config from a file; changes take effect on the next server start'
+    )
     .action(async path => {
       await withCliApp(logger, async app => {
         await app.get(ImportConfigCommand).execute(path);
+        logger.log(
+          'Config imported; changes take effect on the next server start.'
+        );
       });
     });
 

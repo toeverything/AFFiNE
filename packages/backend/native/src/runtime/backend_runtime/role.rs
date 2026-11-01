@@ -54,7 +54,7 @@ impl ServerRole {
     matches!(self, Self::AllInOne)
   }
 
-  pub(super) fn owns_read_cache(self) -> bool {
+  pub(super) fn owns_blob_access(self) -> bool {
     matches!(self, Self::Frontend | Self::Api | Self::AllInOne)
   }
 

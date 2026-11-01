@@ -13,8 +13,9 @@ import {
 import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
 import { Config, hasNewerVersion, URLHelper } from '../../base';
-import { Namespace } from '../../env';
+import { DeploymentType, Namespace } from '../../env';
 import { Feature } from '../../models';
+import { ServerConfigHandle } from '../../native';
 import { CurrentUser, Public } from '../auth';
 import { Admin } from '../common';
 import { AvailableUserFeatureConfig } from '../features';
@@ -63,8 +64,13 @@ export class ServerConfigResolver {
   constructor(
     private readonly config: Config,
     private readonly url: URLHelper,
-    private readonly server: ServerService
+    private readonly server: ServerService,
+    private readonly serverConfigHandle: ServerConfigHandle
   ) {}
+
+  private get selfhosted() {
+    return this.serverConfigHandle.deploymentType === 'selfhosted';
+  }
 
   @Public()
   @Query(() => ServerConfigType, {
@@ -74,7 +80,7 @@ export class ServerConfigResolver {
     return {
       name:
         this.config.server.name ??
-        (env.selfhosted
+        (this.selfhosted
           ? 'AFFiNE Self-hosted'
           : env.namespaces.canary
             ? 'AFFiNE Canary Cloud'
@@ -83,7 +89,7 @@ export class ServerConfigResolver {
               : 'AFFiNE Cloud'),
       version: env.version,
       baseUrl: this.url.requestBaseUrl,
-      type: env.DEPLOYMENT_TYPE,
+      type: this.selfhosted ? DeploymentType.Selfhosted : DeploymentType.Affine,
       features: this.server.features,
     };
   }
@@ -112,7 +118,7 @@ export class ServerConfigResolver {
     description: 'fetch latest available upgradable release of server',
   })
   async availableUpgrade(): Promise<ReleaseVersionType | null> {
-    if (!env.selfhosted) {
+    if (!this.selfhosted) {
       return null;
     }
 
@@ -178,8 +184,11 @@ class UpdateAppConfigInput {
   @Field()
   key!: string;
 
-  @Field(() => GraphQLJSON)
-  value!: any;
+  @Field(() => GraphQLJSON, { nullable: true })
+  value?: any;
+
+  @Field(() => Boolean, { nullable: true })
+  clear?: boolean;
 }
 
 @ObjectType()
@@ -190,8 +199,8 @@ class AppConfigValidateResult {
   @Field()
   key!: string;
 
-  @Field(() => GraphQLJSON)
-  value!: any;
+  @Field(() => GraphQLJSON, { nullable: true })
+  value?: any;
 
   @Field()
   valid!: boolean;
@@ -206,10 +215,17 @@ export class AppConfigResolver {
   constructor(private readonly service: ServerService) {}
 
   @Query(() => GraphQLJSONObject, {
-    description: 'get the whole app configuration',
+    description: 'get visible app configuration values',
   })
-  appConfig() {
-    return this.service.getConfig();
+  async appConfig(): Promise<DeepPartial<AppConfig>> {
+    return await this.service.getEffectiveAdminConfig();
+  }
+
+  @Query(() => GraphQLJSONObject, {
+    description: 'get app configuration value sources and secret status',
+  })
+  appConfigMetadata() {
+    return this.service.getAdminConfigMetadata();
   }
 
   @Mutation(() => GraphQLJSONObject, {
@@ -246,9 +262,17 @@ export class AppConfigResolver {
       return {
         module: update.module,
         key: update.key,
-        value: update.value,
+        value: this.service.getAdminConfigValue(
+          update.module,
+          update.key,
+          update.value
+        ),
         valid: !error,
-        error: error?.data.hint,
+        error: error
+          ? this.service.isSecretConfigKey(update.module, update.key)
+            ? 'Invalid value'
+            : error.data.hint
+          : undefined,
       };
     });
   }

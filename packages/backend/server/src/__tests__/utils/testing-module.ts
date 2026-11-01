@@ -10,18 +10,23 @@ import { PrismaClient } from '@prisma/client';
 
 import { buildAppModule, FunctionalityModules } from '../../app.module';
 import { AFFiNELogger, ConfigFactory } from '../../base';
+import { OVERRIDE_CONFIG_TOKEN } from '../../base/config/factory';
+import { getDefaultConfig } from '../../base/config/register';
 import { GqlModule } from '../../base/graphql';
 import { ServerConfigModule } from '../../core';
 import { AuthGuard, AuthModule } from '../../core/auth';
-import { BACKEND_RUNTIME_CONFIG_PATHS } from '../../core/backend-runtime';
 import { Mailer, MailModule } from '../../core/mail';
 import { ModelsModule } from '../../models';
+import { ServerConfigHandle } from '../../native';
 // for jsdoc inference
 // oxlint-disable-next-line no-unused-vars
 import type { createModule } from '../create-module';
 import { createFactory } from '../mocks';
 import { MockMailer } from '../mocks/mailer.mock';
-import { createTestRuntimeConfig } from './runtime-config';
+import {
+  applyTestConfigOverrides,
+  createTestRuntimeConfig,
+} from './runtime-config';
 import { initTestingDB, TEST_LOG_LEVEL } from './utils';
 
 interface TestingModuleMetadata extends ModuleMetadata {
@@ -68,7 +73,7 @@ export async function createTestingModule(
   moduleDef: TestingModuleMetadata = {},
   autoInitialize = true
 ): Promise<TestingModule> {
-  const config = new ConfigFactory().config;
+  const config = getDefaultConfig();
   const runtimeConfig = await createTestRuntimeConfig(
     config.db.datasourceUrl,
     config.indexer
@@ -103,9 +108,13 @@ export async function createTestingModule(
   });
 
   builder.overrideProvider(Mailer).useClass(MockMailer);
-  builder
-    .overrideProvider(BACKEND_RUNTIME_CONFIG_PATHS)
-    .useValue([runtimeConfig.configPath]);
+  builder.overrideProvider(ServerConfigHandle).useFactory({
+    factory: (overrides?: DeepPartial<AppConfig>) => {
+      applyTestConfigOverrides(runtimeConfig.configPath, overrides);
+      return new ServerConfigHandle(runtimeConfig.configPath);
+    },
+    inject: [{ token: OVERRIDE_CONFIG_TOKEN, optional: true }],
+  });
   if (moduleDef.tapModule) {
     moduleDef.tapModule(builder);
   }

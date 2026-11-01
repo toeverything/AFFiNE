@@ -4,6 +4,7 @@ mod auth_session;
 mod blob_access;
 mod byok;
 mod byok_api;
+mod config_command;
 mod constants;
 mod control_plane;
 mod copilot;
@@ -44,6 +45,7 @@ use search::SearchRuntime;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row};
 use tokio::sync::Mutex;
+use zeroize::Zeroizing;
 
 use self::{
   blob_access::SourceIdentity,
@@ -59,14 +61,17 @@ use self::{
 use super::object_storage::ObjectStorageService;
 pub(crate) use super::types;
 pub(super) use super::{
-  BackendRuntimeConfig, ConfigSource, InviteQuotaConfig, RedisRuntimeConfig, RuntimeError, RuntimeResult,
+  BackendRuntimeConfig, InviteQuotaConfig, RedisRuntimeConfig, RuntimeError, RuntimeResult,
   migrations::{embedding_schema_health, migrate_all_tables},
   napi_error, to_napi_error, webpki_tls_config,
 };
-use crate::llm::{
-  ByokLocalLeaseOutput, ByokPolicyOutput, ByokProbeResultOutput, ByokProfileOutput, CreateByokLocalLeaseInput,
-  CreateByokProfileInput, ProbeByokDraftInput, ProbeByokProfileInput, ReorderByokProfilesInput,
-  ReplaceByokProfileInput, RotateByokCredentialInput,
+use crate::{
+  llm::{
+    ByokLocalLeaseOutput, ByokPolicyOutput, ByokProbeResultOutput, ByokProfileOutput, CreateByokLocalLeaseInput,
+    CreateByokProfileInput, ProbeByokDraftInput, ProbeByokProfileInput, ReorderByokProfilesInput,
+    ReplaceByokProfileInput, RotateByokCredentialInput,
+  },
+  runtime::config::{AppConfigChange, ServerConfig, ServerConfigHandle, save_app_config_changes},
 };
 
 pub(super) fn token_hash(token: &str) -> String {
@@ -104,8 +109,8 @@ fn search_operation_output(result: RuntimeResult<serde_json::Value>) -> SearchOp
 #[derive(Clone)]
 #[napi_derive::napi]
 pub struct BackendRuntime {
-  config_source: ConfigSource,
-  inline_config: Arc<RwLock<Option<serde_json::Value>>>,
+  server_config: Arc<ServerConfig>,
+  bootstrap_private_key: Option<Arc<Zeroizing<String>>>,
   role: ServerRole,
   script_mode: bool,
   config: Arc<RwLock<Arc<BackendRuntimeConfig>>>,
@@ -130,25 +135,18 @@ pub struct BackendRuntime {
 impl BackendRuntime {
   #[napi(constructor)]
   pub fn new(
+    server_config: &ServerConfigHandle,
     private_key: Option<String>,
-    config_paths: Option<Vec<String>>,
     permission_telemetry: Option<ThreadsafeFunction<String, (), String, Status, true, true, 1024>>,
-    inline_config: Option<String>,
     invalidation_events: Option<ThreadsafeFunction<String, (), String, Status, true, true, 1024>>,
   ) -> Result<Self> {
-    let config_source = ConfigSource::new(config_paths);
     let (role, script_mode) = ServerRole::from_environment().map_err(napi_error)?;
-    let inline_config = inline_config
-      .map(|value| serde_json::from_str(&value))
-      .transpose()
-      .map_err(|error| to_napi_error(RuntimeError::json("decode inline runtime config", error)))?;
     let config =
-      BackendRuntimeConfig::from_config_source_with_inline(private_key, &config_source, inline_config.as_ref())
-        .map_err(to_napi_error)?;
-    let object_storage = ObjectStorageService::from_config_source(&config_source).map_err(to_napi_error)?;
+      BackendRuntimeConfig::from_server_config(private_key.clone(), &server_config.inner).map_err(to_napi_error)?;
+    let object_storage = server_config.inner.object_storage().clone();
     Ok(Self {
-      config_source,
-      inline_config: Arc::new(RwLock::new(inline_config)),
+      server_config: Arc::clone(&server_config.inner),
+      bootstrap_private_key: private_key.map(|key| Arc::new(Zeroizing::new(key))),
       role,
       script_mode,
       config: Arc::new(RwLock::new(Arc::new(config))),

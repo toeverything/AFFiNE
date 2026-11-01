@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import {
-  Config,
   InvalidAuthState,
   InvalidOauthCallbackCode,
   InvalidOauthCallbackState,
@@ -36,24 +35,19 @@ type NativeOAuthCallback =
 
 @Injectable()
 export class OAuthService {
-  private activeProviders: OAuthProviderName[];
+  private readonly logger = new Logger(OAuthService.name);
+  private activeProviders: OAuthProviderName[] = [];
 
   constructor(
     private readonly runtime: BackendRuntimeProvider,
-    private readonly config: Config,
     private readonly server: ServerService
-  ) {
-    this.activeProviders = this.configuredProviders().filter(
-      provider => provider !== OAuthProviderName.OIDC
-    );
-  }
+  ) {}
 
   get providers() {
     return this.activeProviders;
   }
 
   @OnEvent('config.init')
-  @OnEvent('config.changed')
   async refreshProviders() {
     try {
       this.activeProviders = await this.runtime.executeAuthSessionCommandV1<
@@ -61,10 +55,11 @@ export class OAuthService {
       >({
         action: 'oauth_providers',
       });
-    } catch {
-      this.activeProviders = this.configuredProviders().filter(
-        provider => provider !== OAuthProviderName.OIDC
+    } catch (error) {
+      this.logger.error(
+        `Failed to load native OAuth providers: ${error instanceof Error ? error.name : 'unknown'}`
       );
+      return;
     }
     if (this.activeProviders.length) {
       this.server.enableFeature(ServerFeature.OAuth);
@@ -73,15 +68,9 @@ export class OAuthService {
     }
   }
 
-  private configuredProviders() {
-    return Object.values(OAuthProviderName).filter(name => {
-      const provider = this.config.oauth.providers[name];
-      if (!provider?.clientId) return false;
-      if (provider.clientSecret) return true;
-      if (name !== OAuthProviderName.Apple) return false;
-      const args = provider.args as Record<string, string> | undefined;
-      return !!(args?.privateKey && args.keyId && args.teamId);
-    });
+  @OnEvent('backendRuntime.configApplied')
+  async onConfigApplied({ updates }: Events['backendRuntime.configApplied']) {
+    if (updates.oauth) await this.refreshProviders();
   }
 
   async preflight(input: {

@@ -453,7 +453,10 @@ impl StorageRuntime {
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashMap, sync::RwLock};
+  use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+  };
 
   use anyhow::{Context, Result as AnyResult};
   use napi::bindgen_prelude::Buffer;
@@ -465,8 +468,9 @@ mod tests {
 
   use super::*;
   use crate::runtime::{
-    migrations::migrate_runtime_tables,
-    object_storage::{FsStorageConfig, StorageBackendConfig},
+    config::ServerConfig,
+    migrations::{EMBEDDING_TEST_LOCK, migrate_runtime_tables},
+    object_storage::{FsStorageConfig, ObjectStorageService, StorageBackendConfig},
     storage_runtime::StorageRuntimeConfig,
   };
 
@@ -512,10 +516,13 @@ mod tests {
       .await
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
     let object_root = tempfile::tempdir()?;
+    let config_dir = tempfile::tempdir()?;
+    let config_path = config_dir.path().join("config.json");
+    std::fs::write(&config_path, r#"{"deployment":{"type":"cloud"}}"#)?;
     let runtime = StorageRuntime {
       config: RwLock::new(StorageRuntimeConfig {
         database_url,
-        object_storage: crate::runtime::object_storage::ObjectStorageService {
+        object_storage: ObjectStorageService {
           backends: HashMap::from([(
             "blob".to_string(),
             StorageBackendConfig::Fs(FsStorageConfig {
@@ -526,6 +533,7 @@ mod tests {
           )]),
         },
       }),
+      server_config: Arc::new(ServerConfig::open(&config_path, None)?),
       pool: Mutex::new(Some(pool.clone())),
     };
     let suffix = Uuid::new_v4().simple().to_string();
@@ -629,7 +637,7 @@ mod tests {
     let Ok(database_url) = std::env::var("DATABASE_URL") else {
       return;
     };
-    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
+    let _guard = EMBEDDING_TEST_LOCK.lock().await;
     let pool = PgPool::connect(&database_url).await.unwrap();
     let suffix = Uuid::new_v4().simple().to_string();
     let workspace_id = format!("blob-cleanup-ws-{suffix}");
@@ -682,7 +690,7 @@ mod tests {
   #[tokio::test]
   #[ignore = "requires DATABASE_URL and a migrated PostgreSQL database"]
   async fn blob_cleanup_projection_reprojects_reference_removal_before_deletion() -> AnyResult<()> {
-    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
+    let _guard = EMBEDDING_TEST_LOCK.lock().await;
     let fixture = blob_cleanup_fixture(true).await?;
     let _object_root = &fixture.object_root;
     fixture
@@ -758,7 +766,7 @@ mod tests {
   #[tokio::test]
   #[ignore = "requires DATABASE_URL and a migrated PostgreSQL database"]
   async fn blob_cleanup_projection_outdated_pending_and_failed_projections_fail_closed() -> AnyResult<()> {
-    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
+    let _guard = EMBEDDING_TEST_LOCK.lock().await;
     for status in ["fresh", "pending", "failed"] {
       let fixture = blob_cleanup_fixture(false).await?;
       let _object_root = &fixture.object_root;

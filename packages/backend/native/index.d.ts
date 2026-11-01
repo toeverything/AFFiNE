@@ -22,6 +22,7 @@ export declare class BackendRuntime {
   deleteByokProfile(workspaceId: string, profileId: string): Promise<boolean>
   reorderByokProfiles(input: ReorderByokProfilesInput): Promise<Array<ByokProfileOutput>>
   createByokLocalLease(input: CreateByokLocalLeaseInput): Promise<ByokLocalLeaseOutput>
+  saveAppConfig(actor: string | undefined | null, commands: Array<AppConfigCommand>): Promise<Array<string>>
   getUserQuotaStateV1(userId: string): Promise<RuntimeUserQuotaState>
   getWorkspaceQuotaStateV1(workspaceId: string): Promise<RuntimeWorkspaceQuotaState>
   getSyncPermissionGenerationV1(workspaceId: string): Promise<number>
@@ -29,6 +30,9 @@ export declare class BackendRuntime {
   runMigrations(): Promise<void>
   searchAuthorized(actorUserId: string, workspaceId: string, request: RuntimeSearchRequest): Promise<SearchOperationOutput>
   aggregateAuthorized(actorUserId: string, workspaceId: string, request: RuntimeAggregateRequest): Promise<SearchOperationOutput>
+  searchEnabled(): boolean
+  copilotEnabled(): boolean
+  nodeCryptoPrivateKey(): string
   reconcileSearchProjection(limit?: number | undefined | null): Promise<number>
   authorizePermissionV1(input: any): Promise<any>
   executeDomainCommandV1(input: any): Promise<any>
@@ -79,11 +83,12 @@ export declare class BackendRuntime {
   cleanupExpiredRuntimeGates(limit: number): Promise<number>
   cleanupExpiredUserSessions(limit: number): Promise<number>
   cleanupExpiredSnapshotHistories(limit: number): Promise<number>
-  configureObjectStorage(configJson: string): void
   start(): Promise<void>
   stop(): Promise<void>
-  reloadConfig(privateKey?: string | undefined | null, objectStorageConfig?: string | undefined | null, inlineConfig?: string | undefined | null): Promise<void>
+  reloadConfig(): Promise<void>
   health(): Promise<BackendRuntimeHealth>
+  paymentEnabled(): boolean
+  stripeEnabled(): boolean
   executePaymentCommandV1(input: any): Promise<any>
   createPaymentCustomerPortalV1(actorUserId: string): Promise<string>
   createLicenseCustomerPortalV1(licenseKey: string, validateKey?: string | undefined | null): Promise<string>
@@ -110,7 +115,7 @@ export declare class BackendRuntime {
   revokeWorkspaceInviteLink(workspaceId: string): Promise<boolean>
   cleanupExpiredRuntimeStates(limit: number): Promise<number>
   cleanupExpiredStorageReservationsV1(limit: number): Promise<number>
-  listManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string): Promise<Array<RuntimeManagedBlob>>
+  listManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string, limit: number, after?: string | undefined | null): Promise<Array<RuntimeManagedBlob>>
   manageWorkspaceBlobV1(input: RuntimeBlobManagementInput): Promise<boolean>
   releaseManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string, limit: number): Promise<number>
   finalizeStorageReservationV1(input: RuntimeStorageReservationMutation): Promise<boolean>
@@ -119,11 +124,26 @@ export declare class BackendRuntime {
   activateWorkspaceSeatV1(input: RuntimeSeatActivationInput): Promise<boolean>
   reserveWorkspaceSeatsV1(input: RuntimeSeatReservationInput): Promise<RuntimeSeatReservationDecision>
   reserveStorageQuotaV1(input: RuntimeStorageReservationInput): Promise<RuntimeStorageReservationDecision>
-  constructor(privateKey?: string | undefined | null, configPaths?: Array<string> | undefined | null, permissionTelemetry?: (((err: Error | null, arg: string) => void)) | undefined | null, inlineConfig?: string | undefined | null, invalidationEvents?: (((err: Error | null, arg: string) => void)) | undefined | null)
+  constructor(serverConfig: ServerConfigHandle, privateKey?: string | undefined | null, permissionTelemetry?: (((err: Error | null, arg: string) => void)) | undefined | null, invalidationEvents?: (((err: Error | null, arg: string) => void)) | undefined | null)
 }
 
 export declare class CopilotStreamHandle {
   abort(): void
+}
+
+export declare class ServerConfigHandle {
+  constructor(path: string, legacyDeploymentType?: string | undefined | null)
+  get path(): string
+  get deploymentType(): string
+  nodeOwnedJson(): string
+  publicNativeBaselineJson(): string
+  hasBaselineConfigKey(key: string): boolean
+  baselineConfigKeyConfigured(key: string): boolean
+  nativeAppConfigKeys(): Array<string>
+  nativeSecretAppConfigKeys(): Array<string>
+  staticAppConfigKeys(): Array<string>
+  redisUrl(): string | null
+  redisNodeOptionsJson(): string
 }
 
 export declare class StorageRuntime {
@@ -135,13 +155,17 @@ export declare class StorageRuntime {
   executeDocumentCleanupCandidates(workspaceId: string | undefined | null, gracePeriodDays: number, limit: number): Promise<RuntimeDocumentCleanupExecuteResult>
   deleteWorkspaceObjects(workspaceId: string, userIds?: Array<string> | undefined | null): Promise<number>
   reconcileWorkspaceStorage(limit: number): Promise<RuntimeWorkspaceStorageReconcileResult>
-  constructor()
+  constructor(serverConfig: ServerConfigHandle)
   start(): Promise<void>
-  configure(configJson: string): void
+  reloadConfig(): Promise<void>
   stop(): Promise<void>
   runMigrations(): Promise<void>
   health(): Promise<StorageRuntimeHealth>
   providerCapabilities(scope: string): Promise<StorageProviderCapabilities>
+  isLocalStorage(scope: string): boolean
+  uploadUrlConfig(scope: string): StorageUploadUrlConfig | null
+  signUploadToken(scope: string, path: string, fields: Array<any>, expiresAt: number): string | null
+  verifyUploadToken(scope: string, path: string, fields: Array<any>, expiresAt: number, token: string): boolean
   putObject(scope: string, key: string, body: Buffer, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimeObjectMetadata>
   headObject(scope: string, key: string): Promise<RuntimeObjectMetadata | null>
   getObject(scope: string, key: string): Promise<RuntimeObjectGetResult | null>
@@ -187,12 +211,22 @@ export interface AggregateOptions {
   pagination: SearchPagination
 }
 
+export interface AppConfigCommand {
+  key: string
+  owner: string
+  operation: string
+  valueJson?: string
+}
+
 export interface AppConfigDescriptor {
   key: string
   description: string
   defaultValue: any
   schema: any
   internal: boolean
+  envName?: string
+  envType?: string
+  link?: string
 }
 
 export declare function appConfigDescriptors(module: string): Array<AppConfigDescriptor>
@@ -578,6 +612,8 @@ export interface DocumentEmbeddingProjectionInput {
   docId: string
   revision: string
   sourceHash: string
+  skipReason?: string
+  rootRevision?: string
   units: Array<DocumentEmbeddingUnitInput>
   deleted?: boolean
 }
@@ -955,6 +991,11 @@ export interface NativeWorkspaceDocContent {
   avatarKey: string
 }
 
+export interface NativeWorkspaceRootProjection {
+  complete: boolean
+  docIds: Array<string>
+}
+
 export interface ParsedDoc {
   name: string
   chunks: Array<Chunk>
@@ -996,6 +1037,8 @@ export declare function processImage(input: Buffer, maxEdge: number, keepExif: b
 export declare function projectDocCanvasFromBinary(docBin: Buffer, docId: string, revision: string): NativeCanvasProjection
 
 export declare function projectDocSearchFromBinary(docBin: Buffer, docId: string, revision: string): NativeDocumentSearchProjection
+
+export declare function projectWorkspaceRootFromBinary(docBin: Buffer): NativeWorkspaceRootProjection
 
 export type PromptBuiltin =  'Date'|
 'Language'|
@@ -1746,6 +1789,8 @@ export interface SearchPagination {
 export type SearchTable =  'doc'|
 'block';
 
+export declare function splitTranscriptAudio(data: Buffer): Promise<Array<TranscriptAudioSlice>>
+
 export interface StorageProviderCapabilities {
   put: boolean
   get: boolean
@@ -1768,6 +1813,11 @@ export interface StorageRuntimeHealth {
   bucket?: string
 }
 
+export interface StorageUploadUrlConfig {
+  proxyUpload: boolean
+  urlPrefix?: string
+}
+
 export interface SyncEmbeddingStateInput {
   workspaceId: string
   enabled: boolean
@@ -1781,6 +1831,12 @@ export interface ToolContract {
   name: string
   description?: string
   parameters: any
+}
+
+export interface TranscriptAudioSlice {
+  data: Buffer
+  startSec: number
+  durationSec: number
 }
 
 /**

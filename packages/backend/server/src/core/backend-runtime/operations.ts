@@ -1,3 +1,4 @@
+import { AccessDenied, BadRequest, NotFound } from '../../base/error';
 import { wrapCallMetric } from '../../base/metrics';
 import type {
   RuntimeUserQuotaState,
@@ -40,6 +41,22 @@ export function backendRuntimeErrorCode(error: unknown) {
 
 export class BackendRuntimeCoreOperations {
   constructor(protected readonly runtime: RuntimeInstance) {}
+
+  stripeEnabled() {
+    return this.runtime.stripeEnabled();
+  }
+
+  paymentEnabled() {
+    return this.runtime.paymentEnabled();
+  }
+
+  copilotEnabled() {
+    return this.runtime.copilotEnabled();
+  }
+
+  nodeCryptoPrivateKey() {
+    return this.runtime.nodeCryptoPrivateKey();
+  }
 
   executePaymentCommandV1<T = unknown>(input: Record<string, unknown>) {
     return this.measured('executePaymentCommandV1', runtime =>
@@ -373,11 +390,18 @@ export class BackendRuntimeCoreOperations {
     );
   }
 
-  async listManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string) {
+  async listManagedWorkspaceBlobsV1(
+    actorUserId: string,
+    workspaceId: string,
+    first: number,
+    after?: string
+  ) {
     return await this.measured('listManagedWorkspaceBlobsV1', rt =>
       this.quotaRuntime(rt).listManagedWorkspaceBlobsV1(
         actorUserId,
-        workspaceId
+        workspaceId,
+        first,
+        after
       )
     );
   }
@@ -569,6 +593,15 @@ export class BackendRuntimeCoreOperations {
       const message = error instanceof Error ? error.message : String(error);
       const match = runtimeErrorPattern.exec(message);
       if (!match) throw error;
+      switch (match[1]) {
+        case 'blob_source_access_denied':
+          throw new AccessDenied('Blob source access denied');
+        case 'blob_source_not_found':
+          throw new NotFound('Blob source not found');
+        case 'blob_source_invalid':
+        case 'blob_source_type_invalid':
+          throw new BadRequest('Invalid blob source');
+      }
       throw new BackendRuntimeError(
         match[1],
         message.replace(runtimeErrorPattern, ''),

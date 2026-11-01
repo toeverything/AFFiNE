@@ -7,6 +7,7 @@ import { CryptoHelper } from '../crypto';
 
 const test = ava as TestFn<{
   crypto: CryptoHelper;
+  setPrivateKey(key: string): void;
 }>;
 
 function generateTestPrivateKey(): string {
@@ -25,11 +26,13 @@ const privateKey = generateTestPrivateKey();
 const privateKey2 = generateTestPrivateKey();
 
 test.beforeEach(async t => {
+  let activeKey = privateKey;
   t.context.crypto = new CryptoHelper({
-    crypto: {
-      privateKey,
-    },
-  } as any);
+    nodeCryptoPrivateKey: () => activeKey,
+  });
+  t.context.setPrivateKey = key => {
+    activeKey = key;
+  };
   t.context.crypto.onConfigInit();
 });
 
@@ -46,13 +49,21 @@ test('should verify signatures across key rotation', t => {
   const signatureV1 = t.context.crypto.sign(data);
   t.true(t.context.crypto.verify(signatureV1));
 
-  (t.context.crypto as any).config.crypto.privateKey = privateKey2;
-  t.context.crypto.onConfigChanged({
-    updates: { crypto: { privateKey: privateKey2 } },
-  } as any);
+  t.context.setPrivateKey(privateKey2);
+  t.context.crypto.onConfigApplied({
+    updates: { crypto: { privateKey: undefined } },
+  });
 
   const signatureV2 = t.context.crypto.sign(data);
   t.true(t.context.crypto.verify(signatureV1));
+  t.true(t.context.crypto.verify(signatureV2));
+
+  const previousKeyHash = t.context.crypto.keyPair.sha256.privateKey;
+  t.context.setPrivateKey('');
+  t.context.crypto.onConfigApplied({
+    updates: { crypto: { privateKey: undefined } },
+  });
+  t.notDeepEqual(t.context.crypto.keyPair.sha256.privateKey, previousKeyHash);
   t.true(t.context.crypto.verify(signatureV2));
 });
 

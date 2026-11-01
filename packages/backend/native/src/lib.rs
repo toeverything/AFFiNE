@@ -1,5 +1,6 @@
 #![deny(clippy::all)]
 
+mod audio_slice;
 mod auth_session;
 pub mod content_policy;
 pub mod doc;

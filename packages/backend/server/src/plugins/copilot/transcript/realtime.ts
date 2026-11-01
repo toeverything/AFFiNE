@@ -1,8 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
-import { Config } from '../../../base/config';
 import { CopilotTranscriptionJobNotFound } from '../../../base/error/errors.gen';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import {
   RealtimeRegistry,
   realtimeTranscriptTaskRoom,
@@ -20,7 +20,7 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
     private readonly transcript: CopilotTranscriptionReader,
     private readonly retry: CopilotTranscriptionRetryService,
     private readonly registry: RealtimeRegistry,
-    private readonly config: Config
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   onModuleInit() {
@@ -114,7 +114,7 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
     resource: { taskId?: string; blobId?: string },
     operation: (personal: boolean) => Promise<T>
   ) {
-    assertCopilotEnabled(this.config);
+    assertCopilotEnabled(this.runtime.copilotEnabled());
     const mode = await this.access.transcriptResource(
       userId,
       workspaceId,

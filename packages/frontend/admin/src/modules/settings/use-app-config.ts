@@ -7,7 +7,7 @@ import {
   type UpdateAppConfigInput,
   updateAppConfigMutation,
 } from '@affine/graphql';
-import { cloneDeep, get, merge, set } from 'lodash-es';
+import { cloneDeep, get, set, unset } from 'lodash-es';
 import { useCallback, useEffect, useState } from 'react';
 
 import type { AppConfig } from './config';
@@ -15,37 +15,27 @@ import { isEqual } from './utils';
 
 export { type UpdateAppConfigInput };
 
-export type AppConfigUpdates = Record<string, { from: any; to: any }>;
-type SaveResponse =
-  | { updateAppConfig?: Partial<AppConfig> }
-  | Partial<AppConfig>;
-
+export type AppConfigUpdates = Record<
+  string,
+  { from: any; to: any; clear?: boolean }
+>;
 const getUpdateInputs = (
-  entries: Array<[string, { from: any; to: any }]>
+  entries: Array<[string, { from: any; to: any; clear?: boolean }]>
 ): UpdateAppConfigInput[] => {
   return entries.map(([key, value]) => {
     const splitIndex = key.indexOf('.');
     const module = key.slice(0, splitIndex);
     const field = key.slice(splitIndex + 1);
 
-    return {
-      module,
-      key: field,
-      value: value.to,
-    };
+    return value.clear
+      ? { module, key: field, clear: true }
+      : { module, key: field, value: value.to };
   });
-};
-
-const getSavedAppConfig = (response: SaveResponse): Partial<AppConfig> => {
-  if ('updateAppConfig' in response) {
-    return (response.updateAppConfig as Partial<AppConfig>) ?? {};
-  }
-  return response;
 };
 
 export const useAppConfig = () => {
   const {
-    data: { appConfig },
+    data: { appConfig, appConfigMetadata },
     mutate,
   } = useQuery({
     query: appConfigQuery,
@@ -110,19 +100,13 @@ export const useAppConfig = () => {
     }
 
     try {
-      const response = (await saveUpdates({
+      await saveUpdates({
         updates: getUpdateInputs(allEntries),
-      })) as SaveResponse;
-      const savedAppConfig = getSavedAppConfig(response);
-
-      await mutate(prev => {
-        return {
-          appConfig: merge({}, prev?.appConfig ?? {}, savedAppConfig),
-        };
       });
+      const refreshed = await mutate();
 
       setUpdates({});
-      setPatchedAppConfig(prev => merge({}, prev, savedAppConfig));
+      setPatchedAppConfig(cloneDeep(refreshed?.appConfig ?? appConfig));
       notify.success({
         title: 'Saved',
         message: 'Settings have been saved successfully.',
@@ -135,7 +119,7 @@ export const useAppConfig = () => {
       });
       console.error(e);
     }
-  }, [updates, mutate, saveUpdates]);
+  }, [updates, mutate, saveUpdates, appConfig]);
 
   const saveGroup = useCallback(
     async (module: string) => {
@@ -150,19 +134,21 @@ export const useAppConfig = () => {
       }));
 
       try {
-        const response = (await saveUpdates({
+        await saveUpdates({
           updates: getUpdateInputs(moduleEntries),
-        })) as SaveResponse;
-        const savedAppConfig = getSavedAppConfig(response);
-
-        await mutate(prev => {
-          return {
-            appConfig: merge({}, prev?.appConfig ?? {}, savedAppConfig),
-          };
         });
+        const refreshed = await mutate();
 
         clearModuleUpdates(module);
-        setPatchedAppConfig(prev => merge({}, prev, savedAppConfig));
+        setPatchedAppConfig(() => {
+          const next = cloneDeep(refreshed?.appConfig ?? appConfig);
+          for (const [key, value] of Object.entries(updates)) {
+            if (!key.startsWith(`${module}.`) && !value.clear) {
+              set(next, key, value.to);
+            }
+          }
+          return next;
+        });
         bumpGroupVersion(module);
         notify.success({
           title: 'Saved',
@@ -188,6 +174,8 @@ export const useAppConfig = () => {
       getEntriesByModule,
       mutate,
       saveUpdates,
+      appConfig,
+      updates,
     ]
   );
 
@@ -234,6 +222,23 @@ export const useAppConfig = () => {
     [appConfig]
   );
 
+  const clear = useCallback(
+    (path: string) => {
+      const [module, field] = path.split('/');
+      const key = `${module}.${field}`;
+      setUpdates(prev => ({
+        ...prev,
+        [key]: { from: get(appConfig, key), to: undefined, clear: true },
+      }));
+      setPatchedAppConfig(prev => {
+        const next = cloneDeep(prev);
+        unset(next, key);
+        return next;
+      });
+    },
+    [appConfig]
+  );
+
   const resetGroup = useCallback(
     (module: string) => {
       clearModuleUpdates(module);
@@ -265,8 +270,10 @@ export const useAppConfig = () => {
 
   return {
     appConfig: appConfig as AppConfig,
+    appConfigMetadata: appConfigMetadata as Record<string, unknown>,
     patchedAppConfig,
     update,
+    clear,
     save,
     saveGroup,
     resetGroup,

@@ -1,7 +1,6 @@
 import ava from 'ava';
 import Sinon from 'sinon';
 
-import type { Config } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { WorkspaceService } from '../../core/workspaces';
 import type { Models } from '../../models';
@@ -19,16 +18,14 @@ ava('payment HTTP and event adapters only forward protocol data', async t => {
   const execute = runtime.executePaymentCommandV1 as Sinon.SinonStub;
   const capture = runtime.capturePaymentWebhookV1 as Sinon.SinonStub;
   const workspace = Sinon.createStubInstance(WorkspaceService);
-  const config = {
-    payment: { enabled: true, stripe: { apiKey: 'sk_test_protocol' } },
-  } as Config;
+  runtime.stripeEnabled.returns(true);
   const models = {
     workspaceUser: {
       chargedCount: Sinon.stub().resolves(3),
       getOwner: Sinon.stub().resolves({ id: 'owner-1' }),
     },
   } as unknown as Models;
-  const events = new PaymentEventHandlers(workspace, runtime, config, models);
+  const events = new PaymentEventHandlers(workspace, runtime, models);
 
   execute.resolves({ status: 'pending' });
   await events.prepareSubscriptionCancellation({ id: 'user-1' });
@@ -44,6 +41,9 @@ ava('payment HTTP and event adapters only forward protocol data', async t => {
     plan: 'team',
     quantity: 3,
   });
+  runtime.stripeEnabled.returns(false);
+  await events.prepareSubscriptionCancellation({ id: 'user-2' });
+  t.is(execute.callCount, 2);
 
   workspace.isTeamWorkspace.resolves(false);
   workspace.sendTeamWorkspaceUpgradedEmail.resolves();

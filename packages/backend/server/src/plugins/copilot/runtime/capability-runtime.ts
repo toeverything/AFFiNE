@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 
-import { Config } from '../../../base/config';
 import { CopilotPromptInvalid } from '../../../base/error/errors.gen';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import {
@@ -81,7 +80,6 @@ export class CapabilityRuntime {
     private readonly conversations: ConversationPolicy,
     private readonly tools: ToolRuntime,
     private readonly events: CopilotRuntimeEventConsumer,
-    private readonly config: Config,
     private readonly attachments: AttachmentAdmissionHost
   ) {}
 
@@ -89,7 +87,7 @@ export class CapabilityRuntime {
     messages: PromptMessage[],
     options: RuntimeOptions
   ) {
-    assertCopilotEnabled(this.config);
+    assertCopilotEnabled(this.backend.copilotEnabled());
     return await this.attachments.preparePromptMessages(messages, {
       userId: options.user ?? '',
       workspaceId: options.workspace ?? '',
@@ -99,7 +97,7 @@ export class CapabilityRuntime {
   }
 
   private async access(options: RuntimeOptions) {
-    assertCopilotEnabled(this.config);
+    assertCopilotEnabled(this.backend.copilotEnabled());
     const workspaceId = options.workspace;
     const featureKind = (options.featureKind ?? 'chat') as ByokFeatureKind;
     const coverage = getByokSourceCoverage(featureKind);
@@ -372,7 +370,7 @@ export class CapabilityRuntime {
   }
 
   async embeddingConfigured(_modelId: string) {
-    return this.config.copilot.enabled;
+    return this.backend.copilotEnabled();
   }
 
   async embed(
@@ -394,7 +392,7 @@ export class CapabilityRuntime {
   }
 
   async rerankConfigured(_modelId: string) {
-    return this.config.copilot.enabled;
+    return this.backend.copilotEnabled();
   }
 
   async rerank(

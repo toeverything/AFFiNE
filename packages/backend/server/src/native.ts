@@ -68,6 +68,7 @@ import serverNativeModule, {
 } from '@affine/server-native';
 
 export type {
+  AppConfigCommand,
   BuiltInManagedTarget,
   BuiltInManagedTargetTier,
   BuiltInRouteOptions,
@@ -300,18 +301,23 @@ export function getTokenEncoder(model?: string | null): Tokenizer | null {
   }
 }
 
+export const splitTranscriptAudio = serverNativeModule.splitTranscriptAudio;
 export const getMime = serverNativeModule.getMime;
 export const inspectImageForProxy = serverNativeModule.inspectImageForProxy;
 export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
 export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
 export const assertSafeUrl = serverNativeModule.assertSafeUrl;
 export const scanContentPolicyV1 = serverNativeModule.scanContentPolicyV1;
-export const safeFetch = serverNativeModule.safeFetch;
+export const safeFetch: typeof serverNativeModule.safeFetch = (...args) =>
+  serverNativeModule.safeFetch(...args);
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;
 export const projectDocCanvasFromBinary =
   serverNativeModule.projectDocCanvasFromBinary;
+export const projectWorkspaceRootFromBinary =
+  serverNativeModule.projectWorkspaceRootFromBinary;
+
 export const projectDocSearchFromBinary =
   serverNativeModule.projectDocSearchFromBinary;
 export const parseYDocToMarkdown = serverNativeModule.parseDocToMarkdown;
@@ -321,6 +327,8 @@ export const readAllDocIdsFromRootDoc =
   serverNativeModule.readAllDocIdsFromRootDoc;
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const BackendRuntime = serverNativeModule.BackendRuntime;
+export const ServerConfigHandle = serverNativeModule.ServerConfigHandle;
+export type ServerConfigHandle = InstanceType<typeof ServerConfigHandle>;
 export const StorageRuntime = serverNativeModule.StorageRuntime;
 
 export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';

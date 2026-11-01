@@ -1,4 +1,6 @@
-import { defineModuleConfig } from '../config';
+import serverNativeModule from '@affine/server-native';
+
+import { defineNativeModuleConfig } from '../config';
 
 declare global {
   interface AppConfigSchema {
@@ -8,11 +10,8 @@ declare global {
   }
 }
 
-defineModuleConfig('crypto', {
-  privateKey: {
-    desc: 'The private key for used by the crypto module to create signed tokens or encrypt data.',
-    env: 'AFFINE_PRIVATE_KEY',
-    default: '',
-    schema: { type: 'string' },
-  },
-});
+defineNativeModuleConfig(
+  'crypto',
+  serverNativeModule.appConfigDescriptors('crypto'),
+  serverNativeModule.validateAppConfigValue
+);

@@ -1,13 +1,21 @@
 import { DynamicModule, Global, Module, Provider } from '@nestjs/common';
 
+import { ServerConfigHandle } from '../../native';
 import { Config } from './config';
 import { ConfigFactory, OVERRIDE_CONFIG_TOKEN } from './factory';
 import { ConfigProvider } from './provider';
 
 @Global()
 @Module({
-  providers: [ConfigProvider, ConfigFactory],
-  exports: [ConfigProvider, ConfigFactory],
+  providers: [
+    {
+      provide: ServerConfigHandle,
+      useFactory: () => env.serverConfigHandle,
+    },
+    ConfigProvider,
+    ConfigFactory,
+  ],
+  exports: [ServerConfigHandle, ConfigProvider, ConfigFactory],
 })
 export class ConfigModule {
   static override(overrides: DeepPartial<AppConfigSchema> = {}): DynamicModule {

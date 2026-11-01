@@ -2,7 +2,9 @@ use super::{
   license::{RuntimeLicenseInstallInput, RuntimeLicenseRefreshInput},
   *,
 };
-use crate::runtime::{backend_runtime::tests::runtime_from_database_url, migrations::DATABASE_TEST_LOCK};
+use crate::runtime::{
+  BackendRuntimeConfig, backend_runtime::tests::runtime_from_database_url, migrations::DATABASE_TEST_LOCK,
+};
 
 pub(super) async fn fixture(runtime: &BackendRuntime) -> (String, String) {
   let owner = uuid::Uuid::new_v4().to_string();
@@ -171,9 +173,10 @@ async fn license_upgrade_recovers_installed_files_and_online_renewals_before_wor
     }
   }
   runtime.stop().await.unwrap();
-  std::sync::Arc::get_mut(&mut runtime.config.write().unwrap())
-    .unwrap()
-    .deployment = Deployment::SelfHosted;
+  let directory = tempfile::tempdir().unwrap();
+  let config_path = directory.path().join("config.json");
+  std::fs::write(&config_path, r#"{"deployment":{"type":"selfhosted"}}"#).unwrap();
+  runtime.server_config = std::sync::Arc::new(crate::runtime::config::ServerConfig::open(&config_path, None).unwrap());
   runtime.start().await.unwrap();
   assert!(runtime.license_health_worker.lock().await.is_none());
   assert_eq!(remote.requests().len(), 1);
@@ -455,10 +458,9 @@ async fn license_install_revoke_rollback_and_stale_fences() {
     .unwrap();
   assert!(
     !runtime
-      .get_byok_entitlement_v1(workspace.clone(), None)
+      .has_workspace_commercial_entitlement_v1(workspace.clone())
       .await
       .unwrap()
-      .server
   );
   let status: String = sqlx::query_scalar("SELECT status FROM entitlements WHERE subject_id=$1")
     .bind(&key)
@@ -774,11 +776,30 @@ async fn authoritative_byok_and_mixed_owner_storage_use_current_facts() {
   assert!(access.local && access.server);
   assert!(
     !runtime
-      .get_byok_entitlement_v1("missing".into(), Some(owner))
+      .get_byok_entitlement_v1("missing".into(), Some(owner.clone()))
       .await
       .unwrap()
       .local
   );
+  let cloud_config = runtime.config().unwrap();
+  *runtime.config.write().unwrap() = std::sync::Arc::new(BackendRuntimeConfig {
+    database_url: cloud_config.database_url.clone(),
+    auth: cloud_config.auth.clone(),
+    invite_quota: cloud_config.invite_quota.clone(),
+    private_key: std::sync::Arc::clone(&cloud_config.private_key),
+    deployment: Deployment::SelfHosted,
+    copilot: cloud_config.copilot.clone(),
+    search: cloud_config.search.clone(),
+    redis: cloud_config.redis.clone(),
+    payment: cloud_config.payment.clone(),
+  });
+  let access = runtime.get_byok_entitlement_v1(workspace.clone(), None).await.unwrap();
+  assert!(access.server && access.local);
+  let access = runtime
+    .get_byok_entitlement_v1(workspace.clone(), Some(owner))
+    .await
+    .unwrap();
+  assert!(access.server && access.local);
   sqlx::query("DELETE FROM workspace_members WHERE workspace_id=$1 AND role='owner'")
     .bind(&workspace)
     .execute(&pool)

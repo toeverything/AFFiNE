@@ -12,6 +12,8 @@ pub(super) struct StripeInvoice {
   pub status: Option<String>,
   pub currency: String,
   pub total: i64,
+  #[serde(default)]
+  pub total_discount_amounts: Vec<StripeInvoiceDiscount>,
   pub billing_reason: Option<String>,
   pub hosted_invoice_url: Option<String>,
   pub created: i64,
@@ -22,6 +24,12 @@ pub(super) struct StripeInvoice {
   pub last_finalization_error: Option<StripeErrorDetail>,
   #[serde(default)]
   pub status_transitions: StripeInvoiceStatusTransitions,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(super) struct StripeInvoiceDiscount {
+  pub amount: i64,
+  pub discount: serde_json::Value,
 }
 
 impl StripeInvoice {
@@ -93,6 +101,8 @@ pub(super) struct StripeDispute {
   pub status: String,
   pub created: i64,
   #[serde(default)]
+  pub payment_method_details: serde_json::Value,
+  #[serde(default)]
   pub metadata: serde_json::Map<String, serde_json::Value>,
 }
 
@@ -101,7 +111,11 @@ impl StripeClient {
     self
       .get(
         &format!("v1/invoices/{}", encode_segment(id)),
-        &[("expand[]", "lines.data.price"), ("expand[]", "subscription")],
+        &[
+          ("expand[]", "lines.data.price"),
+          ("expand[]", "subscription"),
+          ("expand[]", "total_discount_amounts.discount"),
+        ],
       )
       .await
   }

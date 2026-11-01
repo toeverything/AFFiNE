@@ -136,7 +136,7 @@ async fn recover_stripe(runtime: &PaymentRuntime, receipt: &Receipt) -> RuntimeR
     .and_then(Value::as_object)
     .ok_or_else(|| RuntimeError::invalid_input("Stripe receipt object is invalid"))?;
   let object_kind = object.get("object").and_then(Value::as_str).unwrap_or_default();
-  let observed_at = receipt_observed_at(receipt)?;
+  let observed_at = chrono::Utc::now();
   match object_kind {
     "invoice" => {
       let invoice_id = object
@@ -283,20 +283,6 @@ async fn recover_stripe(runtime: &PaymentRuntime, receipt: &Receipt) -> RuntimeR
   Err(RuntimeError::invalid_state("unsupported Stripe payment receipt"))
 }
 
-fn receipt_observed_at(receipt: &Receipt) -> RuntimeResult<chrono::DateTime<chrono::Utc>> {
-  use chrono::TimeZone;
-
-  let created = receipt
-    .payload
-    .get("created")
-    .and_then(Value::as_i64)
-    .ok_or_else(|| RuntimeError::invalid_input("Stripe receipt has no creation time"))?;
-  chrono::Utc
-    .timestamp_opt(created, 0)
-    .single()
-    .ok_or_else(|| RuntimeError::invalid_input("Stripe receipt has invalid creation time"))
-}
-
 async fn recover_revenuecat(runtime: &PaymentRuntime, receipt: &Receipt) -> RuntimeResult<PaymentApplyResult> {
   let client = runtime
     .revenuecat
@@ -427,17 +413,48 @@ fn empty_receipt_snapshot(namespace: affine_core::payment::ProviderNamespace, ev
 pub(super) async fn fail_receipt(runtime: &PaymentRuntime, event_id: &str, namespace: &str, error: &RuntimeError) {
   let _ = sqlx::query(
     r#"UPDATE payment_events
-       SET processing_status=CASE WHEN processing_attempts>=5 THEN 'blocked' ELSE 'failed' END,
+       SET processing_status=CASE WHEN processing_attempts>=5 AND NOT $4 THEN 'blocked' ELSE 'failed' END,
            last_error=$3,
-           next_attempt_at=CASE WHEN processing_attempts>=5 THEN NULL ELSE clock_timestamp()+INTERVAL '5 seconds' END,
+           next_attempt_at=CASE WHEN processing_attempts>=5 AND NOT $4 THEN NULL
+             ELSE clock_timestamp()+make_interval(secs => CASE WHEN $4
+               THEN LEAST(300,5*power(2,LEAST(GREATEST(processing_attempts-1,0),6)))
+               ELSE 5 END) END,
            updated_at=clock_timestamp()
        WHERE provider_namespace=$1 AND external_event_id=$2 AND processing_status='processing'"#,
   )
   .bind(namespace)
   .bind(event_id)
   .bind(error.to_string())
+  .bind(retryable_database_error(error))
   .execute(&runtime.pool)
   .await;
+}
+
+fn retryable_database_error(error: &RuntimeError) -> bool {
+  let RuntimeError::Database { source, .. } = error else {
+    return false;
+  };
+  match source {
+    sqlx::Error::Io(_) | sqlx::Error::PoolTimedOut | sqlx::Error::WorkerCrashed => true,
+    sqlx::Error::Database(error) => error.code().is_some_and(|code| {
+      matches!(
+        code.as_ref(),
+        "08000"
+          | "08001"
+          | "08003"
+          | "08006"
+          | "08007"
+          | "40001"
+          | "40P01"
+          | "55P03"
+          | "57014"
+          | "57P01"
+          | "57P02"
+          | "57P03"
+      )
+    }),
+    _ => false,
+  }
 }
 
 async fn publish_changes(invalidation: &InvalidationRuntime, changes: PaymentApplyResult) {

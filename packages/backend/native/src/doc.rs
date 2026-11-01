@@ -287,6 +287,24 @@ pub fn project_doc_canvas_from_binary(
   Ok(projection.into())
 }
 
+#[napi(object)]
+pub struct NativeWorkspaceRootProjection {
+  pub complete: bool,
+  pub doc_ids: Vec<String>,
+}
+
+#[napi]
+pub fn project_workspace_root_from_binary(doc_bin: Buffer) -> Result<NativeWorkspaceRootProjection> {
+  let projection = map_napi_err(
+    doc_loader::project_workspace_root(doc_bin.into(), true),
+    Status::GenericFailure,
+  )?;
+  Ok(NativeWorkspaceRootProjection {
+    complete: projection.complete,
+    doc_ids: projection.doc_ids,
+  })
+}
+
 #[napi]
 pub fn project_doc_search_from_binary(
   doc_bin: Buffer,

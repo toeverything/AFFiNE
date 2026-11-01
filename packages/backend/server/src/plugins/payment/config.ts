@@ -1,4 +1,6 @@
-import { defineModuleConfig } from '../../base';
+import serverNativeModule from '@affine/server-native';
+
+import { defineNativeModuleConfig } from '../../base';
 
 export interface PaymentRuntimeConfig {
   showLifetimePrice: boolean;
@@ -37,35 +39,14 @@ declare global {
   }
 }
 
-defineModuleConfig('payment', {
-  enabled: {
-    desc: 'Whether enable payment plugin',
-    default: false,
-  },
-  showLifetimePrice: {
-    desc: 'Whether enable lifetime price and allow user to pay for it.',
-    default: true,
-  },
-  stripe: {
-    desc: 'Stripe sdk options and credentials',
-    default: {
-      apiKey: '',
-      webhookKey: '',
-      accountId: '',
-      environment: 'test',
+defineNativeModuleConfig(
+  'payment',
+  serverNativeModule.appConfigDescriptors('payment'),
+  serverNativeModule.validateAppConfigValue,
+  {
+    showLifetimePrice: {
+      desc: 'Whether enable lifetime price and allow user to pay for it.',
+      default: true,
     },
-    link: 'https://docs.stripe.com/api',
-  },
-  revenuecat: {
-    desc: 'RevenueCat integration configs',
-    default: {
-      enabled: false,
-      apiKey: '',
-      projectId: '',
-      webhookAuth: '',
-      environment: 'production',
-      productMap: {},
-    },
-    link: 'https://www.revenuecat.com/docs/',
-  },
-});
+  }
+);

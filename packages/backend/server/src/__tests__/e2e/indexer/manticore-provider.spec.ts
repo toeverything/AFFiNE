@@ -5,7 +5,7 @@ import {
   SearchTable,
 } from '@affine/graphql';
 
-import { Config } from '../../../base';
+import { ServerService } from '../../../core/config';
 import { DocRole } from '../../../models';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
@@ -16,9 +16,10 @@ import {
   reconcileSearchProjection,
 } from '../test';
 
+const indexer = (await app.get(ServerService).getEffectiveAdminConfig())
+  .indexer;
 const manticoreSearchEnabled =
-  app.get(Config).indexer.enabled &&
-  app.get(Config).indexer.provider.type === 'manticoresearch';
+  indexer?.enabled && indexer.provider?.type === 'manticoresearch';
 const manticoreSearchE2e = manticoreSearchEnabled ? e2e.serial : e2e.skip;
 
 async function indexDocument(

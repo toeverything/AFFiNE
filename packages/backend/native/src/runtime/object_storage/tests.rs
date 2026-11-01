@@ -1,7 +1,7 @@
 use reqwest::StatusCode;
 
 use super::{
-  backend::backends_from_config_json,
+  backend::{backends_from_config_json, backends_from_flat_overrides},
   config::ObjectStorageConfig,
   error::ObjectStorageError,
   types::{
@@ -114,6 +114,13 @@ fn resolves_storage_config_from_config_json_shape() {
   .unwrap();
   assert_eq!(configured.get("blob").unwrap().bucket(), "custom-blobs");
   assert_eq!(configured.get("copilot").unwrap().bucket(), "copilot");
+  assert!(
+    backends_from_flat_overrides([(
+      "storages.blob.storage",
+      serde_json::json!({"provider":"invalid","bucket":"blobs","config":{}})
+    )])
+    .is_err()
+  );
 
   let storage = StorageProviderConfig {
     provider: "cloudflare-r2".to_string(),
@@ -273,6 +280,29 @@ fn resolves_r2_proxy_upload_capability_from_config_json_shape() {
 
   assert!(config.use_presigned_url);
   assert!(config.proxy_upload);
+  let fields = [
+    serde_json::json!("ws"),
+    serde_json::json!("file"),
+    serde_json::json!("text/plain"),
+    serde_json::json!(7),
+  ];
+  let token = config
+    .proxy_upload_token("/api/storage/upload", &fields, 1_700_000_000)
+    .unwrap()
+    .unwrap();
+  // TODO(0.27.5): Remove this old Node token-format comparison after 0.27.4
+  // upload URLs expire.
+  assert_eq!(token, "NXaxFbKQjOOnqo5ggDsuK1jf8w5LlM7tLRWRoj_EmtY");
+  assert!(
+    config
+      .verify_proxy_upload_token("/api/storage/upload", &fields, 1_700_000_000, &token)
+      .unwrap()
+  );
+  assert!(
+    !config
+      .verify_proxy_upload_token("/api/storage/upload", &fields, 1_700_000_001, &token)
+      .unwrap()
+  );
   let request = config
     .custom_presign_get_at(&ObjectKey::new("workspace/blob.m4a").unwrap(), 1_700_000_000)
     .unwrap()

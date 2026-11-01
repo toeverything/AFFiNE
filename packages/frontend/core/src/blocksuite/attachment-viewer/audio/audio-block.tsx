@@ -201,11 +201,17 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     }
 
     if (!loading && error) {
-      return <div className={styles.error}>{error.message}</div>;
+      return (
+        <Tooltip content={error.message}>
+          <div className={styles.error} tabIndex={0}>
+            {t['com.affine.audio.transcription-failed']()}
+          </div>
+        </Tooltip>
+      );
     }
 
     return <>{bytes(block.props.props.size)}</>;
-  }, [loading, loadingError, error, reload, block.props.props.size]);
+  }, [loading, loadingError, error, reload, block.props.props.size, t]);
 
   return (
     <AudioPlayer

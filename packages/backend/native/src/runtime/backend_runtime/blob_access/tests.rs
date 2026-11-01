@@ -380,8 +380,15 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
   let publisher = InvalidationRuntime::start(&config, false, Arc::new(NoopInvalidationTarget)).await;
   tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
-  let redis_update =
-    affine_doc_loader::update_doc(&initial_blob, "![redis](blob://redis-key)", &fixture.doc_id).unwrap();
+  let initial_markdown = affine_doc_loader::export_markdown_source(&initial_blob, &fixture.doc_id, None)
+    .unwrap()
+    .markdown;
+  let redis_update = affine_doc_loader::update_doc(
+    &initial_blob,
+    &format!("{initial_markdown}\n![redis](blob://redis-key)"),
+    &fixture.doc_id,
+  )
+  .unwrap();
   append_updates(
     &fixture.pool,
     Some(publisher.clone()),
@@ -413,8 +420,15 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
     .authorize_and_load(Some(&fixture.member_user_id), current(&fixture))
     .await
     .unwrap();
-  let loss_update =
-    affine_doc_loader::update_doc(&current_source.blob, "![loss](blob://loss-key)", &fixture.doc_id).unwrap();
+  let current_markdown = affine_doc_loader::export_markdown_source(&current_source.blob, &fixture.doc_id, None)
+    .unwrap()
+    .markdown;
+  let loss_update = affine_doc_loader::update_doc(
+    &current_source.blob,
+    &format!("{current_markdown}\n![loss](blob://loss-key)"),
+    &fixture.doc_id,
+  )
+  .unwrap();
   append_updates(
     &fixture.pool,
     None,
