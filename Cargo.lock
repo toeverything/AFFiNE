@@ -93,9 +93,9 @@ dependencies = [
 
 [[package]]
 name = "affine_doc_loader"
-version = "0.1.9"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33f7e38cc3ce6ade7a5f2a8c04f8f3211a36211bbcd8502016801c52e78692cc"
+checksum = "1f1d81b2efb500e1b000db2148ccdc196f76b1dede5ff29a1fdae49c49410bdf"
 dependencies = [
  "affine_merge",
  "chrono",
