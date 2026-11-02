@@ -606,7 +606,7 @@ export interface CreateByokProfileInput {
  * # Returns
  * A Buffer containing the y-octo document update binary
  */
-export declare function createDocWithMarkdown(title: string, markdown: string, docId: string): Buffer
+export declare function createDocWithMarkdown(title: string, markdown: string, docId: string, context?: DocWriteContext | undefined | null): Buffer
 
 export interface DocumentEmbeddingProjectionInput {
   docId: string
@@ -625,6 +625,11 @@ export interface DocumentEmbeddingUnitInput {
   blockId?: string
   elementId?: string
   frameId?: string
+}
+
+export interface DocWriteContext {
+  actorUserId: string
+  timestampMs: number
 }
 
 export interface EmbeddingHealth {
@@ -1880,7 +1885,7 @@ export declare function updateDocTitle(existingBinary: Buffer, title: string, do
  * # Returns
  * A Buffer containing only the delta (changes) as a y-octo update binary
  */
-export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string): Buffer
+export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string, context?: DocWriteContext | undefined | null): Buffer
 
 /**
  * Updates a document title in the workspace root doc's meta.pages array.

@@ -81,7 +81,10 @@ export class DocWriter {
     );
 
     // Convert markdown to y-octo binary using the provided title
-    const binary = createDocWithMarkdown(title, markdown, docId);
+    const binary = createDocWithMarkdown(title, markdown, docId, {
+      actorUserId: editorId,
+      timestampMs: Date.now(),
+    });
 
     // Prepare root doc update to register the new document
     const rootDocUpdate = addDocToRootDoc(rootDocBin, docId, title);
@@ -175,7 +178,10 @@ export class DocWriter {
           existingDoc.bin.byteOffset,
           existingDoc.bin.byteLength
         );
-    const delta = updateDocWithMarkdown(existingBinary, markdown, docId);
+    const delta = updateDocWithMarkdown(existingBinary, markdown, docId, {
+      actorUserId: editorId,
+      timestampMs: Date.now(),
+    });
 
     // Push only the delta changes
     const timestamp = await this.storage.pushDocUpdates(
