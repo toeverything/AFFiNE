@@ -41,10 +41,10 @@ identify which restriction prevented the namespace sandbox from working.
 
 #### Use the Debian package on Ubuntu
 
-Download the `.deb` for your architecture and release channel from
-[AFFiNE releases](https://github.com/toeverything/AFFiNE/releases). Install it
-with the package manager, for example, from the download directory. Replace
-`VERSION` below with the version you downloaded:
+Check [AFFiNE releases](https://github.com/toeverything/AFFiNE/releases) for
+a `.deb` matching your architecture and release channel. The examples below
+use stable x64 packages. To install from the download directory, replace
+`VERSION` with the version you downloaded:
 
 ```sh
 sudo apt install ./affine-VERSION-stable-linux-x64.deb
@@ -90,7 +90,9 @@ journalctl -k -b --no-pager | grep -E 'apparmor="DENIED".*(userns|capable)'
 ```
 
 An administrator can allow `userns,` in an AppArmor profile attached to the
-exact trusted executable path, following the
+exact trusted executable path, but `userns,` alone may not be sufficient.
+The profile must also allow the capability operations required by Chromium.
+Use a complete profile or the `flags=(unconfined)` profile mode shown in the
 [Ubuntu release notes](https://documentation.ubuntu.com/release-notes/24.04/#unprivileged-user-namespace-restrictions).
 This preserves Chromium sandboxing but grants that executable access to
 user namespaces; it is a security policy change. An AppImage is portable,
