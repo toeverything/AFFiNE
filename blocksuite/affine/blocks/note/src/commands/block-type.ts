@@ -1,5 +1,6 @@
 import {
   CodeBlockModel,
+  DividerBlockModel,
   ListBlockModel,
   ParagraphBlockModel,
 } from '@blocksuite/affine-model';
@@ -116,7 +117,7 @@ export const updateBlockType: Command<
     const index = parent.children.indexOf(model);
     const nextSibling = doc.getNext(model);
     let nextSiblingId = nextSibling?.id as string;
-    const id = doc.addBlock('affine:divider', {}, parent, index + 1);
+    const id = doc.addBlock('affine:divider', props ?? {}, parent, index + 1);
     if (!nextSibling) {
       nextSiblingId = doc.addBlock('affine:paragraph', {}, parent);
     }
@@ -350,6 +351,7 @@ export const updateBlockType: Command<
               ParagraphBlockModel,
               ListBlockModel,
               CodeBlockModel,
+              DividerBlockModel,
             ])
           ) {
             return;
