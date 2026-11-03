@@ -1,5 +1,7 @@
+import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { safeStorage } from 'electron';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 const sessionFile = path.join('/test-user-data', 'auth-sessions.json');
@@ -63,6 +65,7 @@ vi.mock('../../src/main/logger', () => ({
 import {
   clearAuthSession,
   executeAuthSessionRequest,
+  getAuthSessionBroker,
   getValidAccessToken,
   initializeAuthSessions,
   isManagedAuthEndpoint,
@@ -70,6 +73,7 @@ import {
   revokeAuthSession,
   setAuthSession,
 } from '../../src/main/auth/auth-session';
+import { logger } from '../../src/main/logger';
 
 beforeEach(() => {
   runtime.encryptionAvailable = true;
@@ -232,6 +236,115 @@ test('recovers an unreadable session file on the next atomic write', async () =>
   await expect(getValidAccessToken(endpoint)).resolves.toBe('recovered');
 });
 
+test('keeps startup session discovery retryable after a store read failure', async () => {
+  const endpoint = 'https://startup-read-unavailable.example';
+  await setAuthSession(endpoint, tokenResponse('stored', 'a', 900));
+  const before = runtime.files.get(sessionFile);
+  vi.resetModules();
+  const restarted = await import('../../src/main/auth/auth-session');
+  vi.mocked(fs.readFile).mockRejectedValueOnce(
+    Object.assign(new Error('file temporarily unavailable'), { code: 'EIO' })
+  );
+  await expect(restarted.initializeAuthSessions()).resolves.toBeUndefined();
+  expect(runtime.files.get(sessionFile)).toBe(before);
+  expect(restarted.isManagedAuthEndpoint(endpoint)).toBe(false);
+  await restarted.initializeAuthSessions();
+  expect(restarted.isManagedAuthEndpoint(endpoint)).toBe(true);
+  await expect(restarted.getValidAccessToken(endpoint)).resolves.toBe('stored');
+});
+
+test('retries a transient session-file read failure without losing stored credentials', async () => {
+  const endpoint = 'https://read-unavailable.example';
+  await setAuthSession(endpoint, tokenResponse('stored', 'a', 900));
+  const before = runtime.files.get(sessionFile);
+  vi.resetModules();
+  const restarted = await import('../../src/main/auth/auth-session');
+  vi.mocked(fs.readFile).mockRejectedValueOnce(
+    Object.assign(new Error('file temporarily unavailable'), { code: 'EIO' })
+  );
+  await expect(restarted.getValidAccessToken(endpoint)).rejects.toMatchObject({
+    code: 'AUTH_TOKEN_STORAGE_UNAVAILABLE',
+    transient: true,
+  });
+  expect(runtime.files.get(sessionFile)).toBe(before);
+  await expect(restarted.getValidAccessToken(endpoint)).resolves.toBe('stored');
+  expect(runtime.fetch).not.toHaveBeenCalled();
+});
+
+test('does not overwrite other sessions when reading the store for a save fails', async () => {
+  const endpoint = 'https://save-read-unavailable.example';
+  const other = 'https://save-read-other.example';
+  await setAuthSession(endpoint, tokenResponse('original', 'a', 900));
+  await setAuthSession(other, tokenResponse('other', 'b', 900));
+  const before = runtime.files.get(sessionFile);
+  runtime.rename.mockClear();
+  vi.mocked(fs.readFile).mockRejectedValueOnce(
+    Object.assign(new Error('file temporarily unavailable'), { code: 'EACCES' })
+  );
+  await expect(
+    setAuthSession(endpoint, tokenResponse('replacement', 'c', 900))
+  ).rejects.toMatchObject({ code: 'AUTH_TOKEN_STORAGE_UNAVAILABLE' });
+  expect(runtime.files.get(sessionFile)).toBe(before);
+  expect(runtime.rename).not.toHaveBeenCalled();
+  await getAuthSessionBroker(endpoint).refresh('retry-save');
+  expect(JSON.parse(runtime.files.get(sessionFile)!)).toHaveProperty(other);
+  await expect(getValidAccessToken(endpoint)).resolves.toBe('replacement');
+  expect(runtime.fetch).not.toHaveBeenCalled();
+});
+
+test('retains encrypted credentials and redacts errors when Keychain decryption temporarily fails', async () => {
+  const endpoint = 'https://decrypt-unavailable.example';
+  await setAuthSession(endpoint, tokenResponse('stored', 'a', 900));
+  const before = runtime.files.get(sessionFile);
+  vi.resetModules();
+  const restarted = await import('../../src/main/auth/auth-session');
+  const secret = 'synthetic-sensitive-error-detail';
+  vi.mocked(logger.error).mockClear();
+  const decrypt = vi
+    .spyOn(safeStorage, 'decryptString')
+    .mockImplementationOnce(() => {
+      throw new Error(secret);
+    });
+  try {
+    await expect(restarted.getValidAccessToken(endpoint)).rejects.toMatchObject(
+      {
+        code: 'AUTH_TOKEN_STORAGE_UNAVAILABLE',
+        transient: true,
+      }
+    );
+    expect(runtime.files.get(sessionFile)).toBe(before);
+    expect(vi.mocked(logger.error).mock.calls.flat().join(' ')).not.toContain(
+      secret
+    );
+  } finally {
+    decrypt.mockRestore();
+  }
+  await expect(restarted.getValidAccessToken(endpoint)).resolves.toBe('stored');
+  expect(runtime.fetch).not.toHaveBeenCalled();
+});
+
+test('retries loading an encrypted session after safeStorage becomes available again', async () => {
+  const endpoint = 'https://keychain-unavailable.example';
+  await setAuthSession(endpoint, tokenResponse('stored', 'a', 900));
+  const before = runtime.files.get(sessionFile);
+  vi.resetModules();
+  const restarted = await import('../../src/main/auth/auth-session');
+  runtime.encryptionAvailable = false;
+  try {
+    await expect(restarted.getValidAccessToken(endpoint)).rejects.toMatchObject(
+      {
+        code: 'AUTH_TOKEN_STORAGE_UNAVAILABLE',
+        transient: true,
+      }
+    );
+    expect(runtime.files.get(sessionFile)).toBe(before);
+  } finally {
+    runtime.encryptionAvailable = true;
+  }
+  await expect(restarted.getValidAccessToken(endpoint)).resolves.toBe('stored');
+  expect(runtime.fetch).not.toHaveBeenCalled();
+});
+
 test('does not publish a rotated pair until an atomic save succeeds', async () => {
   const endpoint = 'https://save-failure.example';
   await setAuthSession(endpoint, tokenResponse('old', 'a', 1));
@@ -246,6 +359,105 @@ test('does not publish a rotated pair until an atomic save succeeds', async () =
   runtime.failWrite = false;
   await expect(getValidAccessToken(endpoint, 120_000)).resolves.toBe('rotated');
   expect(runtime.fetch).toHaveBeenCalledTimes(1);
+});
+
+test.each([
+  [
+    403,
+    { code: 'Forbidden', type: 'ACTION_FORBIDDEN' },
+    'ACTION_FORBIDDEN',
+    false,
+  ],
+  [
+    503,
+    { code: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE', type: 'NETWORK_ERROR' },
+    'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
+    true,
+  ],
+  [401, { code: 'REFRESH_TOKEN_REUSED' }, 'REFRESH_TOKEN_REUSED', false],
+  [401, { code: 'AUTH_SESSION_REVOKED' }, 'AUTH_SESSION_REVOKED', false],
+])(
+  'preserves the meaning of refresh HTTP %s / %s',
+  async (status, body, code, transient) => {
+    const endpoint = `https://${code.toLowerCase()}.errors.example`;
+    await setAuthSession(endpoint, tokenResponse('old', 'a', 900));
+    runtime.fetch.mockImplementation(
+      async () => new Response(JSON.stringify(body), { status })
+    );
+    await expect(
+      getAuthSessionBroker(endpoint).refresh('test')
+    ).rejects.toMatchObject({ code, transient });
+    if (code === 'ACTION_FORBIDDEN') {
+      expect(runtime.fetch).toHaveBeenCalledTimes(1);
+      await expect(getValidAccessToken(endpoint, 0)).resolves.toBe('old');
+      await expect(
+        getValidAccessToken(endpoint, 1_000_000)
+      ).rejects.toMatchObject({ code });
+    } else if (!transient) {
+      await expect(getValidAccessToken(endpoint, 0)).resolves.toBeNull();
+      expect(runtime.files.get(sessionFile)).not.toContain(endpoint);
+    }
+  }
+);
+
+test('distinguishes timeout from other network errors without exposing transport details', async () => {
+  const { authFetch } = await import('../../src/main/auth/transport');
+  const timeout = AbortSignal.abort(
+    new DOMException('timeout', 'TimeoutError')
+  );
+  runtime.fetch.mockRejectedValue(new Error('secret-request-body'));
+  await expect(
+    authFetch('https://timeout.example', { signal: timeout })
+  ).rejects.toMatchObject({ code: 'AUTH_REQUEST_TIMEOUT' });
+  const networkError = await authFetch('https://offline.example').catch(
+    error => error
+  );
+  expect(networkError.code).toBe('NETWORK_ERROR');
+  expect(networkError.message).not.toContain('secret-request-body');
+});
+
+test('classifies a connection lost while reading a committed refresh response as a network failure', async () => {
+  const endpoint = 'https://lost-response-body.example';
+  await setAuthSession(endpoint, tokenResponse('old', 'a', 1));
+  runtime.fetch.mockImplementation(
+    async () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.error(new TypeError('connection reset'));
+          },
+        })
+      )
+  );
+  await expect(getValidAccessToken(endpoint)).rejects.toMatchObject({
+    code: 'NETWORK_ERROR',
+  });
+  expect(runtime.files.get(sessionFile)).toContain(endpoint);
+});
+
+test('does not mask a known forbidden status when its response body is lost', async () => {
+  const endpoint = 'https://forbidden-lost-body.example';
+  await setAuthSession(endpoint, tokenResponse('still-valid', 'a', 900));
+  runtime.fetch.mockImplementation(
+    async () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.error(new TypeError('connection reset'));
+          },
+        }),
+        { status: 403 }
+      )
+  );
+  await expect(
+    getAuthSessionBroker(endpoint).refresh('test')
+  ).rejects.toMatchObject({
+    code: 'ACTION_FORBIDDEN',
+    transient: false,
+  });
+  expect(runtime.fetch).toHaveBeenCalledTimes(1);
+  await expect(getValidAccessToken(endpoint, 0)).resolves.toBe('still-valid');
+  expect(runtime.files.get(sessionFile)).toContain(endpoint);
 });
 
 test('main replaces renderer bearer and strips it after local clear', async () => {

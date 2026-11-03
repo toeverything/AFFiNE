@@ -12,8 +12,10 @@ const PUBLIC_AUTH_CODES = new Set([
   'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
   'AUTH_TOKEN_RESPONSE_INVALID',
   'AUTH_TOKEN_STORAGE_UNAVAILABLE',
+  'ACTION_FORBIDDEN',
   'FORBIDDEN',
   'NETWORK_ERROR',
+  'AUTH_REQUEST_TIMEOUT',
   'TOO_MANY_REQUESTS',
 ]);
 const SAFE_AUTH_CODES = new Set([
@@ -251,7 +253,10 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
       reason,
     });
     try {
-      const pair = this.toPair(await this.requestRefresh(current.refreshToken));
+      const { response, requestedAt } = await this.requestRefresh(
+        current.refreshToken
+      );
+      const pair = this.toPair(response, requestedAt);
       if (epoch !== this.mutationEpoch) {
         throw new AuthSessionError('AUTH_OPERATION_CANCELLED', true);
       }
@@ -265,7 +270,7 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
       ) {
         throw new AuthSessionError('AUTH_OPERATION_CANCELLED', true);
       }
-      if (!classified.transient) {
+      if (PERMANENT_AUTH_CODES.has(classified.code)) {
         try {
           await this.mutateStorage(() => this.storage.clear());
         } catch {
@@ -317,7 +322,11 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
   private async requestRefresh(refreshToken: string) {
     for (let attempt = 0; ; attempt++) {
       try {
-        return await this.transport.refresh(refreshToken);
+        // Count in-flight time (including sleep) against the reported TTL.
+        // A response processed after wake must not extend the server's grant.
+        const requestedAt = this.now();
+        const response = await this.transport.refresh(refreshToken);
+        return { response, requestedAt };
       } catch (error) {
         const classified = classifyAuthError(error);
         const delay = this.retryDelays[attempt];
@@ -327,8 +336,11 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
     }
   }
 
-  private toPair(response: AuthTokenResponse): AuthTokenPair {
-    const accessExpiresAt = this.now() + response.expiresIn * 1000;
+  private toPair(
+    response: AuthTokenResponse,
+    requestedAt = this.now()
+  ): AuthTokenPair {
+    const accessExpiresAt = requestedAt + response.expiresIn * 1000;
     if (
       !Number.isFinite(response.expiresIn) ||
       response.expiresIn <= 0 ||
@@ -397,8 +409,32 @@ export function classifyAuthError(error: unknown) {
     : 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE';
   return new AuthSessionError(
     publicCode,
-    !PERMANENT_AUTH_CODES.has(publicCode)
+    !PERMANENT_AUTH_CODES.has(publicCode) &&
+      publicCode !== 'ACTION_FORBIDDEN' &&
+      publicCode !== 'FORBIDDEN'
   );
+}
+
+// Server errors use both `code` (sometimes a generic HTTP label) and `type`.
+// Only allowlisted values may cross the credential boundary.
+export function classifyAuthHttpError(status: number, body: unknown) {
+  const fields =
+    body && typeof body === 'object'
+      ? (body as { code?: unknown; type?: unknown })
+      : {};
+  for (const code of [fields.code, fields.type]) {
+    if (typeof code === 'string' && PUBLIC_AUTH_CODES.has(code)) {
+      return classifyAuthError({ code });
+    }
+  }
+  return classifyAuthError({
+    code:
+      status === 403
+        ? 'ACTION_FORBIDDEN'
+        : status === 429
+          ? 'TOO_MANY_REQUESTS'
+          : 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
+  });
 }
 
 export async function withAuthRetry<T>(

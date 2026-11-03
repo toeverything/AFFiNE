@@ -6,6 +6,8 @@ import {
   type AuthTokenPair,
   type AuthTokenResponse,
   type AuthTokenStorage,
+  classifyAuthError,
+  classifyAuthHttpError,
   createRealtimeAuthAdapter,
   createRequestAuthAdapter,
   withAuthRetry,
@@ -69,6 +71,99 @@ function setup(initial: AuthTokenPair | null) {
 }
 
 describe('AuthTokenBroker', () => {
+  test('does not extend access-token lifetime when a refresh reply is processed after sleep', async () => {
+    const { storage, transport, persisted } = setup(pair(1, now + 30_000));
+    let clock = now;
+    transport.refresh.mockImplementationOnce(async () => {
+      // The response has a 15-minute grant, but the client resumes 27 minutes later.
+      clock += 27 * 60_000;
+      return response(2);
+    });
+    const broker = new AuthTokenBroker(storage, transport, {
+      now: () => clock,
+      retryDelays: [],
+    });
+    await broker.refresh('before-sleep');
+    expect(persisted()?.accessExpiresAt).toBe(
+      new Date(now + 900_000).toISOString()
+    );
+    expect(Date.parse(persisted()!.accessExpiresAt)).toBeLessThan(clock);
+    // The next request must obtain a fresh grant instead of trusting a stale JWT.
+    transport.refresh.mockResolvedValueOnce(response(3));
+    await expect(broker.getValidAccessToken(0)).resolves.toBe('access-3');
+    expect(transport.refresh).toHaveBeenCalledTimes(2);
+  });
+
+  test('measures access-token TTL from the successful retry rather than the original attempt', async () => {
+    const { storage, transport, persisted } = setup(pair(1, now + 30_000));
+    let clock = now;
+    transport.refresh.mockImplementationOnce(async () => {
+      clock += 27 * 60_000;
+      throw new AuthSessionError('NETWORK_ERROR', true);
+    });
+    transport.refresh.mockImplementationOnce(async () => {
+      clock += 2_000;
+      return response(2);
+    });
+    const broker = new AuthTokenBroker(storage, transport, {
+      now: () => clock,
+      retryDelays: [0],
+      sleep: async () => {},
+    });
+    await broker.refresh('retry-after-wake');
+    expect(persisted()?.accessExpiresAt).toBe(
+      new Date(now + 27 * 60_000 + 900_000).toISOString()
+    );
+    expect(transport.refresh).toHaveBeenCalledTimes(2);
+  });
+
+  test('reports forbidden without retrying or clearing a valid credential', async () => {
+    const { storage, transport } = setup(pair(1, now + 30_000));
+    transport.refresh.mockRejectedValue(
+      classifyAuthHttpError(403, {
+        code: 'Forbidden',
+        type: 'ACTION_FORBIDDEN',
+      })
+    );
+    const broker = new AuthTokenBroker(storage, transport);
+    await expect(broker.refresh('manual')).rejects.toMatchObject({
+      code: 'ACTION_FORBIDDEN',
+      transient: false,
+    });
+    expect(transport.refresh).toHaveBeenCalledOnce();
+    expect(storage.clear).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    [
+      503,
+      { code: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE', type: 'NETWORK_ERROR' },
+      'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
+      true,
+    ],
+    [
+      403,
+      { code: 'Forbidden', type: 'ACTION_FORBIDDEN' },
+      'ACTION_FORBIDDEN',
+      false,
+    ],
+    [403, {}, 'ACTION_FORBIDDEN', false],
+    [401, { code: 'REFRESH_TOKEN_REUSED' }, 'REFRESH_TOKEN_REUSED', false],
+    [401, { code: 'AUTH_SESSION_REVOKED' }, 'AUTH_SESSION_REVOKED', false],
+    [429, {}, 'TOO_MANY_REQUESTS', true],
+  ])(
+    'classifies HTTP %s with safe structured codes',
+    (status, body, code, transient) => {
+      expect(classifyAuthHttpError(status, body)).toMatchObject({
+        code,
+        transient,
+      });
+      expect(classifyAuthError({ code: 'secret-token' }).message).not.toContain(
+        'secret-token'
+      );
+    }
+  );
+
   test('proactively refreshes and atomically persists before publishing', async () => {
     const { broker, storage, persisted } = setup(pair(1, now + 30_000));
     const states: string[] = [];
