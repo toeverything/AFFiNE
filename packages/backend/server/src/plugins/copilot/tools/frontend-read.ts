@@ -11,8 +11,21 @@ const execute =
     options: CopilotChatOptions,
     tool: DelegatedToolName
   ) =>
-  (args: Record<string, unknown>, execution: CopilotToolExecuteOptions) =>
-    delegated.execute(options, tool, args, execution.signal, execution);
+  (args: Record<string, unknown>, execution: CopilotToolExecuteOptions) => {
+    if (
+      options?.editorSelectionSnapshot !== undefined &&
+      (tool === 'frontend_read_selection' ||
+        tool === 'frontend_get_editor_state')
+    ) {
+      return delegated.executeSelectionSnapshot(
+        options,
+        tool,
+        args,
+        execution.signal
+      );
+    }
+    return delegated.execute(options, tool, args, execution.signal, execution);
+  };
 
 export function createFrontendEditorStateTool(
   delegated: DelegatedEditorService,
@@ -34,12 +47,10 @@ export function createFrontendSelectionTool(
   const run = execute(delegated, options, 'frontend_read_selection');
   return defineTool({
     description:
-      'Read the current Page or Edgeless selection from the focused live editor. Use for unsynced selected content; results are bounded and include editor_state_id and truncation. Do not use for persisted documents outside the active editor.',
+      'Read the complete Page or Edgeless selection captured when this message was submitted. The user selection determines all content boundaries; the only option, format, changes representation, never the selected content or its extent. No unselected neighbors are included. For older clients without a captured selection, read the focused live editor. Return an explicit error if existing host read budgets prevent a complete read; do not claim completeness after an error. Do not use for persisted documents outside the active editor.',
     inputSchema: z
       .object({
         format: z.enum(['text', 'markdown', 'structure']).optional(),
-        limit: z.number().int().min(1).max(50_000).optional(),
-        neighborhood: z.number().int().min(0).max(20).optional(),
       })
       .strict(),
     execute: run,

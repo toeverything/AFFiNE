@@ -1,4 +1,8 @@
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
+import {
+  type EditorSelectionSnapshot,
+  editorSelectionSnapshotState,
+} from '@affine/realtime';
 
 import type { AIRequestService } from '../request';
 import type { AIChatAction, AIChatSendOptions } from './actions';
@@ -26,6 +30,7 @@ export class AIChatRuntime {
   private requestSeq = 0;
   private historyRequestSeq = 0;
   private streamAbortController: AbortController | null = null;
+  private submittedSelection?: Promise<EditorSelectionSnapshot | undefined>;
   private createSessionPromiseKey: string | null = null;
   private createSessionPromise: Promise<
     CopilotChatHistoryFragment | null | undefined
@@ -317,13 +322,24 @@ export class AIChatRuntime {
     return this.snapshot.messages.findLast(message => message.role === 'user');
   }
 
-  private async activateEditorContext(sessionId: string) {
+  private async activateEditorContext(
+    sessionId: string,
+    captured?: EditorSelectionSnapshot
+  ) {
+    const frozenContext = captured
+      ? JSON.stringify({
+          workspace_id: captured.workspaceId,
+          doc_id: captured.docId,
+          session_id: sessionId,
+          ...editorSelectionSnapshotState(captured),
+        })
+      : undefined;
     try {
       await this.options.request.activateEditor?.(sessionId);
-      return this.options.request.getActiveEditorContext();
+      return frozenContext ?? this.options.request.getActiveEditorContext();
     } catch (error) {
       console.error(error);
-      return undefined;
+      return frozenContext;
     }
   }
 
@@ -333,21 +349,36 @@ export class AIChatRuntime {
     const seq = ++this.requestSeq;
     this.streamAbortController?.abort();
     this.streamAbortController = new AbortController();
-    this.commit({
-      status: 'loading',
-      error: null,
-      messages: retryExisting
-        ? this.resetLastAssistantMessage(this.snapshot.messages)
-        : [
-            ...this.snapshot.messages,
-            this.createMessage('user', content, {
-              attachments: options.attachmentPreviews,
-              ...options.userInfo,
-            }),
-            this.createMessage('assistant', ''),
-          ],
-    });
     try {
+      // Freeze the input before session creation, lease activation or any await.
+      // Retrying a failed submission keeps its original selection.
+      if (!retryExisting || !this.submittedSelection) {
+        const capture = this.options.request.captureEditorSelection?.();
+        this.submittedSelection = capture;
+        capture?.catch(() => {
+          if (this.submittedSelection === capture) {
+            this.submittedSelection = undefined;
+          }
+        });
+      }
+      this.commit({
+        status: 'loading',
+        error: null,
+        messages: retryExisting
+          ? this.resetLastAssistantMessage(this.snapshot.messages)
+          : [
+              ...this.snapshot.messages,
+              this.createMessage('user', content, {
+                attachments: options.attachmentPreviews,
+                ...options.userInfo,
+              }),
+              this.createMessage('assistant', ''),
+            ],
+      });
+      const editorSelectionSnapshot = this.submittedSelection
+        ? await this.submittedSelection
+        : undefined;
+      if (seq !== this.requestSeq) return;
       const session = await this.ensureSession();
       if (seq !== this.requestSeq) return;
       if (!session) {
@@ -358,7 +389,8 @@ export class AIChatRuntime {
         this.openSessionObject(session, true);
       }
       const liveEditorContext = await this.activateEditorContext(
-        session.sessionId
+        session.sessionId,
+        editorSelectionSnapshot
       );
       const scopeSelectors = this.snapshot.composer.scopeSelection.items
         .map(item => this.selectorInput(item))
@@ -401,6 +433,7 @@ export class AIChatRuntime {
         scopeSelectors,
         focusSelectors,
         liveEditorContext,
+        editorSelectionSnapshot,
         attachments: [
           ...this.snapshot.composer.attachments,
           ...(options.attachments ?? []),

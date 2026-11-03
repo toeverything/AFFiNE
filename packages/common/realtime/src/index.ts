@@ -1,3 +1,12 @@
+export {
+  type EditorSelectionSnapshot,
+  editorSelectionSnapshotState,
+  type EditorSelectionView,
+  readEditorSelectionSnapshot,
+  requireCompleteEditorSelection,
+  SelectionReadBudgetError,
+} from './editor-selection-snapshot';
+
 export type RealtimeRequestName = keyof RealtimeRequestMap;
 export type RealtimeTopicName = keyof RealtimeTopicMap;
 

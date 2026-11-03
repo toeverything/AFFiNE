@@ -68,7 +68,7 @@ const updateSnapshotText = (
   model: DraftModel
 ) => {
   const { index, length } = point;
-  if (!snapshot.props.text || length === 0) {
+  if (!snapshot.props.text) {
     return;
   }
   (snapshot.props.text as Record<string, unknown>).delta =

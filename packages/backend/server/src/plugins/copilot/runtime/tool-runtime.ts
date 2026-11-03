@@ -166,7 +166,10 @@ export class ToolRuntime {
           break;
         }
         case 'frontendGetEditorState': {
-          if (this.delegated.getLease(options, 'frontend_get_editor_state')) {
+          if (
+            options?.editorSelectionSnapshot !== undefined ||
+            this.delegated.getLease(options, 'frontend_get_editor_state')
+          ) {
             tools.frontend_get_editor_state = createFrontendEditorStateTool(
               this.delegated,
               options
@@ -175,7 +178,10 @@ export class ToolRuntime {
           break;
         }
         case 'frontendReadSelection': {
-          if (this.delegated.getLease(options, 'frontend_read_selection')) {
+          if (
+            options?.editorSelectionSnapshot !== undefined ||
+            this.delegated.getLease(options, 'frontend_read_selection')
+          ) {
             tools.frontend_read_selection = createFrontendSelectionTool(
               this.delegated,
               options

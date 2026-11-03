@@ -83,6 +83,8 @@ export class TurnOrchestrator {
           managedTargetId: routeTargetId,
           quotaBackedRoutesAllowed: prepared.quotaBackedRoutesAllowed,
           retrievalScope: prepared.latestTurn?.scopeSnapshot?.retrieval,
+          editorSelectionSnapshot:
+            prepared.latestTurn?.metadata.editorSelectionSnapshot,
           featureKind:
             selection.responseMode === 'image'
               ? 'image'

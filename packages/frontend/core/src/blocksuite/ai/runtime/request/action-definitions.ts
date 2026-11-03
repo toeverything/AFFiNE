@@ -68,6 +68,7 @@ export const actionDefinitions = {
           typeof options.liveEditorContext === 'string'
             ? options.liveEditorContext
             : undefined,
+        editorSelectionSnapshot: options.editorSelectionSnapshot,
         scopeSelectors: options.scopeSelectors,
         focusSelectors: options.focusSelectors,
         ...(options.docId ? { currentDocId: options.docId } : {}),

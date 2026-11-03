@@ -3,14 +3,17 @@ import type {
   DelegatedToolCancel,
   DelegatedToolName,
   DelegatedToolRequest,
+  EditorSelectionSnapshot,
 } from '@affine/realtime';
+import { SelectionReadBudgetError } from '@affine/realtime';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import type { Subscription } from 'rxjs';
 
 import {
+  captureSelectionView,
   getLiveEditorMode,
-  getLiveSelectionIds,
+  getLiveSelectionSignature,
   lightEditorContext,
   readEditorState,
   readNodes,
@@ -65,6 +68,34 @@ export class DelegatedEditorHost {
   };
 
   constructor(private readonly options: HostOptions) {}
+
+  captureSelection(): Promise<EditorSelectionSnapshot> {
+    const stateId = crypto.randomUUID();
+    // Each export freezes its native slice synchronously before its first await.
+    const text = captureSelectionView(this.options.host, stateId, {
+      format: 'text',
+      limit: 50_000,
+    });
+    const markdown = captureSelectionView(this.options.host, stateId, {
+      format: 'markdown',
+      limit: 50_000,
+    });
+    const structure = captureSelectionView(this.options.host, stateId, {
+      format: 'structure',
+      limit: 50_000,
+    });
+    const { workspaceId, docId } = this.options;
+    const readonly = this.options.host.store.readonly$.value;
+    return Promise.all([text, markdown, structure]).then(
+      ([text, markdown, structure]): EditorSelectionSnapshot => ({
+        version: 1,
+        workspaceId,
+        docId,
+        readonly,
+        views: { text, markdown, structure },
+      })
+    );
+  }
 
   context() {
     return JSON.stringify({
@@ -163,10 +194,7 @@ export class DelegatedEditorHost {
   }
 
   private getSelectionSignature() {
-    return JSON.stringify([
-      getLiveEditorMode(this.options.host),
-      getLiveSelectionIds(this.options.host),
-    ]);
+    return getLiveSelectionSignature(this.options.host);
   }
 
   private getMetadataSignature() {
@@ -178,13 +206,17 @@ export class DelegatedEditorHost {
 
   private refreshMetadataState(scheduleUpsert = false) {
     const signature = this.getMetadataSignature();
+    const selectionSignature = this.getSelectionSignature();
     const changed =
-      !!this.metadataSignature && signature !== this.metadataSignature;
+      (!!this.metadataSignature && signature !== this.metadataSignature) ||
+      (!!this.selectionSignature &&
+        selectionSignature !== this.selectionSignature);
     if (changed) {
       this.editorStateId = crypto.randomUUID();
       if (scheduleUpsert) this.scheduleStateUpsert();
     }
     this.metadataSignature = signature;
+    this.selectionSignature = selectionSignature;
     return changed;
   }
 
@@ -293,8 +325,12 @@ export class DelegatedEditorHost {
         ...this.identity(request),
         result,
       });
-    } catch {
+    } catch (error) {
       if (abort.signal.aborted) return;
+      if (error instanceof SelectionReadBudgetError) {
+        await this.sendError(request, error.code, error.message, false);
+        return;
+      }
       await this.sendError(request, 'FRONTEND_READ_FAILED');
     } finally {
       this.inFlight.delete(request.requestId);
@@ -362,13 +398,18 @@ export class DelegatedEditorHost {
     );
   }
 
-  private sendError(request: DelegatedToolRequest, code: string) {
+  private sendError(
+    request: DelegatedToolRequest,
+    code: string,
+    message = 'The focused editor changed before the read completed.',
+    retryable = true
+  ) {
     return this.options.realtime.request('copilot.delegated.tool.respond', {
       ...this.identity(request),
       error: {
         code,
-        message: 'The focused editor changed before the read completed.',
-        retryable: true,
+        message,
+        retryable,
       },
     });
   }

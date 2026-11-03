@@ -9,6 +9,7 @@ import {
   type RequestOptions,
   type UpdateChatSessionInput,
 } from '@affine/graphql';
+import type { EditorSelectionSnapshot } from '@affine/realtime';
 import { Subject } from 'rxjs';
 
 import type { ActionEventType } from '../../provider';
@@ -38,6 +39,7 @@ export class AIRequestService {
     sync(): Promise<void>;
     dispose(): void;
     context(): string;
+    captureSelection?(): Promise<EditorSelectionSnapshot>;
   };
   private activeEditor?: {
     sessionId: string;
@@ -87,6 +89,7 @@ export class AIRequestService {
           sync(): Promise<void>;
           dispose(): void;
           context(): string;
+          captureSelection?(): Promise<EditorSelectionSnapshot>;
         })
       | undefined
   ) {
@@ -106,6 +109,12 @@ export class AIRequestService {
 
   getActiveEditorContext() {
     return this.activeEditor?.context();
+  }
+
+  captureEditorSelection() {
+    // Capture without starting a lease: the chat session may not exist yet.
+    // The factory retains the current editor, workspace and document identity.
+    return this.activeEditorFactory?.('')?.captureSelection?.();
   }
 
   private async activateEditorNow(sessionId: string) {

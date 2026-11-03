@@ -61,6 +61,9 @@ export default defineConfig({
       // rootDir cannot be used as a pattern on windows
       fg.convertPathToPattern(rootDir) +
         'packages/{common,frontend}/**/*.spec.{ts,tsx}',
+      // Backend Vitest suites use a distinct suffix so AVA does not collect them.
+      fg.convertPathToPattern(rootDir) +
+        'packages/backend/server/**/*.vitest.ts',
     ],
     exclude: [
       '**/node_modules',

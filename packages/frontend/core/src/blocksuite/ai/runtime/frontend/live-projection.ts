@@ -1,5 +1,6 @@
+import { requireCompleteEditorSelection } from '@affine/realtime';
 import { DocModeProvider } from '@blocksuite/affine/shared/services';
-import type { EditorHost } from '@blocksuite/affine/std';
+import { type EditorHost, TextSelection } from '@blocksuite/affine/std';
 import {
   GfxControllerIdentifier,
   type GfxModel,
@@ -149,6 +150,44 @@ function projectBlock(model: BlockModel, limit: number) {
   };
 }
 
+function projectSelectedBlock(
+  host: EditorHost,
+  model: BlockModel,
+  limit: number,
+  ids: Set<string>
+) {
+  const selection = host.selection.find(TextSelection);
+  const point =
+    selection?.from.blockId === model.id
+      ? selection.from
+      : selection?.to?.blockId === model.id
+        ? selection.to
+        : undefined;
+  const text = model.text?.toString() ?? '';
+  const projected = projectBlock(model, limit);
+  const children = model.children.filter(child => ids.has(child.id));
+  return {
+    ...projected,
+    text: textLimit(
+      point ? text.slice(point.index, point.index + point.length) : text,
+      limit
+    ),
+    child_ids: children.slice(0, MAX_RELATION_IDS).map(child => child.id),
+    child_ids_truncated: children.length > MAX_RELATION_IDS,
+  };
+}
+
+export function getLiveSelectionSignature(host: EditorHost) {
+  const mode = getLiveEditorMode(host);
+  return JSON.stringify([
+    mode,
+    getLiveSelectionIds(host),
+    mode === 'page'
+      ? (host.selection.find(TextSelection)?.toJSON() ?? null)
+      : null,
+  ]);
+}
+
 function neighborhoodOf(models: BlockModel[], distance: number) {
   const neighborhood = new Map<string, BlockModel>();
   for (const model of models) {
@@ -201,31 +240,12 @@ export function readEditorState(host: EditorHost, editorStateId: string) {
 }
 
 export function lightEditorContext(host: EditorHost, editorStateId: string) {
-  const state = readEditorState(host, editorStateId);
-  if (state.mode === 'edgeless') {
-    const preview = host.std
-      .get(GfxControllerIdentifier)
-      .selection.selectedElements.slice(0, 3)
-      .map(element => {
-        const projected = projectElement(element, 200);
-        return {
-          id: projected.id,
-          type: projected.type,
-          text: projected.text,
-          title: projected.title,
-        };
-      });
-    return { ...state, preview };
-  }
-  const preview = (getSelectedModels(host) ?? []).slice(0, 3).map(model => ({
-    id: model.id,
-    type: model.flavour,
-    text: textLimit(model.text?.toString() ?? '', 200),
-  }));
-  return { ...state, preview };
+  // Locators identify the selection; whole-block previews are not selected text.
+  return readEditorState(host, editorStateId);
 }
 
-export async function readSelection(
+// Internal bounded capture keeps the current 10k/50k and50-item policies intact.
+export async function captureSelectionView(
   host: EditorHost,
   editorStateId: string,
   args: Record<string, unknown>
@@ -245,33 +265,48 @@ export async function readSelection(
       truncated: selectedElements.length > MAX_LOCATOR_IDS,
     };
   }
-  const models = getSelectedModels(host) ?? [];
-  const neighborhood = boundedInteger(args.neighborhood, 0, 20);
+  const models = host.selection.find(TextSelection)?.isCollapsed()
+    ? []
+    : (getSelectedModels(host) ?? []);
   if (args.format === 'structure') {
     const blocks = models.slice(0, 50);
-    const nearby = neighborhoodOf(models, neighborhood).slice(0, 100);
+    const selectedIds = new Set(models.map(model => model.id));
     return {
       editor_state_id: editorStateId,
       mode,
-      blocks: blocks.map(model => projectBlock(model, limit)),
-      neighborhood: nearby.map(model =>
-        projectBlock(model, Math.min(limit, 500))
+      blocks: blocks.map(model =>
+        projectSelectedBlock(host, model, limit, selectedIds)
       ),
+      neighborhood: [],
       truncated: blocks.length < models.length,
     };
   }
   const format = args.format === 'text' ? 'plain-text' : 'markdown';
-  const content = await getSelectedTextContent(host, format);
+  const content = models.length
+    ? await getSelectedTextContent(host, format)
+    : '';
   return {
     editor_state_id: editorStateId,
     mode,
     ...textLimit(content, limit),
     block_ids: models.slice(0, MAX_LOCATOR_IDS).map(model => model.id),
     block_ids_truncated: models.length > MAX_LOCATOR_IDS,
-    neighborhood: neighborhoodOf(models, neighborhood)
-      .slice(0, 100)
-      .map(model => projectBlock(model, Math.min(limit, 500))),
+    neighborhood: [],
   };
+}
+
+export async function readSelection(
+  host: EditorHost,
+  editorStateId: string,
+  args: Record<string, unknown>
+) {
+  // Only representation is model-controlled. Legacy scope arguments cannot
+  // change the selection, add neighbors, or override the host read budget.
+  return requireCompleteEditorSelection(
+    await captureSelectionView(host, editorStateId, {
+      format: args.format,
+    })
+  );
 }
 
 export function readNodes(

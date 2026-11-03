@@ -6,6 +6,10 @@ import type {
   DelegatedToolName,
   DelegatedToolResponse,
 } from '@affine/realtime';
+import {
+  editorSelectionSnapshotState,
+  readEditorSelectionSnapshot,
+} from '@affine/realtime';
 import { Injectable } from '@nestjs/common';
 
 import { OnEvent } from '../../../base';
@@ -13,6 +17,7 @@ import { PermissionAccess } from '../../../core/permission';
 import { RealtimePublisher, realtimeUserRoom } from '../../../core/realtime';
 import { CopilotAccessService } from '../access';
 import type { CopilotChatOptions } from '../providers/types';
+import { parseEditorSelectionSnapshot } from './selection-snapshot';
 
 type EditorLease = DelegatedEditorLeaseInput & {
   userId: string;
@@ -227,6 +232,64 @@ export class DelegatedEditorService {
         workspace_id: lease.workspaceId,
         doc_id: lease.docId,
         revision: lease.editorStateId,
+      },
+    };
+  }
+
+  async executeSelectionSnapshot(
+    options: CopilotChatOptions,
+    tool: 'frontend_read_selection' | 'frontend_get_editor_state',
+    args: Record<string, unknown>,
+    signal?: AbortSignal
+  ) {
+    const fail = (code: string) => ({
+      error: {
+        code,
+        message:
+          'The selection captured for this message is unavailable or invalid. Submit the selection again.',
+        retryable: false,
+      },
+    });
+    if (signal?.aborted) return fail('ABORTED');
+    const snapshot = parseEditorSelectionSnapshot(
+      options?.editorSelectionSnapshot
+    );
+    if (
+      !snapshot ||
+      !options?.user ||
+      !options.session ||
+      snapshot.workspaceId !== options.workspace
+    ) {
+      return fail('INVALID_SELECTION_SNAPSHOT');
+    }
+    // Frozen user input still requires the same document/session access as a live read.
+    const mode = await this.access.sessionResource(
+      {
+        userId: options.user,
+        workspaceId: snapshot.workspaceId,
+        docId: snapshot.docId,
+        action: 'Doc.Read',
+      },
+      [options.session]
+    );
+    if (mode === 'canonical') {
+      await this.ac
+        .user(options.user)
+        .workspace(snapshot.workspaceId)
+        .assert('Workspace.Copilot');
+    }
+    if (signal?.aborted) return fail('ABORTED');
+    const text = snapshot.views.text;
+    if (tool === 'frontend_get_editor_state') {
+      return editorSelectionSnapshotState(snapshot);
+    }
+    return {
+      ...readEditorSelectionSnapshot(snapshot, args),
+      source: {
+        type: 'document',
+        workspace_id: snapshot.workspaceId,
+        doc_id: snapshot.docId,
+        revision: text.editor_state_id,
       },
     };
   }
