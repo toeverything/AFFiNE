@@ -217,6 +217,12 @@ export const BlocksuiteDocEditor = forwardRef<
     )
   );
 
+  const displayLinkedDocs = useLiveData(
+    editorSettingService.editorSetting.settings$.selector(
+      s => s.displayLinkedDocs
+    )
+  );
+
   const displayDocInfo = useLiveData(
     editorSettingService.editorSetting.settings$.selector(s => s.displayDocInfo)
   );
@@ -291,7 +297,7 @@ export const BlocksuiteDocEditor = forwardRef<
           <StarterBar doc={page} />
         )}
         {!shared && displayBiDirectionalLink ? (
-          <BiDirectionalLinkPanel />
+          <BiDirectionalLinkPanel displayLinkedDocs={displayLinkedDocs} />
         ) : null}
       </div>
       {portals}
