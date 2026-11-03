@@ -113,6 +113,14 @@ export const DateFilterMethod = {
   'this-month': 'com.affine.filter.this month',
   'this-quarter': 'com.affine.filter.this quarter',
   'this-year': 'com.affine.filter.this year',
+  // Sub-day filters — minute-labelled aliases (last-60-minutes, last-180-minutes)
+  // have been removed to avoid duplicate options in the UI dropdown.
+  'last-30-minutes': 'com.affine.filter.last 30 minutes',
+  'last-1-hour': 'com.affine.filter.last 1 hour',
+  'last-3-hours': 'com.affine.filter.last 3 hours',
+  'last-6-hours': 'com.affine.filter.last 6 hours',
+  'last-12-hours': 'com.affine.filter.last 12 hours',
+  'last-24-hours': 'com.affine.filter.last 24 hours',
 } as const;
 
 export const WorkspacePropertyTypes = {
