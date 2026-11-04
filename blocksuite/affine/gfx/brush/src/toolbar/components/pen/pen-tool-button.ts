@@ -3,6 +3,7 @@ import {
   EditPropsStore,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
+import { edgelessToolShortcutsVersion$ } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import { computed, signal } from '@preact/signals-core';
@@ -98,6 +99,7 @@ export class EdgelessPenToolButton extends EdgelessToolbarToolMixin(
   });
 
   private readonly penInfo$ = computed(() => {
+    void edgelessToolShortcutsVersion$.value;
     const type = this.pen$.value;
     return {
       ...penInfoMap[type],

@@ -1,4 +1,9 @@
 import {
+  formatEdgelessToolShortcut,
+  getEdgelessToolShortcut,
+} from '@blocksuite/affine-shared/utils';
+
+import {
   EdgelessBrushDarkIcon,
   EdgelessBrushLightIcon,
   EdgelessHighlighterDarkIcon,
@@ -20,10 +25,14 @@ export const penIconMap = {
 export const penInfoMap: { [k in Pen]: { tip: string; shortcut: string } } = {
   brush: {
     tip: 'Pen',
-    shortcut: 'P',
+    get shortcut() {
+      return formatEdgelessToolShortcut(getEdgelessToolShortcut('pen'));
+    },
   },
   highlighter: {
     tip: 'Highlighter',
-    shortcut: '⇧ P',
+    get shortcut() {
+      return `⇧ ${formatEdgelessToolShortcut(getEdgelessToolShortcut('pen'))}`;
+    },
   },
 };

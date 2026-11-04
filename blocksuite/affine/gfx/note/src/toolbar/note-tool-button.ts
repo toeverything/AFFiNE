@@ -1,4 +1,9 @@
 import {
+  formatEdgelessToolShortcut,
+  getEdgelessToolShortcut,
+  subscribeEdgelessToolShortcuts,
+} from '@blocksuite/affine-shared/utils';
+import {
   createPopper,
   type MenuPopper,
   QuickToolMixin,
@@ -70,6 +75,9 @@ export class EdgelessNoteToolButton extends QuickToolMixin(LitElement) {
   override connectedCallback() {
     super.connectedCallback();
     this._disposables.add(
+      subscribeEdgelessToolShortcuts(() => this.requestUpdate())
+    );
+    this._disposables.add(
       effect(() => {
         const value = this.gfx.tool.currentToolName$.value;
         if (value !== 'affine:note') {
@@ -94,7 +102,9 @@ export class EdgelessNoteToolButton extends QuickToolMixin(LitElement) {
             ? ''
             : html`<affine-tooltip-content-with-shortcut
                 data-tip="${'Note'}"
-                data-shortcut="${'N'}"
+                data-shortcut="${formatEdgelessToolShortcut(
+                  getEdgelessToolShortcut('note')
+                )}"
               ></affine-tooltip-content-with-shortcut>`
         }
         .tooltipOffset=${17}
