@@ -465,7 +465,9 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
 
     return html`
       <div class="affine-attachment-embed-container">
-        ${guard([this._refreshKey$.value], () => render(model, blobUrl))}
+        ${guard([this._refreshKey$.value, blobUrl], () =>
+          render(model, blobUrl)
+        )}
       </div>
       ${when(enabled, () => {
         const resolvedState = this.resolvedState$.value;
