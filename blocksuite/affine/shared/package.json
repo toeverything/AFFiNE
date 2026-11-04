@@ -51,7 +51,7 @@
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
     "yjs": "^13.6.27",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   },
   "exports": {
     ".": "./src/index.ts",

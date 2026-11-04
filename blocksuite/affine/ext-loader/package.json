@@ -12,7 +12,7 @@
   "dependencies": {
     "@blocksuite/global": "workspace:*",
     "@blocksuite/store": "workspace:*",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "vitest": "^4.1.11"

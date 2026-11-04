@@ -22,7 +22,7 @@
     "@toeverything/theme": "^1.1.23",
     "lit": "^3.2.0",
     "lit-html": "^3.2.1",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@vitest/browser-playwright": "^4.1.11",
