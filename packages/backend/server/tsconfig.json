@@ -12,6 +12,7 @@
   },
   "include": ["./src"],
   "references": [
+    { "path": "../../common/auth" },
     { "path": "../../common/s3-compat" },
     { "path": "../native" },
     { "path": "../../../tools/cli" },

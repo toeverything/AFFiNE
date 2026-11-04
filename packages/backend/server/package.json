@@ -115,6 +115,7 @@
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
+    "@affine/auth": "workspace:*",
     "@affine/graphql": "workspace:*",
     "@affine/realtime": "workspace:*",
     "@faker-js/faker": "^10.5.0",
