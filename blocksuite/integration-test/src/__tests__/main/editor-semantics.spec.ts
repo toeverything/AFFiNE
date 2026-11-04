@@ -9,11 +9,13 @@ import type {
 import { insertContent } from '@blocksuite/affine-rich-text';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import { createDefaultDoc } from '@blocksuite/affine-shared/utils';
-import { TextSelection } from '@blocksuite/std';
+import { SurfaceSelection, TextSelection } from '@blocksuite/std';
 import type { InlineMarkdownMatch } from '@blocksuite/std/inline';
 import { Text } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import type { TableBlockComponent } from '../../../../affine/blocks/table/src/table-block.js';
+import type { TableCell } from '../../../../affine/blocks/table/src/table-cell.js';
 import { defaultSlashMenuConfig } from '../../../../affine/widgets/slash-menu/src/config.js';
 import type {
   SlashMenuActionItem,
@@ -178,6 +180,52 @@ test.each([false, true])(
     model.yBlock.set('prop:url', 'https://www.youtube.com/watch?v=second');
     expect(model.props.videoId).toBe(readonly ? 'first' : 'second');
     detached.readonly = false;
+  }
+);
+
+test.each(['page', 'edgeless'] as const)(
+  'table selection preserves its input owner in %s mode',
+  async mode => {
+    await setupEditor(mode);
+    const noteId = addNote(doc);
+    const tableId = doc.addBlock(
+      'affine:table',
+      {
+        rows: { row: { rowId: 'row', order: 'a0' } },
+        columns: { column: { columnId: 'column', order: 'a0' } },
+        cells: { 'row:column': { text: new Text('abc') } },
+      },
+      noteId
+    );
+    await wait();
+    const table = editor.host!.view.getBlock(tableId) as TableBlockComponent;
+    const cell = table.querySelector('affine-table-cell') as TableCell;
+    const surfaceSelection = new SurfaceSelection(
+      doc.getModelsByFlavour('affine:surface')[0].id,
+      [noteId],
+      true
+    );
+    if (mode === 'edgeless') {
+      editor.std.selection.setGroup('gfx', [surfaceSelection]);
+    }
+    cell.inlineEditor!.focusEnd();
+    await wait();
+    cell.text!.insert('xyz', 3);
+    await wait();
+    expect(cell.text!.toString()).toBe('abcxyz');
+    expect(table.selectionController.getSelected()?.type).toBe('area');
+    expect(editor.std.selection.getGroup('gfx')).toEqual(
+      mode === 'edgeless' ? [surfaceSelection] : []
+    );
+    table.selectionController.setSelected({
+      type: 'column',
+      columnId: 'column',
+    });
+    table.selectionController.setSelected(undefined);
+    expect(table.selectionController.getSelected()).toBeUndefined();
+    expect(editor.std.selection.getGroup('gfx')).toEqual(
+      mode === 'edgeless' ? [surfaceSelection] : []
+    );
   }
 );
 
