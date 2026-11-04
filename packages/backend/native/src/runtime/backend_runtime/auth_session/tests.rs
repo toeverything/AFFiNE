@@ -166,6 +166,154 @@ fn argon2_upgrade_verifies_existing_hashes() {
 }
 
 #[tokio::test]
+async fn refresh_recovers_durable_operation_after_lost_responses_without_widening_replay_grace() {
+  let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
+  let Some(pool) = pool().await else {
+    return;
+  };
+  crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
+  let marker = uuid::Uuid::new_v4().to_string();
+  let user_id = create_user(&pool, &marker).await;
+  let config = config(std::env::var("DATABASE_URL").unwrap());
+  keyring::initialize(&pool, &config).await.unwrap();
+  let code = create_exchange(&pool, &user_id, &marker).await;
+  let issued = session::exchange(&pool, &config, &code, &marker, "electron", None, None)
+    .await
+    .unwrap();
+  let request_id = uuid::Uuid::new_v4().to_string();
+  // The client never receives this committed rotation.
+  let lost = refresh::refresh(&pool, &config, &issued.refresh_token, None, Some(&request_id))
+    .await
+    .unwrap();
+  let lost = serde_json::to_value(lost).unwrap();
+  assert_eq!(lost["status"], "rotated");
+  let source = crate::auth_session::parse_auth_session_refresh_token(&issued.refresh_token).unwrap();
+  sqlx::query("UPDATE auth_refresh_tokens SET used_at=clock_timestamp()-INTERVAL '27 minutes' WHERE id=$1")
+    .bind(&source.id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  // Cleanup must not discard material needed by a suspended/restarted client.
+  session::cleanup(&pool, &config, 1000).await.unwrap();
+  let (first, second) = tokio::join!(
+    refresh::refresh(&pool, &config, &issued.refresh_token, None, Some(&request_id)),
+    refresh::refresh(&pool, &config, &issued.refresh_token, None, Some(&request_id))
+  );
+  for retry in [first.unwrap(), second.unwrap()] {
+    let retry = serde_json::to_value(retry).unwrap();
+    assert_eq!(retry["status"], "rotated");
+    assert!(retry["refreshToken"] == lost["refreshToken"]);
+  }
+  // Another lost reply must remain recoverable, even after grace was claimed.
+  let retry = refresh::refresh(&pool, &config, &issued.refresh_token, None, Some(&request_id))
+    .await
+    .unwrap();
+  assert!(serde_json::to_value(retry).unwrap()["refreshToken"] == lost["refreshToken"]);
+  let stored_hash: String = sqlx::query_scalar("SELECT refresh_request_hash FROM auth_refresh_tokens WHERE id=$1")
+    .bind(&source.id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+  assert!(stored_hash != request_id);
+  let next_request = uuid::Uuid::new_v4().to_string();
+  let next = refresh::refresh(
+    &pool,
+    &config,
+    lost["refreshToken"].as_str().unwrap(),
+    None,
+    Some(&next_request),
+  )
+  .await
+  .unwrap();
+  let next = serde_json::to_value(next).unwrap();
+  assert_eq!(next["status"], "rotated");
+  let material: Option<String> = sqlx::query_scalar("SELECT successor_ciphertext FROM auth_refresh_tokens WHERE id=$1")
+    .bind(&source.id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+  assert!(material.is_none());
+  // A captured operation is not permission to hide replay once its successor
+  // has been consumed. Retrying N must still terminate the stolen chain.
+  let replay = refresh::refresh(&pool, &config, &issued.refresh_token, None, Some(&request_id))
+    .await
+    .unwrap();
+  assert_eq!(serde_json::to_value(replay).unwrap()["status"], "reused");
+  let revoked: Option<chrono::DateTime<chrono::Utc>> =
+    sqlx::query_scalar("SELECT revoked_at FROM auth_sessions WHERE id=$1")
+      .bind(&issued.session.id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+  assert!(revoked.is_some());
+  let revoked = refresh::refresh(
+    &pool,
+    &config,
+    next["refreshToken"].as_str().unwrap(),
+    None,
+    Some(&next_request),
+  )
+  .await
+  .unwrap();
+  assert_eq!(serde_json::to_value(revoked).unwrap()["status"], "revoked");
+  let retained: i64 = sqlx::query_scalar(
+    "SELECT count(*) FROM auth_refresh_tokens WHERE auth_session_id=$1 AND successor_ciphertext IS NOT NULL",
+  )
+  .bind(&issued.session.id)
+  .fetch_one(&pool)
+  .await
+  .unwrap();
+  assert_eq!(retained, 0);
+  sqlx::query("DELETE FROM users WHERE id=$1")
+    .bind(&user_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn keyed_refresh_never_downgrades_to_legacy_grace() {
+  let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
+  let Some(pool) = pool().await else {
+    return;
+  };
+  crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
+  let marker = uuid::Uuid::new_v4().to_string();
+  let user_id = create_user(&pool, &marker).await;
+  let config = config(std::env::var("DATABASE_URL").unwrap());
+  keyring::initialize(&pool, &config).await.unwrap();
+  for requested in [None, Some(uuid::Uuid::new_v4().to_string())] {
+    let installation = uuid::Uuid::new_v4().to_string();
+    let code = create_exchange(&pool, &user_id, &installation).await;
+    let issued = session::exchange(&pool, &config, &code, &installation, "electron", None, None)
+      .await
+      .unwrap();
+    let operation = uuid::Uuid::new_v4().to_string();
+    let rotated = refresh::refresh(&pool, &config, &issued.refresh_token, None, Some(&operation))
+      .await
+      .unwrap();
+    assert_eq!(serde_json::to_value(rotated).unwrap()["status"], "rotated");
+    let replay = refresh::refresh(&pool, &config, &issued.refresh_token, None, requested.as_deref())
+      .await
+      .unwrap();
+    assert_eq!(serde_json::to_value(replay).unwrap()["status"], "reused");
+    let retained: i64 = sqlx::query_scalar(
+      "SELECT count(*) FROM auth_refresh_tokens WHERE auth_session_id=$1 AND successor_ciphertext IS NOT NULL",
+    )
+    .bind(&issued.session.id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(retained, 0);
+  }
+  sqlx::query("DELETE FROM users WHERE id=$1")
+    .bind(&user_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
 async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() {
   let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
   let Some(pool) = pool().await else {
@@ -242,7 +390,7 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
     .await
     .unwrap();
   let unknown_refresh = crate::auth_session::create_auth_session_refresh_token();
-  let unknown_result = refresh::refresh(&pool, &config, &unknown_refresh.token, None)
+  let unknown_result = refresh::refresh(&pool, &config, &unknown_refresh.token, None, None)
     .await
     .unwrap();
   assert_eq!(serde_json::to_value(unknown_result).unwrap()["status"], "invalid");
@@ -489,8 +637,8 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
     .is_err()
   );
   let (first, second) = tokio::join!(
-    refresh::refresh(&pool, &config, &issued.refresh_token, Some("1.1.0")),
-    refresh::refresh(&pool, &config, &issued.refresh_token, Some("1.1.0"))
+    refresh::refresh(&pool, &config, &issued.refresh_token, Some("1.1.0"), None),
+    refresh::refresh(&pool, &config, &issued.refresh_token, Some("1.1.0"), None)
   );
   let (first, second) = (
     serde_json::to_value(first.unwrap()).unwrap(),
@@ -500,7 +648,7 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
   assert_eq!(second["status"], "rotated");
   assert_ne!(first["grace"], second["grace"]);
   assert_eq!(first["refreshToken"], second["refreshToken"]);
-  let replay = refresh::refresh(&pool, &config, &issued.refresh_token, None)
+  let replay = refresh::refresh(&pool, &config, &issued.refresh_token, None, None)
     .await
     .unwrap();
   let replay = serde_json::to_value(replay).unwrap();
@@ -531,7 +679,7 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
   )
   .await
   .unwrap();
-  let rotated = refresh::refresh(&pool, &config, &second_session.refresh_token, None)
+  let rotated = refresh::refresh(&pool, &config, &second_session.refresh_token, None, None)
     .await
     .unwrap();
   let rotated = serde_json::to_value(rotated).unwrap();
@@ -548,7 +696,7 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
     .fetch_one(&pool)
     .await
     .unwrap();
-  let unavailable = refresh::refresh(&pool, &config, &second_session.refresh_token, None)
+  let unavailable = refresh::refresh(&pool, &config, &second_session.refresh_token, None, None)
     .await
     .unwrap();
   assert_eq!(
@@ -621,7 +769,7 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
   .await
   .unwrap();
   assert!(
-    refresh::refresh(&pool, &config, &rollback_refresh_session.refresh_token, None)
+    refresh::refresh(&pool, &config, &rollback_refresh_session.refresh_token, None, None)
       .await
       .is_err()
   );
@@ -648,7 +796,7 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
       .unwrap();
   assert_eq!(rollback_token_count, 1);
 
-  let rotated_after_rollback = refresh::refresh(&pool, &config, &rollback_refresh_session.refresh_token, None)
+  let rotated_after_rollback = refresh::refresh(&pool, &config, &rollback_refresh_session.refresh_token, None, None)
     .await
     .unwrap();
   assert_eq!(
@@ -665,7 +813,7 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
   .await
   .unwrap();
   assert!(
-    refresh::refresh(&pool, &config, &rollback_refresh_session.refresh_token, None)
+    refresh::refresh(&pool, &config, &rollback_refresh_session.refresh_token, None, None)
       .await
       .is_err()
   );
@@ -680,7 +828,7 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
       .await
       .unwrap();
   assert!(grace_used_at.is_none());
-  let grace_after_rollback = refresh::refresh(&pool, &config, &rollback_refresh_session.refresh_token, None)
+  let grace_after_rollback = refresh::refresh(&pool, &config, &rollback_refresh_session.refresh_token, None, None)
     .await
     .unwrap();
   let grace_after_rollback = serde_json::to_value(grace_after_rollback).unwrap();
@@ -925,7 +1073,7 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
   .unwrap()
   .exchange_code
   .unwrap();
-  let refresh_future = refresh::refresh(&pool, &config, &third.refresh_token, None);
+  let refresh_future = refresh::refresh(&pool, &config, &third.refresh_token, None, None);
   let revoke_future = security::revoke_user(&pool, &user_id, "security_action");
   let (_refresh_outcome, revoked) = tokio::join!(refresh_future, revoke_future);
   assert!(revoked.unwrap() >= 1);
@@ -1458,6 +1606,194 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
     .await
     .unwrap();
   sqlx::query("DROP FUNCTION IF EXISTS rfc12_auth_refresh_fault()")
+    .execute(&pool)
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn refresh_recovery_preserves_credential_deadlines_across_multi_day_interruptions() {
+  let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
+  let Some(pool) = pool().await else {
+    return;
+  };
+  crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
+  let marker = uuid::Uuid::new_v4().to_string();
+  let user_id = create_user(&pool, &marker).await;
+  let config = config(std::env::var("DATABASE_URL").unwrap());
+  keyring::initialize(&pool, &config).await.unwrap();
+  for days in [3_i32, 7, 14] {
+    let installation = uuid::Uuid::new_v4().to_string();
+    let code = create_exchange(&pool, &user_id, &installation).await;
+    let issued = session::exchange(&pool, &config, &code, &installation, "electron", None, None)
+      .await
+      .unwrap();
+    let operation = uuid::Uuid::new_v4().to_string();
+    let lost = refresh::refresh(&pool, &config, &issued.refresh_token, None, Some(&operation))
+      .await
+      .unwrap();
+    let lost = serde_json::to_value(lost).unwrap();
+    assert_eq!(lost["status"], "rotated");
+    // Move the entire persisted timeline, not just used_at. This models a
+    // committed rotation days ago without granting extra credential lifetime.
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query(
+      "UPDATE user_sessions SET expires_at=expires_at-make_interval(days => $2) WHERE id=(SELECT user_session_id FROM \
+       auth_sessions WHERE id=$1)",
+    )
+    .bind(&issued.session.id)
+    .bind(days)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    sqlx::query(
+      "UPDATE auth_sessions SET created_at=created_at-make_interval(days => \
+       $2),last_seen_at=last_seen_at-make_interval(days => $2),idle_expires_at=idle_expires_at-make_interval(days => \
+       $2),absolute_expires_at=absolute_expires_at-make_interval(days => $2) WHERE id=$1",
+    )
+    .bind(&issued.session.id)
+    .bind(days)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    sqlx::query(
+      "UPDATE auth_refresh_tokens SET created_at=created_at-make_interval(days => \
+       $2),expires_at=expires_at-make_interval(days => $2),used_at=used_at-make_interval(days => \
+       $2),successor_expires_at=successor_expires_at-make_interval(days => $2) WHERE auth_session_id=$1",
+    )
+    .bind(&issued.session.id)
+    .bind(days)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+    let source = crate::auth_session::parse_auth_session_refresh_token(&issued.refresh_token).unwrap();
+    let deadline: chrono::DateTime<chrono::Utc> =
+      sqlx::query_scalar("SELECT successor_expires_at FROM auth_refresh_tokens WHERE id=$1")
+        .bind(&source.id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let bounded: bool = sqlx::query_scalar(
+      "SELECT r.successor_expires_at=LEAST(r.expires_at,n.expires_at) FROM auth_refresh_tokens r JOIN \
+       auth_refresh_tokens n ON n.id=r.replaced_by_id WHERE r.id=$1",
+    )
+    .bind(&source.id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(bounded);
+    session::cleanup(&pool, &config, 1000).await.unwrap();
+    for _ in 0..2 {
+      let retry = refresh::refresh(&pool, &config, &issued.refresh_token, None, Some(&operation))
+        .await
+        .unwrap();
+      let retry = serde_json::to_value(retry).unwrap();
+      assert_eq!(retry["status"], "rotated");
+      assert!(retry["refreshToken"] == lost["refreshToken"]);
+    }
+    let unchanged: bool = sqlx::query_scalar(
+      "SELECT r.successor_expires_at=$2 AND a.idle_expires_at=n.expires_at AND \
+       r.successor_expires_at<=a.absolute_expires_at FROM auth_refresh_tokens r JOIN auth_refresh_tokens n ON \
+       n.id=r.replaced_by_id JOIN auth_sessions a ON a.id=r.auth_session_id WHERE r.id=$1",
+    )
+    .bind(&source.id)
+    .bind(deadline)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(unchanged);
+    // Expiry of the original credential remains authoritative, even though
+    // rotation previously extended the successor's idle deadline.
+    sqlx::query(
+      "UPDATE auth_refresh_tokens SET expires_at=clock_timestamp()-INTERVAL '1 \
+       second',successor_expires_at=clock_timestamp()-INTERVAL '1 second' WHERE id=$1",
+    )
+    .bind(&source.id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    session::cleanup(&pool, &config, 1000).await.unwrap();
+    let expired = refresh::refresh(&pool, &config, &issued.refresh_token, None, Some(&operation))
+      .await
+      .unwrap();
+    assert_eq!(serde_json::to_value(expired).unwrap()["code"], "AUTH_SESSION_EXPIRED");
+    let retained: bool = sqlx::query_scalar(
+      "SELECT a.revoked_at IS NULL AND r.successor_ciphertext IS NULL FROM auth_sessions a JOIN auth_refresh_tokens r \
+       ON r.auth_session_id=a.id WHERE r.id=$1",
+    )
+    .bind(&source.id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(retained);
+  }
+  sqlx::query("DELETE FROM users WHERE id=$1")
+    .bind(&user_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn keyed_recovery_material_failure_requires_sign_in_without_accusing_replay() {
+  let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
+  let Some(pool) = pool().await else {
+    return;
+  };
+  crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
+  let marker = uuid::Uuid::new_v4().to_string();
+  let user_id = create_user(&pool, &marker).await;
+  let original_config = config(std::env::var("DATABASE_URL").unwrap());
+  keyring::initialize(&pool, &original_config).await.unwrap();
+  for missing in [false, true] {
+    let installation = uuid::Uuid::new_v4().to_string();
+    let code = create_exchange(&pool, &user_id, &installation).await;
+    let issued = session::exchange(&pool, &original_config, &code, &installation, "electron", None, None)
+      .await
+      .unwrap();
+    let operation = uuid::Uuid::new_v4().to_string();
+    let rotated = refresh::refresh(&pool, &original_config, &issued.refresh_token, None, Some(&operation))
+      .await
+      .unwrap();
+    assert_eq!(serde_json::to_value(rotated).unwrap()["status"], "rotated");
+    let source = crate::auth_session::parse_auth_session_refresh_token(&issued.refresh_token).unwrap();
+    let mut retry_config = config(std::env::var("DATABASE_URL").unwrap());
+    if missing {
+      sqlx::query("UPDATE auth_refresh_tokens SET successor_ciphertext=NULL,successor_expires_at=NULL WHERE id=$1")
+        .bind(&source.id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    } else {
+      retry_config.private_key = Arc::new(Zeroizing::new("rotated-test-private-key".to_string()));
+    }
+    for attempt in 0..2 {
+      let failed = refresh::refresh(&pool, &retry_config, &issued.refresh_token, None, Some(&operation))
+        .await
+        .unwrap();
+      assert_eq!(
+        serde_json::to_value(failed).unwrap()["code"],
+        if attempt == 0 {
+          "AUTH_SESSION_RECOVERY_REQUIRED"
+        } else {
+          "AUTH_SESSION_REVOKED"
+        }
+      );
+    }
+    let safe: bool = sqlx::query_scalar(
+      "SELECT a.revoked_at IS NOT NULL AND a.revoke_reason='refresh_recovery_unavailable' AND r.successor_ciphertext \
+       IS NULL AND r.successor_expires_at IS NULL FROM auth_sessions a JOIN auth_refresh_tokens r ON \
+       r.auth_session_id=a.id WHERE r.id=$1",
+    )
+    .bind(&source.id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(safe);
+  }
+  sqlx::query("DELETE FROM users WHERE id=$1")
+    .bind(&user_id)
     .execute(&pool)
     .await
     .unwrap();

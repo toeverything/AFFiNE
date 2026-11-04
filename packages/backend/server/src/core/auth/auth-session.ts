@@ -8,6 +8,7 @@ export const AuthSessionErrorCode = {
   expired: 'AUTH_SESSION_EXPIRED',
   revoked: 'AUTH_SESSION_REVOKED',
   reused: 'REFRESH_TOKEN_REUSED',
+  recoveryRequired: 'AUTH_SESSION_RECOVERY_REQUIRED',
   temporarilyUnavailable: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
 } as const;
 
@@ -65,7 +66,10 @@ export type AuthRefreshResult =
     }
   | { status: 'invalid'; code: (typeof AuthSessionErrorCode)['invalid'] }
   | { status: 'expired'; code: (typeof AuthSessionErrorCode)['expired'] }
-  | { status: 'revoked'; code: (typeof AuthSessionErrorCode)['revoked'] }
+  | {
+      status: 'revoked';
+      code: (typeof AuthSessionErrorCode)['revoked' | 'recoveryRequired'];
+    }
   | {
       status: 'temporarily_unavailable';
       code: (typeof AuthSessionErrorCode)['temporarilyUnavailable'];
@@ -79,12 +83,13 @@ export class AuthSessionService {
     private readonly event: EventBus
   ) {}
 
-  async refresh(refreshToken: string, appVersion?: string) {
+  async refresh(refreshToken: string, appVersion?: string, requestId?: string) {
     const result = await this.rt.executeAuthSessionCommandV1<AuthRefreshResult>(
       {
         action: 'refresh',
         refreshToken,
         appVersion,
+        ...(requestId ? { requestId } : {}),
       }
     );
     metrics.auth.counter('auth_refresh').add(1, {

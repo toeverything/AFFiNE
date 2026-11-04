@@ -76,11 +76,15 @@ export const AuthSessionExchangeBodySchema = z
   })
   .strict();
 
-export const AuthSessionRefreshBodySchema = z
+export const AuthSessionRevokeBodySchema = z
   .object({
     refreshToken: z.string().min(1).max(512),
   })
   .strict();
+
+export const AuthSessionRefreshBodySchema = AuthSessionRevokeBodySchema.extend({
+  refreshRequestId: z.string().uuid().optional(),
+});
 
 export function getSessionOptionsFromRequest(req: Request) {
   const sessionId = SessionIdSchema.safeParse(

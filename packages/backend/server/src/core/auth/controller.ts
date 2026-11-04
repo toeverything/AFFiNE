@@ -34,6 +34,7 @@ import {
   AuthPreflightBodySchema,
   AuthSessionExchangeBodySchema,
   AuthSessionRefreshBodySchema,
+  AuthSessionRevokeBodySchema,
   isNativeClientRequest,
   MagicLinkBodySchema,
   OpenAppSignInBodySchema,
@@ -265,6 +266,16 @@ export class AuthController {
 
   @Public()
   @UseNamedGuard('version')
+  @Get('/session/refresh')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  refreshCapabilities(@Req() req: Request) {
+    if (!isNativeClientRequest(req)) throw new ActionForbidden();
+    return { refreshRequestId: true };
+  }
+
+  @Public()
+  @UseNamedGuard('version')
   @Throttle('default', { limit: 120, ttl: 60_000 })
   @Post('/session/refresh')
   @Header('Cache-Control', 'no-store')
@@ -274,7 +285,8 @@ export class AuthController {
     return await this.sessionExchange.refresh(
       req,
       input.refreshToken,
-      getClientVersionFromRequest(req) ?? undefined
+      getClientVersionFromRequest(req) ?? undefined,
+      input.refreshRequestId
     );
   }
 
@@ -287,7 +299,7 @@ export class AuthController {
     if (!isNativeClientRequest(req)) {
       throw new ActionForbidden();
     }
-    const input = AuthSessionRefreshBodySchema.parse(body);
+    const input = AuthSessionRevokeBodySchema.parse(body);
     await this.authSessions.revokeWithRefreshToken(input.refreshToken);
     return {};
   }
