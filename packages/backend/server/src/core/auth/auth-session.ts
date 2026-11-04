@@ -79,12 +79,13 @@ export class AuthSessionService {
     private readonly event: EventBus
   ) {}
 
-  async refresh(refreshToken: string, appVersion?: string) {
+  async refresh(refreshToken: string, appVersion?: string, attemptId?: string) {
     const result = await this.rt.executeAuthSessionCommandV1<AuthRefreshResult>(
       {
         action: 'refresh',
         refreshToken,
         appVersion,
+        attemptId,
       }
     );
     metrics.auth.counter('auth_refresh').add(1, {

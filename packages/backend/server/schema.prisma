@@ -142,6 +142,7 @@ model AuthRefreshToken {
   revokedAt           DateTime? @map("revoked_at") @db.Timestamptz(3)
   successorCiphertext String?   @map("successor_ciphertext") @db.Text
   successorExpiresAt  DateTime? @map("successor_expires_at") @db.Timestamptz(3)
+  refreshAttemptHash  String?   @map("refresh_attempt_hash") @db.VarChar
 
   authSession AuthSession       @relation(fields: [authSessionId], references: [id], onDelete: Cascade)
   replacedBy  AuthRefreshToken? @relation("AuthRefreshRotation", fields: [replacedById], references: [id], onDelete: SetNull)
