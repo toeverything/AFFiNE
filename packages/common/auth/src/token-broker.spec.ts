@@ -6,6 +6,7 @@ import {
   type AuthTokenPair,
   type AuthTokenResponse,
   type AuthTokenStorage,
+  type AuthTokenTransport,
   createRealtimeAuthAdapter,
   createRequestAuthAdapter,
   withAuthRetry,
@@ -56,7 +57,9 @@ function setup(initial: AuthTokenPair | null) {
       persisted = null;
     }),
   };
-  const transport = { refresh: vi.fn(async () => response(2)) };
+  const transport = {
+    refresh: vi.fn<AuthTokenTransport['refresh']>(async () => response(2)),
+  };
   return {
     broker: new AuthTokenBroker(storage, transport, {
       now: () => now,
@@ -75,7 +78,8 @@ describe('AuthTokenBroker', () => {
     broker.observeAuthState(state => states.push(state.status));
 
     await expect(broker.getValidAccessToken()).resolves.toBe('access-2');
-    expect(storage.save).toHaveBeenCalledOnce();
+    expect(storage.save).toHaveBeenCalledTimes(2);
+    expect(persisted()?.refreshAttemptId).toBeUndefined();
     expect(persisted()?.accessToken).toBe('access-2');
     expect(states).toEqual([
       'initializing',
@@ -117,23 +121,41 @@ describe('AuthTokenBroker', () => {
     });
   });
 
-  test('retries transient refresh failures with bounded jittered backoff', async () => {
-    const { storage, transport } = setup(pair(1, now + 30_000));
-    transport.refresh
-      .mockRejectedValueOnce(new TypeError('offline'))
-      .mockResolvedValueOnce(response(2));
-    const sleep = vi.fn(async () => {});
-    const broker = new AuthTokenBroker(storage, transport, {
-      now: () => now,
-      random: () => 0.5,
-      retryDelays: [250],
-      sleep,
-    });
-
-    await expect(broker.getValidAccessToken()).resolves.toBe('access-2');
-    expect(transport.refresh).toHaveBeenCalledTimes(2);
-    expect(sleep).toHaveBeenCalledWith(250);
-  });
+  test.each(['retry', 'restart'])(
+    'reuses the persisted refresh attempt after response loss and %s',
+    async recovery => {
+      const { storage, transport, persisted } = setup(pair(1, now + 30_000));
+      let attemptId: string | undefined;
+      transport.refresh.mockImplementationOnce(async (token, attempt) => {
+        expect(token).toBe('refresh-1');
+        expect(attempt).toBeTruthy();
+        expect(persisted()?.refreshAttemptId).toBe(attempt);
+        attemptId = attempt;
+        throw new TypeError('response lost');
+      });
+      const sleep = vi.fn(async () => {});
+      const options = {
+        now: () => now,
+        random: () => 0.5,
+        retryDelays: recovery === 'retry' ? [250] : [],
+        sleep,
+      };
+      let broker = new AuthTokenBroker(storage, transport, options);
+      if (recovery === 'restart') {
+        await expect(broker.refresh('before-restart')).rejects.toMatchObject({
+          transient: true,
+        });
+        broker = new AuthTokenBroker(storage, transport, options);
+      }
+      await expect(broker.getValidAccessToken()).resolves.toBe('access-2');
+      expect(transport.refresh).toHaveBeenCalledTimes(2);
+      expect(
+        transport.refresh.mock.calls.map(([, attempt]) => attempt)
+      ).toEqual([attemptId, attemptId]);
+      expect(sleep.mock.calls).toEqual(recovery === 'retry' ? [[250]] : []);
+      expect(persisted()?.refreshAttemptId).toBeUndefined();
+    }
+  );
 
   test('clears credentials only for permanent auth failures', async () => {
     const { broker, storage, transport } = setup(pair(1, now + 30_000));
@@ -225,21 +247,35 @@ describe('AuthTokenBroker', () => {
     expect(await broker.getValidAccessToken()).toBeNull();
   });
 
-  test('retries pending secure-store persistence without rotating again', async () => {
-    const { broker, storage, transport, persisted } = setup(
-      pair(1, now + 30_000)
-    );
-    vi.mocked(storage.save).mockRejectedValueOnce(new Error('locked'));
+  test.each(['attempt', 'successor'])(
+    'retries %s secure-store persistence without losing the refresh attempt',
+    async stage => {
+      const { broker, storage, transport, persisted } = setup(
+        pair(1, now + 30_000)
+      );
+      const save = vi.mocked(storage.save).getMockImplementation()!;
+      vi.mocked(storage.save).mockImplementationOnce(async next => {
+        if (stage === 'attempt') throw new Error('locked');
+        await save(next);
+      });
+      if (stage === 'successor') {
+        vi.mocked(storage.save).mockRejectedValueOnce(new Error('locked'));
+      }
 
-    await expect(broker.getValidAccessToken()).rejects.toMatchObject({
-      code: 'AUTH_TOKEN_STORAGE_UNAVAILABLE',
-    });
-    const recovered = await broker.refresh('storage-retry');
-    expect(recovered).toMatchObject({ accessToken: 'access-2' });
-    expect(JSON.stringify(recovered)).not.toContain('refresh-2');
-    expect(transport.refresh).toHaveBeenCalledOnce();
-    expect(persisted()?.accessToken).toBe('access-2');
-  });
+      await expect(broker.getValidAccessToken()).rejects.toMatchObject({
+        code: 'AUTH_TOKEN_STORAGE_UNAVAILABLE',
+      });
+      expect(transport.refresh).toHaveBeenCalledTimes(
+        stage === 'attempt' ? 0 : 1
+      );
+      const recovered = await broker.refresh('storage-retry');
+      expect(recovered).toMatchObject({ accessToken: 'access-2' });
+      expect(JSON.stringify(recovered)).not.toContain('refresh-2');
+      expect(transport.refresh).toHaveBeenCalledOnce();
+      expect(persisted()?.accessToken).toBe('access-2');
+      expect(persisted()?.refreshAttemptId).toBeUndefined();
+    }
+  );
 
   test('does not resurrect a session when clear races refresh', async () => {
     const { broker, transport, persisted } = setup(pair(1, now + 600_000));
@@ -247,7 +283,7 @@ describe('AuthTokenBroker', () => {
     const rotated = deferred<AuthTokenResponse>();
     transport.refresh.mockReturnValueOnce(rotated.promise);
     const refreshing = broker.refresh('manual');
-    await Promise.resolve();
+    await vi.waitFor(() => expect(transport.refresh).toHaveBeenCalledOnce());
     const clearing = broker.clear('logout');
     rotated.resolve(response(2));
 
@@ -309,7 +345,7 @@ describe('AuthTokenBroker', () => {
     const oldRefresh = deferred<AuthTokenResponse>();
     transport.refresh.mockReturnValueOnce(oldRefresh.promise);
     const refreshing = broker.refresh('manual');
-    await Promise.resolve();
+    await vi.waitFor(() => expect(transport.refresh).toHaveBeenCalledOnce());
     await broker.set(response(3));
     oldRefresh.reject(item.error);
 
@@ -358,7 +394,10 @@ describe('AuthTokenBroker', () => {
       await expect(broker.getValidAccessToken()).rejects.toMatchObject({
         code: 'AUTH_TOKEN_RESPONSE_INVALID',
       });
-      expect(storage.save).not.toHaveBeenCalled();
+      expect(storage.save).toHaveBeenCalledOnce();
+      expect(storage.save).toHaveBeenCalledWith(
+        expect.objectContaining({ refreshToken: 'refresh-1' })
+      );
     }
   );
 

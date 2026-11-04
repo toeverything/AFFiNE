@@ -28,6 +28,7 @@ export interface AuthTokenPair {
   accessToken: string;
   accessExpiresAt: string;
   refreshToken: string;
+  refreshAttemptId?: string;
   refreshExpiresAt: string;
   session: {
     id: string;
@@ -73,7 +74,7 @@ export interface AuthTokenStorage {
 }
 
 export interface AuthTokenTransport {
-  refresh(refreshToken: string): Promise<AuthTokenResponse>;
+  refresh(refreshToken: string, attemptId?: string): Promise<AuthTokenResponse>;
 }
 
 export interface AuthTokenBrokerContract {
@@ -251,7 +252,22 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
       reason,
     });
     try {
-      const pair = this.toPair(await this.requestRefresh(current.refreshToken));
+      const attemptId = current.refreshAttemptId ?? crypto.randomUUID();
+      if (!current.refreshAttemptId) {
+        const attempted = { ...current, refreshAttemptId: attemptId };
+        try {
+          await this.mutateStorage(() => this.storage.save(attempted));
+        } catch {
+          throw new AuthSessionError('AUTH_TOKEN_STORAGE_UNAVAILABLE', true);
+        }
+        if (epoch !== this.mutationEpoch) {
+          throw new AuthSessionError('AUTH_OPERATION_CANCELLED', true);
+        }
+        this.pair = attempted;
+      }
+      const pair = this.toPair(
+        await this.requestRefresh(current.refreshToken, attemptId)
+      );
       if (epoch !== this.mutationEpoch) {
         throw new AuthSessionError('AUTH_OPERATION_CANCELLED', true);
       }
@@ -314,10 +330,10 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
     return await result;
   }
 
-  private async requestRefresh(refreshToken: string) {
+  private async requestRefresh(refreshToken: string, attemptId: string) {
     for (let attempt = 0; ; attempt++) {
       try {
-        return await this.transport.refresh(refreshToken);
+        return await this.transport.refresh(refreshToken, attemptId);
       } catch (error) {
         const classified = classifyAuthError(error);
         const delay = this.retryDelays[attempt];
@@ -452,6 +468,11 @@ export function isAuthTokenPair(value: unknown): value is AuthTokenPair {
     pair.accessToken.length > 0 &&
     typeof pair.refreshToken === 'string' &&
     pair.refreshToken.length > 0 &&
+    (pair.refreshAttemptId === undefined ||
+      (typeof pair.refreshAttemptId === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          pair.refreshAttemptId
+        ))) &&
     typeof pair.accessExpiresAt === 'string' &&
     Number.isFinite(Date.parse(pair.accessExpiresAt)) &&
     typeof pair.refreshExpiresAt === 'string' &&
