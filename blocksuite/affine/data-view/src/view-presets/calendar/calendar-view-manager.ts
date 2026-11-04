@@ -194,6 +194,10 @@ export class CalendarSingleView extends SingleViewBase<CalendarStoredViewData> {
     return this.data$.value?.ui?.emptyMonthHintDismissed ?? false;
   });
 
+  weekStartsOn$ = computed<0 | 1>(() => {
+    return this.data$.value?.weekStartsOn ?? 0;
+  });
+
   private readonly sortManager = this.traitSet(
     sortTraitKey,
     new SortManager(this.sortList$, this, {
@@ -445,6 +449,10 @@ export class CalendarSingleView extends SingleViewBase<CalendarStoredViewData> {
         emptyMonthHintDismissed: true,
       },
     }));
+  }
+
+  setWeekStartsOn(weekStartsOn: 0 | 1) {
+    this.dataUpdate(() => ({ weekStartsOn }));
   }
 
   getDocDisplayTitle(docId: string) {
