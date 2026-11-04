@@ -24,7 +24,7 @@ const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
 };
 
 export interface IconPickerWrapperProps {
-  onSelect?: (iconData?: IconData) => void;
+  onSelect?: (iconData?: IconData | Blob) => void;
   onClose?: () => void;
 }
 

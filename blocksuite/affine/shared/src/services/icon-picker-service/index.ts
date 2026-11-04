@@ -18,11 +18,14 @@ export type IconData =
     }
   | {
       type: IconType.Blob;
-      blob: Blob;
+      /** key of the image stored in the workspace blob engine */
+      blobId: string;
     };
 
 export interface IconPickerService {
-  iconPickerComponent: UniComponent<{ onSelect?: (data?: IconData) => void }>;
+  iconPickerComponent: UniComponent<{
+    onSelect?: (data?: IconData | Blob) => void;
+  }>;
 }
 
 export const IconPickerServiceIdentifier =
