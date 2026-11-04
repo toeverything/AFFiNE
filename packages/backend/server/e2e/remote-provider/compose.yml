@@ -15,7 +15,7 @@ services:
       start_period: 5s
 
   opensearch:
-    image: opensearchproject/opensearch:2.19.1
+    image: opensearchproject/opensearch:2.19.7
     environment:
       discovery.type: single-node
       DISABLE_INSTALL_DEMO_CONFIG: 'true'
@@ -40,13 +40,13 @@ services:
       start_period: 10s
 
   toxiproxy:
-    image: ghcr.io/shopify/toxiproxy:2.12.0
+    image: ghcr.io/shopify/toxiproxy:2.13.0
     ports:
       - '8474:8474'
       - '8666:8666'
 
   proxy-init:
-    image: curlimages/curl:8.12.1
+    image: curlimages/curl:8.23.0
     depends_on:
       opensearch:
         condition: service_healthy
