@@ -2,6 +2,7 @@ export const PERMANENT_AUTH_CODES = new Set([
   'ACCESS_TOKEN_INVALID',
   'AUTH_SESSION_EXPIRED',
   'AUTH_SESSION_REVOKED',
+  'AUTH_SESSION_RECOVERY_REQUIRED',
   'REFRESH_TOKEN_INVALID',
   'REFRESH_TOKEN_REUSED',
   'UNSUPPORTED_CLIENT_VERSION',
@@ -12,6 +13,7 @@ const PUBLIC_AUTH_CODES = new Set([
   'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
   'AUTH_TOKEN_RESPONSE_INVALID',
   'AUTH_TOKEN_STORAGE_UNAVAILABLE',
+  'AUTH_SESSION_RECOVERY_UNSUPPORTED',
   'ACTION_FORBIDDEN',
   'FORBIDDEN',
   'NETWORK_ERROR',
@@ -31,6 +33,8 @@ export interface AuthTokenPair {
   accessExpiresAt: string;
   refreshToken: string;
   refreshExpiresAt: string;
+  // Persisted before dispatch; reused after ambiguous failures and restarts.
+  refreshRequestId?: string;
   session: {
     id: string;
     absoluteExpiresAt: string;
@@ -75,7 +79,7 @@ export interface AuthTokenStorage {
 }
 
 export interface AuthTokenTransport {
-  refresh(refreshToken: string): Promise<AuthTokenResponse>;
+  refresh(refreshToken: string, requestId?: string): Promise<AuthTokenResponse>;
 }
 
 export interface AuthTokenBrokerContract {
@@ -86,6 +90,8 @@ export interface AuthTokenBrokerContract {
 }
 
 export interface AuthTokenBrokerOptions {
+  createRefreshRequestId?: () => string;
+  supportsRefreshRequestId?: () => Promise<boolean>;
   now?: () => number;
   random?: () => number;
   retryDelays?: number[];
@@ -108,12 +114,15 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
   private pending: { pair: AuthTokenPair; epoch: number } | null = null;
   private mutationEpoch = 0;
   private storageMutation: Promise<void> = Promise.resolve();
+  private recoveryBlocked: { requestId: string; retryAt: number } | null = null;
   private readonly listeners = new Set<(state: AuthState) => void>();
   private state: AuthState = { status: 'initializing' };
   private readonly now: () => number;
   private readonly random: () => number;
   private readonly retryDelays: number[];
   private readonly sleep: (delay: number) => Promise<void>;
+  private readonly createRefreshRequestId?: () => string;
+  private readonly supportsRefreshRequestId?: () => Promise<boolean>;
 
   constructor(
     private readonly storage: AuthTokenStorage,
@@ -121,6 +130,8 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
     options: AuthTokenBrokerOptions = {}
   ) {
     this.now = options.now ?? Date.now;
+    this.createRefreshRequestId = options.createRefreshRequestId;
+    this.supportsRefreshRequestId = options.supportsRefreshRequestId;
     this.random = options.random ?? Math.random;
     this.retryDelays = options.retryDelays ?? [250, 1000];
     this.sleep =
@@ -142,15 +153,17 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
   }
 
   async set(response: AuthTokenResponse) {
-    await this.initialize();
-    const epoch = ++this.mutationEpoch;
     const pair = this.toPair(response);
+    await this.initializeForMutation();
+    const epoch = ++this.mutationEpoch;
+    this.recoveryBlocked = null;
     this.pending = { pair, epoch };
     return this.toAccessToken(await this.persistPending());
   }
 
   async getValidAccessToken(minValidity = 60_000) {
     await this.initialize();
+    if (this.pending) await this.refresh('storage-retry');
     if (!this.pair) return null;
     if (Date.parse(this.pair.accessExpiresAt) - this.now() <= minValidity) {
       await this.refresh('proactive');
@@ -160,7 +173,9 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
 
   async refresh(reason: string) {
     await this.initialize();
-    if (!this.pair) throw new AuthSessionError('AUTH_SESSION_EMPTY', false);
+    if (!this.pair && !this.pending) {
+      throw new AuthSessionError('AUTH_SESSION_EMPTY', false);
+    }
     if (!this.refreshPromise) {
       this.refreshPromise = (
         this.pending ? this.persistPending() : this.performRefresh(reason)
@@ -172,8 +187,9 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
   }
 
   async clear(_reason: string) {
-    await this.initialize();
-    ++this.mutationEpoch;
+    await this.initializeForMutation();
+    const epoch = ++this.mutationEpoch;
+    this.recoveryBlocked = null;
     this.pending = null;
     let failed = false;
     try {
@@ -181,8 +197,10 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
     } catch {
       failed = true;
     } finally {
-      this.pair = null;
-      this.publish({ status: 'empty' });
+      if (epoch === this.mutationEpoch) {
+        this.pair = null;
+        this.publish({ status: 'empty' });
+      }
     }
     if (failed) {
       throw new AuthSessionError('AUTH_TOKEN_STORAGE_UNAVAILABLE', true);
@@ -193,8 +211,9 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
     _reason: string,
     revokeToken: (refreshToken: string) => Promise<void>
   ) {
-    await this.initialize();
-    ++this.mutationEpoch;
+    const initializationError = await this.initializeForMutation();
+    const epoch = ++this.mutationEpoch;
+    this.recoveryBlocked = null;
     this.pending = null;
     const refreshToken = this.pair?.refreshToken;
     let storageError: unknown;
@@ -203,24 +222,49 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
     } catch (error) {
       storageError = error;
     } finally {
-      this.pair = null;
-      this.publish({ status: 'empty' });
+      if (epoch === this.mutationEpoch) {
+        this.pair = null;
+        this.publish({ status: 'empty' });
+      }
     }
     if (refreshToken) await revokeToken(refreshToken);
-    if (storageError) {
+    if (storageError || initializationError) {
       throw new AuthSessionError('AUTH_TOKEN_STORAGE_UNAVAILABLE', true);
     }
   }
 
+  private async initializeForMutation() {
+    let unavailable: AuthSessionError | undefined;
+    try {
+      await this.initialize();
+    } catch (error) {
+      if (
+        !(error instanceof AuthSessionError) ||
+        error.code !== 'AUTH_TOKEN_STORAGE_UNAVAILABLE'
+      ) {
+        throw error;
+      }
+      unavailable = error;
+    }
+    // Explicit mutations must not reload the credential they replace or forget.
+    this.initialized = Promise.resolve();
+    return unavailable;
+  }
+
   private async initialize() {
     if (!this.initialized) {
+      const epoch = this.mutationEpoch;
       const attempt = Promise.resolve()
         .then(() => this.storage.load())
         .then(async pair => {
+          if (epoch !== this.mutationEpoch) return;
           if (pair && !isAuthTokenPair(pair)) {
-            await this.mutateStorage(() => this.storage.clear());
+            await this.mutateStorage(async () => {
+              if (epoch === this.mutationEpoch) await this.storage.clear();
+            });
             pair = null;
           }
+          if (epoch !== this.mutationEpoch) return;
           this.pair = pair;
           this.publish(
             pair
@@ -229,6 +273,7 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
           );
         })
         .catch(() => {
+          if (epoch !== this.mutationEpoch) return;
           throw new AuthSessionError('AUTH_TOKEN_STORAGE_UNAVAILABLE', true);
         });
       this.initialized = attempt;
@@ -244,7 +289,7 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
   }
 
   private async performRefresh(reason: string) {
-    const current = this.pair;
+    let current = this.pair;
     if (!current) throw new AuthSessionError('AUTH_SESSION_EMPTY', false);
     const epoch = this.mutationEpoch;
     this.publish({
@@ -253,14 +298,84 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
       reason,
     });
     try {
+      if (this.createRefreshRequestId) {
+        let stored: AuthTokenPair | null;
+        try {
+          stored = await this.storage.load();
+        } catch {
+          throw new AuthSessionError('AUTH_TOKEN_STORAGE_UNAVAILABLE', true);
+        }
+        if (epoch !== this.mutationEpoch) {
+          throw new AuthSessionError('AUTH_OPERATION_CANCELLED', true);
+        }
+        if (!stored || !isAuthTokenPair(stored)) {
+          this.pair = null;
+          this.publish({ status: 'empty' });
+          throw new AuthSessionError('AUTH_OPERATION_CANCELLED', true);
+        }
+        this.pair = stored;
+        if (
+          stored.refreshToken !== current.refreshToken &&
+          this.refreshDeadline(stored) > this.now() &&
+          Date.parse(stored.accessExpiresAt) - this.now() > 60_000
+        ) {
+          // A previous owner already committed a newer pair to shared storage.
+          this.publish({
+            status: 'authenticated',
+            session: this.toSnapshot(stored),
+          });
+          return stored;
+        }
+        current = stored;
+      }
+      const deadline = this.refreshDeadline(current);
+      this.ensureRefreshable(deadline);
+      if (
+        this.recoveryBlocked &&
+        current.refreshRequestId === this.recoveryBlocked.requestId &&
+        this.now() < this.recoveryBlocked.retryAt
+      ) {
+        throw new AuthSessionError('AUTH_SESSION_RECOVERY_UNSUPPORTED', false);
+      }
+      const useRequestId =
+        this.createRefreshRequestId &&
+        (current.refreshRequestId ||
+          !this.supportsRefreshRequestId ||
+          (await this.supportsRefreshRequestId()));
+      if (epoch !== this.mutationEpoch) {
+        throw new AuthSessionError('AUTH_OPERATION_CANCELLED', true);
+      }
+      this.ensureRefreshable(deadline);
+      if (
+        !current.refreshRequestId &&
+        useRequestId &&
+        this.createRefreshRequestId
+      ) {
+        const prepared = {
+          ...current,
+          refreshRequestId: this.createRefreshRequestId(),
+        };
+        try {
+          await this.mutateStorage(() => this.storage.save(prepared));
+        } catch {
+          throw new AuthSessionError('AUTH_TOKEN_STORAGE_UNAVAILABLE', true);
+        }
+        if (epoch !== this.mutationEpoch) {
+          throw new AuthSessionError('AUTH_OPERATION_CANCELLED', true);
+        }
+        this.pair = prepared;
+      }
       const { response, requestedAt } = await this.requestRefresh(
-        current.refreshToken
+        current.refreshToken,
+        deadline,
+        this.pair?.refreshRequestId
       );
       const pair = this.toPair(response, requestedAt);
       if (epoch !== this.mutationEpoch) {
         throw new AuthSessionError('AUTH_OPERATION_CANCELLED', true);
       }
       this.pending = { pair, epoch };
+      this.recoveryBlocked = null;
       return await this.persistPending();
     } catch (error) {
       const classified = classifyAuthError(error);
@@ -276,10 +391,21 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
         } catch {
           // The in-memory credential must still become unusable immediately.
         } finally {
+          this.recoveryBlocked = null;
           this.pair = null;
           this.publish({ status: 'revoked', code: classified.code });
         }
       } else {
+        const requestId = this.pair?.refreshRequestId;
+        if (
+          classified.code === 'AUTH_SESSION_RECOVERY_UNSUPPORTED' &&
+          requestId &&
+          (this.recoveryBlocked?.requestId !== requestId ||
+            this.recoveryBlocked.retryAt <= this.now())
+        ) {
+          // Preserve pending operations across mixed deployments without retry storms.
+          this.recoveryBlocked = { requestId, retryAt: this.now() + 30_000 };
+        }
         this.publish({
           status: 'offline-authenticated',
           session: this.toSnapshot(current),
@@ -319,13 +445,30 @@ export class AuthTokenBroker implements AuthTokenBrokerContract {
     return await result;
   }
 
-  private async requestRefresh(refreshToken: string) {
+  private refreshDeadline(pair: AuthTokenPair) {
+    return Math.min(
+      Date.parse(pair.refreshExpiresAt),
+      Date.parse(pair.session.absoluteExpiresAt)
+    );
+  }
+
+  private ensureRefreshable(deadline: number) {
+    if (this.now() >= deadline) {
+      throw new AuthSessionError('AUTH_SESSION_EXPIRED', false);
+    }
+  }
+
+  private async requestRefresh(
+    refreshToken: string,
+    deadline: number,
+    requestId?: string
+  ) {
     for (let attempt = 0; ; attempt++) {
       try {
-        // Count in-flight time (including sleep) against the reported TTL.
-        // A response processed after wake must not extend the server's grant.
+        this.ensureRefreshable(deadline);
+        // Include request and suspension time in the access-token lifetime.
         const requestedAt = this.now();
-        const response = await this.transport.refresh(refreshToken);
+        const response = await this.transport.refresh(refreshToken, requestId);
         return { response, requestedAt };
       } catch (error) {
         const classified = classifyAuthError(error);
@@ -410,13 +553,13 @@ export function classifyAuthError(error: unknown) {
   return new AuthSessionError(
     publicCode,
     !PERMANENT_AUTH_CODES.has(publicCode) &&
+      publicCode !== 'AUTH_SESSION_RECOVERY_UNSUPPORTED' &&
       publicCode !== 'ACTION_FORBIDDEN' &&
       publicCode !== 'FORBIDDEN'
   );
 }
 
-// Server errors use both `code` (sometimes a generic HTTP label) and `type`.
-// Only allowlisted values may cross the credential boundary.
+// Only allowlisted server codes may cross the credential boundary.
 export function classifyAuthHttpError(status: number, body: unknown) {
   const fields =
     body && typeof body === 'object'
@@ -488,6 +631,11 @@ export function isAuthTokenPair(value: unknown): value is AuthTokenPair {
     pair.accessToken.length > 0 &&
     typeof pair.refreshToken === 'string' &&
     pair.refreshToken.length > 0 &&
+    (pair.refreshRequestId === undefined ||
+      (typeof pair.refreshRequestId === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          pair.refreshRequestId
+        ))) &&
     typeof pair.accessExpiresAt === 'string' &&
     Number.isFinite(Date.parse(pair.accessExpiresAt)) &&
     typeof pair.refreshExpiresAt === 'string' &&
