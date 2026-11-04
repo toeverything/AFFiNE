@@ -3,10 +3,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import {
+  AuthSessionError,
   AuthTokenBroker,
   type AuthTokenPair,
   type AuthTokenResponse,
   classifyAuthError,
+  classifyAuthHttpError,
+  PERMANENT_AUTH_CODES,
 } from '@affine/auth';
 import { app, safeStorage } from 'electron';
 
@@ -20,6 +23,12 @@ const INSTALLATION_FILEPATH = path.join(
   'installation-id'
 );
 const brokers = new Map<string, AuthTokenBroker>();
+const refreshCapabilities = new Map<
+  string,
+  { promise: Promise<boolean>; expiresAt: number }
+>();
+// Auth starts after the main process acquires Electron's single-instance lock.
+// The token store and operation journal require one owner per userData directory.
 const memoryStore = new Map<string, AuthTokenPair>();
 let fileMutation = Promise.resolve();
 let installationId: Promise<string> | undefined;
@@ -38,15 +47,21 @@ export function normalizeEndpoint(endpoint: string) {
 }
 
 async function readStore(): Promise<Record<string, string>> {
+  let encoded: string;
   try {
-    const value = JSON.parse(await fs.readFile(FILEPATH, 'utf8'));
+    encoded = await fs.readFile(FILEPATH, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {};
+    logger.error('failed to read auth session store');
+    throw new AuthSessionError('AUTH_TOKEN_STORAGE_UNAVAILABLE', true);
+  }
+  try {
+    const value = JSON.parse(encoded);
     return value && typeof value === 'object' && !Array.isArray(value)
       ? value
       : {};
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      logger.error('failed to read auth session store', error);
-    }
+  } catch {
+    logger.error('invalid auth session store');
     return {};
   }
 }
@@ -55,7 +70,10 @@ async function mutateFile(mutator: (store: Record<string, string>) => void) {
   const operation = fileMutation.then(async () => {
     const store = await readStore();
     mutator(store);
-    await fs.writeFile(TEMP_FILEPATH, JSON.stringify(store), { mode: 0o600 });
+    await fs.writeFile(TEMP_FILEPATH, JSON.stringify(store), {
+      mode: 0o600,
+      flush: true,
+    });
     await fs.rename(TEMP_FILEPATH, FILEPATH);
   });
   fileMutation = operation.catch(() => {});
@@ -67,45 +85,139 @@ function encrypt(pair: AuthTokenPair) {
 }
 
 function decrypt(value: string): AuthTokenPair | null {
+  let plaintext: string;
   try {
-    return JSON.parse(safeStorage.decryptString(Buffer.from(value, 'base64')));
-  } catch (error) {
-    logger.error('failed to decrypt auth session', error);
+    plaintext = safeStorage.decryptString(Buffer.from(value, 'base64'));
+  } catch {
+    // A locked Keychain is not evidence that the persisted credential is bad.
+    logger.error('failed to decrypt auth session');
+    throw new AuthSessionError('AUTH_TOKEN_STORAGE_UNAVAILABLE', true);
+  }
+  try {
+    return JSON.parse(plaintext);
+  } catch {
+    // Parser errors can contain the decrypted credential; never log them.
+    logger.error('invalid auth session record');
     return null;
   }
 }
 
 function storage(endpoint: string) {
+  let persistedSessionId: string | undefined;
   return {
     async load() {
+      const memory = memoryStore.get(endpoint);
+      if (memory) return memory;
       if (!secureStorageAvailable()) {
-        return memoryStore.get(endpoint) ?? null;
+        // Retain an encrypted session while its storage backend is unavailable.
+        if ((await readStore())[endpoint]) {
+          throw new AuthSessionError('AUTH_TOKEN_STORAGE_UNAVAILABLE', true);
+        }
+        return null;
       }
       const encrypted = (await readStore())[endpoint];
       if (!encrypted) return null;
       const pair = decrypt(encrypted);
       if (!pair) await mutateFile(store => delete store[endpoint]);
+      persistedSessionId = pair?.session?.id;
       return pair;
     },
     async save(pair: AuthTokenPair) {
       if (!secureStorageAvailable()) {
+        // Refresh must not turn an existing durable session into a volatile one
+        // if Keychain availability changes while its request is in flight.
+        if (persistedSessionId === pair.session.id) {
+          throw new AuthSessionError('AUTH_TOKEN_STORAGE_UNAVAILABLE', true);
+        }
         await mutateFile(store => delete store[endpoint]);
         memoryStore.set(endpoint, pair);
+        persistedSessionId = undefined;
         return;
       }
       await mutateFile(store => {
         store[endpoint] = encrypt(pair);
       });
       memoryStore.delete(endpoint);
+      persistedSessionId = pair.session.id;
     },
     async clear() {
       memoryStore.delete(endpoint);
       await mutateFile(store => delete store[endpoint]);
+      persistedSessionId = undefined;
     },
   };
 }
 
-async function refresh(endpoint: string, refreshToken: string) {
+// Discover support without credentials; pending operations never downgrade.
+function supportsRefreshRequestId(endpoint: string) {
+  let cached = refreshCapabilities.get(endpoint);
+  if (cached && cached.expiresAt <= Date.now()) cached = undefined;
+  if (!cached) {
+    const pending = (async () => {
+      const signal = AbortSignal.timeout(AUTH_REQUEST_TIMEOUT);
+      const response = await authFetch(
+        new URL('/api/auth/session/refresh', endpoint).toString(),
+        {
+          headers: {
+            'x-affine-client-kind': 'native',
+            'x-affine-version': BUILD_CONFIG.appVersion,
+          },
+          signal,
+        }
+      );
+      // Old servers have no GET handler for this route. Never probe via POST.
+      if (response.status === 404 || response.status === 405) return false;
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw classifyAuthHttpError(response.status, body);
+      }
+      // Some old self-hosts serve the SPA fallback for unknown GET routes.
+      if (!response.headers.get('content-type')?.includes('application/json')) {
+        return false;
+      }
+      const body: unknown = await response.json().catch(() => {
+        throw new AuthSessionError(
+          signal.aborted
+            ? 'AUTH_REQUEST_TIMEOUT'
+            : 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
+          true
+        );
+      });
+      if (
+        body &&
+        typeof body === 'object' &&
+        'refreshRequestId' in body &&
+        typeof body.refreshRequestId === 'boolean'
+      ) {
+        return body.refreshRequestId;
+      }
+      throw new AuthSessionError('AUTH_SESSION_TEMPORARILY_UNAVAILABLE', true);
+    })();
+    const entry = { promise: pending, expiresAt: Infinity };
+    refreshCapabilities.set(endpoint, entry);
+    void pending.then(
+      supported => {
+        if (refreshCapabilities.get(endpoint) === entry) {
+          entry.expiresAt = supported ? Infinity : Date.now() + 60_000;
+        }
+      },
+      () => {
+        if (refreshCapabilities.get(endpoint) === entry) {
+          refreshCapabilities.delete(endpoint);
+        }
+      }
+    );
+    cached = entry;
+  }
+  return cached.promise;
+}
+
+async function refresh(
+  endpoint: string,
+  refreshToken: string,
+  requestId?: string
+) {
+  const signal = AbortSignal.timeout(AUTH_REQUEST_TIMEOUT);
   const response = await authFetch(
     new URL('/api/auth/session/refresh', endpoint).toString(),
     {
@@ -115,18 +227,34 @@ async function refresh(endpoint: string, refreshToken: string) {
         'x-affine-client-kind': 'native',
         'x-affine-version': BUILD_CONFIG.appVersion,
       },
-      body: JSON.stringify({ refreshToken }),
-      signal: AbortSignal.timeout(AUTH_REQUEST_TIMEOUT),
+      body: JSON.stringify({ refreshToken, refreshRequestId: requestId }),
+      signal,
     }
   );
-  const body = await response.json().catch(() => ({}));
+  const body = await response.json().catch(error => {
+    // Keep known HTTP errors when the response body is lost.
+    if (!response.ok) throw classifyAuthHttpError(response.status, null);
+    if (signal.aborted)
+      throw new AuthSessionError('AUTH_REQUEST_TIMEOUT', true);
+    if (error instanceof SyntaxError) return {};
+    throw new AuthSessionError('NETWORK_ERROR', true);
+  });
   if (!response.ok) {
-    throw classifyAuthError({
-      code:
-        typeof body === 'object' && body && 'code' in body
-          ? String(body.code)
-          : 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
-    });
+    const error = classifyAuthHttpError(response.status, body);
+    if (
+      requestId &&
+      response.status === 400 &&
+      error.code === 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE' &&
+      body &&
+      typeof body === 'object' &&
+      (('code' in body && body.code === 'VALIDATION_ERROR') ||
+        ('type' in body && body.type === 'VALIDATION_ERROR') ||
+        ('name' in body && body.name === 'VALIDATION_ERROR'))
+    ) {
+      // Never downgrade an operation that a newer server may already have committed.
+      throw new AuthSessionError('AUTH_SESSION_RECOVERY_UNSUPPORTED', false);
+    }
+    throw error;
   }
   return body as AuthTokenResponse;
 }
@@ -135,16 +263,25 @@ export function getAuthSessionBroker(endpoint: string) {
   const normalized = normalizeEndpoint(endpoint);
   let broker = brokers.get(normalized);
   if (!broker) {
-    broker = new AuthTokenBroker(storage(normalized), {
-      refresh: (token: string) => refresh(normalized, token),
-    });
+    broker = new AuthTokenBroker(
+      storage(normalized),
+      {
+        refresh: (token, requestId) => refresh(normalized, token, requestId),
+      },
+      {
+        createRefreshRequestId: randomUUID,
+        supportsRefreshRequestId: () => supportsRefreshRequestId(normalized),
+      }
+    );
     brokers.set(normalized, broker);
   }
   return broker;
 }
 
 export async function initializeAuthSessions() {
-  for (const endpoint of Object.keys(await readStore())) {
+  // Allow window startup; individual brokers retry credential reads.
+  const store = await readStore().catch(() => ({}));
+  for (const endpoint of Object.keys(store)) {
     try {
       getAuthSessionBroker(endpoint);
     } catch (error) {
@@ -235,7 +372,10 @@ export async function getValidAccessToken(
     );
   } catch (error) {
     const classified = classifyAuthError(error);
-    if (classified.code === 'AUTH_SESSION_EMPTY' || !classified.transient) {
+    if (
+      classified.code === 'AUTH_SESSION_EMPTY' ||
+      PERMANENT_AUTH_CODES.has(classified.code)
+    ) {
       return null;
     }
     throw classified;

@@ -8,7 +8,11 @@ import jwt from 'jsonwebtoken';
 import Sinon from 'sinon';
 import supertest from 'supertest';
 
-import { ConfigFactory } from '../../base';
+import {
+  ConfigFactory,
+  CORS_ALLOWED_HEADERS,
+  CORS_ALLOWED_METHODS,
+} from '../../base';
 import {
   getRequestCookie,
   getRequestHeader,
@@ -43,7 +47,16 @@ async function lastAuthMail(app: TestingApp, name: string) {
 }
 
 test.before(async t => {
-  const app = await createTestingApp();
+  const app = await createTestingApp({
+    tapApp(app) {
+      app.enableCors({
+        origin: 'https://localhost',
+        credentials: true,
+        methods: CORS_ALLOWED_METHODS,
+        allowedHeaders: CORS_ALLOWED_HEADERS,
+      });
+    },
+  });
   app.url();
 
   t.context.auth = app.get(AuthService);
@@ -696,6 +709,149 @@ test('should reject an invalid refresh token with a stable code', async t => {
     .expect(401);
 
   t.is(res.body.code, 'REFRESH_TOKEN_INVALID');
+});
+
+test('refresh accepts the Electron transport origin on self-hosted and rejects browser origins', async t => {
+  for (const origin of [
+    undefined,
+    'https://localhost',
+    'capacitor://localhost',
+    'ionic://localhost',
+  ]) {
+    const request = t.context.app
+      .POST('/api/auth/session/refresh')
+      .set('x-affine-client-kind', 'native');
+    if (origin) request.set('Origin', origin);
+    const res = await request.send({ refreshToken: 'invalid' }).expect(401);
+    t.is(res.body.code, 'REFRESH_TOKEN_INVALID');
+  }
+  for (const origin of [
+    'https://self-hosted.example',
+    'https://evil.example',
+    'null',
+    'file://',
+  ]) {
+    const res = await t.context.app
+      .POST('/api/auth/session/refresh')
+      .set('x-affine-client-kind', 'native')
+      .set('Origin', origin)
+      .send({ refreshToken: 'invalid' })
+      .expect(403);
+    t.is(res.body.type, 'ACTION_FORBIDDEN');
+  }
+  await t.context.app
+    .POST('/api/auth/session/refresh')
+    .set('Origin', 'https://localhost')
+    .send({ refreshToken: 'invalid' })
+    .expect(403);
+});
+
+test('refresh preflight allows the headers sent by Electron', async t => {
+  const headers = ['content-type', 'x-affine-client-kind', 'x-affine-version'];
+  const response = await supertest(t.context.app.getHttpServer())
+    .options('/api/auth/session/refresh')
+    .set('Origin', 'https://localhost')
+    .set('Access-Control-Request-Method', 'POST')
+    .set('Access-Control-Request-Headers', headers.join(','))
+    .expect(204);
+  t.is(response.headers['access-control-allow-origin'], 'https://localhost');
+  const allowed = new Set(
+    response.headers['access-control-allow-headers']
+      .toLowerCase()
+      .split(',')
+      .map((header: string) => header.trim())
+  );
+  for (const header of headers) t.true(allowed.has(header));
+});
+
+test('refresh recovers lost responses beyond grace and keeps replay detection', async t => {
+  const { app, db } = t.context;
+  const user = await app.createUser('lost-refresh-response@affine.pro');
+  const signIn = await app
+    .POST('/api/auth/sign-in')
+    .set('x-affine-client-kind', 'native')
+    .send({ email: user.email, password: user.password })
+    .expect(200);
+  const issued = await exchangeSession(app, signIn.body.exchangeCode);
+  const requestId = randomUUID();
+  const refresh = (token: string, id = requestId) =>
+    app
+      .POST('/api/auth/session/refresh')
+      .set('x-affine-client-kind', 'native')
+      .set('Origin', 'https://localhost')
+      .send({ refreshToken: token, refreshRequestId: id });
+  const lost = await refresh(issued.body.refreshToken).expect(201);
+  // Simulate a suspended client without a wall-clock sleep. Discard the reply.
+  await db.authRefreshToken.updateMany({
+    where: { authSessionId: issued.body.session.id, usedAt: { not: null } },
+    data: { usedAt: new Date(Date.now() - 27 * 60_000) },
+  });
+  const retries = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      refresh(issued.body.refreshToken).expect(201)
+    )
+  );
+  for (const retry of retries) {
+    t.true(retry.body.refreshToken === lost.body.refreshToken);
+    t.is(retry.headers['cache-control'], 'no-store');
+  }
+  const session = await db.authSession.findUniqueOrThrow({
+    where: { id: issued.body.session.id },
+  });
+  t.is(session.revokedAt, null);
+  const next = await refresh(retries[0].body.refreshToken, randomUUID()).expect(
+    201
+  );
+  // Once N+1 is consumed, even the original operation must trigger replay
+  // revocation. Otherwise a stolen full request could hide an active chain.
+  const replay = await refresh(issued.body.refreshToken).expect(401);
+  t.is(replay.body.code, 'REFRESH_TOKEN_REUSED');
+  await app
+    .GET('/api/auth/sessions')
+    .set('Authorization', `Bearer ${next.body.accessToken}`)
+    .expect(401);
+  const revoked = await refresh(next.body.refreshToken, randomUUID()).expect(
+    401
+  );
+  t.is(revoked.body.code, 'AUTH_SESSION_REVOKED');
+});
+
+test('refresh rejects invalid operation ids before executing a rotation', async t => {
+  const { app, db } = t.context;
+  const user = await app.createUser(
+    'invalid-refresh-operation@example.invalid'
+  );
+  const issued = await app.createNativeAuthSession(user.id, {
+    platform: 'electron',
+  });
+  const res = await t.context.app
+    .POST('/api/auth/session/refresh')
+    .set('x-affine-client-kind', 'native')
+    .send({ refreshToken: issued.refreshToken, refreshRequestId: 'invalid' })
+    .expect(400);
+  t.is(res.body.name, 'VALIDATION_ERROR');
+  const source = await db.authRefreshToken.findFirstOrThrow({
+    where: { authSessionId: issued.session.id },
+  });
+  t.is(source.usedAt, null);
+  t.is(source.replacedById, null);
+  t.is(
+    (
+      await db.authSession.findUniqueOrThrow({
+        where: { id: issued.session.id },
+      })
+    ).revokedAt,
+    null
+  );
+});
+
+test('revoke does not accept refresh-only operation fields', async t => {
+  const response = await t.context.app
+    .POST('/api/auth/session/revoke')
+    .set('x-affine-client-kind', 'native')
+    .send({ refreshToken: 'invalid', refreshRequestId: randomUUID() })
+    .expect(400);
+  t.is(response.body.name, 'VALIDATION_ERROR');
 });
 
 test('should not fall back to a cookie on auth-session refresh', async t => {
@@ -1559,4 +1715,64 @@ test('should lock magic link OTP after too many attempts', async t => {
 
   const session = await currentUser(app);
   t.falsy(session);
+});
+
+test('refresh capability discovery is native-only, uncached and does not rotate', async t => {
+  const { app, db } = t.context;
+  const before = await db.authRefreshToken.count();
+  const response = await app
+    .GET('/api/auth/session/refresh')
+    .set('x-affine-client-kind', 'native')
+    .set('Origin', 'https://localhost')
+    .expect(200);
+  t.deepEqual(response.body, { refreshRequestId: true });
+  t.is(response.headers['cache-control'], 'no-store');
+  t.is(await db.authRefreshToken.count(), before);
+  await app.GET('/api/auth/session/refresh').expect(403);
+  await app
+    .GET('/api/auth/session/refresh')
+    .set('x-affine-client-kind', 'native')
+    .set('Origin', 'https://evil.example')
+    .expect(403);
+});
+
+test('original credential expiry still prevents keyed recovery without replay revocation', async t => {
+  const { app, db } = t.context;
+  const user = await app.createUser('bounded-recovery@example.invalid');
+  const issued = await app.createNativeAuthSession(user.id, {
+    platform: 'electron',
+  });
+  const operation = randomUUID();
+  const refresh = () =>
+    app
+      .POST('/api/auth/session/refresh')
+      .set('x-affine-client-kind', 'native')
+      .send({ refreshToken: issued.refreshToken, refreshRequestId: operation });
+  await refresh().expect(201);
+  const source = await db.authRefreshToken.findFirstOrThrow({
+    where: { authSessionId: issued.session.id, usedAt: { not: null } },
+  });
+  t.true(
+    source.successorExpiresAt !== null &&
+      source.usedAt !== null &&
+      source.successorExpiresAt.getTime() === source.expiresAt.getTime()
+  );
+  await db.authRefreshToken.update({
+    where: { id: source.id },
+    data: {
+      expiresAt: new Date(Date.now() - 3600_000),
+      successorExpiresAt: new Date(Date.now() - 3600_000),
+    },
+  });
+  const response = await refresh().expect(401);
+  t.is(response.body.code, 'AUTH_SESSION_EXPIRED');
+  t.is(
+    (
+      await db.authSession.findUniqueOrThrow({
+        where: { id: issued.session.id },
+      })
+    ).revokedAt,
+    null
+  );
+  t.is(response.body.refreshToken, undefined);
 });

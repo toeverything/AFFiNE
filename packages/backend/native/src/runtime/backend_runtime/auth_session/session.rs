@@ -250,12 +250,16 @@ pub(super) async fn revoke(
       .map_err(|error| RuntimeError::database("revoke auth session", error))?
       .rows_affected()
       == 1;
-  sqlx::query("UPDATE auth_refresh_tokens SET revoked_at=$2 WHERE auth_session_id=$1 AND revoked_at IS NULL")
-    .bind(auth_session_id)
-    .bind(now)
-    .execute(&mut *tx)
-    .await
-    .map_err(|error| RuntimeError::database("revoke auth refresh tokens", error))?;
+  sqlx::query(
+    r#"UPDATE auth_refresh_tokens
+       SET revoked_at=COALESCE(revoked_at,$2),successor_ciphertext=NULL,successor_expires_at=NULL
+       WHERE auth_session_id=$1 AND (revoked_at IS NULL OR successor_ciphertext IS NOT NULL)"#,
+  )
+  .bind(auth_session_id)
+  .bind(now)
+  .execute(&mut *tx)
+  .await
+  .map_err(|error| RuntimeError::database("revoke auth refresh tokens", error))?;
   tx.commit()
     .await
     .map_err(|error| RuntimeError::database("commit auth session revoke", error))?;

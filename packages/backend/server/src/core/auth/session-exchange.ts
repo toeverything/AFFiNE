@@ -27,7 +27,9 @@ export class AuthSessionHttpError extends UserFriendlyError {
       status === HttpStatus.SERVICE_UNAVAILABLE
         ? 'network_error'
         : 'authentication_required',
-      code.toLowerCase() as
+      (code === AuthSessionErrorCode.recoveryRequired
+        ? 'refresh_token_invalid'
+        : code.toLowerCase()) as
         | 'access_token_expired'
         | 'access_token_invalid'
         | 'auth_session_expired'
@@ -94,9 +96,18 @@ export class SessionExchangeService {
     return publicPair(pair);
   }
 
-  async refresh(req: Request, refreshToken: string, appVersion?: string) {
+  async refresh(
+    req: Request,
+    refreshToken: string,
+    appVersion?: string,
+    requestId?: string
+  ) {
     if (!isNativeClientRequest(req)) throw new ActionForbidden();
-    const refreshed = await this.authSessions.refresh(refreshToken, appVersion);
+    const refreshed = await this.authSessions.refresh(
+      refreshToken,
+      appVersion,
+      requestId
+    );
     if (refreshed.status === 'rate_limited') throw new TooManyRequest();
     if (refreshed.status !== 'rotated') {
       const status =
