@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 
 import { Package } from '@affine-tools/utils/workspace';
@@ -80,43 +81,46 @@ async function submit() {
   ) {
     throw new Error('Invalid Google Play candidate metadata');
   }
+  const hash = createHash('sha256');
+  for await (const chunk of fs.createReadStream(bundle)) {
+    hash.update(chunk);
+  }
+  const digest = hash.digest('hex');
   const editId = await createEdit(packageName);
   const tracks = await publisher.edits.tracks.list({ packageName, editId });
-  const submitted = tracks.data.tracks?.some(track =>
+  const uploaded = await publisher.edits.bundles.list({ packageName, editId });
+  const existing = uploaded.data.bundles?.find(
+    item => item.versionCode === candidate.versionCode
+  );
+  const onTrack = tracks.data.tracks?.some(track =>
     track.releases?.some(release =>
       release.versionCodes?.includes(String(candidate.versionCode))
     )
   );
-  if (process.env.STORE_QUERY_ONLY === '1') {
+  if ((onTrack || existing) && !existing?.sha256) {
     await publisher.edits.delete({ packageName, editId });
-    if (!submitted && process.env.STORE_ALLOW_ABSENT !== '1') {
+    throw new Error('Google Play version has no verifiable bundle digest');
+  }
+  const conflict = existing && existing.sha256 !== digest;
+  const submitted = onTrack && !conflict;
+  const queryOnly = process.env.STORE_QUERY_ONLY === '1';
+  if (queryOnly || submitted || conflict) {
+    await publisher.edits.delete({ packageName, editId });
+    if (conflict && !queryOnly) {
+      throw new Error('Google Play version code belongs to a different bundle');
+    }
+    if (
+      queryOnly &&
+      !submitted &&
+      !conflict &&
+      process.env.STORE_ALLOW_ABSENT !== '1'
+    ) {
       throw new Error(
         'No visible store result; the previous submission step ran, so its result remains unresolved'
       );
     }
-    fs.writeFileSync(
-      receipt,
-      JSON.stringify({
-        ...candidate,
-        store: 'google-play',
-        status: submitted ? 'submitted' : 'not-submitted',
-        ...operation,
-      })
-    );
-    return;
-  }
-  if (submitted) {
-    await publisher.edits.delete({ packageName, editId });
   } else {
-    const uploaded = await publisher.edits.bundles.list({
-      packageName,
-      editId,
-    });
-    if (
-      !uploaded.data.bundles?.some(
-        item => item.versionCode === candidate.versionCode
-      )
-    ) {
+    if (!existing) {
       const result = await publisher.edits.bundles.upload({
         packageName,
         editId,
@@ -125,9 +129,12 @@ async function submit() {
           body: fs.createReadStream(bundle),
         },
       });
-      if (result.data.versionCode !== candidate.versionCode) {
+      if (
+        result.data.versionCode !== candidate.versionCode ||
+        result.data.sha256 !== digest
+      ) {
         throw new Error(
-          'Uploaded bundle version does not match the prepared candidate'
+          'Uploaded bundle does not match the prepared candidate'
         );
       }
     }
@@ -149,7 +156,7 @@ async function submit() {
       ...candidate,
       ...operation,
       store: 'google-play',
-      status: 'submitted',
+      status: !queryOnly || submitted ? 'submitted' : 'not-submitted',
     })
   );
 }

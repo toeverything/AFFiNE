@@ -2,9 +2,9 @@ use sqlx::{PgPool, Row};
 
 use super::{
   DOCUMENT_PROJECTION_FAILED, ProjectionExpectation, RECONCILE_BATCH, WorkspacePhase, WorkspaceReconcileContext,
-  WorkspaceStep, provider_projection_matches, renew_workspace_lease, upsert_document,
+  WorkspaceStep, project_current_doc, provider_projection_matches, renew_workspace_lease, upsert_document,
 };
-use crate::runtime::{RuntimeError, RuntimeResult, storage_runtime::load_current_doc};
+use crate::runtime::{RuntimeError, RuntimeResult};
 
 pub(super) const ROOT_DOCUMENT_BATCH_SQL: &str = r#"WITH root_document AS (
        SELECT unnest($5::text[]) AS doc_id
@@ -44,24 +44,21 @@ impl RootReconcilePhase {
 }
 
 pub(super) async fn load_root_document_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  let root = load_current_doc(pool, workspace_id, workspace_id)
-    .await
-    .map_err(|error| match error {
-      RuntimeError::InvalidState(message) => RuntimeError::SearchSourceInvalid(message),
-      error => error,
-    })?
-    .ok_or_else(|| RuntimeError::SearchSourceInvalid("workspace root doc is missing".to_string()))?;
-  let projection = affine_doc_loader::project_workspace_root(root.blob, false)
-    .map_err(|error| RuntimeError::SearchSourceInvalid(format!("workspace root projection failed: {error}")))?;
-  if !projection.complete {
-    return Err(RuntimeError::SearchSourceInvalid(
-      "workspace root projection is incomplete".to_string(),
-    ));
-  }
-  let mut doc_ids = projection.doc_ids;
-  doc_ids.sort();
-  doc_ids.dedup();
-  Ok(doc_ids)
+  project_current_doc(pool, workspace_id, workspace_id, |root| {
+    let projection = affine_doc_loader::project_workspace_root(root.blob, false)
+      .map_err(|error| RuntimeError::SearchSourceInvalid(format!("workspace root projection failed: {error}")))?;
+    if !projection.complete {
+      return Err(RuntimeError::SearchSourceInvalid(
+        "workspace root projection is incomplete".to_string(),
+      ));
+    }
+    let mut doc_ids = projection.doc_ids;
+    doc_ids.sort();
+    doc_ids.dedup();
+    Ok(doc_ids)
+  })
+  .await?
+  .ok_or_else(|| RuntimeError::SearchSourceInvalid("workspace root doc is missing".to_string()))
 }
 
 async fn converge_document_membership(

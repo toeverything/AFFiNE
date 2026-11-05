@@ -190,7 +190,18 @@ jobs:
             };
             for (const target of plan.targets) {
               if (target.name === 'server') continue;
-              const artifact = artifacts.find(a => a.name === `candidate-${target.name}` && !a.expired);
+              const arches = plan.buildMatrix.include.filter(row => row.target === target.name && target.name.startsWith('desktop-'));
+              const missing = arches.filter(row => !artifacts.some(a =>
+                a.name === `candidate-desktop-${row.platform}-${row.arch}` && !a.expired
+              ));
+              const artifact = missing.length === 0
+                ? artifacts.find(a => a.name === `candidate-${target.name}` && !a.expired)
+                : undefined;
+              if (arches.length && !artifact) {
+                const reason = missing.length ? `missing ${missing.map(row => row.arch).join(', ')}` : 'missing merged artifact';
+                if (target.required) throw new Error(`${target.name}: ${reason}`);
+                core.warning(`Omitting ${target.name}: ${reason}`);
+              }
               if (artifact) candidate.artifacts[target.name] = {
                 id: artifact.id, runId: context.runId, repository: candidate.repository,
                 name: artifact.name, stage: 'unsigned',
