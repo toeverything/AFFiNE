@@ -148,11 +148,27 @@ describe('AIChatRuntime', () => {
     const runtime = createRuntime(request);
     await runtime.dispatch({ type: 'initialize' });
 
-    const firstSend = runtime.dispatch({ type: 'send', input: 'hello' });
+    const onAccepted = vi.fn(() => {
+      expect(runtime.getSnapshot().messages[0]?.content).toBe('hello');
+      expect(runtime.getSnapshot().status).toBe('loading');
+    });
+    const firstSend = runtime.dispatch({
+      type: 'send',
+      input: 'hello',
+      onAccepted,
+    });
+    expect(onAccepted).toHaveBeenCalledOnce();
     await waitUntil(() => {
       expect(request.executeAction).toHaveBeenCalled();
     });
-    await runtime.dispatch({ type: 'send', input: 'again' });
+    const rejected = vi.fn();
+    await runtime.dispatch({
+      type: 'send',
+      input: 'again',
+      onAccepted: rejected,
+    });
+    expect(rejected).not.toHaveBeenCalled();
+    expect(onAccepted).toHaveBeenCalledOnce();
     release();
     await firstSend;
 
