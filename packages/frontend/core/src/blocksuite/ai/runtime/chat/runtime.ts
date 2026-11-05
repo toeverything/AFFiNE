@@ -351,7 +351,11 @@ export class AIChatRuntime {
             this.createMessage('assistant', ''),
           ],
     });
-    onAccepted?.();
+    try {
+      onAccepted?.();
+    } catch (error) {
+      console.error(error);
+    }
     try {
       const session = await this.ensureSession();
       if (seq !== this.requestSeq) return;
