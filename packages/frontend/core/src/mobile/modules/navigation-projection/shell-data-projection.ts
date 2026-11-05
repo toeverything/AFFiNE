@@ -52,13 +52,12 @@ export class MobileShellDataProjection extends Service {
     string,
     LiveData<MobileShellDocEntry | undefined>
   >();
-  private readonly readPermissions = new Map<
+  private readonly permissions = new Map<
     string,
-    LiveData<boolean | undefined>
-  >();
-  private readonly updatePermissions = new Map<
-    string,
-    LiveData<boolean | undefined>
+    {
+      read$: LiveData<boolean | undefined>;
+      update$: LiveData<boolean | undefined>;
+    }
   >();
   private readonly expandedDocIds = new Set<string>();
   private readonly collectionDocs = new Map<string, LiveData<string[]>>();
@@ -74,7 +73,7 @@ export class MobileShellDataProjection extends Service {
   private readonly expandedDocIds$ = new LiveData<readonly string[]>([]);
   private readonly permittedExpandedDocIds$ = LiveData.computed(get =>
     get(this.expandedDocIds$).filter(
-      id => get(this.readPermission(id)) === true
+      id => get(this.permissionsFor(id).read$) === true
     )
   );
   readonly visible$ = new LiveData(true);
@@ -112,8 +111,8 @@ export class MobileShellDataProjection extends Service {
             item => item.type === 'doc' && item.id === id
           ),
           active: get(this.globalContext.globalContext.docId.$) === id,
-          canRead: get(this.readPermission(id)),
-          canUpdate: get(this.updatePermission(id)),
+          canRead: get(this.permissionsFor(id).read$),
+          canUpdate: get(this.permissionsFor(id).update$),
         };
         const cached = this.entryCache.get(id);
         if (
@@ -462,22 +461,17 @@ export class MobileShellDataProjection extends Service {
     };
   }
 
-  private readPermission(id: string) {
-    let permission$ = this.readPermissions.get(id);
-    if (!permission$) {
-      permission$ = this.guard.can$('Doc_Read', id);
-      this.readPermissions.set(id, permission$);
+  private permissionsFor(id: string) {
+    let permissions = this.permissions.get(id);
+    if (!permissions) {
+      permissions = {
+        read$: this.guard.can$('Doc_Read', id),
+        update$: this.guard.can$('Doc_Update', id),
+      };
+      this.permissions.set(id, permissions);
+      this.guard.revalidateCan('Doc_Read', id);
     }
-    return permission$;
-  }
-
-  private updatePermission(id: string) {
-    let permission$ = this.updatePermissions.get(id);
-    if (!permission$) {
-      permission$ = this.guard.can$('Doc_Update', id);
-      this.updatePermissions.set(id, permission$);
-    }
-    return permission$;
+    return permissions;
   }
 
   private collectionDocsFor(id: string) {
@@ -502,8 +496,7 @@ export class MobileShellDataProjection extends Service {
     this.expandedDocIds$.next([]);
     this.entryCache.clear();
     this.docEntries.clear();
-    this.readPermissions.clear();
-    this.updatePermissions.clear();
+    this.permissions.clear();
     this.collectionDocs.clear();
     this.navigationEntryCache.clear();
     this.docNavigationEntries.clear();
