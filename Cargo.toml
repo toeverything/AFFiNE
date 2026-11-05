@@ -113,7 +113,7 @@ resolver = "3"
   windows-core = { version = "0.62" }
   y-octo = "0.1.1"
   zeroize = "1.9"
-  zip = "8.6"
+  zip = "9.0.5"
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3
