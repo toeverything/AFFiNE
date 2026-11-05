@@ -28,7 +28,7 @@
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
-    "glob": "^11.0.0",
+    "glob": "^14.0.3",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "vitest": "^4.1.11"
   }

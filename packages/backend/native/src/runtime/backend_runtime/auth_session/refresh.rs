@@ -172,6 +172,15 @@ pub(super) async fn refresh(
       .execute(&mut *tx)
       .await
       .map_err(|error| RuntimeError::database("rotate auth refresh source", error))?;
+      sqlx::query(
+        r#"UPDATE auth_refresh_tokens SET successor_ciphertext=NULL,successor_expires_at=NULL
+           WHERE auth_session_id=$1 AND replaced_by_id=$2"#,
+      )
+      .bind(&row.auth_session_id)
+      .bind(&row.id)
+      .execute(&mut *tx)
+      .await
+      .map_err(|error| RuntimeError::database("clear consumed auth refresh successor", error))?;
       update_session(&mut tx, &row, refresh_expires_at, app_version, now).await?;
       let pair = token_pair(
         &mut tx,
