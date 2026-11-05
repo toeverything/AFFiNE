@@ -617,8 +617,8 @@ async fn session_kernel_serializes_refresh_replay_revocation_and_key_rotation() 
         .id;
       assert_eq!(predecessor, (None, None, Some(child_id.clone())));
       let child_material: bool = sqlx::query_scalar(
-        "SELECT successor_ciphertext IS NOT NULL AND successor_expires_at IS NOT NULL AND refresh_attempt_hash IS \
-         NOT NULL FROM auth_refresh_tokens WHERE id=$1",
+        "SELECT successor_ciphertext IS NOT NULL AND successor_expires_at IS NOT NULL AND refresh_attempt_hash IS NOT \
+         NULL FROM auth_refresh_tokens WHERE id=$1",
       )
       .bind(&child_id)
       .fetch_one(&pool)

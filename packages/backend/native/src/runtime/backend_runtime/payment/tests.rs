@@ -17,7 +17,7 @@ use tokio::{
 };
 use zeroize::Zeroizing;
 
-use super::*;
+use super::{super::search::project_current_doc, *};
 use crate::runtime::{Deployment, RevenueCatRuntimeConfig, StripeRuntimeConfig};
 
 async fn apply_payment_snapshot(
@@ -1248,6 +1248,38 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     "t={timestamp},v1={}",
     hex::encode(hmac::Mac::finalize(signature).into_bytes())
   );
+  sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$1,$2,now())")
+    .bind(&marker)
+    .bind(affine_doc_loader::build_full_doc("title", "body", &marker).unwrap())
+    .execute(&pool)
+    .await
+    .unwrap();
+  let (started, started_rx) = tokio::sync::oneshot::channel();
+  let (release, mut release_rx) = tokio::sync::oneshot::channel::<()>();
+  let projection_pool = pool.clone();
+  let projection_doc = marker.clone();
+  let projection = tokio::spawn(async move {
+    project_current_doc(&projection_pool, &projection_doc, &projection_doc, move |_| {
+      started.send(()).unwrap();
+      let deadline = std::time::Instant::now() + Duration::from_secs(15);
+      while matches!(
+        release_rx.try_recv(),
+        Err(tokio::sync::oneshot::error::TryRecvError::Empty)
+      ) {
+        assert!(
+          std::time::Instant::now() < deadline,
+          "payment did not complete while search was busy"
+        );
+        std::hint::spin_loop();
+      }
+      Ok(())
+    })
+    .await
+  });
+  tokio::time::timeout(Duration::from_secs(5), started_rx)
+    .await
+    .unwrap()
+    .unwrap();
   let first_receipt = super::webhook::capture_stripe(&pool, &webhook_client, raw_event.as_bytes(), &signature)
     .await
     .unwrap();
@@ -1345,6 +1377,13 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     .await
     .unwrap();
   assert_eq!(processed_receipt.get("status"), Some(&json!("processed")));
+  release.send(()).expect("payment completed after search stopped");
+  projection.await.unwrap().unwrap().unwrap();
+  sqlx::query("DELETE FROM snapshots WHERE workspace_id=$1 AND guid=$1")
+    .bind(&marker)
+    .execute(&pool)
+    .await
+    .unwrap();
   assert!(super::worker::claim_receipt(&webhook_runtime).await.unwrap().is_none());
   let mut connection = PaymentConnection::try_acquire(&pool, lock_scopes)
     .await

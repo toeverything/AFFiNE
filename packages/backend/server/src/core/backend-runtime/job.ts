@@ -279,7 +279,7 @@ export class BackendRuntimeHousekeepingJob {
 export class BackendRuntimeSearchJob {
   constructor(private readonly rt: BackendRuntimeProvider) {}
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_30_SECONDS, { waitForCompletion: true })
   async reconcileProjection(limit = 100) {
     if (!this.rt.searchEnabled()) return 0;
     const startedAt = performance.now();
