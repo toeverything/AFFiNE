@@ -21,11 +21,14 @@ export const header = style({
   background: cssVarV2('layer/background/primary'),
   position: 'fixed',
   top: 0,
-  zIndex: 1,
+  zIndex: 100,
+  pointerEvents: 'auto',
 });
 
 export const headerContent = style({
-  maxWidth: `calc(100% - 200px)`,
+  // Title lives in the flex middle slot; keep it from taking pointer hits.
+  pointerEvents: 'none',
+  minWidth: 0,
 });
 export const headerTitle = style([
   bodyEmphasized,
@@ -33,6 +36,8 @@ export const headerTitle = style([
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    maxWidth: '100%',
+    pointerEvents: 'none',
 
     opacity: 0,
     transition: 'opacity 0.23s ease',
