@@ -376,10 +376,12 @@ pub(in crate::runtime::backend_runtime) fn protocol(value: BackendProtocol) -> E
 
 fn project_event(event: RuntimeRouteEvent, identities: &HashMap<String, RouteIdentity>) -> RuntimeResult<ProductEvent> {
   match event {
-    RuntimeRouteEvent::Selected { route_id } => Ok(ProductEvent::RouteSelected {
+    RuntimeRouteEvent::Selected { route_id, .. } => Ok(ProductEvent::RouteSelected {
       route: identity(identities, &route_id)?,
     }),
-    RuntimeRouteEvent::Failed { route_id, error_kind } => Ok(ProductEvent::RouteFailed {
+    RuntimeRouteEvent::Failed {
+      route_id, error_kind, ..
+    } => Ok(ProductEvent::RouteFailed {
       route: identity(identities, &route_id)?,
       error_kind,
     }),

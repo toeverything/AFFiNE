@@ -581,7 +581,7 @@
   {
     "name": "Generate image",
     "action": "image",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -592,7 +592,7 @@
   {
     "name": "Convert to Clay style",
     "action": "Convert to Clay style",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -603,7 +603,7 @@
   {
     "name": "Convert to Sketch style",
     "action": "Convert to Sketch style",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -614,7 +614,7 @@
   {
     "name": "Convert to Anime style",
     "action": "Convert to Anime style",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -625,7 +625,7 @@
   {
     "name": "Convert to Pixel style",
     "action": "Convert to Pixel style",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -636,7 +636,7 @@
   {
     "name": "Convert to sticker",
     "action": "Convert to sticker",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -647,7 +647,7 @@
   {
     "name": "Upscale image",
     "action": "Upscale image",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -658,7 +658,7 @@
   {
     "name": "Remove background",
     "action": "Remove background",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",

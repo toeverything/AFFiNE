@@ -250,7 +250,7 @@ mod tests {
         attachment_kinds: None,
         attachment_source_kinds: None,
         has_remote_attachments: None,
-        model_id: Some("gpt-image-1".to_string()),
+        model_id: Some("gpt-image-2.6-flare".to_string()),
         output_type: Some("image".to_string()),
       },
     })
