@@ -1,0 +1,50 @@
+name: BlockSuite Version
+
+# Turns pending changesets into a "version packages" pull request that bumps
+# every @blocksuite/* package (they are one fixed version group) and updates
+# their changelogs. Merging that PR, then tagging the merge commit as
+# `blocksuite@X.Y.Z`, triggers `BlockSuite Publish`.
+#
+# Note: pull requests created with the default GITHUB_TOKEN do not trigger
+# other workflows, so CI will not run on the version PR unless
+# BLOCKSUITE_RELEASE_TOKEN (a PAT or GitHub App token with contents + pull
+# request write access) is configured.
+
+on:
+  push:
+    branches:
+      - canary
+    paths:
+      - '.changeset/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: blocksuite-version
+  cancel-in-progress: true
+
+jobs:
+  version-pr:
+    name: Open or update the version PR
+    if: github.repository == 'toeverything/AFFiNE'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo
+          electron-install: false
+
+      - name: Create or update the version PR
+        uses: changesets/action@v1
+        with:
+          version: yarn changeset version
+          commit: 'chore(editor): version blocksuite packages'
+          title: 'chore(editor): version blocksuite packages'
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.BLOCKSUITE_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}

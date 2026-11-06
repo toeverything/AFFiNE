@@ -47,6 +47,11 @@
   },
   "author": "toeverything",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git",
+    "directory": "blocksuite/framework/global"
+  },
   "files": [
     "src",
     "dist",

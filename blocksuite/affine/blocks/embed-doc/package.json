@@ -9,6 +9,11 @@
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git",
+    "directory": "blocksuite/affine/blocks/embed-doc"
+  },
   "dependencies": {
     "@blocksuite/affine-block-embed": "workspace:*",
     "@blocksuite/affine-block-surface": "workspace:*",
