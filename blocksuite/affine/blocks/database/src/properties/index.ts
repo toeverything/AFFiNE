@@ -9,6 +9,7 @@ export * from './converts.js';
 const {
   checkboxPropertyConfig,
   datePropertyConfig,
+  formulaPropertyConfig,
   multiSelectPropertyConfig,
   numberPropertyConfig,
   progressPropertyConfig,
@@ -26,4 +27,5 @@ export const databaseBlockProperties = {
   richTextColumnConfig,
   titleColumnConfig,
   createdTimeColumnConfig,
+  formulaColumnConfig: formulaPropertyConfig,
 };
