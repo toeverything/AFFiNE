@@ -245,7 +245,7 @@ fn auth_descriptors() -> Vec<AppConfigDescriptor> {
     ),
     (
       "token.refreshGracePeriod",
-      "Refresh rotation concurrency grace period in seconds.",
+      "How long, in seconds, a just-rotated refresh token may still redeem its unused successor (covers concurrent refreshes and lost refresh responses).",
     ),
     (
       "token.refreshRetention",
