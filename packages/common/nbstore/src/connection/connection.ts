@@ -21,6 +21,14 @@ export interface Connection<T = any> {
   ): () => void;
 }
 
+function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
+  return (
+    (typeof value === 'object' || typeof value === 'function') &&
+    value !== null &&
+    typeof (value as any).then === 'function'
+  );
+}
+
 export abstract class AutoReconnectConnection<
   T = any,
 > implements Connection<T> {
@@ -86,7 +94,7 @@ export abstract class AutoReconnectConnection<
     }
   }
 
-  protected abstract doConnect(signal?: AbortSignal): Promise<T>;
+  protected abstract doConnect(signal?: AbortSignal): PromiseLike<T> | T;
   protected abstract doDisconnect(conn: T): void;
 
   private innerConnect() {
@@ -100,28 +108,53 @@ export abstract class AutoReconnectConnection<
           this.handleError(new Error('connecting timeout'));
         }
       }, this.connectingTimeout);
-      this.doConnect(signal)
-        .then(value => {
+
+      try {
+        const result = this.doConnect(signal);
+        if (isPromiseLike(result)) {
+          Promise.resolve(result)
+            .then(value => {
+              clearTimeout(timeout);
+              if (!signal.aborted) {
+                this._inner = value;
+                this.retryCount = 0;
+                this.setStatus('connected');
+              } else {
+                try {
+                  this.doDisconnect(value);
+                } catch (error) {
+                  console.error('failed to disconnect', error);
+                }
+              }
+            })
+            .catch(error => {
+              if (!signal.aborted) {
+                clearTimeout(timeout);
+                console.error('failed to connect', error);
+                this.handleError(error as any);
+              }
+            });
+        } else {
           clearTimeout(timeout);
           if (!signal.aborted) {
-            this._inner = value;
+            this._inner = result;
             this.retryCount = 0;
             this.setStatus('connected');
           } else {
             try {
-              this.doDisconnect(value);
+              this.doDisconnect(result);
             } catch (error) {
               console.error('failed to disconnect', error);
             }
           }
-        })
-        .catch(error => {
-          if (!signal.aborted) {
-            clearTimeout(timeout);
-            console.error('failed to connect', error);
-            this.handleError(error as any);
-          }
-        });
+        }
+      } catch (error) {
+        if (!signal.aborted) {
+          clearTimeout(timeout);
+          console.error('failed to connect', error);
+          this.handleError(error as any);
+        }
+      }
     }
   }
 
