@@ -58,8 +58,19 @@ export const processTable = (
   children: BlockSnapshot[] = [],
   cells: SerializedCells = {}
 ): Table => {
+  // Every row is built as [row title, ...non-title columns], so the headers
+  // must use that same order. Passing the raw columns array put each name
+  // above the wrong column whenever the title column was not first.
+  const titleColumn = columns.find(col => col.type === 'title');
+  const valueColumns = columns.filter(col => col.type !== 'title');
   const table: Table = {
-    headers: columns,
+    headers: [
+      {
+        ...(titleColumn ?? { id: 'title', type: 'title', data: {} }),
+        name: titleColumn?.name ?? 'Title',
+      } as ColumnDataType,
+      ...valueColumns,
+    ],
     rows: [],
   };
   children.forEach(v => {
@@ -77,12 +88,9 @@ export const processTable = (
       });
     }
 
-    columns.forEach(col => {
+    valueColumns.forEach(col => {
       const property = databaseBlockModels[col.type];
       const cell = cells[v.id]?.[col.id];
-      if (col.type === 'title') {
-        return;
-      }
       if (!cell || !property) {
         row.cells.push({
           value: '',
@@ -94,10 +102,14 @@ export const processTable = (
         if (isDelta(cell.value)) {
           value = cell.value;
         } else {
-          value = property.config.rawValue.toString({
-            value: cell.value,
-            data: col.data,
-          });
+          // An empty cell can stringify to undefined, which is not a throw,
+          // so the catch below does not cover it. Every adapter then reads
+          // value.delta and fails, and the whole export aborts.
+          value =
+            property.config.rawValue.toString({
+              value: cell.value,
+              data: col.data,
+            }) ?? '';
         }
       } catch {
         value = '';
