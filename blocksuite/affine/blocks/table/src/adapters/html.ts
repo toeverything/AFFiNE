@@ -13,7 +13,7 @@ import { nanoid } from '@blocksuite/store';
 import type { Element } from 'hast';
 
 import { DefaultColumnWidth } from '../consts';
-import { parseTableFromHtml, processTable } from './utils';
+import { parseTableFromHtml } from './utils';
 
 const TABLE_NODE_TYPES = new Set(['table', 'thead', 'tbody', 'th', 'tr']);
 
@@ -62,30 +62,49 @@ export const tableBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
       const { walkerContext } = context;
       const { columns, rows, cells } = o.node
         .props as unknown as TableBlockPropsSerialized;
-      const table = processTable(columns, rows, cells);
-      const createAstTableCell = (
-        children: InlineHtmlAST[]
-      ): InlineHtmlAST => ({
-        type: 'element',
-        tagName: 'td',
-        properties: Object.create(null),
-        children: [
-          {
-            type: 'element',
-            tagName: 'div',
-            properties: {
-              style: `min-height: 22px;min-width:${DefaultColumnWidth}px;padding: 8px 12px;`,
-            },
-            children,
-          },
-        ],
-      });
 
-      const createAstTableRow = (cells: InlineHtmlAST[]): Element => ({
+      const sortedColumns = Object.values(columns).sort((a, b) =>
+        a.order.localeCompare(b.order)
+      );
+      const sortedRows = Object.values(rows).sort((a, b) =>
+        a.order.localeCompare(b.order)
+      );
+
+      const createAstTableCell = (
+        children: InlineHtmlAST[],
+        colSpan: number,
+        rowSpan: number,
+        textAlign: string | undefined
+      ): InlineHtmlAST => {
+        const divStyle = [
+          `min-height: 22px;min-width:${DefaultColumnWidth}px;padding: 8px 12px;`,
+          textAlign ? `text-align: ${textAlign};` : '',
+        ]
+          .filter(Boolean)
+          .join('');
+        return {
+          type: 'element',
+          tagName: 'td',
+          properties: {
+            ...(colSpan > 1 ? { colSpan } : {}),
+            ...(rowSpan > 1 ? { rowSpan } : {}),
+          },
+          children: [
+            {
+              type: 'element',
+              tagName: 'div',
+              properties: { style: divStyle },
+              children,
+            },
+          ],
+        };
+      };
+
+      const createAstTableRow = (tdNodes: InlineHtmlAST[]): Element => ({
         type: 'element',
         tagName: 'tr',
         properties: Object.create(null),
-        children: cells,
+        children: tdNodes,
       });
 
       const { deltaConverter } = context;
@@ -94,16 +113,23 @@ export const tableBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
         type: 'element',
         tagName: 'tbody',
         properties: Object.create(null),
-        children: table.rows.map(v => {
-          return createAstTableRow(
-            v.cells.map(cell => {
+        children: sortedRows.map(row => {
+          const tdNodes = sortedColumns
+            .map(col => {
+              const rawCell = cells[`${row.rowId}:${col.columnId}`];
+              if (rawCell?.hidden) return null;
+              const delta = rawCell?.text?.delta ?? [];
               return createAstTableCell(
-                typeof cell.value === 'string'
-                  ? [{ type: 'text', value: cell.value }]
-                  : deltaConverter.deltaToAST(cell.value.delta)
+                delta.length
+                  ? deltaConverter.deltaToAST(delta)
+                  : [{ type: 'text', value: '' }],
+                rawCell?.colSpan ?? 1,
+                rawCell?.rowSpan ?? 1,
+                rawCell?.textAlign
               );
             })
-          );
+            .filter((c): c is InlineHtmlAST => c !== null);
+          return createAstTableRow(tdNodes);
         }),
       };
 

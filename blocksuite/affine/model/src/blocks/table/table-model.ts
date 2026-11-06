@@ -8,8 +8,19 @@ import {
 import type { TextAlign } from '../../consts';
 import type { BlockMeta } from '../../utils/types';
 
+export type CellTextAlign = 'left' | 'center' | 'right';
+export type CellVerticalAlign = 'top' | 'middle' | 'bottom';
+
 export type TableCell = {
   text: Text;
+  /** Number of columns this cell spans. Default 1. */
+  colSpan?: number;
+  /** Number of rows this cell spans. Default 1. */
+  rowSpan?: number;
+  /** True when this cell is covered by another cell's span. Not rendered. */
+  hidden?: boolean;
+  textAlign?: CellTextAlign;
+  verticalAlign?: CellVerticalAlign;
 };
 
 export interface TableRow {
@@ -38,6 +49,11 @@ export interface TableCellSerialized {
   text: {
     delta: DeltaInsert[];
   };
+  colSpan?: number;
+  rowSpan?: number;
+  hidden?: boolean;
+  textAlign?: CellTextAlign;
+  verticalAlign?: CellVerticalAlign;
 }
 
 export interface TableBlockPropsSerialized {
