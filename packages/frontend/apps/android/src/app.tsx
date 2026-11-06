@@ -23,6 +23,7 @@ import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
+import { resolveDeepLinkRoute } from '@affine/core/modules/open-in-app/utils';
 import {
   configureLocalStorageStateStorageImpls,
   NbstoreProvider,
@@ -397,6 +398,13 @@ CapacitorApp.addListener('appUrlOpen', ({ url }) => {
         .catch(error =>
           notifyAuthenticationError(error, 'Failed to sign in with magic link')
         );
+    }
+  } else {
+    const route = resolveDeepLinkRoute(url);
+    if (route) {
+      router.navigate(route).catch(e => {
+        console.error('Failed to open deep link', e);
+      });
     }
   }
 }).catch(e => {
