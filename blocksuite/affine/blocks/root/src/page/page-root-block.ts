@@ -419,6 +419,15 @@ export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
     // to the document model. Keep only the block editors editable on Android.
     this.contentEditable = String(!this.store.readonly$.value && !IS_ANDROID);
 
+    // Disable macOS text replacement to prevent aggressive autocorrect
+    if (!this.store.readonly$.value) {
+      this.setAttribute('autocorrect', 'off');
+      this.setAttribute('autocapitalize', 'off');
+    } else {
+      this.removeAttribute('autocorrect');
+      this.removeAttribute('autocapitalize');
+    }
+
     return html`
       <div class="affine-page-root-block-container">${children} ${widgets}</div>
     `;
