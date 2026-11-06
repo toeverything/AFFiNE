@@ -245,7 +245,7 @@ mod tests {
     let prompt_slot = slot("prompt.text").unwrap();
     assert_eq!(
       managed_targets(&prompt_slot, Some("Summary as title"), CopilotManagedTier::Standard).unwrap(),
-      ["gpt-5.6-luna"]
+      ["gpt-6-luna"]
     );
     assert!(
       managed_targets(
@@ -262,7 +262,7 @@ mod tests {
         CopilotManagedTier::Premium
       )
       .unwrap(),
-      ["gemini-3.7-flash"]
+      ["gemini-3.8-flash"]
     );
     assert_eq!(
       managed_targets(&slot("index.embedding").unwrap(), None, CopilotManagedTier::Standard).unwrap(),

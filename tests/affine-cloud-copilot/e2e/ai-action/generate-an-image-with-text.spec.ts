@@ -15,7 +15,11 @@ test.describe('AIAction/GenerateAnImageWithText', () => {
   }) => {
     const { generateImage } = await utils.editor.askAIWithText(page, 'Panda');
     const { answer, responses } = await generateImage();
-    await expect(answer.getByTestId('ai-answer-image')).toBeVisible();
+    const image = answer.getByTestId('ai-answer-image').locator('img');
+    await expect(image).toBeVisible();
+    await expect
+      .poll(() => image.evaluate(img => (img as HTMLImageElement).naturalWidth))
+      .toBeGreaterThan(0);
     expect(responses).toEqual(new Set(['insert-below']));
   });
 

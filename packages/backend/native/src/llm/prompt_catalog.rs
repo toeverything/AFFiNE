@@ -575,13 +575,13 @@ mod tests {
     assert!(chat_tools.iter().any(|tool| tool == "artifactSearch"));
     assert!(!chat_tools.iter().any(|tool| tool == "contextSearch"));
     assert!(!chat_tools.iter().any(|tool| tool == "blobRead"));
-    assert_eq!(chat.managed_targets, ["gpt-5.6-luna"]);
+    assert_eq!(chat.managed_targets, ["gpt-6-luna"]);
     assert_eq!(
       chat
         .managed_premium_targets
         .as_deref()
         .map(|targets| targets.iter().map(String::as_str).collect::<Vec<_>>()),
-      Some(vec!["gpt-5.6-luna"])
+      Some(vec!["gpt-6-luna"])
     );
     let options = llm_get_built_in_route_options(chat.name.clone()).expect("chat route options");
     assert_eq!(options.standard_default_target_id.as_deref(), Some("luna"));
@@ -593,17 +593,17 @@ mod tests {
     );
     assert_eq!(
       built_in_managed_target(&chat.name, "terra", true).map(|target| target.model_id.as_str()),
-      Some("gpt-5.6-terra")
+      Some("gpt-6.1-terra")
     );
 
     let transcript = built_in_prompt("Transcript audio structured").expect("transcript prompt");
-    assert_eq!(transcript.managed_targets, ["gemini-3.7-flash"]);
+    assert_eq!(transcript.managed_targets, ["gemini-3.5-flash-lite"]);
     assert_eq!(
       transcript
         .managed_premium_targets
         .as_deref()
         .map(|targets| targets.iter().map(String::as_str).collect::<Vec<_>>()),
-      Some(vec!["gemini-3.7-flash"])
+      Some(vec!["gemini-3.8-flash"])
     );
   }
 }

@@ -3,8 +3,8 @@
     "name": "Transcript audio",
     "action": "Transcript audio",
     "managedRoute": {
-      "targets": ["gemini-3.7-flash"],
-      "premiumTargets": ["gemini-3.7-flash"]
+      "targets": ["gemini-3.5-flash-lite"],
+      "premiumTargets": ["gemini-3.8-flash"]
     },
     "config": {
       "requireContent": false,
@@ -17,8 +17,8 @@
     "name": "Transcript audio structured",
     "action": "Transcript audio structured",
     "managedRoute": {
-      "targets": ["gemini-3.7-flash"],
-      "premiumTargets": ["gemini-3.7-flash"]
+      "targets": ["gemini-3.5-flash-lite"],
+      "premiumTargets": ["gemini-3.8-flash"]
     },
     "config": {
       "requireContent": false,
@@ -39,7 +39,7 @@
   {
     "name": "Generate a caption",
     "action": "Generate a caption",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "config": {
       "requireContent": false,
       "requireAttachment": true
@@ -54,7 +54,7 @@
   {
     "name": "Conversation Summary",
     "action": "Conversation Summary",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "config": {
       "requireContent": false
     },
@@ -72,7 +72,7 @@
   {
     "name": "Summary",
     "action": "Summary",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -87,7 +87,7 @@
   {
     "name": "Summary as title",
     "action": "Summary as title",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -102,7 +102,7 @@
   {
     "name": "Summary the webpage",
     "action": "Summary the webpage",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "user",
@@ -113,7 +113,7 @@
   {
     "name": "Explain this",
     "action": "Explain this",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "builtins": ["language"],
     "messages": [
       {
@@ -129,7 +129,7 @@
   {
     "name": "Explain this image",
     "action": "Explain this image",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "config": {
       "requireContent": false,
       "requireAttachment": true
@@ -148,7 +148,7 @@
   {
     "name": "Explain this code",
     "action": "Explain this code",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -163,7 +163,7 @@
   {
     "name": "Translate to",
     "action": "Translate",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "params": {
       "language": {
         "default": "English",
@@ -196,7 +196,7 @@
   {
     "name": "Summarize the meeting structured",
     "action": "Summarize the meeting structured",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -211,7 +211,7 @@
   {
     "name": "Summarize the meeting",
     "action": "Summarize the meeting",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -226,7 +226,7 @@
   {
     "name": "Find action for summary",
     "action": "Find action for summary",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -241,7 +241,7 @@
   {
     "name": "Write an article about this",
     "action": "Write an article about this",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -256,7 +256,7 @@
   {
     "name": "Write a twitter about this",
     "action": "Write a twitter about this",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -271,7 +271,7 @@
   {
     "name": "Write a poem about this",
     "action": "Write a poem about this",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -286,7 +286,7 @@
   {
     "name": "Write a blog post about this",
     "action": "Write a blog post about this",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -301,7 +301,7 @@
   {
     "name": "Write outline",
     "action": "Write outline",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -316,7 +316,7 @@
   {
     "name": "Change tone to",
     "action": "Change tone",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "params": {
       "tone": {
         "default": "professional",
@@ -337,7 +337,7 @@
   {
     "name": "Brainstorm ideas about this",
     "action": "Brainstorm ideas about this",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -352,7 +352,7 @@
   {
     "name": "Brainstorm mindmap",
     "action": "Brainstorm mindmap",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -367,7 +367,7 @@
   {
     "name": "Expand mind map",
     "action": "Expand mind map",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -386,7 +386,7 @@
   {
     "name": "Improve writing for it",
     "action": "Improve writing for it",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -401,7 +401,7 @@
   {
     "name": "Improve grammar for it",
     "action": "Improve grammar for it",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -416,7 +416,7 @@
   {
     "name": "Fix spelling for it",
     "action": "Fix spelling for it",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -431,7 +431,7 @@
   {
     "name": "Find action items from it",
     "action": "Find action items from it",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -446,7 +446,7 @@
   {
     "name": "Check code error",
     "action": "Check code error",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -461,7 +461,7 @@
   {
     "name": "Create a presentation",
     "action": "Create a presentation",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -476,7 +476,7 @@
   {
     "name": "Create headings",
     "action": "Create headings",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -521,7 +521,7 @@
   {
     "name": "Make it longer",
     "action": "Make it longer",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -536,7 +536,7 @@
   {
     "name": "Make it shorter",
     "action": "Make it shorter",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -551,7 +551,7 @@
   {
     "name": "Continue writing",
     "action": "Continue writing",
-    "managedRoute": { "targets": ["gemini-3.7-flash"] },
+    "managedRoute": { "targets": ["gemini-3.8-flash"] },
     "messages": [
       {
         "role": "system",
@@ -581,7 +581,7 @@
   {
     "name": "Generate image",
     "action": "image",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -592,7 +592,7 @@
   {
     "name": "Convert to Clay style",
     "action": "Convert to Clay style",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -603,7 +603,7 @@
   {
     "name": "Convert to Sketch style",
     "action": "Convert to Sketch style",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -614,7 +614,7 @@
   {
     "name": "Convert to Anime style",
     "action": "Convert to Anime style",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -625,7 +625,7 @@
   {
     "name": "Convert to Pixel style",
     "action": "Convert to Pixel style",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -636,7 +636,7 @@
   {
     "name": "Convert to sticker",
     "action": "Convert to sticker",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -647,7 +647,7 @@
   {
     "name": "Upscale image",
     "action": "Upscale image",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -658,7 +658,7 @@
   {
     "name": "Remove background",
     "action": "Remove background",
-    "managedRoute": { "targets": ["gpt-image-1"] },
+    "managedRoute": { "targets": ["gpt-image-2.6-flare"] },
     "messages": [
       {
         "role": "user",
@@ -694,25 +694,25 @@
   {
     "name": "Chat With AFFiNE AI",
     "managedRoute": {
-      "targets": ["gpt-5.6-luna"],
-      "premiumTargets": ["gpt-5.6-luna"],
+      "targets": ["gpt-6-luna"],
+      "premiumTargets": ["gpt-6-luna"],
       "selectableTargets": [
         {
           "id": "luna",
-          "modelId": "gpt-5.6-luna",
-          "displayName": "GPT 5.6 Luna",
+          "modelId": "gpt-6-luna",
+          "displayName": "GPT-6 Luna",
           "minimumTier": "standard"
         },
         {
           "id": "terra",
-          "modelId": "gpt-5.6-terra",
-          "displayName": "GPT 5.6 Terra",
+          "modelId": "gpt-6.1-terra",
+          "displayName": "GPT-6.1 Terra",
           "minimumTier": "premium"
         },
         {
           "id": "gemini",
-          "modelId": "gemini-3.7-flash",
-          "displayName": "Gemini 3.7 Flash",
+          "modelId": "gemini-3.8-flash",
+          "displayName": "Gemini 3.8 Flash",
           "minimumTier": "premium"
         },
         {
@@ -764,7 +764,7 @@
   {
     "name": "mindmap.generate",
     "action": "mindmap.generate",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "config": {
       "frequencyPenalty": 0.5,
       "presencePenalty": 0.5,
@@ -789,7 +789,7 @@
   {
     "name": "slides.outline",
     "action": "slides.outline",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -893,7 +893,7 @@
   {
     "name": "workflow:presentation:step1",
     "action": "workflow:presentation:step1",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "config": {
       "temperature": 0.7
     },
@@ -911,7 +911,7 @@
   {
     "name": "workflow:presentation:step2",
     "action": "workflow:presentation:step2",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -930,7 +930,7 @@
   {
     "name": "workflow:presentation:step4",
     "action": "workflow:presentation:step4",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "messages": [
       {
         "role": "system",
@@ -954,7 +954,7 @@
   {
     "name": "workflow:brainstorm:step1",
     "action": "workflow:brainstorm:step1",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "config": {
       "temperature": 0.7
     },
@@ -972,7 +972,7 @@
   {
     "name": "workflow:brainstorm:step2",
     "action": "workflow:brainstorm:step2",
-    "managedRoute": { "targets": ["gpt-5.6-luna"] },
+    "managedRoute": { "targets": ["gpt-6-luna"] },
     "config": {
       "frequencyPenalty": 0.5,
       "presencePenalty": 0.5,

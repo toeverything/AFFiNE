@@ -166,7 +166,7 @@ fn emit_json(
 }
 
 fn transport_error(message: String) -> BackendError {
-  BackendError::Transport { message }
+  BackendError::Transport { message, context: None }
 }
 
 fn execute_tool(
