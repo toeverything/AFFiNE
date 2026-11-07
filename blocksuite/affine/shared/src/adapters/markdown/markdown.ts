@@ -222,10 +222,40 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
       .replace(/&#x20;\n/g, ' \n');
   }
 
-  private _markdownToAst(markdown: Markdown) {
+ private _markdownToAst(markdown: Markdown) {
     const processor = unified()
       .use(remarkParse)
       .use(remarkGfm)
+      // Custom plugin to disable autolinking of file paths.
+      // remark-gfm autolinks things like `api\views\project.py` which is not desired.
+      .use(() => {
+        return (tree: Root) => {
+          const visitor = (node: any) => {
+            if (!node.children) {
+              return;
+            }
+
+            for (let i = 0; i < node.children.length; i++) {
+              const child = node.children[i];
+
+              if (
+                child.type === 'link' &&
+                child.children.length === 1 &&
+                child.children[0].type === 'text' &&
+                child.url === child.children[0].value &&
+                (child.url as string).includes('\\')
+              ) {
+                // This is an autolink that contains backslashes, likely a file path.
+                // Replace the link node with a text node.
+                node.children[i] = { type: 'text', value: child.url };
+              } else {
+                visitor(child);
+              }
+            }
+          };
+          visitor(tree);
+        };
+      })
       .use(remarkMath)
       .use(remarkCallout);
     const ast = processor.parse(markdown);
