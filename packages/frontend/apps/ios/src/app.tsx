@@ -46,8 +46,6 @@ import {
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { getWorkerUrl } from '@affine/env/worker';
 import {
-  type AppStorePurchaseInput,
-  appStorePurchaseMutation,
   expireCheckoutMutation,
   OAuthProviderType,
   SubscriptionPlan,
@@ -84,6 +82,7 @@ import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { BlocksuiteMenuConfigProvider } from './bs-menu-config';
+import { createNativePurchaseBridge } from './native-purchase-bridge';
 import { AffineTheme } from './plugins/affine-theme';
 import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
@@ -666,11 +665,10 @@ const showNativeSignIn = async () => {
 };
 declare global {
   interface Window {
-    appStorePurchase: (input: AppStorePurchaseInput) => Promise<{
-      status: string;
-      attemptId?: string | null;
-      provider?: string | null;
-    }>;
+    getAppStorePurchaseContext: ReturnType<
+      typeof createNativePurchaseBridge
+    >['getContext'];
+    appStorePurchase: ReturnType<typeof createNativePurchaseBridge>['purchase'];
     endStripeCheckout: (
       expectedUserId: string,
       family: 'pro' | 'ai',
@@ -679,23 +677,9 @@ declare global {
   }
 }
 
-window.appStorePurchase = async input => {
-  const currentServer = getCurrentServerForNative();
-  const { appStorePurchase } = await currentServer.gql({
-    query: appStorePurchaseMutation,
-    variables: { input },
-  });
-  if (
-    appStorePurchase.status === 'confirmed' ||
-    appStorePurchase.status === 'conflict'
-  ) {
-    currentServer.scope
-      .get(SubscriptionService)
-      .subscription.waitForRevalidation()
-      .catch(error => console.error('Failed to refresh subscription', error));
-  }
-  return appStorePurchase;
-};
+const purchaseBridge = createNativePurchaseBridge(getCurrentServerForNative);
+window.getAppStorePurchaseContext = purchaseBridge.getContext;
+window.appStorePurchase = purchaseBridge.purchase;
 
 window.endStripeCheckout = async (expectedUserId, family, attemptId) => {
   const { authService, currentServer } = getCurrentNativeSignInContext();

@@ -136,7 +136,7 @@ pub(super) async fn freeze_stripe_operation(
   } else {
     sqlx::query_scalar(
       "SELECT id FROM payment_operations WHERE provider_namespace=$1 AND status IN ('pending','blocked') AND \
-     resource_keys && $2 AND operation_type NOT IN ('purchase_checkout','app_store_purchase')
+       resource_keys && $2 AND operation_type NOT IN ('purchase_checkout','app_store_purchase')
      ORDER BY id LIMIT 1 FOR UPDATE",
     )
     .bind(&namespace)

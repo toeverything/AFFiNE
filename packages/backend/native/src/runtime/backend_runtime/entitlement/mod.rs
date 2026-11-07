@@ -22,10 +22,9 @@ pub(super) use mutation::{
 };
 use sqlx::{Postgres, Row, Transaction};
 
-use super::payment::has_paid_ai_subscription;
 use super::{
   BackendRuntime, InvalidationHintV1, RuntimeError, RuntimeResult, entitlement_input_error, parse_quantity,
-  parse_target_type,
+  parse_target_type, payment::has_paid_ai_subscription,
 };
 use crate::{AFFINE_PRO_PUBLIC_KEY, license_import::normalize_license, runtime::Deployment};
 

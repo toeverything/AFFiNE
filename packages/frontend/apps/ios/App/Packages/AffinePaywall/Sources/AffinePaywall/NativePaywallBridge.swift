@@ -31,6 +31,7 @@ public final class NativePaywallBridge: ObservableObject {
   private weak var associatedWebContext: WKWebView?
   private var stripeCheckout: (userID: String, family: String, attemptID: String)?
   private var productsByPlan: [NativePaywallPlanKind: StoreProduct] = [:]
+  private let purchaseJournal = AppStorePurchaseJournal()
 
   public init(initialPlan: NativePaywallPlanKind = .pro) {
     selectedPlan = initialPlan
@@ -130,24 +131,29 @@ public final class NativePaywallBridge: ObservableObject {
     guard let product = productsByPlan[plan] else {
       throw bridgeError("Unable to load the selected plan.")
     }
-    let userID = try await configurePurchasesForCurrentUser(in: webView)
+    let context = try await configurePurchasesForCurrentUser(in: webView)
     let productID = product.productIdentifier
     let prepared = try await purchaseCommand(
-      "Prepare", userID: userID, productID: productID, intentID: UUID().uuidString, in: webView
+      "Prepare", context: context, productID: productID, intentID: UUID().uuidString, in: webView
     )
     if prepared.status == "processing", prepared.provider == "stripe", let attemptID = prepared.attemptID {
-      stripeCheckout = (userID, plan == .ai ? "ai" : "pro", attemptID)
+      stripeCheckout = (context.userID, plan == .ai ? "ai" : "pro", attemptID)
       throw bridgeError("End your open Stripe checkout before subscribing through the App Store.")
     }
     guard prepared.status == "prepared", let attemptID = prepared.attemptID else {
       return try interpret(prepared)
     }
     try Task.checkCancellation()
-    let handoff = try await purchaseCommand("Claim", userID: userID, productID: productID, attemptID: attemptID, in: webView)
+    let handoff = try await purchaseCommand("Claim", context: context, productID: productID, attemptID: attemptID, in: webView)
     guard handoff.status == "start" else { return try interpret(handoff) }
-    let currentUserID = try? await fetchCurrentUserIdentifier(in: webView)
-    if Task.isCancelled || currentUserID != userID || Purchases.shared.appUserID != userID {
-      _ = try? await purchaseCommand("Cancel", userID: userID, productID: productID, attemptID: attemptID, in: webView)
+    let currentContext = try? await fetchPurchaseContext(in: webView)
+    if Task.isCancelled || currentContext != context || Purchases.shared.appUserID != context.userID {
+      let report = AppStorePurchaseReport(
+        context: context, productID: productID, attemptID: attemptID, outcome: .canceled
+      )
+      _ = try? await purchaseJournal.recordAndDeliver(report) { report in
+        try await sendPurchaseReport(report, in: webView)
+      }
       try Task.checkCancellation()
       throw bridgeError("Unable to verify your current account.")
     }
@@ -158,19 +164,20 @@ public final class NativePaywallBridge: ObservableObject {
     } catch {
       throw bridgeError("Your purchase is still being processed. Use Restore purchases to check it.")
     }
+    let outcome: AppStorePurchaseReport.Outcome
     if result.userCancelled {
-      let canceled = try await purchaseCommand(
-        "Cancel", userID: userID, productID: productID, attemptID: attemptID, in: webView
-      )
-      return try interpret(canceled)
-    }
-    guard let transaction = result.transaction else {
+      outcome = .canceled
+    } else if let transaction = result.transaction {
+      outcome = .submitted(transactionID: transaction.transactionIdentifier)
+    } else {
       throw bridgeError("Your purchase is still being processed. Use Restore purchases to check it.")
     }
-    let submitted = try await purchaseCommand(
-      "Submit", userID: userID, productID: productID, attemptID: attemptID,
-      transactionID: transaction.transactionIdentifier, in: webView
+    let report = AppStorePurchaseReport(
+      context: context, productID: productID, attemptID: attemptID, outcome: outcome
     )
+    let submitted = try await purchaseJournal.recordAndDeliver(report) { report in
+      try await sendPurchaseReport(report, in: webView)
+    }
     return try interpret(submitted)
   }
 
@@ -187,7 +194,7 @@ public final class NativePaywallBridge: ObservableObject {
     guard let webView = associatedWebContext else {
       throw bridgeError("Missing required information")
     }
-    let userID = try await configurePurchasesForCurrentUser(in: webView)
+    let context = try await configurePurchasesForCurrentUser(in: webView)
     let requestedProducts = selectedPlan == .ai
       ? [Self.productIdentifier(for: .ai)]
       : [Self.productIdentifier(for: .lite), Self.productIdentifier(for: .pro)]
@@ -196,7 +203,7 @@ public final class NativePaywallBridge: ObservableObject {
       guard case let .verified(transaction) = entitlement,
             requestedProducts.contains(transaction.productID) else { continue }
       let restored = try await purchaseCommand(
-        "Restore", userID: userID, productID: transaction.productID,
+        "Restore", context: context, productID: transaction.productID,
         transactionID: String(transaction.id), in: webView
       )
       return try interpret(restored)
@@ -244,61 +251,63 @@ private extension NativePaywallBridge {
     }
   }
 
-  func configurePurchasesForCurrentUser(in webView: WKWebView) async throws -> String {
+  func configurePurchasesForCurrentUser(in webView: WKWebView) async throws -> AppStorePurchaseContext {
+    let context = try await fetchPurchaseContext(in: webView)
+    await purchaseJournal.replay(in: context) { report in
+      try await sendPurchaseReport(report, in: webView)
+    }
     configurePurchases()
-    let userIdentifier = try await fetchCurrentUserIdentifier(in: webView)
-    _ = try await Purchases.shared.logIn(userIdentifier)
-    return userIdentifier
+    _ = try await Purchases.shared.logIn(context.userID)
+    return context
   }
 
-  func fetchCurrentUserIdentifier(in webView: WKWebView) async throws -> String {
+  func fetchPurchaseContext(in webView: WKWebView) async throws -> AppStorePurchaseContext {
     let result = try await webView.callAsyncJavaScript(
-      "return await window.getCurrentUserIdentifier();",
+      "return await window.getAppStorePurchaseContext();",
       contentWorld: .page
     )
-    let userIdentifier = (result as? String)?
-      .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-
-    guard !userIdentifier.isEmpty, userIdentifier.count < 256 else {
+    guard let result = result as? [String: String],
+          let userID = result["userId"], !userID.isEmpty, userID.count < 256,
+          let serverBaseURL = result["serverBaseUrl"], !serverBaseURL.isEmpty else {
       throw bridgeError("Missing required information")
     }
-
-    return userIdentifier
+    return AppStorePurchaseContext(serverBaseURL: serverBaseURL, userID: userID)
   }
 
-  struct PurchaseResponse {
-    let status: String
-    let attemptID: String?
-    let provider: String?
+  func sendPurchaseReport(_ report: AppStorePurchaseReport, in webView: WKWebView) async throws -> AppStorePurchaseResponse {
+    try await purchaseCommand(
+      report.action, context: report.context, productID: report.productID,
+      attemptID: report.attemptID, transactionID: report.transactionID, in: webView
+    )
   }
 
   func purchaseCommand(
     _ action: String,
-    userID: String,
+    context: AppStorePurchaseContext,
     productID: String,
     intentID: String? = nil,
     attemptID: String? = nil,
     transactionID: String? = nil,
     in webView: WKWebView
-  ) async throws -> PurchaseResponse {
-    var input = ["purchaseAction": action, "expectedUserId": userID, "productId": productID]
+  ) async throws -> AppStorePurchaseResponse {
+    var input = ["purchaseAction": action, "expectedUserId": context.userID, "productId": productID]
     input["intentId"] = intentID
     input["attemptId"] = attemptID
     input["transactionId"] = transactionID
     let value = try await webView.callAsyncJavaScript(
-      "return await window.appStorePurchase(input);",
-      arguments: ["input": input],
+      "return await window.appStorePurchase(input, expectedServerBaseUrl);",
+      arguments: ["input": input, "expectedServerBaseUrl": context.serverBaseURL],
       contentWorld: .page
     )
     guard let result = value as? [String: Any], let status = result["status"] as? String else {
       throw bridgeError("Unable to check your purchase. Please try again.")
     }
-    return PurchaseResponse(
+    return AppStorePurchaseResponse(
       status: status, attemptID: result["attemptId"] as? String, provider: result["provider"] as? String
     )
   }
 
-  func interpret(_ response: PurchaseResponse) throws -> Bool {
+  func interpret(_ response: AppStorePurchaseResponse) throws -> Bool {
     switch response.status {
     case "confirmed":
       return true

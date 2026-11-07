@@ -4200,6 +4200,7 @@ async fn revenuecat_access_and_missing_source_rules_fail_closed() {
 async fn workspace_payment_freeze_rechecks_owner_after_transfer() {
   use super::super::{domain_command::lock_workspace, permission::PermissionAuthorizer};
 
+  let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
   let Some(pool) = pool().await else {
     return;
   };
@@ -4280,6 +4281,7 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
 
   use tokio::sync::Notify;
 
+  let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
   let Some(pool) = pool().await else { return };
   let marker = uuid::Uuid::new_v4().to_string();
   let user_id = insert_user(&pool, &marker).await;
@@ -4350,6 +4352,7 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
     page(vec![current.clone()]),
     page(Vec::new()),
     page(Vec::new()),
+    provider_failure(),
     page(vec![stale_lookup.clone()]),
     page(vec![stale_lookup.clone()]),
     page(vec![stale_lookup.clone()]),
@@ -4423,52 +4426,6 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
   );
   assert!(revenuecat_requests.try_recv().is_err());
   let family_scope = PaymentScope::cloud_target("user", &user_id, Plan::Pro).unwrap();
-  let legacy_checkout = format!("legacy-checkout-{marker}");
-  for status in ["pending", "blocked"] {
-    sqlx::query(
-      "INSERT INTO \
-       payment_operations(id,provider,provider_namespace,operation_type,intent_id,primary_resource_key,resource_keys,\
-       target_type,target_id,status)
-       VALUES($1,'stripe',$2,'create_checkout',$1,$3,ARRAY[$3],'user',$4,$5)",
-    )
-    .bind(&legacy_checkout)
-    .bind(&stripe_namespace)
-    .bind(family_scope.as_str())
-    .bind(&user_id)
-    .bind(status)
-    .execute(&pool)
-    .await
-    .unwrap();
-    assert_eq!(
-      runtime.execute_for_test(prepare("store-1")).await.unwrap()["status"],
-      "conflict"
-    );
-    sqlx::query("DELETE FROM payment_operations WHERE id=$1")
-      .bind(&legacy_checkout)
-      .execute(&pool)
-      .await
-      .unwrap();
-  }
-  let legacy_entitlement = format!("legacy-entitlement-{marker}");
-  sqlx::query(
-    "INSERT INTO entitlements(id,target_type,target_id,source,plan,status,starts_at,expires_at)
-     VALUES($1,'user',$2,'cloud_subscription','pro','active',now()-INTERVAL '1 day',now()+INTERVAL '1 day')",
-  )
-  .bind(&legacy_entitlement)
-  .bind(&user_id)
-  .execute(&pool)
-  .await
-  .unwrap();
-  assert_eq!(
-    runtime.execute_for_test(prepare("store-1")).await.unwrap()["status"],
-    "conflict"
-  );
-  sqlx::query("DELETE FROM entitlements WHERE id=$1")
-    .bind(&legacy_entitlement)
-    .execute(&pool)
-    .await
-    .unwrap();
-
   let first = runtime.execute_for_test(checkout("stripe-1")).await.unwrap();
   assert_eq!(runtime.execute_for_test(checkout("stripe-2")).await.unwrap(), first);
   assert_eq!(
@@ -4613,7 +4570,21 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
       "processing"
     );
   }
-  assert_eq!(runtime.execute_for_test(cancel).await.unwrap()["status"], "canceled");
+  assert_eq!(
+    runtime.execute_for_test(cancel.clone()).await.unwrap()["status"],
+    "canceled"
+  );
+  assert_eq!(
+    runtime.execute_for_test(cancel.clone()).await.unwrap()["status"],
+    "canceled"
+  );
+  assert_eq!(
+    runtime
+      .execute_for_test(app_store("cancel", None, Some("unmatched-attempt"), None))
+      .await
+      .unwrap(),
+    json!({ "status": "processing" })
+  );
   for _ in 0..3 {
     assert!(
       revenuecat_requests
@@ -4624,6 +4595,7 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
   }
   assert!(revenuecat_requests.try_recv().is_err());
   let prepared = runtime.execute_for_test(prepare("store-2")).await.unwrap();
+  assert_eq!(runtime.execute_for_test(cancel).await.unwrap()["status"], "canceled");
   let attempt_id = prepared["attemptId"].as_str();
   assert_eq!(
     runtime
@@ -4709,7 +4681,10 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
     reconnecting.notified().await;
     wait_for_family_release().await;
     let submit = app_store("submit", None, attempt_id, Some(transaction));
-    assert_eq!(runtime.execute_for_test(submit).await.unwrap()["status"], "processing");
+    assert_eq!(
+      runtime.execute_for_test(submit).await.unwrap(),
+      json!({ "status": "processing", "attemptId": attempt_id })
+    );
     assert_eq!(
       load_attempt(attempt_id.unwrap()).await.unwrap(),
       ("waiting".into(), Some(transaction.into()))
@@ -4766,16 +4741,24 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
   let retry = app_store("submit", None, attempt_id, Some(transaction));
   let unrelated = app_store("submit", None, attempt_id, Some("different-transaction"));
   assert_eq!(
-    runtime.execute_for_test(unrelated).await.unwrap()["status"],
-    "processing"
+    runtime.execute_for_test(unrelated).await.unwrap(),
+    json!({ "status": "processing" })
+  );
+  assert_eq!(
+    runtime
+      .execute_for_test(app_store("submit", None, Some("unmatched-attempt"), Some(transaction)))
+      .await
+      .unwrap(),
+    json!({ "status": "processing" })
   );
   assert_eq!(
     load_attempt(attempt_id.unwrap()).await.unwrap().1.as_deref(),
     Some(transaction)
   );
+  assert!(runtime.execute_for_test(retry.clone()).await.is_err());
   assert_eq!(
-    runtime.execute_for_test(retry.clone()).await.unwrap()["status"],
-    "processing"
+    runtime.execute_for_test(retry.clone()).await.unwrap(),
+    json!({ "status": "processing", "attemptId": attempt_id })
   );
   assert_eq!(load_attempt(attempt_id.unwrap()).await.unwrap().0, "waiting");
   assert_eq!(
@@ -4828,7 +4811,23 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
     .unwrap();
   assert!(recover_app_store_purchase(&runtime).await.unwrap().is_some());
   assert_eq!(load_attempt(attempt_id.unwrap()).await.unwrap().0, "completed");
-  assert_eq!(runtime.execute_for_test(retry).await.unwrap()["status"], "confirmed");
+  let confirmed = runtime.execute_for_test(retry).await.unwrap();
+  assert_eq!(confirmed["status"], "confirmed");
+  assert_eq!(confirmed["attemptId"], json!(attempt_id));
+  assert_eq!(
+    runtime
+      .execute_for_test(app_store("submit", None, attempt_id, Some("different-transaction")))
+      .await
+      .unwrap(),
+    json!({ "status": "processing" })
+  );
+  assert_eq!(
+    runtime
+      .execute_for_test(app_store("cancel", None, attempt_id, None))
+      .await
+      .unwrap(),
+    json!({ "status": "processing" })
+  );
   let billing_before = runtime
     .list_subscriptions("user", &user_id)
     .await
@@ -4884,7 +4883,7 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
     1
   );
   let requests: Vec<_> = std::iter::from_fn(|| revenuecat_requests.try_recv().ok()).collect();
-  assert_eq!(requests.len(), 16);
+  assert_eq!(requests.len(), 17);
   assert!(requests.iter().all(|request| !request.contains("/aliases")));
   assert_eq!(
     requests
@@ -4899,6 +4898,7 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
 
 #[tokio::test]
 async fn operator_reconciliation_verifies_sources_and_commits_with_audit() {
+  let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
   let Some(pool) = pool().await else { return };
   let marker = uuid::Uuid::new_v4().simple().to_string();
   let user_id = insert_user(&pool, &marker).await;

@@ -454,12 +454,10 @@ pub(super) async fn complete_receipts_and_operation(
         return Err(RuntimeError::invalid_state("payment operation has unfinished steps"));
       }
       sqlx::query(
-        "UPDATE payment_operations SET \
-         status=CASE WHEN operation_type='purchase_checkout' AND status='pending' THEN 'waiting' ELSE 'completed' END,\
-         result=$3,last_error_code=NULL,last_error=NULL,\
-         next_attempt_at=CASE WHEN operation_type='purchase_checkout' AND status='pending' THEN $4::timestamptz + INTERVAL '1 minute' END,\
-         updated_at=$4 WHERE \
-         id=$1 AND provider_namespace=$2",
+        "UPDATE payment_operations SET status=CASE WHEN operation_type='purchase_checkout' AND status='pending' THEN \
+         'waiting' ELSE 'completed' END,result=$3,last_error_code=NULL,last_error=NULL,next_attempt_at=CASE WHEN \
+         operation_type='purchase_checkout' AND status='pending' THEN $4::timestamptz + INTERVAL '1 minute' \
+         END,updated_at=$4 WHERE id=$1 AND provider_namespace=$2",
       )
       .bind(&operation.operation_id)
       .bind(namespace)

@@ -76,7 +76,7 @@ impl PaymentRuntime {
           return Ok(json!({ "status": "prepared", "attemptId": attempt.id }));
         }
       }
-      let facts = load_user_purchase_facts(&mut connection, user_id, family, now).await?;
+      let facts = load_user_purchase_facts(&mut connection, user_id, family).await?;
       return match facts.admission(family, Provider::RevenueCat, recurring, now, open.is_some()) {
         PurchaseAdmission::Allowed => {
           let attempt_id = uuid::Uuid::new_v4().to_string();
@@ -128,7 +128,7 @@ impl PaymentRuntime {
         let Some(attempt) = attempt.filter(|attempt| attempt.status == "pending") else {
           return Ok(json!({ "status": "processing" }));
         };
-        let facts = load_user_purchase_facts(&mut connection, user_id, family, now).await?;
+        let facts = load_user_purchase_facts(&mut connection, user_id, family).await?;
         match facts.admission(family, Provider::RevenueCat, recurring, now, false) {
           PurchaseAdmission::Allowed => {}
           PurchaseAdmission::Existing(provider) => return Ok(json!({ "status": "existing", "provider": provider })),
@@ -147,7 +147,19 @@ impl PaymentRuntime {
       }
       AppStoreAction::Cancel => {
         let Some(attempt) = attempt.filter(|attempt| attempt.status == "waiting") else {
-          return Ok(json!({ "status": "processing" }));
+          let canceled: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM payment_operations WHERE id=$1 AND provider_namespace=$2
+               AND target_type='user' AND target_id=$3 AND operation_type='app_store_purchase'
+               AND status='completed' AND result->>'productId'=$4 AND last_error_code='sdk_cancelled')",
+          )
+          .bind(input.attempt_id.as_deref())
+          .bind(&namespace)
+          .bind(user_id)
+          .bind(&input.product_id)
+          .fetch_one(connection.connection())
+          .await
+          .map_err(|error| RuntimeError::database("load App Store cancellation result", error))?;
+          return Ok(json!({ "status": if canceled { "canceled" } else { "processing" } }));
         };
         if attempt
           .result
@@ -211,7 +223,7 @@ impl PaymentRuntime {
         if !restore && attempt.is_none() {
           let prior: Option<Value> = sqlx::query_scalar(
             "SELECT result FROM payment_operations WHERE id=$1 AND provider_namespace=$2 AND target_id=$3
-               AND operation_type='app_store_purchase' AND status='completed'
+               AND target_type='user' AND operation_type='app_store_purchase' AND status='completed'
                AND result->>'productId'=$4 AND result->>'transactionId'=$5",
           )
           .bind(input.attempt_id.as_deref())
@@ -222,7 +234,13 @@ impl PaymentRuntime {
           .fetch_optional(connection.connection())
           .await
           .map_err(|error| RuntimeError::database("load App Store purchase result", error))?;
-          return Ok(prior.unwrap_or_else(|| json!({ "status": "processing" })));
+          return Ok(match prior {
+            Some(mut prior) => {
+              prior["attemptId"] = json!(input.attempt_id);
+              prior
+            }
+            None => json!({ "status": "processing" }),
+          });
         }
         if let Some(attempt) = attempt.as_ref().filter(|_| !restore) {
           let recorded = sqlx::query(
@@ -255,7 +273,11 @@ impl PaymentRuntime {
             attempt.as_ref().map(|attempt| attempt.id.as_str()),
           )
           .await?;
-        Ok(json!({ "status": status }))
+        let mut result = json!({ "status": status });
+        if !restore && let Some(attempt) = attempt {
+          result["attemptId"] = json!(attempt.id);
+        }
+        Ok(result)
       }
     }
   }

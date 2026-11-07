@@ -66,7 +66,6 @@ pub(super) async fn open_purchase(
 pub(super) struct UserPurchaseFacts {
   relationships: Vec<PurchaseRelationship>,
   binding_conflict: bool,
-  historical_needs_verification: bool,
 }
 
 impl UserPurchaseFacts {
@@ -85,7 +84,7 @@ impl UserPurchaseFacts {
       now,
       &self.relationships,
       has_attempt,
-      self.binding_conflict || self.historical_needs_verification,
+      self.binding_conflict,
     )
   }
 }
@@ -94,7 +93,6 @@ pub(super) async fn load_user_purchase_facts(
   connection: &mut PaymentConnection,
   user_id: &str,
   family: UserPlanFamily,
-  now: DateTime<Utc>,
 ) -> RuntimeResult<UserPurchaseFacts> {
   let plans: &[&str] = match family {
     UserPlanFamily::Pro => &["pro", "lifetime_pro"],
@@ -102,7 +100,6 @@ pub(super) async fn load_user_purchase_facts(
   };
   let rows = sqlx::query(
     "SELECT s.provider::text AS provider,s.status,s.plan,s.recurring,s.period_end,s.canceled_at,
-            s.provider_namespace IS NOT NULL AND s.source_identity IS NOT NULL AS canonical,
             ARRAY(
               SELECT DISTINCT e.metadata->>'financialRestriction'
               FROM entitlements e
@@ -127,9 +124,10 @@ pub(super) async fn load_user_purchase_facts(
         .ok_or_else(|| RuntimeError::invalid_state("invalid purchase lifecycle"))?;
       let recurring = row
         .get::<Option<&str>, _>("recurring")
-        .and_then(SubscriptionRecurring::parse);
+        .and_then(SubscriptionRecurring::parse)
+        .ok_or_else(|| RuntimeError::invalid_state("invalid purchase recurring"))?;
       let plan = match (parse_plan(row.get("plan"))?, recurring) {
-        (Plan::Pro, Some(SubscriptionRecurring::Lifetime)) => Plan::LifetimePro,
+        (Plan::Pro, SubscriptionRecurring::Lifetime) => Plan::LifetimePro,
         (plan, _) => plan,
       };
       let restriction = row.get::<Vec<String>, _>("financial_restrictions").iter().try_fold(
@@ -142,7 +140,7 @@ pub(super) async fn load_user_purchase_facts(
       )?;
       Ok(PurchaseRelationship {
         plan,
-        recurring: recurring.unwrap_or(SubscriptionRecurring::Monthly),
+        recurring,
         restriction,
         billing: BillingRelationship {
           provider,
@@ -150,59 +148,21 @@ pub(super) async fn load_user_purchase_facts(
           period_end: row.get("period_end"),
           canceled_at: row.get("canceled_at"),
         },
-        canonical: row.get::<bool, _>("canonical") && recurring.is_some(),
       })
     })
     .collect::<RuntimeResult<Vec<_>>>()?;
-  let (binding_conflict, historical_needs_verification) =
-    load_purchase_verification(connection, user_id, family, plans, now).await?;
+  let binding_conflict = sqlx::query_scalar(
+    "SELECT EXISTS(
+       SELECT 1 FROM cloud_subscription_bindings WHERE user_id=$1 AND plan_family=$2 AND conflicted
+     )",
+  )
+  .bind(user_id)
+  .bind(family.as_str())
+  .fetch_one(connection.connection())
+  .await
+  .map_err(|error| RuntimeError::database("load purchase binding conflict", error))?;
   Ok(UserPurchaseFacts {
     relationships,
     binding_conflict,
-    historical_needs_verification,
   })
-}
-
-async fn load_purchase_verification(
-  connection: &mut PaymentConnection,
-  user_id: &str,
-  family: UserPlanFamily,
-  plans: &[&str],
-  now: DateTime<Utc>,
-) -> RuntimeResult<(bool, bool)> {
-  let scope = PaymentScope::cloud_target(
-    "user",
-    user_id,
-    match family {
-      UserPlanFamily::Pro => Plan::Pro,
-      UserPlanFamily::Ai => Plan::Ai,
-    },
-  )?;
-  sqlx::query_as(
-    "SELECT EXISTS(
-       SELECT 1 FROM cloud_subscription_bindings WHERE user_id=$1 AND plan_family=$3 AND conflicted
-     ) AS binding_conflict, (
-       EXISTS(
-         SELECT 1 FROM payment_operations WHERE target_type='user' AND target_id=$1
-           AND operation_type='create_checkout' AND status IN ('pending','blocked')
-           AND $5=ANY(resource_keys)
-       ) OR EXISTS(
-         SELECT 1 FROM entitlements WHERE target_type='user' AND target_id=$1 AND plan=ANY($2)
-           AND source='cloud_subscription' AND status IN ('active','grace')
-           AND (expires_at IS NULL OR expires_at>$4)
-           AND (status='active' OR grace_until>$4)
-           AND NOT EXISTS (
-             SELECT 1 FROM cloud_subscription_bindings WHERE user_id=$1 AND plan_family=$3
-           )
-       )
-     ) AS historical_needs_verification",
-  )
-  .bind(user_id)
-  .bind(plans)
-  .bind(family.as_str())
-  .bind(now)
-  .bind(scope.as_str())
-  .fetch_one(connection.connection())
-  .await
-  .map_err(|error| RuntimeError::database("verify purchase binding and historical facts", error))
 }

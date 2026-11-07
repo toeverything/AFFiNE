@@ -102,7 +102,7 @@ impl PaymentRuntime {
     let now = purchase_time(&mut connection).await?;
     if let Some(family) = family {
       let attempt = open_purchase(&mut connection, &target_scope, now).await?;
-      let facts = load_user_purchase_facts(&mut connection, &target_id, family, now).await?;
+      let facts = load_user_purchase_facts(&mut connection, &target_id, family).await?;
       let admission = facts.admission(family, Provider::Stripe, recurring, now, attempt.is_some());
       match admission {
         PurchaseAdmission::Allowed => {}
