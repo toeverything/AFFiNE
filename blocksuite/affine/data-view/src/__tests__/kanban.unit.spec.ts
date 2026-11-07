@@ -1,3 +1,4 @@
+import * as contextMenu from '@blocksuite/affine-components/context-menu';
 import { signal } from '@preact/signals-core';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -866,6 +867,122 @@ describe('kanban', () => {
       expect(tag3?.textContent?.trim()).toBe('Done');
 
       view.remove();
+    });
+
+    it('allows opening rename and color menu when column title is empty or whitespace', async () => {
+      if (!customElements.get('data-view-group-title-select-view')) {
+        customElements.define(
+          'data-view-group-title-select-view',
+          SelectGroupView
+        );
+      }
+      const view = document.createElement(
+        'data-view-group-title-select-view'
+      ) as SelectGroupView;
+      const data$ = signal({
+        options: [
+          { id: 'opt-1', value: '', color: '#ff0000' },
+          { id: 'opt-2', value: '   ', color: '#00ff00' },
+        ],
+      });
+      const updateData = vi.fn((data: unknown) => {
+        data$.value = data as {
+          options: Array<{ id: string; value: string; color: string }>;
+        };
+      });
+      view.group = {
+        value: 'opt-1',
+        property: {
+          data$,
+          name$: signal('Status'),
+        },
+        manager: {
+          updateData,
+        },
+      } as never;
+
+      document.body.append(view);
+      await view.updateComplete;
+
+      const inputSpy = vi.spyOn(contextMenu.menu, 'input');
+      const popMenuSpy = vi
+        .spyOn(contextMenu, 'popMenu')
+        .mockImplementation(() => ({ close: () => {} }) as never);
+
+      try {
+        // Test empty string title
+        const trigger1 = view.querySelector(
+          '.data-view-group-title-select-view'
+        ) as HTMLElement;
+        expect(trigger1).not.toBeNull();
+        trigger1.click();
+
+        expect(popMenuSpy).toHaveBeenCalledTimes(1);
+        expect(inputSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            initialValue: '',
+            placeholder: 'Untitled',
+          })
+        );
+
+        // Test rename from the menu input
+        const inputConfig1 = inputSpy.mock.calls[0][0];
+        inputConfig1.onChange?.('In Progress');
+        expect(updateData).toHaveBeenCalledWith({
+          options: [
+            { id: 'opt-1', value: 'In Progress', color: '#ff0000' },
+            { id: 'opt-2', value: '   ', color: '#00ff00' },
+          ],
+        });
+
+        // Test color selection from the menu
+        const popMenuOptions1 = popMenuSpy.mock.calls[0][1]?.options?.items;
+        expect(popMenuOptions1).toBeDefined();
+        expect(popMenuOptions1!.length).toBeGreaterThan(1);
+
+        // Test whitespace-only title
+        popMenuSpy.mockClear();
+        inputSpy.mockClear();
+        updateData.mockClear();
+        view.group = {
+          value: 'opt-2',
+          property: {
+            data$,
+            name$: signal('Status'),
+          },
+          manager: {
+            updateData,
+          },
+        } as never;
+        await view.updateComplete;
+
+        const trigger2 = view.querySelector(
+          '.data-view-group-title-select-view'
+        ) as HTMLElement;
+        expect(trigger2).not.toBeNull();
+        trigger2.click();
+
+        expect(popMenuSpy).toHaveBeenCalledTimes(1);
+        expect(inputSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            initialValue: '   ',
+            placeholder: 'Untitled',
+          })
+        );
+
+        const inputConfig2 = inputSpy.mock.calls[0][0];
+        inputConfig2.onChange?.('Done');
+        expect(updateData).toHaveBeenCalledWith({
+          options: [
+            { id: 'opt-1', value: 'In Progress', color: '#ff0000' },
+            { id: 'opt-2', value: 'Done', color: '#00ff00' },
+          ],
+        });
+      } finally {
+        inputSpy.mockRestore();
+        popMenuSpy.mockRestore();
+        view.remove();
+      }
     });
   });
 
