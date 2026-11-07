@@ -1,4 +1,7 @@
-import type { SubscriptionQuery, SubscriptionRecurring } from '@affine/graphql';
+import type {
+  GetWorkspaceSubscriptionQuery,
+  SubscriptionRecurring,
+} from '@affine/graphql';
 import { SubscriptionPlan } from '@affine/graphql';
 import {
   catchErrorInto,
@@ -17,8 +20,8 @@ import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceServerService } from '../services/workspace-server';
 import { SubscriptionStore } from '../stores/subscription';
 export type SubscriptionType = NonNullable<
-  SubscriptionQuery['currentUser']
->['subscriptions'][number];
+  NonNullable<GetWorkspaceSubscriptionQuery['workspace']>['subscription']
+>;
 
 export class WorkspaceSubscription extends Entity {
   subscription$ = new LiveData<SubscriptionType | null | undefined>(null);

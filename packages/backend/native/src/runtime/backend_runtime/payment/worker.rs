@@ -4,15 +4,15 @@ use serde_json::Value;
 use sqlx::Row;
 use tokio::{sync::Mutex, task::JoinHandle};
 
-use super::{PaymentApplyResult, PaymentRuntime, PaymentSnapshot, SnapshotCoverage};
+use super::{PaymentApplyResult, PaymentRuntime, PaymentSnapshot, SnapshotCoverage, recover_app_store_purchase};
 use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::invalidation::InvalidationRuntime};
 
 pub(super) struct Receipt {
   provider: String,
-  namespace: String,
+  pub(super) namespace: String,
   event_id: String,
   event_type: String,
-  payload: Value,
+  pub(super) payload: Value,
 }
 
 pub(super) struct PaymentWorker {
@@ -43,6 +43,12 @@ impl PaymentWorker {
         if let Ok(Some(changes)) = super::command::recover_one_stripe_operation(&runtime).await {
           publish_changes(&invalidation, changes).await;
           continue;
+        }
+        if let Ok(Some(changes)) = recover_app_store_purchase(&runtime).await {
+          publish_changes(&invalidation, changes).await;
+        }
+        if let Ok(Some(changes)) = super::command::recover_waiting_checkout(&runtime).await {
+          publish_changes(&invalidation, changes).await;
         }
         if let Ok(Some(changes)) = super::reconcile_one_source(&runtime).await {
           publish_changes(&invalidation, changes).await;
@@ -137,6 +143,17 @@ async fn recover_stripe(runtime: &PaymentRuntime, receipt: &Receipt) -> RuntimeR
     .ok_or_else(|| RuntimeError::invalid_input("Stripe receipt object is invalid"))?;
   let object_kind = object.get("object").and_then(Value::as_str).unwrap_or_default();
   let observed_at = chrono::Utc::now();
+  if object_kind == "checkout.session" {
+    super::command::stripe_checkout_receipt(runtime, receipt).await?;
+    if object.get("subscription").is_none_or(Value::is_null) {
+      return runtime
+        .apply_snapshot(empty_receipt_snapshot(
+          stripe.namespace().clone(),
+          receipt.event_id.clone(),
+        ))
+        .await;
+    }
+  }
   match object_kind {
     "invoice" => {
       let invoice_id = object
@@ -288,10 +305,6 @@ async fn recover_revenuecat(runtime: &PaymentRuntime, receipt: &Receipt) -> Runt
     .revenuecat
     .as_deref()
     .ok_or_else(|| RuntimeError::invalid_state("RevenueCat payment provider is not configured"))?;
-  let config = runtime
-    .revenuecat_config
-    .as_ref()
-    .ok_or_else(|| RuntimeError::invalid_state("RevenueCat payment provider is not configured"))?;
   require_namespace(receipt, client.namespace())?;
   let event = receipt
     .payload
@@ -305,23 +318,8 @@ async fn recover_revenuecat(runtime: &PaymentRuntime, receipt: &Receipt) -> Runt
     .or_else(|| event.get("app_user_id").and_then(Value::as_str))
     .filter(|id| !id.starts_with("$RCAnonymousID:"))
     .ok_or_else(|| RuntimeError::invalid_state("RevenueCat receipt has no canonical customer"))?;
-  let subscriptions = client
-    .customer_subscriptions(customer_id)
-    .await
-    .map_err(provider_runtime_error)?;
-  let verified = verified_missing_revenuecat_sources(runtime, client, customer_id, &subscriptions).await?;
-  let snapshot = super::snapshot::revenuecat_customer_snapshot(
-    &runtime.pool,
-    client,
-    config,
-    customer_id,
-    subscriptions,
-    SnapshotCoverage::Complete {
-      verified_missing_revenuecat_sources: verified,
-    },
-    vec![receipt.event_id.clone()],
-  )
-  .await?;
+  let mut snapshot = runtime.observe_revenuecat_customer(customer_id).await?;
+  snapshot.captured_event_ids.push(receipt.event_id.clone());
   runtime.apply_snapshot(snapshot).await
 }
 

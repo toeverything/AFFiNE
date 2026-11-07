@@ -58,6 +58,15 @@ export class BackendRuntimeCoreOperations {
     return this.runtime.nodeCryptoPrivateKey();
   }
 
+  listPaymentSubscriptionsV1<T>(
+    targetType: 'user' | 'workspace',
+    targetId: string
+  ) {
+    return this.measured('listPaymentSubscriptionsV1', runtime =>
+      runtime.listPaymentSubscriptionsV1(targetType, targetId)
+    ) as Promise<T>;
+  }
+
   executePaymentCommandV1<T = unknown>(input: Record<string, unknown>) {
     return this.measured('executePaymentCommandV1', runtime =>
       runtime.executePaymentCommandV1(input)

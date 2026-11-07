@@ -7,10 +7,6 @@ use super::*;
 enum PaymentCommand {
   ProvisionStripeCatalog,
   ListPrices,
-  ListSubscriptions {
-    target_type: String,
-    target_id: String,
-  },
   ListInvoices {
     target_id: String,
   },
@@ -26,6 +22,15 @@ enum PaymentCommand {
     quantity: Option<u32>,
     success_url: String,
     intent_id: String,
+  },
+  CheckoutAttempt {
+    user_id: String,
+    plan: String,
+  },
+  ExpireCheckout {
+    user_id: String,
+    plan: String,
+    attempt_id: String,
   },
   MutateSubscription {
     actor_user_id: String,
@@ -50,7 +55,12 @@ enum PaymentCommand {
     quantity: u32,
     intent_id: String,
   },
-  RefreshRevenuecat {
+  AppStorePurchase {
+    user_id: String,
+    #[serde(flatten)]
+    input: AppStorePurchase,
+  },
+  RefreshSubscriptions {
     user_id: String,
   },
   RequestApplyRevenuecat {
@@ -89,13 +99,30 @@ enum PaymentCommand {
   PrepareUserDeletion {
     user_id: String,
   },
+  InspectPaymentReconciliation {
+    user_id: Option<String>,
+    plan_family: Option<String>,
+    provider_identity: Option<String>,
+  },
+  ReconcilePayment {
+    #[serde(flatten)]
+    request: Reconciliation,
+  },
+}
+
+pub(in crate::runtime::backend_runtime::payment) fn refresh_subscriptions_user(input: Value) -> Option<String> {
+  match serde_json::from_value(input).ok()? {
+    PaymentCommand::RefreshSubscriptions { user_id } => Some(user_id),
+    _ => None,
+  }
 }
 
 impl PaymentRuntime {
   pub(in crate::runtime::backend_runtime::payment) async fn execute(
     &self,
     input: Value,
-  ) -> RuntimeResult<PaymentCommandOutcome> {
+    changes: &mut super::super::PaymentApplyResult,
+  ) -> RuntimeResult<Value> {
     let command: PaymentCommand =
       serde_json::from_value(input).map_err(|error| RuntimeError::json("invalid payment command", error))?;
     let _permit = self
@@ -103,13 +130,9 @@ impl PaymentRuntime {
       .acquire()
       .await
       .map_err(|_| RuntimeError::invalid_state("payment runtime stopped"))?;
-    let mut changes = super::super::PaymentApplyResult::default();
-    let value = match command {
-      PaymentCommand::ProvisionStripeCatalog => self.provision_stripe_catalog(&mut changes).await,
+    match command {
+      PaymentCommand::ProvisionStripeCatalog => self.provision_stripe_catalog(changes).await,
       PaymentCommand::ListPrices => self.list_prices().await,
-      PaymentCommand::ListSubscriptions { target_type, target_id } => {
-        self.list_subscriptions(&target_type, &target_id).await
-      }
       PaymentCommand::ListInvoices { target_id } => self.list_invoices(&target_id).await,
       PaymentCommand::CreateCheckout {
         actor_user_id,
@@ -126,7 +149,7 @@ impl PaymentRuntime {
       } => {
         self
           .create_checkout(
-            &mut changes,
+            changes,
             actor_user_id.as_deref(),
             user_email.as_deref(),
             &target_type,
@@ -141,6 +164,12 @@ impl PaymentRuntime {
           )
           .await
       }
+      PaymentCommand::CheckoutAttempt { user_id, plan } => self.checkout_attempt(&user_id, parse_plan(&plan)?).await,
+      PaymentCommand::ExpireCheckout {
+        user_id,
+        plan,
+        attempt_id,
+      } => self.expire_checkout(&user_id, parse_plan(&plan)?, &attempt_id).await,
       PaymentCommand::MutateSubscription {
         actor_user_id,
         target,
@@ -148,7 +177,7 @@ impl PaymentRuntime {
         intent_id,
       } => {
         self
-          .mutate_subscription(&mut changes, &actor_user_id, &target, &mutation, &intent_id)
+          .mutate_subscription(changes, &actor_user_id, &target, &mutation, &intent_id)
           .await
       }
       PaymentCommand::UpdateRecurring {
@@ -160,7 +189,7 @@ impl PaymentRuntime {
       } => {
         self
           .update_recurring(
-            &mut changes,
+            changes,
             actor_user_id.as_deref(),
             validate_key.as_deref(),
             &target,
@@ -178,7 +207,7 @@ impl PaymentRuntime {
       } => {
         self
           .update_quantity(
-            &mut changes,
+            changes,
             actor_user_id.as_deref(),
             validate_key.as_deref(),
             &target,
@@ -187,18 +216,19 @@ impl PaymentRuntime {
           )
           .await
       }
-      PaymentCommand::RefreshRevenuecat { user_id } => self.refresh_revenuecat(&mut changes, &user_id).await,
+      PaymentCommand::AppStorePurchase { user_id, input } => self.app_store_purchase(changes, &user_id, input).await,
+      PaymentCommand::RefreshSubscriptions { user_id } => self.refresh_subscriptions(changes, &user_id).await,
       PaymentCommand::RequestApplyRevenuecat {
         user_id,
         transaction_id,
         intent_id,
       } => {
         self
-          .request_apply_revenuecat(&mut changes, &user_id, &transaction_id, &intent_id)
+          .request_apply_revenuecat(changes, &user_id, &transaction_id, &intent_id)
           .await
       }
       PaymentCommand::RevealLicense { session_id, intent_id } => {
-        self.reveal_license(&mut changes, &session_id, &intent_id).await
+        self.reveal_license(changes, &session_id, &intent_id).await
       }
       PaymentCommand::ActivateLicense {
         license_key,
@@ -225,7 +255,16 @@ impl PaymentRuntime {
         validate_key,
       } => self.check_legacy_license_health(&license_key, &validate_key).await,
       PaymentCommand::PrepareUserDeletion { user_id } => self.prepare_user_deletion(&user_id).await,
-    }?;
-    Ok(PaymentCommandOutcome { value, changes })
+      PaymentCommand::InspectPaymentReconciliation {
+        user_id,
+        plan_family,
+        provider_identity,
+      } => {
+        self
+          .inspect_payment_reconciliation(user_id.as_deref(), plan_family.as_deref(), provider_identity.as_deref())
+          .await
+      }
+      PaymentCommand::ReconcilePayment { request } => self.reconcile_payment(changes, request).await,
+    }
   }
 }

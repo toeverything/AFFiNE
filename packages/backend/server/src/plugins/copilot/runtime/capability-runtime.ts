@@ -101,14 +101,15 @@ export class CapabilityRuntime {
     const workspaceId = options.workspace;
     const featureKind = (options.featureKind ?? 'chat') as ByokFeatureKind;
     const coverage = getByokSourceCoverage(featureKind);
-    const [serverByok, localByok, premium] = workspaceId
-      ? await Promise.all([
-          coverage.server && this.entitlement.hasServerEntitlement(workspaceId),
-          coverage.local &&
-            this.entitlement.hasLocalEntitlement(workspaceId, options.user),
-          this.entitlement.hasAiPlan(options.user),
-        ])
-      : [false, false, await this.entitlement.hasAiPlan(options.user)];
+    const [[serverByok, localByok], premium] = await Promise.all([
+      workspaceId && (coverage.server || coverage.local)
+        ? this.entitlement.hasEntitlement(
+            workspaceId,
+            coverage.local ? options.user : undefined
+          )
+        : ([false, false] as const),
+      this.entitlement.hasAiPlan(options.user),
+    ]);
     const routeAllowed =
       options.quotaBackedRoutesAllowed ??
       (!getCopilotFeatureAccess(featureKind).quotaMetered ||
@@ -117,8 +118,8 @@ export class CapabilityRuntime {
     return {
       routeAllowed,
       managedTier: premium ? ('Premium' as const) : ('Standard' as const),
-      serverByok,
-      localByok,
+      serverByok: coverage.server && serverByok,
+      localByok: coverage.local && localByok,
     };
   }
 

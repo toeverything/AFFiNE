@@ -13,6 +13,7 @@ import {
   LockIcon,
   MoreHorizontalIcon,
 } from '@blocksuite/icons/rc';
+import { CreditCardIcon } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -22,6 +23,7 @@ import type { UserType } from '../schema';
 import { DeleteAccountDialog } from './delete-account';
 import { DisableAccountDialog } from './disable-account';
 import { EnableAccountDialog } from './enable-account';
+import { PaymentReviewPanel } from './payment-review';
 import { ResetPasswordDialog } from './reset-password';
 import {
   useDeleteUser,
@@ -40,7 +42,7 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
   const [enableDialogOpen, setEnableDialogOpen] = useState(false);
-  const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
+  const [pendingPanel, setPendingPanel] = useState<'edit' | 'payment'>();
   const {
     openPanel,
     isOpen,
@@ -147,20 +149,28 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
     setHasDirtyChanges,
   ]);
 
-  const handleEdit = useCallback(() => {
-    if (hasDirtyChanges) {
-      setDiscardDialogOpen(true);
-      return;
-    }
-    setHasDirtyChanges(false);
-    handleConfirm();
-  }, [handleConfirm, hasDirtyChanges, setHasDirtyChanges]);
+  const openPaymentReview = useCallback(() => {
+    setPanelContent(
+      <PaymentReviewPanel key={crypto.randomUUID()} user={user} />
+    );
+    openPanel();
+  }, [openPanel, setPanelContent, user]);
 
-  const handleDiscardConfirm = useCallback(() => {
-    setDiscardDialogOpen(false);
-    setHasDirtyChanges(false);
-    handleConfirm();
-  }, [handleConfirm, setHasDirtyChanges]);
+  const openAccountPanel = (panel: 'edit' | 'payment') => {
+    if (hasDirtyChanges) {
+      setPendingPanel(panel);
+    } else if (panel === 'edit') {
+      handleConfirm();
+    } else {
+      openPaymentReview();
+    }
+  };
+
+  const handleDiscardConfirm = () => {
+    setPendingPanel(undefined);
+    if (pendingPanel === 'edit') handleConfirm();
+    if (pendingPanel === 'payment') openPaymentReview();
+  };
 
   return (
     <div className="flex justify-end items-center">
@@ -177,12 +187,21 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[214px] p-1.5">
           <DropdownMenuItem
-            onSelect={handleEdit}
+            onSelect={() => openAccountPanel('edit')}
             className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
           >
             <EditIcon fontSize={20} />
             Edit
           </DropdownMenuItem>
+          {!environment.isSelfHosted && (
+            <DropdownMenuItem
+              onSelect={() => openAccountPanel('payment')}
+              className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
+            >
+              <CreditCardIcon size={20} />
+              Payment review
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
             onSelect={openResetPasswordDialog}
@@ -246,9 +265,11 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
         onCopy={handleCopy}
       />
       <DiscardChanges
-        open={discardDialogOpen}
-        onOpenChange={setDiscardDialogOpen}
-        onClose={() => setDiscardDialogOpen(false)}
+        open={!!pendingPanel}
+        onOpenChange={open => {
+          if (!open) setPendingPanel(undefined);
+        }}
+        onClose={() => setPendingPanel(undefined)}
         onConfirm={handleDiscardConfirm}
       />
     </div>

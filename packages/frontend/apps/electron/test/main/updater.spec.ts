@@ -11,6 +11,7 @@ import {
   afterAll,
   afterEach,
   beforeAll,
+  beforeEach,
   describe,
   expect,
   it,
@@ -80,7 +81,14 @@ describe('testing for client update', () => {
     const server = setupServer(...basicRequestHandlers);
     beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
     afterAll(() => server.close());
-    afterEach(() => server.resetHandlers());
+    beforeEach(() => {
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
+      vi.spyOn(process, 'arch', 'get').mockReturnValue('x64');
+    });
+    afterEach(() => {
+      server.resetHandlers();
+      vi.restoreAllMocks();
+    });
 
     for (const { buildType, version } of expectReleaseList) {
       it(`check update for ${buildType} channel successfully`, async () => {
@@ -97,9 +105,100 @@ describe('testing for client update', () => {
         expect(info).not.toBe(null);
         expect(info.updateInfo.releaseName).toBe(version);
         expect(info.updateInfo.version).toBe(version);
-        // expect(info.updateInfo.releaseNotes?.length).toBeGreaterThan(0);
+        expect(info.updateInfo.files.map(file => file.url)).toEqual([
+          `https://github.com/toeverything/AFFiNE/releases/download/v${version}/affine-${version}-${buildType}-windows-x64.nsis.exe`,
+        ]);
       });
     }
+
+    const newerVersion = '0.17.0-canary.8';
+    const newerInstaller = `affine-${newerVersion}-canary-windows-x64.nsis.exe`;
+    const manifest = (filename: string) =>
+      `version: ${newerVersion}\nfiles:\n  - url: ${filename}\n    sha512: test`;
+
+    it.each([
+      {
+        reason: 'Linux-only attachments',
+        installer: `affine-${newerVersion}-canary-linux-x64.appimage`,
+      },
+      {
+        reason: 'incompatible Windows installer',
+        installer: `affine-${newerVersion}-canary-windows-x64.exe`,
+      },
+      { reason: 'missing manifest attachment', hasManifest: false },
+      { reason: 'manifest returns 404', response: { status: 404, body: '' } },
+      {
+        reason: 'manifest lists an unattached installer',
+        response: {
+          status: 200,
+          body: manifest(
+            newerInstaller.replace(newerVersion, '0.17.0-canary.9')
+          ),
+        },
+      },
+      {
+        reason: 'manifest returns 503',
+        response: { status: 503, body: '' },
+        error: { statusCode: 503 },
+      },
+      {
+        reason: 'manifest has invalid YAML',
+        response: { status: 200, body: 'files: [' },
+        error: { code: 'ERR_UPDATER_INVALID_UPDATE_INFO' },
+      },
+      {
+        reason: 'compatible installer',
+        response: { status: 200, body: manifest(newerInstaller) },
+        expectedVersion: newerVersion,
+      },
+    ])(
+      'handles a newer release with $reason',
+      async ({
+        installer = newerInstaller,
+        hasManifest = true,
+        response,
+        error,
+        expectedVersion = '0.17.0-canary.7',
+      }) => {
+        const [older] = await fs.readJson(
+          path.join(__dirname, 'fixtures', 'candidates', 'canary.json')
+        );
+        const tag = `v${newerVersion}`;
+        const baseUrl = `https://github.com/toeverything/AFFiNE/releases/download/${tag}`;
+        const assets = [{ name: installer, url: `${baseUrl}/${installer}` }];
+        const manifestUrl = `${baseUrl}/latest.yml`;
+        if (hasManifest) {
+          assets.push({ name: 'latest.yml', url: manifestUrl });
+        }
+
+        server.use(
+          http.get('https://affine.pro/api/worker/releases', () =>
+            HttpResponse.json([
+              { ...older, tag_name: tag, name: newerVersion, assets },
+              older,
+            ])
+          )
+        );
+        if (response) {
+          const { body, status } = response;
+          server.use(
+            http.get(manifestUrl, () => HttpResponse.text(body, { status }))
+          );
+        }
+
+        const updater = new MockedUpdater(null, new MockedAppAdapter('0.10.0'));
+        updater.setFeedURL(
+          AFFiNEUpdateProvider.configFeed({ channel: 'canary' })
+        );
+
+        if (error) {
+          await expect(updater.checkForUpdates()).rejects.toMatchObject(error);
+        } else {
+          const info = await updater.checkForUpdates();
+          expect(info?.updateInfo.version).toBe(expectedVersion);
+        }
+      }
+    );
   });
 
   describe('filter valid installer files', async () => {

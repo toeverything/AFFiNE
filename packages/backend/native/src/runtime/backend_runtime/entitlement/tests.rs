@@ -763,12 +763,29 @@ async fn authoritative_byok_and_mixed_owner_storage_use_current_facts() {
     .upsert_admin_grant_v1(RuntimeAdminGrantInput {
       target_type: "user".into(),
       target_id: owner.clone(),
+      plan: "pro".into(),
+      quantity: None,
+    })
+    .await
+    .unwrap();
+  assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+  assert!(
+    runtime
+      .get_byok_entitlement_v1(workspace.clone(), Some(owner.clone()))
+      .await
+      .unwrap()
+      .local
+  );
+  runtime
+    .upsert_admin_grant_v1(RuntimeAdminGrantInput {
+      target_type: "user".into(),
+      target_id: owner.clone(),
       plan: "ai".into(),
       quantity: None,
     })
     .await
     .unwrap();
-  assert!(runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+  assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
   let access = runtime
     .get_byok_entitlement_v1(workspace.clone(), Some(owner.clone()))
     .await
@@ -781,6 +798,63 @@ async fn authoritative_byok_and_mixed_owner_storage_use_current_facts() {
       .unwrap()
       .local
   );
+  let subscription = uuid::Uuid::new_v4().to_string();
+  let mut tx = pool.begin().await.unwrap();
+  let now = load_decision_time(&mut tx, "test").await.unwrap();
+  upsert(
+    &mut tx,
+    EntitlementWrite {
+      target: &RuntimeEntitlementTarget {
+        target_type: "user".into(),
+        target_id: owner.clone(),
+      },
+      source: "cloud_subscription",
+      subject_id: &subscription,
+      plan: "ai",
+      status: "active",
+      quantity: None,
+      payload: None,
+      metadata: serde_json::json!({
+        "paidFrom": now + chrono::Duration::days(7),
+      }),
+      starts_at: None,
+      expires_at: None,
+      grace_until: None,
+    },
+    now,
+  )
+  .await
+  .unwrap();
+  tx.commit().await.unwrap();
+  assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+
+  sqlx::query(
+    "UPDATE entitlements SET metadata=jsonb_build_object('paidFrom',statement_timestamp()) WHERE subject_id=$1",
+  )
+  .bind(&subscription)
+  .execute(&pool)
+  .await
+  .unwrap();
+  assert!(runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+
+  sqlx::query("UPDATE entitlements SET expires_at=statement_timestamp() WHERE subject_id=$1")
+    .bind(&subscription)
+    .execute(&pool)
+    .await
+    .unwrap();
+  assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+  sqlx::query("UPDATE entitlements SET expires_at=NULL WHERE subject_id=$1")
+    .bind(&subscription)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+  sqlx::query("UPDATE entitlements SET status='revoked' WHERE source='cloud_subscription' AND target_id=$1")
+    .bind(&owner)
+    .execute(&pool)
+    .await
+    .unwrap();
+  assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
   let cloud_config = runtime.config().unwrap();
   *runtime.config.write().unwrap() = std::sync::Arc::new(BackendRuntimeConfig {
     database_url: cloud_config.database_url.clone(),

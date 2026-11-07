@@ -24,7 +24,8 @@ pub(super) async fn claim_projection(pool: &PgPool, owner: &str) -> RuntimeResul
       JOIN embedding_workspace_states state ON state.workspace_id=source.workspace_id
         AND state.active_index_id=projection.index_id
       JOIN embedding_indexes index_fact ON index_fact.id=projection.index_id AND index_fact.health_status='ready'
-      WHERE state.runtime_state='active' AND source.deleted_at IS NULL AND(
+      WHERE state.runtime_state='active' AND source.deleted_at IS NULL
+      AND projection.status IN ('pending','retry_wait','running') AND(
         projection.status='pending'
         OR projection.status='retry_wait' AND projection.next_attempt_at<=statement_timestamp()
         OR projection.status='running' AND projection.lease_until<=statement_timestamp())

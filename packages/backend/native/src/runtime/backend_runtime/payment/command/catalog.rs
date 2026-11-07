@@ -150,43 +150,6 @@ impl PaymentRuntime {
     Ok(json!({ "prices": results }))
   }
 
-  pub(super) async fn refresh_revenuecat(
-    &self,
-    changes: &mut super::super::PaymentApplyResult,
-    user_id: &str,
-  ) -> RuntimeResult<Value> {
-    validate_identity(user_id, "RevenueCat user")?;
-    let client = self
-      .revenuecat
-      .as_ref()
-      .ok_or_else(|| RuntimeError::invalid_state("RevenueCat payment provider is not configured"))?;
-    let config = self
-      .revenuecat_config
-      .as_ref()
-      .ok_or_else(|| RuntimeError::invalid_state("RevenueCat payment provider is not configured"))?;
-    let subscriptions = client
-      .customer_subscriptions(user_id)
-      .await
-      .map_err(provider_runtime_error)?;
-    let verified =
-      super::super::worker::verified_missing_revenuecat_sources(self, client, user_id, &subscriptions).await?;
-    let snapshot = super::super::snapshot::revenuecat_customer_snapshot(
-      &self.pool,
-      client,
-      config,
-      user_id,
-      subscriptions,
-      SnapshotCoverage::Complete {
-        verified_missing_revenuecat_sources: verified,
-      },
-      Vec::new(),
-    )
-    .await?;
-    let count = snapshot.subscriptions.len();
-    changes.extend(self.apply_snapshot(snapshot).await?);
-    Ok(json!({ "status": "completed", "count": count }))
-  }
-
   pub(super) async fn ensure_customer(
     &self,
     changes: &mut super::super::PaymentApplyResult,

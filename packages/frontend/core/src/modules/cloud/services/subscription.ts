@@ -1,4 +1,7 @@
-import { type CreateCheckoutSessionInput } from '@affine/graphql';
+import type {
+  CreateCheckoutSessionInput,
+  SubscriptionPlan,
+} from '@affine/graphql';
 import { tracker } from '@affine/track';
 import { OnEvent, Service } from '@toeverything/infra';
 
@@ -34,6 +37,14 @@ export class SubscriptionService extends Service {
 
   async createCheckoutSession(input: CreateCheckoutSessionInput) {
     return await this.store.createCheckoutSession(input);
+  }
+
+  checkoutAttempt(plan: SubscriptionPlan) {
+    return this.store.checkoutAttempt(plan);
+  }
+
+  expireCheckout(plan: SubscriptionPlan, attemptId: string) {
+    return this.store.expireCheckout(plan, attemptId);
   }
 
   private onAccountChanged() {

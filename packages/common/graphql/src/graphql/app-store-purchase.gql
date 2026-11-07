@@ -1,0 +1,7 @@
+mutation appStorePurchase($input: AppStorePurchaseInput!) {
+  appStorePurchase(input: $input) {
+    status
+    attemptId
+    provider
+  }
+}

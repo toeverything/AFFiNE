@@ -76,9 +76,9 @@ dependencies = [
 
 [[package]]
 name = "affine_core"
-version = "0.0.9"
+version = "0.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd38b61e1411720b6e5654e2ecb4909fe7bb36d856083df895200dd2634f0a0a"
+checksum = "5061001e55555388ecbe1c614daa401188441e54c38e8b085b7f94f2bac01563"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -3120,8 +3120,8 @@ dependencies = [
  "libc",
  "log",
  "rustversion",
- "windows-link 0.1.3",
- "windows-result 0.3.4",
+ "windows-link 0.2.1",
+ "windows-result 0.4.1",
 ]
 
 [[package]]
@@ -3868,7 +3868,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.61.2",
+ "windows-core 0.62.2",
 ]
 
 [[package]]

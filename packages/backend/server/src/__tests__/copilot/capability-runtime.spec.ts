@@ -89,8 +89,7 @@ function runtimeFixture(streamError?: string, enabled = true) {
     },
   } as unknown as BackendRuntimeProvider;
   const entitlement = {
-    hasServerEntitlement: async () => true,
-    hasLocalEntitlement: async () => true,
+    hasEntitlement: async () => [true, true],
     hasAiPlan: async () => false,
   } as unknown as ByokEntitlementPolicy;
   const conversation = {
