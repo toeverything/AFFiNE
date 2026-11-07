@@ -242,3 +242,71 @@ test('should index references from database rich-text cells', async () => {
     JSON.stringify({ docId: 'target-doc', mode: 'page' }),
   ]);
 });
+
+test('should keep database rows when a select option was deleted', () => {
+  const doc = new YDoc({
+    guid: 'db-doc',
+  });
+  const blocks = doc.getMap('blocks');
+
+  const page = new YMap();
+  page.set('sys:id', 'page');
+  page.set('sys:flavour', 'affine:page');
+  page.set('sys:children', YArray.from(['note']));
+  page.set('prop:title', new YText('Page'));
+  blocks.set('page', page);
+
+  const note = new YMap();
+  note.set('sys:id', 'note');
+  note.set('sys:flavour', 'affine:note');
+  note.set('sys:children', YArray.from(['db']));
+  note.set('prop:displayMode', 'page');
+  blocks.set('note', note);
+
+  const db = new YMap();
+  db.set('sys:id', 'db');
+  db.set('sys:flavour', 'affine:database');
+  db.set('sys:children', YArray.from(['row1', 'row2']));
+  db.set('prop:title', new YText('Database'));
+
+  const option = new YMap();
+  option.set('id', 'todo');
+  option.set('value', 'Todo');
+  option.set('color', 'red');
+  const data = new YMap();
+  data.set('options', YArray.from([option]));
+  const column = new YMap();
+  column.set('id', 'status');
+  column.set('name', 'Status');
+  column.set('type', 'select');
+  column.set('data', data);
+  db.set('prop:columns', YArray.from([column]));
+
+  const cells = new YMap();
+  for (const [rowId, value] of [
+    ['row1', 'todo'],
+    // the option this row used was deleted from the column
+    ['row2', 'done'],
+  ]) {
+    const cell = new YMap();
+    cell.set('columnId', 'status');
+    cell.set('value', value);
+    const row = new YMap();
+    row.set('status', cell);
+    cells.set(rowId, row);
+  }
+  db.set('prop:cells', cells);
+  blocks.set('db', db);
+
+  const result = parsePageDoc({
+    workspaceId: 'test-space',
+    doc,
+    buildBlobUrl: id => `blob://${id}`,
+    buildDocUrl: id => `doc://${id}`,
+  });
+
+  expect(result.md).toContain('|Status|');
+  expect(result.md).toContain(
+    '<span data-affine-option data-value="todo" data-option-color="red">Todo</span>'
+  );
+});
