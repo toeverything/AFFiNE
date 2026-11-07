@@ -58,13 +58,9 @@ function diffBlockLists(oldBlocks: Block[], newBlocks: Block[]): PatchOp[] {
   const newMap = new Map<string, { block: Block; index: number }>();
   newBlocks.forEach((b, i) => newMap.set(b.id, { block: b, index: i }));
 
-  // Mark old blocks that have been handled
-  const handledOld = new Set<string>();
-
   newBlocks.forEach((newBlock, newIdx) => {
     const old = oldMap.get(newBlock.id);
     if (old) {
-      handledOld.add(newBlock.id);
       if (old.block.content !== newBlock.content) {
         patch.push({
           op: 'replace',
