@@ -867,6 +867,23 @@ describe('kanban', () => {
       ]);
     });
 
+    it('does not create fallback property in readonly mode when no groupable column exists', () => {
+      const dataSource = createMockDataSource([
+        {
+          id: 'text',
+          type: textPropertyModelConfig.type,
+        },
+      ]);
+
+      const result = resolveKanbanGroupBy(
+        asDataSource(dataSource),
+        undefined,
+        true
+      );
+      expect(result).toBeUndefined();
+      expect(dataSource.properties$.value).toEqual(['text']);
+    });
+
     it('defaults hideEmpty to true for non-option groups', () => {
       const dataSource = createMockDataSource([
         {
