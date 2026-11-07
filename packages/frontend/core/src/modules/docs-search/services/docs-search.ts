@@ -348,6 +348,44 @@ export class DocsSearchService extends Service {
       );
   }
 
+  /**
+   * Watch the ids of docs that contain a reference to the given doc.
+   */
+  watchRefsTo(docId: string): Observable<string[]> {
+    return this.indexer
+      .search$(
+        'block',
+        {
+          type: 'match',
+          field: 'refDocId',
+          match: docId,
+        },
+        {
+          fields: ['docId'],
+          pagination: {
+            limit: Infinity,
+          },
+        }
+      )
+      .pipe(
+        map(({ nodes }) => {
+          const sourceIds = new Set<string>();
+          for (const node of nodes) {
+            const sourceId = stringField(node.fields.docId);
+            if (sourceId && sourceId !== docId) {
+              sourceIds.add(sourceId);
+            }
+          }
+          return Array.from(sourceIds);
+        }),
+        distinctUntilChanged(
+          (previous, current) =>
+            previous.length === current.length &&
+            previous.every((id, index) => id === current[index])
+        )
+      );
+  }
+
   watchDatabasesTo(docId: string) {
     const DatabaseAdditionalSchema = z.object({
       databaseName: z.string().optional(),
