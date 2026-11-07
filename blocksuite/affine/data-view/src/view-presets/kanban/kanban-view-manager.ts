@@ -124,7 +124,23 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
   groupBy$ = computed(() => {
     const groupBy = this.data$.value?.groupBy;
     if (groupBy?.columnId && !canGroupable(this.dataSource, groupBy.columnId)) {
-      return resolveKanbanGroupBy(this.dataSource, groupBy);
+      const fallback = resolveKanbanGroupBy(this.dataSource, groupBy);
+      if (
+        !this.readonly$.value &&
+        fallback &&
+        fallback.columnId !== groupBy.columnId
+      ) {
+        queueMicrotask(() => {
+          const current = this.data$.value?.groupBy;
+          if (
+            current?.columnId &&
+            !canGroupable(this.dataSource, current.columnId)
+          ) {
+            this.dataUpdate(() => ({ groupBy: fallback }));
+          }
+        });
+      }
+      return fallback;
     }
     if (!groupBy || groupBy.hideEmpty != null) {
       return groupBy;
@@ -293,6 +309,20 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     this.dataUpdate(() => ({ columns: nextColumns }));
   }
 
+  private materializeGroupBy() {
+    const view = this.view;
+    if (!view || this.readonly$.value) {
+      return;
+    }
+    const groupBy = view.groupBy;
+    if (groupBy?.columnId && !canGroupable(this.dataSource, groupBy.columnId)) {
+      const fallback = resolveKanbanGroupBy(this.dataSource, groupBy);
+      if (fallback && fallback.columnId !== groupBy.columnId) {
+        this.dataUpdate(() => ({ groupBy: fallback }));
+      }
+    }
+  }
+
   get view() {
     return this.data$.value;
   }
@@ -392,6 +422,7 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     // Materialize view columns on view activation so newly added properties
     // can participate in hide/order operations in kanban.
     this.materializeColumns();
+    this.materializeGroupBy();
   }
 }
 

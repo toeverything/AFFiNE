@@ -181,6 +181,7 @@ export const groupByMatchers: GroupByConfig[] = [
     valuesGroup: (value, _t) =>
       value == null ? [ungroups] : [{ key: `${value}`, value }],
     addToGroup: (v: string | null, _old: string | null) => v,
+    removeFromGroup: (value, old) => (old === value ? null : old),
     view: createUniComponentFromWebComponent(SelectGroupView),
   }),
 
