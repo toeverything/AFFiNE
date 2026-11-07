@@ -22,6 +22,7 @@ import { SingleViewBase } from '../../core/view-manager/single-view.js';
 import type { ViewManager } from '../../core/view-manager/view-manager.js';
 import type { KanbanViewColumn, KanbanViewData } from './define.js';
 import {
+  canGroupable,
   getKanbanDefaultHideEmpty,
   resolveKanbanGroupBy,
 } from './group-by-utils.js';
@@ -122,6 +123,9 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
 
   groupBy$ = computed(() => {
     const groupBy = this.data$.value?.groupBy;
+    if (groupBy?.columnId && !canGroupable(this.dataSource, groupBy.columnId)) {
+      return resolveKanbanGroupBy(this.dataSource, groupBy);
+    }
     if (!groupBy || groupBy.hideEmpty != null) {
       return groupBy;
     }

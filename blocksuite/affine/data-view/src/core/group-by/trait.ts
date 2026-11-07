@@ -433,6 +433,54 @@ export class GroupTrait {
     return this.property$.value?.meta$.value?.config.addGroup;
   }
 
+  get deleteGroup() {
+    return this.property$.value?.meta$.value?.config.deleteGroup;
+  }
+
+  canDeleteGroup(group: Group): boolean {
+    if (group.value == null) {
+      return false;
+    }
+    return !!this.deleteGroup;
+  }
+
+  deleteGroupByKey(group: Group) {
+    if (!this.canDeleteGroup(group)) {
+      return;
+    }
+    this.view.lockRows(false);
+    const column = this.property$.value;
+    if (!column) return;
+
+    group.rows.forEach(row => {
+      this.removeFromGroup(row.rowId, group.key);
+    });
+
+    const groupProperties = this.view.data$.value?.groupProperties;
+    if (Array.isArray(groupProperties)) {
+      const nextGroupProperties = groupProperties.filter(
+        (g: GroupProperty) => g.key !== group.key
+      );
+      if (nextGroupProperties.length !== groupProperties.length) {
+        this.view.dataUpdate(() => ({
+          groupProperties: nextGroupProperties,
+        }));
+      }
+    }
+
+    const deleteGroupFn = this.deleteGroup;
+    if (deleteGroupFn) {
+      column.dataUpdate(() =>
+        deleteGroupFn({
+          key: group.key,
+          value: group.value,
+          oldData: column.data$.value,
+          dataSource: this.view.manager.dataSource,
+        })
+      );
+    }
+  }
+
   updateData = (data: NonNullable<unknown>) => {
     const prop = this.property$.value;
     if (!prop) return;
