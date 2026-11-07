@@ -2,6 +2,7 @@ import { signal } from '@preact/signals-core';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { GroupBy } from '../core/common/types.js';
+import { TagManager } from '../core/component/tags/multi-tag-select.js';
 import type { DataSource } from '../core/data-source/base.js';
 import { DetailSelection } from '../core/detail/selection.js';
 import type { FilterGroup } from '../core/filter/types.js';
@@ -865,6 +866,31 @@ describe('kanban', () => {
       expect(tag3?.textContent?.trim()).toBe('Done');
 
       view.remove();
+    });
+  });
+
+  describe('TagManager', () => {
+    it('matches blank tags when searching for Untitled', () => {
+      const options$ = signal([
+        { id: 'opt-1', value: '', color: '#ff0000' },
+        { id: 'opt-2', value: 'Todo', color: '#00ff00' },
+      ]);
+      const manager = new TagManager({
+        options: options$,
+        value: signal([]),
+        onChange: () => {},
+        onOptionsChange: () => {},
+      });
+
+      manager.text$.value = 'unt';
+      const filtered = manager.filteredOptions$.value;
+      expect(filtered.some(opt => opt.id === 'opt-1')).toBe(true);
+      expect(filtered.some(opt => opt.id === 'opt-2')).toBe(false);
+
+      manager.text$.value = 'todo';
+      const filteredTodo = manager.filteredOptions$.value;
+      expect(filteredTodo.some(opt => opt.id === 'opt-1')).toBe(false);
+      expect(filteredTodo.some(opt => opt.id === 'opt-2')).toBe(true);
     });
   });
 });

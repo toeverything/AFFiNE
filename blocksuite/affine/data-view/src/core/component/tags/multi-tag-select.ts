@@ -83,7 +83,7 @@ export function consumeTagDraftFromTableCellHost(
   return host?.consumeTagDraft?.();
 }
 
-class TagManager {
+export class TagManager {
   changeTag = (option: Partial<SelectTag>) => {
     this.ops.onOptionsChange(
       this.ops.options.value.map(item => {
@@ -129,13 +129,10 @@ class TagManager {
   filteredOptions$ = computed(() => {
     let matched = false;
     const options: RenderOption[] = [];
+    const filterText = this.text$.value.toLocaleLowerCase();
     for (const option of this.options$.value) {
-      if (
-        !this.text$.value ||
-        option.value
-          .toLocaleLowerCase()
-          .includes(this.text$.value.toLocaleLowerCase())
-      ) {
+      const label = option.value?.trim() ? option.value : 'Untitled';
+      if (!filterText || label.toLocaleLowerCase().includes(filterText)) {
         options.push({
           ...option,
           isCreate: false,
