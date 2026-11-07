@@ -132,7 +132,11 @@ export class TagManager {
     const filterText = this.text$.value.toLocaleLowerCase();
     for (const option of this.options$.value) {
       const label = option.value?.trim() ? option.value : 'Untitled';
-      if (!filterText || label.toLocaleLowerCase().includes(filterText)) {
+      if (
+        !filterText ||
+        label.toLocaleLowerCase().includes(filterText) ||
+        option.value.toLocaleLowerCase().includes(filterText)
+      ) {
         options.push({
           ...option,
           isCreate: false,

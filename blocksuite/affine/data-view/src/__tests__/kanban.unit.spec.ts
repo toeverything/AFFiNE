@@ -874,6 +874,7 @@ describe('kanban', () => {
       const options$ = signal([
         { id: 'opt-1', value: '', color: '#ff0000' },
         { id: 'opt-2', value: 'Todo', color: '#00ff00' },
+        { id: 'opt-3', value: '   ', color: '#0000ff' },
       ]);
       const manager = new TagManager({
         options: options$,
@@ -891,6 +892,10 @@ describe('kanban', () => {
       const filteredTodo = manager.filteredOptions$.value;
       expect(filteredTodo.some(opt => opt.id === 'opt-1')).toBe(false);
       expect(filteredTodo.some(opt => opt.id === 'opt-2')).toBe(true);
+
+      manager.text$.value = ' ';
+      const filteredSpace = manager.filteredOptions$.value;
+      expect(filteredSpace.some(opt => opt.id === 'opt-3')).toBe(true);
     });
   });
 });
