@@ -280,7 +280,12 @@ test('should keep database rows when a select option was deleted', () => {
   column.set('name', 'Status');
   column.set('type', 'select');
   column.set('data', data);
-  db.set('prop:columns', YArray.from([column]));
+  const titleColumn = new YMap();
+  titleColumn.set('id', 'title');
+  titleColumn.set('name', 'Title');
+  titleColumn.set('type', 'title');
+  titleColumn.set('data', new YMap());
+  db.set('prop:columns', YArray.from([column, titleColumn]));
 
   const cells = new YMap();
   for (const [rowId, value] of [
@@ -298,6 +303,13 @@ test('should keep database rows when a select option was deleted', () => {
   db.set('prop:cells', cells);
   blocks.set('db', db);
 
+  const row2Block = new YMap();
+  row2Block.set('sys:id', 'row2');
+  row2Block.set('sys:flavour', 'affine:paragraph');
+  row2Block.set('prop:type', 'text');
+  row2Block.set('prop:text', new YText('Row 2'));
+  blocks.set('row2', row2Block);
+
   const result = parsePageDoc({
     workspaceId: 'test-space',
     doc,
@@ -305,7 +317,8 @@ test('should keep database rows when a select option was deleted', () => {
     buildDocUrl: id => `doc://${id}`,
   });
 
-  expect(result.md).toContain('|Status|');
+  expect(result.md).toContain('|Status|Title|');
+  expect(result.md).toContain('||Row 2|');
   expect(result.md).toContain(
     '<span data-affine-option data-value="todo" data-option-color="red">Todo</span>'
   );
