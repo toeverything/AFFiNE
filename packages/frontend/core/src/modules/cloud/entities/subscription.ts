@@ -12,7 +12,6 @@ import {
   LiveData,
   onComplete,
   onStart,
-  smartRetry,
 } from '@toeverything/infra';
 import { map, tap } from 'rxjs';
 
@@ -20,15 +19,23 @@ import type { AuthService } from '../services/auth';
 import type { ServerService } from '../services/server';
 import type { SubscriptionStore } from '../stores/subscription';
 
-export type SubscriptionType = NonNullable<
+export type SubscriptionBilling = NonNullable<
   SubscriptionQuery['currentUser']
->['subscriptions'][number];
+>['subscriptionBilling'];
+
+export type SubscriptionType = SubscriptionBilling['subscriptions'][number];
 
 export class Subscription extends Entity {
   // undefined means no user, null means loading
-  subscription$ = new LiveData<SubscriptionType[] | null | undefined>(null);
+  billing$ = new LiveData<SubscriptionBilling | null | undefined>(null);
   isRevalidating$ = new LiveData(false);
-  error$ = new LiveData<any | null>(null);
+  error$ = new LiveData<unknown>(null);
+
+  subscription$ = this.billing$.map<SubscriptionType[] | null | undefined>(
+    billing => (billing ? billing.subscriptions : billing)
+  );
+  conflicts$ = this.billing$.map(billing => billing?.conflicts);
+  manageable$ = this.billing$.map(billing => billing?.manageable);
 
   pro$ = this.subscription$.map(subscriptions =>
     subscriptions
@@ -72,6 +79,14 @@ export class Subscription extends Entity {
   }
 
   async waitForRevalidation(signal?: AbortSignal) {
+    signal?.throwIfAborted();
+    if (this.isRevalidating$.value) {
+      await this.isRevalidating$.waitFor(
+        isRevalidating => !isRevalidating,
+        signal
+      );
+    }
+    signal?.throwIfAborted();
     this.revalidate();
     await this.isRevalidating$.waitFor(
       isRevalidating => !isRevalidating,
@@ -88,65 +103,54 @@ export class Subscription extends Entity {
       ({ accountId }) => {
         return fromPromise(async signal => {
           if (!accountId) {
-            return undefined; // no subscription if no user
+            return undefined;
           }
 
           const serverConfig =
             await this.serverService.server.features$.waitForNonNull(signal);
 
           if (!serverConfig.payment) {
-            // No payment feature, no subscription
             return {
               userId: accountId,
-              subscriptions: [],
+              billing: { subscriptions: [], conflicts: [], manageable: [] },
             };
           }
-          const { userId, subscriptions } =
-            await this.store.fetchSubscriptions(signal);
-          if (userId !== accountId) {
-            // The user has changed, ignore the result
+          const data = await this.store.fetchSubscriptionBilling(signal);
+          if (data?.userId !== accountId) {
+            signal.throwIfAborted();
+            this.billing$.next(null);
             this.authService.session.revalidate();
-            await this.authService.session.waitForRevalidation();
-            return null;
+            throw new Error('Subscription billing account changed');
           }
-          return {
-            userId: userId,
-            subscriptions: subscriptions,
-          };
+          return data;
         }).pipe(
-          smartRetry(),
           tap(data => {
             if (data) {
-              this.store.setCachedSubscriptions(
+              this.store.setCachedSubscriptionBilling(
                 data.userId,
-                data.subscriptions
+                data.billing
               );
-              this.subscription$.next(data.subscriptions);
-            } else {
-              this.subscription$.next(undefined);
             }
+            this.billing$.next(data?.billing);
           }),
           catchErrorInto(this.error$),
-          onStart(() => this.isRevalidating$.next(true)),
+          onStart(() => {
+            this.error$.next(null);
+            this.isRevalidating$.next(true);
+          }),
           onComplete(() => this.isRevalidating$.next(false))
         );
       },
       ({ accountId }) => {
-        this.reset();
-        if (!accountId) {
-          this.subscription$.next(null);
-        } else {
-          this.subscription$.next(this.store.getCachedSubscriptions(accountId));
-        }
+        this.billing$.next(
+          accountId
+            ? (this.store.getCachedSubscriptionBilling(accountId) ?? null)
+            : undefined
+        );
+        this.error$.next(null);
       }
     )
   );
-
-  reset() {
-    this.subscription$.next(null);
-    this.isRevalidating$.next(false);
-    this.error$.next(null);
-  }
 
   override dispose(): void {
     this.revalidate.unsubscribe();

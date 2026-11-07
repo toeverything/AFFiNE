@@ -46,9 +46,11 @@ import {
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { getWorkerUrl } from '@affine/env/worker';
 import {
+  type AppStorePurchaseInput,
+  appStorePurchaseMutation,
+  expireCheckoutMutation,
   OAuthProviderType,
-  refreshSubscriptionMutation,
-  requestApplySubscriptionMutation,
+  SubscriptionPlan,
 } from '@affine/graphql';
 import { I18n } from '@affine/i18n';
 import { serveAuthRequests } from '@affine/mobile-shared/auth/channel';
@@ -662,40 +664,52 @@ const showNativeSignIn = async () => {
     ai: subscriptionService.subscription.ai$.value,
   };
 };
-(window as any).updateSubscriptionState = async () => {
-  const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
-  const serversService = frameworkProvider.get(ServersService);
-  const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
-    (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
-  await currentServer.gql({
-    query: refreshSubscriptionMutation,
+declare global {
+  interface Window {
+    appStorePurchase: (input: AppStorePurchaseInput) => Promise<{
+      status: string;
+      attemptId?: string | null;
+      provider?: string | null;
+    }>;
+    endStripeCheckout: (
+      expectedUserId: string,
+      family: 'pro' | 'ai',
+      attemptId: string
+    ) => Promise<boolean>;
+  }
+}
+
+window.appStorePurchase = async input => {
+  const currentServer = getCurrentServerForNative();
+  const { appStorePurchase } = await currentServer.gql({
+    query: appStorePurchaseMutation,
+    variables: { input },
   });
-  const subscriptionService = currentServer.scope.get(SubscriptionService);
-  await waitForSubscriptionRevalidation(
-    subscriptionService,
-    'Unable to refresh subscription state.'
-  );
+  if (
+    appStorePurchase.status === 'confirmed' ||
+    appStorePurchase.status === 'conflict'
+  ) {
+    currentServer.scope
+      .get(SubscriptionService)
+      .subscription.waitForRevalidation()
+      .catch(error => console.error('Failed to refresh subscription', error));
+  }
+  return appStorePurchase;
 };
-(window as any).requestApplySubscription = async (transactionId: string) => {
-  const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
-  const serversService = frameworkProvider.get(ServersService);
-  const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
-    (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
-  await currentServer.gql({
-    query: requestApplySubscriptionMutation,
-    variables: { transactionId },
+
+window.endStripeCheckout = async (expectedUserId, family, attemptId) => {
+  const { authService, currentServer } = getCurrentNativeSignInContext();
+  if ((await getCurrentNativeUserIdentifier(authService)) !== expectedUserId) {
+    return false;
+  }
+  const { expireCheckout } = await currentServer.gql({
+    query: expireCheckoutMutation,
+    variables: {
+      plan: family === 'ai' ? SubscriptionPlan.AI : SubscriptionPlan.Pro,
+      attemptId,
+    },
   });
-  const subscriptionService = currentServer.scope.get(SubscriptionService);
-  await waitForSubscriptionRevalidation(
-    subscriptionService,
-    'Unable to refresh subscription state after purchase.'
-  );
+  return expireCheckout;
 };
 
 // setup application lifecycle events, and emit application start event

@@ -55,7 +55,6 @@ export const CancelAction = ({
       const prevRecurring = subscription.pro$.value?.recurring;
       setIsMutating(true);
       await subscription.cancelSubscription(idempotencyKey);
-      await subscription.waitForRevalidation();
       // refresh idempotency key
       setIdempotencyKey(nanoid());
       onOpenChange(false);
@@ -192,7 +191,6 @@ export const ResumeAction = ({
     try {
       setIsMutating(true);
       await subscription.resumeSubscription(idempotencyKey);
-      await subscription.waitForRevalidation();
       // refresh idempotency key
       setIdempotencyKey(nanoid());
       onOpenChange(false);

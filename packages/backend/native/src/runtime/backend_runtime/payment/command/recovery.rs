@@ -14,7 +14,7 @@ pub(in crate::runtime::backend_runtime::payment) async fn recover_one_stripe_ope
     r#"SELECT id,operation_type,intent_id,resource_keys,target_type,target_id,steps
        FROM payment_operations
        WHERE provider='stripe' AND provider_namespace=$1 AND status='pending'
-         AND (first_sent_at IS NOT NULL OR operation_type='account_delete_cancel')
+         AND (first_sent_at IS NOT NULL OR operation_type IN ('account_delete_cancel','purchase_checkout'))
          AND (next_attempt_at IS NULL OR next_attempt_at<=clock_timestamp())
        ORDER BY updated_at,id LIMIT 1"#,
   )
@@ -43,13 +43,7 @@ pub(in crate::runtime::backend_runtime::payment) async fn recover_one_stripe_ope
     steps: serde_json::from_value(row.get("steps"))
       .map_err(|error| RuntimeError::json("decode pending Stripe operation", error))?,
   };
-  let reserves_trial = intent.steps.iter().any(|step| {
-    matches!(
-      &step.request,
-      PaymentStep::StripePost { form, .. }
-        if form.iter().any(|field| field.key == "subscription_data[trial_period_days]")
-    )
-  });
+  let reserves_trial = checkout_reserves_trial(&intent.steps);
   let OperationExecution::Sent {
     connection,
     operation_id,
@@ -66,7 +60,7 @@ pub(in crate::runtime::backend_runtime::payment) async fn recover_one_stripe_ope
       operation_id,
       response,
     )?,
-    "create_checkout" => recover_checkout(
+    "create_checkout" | "purchase_checkout" => recover_checkout(
       stripe.namespace().clone(),
       target_type,
       target_id,
@@ -147,7 +141,7 @@ fn recover_customer(
   Ok(snapshot)
 }
 
-fn recover_checkout(
+pub(super) fn recover_checkout(
   namespace: ProviderNamespace,
   target_type: Option<String>,
   target_id: Option<String>,
@@ -163,7 +157,11 @@ fn recover_checkout(
   let url = session
     .url
     .ok_or_else(|| RuntimeError::invalid_state("Stripe checkout has no URL"))?;
-  let customer_id = session.customer.as_ref().map(|customer| customer.id().to_string());
+  let customer_id = session
+    .customer
+    .as_ref()
+    .filter(|_| target_type != "user")
+    .map(|customer| customer.id().to_string());
   let result = json!({ "url": url, "sessionId": session.id, "targetId": target_id });
   let mut snapshot = empty_snapshot(namespace, customer_id, operation_id, result);
   if target_type == "user" && reserves_trial {

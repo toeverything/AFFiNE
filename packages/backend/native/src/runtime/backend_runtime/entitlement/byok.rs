@@ -2,7 +2,10 @@ use affine_core::access_control::{ByokAccessContext, ByokExecution, evaluate_byo
 use napi::Result;
 use sqlx::Row;
 
-use super::{BackendRuntime, CoreDeployment, Deployment, RuntimeError, load_decision_time, resolve_user_entitlement};
+use super::{
+  BackendRuntime, CoreDeployment, Deployment, RuntimeError, has_paid_ai_subscription, load_decision_time,
+  resolve_user_entitlement,
+};
 
 #[derive(Debug)]
 #[napi_derive::napi(object)]
@@ -15,32 +18,10 @@ pub struct RuntimeByokEntitlement {
 impl BackendRuntime {
   #[napi]
   pub async fn has_ai_entitlement_v1(&self, user_id: String) -> Result<bool> {
-    let pool = self.pool().await?;
-    let mut tx = pool
-      .begin()
-      .await
-      .map_err(|e| RuntimeError::database("begin actor entitlement read", e))?;
-    let now = load_decision_time(&mut tx, "actor entitlement clock").await?;
-    let deployment = self.config()?.deployment;
-    let grant = resolve_user_entitlement(&mut tx, deployment, &user_id, "", now).await?;
-    tx.commit()
-      .await
-      .map_err(|e| RuntimeError::database("commit actor entitlement read", e))?;
-    Ok(
-      evaluate_byok_access(
-        ByokAccessContext {
-          deployment: match deployment {
-            Deployment::Cloud => CoreDeployment::Cloud,
-            Deployment::SelfHosted => CoreDeployment::SelfHosted,
-          },
-          execution: ByokExecution::Local,
-        },
-        None,
-        None,
-        Some(grant.rights),
-      )
-      .allowed,
-    )
+    if self.config()?.deployment != Deployment::Cloud {
+      return Ok(false);
+    }
+    Ok(has_paid_ai_subscription(&self.pool().await?, &user_id).await?)
   }
 
   #[napi]
@@ -94,7 +75,9 @@ impl BackendRuntime {
     let now = load_decision_time(&mut tx, "BYOK entitlement clock").await?;
     let workspace = super::resolve_workspace_entitlement(&mut tx, deployment, &workspace_id, now).await?;
     let owner = resolve_user_entitlement(&mut tx, deployment, &owner_id, &workspace_id, now).await?;
-    let actor = if let Some(actor_id) = actor_id {
+    let actor = if actor_id.as_deref() == Some(owner_id.as_str()) {
+      Some(owner.rights)
+    } else if let Some(actor_id) = actor_id {
       Some(
         resolve_user_entitlement(&mut tx, deployment, &actor_id, &workspace_id, now)
           .await?

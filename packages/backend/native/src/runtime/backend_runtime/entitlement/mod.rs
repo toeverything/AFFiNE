@@ -22,6 +22,7 @@ pub(super) use mutation::{
 };
 use sqlx::{Postgres, Row, Transaction};
 
+use super::payment::has_paid_ai_subscription;
 use super::{
   BackendRuntime, InvalidationHintV1, RuntimeError, RuntimeResult, entitlement_input_error, parse_quantity,
   parse_target_type,

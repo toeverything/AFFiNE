@@ -1,8 +1,8 @@
 use serde::Deserialize;
 
 use super::{
-  PaymentProviderError, StripeClient,
-  stripe_client::{StripeExpandedId, StripeList, StripePrice, encode_segment},
+  PaymentProviderError, RuntimeError, RuntimeResult, StripeClient,
+  stripe_client::{StripeCheckoutSession, StripeExpandedId, StripeList, StripePrice, encode_segment},
 };
 
 #[derive(Clone, Debug, Deserialize)]
@@ -20,6 +20,7 @@ pub(super) struct StripeInvoice {
   pub lines: StripeList<StripeInvoiceLine>,
   pub parent: Option<StripeInvoiceParent>,
   pub subscription: Option<StripeExpandedId>,
+  pub charge: Option<StripeExpandedId>,
   pub payment_intent: Option<StripeExpandedId>,
   pub last_finalization_error: Option<StripeErrorDetail>,
   #[serde(default)]
@@ -136,4 +137,63 @@ impl StripeClient {
   pub(super) async fn dispute(&self, id: &str) -> Result<StripeDispute, PaymentProviderError> {
     self.get(&format!("v1/disputes/{}", encode_segment(id)), &[]).await
   }
+}
+
+pub(super) async fn stripe_checkout_termination(
+  connection: &mut sqlx::PgConnection,
+  client: &StripeClient,
+  namespace: &str,
+  session: &StripeCheckoutSession,
+  invoice_observation: Option<&StripeInvoice>,
+) -> RuntimeResult<Option<(&'static str, String)>> {
+  match (session.status.as_deref(), session.payment_status.as_deref()) {
+    (Some("expired"), _) => return Ok(Some(("expired", session.id.clone()))),
+    (Some("complete"), Some("unpaid")) => {}
+    _ => return Ok(None),
+  }
+  let receipt: Option<String> = sqlx::query_scalar(
+    "SELECT external_event_id FROM payment_events WHERE provider_namespace=$1
+     AND event_type='checkout.session.async_payment_failed' AND metadata #>> '{data,object,id}'=$2
+     ORDER BY external_event_id LIMIT 1",
+  )
+  .bind(namespace)
+  .bind(&session.id)
+  .fetch_optional(connection)
+  .await
+  .map_err(|error| RuntimeError::database("verify asynchronous checkout failure", error))?;
+  if let Some(receipt) = receipt {
+    return Ok(Some(("async_payment_failed", receipt)));
+  }
+  if let Some(invoice) = session.invoice.as_ref() {
+    let fetched;
+    let observation = if let Some(observed) = invoice_observation {
+      observed
+    } else {
+      fetched = client
+        .invoice(invoice.id())
+        .await
+        .map_err(|error| RuntimeError::invalid_state(error.code))?;
+      &fetched
+    };
+    if observation.status.as_deref() == Some("void") {
+      return Ok(Some(("async_payment_failed", observation.id.clone())));
+    }
+  } else if let Some(intent) = session
+    .payment_intent
+    .as_ref()
+    .filter(|_| session.subscription.is_none())
+  {
+    #[derive(Deserialize)]
+    struct PaymentIntentStatus {
+      status: String,
+    }
+    let payment = client
+      .get::<PaymentIntentStatus>(&format!("v1/payment_intents/{}", encode_segment(intent.id())), &[])
+      .await
+      .map_err(|error| RuntimeError::invalid_state(error.code))?;
+    if payment.status == "canceled" {
+      return Ok(Some(("async_payment_failed", intent.id().to_string())));
+    }
+  }
+  Ok(None)
 }

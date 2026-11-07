@@ -24,6 +24,7 @@ import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
+import { ManageSubscriptionButton } from '../billing/manage-subscription';
 import { CancelAction, ResumeAction } from './actions';
 import { CheckoutSlot } from './checkout-slot';
 import type { DynamicPrice, FixedPrice } from './cloud-plans';
@@ -149,6 +150,17 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
   // not signed in
   if (!loggedIn) {
     return <SignUpAction>{signUpText}</SignUpAction>;
+  }
+
+  if (primarySubscription && primarySubscription.provider !== 'stripe') {
+    return isFree ? null : (
+      <ManageSubscriptionButton
+        source={primarySubscription}
+        inCardView
+        className={styles.planAction}
+        variant="primary"
+      />
+    );
   }
 
   // lifetime

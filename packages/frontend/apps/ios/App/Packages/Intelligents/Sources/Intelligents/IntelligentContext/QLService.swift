@@ -130,11 +130,11 @@ public final class QLService {
     }
   }
 
-  public func fetchSubscription(completion: @escaping (SubscriptionQuery.Data.CurrentUser.Subscription?) -> Void) {
+  public func fetchSubscription(completion: @escaping (SubscriptionQuery.Data.CurrentUser.SubscriptionBilling.Subscription?) -> Void) {
     client.fetch(query: SubscriptionQuery()) { result in
       switch result {
       case let .success(graphQLResult):
-        completion(graphQLResult.data?.currentUser?.subscriptions.first)
+        completion(graphQLResult.data?.currentUser?.subscriptionBilling.subscriptions.first)
       case .failure:
         completion(nil)
       }

@@ -1,20 +1,24 @@
-use std::collections::{BTreeMap, BTreeSet};
+mod revenuecat;
+
+use std::collections::BTreeSet;
 
 use affine_core::{
   access_control::Plan,
   payment::{ProviderLifecycle, SubscriptionRecurring},
 };
-use chrono::{TimeZone, Utc};
+use chrono::{DateTime, TimeZone, Utc};
+pub(super) use revenuecat::revenuecat_customer_snapshot;
 use serde_json::json;
 use sqlx::Row;
 
 use super::{
-  CustomerSnapshot, LicenseSnapshot, MailSnapshot, OperationCompletion, PaymentSnapshot, RevenueCatClient,
-  RevenueCatOwnershipTransfer, SnapshotCoverage, StripeClient, SubscriptionSnapshot,
+  CustomerSnapshot, LicenseSnapshot, MailSnapshot, OperationCompletion, PaymentRuntime, PaymentSnapshot,
+  RevenueCatClient, RevenueCatOwnershipTransfer, SnapshotCoverage, StripeClient, StripeInvoice, SubscriptionSnapshot,
   revenuecat_client::{RevenueCatProduct, RevenueCatSubscription},
   stripe_client::StripeSubscription,
+  verified_missing_revenuecat_sources,
 };
-use crate::runtime::{PaymentProductConfig, RevenueCatRuntimeConfig, RuntimeError, RuntimeResult};
+use crate::runtime::{RuntimeError, RuntimeResult};
 
 pub(super) async fn stripe_subscription_snapshot(
   pool: &sqlx::PgPool,
@@ -22,6 +26,30 @@ pub(super) async fn stripe_subscription_snapshot(
   subscription: StripeSubscription,
   event_ids: Vec<String>,
   operation: Option<OperationCompletion>,
+) -> RuntimeResult<PaymentSnapshot> {
+  let observed_at = Utc::now();
+  let latest_invoice = match subscription.latest_invoice.as_ref() {
+    Some(latest) => Some(client.invoice(latest.id()).await.map_err(provider_runtime_error)?),
+    None => None,
+  };
+  stripe_subscription_snapshot_from_observation(
+    pool,
+    client,
+    subscription,
+    event_ids,
+    operation,
+    latest_invoice.as_ref().map(|invoice| (invoice, observed_at)),
+  )
+  .await
+}
+
+pub(super) async fn stripe_subscription_snapshot_from_observation(
+  pool: &sqlx::PgPool,
+  client: &StripeClient,
+  subscription: StripeSubscription,
+  event_ids: Vec<String>,
+  operation: Option<OperationCompletion>,
+  invoice_observation: Option<(&StripeInvoice, DateTime<Utc>)>,
 ) -> RuntimeResult<PaymentSnapshot> {
   let namespace = client.namespace().clone();
   let namespace_key = namespace
@@ -145,17 +173,17 @@ pub(super) async fn stripe_subscription_snapshot(
   };
   let mut financial_facts = Vec::new();
   if let Some(latest_invoice) = subscription.latest_invoice.as_ref() {
-    let observed_at = Utc::now();
-    let invoice = client
-      .invoice(latest_invoice.id())
-      .await
-      .map_err(|error| RuntimeError::invalid_state(error.code))?;
-    if invoice.customer.id() != customer_id || invoice.subscription_id() != Some(subscription.id.as_str()) {
+    let (invoice, observed_at) = invoice_observation
+      .ok_or_else(|| RuntimeError::invalid_state("Stripe latest invoice absent from provider observations"))?;
+    if invoice.id != latest_invoice.id()
+      || invoice.customer.id() != customer_id
+      || invoice.subscription_id() != Some(subscription.id.as_str())
+    {
       return Err(RuntimeError::invalid_state(
         "Stripe subscription invoice ownership mismatch",
       ));
     }
-    financial_facts.push(super::stripe_invoice_fact(&invoice, Some(&source), observed_at)?);
+    financial_facts.push(super::stripe_invoice_fact(invoice, Some(&source), observed_at)?);
   }
   let licenses = (plan == Plan::SelfHostedTeam)
     .then(|| LicenseSnapshot {
@@ -253,188 +281,6 @@ pub(super) async fn stripe_customer_snapshot(
   Ok(snapshot)
 }
 
-pub(super) async fn revenuecat_customer_snapshot(
-  pool: &sqlx::PgPool,
-  client: &RevenueCatClient,
-  config: &RevenueCatRuntimeConfig,
-  customer_id: &str,
-  subscriptions: Vec<RevenueCatSubscription>,
-  coverage: SnapshotCoverage,
-  event_ids: Vec<String>,
-) -> RuntimeResult<PaymentSnapshot> {
-  if customer_id.is_empty() || customer_id.starts_with("$RCAnonymousID:") {
-    return Err(RuntimeError::invalid_input("RevenueCat customer is not canonical"));
-  }
-  let user_exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE id=$1)")
-    .bind(customer_id)
-    .fetch_one(pool)
-    .await
-    .map_err(|error| RuntimeError::database("load RevenueCat target user", error))?;
-  if !user_exists {
-    return Err(RuntimeError::invalid_state("RevenueCat customer target does not exist"));
-  }
-  let namespace = client.namespace().clone();
-  let namespace_key = namespace
-    .canonical_key()
-    .map_err(|_| RuntimeError::invalid_state("invalid RevenueCat provider namespace"))?;
-  let mut alias_ids = None;
-  let mut snapshots = Vec::with_capacity(subscriptions.len());
-  let mut transfers = Vec::new();
-  for subscription in subscriptions {
-    if subscription.customer_id.as_deref() != Some(customer_id)
-      || subscription.environment != client.namespace().environment.as_str()
-      || subscription.entitlements.next_page.is_some()
-      || subscription.id == subscription.store_subscription_identifier
-    {
-      return Err(RuntimeError::invalid_input("invalid RevenueCat subscription identity"));
-    }
-    let product = resolve_revenuecat_product(client, &subscription).await?;
-    let mapping = config
-      .product_map
-      .get(&product.store_identifier)
-      .ok_or_else(|| RuntimeError::invalid_input("RevenueCat product is not mapped"))?;
-    let (plan, recurring) = parse_product_mapping(mapping)?;
-    let existing = sqlx::query(
-      "SELECT target_type,target_id FROM provider_subscriptions WHERE provider_namespace=$1 AND source_identity=$2",
-    )
-    .bind(&namespace_key)
-    .bind(&subscription.id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|error| RuntimeError::database("load RevenueCat subscription target", error))?;
-    if let Some(existing) = existing {
-      let old_type: String = existing.get("target_type");
-      let old_id: String = existing.get("target_id");
-      if old_type != "user" || old_id != customer_id {
-        if alias_ids.is_none() {
-          alias_ids = Some(
-            client
-              .customer_aliases(customer_id)
-              .await
-              .map_err(provider_runtime_error)?
-              .into_iter()
-              .map(|alias| alias.id)
-              .collect::<BTreeSet<_>>(),
-          );
-        }
-        let alias_ids = alias_ids.as_ref().expect("RevenueCat aliases were loaded");
-        if !alias_ids.contains(&old_id) || !alias_ids.contains(customer_id) {
-          return Err(RuntimeError::invalid_state(
-            "RevenueCat transfer is not proven by aliases",
-          ));
-        }
-        transfers.push(RevenueCatOwnershipTransfer {
-          source_id: subscription.id.clone(),
-          customer_id: customer_id.to_string(),
-          old_target_type: old_type,
-          old_target_id: old_id,
-          new_target_type: "user".to_string(),
-          new_target_id: customer_id.to_string(),
-        });
-      }
-    }
-    snapshots.push(SubscriptionSnapshot {
-      source_id: subscription.id.clone(),
-      target_type: "user".to_string(),
-      target_id: customer_id.to_string(),
-      plan,
-      recurring,
-      lifecycle: ProviderLifecycle::parse(&subscription.status)
-        .ok_or_else(|| RuntimeError::invalid_input("unknown RevenueCat subscription lifecycle"))?,
-      gives_access: Some(subscription.gives_access),
-      will_renew: Some(subscription.auto_renewal_status == "will_renew"),
-      quantity: None,
-      external_customer_id: Some(customer_id.to_string()),
-      external_subscription_id: Some(subscription.id.clone()),
-      external_product_id: Some(product.store_identifier.clone()),
-      external_price_id: None,
-      iap_store: Some(subscription.store.clone()),
-      external_ref: Some(subscription.store_subscription_identifier.clone()),
-      currency: None,
-      amount: None,
-      period_start: Some(timestamp_millis(subscription.starts_at, "RevenueCat period start")?),
-      period_end: subscription
-        .current_period_ends_at
-        .map(|timestamp| timestamp_millis(timestamp, "RevenueCat period end"))
-        .transpose()?,
-      trial_start: (subscription.status == "trialing")
-        .then(|| timestamp_millis(subscription.starts_at, "RevenueCat trial start"))
-        .transpose()?,
-      trial_end: (subscription.status == "trialing")
-        .then_some(subscription.current_period_ends_at)
-        .flatten()
-        .map(|timestamp| timestamp_millis(timestamp, "RevenueCat trial end"))
-        .transpose()?,
-      canceled_at: None,
-      metadata: json!({
-        "ownership": subscription.ownership,
-        "entitlement": product.display_name,
-        "duration": product.subscription.and_then(|subscription| subscription.duration),
-      }),
-    });
-  }
-  Ok(PaymentSnapshot {
-    namespace,
-    coverage,
-    customer_id: Some(customer_id.to_string()),
-    customers: Vec::new(),
-    subscriptions: snapshots,
-    ownership_transfers: transfers,
-    financial_facts: Vec::new(),
-    trials: Vec::new(),
-    invoices: Vec::new(),
-    licenses: Vec::new(),
-    mails: Vec::new(),
-    captured_event_ids: event_ids,
-    operation: None,
-  })
-}
-
-async fn resolve_revenuecat_product(
-  client: &RevenueCatClient,
-  subscription: &RevenueCatSubscription,
-) -> RuntimeResult<RevenueCatProduct> {
-  let mut products = BTreeMap::new();
-  for entitlement in &subscription.entitlements.items {
-    if entitlement.lookup_key.trim().is_empty() {
-      return Err(RuntimeError::invalid_state(
-        "RevenueCat entitlement lookup key is missing",
-      ));
-    }
-    let entitlement = if entitlement.products.is_some() {
-      entitlement.clone()
-    } else {
-      client
-        .entitlement(&entitlement.id)
-        .await
-        .map_err(provider_runtime_error)?
-    };
-    let Some(product_list) = entitlement.products else {
-      continue;
-    };
-    if product_list.next_page.is_some() {
-      return Err(RuntimeError::invalid_state(
-        "RevenueCat entitlement products are incomplete",
-      ));
-    }
-    for product in product_list.items {
-      products.insert(product.id.clone(), product);
-    }
-  }
-  let product_id = subscription
-    .product_id
-    .as_deref()
-    .ok_or_else(|| RuntimeError::invalid_state("RevenueCat subscription product is incomplete"))?;
-  let product = match products.remove(product_id) {
-    Some(product) => product,
-    None => client.product(product_id).await.map_err(provider_runtime_error)?,
-  };
-  if product.id != product_id {
-    return Err(RuntimeError::invalid_state("RevenueCat product identity mismatch"));
-  }
-  Ok(product)
-}
-
 pub(super) fn parse_lookup_key(value: &str) -> RuntimeResult<(Plan, SubscriptionRecurring, Option<String>)> {
   let (plan_key, suffix) = if let Some(suffix) = value.strip_prefix("selfhost_team_") {
     ("selfhost_team", suffix)
@@ -458,13 +304,6 @@ pub(super) fn parse_lookup_key(value: &str) -> RuntimeResult<(Plan, Subscription
   Ok((plan, recurring, variant))
 }
 
-fn parse_product_mapping(config: &PaymentProductConfig) -> RuntimeResult<(Plan, SubscriptionRecurring)> {
-  let plan = Plan::parse(&config.plan).ok_or_else(|| RuntimeError::config("invalid RevenueCat product plan"))?;
-  let recurring = SubscriptionRecurring::parse(&config.recurring)
-    .ok_or_else(|| RuntimeError::config("invalid RevenueCat product recurring"))?;
-  Ok((plan, recurring))
-}
-
 fn required_metadata<'a>(subscription: &'a StripeSubscription, key: &str) -> RuntimeResult<&'a str> {
   subscription
     .metadata
@@ -477,13 +316,6 @@ fn required_metadata<'a>(subscription: &'a StripeSubscription, key: &str) -> Run
 fn timestamp_seconds(value: i64, label: &str) -> RuntimeResult<chrono::DateTime<Utc>> {
   Utc
     .timestamp_opt(value, 0)
-    .single()
-    .ok_or_else(|| RuntimeError::invalid_input(format!("invalid {label}")))
-}
-
-fn timestamp_millis(value: i64, label: &str) -> RuntimeResult<chrono::DateTime<Utc>> {
-  Utc
-    .timestamp_millis_opt(value)
     .single()
     .ok_or_else(|| RuntimeError::invalid_input(format!("invalid {label}")))
 }

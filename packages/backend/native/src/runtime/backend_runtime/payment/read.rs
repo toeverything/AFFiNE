@@ -1,12 +1,37 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
-use affine_core::payment::{FinancialFact, FinancialKind, FinancialStatus};
-use sqlx::{Postgres, Row, Transaction};
+use affine_core::{
+  access_control::{EntitlementStatus, Plan},
+  payment::{CollectionPauseChange, FinancialFact, FinancialKind, FinancialStatus, Provider, ProviderLifecycle},
+};
+use sqlx::{PgPool, Postgres, Row, Transaction};
 
 use super::{
   super::{RuntimeError, RuntimeResult, entitlement::RuntimeEntitlementTarget},
   PaymentConnection, PaymentScope, PaymentSnapshot, SnapshotCoverage,
 };
+
+pub(in crate::runtime::backend_runtime) async fn has_paid_ai_subscription(
+  pool: &PgPool,
+  user_id: &str,
+) -> RuntimeResult<bool> {
+  sqlx::query_scalar(
+    r#"SELECT EXISTS (
+         SELECT 1 FROM entitlements
+         WHERE target_type='user' AND target_id=$1 AND plan=$2
+           AND source='cloud_subscription' AND status=$3
+           AND (metadata->>'paidFrom')::timestamptz <= statement_timestamp()
+           AND (starts_at IS NULL OR starts_at <= statement_timestamp())
+           AND (expires_at IS NULL OR expires_at > statement_timestamp())
+       )"#,
+  )
+  .bind(user_id)
+  .bind(Plan::Ai.as_str())
+  .bind(EntitlementStatus::Active.as_str())
+  .fetch_one(pool)
+  .await
+  .map_err(|error| RuntimeError::database("load paid AI subscription", error))
+}
 
 pub(super) struct StoredSubscription {
   pub id: String,
@@ -283,10 +308,94 @@ pub(super) async fn stored_subscription_decision(
   affine_core::payment::NormalizedSubscription,
   affine_core::payment::FinancialRestriction,
 )> {
-  use affine_core::{
-    access_control::Plan,
-    payment::{Provider, ProviderLifecycle, ProviderSubscriptionFacts, SubscriptionRecurring, decide_subscription},
+  let mut pauses = if row.get::<&str, _>("provider") == Provider::Stripe.as_str() {
+    load_collection_pauses(tx, &[row.get("provider_namespace")], &[row.get("source_identity")]).await?
+  } else {
+    BTreeMap::new()
   };
+  decide_stored_subscription(
+    row,
+    financial_rows,
+    pauses
+      .remove(&(row.get("provider_namespace"), row.get("source_identity")))
+      .unwrap_or_default(),
+    now,
+  )
+}
+
+pub(super) async fn load_collection_pauses(
+  tx: &mut Transaction<'_, Postgres>,
+  namespaces: &[&str],
+  source_ids: &[&str],
+) -> RuntimeResult<BTreeMap<(String, String), Vec<CollectionPauseChange>>> {
+  if namespaces.is_empty() {
+    return Ok(BTreeMap::new());
+  }
+  let events = sqlx::query(
+    r#"SELECT e.provider_namespace,source.source_identity,e.occurred_at,e.metadata
+       FROM unnest($1::text[], $2::text[]) AS source(provider_namespace,source_identity)
+       JOIN payment_events e ON e.provider_namespace=source.provider_namespace
+         AND e.metadata #>> '{data,object,id}'=source.source_identity
+       WHERE e.provider='stripe' AND e.event_type='customer.subscription.updated'
+         AND (e.metadata #> '{data,previous_attributes}') ? 'pause_collection'
+       ORDER BY e.provider_namespace,source.source_identity,e.occurred_at"#,
+  )
+  .bind(namespaces)
+  .bind(source_ids)
+  .fetch_all(&mut **tx)
+  .await
+  .map_err(|error| RuntimeError::database("read collection pause facts", error))?;
+  let mut history = BTreeMap::<_, Vec<_>>::new();
+  for event in events {
+    let metadata: serde_json::Value = event.get("metadata");
+    let pause = metadata
+      .pointer("/data/object/pause_collection")
+      .ok_or_else(|| RuntimeError::invalid_state("missing collection pause change"))?;
+    if !pause.is_null()
+      && !matches!(
+        pause.get("behavior").and_then(serde_json::Value::as_str),
+        Some("void" | "keep_as_draft" | "mark_uncollectible")
+      )
+    {
+      return Err(RuntimeError::invalid_state("invalid collection pause behavior"));
+    }
+    let resumes_at = pause
+      .get("resumes_at")
+      .filter(|value| !value.is_null())
+      .map(|value| {
+        chrono::DateTime::from_timestamp(
+          value
+            .as_i64()
+            .ok_or_else(|| RuntimeError::invalid_state("invalid collection resume time"))?,
+          0,
+        )
+        .ok_or_else(|| RuntimeError::invalid_state("invalid collection resume time"))
+      })
+      .transpose()?;
+    history
+      .entry((event.get("provider_namespace"), event.get("source_identity")))
+      .or_default()
+      .push(CollectionPauseChange {
+        occurred_at: event
+          .get::<Option<chrono::DateTime<chrono::Utc>>, _>("occurred_at")
+          .ok_or_else(|| RuntimeError::invalid_state("missing collection change time"))?,
+        paused: !pause.is_null(),
+        resumes_at,
+      });
+  }
+  Ok(history)
+}
+
+pub(super) fn decide_stored_subscription(
+  row: &sqlx::postgres::PgRow,
+  financial_rows: &[sqlx::postgres::PgRow],
+  collection_pauses: Vec<CollectionPauseChange>,
+  now: chrono::DateTime<chrono::Utc>,
+) -> RuntimeResult<(
+  affine_core::payment::NormalizedSubscription,
+  affine_core::payment::FinancialRestriction,
+)> {
+  use affine_core::payment::{ProviderSubscriptionFacts, SubscriptionRecurring, decide_subscription};
   let facts = financial_rows
     .iter()
     .map(|row| {
@@ -302,53 +411,6 @@ pub(super) async fn stored_subscription_decision(
         .transpose()
         .map_err(|_| RuntimeError::invalid_state("invalid invoice financial facts"))?;
       Ok(FinancialFact { kind, status, invoice })
-    })
-    .collect::<RuntimeResult<Vec<_>>>()?;
-  let events = sqlx::query(
-    "SELECT occurred_at,metadata FROM payment_events WHERE provider_namespace=$1 AND \
-     event_type='customer.subscription.updated' AND metadata #>> '{data,object,id}'=$2 AND (metadata #> \
-     '{data,previous_attributes}') ? 'pause_collection' ORDER BY occurred_at",
-  )
-  .bind(row.get::<String, _>("provider_namespace"))
-  .bind(row.get::<String, _>("source_identity"))
-  .fetch_all(&mut **tx)
-  .await
-  .map_err(|error| RuntimeError::database("read collection pause facts", error))?;
-  let collection_pauses = events
-    .iter()
-    .map(|event| {
-      let metadata: serde_json::Value = event.get("metadata");
-      let pause = metadata
-        .pointer("/data/object/pause_collection")
-        .ok_or_else(|| RuntimeError::invalid_state("missing collection pause change"))?;
-      if !pause.is_null()
-        && !matches!(
-          pause.get("behavior").and_then(serde_json::Value::as_str),
-          Some("void" | "keep_as_draft" | "mark_uncollectible")
-        )
-      {
-        return Err(RuntimeError::invalid_state("invalid collection pause behavior"));
-      }
-      let resumes_at = pause
-        .get("resumes_at")
-        .filter(|value| !value.is_null())
-        .map(|value| {
-          chrono::DateTime::from_timestamp(
-            value
-              .as_i64()
-              .ok_or_else(|| RuntimeError::invalid_state("invalid collection resume time"))?,
-            0,
-          )
-          .ok_or_else(|| RuntimeError::invalid_state("invalid collection resume time"))
-        })
-        .transpose()?;
-      Ok(affine_core::payment::CollectionPauseChange {
-        occurred_at: event
-          .get::<Option<chrono::DateTime<chrono::Utc>>, _>("occurred_at")
-          .ok_or_else(|| RuntimeError::invalid_state("missing collection change time"))?,
-        paused: !pause.is_null(),
-        resumes_at,
-      })
     })
     .collect::<RuntimeResult<Vec<_>>>()?;
   let source = ProviderSubscriptionFacts {

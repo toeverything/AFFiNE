@@ -447,7 +447,7 @@ pub(super) async fn complete_receipts_and_operation(
           "completed payment operation result changed",
         ));
       }
-    } else if matches!(status.as_str(), "pending" | "blocked") {
+    } else if matches!(status.as_str(), "pending" | "blocked" | "waiting") {
       let steps = serde_json::from_value::<Vec<super::PaymentStepState>>(state.get("steps"))
         .map_err(|error| RuntimeError::json("decode completed payment operation steps", error))?;
       if steps.iter().any(|step| step.result.is_none()) {
@@ -455,7 +455,10 @@ pub(super) async fn complete_receipts_and_operation(
       }
       sqlx::query(
         "UPDATE payment_operations SET \
-         status='completed',result=$3,last_error_code=NULL,last_error=NULL,next_attempt_at=NULL,updated_at=$4 WHERE \
+         status=CASE WHEN operation_type='purchase_checkout' AND status='pending' THEN 'waiting' ELSE 'completed' END,\
+         result=$3,last_error_code=NULL,last_error=NULL,\
+         next_attempt_at=CASE WHEN operation_type='purchase_checkout' AND status='pending' THEN $4::timestamptz + INTERVAL '1 minute' END,\
+         updated_at=$4 WHERE \
          id=$1 AND provider_namespace=$2",
       )
       .bind(&operation.operation_id)

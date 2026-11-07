@@ -25,8 +25,6 @@ pub(super) async fn stripe_invoice_snapshot(
     .canonical_key()
     .map_err(|_| RuntimeError::invalid_state("invalid Stripe provider namespace"))?;
   let status = invoice_status(invoice.status.as_deref())?;
-  let amount =
-    i32::try_from(invoice.total).map_err(|_| RuntimeError::invalid_input("Stripe invoice amount is out of range"))?;
   let mut snapshot = if let Some(subscription_id) = invoice.subscription_id() {
     let subscription = client
       .subscription(subscription_id)
@@ -46,6 +44,33 @@ pub(super) async fn stripe_invoice_snapshot(
   } else {
     customer_user(pool, &namespace_key, &customer_id).await?
   };
+  push_stripe_invoice(&mut snapshot, &invoice, target_id, observed_at)?;
+  Ok(snapshot)
+}
+
+pub(super) fn push_stripe_invoice(
+  snapshot: &mut PaymentSnapshot,
+  invoice: &StripeInvoice,
+  target_id: String,
+  observed_at: chrono::DateTime<Utc>,
+) -> RuntimeResult<()> {
+  let fact = stripe_invoice_fact(invoice, snapshot.subscriptions.first(), observed_at)?;
+  push_stripe_invoice_record(
+    snapshot,
+    invoice,
+    target_id,
+    fact.amount.expect("Stripe invoice fact always has an amount"),
+  );
+  snapshot.financial_facts.push(fact);
+  Ok(())
+}
+
+pub(super) fn push_stripe_invoice_record(
+  snapshot: &mut PaymentSnapshot,
+  invoice: &StripeInvoice,
+  target_id: String,
+  amount: i32,
+) {
   snapshot.invoices.push(InvoiceSnapshot {
     external_id: invoice.id.clone(),
     target_id,
@@ -59,12 +84,6 @@ pub(super) async fn stripe_invoice_snapshot(
       .and_then(|error| error.message.clone()),
     link: invoice.hosted_invoice_url.clone(),
   });
-  snapshot.financial_facts.push(stripe_invoice_fact(
-    &invoice,
-    snapshot.subscriptions.first(),
-    observed_at,
-  )?);
-  Ok(snapshot)
 }
 
 pub(super) fn stripe_invoice_fact(
@@ -137,9 +156,24 @@ pub(super) fn push_stripe_refund(
     .invoices
     .first()
     .ok_or_else(|| RuntimeError::invalid_state("Stripe refund has no canonical invoice"))?;
+  snapshot.financial_facts.push(stripe_refund_fact(
+    refund,
+    &invoice.external_id,
+    snapshot.subscriptions.first(),
+    observed_at,
+  )?);
+  Ok(())
+}
+
+pub(super) fn stripe_refund_fact(
+  refund: StripeRefund,
+  invoice_id: &str,
+  source: Option<&SubscriptionSnapshot>,
+  observed_at: chrono::DateTime<Utc>,
+) -> RuntimeResult<FinancialSnapshot> {
   let amount =
     i32::try_from(refund.amount).map_err(|_| RuntimeError::invalid_input("Stripe refund amount is out of range"))?;
-  snapshot.financial_facts.push(FinancialSnapshot {
+  Ok(FinancialSnapshot {
     observed_at,
     fact: FinancialFact {
       invoice: None,
@@ -147,15 +181,14 @@ pub(super) fn push_stripe_refund(
       status: refund_status(refund.status.as_deref())?,
     },
     external_id: refund.id,
-    source_id: snapshot.subscriptions.first().map(|source| source.source_id.clone()),
-    external_invoice_id: Some(invoice.external_id.clone()),
+    source_id: source.map(|source| source.source_id.clone()),
+    external_invoice_id: Some(invoice_id.to_string()),
     external_payment_id: refund.payment_intent.map(|payment| payment.id().to_string()),
     amount: Some(amount),
     currency: Some(refund.currency),
     occurred_at: Some(timestamp(refund.created, "Stripe refund")?),
     metadata: json!({ "created": refund.created, "providerMetadata": refund.metadata }),
-  });
-  Ok(())
+  })
 }
 
 pub(super) fn push_stripe_dispute(
@@ -167,9 +200,24 @@ pub(super) fn push_stripe_dispute(
     .invoices
     .first()
     .ok_or_else(|| RuntimeError::invalid_state("Stripe dispute has no canonical invoice"))?;
+  snapshot.financial_facts.push(stripe_dispute_fact(
+    dispute,
+    &invoice.external_id,
+    snapshot.subscriptions.first(),
+    observed_at,
+  )?);
+  Ok(())
+}
+
+pub(super) fn stripe_dispute_fact(
+  dispute: StripeDispute,
+  invoice_id: &str,
+  source: Option<&SubscriptionSnapshot>,
+  observed_at: chrono::DateTime<Utc>,
+) -> RuntimeResult<FinancialSnapshot> {
   let amount =
     i32::try_from(dispute.amount).map_err(|_| RuntimeError::invalid_input("Stripe dispute amount is out of range"))?;
-  snapshot.financial_facts.push(FinancialSnapshot {
+  Ok(FinancialSnapshot {
     observed_at,
     fact: FinancialFact {
       invoice: None,
@@ -177,15 +225,14 @@ pub(super) fn push_stripe_dispute(
       status: dispute_status(&dispute)?,
     },
     external_id: dispute.id,
-    source_id: snapshot.subscriptions.first().map(|source| source.source_id.clone()),
-    external_invoice_id: Some(invoice.external_id.clone()),
+    source_id: source.map(|source| source.source_id.clone()),
+    external_invoice_id: Some(invoice_id.to_string()),
     external_payment_id: dispute.payment_intent.map(|payment| payment.id().to_string()),
     amount: Some(amount),
     currency: Some(dispute.currency),
     occurred_at: Some(timestamp(dispute.created, "Stripe dispute")?),
     metadata: serde_json::Value::Object(dispute.metadata),
-  });
-  Ok(())
+  })
 }
 
 async fn lifetime_invoice_snapshot(

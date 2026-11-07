@@ -6,6 +6,8 @@ use sqlx::{PgPool, Row};
 use super::{RevenueCatClient, StripeClient};
 use crate::runtime::{RuntimeError, RuntimeResult};
 
+const STRIPE_WEBHOOK_PAYLOAD_VERSION: &str = "2025-02-24.acacia";
+
 #[derive(Deserialize)]
 struct StripeWebhook {
   id: String,
@@ -51,14 +53,16 @@ pub(super) async fn capture_stripe(
     .map_err(|error| RuntimeError::json("invalid Stripe webhook envelope", error))?;
   validate_identity(&event.id, "Stripe event")?;
   validate_identity(&event.event_type, "Stripe event type")?;
-  if event.api_version.as_deref() != Some(super::stripe_client::STRIPE_API_VERSION)
-    || event.livemode != (client.namespace().environment == affine_core::payment::ProviderEnvironment::Live)
+  if event.livemode != (client.namespace().environment == affine_core::payment::ProviderEnvironment::Live)
     || event
       .account
       .as_deref()
       .is_some_and(|account| account != client.namespace().account)
   {
     return Err(RuntimeError::invalid_input("Stripe webhook namespace mismatch"));
+  }
+  if event.api_version.as_deref() != Some(STRIPE_WEBHOOK_PAYLOAD_VERSION) {
+    return Err(RuntimeError::invalid_input("Stripe webhook payload version mismatch"));
   }
   if !event.data.object.is_object() {
     return Err(RuntimeError::invalid_input("invalid Stripe webhook object"));
