@@ -127,17 +127,18 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
 
   groupBy$ = computed(() => {
     const groupBy = this.data$.value?.groupBy;
+    const isReadonly = this.readonly$.value;
     if (groupBy?.columnId && !canGroupable(this.dataSource, groupBy.columnId)) {
-      const fallback = resolveKanbanGroupBy(this.dataSource, groupBy);
-      if (
-        !this.readonly$.value &&
-        fallback &&
-        fallback.columnId !== groupBy.columnId
-      ) {
+      const fallback = resolveKanbanGroupBy(
+        this.dataSource,
+        groupBy,
+        isReadonly
+      );
+      if (!isReadonly && fallback && fallback.columnId !== groupBy.columnId) {
         queueMicrotask(() => {
           const current = this.data$.value?.groupBy;
           if (
-            current?.columnId &&
+            current?.columnId === groupBy.columnId &&
             !canGroupable(this.dataSource, current.columnId)
           ) {
             this.dataUpdate(() => ({ groupBy: fallback }));
@@ -161,7 +162,8 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
       groupBySet: groupBy => {
         const nextGroupBy = resolveKanbanGroupBy(
           this.manager.dataSource,
-          groupBy
+          groupBy,
+          this.readonly$.value
         );
         this.dataUpdate(() => {
           return {
@@ -316,7 +318,7 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     }
     const groupBy = view.groupBy;
     if (groupBy?.columnId && !canGroupable(this.dataSource, groupBy.columnId)) {
-      const fallback = resolveKanbanGroupBy(this.dataSource, groupBy);
+      const fallback = resolveKanbanGroupBy(this.dataSource, groupBy, false);
       if (fallback && fallback.columnId !== groupBy.columnId) {
         this.dataUpdate(() => ({ groupBy: fallback }));
       }
