@@ -359,6 +359,139 @@ const createGroupTraitHarness = (options?: {
   };
 };
 
+const createSelectGroupTraitHarness = (options?: {
+  options?: Array<{ id: string; value: string; color: string }>;
+  rowIds?: string[];
+  values?: Record<string, string | null>;
+}) => {
+  const selectOptions = options?.options ?? [
+    { id: 'opt-1', value: 'Todo', color: '#ff0000' },
+    { id: 'opt-2', value: 'Done', color: '#00ff00' },
+  ];
+  const dataSource = createMockDataSource([
+    {
+      id: 'status',
+      type: selectPropertyModelConfig.type,
+      data: { options: selectOptions },
+    },
+  ]);
+
+  const propertyData$ = signal({ options: selectOptions });
+  const property = {
+    id: 'status',
+    dataType$: signal(t.tag.instance(selectOptions)),
+    data$: propertyData$,
+    meta$: signal({
+      config: {
+        addGroup: selectPropertyModelConfig.config.addGroup,
+        deleteGroup: selectPropertyModelConfig.config.deleteGroup,
+      },
+    }),
+    dataUpdate: vi.fn((updater: (data: unknown) => unknown) => {
+      propertyData$.value = updater(propertyData$.value) as {
+        options: Array<{ id: string; value: string; color: string }>;
+      };
+    }),
+  };
+
+  const rows = options?.rowIds ?? [];
+  const data$ = signal({
+    groupProperties: [
+      { key: 'opt-1', hide: false, manuallyCardSort: [] },
+      { key: 'opt-2', hide: false, manuallyCardSort: [] },
+    ],
+  });
+  const cellValues = new Map(
+    Object.entries(options?.values ?? {}).map(([rowId, value]) => [
+      `${rowId}:status`,
+      value,
+    ])
+  );
+  const cells = new Map<
+    string,
+    {
+      jsonValue$: ReturnType<typeof signal<string | null | undefined>>;
+      jsonValueSet: ReturnType<typeof vi.fn<(value: unknown) => void>>;
+      valueSet: ReturnType<typeof vi.fn<(value: unknown) => void>>;
+    }
+  >();
+
+  const cellGetOrCreate = (rowId: string, propertyId: string) => {
+    const key = `${rowId}:${propertyId}`;
+    const existing = cells.get(key);
+    if (existing) {
+      return existing;
+    }
+
+    const jsonValue$ = signal(cellValues.get(key));
+    const update = (value: unknown) => {
+      jsonValue$.value = value as string | null | undefined;
+      cellValues.set(key, value as string | null);
+    };
+    const cell = {
+      jsonValue$,
+      jsonValueSet: vi.fn(update),
+      valueSet: vi.fn(update),
+    };
+    cells.set(key, cell);
+    return cell;
+  };
+
+  const isLocked$ = signal(false);
+  const view = {
+    data$,
+    rows$: signal(rows.map(createTestRow)),
+    isLocked$,
+    lockRows: vi.fn((locked: boolean) => {
+      isLocked$.value = locked;
+    }),
+    dataUpdate: vi.fn((updater: (data: unknown) => unknown) => {
+      data$.value = {
+        ...data$.value,
+        ...(updater(data$.value) as Record<string, unknown>),
+      };
+    }),
+    manager: {
+      dataSource: asDataSource(dataSource),
+    },
+    propertyGetOrCreate: () => property,
+    cellGetOrCreate,
+  };
+
+  const groupBy$ = signal<GroupBy | undefined>({
+    type: 'groupBy',
+    columnId: 'status',
+    name: 'select',
+    hideEmpty: false,
+    sort: { desc: false },
+  });
+
+  const ops = {
+    groupBySet: vi.fn(),
+    sortGroup: (keys: string[], asc?: boolean) => {
+      const sorted = sortByManually(
+        keys,
+        value => value,
+        data$.value.groupProperties.map(value => value.key)
+      );
+      return asc === false ? sorted.reverse() : sorted;
+    },
+    sortRow: (groupKey: string, groupedRows: Row[]) => groupedRows,
+    changeGroupSort: vi.fn(),
+    changeRowSort: vi.fn(),
+    changeGroupHide: vi.fn(),
+  };
+
+  return {
+    groupTrait: new GroupTrait(groupBy$, view as never, ops),
+    ops,
+    cells,
+    view,
+    property,
+    propertyData$,
+  };
+};
+
 describe('kanban', () => {
   describe('group trait', () => {
     it('reapplies manual card order when building grouped rows', () => {
@@ -433,6 +566,43 @@ describe('kanban', () => {
       expect(cells.get('row-1:checkbox')?.jsonValueSet).toHaveBeenCalledWith(
         true
       );
+    });
+
+    it('allows deleting a select group, ungroups rows, and deletes the option', () => {
+      const { groupTrait, propertyData$, cells, view } =
+        createSelectGroupTraitHarness({
+          rowIds: ['row-1', 'row-2'],
+          values: {
+            'row-1': 'opt-1',
+            'row-2': 'opt-2',
+          },
+        });
+
+      const opt1Group = groupTrait.groupsDataList$.value?.find(
+        g => g.key === 'opt-1'
+      );
+      expect(opt1Group).toBeDefined();
+      expect(groupTrait.canDeleteGroup(opt1Group!)).toBe(true);
+
+      const ungroups = groupTrait.groupsDataListAll$.value?.find(
+        g => g.key === 'Ungroups'
+      );
+      if (ungroups) {
+        expect(groupTrait.canDeleteGroup(ungroups)).toBe(false);
+      }
+
+      groupTrait.deleteGroupByKey(opt1Group!);
+
+      // Cards in opt-1 are ungrouped
+      expect(cells.get('row-1:status')?.valueSet).toHaveBeenCalledWith(
+        undefined
+      );
+      // Option is deleted from property data
+      expect(propertyData$.value.options.map(o => o.id)).toEqual(['opt-2']);
+      // Group properties updated in view
+      expect(view.data$.value.groupProperties.map(g => g.key)).toEqual([
+        'opt-2',
+      ]);
     });
   });
 
