@@ -121,6 +121,10 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     })
   );
 
+  readonly$ = computed(() => {
+    return this.manager.readonly$.value;
+  });
+
   groupBy$ = computed(() => {
     const groupBy = this.data$.value?.groupBy;
     if (groupBy?.columnId && !canGroupable(this.dataSource, groupBy.columnId)) {
@@ -270,10 +274,6 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
         iconColumn: 'type',
       }
     );
-  });
-
-  readonly$ = computed(() => {
-    return this.manager.readonly$.value;
   });
 
   get columns(): KanbanColumn[] {
