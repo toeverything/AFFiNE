@@ -58,6 +58,7 @@ type TestPropertyMeta = {
 
 type MockDataSource = {
   properties$: ReturnType<typeof signal<string[]>>;
+  rows$: ReturnType<typeof signal<string[]>>;
   provider: {
     getAll: () => Map<unknown, unknown>;
   };
@@ -117,8 +118,12 @@ const immutableBooleanMeta = toTestMeta('immutable-boolean', {
   },
 });
 
-const createMockDataSource = (columns: Column[]): MockDataSource => {
+const createMockDataSource = (
+  columns: Column[],
+  rowIds: string[] = []
+): MockDataSource => {
   const properties$ = signal(columns.map(column => column.id));
+  const rows$ = signal(rowIds);
   const typeById = new Map(columns.map(column => [column.id, column.type]));
   const dataById = new Map(
     columns.map(column => [column.id, column.data ?? {}])
@@ -164,6 +169,7 @@ const createMockDataSource = (columns: Column[]): MockDataSource => {
 
   const dataSource = {
     properties$,
+    rows$,
     provider: {
       getAll: () => new Map<unknown, unknown>(),
     },
@@ -362,19 +368,24 @@ const createGroupTraitHarness = (options?: {
 const createSelectGroupTraitHarness = (options?: {
   options?: Array<{ id: string; value: string; color: string }>;
   rowIds?: string[];
+  allRowIds?: string[];
   values?: Record<string, string | null>;
 }) => {
   const selectOptions = options?.options ?? [
     { id: 'opt-1', value: 'Todo', color: '#ff0000' },
     { id: 'opt-2', value: 'Done', color: '#00ff00' },
   ];
-  const dataSource = createMockDataSource([
-    {
-      id: 'status',
-      type: selectPropertyModelConfig.type,
-      data: { options: selectOptions },
-    },
-  ]);
+  const allRowIds = options?.allRowIds ?? options?.rowIds ?? [];
+  const dataSource = createMockDataSource(
+    [
+      {
+        id: 'status',
+        type: selectPropertyModelConfig.type,
+        data: { options: selectOptions },
+      },
+    ],
+    allRowIds
+  );
 
   const propertyData$ = signal({ options: selectOptions });
   const property = {
@@ -568,13 +579,15 @@ describe('kanban', () => {
       );
     });
 
-    it('allows deleting a select group, ungroups rows, and deletes the option', () => {
+    it('allows deleting a select group, ungroups visible and hidden rows, and deletes the option', () => {
       const { groupTrait, propertyData$, cells, view } =
         createSelectGroupTraitHarness({
           rowIds: ['row-1', 'row-2'],
+          allRowIds: ['row-1', 'row-2', 'row-3'],
           values: {
             'row-1': 'opt-1',
             'row-2': 'opt-2',
+            'row-3': 'opt-1',
           },
         });
 
@@ -593,10 +606,11 @@ describe('kanban', () => {
 
       groupTrait.deleteGroupByKey(opt1Group!);
 
-      // Cards in opt-1 are ungrouped
-      expect(cells.get('row-1:status')?.valueSet).toHaveBeenCalledWith(
-        undefined
-      );
+      // Both visible (row-1) and filtered/hidden (row-3) cards in opt-1 are ungrouped
+      expect(cells.get('row-1:status')?.valueSet).toHaveBeenCalledWith(null);
+      expect(cells.get('row-3:status')?.valueSet).toHaveBeenCalledWith(null);
+      // Unrelated row with opt-2 is untouched
+      expect(cells.get('row-2:status')?.valueSet).not.toHaveBeenCalled();
       // Option is deleted from property data
       expect(propertyData$.value.options.map(o => o.id)).toEqual(['opt-2']);
       // Group properties updated in view
@@ -918,6 +932,57 @@ describe('kanban', () => {
       expect(next?.columnId).toBe('checkbox');
       expect(next?.name).toBe('boolean');
       expect(next?.hideEmpty).toBe(true);
+    });
+
+    it('persists fallback groupBy when current column is not groupable and view is writable', () => {
+      const dataSource = createMockDataSource([
+        { id: 'text', type: textPropertyModelConfig.type },
+        { id: 'select', type: selectPropertyModelConfig.type },
+      ]);
+      const dataUpdate = vi.fn();
+      const view = {
+        view: {
+          groupBy: {
+            type: 'groupBy',
+            columnId: 'text',
+            name: 'text',
+          },
+        },
+        readonly$: signal(false),
+        dataSource: asDataSource(dataSource),
+        dataUpdate,
+      };
+
+      KanbanSingleView.prototype['materializeGroupBy'].call(view);
+
+      expect(dataUpdate).toHaveBeenCalledWith(expect.any(Function));
+      const updater = dataUpdate.mock.calls[0][0];
+      const result = updater();
+      expect(result.groupBy.columnId).toBe('select');
+    });
+
+    it('does not persist fallback groupBy when view is readonly', () => {
+      const dataSource = createMockDataSource([
+        { id: 'text', type: textPropertyModelConfig.type },
+        { id: 'select', type: selectPropertyModelConfig.type },
+      ]);
+      const dataUpdate = vi.fn();
+      const view = {
+        view: {
+          groupBy: {
+            type: 'groupBy',
+            columnId: 'text',
+            name: 'text',
+          },
+        },
+        readonly$: signal(true),
+        dataSource: asDataSource(dataSource),
+        dataUpdate,
+      };
+
+      KanbanSingleView.prototype['materializeGroupBy'].call(view);
+
+      expect(dataUpdate).not.toHaveBeenCalled();
     });
   });
 

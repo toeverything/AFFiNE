@@ -452,8 +452,9 @@ export class GroupTrait {
     const column = this.property$.value;
     if (!column) return;
 
-    group.rows.forEach(row => {
-      this.removeFromGroup(row.rowId, group.key);
+    const allRowIds = this.view.manager.dataSource.rows$.value;
+    allRowIds.forEach(rowId => {
+      this.removeFromGroup(rowId, group.key);
     });
 
     const groupProperties = this.view.data$.value?.groupProperties;
@@ -567,12 +568,15 @@ export class GroupTrait {
       return;
     }
     const remove =
-      this.groupInfo$.value?.config.removeFromGroup ?? (() => undefined);
-    const newValue = remove(
-      groupMap[key]?.value ?? null,
-      this.view.cellGetOrCreate(rowId, propertyId).jsonValue$.value
-    );
-    this.view.cellGetOrCreate(rowId, propertyId).valueSet(newValue);
+      this.groupInfo$.value?.config.removeFromGroup ??
+      ((value, old) => (old === value ? null : old));
+    const targetVal = groupMap[key]?.value ?? null;
+    const currentVal = this.view.cellGetOrCreate(rowId, propertyId).jsonValue$
+      .value;
+    const newValue = remove(targetVal, currentVal);
+    if (newValue !== currentVal) {
+      this.view.cellGetOrCreate(rowId, propertyId).valueSet(newValue);
+    }
   }
 
   updateValue(rows: string[], value: unknown) {
