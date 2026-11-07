@@ -19,10 +19,14 @@ export class SelectGroupView extends BaseGroup<
 > {
   static override styles = css`
     data-view-group-title-select-view {
+      display: flex;
+      align-items: center;
       overflow: hidden;
     }
 
     .data-view-group-title-select-view {
+      display: flex;
+      align-items: center;
       width: 100%;
       cursor: pointer;
     }
@@ -32,6 +36,10 @@ export class SelectGroupView extends BaseGroup<
     }
 
     .tag {
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      min-height: 20px;
       padding: 0 8px;
       border-radius: 4px;
       font-size: var(--data-view-cell-text-size);
@@ -52,6 +60,7 @@ export class SelectGroupView extends BaseGroup<
         items: [
           menu.input({
             initialValue: this.tag?.value ?? '',
+            placeholder: 'Untitled',
             onChange: text => {
               this.updateTag({ value: text });
             },
@@ -98,8 +107,9 @@ export class SelectGroupView extends BaseGroup<
       'data-view-group-title-select-view': true,
       readonly: this.readonly,
     });
+    const label = tag.value?.trim() ? tag.value : 'Untitled';
     return html` <div @click="${this._click}" class="${classList}">
-      <div class="tag" style="${style}">${tag.value}</div>
+      <div class="tag" style="${style}">${label}</div>
     </div>`;
   }
 

@@ -64,7 +64,7 @@ export class MultiTagView extends WithDisposable(ShadowlessElement) {
             data-testid="tag-selected"
             class="select-selected"
             style=${style}
-            >${option.value}</span
+            >${option.value?.trim() ? option.value : 'Untitled'}</span
           >`;
         })}
       </div>

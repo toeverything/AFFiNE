@@ -217,6 +217,7 @@ export class MultiTagSelect extends SignalWatcher(
         items: [
           menu.input({
             initialValue: option.value,
+            placeholder: 'Untitled',
             onChange: text => {
               this.tagManager.changeTag({
                 id: option.id,
@@ -360,7 +361,9 @@ export class MultiTagSelect extends SignalWatcher(
       backgroundColor: color,
     });
     return html` <div class="${tagContainerStyle}" style=${style}>
-      <div data-testid="tag-name" class="${tagTextStyle}">${name}</div>
+      <div data-testid="tag-name" class="${tagTextStyle}">
+        ${name?.trim() ? name : 'Untitled'}
+      </div>
       ${
         onDelete
           ? html` <div class="${tagDeleteIconStyle}" @click="${onDelete}">
@@ -555,7 +558,9 @@ const popMobileTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
                   width: 'max-content',
                 });
                 return html` <div class="${tagContainerStyle}" style=${style}>
-                  <div class="${tagTextStyle}">${option.value}</div>
+                  <div class="${tagTextStyle}">
+                    ${option.value?.trim() ? option.value : 'Untitled'}
+                  </div>
                   <div
                     class="${tagDeleteIconStyle}"
                     @click="${(e: MouseEvent) => {
@@ -600,7 +605,9 @@ const popMobileTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
                             : ''
                         }
                         <div class="${tagContainerStyle}" style=${style}>
-                          <div class="${tagTextStyle}">${option.value}</div>
+                          <div class="${tagTextStyle}">
+                            ${option.value?.trim() ? option.value : 'Untitled'}
+                          </div>
                         </div>
                       </div>
                     `;

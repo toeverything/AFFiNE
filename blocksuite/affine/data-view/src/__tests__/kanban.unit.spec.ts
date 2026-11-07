@@ -6,6 +6,7 @@ import type { DataSource } from '../core/data-source/base.js';
 import { DetailSelection } from '../core/detail/selection.js';
 import type { FilterGroup } from '../core/filter/types.js';
 import { groupByMatchers } from '../core/group-by/define.js';
+import { SelectGroupView } from '../core/group-by/renderer/select-group.js';
 import { GroupTrait, sortByManually } from '../core/group-by/trait.js';
 import { t } from '../core/logical/type-presets.js';
 import type { DataViewCellLifeCycle } from '../core/property/index.js';
@@ -801,6 +802,69 @@ describe('kanban', () => {
       } finally {
         vi.unstubAllGlobals();
       }
+    });
+  });
+
+  describe('SelectGroupView', () => {
+    it('renders Untitled when tag value is empty or whitespace', async () => {
+      if (!customElements.get('data-view-group-title-select-view')) {
+        customElements.define(
+          'data-view-group-title-select-view',
+          SelectGroupView
+        );
+      }
+      const view = document.createElement(
+        'data-view-group-title-select-view'
+      ) as SelectGroupView;
+      const data$ = signal({
+        options: [
+          { id: 'opt-1', value: '', color: '#ff0000' },
+          { id: 'opt-2', value: '   ', color: '#00ff00' },
+          { id: 'opt-3', value: 'Done', color: '#0000ff' },
+        ],
+      });
+      view.group = {
+        value: 'opt-1',
+        property: {
+          data$,
+          name$: signal('Status'),
+        },
+        manager: {},
+      } as never;
+
+      document.body.append(view);
+      await view.updateComplete;
+
+      const tag1 = view.querySelector('.tag');
+      expect(tag1?.textContent?.trim()).toBe('Untitled');
+
+      view.group = {
+        value: 'opt-2',
+        property: {
+          data$,
+          name$: signal('Status'),
+        },
+        manager: {},
+      } as never;
+      await view.updateComplete;
+
+      const tag2 = view.querySelector('.tag');
+      expect(tag2?.textContent?.trim()).toBe('Untitled');
+
+      view.group = {
+        value: 'opt-3',
+        property: {
+          data$,
+          name$: signal('Status'),
+        },
+        manager: {},
+      } as never;
+      await view.updateComplete;
+
+      const tag3 = view.querySelector('.tag');
+      expect(tag3?.textContent?.trim()).toBe('Done');
+
+      view.remove();
     });
   });
 });
