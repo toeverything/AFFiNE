@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 
 import { Package } from '@affine-tools/utils/workspace';
@@ -7,70 +7,162 @@ import {
   auth as google_auth,
 } from '@googleapis/androidpublisher';
 
-export async function fetchVersionCode(applicationId: string): Promise<number> {
-  const auth = new google_auth.GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/androidpublisher'],
-  });
-  const androidPublisher = new androidpublisher_v3.Androidpublisher({
-    auth,
-  });
-  const appEdit = await androidPublisher.edits.insert({
-    packageName: applicationId,
-    requestBody: {
-      // 20min
-      expiryTimeSeconds: (Math.floor(Date.now() / 1000) + 12000).toString(),
-    },
-  });
+const packageName = 'app.affine.pro';
+const auth = new google_auth.GoogleAuth({
+  scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+});
+const publisher = new androidpublisher_v3.Androidpublisher({ auth });
 
-  if (!appEdit.data.id) {
-    throw new Error('Failed to create edit');
+async function createEdit(applicationId: string) {
+  const response = await publisher.edits.insert({ packageName: applicationId });
+  if (!response.data.id) {
+    throw new Error('Google Play returned no edit ID');
   }
-
-  const lists = await androidPublisher.edits.bundles.list({
-    packageName: applicationId,
-    editId: appEdit.data.id,
-  });
-
-  let versionCode: number = 1;
-  try {
-    versionCode =
-      lists.data.bundles?.[lists.data.bundles.length - 1].versionCode || 1;
-  } catch {}
-
-  console.info(`Remote version code: ${versionCode}`);
-
-  console.info(`Writing edit ID to ${process.env.GITHUB_OUTPUT}`);
-
-  if (process.env.GITHUB_OUTPUT) {
-    execSync(
-      `echo "EDIT_ID=${appEdit.data.id}" >> ${process.env.GITHUB_OUTPUT}`,
-      {
-        stdio: 'inherit',
-      }
-    );
-  }
-
-  return versionCode;
+  return response.data.id;
 }
 
-const versionCodeRegexPattern = /(versionCode(?:\s|=)*)(.*)/;
+export async function fetchVersionCode(applicationId: string): Promise<number> {
+  const editId = await createEdit(applicationId);
+  const response = await publisher.edits.bundles.list({
+    packageName: applicationId,
+    editId,
+  });
+  await publisher.edits.delete({ packageName: applicationId, editId });
+  return Math.max(
+    1,
+    ...(response.data.bundles ?? []).map(bundle => bundle.versionCode ?? 0)
+  );
+}
 
-const gradlePath = new Package('@affine/android').join(
-  'App/app/build.gradle'
-).value;
+async function bump() {
+  const gradlePath = new Package('@affine/android').join(
+    'App/app/build.gradle'
+  ).value;
+  const gradle = fs.readFileSync(gradlePath, 'utf8');
+  const pattern = /(versionCode(?:\s|=)*)(\d+)/;
+  const local = Number(gradle.match(pattern)?.[2] ?? 0);
+  const versionCode = Math.max(local, await fetchVersionCode(packageName)) + 1;
+  fs.writeFileSync(gradlePath, gradle.replace(pattern, `$1${versionCode}`));
+  fs.writeFileSync(
+    process.env.STORE_BUILD_METADATA ?? 'store-build.json',
+    JSON.stringify({ packageName, versionCode })
+  );
+}
 
-let gradleVersionCode = 0;
+async function submit() {
+  const metadata = process.env.STORE_BUILD_METADATA;
+  const bundle = process.env.STORE_BUNDLE;
+  const receipt = process.env.STORE_RECEIPT;
+  if (!metadata || !bundle || !receipt) {
+    throw new Error(
+      'STORE_BUILD_METADATA, STORE_BUNDLE and STORE_RECEIPT are required'
+    );
+  }
+  const operation = {
+    operationRunId: Number(process.env.STORE_OPERATION_RUN_ID),
+    operationAttempt: Number(process.env.STORE_OPERATION_ATTEMPT),
+  };
+  if (
+    !Number.isSafeInteger(operation.operationRunId) ||
+    operation.operationRunId <= 0 ||
+    !Number.isSafeInteger(operation.operationAttempt) ||
+    operation.operationAttempt <= 0
+  ) {
+    throw new Error(
+      'A positive store operation run ID and attempt are required'
+    );
+  }
+  const candidate: { packageName: string; versionCode: number } = JSON.parse(
+    fs.readFileSync(metadata, 'utf8')
+  );
+  if (
+    candidate.packageName !== packageName ||
+    !Number.isSafeInteger(candidate.versionCode)
+  ) {
+    throw new Error('Invalid Google Play candidate metadata');
+  }
+  const hash = createHash('sha256');
+  for await (const chunk of fs.createReadStream(bundle)) {
+    hash.update(chunk);
+  }
+  const digest = hash.digest('hex');
+  const editId = await createEdit(packageName);
+  const tracks = await publisher.edits.tracks.list({ packageName, editId });
+  const uploaded = await publisher.edits.bundles.list({ packageName, editId });
+  const existing = uploaded.data.bundles?.find(
+    item => item.versionCode === candidate.versionCode
+  );
+  const onTrack = tracks.data.tracks?.some(track =>
+    track.releases?.some(release =>
+      release.versionCodes?.includes(String(candidate.versionCode))
+    )
+  );
+  if ((onTrack || existing) && !existing?.sha256) {
+    await publisher.edits.delete({ packageName, editId });
+    throw new Error('Google Play version has no verifiable bundle digest');
+  }
+  const conflict = existing && existing.sha256 !== digest;
+  const submitted = onTrack && !conflict;
+  const queryOnly = process.env.STORE_QUERY_ONLY === '1';
+  if (queryOnly || submitted || conflict) {
+    await publisher.edits.delete({ packageName, editId });
+    if (conflict && !queryOnly) {
+      throw new Error('Google Play version code belongs to a different bundle');
+    }
+    if (
+      queryOnly &&
+      !submitted &&
+      !conflict &&
+      process.env.STORE_ALLOW_ABSENT !== '1'
+    ) {
+      throw new Error(
+        'No visible store result; the previous submission step ran, so its result remains unresolved'
+      );
+    }
+  } else {
+    if (!existing) {
+      const result = await publisher.edits.bundles.upload({
+        packageName,
+        editId,
+        media: {
+          mimeType: 'application/octet-stream',
+          body: fs.createReadStream(bundle),
+        },
+      });
+      if (
+        result.data.versionCode !== candidate.versionCode ||
+        result.data.sha256 !== digest
+      ) {
+        throw new Error(
+          'Uploaded bundle does not match the prepared candidate'
+        );
+      }
+    }
+    await publisher.edits.tracks.update({
+      packageName,
+      editId,
+      track: 'internal',
+      requestBody: {
+        releases: [
+          { status: 'draft', versionCodes: [String(candidate.versionCode)] },
+        ],
+      },
+    });
+    await publisher.edits.commit({ packageName, editId });
+  }
+  fs.writeFileSync(
+    receipt,
+    JSON.stringify({
+      ...candidate,
+      ...operation,
+      store: 'google-play',
+      status: !queryOnly || submitted ? 'submitted' : 'not-submitted',
+    })
+  );
+}
 
-const gradleFile = fs.readFileSync(gradlePath, 'utf8');
-const matched = gradleFile.match(versionCodeRegexPattern);
-
-const remoteVersion = await fetchVersionCode('app.affine.pro');
-
-gradleVersionCode = parseInt(matched?.[2] || '0');
-gradleVersionCode = isNaN(gradleVersionCode) ? 0 : gradleVersionCode;
-const versionCode = Math.max(gradleVersionCode, remoteVersion) + 1;
-
-fs.writeFileSync(
-  gradlePath,
-  gradleFile.replace(versionCodeRegexPattern, `$1 ${versionCode}`)
-);
+if (process.argv.includes('submit')) {
+  await submit();
+} else {
+  await bump();
+}

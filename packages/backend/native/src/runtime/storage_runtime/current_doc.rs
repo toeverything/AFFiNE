@@ -21,6 +21,15 @@ pub(in crate::runtime) async fn load_current_doc(
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<Option<CurrentDoc>> {
+  let (snapshot, updates) = load_current_doc_parts(pool, workspace_id, doc_id).await?;
+  merge_current_doc(snapshot, updates)
+}
+
+pub(in crate::runtime) async fn load_current_doc_parts(
+  pool: &PgPool,
+  workspace_id: &str,
+  doc_id: &str,
+) -> RuntimeResult<(Option<CurrentDoc>, Vec<CurrentDocUpdate>)> {
   let snapshot = sqlx::query_as::<_, CurrentDoc>(
     r#"
     SELECT blob, updated_at
@@ -46,7 +55,7 @@ pub(in crate::runtime) async fn load_current_doc(
   .fetch_all(pool)
   .await
   .map_err(|err| RuntimeError::database("Current doc updates load failed", err))?;
-  merge_current_doc(snapshot, updates)
+  Ok((snapshot, updates))
 }
 
 pub(super) async fn load_canonical_doc<'a>(

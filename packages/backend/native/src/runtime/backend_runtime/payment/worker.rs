@@ -4,15 +4,15 @@ use serde_json::Value;
 use sqlx::Row;
 use tokio::{sync::Mutex, task::JoinHandle};
 
-use super::{PaymentApplyResult, PaymentRuntime, PaymentSnapshot, SnapshotCoverage};
+use super::{PaymentApplyResult, PaymentRuntime, PaymentSnapshot, SnapshotCoverage, recover_app_store_purchase};
 use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::invalidation::InvalidationRuntime};
 
 pub(super) struct Receipt {
   provider: String,
-  namespace: String,
+  pub(super) namespace: String,
   event_id: String,
   event_type: String,
-  payload: Value,
+  pub(super) payload: Value,
 }
 
 pub(super) struct PaymentWorker {
@@ -43,6 +43,12 @@ impl PaymentWorker {
         if let Ok(Some(changes)) = super::command::recover_one_stripe_operation(&runtime).await {
           publish_changes(&invalidation, changes).await;
           continue;
+        }
+        if let Ok(Some(changes)) = recover_app_store_purchase(&runtime).await {
+          publish_changes(&invalidation, changes).await;
+        }
+        if let Ok(Some(changes)) = super::command::recover_waiting_checkout(&runtime).await {
+          publish_changes(&invalidation, changes).await;
         }
         if let Ok(Some(changes)) = super::reconcile_one_source(&runtime).await {
           publish_changes(&invalidation, changes).await;
@@ -136,7 +142,18 @@ async fn recover_stripe(runtime: &PaymentRuntime, receipt: &Receipt) -> RuntimeR
     .and_then(Value::as_object)
     .ok_or_else(|| RuntimeError::invalid_input("Stripe receipt object is invalid"))?;
   let object_kind = object.get("object").and_then(Value::as_str).unwrap_or_default();
-  let observed_at = receipt_observed_at(receipt)?;
+  let observed_at = chrono::Utc::now();
+  if object_kind == "checkout.session" {
+    super::command::stripe_checkout_receipt(runtime, receipt).await?;
+    if object.get("subscription").is_none_or(Value::is_null) {
+      return runtime
+        .apply_snapshot(empty_receipt_snapshot(
+          stripe.namespace().clone(),
+          receipt.event_id.clone(),
+        ))
+        .await;
+    }
+  }
   match object_kind {
     "invoice" => {
       let invoice_id = object
@@ -283,28 +300,10 @@ async fn recover_stripe(runtime: &PaymentRuntime, receipt: &Receipt) -> RuntimeR
   Err(RuntimeError::invalid_state("unsupported Stripe payment receipt"))
 }
 
-fn receipt_observed_at(receipt: &Receipt) -> RuntimeResult<chrono::DateTime<chrono::Utc>> {
-  use chrono::TimeZone;
-
-  let created = receipt
-    .payload
-    .get("created")
-    .and_then(Value::as_i64)
-    .ok_or_else(|| RuntimeError::invalid_input("Stripe receipt has no creation time"))?;
-  chrono::Utc
-    .timestamp_opt(created, 0)
-    .single()
-    .ok_or_else(|| RuntimeError::invalid_input("Stripe receipt has invalid creation time"))
-}
-
 async fn recover_revenuecat(runtime: &PaymentRuntime, receipt: &Receipt) -> RuntimeResult<PaymentApplyResult> {
   let client = runtime
     .revenuecat
     .as_deref()
-    .ok_or_else(|| RuntimeError::invalid_state("RevenueCat payment provider is not configured"))?;
-  let config = runtime
-    .revenuecat_config
-    .as_ref()
     .ok_or_else(|| RuntimeError::invalid_state("RevenueCat payment provider is not configured"))?;
   require_namespace(receipt, client.namespace())?;
   let event = receipt
@@ -319,23 +318,8 @@ async fn recover_revenuecat(runtime: &PaymentRuntime, receipt: &Receipt) -> Runt
     .or_else(|| event.get("app_user_id").and_then(Value::as_str))
     .filter(|id| !id.starts_with("$RCAnonymousID:"))
     .ok_or_else(|| RuntimeError::invalid_state("RevenueCat receipt has no canonical customer"))?;
-  let subscriptions = client
-    .customer_subscriptions(customer_id)
-    .await
-    .map_err(provider_runtime_error)?;
-  let verified = verified_missing_revenuecat_sources(runtime, client, customer_id, &subscriptions).await?;
-  let snapshot = super::snapshot::revenuecat_customer_snapshot(
-    &runtime.pool,
-    client,
-    config,
-    customer_id,
-    subscriptions,
-    SnapshotCoverage::Complete {
-      verified_missing_revenuecat_sources: verified,
-    },
-    vec![receipt.event_id.clone()],
-  )
-  .await?;
+  let mut snapshot = runtime.observe_revenuecat_customer(customer_id).await?;
+  snapshot.captured_event_ids.push(receipt.event_id.clone());
   runtime.apply_snapshot(snapshot).await
 }
 
@@ -427,17 +411,48 @@ fn empty_receipt_snapshot(namespace: affine_core::payment::ProviderNamespace, ev
 pub(super) async fn fail_receipt(runtime: &PaymentRuntime, event_id: &str, namespace: &str, error: &RuntimeError) {
   let _ = sqlx::query(
     r#"UPDATE payment_events
-       SET processing_status=CASE WHEN processing_attempts>=5 THEN 'blocked' ELSE 'failed' END,
+       SET processing_status=CASE WHEN processing_attempts>=5 AND NOT $4 THEN 'blocked' ELSE 'failed' END,
            last_error=$3,
-           next_attempt_at=CASE WHEN processing_attempts>=5 THEN NULL ELSE clock_timestamp()+INTERVAL '5 seconds' END,
+           next_attempt_at=CASE WHEN processing_attempts>=5 AND NOT $4 THEN NULL
+             ELSE clock_timestamp()+make_interval(secs => CASE WHEN $4
+               THEN LEAST(300,5*power(2,LEAST(GREATEST(processing_attempts-1,0),6)))
+               ELSE 5 END) END,
            updated_at=clock_timestamp()
        WHERE provider_namespace=$1 AND external_event_id=$2 AND processing_status='processing'"#,
   )
   .bind(namespace)
   .bind(event_id)
   .bind(error.to_string())
+  .bind(retryable_database_error(error))
   .execute(&runtime.pool)
   .await;
+}
+
+fn retryable_database_error(error: &RuntimeError) -> bool {
+  let RuntimeError::Database { source, .. } = error else {
+    return false;
+  };
+  match source {
+    sqlx::Error::Io(_) | sqlx::Error::PoolTimedOut | sqlx::Error::WorkerCrashed => true,
+    sqlx::Error::Database(error) => error.code().is_some_and(|code| {
+      matches!(
+        code.as_ref(),
+        "08000"
+          | "08001"
+          | "08003"
+          | "08006"
+          | "08007"
+          | "40001"
+          | "40P01"
+          | "55P03"
+          | "57014"
+          | "57P01"
+          | "57P02"
+          | "57P03"
+      )
+    }),
+    _ => false,
+  }
 }
 
 async fn publish_changes(invalidation: &InvalidationRuntime, changes: PaymentApplyResult) {

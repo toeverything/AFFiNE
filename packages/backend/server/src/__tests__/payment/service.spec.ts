@@ -1,3 +1,4 @@
+import { PrismaClient } from '@prisma/client';
 import ava from 'ava';
 import Sinon from 'sinon';
 
@@ -11,7 +12,7 @@ import {
 } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { ServerFeature, ServerService } from '../../core/config';
-import { subscriptionFromEntitlement } from '../../plugins/payment/model';
+import { UserSubscriptionResolver } from '../../plugins/payment/read-resolver';
 import {
   SubscriptionService,
   userSubscriptionIdentity,
@@ -117,7 +118,7 @@ ava(
     });
 
     const timestamp = '2026-09-06T00:00:00.000Z';
-    command.resolves({
+    const nativeSubscription = {
       stripeSubscriptionId: 'sub_1',
       stripeScheduleId: null,
       status: 'active',
@@ -133,7 +134,8 @@ ava(
       canceledAt: null,
       createdAt: timestamp,
       updatedAt: timestamp,
-    });
+    };
+    command.resolves(nativeSubscription);
     const canceled = await service.cancelSubscription(
       userSubscriptionIdentity(SubscriptionPlan.Pro, 'user-1'),
       'intent-2'
@@ -147,6 +149,44 @@ ava(
       actorUserId: 'user-1',
       intentId: 'intent-2',
     });
+
+    const read = new UserSubscriptionResolver(
+      Sinon.createStubInstance(PrismaClient),
+      runtime
+    );
+    const nativeBilling = {
+      subscriptions: [nativeSubscription],
+      conflicts: [],
+      manageable: [],
+    };
+    const list = runtime.listPaymentSubscriptionsV1 as Sinon.SinonStub;
+    list.resolves(nativeBilling);
+    const user = {
+      id: 'user-1',
+      email: 'user@example.com',
+      name: 'User',
+      avatarUrl: null,
+      disabled: false,
+      hasPassword: true,
+      emailVerified: true,
+    };
+    t.deepEqual(await read.subscriptionBilling(user, user), {
+      subscriptions: [canceled],
+      conflicts: [],
+      manageable: [],
+    });
+    t.true(list.calledOnceWithExactly('user', user.id));
+
+    command.resetHistory();
+    command.resolves(nativeBilling);
+    t.deepEqual(await read.refreshUserSubscriptions(user), [canceled]);
+    t.true(
+      command.calledOnceWithExactly({
+        action: 'refresh_subscriptions',
+        userId: user.id,
+      })
+    );
+    t.true(list.calledOnce);
 
     const portal = runtime.createPaymentCustomerPortalV1 as Sinon.SinonStub;
     portal.resolves('https://billing.example/portal');
@@ -189,26 +229,5 @@ ava(
     t.deepEqual(sameRecurring.data, {
       recurring: SubscriptionRecurring.Yearly,
     });
-
-    const createdAt = new Date('2026-09-01T00:00:00.000Z');
-    const updatedAt = new Date('2026-09-02T00:00:00.000Z');
-    const mapped = subscriptionFromEntitlement(
-      {
-        metadata: {},
-        plan: 'pro',
-        status: 'active',
-        quantity: 1,
-        startsAt: null,
-        createdAt,
-        expiresAt: null,
-        graceUntil: null,
-        updatedAt,
-      },
-      undefined,
-      SubscriptionPlan.Pro
-    );
-    t.is(mapped.createdAt, createdAt);
-    t.is(mapped.updatedAt, updatedAt);
-    t.is(mapped.variant, null);
   }
 );

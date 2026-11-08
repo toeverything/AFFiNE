@@ -83,8 +83,8 @@ impl TryFrom<DocClock> for NbDocClock {
 #[derive(uniffi::Record)]
 pub struct Blob {
   pub key: String,
-  // base64 encoded data; on mobile large blobs this is a file-path token prefixed
-  // with "__AFFINE_BLOB_FILE__:"
+  // base64 encoded data; on mobile large blobs this is a file-path token
+  // prefixed with "__AFFINE_BLOB_FILE__:"
   pub data: String,
   pub mime: String,
   pub size: i64,

@@ -46,9 +46,9 @@ import {
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { getWorkerUrl } from '@affine/env/worker';
 import {
+  expireCheckoutMutation,
   OAuthProviderType,
-  refreshSubscriptionMutation,
-  requestApplySubscriptionMutation,
+  SubscriptionPlan,
 } from '@affine/graphql';
 import { I18n } from '@affine/i18n';
 import { serveAuthRequests } from '@affine/mobile-shared/auth/channel';
@@ -82,6 +82,7 @@ import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { BlocksuiteMenuConfigProvider } from './bs-menu-config';
+import { createNativePurchaseBridge } from './native-purchase-bridge';
 import { AffineTheme } from './plugins/affine-theme';
 import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
@@ -662,40 +663,37 @@ const showNativeSignIn = async () => {
     ai: subscriptionService.subscription.ai$.value,
   };
 };
-(window as any).updateSubscriptionState = async () => {
-  const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
-  const serversService = frameworkProvider.get(ServersService);
-  const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
-    (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
-  await currentServer.gql({
-    query: refreshSubscriptionMutation,
+declare global {
+  interface Window {
+    getAppStorePurchaseContext: ReturnType<
+      typeof createNativePurchaseBridge
+    >['getContext'];
+    appStorePurchase: ReturnType<typeof createNativePurchaseBridge>['purchase'];
+    endStripeCheckout: (
+      expectedUserId: string,
+      family: 'pro' | 'ai',
+      attemptId: string
+    ) => Promise<boolean>;
+  }
+}
+
+const purchaseBridge = createNativePurchaseBridge(getCurrentServerForNative);
+window.getAppStorePurchaseContext = purchaseBridge.getContext;
+window.appStorePurchase = purchaseBridge.purchase;
+
+window.endStripeCheckout = async (expectedUserId, family, attemptId) => {
+  const { authService, currentServer } = getCurrentNativeSignInContext();
+  if ((await getCurrentNativeUserIdentifier(authService)) !== expectedUserId) {
+    return false;
+  }
+  const { expireCheckout } = await currentServer.gql({
+    query: expireCheckoutMutation,
+    variables: {
+      plan: family === 'ai' ? SubscriptionPlan.AI : SubscriptionPlan.Pro,
+      attemptId,
+    },
   });
-  const subscriptionService = currentServer.scope.get(SubscriptionService);
-  await waitForSubscriptionRevalidation(
-    subscriptionService,
-    'Unable to refresh subscription state.'
-  );
-};
-(window as any).requestApplySubscription = async (transactionId: string) => {
-  const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
-  const serversService = frameworkProvider.get(ServersService);
-  const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
-    (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
-  await currentServer.gql({
-    query: requestApplySubscriptionMutation,
-    variables: { transactionId },
-  });
-  const subscriptionService = currentServer.scope.get(SubscriptionService);
-  await waitForSubscriptionRevalidation(
-    subscriptionService,
-    'Unable to refresh subscription state after purchase.'
-  );
+  return expireCheckout;
 };
 
 // setup application lifecycle events, and emit application start event

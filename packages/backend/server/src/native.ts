@@ -315,6 +315,9 @@ export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;
 export const projectDocCanvasFromBinary =
   serverNativeModule.projectDocCanvasFromBinary;
+export const projectWorkspaceRootFromBinary =
+  serverNativeModule.projectWorkspaceRootFromBinary;
+
 export const projectDocSearchFromBinary =
   serverNativeModule.projectDocSearchFromBinary;
 export const parseYDocToMarkdown = serverNativeModule.parseDocToMarkdown;

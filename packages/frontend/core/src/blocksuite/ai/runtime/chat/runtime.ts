@@ -99,7 +99,7 @@ export class AIChatRuntime {
         await this.togglePinActiveSession();
         return;
       case 'send':
-        await this.send(action);
+        await this.send(action, false, action.onAccepted);
         return;
       case 'retry':
         await this.retry();
@@ -327,7 +327,11 @@ export class AIChatRuntime {
     }
   }
 
-  private async send(options: AIChatSendOptions, retryExisting = false) {
+  private async send(
+    options: AIChatSendOptions,
+    retryExisting = false,
+    onAccepted?: () => void
+  ) {
     const content = options.input || this.snapshot.composer.text;
     if (!content.trim() || !this.snapshot.uiPolicy.canSend) return;
     const seq = ++this.requestSeq;
@@ -347,6 +351,11 @@ export class AIChatRuntime {
             this.createMessage('assistant', ''),
           ],
     });
+    try {
+      onAccepted?.();
+    } catch (error) {
+      console.error(error);
+    }
     try {
       const session = await this.ensureSession();
       if (seq !== this.requestSeq) return;

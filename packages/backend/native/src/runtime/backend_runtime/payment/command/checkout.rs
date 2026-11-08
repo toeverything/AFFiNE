@@ -1,8 +1,8 @@
 use affine_core::{
   access_control::{EntitlementStatus, Plan},
   payment::{
-    AI_TRIAL_DAYS, CheckoutExistingFact, CheckoutExistingStatus, ProviderLifecycle, SubscriptionRecurring,
-    checkout_has_conflict, trial_eligible,
+    AI_TRIAL_DAYS, CheckoutExistingFact, CheckoutExistingStatus, Provider, ProviderLifecycle, PurchaseAdmission,
+    SubscriptionRecurring, UserPlanFamily, checkout_has_conflict, trial_eligible,
   },
 };
 use serde_json::{Value, json};
@@ -69,9 +69,11 @@ impl PaymentRuntime {
     let target_id = target_id
       .map(str::to_string)
       .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    if target_type == "workspace" {
-      self.assert_workspace_payment(actor_user_id, &target_id).await?;
-    }
+    let workspace_actor = if target_type == "workspace" {
+      Some(actor_user_id.ok_or_else(|| RuntimeError::invalid_input("payment actor is required"))?)
+    } else {
+      None
+    };
     let namespace = self.stripe()?.namespace().clone();
     let namespace_key = canonical_namespace(&namespace)?;
     let customer_id = if let Some(user_id) = actor_user_id {
@@ -84,48 +86,120 @@ impl PaymentRuntime {
       None
     };
     let lookup_key = stripe_lookup_key(plan, recurring, variant)?;
+    let target_scope = if matches!(plan, Plan::Pro | Plan::Ai | Plan::Team) {
+      PaymentScope::cloud_target(target_type, &target_id, plan)?
+    } else {
+      PaymentScope::billing_target(&namespace_key, target_type, &target_id)?
+    };
+    let family = UserPlanFamily::from_plan(plan);
+    let mut resources = vec![target_scope.clone()];
+    if let Some(customer_id) = customer_id.as_deref().filter(|_| family.is_none()) {
+      resources.push(PaymentScope::customer(&namespace_key, customer_id)?);
+    }
+    let mut connection = PaymentConnection::try_acquire(&self.pool, resources.clone())
+      .await?
+      .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
+    let now = purchase_time(&mut connection).await?;
+    if let Some(family) = family {
+      let attempt = open_purchase(&mut connection, &target_scope, now).await?;
+      let facts = load_user_purchase_facts(&mut connection, &target_id, family).await?;
+      let admission = facts.admission(family, Provider::Stripe, recurring, now, attempt.is_some());
+      match admission {
+        PurchaseAdmission::Allowed => {}
+        PurchaseAdmission::Existing(Provider::RevenueCat) => {
+          return Err(RuntimeError::invalid_state("managed_by_app_store"));
+        }
+        PurchaseAdmission::Existing(Provider::Stripe) => {
+          return Err(RuntimeError::invalid_state("subscription_already_exists"));
+        }
+        PurchaseAdmission::NeedsVerification => {
+          return Err(RuntimeError::invalid_state("purchase_needs_verification"));
+        }
+        PurchaseAdmission::InProgress => {
+          let attempt = attempt.expect("purchase admission found an open attempt");
+          if attempt.operation_type != "purchase_checkout"
+            || attempt.namespace != namespace_key
+            || checkout_product(&attempt.steps) != Some(&lookup_key)
+          {
+            return Err(RuntimeError::invalid_state("purchase_in_progress"));
+          }
+          if attempt.status == "waiting" {
+            let result = attempt
+              .result
+              .ok_or_else(|| RuntimeError::invalid_state("missing checkout result"))?;
+            let session_id = result["sessionId"]
+              .as_str()
+              .ok_or_else(|| RuntimeError::invalid_state("missing checkout session"))?;
+            let session = self
+              .stripe()?
+              .checkout_session(session_id)
+              .await
+              .map_err(provider_runtime_error)?;
+            if session.status.as_deref() == Some("open") {
+              return Ok(result);
+            }
+            if session.status.as_deref() != Some("expired") {
+              return Err(RuntimeError::invalid_state("purchase_in_progress"));
+            }
+            finish_purchase(&mut connection, &attempt.id, "expired").await?;
+            match facts.admission(family, Provider::Stripe, recurring, now, false) {
+              PurchaseAdmission::Allowed => {}
+              PurchaseAdmission::Existing(Provider::Stripe) => {
+                return Err(RuntimeError::invalid_state("subscription_already_exists"));
+              }
+              PurchaseAdmission::Existing(Provider::RevenueCat) => {
+                return Err(RuntimeError::invalid_state("managed_by_app_store"));
+              }
+              _ => return Err(RuntimeError::invalid_state("purchase_needs_verification")),
+            }
+          } else {
+            return self
+              .send_checkout(
+                changes,
+                connection,
+                OperationIntent {
+                  namespace,
+                  operation_type: attempt.operation_type,
+                  intent_id: attempt.intent_id,
+                  resources,
+                  target_type: Some(target_type.to_string()),
+                  target_id: Some(target_id),
+                  steps: attempt.steps,
+                },
+                None,
+              )
+              .await;
+          }
+        }
+      }
+    } else {
+      let rows = sqlx::query(
+        r#"SELECT plan,status,recurring,period_end,NULL::timestamptz AS grace_until,
+                  NULL::timestamptz AS expires_at,true AS provider
+             FROM provider_subscriptions WHERE target_type=$1 AND target_id=$2
+           UNION ALL
+           SELECT plan,status,metadata->>'recurring',NULL,grace_until,expires_at,false
+             FROM entitlements WHERE target_type=$1 AND target_id=$2 AND source='cloud_subscription'"#,
+      )
+      .bind(target_type)
+      .bind(&target_id)
+      .fetch_all(connection.connection())
+      .await
+      .map_err(|error| RuntimeError::database("load existing checkout subscriptions", error))?;
+      let facts = rows
+        .into_iter()
+        .map(|row| checkout_existing_fact(&row))
+        .collect::<RuntimeResult<Vec<_>>>()?;
+      if checkout_has_conflict(plan, recurring, now, &facts) {
+        return Err(RuntimeError::invalid_state("subscription_already_exists"));
+      }
+    }
     let price = self.find_price(&lookup_key, recurring).await?;
     let coupon_id = if let Some(coupon) = coupon.filter(|coupon| !coupon.is_empty()) {
       self.resolve_coupon(coupon, customer_id.as_deref()).await?
     } else {
       None
     };
-    let target_scope = if matches!(plan, Plan::Pro | Plan::Ai | Plan::Team) {
-      PaymentScope::cloud_target(target_type, &target_id, plan)?
-    } else {
-      PaymentScope::billing_target(&namespace_key, target_type, &target_id)?
-    };
-    let mut resources = vec![target_scope];
-    if let Some(customer_id) = customer_id.as_deref() {
-      resources.push(PaymentScope::customer(&namespace_key, customer_id)?);
-    }
-    let mut connection = PaymentConnection::try_acquire(&self.pool, resources.clone())
-      .await?
-      .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-    let now: chrono::DateTime<chrono::Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
-      .fetch_one(connection.connection())
-      .await
-      .map_err(|error| RuntimeError::database("load checkout decision time", error))?;
-    let rows = sqlx::query(
-      r#"SELECT plan,status,recurring,period_end,NULL::timestamptz AS grace_until,
-                NULL::timestamptz AS expires_at,true AS provider
-           FROM provider_subscriptions WHERE target_type=$1 AND target_id=$2
-         UNION ALL
-         SELECT plan,status,metadata->>'recurring',NULL,grace_until,expires_at,false
-           FROM entitlements WHERE target_type=$1 AND target_id=$2 AND source='cloud_subscription'"#,
-    )
-    .bind(target_type)
-    .bind(&target_id)
-    .fetch_all(connection.connection())
-    .await
-    .map_err(|error| RuntimeError::database("load existing checkout subscriptions", error))?;
-    let facts = rows
-      .into_iter()
-      .map(|row| checkout_existing_fact(&row))
-      .collect::<RuntimeResult<Vec<_>>>()?;
-    if checkout_has_conflict(plan, recurring, now, &facts) {
-      return Err(RuntimeError::invalid_state("subscription_already_exists"));
-    }
     let trial_used = if plan == Plan::Ai {
       sqlx::query_scalar::<_, bool>(
         "SELECT EXISTS(SELECT 1 FROM subscription_trial_usages WHERE target_type='user' AND target_id=$1 AND \
@@ -159,6 +233,9 @@ impl PaymentRuntime {
         },
       ),
     ];
+    if family.is_some() {
+      fields.push(text_field("metadata[affine_checkout_product]", lookup_key));
+    }
     if let Some(customer_id) = customer_id.as_deref() {
       fields.push(text_field("customer", customer_id));
     }
@@ -185,40 +262,56 @@ impl PaymentRuntime {
     }
     let operation_intent = stripe_operation(
       namespace.clone(),
-      "create_checkout",
+      if family.is_some() {
+        "purchase_checkout"
+      } else {
+        "create_checkout"
+      },
       intent_id,
       resources,
       Some((target_type, &target_id)),
       "v1/checkout/sessions",
       fields,
     );
+    self
+      .send_checkout(changes, connection, operation_intent, workspace_actor)
+      .await
+  }
+
+  async fn send_checkout(
+    &self,
+    changes: &mut super::super::PaymentApplyResult,
+    connection: PaymentConnection,
+    intent: OperationIntent,
+    workspace_actor: Option<&str>,
+  ) -> RuntimeResult<Value> {
+    let reserves_trial = checkout_reserves_trial(&intent.steps);
+    let namespace = intent.namespace.clone();
+    let target_type = intent.target_type.clone();
+    let target_id = intent.target_id.clone();
+    let user_purchase = intent.operation_type == "purchase_checkout";
     match self
-      .execute_locked_stripe_operation(connection, operation_intent)
+      .execute_locked_stripe_operation(connection, intent, workspace_actor)
       .await?
     {
+      OperationExecution::Completed(_) if user_purchase => {
+        Err(RuntimeError::invalid_state("purchase_checkout_intent_used"))
+      }
       OperationExecution::Completed(result) => Ok(result),
       OperationExecution::Sent {
         connection,
         operation_id,
         response,
       } => {
-        let session: StripeCheckoutSession = serde_json::from_value(response)
-          .map_err(|error| RuntimeError::json("invalid Stripe checkout response", error))?;
-        let url = session
-          .url
-          .clone()
-          .ok_or_else(|| RuntimeError::invalid_state("Stripe checkout has no URL"))?;
-        let result = json!({ "url": url, "sessionId": session.id, "targetId": target_id });
-        let mut snapshot = empty_snapshot(namespace, customer_id, operation_id, result.clone());
-        if trial {
-          snapshot.trials.push(TrialSnapshot {
-            target_type: "user".to_string(),
-            target_id: target_id.clone(),
-            plan,
-            external_ref: Some(session.id),
-            metadata: json!({ "source": "checkout_session" }),
-          });
-        }
+        let snapshot = recover_checkout(
+          namespace,
+          target_type,
+          target_id,
+          operation_id,
+          response,
+          reserves_trial,
+        )?;
+        let result = snapshot.operation.as_ref().expect("checkout completion").result.clone();
         changes.extend(self.apply_with_connection(connection, snapshot).await?);
         Ok(result)
       }

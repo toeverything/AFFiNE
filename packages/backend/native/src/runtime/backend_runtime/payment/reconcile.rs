@@ -3,11 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::Row;
 
-use super::{
-  OperationCompletion, OperationIntent, PaymentApplyResult, PaymentConnection, PaymentRuntime, PaymentScope,
-  PaymentSendDecision, PaymentSnapshot, PaymentStep, PaymentStepState, SnapshotCoverage, freeze_operation,
-  mark_operation_step_sent, record_operation_error, record_operation_step_result,
-};
+use super::{PaymentApplyResult, PaymentConnection, PaymentRuntime, PaymentScope, PaymentSnapshot, SnapshotCoverage};
 use crate::runtime::{RuntimeError, RuntimeResult};
 
 const CURSOR_PURPOSE: &str = "payment_reconcile_cursor:source";
@@ -27,6 +23,8 @@ struct SourceCursor {
   after: Option<String>,
   overlap_pending: bool,
   generation: u64,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  last_error: Option<String>,
 }
 
 struct SourceCandidate {
@@ -46,18 +44,22 @@ pub(super) async fn reconcile_one_source(runtime: &PaymentRuntime) -> RuntimeRes
     runtime.stripe.as_ref().map(|client| client.namespace()),
     runtime.revenuecat.as_ref().map(|client| client.namespace()),
   ];
+  let mut changes: Option<PaymentApplyResult> = None;
   for namespace in namespaces.into_iter().flatten() {
     let namespace = namespace
       .canonical_key()
       .map_err(|_| RuntimeError::invalid_state("invalid payment provider namespace"))?;
-    let Some(candidate) = source_candidate(runtime, &namespace).await? else {
+    let Some(mut candidate) = source_candidate(runtime, &namespace).await? else {
       continue;
     };
-    let changes = reconcile_source(runtime, &candidate).await?;
+    match reconcile_source(runtime, &candidate).await {
+      Ok(Some(result)) => changes.get_or_insert_default().extend(result),
+      Ok(None) => {}
+      Err(error) => candidate.next_cursor.last_error = Some(error.to_string()),
+    }
     advance_cursor(runtime, &candidate).await?;
-    return Ok(changes);
   }
-  Ok(None)
+  Ok(changes)
 }
 
 async fn source_candidate(runtime: &PaymentRuntime, namespace: &str) -> RuntimeResult<Option<SourceCandidate>> {
@@ -66,6 +68,7 @@ async fn source_candidate(runtime: &PaymentRuntime, namespace: &str) -> RuntimeR
     after: None,
     overlap_pending: false,
     generation: 0,
+    last_error: None,
   };
   sqlx::query(
     r#"INSERT INTO runtime_states(purpose,token_hash,lookup_key,payload,expires_at)
@@ -139,6 +142,7 @@ async fn source_candidate(runtime: &PaymentRuntime, namespace: &str) -> RuntimeR
       after: None,
       overlap_pending: false,
       generation: cursor.generation + 1,
+      last_error: cursor.last_error.clone(),
     };
     sqlx::query(
       "UPDATE runtime_states SET payload=$3,updated_at=clock_timestamp(),expires_at=clock_timestamp()+INTERVAL '10 \
@@ -160,6 +164,7 @@ async fn source_candidate(runtime: &PaymentRuntime, namespace: &str) -> RuntimeR
     after: Some(source_id.clone()),
     overlap_pending: !overlap_pass,
     generation: cursor.generation,
+    last_error: None,
   };
   let provider = Provider::parse(row.get::<String, _>("provider").as_str())
     .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment provider"))?;
@@ -195,127 +200,44 @@ async fn reconcile_source(
   if let Some(customer_id) = candidate.customer_id.as_deref() {
     resources.push(PaymentScope::customer(&candidate.namespace, customer_id)?);
   }
-  let intent_id = format!(
-    "reconcile:source:{}:{}:{}",
-    candidate.cursor.generation,
-    u8::from(candidate.cursor.overlap_pending),
-    candidate.source_id
-  );
-  let step_key = format!("payment:{intent_id}:verify");
-  let mut connection = PaymentConnection::try_acquire(&runtime.pool, resources.clone())
+  let connection = PaymentConnection::try_acquire(&runtime.pool, resources)
     .await?
     .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-  let provider_namespace = match candidate.provider {
-    Provider::Stripe => runtime.stripe.as_ref().map(|client| client.namespace().clone()),
-    Provider::RevenueCat => runtime.revenuecat.as_ref().map(|client| client.namespace().clone()),
-  }
-  .ok_or_else(|| RuntimeError::invalid_state("payment provider is not configured"))?;
-  let frozen = freeze_operation(
-    &mut connection,
-    &OperationIntent {
-      namespace: provider_namespace,
-      operation_type: "reconcile_source".to_string(),
-      intent_id,
-      resources,
-      target_type: Some(candidate.target_type.clone()),
-      target_id: Some(candidate.target_id.clone()),
-      steps: vec![PaymentStepState {
-        key: step_key.clone(),
-        request: PaymentStep::VerifySource {
-          source_id: candidate.source_id.clone(),
-        },
-        first_sent_at: None,
-        result: None,
-      }],
-    },
-  )
-  .await?;
-  if frozen.status == "completed" {
-    return Ok(None);
-  }
-  if frozen.status != "pending" {
-    return Err(RuntimeError::invalid_state("payment reconcile operation is blocked"));
-  }
-  if frozen.steps[0].result.is_none()
-    && mark_operation_step_sent(&mut connection, &frozen.id, &step_key, chrono::Duration::days(3650)).await?
-      == PaymentSendDecision::Blocked
-  {
-    return Err(RuntimeError::invalid_state("payment reconcile operation is blocked"));
-  }
   let snapshot = match candidate.provider {
-    Provider::Stripe => reconcile_stripe(runtime, candidate, &frozen.id).await,
-    Provider::RevenueCat => reconcile_revenuecat(runtime, candidate, &frozen.id).await,
+    Provider::Stripe => reconcile_stripe(runtime, candidate).await?,
+    Provider::RevenueCat => reconcile_revenuecat(runtime, candidate).await?,
   };
-  let snapshot = match snapshot {
-    Ok(snapshot) => snapshot,
-    Err(ReconcileError::Provider(error)) => {
-      record_operation_error(
-        &mut connection,
-        &frozen.id,
-        error.code,
-        error.retryable,
-        error.uncertain,
-      )
-      .await?;
-      return Err(RuntimeError::invalid_state(error.code));
-    }
-    Err(ReconcileError::Runtime(error)) => return Err(error),
-  };
-  record_operation_step_result(
-    &mut connection,
-    &frozen.id,
-    &step_key,
-    json!({ "sourceId": candidate.source_id }),
-  )
-  .await?;
   runtime.apply_with_connection(connection, snapshot).await.map(Some)
 }
 
-enum ReconcileError {
-  Provider(super::PaymentProviderError),
-  Runtime(RuntimeError),
-}
-
-impl From<RuntimeError> for ReconcileError {
-  fn from(error: RuntimeError) -> Self {
-    Self::Runtime(error)
-  }
-}
-
-async fn reconcile_stripe(
-  runtime: &PaymentRuntime,
-  candidate: &SourceCandidate,
-  operation_id: &str,
-) -> Result<PaymentSnapshot, ReconcileError> {
+async fn reconcile_stripe(runtime: &PaymentRuntime, candidate: &SourceCandidate) -> RuntimeResult<PaymentSnapshot> {
   let client = runtime
     .stripe
     .as_ref()
     .ok_or_else(|| RuntimeError::invalid_state("Stripe payment provider is not configured"))?;
-  let mut snapshot = if let Some(customer_id) = candidate.customer_id.as_deref() {
+  let snapshot = if let Some(invoice_id) = candidate.source_id.strip_prefix("stripe_invoice:") {
+    let invoice = client
+      .invoice(invoice_id)
+      .await
+      .map_err(|error| RuntimeError::invalid_state(error.code))?;
+    super::stripe_invoice_snapshot(&runtime.pool, client, invoice, Vec::new(), chrono::Utc::now()).await?
+  } else if let Some(customer_id) = candidate.customer_id.as_deref() {
     let subscriptions = client
       .customer_subscriptions(customer_id)
       .await
-      .map_err(ReconcileError::Provider)?;
+      .map_err(|error| RuntimeError::invalid_state(error.code))?;
     super::snapshot::stripe_customer_snapshot(&runtime.pool, client, customer_id, subscriptions, None).await?
   } else {
     let subscription = client
       .subscription(&candidate.source_id)
       .await
-      .map_err(ReconcileError::Provider)?;
+      .map_err(|error| RuntimeError::invalid_state(error.code))?;
     super::snapshot::stripe_subscription_snapshot(&runtime.pool, client, subscription, Vec::new(), None).await?
   };
-  snapshot.operation = Some(OperationCompletion {
-    operation_id: operation_id.to_string(),
-    result: json!({ "status": "completed" }),
-  });
   Ok(snapshot)
 }
 
-async fn reconcile_revenuecat(
-  runtime: &PaymentRuntime,
-  candidate: &SourceCandidate,
-  operation_id: &str,
-) -> Result<PaymentSnapshot, ReconcileError> {
+async fn reconcile_revenuecat(runtime: &PaymentRuntime, candidate: &SourceCandidate) -> RuntimeResult<PaymentSnapshot> {
   let client = runtime
     .revenuecat
     .as_ref()
@@ -331,10 +253,10 @@ async fn reconcile_revenuecat(
   let subscriptions = client
     .customer_subscriptions(customer_id)
     .await
-    .map_err(ReconcileError::Provider)?;
+    .map_err(|error| RuntimeError::invalid_state(error.code))?;
   let verified =
     super::worker::verified_missing_revenuecat_sources(runtime, client, customer_id, &subscriptions).await?;
-  let mut snapshot = super::snapshot::revenuecat_customer_snapshot(
+  let snapshot = super::snapshot::revenuecat_customer_snapshot(
     &runtime.pool,
     client,
     config,
@@ -346,10 +268,6 @@ async fn reconcile_revenuecat(
     Vec::new(),
   )
   .await?;
-  snapshot.operation = Some(OperationCompletion {
-    operation_id: operation_id.to_string(),
-    result: json!({ "status": "completed" }),
-  });
   Ok(snapshot)
 }
 

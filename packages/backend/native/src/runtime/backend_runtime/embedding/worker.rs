@@ -143,6 +143,9 @@ async fn materialize(
         .ok_or_else(|| failure("document_projection_missing", None))?,
     )
     .map_err(|_| failure("document_projection_invalid", None))?;
+    if let Some(reason) = projection.skip_reason {
+      return Err(failure("document_projection_skipped", Some(reason)));
+    }
     let mut contents = Vec::with_capacity(projection.units.len());
     let mut locators = Vec::with_capacity(projection.units.len());
     for unit in projection.units {

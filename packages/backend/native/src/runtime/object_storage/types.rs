@@ -231,7 +231,8 @@ fn validate_copilot_key(key: &str) -> bool {
     // chat attachments, generated images, transcript slices:
     // <userId>/<workspaceId>/<sha256b64>[-<index>]
     [user_id, workspace_id, hash] => is_id_segment(user_id) && is_id_segment(workspace_id) && is_hash_or_slice(hash),
-    // embedding workspace file: workspace-files/<workspaceId>/<fileId>/<sha256b64>
+    // embedding workspace file:
+    // workspace-files/<workspaceId>/<fileId>/<sha256b64>
     ["workspace-files", workspace_id, file_id, hash] => {
       is_id_segment(workspace_id) && is_id_segment(file_id) && is_sha256_base64url(hash)
     }

@@ -1,23 +1,18 @@
-import { Skeleton } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { SubscriptionStatus } from '@affine/graphql';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { AICancel, AIResume, AISubscribe } from '../plans/ai/actions';
 import { CardNameLabelRow } from './card-name-label-row';
-import { PaymentMethodUpdater } from './payment-method';
+import { ManageSubscriptionButton } from './manage-subscription';
 import * as styles from './style.css';
 
 export const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
   const t = useI18n();
   const subscriptionService = useService(SubscriptionService);
-  useEffect(() => {
-    subscriptionService.subscription.revalidate();
-    subscriptionService.prices.revalidate();
-  }, [subscriptionService]);
   const price = useLiveData(subscriptionService.prices.aiPrice$);
   const subscription = useLiveData(subscriptionService.subscription.ai$);
 
@@ -59,10 +54,6 @@ export const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
     return null;
   }, [subscription, onClick, t]);
 
-  if (subscription === null) {
-    return <Skeleton height={100} />;
-  }
-
   return (
     <div className={styles.planCard} style={{ marginBottom: 24 }}>
       <div className={styles.currentPlan}>
@@ -78,7 +69,13 @@ export const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
             <>
               {billingTip}
               <div className={styles.planActionContainer}>
-                {price?.yearlyAmount ? (
+                {subscription && subscription.provider !== 'stripe' ? (
+                  <ManageSubscriptionButton
+                    source={subscription}
+                    inCardView
+                    className={styles.planAction}
+                  />
+                ) : price?.yearlyAmount ? (
                   subscription ? (
                     subscription.canceledAt ? (
                       <AIResume className={styles.planAction} />
@@ -93,8 +90,10 @@ export const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
                     </AISubscribe>
                   )
                 ) : null}
-                {subscription?.status === SubscriptionStatus.PastDue ? (
-                  <PaymentMethodUpdater
+                {subscription?.provider === 'stripe' &&
+                subscription.status === SubscriptionStatus.PastDue ? (
+                  <ManageSubscriptionButton
+                    source={subscription}
                     inCardView
                     className={styles.managementInCard}
                     variant="primary"

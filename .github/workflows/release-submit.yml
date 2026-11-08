@@ -1,0 +1,43 @@
+name: Submit Release Candidate
+on:
+  workflow_run:
+    workflows: [Release Candidates]
+    types: [completed]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  submit:
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_repository.full_name == 'toeverything/AFFiNE' &&
+          contains(fromJSON('["workflow_dispatch","schedule"]'), github.event.workflow_run.event) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find completed candidate
+        id: candidate
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            if (run.path.split('@')[0] !== '.github/workflows/release.yml') throw new Error('Unexpected candidate workflow');
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts,{...context.repo,run_id:run.id});
+            core.setOutput('present', String(artifacts.some(a => a.name === 'release-candidate' && !a.expired)));
+      - uses: actions/create-github-app-token@v2
+        if: ${{ steps.candidate.outputs.present == 'true' }}
+        id: token
+        with:
+          app-id: ${{ secrets.AFFINE_RELEASE_APP_ID }}
+          private-key: ${{ secrets.AFFINE_RELEASE_APP_PRIVATE_KEY }}
+          owner: toeverything
+          repositories: affine-native
+      - name: Submit candidate identity
+        if: ${{ steps.candidate.outputs.present == 'true' }}
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ steps.token.outputs.token }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner:'toeverything',repo:'affine-native',workflow_id:'affine-release.yml',ref:'master',
+              inputs:{'candidate-run-id':String(context.payload.workflow_run.id),command:'apply'},
+            });

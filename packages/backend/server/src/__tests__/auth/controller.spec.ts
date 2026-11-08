@@ -361,6 +361,62 @@ test('should rotate token pairs and manage auth sessions', async t => {
     .set('Authorization', `Bearer ${refreshed.body.accessToken}`)
     .expect(401);
   t.is(rejected.body.code, 'AUTH_SESSION_REVOKED');
+
+  for (const replay of ['missing', 'mismatch', 'consumed']) {
+    const attemptId = randomUUID();
+    const issued = await app.createNativeAuthSession(user.id, {
+      platform: 'electron',
+    });
+    const refresh = () =>
+      app
+        .POST('/api/auth/session/refresh')
+        .set('x-affine-client-kind', 'native')
+        .set('x-affine-refresh-attempt', attemptId)
+        .send({ refreshToken: issued.refreshToken });
+    const rotated = await refresh().expect(201);
+    await t.context.db.$executeRaw`
+      UPDATE auth_refresh_tokens SET used_at=clock_timestamp()-INTERVAL '31 seconds'
+      WHERE auth_session_id=${issued.session.id} AND generation=0
+    `;
+    for (let retry = 0; retry < 2; retry++) {
+      const recovered = await refresh().expect(201);
+      t.is(recovered.body.refreshToken, rotated.body.refreshToken);
+    }
+    t.is(
+      await t.context.db.authRefreshToken.count({
+        where: { authSessionId: issued.session.id },
+      }),
+      2
+    );
+    if (replay === 'consumed') {
+      await app
+        .POST('/api/auth/session/refresh')
+        .set('x-affine-client-kind', 'native')
+        .set('x-affine-refresh-attempt', randomUUID())
+        .send({ refreshToken: rotated.body.refreshToken })
+        .expect(201);
+    }
+    const replayRequest = app
+      .POST('/api/auth/session/refresh')
+      .set('x-affine-client-kind', 'native');
+    if (replay !== 'missing') {
+      replayRequest.set(
+        'x-affine-refresh-attempt',
+        replay === 'mismatch' ? randomUUID() : attemptId
+      );
+    }
+    const rejected = await replayRequest
+      .send({ refreshToken: issued.refreshToken })
+      .expect(401);
+    t.is(rejected.body.code, 'REFRESH_TOKEN_REUSED');
+    t.truthy(
+      (
+        await t.context.db.authSession.findUniqueOrThrow({
+          where: { id: issued.session.id },
+        })
+      ).revokedAt
+    );
+  }
 });
 
 test('should revoke another device immediately and revoke all devices', async t => {
@@ -489,6 +545,13 @@ test('should strictly validate auth-session refresh and revoke bodies', async t 
     .send({ refreshToken: 'invalid', extra: true })
     .expect(400);
   t.is(refresh.body.name, 'VALIDATION_ERROR');
+  const invalidAttempt = await t.context.app
+    .POST('/api/auth/session/refresh')
+    .set('x-affine-client-kind', 'native')
+    .set('x-affine-refresh-attempt', 'invalid-attempt')
+    .send({ refreshToken: 'invalid' })
+    .expect(400);
+  t.is(invalidAttempt.body.name, 'VALIDATION_ERROR');
 
   const revoke = await t.context.app
     .POST('/api/auth/session/revoke')

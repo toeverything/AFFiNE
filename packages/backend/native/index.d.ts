@@ -89,6 +89,7 @@ export declare class BackendRuntime {
   health(): Promise<BackendRuntimeHealth>
   paymentEnabled(): boolean
   stripeEnabled(): boolean
+  listPaymentSubscriptionsV1(targetType: string, targetId: string): Promise<any>
   executePaymentCommandV1(input: any): Promise<any>
   createPaymentCustomerPortalV1(actorUserId: string): Promise<string>
   createLicenseCustomerPortalV1(licenseKey: string, validateKey?: string | undefined | null): Promise<string>
@@ -115,7 +116,7 @@ export declare class BackendRuntime {
   revokeWorkspaceInviteLink(workspaceId: string): Promise<boolean>
   cleanupExpiredRuntimeStates(limit: number): Promise<number>
   cleanupExpiredStorageReservationsV1(limit: number): Promise<number>
-  listManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string): Promise<Array<RuntimeManagedBlob>>
+  listManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string, limit: number, after?: string | undefined | null): Promise<Array<RuntimeManagedBlob>>
   manageWorkspaceBlobV1(input: RuntimeBlobManagementInput): Promise<boolean>
   releaseManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string, limit: number): Promise<number>
   finalizeStorageReservationV1(input: RuntimeStorageReservationMutation): Promise<boolean>
@@ -606,12 +607,14 @@ export interface CreateByokProfileInput {
  * # Returns
  * A Buffer containing the y-octo document update binary
  */
-export declare function createDocWithMarkdown(title: string, markdown: string, docId: string): Buffer
+export declare function createDocWithMarkdown(title: string, markdown: string, docId: string, context?: DocWriteContext | undefined | null): Buffer
 
 export interface DocumentEmbeddingProjectionInput {
   docId: string
   revision: string
   sourceHash: string
+  skipReason?: string
+  rootRevision?: string
   units: Array<DocumentEmbeddingUnitInput>
   deleted?: boolean
 }
@@ -623,6 +626,11 @@ export interface DocumentEmbeddingUnitInput {
   blockId?: string
   elementId?: string
   frameId?: string
+}
+
+export interface DocWriteContext {
+  actorUserId: string
+  timestampMs: number
 }
 
 export interface EmbeddingHealth {
@@ -989,6 +997,11 @@ export interface NativeWorkspaceDocContent {
   avatarKey: string
 }
 
+export interface NativeWorkspaceRootProjection {
+  complete: boolean
+  docIds: Array<string>
+}
+
 export interface ParsedDoc {
   name: string
   chunks: Array<Chunk>
@@ -1030,6 +1043,8 @@ export declare function processImage(input: Buffer, maxEdge: number, keepExif: b
 export declare function projectDocCanvasFromBinary(docBin: Buffer, docId: string, revision: string): NativeCanvasProjection
 
 export declare function projectDocSearchFromBinary(docBin: Buffer, docId: string, revision: string): NativeDocumentSearchProjection
+
+export declare function projectWorkspaceRootFromBinary(docBin: Buffer): NativeWorkspaceRootProjection
 
 export type PromptBuiltin =  'Date'|
 'Language'|
@@ -1871,7 +1886,7 @@ export declare function updateDocTitle(existingBinary: Buffer, title: string, do
  * # Returns
  * A Buffer containing only the delta (changes) as a y-octo update binary
  */
-export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string): Buffer
+export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string, context?: DocWriteContext | undefined | null): Buffer
 
 /**
  * Updates a document title in the workspace root doc's meta.pages array.

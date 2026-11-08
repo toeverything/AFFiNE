@@ -28,6 +28,7 @@ export function extractTokenFromHeader(authorization: string) {
 }
 
 export const SessionIdSchema = z.string().uuid();
+export const RefreshAttemptSchema = z.string().uuid().optional();
 
 export const UserIdSchema = z.union([
   z.string().uuid(),

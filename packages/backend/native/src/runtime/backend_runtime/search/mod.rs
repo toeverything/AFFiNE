@@ -9,6 +9,7 @@ mod types;
 mod worker;
 
 use generation::{ActiveGeneration, activate, cleanup_retired_generation, config_hash, ensure, fail, load_active};
+pub(super) use projection::project_current_doc;
 use projection::{ProjectionInput, project_document};
 use provider::{SearchChange, SearchProvider, projection_external_id};
 use query::{compile, compile_aggregate};

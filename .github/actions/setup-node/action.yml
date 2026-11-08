@@ -137,7 +137,6 @@ runs:
       env:
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-        ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
         SENTRYCLI_SKIP_DOWNLOAD: '1'
         DEBUG: '*'
 
@@ -187,7 +186,7 @@ runs:
       working-directory: ${{ steps.workspace-path.outputs.workspace_path }}
       shell: bash
       run: |
-        echo "version=$(yarn why --json electron | grep -h 'workspace:.' | jq --raw-output '.children[].locator' | sed -e 's/@playwright\/test@.*://' | head -n 1)" >> $GITHUB_OUTPUT
+        node -e "console.log('version=' + require('electron/package.json').version)" >> "$GITHUB_OUTPUT"
 
     - uses: actions/cache@v6
       id: electron-cache
@@ -201,7 +200,7 @@ runs:
     - name: Install Electron binary
       shell: bash
       if: inputs.electron-install == 'true'
-      run: node ./node_modules/electron/install.js
+      run: yarn install-electron
       working-directory: ${{ steps.workspace-path.outputs.workspace_path }}
       env:
         electron_config_cache: ${{ steps.workspace-path.outputs.workspace_path }}/node_modules/.cache/electron

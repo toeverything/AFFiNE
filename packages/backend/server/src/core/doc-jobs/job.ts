@@ -66,6 +66,20 @@ export class DocJobRunner {
       ORDER BY workspace.last_check_embeddings, workspace.sid
       LIMIT ${WORKSPACE_BATCH_SIZE}
     `;
+    const rootsByWorkspace = new Map<
+      string,
+      Awaited<
+        ReturnType<BackendRuntimeEmbeddingService['inspectWorkspaceRoot']>
+      >
+    >();
+    const inspectRoot = async (workspaceId: string) => {
+      let root = rootsByWorkspace.get(workspaceId);
+      if (!root) {
+        root = await this.embedding.inspectWorkspaceRoot(workspaceId);
+        rootsByWorkspace.set(workspaceId, root);
+      }
+      return root;
+    };
     let reconciledWorkspaces = 0;
     for (const workspace of roots) {
       const claimedAt = new Date();
@@ -78,6 +92,8 @@ export class DocJobRunner {
       });
       if (!claimed.count) continue;
       try {
+        const root = await inspectRoot(workspace.id);
+        if (!root.complete) continue;
         await this.embedding.reconcileDocuments(workspace.id);
         reconciledWorkspaces++;
       } catch (error) {
@@ -85,10 +101,10 @@ export class DocJobRunner {
           where: { id: workspace.id, lastCheckEmbeddings: claimedAt },
           data: { lastCheckEmbeddings: new Date(0) },
         });
-        this.logger.error(
-          `embedding workspace reconciliation failed workspace=${workspace.id}`,
-          error
-        );
+        this.logger.error('embedding workspace reconciliation failed', {
+          workspaceId: workspace.id,
+          error,
+        });
       }
     }
 
@@ -98,6 +114,7 @@ export class DocJobRunner {
       SELECT snapshot.workspace_id AS "workspaceId", snapshot.guid AS "docId"
       FROM snapshots snapshot
       JOIN workspaces workspace ON workspace.id = snapshot.workspace_id
+      LEFT JOIN snapshots root ON root.workspace_id = snapshot.workspace_id AND root.guid = snapshot.workspace_id
       LEFT JOIN embedding_sources source
         ON source.workspace_id = snapshot.workspace_id
         AND source.source_kind = 'document'
@@ -108,7 +125,8 @@ export class DocJobRunner {
         AND snapshot.guid NOT LIKE 'userdata$%'
         AND (
           source.id IS NULL
-          OR source.deleted_at IS NOT NULL
+          OR (source.document_projection->>'rootRevision' IS NOT NULL
+            AND source.document_projection->>'rootRevision' <> COALESCE(((extract(epoch FROM root.updated_at) * 1000)::bigint)::text, 'missing'))
           OR source.content_revision <> ((extract(epoch FROM snapshot.updated_at) * 1000)::bigint)::text
         )
       ORDER BY snapshot.updated_at, snapshot.workspace_id, snapshot.guid
@@ -117,13 +135,17 @@ export class DocJobRunner {
     let syncedDocuments = 0;
     for (const document of documents) {
       try {
-        await this.embedding.syncDocument(document.workspaceId, document.docId);
+        await this.embedding.syncDocument(
+          document.workspaceId,
+          document.docId,
+          await inspectRoot(document.workspaceId)
+        );
         syncedDocuments++;
       } catch (error) {
-        this.logger.error(
-          `document embedding sync failed workspace=${document.workspaceId} doc=${document.docId}`,
-          error
-        );
+        this.logger.error('document embedding sync failed', {
+          ...document,
+          error,
+        });
       }
     }
     return {
@@ -168,10 +190,11 @@ export class DocJobRunner {
           });
         }
       } catch (error) {
-        this.logger.error(
-          `document compaction failed workspace=${group.workspaceId} doc=${group.id}`,
-          error
-        );
+        this.logger.error('document compaction failed', {
+          workspaceId: group.workspaceId,
+          docId: group.id,
+          error,
+        });
       }
     }
     return { scanned: groups.length, merged };
@@ -211,10 +234,11 @@ export class DocJobRunner {
           await this.models.doc.upsertMeta(workspace.id, docId, content);
           fixed++;
         } catch (error) {
-          this.logger.error(
-            `document summary repair failed workspace=${workspace.id} doc=${docId}`,
-            error
-          );
+          this.logger.error('document summary repair failed', {
+            workspaceId: workspace.id,
+            docId,
+            error,
+          });
         }
       }
     }

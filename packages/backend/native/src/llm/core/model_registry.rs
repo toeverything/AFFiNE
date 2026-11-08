@@ -143,14 +143,20 @@ mod tests {
     assert_eq!(variant.raw_model_id, "deepseek-v4-pro");
     assert_eq!(variant.request_layer.as_deref(), Some("chat_completions"));
 
-    let legacy = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
-      backend_kind: Some("deepseek".to_string()),
-      model_id: "deepseek-chat".to_string(),
-    })
-    .unwrap();
+    for (model_id, matched_by) in [
+      ("deepseek-flash", "raw_model_id"),
+      ("deepseek-v4-flash", "legacy_alias"),
+      ("deepseek-v4-flash-vision-exp", "legacy_alias"),
+    ] {
+      let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+        backend_kind: Some("deepseek".to_string()),
+        model_id: model_id.to_string(),
+      })
+      .unwrap();
 
-    assert_eq!(legacy.matched_by.as_deref(), Some("legacy_alias"));
-    assert_eq!(legacy.variant.unwrap().raw_model_id, "deepseek-v4-flash");
+      assert_eq!(response.matched_by.as_deref(), Some(matched_by));
+      assert_eq!(response.variant.unwrap().raw_model_id, "deepseek-flash");
+    }
   }
 
   #[test]
@@ -250,7 +256,7 @@ mod tests {
         attachment_kinds: None,
         attachment_source_kinds: None,
         has_remote_attachments: None,
-        model_id: Some("gpt-image-1".to_string()),
+        model_id: Some("gpt-image-2.6-flare".to_string()),
         output_type: Some("image".to_string()),
       },
     })

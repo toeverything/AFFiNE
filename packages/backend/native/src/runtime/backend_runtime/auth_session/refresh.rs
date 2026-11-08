@@ -1,5 +1,5 @@
 use affine_core::auth::{
-  RefreshState, SessionFacts, SessionState, refresh_state, refreshed_idle_deadline, session_state,
+  RefreshFacts, RefreshState, SessionFacts, SessionState, refresh_state, refreshed_idle_deadline, session_state,
 };
 use chrono::{DateTime, Duration, Utc};
 use sqlx::{PgPool, Row};
@@ -27,6 +27,7 @@ struct RefreshRow {
   token_revoked_at: Option<DateTime<Utc>>,
   successor_ciphertext: Option<String>,
   successor_expires_at: Option<DateTime<Utc>>,
+  refresh_attempt_hash: Option<String>,
   platform: String,
   idle_expires_at: DateTime<Utc>,
   absolute_expires_at: DateTime<Utc>,
@@ -39,6 +40,7 @@ pub(super) async fn refresh(
   config: &super::super::BackendRuntimeConfig,
   refresh_token: &str,
   app_version: Option<&str>,
+  attempt_id: Option<&str>,
 ) -> RuntimeResult<RefreshResult> {
   let Some(parsed) = parse_auth_session_refresh_token(refresh_token) else {
     return Ok(invalid());
@@ -51,6 +53,7 @@ pub(super) async fn refresh(
       code: "AUTH_REFRESH_RATE_LIMITED",
     });
   }
+  let attempt_hash = attempt_id.map(super::super::token_hash);
   let encryption_key = SuccessorKey::derive(config.private_key.as_bytes())?;
   let candidate = create_auth_session_refresh_token();
   let mut tx = pool
@@ -115,22 +118,31 @@ pub(super) async fn refresh(
     && replacement.as_ref().is_some_and(|replacement| {
       replacement.used_at.is_none() && replacement.revoked_at.is_none() && replacement.expires_at > now
     });
-  let state = refresh_state(
-    row.used_at,
-    row.grace_used_at,
-    row.replaced_by_id.is_some(),
+  let state = refresh_state(&RefreshFacts {
+    used_at: row.used_at,
+    grace_used_at: row.grace_used_at,
+    has_replacement: row.replaced_by_id.is_some(),
     successor_available,
-    replacement
+    replacement_unused: replacement
       .as_ref()
       .is_some_and(|replacement| replacement.used_at.is_none()),
+    attempt_matches: row.refresh_attempt_hash.as_deref().map(|stored| {
+      attempt_hash
+        .as_deref()
+        .is_some_and(|provided| hashes_equal(stored, provided))
+    }),
     now,
-    Duration::seconds(config.auth.refresh_grace_seconds),
-  );
+    grace: Duration::seconds(config.auth.refresh_grace_seconds),
+  });
   match state {
     RefreshState::Rotate => {
       let refresh_expires_at =
         refreshed_idle_deadline(now, config.auth.refresh_idle_ttl_seconds, row.absolute_expires_at);
-      let successor_expires_at = now + Duration::seconds(config.auth.refresh_grace_seconds);
+      let successor_expires_at = if attempt_hash.is_some() {
+        row.token_expires_at.min(refresh_expires_at)
+      } else {
+        now + Duration::seconds(config.auth.refresh_grace_seconds)
+      };
       let ciphertext = encryption_key.encrypt(&candidate.token, &row.id, &row.auth_session_id)?;
       sqlx::query(
         r#"INSERT INTO auth_refresh_tokens(
@@ -148,7 +160,7 @@ pub(super) async fn refresh(
       .map_err(|error| RuntimeError::database("create auth refresh successor", error))?;
       sqlx::query(
         r#"UPDATE auth_refresh_tokens
-           SET used_at=$2,replaced_by_id=$3,successor_ciphertext=$4,successor_expires_at=$5
+           SET used_at=$2,replaced_by_id=$3,successor_ciphertext=$4,successor_expires_at=$5,refresh_attempt_hash=$6
            WHERE id=$1 AND used_at IS NULL"#,
       )
       .bind(&row.id)
@@ -156,9 +168,19 @@ pub(super) async fn refresh(
       .bind(&candidate.id)
       .bind(ciphertext)
       .bind(successor_expires_at)
+      .bind(attempt_hash)
       .execute(&mut *tx)
       .await
       .map_err(|error| RuntimeError::database("rotate auth refresh source", error))?;
+      sqlx::query(
+        r#"UPDATE auth_refresh_tokens SET successor_ciphertext=NULL,successor_expires_at=NULL
+           WHERE auth_session_id=$1 AND replaced_by_id=$2"#,
+      )
+      .bind(&row.auth_session_id)
+      .bind(&row.id)
+      .execute(&mut *tx)
+      .await
+      .map_err(|error| RuntimeError::database("clear consumed auth refresh successor", error))?;
       update_session(&mut tx, &row, refresh_expires_at, app_version, now).await?;
       let pair = token_pair(
         &mut tx,
@@ -183,7 +205,7 @@ pub(super) async fn refresh(
         grace: false,
       })
     }
-    RefreshState::Grace => {
+    RefreshState::Grace | RefreshState::Recover => {
       let replacement = replacement.ok_or_else(|| RuntimeError::invalid_state("auth refresh successor is missing"))?;
       let ciphertext = row
         .successor_ciphertext
@@ -207,12 +229,14 @@ pub(super) async fn refresh(
           code: "AUTH_SESSION_TEMPORARILY_UNAVAILABLE",
         });
       }
-      sqlx::query("UPDATE auth_refresh_tokens SET grace_used_at=$2 WHERE id=$1 AND grace_used_at IS NULL")
-        .bind(&row.id)
-        .bind(now)
-        .execute(&mut *tx)
-        .await
-        .map_err(|error| RuntimeError::database("claim auth refresh grace", error))?;
+      if state == RefreshState::Grace {
+        sqlx::query("UPDATE auth_refresh_tokens SET grace_used_at=$2 WHERE id=$1 AND grace_used_at IS NULL")
+          .bind(&row.id)
+          .bind(now)
+          .execute(&mut *tx)
+          .await
+          .map_err(|error| RuntimeError::database("claim auth refresh grace", error))?;
+      }
       let pair = token_pair(
         &mut tx,
         config,
@@ -237,7 +261,7 @@ pub(super) async fn refresh(
         pair,
         auth_session_id: row.auth_session_id,
         platform: row.platform,
-        grace: true,
+        grace: state == RefreshState::Grace,
       })
     }
     RefreshState::Replay => {
@@ -324,7 +348,7 @@ async fn load_refresh(
   let row = sqlx::query(
     r#"SELECT r.id,r.auth_session_id,r.generation,r.secret_hash,r.expires_at AS token_expires_at,
               r.used_at,r.replaced_by_id,r.grace_used_at,r.revoked_at AS token_revoked_at,
-              r.successor_ciphertext,r.successor_expires_at,a.user_session_id,a.platform,
+              r.successor_ciphertext,r.successor_expires_at,r.refresh_attempt_hash,a.user_session_id,a.platform,
               a.idle_expires_at,a.absolute_expires_at,a.revoked_at AS session_revoked_at,
               u.user_id,u.expires_at AS user_session_expires_at
        FROM auth_refresh_tokens r JOIN auth_sessions a ON a.id=r.auth_session_id
@@ -348,6 +372,7 @@ async fn load_refresh(
     token_revoked_at: row.get("token_revoked_at"),
     successor_ciphertext: row.get("successor_ciphertext"),
     successor_expires_at: row.get("successor_expires_at"),
+    refresh_attempt_hash: row.get("refresh_attempt_hash"),
     platform: row.get("platform"),
     idle_expires_at: row.get("idle_expires_at"),
     absolute_expires_at: row.get("absolute_expires_at"),
