@@ -89,6 +89,7 @@ export declare class BackendRuntime {
   health(): Promise<BackendRuntimeHealth>
   paymentEnabled(): boolean
   stripeEnabled(): boolean
+  listPaymentSubscriptionsV1(targetType: string, targetId: string): Promise<any>
   executePaymentCommandV1(input: any): Promise<any>
   createPaymentCustomerPortalV1(actorUserId: string): Promise<string>
   createLicenseCustomerPortalV1(licenseKey: string, validateKey?: string | undefined | null): Promise<string>

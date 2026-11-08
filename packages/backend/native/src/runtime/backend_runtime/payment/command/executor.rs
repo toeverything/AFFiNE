@@ -5,16 +5,24 @@ impl PaymentRuntime {
     let connection = PaymentConnection::try_acquire(&self.pool, intent.resources.clone())
       .await?
       .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-    self.execute_locked_stripe_operation(connection, intent).await
+    self.execute_locked_stripe_operation(connection, intent, None).await
   }
 
   pub(super) async fn execute_locked_stripe_operation(
     &self,
     mut connection: PaymentConnection,
     intent: OperationIntent,
+    workspace_actor: Option<&str>,
   ) -> RuntimeResult<OperationExecution> {
     let stripe = self.stripe()?;
-    let frozen = freeze_operation(&mut connection, &intent).await?;
+    let frozen = if let Some(actor) = workspace_actor {
+      use super::super::super::permission::{PermissionAuthorizer, PermissionTelemetry};
+      let authorizer =
+        PermissionAuthorizer::with_telemetry(self.pool.clone(), self.deployment, PermissionTelemetry::default());
+      freeze_stripe_operation(&mut connection, &intent, Some((&authorizer, actor))).await?
+    } else {
+      freeze_operation(&mut connection, &intent).await?
+    };
     match frozen.status.as_str() {
       "completed" => {
         return frozen
@@ -94,27 +102,6 @@ impl PaymentRuntime {
       operation_id: frozen.id,
       response,
     })
-  }
-
-  pub(super) async fn assert_workspace_payment(
-    &self,
-    actor_user_id: Option<&str>,
-    workspace_id: &str,
-  ) -> RuntimeResult<()> {
-    let actor_user_id = actor_user_id.ok_or_else(|| RuntimeError::invalid_input("payment actor is required"))?;
-    let allowed: bool = sqlx::query_scalar(
-      "SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=$1 AND user_id=$2 AND role='owner' AND \
-       state='active')",
-    )
-    .bind(workspace_id)
-    .bind(actor_user_id)
-    .fetch_one(&self.pool)
-    .await
-    .map_err(|error| RuntimeError::database("authorize workspace payment", error))?;
-    if !allowed {
-      return Err(RuntimeError::invalid_state("workspace_payment_denied"));
-    }
-    Ok(())
   }
 
   pub(super) fn stripe(&self) -> RuntimeResult<&super::super::StripeClient> {

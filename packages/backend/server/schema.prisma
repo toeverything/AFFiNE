@@ -54,6 +54,7 @@ model User {
   workspaceMemberLastAccesses WorkspaceMemberLastAccess[]
   quotaState                  EffectiveUserQuotaState?
   ownedQuotaStates            EffectiveWorkspaceQuotaState[]
+  cloudSubscriptionBindings   CloudSubscriptionBinding[]
 
   @@index([email])
   @@map("users")
@@ -1011,6 +1012,18 @@ model UserStripeCustomer {
   @@map("user_stripe_customers")
 }
 
+model CloudSubscriptionBinding {
+  userId                 String  @map("user_id") @db.VarChar
+  planFamily             String  @map("plan_family") @db.Text
+  boundProviderNamespace String? @map("bound_provider_namespace") @db.Text
+  boundSourceIdentity    String? @map("bound_source_identity") @db.Text
+  conflicted             Boolean @default(false)
+  user                   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, planFamily])
+  @@map("cloud_subscription_bindings")
+}
+
 model ProviderSubscription {
   id                     String    @id @default(uuid()) @db.VarChar
   provider               Provider
@@ -1150,6 +1163,21 @@ model PaymentFinancialFact {
   @@index([providerNamespace, sourceIdentity])
   @@index([providerNamespace, externalInvoiceId], map: "payment_financial_facts_namespace_invoice_idx")
   @@map("payment_financial_facts")
+}
+
+model PaymentReconciliation {
+  requestId     String   @id @map("request_id") @db.Text
+  actorUserId   String   @map("actor_user_id") @db.Text
+  userId        String   @map("user_id") @db.Text
+  planFamily    String   @map("plan_family") @db.Text
+  attemptId     String?  @map("attempt_id") @db.Text
+  transactionId String?  @map("transaction_id") @db.Text
+  evidence      String   @db.Text
+  result        Json     @db.JsonB
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([userId, planFamily, createdAt], map: "payment_reconciliations_user_family_created_idx")
+  @@map("payment_reconciliations")
 }
 
 model PaymentOperation {

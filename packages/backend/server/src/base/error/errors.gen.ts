@@ -645,6 +645,18 @@ export class FailedToCheckout extends UserFriendlyError {
   }
 }
 
+export class PurchaseInProgress extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'purchase_in_progress', message);
+  }
+}
+
+export class PurchaseNeedsVerification extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'purchase_needs_verification', message);
+  }
+}
+
 export class InvalidCheckoutParameters extends UserFriendlyError {
   constructor(message?: string) {
     super('invalid_input', 'invalid_checkout_parameters', message);
@@ -1304,6 +1316,8 @@ export enum ErrorNames {
   NO_MORE_SEAT,
   UNSUPPORTED_SUBSCRIPTION_PLAN,
   FAILED_TO_CHECKOUT,
+  PURCHASE_IN_PROGRESS,
+  PURCHASE_NEEDS_VERIFICATION,
   INVALID_CHECKOUT_PARAMETERS,
   SUBSCRIPTION_ALREADY_EXISTS,
   INVALID_SUBSCRIPTION_PARAMETERS,
