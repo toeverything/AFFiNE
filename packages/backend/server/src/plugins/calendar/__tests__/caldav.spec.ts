@@ -1,11 +1,16 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import test from 'ava';
+import ava from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
-import { CryptoHelper, GraphqlBadRequest, Mutex } from '../../../base';
+import {
+  CalendarProviderRequestError,
+  CryptoHelper,
+  GraphqlBadRequest,
+  Mutex,
+} from '../../../base';
 import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import { Models } from '../../../models';
@@ -16,6 +21,8 @@ import {
   CalendarProviderName,
 } from '../providers';
 import { CalendarService } from '../service';
+
+const test = ava.serial;
 
 const USERNAME = 'caldav-user@example.com';
 const PASSWORD = 'caldav-pass';
@@ -147,7 +154,9 @@ const calendarQueryResponse = `<?xml version="1.0" encoding="UTF-8"?>
 </multistatus>`;
 
 const createCalDAVServer = async (options?: {
-  discoveryGetStatus?: number;
+  discoveryStatus?: number;
+  browserRedirect?: boolean;
+  relativeHrefs?: boolean;
   syncCollectionStatus?: number;
 }) => {
   const requests: Array<{ method: string; url: string; body: string }> = [];
@@ -170,8 +179,8 @@ const createCalDAVServer = async (options?: {
     }
 
     if (req.url === '/.well-known/caldav') {
-      if (options?.discoveryGetStatus) {
-        res.writeHead(options.discoveryGetStatus, {
+      if (options?.discoveryStatus) {
+        res.writeHead(options.discoveryStatus, {
           'Content-Type': 'application/xml',
         });
         res.end(`<?xml version="1.0" encoding="utf-8"?>
@@ -180,24 +189,62 @@ const createCalDAVServer = async (options?: {
 </d:error>`);
         return;
       }
-      res.writeHead(302, { Location: '/caldav/' });
+      res.writeHead(302, {
+        Location: options?.browserRedirect ? '/' : '/caldav/',
+      });
       res.end();
       return;
     }
 
-    if (req.method === 'PROPFIND' && req.url === '/caldav/') {
-      res.writeHead(207, { 'Content-Type': 'application/xml' });
-      res.end(principalResponse);
+    if (req.method === 'GET' && req.url === '/') {
+      res.writeHead(302, { Location: '/.web/' });
+      res.end();
+      return;
+    }
+    if (req.url === '/.web/') {
+      res.writeHead(req.method === 'GET' ? 200 : 403, {
+        'Content-Type': 'text/html',
+      });
+      res.end('<html>Radicale web UI</html>');
       return;
     }
 
-    if (req.method === 'PROPFIND' && req.url === '/principals/user/') {
+    if (
+      req.method === 'PROPFIND' &&
+      (req.url === '/caldav/' || req.url === '/')
+    ) {
       res.writeHead(207, { 'Content-Type': 'application/xml' });
-      res.end(homeSetResponse);
+      res.end(
+        options?.relativeHrefs
+          ? principalResponse.replace('/principals/user/', 'principals/user/')
+          : principalResponse
+      );
       return;
     }
 
-    if (req.method === 'PROPFIND' && req.url === '/calendars/user/') {
+    if (
+      req.method === 'PROPFIND' &&
+      req.url ===
+        (options?.relativeHrefs
+          ? '/caldav/principals/user/'
+          : '/principals/user/')
+    ) {
+      res.writeHead(207, { 'Content-Type': 'application/xml' });
+      res.end(
+        options?.relativeHrefs
+          ? homeSetResponse.replace('/calendars/user/', 'calendars/')
+          : homeSetResponse
+      );
+      return;
+    }
+
+    if (
+      req.method === 'PROPFIND' &&
+      req.url ===
+        (options?.relativeHrefs
+          ? '/caldav/principals/user/calendars/'
+          : '/calendars/user/')
+    ) {
       res.writeHead(207, { 'Content-Type': 'application/xml' });
       res.end(calendarListResponse);
       return;
@@ -285,86 +332,101 @@ const createCalendarModule = async (caldavConfig: Record<string, unknown>) => {
   return module;
 };
 
-test('linkCalDAVAccount discovers calendars and parses events', async t => {
-  const server = await createCalDAVServer({ discoveryGetStatus: 501 });
-  t.teardown(() => server.server.close());
+for (const { label, options } of [
+  { label: 'unsupported well-known', options: { discoveryStatus: 501 } },
+  { label: 'DAV redirect', options: {} },
+  { label: 'HTML-only GET redirect', options: { browserRedirect: true } },
+  { label: 'relative DAV hrefs', options: { relativeHrefs: true } },
+]) {
+  test(`linkCalDAVAccount discovers calendars and parses events with ${label}`, async t => {
+    const server = await createCalDAVServer(options);
+    t.teardown(() => server.server.close());
 
-  const module = await createCalendarModule({
-    enabled: true,
-    allowInsecureHttp: true,
-    blockPrivateNetwork: false,
-    providers: [
-      {
-        id: 'test',
-        label: 'Test CalDAV',
-        serverUrl: `${server.baseUrl}/caldav/`,
-        authType: 'basic',
+    const module = await createCalendarModule({
+      enabled: true,
+      allowInsecureHttp: true,
+      blockPrivateNetwork: false,
+      providers: [
+        {
+          id: 'test',
+          label: 'Test CalDAV',
+          serverUrl: `${server.baseUrl}/caldav/`,
+          authType: 'basic',
+        },
+      ],
+    });
+    t.teardown(() => module.close());
+
+    const calendarService = module.get(CalendarService);
+    const models = module.get(Models);
+    const user = await module.create(Mockers.User);
+
+    const account = await calendarService.linkCalDAVAccount({
+      userId: user.id,
+      input: {
+        providerPresetId: 'test',
+        username: USERNAME,
+        password: PASSWORD,
+        displayName: 'Test CalDAV',
       },
-    ],
+    });
+
+    const subscriptions = await models.calendarSubscription.listByAccount(
+      account.id
+    );
+    t.is(subscriptions.length, 1);
+    t.is(account.calendarsCount, 1);
+    t.true(
+      server.requests.some(
+        request =>
+          request.method === 'PROPFIND' && request.url === '/.well-known/caldav'
+      )
+    );
+    t.true(
+      server.requests.some(
+        request =>
+          request.method === 'PROPFIND' &&
+          ['/caldav/', '/'].includes(request.url)
+      )
+    );
+
+    t.false(
+      server.requests.some(
+        request => request.method === 'GET' || request.url === '/.web/'
+      )
+    );
+
+    const events = await models.calendarEvent.listBySubscriptionsInRange(
+      [subscriptions[0].id],
+      new Date('2020-01-01T00:00:00.000Z'),
+      new Date('2030-01-01T00:00:00.000Z')
+    );
+    t.is(events.length, 3);
+
+    const allDay = events.find(
+      (event: (typeof events)[number]) => event.title === 'All Day Event'
+    );
+    t.truthy(allDay);
+    t.is(allDay?.allDay, true);
+    t.is(allDay?.startAtUtc.toISOString(), '2025-01-01T00:00:00.000Z');
+    t.is(allDay?.endAtUtc.toISOString(), '2025-01-02T00:00:00.000Z');
+    t.is(allDay?.originalTimezone, 'UTC');
+
+    const tzEvent = events.find(
+      (event: (typeof events)[number]) => event.title === 'Timezone Event'
+    );
+    t.truthy(tzEvent);
+    t.is(tzEvent?.originalTimezone, 'America/Los_Angeles');
+    t.is(tzEvent?.startAtUtc.toISOString(), '2025-01-03T17:00:00.000Z');
+    t.is(tzEvent?.endAtUtc.toISOString(), '2025-01-03T18:00:00.000Z');
+
+    const recurrence = events.find(
+      (event: (typeof events)[number]) => event.title === 'Recurring Instance'
+    );
+    t.truthy(recurrence);
+    t.is(recurrence?.recurrenceId, '2025-01-04T09:00:00.000Z');
   });
-  t.teardown(() => module.close());
-
-  const calendarService = module.get(CalendarService);
-  const models = module.get(Models) as any;
-  const user = await module.create(Mockers.User);
-
-  const account = await calendarService.linkCalDAVAccount({
-    userId: user.id,
-    input: {
-      providerPresetId: 'test',
-      username: USERNAME,
-      password: PASSWORD,
-      displayName: 'Test CalDAV',
-    },
-  });
-
-  const subscriptions = await models.calendarSubscription.listByAccount(
-    account.id
-  );
-  t.is(subscriptions.length, 1);
-  t.is(account.calendarsCount, 1);
-  t.true(
-    server.requests.some(
-      request =>
-        request.method === 'GET' && request.url === '/.well-known/caldav'
-    )
-  );
-  t.true(
-    server.requests.some(
-      request => request.method === 'PROPFIND' && request.url === '/caldav/'
-    )
-  );
-
-  const events = await models.calendarEvent.listBySubscriptionsInRange(
-    [subscriptions[0].id],
-    new Date('2020-01-01T00:00:00.000Z'),
-    new Date('2030-01-01T00:00:00.000Z')
-  );
-  t.is(events.length, 3);
-
-  const allDay = events.find(
-    (event: (typeof events)[number]) => event.title === 'All Day Event'
-  );
-  t.truthy(allDay);
-  t.is(allDay?.allDay, true);
-  t.is(allDay?.startAtUtc.toISOString(), '2025-01-01T00:00:00.000Z');
-  t.is(allDay?.endAtUtc.toISOString(), '2025-01-02T00:00:00.000Z');
-  t.is(allDay?.originalTimezone, 'UTC');
-
-  const tzEvent = events.find(
-    (event: (typeof events)[number]) => event.title === 'Timezone Event'
-  );
-  t.truthy(tzEvent);
-  t.is(tzEvent?.originalTimezone, 'America/Los_Angeles');
-  t.is(tzEvent?.startAtUtc.toISOString(), '2025-01-03T17:00:00.000Z');
-  t.is(tzEvent?.endAtUtc.toISOString(), '2025-01-03T18:00:00.000Z');
-
-  const recurrence = events.find(
-    (event: (typeof events)[number]) => event.title === 'Recurring Instance'
-  );
-  t.truthy(recurrence);
-  t.is(recurrence?.recurrenceId, '2025-01-04T09:00:00.000Z');
-});
+}
 
 test('syncSubscription falls back when sync-collection is rejected', async t => {
   const server = await createCalDAVServer({ syncCollectionStatus: 403 });
@@ -386,7 +448,7 @@ test('syncSubscription falls back when sync-collection is rejected', async t => 
   t.teardown(() => module.close());
 
   const calendarService = module.get(CalendarService);
-  const models = module.get(Models) as any;
+  const models = module.get(Models);
   const user = await module.create(Mockers.User);
 
   const account = await models.calendarAccount.upsert({
@@ -552,3 +614,35 @@ test('linkCalDAVAccount enforces redirect limits', async t => {
   t.true(error instanceof GraphqlBadRequest);
   t.is((error as GraphqlBadRequest).data?.code, 'caldav_max_redirects');
 });
+
+for (const status of [401, 403]) {
+  test(`discovery does not fall back after HTTP ${status}`, async t => {
+    const server = await createCalDAVServer({ discoveryStatus: status });
+    t.teardown(() => server.server.close());
+    const preset = {
+      id: 'test',
+      label: 'Test CalDAV',
+      serverUrl: `${server.baseUrl}/caldav/`,
+      authType: 'basic' as const,
+    };
+    const module = await createCalendarModule({
+      enabled: true,
+      allowInsecureHttp: true,
+      blockPrivateNetwork: false,
+      providers: [preset],
+    });
+    t.teardown(() => module.close());
+    const error = await t.throwsAsync<CalendarProviderRequestError>(
+      () =>
+        module
+          .get(CalDAVProvider)
+          .discoverAccount({ preset, username: USERNAME, password: PASSWORD }),
+      { instanceOf: CalendarProviderRequestError }
+    );
+    t.is(error?.data.status, status);
+    t.deepEqual(
+      server.requests.map(({ method, url }) => ({ method, url })),
+      [{ method: 'PROPFIND', url: '/.well-known/caldav' }]
+    );
+  });
+}
