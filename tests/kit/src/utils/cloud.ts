@@ -201,6 +201,7 @@ export async function createRandomAIUser(): Promise<{
         subjectId: `test-ai:${created.id}`,
         metadata: {
           legacySync: false,
+          paidFrom: new Date().toISOString(),
         },
       },
     });

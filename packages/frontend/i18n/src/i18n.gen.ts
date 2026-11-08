@@ -4707,6 +4707,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.modal.downgrade.title"](): string;
     /**
+      * `End checkout`
+      */
+    ["com.affine.payment.modal.end-checkout.confirm"](): string;
+    /**
+      * `End your open Stripe checkout before starting a new one for this plan.`
+      */
+    ["com.affine.payment.modal.end-checkout.description"](): string;
+    /**
+      * `End the previous checkout?`
+      */
+    ["com.affine.payment.modal.end-checkout.title"](): string;
+    /**
       * `Cancel`
       */
     ["com.affine.payment.modal.resume.cancel"](): string;

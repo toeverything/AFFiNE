@@ -10,6 +10,7 @@ import {
   type CreateCheckoutSessionInput,
   SubscriptionPlan,
 } from '@affine/graphql';
+import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import {
@@ -38,6 +39,7 @@ export const CheckoutSlot = ({
   onCheckoutSuccess,
   renderer: Renderer,
 }: CheckoutSlotProps) => {
+  const t = useI18n();
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const [isMutating, setMutating] = useState(false);
   const [isOpenedExternalWindow, setOpenedExternalWindow] = useState(false);
@@ -99,10 +101,10 @@ export const CheckoutSlot = ({
           const attemptId = await subscriptionService.checkoutAttempt(plan);
           if (attemptId) {
             openConfirmModal({
-              title: 'End the previous checkout?',
+              title: t['com.affine.payment.modal.end-checkout.title'](),
               description:
-                'End your open Stripe checkout before starting a new one for this plan.',
-              confirmText: 'End checkout',
+                t['com.affine.payment.modal.end-checkout.description'](),
+              confirmText: t['com.affine.payment.modal.end-checkout.confirm'](),
               onConfirm: async () => {
                 try {
                   if (
@@ -138,6 +140,7 @@ export const CheckoutSlot = ({
     openCheckout,
     openConfirmModal,
     subscriptionService,
+    t,
   ]);
 
   return <Renderer onClick={subscribe} loading={isMutating} />;
