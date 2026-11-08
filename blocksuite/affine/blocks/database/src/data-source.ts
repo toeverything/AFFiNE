@@ -285,10 +285,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
       meta.config.rawValue.default();
     const schema = meta.config.rawValue.schema;
     const result = schema.safeParse(rawValue);
-    if (result.success) {
-      return result.data;
-    }
-    return;
+    return result.success ? result.data : meta.config.rawValue.default();
   }
 
   propertyAdd(
