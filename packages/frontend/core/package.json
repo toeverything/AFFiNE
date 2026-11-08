@@ -94,7 +94,7 @@
     "tinykeys": "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch",
     "y-protocols": "^1.0.6",
     "yjs": "^13.6.27",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@blocksuite/affine-ext-loader": "workspace:*",
