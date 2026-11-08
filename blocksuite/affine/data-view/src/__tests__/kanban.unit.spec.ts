@@ -926,8 +926,8 @@ describe('kanban', () => {
         );
 
         // Test rename from the menu input
-        const inputConfig1 = inputSpy.mock.calls[0][0];
-        inputConfig1.onChange?.('In Progress');
+        const inputConfig1 = inputSpy.mock.calls[0]?.[0];
+        inputConfig1?.onChange?.('In Progress');
         expect(updateData).toHaveBeenCalledWith({
           options: [
             { id: 'opt-1', value: 'In Progress', color: '#ff0000' },
@@ -936,7 +936,7 @@ describe('kanban', () => {
         });
 
         // Test color selection from the menu
-        const popMenuOptions1 = popMenuSpy.mock.calls[0][1]?.options?.items;
+        const popMenuOptions1 = popMenuSpy.mock.calls[0]?.[1]?.options?.items;
         expect(popMenuOptions1).toBeDefined();
         expect(popMenuOptions1!.length).toBeGreaterThan(1);
 
@@ -970,8 +970,8 @@ describe('kanban', () => {
           })
         );
 
-        const inputConfig2 = inputSpy.mock.calls[0][0];
-        inputConfig2.onChange?.('Done');
+        const inputConfig2 = inputSpy.mock.calls[0]?.[0];
+        inputConfig2?.onChange?.('Done');
         expect(updateData).toHaveBeenCalledWith({
           options: [
             { id: 'opt-1', value: 'In Progress', color: '#ff0000' },
